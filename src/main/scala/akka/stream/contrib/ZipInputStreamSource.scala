@@ -33,7 +33,7 @@ object ZipInputStreamSource {
    * @param creationTime The last modification time of the entry in milliseconds
    *          since the epoch, or -1 if not specified
    */
-  case class ZipEntryData(name: String, creationTime: Long)
+  final case class ZipEntryData(name: String, creationTime: Long)
 
   /**
    * Factory for [[ZipInputStreamSource]] instances wrapped

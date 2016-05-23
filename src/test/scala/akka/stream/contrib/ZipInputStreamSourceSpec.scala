@@ -68,9 +68,9 @@ trait ZipInputStreamSourceSpec extends BaseStreamSpec {
   }
 
   private def sampleZipFile(
-    numFiles: Int,
+    numFiles:    Int,
     sizePerFile: Int = 1024,
-    dirRatio: Int = 4
+    dirRatio:    Int = 4
   ): ByteArrayInputStream = {
     withZos { zos =>
       (1 to numFiles).foreach(i1 => {
