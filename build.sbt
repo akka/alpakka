@@ -35,7 +35,7 @@ testOptions in Test += Tests.Argument("-oDF")
 // -a Show stack traces and exception class name for AssertionErrors.
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")
 
-val AkkaVersion = "2.4.6"
+val AkkaVersion = "2.4.7"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka"      %% "akka-stream"                         % AkkaVersion,
