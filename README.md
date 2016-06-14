@@ -14,9 +14,9 @@ Dependencies
 
 To include the latest release of `akka-stream-contrib` into your `sbt` project, add the following lines to your `build.sbt` file:
 
-    libraryDependencies += "com.typesafe.akka" %% "akka-stream-contrib" % "0.1"
+    libraryDependencies += "com.typesafe.akka" %% "akka-stream-contrib" % "0.2"
 
-This version of `akka-stream-contrib` depends on Akka 2.4.4 and Scala 2.11.8. 
+This version of `akka-stream-contrib` depends on Akka 2.4.7 and Scala 2.11.8. 
 
 Caveat Emptor
 -------------
