@@ -13,3 +13,5 @@ target/
 *.sublime-project
 /bin/
 ext-lib-src/
+.ensime
+.ensime_cache/
