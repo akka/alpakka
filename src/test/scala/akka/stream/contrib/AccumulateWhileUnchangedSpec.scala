@@ -34,7 +34,7 @@ trait AccumulateWhileUnchangedSpec extends BaseStreamSpec {
     }
 
     "not emit any value for an empty source" in {
-      Source(Vector.empty[Element])
+      Source.empty[Element]
         .via(AccumulateWhileUnchanged(_.value))
         .runWith(TestSink.probe)
         .request(42)
