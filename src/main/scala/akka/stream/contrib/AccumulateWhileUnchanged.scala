@@ -72,9 +72,7 @@ final class AccumulateWhileUnchanged[Element, Property](propertyExtractor: Eleme
       }
 
       override def onPull(): Unit = {
-        if (!isClosed(in)) {
-          pull(in)
-        }
+        pull(in)
       }
 
       override def onUpstreamFinish(): Unit = {
