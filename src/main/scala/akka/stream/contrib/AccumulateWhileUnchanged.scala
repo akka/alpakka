@@ -78,9 +78,9 @@ final class AccumulateWhileUnchanged[Element, Property](propertyExtractor: Eleme
       override def onUpstreamFinish(): Unit = {
         val result = buffer.result()
         if (result.nonEmpty) {
-          push(out, result)
+          emit(out, result)
         }
-        super.onUpstreamFinish()
+        completeStage()
       }
     })
 
