@@ -83,5 +83,9 @@ final class AccumulateWhileUnchanged[Element, Property](propertyExtractor: Eleme
         super.onUpstreamFinish()
       }
     })
+
+    override def postStop(): Unit = {
+      buffer.clear()
+    }
   }
 }
