@@ -21,14 +21,12 @@ trait AccumulateWhileUnchangedSpec extends BaseStreamSpec {
   "AccumulateWhileUnchanged" should {
 
     "emit accumulated elements when the given property changes" in {
-      val (source, sink) = TestSource.probe[Element]
+      val (_, sink) = Source(SampleElements.All)
         .via(AccumulateWhileUnchanged(_.value))
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
       sink.request(42)
-      SampleElements.All.foreach(source.sendNext)
-      source.sendComplete()
       sink.expectNext(SampleElements.Ones, SampleElements.Twos, SampleElements.Threes)
       sink.expectComplete()
     }
