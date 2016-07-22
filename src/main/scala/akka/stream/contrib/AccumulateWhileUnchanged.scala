@@ -58,17 +58,19 @@ final class AccumulateWhileUnchanged[Element, Property](propertyExtractor: Eleme
         val nextElement = grab(in)
         val nextState = propertyExtractor(nextElement)
 
-        if (currentState.isEmpty || currentState.contains(nextState)) {
-          buffer += nextElement
-          pull(in)
-        } else {
-          val result = buffer.result()
-          buffer.clear()
-          buffer += nextElement
-          push(out, result)
-        }
+        if (currentState.isEmpty) currentState = Some(nextState)
 
-        currentState = Some(nextState)
+        currentState match {
+          case Some(`nextState`) =>
+            buffer += nextElement
+            pull(in)
+          case _ =>
+            val result = buffer.result()
+            buffer.clear()
+            buffer += nextElement
+            push(out, result)
+            currentState = Some(nextState)
+        }
       }
 
       override def onPull(): Unit = {
