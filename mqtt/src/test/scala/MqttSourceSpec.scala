@@ -8,15 +8,18 @@ import akka.stream._
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
-import io.moquette.server.Server
-import io.moquette.proto.messages.PublishMessage
 import io.moquette.proto.messages.AbstractMessage.QOSType
+import io.moquette.proto.messages.PublishMessage
+import io.moquette.server.Server
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
-import scala.concurrent.duration._
+import org.scalatest.time.{ Millis, Seconds, Span }
 
 class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
+
+  implicit val defaultPatience =
+    PatienceConfig(timeout = Span(1, Seconds), interval = Span(100, Millis))
 
   "mqtt source" should {
     "receive a message from a topic" in withBroker(Map("topic1" -> 0)) { settings => implicit server => implicit sys => implicit mat =>
