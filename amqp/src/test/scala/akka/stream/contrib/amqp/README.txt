@@ -1,0 +1,1 @@
+All these tests require a locally running amqp server that does not require any authorization

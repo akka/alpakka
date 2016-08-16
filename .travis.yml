@@ -8,4 +8,6 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
-
+sudo: required
+services:
+  - rabbitmq
