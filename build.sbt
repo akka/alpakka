@@ -6,3 +6,4 @@ lazy val contrib = project.
 
 lazy val mqtt = project.
   enablePlugins(AutomateHeaderPlugin)
+
