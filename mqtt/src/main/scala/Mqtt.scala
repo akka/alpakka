@@ -9,27 +9,34 @@ import org.eclipse.paho.client.mqttv3.{ MqttMessage => PahoMqttMessage, _ }
 import scala.util._
 import scala.language.implicitConversions
 
-case class MqttSourceSettings(
+final case class MqttSourceSettings(
   connectionSettings: MqttConnectionSettings,
   topics:             Map[String, Int]
 )
 
-case class MqttConnectionSettings(
+final case class MqttConnectionSettings(
   broker:      String,
   clientId:    String,
   persistence: MqttClientPersistence
 )
 
-case class MqttMessage(topic: String, payload: ByteString)
+final case class MqttMessage(topic: String, payload: ByteString)
 
-trait MqttConnectorLogic { this: GraphStageLogic =>
+/**
+ *  Internal API
+ */
+private[mqtt] trait MqttConnectorLogic { this: GraphStageLogic =>
 
   import MqttConnectorLogic._
 
   def connectionSettings: MqttConnectionSettings
-  def onConnect: AsyncCallback[IMqttAsyncClient]
-  def onMessage: AsyncCallback[MqttMessage]
-  def onConnectionLost: AsyncCallback[Throwable]
+  def handleConnection(client: IMqttAsyncClient): Unit
+  def handleMessage(message: MqttMessage): Unit
+  def handleConnectionLost(ex: Throwable): Unit
+
+  val onConnect = getAsyncCallback[IMqttAsyncClient](handleConnection)
+  val onMessage = getAsyncCallback[MqttMessage](handleMessage)
+  val onConnectionLost = getAsyncCallback[Throwable](handleConnectionLost)
 
   final override def preStart(): Unit = {
     val client = new MqttAsyncClient(
@@ -38,7 +45,6 @@ trait MqttConnectorLogic { this: GraphStageLogic =>
       connectionSettings.persistence
     )
 
-    client.connect((), connectHandler(client))
     client.setCallback(new MqttCallback {
       def messageArrived(topic: String, message: PahoMqttMessage) =
         onMessage.invoke(MqttMessage(topic, ByteString(message.getPayload)))
@@ -49,6 +55,7 @@ trait MqttConnectorLogic { this: GraphStageLogic =>
       def connectionLost(cause: Throwable) =
         onConnectionLost.invoke(cause)
     })
+    client.connect((), connectHandler(client))
   }
 
   private val connectHandler: IMqttAsyncClient => Try[IMqttToken] => Unit = client => {
@@ -57,7 +64,10 @@ trait MqttConnectorLogic { this: GraphStageLogic =>
   }
 }
 
-object MqttConnectorLogic {
+/**
+ *  Internal API
+ */
+private[mqtt] object MqttConnectorLogic {
 
   implicit def funcToMqttActionListener(func: Try[IMqttToken] => Unit): IMqttActionListener = new IMqttActionListener {
     def onSuccess(token: IMqttToken) = func(Success(token))

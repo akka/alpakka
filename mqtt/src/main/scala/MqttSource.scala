@@ -40,15 +40,11 @@ final class MqttSource(settings: MqttSourceSettings, bufferSize: Int) extends Gr
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = (new GraphStageLogic(shape) with MqttConnectorLogic {
 
-    override val connectionSettings = settings.connectionSettings
-
-    override val onConnect = getAsyncCallback[IMqttAsyncClient](handleConnection)
-    override val onMessage = getAsyncCallback[MqttMessage](handleMessage)
-    override val onConnectionLost = getAsyncCallback[Throwable](handleConnectionLost)
-
     private val queue = mutable.Queue[MqttMessage]()
     private val mqttSubscriptionCallback: Try[IMqttToken] => Unit = conn =>
       subscriptionPromise.complete(conn.map { _ => NotUsed })
+
+    override val connectionSettings = settings.connectionSettings
 
     setHandler(out, new OutHandler {
       override def onPull(): Unit = {
@@ -58,12 +54,12 @@ final class MqttSource(settings: MqttSourceSettings, bufferSize: Int) extends Gr
       }
     })
 
-    def handleConnection(client: IMqttAsyncClient) = {
+    override def handleConnection(client: IMqttAsyncClient) = {
       val (topics, qos) = settings.topics.unzip
       client.subscribe(topics.toArray, qos.toArray, (), mqttSubscriptionCallback)
     }
 
-    def handleMessage(message: MqttMessage): Unit = {
+    override def handleMessage(message: MqttMessage): Unit = {
       if (isAvailable(out)) {
         pushAndAckMessage(message)
       } else {
@@ -79,7 +75,7 @@ final class MqttSource(settings: MqttSourceSettings, bufferSize: Int) extends Gr
       push(out, message)
     }
 
-    def handleConnectionLost(ex: Throwable) =
+    override def handleConnectionLost(ex: Throwable) =
       failStage(ex)
 
   }, subscriptionPromise.future)

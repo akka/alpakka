@@ -14,24 +14,33 @@ import io.moquette.server.Server
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{ Millis, Seconds, Span }
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
 
+  import MqttSourceSpec._
+
   implicit val defaultPatience =
-    PatienceConfig(timeout = Span(1, Seconds), interval = Span(100, Millis))
+    PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
   "mqtt source" should {
-    "receive a message from a topic" in withBroker(Map("topic1" -> 0)) { settings => implicit server => implicit sys => implicit mat =>
-      val (subscriptionFuture, probe) = MqttSource(settings, 8).toMat(TestSink.probe)(Keep.both).run()
+    "receive a message from a topic" in withBroker(Map("topic1" -> 0)) { p =>
+      val f = fixture(p)
+      import f._
+
+      val (subscriptionFuture, probe) = MqttSource(p.settings, 8).toMat(TestSink.probe)(Keep.both).run()
       whenReady(subscriptionFuture) { _ =>
         publish("topic1", "ohi")
         probe.requestNext shouldBe MqttMessage("topic1", ByteString("ohi"))
       }
     }
 
-    "receive messages from multiple topics" in withBroker(Map("topic1" -> 0, "topic2" -> 0)) { settings => implicit server => implicit sys => implicit mat =>
-      val (subscriptionFuture, probe) = MqttSource(settings, 8).toMat(TestSink.probe)(Keep.both).run()
+    "receive messages from multiple topics" in withBroker(Map("topic1" -> 0, "topic2" -> 0)) { p =>
+      val f = fixture(p)
+      import f._
+
+      val (subscriptionFuture, probe) = MqttSource(p.settings, 8).toMat(TestSink.probe)(Keep.both).run()
       whenReady(subscriptionFuture) { _ =>
         publish("topic1", "ohi")
         publish("topic2", "hello again")
@@ -40,8 +49,11 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "fail stream when disconnected" in withBroker(Map("topic1" -> 0)) { settings => implicit server => implicit sys => implicit mat =>
-      val (subscriptionFuture, probe) = MqttSource(settings, 8).toMat(TestSink.probe)(Keep.both).run()
+    "fail stream when disconnected" in withBroker(Map("topic1" -> 0)) { p =>
+      val f = fixture(p)
+      import f._
+
+      val (subscriptionFuture, probe) = MqttSource(p.settings, 8).toMat(TestSink.probe)(Keep.both).run()
       whenReady(subscriptionFuture) { _ =>
         publish("topic1", "ohi")
         probe.requestNext shouldBe MqttMessage("topic1", ByteString("ohi"))
@@ -60,7 +72,7 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
     server.internalPublish(msg)
   }
 
-  def withBroker(subscriptions: Map[String, Int])(test: MqttSourceSettings => Server => ActorSystem => Materializer => Any) = {
+  def withBroker(subscriptions: Map[String, Int])(test: FixtureParam => Any) = {
     implicit val sys = ActorSystem("MqttSourceSpec")
     val mat = ActorMaterializer()
 
@@ -76,10 +88,24 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
     val server = new Server()
     server.startServer()
     try {
-      test(settings)(server)(sys)(mat)
+      test(FixtureParam(settings, server, sys, mat))
     } finally {
       server.stopServer()
     }
+
+    Await.ready(sys.terminate(), 5.seconds)
   }
+
+}
+
+object MqttSourceSpec {
+
+  def fixture(p: FixtureParam) = new {
+    implicit val server = p.server
+    implicit val system = p.sys
+    implicit val materializer = p.mat
+  }
+
+  case class FixtureParam(settings: MqttSourceSettings, server: Server, sys: ActorSystem, mat: Materializer)
 
 }
