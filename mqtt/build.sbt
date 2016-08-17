@@ -1,3 +1,6 @@
+lazy val mqtt = (project in file(".")).
+  enablePlugins(AutomateHeaderPlugin)
+
 name := "akka-stream-contrib-mqtt"
 
 libraryDependencies ++= Seq(

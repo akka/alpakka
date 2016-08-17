@@ -62,6 +62,26 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
         probe.expectError.getMessage should be("Connection lost")
       }
     }
+
+    "signal backpressure" in withBroker(Map("topic1" -> 0)) { p =>
+      val f = fixture(p)
+      import f._
+
+      val bufferSize = 8
+      val overflow = 4
+
+      val (subscriptionFuture, probe) = MqttSource(p.settings, bufferSize).toMat(TestSink.probe)(Keep.both).run()
+      whenReady(subscriptionFuture) { _ =>
+
+        (1 to bufferSize + overflow) foreach { i =>
+          publish("topic1", s"ohi_$i")
+        }
+
+        (1 to bufferSize + overflow) foreach { i =>
+          probe.requestNext shouldBe MqttMessage("topic1", ByteString(s"ohi_$i"))
+        }
+      }
+    }
   }
 
   def publish(topic: String, payload: String)(implicit server: Server) = {
