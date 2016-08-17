@@ -38,51 +38,54 @@ final class MqttSource(settings: MqttSourceSettings, bufferSize: Int) extends Gr
   override val shape: SourceShape[MqttMessage] = SourceShape.of(out)
   override protected def initialAttributes: Attributes = Attributes.name("MqttSource")
 
-  private val subscriptionPromise = Promise[Done]
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = (new GraphStageLogic(shape) with MqttConnectorLogic {
+    val subscriptionPromise = Promise[Done]
 
-    private val queue = mutable.Queue[MqttMessage]()
-    private val mqttSubscriptionCallback: Try[IMqttToken] => Unit = conn =>
-      subscriptionPromise.complete(conn.map { _ => Done })
-    private val backpressure = new Semaphore(bufferSize)
+    (new GraphStageLogic(shape) with MqttConnectorLogic {
 
-    override val connectionSettings = settings.connectionSettings
+      private val queue = mutable.Queue[MqttMessage]()
+      private val mqttSubscriptionCallback: Try[IMqttToken] => Unit = conn =>
+        subscriptionPromise.complete(conn.map { _ => Done })
+      private val backpressure = new Semaphore(bufferSize)
 
-    setHandler(out, new OutHandler {
-      override def onPull(): Unit = {
-        if (queue.nonEmpty) {
-          pushMessage(queue.dequeue())
-          backpressure.release()
+      override val connectionSettings = settings.connectionSettings
+
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = {
+          if (queue.nonEmpty) {
+            pushMessage(queue.dequeue())
+            backpressure.release()
+          }
+        }
+      })
+
+      override def handleConnection(client: IMqttAsyncClient) = {
+        val (topics, qos) = settings.topics.unzip
+        client.subscribe(topics.toArray, qos.toArray, (), mqttSubscriptionCallback)
+      }
+
+      override def beforeHandleMessage(): Unit = {
+        backpressure.acquire()
+      }
+
+      override def handleMessage(message: MqttMessage): Unit = {
+        require(queue.size <= bufferSize)
+        if (isAvailable(out)) {
+          pushMessage(message)
+        } else {
+          queue.enqueue(message)
         }
       }
-    })
 
-    override def handleConnection(client: IMqttAsyncClient) = {
-      val (topics, qos) = settings.topics.unzip
-      client.subscribe(topics.toArray, qos.toArray, (), mqttSubscriptionCallback)
-    }
-
-    override def beforeHandleMessage(): Unit = {
-      backpressure.acquire()
-    }
-
-    override def handleMessage(message: MqttMessage): Unit = {
-      require(queue.size <= bufferSize)
-      if (isAvailable(out)) {
-        pushMessage(message)
-      } else {
-        queue.enqueue(message)
+      def pushMessage(message: MqttMessage): Unit = {
+        push(out, message)
       }
-    }
 
-    def pushMessage(message: MqttMessage): Unit = {
-      push(out, message)
-    }
+      override def handleConnectionLost(ex: Throwable) =
+        failStage(ex)
 
-    override def handleConnectionLost(ex: Throwable) =
-      failStage(ex)
-
-  }, subscriptionPromise.future)
+    }, subscriptionPromise.future)
+  }
 
 }
