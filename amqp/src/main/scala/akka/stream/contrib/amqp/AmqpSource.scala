@@ -28,6 +28,8 @@ object AmqpSource {
   def create(settings: AmqpSourceSettings, bufferSize: Int): akka.stream.javadsl.Source[IncomingMessage, NotUsed] =
     akka.stream.javadsl.Source.fromGraph(new AmqpSource(settings, bufferSize))
 
+  private val defaultAttributes = Attributes.name("AmqpSource")
+
 }
 
 /**
@@ -43,8 +45,7 @@ final class AmqpSource(settings: AmqpSourceSettings, bufferSize: Int) extends Gr
 
   override val shape: SourceShape[IncomingMessage] = SourceShape.of(out)
 
-  override protected def initialAttributes: Attributes =
-    Attributes.name("AmqpSource").and(ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher"))
+  override protected def initialAttributes: Attributes = AmqpSource.defaultAttributes
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with AmqpConnectorLogic {
 
