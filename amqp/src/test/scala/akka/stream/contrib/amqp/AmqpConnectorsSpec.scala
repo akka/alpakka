@@ -15,6 +15,7 @@ import akka.testkit.TestKit.awaitCond
 
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+import scala.util.Try
 
 class AmqpConnectorsSpec extends AmqpSpec {
 
@@ -312,10 +313,10 @@ class AmqpConnectorsSpec extends AmqpSpec {
     import sys.process._
     // delete all used queues
     usedQueues.foreach { queueName =>
-      s"rabbitmqadmin delete queue name=$queueName".!
+      Try(s"rabbitmqadmin delete queue name=$queueName".!) // best effort
     }
     usedExchanges.foreach { exchangeName =>
-      s"rabbitmqadmin delete exchange name=$exchangeName".!
+      Try(s"rabbitmqadmin delete exchange name=$exchangeName".!) // best effort
     }
     super.afterAll()
   }
