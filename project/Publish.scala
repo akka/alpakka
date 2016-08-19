@@ -6,7 +6,6 @@ package akka
 import sbt._
 import sbt.Keys._
 import java.io.File
-import sbtrelease.ReleasePlugin.autoImport.releasePublishArtifactsAction
 import com.typesafe.sbt.pgp.PgpKeys
 
 object Publish extends AutoPlugin {
@@ -14,7 +13,7 @@ object Publish extends AutoPlugin {
   val defaultPublishTo = settingKey[File]("Default publish directory")
 
   override def trigger = allRequirements
-  override def requires = sbtrelease.ReleasePlugin
+  override def requires = plugins.JvmPlugin
 
   override lazy val projectSettings = Seq(
     crossPaths := false,
@@ -26,8 +25,7 @@ object Publish extends AutoPlugin {
     homepage := Some(url("https://github.com/akka/akka-stream-contrib")),
     publishMavenStyle := true,
     pomIncludeRepository := { x => false },
-    defaultPublishTo := crossTarget.value / "repository",
-    releasePublishArtifactsAction := PgpKeys.publishSigned.value
+    defaultPublishTo := crossTarget.value / "repository"
   )
 
   def akkaPomExtra = {

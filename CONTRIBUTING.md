@@ -133,10 +133,16 @@ Example:
 ## How To Enforce These Guidelines?
 
 ### Make Use of Pull Request Validator
-akka-stream-contrib uses [Travis pull request builder](https://travis-ci.org/akka/akka-stream-contrib) 
+akka-stream-contrib uses [Travis pull request builder](https://travis-ci.org/akka/akka-stream-contrib)
 that automatically merges the code, builds it, runs the tests and comments on the Pull Request in GitHub.
 
 ## Source style
 
 akka-stream-contrib uses [Scalariform](https://github.com/daniel-trinh/scalariform) to enforce some of the code style rules.
 
+## Releasing
+
+1. Create a [new release](https://github.com/akka/akka-stream-contrib/releases/new) with the next tag version (e.g. `v0.3`), title and release decsription including notable changes.
+2. Fetch tags to your local clone: `git fetch --tags`.
+3. Publish signed release: `sbt publishSigned`.
+4. Stage and close [sonatype repository](https://oss.sonatype.org/).
