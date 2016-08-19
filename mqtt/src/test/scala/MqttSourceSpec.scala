@@ -5,7 +5,7 @@ package akka.stream.contrib.mqtt
 
 import akka.actor.ActorSystem
 import akka.stream._
-import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
 import io.moquette.proto.messages.AbstractMessage.QOSType
@@ -14,8 +14,10 @@ import io.moquette.server.Server
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
-import scala.concurrent.Await
+import scala.concurrent._
 import scala.concurrent.duration._
+
+import scala.language.reflectiveCalls
 
 class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
 
@@ -60,6 +62,46 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
 
         server.stopServer()
         probe.expectError.getMessage should be("Connection lost")
+      }
+    }
+
+    "signal backpressure" in withBroker(Map("topic1" -> 0)) { p =>
+      val f = fixture(p)
+      import f._
+
+      val bufferSize = 8
+      val overflow = 4
+
+      val (subscriptionFuture, probe) = MqttSource(p.settings, bufferSize).toMat(TestSink.probe)(Keep.both).run()
+      whenReady(subscriptionFuture) { _ =>
+
+        (1 to bufferSize + overflow) foreach { i =>
+          publish("topic1", s"ohi_$i")
+        }
+
+        (1 to bufferSize + overflow) foreach { i =>
+          probe.requestNext shouldBe MqttMessage("topic1", ByteString(s"ohi_$i"))
+        }
+      }
+    }
+
+    "support multiple materialization" in withBroker(Map("topic1" -> 0)) { p =>
+      val f = fixture(p)
+      import f._
+      import f.system.dispatcher
+
+      val source = MqttSource(p.settings, 8)
+
+      val (sub, elem) = source.toMat(Sink.head)(Keep.both).run()
+      whenReady(sub) { _ =>
+        publish("topic1", s"ohi")
+        elem.futureValue shouldBe MqttMessage("topic1", ByteString("ohi"))
+      }
+
+      val (sub2, elem2) = source.toMat(Sink.head)(Keep.both).run()
+      whenReady(sub2) { _ =>
+        publish("topic1", s"ohi")
+        elem2.futureValue shouldBe MqttMessage("topic1", ByteString("ohi"))
       }
     }
   }

@@ -31,6 +31,13 @@ private[mqtt] trait MqttConnectorLogic { this: GraphStageLogic =>
 
   def connectionSettings: MqttConnectionSettings
   def handleConnection(client: IMqttAsyncClient): Unit
+
+  /**
+   * Callback, that is called from the MQTT client thread before invoking
+   * message handler callback in the GraphStage context.
+   */
+  def beforeHandleMessage(): Unit
+
   def handleMessage(message: MqttMessage): Unit
   def handleConnectionLost(ex: Throwable): Unit
 
@@ -46,8 +53,10 @@ private[mqtt] trait MqttConnectorLogic { this: GraphStageLogic =>
     )
 
     client.setCallback(new MqttCallback {
-      def messageArrived(topic: String, message: PahoMqttMessage) =
+      def messageArrived(topic: String, message: PahoMqttMessage) = {
+        beforeHandleMessage()
         onMessage.invoke(MqttMessage(topic, ByteString(message.getPayload)))
+      }
 
       def deliveryComplete(token: IMqttDeliveryToken) =
         println(s"Delivery complete $token")
