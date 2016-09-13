@@ -55,7 +55,6 @@ final class MqttSource(settings: MqttSourceSettings, bufferSize: Int) extends Gr
         override def onPull(): Unit = {
           if (queue.nonEmpty) {
             pushMessage(queue.dequeue())
-            backpressure.release()
           }
         }
       })
@@ -80,6 +79,7 @@ final class MqttSource(settings: MqttSourceSettings, bufferSize: Int) extends Gr
 
       def pushMessage(message: MqttMessage): Unit = {
         push(out, message)
+        backpressure.release()
       }
 
       override def handleConnectionLost(ex: Throwable) =

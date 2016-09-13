@@ -85,6 +85,28 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
+    "work with fast downstream" in withBroker(Map("topic1" -> 0)) { p =>
+      val f = fixture(p)
+      import f._
+
+      val bufferSize = 8
+      val overflow = 4
+
+      val (subscriptionFuture, probe) = MqttSource(p.settings, bufferSize).toMat(TestSink.probe)(Keep.both).run()
+      whenReady(subscriptionFuture) { _ =>
+
+        probe.request((bufferSize + overflow).toLong)
+
+        (1 to bufferSize + overflow) foreach { i =>
+          publish("topic1", s"ohi_$i")
+        }
+
+        (1 to bufferSize + overflow) foreach { i =>
+          probe.expectNext() shouldBe MqttMessage("topic1", ByteString(s"ohi_$i"))
+        }
+      }
+    }
+
     "support multiple materialization" in withBroker(Map("topic1" -> 0)) { p =>
       val f = fixture(p)
       import f._
