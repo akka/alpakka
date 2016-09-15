@@ -11,7 +11,7 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 object Common extends AutoPlugin {
 
-  val AkkaVersion = "2.4.9"
+  val AkkaVersion = "2.4.10"
 
   override def trigger = allRequirements
   override def requires = plugins.JvmPlugin && HeaderPlugin
