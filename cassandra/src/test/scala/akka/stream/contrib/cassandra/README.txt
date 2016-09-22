@@ -1,0 +1,1 @@
+All the tests must be run with a local Cassandra running on default port 9042.
