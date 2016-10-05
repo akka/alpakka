@@ -11,12 +11,15 @@ import akka.util.ByteString
 import io.moquette.proto.messages.AbstractMessage.QOSType
 import io.moquette.proto.messages.PublishMessage
 import io.moquette.server.Server
+import io.moquette.server.config.FilesystemConfig
+import io.moquette.spi.security.IAuthenticator
+import org.eclipse.paho.client.mqttv3.MqttException
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
+
 import scala.concurrent._
 import scala.concurrent.duration._
-
 import scala.language.reflectiveCalls
 
 class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
@@ -62,6 +65,29 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
 
         server.stopServer()
         probe.expectError.getMessage should be("Connection lost")
+      }
+    }
+
+    "fail connection when not providing the requested credentials" in withBroker(Map(), Some(("user", "passwd"))) { p =>
+      val f = fixture(p)
+      import f._
+
+      val (subscriptionFuture, probe) = MqttSource(p.settings, 8).toMat(TestSink.probe)(Keep.both).run()
+      whenReady(subscriptionFuture.failed) {
+        case e: MqttException => e.getMessage should be("Connection lost")
+        case e                => throw e
+      }
+    }
+
+    "receive a message from a topic with right credentials" in withBroker(Map("topic1" -> 0), Some(("user", "passwd"))) { p =>
+      val f = fixture(p)
+      import f._
+
+      val settings = withClientAuth(p.settings, ("user", "passwd"))
+      val (subscriptionFuture, probe) = MqttSource(settings, 8).toMat(TestSink.probe)(Keep.both).run()
+      whenReady(subscriptionFuture) { _ =>
+        publish("topic1", "ohi")
+        probe.requestNext shouldBe MqttMessage("topic1", ByteString("ohi"))
       }
     }
 
@@ -136,7 +162,7 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
     server.internalPublish(msg)
   }
 
-  def withBroker(subscriptions: Map[String, Int])(test: FixtureParam => Any) = {
+  def withBroker(subscriptions: Map[String, Int], serverAuth: Option[(String, String)] = None)(test: FixtureParam => Any) = {
     implicit val sys = ActorSystem("MqttSourceSpec")
     val mat = ActorMaterializer()
 
@@ -150,7 +176,11 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
     )
 
     val server = new Server()
-    server.startServer()
+    val authenticator = new IAuthenticator {
+      override def checkValid(username: String, password: Array[Byte]): Boolean =
+        serverAuth.fold(true) { case (u, p) => username == u && new String(password) == p }
+    }
+    server.startServer(new FilesystemConfig, null, null, authenticator, null)
     try {
       test(FixtureParam(settings, server, sys, mat))
     } finally {
@@ -159,6 +189,9 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
 
     Await.ready(sys.terminate(), 5.seconds)
   }
+
+  def withClientAuth(settings: MqttSourceSettings, auth: (String, String)): MqttSourceSettings =
+    settings.copy(connectionSettings = settings.connectionSettings.copy(auth = Some(auth)))
 
 }
 
