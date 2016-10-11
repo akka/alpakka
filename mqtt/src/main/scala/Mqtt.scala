@@ -17,7 +17,8 @@ final case class MqttSourceSettings(
 final case class MqttConnectionSettings(
   broker:      String,
   clientId:    String,
-  persistence: MqttClientPersistence
+  persistence: MqttClientPersistence,
+  auth:        Option[(String, String)] = None
 )
 
 final case class MqttMessage(topic: String, payload: ByteString)
@@ -64,7 +65,13 @@ private[mqtt] trait MqttConnectorLogic { this: GraphStageLogic =>
       def connectionLost(cause: Throwable) =
         onConnectionLost.invoke(cause)
     })
-    client.connect((), connectHandler(client))
+    val connectOptions = new MqttConnectOptions
+    connectionSettings.auth.foreach {
+      case (user, password) =>
+        connectOptions.setUserName(user)
+        connectOptions.setPassword(password.toCharArray)
+    }
+    client.connect(connectOptions, (), connectHandler(client))
   }
 
   private val connectHandler: IMqttAsyncClient => Try[IMqttToken] => Unit = client => {
