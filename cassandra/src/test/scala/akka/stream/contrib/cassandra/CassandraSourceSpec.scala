@@ -19,6 +19,9 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
   val cluster = Cluster.builder.addContactPoint("127.0.0.1").withPort(9042).build
   implicit val session = cluster.connect()
 
+  implicit val defaultPatience =
+    PatienceConfig(timeout = 2.seconds, interval = 50.millis)
+
   override def beforeEach(): Unit = {
     session.execute(
       """
