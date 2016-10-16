@@ -1,7 +1,7 @@
 lazy val mqtt = (project in file(".")).
   enablePlugins(AutomateHeaderPlugin)
 
-name := "akka-stream-contrib-mqtt"
+name := "akka-stream-alpakka-mqtt"
 
 libraryDependencies ++= Seq(
   "org.eclipse.paho" % "org.eclipse.paho.client.mqttv3" % "1.1.0",       // Eclipse Public License Version 1.0
