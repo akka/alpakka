@@ -34,9 +34,14 @@ object Common extends AutoPlugin {
       "-Xlint",
       "-Yno-adapted-args",
       "-Ywarn-dead-code",
-      "-Ywarn-numeric-widen",
       "-Xfuture"
     ),
+
+    javacOptions ++= Seq(
+      "-Xlint:unchecked"
+    ),
+
+    autoAPIMappings := true,
 
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),

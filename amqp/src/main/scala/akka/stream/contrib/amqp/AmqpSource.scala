@@ -17,13 +17,13 @@ final case class IncomingMessage(bytes: ByteString, envelope: Envelope, properti
 
 object AmqpSource {
   /**
-   * Scala API:
+   * Scala API: Creates [[AmqpSource]] with given settings and buffer size.
    */
   def apply(settings: AmqpSourceSettings, bufferSize: Int): Source[IncomingMessage, NotUsed] =
     Source.fromGraph(new AmqpSource(settings, bufferSize))
 
   /**
-   * Java API:
+   * Java API: Creates [[AmqpSource]] with given settings and buffer size.
    */
   def create(settings: AmqpSourceSettings, bufferSize: Int): akka.stream.javadsl.Source[IncomingMessage, NotUsed] =
     akka.stream.javadsl.Source.fromGraph(new AmqpSource(settings, bufferSize))
@@ -33,8 +33,8 @@ object AmqpSource {
 }
 
 /**
- * Connects to an amqp server upon materialization and consumes messages from it emitting them
- * into the stream. Each materialized stage will create one connection to the broker.
+ * Connects to an AMQP server upon materialization and consumes messages from it emitting them
+ * into the stream. Each materialized source will create one connection to the broker.
  * As soon as an `IncomingMessage` is sent downstream, an ack for it is sent to the broker.
  *
  * @param bufferSize The max number of elements to prefetch and buffer at any given time.
