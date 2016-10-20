@@ -52,4 +52,16 @@ object Dependencies {
     )
   )
 
+  val Ftp = Seq(
+    libraryDependencies ++= Seq(
+      "commons-net"           % "commons-net"          % "3.5",             // ApacheV2
+      "com.jcraft"            % "jsch"                 % "0.1.54",          // BSD-style
+      "org.apache.ftpserver"  % "ftpserver-core"       % "1.0.6"    % Test, // ApacheV2
+      "org.apache.sshd"       % "sshd-core"            % "1.3.0"    % Test, // ApacheV2
+      "com.google.jimfs"      % "jimfs"                % "1.1"      % Test, // ApacheV2
+      "org.slf4j"             % "slf4j-api"            % "1.7.21"   % Test, // MIT
+      "ch.qos.logback"        % "logback-classic"      % "1.1.7"    % Test, // Eclipse Public License 1.0
+      "ch.qos.logback"        % "logback-core"         % "1.1.7"    % Test  // Eclipse Public License 1.0
+    )
+  )
 }

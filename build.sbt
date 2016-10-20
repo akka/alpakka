@@ -1,7 +1,7 @@
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
-  .aggregate(amqp, cassandra, docs, files, mqtt, s3)
+  .aggregate(amqp, cassandra, docs, files, mqtt, s3, ftp)
 
 lazy val amqp = project
   .enablePlugins(AutomateHeaderPlugin)
@@ -42,6 +42,14 @@ lazy val s3 = project
   .settings(
     name := "akka-stream-alpakka-s3",
     Dependencies.S3
+  )
+
+lazy val ftp = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-ftp",
+    Dependencies.Ftp,
+    parallelExecution in Test := false
   )
 
 lazy val docs = project

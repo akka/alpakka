@@ -6,6 +6,7 @@
 * [Cassandra Connector](cassandra.md)
 * [File Connectors](file.md)
 * [MQTT Connector](mqtt.md)
+* [FTP Connector](ftp.md)
 * [External Connectors](external-connectors.md)
 
 @@@

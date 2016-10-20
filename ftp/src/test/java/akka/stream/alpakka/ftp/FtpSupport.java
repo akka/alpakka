@@ -1,0 +1,23 @@
+/*
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
+package akka.stream.alpakka.ftp;
+
+interface FtpSupport {
+
+    void startServer();
+
+    void stopServer();
+
+    void generateFiles();
+
+    void generateFiles(int numFiles);
+
+    void generateFiles(int numFiles, int pageSize);
+
+    void generateFiles(int numFiles, int pageSize, String basePath);
+
+    void putFileOnFtp(String path, String fileName);
+
+    String getLoremIpsum();
+}
