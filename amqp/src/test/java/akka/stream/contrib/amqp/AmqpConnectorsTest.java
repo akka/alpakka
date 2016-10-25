@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.contrib.amqp;
 
 import org.junit.AfterClass;
@@ -19,6 +22,9 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.*;
 
+/**
+ * Needs a local running AMQP server on the default port with no password.
+ */
 public class AmqpConnectorsTest {
 
   static ActorSystem system;

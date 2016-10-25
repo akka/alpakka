@@ -16,25 +16,25 @@ final case class OutgoingMessage(bytes: ByteString, immediate: Boolean, mandator
 object AmqpSink {
 
   /**
-   * Scala API: Create [[AmqpSink]] that accepts ByteString elements.
+   * Scala API: Creates an [[AmqpSink]] that accepts ByteString elements.
    */
   def simple(settings: AmqpSinkSettings): Sink[ByteString, NotUsed] =
     apply(settings).contramap[ByteString](bytes => OutgoingMessage(bytes, false, false, None))
 
   /**
-   * Scala API: Create [[AmqpSink]] that accepts [[OutgoingMessage]] elements.
+   * Scala API: Creates an [[AmqpSink]] that accepts [[OutgoingMessage]] elements.
    */
   def apply(settings: AmqpSinkSettings): Sink[OutgoingMessage, NotUsed] =
     Sink.fromGraph(new AmqpSink(settings))
 
   /**
-   * Java API: Create [[AmqpSink]] that accepts [[OutgoingMessage]] elements.
+   * Java API: Creates an [[AmqpSink]] that accepts [[OutgoingMessage]] elements.
    */
   def create(settings: AmqpSinkSettings): akka.stream.javadsl.Sink[OutgoingMessage, NotUsed] =
     akka.stream.javadsl.Sink.fromGraph(new AmqpSink(settings))
 
   /**
-   * Java API: Create [[AmqpSink]] that accepts ByteString elements.
+   * Java API: Creates an [[AmqpSink]] that accepts ByteString elements.
    */
   def createSimple(settings: AmqpSinkSettings): akka.stream.javadsl.Sink[ByteString, NotUsed] =
     simple(settings).asJava

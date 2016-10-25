@@ -3,7 +3,6 @@
  */
 package akka.stream.contrib.amqp
 
-import scala.collection.immutable.Seq
 import scala.collection.JavaConverters._
 
 /**
@@ -97,6 +96,9 @@ object AmqpSinkSettings {
  */
 sealed trait AmqpConnectionSettings
 
+/**
+ * Connects to a local AMQP broker at the default port with no password.
+ */
 case object DefaultAmqpConnection extends AmqpConnectionSettings {
   /**
    * Java API

@@ -38,50 +38,50 @@ Gradle
 First define a queue name and the declaration of the queue that the messages will be sent to.
 
 Scala
-: @@ snip [dummy](../../../../amqp/src/test/scala/akka/stream/contrib/amqp/AmqpConnectorsSpec.scala) { #queue-declaration }
+: @@snip (../../../../amqp/src/test/scala/akka/stream/contrib/amqp/AmqpConnectorsSpec.scala) { #queue-declaration }
 
 Java
-: @@ snip [dummy](../../../../amqp/src/test/java/akka/stream/contrib/amqp/AmqpConnectorsTest.java) { #queue-declaration }
+: @@snip (../../../../amqp/src/test/java/akka/stream/contrib/amqp/AmqpConnectorsTest.java) { #queue-declaration }
 
 Here we used @scaladoc[QueueDeclaration](akka.stream.contrib.amqp.QueueDeclaration) configuration class to create a queue declaration. All of the configuration classes as well as connector factories are under the @scaladoc[akka.stream.contrib.amqp](akka.stream.contrib.amqp.package) package.
 
 Create a sink, that accepts and forwards @scaladoc[ByteString](akka.util.ByteString)s to the AMQP server.
 
 Scala
-: @@ snip [dummy](../../../../amqp/src/test/scala/akka/stream/contrib/amqp/AmqpConnectorsSpec.scala) { #create-sink }
+: @@snip (../../../../amqp/src/test/scala/akka/stream/contrib/amqp/AmqpConnectorsSpec.scala) { #create-sink }
 
 Java
-: @@ snip [dummy](../../../../amqp/src/test/java/akka/stream/contrib/amqp/AmqpConnectorsTest.java) { #create-sink }
+: @@snip (../../../../amqp/src/test/java/akka/stream/contrib/amqp/AmqpConnectorsTest.java) { #create-sink }
 
 @scaladoc[AmqpSink](akka.stream.contrib.amqp.AmqpSink$) is a collection of factory methods that facilitates creation of sinks. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @scaladoc[OutgoingMessage](akka.stream.contrib.amqp.OutgoingMessage)s.
 
 Last step is to @extref[materialize](akka-docs:scala/stream/stream-flows-and-basics) and run the sink we have created.
 
 Scala
-: @@ snip [dummy](../../../../amqp/src/test/scala/akka/stream/contrib/amqp/AmqpConnectorsSpec.scala) { #run-sink }
+: @@snip (../../../../amqp/src/test/scala/akka/stream/contrib/amqp/AmqpConnectorsSpec.scala) { #run-sink }
 
 Java
-: @@ snip [dummy](../../../../amqp/src/test/java/akka/stream/contrib/amqp/AmqpConnectorsTest.java) { #run-sink }
+: @@snip (../../../../amqp/src/test/java/akka/stream/contrib/amqp/AmqpConnectorsTest.java) { #run-sink }
 
 ### Receiving messages from AMQP server
 
 Create a source using the same queue declaration as before.
 
 Scala
-: @@ snip [dummy](../../../../amqp/src/test/scala/akka/stream/contrib/amqp/AmqpConnectorsSpec.scala) { #create-source }
+: @@snip (../../../../amqp/src/test/scala/akka/stream/contrib/amqp/AmqpConnectorsSpec.scala) { #create-source }
 
 Java
-: @@ snip [dummy](../../../../amqp/src/test/java/akka/stream/contrib/amqp/AmqpConnectorsTest.java) { #create-source }
+: @@snip (../../../../amqp/src/test/java/akka/stream/contrib/amqp/AmqpConnectorsTest.java) { #create-source }
 
 The `bufferSize` parameter controls the maximum number of messages to prefetch from the AMQP server.
 
-Run the source and take the same amount of message as we previously sent to it.
+Run the source and take the same amount of messages as we previously sent to it.
 
 Scala
-: @@ snip [dummy](../../../../amqp/src/test/scala/akka/stream/contrib/amqp/AmqpConnectorsSpec.scala) { #run-source }
+: @@snip (../../../../amqp/src/test/scala/akka/stream/contrib/amqp/AmqpConnectorsSpec.scala) { #run-source }
 
 Java
-: @@ snip [dummy](../../../../amqp/src/test/java/akka/stream/contrib/amqp/AmqpConnectorsTest.java) { #run-source }
+: @@snip (../../../../amqp/src/test/java/akka/stream/contrib/amqp/AmqpConnectorsTest.java) { #run-source }
 
 This is how you send and receive message from AMQP server using this connector.
 
@@ -90,26 +90,26 @@ This is how you send and receive message from AMQP server using this connector.
 Instead of sending messages directly to queues, it is possible to send messages to an exchange and then provide instructions to AMQP server what to do with incoming messages to the exchange. We are going to use the *fanout* type of the exchange, which enables message broadcasting to multiple consumers. We are going to do that by using an exchange declaration for the sink and all of the sources.
 
 Scala
-: @@ snip [dummy](../../../../amqp/src/test/scala/akka/stream/contrib/amqp/AmqpConnectorsSpec.scala) { #exchange-declaration }
+: @@snip (../../../../amqp/src/test/scala/akka/stream/contrib/amqp/AmqpConnectorsSpec.scala) { #exchange-declaration }
 
 Java
-: @@ snip [dummy](../../../../amqp/src/test/java/akka/stream/contrib/amqp/AmqpConnectorsTest.java) { #exchange-declaration }
+: @@snip (../../../../amqp/src/test/java/akka/stream/contrib/amqp/AmqpConnectorsTest.java) { #exchange-declaration }
 
 The sink for the exchange is created in a very similar way.
 
 Scala
-: @@ snip [dummy](../../../../amqp/src/test/scala/akka/stream/contrib/amqp/AmqpConnectorsSpec.scala) { #create-exchange-sink }
+: @@snip (../../../../amqp/src/test/scala/akka/stream/contrib/amqp/AmqpConnectorsSpec.scala) { #create-exchange-sink }
 
 Java
-: @@ snip [dummy](../../../../amqp/src/test/java/akka/stream/contrib/amqp/AmqpConnectorsTest.java) { #create-exchange-sink }
+: @@snip (../../../../amqp/src/test/java/akka/stream/contrib/amqp/AmqpConnectorsTest.java) { #create-exchange-sink }
 
 For the source, we are going to create multiple sources and merge them using @extref[Akka Streams API](akka-docs:scala/stream/stages-overview).
 
 Scala
-: @@ snip [dummy](../../../../amqp/src/test/scala/akka/stream/contrib/amqp/AmqpConnectorsSpec.scala) { #create-exchange-source }
+: @@snip (../../../../amqp/src/test/scala/akka/stream/contrib/amqp/AmqpConnectorsSpec.scala) { #create-exchange-source }
 
 Java
-: @@ snip [dummy](../../../../amqp/src/test/java/akka/stream/contrib/amqp/AmqpConnectorsTest.java) { #create-exchange-source }
+: @@snip (../../../../amqp/src/test/java/akka/stream/contrib/amqp/AmqpConnectorsTest.java) { #create-exchange-source }
 
 We merge all sources into one and add the index of the source to all incoming messages, so we can distinguish which source the incoming message came from.
 

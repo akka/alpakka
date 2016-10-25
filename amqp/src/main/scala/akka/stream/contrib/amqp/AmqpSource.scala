@@ -17,13 +17,13 @@ final case class IncomingMessage(bytes: ByteString, envelope: Envelope, properti
 
 object AmqpSource {
   /**
-   * Scala API: Creates [[AmqpSource]] with given settings and buffer size.
+   * Scala API: Creates an [[AmqpSource]] with given settings and buffer size.
    */
   def apply(settings: AmqpSourceSettings, bufferSize: Int): Source[IncomingMessage, NotUsed] =
     Source.fromGraph(new AmqpSource(settings, bufferSize))
 
   /**
-   * Java API: Creates [[AmqpSource]] with given settings and buffer size.
+   * Java API: Creates an [[AmqpSource]] with given settings and buffer size.
    */
   def create(settings: AmqpSourceSettings, bufferSize: Int): akka.stream.javadsl.Source[IncomingMessage, NotUsed] =
     akka.stream.javadsl.Source.fromGraph(new AmqpSource(settings, bufferSize))

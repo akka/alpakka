@@ -12,6 +12,9 @@ import akka.util.ByteString
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 
+/**
+ * Needs a local running AMQP server on the default port with no password.
+ */
 class AmqpConnectorsSpec extends AmqpSpec {
 
   override implicit val patienceConfig = PatienceConfig(10.seconds)
