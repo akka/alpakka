@@ -13,6 +13,12 @@ object Common extends AutoPlugin {
 
   val AkkaVersion = "2.4.10"
 
+  val FileHeader = (HeaderPattern.cStyleBlockComment,
+    """|/*
+       | * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+       | */
+       |""".stripMargin)
+
   override def trigger = allRequirements
   override def requires = plugins.JvmPlugin && HeaderPlugin
 
@@ -34,9 +40,14 @@ object Common extends AutoPlugin {
       "-Xlint",
       "-Yno-adapted-args",
       "-Ywarn-dead-code",
-      "-Ywarn-numeric-widen",
       "-Xfuture"
     ),
+
+    javacOptions ++= Seq(
+      "-Xlint:unchecked"
+    ),
+
+    autoAPIMappings := true,
 
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
@@ -52,13 +63,8 @@ object Common extends AutoPlugin {
     ),
 
     headers := headers.value ++ Map(
-      "scala" -> (
-        HeaderPattern.cStyleBlockComment,
-        """|/*
-           | * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
-           | */
-           |""".stripMargin
-      )
+      "scala" -> FileHeader,
+      "java" -> FileHeader
     ),
 
     ScalariformKeys.preferences in Compile  := formattingPreferences,

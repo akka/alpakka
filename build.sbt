@@ -7,3 +7,4 @@ lazy val docs = project
 lazy val mqtt = project
 
 publishArtifact := false
+unidocSettings

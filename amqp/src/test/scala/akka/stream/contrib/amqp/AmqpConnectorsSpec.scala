@@ -3,98 +3,65 @@
  */
 package akka.stream.contrib.amqp
 
-import java.util.concurrent.atomic.AtomicInteger
-
 import akka.Done
-import akka.stream.javadsl.SinkQueueWithCancel
 import akka.stream._
-import akka.stream.scaladsl.{ Flow, GraphDSL, Keep, Merge, Sink, Source }
+import akka.stream.scaladsl.{ GraphDSL, Merge, Sink, Source }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.util.ByteString
-import akka.testkit.TestKit.awaitCond
 
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-import scala.util.Try
 
+/**
+ * Needs a local running AMQP server on the default port with no password.
+ */
 class AmqpConnectorsSpec extends AmqpSpec {
 
   override implicit val patienceConfig = PatienceConfig(10.seconds)
 
-  var usedQueues = Seq.empty[String]
-  var usedExchanges = Seq.empty[String]
-
   "The AMQP Connectors" should {
 
-    "publish and consume elements through a simple queue" in {
-      val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
-      usedQueues = usedQueues :+ queueName
-      val queueDeclaration = QueueDeclaration(queueName)
-      val amqpSource = AmqpSource(
-        NamedQueueSourceSettings(
-          DefaultAmqpConnection,
-          queueName,
-          List(queueDeclaration)
-        ), bufferSize = 10
-      )
-
-      val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(
-          DefaultAmqpConnection,
-          None,
-          Some(queueName),
-          List(queueDeclaration)
-        )
-      )
-
-      val input = Vector("one", "two", "three", "four", "five")
-      Source(input).map(s => ByteString(s)).runWith(amqpSink)
-
-      val result = amqpSource.map(_.bytes.utf8String).take(input.size).runWith(Sink.seq)
-
-      result.futureValue shouldEqual input
-    }
-
     "publish and consume elements through a simple queue again in the same JVM" in {
-      val queueName = "amqp-conn-it-spec-simple-queue-2-" + System.currentTimeMillis()
-      usedQueues = usedQueues :+ queueName
+      //#queue-declaration
+      val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
-      val amqpSource = AmqpSource(
-        NamedQueueSourceSettings(
-          DefaultAmqpConnection,
-          queueName,
-          List(queueDeclaration)
-        ), bufferSize = 10
-      )
+      //#queue-declaration
 
+      //#create-sink
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(
-          DefaultAmqpConnection,
-          exchange = None,
-          routingKey = Some(queueName),
-          List(queueDeclaration)
-        )
+        AmqpSinkSettings(DefaultAmqpConnection)
+          .withRoutingKey(queueName)
+          .withDeclarations(queueDeclaration)
       )
+      //#create-sink
 
+      //#create-source
+      val amqpSource = AmqpSource(
+        NamedQueueSourceSettings(DefaultAmqpConnection, queueName)
+          .withDeclarations(queueDeclaration),
+        bufferSize = 10
+      )
+      //#create-source
+
+      //#run-sink
       val input = Vector("one", "two", "three", "four", "five")
       Source(input).map(s => ByteString(s)).runWith(amqpSink)
+      //#run-sink
 
+      //#run-source
       val result = amqpSource.map(_.bytes.utf8String).take(input.size).runWith(Sink.seq)
+      //#run-source
 
       result.futureValue shouldEqual input
     }
 
     "publish from one source and consume elements with multiple sinks" in {
       val queueName = "amqp-conn-it-spec-work-queues-" + System.currentTimeMillis()
-      usedQueues = usedQueues :+ queueName
       val queueDeclaration = QueueDeclaration(queueName)
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(
-          DefaultAmqpConnection,
-          exchange = None,
-          routingKey = Some(queueName),
-          List(queueDeclaration)
-        )
+        AmqpSinkSettings(DefaultAmqpConnection)
+          .withRoutingKey(queueName)
+          .withDeclarations(queueDeclaration)
       )
 
       val input = Vector("one", "two", "three", "four", "five")
@@ -105,11 +72,11 @@ class AmqpConnectorsSpec extends AmqpSpec {
         val count = 3
         val merge = b.add(Merge[IncomingMessage](count))
         for (n <- 0 until count) {
-          val source = b.add(AmqpSource(NamedQueueSourceSettings(
-            DefaultAmqpConnection,
-            queueName,
-            List(queueDeclaration)
-          ), bufferSize = 1))
+          val source = b.add(AmqpSource(
+            NamedQueueSourceSettings(DefaultAmqpConnection, queueName)
+              .withDeclarations(queueDeclaration),
+            bufferSize = 1
+          ))
           source.out ~> merge.in(n)
         }
 
@@ -123,23 +90,17 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
     "not fail on a fast producer and a slow consumer" in {
       val queueName = "amqp-conn-it-spec-simple-queue-2-" + System.currentTimeMillis()
-      usedQueues = usedQueues :+ queueName
       val queueDeclaration = QueueDeclaration(queueName)
       val amqpSource = AmqpSource(
-        NamedQueueSourceSettings(
-          DefaultAmqpConnection,
-          queueName,
-          List(queueDeclaration)
-        ), bufferSize = 2
+        NamedQueueSourceSettings(DefaultAmqpConnection, queueName)
+          .withDeclarations(queueDeclaration),
+        bufferSize = 2
       )
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(
-          DefaultAmqpConnection,
-          exchange = None,
-          routingKey = Some(queueName),
-          List(queueDeclaration)
-        )
+        AmqpSinkSettings(DefaultAmqpConnection)
+          .withRoutingKey(queueName)
+          .withDeclarations(queueDeclaration)
       )
 
       val publisher = TestPublisher.probe[ByteString]()
@@ -182,23 +143,17 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
     "not ack messages unless they get consumed" in {
       val queueName = "amqp-conn-it-spec-simple-queue-2-" + System.currentTimeMillis()
-      usedQueues = usedQueues :+ queueName
       val queueDeclaration = QueueDeclaration(queueName)
       val amqpSource = AmqpSource(
-        NamedQueueSourceSettings(
-          DefaultAmqpConnection,
-          queueName,
-          List(queueDeclaration)
-        ), bufferSize = 10
+        NamedQueueSourceSettings(DefaultAmqpConnection, queueName)
+          .withDeclarations(queueDeclaration),
+        bufferSize = 10
       )
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(
-          DefaultAmqpConnection,
-          exchange = None,
-          routingKey = Some(queueName),
-          List(queueDeclaration)
-        )
+        AmqpSinkSettings(DefaultAmqpConnection)
+          .withRoutingKey(queueName)
+          .withDeclarations(queueDeclaration)
       )
 
       val publisher = TestPublisher.probe[ByteString]()
@@ -251,45 +206,41 @@ class AmqpConnectorsSpec extends AmqpSpec {
       // with pubsub we arrange one exchange which the sink writes to
       // and then one queue for each source which subscribes to the
       // exchange - all this described by the declarations
+
+      //#exchange-declaration
       val exchangeName = "amqp-conn-it-spec-pub-sub-" + System.currentTimeMillis()
-      usedExchanges = usedExchanges :+ exchangeName
-
       val exchangeDeclaration = ExchangeDeclaration(exchangeName, "fanout")
+      //#exchange-declaration
 
+      //#create-exchange-sink
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(
-          DefaultAmqpConnection,
-          Some(exchangeName),
-          None,
-          List(exchangeDeclaration)
-        )
+        AmqpSinkSettings(DefaultAmqpConnection)
+          .withExchange(exchangeName)
+          .withDeclarations(exchangeDeclaration)
       )
+      //#create-exchange-sink
 
-      val count = 4
-      val mergedSources = Source.fromGraph(GraphDSL.create() { implicit b =>
-        import GraphDSL.Implicits._
-        val merge = b.add(Merge[(IncomingMessage, Int)](count))
-        for (n <- 0 until count) {
-          val declarations = List(
-            exchangeDeclaration
-          )
-          val source = b.add(AmqpSource(
+      val input = Vector("one", "two", "three", "four", "five")
+
+      //#create-exchange-source
+      val fanoutSize = 4
+
+      val mergedSources = (0 until fanoutSize).foldLeft(Source.empty[(Int, String)]) {
+        case (source, fanoutBranch) => source.merge(
+          AmqpSource(
             TemporaryQueueSourceSettings(
               DefaultAmqpConnection,
-              exchangeName,
-              List(exchangeDeclaration)
-            ),
+              exchangeName
+            ).withDeclarations(exchangeDeclaration),
             bufferSize = 1
-          ).map(msg => (msg, n)))
-          source.out ~> merge.in(n)
-        }
-
-        SourceShape(merge.out)
-      })
+          ).map(msg => (fanoutBranch, msg.bytes.utf8String))
+        )
+      }
+      //#create-exchange-source
 
       val materialized = Promise[Done]()
-      val futureResult = mergedSources.map(t => (t._2, t._1.bytes.utf8String))
-        .takeWithin(10.seconds)
+      val futureResult = mergedSources
+        .take(input.size * fanoutSize)
         .mapMaterializedValue { n =>
           materialized.success(Done)
           n
@@ -300,24 +251,10 @@ class AmqpConnectorsSpec extends AmqpSpec {
       materialized.future.futureValue
       Thread.sleep(200)
 
-      val input = Vector("one", "two", "three", "four", "five")
       Source(input).map(s => ByteString(s)).runWith(amqpSink)
 
-      val expectedOutput = input.flatMap(string => (0 until 4).map(n => (n, string))).toSet
+      val expectedOutput = input.flatMap(string => (0 until fanoutSize).map(n => (n, string))).toSet
       futureResult.futureValue.toSet shouldEqual expectedOutput
     }
-  }
-
-  override protected def afterAll(): Unit = {
-    println("Cleaning up queues and exchanges")
-    import sys.process._
-    // delete all used queues
-    usedQueues.foreach { queueName =>
-      Try(s"rabbitmqadmin delete queue name=$queueName".!) // best effort
-    }
-    usedExchanges.foreach { exchangeName =>
-      Try(s"rabbitmqadmin delete exchange name=$exchangeName".!) // best effort
-    }
-    super.afterAll()
   }
 }
