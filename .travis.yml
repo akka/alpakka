@@ -12,3 +12,5 @@ sudo: required
 services:
   - rabbitmq
   - cassandra
+script:
+  - sbt +test

@@ -20,7 +20,6 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.language.reflectiveCalls
 
 class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
 
@@ -51,6 +50,46 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
         publish("topic2", "hello again")
         probe.requestNext shouldBe MqttMessage("topic1", ByteString("ohi"))
         probe.requestNext shouldBe MqttMessage("topic2", ByteString("hello again"))
+      }
+    }
+
+    "receive messages from multiple topics (for docs)" in withBroker(Map.empty) { p =>
+      val f = fixture(p)
+      import f._
+
+      //#create-settings
+      val settings = MqttSourceSettings(
+        MqttConnectionSettings(
+          "tcp://localhost:1883",
+          "test-client",
+          new MemoryPersistence
+        ),
+        Map("topic1" -> 0, "topic2" -> 0)
+      )
+      //#create-settings
+
+      val messageCount = 7
+
+      //#create-source
+      val mqttSource = MqttSource(settings, bufferSize = 8)
+      //#create-source
+
+      //#run-source
+      val (subscriptionFuture, result) = mqttSource
+        .map(m => s"${m.topic}_${m.payload.utf8String}")
+        .take(messageCount * 2)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+      //#run-source
+
+      whenReady(subscriptionFuture) { _ =>
+        val expected = (0 until messageCount).flatMap { i =>
+          publish("topic1", i.toString)
+          publish("topic2", i.toString)
+          Seq(s"topic1_$i", s"topic2_$i")
+        }
+
+        result.futureValue shouldBe expected
       }
     }
 
@@ -136,7 +175,6 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
     "support multiple materialization" in withBroker(Map("topic1" -> 0)) { p =>
       val f = fixture(p)
       import f._
-      import f.system.dispatcher
 
       val source = MqttSource(p.settings, 8)
 

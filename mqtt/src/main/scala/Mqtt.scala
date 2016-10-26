@@ -5,23 +5,56 @@ package akka.stream.contrib.mqtt
 
 import akka.util.ByteString
 import akka.stream.stage._
+
 import org.eclipse.paho.client.mqttv3.{ MqttMessage => PahoMqttMessage, _ }
+
 import scala.util._
 import scala.language.implicitConversions
 
 final case class MqttSourceSettings(
   connectionSettings: MqttConnectionSettings,
-  topics:             Map[String, Int]
-)
+  subscriptions:      Map[String, Int]       = Map.empty
+) {
+  @annotation.varargs
+  def withSubscriptions(subscription: akka.japi.Pair[String, Int], subscriptions: akka.japi.Pair[String, Int]*) =
+    copy(subscriptions = (subscription +: subscriptions).map(_.toScala).toMap)
+}
+
+object MqttSourceSettings {
+  /**
+   * Java API: create [[MqttSourceSettings]].
+   */
+  def create(connectionSettings: MqttConnectionSettings) =
+    MqttSourceSettings(connectionSettings)
+}
 
 final case class MqttConnectionSettings(
   broker:      String,
   clientId:    String,
   persistence: MqttClientPersistence,
   auth:        Option[(String, String)] = None
-)
+) {
+  def withAuth(username: String, password: String) =
+    copy(auth = Some((username, password)))
+}
+
+object MqttConnectionSettings {
+  /**
+   * Java API: create [[MqttConnectionSettings]] with no auth information.
+   */
+  def create(broker: String, clientId: String, persistence: MqttClientPersistence) =
+    MqttConnectionSettings(broker, clientId, persistence)
+}
 
 final case class MqttMessage(topic: String, payload: ByteString)
+
+object MqttMessage {
+  /**
+   * Java API: create  [[MqttMessage]]
+   */
+  def create(topic: String, payload: ByteString) =
+    MqttMessage(topic, payload)
+}
 
 /**
  *  Internal API

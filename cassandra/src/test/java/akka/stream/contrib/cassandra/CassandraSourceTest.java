@@ -80,7 +80,6 @@ public class CassandraSourceTest {
     session.execute("DROP KEYSPACE IF EXISTS akka_stream_java_test;");
 
     JavaTestKit.shutdownActorSystem(system);
-    system = null;
   }
 
   @Test
