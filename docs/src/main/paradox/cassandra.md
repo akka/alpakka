@@ -1,6 +1,6 @@
 # Cassandra Connector
 
-The Cassandra connector provides a way to transform a Cassandra's ResultSet into a Akka Stream's Source.
+The Cassandra connector provides a way to provide the result of a Cassandra query as a stream of rows.
 
 ## Dependencies
 
