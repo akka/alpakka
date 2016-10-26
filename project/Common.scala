@@ -1,5 +1,3 @@
-package akka
-
 import sbt._
 import sbt.Keys._
 
@@ -11,8 +9,6 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 object Common extends AutoPlugin {
 
-  val AkkaVersion = "2.4.10"
-
   val FileHeader = (HeaderPattern.cStyleBlockComment,
     """|/*
        | * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
@@ -22,7 +18,8 @@ object Common extends AutoPlugin {
   override def trigger = allRequirements
   override def requires = plugins.JvmPlugin && HeaderPlugin
 
-  override lazy val projectSettings = SbtScalariform.scalariformSettings ++ Seq(
+  override lazy val projectSettings = SbtScalariform.scalariformSettings ++
+    Dependencies.Common ++ Seq(
     organization := "com.typesafe.akka",
     organizationName := "Lightbend Inc.",
 
@@ -48,6 +45,7 @@ object Common extends AutoPlugin {
     ),
 
     autoAPIMappings := true,
+    apiURL := Some(url(s"http://doc.akka.io/api/alpakka/${version.value}")),
 
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
@@ -55,12 +53,6 @@ object Common extends AutoPlugin {
     // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
     // -a Show stack traces and exception class name for AssertionErrors.
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
-
-    libraryDependencies ++= Seq(
-      "com.typesafe.akka"      %% "akka-stream"                         % AkkaVersion,
-      "com.typesafe.akka"      %% "akka-stream-testkit"                 % AkkaVersion   % "test",
-      "org.scalatest"          %% "scalatest"                           % "2.2.6"       % "test" // ApacheV2
-    ),
 
     headers := headers.value ++ Map(
       "scala" -> FileHeader,
