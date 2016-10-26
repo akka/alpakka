@@ -5,19 +5,28 @@ package akka.stream.contrib.cassandra
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.Sink
 import com.datastax.driver.core.{ SimpleStatement, Cluster }
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent._
 import scala.concurrent.duration._
 
+/**
+ * All the tests must be run with a local Cassandra running on default port 9042.
+ */
 class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfterEach with BeforeAndAfterAll with MustMatchers {
+
+  //#init-mat
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
+  //#init-mat
 
-  val cluster = Cluster.builder.addContactPoint("127.0.0.1").withPort(9042).build
-  implicit val session = cluster.connect()
+  //#init-session
+  implicit val session = Cluster.builder
+    .addContactPoint("127.0.0.1").withPort(9042)
+    .build.connect()
+  //#init-session
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 2.seconds, interval = 50.millis)
@@ -71,13 +80,17 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
 
     "stream the result of a Cassandra statement with several pages" in {
       val data = populate()
-      val stmt = new SimpleStatement("SELECT * FROM akka_stream_test.test").setFetchSize(20)
 
+      //#statement
+      val stmt = new SimpleStatement("SELECT * FROM akka_stream_test.test").setFetchSize(20)
+      //#statement
+
+      //#run-source
       val rows = CassandraSource(stmt)
         .runWith(Sink.seq)
-        .futureValue
+      //#run-source
 
-      rows.map(_.getInt("id")) must contain theSameElementsAs data
+      rows.futureValue.map(_.getInt("id")) must contain theSameElementsAs data
     }
 
     "support multiple materializations" in {

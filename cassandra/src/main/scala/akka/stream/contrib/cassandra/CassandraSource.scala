@@ -76,20 +76,26 @@ class CassandraSource(futStmt: Future[Statement], session: Session) extends Grap
 
 object CassandraSource {
   /**
-   * Scala API:
+   * Scala API: creates a [[CassandraSource]] from a given statement.
    */
   def apply(stmt: Statement)(implicit session: Session): Source[Row, NotUsed] =
     Source.fromGraph(new CassandraSource(Future.successful(stmt), session))
 
+  /**
+   * Scala API: creates a [[CassandraSource]] from the result of a given Future.
+   */
   def fromFuture(futStmt: Future[Statement])(implicit session: Session): Source[Row, NotUsed] =
     Source.fromGraph(new CassandraSource(futStmt, session))
 
   /**
-   * Java API:
+   * Java API: creates a [[CassandraSource]] from a given statement.
    */
   def create(stmt: Statement, session: Session): akka.stream.javadsl.Source[Row, NotUsed] =
     akka.stream.javadsl.Source.fromGraph(new CassandraSource(Future.successful(stmt), session))
 
+  /**
+   * Java API: creates a [[CassandraSource]] from the result of a given CompletableFuture.
+   */
   def createFromFuture(
     futStmt: java.util.concurrent.CompletableFuture[Statement],
     session: Session
