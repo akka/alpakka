@@ -34,7 +34,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
   override def beforeEach(): Unit = {
     session.execute(
       """
-        |CREATE KEYSPACE IF NOT EXISTS akka_stream_test WITH replication = {
+        |CREATE KEYSPACE IF NOT EXISTS akka_stream_scala_test WITH replication = {
         |  'class': 'SimpleStrategy',
         |  'replication_factor': '1'
         |};
@@ -42,7 +42,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
     )
     session.execute(
       """
-        |CREATE TABLE IF NOT EXISTS akka_stream_test.test (
+        |CREATE TABLE IF NOT EXISTS akka_stream_scala_test.test (
         |    id int PRIMARY KEY
         |);
       """.stripMargin
@@ -50,8 +50,8 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
   }
 
   override def afterEach(): Unit = {
-    session.execute("DROP TABLE IF EXISTS akka_stream_test.test;")
-    session.execute("DROP KEYSPACE IF EXISTS akka_stream_test;")
+    session.execute("DROP TABLE IF EXISTS akka_stream_scala_test.test;")
+    session.execute("DROP KEYSPACE IF EXISTS akka_stream_scala_test;")
   }
 
   override def afterAll(): Unit = {
@@ -60,7 +60,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
 
   def populate() = {
     (1 until 103).map { i =>
-      session.execute(s"INSERT INTO akka_stream_test.test(id) VALUES ($i)")
+      session.execute(s"INSERT INTO akka_stream_scala_test.test(id) VALUES ($i)")
       i
     }
   }
@@ -69,7 +69,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
 
     "stream the result of a Cassandra statement with one page" in {
       val data = populate()
-      val stmt = new SimpleStatement("SELECT * FROM akka_stream_test.test").setFetchSize(200)
+      val stmt = new SimpleStatement("SELECT * FROM akka_stream_scala_test.test").setFetchSize(200)
 
       val rows = CassandraSource(stmt)
         .runWith(Sink.seq)
@@ -82,7 +82,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
       val data = populate()
 
       //#statement
-      val stmt = new SimpleStatement("SELECT * FROM akka_stream_test.test").setFetchSize(20)
+      val stmt = new SimpleStatement("SELECT * FROM akka_stream_scala_test.test").setFetchSize(20)
       //#statement
 
       //#run-source
@@ -95,7 +95,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
 
     "support multiple materializations" in {
       val data = populate()
-      val stmt = new SimpleStatement("SELECT * FROM akka_stream_test.test")
+      val stmt = new SimpleStatement("SELECT * FROM akka_stream_scala_test.test")
 
       val source = CassandraSource(stmt)
 
@@ -104,7 +104,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
     }
 
     "stream the result of Cassandra statement that results in no data" in {
-      val stmt = new SimpleStatement("SELECT * FROM akka_stream_test.test")
+      val stmt = new SimpleStatement("SELECT * FROM akka_stream_scala_test.test")
 
       val rows = CassandraSource(stmt)
         .runWith(Sink.seq)

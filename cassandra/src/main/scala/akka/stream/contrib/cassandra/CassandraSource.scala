@@ -4,14 +4,12 @@
 package akka.stream.contrib.cassandra
 
 import akka.NotUsed
-import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.scaladsl.Source
 import akka.stream.stage.{ AsyncCallback, OutHandler, GraphStageLogic, GraphStage }
 import com.datastax.driver.core.{ ResultSet, Session, Statement, Row }
 import com.google.common.util.concurrent.{ ListenableFuture, FutureCallback, Futures }
 import scala.concurrent.{ Future, Promise }
-import scala.collection.JavaConverters._
 import scala.util.{ Try, Failure, Success }
 
 class CassandraSource(futStmt: Future[Statement], session: Session) extends GraphStage[SourceShape[Row]] {

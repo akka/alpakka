@@ -64,20 +64,20 @@ public class CassandraSourceTest {
     session = setupSession();
 
     session.execute(
-      "CREATE KEYSPACE IF NOT EXISTS akka_stream_test WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'}"
+      "CREATE KEYSPACE IF NOT EXISTS akka_stream_java_test WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'}"
     );
     session.execute(
-      "CREATE TABLE IF NOT EXISTS akka_stream_test.test (id int PRIMARY KEY);"
+      "CREATE TABLE IF NOT EXISTS akka_stream_java_test.test (id int PRIMARY KEY);"
     );
     for (Integer i = 1; i < 103; i++) {
-      session.execute("INSERT INTO akka_stream_test.test(id) VALUES (" + i + ")");
+      session.execute("INSERT INTO akka_stream_java_test.test(id) VALUES (" + i + ")");
     }
   }
 
   @AfterClass
   public static void teardown() {
-    session.execute("DROP TABLE IF EXISTS akka_stream_test.test;");
-    session.execute("DROP KEYSPACE IF EXISTS akka_stream_test;");
+    session.execute("DROP TABLE IF EXISTS akka_stream_java_test.test;");
+    session.execute("DROP KEYSPACE IF EXISTS akka_stream_java_test;");
 
     JavaTestKit.shutdownActorSystem(system);
     system = null;
@@ -86,7 +86,7 @@ public class CassandraSourceTest {
   @Test
   public void streamStatementResult() throws Exception {
     //#statement
-    final Statement stmt = new SimpleStatement("SELECT * FROM akka_stream_test.test").setFetchSize(20);
+    final Statement stmt = new SimpleStatement("SELECT * FROM akka_stream_java_test.test").setFetchSize(20);
     //#statement
 
     //#run-source
