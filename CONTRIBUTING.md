@@ -18,7 +18,7 @@ In case of questions about the contribution process or for discussion of specifi
 
 For a Pull Request to be considered at all it has to meet these requirements:
 
-1. Pull Request branch should be given a unique [descriptive name](#pull-request-branch-naming) that explains its intent.
+1. Pull Request branch should be given a unique descriptive name that explains its intent.
 2. Code in the branch should live up to the current code standard:
    - Not violate [DRY](http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself).
    - [Boy Scout Rule](http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule) needs to have been applied.
@@ -29,16 +29,12 @@ For a Pull Request to be considered at all it has to meet these requirements:
 
 If these requirements are not met then the code should **not** be merged into master, or even reviewed - regardless of how good or important it is. No exceptions.
 
-## Pull Request Branch Naming
-
-It is ok to work on a public feature branch in the GitHub repository. Something that can sometimes be useful for early feedback etc. It is preferred to prefix the feature branch name with ``wip-`` as in ‘Work In Progress’, followed by the issue number that the work in the branch is addressing. After the issue number should follow one to four word summary of what the work is about. Lastly branch name should end with an authors name. Here is a good example of a feature branch name: `wip-18012-rate-transformation-docs-2m`.
-
 ## Documentation
 
 Documentation should be written in two forms:
 
-1. API documentation in the form of scaladoc comments on the Scala and Java user API.
-2. Guide documentation in [doc](doc/) subproject. This documentation should give a short introduction of how a given connector should be used.
+1. API documentation in the form of scaladoc/javadoc comments on the Scala and Java user API.
+2. Guide documentation in [docs](docs/) subproject using [Paradox](https://github.com/lightbend/paradox) documentation tool. This documentation should give a short introduction of how a given connector should be used.
 
 ## External Dependencies
 
