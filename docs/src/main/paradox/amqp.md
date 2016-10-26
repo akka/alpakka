@@ -1,6 +1,6 @@
 # AMQP Connector
 
-The AMQP Connector provides Akka Stream sources and sinks to connect to AMQP servers.
+The AMQP connector provides Akka Stream sources and sinks to connect to AMQP servers.
 
 ## Dependencies
 
@@ -115,7 +115,7 @@ We merge all sources into one and add the index of the source to all incoming me
 
 Such sink and source can be started the same way as in the previous example.
 
-### Running the test code
+### Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
 

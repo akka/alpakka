@@ -5,19 +5,28 @@ package akka.stream.contrib.cassandra
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.Sink
 import com.datastax.driver.core.{ SimpleStatement, Cluster }
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent._
 import scala.concurrent.duration._
 
+/**
+ * All the tests must be run with a local Cassandra running on default port 9042.
+ */
 class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfterEach with BeforeAndAfterAll with MustMatchers {
+
+  //#init-mat
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
+  //#init-mat
 
-  val cluster = Cluster.builder.addContactPoint("127.0.0.1").withPort(9042).build
-  implicit val session = cluster.connect()
+  //#init-session
+  implicit val session = Cluster.builder
+    .addContactPoint("127.0.0.1").withPort(9042)
+    .build.connect()
+  //#init-session
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 2.seconds, interval = 50.millis)
@@ -25,7 +34,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
   override def beforeEach(): Unit = {
     session.execute(
       """
-        |CREATE KEYSPACE IF NOT EXISTS akka_stream_test WITH replication = {
+        |CREATE KEYSPACE IF NOT EXISTS akka_stream_scala_test WITH replication = {
         |  'class': 'SimpleStrategy',
         |  'replication_factor': '1'
         |};
@@ -33,7 +42,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
     )
     session.execute(
       """
-        |CREATE TABLE IF NOT EXISTS akka_stream_test.test (
+        |CREATE TABLE IF NOT EXISTS akka_stream_scala_test.test (
         |    id int PRIMARY KEY
         |);
       """.stripMargin
@@ -41,8 +50,8 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
   }
 
   override def afterEach(): Unit = {
-    session.execute("DROP TABLE IF EXISTS akka_stream_test.test;")
-    session.execute("DROP KEYSPACE IF EXISTS akka_stream_test;")
+    session.execute("DROP TABLE IF EXISTS akka_stream_scala_test.test;")
+    session.execute("DROP KEYSPACE IF EXISTS akka_stream_scala_test;")
   }
 
   override def afterAll(): Unit = {
@@ -51,7 +60,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
 
   def populate() = {
     (1 until 103).map { i =>
-      session.execute(s"INSERT INTO akka_stream_test.test(id) VALUES ($i)")
+      session.execute(s"INSERT INTO akka_stream_scala_test.test(id) VALUES ($i)")
       i
     }
   }
@@ -60,7 +69,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
 
     "stream the result of a Cassandra statement with one page" in {
       val data = populate()
-      val stmt = new SimpleStatement("SELECT * FROM akka_stream_test.test").setFetchSize(200)
+      val stmt = new SimpleStatement("SELECT * FROM akka_stream_scala_test.test").setFetchSize(200)
 
       val rows = CassandraSource(stmt)
         .runWith(Sink.seq)
@@ -71,18 +80,22 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
 
     "stream the result of a Cassandra statement with several pages" in {
       val data = populate()
-      val stmt = new SimpleStatement("SELECT * FROM akka_stream_test.test").setFetchSize(20)
 
+      //#statement
+      val stmt = new SimpleStatement("SELECT * FROM akka_stream_scala_test.test").setFetchSize(20)
+      //#statement
+
+      //#run-source
       val rows = CassandraSource(stmt)
         .runWith(Sink.seq)
-        .futureValue
+      //#run-source
 
-      rows.map(_.getInt("id")) must contain theSameElementsAs data
+      rows.futureValue.map(_.getInt("id")) must contain theSameElementsAs data
     }
 
     "support multiple materializations" in {
       val data = populate()
-      val stmt = new SimpleStatement("SELECT * FROM akka_stream_test.test")
+      val stmt = new SimpleStatement("SELECT * FROM akka_stream_scala_test.test")
 
       val source = CassandraSource(stmt)
 
@@ -91,7 +104,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
     }
 
     "stream the result of Cassandra statement that results in no data" in {
-      val stmt = new SimpleStatement("SELECT * FROM akka_stream_test.test")
+      val stmt = new SimpleStatement("SELECT * FROM akka_stream_scala_test.test")
 
       val rows = CassandraSource(stmt)
         .runWith(Sink.seq)
