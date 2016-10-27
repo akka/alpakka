@@ -1,4 +1,4 @@
-package akka.stream.contrib.mqtt;
+package akka.stream.alpakka.mqtt;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

@@ -22,7 +22,7 @@ object Publish extends AutoPlugin {
     credentials ++= akkaCredentials,
     organizationName := "Lightbend Inc.",
     organizationHomepage := Some(url("http://www.lightbend.com")),
-    homepage := Some(url("https://github.com/akka/akka-stream-contrib")),
+    homepage := Some(url("https://github.com/akka/alpakka")),
     publishMavenStyle := true,
     pomIncludeRepository := { x => false },
     defaultPublishTo := crossTarget.value / "repository"
@@ -30,15 +30,15 @@ object Publish extends AutoPlugin {
 
   def akkaPomExtra = {
     <scm>
-      <url>git@github.com:akka/akka-stream-contrib.git</url>
-      <connection>scm:git:git@github.com:akka/akka-stream-contrib.git</connection>
+      <url>git@github.com:akka/alpakka.git</url>
+      <connection>scm:git:git@github.com:akka/alpakka.git</connection>
     </scm>
     <developers>
       <developer>
         <id>contributors</id>
         <name>Contributors</name>
         <email>akka-dev@googlegroups.com</email>
-        <url>https://github.com/akka/akka-stream-contrib/graphs/contributors</url>
+        <url>https://github.com/akka/alpakka/graphs/contributors</url>
       </developer>
     </developers>
   }

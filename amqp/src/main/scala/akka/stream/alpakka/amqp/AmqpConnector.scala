@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.contrib.amqp
+package akka.stream.alpakka.amqp
 
 import akka.stream.stage.GraphStageLogic
 import com.rabbitmq.client._

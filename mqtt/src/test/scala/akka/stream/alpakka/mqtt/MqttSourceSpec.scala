@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.contrib.mqtt
+package akka.stream.alpakka.mqtt
 
 import akka.actor.ActorSystem
 import akka.stream._

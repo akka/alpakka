@@ -20,7 +20,7 @@ object LocalApiDocs extends AutoPlugin {
     commands += Command.command("localApiDocs") { state =>
       val extracted = Project.extract(state)
       import extracted._
-      append(Seq(paradoxProperties += "scaladoc.akka.stream.contrib.base_url" -> s"../../../../target/unidoc"), state)
+      append(Seq(paradoxProperties += "scaladoc.akka.stream.alpakka.base_url" -> s"../../../../target/unidoc"), state)
     }
   )
 
