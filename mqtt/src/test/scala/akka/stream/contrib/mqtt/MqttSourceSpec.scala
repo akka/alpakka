@@ -29,7 +29,7 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
   "mqtt source" should {
-    "receive a message from a topic" in withBroker(Map("topic1" -> 0)) { p =>
+    "receive a message from a topic" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce)) { p =>
       val f = fixture(p)
       import f._
 
@@ -40,7 +40,7 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "receive messages from multiple topics" in withBroker(Map("topic1" -> 0, "topic2" -> 0)) { p =>
+    "receive messages from multiple topics" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce, "topic2" -> MqttQoS.AtMostOnce)) { p =>
       val f = fixture(p)
       import f._
 
@@ -64,7 +64,7 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
           "test-client",
           new MemoryPersistence
         ),
-        Map("topic1" -> 0, "topic2" -> 0)
+        Map("topic1" -> MqttQoS.AtMostOnce, "topic2" -> MqttQoS.AtMostOnce)
       )
       //#create-settings
 
@@ -93,7 +93,7 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "fail stream when disconnected" in withBroker(Map("topic1" -> 0)) { p =>
+    "fail stream when disconnected" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce)) { p =>
       val f = fixture(p)
       import f._
 
@@ -118,7 +118,7 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "receive a message from a topic with right credentials" in withBroker(Map("topic1" -> 0), Some(("user", "passwd"))) { p =>
+    "receive a message from a topic with right credentials" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce), Some(("user", "passwd"))) { p =>
       val f = fixture(p)
       import f._
 
@@ -130,7 +130,7 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "signal backpressure" in withBroker(Map("topic1" -> 0)) { p =>
+    "signal backpressure" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce)) { p =>
       val f = fixture(p)
       import f._
 
@@ -150,7 +150,7 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "work with fast downstream" in withBroker(Map("topic1" -> 0)) { p =>
+    "work with fast downstream" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce)) { p =>
       val f = fixture(p)
       import f._
 
@@ -172,7 +172,7 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "support multiple materialization" in withBroker(Map("topic1" -> 0)) { p =>
+    "support multiple materialization" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce)) { p =>
       val f = fixture(p)
       import f._
 
@@ -196,11 +196,11 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
     val msg = new PublishMessage()
     msg.setPayload(ByteString(payload).toByteBuffer)
     msg.setTopicName(topic)
-    msg.setQos(QOSType.MOST_ONE)
+    msg.setQos(QOSType.valueOf(MqttQoS.AtMostOnce.byteValue))
     server.internalPublish(msg)
   }
 
-  def withBroker(subscriptions: Map[String, Int], serverAuth: Option[(String, String)] = None)(test: FixtureParam => Any) = {
+  def withBroker(subscriptions: Map[String, MqttQoS], serverAuth: Option[(String, String)] = None)(test: FixtureParam => Any) = {
     implicit val sys = ActorSystem("MqttSourceSpec")
     val mat = ActorMaterializer()
 

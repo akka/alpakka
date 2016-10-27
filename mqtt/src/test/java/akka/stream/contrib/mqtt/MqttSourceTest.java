@@ -59,7 +59,7 @@ public class MqttSourceTest {
     final PublishMessage  msg = new PublishMessage();
     msg.setPayload(ByteString.fromString(payload).toByteBuffer());
     msg.setTopicName(topic);
-    msg.setQos(QOSType.MOST_ONE);
+    msg.setQos(QOSType.valueOf(MqttQoS.atMostOnce().byteValue()));
     server.internalPublish(msg);
   }
 
@@ -72,7 +72,10 @@ public class MqttSourceTest {
         "test-client",
         new MemoryPersistence()
       )
-    ).withSubscriptions(Pair.create("topic1", 0), Pair.create("topic2", 0));
+    ).withSubscriptions(
+      Pair.create("topic1", MqttQoS.atMostOnce()),
+      Pair.create("topic2", MqttQoS.atMostOnce())
+    );
     //#create-settings
 
     final Integer messageCount = 7;

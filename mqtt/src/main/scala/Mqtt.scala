@@ -11,12 +11,52 @@ import org.eclipse.paho.client.mqttv3.{ MqttMessage => PahoMqttMessage, _ }
 import scala.util._
 import scala.language.implicitConversions
 
+sealed abstract class MqttQoS {
+  def byteValue: Byte
+}
+
+/**
+ * Quality of Service constants as defined in
+ * https://www.eclipse.org/paho/files/mqttdoc/Cclient/qos.html
+ */
+object MqttQoS {
+  object AtMostOnce extends MqttQoS {
+    def byteValue: Byte = 0
+  }
+
+  object AtLeastOnce extends MqttQoS {
+    def byteValue: Byte = 1
+  }
+
+  object ExactlyOnce extends MqttQoS {
+    def byteValue: Byte = 2
+  }
+
+  /**
+   * Java API
+   */
+  def atMostOnce = AtMostOnce
+
+  /**
+   * Java API
+   */
+  def atLeastOnce = AtLeastOnce
+
+  /**
+   * Java API
+   */
+  def exactlyOnce = ExactlyOnce
+}
+
+/**
+ * @param subscriptions the mapping between a topic name and a [[MqttQoS]].
+ */
 final case class MqttSourceSettings(
   connectionSettings: MqttConnectionSettings,
-  subscriptions:      Map[String, Int]       = Map.empty
+  subscriptions:      Map[String, MqttQoS]   = Map.empty
 ) {
   @annotation.varargs
-  def withSubscriptions(subscription: akka.japi.Pair[String, Int], subscriptions: akka.japi.Pair[String, Int]*) =
+  def withSubscriptions(subscription: akka.japi.Pair[String, MqttQoS], subscriptions: akka.japi.Pair[String, MqttQoS]*) =
     copy(subscriptions = (subscription +: subscriptions).map(_.toScala).toMap)
 }
 

@@ -63,7 +63,7 @@ final class MqttSource(settings: MqttSourceSettings, bufferSize: Int) extends Gr
 
       override def handleConnection(client: IMqttAsyncClient) = {
         val (topics, qos) = settings.subscriptions.unzip
-        client.subscribe(topics.toArray, qos.toArray, (), mqttSubscriptionCallback)
+        client.subscribe(topics.toArray, qos.map(_.byteValue.toInt).toArray, (), mqttSubscriptionCallback)
       }
 
       override def beforeHandleMessage(): Unit = {
