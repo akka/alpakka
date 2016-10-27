@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.contrib.cassandra
+package akka.stream.alpakka.cassandra
 
 import akka.NotUsed
 import akka.stream._
