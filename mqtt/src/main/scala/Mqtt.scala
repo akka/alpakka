@@ -5,23 +5,96 @@ package akka.stream.contrib.mqtt
 
 import akka.util.ByteString
 import akka.stream.stage._
+
 import org.eclipse.paho.client.mqttv3.{ MqttMessage => PahoMqttMessage, _ }
+
 import scala.util._
 import scala.language.implicitConversions
 
+sealed abstract class MqttQoS {
+  def byteValue: Byte
+}
+
+/**
+ * Quality of Service constants as defined in
+ * https://www.eclipse.org/paho/files/mqttdoc/Cclient/qos.html
+ */
+object MqttQoS {
+  object AtMostOnce extends MqttQoS {
+    def byteValue: Byte = 0
+  }
+
+  object AtLeastOnce extends MqttQoS {
+    def byteValue: Byte = 1
+  }
+
+  object ExactlyOnce extends MqttQoS {
+    def byteValue: Byte = 2
+  }
+
+  /**
+   * Java API
+   */
+  def atMostOnce = AtMostOnce
+
+  /**
+   * Java API
+   */
+  def atLeastOnce = AtLeastOnce
+
+  /**
+   * Java API
+   */
+  def exactlyOnce = ExactlyOnce
+}
+
+/**
+ * @param subscriptions the mapping between a topic name and a [[MqttQoS]].
+ */
 final case class MqttSourceSettings(
   connectionSettings: MqttConnectionSettings,
-  topics:             Map[String, Int]
-)
+  subscriptions:      Map[String, MqttQoS]   = Map.empty
+) {
+  @annotation.varargs
+  def withSubscriptions(subscription: akka.japi.Pair[String, MqttQoS], subscriptions: akka.japi.Pair[String, MqttQoS]*) =
+    copy(subscriptions = (subscription +: subscriptions).map(_.toScala).toMap)
+}
+
+object MqttSourceSettings {
+  /**
+   * Java API: create [[MqttSourceSettings]].
+   */
+  def create(connectionSettings: MqttConnectionSettings) =
+    MqttSourceSettings(connectionSettings)
+}
 
 final case class MqttConnectionSettings(
   broker:      String,
   clientId:    String,
   persistence: MqttClientPersistence,
   auth:        Option[(String, String)] = None
-)
+) {
+  def withAuth(username: String, password: String) =
+    copy(auth = Some((username, password)))
+}
+
+object MqttConnectionSettings {
+  /**
+   * Java API: create [[MqttConnectionSettings]] with no auth information.
+   */
+  def create(broker: String, clientId: String, persistence: MqttClientPersistence) =
+    MqttConnectionSettings(broker, clientId, persistence)
+}
 
 final case class MqttMessage(topic: String, payload: ByteString)
+
+object MqttMessage {
+  /**
+   * Java API: create  [[MqttMessage]]
+   */
+  def create(topic: String, payload: ByteString) =
+    MqttMessage(topic, payload)
+}
 
 /**
  *  Internal API

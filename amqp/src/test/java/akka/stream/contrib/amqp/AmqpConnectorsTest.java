@@ -39,7 +39,6 @@ public class AmqpConnectorsTest {
   @AfterClass
   public static void teardown() {
     JavaTestKit.shutdownActorSystem(system);
-    system = null;
   }
 
   @Test

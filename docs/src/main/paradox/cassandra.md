@@ -2,7 +2,7 @@
 
 The Cassandra connector provides a way to provide the result of a Cassandra query as a stream of rows.
 
-## Dependencies
+## Artifacts
 
 sbt
 :   @@@vars

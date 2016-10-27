@@ -2,7 +2,7 @@
 
 The AMQP connector provides Akka Stream sources and sinks to connect to AMQP servers.
 
-## Dependencies
+## Artifacts
 
 sbt
 :   @@@vars

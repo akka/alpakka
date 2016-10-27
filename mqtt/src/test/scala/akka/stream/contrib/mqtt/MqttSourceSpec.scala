@@ -20,7 +20,6 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.language.reflectiveCalls
 
 class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
 
@@ -30,7 +29,7 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
   "mqtt source" should {
-    "receive a message from a topic" in withBroker(Map("topic1" -> 0)) { p =>
+    "receive a message from a topic" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce)) { p =>
       val f = fixture(p)
       import f._
 
@@ -41,7 +40,7 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "receive messages from multiple topics" in withBroker(Map("topic1" -> 0, "topic2" -> 0)) { p =>
+    "receive messages from multiple topics" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce, "topic2" -> MqttQoS.AtMostOnce)) { p =>
       val f = fixture(p)
       import f._
 
@@ -54,7 +53,47 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "fail stream when disconnected" in withBroker(Map("topic1" -> 0)) { p =>
+    "receive messages from multiple topics (for docs)" in withBroker(Map.empty) { p =>
+      val f = fixture(p)
+      import f._
+
+      //#create-settings
+      val settings = MqttSourceSettings(
+        MqttConnectionSettings(
+          "tcp://localhost:1883",
+          "test-client",
+          new MemoryPersistence
+        ),
+        Map("topic1" -> MqttQoS.AtMostOnce, "topic2" -> MqttQoS.AtMostOnce)
+      )
+      //#create-settings
+
+      val messageCount = 7
+
+      //#create-source
+      val mqttSource = MqttSource(settings, bufferSize = 8)
+      //#create-source
+
+      //#run-source
+      val (subscriptionFuture, result) = mqttSource
+        .map(m => s"${m.topic}_${m.payload.utf8String}")
+        .take(messageCount * 2)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+      //#run-source
+
+      whenReady(subscriptionFuture) { _ =>
+        val expected = (0 until messageCount).flatMap { i =>
+          publish("topic1", i.toString)
+          publish("topic2", i.toString)
+          Seq(s"topic1_$i", s"topic2_$i")
+        }
+
+        result.futureValue shouldBe expected
+      }
+    }
+
+    "fail stream when disconnected" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce)) { p =>
       val f = fixture(p)
       import f._
 
@@ -79,7 +118,7 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "receive a message from a topic with right credentials" in withBroker(Map("topic1" -> 0), Some(("user", "passwd"))) { p =>
+    "receive a message from a topic with right credentials" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce), Some(("user", "passwd"))) { p =>
       val f = fixture(p)
       import f._
 
@@ -91,7 +130,7 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "signal backpressure" in withBroker(Map("topic1" -> 0)) { p =>
+    "signal backpressure" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce)) { p =>
       val f = fixture(p)
       import f._
 
@@ -111,7 +150,7 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "work with fast downstream" in withBroker(Map("topic1" -> 0)) { p =>
+    "work with fast downstream" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce)) { p =>
       val f = fixture(p)
       import f._
 
@@ -133,10 +172,9 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "support multiple materialization" in withBroker(Map("topic1" -> 0)) { p =>
+    "support multiple materialization" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce)) { p =>
       val f = fixture(p)
       import f._
-      import f.system.dispatcher
 
       val source = MqttSource(p.settings, 8)
 
@@ -158,11 +196,11 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
     val msg = new PublishMessage()
     msg.setPayload(ByteString(payload).toByteBuffer)
     msg.setTopicName(topic)
-    msg.setQos(QOSType.MOST_ONE)
+    msg.setQos(QOSType.valueOf(MqttQoS.AtMostOnce.byteValue))
     server.internalPublish(msg)
   }
 
-  def withBroker(subscriptions: Map[String, Int], serverAuth: Option[(String, String)] = None)(test: FixtureParam => Any) = {
+  def withBroker(subscriptions: Map[String, MqttQoS], serverAuth: Option[(String, String)] = None)(test: FixtureParam => Any) = {
     implicit val sys = ActorSystem("MqttSourceSpec")
     val mat = ActorMaterializer()
 

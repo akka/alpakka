@@ -2,13 +2,14 @@ import sbt._, Keys._
 
 object Dependencies {
 
+  val ScalaVersions = Seq("2.11.8", "2.12.0-RC2")
   val AkkaVersion = "2.4.11"
 
   val Common = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-stream"         % AkkaVersion,
       "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion   % Test,
-      "org.scalatest"     %% "scalatest"           % "2.2.6"       % Test, // ApacheV2
+      "org.scalatest"     %% "scalatest"           % "3.0.0"       % Test, // ApacheV2
       "com.novocode"       % "junit-interface"     % "0.11"        % Test, // BSD-style
       "junit"              % "junit"               % "4.12"        % Test  // Eclipse Public License 1.0
     )
