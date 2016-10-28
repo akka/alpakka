@@ -1,16 +1,44 @@
 language: scala
-sudo: false
+
+sudo: required
+
 scala:
   - "2.11.8"
+
 jdk:
   - oraclejdk8
+
+before_cache:
+  - find $HOME/.ivy2 -name "ivydata-*.properties" -print -delete
+  - find $HOME/.sbt  -name "*.lock"               -print -delete
+
 cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
-sudo: required
+
 services:
   - rabbitmq
   - cassandra
+
 script:
-  - sbt +test
+  - sbt -J-XX:ReservedCodeCacheSize=128m +test
+
+deploy:
+  provider: script
+  script:
+    - sbt -J-XX:ReservedCodeCacheSize=128m +publish bintraySyncMavenCentral
+  on:
+    tags: true
+    repo: akka/alpakka
+
+env:
+  global:
+    # encrypt with: travis encrypt BINTRAY_USER=...
+    - secure: "DLc1v2XMWrxtbPzVfoArkSQiwzT+O7/rwT7APqoA68K5A1pwxDw5BD3sOLpd6rKbPBulmwDAAQ1am3uE6lbmymCTMe8bvA3iHWy0Jg8baK4nC46EKFLabQz4Uaoq/bs92YGW1QH12rbBPyTA7uvPpvhmb8uyUbJqjT3uyROqHhHfhll89dsPVaK0NCY9DN2K356M87z7cp1SvtfAiF8qaNjNmlOfWjIEUSO1SiiqQBjT/GJvhrrW32J4htf5CqEEYBSoN+fqTCwwdo3GpOFFq+Zh5TSoyvKyi5xo+LVq0hW2SAYTHMMB5WhLd1cvQ0bvK6FpUhyfMcON/8ad3R7paNVxLpIGEu8hsUYGsENjdXaEK4g1TurDeVekWJRYyGMCmy2cCg5yHC+Pb56qOgpM7gmZACCitLap1jXUCWI27q+7cvxuxaBb6EPiDuWGNQXHH+OkbD/s4RJO3kQfv1Si64RON8+bZ+fqOWLK+BuakYi3YMukFgPngQozX3aMZOVcEBKJZtquwewCKsNV2VGItJxrp3MDol0HhuNvdUvIf5UydZZCyJTo1DBsK49yDUj7iKOEJk5Qc5oYfEhSEKcGRZs8Yl9n/kIJUh8ZYTT+35rwD27dHgsEkPkCEGpbMP/r0JewkWH7q9FfajPIYOlEpoP6tCsdP4mBOyF1uZH7omM="
+    # encrypt with: travis encrypt BINTRAY_PASS=...
+    - secure: "gasjgT+qHUFPe/eMqvwD7WtzQmNw++LXmmQ6ic6VJOf/drAQckdeXIaa3rOsuoiI72xtngIUPil61+bviRf3Qgw061w65dSlrn4Pm1c4f4kOCRBQCpsg06PK2Xs40ZD/9l9e+3N0T6alwx//PFH+bUB5yEi7y/Qs1dOKtofvvtoTkGvF6GZDCMiKwpYmcEKmBbmEuyaFLd5h1N6oJ53g7dtyh1KD9gU4HXmc3QujrKSxm3YunMf68wgtTJWZf3b/OcyVTSz7/8mbvJ++GWCyVK5B8snAnKxwSNHhYysNdOoOTGhwF2dnE38Vr/NXldHnm+M2LzuBBADXLmxlW92bxv+IjuAT+HtBoPEP9I+f/eJqfirkrMRWiylWN7zcchMzHTHS54qx1JvtRyJYNFsOfzqLry/IUZoT/1tLe2vPCRE601K5pS2GEDAt/gj3BTCWpCvidgXXq4KPlj5IqeIJ5UVWSpjCCH0hZUwuUUwgSNTXFg7Ug+U4U5DjPmyla5oNj9d+RIGqWtsixB8QAs5dCgtBa0om/f8nT584iHjrpvduLpoUpUcMPyPgcJnlHNvKawnEW0JCcMxR4fJBsG3IG+6Q6Rbo17VIs/Z5hgcNQtJMVnjiIGfOFBQKYKrStAWlJWK9WTo5L5oO3sn+BZQUnuJxafoJsdArEogzfbRjovk="
+    # encrypt with: travis encrypt SONA_USER=...
+    - secure: "uZZuo8SbxcHIURDJU/86EyKsiQKXQwCJm8nhBSu61xEMAY4l24qbceUAYySfgS6IFLmGtfEzycq2CpryRGz5P9aJZpS4rzW55nGvFpDLhft7j++usKPpWEA+5efl5cRX/smRhKmvaD8t0MjY///0wlwOhD4FJnLERPpWOSusttei50lRgk4hTGE4S+5A/M887v2036hA+AFPIolYxAr0Mo5haDKm1FTLOrp1IGGEa2Uo7GLVXAFDmcgqgpoISw3ubMi6lP/Kfuh/ktqDo0W8MsMOxuU7ebiubbjr2oGPNhDSKiASjs7U/s75CHXz0OcZOxnJhfDkFNhCvGdn2M2zngmxPgZ8/6Qg4ytN648hwJyQ0UX64FSsqtJdU4s5k3yKEoaPsgSOMRdZSftD3JCGQGBjqNkaQ10AWUq14xKqLevqOz8zr+JY2h3JNSXK/tqrRKtUr2pmRz/4gYyomddIOcGVxvfXfBteq1gobVkmAYGE8FnOazNTg4ncOFNFNvf6dQ91hjoWcDR9aG/NSgTQ6aWufTge+HAuvhz44kdSDVzHvPIQlxAYWBEaf1qLm2uDKp/HOU1rt/WmUCHd1BM5TKo4SgBCdL10o885tY39Xde1IPE1EmiPTgvUr9gwB/aDBv+bVWHjWZdfh7F7jEGWFB29i6b2L/xJlkZinSYJWB8="
+    # encrypt with: travis encrypt SONA_PASS=...
+    - secure: "G4LapZYEj8iK5x0fI8TIZwSLFiuTeGNmsqM5LN92y/mSo8CjzlbudPiLLtVx7iH4CcF/8ItpviEXT21NzaBGx8lkzvPTm0wI55E2d+uiNnpq/PkOD3LAFVx9BoCBbeo3jHpXMIxUyLmBKUTDzcKoyPWeIRUXcJkWjP/B9so3DbCHW+vcQyQuRGRaG7qX3y7E1ktNKXvpy4Q9BDgzaQN7Nt9aSAnbai+Cb8ByixyT+O5+Y8iL6QP84nSCs6k5ZTlaSxaA5LR8aJszYZTE7Y1Qth09B+JuzZSaQeSU/wTexPtXBnmlogbMwXkZqNvA9FlXJrg5Zs7lpbKKi3Qdqod96uRgi/RNajcIVxn/Vy6JJWZDXlOKmH+pAUTXTvgNzpZzueOP9aPVvs1EHG/0SoBsR+sgnKKZcH/89pmkPfBFPpN4UUmYtooynENeP2GJy8+WoyW8DYCDz61UKFpN+j1DgilEM8vOuKTc3xI/x62jKZwPP+SuUQj5bHkjFh+TeklgExLbJFOnowZw6CFx+pE7UMhmAk8W4tfUo8AsSnTsilrODpcFLcwBQdZO9vUa2qVl0ItJ3GDKv/0rru5KjghDUIA2PhkmZ3kdkyVx+GSXNj/Xmzkm4hbdpZZQhVKuyjlNMuPA6vwU3yTuVhFjz64a1kQXX81uUSCUPrXb6yecumI="

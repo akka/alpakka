@@ -1,9 +1,11 @@
 lazy val alpakka = project
   .in(file("."))
+  .enablePlugins(NoPublish, DeployRsync)
+  .disablePlugins(BintrayPlugin)
   .aggregate(amqp, cassandra, docs, mqtt)
   .settings(
-    publishArtifact := false,
-    unidocSettings
+    unidocSettings,
+    deployRsyncArtifact := (sbtunidoc.Plugin.UnidocKeys.unidoc in Compile).value.head -> s"www/api/alpakka/${version.value}"
   )
 
 lazy val amqp = project
@@ -36,7 +38,8 @@ lazy val mqtt = project
 
 lazy val docs = project
   .in(file("docs"))
-  .enablePlugins(ParadoxPlugin)
+  .enablePlugins(ParadoxPlugin, NoPublish, DeployRsync)
+  .disablePlugins(BintrayPlugin)
   .settings(
     name := "Alpakka",
     paradoxTheme := Some(builtinParadoxTheme("generic")),
@@ -49,5 +52,5 @@ lazy val docs = project
       "scaladoc.akka.base_url" -> s"http://doc.akka.io/api/akka/${Dependencies.AkkaVersion}",
       "scaladoc.akka.stream.alpakka.base_url" -> s"http://doc.akka.io/api/alpakka/${version.value}"
     ),
-    publishArtifact := false
+    deployRsyncArtifact := (paradox in Compile).value -> s"www/docs/alpakka/${version.value}"
   )

@@ -1,7 +1,5 @@
-import sbt._
-import sbt.Keys._
+import sbt._, Keys._
 
-import Tests._
 import de.heikoseeberger.sbtheader._
 import de.heikoseeberger.sbtheader.HeaderKey._
 import com.typesafe.sbt.SbtScalariform
@@ -20,10 +18,13 @@ object Common extends AutoPlugin {
 
   override lazy val projectSettings = SbtScalariform.scalariformSettings ++
     Dependencies.Common ++ Seq(
-    organization := "com.typesafe.akka",
+    organization := "com.lightbend.akka",
     organizationName := "Lightbend Inc.",
+    homepage := Some(url("https://github.com/akka/alpakka")),
+    scmInfo := Some(ScmInfo(url("https://github.com/akka/alpakka"), "git@github.com:akka/alpakka.git")),
+    developers += Developer("contributors", "Contributors", "https://gitter.im/akka/dev", url("https://github.com/akka/alpakka/graphs/contributors")),
 
-    licenses := Seq(("Apache License, Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
+    licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
 
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := Dependencies.ScalaVersions,
@@ -46,7 +47,7 @@ object Common extends AutoPlugin {
     ),
 
     autoAPIMappings := true,
-    apiURL := Some(url(s"http://doc.akka.io/api/alpakka/${version.value}")),
+    apiURL := Some(url(s"http://doc.akka.io/alpakka/api/${version.value}")),
 
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
