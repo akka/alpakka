@@ -1,13 +1,16 @@
 # Alpakka
 
-Welcome to the home of the Alpakka innitiative, which harbours various Akka Streams connectors. Here you can find documentation of the connectors that are part of this project as well as links to connectors that are maintained by other projects.
+Welcome to the home of the Alpakka innitiative, which harbours various Akka Streams components for integration use cases. Here you can find documentation of the components that are part of this project as well as links to components that are maintained by other projects.
 
-@@ toc { .main depth=3 }
+@@ toc { .main depth=2 }
 
 @@@ index
 
-* [AMQP Connector](amqp.md)
-* [Cassandra Connector](cassandra.md)
-* [MQTT Connector](mqtt.md)
+* [Connectors](connectors.md)
+* [Integration Patterns](patterns.md)
+* [Data Transformations](data-transformations.md)
 
 @@@
+
+
+
