@@ -1,6 +1,8 @@
 # Alpakka
 
-Welcome to the home of the Alpakka innitiative, which harbours various Akka Streams components for integration use cases. Here you can find documentation of the components that are part of this project as well as links to components that are maintained by other projects.
+Welcome to the home of the Alpakka initiative, which harbours various Akka Streams connectors, integration patterns,
+and data transformations for integration use cases. Here you can find documentation of the components that are
+part of this project as well as links to components that are maintained by other projects.
 
 @@ toc { .main depth=2 }
 
@@ -11,6 +13,3 @@ Welcome to the home of the Alpakka innitiative, which harbours various Akka Stre
 * [Data Transformations](data-transformations.md)
 
 @@@
-
-
-
