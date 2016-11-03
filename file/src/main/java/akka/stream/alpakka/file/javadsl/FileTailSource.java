@@ -138,10 +138,8 @@ public final class FileTailSource extends GraphStage<SourceShape<ByteString>> {
   // factory methods
 
   /**
-   * Java API:
-   *
-   * Read the entire contents of a file as chunks of bytes. When the end is reached, keep reading
-   * newly appended data. Like the unix command `tail -f` but for bytes.
+   * Java API: Read the entire contents of a file as chunks of bytes and when the end is reached, keep reading newly
+   * appended data. Like the unix command `tail -f` but for bytes.
    *
    * Reading text lines can be done with the `createLines` factory methods or by composing with other stages
    * manually depending on your needs.
@@ -157,9 +155,7 @@ public final class FileTailSource extends GraphStage<SourceShape<ByteString>> {
   }
 
   /**
-   * Java API:
-   *
-   * Read the entire contents of a file as text lines, and then when the end is reached, keep reading
+   * Java API: Read the entire contents of a file as text lines, and then when the end is reached, keep reading
    * newly appended data. Like the unix command `tail -f`.
    *
    * If a line is longer than `maxChunkSize` the stream will fail.
@@ -179,9 +175,7 @@ public final class FileTailSource extends GraphStage<SourceShape<ByteString>> {
   }
 
   /**
-   * Java API:
-   *
-   * Same as {@link #createLines(Path, int, FiniteDuration, String, Charset)} but using the OS default line
+   * Java API: Same as {@link #createLines(Path, int, FiniteDuration, String, Charset)} but using the OS default line
    * separator and UTF-8 for charset
    */
   public static Source<String, NotUsed> createLines(Path path, int maxChunkSize, FiniteDuration pollingInterval) {

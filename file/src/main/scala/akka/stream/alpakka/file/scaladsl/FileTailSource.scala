@@ -19,9 +19,7 @@ import scala.concurrent.duration.FiniteDuration
  */
 object FileTailSource {
   /**
-   * Scala API:
-   *
-   * Read the entire contents of a file, and then when the end is reached, keep reading
+   * Scala API: Read the entire contents of a file, and then when the end is reached, keep reading
    * newly appended data. Like the unix command `tail -f`.
    *
    * Aborting the stage can be done by combining with a [[akka.stream.KillSwitch]]
@@ -35,9 +33,7 @@ object FileTailSource {
     Source.fromGraph(new FileTailSource(path, maxChunkSize, startingPosition, pollingInterval))
 
   /**
-   * Scala API:
-   *
-   * Read the entire contents of a file as text lines, and then when the end is reached, keep reading
+   * Scala API: Read the entire contents of a file as text lines, and then when the end is reached, keep reading
    * newly appended data. Like the unix command `tail -f`.
    *
    * If a line is longer than `maxChunkSize` the stream will fail.

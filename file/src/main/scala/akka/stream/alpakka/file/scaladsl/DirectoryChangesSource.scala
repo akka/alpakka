@@ -20,7 +20,7 @@ object DirectoryChangesSource {
   }
 
   /**
-   * Scala API
+   * Scala API: Watch directory and emit changes as a stream of tuples containing the path and type of change.
    *
    * @param directoryPath Directory to watch
    * @param pollInterval  Interval between polls to the JDK watch service when a push comes in and there was no changes, if

@@ -2,9 +2,9 @@
 
 @@@ index
 
-* [File Connectors](file.md)
 * [AMQP Connector](amqp.md)
 * [Cassandra Connector](cassandra.md)
+* [File Connectors](file.md)
 * [MQTT Connector](mqtt.md)
 * [External Connectors](external-connectors.md)
 
