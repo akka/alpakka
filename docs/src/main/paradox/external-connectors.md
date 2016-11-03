@@ -26,3 +26,7 @@ TODO: Add links to more connectors. [Contributions](https://github.com/akka/alpa
 [Streaming TCP Java documentation](http://doc.akka.io/docs/akka/2.4/java/stream/stream-io.html#Streaming_TCP)
 
 [Streaming TCP Scala documentation](http://doc.akka.io/docs/akka/2.4/scala/stream/stream-io.html#Streaming_TCP)
+
+## Azure
+
+[Streaming IoT messages using Azure IoT Hub](https://github.com/Azure/toketi-iothubreact)
