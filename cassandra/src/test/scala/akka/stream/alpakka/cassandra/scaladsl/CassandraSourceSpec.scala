@@ -1,14 +1,15 @@
 /*
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.cassandra
+package akka.stream.alpakka.cassandra.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
-import com.datastax.driver.core.{ SimpleStatement, Cluster }
+import com.datastax.driver.core.{ Cluster, SimpleStatement }
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
+
 import scala.concurrent._
 import scala.concurrent.duration._
 
@@ -86,7 +87,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
       //#statement
 
       //#run-source
-      val rows = CassandraSource(stmt)
+      val rows = CassandraSourceStage(stmt)
         .runWith(Sink.seq)
       //#run-source
 
@@ -97,7 +98,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
       val data = populate()
       val stmt = new SimpleStatement("SELECT * FROM akka_stream_scala_test.test")
 
-      val source = CassandraSource(stmt)
+      val source = CassandraSourceStage(stmt)
 
       source.runWith(Sink.seq).futureValue.map(_.getInt("id")) must contain theSameElementsAs data
       source.runWith(Sink.seq).futureValue.map(_.getInt("id")) must contain theSameElementsAs data
@@ -106,7 +107,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
     "stream the result of Cassandra statement that results in no data" in {
       val stmt = new SimpleStatement("SELECT * FROM akka_stream_scala_test.test")
 
-      val rows = CassandraSource(stmt)
+      val rows = CassandraSourceStage(stmt)
         .runWith(Sink.seq)
         .futureValue
 

@@ -1,8 +1,9 @@
 /*
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.amqp;
+package akka.stream.alpakka.amqp.javadsl;
 
+import akka.stream.alpakka.amqp.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

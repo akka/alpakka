@@ -1,5 +1,6 @@
-package akka.stream.alpakka.mqtt;
+package akka.stream.alpakka.mqtt.javadsl;
 
+import akka.stream.alpakka.mqtt.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

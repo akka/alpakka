@@ -3,16 +3,15 @@
  */
 package akka.stream.alpakka.cassandra
 
-import akka.NotUsed
 import akka.stream._
-import akka.stream.scaladsl.Source
-import akka.stream.stage.{ AsyncCallback, OutHandler, GraphStageLogic, GraphStage }
-import com.datastax.driver.core.{ ResultSet, Session, Statement, Row }
-import com.google.common.util.concurrent.{ ListenableFuture, FutureCallback, Futures }
-import scala.concurrent.{ Future, Promise }
-import scala.util.{ Try, Failure, Success }
+import akka.stream.stage.{ AsyncCallback, GraphStage, GraphStageLogic, OutHandler }
+import com.datastax.driver.core.{ ResultSet, Row, Session, Statement }
+import com.google.common.util.concurrent.{ FutureCallback, Futures, ListenableFuture }
 
-class CassandraSource(futStmt: Future[Statement], session: Session) extends GraphStage[SourceShape[Row]] {
+import scala.concurrent.{ Future, Promise }
+import scala.util.{ Failure, Success, Try }
+
+class CassandraSourceStage(futStmt: Future[Statement], session: Session) extends GraphStage[SourceShape[Row]] {
   val out: Outlet[Row] = Outlet("CassandraSource.out")
   override val shape: SourceShape[Row] = SourceShape(out)
 
@@ -72,33 +71,3 @@ class CassandraSource(futStmt: Future[Statement], session: Session) extends Grap
   }
 }
 
-object CassandraSource {
-  /**
-   * Scala API: creates a [[CassandraSource]] from a given statement.
-   */
-  def apply(stmt: Statement)(implicit session: Session): Source[Row, NotUsed] =
-    Source.fromGraph(new CassandraSource(Future.successful(stmt), session))
-
-  /**
-   * Scala API: creates a [[CassandraSource]] from the result of a given Future.
-   */
-  def fromFuture(futStmt: Future[Statement])(implicit session: Session): Source[Row, NotUsed] =
-    Source.fromGraph(new CassandraSource(futStmt, session))
-
-  /**
-   * Java API: creates a [[CassandraSource]] from a given statement.
-   */
-  def create(stmt: Statement, session: Session): akka.stream.javadsl.Source[Row, NotUsed] =
-    akka.stream.javadsl.Source.fromGraph(new CassandraSource(Future.successful(stmt), session))
-
-  /**
-   * Java API: creates a [[CassandraSource]] from the result of a given CompletableFuture.
-   */
-  def createFromFuture(
-    futStmt: java.util.concurrent.CompletableFuture[Statement],
-    session: Session
-  ): akka.stream.javadsl.Source[Row, NotUsed] = {
-    import scala.compat.java8.FutureConverters._
-    akka.stream.javadsl.Source.fromGraph(new CassandraSource(futStmt.toScala, session))
-  }
-}
