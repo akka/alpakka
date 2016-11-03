@@ -66,30 +66,30 @@ The solution is the configuration of the event-adapters on the write-plugins lik
 
 ```
 inmemory-journal {
- event-adapters {
-   adapter-a = "com.github.dnvriend.EventAdapterA"
- }
- event-adapter-bindings {
-   "com.github.dnvriend.MyMessage" = adapter-a
- }
+  event-adapters {
+    adapter-a = "akka.stream.alpakka.persistence.writer.EventAdapterA"
+  }
+  event-adapter-bindings {
+    "akka.stream.alpakka.persistence.writer.MyMessage" = adapter-a
+  }
 }
 
 inmemory-read-journal {
- write-plugin = "inmemory-journal"
+  write-plugin = "inmemory-journal"
 }
 
 akka.persistence.journal.leveldb {
- dir = "target/journal"
- event-adapters {
-   adapter-b = "com.github.dnvriend.EventAdapterB"
- }
- event-adapter-bindings {
-   "com.github.dnvriend.MyMessage" = adapter-b
- }
+  dir = "target/journal"
+  event-adapters {
+    adapter-b = "akka.stream.alpakka.persistence.writer.EventAdapterB"
+  }
+  event-adapter-bindings {
+    "akka.stream.alpakka.persistence.writer.MyMessage" = adapter-b
+  }
 }
 
 akka.persistence.query.journal.leveldb {
- write-plugin = "akka.persistence.journal.leveldb"
+  write-plugin = "akka.persistence.journal.leveldb"
 }
 ```
 
