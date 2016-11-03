@@ -14,6 +14,13 @@ lazy val amqp = project
     Dependencies.Amqp
   )
 
+lazy val `akka-stream-alpakka-file` = project
+  .in(file("file"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    Dependencies.File
+  )
+
 lazy val cassandra = project
   .in(file("cassandra"))
   .enablePlugins(AutomateHeaderPlugin)

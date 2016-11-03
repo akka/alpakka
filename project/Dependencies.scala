@@ -34,4 +34,10 @@ object Dependencies {
     ),
     resolvers += "moquette" at "http://dl.bintray.com/andsel/maven/"
   )
+
+  val File = Seq(
+    libraryDependencies ++= Seq(
+      "com.google.jimfs"  %  "jimfs"               % "1.1"  % Test  // ApacheV2
+    )
+  )
 }
