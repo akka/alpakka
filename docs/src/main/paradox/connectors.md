@@ -6,6 +6,7 @@
 * [Cassandra Connector](cassandra.md)
 * [MQTT Connector](mqtt.md)
 * [External Connectors](external-connectors.md)
+* [Akka Persistence Journal Writer](journal-writer.md)
 
 @@@
 
