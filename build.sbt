@@ -1,6 +1,6 @@
 lazy val alpakka = project
   .in(file("."))
-  .aggregate(amqp, cassandra, docs, mqtt)
+  .aggregate(amqp, cassandra, docs, mqtt, journalWriter)
   .settings(
     publishArtifact := false,
     unidocSettings
@@ -33,6 +33,16 @@ lazy val mqtt = project
     // Make it not step on each other by running Scala and Java tests sequentially.
     parallelExecution in Test := false
   )
+
+lazy val journalWriter = project
+    .in(file("journal-writer"))
+    .enablePlugins(AutomateHeaderPlugin)
+    .settings(
+      name := "akka-stream-alpakka-journal-writer",
+      Dependencies.AkkaPersistenceWriter,
+      fork in Test := true,
+      parallelExecution in Test := false
+    )
 
 lazy val docs = project
   .in(file("docs"))

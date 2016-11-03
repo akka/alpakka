@@ -3,7 +3,7 @@ import sbt._, Keys._
 object Dependencies {
 
   val ScalaVersions = Seq("2.11.8", "2.12.0-RC2")
-  val AkkaVersion = "2.4.11"
+  val AkkaVersion = "2.4.12"
 
   val Common = Seq(
     libraryDependencies ++= Seq(
@@ -33,5 +33,20 @@ object Dependencies {
       "io.moquette"      % "moquette-broker"                % "0.8.1" % Test // ApacheV2
     ),
     resolvers += "moquette" at "http://dl.bintray.com/andsel/maven/"
+  )
+
+  val AkkaPersistenceWriter = Seq(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-persistence" % AkkaVersion,
+      "com.typesafe.akka" %% "akka-persistence-query-experimental" % AkkaVersion,
+      "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.13" % Test,
+      "commons-io" % "commons-io" % "2.5" % Test,
+      "org.iq80.leveldb" % "leveldb" % "0.7" % Test,
+      "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8" % Test
+    ),
+    libraryDependencies --= Seq(
+      "com.novocode"       % "junit-interface"     % "0.11"        % Test, // BSD-style
+      "junit"              % "junit"               % "4.12"        % Test  // Eclipse Public License 1.0
+    )
   )
 }
