@@ -1,10 +1,11 @@
 /*
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.amqp
+package akka.stream.alpakka.amqp.scaladsl
 
 import akka.Done
 import akka.stream._
+import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.{ GraphDSL, Merge, Sink, Source }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.util.ByteString

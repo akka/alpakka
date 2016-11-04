@@ -3,13 +3,12 @@
  */
 package akka.stream.alpakka.mqtt
 
-import akka.util.ByteString
 import akka.stream.stage._
-
+import akka.util.ByteString
 import org.eclipse.paho.client.mqttv3.{ MqttMessage => PahoMqttMessage, _ }
 
-import scala.util._
 import scala.language.implicitConversions
+import scala.util._
 
 sealed abstract class MqttQoS {
   def byteValue: Byte

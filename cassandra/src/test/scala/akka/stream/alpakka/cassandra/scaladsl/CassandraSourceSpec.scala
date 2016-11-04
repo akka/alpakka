@@ -1,14 +1,15 @@
 /*
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.cassandra
+package akka.stream.alpakka.cassandra.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
-import com.datastax.driver.core.{ SimpleStatement, Cluster }
+import com.datastax.driver.core.{ Cluster, SimpleStatement }
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
+
 import scala.concurrent._
 import scala.concurrent.duration._
 

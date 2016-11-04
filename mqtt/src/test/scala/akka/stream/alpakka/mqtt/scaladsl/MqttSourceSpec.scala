@@ -1,10 +1,11 @@
 /*
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.mqtt
+package akka.stream.alpakka.mqtt.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream._
+import akka.stream.alpakka.mqtt.{ MqttConnectionSettings, MqttMessage, MqttQoS, MqttSourceSettings }
 import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString

@@ -3,9 +3,7 @@
  */
 package akka.stream.alpakka.amqp
 
-import akka.NotUsed
 import akka.stream._
-import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.util.ByteString
 import com.rabbitmq.client.AMQP.BasicProperties
@@ -15,18 +13,7 @@ import scala.collection.mutable
 
 final case class IncomingMessage(bytes: ByteString, envelope: Envelope, properties: BasicProperties)
 
-object AmqpSource {
-  /**
-   * Scala API: Creates an [[AmqpSource]] with given settings and buffer size.
-   */
-  def apply(settings: AmqpSourceSettings, bufferSize: Int): Source[IncomingMessage, NotUsed] =
-    Source.fromGraph(new AmqpSource(settings, bufferSize))
-
-  /**
-   * Java API: Creates an [[AmqpSource]] with given settings and buffer size.
-   */
-  def create(settings: AmqpSourceSettings, bufferSize: Int): akka.stream.javadsl.Source[IncomingMessage, NotUsed] =
-    akka.stream.javadsl.Source.fromGraph(new AmqpSource(settings, bufferSize))
+object AmqpSourceStage {
 
   private val defaultAttributes = Attributes.name("AmqpSource")
 
@@ -39,13 +26,13 @@ object AmqpSource {
  *
  * @param bufferSize The max number of elements to prefetch and buffer at any given time.
  */
-final class AmqpSource(settings: AmqpSourceSettings, bufferSize: Int) extends GraphStage[SourceShape[IncomingMessage]] with AmqpConnector { stage =>
+final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int) extends GraphStage[SourceShape[IncomingMessage]] with AmqpConnector { stage =>
 
   val out = Outlet[IncomingMessage]("AmqpSource.out")
 
   override val shape: SourceShape[IncomingMessage] = SourceShape.of(out)
 
-  override protected def initialAttributes: Attributes = AmqpSource.defaultAttributes
+  override protected def initialAttributes: Attributes = AmqpSourceStage.defaultAttributes
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with AmqpConnectorLogic {
 

@@ -3,36 +3,18 @@
  */
 package akka.stream.alpakka.mqtt
 
+import java.util.concurrent.Semaphore
+
 import akka.Done
-import akka.stream.scaladsl._
-import akka.stream.stage._
 import akka.stream._
-import org.eclipse.paho.client.mqttv3.IMqttAsyncClient
-import org.eclipse.paho.client.mqttv3.IMqttToken
+import akka.stream.stage._
+import org.eclipse.paho.client.mqttv3.{ IMqttAsyncClient, IMqttToken }
+
 import scala.collection.mutable
 import scala.concurrent._
 import scala.util.Try
-import scala.compat.java8.FutureConverters._
 
-import java.util.concurrent.CompletionStage
-import java.util.concurrent.Semaphore
-
-object MqttSource {
-
-  /**
-   * Scala API: create an [[MqttSource]] with a provided bufferSize.
-   */
-  def apply(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessage, Future[Done]] =
-    Source.fromGraph(new MqttSource(settings, bufferSize))
-
-  /**
-   * Java API: create an [[MqttSource]] with a provided bufferSize.
-   */
-  def create(settings: MqttSourceSettings, bufferSize: Int): akka.stream.javadsl.Source[MqttMessage, CompletionStage[Done]] =
-    apply(settings, bufferSize).mapMaterializedValue(_.toJava).asJava
-}
-
-final class MqttSource(settings: MqttSourceSettings, bufferSize: Int) extends GraphStageWithMaterializedValue[SourceShape[MqttMessage], Future[Done]] {
+final class MqttSourceStage(settings: MqttSourceSettings, bufferSize: Int) extends GraphStageWithMaterializedValue[SourceShape[MqttMessage], Future[Done]] {
 
   import MqttConnectorLogic._
 
