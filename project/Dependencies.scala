@@ -2,7 +2,7 @@ import sbt._, Keys._
 
 object Dependencies {
 
-  val ScalaVersions = Seq("2.11.8", "2.12.0-RC2")
+  val ScalaVersions = Seq("2.11.8", "2.12.0")
   val AkkaVersion = "2.4.12"
 
   val Common = Seq(
@@ -39,7 +39,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-persistence" % AkkaVersion,
       "com.typesafe.akka" %% "akka-persistence-query-experimental" % AkkaVersion,
-      "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.13" % Test,
+      "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.14" % Test,
       "commons-io" % "commons-io" % "2.5" % Test,
       "org.iq80.leveldb" % "leveldb" % "0.7" % Test,
       "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8" % Test
