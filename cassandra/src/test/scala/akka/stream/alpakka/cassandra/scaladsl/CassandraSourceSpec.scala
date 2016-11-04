@@ -87,7 +87,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
       //#statement
 
       //#run-source
-      val rows = CassandraSourceStage(stmt)
+      val rows = CassandraSource(stmt)
         .runWith(Sink.seq)
       //#run-source
 
@@ -98,7 +98,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
       val data = populate()
       val stmt = new SimpleStatement("SELECT * FROM akka_stream_scala_test.test")
 
-      val source = CassandraSourceStage(stmt)
+      val source = CassandraSource(stmt)
 
       source.runWith(Sink.seq).futureValue.map(_.getInt("id")) must contain theSameElementsAs data
       source.runWith(Sink.seq).futureValue.map(_.getInt("id")) must contain theSameElementsAs data
@@ -107,7 +107,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
     "stream the result of Cassandra statement that results in no data" in {
       val stmt = new SimpleStatement("SELECT * FROM akka_stream_scala_test.test")
 
-      val rows = CassandraSourceStage(stmt)
+      val rows = CassandraSource(stmt)
         .runWith(Sink.seq)
         .futureValue
 
