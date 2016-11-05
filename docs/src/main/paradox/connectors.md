@@ -5,6 +5,7 @@
 * [AMQP Connector](amqp.md)
 * [Cassandra Connector](cassandra.md)
 * [MQTT Connector](mqtt.md)
+* [XML Connector](xml.md)
 * [External Connectors](external-connectors.md)
 
 @@@

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="http://com.github.dnvriend.stream/person" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="persons" type="per:personsType" xmlns:per="http://com.github.dnvriend.stream/person"/>
+  <xs:complexType name="personsType">
+    <xs:sequence>
+      <xs:element type="per:personType" name="person" maxOccurs="unbounded" minOccurs="0" xmlns:per="http://com.github.dnvriend.stream/person"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="addressType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="street"/>
+      <xs:element type="xs:string" name="house-number"/>
+      <xs:element type="xs:string" name="zip-code"/>
+      <xs:element type="xs:string" name="city"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="personType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="first-name"/>
+      <xs:element type="xs:string" name="last-name"/>
+      <xs:element type="xs:string" name="age"/>
+      <xs:element type="per:addressType" name="address" xmlns:per="http://com.github.dnvriend.stream/person"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persons xmlns="http://com.github.dnvriend.stream/person">
+    <person>
+        <first-name>Barack</first-name>
+        <age>54</age>
+        <address>
+            <street>Pennsylvania Ave</street>
+            <house-number>1600</house-number>
+            <zip-code>20500</zip-code>
+            <city>Washington</city>
+        </address>
+    </person>
+</persons>
