@@ -3,7 +3,7 @@ import sbt._, Keys._
 object Dependencies {
 
   val ScalaVersions = Seq("2.11.8", "2.12.0")
-  val AkkaVersion = "2.4.11"
+  val AkkaVersion = "2.4.12"
 
   val Common = Seq(
     libraryDependencies ++= Seq(
