@@ -2,8 +2,8 @@ import sbt._, Keys._
 
 object Dependencies {
 
-  val ScalaVersions = Seq("2.11.8", "2.12.0-RC2")
-  val AkkaVersion = "2.4.11"
+  val ScalaVersions = Seq("2.11.8", "2.12.0")
+  val AkkaVersion = "2.4.12"
 
   val Common = Seq(
     libraryDependencies ++= Seq(
@@ -33,5 +33,11 @@ object Dependencies {
       "io.moquette"      % "moquette-broker"                % "0.8.1" % Test // ApacheV2
     ),
     resolvers += "moquette" at "http://dl.bintray.com/andsel/maven/"
+  )
+
+  val Digest = Seq(
+    libraryDependencies ++= Seq(
+
+    )
   )
 }

@@ -8,6 +8,7 @@ Welcome to the home of the Alpakka innitiative, which harbours various Akka Stre
 
 * [Connectors](connectors.md)
 * [Integration Patterns](patterns.md)
+* [Digest Component](digest.md)
 * [Data Transformations](data-transformations.md)
 
 @@@

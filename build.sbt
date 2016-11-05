@@ -34,6 +34,14 @@ lazy val mqtt = project
     parallelExecution in Test := false
   )
 
+lazy val digest = project
+  .in(file("digest"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-digest",
+    Dependencies.Digest
+  )
+
 lazy val docs = project
   .in(file("docs"))
   .enablePlugins(ParadoxPlugin)
