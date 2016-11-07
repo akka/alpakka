@@ -85,6 +85,5 @@ Example:
 ## Releasing
 
 1. Create a [new release](https://github.com/akka/alpakka/releases/new) with the next tag version (e.g. `v0.3`), title and release decsription including notable changes mentioning external contributors.
-2. Fetch tags to your local clone: `git fetch --tags`.
-3. Publish signed release: `sbt publishSigned`.
-4. Stage and close [sonatype repository](https://oss.sonatype.org/).
+2. Travis CI will start a [CI build](https://travis-ci.org/akka/alpakka/builds) for the new tag and publish artifacts to Bintray and will sync them to Maven Central.
+3. Checkout the newly created tag and run `sbt "deployRsync repo.akka.io"` to deploy API and reference documentation.

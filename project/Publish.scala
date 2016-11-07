@@ -1,63 +1,49 @@
+import sbt._, Keys._
+
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * For projects that are not published.
  */
-package akka
-
-import sbt._
-import sbt.Keys._
-import java.io.File
-import com.typesafe.sbt.pgp.PgpKeys
-
-object Publish extends AutoPlugin {
-
-  val defaultPublishTo = settingKey[File]("Default publish directory")
-
-  override def trigger = allRequirements
+object NoPublish extends AutoPlugin {
   override def requires = plugins.JvmPlugin
 
-  override lazy val projectSettings = Seq(
-    crossPaths := false,
-    pomExtra := akkaPomExtra,
-    publishTo := akkaPublishTo.value,
-    credentials ++= akkaCredentials,
-    organizationName := "Lightbend Inc.",
-    organizationHomepage := Some(url("http://www.lightbend.com")),
-    homepage := Some(url("https://github.com/akka/alpakka")),
-    publishMavenStyle := true,
-    pomIncludeRepository := { x => false },
-    defaultPublishTo := crossTarget.value / "repository"
+  override def projectSettings = Seq(
+    publishArtifact := false,
+    publish := {},
+    publishLocal := {}
   )
+}
 
-  def akkaPomExtra = {
-    <scm>
-      <url>git@github.com:akka/alpakka.git</url>
-      <connection>scm:git:git@github.com:akka/alpakka.git</connection>
-    </scm>
-    <developers>
-      <developer>
-        <id>contributors</id>
-        <name>Contributors</name>
-        <email>akka-dev@googlegroups.com</email>
-        <url>https://github.com/akka/alpakka/graphs/contributors</url>
-      </developer>
-    </developers>
+object Publish extends AutoPlugin {
+  import bintray.BintrayPlugin
+  import bintray.BintrayPlugin.autoImport._
+
+  override def trigger = allRequirements
+  override def requires = BintrayPlugin
+
+  override def projectSettings = Seq(
+    bintrayOrganization := Some("akka")
+  )
+}
+
+object DeployRsync extends AutoPlugin {
+  import scala.sys.process._
+  import sbt.complete.DefaultParsers._
+
+  override def requires = plugins.JvmPlugin
+
+  trait Keys {
+    val deployRsyncArtifact = taskKey[(File, String)]("File or directory and a path to deploy to")
+    val deployRsync = inputKey[Int]("Deploy using SCP")
   }
 
-  private def akkaPublishTo = Def.setting {
-    sonatypeRepo(version.value) orElse localRepo(defaultPublishTo.value)
-  }
+  object autoImport extends Keys
+  import autoImport._
 
-  private def sonatypeRepo(version: String): Option[Resolver] =
-    Option(sys.props("publish.maven.central")) filter (_.toLowerCase == "true") map { _ =>
-      val nexus = "https://oss.sonatype.org/"
-      if (version endsWith "-SNAPSHOT") "snapshots" at nexus + "content/repositories/snapshots"
-      else "releases" at nexus + "service/local/staging/deploy/maven2"
+  override def projectSettings = Seq(
+    deployRsync := {
+      val (_, host) = (Space ~ StringBasic).parsed
+      val (from, to) = deployRsyncArtifact.value
+      s"rsync -rvz $from/ $host:$to"!
     }
-
-  private def localRepo(repository: File) =
-    Some(Resolver.file("Default Local Repository", repository))
-
-  private def akkaCredentials: Seq[Credentials] =
-    Option(System.getProperty("akka.publish.credentials", null)).map(f => Credentials(new File(f))).toSeq
-
+  )
 }
