@@ -37,13 +37,20 @@ class HelloWorld {
   import system.dispatcher
 
   def start(): Unit = {
+
+    val serverHandler = new AbstractReactiveSocketScaladsl {
+      override def requestResponse(payload: Payload): Future[Payload] = {
+        println(s"# got request") // FIXME
+        Future.successful(payload)
+      }
+    }
     val server = ReactiveSocketServer.create(TcpTransportServer.create())
-      .start(socketAcceptor)
+      .start(SocketAcceptorAdapter.disabledLease(serverHandler))
 
     val serverAddress = server.getServerAddress
     println(s"started server: $serverAddress") // FIXME
 
-    val client: Future[ReactiveSocketClientScaladsl] =
+    val client: Future[ReactiveSocketScaladsl] =
       ReactiveSocketClientScaladsl(ReactiveSocketClient.create(TcpTransportClient.create(serverAddress),
         keepAlive(never()).disableLease()))
 
@@ -64,37 +71,93 @@ class HelloWorld {
 
   }
 
-  def socketAcceptor: SocketAcceptor = new SocketAcceptor {
-    override def accept(setup: ConnectionSetupPayload, sendingSocket: ReactiveSocket): LeaseEnforcingSocket =
-      new DisabledLeaseAcceptingSocket(new AbstractReactiveSocket {
-        override def requestResponse(p: Payload): Publisher[Payload] = {
-          println(s"# got request") // FIXME
-          Source.single(p).runWith(Sink.asPublisher(fanout = false))
-        }
-      })
-  }
 }
 
-object ReactiveSocketClientScaladsl {
-  def apply(client: ReactiveSocketClient)(implicit materializer: Materializer): Future[ReactiveSocketClientScaladsl] = {
-    val clientPublisher = client.connect()
-    implicit val ec = materializer.executionContext
-    Source.fromPublisher(clientPublisher).runWith(Sink.head).map(new ReactiveSocketClientScaladsl(_))
-  }
+trait ReactiveSocketScaladsl {
+
+  def fireAndForget(payload: Payload): Future[Done]
+
+  def requestResponse(payload: Payload): Future[Payload]
+
+  def requestStream(payload: Payload): Source[Payload, NotUsed]
+
+  def requestChannel(payloads: Source[Payload, NotUsed]): Source[Payload, NotUsed]
+
+  def close(): Unit
+
 }
 
-class ReactiveSocketClientScaladsl(socket: ReactiveSocket)(implicit materializer: Materializer) {
+trait AbstractReactiveSocketScaladsl extends ReactiveSocketScaladsl {
+
+  // FIXME real, empty implementations
 
   def fireAndForget(payload: Payload): Future[Done] = ???
 
-  def requestResponse(payload: Payload): Future[Payload] =
-    Source.fromPublisher(socket.requestResponse(payload)).runWith(Sink.head)
+  def requestResponse(payload: Payload): Future[Payload] = ???
 
   def requestStream(payload: Payload): Source[Payload, NotUsed] = ???
 
   def requestChannel(payloads: Source[Payload, NotUsed]): Source[Payload, NotUsed] = ???
 
   def close(): Unit = ???
+
+}
+
+object SocketAcceptorAdapter {
+
+  def disabledLease(handler: ReactiveSocketScaladsl)(implicit materializer: Materializer): SocketAcceptor =
+    apply((_, _) => new DisabledLeaseAcceptingSocket(ReactiveSocketAdapter(handler)))
+
+  // FIXME add more factory methods for other common lease types
+
+  /**
+   * For full control
+   */
+  def apply(f: Function2[ConnectionSetupPayload, ReactiveSocket, LeaseEnforcingSocket]): SocketAcceptor = {
+    new SocketAcceptor {
+      override def accept(setup: ConnectionSetupPayload, sendingSocket: ReactiveSocket): LeaseEnforcingSocket =
+        f(setup, sendingSocket)
+    }
+  }
+
+}
+
+object ReactiveSocketAdapter {
+  def apply(delegate: ReactiveSocketScaladsl)(implicit materializer: Materializer): ReactiveSocketAdapter =
+    new ReactiveSocketAdapter(delegate)(materializer)
+}
+
+class ReactiveSocketAdapter(delegate: ReactiveSocketScaladsl)(implicit materializer: Materializer)
+  extends AbstractReactiveSocket {
+
+  override def requestResponse(payload: Payload): Publisher[Payload] =
+    Source.fromFuture(delegate.requestResponse(payload)).runWith(Sink.asPublisher(fanout = false))
+
+  // FIXME delegate other methods
+
+}
+
+object ReactiveSocketClientScaladsl {
+  def apply(client: ReactiveSocketClient)(implicit materializer: Materializer): Future[ReactiveSocketScaladsl] = {
+    val clientPublisher = client.connect()
+    implicit val ec = materializer.executionContext
+    Source.fromPublisher(clientPublisher).runWith(Sink.head).map(new ReactiveSocketClientScaladsl(_))
+  }
+}
+
+class ReactiveSocketClientScaladsl(socket: ReactiveSocket)(implicit materializer: Materializer)
+  extends ReactiveSocketScaladsl {
+
+  override def fireAndForget(payload: Payload): Future[Done] = ???
+
+  override def requestResponse(payload: Payload): Future[Payload] =
+    Source.fromPublisher(socket.requestResponse(payload)).runWith(Sink.head)
+
+  override def requestStream(payload: Payload): Source[Payload, NotUsed] = ???
+
+  override def requestChannel(payloads: Source[Payload, NotUsed]): Source[Payload, NotUsed] = ???
+
+  override def close(): Unit = ???
 
 }
 
