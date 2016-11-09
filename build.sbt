@@ -2,7 +2,7 @@ lazy val alpakka = project
   .in(file("."))
   .enablePlugins(NoPublish, DeployRsync)
   .disablePlugins(BintrayPlugin)
-  .aggregate(amqp, cassandra, docs, mqtt)
+  .aggregate(amqp, cassandra, docs, files, mqtt)
   .settings(
     unidocSettings,
     deployRsyncArtifact := (sbtunidoc.Plugin.UnidocKeys.unidoc in Compile).value.head -> s"www/api/alpakka/${version.value}"
@@ -16,19 +16,20 @@ lazy val amqp = project
     Dependencies.Amqp
   )
 
-lazy val `akka-stream-alpakka-file` = project
-  .in(file("file"))
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    Dependencies.File
-  )
-
 lazy val cassandra = project
   .in(file("cassandra"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-cassandra",
     Dependencies.Cassandra
+  )
+
+lazy val files = project
+  .in(file("file"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-file",
+    Dependencies.File
   )
 
 lazy val mqtt = project
