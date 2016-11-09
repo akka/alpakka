@@ -4,6 +4,7 @@
 *.iml
 target/
 /.target/
+.target
 .DS_Store
 .cache*
 .classpath

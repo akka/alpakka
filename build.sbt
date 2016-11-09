@@ -1,8 +1,11 @@
+
+resolvers in ThisBuild += "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
+
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(NoPublish, DeployRsync)
   .disablePlugins(BintrayPlugin)
-  .aggregate(amqp, cassandra, docs, files, mqtt)
+  .aggregate(amqp, cassandra, docs, files, mqtt, reactivesocket)
   .settings(
     unidocSettings,
     deployRsyncArtifact := (sbtunidoc.Plugin.UnidocKeys.unidoc in Compile).value.head -> s"www/api/alpakka/${version.value}"
@@ -42,6 +45,14 @@ lazy val mqtt = project
     // Scala and Java tests start a separate MQTT broker.
     // Make it not step on each other by running Scala and Java tests sequentially.
     parallelExecution in Test := false
+  )
+
+lazy val reactivesocket = project
+  .in(file("reactivesocket"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-reactivesocket",
+    Dependencies.ReactiveSockets
   )
 
 lazy val docs = project

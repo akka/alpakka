@@ -2,7 +2,7 @@ import sbt._, Keys._
 
 object Dependencies {
 
-  val ScalaVersions = Seq("2.12.0", "2.11.8")
+  val ScalaVersions = Seq("2.11.8", "2.12.0")
   val AkkaVersion = "2.4.12"
 
   val Common = Seq(
@@ -38,6 +38,12 @@ object Dependencies {
   val File = Seq(
     libraryDependencies ++= Seq(
       "com.google.jimfs"  %  "jimfs"               % "1.1"  % Test  // ApacheV2
+    )
+  )
+
+  val ReactiveSockets = Seq(
+    libraryDependencies ++= Seq(
+      "io.reactivesocket" % "reactivesocket-transport-tcp" % "0.2.3-SNAPSHOT" // ApacheV2
     )
   )
 }
