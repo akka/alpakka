@@ -22,6 +22,9 @@ import akka.stream.scaladsl.Sink
 import io.reactivesocket.util.PayloadImpl
 import scala.concurrent.Future
 import io.reactivesocket.frame.ByteBufferUtil
+import akka.stream.Materializer
+import akka.Done
+import akka.NotUsed
 
 object HelloWorld {
   def main(args: Array[String]): Unit =
@@ -40,13 +43,13 @@ class HelloWorld {
     val serverAddress = server.getServerAddress
     println(s"started server: $serverAddress") // FIXME
 
-    val clientPublisher = ReactiveSocketClient.create(TcpTransportClient.create(serverAddress),
-      keepAlive(never()).disableLease()).connect()
+    val client: Future[ReactiveSocketClientScaladsl] =
+      ReactiveSocketClientScaladsl(ReactiveSocketClient.create(TcpTransportClient.create(serverAddress),
+        keepAlive(never()).disableLease()))
 
-    Source.fromPublisher(clientPublisher).runWith(Sink.head).foreach { socket =>
+    client.foreach { socket =>
       println(s"# got socket") // FIXME
-      val response: Future[Payload] =
-        Source.fromPublisher(socket.requestResponse(new PayloadImpl("Hello"))).runWith(Sink.head)
+      val response: Future[Payload] = socket.requestResponse(new PayloadImpl("Hello"))
 
       response.onFailure {
         case e => println(e.getMessage)
@@ -71,3 +74,27 @@ class HelloWorld {
       })
   }
 }
+
+object ReactiveSocketClientScaladsl {
+  def apply(client: ReactiveSocketClient)(implicit materializer: Materializer): Future[ReactiveSocketClientScaladsl] = {
+    val clientPublisher = client.connect()
+    implicit val ec = materializer.executionContext
+    Source.fromPublisher(clientPublisher).runWith(Sink.head).map(new ReactiveSocketClientScaladsl(_))
+  }
+}
+
+class ReactiveSocketClientScaladsl(socket: ReactiveSocket)(implicit materializer: Materializer) {
+
+  def fireAndForget(payload: Payload): Future[Done] = ???
+
+  def requestResponse(payload: Payload): Future[Payload] =
+    Source.fromPublisher(socket.requestResponse(payload)).runWith(Sink.head)
+
+  def requestStream(payload: Payload): Source[Payload, NotUsed] = ???
+
+  def requestChannel(payloads: Source[Payload, NotUsed]): Source[Payload, NotUsed] = ???
+
+  def close(): Unit = ???
+
+}
+
