@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.reactivesocket.scaladsl
 
 import io.reactivesocket.transport.tcp.server.TcpTransportServer
@@ -38,21 +41,23 @@ class HelloWorld {
 
   def start(): Unit = {
 
-    val serverHandler = new AbstractReactiveSocketScaladsl {
+    val serverHandler = new AbstractReactiveSocketApi {
       override def requestResponse(payload: Payload): Future[Payload] = {
         println(s"# got request") // FIXME
         Future.successful(payload)
       }
     }
     val server = ReactiveSocketServer.create(TcpTransportServer.create())
-      .start(SocketAcceptorAdapter.disabledLease(serverHandler))
+      .start(ServerSocketAcceptorAdapter.disabledLease(setup => serverHandler))
 
     val serverAddress = server.getServerAddress
     println(s"started server: $serverAddress") // FIXME
 
-    val client: Future[ReactiveSocketScaladsl] =
-      ReactiveSocketClientScaladsl(ReactiveSocketClient.create(TcpTransportClient.create(serverAddress),
-        keepAlive(never()).disableLease()))
+    val client: Future[ReactiveSocketApi] =
+      ClientReactiveSocketAdapter(ReactiveSocketClient.create(
+        TcpTransportClient.create(serverAddress),
+        keepAlive(never()).disableLease()
+      ))
 
     client.foreach { socket =>
       println(s"# got socket") // FIXME
@@ -73,7 +78,7 @@ class HelloWorld {
 
 }
 
-trait ReactiveSocketScaladsl {
+trait ReactiveSocketApi {
 
   def fireAndForget(payload: Payload): Future[Done]
 
@@ -87,7 +92,7 @@ trait ReactiveSocketScaladsl {
 
 }
 
-trait AbstractReactiveSocketScaladsl extends ReactiveSocketScaladsl {
+trait AbstractReactiveSocketApi extends ReactiveSocketApi {
 
   // FIXME real, empty implementations
 
@@ -103,10 +108,10 @@ trait AbstractReactiveSocketScaladsl extends ReactiveSocketScaladsl {
 
 }
 
-object SocketAcceptorAdapter {
+object ServerSocketAcceptorAdapter {
 
-  def disabledLease(handler: ReactiveSocketScaladsl)(implicit materializer: Materializer): SocketAcceptor =
-    apply((_, _) => new DisabledLeaseAcceptingSocket(ReactiveSocketAdapter(handler)))
+  def disabledLease(handler: ConnectionSetupPayload => ReactiveSocketApi)(implicit materializer: Materializer): SocketAcceptor =
+    apply((setup, _) => new DisabledLeaseAcceptingSocket(ReactiveSocketAdapter(handler(setup))))
 
   // FIXME add more factory methods for other common lease types
 
@@ -123,11 +128,11 @@ object SocketAcceptorAdapter {
 }
 
 object ReactiveSocketAdapter {
-  def apply(delegate: ReactiveSocketScaladsl)(implicit materializer: Materializer): ReactiveSocketAdapter =
+  def apply(delegate: ReactiveSocketApi)(implicit materializer: Materializer): ReactiveSocketAdapter =
     new ReactiveSocketAdapter(delegate)(materializer)
 }
 
-class ReactiveSocketAdapter(delegate: ReactiveSocketScaladsl)(implicit materializer: Materializer)
+class ReactiveSocketAdapter(delegate: ReactiveSocketApi)(implicit materializer: Materializer)
   extends AbstractReactiveSocket {
 
   override def requestResponse(payload: Payload): Publisher[Payload] =
@@ -137,21 +142,21 @@ class ReactiveSocketAdapter(delegate: ReactiveSocketScaladsl)(implicit materiali
 
 }
 
-object ReactiveSocketClientScaladsl {
-  def apply(client: ReactiveSocketClient)(implicit materializer: Materializer): Future[ReactiveSocketScaladsl] = {
-    val clientPublisher = client.connect()
+object ClientReactiveSocketAdapter {
+  def apply(underlyingClient: ReactiveSocketClient)(implicit materializer: Materializer): Future[ReactiveSocketApi] = {
+    val clientPublisher = underlyingClient.connect()
     implicit val ec = materializer.executionContext
-    Source.fromPublisher(clientPublisher).runWith(Sink.head).map(new ReactiveSocketClientScaladsl(_))
+    Source.fromPublisher(clientPublisher).runWith(Sink.head).map(new ClientReactiveSocketAdapter(_))
   }
 }
 
-class ReactiveSocketClientScaladsl(socket: ReactiveSocket)(implicit materializer: Materializer)
-  extends ReactiveSocketScaladsl {
+class ClientReactiveSocketAdapter(underlyingSocket: ReactiveSocket)(implicit materializer: Materializer)
+  extends ReactiveSocketApi {
 
   override def fireAndForget(payload: Payload): Future[Done] = ???
 
   override def requestResponse(payload: Payload): Future[Payload] =
-    Source.fromPublisher(socket.requestResponse(payload)).runWith(Sink.head)
+    Source.fromPublisher(underlyingSocket.requestResponse(payload)).runWith(Sink.head)
 
   override def requestStream(payload: Payload): Source[Payload, NotUsed] = ???
 
@@ -160,4 +165,3 @@ class ReactiveSocketClientScaladsl(socket: ReactiveSocket)(implicit materializer
   override def close(): Unit = ???
 
 }
-
