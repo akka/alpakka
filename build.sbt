@@ -1,7 +1,7 @@
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
-  .aggregate(amqp, cassandra, docs, files, mqtt)
+  .aggregate(amqp, cassandra, docs, files, mqtt, s3)
 
 lazy val amqp = project
   .in(file("amqp"))
@@ -37,6 +37,14 @@ lazy val mqtt = project
     // Scala and Java tests start a separate MQTT broker.
     // Make it not step on each other by running Scala and Java tests sequentially.
     parallelExecution in Test := false
+  )
+
+lazy val `s3` = project
+  .in(file("s3"))
+  .enablePlugins()
+  .settings(
+    name := "akka-stream-alpakka-s3",
+    Dependencies.S3
   )
 
 lazy val docs = project
