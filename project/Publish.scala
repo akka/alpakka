@@ -21,7 +21,8 @@ object Publish extends AutoPlugin {
   override def requires = BintrayPlugin
 
   override def projectSettings = Seq(
-    bintrayOrganization := Some("akka")
+    bintrayOrganization := Some("akka"),
+    bintrayPackage := "alpakka"
   )
 }
 

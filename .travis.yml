@@ -27,7 +27,8 @@ script:
 deploy:
   provider: script
   script:
-    - sbt -J-XX:ReservedCodeCacheSize=128m +publish bintraySyncMavenCentral
+    # do the maven central sync only once, as all of the artifacts are under the same bintray package
+    - sbt -J-XX:ReservedCodeCacheSize=128m +publish amqp/bintraySyncMavenCentral
   on:
     tags: true
     repo: akka/alpakka
