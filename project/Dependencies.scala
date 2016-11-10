@@ -40,4 +40,10 @@ object Dependencies {
       "com.google.jimfs"  %  "jimfs"               % "1.1"  % Test  // ApacheV2
     )
   )
+
+  val ReactiveSockets = Seq(
+    libraryDependencies ++= Seq(
+      "io.reactivesocket" % "reactivesocket-transport-tcp" % "0.2.3-SNAPSHOT" // ApacheV2
+    )
+  )
 }
