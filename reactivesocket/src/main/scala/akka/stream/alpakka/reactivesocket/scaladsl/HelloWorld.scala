@@ -3,19 +3,20 @@
  */
 package akka.stream.alpakka.reactivesocket.scaladsl
 
+import java.util.concurrent.TimeUnit
+import java.util.function.IntSupplier
+
 import io.reactivesocket.transport.tcp.server.TcpTransportServer
 import io.reactivesocket.server.ReactiveSocketServer
 import io.reactivesocket.server.ReactiveSocketServer.SocketAcceptor
 import io.reactivesocket.ConnectionSetupPayload
-import io.reactivesocket.lease.LeaseEnforcingSocket
+import io.reactivesocket.lease.{ DefaultLeaseEnforcingSocket, DisabledLeaseAcceptingSocket, FairLeaseDistributor, LeaseEnforcingSocket }
 import io.reactivesocket.ReactiveSocket
-import io.reactivesocket.lease.DisabledLeaseAcceptingSocket
 import io.reactivesocket.AbstractReactiveSocket
 import org.reactivestreams.Publisher
 import io.reactivesocket.Payload
 import io.reactivesocket.client.ReactiveSocketClient
 import io.reactivesocket.transport.tcp.client.TcpTransportClient
-
 import io.reactivesocket.client.KeepAliveProvider._
 import io.reactivesocket.client.SetupProvider._
 import akka.actor.ActorSystem
@@ -23,11 +24,14 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.Sink
 import io.reactivesocket.util.PayloadImpl
+
 import scala.concurrent.Future
 import io.reactivesocket.frame.ByteBufferUtil
 import akka.stream.Materializer
 import akka.Done
 import akka.NotUsed
+
+import scala.concurrent.duration._
 
 object HelloWorld {
   def main(args: Array[String]): Unit =
@@ -48,7 +52,7 @@ class HelloWorld {
       }
     }
     val server = ReactiveSocketServer.create(TcpTransportServer.create())
-      .start(ServerSocketAcceptorAdapter.disabledLease(setup => serverHandler))
+      .start(ServerSocketAcceptorAdapter.defaultLease(setup => serverHandler))
 
     val serverAddress = server.getServerAddress
     println(s"started server: $serverAddress") // FIXME
@@ -56,7 +60,7 @@ class HelloWorld {
     val client: Future[ReactiveSocketApi] =
       ClientReactiveSocketAdapter(ReactiveSocketClient.create(
         TcpTransportClient.create(serverAddress),
-        keepAlive(never()).disableLease()
+        keepAlive(never()) //.disableLease()
       ))
 
     client.foreach { socket =>
@@ -113,6 +117,14 @@ object ServerSocketAcceptorAdapter {
   def disabledLease(handler: ConnectionSetupPayload => ReactiveSocketApi)(implicit materializer: Materializer): SocketAcceptor =
     apply((setup, _) => new DisabledLeaseAcceptingSocket(ReactiveSocketAdapter(handler(setup))))
 
+  def defaultLease(handler: ConnectionSetupPayload => ReactiveSocketApi)(implicit materializer: Materializer): SocketAcceptor = {
+    val lease = Source.tick(0.seconds, 30.seconds, 10L.asInstanceOf[java.lang.Long]).runWith(Sink.asPublisher(false))
+    val leaseDistributor = new FairLeaseDistributor(new IntSupplier { def getAsInt = 5000 }, 5000, lease)
+    apply((setup, _) => new DefaultLeaseEnforcingSocket(ReactiveSocketAdapter(handler(setup)), leaseDistributor))
+  }
+
+  //DefaultLeaseEnforcingSocket
+
   // FIXME add more factory methods for other common lease types
 
   /**
@@ -162,6 +174,8 @@ class ClientReactiveSocketAdapter(underlyingSocket: ReactiveSocket)(implicit mat
 
   override def requestChannel(payloads: Source[Payload, NotUsed]): Source[Payload, NotUsed] = ???
 
-  override def close(): Unit = ???
+  override def close(): Unit = {
+    println("closing")
+  }
 
 }
