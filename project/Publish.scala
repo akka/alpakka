@@ -1,7 +1,7 @@
 import sbt._, Keys._
 
 /**
- * For projects that are not published.
+ * For projects that are not to be published.
  */
 object NoPublish extends AutoPlugin {
   override def requires = plugins.JvmPlugin
@@ -26,25 +26,21 @@ object Publish extends AutoPlugin {
   )
 }
 
-object DeployRsync extends AutoPlugin {
-  import scala.sys.process._
-  import sbt.complete.DefaultParsers._
+object PublishUnidoc extends AutoPlugin {
+  import sbtunidoc.Plugin._
+  import sbtunidoc.Plugin.UnidocKeys._
 
   override def requires = plugins.JvmPlugin
 
-  trait Keys {
-    val deployRsyncArtifact = taskKey[(File, String)]("File or directory and a path to deploy to")
-    val deployRsync = inputKey[Int]("Deploy using SCP")
+  def publishOnly(artifactType: String)(config: PublishConfiguration) = {
+    val newArts = config.artifacts.filterKeys(_.`type` == artifactType)
+    new PublishConfiguration(config.ivyFile, config.resolverName, newArts, config.checksums, config.logging)
   }
 
-  object autoImport extends Keys
-  import autoImport._
-
-  override def projectSettings = Seq(
-    deployRsync := {
-      val (_, host) = (Space ~ StringBasic).parsed
-      val (from, to) = deployRsyncArtifact.value
-      s"rsync -rvz $from/ $host:$to"!
-    }
+  override def projectSettings = unidocSettings ++ Seq(
+    doc in Compile := (doc in ScalaUnidoc).value,
+    target in unidoc in ScalaUnidoc := crossTarget.value / "api",
+    publishConfiguration ~= publishOnly(Artifact.DocType),
+    publishLocalConfiguration ~= publishOnly(Artifact.DocType)
   )
 }
