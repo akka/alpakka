@@ -30,3 +30,11 @@ TODO: Add links to more connectors. [Contributions](https://github.com/akka/alpa
 ## Azure
 
 [Streaming IoT messages using Azure IoT Hub](https://github.com/Azure/toketi-iothubreact)
+
+## Eventuate
+
+[Akka Streams adapter for Eventuate](http://rbmhtechnology.github.io/eventuate/adapters/stream.html)
+
+## FS2
+
+[An Akka Streams - Functional Streams for Scala (FS2) interface](https://github.com/krasserm/streamz#combinators-for-akka-stream)
