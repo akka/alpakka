@@ -1,12 +1,7 @@
 lazy val alpakka = project
   .in(file("."))
-  .enablePlugins(NoPublish, DeployRsync)
-  .disablePlugins(BintrayPlugin)
+  .enablePlugins(PublishUnidoc)
   .aggregate(amqp, cassandra, docs, files, mqtt)
-  .settings(
-    unidocSettings,
-    deployRsyncArtifact := (sbtunidoc.Plugin.UnidocKeys.unidoc in Compile).value.head -> s"www/api/alpakka/${version.value}"
-  )
 
 lazy val amqp = project
   .in(file("amqp"))
@@ -34,7 +29,7 @@ lazy val files = project
 
 lazy val mqtt = project
   .in(file("mqtt"))
-  .enablePlugins()
+  .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-mqtt",
     Dependencies.Mqtt,
@@ -46,7 +41,7 @@ lazy val mqtt = project
 
 lazy val docs = project
   .in(file("docs"))
-  .enablePlugins(ParadoxPlugin, NoPublish, DeployRsync)
+  .enablePlugins(ParadoxPlugin, NoPublish)
   .disablePlugins(BintrayPlugin)
   .settings(
     name := "Alpakka",
@@ -59,6 +54,5 @@ lazy val docs = project
       "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
       "scaladoc.akka.base_url" -> s"http://doc.akka.io/api/akka/${Dependencies.AkkaVersion}",
       "scaladoc.akka.stream.alpakka.base_url" -> s"http://doc.akka.io/api/alpakka/${version.value}"
-    ),
-    deployRsyncArtifact := (paradox in Compile).value -> s"www/docs/alpakka/${version.value}"
+    )
   )
