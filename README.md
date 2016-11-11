@@ -5,6 +5,16 @@ Alpakka: Akka Streams Connectors
 
 This project provides a home to Akka Streams connectors to various technologies, protocols or libraries.
 
+Documentation
+-------------
+
+Latest [documentation](http://developer.lightbend.com/docs/alpakka/latest/).
+
+Contributions
+-------------
+
+Contributions are welcome, see [CONTRIBUTING.md](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md)
+
 Caveat Emptor
 -------------
 
