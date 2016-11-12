@@ -5,3 +5,10 @@ Many [Enterprise Integration Patterns](http://www.eaipatterns.com/toc.html) can 
 
 TODO: Create documentation pages for typical integration patterns and some might deserve a higher level component that is implemented in Alpakka. [Contributions](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md) are very welcome.
 [Creating an issue](https://github.com/akka/alpakka/issues) for discussion is a good first step for such contributions.
+
+@@@index
+
+* [Caffeine](caffeine.md)
+
+
+@@@

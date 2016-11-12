@@ -32,6 +32,13 @@ object Dependencies {
     )
   )
 
+  val Caffeine = Seq(
+    libraryDependencies ++= Seq(
+      "com.github.blemale" %% "scaffeine" % "2.0.0" % "compile",   // ApacheV2
+      "com.google.code.findbugs" % "jsr305" % "3.0.1" % "provided" //Compilation warning without this ...
+    )
+  )
+
   val Cassandra = Seq(
     libraryDependencies ++= Seq(
       "com.datastax.cassandra" % "cassandra-driver-core" % "3.1.0" // ApacheV2
