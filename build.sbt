@@ -1,7 +1,7 @@
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
-  .aggregate(amqp, awslambda, cassandra, csv, dynamodb, files, ftp, googleCloudPubSub, hbase, jms, mqtt, s3, simpleCodecs, sqs, sse)
+  .aggregate(amqp, awslambda, cassandra, csv, druid, dynamodb, files, ftp, googleCloudPubSub, hbase, jms, mqtt, s3, simpleCodecs, sqs, sse)
 
 lazy val amqp = project
   .enablePlugins(AutomateHeaderPlugin)
@@ -36,6 +36,14 @@ lazy val dynamodb = project
   .settings(
     name := "akka-stream-alpakka-dynamodb",
     Dependencies.DynamoDB
+  )
+
+lazy val druid = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-druid",
+    crossScalaVersions := Seq("2.11.8"), //This does not seem to work.
+    Dependencies.Druid
   )
 
 lazy val files = project // The name file is taken by `sbt.file`!

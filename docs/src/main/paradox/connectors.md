@@ -8,6 +8,7 @@
 * [AWS S3 Connector](s3.md)
 * [AWS SQS Connector](sqs.md)
 * [Cassandra Connector](cassandra.md)
+* [Druid Connector](druid.md)
 * [File Connectors](file.md)
 * [FTP Connector](ftp.md)
 * [Google Cloud Pub/Sub Connector](google-cloud-pub-sub.md)
