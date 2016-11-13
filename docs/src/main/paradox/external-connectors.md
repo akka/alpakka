@@ -38,3 +38,7 @@ TODO: Add links to more connectors. [Contributions](https://github.com/akka/alpa
 ## FS2
 
 [An Akka Streams - Functional Streams for Scala (FS2) interface](https://github.com/krasserm/streamz#combinators-for-akka-stream)
+
+## MongoDB
+
+[ReactiveMongo](http://reactivemongo.org/releases/0.12/documentation/release-details.html#akka-stream)
