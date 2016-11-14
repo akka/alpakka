@@ -15,48 +15,33 @@ import akka.stream.scaladsl.RunnableGraph
 import akka.stream.scaladsl.Flow
 
 /**
- * Splits up a bytestream source into sub-flows of a minimum size. Does not attempt to create chunkes of an exact size.
+ * Splits up a byte stream source into sub-flows of a minimum size. Does not attempt to create chunks of an exact size.
  */
-object SplitAfterSize {
+final object SplitAfterSize {
   def apply[I, M](minChunkSize: Long)(in: Flow[I, ByteString, M]): SubFlow[ByteString, M, in.Repr, in.Closed] = {
-    in.via(insertMarkers(minChunkSize)).splitWhen(_ == NewStream).filter(_.isInstanceOf[ByteString]).map(_.asInstanceOf[ByteString])
+    in.via(insertMarkers(minChunkSize)).splitWhen(_ == NewStream).collect { case bs: ByteString => bs }
   }
 
   private case object NewStream
 
   private def insertMarkers(minChunkSize: Long) = new GraphStage[FlowShape[ByteString, Any]] {
-    val in = Inlet[ByteString]("in")
-    val out = Outlet[Any]("out")
+    val in = Inlet[ByteString]("SplitAfterSize.in")
+    val out = Outlet[Any]("SplitAfterSize.out")
     override val shape = FlowShape.of(in, out)
 
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-      var count: Long = 0;
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler with InHandler {
+      var count: Long = 0
+      override def onPull(): Unit = pull(in)
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
-          pull(in)
-        }
-      })
-
-      setHandler(in, new InHandler {
-        override def onPush(): Unit = {
-          val elem = grab(in)
-          count += elem.size
-          if (count >= minChunkSize) {
-            println("*** split after " + count)
-            count = 0
-            emitMultiple(out, elem :: NewStream :: Nil)
-          } else {
-            emit(out, elem)
-          }
-        }
-
-        override def onUpstreamFinish(): Unit = {
-          println("*** complete after " + count)
-          completeStage()
-        }
-      })
-
+      override def onPush(): Unit = {
+        val elem = grab(in)
+        count += elem.size
+        if (count >= minChunkSize) {
+          count = 0
+          emitMultiple(out, elem :: NewStream :: Nil)
+        } else emit(out, elem)
+      }
+      setHandlers(in, out, this)
     }
   }
 }
