@@ -11,6 +11,8 @@ import com.google.common.util.concurrent.{ FutureCallback, Futures, ListenableFu
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
 
+import GuavaFutureOptsImplicits._
+
 class CassandraSourceStage(futStmt: Future[Statement], session: Session) extends GraphStage[SourceShape[Row]] {
   val out: Outlet[Row] = Outlet("CassandraSource.out")
   override val shape: SourceShape[Row] = SourceShape(out)
@@ -25,7 +27,7 @@ class CassandraSourceStage(futStmt: Future[Statement], session: Session) extends
 
         futFetchedCallback = getAsyncCallback[Try[ResultSet]](tryPushAfterFetch)
 
-        val futRs = futStmt.flatMap(stmt => guavaFutToScalaFut(session.executeAsync(stmt)))
+        val futRs = futStmt.flatMap(stmt => session.executeAsync(stmt).toFuture())
         futRs.onComplete(futFetchedCallback.invoke)
       }
 
@@ -38,7 +40,7 @@ class CassandraSourceStage(futStmt: Future[Statement], session: Session) extends
             case Some(rs) if rs.isExhausted                     => completeStage()
             case Some(rs) =>
               // fetch next page
-              val futRs = guavaFutToScalaFut(rs.fetchMoreResults())
+              val futRs = rs.fetchMoreResults().toFuture()
               futRs.onComplete(futFetchedCallback.invoke)
             case None => () // doing nothing, waiting for futRs in preStart() to be completed
           }
@@ -59,15 +61,5 @@ class CassandraSourceStage(futStmt: Future[Statement], session: Session) extends
         case Failure(failure) => failStage(failure)
       }
     }
-
-  private def guavaFutToScalaFut[A](guavaFut: ListenableFuture[A]): Future[A] = {
-    val p = Promise[A]()
-    val callback = new FutureCallback[A] {
-      override def onSuccess(a: A): Unit = p.success(a)
-      override def onFailure(err: Throwable): Unit = p.failure(err)
-    }
-    Futures.addCallback(guavaFut, callback)
-    p.future
-  }
 }
 

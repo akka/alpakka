@@ -5,13 +5,16 @@ package akka.stream.alpakka.cassandra.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.{ Sink, Source }
 import com.datastax.driver.core.{ Cluster, SimpleStatement }
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent._
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
+
+import scala.collection.convert.decorateAsScala._
 
 /**
  * All the tests must be run with a local Cassandra running on default port 9042.
@@ -114,6 +117,17 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
       rows mustBe empty
     }
 
-  }
+    "sink should write to the table" in {
+      val source = Source(0 to 10)
+      val sink = CassandraSink[Integer](parallelism = 2, session.prepare("INSERT INTO akka_stream_scala_test.test(id) VALUES (?)"), (t, p) => p.bind(t))
 
+      val result = source.map(i => i: Integer).runWith(sink)
+
+      result.futureValue
+
+      val found = session.execute("select id from akka_stream_scala_test.test").all().asScala.map(_.getInt("id"))
+
+      found.toSet mustBe (0 to 10).toSet
+    }
+  }
 }
