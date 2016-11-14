@@ -26,8 +26,7 @@ class StreamUtilsSpec(_system: ActorSystem) extends TestKit(_system) with FlatSp
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
 
   implicit val defaultPatience =
-    PatienceConfig(timeout =  Span(5, Seconds), interval = Span(30, Millis))
-
+    PatienceConfig(timeout = Span(5, Seconds), interval = Span(30, Millis))
 
   "digest" should "calculate the digest of a short string" in {
     val bytes: Array[Byte] = "abcdefghijklmnopqrstuvwxyz".getBytes()
