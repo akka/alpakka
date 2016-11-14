@@ -7,6 +7,7 @@
 * [File Connectors](file.md)
 * [MQTT Connector](mqtt.md)
 * [FTP Connector](ftp.md)
+* [SQS Connector](sqs.md)
 * [External Connectors](external-connectors.md)
 
 @@@

@@ -14,9 +14,9 @@ object Dependencies {
       "junit"              % "junit"               % "4.12"        % Test  // Eclipse Public License 1.0
     )
   )
-  
+
   val AkkaHttpVersion = "10.0.0-RC2"
-  
+
   val S3 = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http"     % AkkaHttpVersion,
@@ -62,6 +62,14 @@ object Dependencies {
       "org.slf4j"             % "slf4j-api"            % "1.7.21"   % Test, // MIT
       "ch.qos.logback"        % "logback-classic"      % "1.1.7"    % Test, // Eclipse Public License 1.0
       "ch.qos.logback"        % "logback-core"         % "1.1.7"    % Test  // Eclipse Public License 1.0
+    )
+  )
+
+  val Sqs = Seq(
+    libraryDependencies ++= Seq(
+      "com.amazonaws"   % "aws-java-sdk-sqs"    % "1.11.51",          // ApacheV2
+      "org.elasticmq"  %% "elasticmq-rest-sqs"  % "0.10.1"    % Test  // ApacheV2
+
     )
   )
 }
