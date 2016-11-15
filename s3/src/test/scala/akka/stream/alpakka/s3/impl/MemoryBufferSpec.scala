@@ -1,19 +1,12 @@
 package akka.stream.alpakka.s3.impl
 
-import scala.Vector
-
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.FlatSpecLike
-import org.scalatest.Matchers
-import org.scalatest.concurrent.ScalaFutures
-
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.testkit.TestKit
 import akka.util.ByteString
+import org.scalatest.{ BeforeAndAfterAll, FlatSpecLike, Matchers }
+import org.scalatest.concurrent.ScalaFutures
 
 class MemoryBufferSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures {
 

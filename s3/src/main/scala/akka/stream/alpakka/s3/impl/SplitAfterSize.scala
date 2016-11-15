@@ -17,7 +17,7 @@ import akka.stream.scaladsl.Flow
 /**
  * Splits up a byte stream source into sub-flows of a minimum size. Does not attempt to create chunks of an exact size.
  */
-final object SplitAfterSize {
+private[alpakka] object SplitAfterSize {
   def apply[I, M](minChunkSize: Long)(in: Flow[I, ByteString, M]): SubFlow[ByteString, M, in.Repr, in.Closed] = {
     in.via(insertMarkers(minChunkSize)).splitWhen(_ == NewStream).collect { case bs: ByteString => bs }
   }

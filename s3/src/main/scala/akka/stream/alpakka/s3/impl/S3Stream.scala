@@ -11,7 +11,7 @@ import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, ResponseEntity, Uri
 import akka.http.scaladsl.unmarshalling.{ Unmarshal, Unmarshaller }
 import akka.stream.{ Attributes, Materializer }
 import akka.stream.alpakka.s3.{ MemoryBufferType, DiskBufferType, S3Settings }
-import akka.stream.alpakka.s3.signing.{ AWSCredentials, CredentialScope, Signer, SigningKey }
+import akka.stream.alpakka.s3.auth.{ AWSCredentials, CredentialScope, Signer, SigningKey }
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.util.ByteString
 
@@ -19,23 +19,23 @@ import scala.collection.immutable.Seq
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success }
 
-case class S3Location(bucket: String, key: String)
+final case class S3Location(bucket: String, key: String)
 
-case class MultipartUpload(s3Location: S3Location, uploadId: String)
+final case class MultipartUpload(s3Location: S3Location, uploadId: String)
 
 sealed trait UploadPartResponse {
   def multipartUpload: MultipartUpload
   def index: Int
 }
 
-case class SuccessfulUploadPart(multipartUpload: MultipartUpload, index: Int, etag: String) extends UploadPartResponse
+final case class SuccessfulUploadPart(multipartUpload: MultipartUpload, index: Int, etag: String) extends UploadPartResponse
 
-case class FailedUploadPart(multipartUpload: MultipartUpload, index: Int, exception: Throwable) extends UploadPartResponse
+final case class FailedUploadPart(multipartUpload: MultipartUpload, index: Int, exception: Throwable) extends UploadPartResponse
 
-case class FailedUpload(reasons: Seq[Throwable]) extends Exception
-case class CompleteMultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
+final case class FailedUpload(reasons: Seq[Throwable]) extends Exception
+final case class CompleteMultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
-class S3Stream(credentials: AWSCredentials, region: String, val settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
+private[alpakka] final class S3Stream(credentials: AWSCredentials, region: String, val settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
   import Marshalling._
 
   val MIN_CHUNK_SIZE = 5242880
@@ -108,7 +108,7 @@ class S3Stream(credentials: AWSCredentials, region: String, val settings: S3Sett
   def initiateUpload(s3Location: S3Location): Source[(MultipartUpload, Int), NotUsed] = {
     Source.single(s3Location).mapAsync(1)(initiateMultipartUpload(_))
       .mapConcat { case r => Stream.continually(r) }
-      .zip(StreamUtils.counter(1))
+      .zip(Source.fromIterator(() => Iterator.from(1)))
   }
 
   /**
@@ -144,11 +144,11 @@ class S3Stream(credentials: AWSCredentials, region: String, val settings: S3Sett
     createRequests(s3Location, chunkSize, parallelism)
       .via(Http().superPool[(MultipartUpload, Int)]())
       .map {
-        case (Success(r), (upload, index)) => {
+        case (Success(r), (upload, index)) =>
           r.entity.dataBytes.runWith(Sink.ignore)
           val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value())
           etag.map((t) => SuccessfulUploadPart(upload, index, t)).getOrElse(FailedUploadPart(upload, index, new RuntimeException("Cannot find etag")))
-        }
+
         case (Failure(e), (upload, index)) => FailedUploadPart(upload, index, e)
       }
   }
