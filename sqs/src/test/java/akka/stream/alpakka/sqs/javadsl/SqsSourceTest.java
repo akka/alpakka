@@ -42,7 +42,7 @@ public class SqsSourceTest {
 
         //#init-client
         credentials = new BasicAWSCredentials("x", "x");
-        sqsClient = new AmazonSQSAsyncClient()
+        sqsClient = new AmazonSQSAsyncClient(credentials)
             .withEndpoint("http://localhost:9324");
         //#init-client
 
