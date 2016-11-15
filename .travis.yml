@@ -18,6 +18,8 @@ before_install:
   - docker run -p 9042:9042 -d cassandra:3
   - docker pull rabbitmq:3
   - docker run -p 5672:5672 -d rabbitmq:3
+  - docker pull expert360/elasticmq
+  - docker run -p 9324:9324 -d expert360/elasticmq
 
 cache:
   directories:

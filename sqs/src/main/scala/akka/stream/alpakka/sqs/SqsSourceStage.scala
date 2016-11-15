@@ -9,7 +9,7 @@ import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient
 import com.amazonaws.services.sqs.model.{ Message, ReceiveMessageRequest, ReceiveMessageResult }
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 
@@ -50,7 +50,7 @@ class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings, sqsClient: A
 
       def handleSuccess(result: ReceiveMessageResult): Unit = {
 
-        buffer.enqueue(result.getMessages.reverse: _*)
+        buffer.enqueue(result.getMessages.asScala.reverse: _*)
 
         if (result.getMessages.isEmpty || buffer.size < settings.maxBufferSize) {
           receiveMessages()

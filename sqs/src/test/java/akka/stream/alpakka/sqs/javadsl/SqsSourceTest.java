@@ -10,8 +10,6 @@ import akka.testkit.JavaTestKit;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
-import org.elasticmq.rest.sqs.SQSRestServer;
-import org.elasticmq.rest.sqs.SQSRestServerBuilder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,7 +28,6 @@ public class SqsSourceTest {
 
     static ActorSystem system;
     static ActorMaterializer materializer;
-    static SQSRestServer sqsServer;
     static AWSCredentials credentials;
     static AmazonSQSAsyncClient sqsClient;
 
@@ -43,31 +40,21 @@ public class SqsSourceTest {
         materializer = ActorMaterializer.create(system);
         //#init-mat
 
-        sqsServer = SQSRestServerBuilder
-            .withActorSystem(system)
-            .withInterface("localhost")
-            .withPort(9325)
-            .start();
-
-        sqsServer.waitUntilStarted();
-
         //#init-client
         credentials = new BasicAWSCredentials("x", "x");
         sqsClient = new AmazonSQSAsyncClient()
-            .withEndpoint("http://localhost:9325");
+            .withEndpoint("http://localhost:9324");
         //#init-client
 
     }
 
     @AfterClass
     public static void teardown() {
-        sqsServer.stopAndWait();
         JavaTestKit.shutdownActorSystem(system);
     }
 
     static String randomQueueUrl() {
-        //there is a bug in elasticmq which returns incorrect queueUrls
-        return sqsClient.createQueue(String.format("queue-%s", new Random().nextInt())).getQueueUrl().replaceFirst("9324","9325");
+        return sqsClient.createQueue(String.format("queue-%s", new Random().nextInt())).getQueueUrl();
     }
 
     @Test
@@ -75,13 +62,13 @@ public class SqsSourceTest {
 
         final String queueUrl = randomQueueUrl();
 
-        final List<String> input = IntStream.range(1, 100).boxed().map(i -> String.format("alpakka-%s", i)).collect(Collectors.toList());
+        final List<String> input = IntStream.range(0, 100).boxed().map(i -> String.format("alpakka-%s", i)).collect(Collectors.toList());
         input.forEach(m -> sqsClient.sendMessage(queueUrl, m));
 
         //#run
         final CompletionStage<List<String>> cs = SqsSource.create(queueUrl, sqsClient)
             .map(m -> m.getBody())
-            .takeWithin(Duration.create(1, TimeUnit.SECONDS))
+            .take(100)
             .runWith(Sink.seq(), materializer);
         //#run
 

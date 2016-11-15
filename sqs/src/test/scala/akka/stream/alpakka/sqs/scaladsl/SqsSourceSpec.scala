@@ -9,15 +9,15 @@ import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.scaladsl.Sink
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient
-import org.elasticmq.rest.sqs.{SQSRestServer, SQSRestServerBuilder}
+import com.amazonaws.services.sqs.model.QueueDoesNotExistException
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.{ AsyncWordSpec, BeforeAndAfterAll, Matchers }
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
-import scala.util.{Random, Try}
+import scala.util.Random
 
-class SqsSourceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures with Matchers {
+class SqsSourceSpec extends AsyncWordSpec with BeforeAndAfterAll with ScalaFutures with Matchers {
 
   //#init-mat
   implicit val system = ActorSystem()
@@ -25,19 +25,12 @@ class SqsSourceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
   //#init-mat
 
   //#init-client
-  val credentials = new BasicAWSCredentials("x","x")
+  val credentials = new BasicAWSCredentials("x", "x")
   implicit val sqsClient: AmazonSQSAsyncClient = new AmazonSQSAsyncClient(credentials)
     .withEndpoint("http://localhost:9324")
   //#init-client
 
-  val server: SQSRestServer = SQSRestServerBuilder
-    .withActorSystem(system)
-    .withPort(9324)
-    .withInterface("localhost")
-    .start()
-
   override protected def afterAll(): Unit = {
-    server.stopAndWait()
     Await.ready(system.terminate(), 5.seconds)
   }
 
@@ -48,14 +41,13 @@ class SqsSourceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
     "stream a single batch from the queue" in {
 
       val queue = randomQueueUrl()
-
       sqsClient.sendMessage(queue, "alpakka")
 
-      val f = SqsSource(queue)
-        .takeWithin(100.millis)
+      SqsSource(queue)
+        .take(1)
         .runWith(Sink.seq)
+        .map(_.map(_.getBody) should contain("alpakka"))
 
-      f.futureValue.map(_.getBody) should contain("alpakka")
     }
 
     "stream multiple batches from the queue" in {
@@ -67,28 +59,25 @@ class SqsSourceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
       input foreach { m => sqsClient.sendMessage(queue, m) }
 
       //#run
-      val f = SqsSource(queue)
-        .takeWithin(100.millis)
+      SqsSource(queue)
+        .take(100)
         .runWith(Sink.seq)
+        .map(_ should have size 100)
       //#run
 
-      f.futureValue.map(_.getBody) should have size 100
     }
 
-    //This test has to block for a seconds because it is not possible to go below 1 second with the wait time
     "continue streaming if receives an empty response" in {
 
       val queue = randomQueueUrl()
 
-      val f = SqsSource(queue, SqsSourceSettings(1.second, 100))
-        .takeWithin(1100.millis)
+      val f = SqsSource(queue, SqsSourceSettings(0.seconds, 100))
+        .take(1)
         .runWith(Sink.seq)
-
-      Thread.sleep(1000)
 
       sqsClient.sendMessage(queue, s"alpakka")
 
-      f.futureValue should have size 1
+      f.map(_ should have size 1)
     }
 
     "should finish immediately if the queue does not exist" in {
@@ -98,7 +87,7 @@ class SqsSourceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
       val f = SqsSource(queue)
         .runWith(Sink.seq)
 
-      Await.ready(f, 1.seconds)
+      f.failed.map(_ shouldBe a[QueueDoesNotExistException])
     }
   }
 }
