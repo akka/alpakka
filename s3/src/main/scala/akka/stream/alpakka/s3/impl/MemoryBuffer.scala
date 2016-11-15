@@ -20,13 +20,7 @@ private[alpakka] final class MemoryBuffer(maxSize: Int) extends GraphStage[FlowS
 
   override def createLogic(attr: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
     var buffer = ByteString.empty
-    override def onPull(): Unit = {
-      if (isClosed(in)) {
-        emit()
-      } else {
-        pull(in)
-      }
-    }
+    override def onPull(): Unit = if (isClosed(in)) emit() else pull(in)
 
     override def onPush(): Unit = {
       val elem = grab(in)
@@ -39,16 +33,11 @@ private[alpakka] final class MemoryBuffer(maxSize: Int) extends GraphStage[FlowS
     }
 
     override def onUpstreamFinish(): Unit = {
-      if (isAvailable(out)) {
-        emit()
-      }
+      if (isAvailable(out)) emit()
       completeStage()
     }
 
-    def emit(): Unit = {
-      emit(out, Chunk(Source.single(buffer), buffer.size), () => completeStage())
-    }
-
+    def emit(): Unit = emit(out, Chunk(Source.single(buffer), buffer.size), () => completeStage())
     setHandlers(in, out, this)
   }
 

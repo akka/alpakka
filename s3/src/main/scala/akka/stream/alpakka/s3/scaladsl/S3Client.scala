@@ -21,7 +21,7 @@ object MultipartUploadResult {
 }
 
 object S3Client {
-  val MIN_CHUNK_SIZE = 5242880
+  val MinChunkSize = 5242880
 }
 
 final class S3Client(credentials: AWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer) {
@@ -30,6 +30,6 @@ final class S3Client(credentials: AWSCredentials, region: String)(implicit syste
 
   def download(bucket: String, key: String): Source[ByteString, NotUsed] = impl.download(S3Location(bucket, key))
 
-  def multipartUpload(bucket: String, key: String, chunkSize: Int = MIN_CHUNK_SIZE, chunkingParallelism: Int = 4): Sink[ByteString, Future[MultipartUploadResult]] =
+  def multipartUpload(bucket: String, key: String, chunkSize: Int = MinChunkSize, chunkingParallelism: Int = 4): Sink[ByteString, Future[MultipartUploadResult]] =
     impl.multipartUpload(S3Location(bucket, key), chunkSize, chunkingParallelism).mapMaterializedValue(_.map(MultipartUploadResult.apply)(system.dispatcher))
 }

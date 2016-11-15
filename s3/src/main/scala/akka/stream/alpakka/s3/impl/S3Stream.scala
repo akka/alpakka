@@ -29,7 +29,6 @@ sealed trait UploadPartResponse {
 }
 
 final case class SuccessfulUploadPart(multipartUpload: MultipartUpload, index: Int, etag: String) extends UploadPartResponse
-
 final case class FailedUploadPart(multipartUpload: MultipartUpload, index: Int, exception: Throwable) extends UploadPartResponse
 
 final case class FailedUpload(reasons: Seq[Throwable]) extends Exception
@@ -38,7 +37,7 @@ final case class CompleteMultipartUploadResult(location: Uri, bucket: String, ke
 private[alpakka] final class S3Stream(credentials: AWSCredentials, region: String, val settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
   import Marshalling._
 
-  val MIN_CHUNK_SIZE = 5242880
+  val MinChunkSize = 5242880
   val signingKey = SigningKey(credentials, CredentialScope(LocalDate.now(), region, "s3"))
 
   def this(credentials: AWSCredentials, region: String = "us-east-1")(implicit system: ActorSystem, mat: Materializer) =
@@ -58,7 +57,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
    * @param chunkingParallelism
    * @return
    */
-  def multipartUpload(s3Location: S3Location, chunkSize: Int = MIN_CHUNK_SIZE, chunkingParallelism: Int = 4): Sink[ByteString, Future[CompleteMultipartUploadResult]] = {
+  def multipartUpload(s3Location: S3Location, chunkSize: Int = MinChunkSize, chunkingParallelism: Int = 4): Sink[ByteString, Future[CompleteMultipartUploadResult]] = {
     val flow = chunkAndRequest(s3Location, chunkSize)(chunkingParallelism)
     (if (settings.debugLogging)
       flow.log("s3-upload-response")
@@ -106,7 +105,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
    * @return
    */
   def initiateUpload(s3Location: S3Location): Source[(MultipartUpload, Int), NotUsed] = {
-    Source.single(s3Location).mapAsync(1)(initiateMultipartUpload(_))
+    Source.single(s3Location).mapAsync(1)(initiateMultipartUpload)
       .mapConcat { case r => Stream.continually(r) }
       .zip(Source.fromIterator(() => Iterator.from(1)))
   }
@@ -119,8 +118,8 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
    * @param parallelism
    * @return
    */
-  def createRequests(s3Location: S3Location, chunkSize: Int = MIN_CHUNK_SIZE, parallelism: Int = 4): Flow[ByteString, (HttpRequest, (MultipartUpload, Int)), NotUsed] = {
-    assert(chunkSize >= MIN_CHUNK_SIZE, "Chunk size must be at least 5242880B. See http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadUploadPart.html")
+  def createRequests(s3Location: S3Location, chunkSize: Int = MinChunkSize, parallelism: Int = 4): Flow[ByteString, (HttpRequest, (MultipartUpload, Int)), NotUsed] = {
+    assert(chunkSize >= MinChunkSize, "Chunk size must be at least 5242880B. See http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadUploadPart.html")
     val requestInfo: Source[(MultipartUpload, Int), NotUsed] = initiateUpload(s3Location)
 
     SplitAfterSize(chunkSize)(Flow.apply[ByteString])
@@ -140,13 +139,13 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
     case s  => Some(Paths.get(s))
   }
 
-  def chunkAndRequest(s3Location: S3Location, chunkSize: Int = MIN_CHUNK_SIZE)(parallelism: Int = 4): Flow[ByteString, UploadPartResponse, NotUsed] = {
+  def chunkAndRequest(s3Location: S3Location, chunkSize: Int = MinChunkSize)(parallelism: Int = 4): Flow[ByteString, UploadPartResponse, NotUsed] = {
     createRequests(s3Location, chunkSize, parallelism)
       .via(Http().superPool[(MultipartUpload, Int)]())
       .map {
         case (Success(r), (upload, index)) =>
           r.entity.dataBytes.runWith(Sink.ignore)
-          val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value())
+          val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
           etag.map((t) => SuccessfulUploadPart(upload, index, t)).getOrElse(FailedUploadPart(upload, index, new RuntimeException("Cannot find etag")))
 
         case (Failure(e), (upload, index)) => FailedUploadPart(upload, index, e)

@@ -18,13 +18,9 @@ final case class SigningKey(credentials: AWSCredentials, scope: CredentialScope,
 
   val rawKey = new SecretKeySpec(s"AWS4${credentials.secretAccessKey}".getBytes, algorithm)
 
-  def signature(message: Array[Byte]): Array[Byte] = {
-    signWithKey(key, message)
-  }
+  def signature(message: Array[Byte]): Array[Byte] = signWithKey(key, message)
 
-  def hexEncodedSignature(message: Array[Byte]): String = {
-    Utils.encodeHex(signature(message))
-  }
+  def hexEncodedSignature(message: Array[Byte]): String = encodeHex(signature(message))
 
   def credentialString: String = s"${credentials.accessKeyId}/${scope.scopeString}"
 
@@ -40,9 +36,8 @@ final case class SigningKey(credentials: AWSCredentials, scope: CredentialScope,
   lazy val dateKey: SecretKeySpec =
     wrapSignature(rawKey, scope.formattedDate.getBytes)
 
-  private def wrapSignature(signature: SecretKeySpec, message: Array[Byte]): SecretKeySpec = {
+  private def wrapSignature(signature: SecretKeySpec, message: Array[Byte]): SecretKeySpec =
     new SecretKeySpec(signWithKey(signature, message), algorithm)
-  }
 
   private def signWithKey(key: SecretKeySpec, message: Array[Byte]): Array[Byte] = {
     val mac = Mac.getInstance(algorithm)
