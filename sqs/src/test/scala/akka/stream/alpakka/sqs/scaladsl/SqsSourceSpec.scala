@@ -7,14 +7,15 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.scaladsl.Sink
+import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient
-import org.elasticmq.rest.sqs.{ SQSRestServer, SQSRestServerBuilder }
+import org.elasticmq.rest.sqs.{SQSRestServer, SQSRestServerBuilder}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
-import scala.util.{ Random, Try }
+import scala.concurrent.{Await, Future}
+import scala.util.{Random, Try}
 
 class SqsSourceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures with Matchers {
 
@@ -24,7 +25,8 @@ class SqsSourceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
   //#init-mat
 
   //#init-client
-  implicit val sqsClient: AmazonSQSAsyncClient = new AmazonSQSAsyncClient()
+  val credentials = new BasicAWSCredentials("x","x")
+  implicit val sqsClient: AmazonSQSAsyncClient = new AmazonSQSAsyncClient(credentials)
     .withEndpoint("http://localhost:9324")
   //#init-client
 

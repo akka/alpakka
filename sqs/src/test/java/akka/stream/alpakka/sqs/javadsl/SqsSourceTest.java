@@ -7,6 +7,8 @@ import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.testkit.JavaTestKit;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import org.elasticmq.rest.sqs.SQSRestServer;
 import org.elasticmq.rest.sqs.SQSRestServerBuilder;
@@ -29,6 +31,7 @@ public class SqsSourceTest {
     static ActorSystem system;
     static ActorMaterializer materializer;
     static SQSRestServer sqsServer;
+    static AWSCredentials credentials;
     static AmazonSQSAsyncClient sqsClient;
 
 
@@ -49,6 +52,7 @@ public class SqsSourceTest {
         sqsServer.waitUntilStarted();
 
         //#init-client
+        credentials = new BasicAWSCredentials("x", "x");
         sqsClient = new AmazonSQSAsyncClient()
             .withEndpoint("http://localhost:9325");
         //#init-client
