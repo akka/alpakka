@@ -19,9 +19,10 @@ object Dependencies {
   
   val AkkaHttp = Seq(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-http-core" % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-      "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion
+      "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
+      // in-memory filesystem for file related tests
+      "com.google.jimfs" % "jimfs" % "1.1" % Test // ApacheV2
     )
   )
 

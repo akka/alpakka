@@ -7,13 +7,17 @@ import akka.actor.ActorSystem
 import com.typesafe.config.Config
 
 final class S3Settings(val bufferType: BufferType, val diskBufferPath: String, val debugLogging: Boolean) {
-  override def toString: String = s"S3Settings($bufferType,$diskBufferPath)"
-
+  override def toString: String = s"S3Settings($bufferType,$diskBufferPath,$debugLogging)"
 }
 
 sealed trait BufferType
-case object MemoryBufferType extends BufferType
-case object DiskBufferType extends BufferType
+case object MemoryBufferType extends BufferType {
+  def getInstance: BufferType = MemoryBufferType
+}
+
+case object DiskBufferType extends BufferType {
+  def getInstance: BufferType = DiskBufferType
+}
 
 object S3Settings {
   def apply(system: ActorSystem): S3Settings =

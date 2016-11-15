@@ -11,7 +11,7 @@ import akka.stream.scaladsl.Source
 import akka.http.scaladsl.model.RequestEntity
 import akka.http.scaladsl.model.RequestEntity
 
-object HttpRequests {
+private[alpakka] object HttpRequests {
 
   def s3Request(s3Location: S3Location, method: HttpMethod = HttpMethods.GET, uriFn: (Uri => Uri) = identity): HttpRequest = {
     HttpRequest(method)

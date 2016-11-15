@@ -6,7 +6,7 @@ import akka.http.scaladsl.unmarshalling.{ FromEntityUnmarshaller, Unmarshaller }
 
 import scala.xml.NodeSeq
 
-object Marshalling {
+private[alpakka] object Marshalling {
   import ScalaXmlSupport._
 
   implicit val MultipartUploadUnmarshaller: FromEntityUnmarshaller[MultipartUpload] = {
