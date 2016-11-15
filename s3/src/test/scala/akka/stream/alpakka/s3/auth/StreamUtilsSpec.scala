@@ -51,7 +51,7 @@ class StreamUtilsSpec(_system: ActorSystem) extends TestKit(_system) with FlatSp
 
   "digest" should "calculate the digest of a short string" in {
     val bytes: Array[Byte] = "abcdefghijklmnopqrstuvwxyz".getBytes()
-    val flow: Future[ByteString] = Source.single(ByteString(bytes)).runWith(StreamUtils.digest())
+    val flow: Future[ByteString] = Source.single(ByteString(bytes)).runWith(digest())
 
     val testDigest = MessageDigest.getInstance("SHA-256").digest(bytes)
     whenReady(flow) { result =>
@@ -61,7 +61,7 @@ class StreamUtilsSpec(_system: ActorSystem) extends TestKit(_system) with FlatSp
 
   it should "calculate the digest of a file" in {
     val input = StreamConverters.fromInputStream(() => Files.newInputStream(bigFile))
-    val flow: Future[ByteString] = input.runWith(StreamUtils.digest())
+    val flow: Future[ByteString] = input.runWith(digest())
 
     val testDigest = MessageDigest.getInstance("SHA-256")
     val dis: DigestInputStream = new DigestInputStream(Files.newInputStream(bigFile), testDigest)

@@ -9,7 +9,7 @@ import scala.xml.NodeSeq
 private[alpakka] object Marshalling {
   import ScalaXmlSupport._
 
-  implicit val MultipartUploadUnmarshaller: FromEntityUnmarshaller[MultipartUpload] = {
+  implicit val multipartUploadUnmarshaller: FromEntityUnmarshaller[MultipartUpload] = {
     nodeSeqUnmarshaller(ContentTypes.`application/octet-stream`) map {
       case NodeSeq.Empty => throw Unmarshaller.NoContentException
       case x =>
