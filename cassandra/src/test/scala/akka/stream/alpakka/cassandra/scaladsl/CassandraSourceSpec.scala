@@ -12,9 +12,8 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
 
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 
 /**
  * All the tests must be run with a local Cassandra running on default port 9042.
@@ -118,6 +117,8 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
     }
 
     "sink should write to the table" in {
+      import system.dispatcher
+
       val source = Source(0 to 10)
       val sink = CassandraSink[Integer](parallelism = 2, session.prepare("INSERT INTO akka_stream_scala_test.test(id) VALUES (?)"), (t, p) => p.bind(t))
 

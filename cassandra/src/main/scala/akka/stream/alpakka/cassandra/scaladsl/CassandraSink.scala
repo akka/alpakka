@@ -8,11 +8,11 @@ import akka.stream.scaladsl.{ Flow, Keep, Sink }
 import com.datastax.driver.core.{ BoundStatement, PreparedStatement, Session }
 
 import scala.concurrent.{ ExecutionContext, Future }
-import akka.stream.alpakka.cassandra.GuavaFutureOptsImplicits._
+
+import akka.stream.alpakka.cassandra.cassandra._
 
 object CassandraSink {
   def apply[T](parallelism: Int, statement: PreparedStatement, statementBinder: (T, PreparedStatement) => BoundStatement)(implicit session: Session, ex: ExecutionContext): Sink[T, Future[Done]] =
     Flow[T].mapAsyncUnordered(parallelism)(t ⇒
-      session.executeAsync(statementBinder(t, statement)).toFuture()
-    ).toMat(Sink.ignore)(Keep.right)
+      session.executeAsync(statementBinder(t, statement)).asScala()).toMat(Sink.ignore)(Keep.right)
 }
