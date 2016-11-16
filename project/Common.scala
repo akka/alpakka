@@ -1,9 +1,10 @@
-import sbt._, Keys._
-
+import sbt._
+import sbt.Keys._
+import sbt.plugins.JvmPlugin
 import de.heikoseeberger.sbtheader._
-import de.heikoseeberger.sbtheader.HeaderKey._
-import com.typesafe.sbt.SbtScalariform
-import com.typesafe.sbt.SbtScalariform.ScalariformKeys
+import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
+import org.scalafmt.sbt.ScalaFmtPlugin
+import org.scalafmt.sbt.ScalaFmtPlugin.autoImport._
 
 object Common extends AutoPlugin {
 
@@ -14,9 +15,10 @@ object Common extends AutoPlugin {
        |""".stripMargin)
 
   override def trigger = allRequirements
-  override def requires = plugins.JvmPlugin && HeaderPlugin
 
-  override lazy val projectSettings = SbtScalariform.scalariformSettings ++
+  override def requires = JvmPlugin && HeaderPlugin
+
+  override lazy val projectSettings = reformatOnCompileSettings ++
     Dependencies.Common ++ Seq(
     organization := "com.lightbend.akka",
     organizationName := "Lightbend Inc.",
@@ -61,17 +63,8 @@ object Common extends AutoPlugin {
       "java" -> FileHeader
     ),
 
-    ScalariformKeys.preferences in Compile  := formattingPreferences,
-    ScalariformKeys.preferences in Test     := formattingPreferences
+    formatSbtFiles := false,
+    scalafmtConfig := Some(baseDirectory.in(ThisBuild).value / ".scalafmt.conf"),
+    ivyScala := ivyScala.value.map(_.copy(overrideScalaVersion = sbtPlugin.value)) // TODO Remove once this workaround no longer needed (https://github.com/sbt/sbt/issues/2786)!
   )
-
-  def formattingPreferences = {
-    import scalariform.formatter.preferences._
-    FormattingPreferences()
-      .setPreference(RewriteArrowSymbols, false)
-      .setPreference(AlignParameters, true)
-      .setPreference(AlignSingleLineCaseStatements, true)
-      .setPreference(SpacesAroundMultiImports, true)
-  }
-
 }
