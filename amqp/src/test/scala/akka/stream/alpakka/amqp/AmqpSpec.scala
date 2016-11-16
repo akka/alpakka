@@ -13,7 +13,6 @@ abstract class AmqpSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
   implicit val system = ActorSystem(this.getClass.getSimpleName)
   implicit val materializer = ActorMaterializer()
 
-  override protected def afterAll(): Unit = {
+  override protected def afterAll(): Unit =
     system.terminate()
-  }
 }

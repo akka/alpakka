@@ -58,22 +58,19 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
           override def handleDelivery(consumerTag: String,
                                       envelope: Envelope,
                                       properties: BasicProperties,
-                                      body: Array[Byte]): Unit = {
+                                      body: Array[Byte]): Unit =
             consumerCallback.invoke(IncomingMessage(ByteString(body), envelope, properties))
-          }
 
-          override def handleCancel(consumerTag: String): Unit = {
+          override def handleCancel(consumerTag: String): Unit =
             // non consumer initiated cancel, for example happens when the queue has been deleted.
             shutdownCallback.invoke(None)
-          }
 
-          override def handleShutdownSignal(consumerTag: String, sig: ShutdownSignalException): Unit = {
+          override def handleShutdownSignal(consumerTag: String, sig: ShutdownSignalException): Unit =
             // "Called when either the channel or the underlying connection has been shut down."
             shutdownCallback.invoke(Option(sig))
-          }
         }
 
-        def setupNamedQueue(settings: NamedQueueSourceSettings): Unit = {
+        def setupNamedQueue(settings: NamedQueueSourceSettings): Unit =
           channel.basicConsume(
             settings.queue,
             false, // never auto-ack
@@ -83,7 +80,6 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
             settings.arguments.asJava,
             amqpSourceConsumer
           )
-        }
 
         def setupTemporaryQueue(settings: TemporaryQueueSourceSettings): Unit = {
           // this is a weird case that required dynamic declaration, the queue name is not known
@@ -103,7 +99,7 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
 
       }
 
-      def handleDelivery(message: IncomingMessage): Unit = {
+      def handleDelivery(message: IncomingMessage): Unit =
         if (isAvailable(out)) {
           pushAndAckMessage(message)
         } else {
@@ -113,14 +109,12 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
             queue.enqueue(message)
           }
         }
-      }
 
       setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
+        override def onPull(): Unit =
           if (queue.nonEmpty) {
             pushAndAckMessage(queue.dequeue())
           }
-        }
 
       })
 

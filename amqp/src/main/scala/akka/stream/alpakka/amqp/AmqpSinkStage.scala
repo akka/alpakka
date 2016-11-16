@@ -51,9 +51,8 @@ final class AmqpSinkStage(settings: AmqpSinkSettings)
           failStage(ex)
         }
         channel.addShutdownListener(new ShutdownListener {
-          override def shutdownCompleted(cause: ShutdownSignalException): Unit = {
+          override def shutdownCompleted(cause: ShutdownSignalException): Unit =
             shutdownCallback.invoke(cause)
-          }
         })
         pull(in)
       }

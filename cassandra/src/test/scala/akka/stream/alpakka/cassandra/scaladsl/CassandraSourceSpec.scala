@@ -58,16 +58,14 @@ class CassandraSourceSpec
     session.execute("DROP KEYSPACE IF EXISTS akka_stream_scala_test;")
   }
 
-  override def afterAll(): Unit = {
+  override def afterAll(): Unit =
     Await.result(system.terminate(), 5.seconds)
-  }
 
-  def populate() = {
+  def populate() =
     (1 until 103).map { i =>
       session.execute(s"INSERT INTO akka_stream_scala_test.test(id) VALUES ($i)")
       i
     }
-  }
 
   "CassandraSourceSpec" must {
 

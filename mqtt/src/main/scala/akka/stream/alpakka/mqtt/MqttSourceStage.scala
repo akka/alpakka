@@ -39,11 +39,10 @@ final class MqttSourceStage(settings: MqttSourceSettings, bufferSize: Int)
       override val connectionSettings = settings.connectionSettings
 
       setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
+        override def onPull(): Unit =
           if (queue.nonEmpty) {
             pushMessage(queue.dequeue())
           }
-        }
       })
 
       override def handleConnection(client: IMqttAsyncClient) = {
@@ -51,9 +50,8 @@ final class MqttSourceStage(settings: MqttSourceSettings, bufferSize: Int)
         client.subscribe(topics.toArray, qos.map(_.byteValue.toInt).toArray, (), mqttSubscriptionCallback)
       }
 
-      override def beforeHandleMessage(): Unit = {
+      override def beforeHandleMessage(): Unit =
         backpressure.acquire()
-      }
 
       override def handleMessage(message: MqttMessage): Unit = {
         require(queue.size <= bufferSize)
