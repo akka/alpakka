@@ -15,7 +15,7 @@ object SqsSource {
   /**
    * Scala API: creates a [[SqsSourceStage]] for a SQS queue using an [[AmazonSQSAsyncClient]]
    */
-  def apply(queueUrl: String, settings: SqsSourceSettings = SqsSourceSettings(20.seconds, 100))(implicit sqsClient: AmazonSQSAsyncClient): Source[Message, NotUsed] =
+  def apply(queueUrl: String, settings: SqsSourceSettings = SqsSourceSettings.Defaults)(implicit sqsClient: AmazonSQSAsyncClient): Source[Message, NotUsed] =
     Source.fromGraph(new SqsSourceStage(queueUrl, settings, sqsClient))
 
 }

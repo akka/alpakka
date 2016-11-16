@@ -12,10 +12,15 @@ import com.amazonaws.services.sqs.model.{ Message, ReceiveMessageRequest, Receiv
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
-case class SqsSourceSettings(longPollingDuration: FiniteDuration, maxBufferSize: Int)
+object SqsSourceSettings {
+  val Defaults = SqsSourceSettings(20.seconds, 100, 10)
+}
 
-class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings, sqsClient: AmazonSQSAsyncClient) extends GraphStage[SourceShape[Message]] {
+final case class SqsSourceSettings(longPollingDuration: FiniteDuration, maxBufferSize: Int, maxBatchSize: Int)
+
+final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings, sqsClient: AmazonSQSAsyncClient) extends GraphStage[SourceShape[Message]] {
 
   val out: Outlet[Message] = Outlet("SqsSource.out")
   override val shape: SourceShape[Message] = SourceShape(out)
@@ -31,7 +36,7 @@ class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings, sqsClient: A
       def receiveMessages(): Unit = {
 
         val request = new ReceiveMessageRequest(queueUrl)
-          .withMaxNumberOfMessages(10)
+          .withMaxNumberOfMessages(settings.maxBatchSize)
           .withWaitTimeSeconds(settings.longPollingDuration.toSeconds.toInt)
 
         sqsClient.receiveMessageAsync(request, new AsyncHandler[ReceiveMessageRequest, ReceiveMessageResult] {
@@ -52,19 +57,21 @@ class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings, sqsClient: A
 
         buffer.enqueue(result.getMessages.asScala.reverse: _*)
 
-        if (result.getMessages.isEmpty || buffer.size < settings.maxBufferSize) {
-          receiveMessages()
-        }
-
         if (buffer.nonEmpty && isAvailable(out)) {
           push(out, buffer.dequeue())
         }
 
+        if (buffer.size < settings.maxBufferSize - settings.maxBatchSize) {
+          receiveMessages()
+        }
       }
 
       setHandler(out, new OutHandler {
         override def onPull(): Unit = {
           if (buffer.nonEmpty) {
+            if (buffer.size == settings.maxBufferSize - settings.maxBatchSize) {
+              receiveMessages()
+            }
             push(out, buffer.dequeue())
           } else {
             receiveMessages()

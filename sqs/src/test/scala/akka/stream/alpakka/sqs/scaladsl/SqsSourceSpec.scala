@@ -71,7 +71,7 @@ class SqsSourceSpec extends AsyncWordSpec with BeforeAndAfterAll with ScalaFutur
 
       val queue = randomQueueUrl()
 
-      val f = SqsSource(queue, SqsSourceSettings(0.seconds, 100))
+      val f = SqsSource(queue, SqsSourceSettings(0.seconds, 100, 10))
         .take(1)
         .runWith(Sink.seq)
 
