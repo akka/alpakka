@@ -9,6 +9,7 @@ import akka.stream.javadsl.Sink
 import akka.util.ByteString
 
 object AmqpSink {
+
   /**
    * Java API: Creates an [[AmqpSink]] that accepts [[OutgoingMessage]] elements.
    */

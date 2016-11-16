@@ -14,7 +14,8 @@ import scala.collection.mutable
 import scala.concurrent._
 import scala.util.Try
 
-final class MqttSourceStage(settings: MqttSourceSettings, bufferSize: Int) extends GraphStageWithMaterializedValue[SourceShape[MqttMessage], Future[Done]] {
+final class MqttSourceStage(settings: MqttSourceSettings, bufferSize: Int)
+    extends GraphStageWithMaterializedValue[SourceShape[MqttMessage], Future[Done]] {
 
   import MqttConnectorLogic._
 
@@ -30,7 +31,9 @@ final class MqttSourceStage(settings: MqttSourceSettings, bufferSize: Int) exten
 
       private val queue = mutable.Queue[MqttMessage]()
       private val mqttSubscriptionCallback: Try[IMqttToken] => Unit = conn =>
-        subscriptionPromise.complete(conn.map { _ => Done })
+        subscriptionPromise.complete(conn.map { _ =>
+          Done
+        })
       private val backpressure = new Semaphore(bufferSize)
 
       override val connectionSettings = settings.connectionSettings

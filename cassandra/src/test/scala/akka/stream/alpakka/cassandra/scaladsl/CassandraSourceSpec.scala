@@ -16,7 +16,12 @@ import scala.concurrent.duration._
 /**
  * All the tests must be run with a local Cassandra running on default port 9042.
  */
-class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfterEach with BeforeAndAfterAll with MustMatchers {
+class CassandraSourceSpec
+    extends WordSpec
+    with ScalaFutures
+    with BeforeAndAfterEach
+    with BeforeAndAfterAll
+    with MustMatchers {
 
   //#init-mat
   implicit val system = ActorSystem()
@@ -24,9 +29,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
   //#init-mat
 
   //#init-session
-  implicit val session = Cluster.builder
-    .addContactPoint("127.0.0.1").withPort(9042)
-    .build.connect()
+  implicit val session = Cluster.builder.addContactPoint("127.0.0.1").withPort(9042).build.connect()
   //#init-session
 
   implicit val defaultPatience =
@@ -72,9 +75,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
       val data = populate()
       val stmt = new SimpleStatement("SELECT * FROM akka_stream_scala_test.test").setFetchSize(200)
 
-      val rows = CassandraSource(stmt)
-        .runWith(Sink.seq)
-        .futureValue
+      val rows = CassandraSource(stmt).runWith(Sink.seq).futureValue
 
       rows.map(_.getInt("id")) must contain theSameElementsAs data
     }
@@ -87,8 +88,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
       //#statement
 
       //#run-source
-      val rows = CassandraSource(stmt)
-        .runWith(Sink.seq)
+      val rows = CassandraSource(stmt).runWith(Sink.seq)
       //#run-source
 
       rows.futureValue.map(_.getInt("id")) must contain theSameElementsAs data
@@ -107,9 +107,7 @@ class CassandraSourceSpec extends WordSpec with ScalaFutures with BeforeAndAfter
     "stream the result of Cassandra statement that results in no data" in {
       val stmt = new SimpleStatement("SELECT * FROM akka_stream_scala_test.test")
 
-      val rows = CassandraSource(stmt)
-        .runWith(Sink.seq)
-        .futureValue
+      val rows = CassandraSource(stmt).runWith(Sink.seq).futureValue
 
       rows mustBe empty
     }

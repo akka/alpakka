@@ -4,10 +4,11 @@
 package akka.stream.alpakka.amqp.javadsl
 
 import akka.NotUsed
-import akka.stream.alpakka.amqp.{ AmqpSourceStage, AmqpSourceSettings, IncomingMessage }
+import akka.stream.alpakka.amqp.{ AmqpSourceSettings, AmqpSourceStage, IncomingMessage }
 import akka.stream.javadsl.Source
 
 object AmqpSource {
+
   /**
    * Java API: Creates an [[AmqpSource]] with given settings and buffer size.
    */

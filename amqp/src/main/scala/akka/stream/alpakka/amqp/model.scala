@@ -16,13 +16,13 @@ sealed trait AmqpConnectorSettings {
 sealed trait AmqpSourceSettings extends AmqpConnectorSettings
 
 final case class NamedQueueSourceSettings(
-  connectionSettings: AmqpConnectionSettings,
-  queue:              String,
-  declarations:       Seq[Declaration]       = Seq.empty,
-  noLocal:            Boolean                = false,
-  exclusive:          Boolean                = false,
-  consumerTag:        String                 = "default",
-  arguments:          Map[String, AnyRef]    = Map.empty
+    connectionSettings: AmqpConnectionSettings,
+    queue: String,
+    declarations: Seq[Declaration] = Seq.empty,
+    noLocal: Boolean = false,
+    exclusive: Boolean = false,
+    consumerTag: String = "default",
+    arguments: Map[String, AnyRef] = Map.empty
 ) extends AmqpSourceSettings {
   @annotation.varargs
   def withDeclarations(declarations: Declaration*) = copy(declarations = declarations.toList)
@@ -42,6 +42,7 @@ final case class NamedQueueSourceSettings(
 }
 
 object NamedQueueSourceSettings {
+
   /**
    * Java API
    */
@@ -50,10 +51,10 @@ object NamedQueueSourceSettings {
 }
 
 final case class TemporaryQueueSourceSettings(
-  connectionSettings: AmqpConnectionSettings,
-  exchange:           String,
-  declarations:       Seq[Declaration]       = Seq.empty,
-  routingKey:         Option[String]         = None
+    connectionSettings: AmqpConnectionSettings,
+    exchange: String,
+    declarations: Seq[Declaration] = Seq.empty,
+    routingKey: Option[String] = None
 ) extends AmqpSourceSettings {
   def withRoutingKey(routingKey: String) = copy(routingKey = Some(routingKey))
 
@@ -62,6 +63,7 @@ final case class TemporaryQueueSourceSettings(
 }
 
 object TemporaryQueueSourceSettings {
+
   /**
    * Java API
    */
@@ -70,10 +72,10 @@ object TemporaryQueueSourceSettings {
 }
 
 final case class AmqpSinkSettings(
-  connectionSettings: AmqpConnectionSettings,
-  exchange:           Option[String]         = None,
-  routingKey:         Option[String]         = None,
-  declarations:       Seq[Declaration]       = Seq.empty
+    connectionSettings: AmqpConnectionSettings,
+    exchange: Option[String] = None,
+    routingKey: Option[String] = None,
+    declarations: Seq[Declaration] = Seq.empty
 ) extends AmqpConnectorSettings {
   def withExchange(exchange: String) = copy(exchange = Some(exchange))
 
@@ -84,6 +86,7 @@ final case class AmqpSinkSettings(
 }
 
 object AmqpSinkSettings {
+
   /**
    * Java API
    */
@@ -100,6 +103,7 @@ sealed trait AmqpConnectionSettings
  * Connects to a local AMQP broker at the default port with no password.
  */
 case object DefaultAmqpConnection extends AmqpConnectionSettings {
+
   /**
    * Java API
    */
@@ -109,6 +113,7 @@ case object DefaultAmqpConnection extends AmqpConnectionSettings {
 final case class AmqpConnectionUri(uri: String) extends AmqpConnectionSettings
 
 object AmqpConnectionUri {
+
   /**
    * Java API:
    */
@@ -116,15 +121,14 @@ object AmqpConnectionUri {
 }
 
 final case class AmqpConnectionDetails(
-  host:        String,
-  port:        Int,
-  credentials: Option[AmqpCredentials] = None,
-  virtualHost: Option[String]          = None
-) extends AmqpConnectionSettings {
-
-}
+    host: String,
+    port: Int,
+    credentials: Option[AmqpCredentials] = None,
+    virtualHost: Option[String] = None
+) extends AmqpConnectionSettings {}
 
 object AmqpConnectionDetails {
+
   /**
    * Java API:
    */
@@ -137,6 +141,7 @@ final case class AmqpCredentials(username: String, password: String) {
 }
 
 object AmqpCredentials {
+
   /**
    * Java API
    */
@@ -147,11 +152,11 @@ object AmqpCredentials {
 sealed trait Declaration
 
 final case class QueueDeclaration(
-  name:       String,
-  durable:    Boolean             = false,
-  exclusive:  Boolean             = false,
-  autoDelete: Boolean             = false,
-  arguments:  Map[String, AnyRef] = Map.empty
+    name: String,
+    durable: Boolean = false,
+    exclusive: Boolean = false,
+    autoDelete: Boolean = false,
+    arguments: Map[String, AnyRef] = Map.empty
 ) extends Declaration {
   def withDurable(durable: Boolean) = copy(durable = durable)
 
@@ -168,6 +173,7 @@ final case class QueueDeclaration(
 }
 
 object QueueDeclaration {
+
   /**
    * Java API
    */
@@ -175,10 +181,10 @@ object QueueDeclaration {
 }
 
 final case class BindingDeclaration(
-  queue:      String,
-  exchange:   String,
-  routingKey: Option[String]      = None,
-  arguments:  Map[String, AnyRef] = Map.empty
+    queue: String,
+    exchange: String,
+    routingKey: Option[String] = None,
+    arguments: Map[String, AnyRef] = Map.empty
 ) extends Declaration {
   def withRoutingKey(routingKey: String) = copy(routingKey = Some(routingKey))
 
@@ -191,6 +197,7 @@ final case class BindingDeclaration(
 }
 
 object BindingDeclaration {
+
   /**
    * Java API
    */
@@ -198,12 +205,12 @@ object BindingDeclaration {
 }
 
 final case class ExchangeDeclaration(
-  name:         String,
-  exchangeType: String,
-  durable:      Boolean             = false,
-  autoDelete:   Boolean             = false,
-  internal:     Boolean             = false,
-  arguments:    Map[String, AnyRef] = Map.empty
+    name: String,
+    exchangeType: String,
+    durable: Boolean = false,
+    autoDelete: Boolean = false,
+    internal: Boolean = false,
+    arguments: Map[String, AnyRef] = Map.empty
 ) extends Declaration {
   def withDurable(durable: Boolean) = copy(durable = durable)
 
@@ -220,6 +227,7 @@ final case class ExchangeDeclaration(
 }
 
 object ExchangeDeclaration {
+
   /**
    * Java API
    */

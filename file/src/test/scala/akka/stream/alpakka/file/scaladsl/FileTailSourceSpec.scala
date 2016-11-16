@@ -26,7 +26,9 @@ object FileTailSourceSpec extends {
     // #simple-lines
     val fs = FileSystems.getDefault
     val lines: Source[String, NotUsed] = scaladsl.FileTailSource.lines(
-      path = fs.getPath(path), maxLineSize = 8192, pollingInterval = 250.millis
+      path = fs.getPath(path),
+      maxLineSize = 8192,
+      pollingInterval = 250.millis
     )
 
     lines.runForeach(line => System.out.println(line))

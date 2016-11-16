@@ -41,7 +41,8 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "receive messages from multiple topics" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce, "topic2" -> MqttQoS.AtMostOnce)) { p =>
+    "receive messages from multiple topics" in withBroker(
+      Map("topic1" -> MqttQoS.AtMostOnce, "topic2" -> MqttQoS.AtMostOnce)) { p =>
       val f = fixture(p)
       import f._
 
@@ -108,18 +109,20 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "fail connection when not providing the requested credentials" in withBroker(Map(), Some(("user", "passwd"))) { p =>
-      val f = fixture(p)
-      import f._
+    "fail connection when not providing the requested credentials" in withBroker(Map(), Some(("user", "passwd"))) {
+      p =>
+        val f = fixture(p)
+        import f._
 
-      val (subscriptionFuture, probe) = MqttSource(p.settings, 8).toMat(TestSink.probe)(Keep.both).run()
-      whenReady(subscriptionFuture.failed) {
-        case e: MqttException => e.getMessage should be("Connection lost")
-        case e                => throw e
-      }
+        val (subscriptionFuture, probe) = MqttSource(p.settings, 8).toMat(TestSink.probe)(Keep.both).run()
+        whenReady(subscriptionFuture.failed) {
+          case e: MqttException => e.getMessage should be("Connection lost")
+          case e => throw e
+        }
     }
 
-    "receive a message from a topic with right credentials" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce), Some(("user", "passwd"))) { p =>
+    "receive a message from a topic with right credentials" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce),
+                                                                          Some(("user", "passwd"))) { p =>
       val f = fixture(p)
       import f._
 
@@ -140,7 +143,6 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
 
       val (subscriptionFuture, probe) = MqttSource(p.settings, bufferSize).toMat(TestSink.probe)(Keep.both).run()
       whenReady(subscriptionFuture) { _ =>
-
         (1 to bufferSize + overflow) foreach { i =>
           publish("topic1", s"ohi_$i")
         }
@@ -160,7 +162,6 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
 
       val (subscriptionFuture, probe) = MqttSource(p.settings, bufferSize).toMat(TestSink.probe)(Keep.both).run()
       whenReady(subscriptionFuture) { _ =>
-
         probe.request((bufferSize + overflow).toLong)
 
         (1 to bufferSize + overflow) foreach { i =>
@@ -201,7 +202,8 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
     server.internalPublish(msg)
   }
 
-  def withBroker(subscriptions: Map[String, MqttQoS], serverAuth: Option[(String, String)] = None)(test: FixtureParam => Any) = {
+  def withBroker(subscriptions: Map[String, MqttQoS], serverAuth: Option[(String, String)] = None)(
+      test: FixtureParam => Any) = {
     implicit val sys = ActorSystem("MqttSourceSpec")
     val mat = ActorMaterializer()
 

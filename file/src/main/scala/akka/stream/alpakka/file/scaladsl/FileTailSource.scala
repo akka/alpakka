@@ -18,6 +18,7 @@ import scala.concurrent.duration.FiniteDuration
  * Factory methods for the `FileTailSource`
  */
 object FileTailSource {
+
   /**
    * Scala API: Read the entire contents of a file, and then when the end is reached, keep reading
    * newly appended data. Like the unix command `tail -f`.
@@ -29,7 +30,10 @@ object FileTailSource {
    * @param startingPosition Offset into the file to start reading
    * @param pollingInterval  When the end has been reached, look for new content with this interval
    */
-  def apply(path: Path, maxChunkSize: Int, startingPosition: Long, pollingInterval: FiniteDuration): Source[ByteString, NotUsed] =
+  def apply(path: Path,
+            maxChunkSize: Int,
+            startingPosition: Long,
+            pollingInterval: FiniteDuration): Source[ByteString, NotUsed] =
     Source.fromGraph(new FileTailSource(path, maxChunkSize, startingPosition, pollingInterval))
 
   /**
@@ -46,7 +50,11 @@ object FileTailSource {
    * @param lf              The character or characters used as line separator, default is fetched from OS
    * @param charset         The charset of the file, defaults to UTF-8
    */
-  def lines(path: Path, maxLineSize: Int, pollingInterval: FiniteDuration, lf: String = System.getProperty("line.separator"), charset: Charset = StandardCharsets.UTF_8): Source[String, NotUsed] =
+  def lines(path: Path,
+            maxLineSize: Int,
+            pollingInterval: FiniteDuration,
+            lf: String = System.getProperty("line.separator"),
+            charset: Charset = StandardCharsets.UTF_8): Source[String, NotUsed] =
     apply(path, maxLineSize, 0, pollingInterval)
       .via(akka.stream.scaladsl.Framing.delimiter(ByteString.fromString(lf, charset.name), maxLineSize, false))
       .map(_.decodeString(charset))
