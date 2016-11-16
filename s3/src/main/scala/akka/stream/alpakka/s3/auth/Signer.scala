@@ -21,7 +21,7 @@ object Signer {
 
     hashedBody.map {
       case hb =>
-        val headersToAdd = Seq(RawHeader("x-amz-date", date.format(dateFormatter)), RawHeader("x-amz-content-sha256", hb)) ++ sessionHeader(key.credentials)
+        val headersToAdd = Vector(RawHeader("x-amz-date", date.format(dateFormatter)), RawHeader("x-amz-content-sha256", hb)) ++ sessionHeader(key.credentials)
         val reqWithHeaders = request.withHeaders(request.headers ++ headersToAdd)
         val cr = CanonicalRequest.from(reqWithHeaders)
         val authHeader = authorizationHeader("AWS4-HMAC-SHA256", key, date, cr)
