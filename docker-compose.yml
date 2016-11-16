@@ -1,3 +1,7 @@
+# For detailed information about docker-compose visit https://docs.docker.com/compose/
+# To start all docker containers required to execute the tests locally run:
+# docker-compose up
+
 version: '2'
 services:
   cassandra:
