@@ -1,0 +1,10 @@
+version: '2'
+services:
+  cassandra:
+    image: cassandra:3
+    ports:
+      - "9042:9042"
+  rabbitmq:
+    image: rabbitmq:3
+    ports:
+      - "5672:5672"
