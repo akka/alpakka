@@ -4,12 +4,13 @@
 package akka.stream.alpakka.mqtt.scaladsl
 
 import akka.Done
-import akka.stream.alpakka.mqtt.{ MqttMessage, MqttSourceStage, MqttSourceSettings }
+import akka.stream.alpakka.mqtt.{ MqttMessage, MqttSourceSettings, MqttSourceStage }
 import akka.stream.scaladsl.Source
 
 import scala.concurrent.Future
 
 object MqttSource {
+
   /**
    * Scala API: create an [[MqttSource]] with a provided bufferSize.
    */

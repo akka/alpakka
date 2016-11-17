@@ -27,7 +27,9 @@ object DirectoryChangesSource {
    *                      the JDK implementation is slow, it will not help lowering this
    * @param maxBufferSize Maximum number of buffered directory changes before the stage fails
    */
-  def apply(directoryPath: Path, pollInterval: FiniteDuration, maxBufferSize: Int): Source[(Path, DirectoryChange), NotUsed] =
+  def apply(directoryPath: Path,
+            pollInterval: FiniteDuration,
+            maxBufferSize: Int): Source[(Path, DirectoryChange), NotUsed] =
     Source.fromGraph(new DirectoryChangesSource(directoryPath, pollInterval, maxBufferSize, tupler))
 
 }

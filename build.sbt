@@ -4,7 +4,6 @@ lazy val alpakka = project
   .aggregate(amqp, cassandra, docs, files, mqtt)
 
 lazy val amqp = project
-  .in(file("amqp"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-amqp",
@@ -12,14 +11,13 @@ lazy val amqp = project
   )
 
 lazy val cassandra = project
-  .in(file("cassandra"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-cassandra",
     Dependencies.Cassandra
   )
 
-lazy val files = project
+lazy val files = project // The name file is taken by `sbt.file`!
   .in(file("file"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
@@ -28,7 +26,6 @@ lazy val files = project
   )
 
 lazy val mqtt = project
-  .in(file("mqtt"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-mqtt",
@@ -40,7 +37,6 @@ lazy val mqtt = project
   )
 
 lazy val docs = project
-  .in(file("docs"))
   .enablePlugins(ParadoxPlugin, NoPublish)
   .disablePlugins(BintrayPlugin)
   .settings(

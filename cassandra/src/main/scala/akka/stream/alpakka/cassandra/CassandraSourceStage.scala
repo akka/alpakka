@@ -35,7 +35,7 @@ class CassandraSourceStage(futStmt: Future[Statement], session: Session) extends
 
           maybeRs match {
             case Some(rs) if rs.getAvailableWithoutFetching > 0 => push(out, rs.one())
-            case Some(rs) if rs.isExhausted                     => completeStage()
+            case Some(rs) if rs.isExhausted => completeStage()
             case Some(rs) =>
               // fetch next page
               val futRs = guavaFutToScalaFut(rs.fetchMoreResults())
@@ -70,4 +70,3 @@ class CassandraSourceStage(futStmt: Future[Statement], session: Session) extends
     p.future
   }
 }
-

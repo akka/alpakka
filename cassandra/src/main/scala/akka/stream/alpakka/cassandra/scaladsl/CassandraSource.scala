@@ -11,6 +11,7 @@ import com.datastax.driver.core.{ Row, Session, Statement }
 import scala.concurrent.Future
 
 object CassandraSource {
+
   /**
    * Scala API: creates a [[CassandraSourceStage]] from a given statement.
    */

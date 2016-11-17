@@ -24,8 +24,8 @@ object CassandraSource {
    * Java API: creates a [[CassandraSource]] from the result of a given CompletableFuture.
    */
   def createFromFuture(
-    futStmt: CompletableFuture[Statement],
-    session: Session
+      futStmt: CompletableFuture[Statement],
+      session: Session
   ): Source[Row, NotUsed] = {
     import scala.compat.java8.FutureConverters._
     akka.stream.javadsl.Source.fromGraph(new CassandraSourceStage(futStmt.toScala, session))

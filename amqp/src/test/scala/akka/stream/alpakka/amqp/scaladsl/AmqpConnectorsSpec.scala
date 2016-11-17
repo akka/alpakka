@@ -30,16 +30,13 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       //#create-sink
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(DefaultAmqpConnection)
-          .withRoutingKey(queueName)
-          .withDeclarations(queueDeclaration)
+        AmqpSinkSettings(DefaultAmqpConnection).withRoutingKey(queueName).withDeclarations(queueDeclaration)
       )
       //#create-sink
 
       //#create-source
       val amqpSource = AmqpSource(
-        NamedQueueSourceSettings(DefaultAmqpConnection, queueName)
-          .withDeclarations(queueDeclaration),
+        NamedQueueSourceSettings(DefaultAmqpConnection, queueName).withDeclarations(queueDeclaration),
         bufferSize = 10
       )
       //#create-source
@@ -60,9 +57,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueName = "amqp-conn-it-spec-work-queues-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(DefaultAmqpConnection)
-          .withRoutingKey(queueName)
-          .withDeclarations(queueDeclaration)
+        AmqpSinkSettings(DefaultAmqpConnection).withRoutingKey(queueName).withDeclarations(queueDeclaration)
       )
 
       val input = Vector("one", "two", "three", "four", "five")
@@ -73,11 +68,11 @@ class AmqpConnectorsSpec extends AmqpSpec {
         val count = 3
         val merge = b.add(Merge[IncomingMessage](count))
         for (n <- 0 until count) {
-          val source = b.add(AmqpSource(
-            NamedQueueSourceSettings(DefaultAmqpConnection, queueName)
-              .withDeclarations(queueDeclaration),
-            bufferSize = 1
-          ))
+          val source = b.add(
+            AmqpSource(
+              NamedQueueSourceSettings(DefaultAmqpConnection, queueName).withDeclarations(queueDeclaration),
+              bufferSize = 1
+            ))
           source.out ~> merge.in(n)
         }
 
@@ -93,15 +88,12 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueName = "amqp-conn-it-spec-simple-queue-2-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
       val amqpSource = AmqpSource(
-        NamedQueueSourceSettings(DefaultAmqpConnection, queueName)
-          .withDeclarations(queueDeclaration),
+        NamedQueueSourceSettings(DefaultAmqpConnection, queueName).withDeclarations(queueDeclaration),
         bufferSize = 2
       )
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(DefaultAmqpConnection)
-          .withRoutingKey(queueName)
-          .withDeclarations(queueDeclaration)
+        AmqpSinkSettings(DefaultAmqpConnection).withRoutingKey(queueName).withDeclarations(queueDeclaration)
       )
 
       val publisher = TestPublisher.probe[ByteString]()
@@ -146,15 +138,12 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueName = "amqp-conn-it-spec-simple-queue-2-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
       val amqpSource = AmqpSource(
-        NamedQueueSourceSettings(DefaultAmqpConnection, queueName)
-          .withDeclarations(queueDeclaration),
+        NamedQueueSourceSettings(DefaultAmqpConnection, queueName).withDeclarations(queueDeclaration),
         bufferSize = 10
       )
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(DefaultAmqpConnection)
-          .withRoutingKey(queueName)
-          .withDeclarations(queueDeclaration)
+        AmqpSinkSettings(DefaultAmqpConnection).withRoutingKey(queueName).withDeclarations(queueDeclaration)
       )
 
       val publisher = TestPublisher.probe[ByteString]()
@@ -215,9 +204,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       //#create-exchange-sink
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(DefaultAmqpConnection)
-          .withExchange(exchangeName)
-          .withDeclarations(exchangeDeclaration)
+        AmqpSinkSettings(DefaultAmqpConnection).withExchange(exchangeName).withDeclarations(exchangeDeclaration)
       )
       //#create-exchange-sink
 
@@ -227,15 +214,16 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val fanoutSize = 4
 
       val mergedSources = (0 until fanoutSize).foldLeft(Source.empty[(Int, String)]) {
-        case (source, fanoutBranch) => source.merge(
-          AmqpSource(
-            TemporaryQueueSourceSettings(
-              DefaultAmqpConnection,
-              exchangeName
-            ).withDeclarations(exchangeDeclaration),
-            bufferSize = 1
-          ).map(msg => (fanoutBranch, msg.bytes.utf8String))
-        )
+        case (source, fanoutBranch) =>
+          source.merge(
+            AmqpSource(
+              TemporaryQueueSourceSettings(
+                DefaultAmqpConnection,
+                exchangeName
+              ).withDeclarations(exchangeDeclaration),
+              bufferSize = 1
+            ).map(msg => (fanoutBranch, msg.bytes.utf8String))
+          )
       }
       //#create-exchange-source
 
@@ -245,7 +233,8 @@ class AmqpConnectorsSpec extends AmqpSpec {
         .mapMaterializedValue { n =>
           materialized.success(Done)
           n
-        }.runWith(Sink.seq)
+        }
+        .runWith(Sink.seq)
 
       // There is a race here if we don`t make sure the sources has declared their subscription queues and bindings
       // before we start writing to the exchange
