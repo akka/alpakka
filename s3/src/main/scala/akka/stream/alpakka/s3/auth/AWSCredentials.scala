@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.s3.auth
 
 sealed trait AWSCredentials {
@@ -12,4 +15,6 @@ object AWSCredentials {
   def apply(accessKeyId: String, secretAccessKey: String): BasicCredentials = {
     BasicCredentials(accessKeyId, secretAccessKey)
   }
+  def create(accessKeyId: String, secretAccessKey: String): BasicCredentials =
+    apply(accessKeyId, secretAccessKey)
 }

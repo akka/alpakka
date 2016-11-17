@@ -17,7 +17,7 @@ object Dependencies {
   
   val AkkaHttpVersion = "10.0.0-RC2"
   
-  val AkkaHttp = Seq(
+  val S3 = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http"     % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
@@ -51,7 +51,5 @@ object Dependencies {
       "com.google.jimfs"  %  "jimfs"               % "1.1"  % Test  // ApacheV2
     )
   )
-  
-  val S3 = AkkaHttp 
-  
+
 }

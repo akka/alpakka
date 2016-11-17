@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.s3.impl
 
 import java.nio.file.Paths
@@ -57,20 +60,11 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
    * @param chunkingParallelism
    * @return
    */
-  def multipartUpload(s3Location: S3Location, chunkSize: Int = MinChunkSize, chunkingParallelism: Int = 4): Sink[ByteString, Future[CompleteMultipartUploadResult]] = {
-    val flow = chunkAndRequest(s3Location, chunkSize)(chunkingParallelism)
-    (if (settings.debugLogging)
-      flow.log("s3-upload-response")
-      .withAttributes(Attributes.logLevels(
-        onElement = Logging.DebugLevel,
-        onFailure = Logging.WarningLevel,
-        onFinish = Logging.InfoLevel
-      ))
-    else
-      flow).toMat(completionSink(s3Location))(Keep.right)
-  }
+  def multipartUpload(s3Location: S3Location, chunkSize: Int = MinChunkSize, chunkingParallelism: Int = 4): Sink[ByteString, Future[CompleteMultipartUploadResult]] =
+    chunkAndRequest(s3Location, chunkSize)(chunkingParallelism)
+      .toMat(completionSink(s3Location))(Keep.right)
 
-  def initiateMultipartUpload(s3Location: S3Location): Future[MultipartUpload] = {
+  private def initiateMultipartUpload(s3Location: S3Location): Future[MultipartUpload] = {
     import mat.executionContext
 
     val req = HttpRequests.initiateMultipartUploadRequest(s3Location)
@@ -89,7 +83,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
     }
   }
 
-  def completeMultipartUpload(s3Location: S3Location, parts: Seq[SuccessfulUploadPart]): Future[CompleteMultipartUploadResult] = {
+  private def completeMultipartUpload(s3Location: S3Location, parts: Seq[SuccessfulUploadPart]): Future[CompleteMultipartUploadResult] = {
     import mat.executionContext
 
     for (
@@ -104,7 +98,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
    * @param s3Location The s3 location to which to upload to
    * @return
    */
-  def initiateUpload(s3Location: S3Location): Source[(MultipartUpload, Int), NotUsed] = {
+  private def initiateUpload(s3Location: S3Location): Source[(MultipartUpload, Int), NotUsed] = {
     Source.single(s3Location).mapAsync(1)(initiateMultipartUpload)
       .mapConcat { case r => Stream.continually(r) }
       .zip(Source.fromIterator(() => Iterator.from(1)))
@@ -118,7 +112,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
    * @param parallelism
    * @return
    */
-  def createRequests(s3Location: S3Location, chunkSize: Int = MinChunkSize, parallelism: Int = 4): Flow[ByteString, (HttpRequest, (MultipartUpload, Int)), NotUsed] = {
+  private def createRequests(s3Location: S3Location, chunkSize: Int = MinChunkSize, parallelism: Int = 4): Flow[ByteString, (HttpRequest, (MultipartUpload, Int)), NotUsed] = {
     assert(chunkSize >= MinChunkSize, "Chunk size must be at least 5242880B. See http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadUploadPart.html")
     val requestInfo: Source[(MultipartUpload, Int), NotUsed] = initiateUpload(s3Location)
 
@@ -139,7 +133,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
     case s  => Some(Paths.get(s))
   }
 
-  def chunkAndRequest(s3Location: S3Location, chunkSize: Int = MinChunkSize)(parallelism: Int = 4): Flow[ByteString, UploadPartResponse, NotUsed] = {
+  private def chunkAndRequest(s3Location: S3Location, chunkSize: Int = MinChunkSize)(parallelism: Int = 4): Flow[ByteString, UploadPartResponse, NotUsed] = {
     createRequests(s3Location, chunkSize, parallelism)
       .via(Http().superPool[(MultipartUpload, Int)]())
       .map {
@@ -152,7 +146,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
       }
   }
 
-  def completionSink(s3Location: S3Location): Sink[UploadPartResponse, Future[CompleteMultipartUploadResult]] = {
+  private def completionSink(s3Location: S3Location): Sink[UploadPartResponse, Future[CompleteMultipartUploadResult]] = {
     import mat.executionContext
 
     Sink.seq[UploadPartResponse].mapMaterializedValue {
