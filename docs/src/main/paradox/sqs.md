@@ -1,6 +1,7 @@
 # AWS SQS Connector
 
 The AWS SQS connector allows to stream SQS `Message` from a AWS SQS queue.
+For more information about AWS SQS please visit the [official docmentation](https://aws.amazon.com/documentation/sqs/).
 
 ## Artifacts
 
