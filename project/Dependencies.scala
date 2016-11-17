@@ -43,7 +43,11 @@ object Dependencies {
 
   val ReactiveSockets = Seq(
     libraryDependencies ++= Seq(
-      "io.reactivesocket" % "reactivesocket-transport-tcp" % "0.2.3-SNAPSHOT" // ApacheV2
+      "io.reactivex.rxjava2" % "rxjava" % "2.0.1",
+      "io.reactivesocket" % "reactivesocket-transport-tcp" % "0.2.3-SNAPSHOT", // ApacheV2
+      "io.reactivesocket" % "reactivesocket-transport-local" % "0.2.3-SNAPSHOT", // ApacheV2
+      "io.reactivesocket" % "reactivesocket-transport-aeron" % "0.2.3-SNAPSHOT" // ApacheV2
+      //"io.reactivesocket" % "reactivesocket-transport-websocket" % "0.2.3-SNAPSHOT" // ApacheV2
     )
   )
 }
