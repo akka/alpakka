@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.s3.auth
 
 import java.security.MessageDigest
@@ -10,7 +13,7 @@ import akka.stream.Materializer
 
 import scala.concurrent.Future
 
-object Signer {
+private[alpakka] object Signer {
   private val dateFormatter = DateTimeFormatter.ofPattern("YYYYMMdd'T'HHmmssX")
 
   def signedRequest(request: HttpRequest, key: SigningKey, date: ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC))(implicit mat: Materializer): Future[HttpRequest] = {
@@ -51,4 +54,3 @@ object Signer {
   }
 
 }
-

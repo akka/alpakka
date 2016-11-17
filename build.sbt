@@ -44,9 +44,9 @@ lazy val mqtt = project
     parallelExecution in Test := false
   )
 
-lazy val `s3` = project
+lazy val s3 = project
   .in(file("s3"))
-  .enablePlugins()
+  .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-s3",
     Dependencies.S3

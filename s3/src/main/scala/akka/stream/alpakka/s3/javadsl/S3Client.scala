@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.s3.javadsl
 
 import akka.actor.ActorSystem
@@ -18,7 +21,8 @@ import scala.compat.java8.FutureConverters._
 final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
 object MultipartUploadResult {
-  def apply(r: CompleteMultipartUploadResult): MultipartUploadResult = new MultipartUploadResult(JavaUri(r.location), r.bucket, r.key, r.etag)
+  def create(r: CompleteMultipartUploadResult): MultipartUploadResult =
+    new MultipartUploadResult(JavaUri(r.location), r.bucket, r.key, r.etag)
 }
 
 final class S3Client(credentials: AWSCredentials, region: String, system: ActorSystem, mat: Materializer) {
@@ -27,5 +31,6 @@ final class S3Client(credentials: AWSCredentials, region: String, system: ActorS
   def download(bucket: String, key: String): Source[ByteString, NotUsed] = impl.download(S3Location(bucket, key)).asJava
 
   def multipartUpload(bucket: String, key: String): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    impl.multipartUpload(S3Location(bucket, key)).mapMaterializedValue(_.map(MultipartUploadResult.apply)(system.dispatcher).toJava).asJava
+    impl.multipartUpload(S3Location(bucket, key))
+      .mapMaterializedValue(_.map(MultipartUploadResult.create)(system.dispatcher).toJava).asJava
 }

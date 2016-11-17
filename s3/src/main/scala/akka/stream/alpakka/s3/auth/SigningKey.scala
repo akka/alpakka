@@ -1,20 +1,20 @@
+/*
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.s3.auth
 
-import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
-import javax.xml.bind.DatatypeConverter
 
-final case class CredentialScope(date: LocalDate, awsRegion: String, awsService: String) {
-  val dateFormat = new SimpleDateFormat("yyyy-MM-dd")
+private[alpakka] final case class CredentialScope(date: LocalDate, awsRegion: String, awsService: String) {
   lazy val formattedDate: String = date.format(DateTimeFormatter.BASIC_ISO_DATE)
 
   def scopeString = s"$formattedDate/$awsRegion/$awsService/aws4_request"
 }
 
-final case class SigningKey(credentials: AWSCredentials, scope: CredentialScope, algorithm: String = "HmacSHA256") {
+private[alpakka] final case class SigningKey(credentials: AWSCredentials, scope: CredentialScope, algorithm: String = "HmacSHA256") {
 
   val rawKey = new SecretKeySpec(s"AWS4${credentials.secretAccessKey}".getBytes, algorithm)
 

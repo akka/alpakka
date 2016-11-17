@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.s3.auth
 
 import java.nio.charset.StandardCharsets._
@@ -50,8 +53,8 @@ class StreamUtilsSpec(_system: ActorSystem) extends TestKit(_system) with FlatSp
   }
 
   "digest" should "calculate the digest of a short string" in {
-    val bytes: Array[Byte] = "abcdefghijklmnopqrstuvwxyz".getBytes()
-    val flow: Future[ByteString] = Source.single(ByteString(bytes)).runWith(digest())
+    val bytes = "abcdefghijklmnopqrstuvwxyz".getBytes()
+    val flow = Source.single(ByteString(bytes)).runWith(digest())
 
     val testDigest = MessageDigest.getInstance("SHA-256").digest(bytes)
     whenReady(flow) { result =>
@@ -61,10 +64,10 @@ class StreamUtilsSpec(_system: ActorSystem) extends TestKit(_system) with FlatSp
 
   it should "calculate the digest of a file" in {
     val input = StreamConverters.fromInputStream(() => Files.newInputStream(bigFile))
-    val flow: Future[ByteString] = input.runWith(digest())
+    val flow = input.runWith(digest())
 
     val testDigest = MessageDigest.getInstance("SHA-256")
-    val dis: DigestInputStream = new DigestInputStream(Files.newInputStream(bigFile), testDigest)
+    val dis = new DigestInputStream(Files.newInputStream(bigFile), testDigest)
 
     val buffer = new Array[Byte](1024)
 
