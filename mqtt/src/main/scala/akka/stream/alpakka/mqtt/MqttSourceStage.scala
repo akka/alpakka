@@ -14,7 +14,8 @@ import scala.collection.mutable
 import scala.concurrent._
 import scala.util.Try
 
-final class MqttSourceStage(settings: MqttSourceSettings, bufferSize: Int) extends GraphStageWithMaterializedValue[SourceShape[MqttMessage], Future[Done]] {
+final class MqttSourceStage(settings: MqttSourceSettings, bufferSize: Int)
+    extends GraphStageWithMaterializedValue[SourceShape[MqttMessage], Future[Done]] {
 
   import MqttConnectorLogic._
 
@@ -30,17 +31,18 @@ final class MqttSourceStage(settings: MqttSourceSettings, bufferSize: Int) exten
 
       private val queue = mutable.Queue[MqttMessage]()
       private val mqttSubscriptionCallback: Try[IMqttToken] => Unit = conn =>
-        subscriptionPromise.complete(conn.map { _ => Done })
+        subscriptionPromise.complete(conn.map { _ =>
+          Done
+        })
       private val backpressure = new Semaphore(bufferSize)
 
       override val connectionSettings = settings.connectionSettings
 
       setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
+        override def onPull(): Unit =
           if (queue.nonEmpty) {
             pushMessage(queue.dequeue())
           }
-        }
       })
 
       override def handleConnection(client: IMqttAsyncClient) = {
@@ -48,9 +50,8 @@ final class MqttSourceStage(settings: MqttSourceSettings, bufferSize: Int) exten
         client.subscribe(topics.toArray, qos.map(_.byteValue.toInt).toArray, (), mqttSubscriptionCallback)
       }
 
-      override def beforeHandleMessage(): Unit = {
+      override def beforeHandleMessage(): Unit =
         backpressure.acquire()
-      }
 
       override def handleMessage(message: MqttMessage): Unit = {
         require(queue.size <= bufferSize)

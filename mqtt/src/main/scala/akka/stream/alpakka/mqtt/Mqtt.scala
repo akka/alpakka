@@ -51,15 +51,17 @@ object MqttQoS {
  * @param subscriptions the mapping between a topic name and a [[MqttQoS]].
  */
 final case class MqttSourceSettings(
-  connectionSettings: MqttConnectionSettings,
-  subscriptions:      Map[String, MqttQoS]   = Map.empty
+    connectionSettings: MqttConnectionSettings,
+    subscriptions: Map[String, MqttQoS] = Map.empty
 ) {
   @annotation.varargs
-  def withSubscriptions(subscription: akka.japi.Pair[String, MqttQoS], subscriptions: akka.japi.Pair[String, MqttQoS]*) =
+  def withSubscriptions(subscription: akka.japi.Pair[String, MqttQoS],
+                        subscriptions: akka.japi.Pair[String, MqttQoS]*) =
     copy(subscriptions = (subscription +: subscriptions).map(_.toScala).toMap)
 }
 
 object MqttSourceSettings {
+
   /**
    * Java API: create [[MqttSourceSettings]].
    */
@@ -68,16 +70,17 @@ object MqttSourceSettings {
 }
 
 final case class MqttConnectionSettings(
-  broker:      String,
-  clientId:    String,
-  persistence: MqttClientPersistence,
-  auth:        Option[(String, String)] = None
+    broker: String,
+    clientId: String,
+    persistence: MqttClientPersistence,
+    auth: Option[(String, String)] = None
 ) {
   def withAuth(username: String, password: String) =
     copy(auth = Some((username, password)))
 }
 
 object MqttConnectionSettings {
+
   /**
    * Java API: create [[MqttConnectionSettings]] with no auth information.
    */
@@ -88,6 +91,7 @@ object MqttConnectionSettings {
 final case class MqttMessage(topic: String, payload: ByteString)
 
 object MqttMessage {
+
   /**
    * Java API: create  [[MqttMessage]]
    */
@@ -147,7 +151,7 @@ private[mqtt] trait MqttConnectorLogic { this: GraphStageLogic =>
   }
 
   private val connectHandler: IMqttAsyncClient => Try[IMqttToken] => Unit = client => {
-    case Success(_)  => onConnect.invoke(client)
+    case Success(_) => onConnect.invoke(client)
     case Failure(ex) => onConnectionLost.invoke(ex)
   }
 }
