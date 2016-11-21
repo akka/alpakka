@@ -15,8 +15,13 @@ import scala.compat.java8.FutureConverters._
 
 object CassandraSink {
 
-  def create[T](parallelism: Int, statement: PreparedStatement, statementBinder: BiFunction[T, PreparedStatement, BoundStatement], session: Session): Sink[T, CompletionStage[Done]] = {
-    val sink = ScalaCSink.apply[T](parallelism, statement, (t, p) => statementBinder.apply(t, p))(session, scala.concurrent.ExecutionContext.global)
+  def create[T](parallelism: Int,
+                statement: PreparedStatement,
+                statementBinder: BiFunction[T, PreparedStatement, BoundStatement],
+                session: Session): Sink[T, CompletionStage[Done]] = {
+    val sink = ScalaCSink.apply[T](parallelism, statement, (t, p) => statementBinder.apply(t, p))(
+      session,
+      scala.concurrent.ExecutionContext.global)
 
     sink.mapMaterializedValue(_.toJava).asJava
   }

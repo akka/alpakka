@@ -12,7 +12,12 @@ import scala.concurrent.{ ExecutionContext, Future }
 import akka.stream.alpakka.cassandra.cassandra._
 
 object CassandraSink {
-  def apply[T](parallelism: Int, statement: PreparedStatement, statementBinder: (T, PreparedStatement) => BoundStatement)(implicit session: Session, ex: ExecutionContext): Sink[T, Future[Done]] =
-    Flow[T].mapAsyncUnordered(parallelism)(t ⇒
-      session.executeAsync(statementBinder(t, statement)).asScala()).toMat(Sink.ignore)(Keep.right)
+  def apply[T](parallelism: Int,
+               statement: PreparedStatement,
+               statementBinder: (T, PreparedStatement) => BoundStatement)(
+      implicit session: Session,
+      ex: ExecutionContext): Sink[T, Future[Done]] =
+    Flow[T]
+      .mapAsyncUnordered(parallelism)(t ⇒ session.executeAsync(statementBinder(t, statement)).asScala())
+      .toMat(Sink.ignore)(Keep.right)
 }
