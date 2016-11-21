@@ -7,7 +7,7 @@ The Cassandra connector provides a way to provide the result of a Cassandra quer
 sbt
 :   @@@vars
     ```scala
-    libraryDependencies += "com.typesafe.akka" %% "akka-stream-alpakka-cassandra" % "$version$"
+    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-cassandra" % "$version$"
     ```
     @@@
 
@@ -15,7 +15,7 @@ Maven
 :   @@@vars
     ```xml
     <dependency>
-      <groupId>com.typesafe.akka</groupId>
+      <groupId>com.lightbend.akka</groupId>
       <artifactId>akka-stream-alpakka-cassandra_$scala.binaryVersion$</artifactId>
       <version>$version$</version>
     </dependency>
@@ -26,7 +26,7 @@ Gradle
 :   @@@vars
     ```gradle
     dependencies {
-      compile group: "com.typesafe.akka", name: "akka-stream-alpakka-cassandra_$scala.binaryVersion$", version: "$version$"
+      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-cassandra_$scala.binaryVersion$", version: "$version$"
     }
     ```
     @@@
