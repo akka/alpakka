@@ -26,13 +26,12 @@ class SqsSourceSpec extends AsyncWordSpec with BeforeAndAfterAll with ScalaFutur
 
   //#init-client
   val credentials = new BasicAWSCredentials("x", "x")
-  implicit val sqsClient: AmazonSQSAsyncClient = new AmazonSQSAsyncClient(credentials)
-    .withEndpoint("http://localhost:9324")
+  implicit val sqsClient: AmazonSQSAsyncClient =
+    new AmazonSQSAsyncClient(credentials).withEndpoint("http://localhost:9324")
   //#init-client
 
-  override protected def afterAll(): Unit = {
+  override protected def afterAll(): Unit =
     Await.ready(system.terminate(), 5.seconds)
-  }
 
   def randomQueueUrl(): String = sqsClient.createQueue(s"queue-${Random.nextInt}").getQueueUrl
 
@@ -43,10 +42,7 @@ class SqsSourceSpec extends AsyncWordSpec with BeforeAndAfterAll with ScalaFutur
       val queue = randomQueueUrl()
       sqsClient.sendMessage(queue, "alpakka")
 
-      SqsSource(queue)
-        .take(1)
-        .runWith(Sink.seq)
-        .map(_.map(_.getBody) should contain("alpakka"))
+      SqsSource(queue).take(1).runWith(Sink.seq).map(_.map(_.getBody) should contain("alpakka"))
 
     }
 
@@ -54,15 +50,16 @@ class SqsSourceSpec extends AsyncWordSpec with BeforeAndAfterAll with ScalaFutur
 
       val queue = randomQueueUrl()
 
-      val input = 1 to 100 map { i => s"alpakka-$i" }
+      val input = 1 to 100 map { i =>
+        s"alpakka-$i"
+      }
 
-      input foreach { m => sqsClient.sendMessage(queue, m) }
+      input foreach { m =>
+        sqsClient.sendMessage(queue, m)
+      }
 
       //#run
-      SqsSource(queue)
-        .take(100)
-        .runWith(Sink.seq)
-        .map(_ should have size 100)
+      SqsSource(queue).take(100).runWith(Sink.seq).map(_ should have size 100)
       //#run
 
     }
@@ -71,9 +68,7 @@ class SqsSourceSpec extends AsyncWordSpec with BeforeAndAfterAll with ScalaFutur
 
       val queue = randomQueueUrl()
 
-      val f = SqsSource(queue, SqsSourceSettings(0.seconds, 100, 10))
-        .take(1)
-        .runWith(Sink.seq)
+      val f = SqsSource(queue, SqsSourceSettings(0.seconds, 100, 10)).take(1).runWith(Sink.seq)
 
       sqsClient.sendMessage(queue, s"alpakka")
 
@@ -84,8 +79,7 @@ class SqsSourceSpec extends AsyncWordSpec with BeforeAndAfterAll with ScalaFutur
 
       val queue = "http://localhost:9324/queue/not-existing"
 
-      val f = SqsSource(queue)
-        .runWith(Sink.seq)
+      val f = SqsSource(queue).runWith(Sink.seq)
 
       f.failed.map(_ shouldBe a[QueueDoesNotExistException])
     }

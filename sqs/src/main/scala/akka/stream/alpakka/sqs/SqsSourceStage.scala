@@ -22,12 +22,13 @@ final case class SqsSourceSettings(longPollingDuration: FiniteDuration, maxBuffe
   require(maxBatchSize <= maxBufferSize)
 }
 
-final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings, sqsClient: AmazonSQSAsyncClient) extends GraphStage[SourceShape[Message]] {
+final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings, sqsClient: AmazonSQSAsyncClient)
+    extends GraphStage[SourceShape[Message]] {
 
   val out: Outlet[Message] = Outlet("SqsSource.out")
   override val shape: SourceShape[Message] = SourceShape(out)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
 
       private val buffer = new util.ArrayDeque[Message]()
@@ -42,18 +43,16 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings, sqsCli
           .withWaitTimeSeconds(settings.longPollingDuration.toSeconds.toInt)
 
         sqsClient.receiveMessageAsync(request, new AsyncHandler[ReceiveMessageRequest, ReceiveMessageResult] {
-          override def onError(e: Exception): Unit = {
+          override def onError(e: Exception): Unit =
             failureCallback.invoke(e)
-          }
 
           override def onSuccess(request: ReceiveMessageRequest, result: ReceiveMessageResult): Unit =
             successCallback.invoke(result)
         })
       }
 
-      def handleFailure(ex: Exception): Unit = {
+      def handleFailure(ex: Exception): Unit =
         failStage(ex)
-      }
 
       def handleSuccess(result: ReceiveMessageResult): Unit = {
 
@@ -69,7 +68,7 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings, sqsCli
       }
 
       setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
+        override def onPull(): Unit =
           if (!buffer.isEmpty) {
             if (buffer.size == settings.maxBufferSize - settings.maxBatchSize) {
               receiveMessages()
@@ -78,9 +77,7 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings, sqsCli
           } else {
             receiveMessages()
           }
-        }
       })
 
     }
-  }
 }
