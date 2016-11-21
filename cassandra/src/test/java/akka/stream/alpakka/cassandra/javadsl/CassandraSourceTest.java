@@ -110,15 +110,24 @@ public class CassandraSourceTest {
   @Test
   public void sinkInputValues() throws Exception {
 
-    BiFunction<Integer, PreparedStatement,BoundStatement> writer = (x, y) -> {
-      return y.bind(x);
-    };
+    //#prepared-statement
+    final PreparedStatement preparedStatement = session.prepare("insert into akka_stream_java_test.test (id) values (?)");
+    //#prepared-statement
 
-    final Sink<Integer, CompletionStage<Done>> sink =  CassandraSink.create(2, session.prepare("insert into akka_stream_java_test.test (id) values (?)"), writer, session);
+    //#statement-binder
+    BiFunction<Integer, PreparedStatement,BoundStatement> statementBinder = (myInteger, statement) -> {
+      return statement.bind(myInteger);
+    };
+    //#statement-binder
 
     Source<Integer, NotUsed> source = Source.from(IntStream.range(1, 10).boxed().collect(Collectors.toList()));
 
+
+    //#run-sink
+    final Sink<Integer, CompletionStage<Done>> sink = CassandraSink.create(2, preparedStatement, statementBinder, session);
+
     CompletionStage<Done> result = source.runWith(sink, materializer);
+    //#run-sink
 
     result.toCompletableFuture().get();
 
