@@ -5,8 +5,8 @@ package akka.stream.alpakka.cassandra.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Sink, Source}
-import com.datastax.driver.core.{Cluster, PreparedStatement, SimpleStatement}
+import akka.stream.scaladsl.{ Sink, Source }
+import com.datastax.driver.core.{ Cluster, PreparedStatement, SimpleStatement }
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 

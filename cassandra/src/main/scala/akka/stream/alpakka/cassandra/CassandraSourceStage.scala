@@ -12,7 +12,7 @@ import scala.util.{ Failure, Success, Try }
 
 import akka.stream.alpakka.cassandra.cassandra._
 
-class CassandraSourceStage(futStmt: Future[Statement], session: Session) extends GraphStage[SourceShape[Row]] {
+final class CassandraSourceStage(futStmt: Future[Statement], session: Session) extends GraphStage[SourceShape[Row]] {
   val out: Outlet[Row] = Outlet("CassandraSource.out")
   override val shape: SourceShape[Row] = SourceShape(out)
 

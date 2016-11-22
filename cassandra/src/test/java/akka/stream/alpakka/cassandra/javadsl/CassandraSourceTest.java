@@ -124,7 +124,7 @@ public class CassandraSourceTest {
 
 
     //#run-sink
-    final Sink<Integer, CompletionStage<Done>> sink = CassandraSink.create(2, preparedStatement, statementBinder, session);
+    final Sink<Integer, CompletionStage<Done>> sink = CassandraSink.create(2, preparedStatement, statementBinder, session, system.dispatcher());
 
     CompletionStage<Done> result = source.runWith(sink, materializer);
     //#run-sink
