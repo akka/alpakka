@@ -9,7 +9,7 @@ the sources and sinks for files already included in core Akka Streams
 sbt
 :   @@@vars
     ```scala
-    libraryDependencies += "com.typesafe.akka" %% "akka-stream-alpakka-file" % "$version$"
+    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-file" % "$version$"
     ```
     @@@
 
@@ -17,7 +17,7 @@ Maven
 :   @@@vars
     ```xml
     <dependency>
-      <groupId>com.typesafe.akka</groupId>
+      <groupId>com.lightbend.akka</groupId>
       <artifactId>akka-stream-alpakka-file_$scala.binaryVersion$</artifactId>
       <version>$version$</version>
     </dependency>
@@ -28,7 +28,7 @@ Gradle
 :   @@@vars
     ```gradle
     dependencies {
-      compile group: "com.typesafe.akka", name: "akka-stream-alpakka-file_$scala.binaryVersion$", version: "$version$"
+      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-file_$scala.binaryVersion$", version: "$version$"
     }
     ```
     @@@
