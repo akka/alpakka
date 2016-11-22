@@ -9,7 +9,7 @@ import com.datastax.driver.core.{ BoundStatement, PreparedStatement, Session }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-import akka.stream.alpakka.cassandra.cassandra._
+import akka.stream.alpakka.cassandra.GuavaFutureOpts._
 
 object CassandraSink {
   def apply[T](parallelism: Int,
