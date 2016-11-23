@@ -20,3 +20,4 @@ private[cassandra] object GuavaFutures {
     }
   }
 }
+
