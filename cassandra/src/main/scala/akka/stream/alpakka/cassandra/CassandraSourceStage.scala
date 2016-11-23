@@ -10,7 +10,7 @@ import com.datastax.driver.core.{ ResultSet, Row, Session, Statement }
 import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 
-import akka.stream.alpakka.cassandra.GuavaFutureOpts._
+import akka.stream.alpakka.cassandra.GuavaFutures._
 
 final class CassandraSourceStage(futStmt: Future[Statement], session: Session) extends GraphStage[SourceShape[Row]] {
   val out: Outlet[Row] = Outlet("CassandraSource.out")

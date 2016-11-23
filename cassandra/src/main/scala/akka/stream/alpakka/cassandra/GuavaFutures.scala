@@ -7,7 +7,7 @@ import com.google.common.util.concurrent.{ FutureCallback, Futures, ListenableFu
 
 import scala.concurrent.{ Future, Promise }
 
-private[cassandra] object GuavaFutureOpts {
+private[cassandra] object GuavaFutures {
   implicit final class GuavaFutureOpts[A](val guavaFut: ListenableFuture[A]) extends AnyVal {
     def asScala(): Future[A] = {
       val p = Promise[A]()
