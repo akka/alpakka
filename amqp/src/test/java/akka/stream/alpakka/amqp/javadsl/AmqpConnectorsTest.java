@@ -18,6 +18,7 @@ import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
 import akka.util.ByteString;
+import scala.concurrent.duration.Duration;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -28,8 +29,8 @@ import java.util.stream.*;
  */
 public class AmqpConnectorsTest {
 
-  static ActorSystem system;
-  static Materializer materializer;
+  private static ActorSystem system;
+  private static Materializer materializer;
 
   @BeforeClass
   public static void setup() {
@@ -70,7 +71,7 @@ public class AmqpConnectorsTest {
 
     //#run-sink
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
-    Source.from(input).map(s -> ByteString.fromString(s)).runWith(amqpSink, materializer);
+    Source.from(input).map(ByteString::fromString).runWith(amqpSink, materializer);
     //#run-sink
 
     //#run-source
@@ -96,8 +97,6 @@ public class AmqpConnectorsTest {
     );
     //#create-exchange-sink
 
-    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
-
     //#create-exchange-source
     final Integer fanoutSize = 4;
     final Integer bufferSize = 1;
@@ -118,28 +117,24 @@ public class AmqpConnectorsTest {
     }
     //#create-exchange-source
 
-    final CompletableFuture<Done> materialized = new CompletableFuture<>();
-    final CompletionStage<List<Pair<Integer, String>>> result =  mergedSources
-      .take(input.size() * fanoutSize)
-      .mapMaterializedValue(matVal -> {
-        materialized.complete(Done.getInstance());
-        return matVal;
-      })
-      .runWith(Sink.seq(), materializer);
+    final CompletableFuture<Done> completion = new CompletableFuture<>();
+    mergedSources
+      .runWith(Sink.fold(new HashSet<Integer>(), (seen, branchElem) -> {
+        if (seen.size() == fanoutSize) {
+          completion.complete(Done.getInstance());
+        }
+        seen.add(branchElem.first());
+        return seen;
+      }), materializer);
 
-     // There is a race here if we don`t make sure the sources has declared their subscription queues and bindings
-     // before we start writing to the exchange
-     materialized.get(3, TimeUnit.SECONDS);
-     Thread.sleep(200);
+    system.scheduler().scheduleOnce(
+      Duration.create(5, TimeUnit.SECONDS),
+      () -> completion.completeExceptionally(new Error("Did not get at least one element from every fanout branch")),
+      system.dispatcher());
 
-     Source.from(input).map(s -> ByteString.fromString(s)).runWith(amqpSink, materializer);
+     Source.repeat("stuff").map(ByteString::fromString).runWith(amqpSink, materializer);
 
-     final Set<Pair<Integer, String>> expectedResult = input
-       .stream()
-       .flatMap(str -> IntStream.range(0, fanoutSize).boxed().map(i -> Pair.create(i, str)))
-       .collect(Collectors.toSet());
-
-     assertEquals(expectedResult, result.toCompletableFuture().get(10, TimeUnit.SECONDS).stream().collect(Collectors.toSet()));
+     assertEquals(Done.getInstance(), completion.get(10, TimeUnit.SECONDS));
   }
 
 }

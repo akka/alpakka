@@ -131,7 +131,6 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       subscriber.cancel()
       publisher.sendComplete()
-
     }
 
     "not ack messages unless they get consumed" in {
@@ -189,7 +188,6 @@ class AmqpConnectorsSpec extends AmqpSpec {
       subscriber2.expectNext().bytes.utf8String shouldEqual "five"
 
       subscriber2.cancel()
-
     }
 
     "pub-sub from one source with multiple sinks" in {
@@ -208,8 +206,6 @@ class AmqpConnectorsSpec extends AmqpSpec {
       )
       //#create-exchange-sink
 
-      val input = Vector("one", "two", "three", "four", "five")
-
       //#create-exchange-source
       val fanoutSize = 4
 
@@ -227,24 +223,20 @@ class AmqpConnectorsSpec extends AmqpSpec {
       }
       //#create-exchange-source
 
-      val materialized = Promise[Done]()
-      val futureResult = mergedSources
-        .take(input.size * fanoutSize)
-        .mapMaterializedValue { n =>
-          materialized.success(Done)
-          n
-        }
-        .runWith(Sink.seq)
+      val completion = Promise[Done]
+      mergedSources.runWith(Sink.fold(Set.empty[Int]) {
+        case (seen, (branch, element)) =>
+          if (seen.size == fanoutSize) completion.trySuccess(Done)
+          seen + branch
+      })
 
-      // There is a race here if we don`t make sure the sources has declared their subscription queues and bindings
-      // before we start writing to the exchange
-      materialized.future.futureValue
-      Thread.sleep(200)
+      import system.dispatcher
+      system.scheduler.scheduleOnce(5.seconds)(
+        completion.tryFailure(new Error("Did not get at least one element from every fanout branch")))
 
-      Source(input).map(s => ByteString(s)).runWith(amqpSink)
+      Source.repeat("stuff").map(s => ByteString(s)).runWith(amqpSink)
 
-      val expectedOutput = input.flatMap(string => (0 until fanoutSize).map(n => (n, string))).toSet
-      futureResult.futureValue.toSet shouldEqual expectedOutput
+      completion.future.futureValue shouldBe Done
     }
   }
 }
