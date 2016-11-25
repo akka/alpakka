@@ -49,7 +49,7 @@ object Common extends AutoPlugin {
     ),
 
     autoAPIMappings := true,
-    apiURL := Some(url(s"http://doc.akka.io/alpakka/api/${version.value}")),
+    apiURL := Some(url(s"http://developer.lightbend.com/docs/api/alpakka/${version.value}")),
 
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
