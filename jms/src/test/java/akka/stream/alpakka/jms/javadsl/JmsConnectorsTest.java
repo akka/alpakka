@@ -17,24 +17,18 @@ import org.apache.activemq.broker.BrokerService;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.duration.FiniteDuration;
 
-import javax.jms.JMSException;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static akka.pattern.PatternsCS.after;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 public class JmsConnectorsTest {
 
@@ -76,52 +70,6 @@ public class JmsConnectorsTest {
             assertEquals(in, result.toCompletableFuture().get(3, TimeUnit.SECONDS));
         });
 
-    }
-
-    @Test
-    public void applyingBackpressure() throws Exception {
-        withServer(ctx -> {
-            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
-            List<String> in = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
-            Source.from(in).runWith(JmsSink.create(JmsSinkSettings
-                    .create(connectionFactory)
-                    .withQueue("test")
-            ), materializer);
-
-            CompletionStage<List<String>> result = JmsSource
-                    .textSource(JmsSourceSettings
-                            .create(connectionFactory)
-                            .withQueue("test")
-                            .withBufferSize(1)
-                    )
-                    .mapAsync(1, e ->
-                            after(FiniteDuration.create(1, TimeUnit.SECONDS), system.scheduler(), system.dispatcher(), CompletableFuture.completedFuture(e))
-                    )
-                    .take(in.size()).runWith(Sink.seq(), materializer);
-
-            assertEquals(in, result.toCompletableFuture().get(15, TimeUnit.SECONDS));
-        });
-    }
-
-    @Test
-    public void deconnexionShouldFail() throws Exception {
-        withServer(ctx -> {
-            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
-
-            CompletionStage<List<String>> result = JmsSource.textSource(JmsSourceSettings
-                    .create(connectionFactory)
-                    .withQueue("test")
-                    .withBufferSize(1)
-            ).runWith(Sink.seq(), materializer);
-            Thread.sleep(500);
-            ctx.broker.stop();
-            try {
-                result.toCompletableFuture().get();
-                fail();
-            } catch (ExecutionException e) {
-                assertEquals(JMSException.class, e.getCause().getClass());
-            }
-        });
     }
 
     @Test

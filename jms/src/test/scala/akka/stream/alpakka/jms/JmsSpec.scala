@@ -7,6 +7,7 @@ import java.net.ServerSocket
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.testkit.TestKit
 import org.apache.activemq.broker.BrokerService
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
@@ -22,7 +23,7 @@ abstract class JmsSpec
   implicit val materializer = ActorMaterializer()
 
   override protected def afterAll(): Unit =
-    system.terminate()
+    TestKit.shutdownActorSystem(system)
 
   def withServer()(test: Context => Unit): Unit = {
     val broker = new BrokerService()

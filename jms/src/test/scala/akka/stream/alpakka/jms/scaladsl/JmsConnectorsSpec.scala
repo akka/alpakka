@@ -6,14 +6,12 @@ package akka.stream.alpakka.jms.scaladsl
 import javax.jms.JMSException
 
 import akka.NotUsed
+import akka.stream.ThrottleMode
 import akka.stream.alpakka.jms.{ JmsSinkSettings, JmsSourceSettings, JmsSpec }
 import akka.stream.scaladsl.{ Sink, Source }
 import org.apache.activemq.ActiveMQConnectionFactory
-import org.apache.activemq.broker.BrokerService
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.Random
 
 class JmsConnectorsSpec extends JmsSpec {
 
@@ -52,15 +50,13 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "applying backpressure when the consumer is slower than the producer" in withServer() { ctx =>
-      import system.dispatcher
-
       val connectionFactory = new ActiveMQConnectionFactory(s"tcp://${ctx.host}:${ctx.port}")
-      val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
+      val in = List("a", "b", "c")
       Source(in).runWith(JmsSink(JmsSinkSettings(connectionFactory).withQueue("test")))
 
       val result = JmsSource
         .textSource(JmsSourceSettings(connectionFactory).withBufferSize(1).withQueue("test"))
-        .mapAsync(1)(e => akka.pattern.after(1.seconds, system.scheduler)(Future.successful(e)))
+        .throttle(1, 1.second, 1, ThrottleMode.shaping)
         .take(in.size)
         .runWith(Sink.seq)
 

@@ -11,8 +11,6 @@ object JmsSink {
 
   /**
    * Scala API: Creates an [[JmsSink]]
-   * @param jmsSettings the connexion settings
-   * @return
    */
   def apply(jmsSettings: JmsSinkSettings): Sink[String, NotUsed] =
     Sink.fromGraph(new JmsSinkStage(jmsSettings))

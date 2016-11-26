@@ -7,7 +7,7 @@ The JMS connector provides Akka Stream sources and sinks to connect to JMS serve
 sbt
 :   @@@vars
     ```scala
-    libraryDependencies += "com.typesafe.akka" %% "akka-stream-alpakka-jms" % "$version$"
+    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-jms" % "$version$"
     ```
     @@@
 
@@ -15,7 +15,7 @@ Maven
 :   @@@vars
     ```xml
     <dependency>
-      <groupId>com.typesafe.akka</groupId>
+      <groupId>com.lightbend.akka</groupId>
       <artifactId>akka-stream-alpakka-jms_$scala.binaryVersion$</artifactId>
       <version>$version$</version>
     </dependency>
