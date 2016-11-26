@@ -8,7 +8,7 @@ For more information about AWS SQS please visit the [official docmentation](http
 sbt
 :   @@@vars
     ```scala
-    libraryDependencies += "com.typesafe.akka" %% "akka-stream-alpakka-sqs" % "$version$"
+    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-sqs" % "$version$"
     ```
     @@@
 
@@ -16,7 +16,7 @@ Maven
 :   @@@vars
     ```xml
     <dependency>
-      <groupId>com.typesafe.akka</groupId>
+      <groupId>com.lightbend.akka</groupId>
       <artifactId>akka-stream-alpakka-sqs_$scala.binaryVersion$</artifactId>
       <version>$version$</version>
     </dependency>
@@ -27,7 +27,7 @@ Gradle
 :   @@@vars
     ```gradle
     dependencies {
-      compile group: "com.typesafe.akka", name: "akka-stream-alpakka-sqs_$scala.binaryVersion$", version: "$version$"
+      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-sqs_$scala.binaryVersion$", version: "$version$"
     }
     ```
     @@@
@@ -61,8 +61,8 @@ Scala
 Java
 : @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSourceTest.java) { #run }
 
-As you have seen we consume the stream for 100 milliseconds. The reason for this is, that reading messages from
-SQS queues never finished because there is no direct way to determine the end of a queue.
+As you have seen we take the first 100 elements from the stream. The reason for this is, that reading messages from
+SQS queues never finishes because there is no direct way to determine the end of a queue.
 
 ### Running the example code
 
