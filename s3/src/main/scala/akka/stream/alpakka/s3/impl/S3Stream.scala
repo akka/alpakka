@@ -8,7 +8,6 @@ import java.time.LocalDate
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ ContentType, ContentTypes, HttpRequest, HttpResponse, ResponseEntity, Uri }
 import akka.http.scaladsl.unmarshalling.{ Unmarshal, Unmarshaller }
@@ -16,6 +15,7 @@ import akka.stream.{ Attributes, Materializer }
 import akka.stream.alpakka.s3.{ DiskBufferType, MemoryBufferType, S3Settings }
 import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.auth.{ AWSCredentials, CredentialScope, Signer, SigningKey }
+import akka.stream.alpakka.s3.{ DiskBufferType, MemoryBufferType, S3Exception, S3Settings }
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.util.ByteString
 
@@ -44,7 +44,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
     implicit system: ActorSystem,
     mat: Materializer) {
   import Marshalling._
-
+  implicit val conf = settings
   val MinChunkSize = 5242880
   val signingKey = SigningKey(credentials, CredentialScope(LocalDate.now(), region, "s3"))
 
@@ -209,7 +209,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
       case HttpResponse(status, _, entity, _) if status.isSuccess() => Future.successful(entity)
       case HttpResponse(status, _, entity, _) =>
         Unmarshal(entity).to[String].flatMap {
-          case err => Future.failed(new Exception("Error: " + err))
+          case err => Future.failed(new S3Exception(err))
         }
     }
 }
