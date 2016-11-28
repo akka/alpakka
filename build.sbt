@@ -37,7 +37,6 @@ lazy val mqtt = project
   )
 
 lazy val s3 = project
-  .in(file("s3"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-s3",
@@ -57,6 +56,6 @@ lazy val docs = project
       "extref.java-api.base_url" -> "https://docs.oracle.com/javase/8/docs/api/index.html?%s.html",
       "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
       "scaladoc.akka.base_url" -> s"http://doc.akka.io/api/akka/${Dependencies.AkkaVersion}",
-      "scaladoc.akka.stream.alpakka.base_url" -> s"http://doc.akka.io/api/alpakka/${version.value}"
+      "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}"
     )
   )
