@@ -26,7 +26,7 @@ Gradle
 :   @@@vars
     ```gradle
     dependencies {
-      compile group: "com.typesafe.akka", name: "akka-stream-alpakka-jms_$scala.binaryVersion$", version: "$version$"
+      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-jms_$scala.binaryVersion$", version: "$version$"
     }
     ```
     @@@

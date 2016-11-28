@@ -38,7 +38,7 @@ object JmsSinkSettings {
 
 }
 
-case class JmsSinkSettings(connectionFactory: ConnectionFactory,
+final case class JmsSinkSettings(connectionFactory: ConnectionFactory,
                            destination: Option[Destination] = None,
                            credentials: Option[Credentials] = None)
     extends JmsSettings {
@@ -47,4 +47,4 @@ case class JmsSinkSettings(connectionFactory: ConnectionFactory,
   def withTopic(name: String) = copy(destination = Some(Topic(name)))
 }
 
-case class Credentials(username: String, password: String)
+final case class Credentials(username: String, password: String)
