@@ -4,7 +4,7 @@
 package akka.stream.alpakka.s3.auth
 
 import java.nio.charset.StandardCharsets._
-import java.nio.file.{ Path, Files }
+import java.nio.file.{ Files, Path }
 import java.security.DigestInputStream
 import java.security.MessageDigest
 
@@ -25,7 +25,12 @@ import akka.testkit.TestKit
 import akka.util.ByteString
 import com.google.common.jimfs.{ Configuration, Jimfs }
 
-class StreamUtilsSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLike with Matchers with ScalaFutures with BeforeAndAfterAll {
+class StreamUtilsSpec(_system: ActorSystem)
+    extends TestKit(_system)
+    with FlatSpecLike
+    with Matchers
+    with ScalaFutures
+    with BeforeAndAfterAll {
   def this() = this(ActorSystem("StreamUtilsSpec"))
 
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
@@ -37,11 +42,11 @@ class StreamUtilsSpec(_system: ActorSystem) extends TestKit(_system) with FlatSp
 
   val TestText = {
     ("a" * 1000) +
-      ("b" * 1000) +
-      ("c" * 1000) +
-      ("d" * 1000) +
-      ("e" * 1000) +
-      ("f" * 1000)
+    ("b" * 1000) +
+    ("c" * 1000) +
+    ("d" * 1000) +
+    ("e" * 1000) +
+    ("f" * 1000)
   }
 
   val bigFile: Path = {

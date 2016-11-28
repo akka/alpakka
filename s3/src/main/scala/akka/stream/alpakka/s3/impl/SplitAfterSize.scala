@@ -21,9 +21,8 @@ import akka.stream.scaladsl.Flow
  * Splits up a byte stream source into sub-flows of a minimum size. Does not attempt to create chunks of an exact size.
  */
 private[alpakka] object SplitAfterSize {
-  def apply[I, M](minChunkSize: Long)(in: Flow[I, ByteString, M]): SubFlow[ByteString, M, in.Repr, in.Closed] = {
+  def apply[I, M](minChunkSize: Long)(in: Flow[I, ByteString, M]): SubFlow[ByteString, M, in.Repr, in.Closed] =
     in.via(insertMarkers(minChunkSize)).splitWhen(_ == NewStream).collect { case bs: ByteString => bs }
-  }
 
   private case object NewStream
 
@@ -32,19 +31,20 @@ private[alpakka] object SplitAfterSize {
     val out = Outlet[Any]("SplitAfterSize.out")
     override val shape = FlowShape.of(in, out)
 
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler with InHandler {
-      var count: Long = 0
-      override def onPull(): Unit = pull(in)
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+      new GraphStageLogic(shape) with OutHandler with InHandler {
+        var count: Long = 0
+        override def onPull(): Unit = pull(in)
 
-      override def onPush(): Unit = {
-        val elem = grab(in)
-        count += elem.size
-        if (count >= minChunkSize) {
-          count = 0
-          emitMultiple(out, elem :: NewStream :: Nil)
-        } else emit(out, elem)
+        override def onPush(): Unit = {
+          val elem = grab(in)
+          count += elem.size
+          if (count >= minChunkSize) {
+            count = 0
+            emitMultiple(out, elem :: NewStream :: Nil)
+          } else emit(out, elem)
+        }
+        setHandlers(in, out, this)
       }
-      setHandlers(in, out, this)
-    }
   }
 }

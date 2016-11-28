@@ -9,7 +9,12 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{ HttpHeader, HttpRequest }
 
 // Documentation: http://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
-private[alpakka] case class CanonicalRequest(method: String, uri: String, queryString: String, headerString: String, signedHeaders: String, hashedPayload: String) {
+private[alpakka] case class CanonicalRequest(method: String,
+                                             uri: String,
+                                             queryString: String,
+                                             headerString: String,
+                                             signedHeaders: String,
+                                             hashedPayload: String) {
   def canonicalString: String = s"$method\n$uri\n$queryString\n$headerString\n\n$signedHeaders\n$hashedPayload"
 }
 

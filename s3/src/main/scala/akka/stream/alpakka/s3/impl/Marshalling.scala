@@ -26,7 +26,8 @@ private[alpakka] object Marshalling {
       case x =>
         CompleteMultipartUploadResult(
           (x \ "Location").text,
-          (x \ "Bucket").text, (x \ "Key").text,
+          (x \ "Bucket").text,
+          (x \ "Key").text,
           (x \ "Etag").text
         )
     }

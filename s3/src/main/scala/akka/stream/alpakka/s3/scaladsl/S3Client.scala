@@ -33,6 +33,11 @@ final class S3Client(credentials: AWSCredentials, region: String)(implicit syste
 
   def download(bucket: String, key: String): Source[ByteString, NotUsed] = impl.download(S3Location(bucket, key))
 
-  def multipartUpload(bucket: String, key: String, chunkSize: Int = MinChunkSize, chunkingParallelism: Int = 4): Sink[ByteString, Future[MultipartUploadResult]] =
-    impl.multipartUpload(S3Location(bucket, key), chunkSize, chunkingParallelism).mapMaterializedValue(_.map(MultipartUploadResult.apply)(system.dispatcher))
+  def multipartUpload(bucket: String,
+                      key: String,
+                      chunkSize: Int = MinChunkSize,
+                      chunkingParallelism: Int = 4): Sink[ByteString, Future[MultipartUploadResult]] =
+    impl
+      .multipartUpload(S3Location(bucket, key), chunkSize, chunkingParallelism)
+      .mapMaterializedValue(_.map(MultipartUploadResult.apply)(system.dispatcher))
 }

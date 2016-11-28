@@ -21,27 +21,28 @@ private[alpakka] final class MemoryBuffer(maxSize: Int) extends GraphStage[FlowS
   val out = Outlet[Chunk]("MemoryBuffer.out")
   override val shape = FlowShape.of(in, out)
 
-  override def createLogic(attr: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
-    var buffer = ByteString.empty
-    override def onPull(): Unit = if (isClosed(in)) emit() else pull(in)
+  override def createLogic(attr: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with InHandler with OutHandler {
+      var buffer = ByteString.empty
+      override def onPull(): Unit = if (isClosed(in)) emit() else pull(in)
 
-    override def onPush(): Unit = {
-      val elem = grab(in)
-      if (buffer.size + elem.size > maxSize) {
-        failStage(new IllegalStateException("Buffer size of " + maxSize + " bytes exceeded."))
-      } else {
-        buffer ++= elem
-        pull(in)
+      override def onPush(): Unit = {
+        val elem = grab(in)
+        if (buffer.size + elem.size > maxSize) {
+          failStage(new IllegalStateException("Buffer size of " + maxSize + " bytes exceeded."))
+        } else {
+          buffer ++= elem
+          pull(in)
+        }
       }
-    }
 
-    override def onUpstreamFinish(): Unit = {
-      if (isAvailable(out)) emit()
-      completeStage()
-    }
+      override def onUpstreamFinish(): Unit = {
+        if (isAvailable(out)) emit()
+        completeStage()
+      }
 
-    def emit(): Unit = emit(out, Chunk(Source.single(buffer), buffer.size), () => completeStage())
-    setHandlers(in, out, this)
-  }
+      def emit(): Unit = emit(out, Chunk(Source.single(buffer), buffer.size), () => completeStage())
+      setHandlers(in, out, this)
+    }
 
 }

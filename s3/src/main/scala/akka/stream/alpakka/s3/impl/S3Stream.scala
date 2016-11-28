@@ -13,7 +13,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, ResponseEntity, Uri }
 import akka.http.scaladsl.unmarshalling.{ Unmarshal, Unmarshaller }
 import akka.stream.{ Attributes, Materializer }
-import akka.stream.alpakka.s3.{ MemoryBufferType, DiskBufferType, S3Settings }
+import akka.stream.alpakka.s3.{ DiskBufferType, MemoryBufferType, S3Settings }
 import akka.stream.alpakka.s3.auth.{ AWSCredentials, CredentialScope, Signer, SigningKey }
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.util.ByteString
@@ -31,25 +31,29 @@ sealed trait UploadPartResponse {
   def index: Int
 }
 
-final case class SuccessfulUploadPart(multipartUpload: MultipartUpload, index: Int, etag: String) extends UploadPartResponse
-final case class FailedUploadPart(multipartUpload: MultipartUpload, index: Int, exception: Throwable) extends UploadPartResponse
+final case class SuccessfulUploadPart(multipartUpload: MultipartUpload, index: Int, etag: String)
+    extends UploadPartResponse
+final case class FailedUploadPart(multipartUpload: MultipartUpload, index: Int, exception: Throwable)
+    extends UploadPartResponse
 
 final case class FailedUpload(reasons: Seq[Throwable]) extends Exception
 final case class CompleteMultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
-private[alpakka] final class S3Stream(credentials: AWSCredentials, region: String, val settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
+private[alpakka] final class S3Stream(credentials: AWSCredentials, region: String, val settings: S3Settings)(
+    implicit system: ActorSystem,
+    mat: Materializer) {
   import Marshalling._
 
   val MinChunkSize = 5242880
   val signingKey = SigningKey(credentials, CredentialScope(LocalDate.now(), region, "s3"))
 
-  def this(credentials: AWSCredentials, region: String = "us-east-1")(implicit system: ActorSystem, mat: Materializer) =
+  def this(credentials: AWSCredentials, region: String = "us-east-1")(implicit system: ActorSystem,
+                                                                      mat: Materializer) =
     this(credentials, region, S3Settings(system))
 
   def download(s3Location: S3Location): Source[ByteString, NotUsed] = {
     import mat.executionContext
-    Source.fromFuture(signAndGet(HttpRequests.getRequest(s3Location)).map(_.dataBytes))
-      .flatMapConcat(identity)
+    Source.fromFuture(signAndGet(HttpRequests.getRequest(s3Location)).map(_.dataBytes)).flatMapConcat(identity)
   }
 
   /**
@@ -60,9 +64,10 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
    * @param chunkingParallelism
    * @return
    */
-  def multipartUpload(s3Location: S3Location, chunkSize: Int = MinChunkSize, chunkingParallelism: Int = 4): Sink[ByteString, Future[CompleteMultipartUploadResult]] =
-    chunkAndRequest(s3Location, chunkSize)(chunkingParallelism)
-      .toMat(completionSink(s3Location))(Keep.right)
+  def multipartUpload(s3Location: S3Location,
+                      chunkSize: Int = MinChunkSize,
+                      chunkingParallelism: Int = 4): Sink[ByteString, Future[CompleteMultipartUploadResult]] =
+    chunkAndRequest(s3Location, chunkSize)(chunkingParallelism).toMat(completionSink(s3Location))(Keep.right)
 
   private def initiateMultipartUpload(s3Location: S3Location): Future[MultipartUpload] = {
     import mat.executionContext
@@ -76,20 +81,21 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
     }
     response.flatMap {
       case HttpResponse(status, _, entity, _) if status.isSuccess() => Unmarshal(entity).to[MultipartUpload]
-      case HttpResponse(status, _, entity, _) => Unmarshal(entity).to[String].flatMap {
-        case err =>
-          Future.failed(new Exception("Can't initiate upload: " + err))
-      }
+      case HttpResponse(status, _, entity, _) =>
+        Unmarshal(entity).to[String].flatMap {
+          case err =>
+            Future.failed(new Exception("Can't initiate upload: " + err))
+        }
     }
   }
 
-  private def completeMultipartUpload(s3Location: S3Location, parts: Seq[SuccessfulUploadPart]): Future[CompleteMultipartUploadResult] = {
+  private def completeMultipartUpload(s3Location: S3Location,
+                                      parts: Seq[SuccessfulUploadPart]): Future[CompleteMultipartUploadResult] = {
     import mat.executionContext
 
-    for (
-      req <- HttpRequests.completeMultipartUploadRequest(parts.head.multipartUpload, parts.map { case p => (p.index, p.etag) });
-      res <- signAndGetAs[CompleteMultipartUploadResult](req)
-    ) yield res
+    for (req <- HttpRequests
+           .completeMultipartUploadRequest(parts.head.multipartUpload, parts.map { case p => (p.index, p.etag) });
+         res <- signAndGetAs[CompleteMultipartUploadResult](req)) yield res
   }
 
   /**
@@ -98,11 +104,12 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
    * @param s3Location The s3 location to which to upload to
    * @return
    */
-  private def initiateUpload(s3Location: S3Location): Source[(MultipartUpload, Int), NotUsed] = {
-    Source.single(s3Location).mapAsync(1)(initiateMultipartUpload)
+  private def initiateUpload(s3Location: S3Location): Source[(MultipartUpload, Int), NotUsed] =
+    Source
+      .single(s3Location)
+      .mapAsync(1)(initiateMultipartUpload)
       .mapConcat { case r => Stream.continually(r) }
       .zip(Source.fromIterator(() => Iterator.from(1)))
-  }
 
   /**
    * Transforms a flow of ByteStrings into a flow of HTTPRequests to upload to S3.
@@ -112,39 +119,47 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
    * @param parallelism
    * @return
    */
-  private def createRequests(s3Location: S3Location, chunkSize: Int = MinChunkSize, parallelism: Int = 4): Flow[ByteString, (HttpRequest, (MultipartUpload, Int)), NotUsed] = {
-    assert(chunkSize >= MinChunkSize, "Chunk size must be at least 5242880B. See http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadUploadPart.html")
+  private def createRequests(
+      s3Location: S3Location,
+      chunkSize: Int = MinChunkSize,
+      parallelism: Int = 4): Flow[ByteString, (HttpRequest, (MultipartUpload, Int)), NotUsed] = {
+    assert(chunkSize >= MinChunkSize,
+      "Chunk size must be at least 5242880B. See http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadUploadPart.html")
     val requestInfo: Source[(MultipartUpload, Int), NotUsed] = initiateUpload(s3Location)
 
     SplitAfterSize(chunkSize)(Flow.apply[ByteString])
       .via(getChunkBuffer(chunkSize))
       .concatSubstreams
-      .zipWith(requestInfo) { case (payload, (uploadInfo, chunkIndex)) => (HttpRequests.uploadPartRequest(uploadInfo, chunkIndex, payload.data, payload.size), (uploadInfo, chunkIndex)) }
+      .zipWith(requestInfo) {
+        case (payload, (uploadInfo, chunkIndex)) =>
+          (HttpRequests.uploadPartRequest(uploadInfo, chunkIndex, payload.data, payload.size),
+            (uploadInfo, chunkIndex))
+      }
       .mapAsync(parallelism) { case (req, info) => Signer.signedRequest(req, signingKey).zip(Future.successful(info)) }
   }
 
   private def getChunkBuffer(chunkSize: Int) = settings.bufferType match {
     case MemoryBufferType => new MemoryBuffer(chunkSize * 2)
-    case DiskBufferType   => new DiskBuffer(2, chunkSize * 2, getDiskBufferPath)
+    case DiskBufferType => new DiskBuffer(2, chunkSize * 2, getDiskBufferPath)
   }
 
   private val getDiskBufferPath = settings.diskBufferPath match {
     case "" => None
-    case s  => Some(Paths.get(s))
+    case s => Some(Paths.get(s))
   }
 
-  private def chunkAndRequest(s3Location: S3Location, chunkSize: Int = MinChunkSize)(parallelism: Int = 4): Flow[ByteString, UploadPartResponse, NotUsed] = {
-    createRequests(s3Location, chunkSize, parallelism)
-      .via(Http().superPool[(MultipartUpload, Int)]())
-      .map {
-        case (Success(r), (upload, index)) =>
-          r.entity.dataBytes.runWith(Sink.ignore)
-          val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
-          etag.map((t) => SuccessfulUploadPart(upload, index, t)).getOrElse(FailedUploadPart(upload, index, new RuntimeException("Cannot find etag")))
+  private def chunkAndRequest(s3Location: S3Location, chunkSize: Int = MinChunkSize)(
+      parallelism: Int = 4): Flow[ByteString, UploadPartResponse, NotUsed] =
+    createRequests(s3Location, chunkSize, parallelism).via(Http().superPool[(MultipartUpload, Int)]()).map {
+      case (Success(r), (upload, index)) =>
+        r.entity.dataBytes.runWith(Sink.ignore)
+        val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
+        etag
+          .map((t) => SuccessfulUploadPart(upload, index, t))
+          .getOrElse(FailedUploadPart(upload, index, new RuntimeException("Cannot find etag")))
 
-        case (Failure(e), (upload, index)) => FailedUploadPart(upload, index, e)
-      }
-  }
+      case (Failure(e), (upload, index)) => FailedUploadPart(upload, index, e)
+    }
 
   private def completionSink(s3Location: S3Location): Sink[UploadPartResponse, Future[CompleteMultipartUploadResult]] = {
     import mat.executionContext
@@ -173,19 +188,17 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
 
   private def signAndGet(request: HttpRequest): Future[ResponseEntity] = {
     import mat.executionContext
-    for (
-      req <- Signer.signedRequest(request, signingKey);
-      res <- Http().singleRequest(req);
-      t <- entityForSuccess(res)
-    ) yield t
+    for (req <- Signer.signedRequest(request, signingKey);
+         res <- Http().singleRequest(req);
+         t <- entityForSuccess(res)) yield t
   }
 
-  private def entityForSuccess(resp: HttpResponse)(implicit ctx: ExecutionContext): Future[ResponseEntity] = {
+  private def entityForSuccess(resp: HttpResponse)(implicit ctx: ExecutionContext): Future[ResponseEntity] =
     resp match {
       case HttpResponse(status, _, entity, _) if status.isSuccess() => Future.successful(entity)
-      case HttpResponse(status, _, entity, _) => Unmarshal(entity).to[String].flatMap {
-        case err => Future.failed(new Exception("Error: " + err))
-      }
+      case HttpResponse(status, _, entity, _) =>
+        Unmarshal(entity).to[String].flatMap {
+          case err => Future.failed(new Exception("Error: " + err))
+        }
     }
-  }
 }
