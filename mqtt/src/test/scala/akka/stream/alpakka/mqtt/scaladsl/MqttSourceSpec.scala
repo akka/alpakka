@@ -41,8 +41,8 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "receive messages from multiple topics" in withBroker(
-      Map("topic1" -> MqttQoS.AtMostOnce, "topic2" -> MqttQoS.AtMostOnce)) { p =>
+    "receive messages from multiple topics" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce,
+        "topic2" -> MqttQoS.AtMostOnce)) { p =>
       val f = fixture(p)
       import f._
 
@@ -122,7 +122,7 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
     }
 
     "receive a message from a topic with right credentials" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce),
-                                                                          Some(("user", "passwd"))) { p =>
+      Some(("user", "passwd"))) { p =>
       val f = fixture(p)
       import f._
 

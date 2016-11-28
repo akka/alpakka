@@ -11,7 +11,12 @@ import akka.util.ByteString
 import org.scalatest.{ BeforeAndAfterAll, FlatSpecLike, Matchers }
 import org.scalatest.concurrent.ScalaFutures
 
-class MemoryBufferSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures {
+class MemoryBufferSpec(_system: ActorSystem)
+    extends TestKit(_system)
+    with FlatSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with ScalaFutures {
 
   def this() = this(ActorSystem("MemoryBufferSpec"))
 
@@ -31,10 +36,8 @@ class MemoryBufferSpec(_system: ActorSystem) extends TestKit(_system) with FlatS
 
   it should "fail if more than maxSize bytes are fed into it" in {
     whenReady(
-      Source(Vector(ByteString(1, 2, 3, 4, 5), ByteString(6, 7, 8, 9, 10, 11, 12), ByteString(13, 14)))
-      .via(new MemoryBuffer(10))
-      .runWith(Sink.seq)
-      .failed
+      Source(Vector(ByteString(1, 2, 3, 4, 5), ByteString(6, 7, 8, 9, 10, 11, 12),
+          ByteString(13, 14))).via(new MemoryBuffer(10)).runWith(Sink.seq).failed
     ) { e =>
       e shouldBe a[IllegalStateException]
     }

@@ -14,7 +14,9 @@ private[alpakka] final case class CredentialScope(date: LocalDate, awsRegion: St
   def scopeString = s"$formattedDate/$awsRegion/$awsService/aws4_request"
 }
 
-private[alpakka] final case class SigningKey(credentials: AWSCredentials, scope: CredentialScope, algorithm: String = "HmacSHA256") {
+private[alpakka] final case class SigningKey(credentials: AWSCredentials,
+                                             scope: CredentialScope,
+                                             algorithm: String = "HmacSHA256") {
 
   val rawKey = new SecretKeySpec(s"AWS4${credentials.secretAccessKey}".getBytes, algorithm)
 

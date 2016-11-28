@@ -29,10 +29,10 @@ object S3Settings {
   def apply(config: Config): S3Settings =
     new S3Settings(
       bufferType = config.getString("buffer") match {
-      case "memory" => MemoryBufferType
-      case "disk"   => DiskBufferType
-      case _        => throw new IllegalArgumentException("Buffer type must be 'memory' or 'disk'")
-    },
+        case "memory" => MemoryBufferType
+        case "disk" => DiskBufferType
+        case _ => throw new IllegalArgumentException("Buffer type must be 'memory' or 'disk'")
+      },
       diskBufferPath = config.getString("disk-buffer-path"),
       debugLogging = config.getBoolean("debug-logging")
     )

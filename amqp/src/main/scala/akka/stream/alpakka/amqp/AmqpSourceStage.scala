@@ -110,7 +110,8 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
           }
         }
 
-      setHandler(out, new OutHandler {
+      setHandler(out,
+        new OutHandler {
         override def onPull(): Unit =
           if (queue.nonEmpty) {
             pushAndAckMessage(queue.dequeue())

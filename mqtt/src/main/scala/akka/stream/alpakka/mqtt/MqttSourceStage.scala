@@ -38,7 +38,8 @@ final class MqttSourceStage(settings: MqttSourceSettings, bufferSize: Int)
 
       override val connectionSettings = settings.connectionSettings
 
-      setHandler(out, new OutHandler {
+      setHandler(out,
+        new OutHandler {
         override def onPull(): Unit =
           if (queue.nonEmpty) {
             pushMessage(queue.dequeue())

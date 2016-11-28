@@ -57,7 +57,8 @@ final class AmqpSinkStage(settings: AmqpSinkSettings)
         pull(in)
       }
 
-      setHandler(in, new InHandler {
+      setHandler(in,
+        new InHandler {
         override def onPush(): Unit = {
           val elem = grab(in)
           channel.basicPublish(

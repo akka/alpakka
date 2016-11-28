@@ -69,10 +69,10 @@ class AmqpConnectorsSpec extends AmqpSpec {
         val merge = b.add(Merge[IncomingMessage](count))
         for (n <- 0 until count) {
           val source = b.add(
-            AmqpSource(
-              NamedQueueSourceSettings(DefaultAmqpConnection, queueName).withDeclarations(queueDeclaration),
-              bufferSize = 1
-            ))
+              AmqpSource(
+                NamedQueueSourceSettings(DefaultAmqpConnection, queueName).withDeclarations(queueDeclaration),
+                bufferSize = 1
+              ))
           source.out ~> merge.in(n)
         }
 
@@ -232,7 +232,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       import system.dispatcher
       system.scheduler.scheduleOnce(5.seconds)(
-        completion.tryFailure(new Error("Did not get at least one element from every fanout branch")))
+          completion.tryFailure(new Error("Did not get at least one element from every fanout branch")))
 
       Source.repeat("stuff").map(s => ByteString(s)).runWith(amqpSink)
 

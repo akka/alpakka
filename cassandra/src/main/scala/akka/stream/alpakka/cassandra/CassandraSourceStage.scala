@@ -29,7 +29,8 @@ class CassandraSourceStage(futStmt: Future[Statement], session: Session) extends
         futRs.onComplete(futFetchedCallback.invoke)
       }
 
-      setHandler(out, new OutHandler {
+      setHandler(out,
+        new OutHandler {
         override def onPull(): Unit = {
           implicit val ec = materializer.executionContext
 

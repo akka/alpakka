@@ -32,7 +32,8 @@ import java.nio.file.Path
  * @param maxMaterializations Number of expected materializations for the completed chunk. After this, the temp file is deleted.
  * @param maxSize Maximum size on disk to buffer
  */
-private[alpakka] final class DiskBuffer(maxMaterializations: Int, maxSize: Int, tempPath: Option[Path]) extends GraphStage[FlowShape[ByteString, Chunk]] {
+private[alpakka] final class DiskBuffer(maxMaterializations: Int, maxSize: Int, tempPath: Option[Path])
+    extends GraphStage[FlowShape[ByteString, Chunk]] {
   require(maxMaterializations > 0, "maxMaterializations should be at least 1")
   require(maxSize > 0, "maximumSize should be at least 1")
 
@@ -42,45 +43,51 @@ private[alpakka] final class DiskBuffer(maxMaterializations: Int, maxSize: Int, 
 
   override def initialAttributes = ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher")
 
-  override def createLogic(attr: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler with InHandler {
-    val path: File = tempPath.map(dir => Files.createTempFile(dir, "s3-buffer-", ".bin")).getOrElse(Files.createTempFile("s3-buffer-", ".bin")).toFile
-    path.deleteOnExit()
-    val writeBuffer = new RandomAccessFile(path, "rw").getChannel.map(FileChannel.MapMode.READ_WRITE, 0, maxSize)
-    var length = 0
+  override def createLogic(attr: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with OutHandler with InHandler {
+      val path: File = tempPath
+        .map(dir => Files.createTempFile(dir, "s3-buffer-", ".bin"))
+        .getOrElse(Files.createTempFile("s3-buffer-", ".bin"))
+        .toFile
+      path.deleteOnExit()
+      val writeBuffer = new RandomAccessFile(path, "rw").getChannel.map(FileChannel.MapMode.READ_WRITE, 0, maxSize)
+      var length = 0
 
-    override def onPull(): Unit = if (isClosed(in)) emit() else pull(in)
+      override def onPull(): Unit = if (isClosed(in)) emit() else pull(in)
 
-    override def onPush(): Unit = {
-      val elem = grab(in)
-      length += elem.size
-      writeBuffer.put(elem.asByteBuffer)
-      pull(in)
-    }
-
-    override def onUpstreamFinish(): Unit = {
-      if (isAvailable(out)) emit()
-      completeStage()
-    }
-
-    private def emit(): Unit = {
-      // TODO Should we do http://stackoverflow.com/questions/2972986/how-to-unmap-a-file-from-memory-mapped-using-filechannel-in-java ?
-      writeBuffer.force()
-
-      val ch = new FileOutputStream(path, true).getChannel
-      try {
-        ch.truncate(length)
-      } finally {
-        ch.close()
+      override def onPush(): Unit = {
+        val elem = grab(in)
+        length += elem.size
+        writeBuffer.put(elem.asByteBuffer)
+        pull(in)
       }
 
-      val deleteCounter = new AtomicInteger(maxMaterializations)
-      val src = FileIO.fromPath(path.toPath, 65536).mapMaterializedValue { f =>
-        if (deleteCounter.decrementAndGet() <= 0)
-          f.onComplete { _ => path.delete() }(ExecutionContexts.sameThreadExecutionContext)
-        NotUsed
+      override def onUpstreamFinish(): Unit = {
+        if (isAvailable(out)) emit()
+        completeStage()
       }
-      emit(out, Chunk(src, length), () => completeStage())
+
+      private def emit(): Unit = {
+        // TODO Should we do http://stackoverflow.com/questions/2972986/how-to-unmap-a-file-from-memory-mapped-using-filechannel-in-java ?
+        writeBuffer.force()
+
+        val ch = new FileOutputStream(path, true).getChannel
+        try {
+          ch.truncate(length)
+        } finally {
+          ch.close()
+        }
+
+        val deleteCounter = new AtomicInteger(maxMaterializations)
+        val src = FileIO.fromPath(path.toPath, 65536).mapMaterializedValue { f =>
+          if (deleteCounter.decrementAndGet() <= 0)
+            f.onComplete { _ =>
+              path.delete()
+            }(ExecutionContexts.sameThreadExecutionContext)
+          NotUsed
+        }
+        emit(out, Chunk(src, length), () => completeStage())
+      }
+      setHandlers(in, out, this)
     }
-    setHandlers(in, out, this)
-  }
 }
