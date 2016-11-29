@@ -27,11 +27,11 @@ abstract class JmsSpec
 
   val random = Random
 
-  def withServer(network: Boolean = false)(test: Context => Unit): Unit = {
+  def withServer(network: Boolean = true)(test: Context => Unit): Unit = {
     val broker = new BrokerService()
     val host: String = "localhost"
-    val url = if(network) {
-      val port = random.nextInt(1000) + 6000
+    val url = if (network) {
+      val port = random.nextInt(499) + 6000
       val serverUrl = s"tcp://$host:$port"
       broker.addConnector(serverUrl)
       serverUrl

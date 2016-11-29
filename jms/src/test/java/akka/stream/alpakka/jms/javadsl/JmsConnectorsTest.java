@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -143,13 +144,17 @@ public class JmsConnectorsTest {
         JavaTestKit.shutdownActorSystem(system);
     }
 
+    private final Random randomPort  = new Random();
+
     private void withServer(ConsumerChecked<Context> test) throws Exception {
         BrokerService broker = new BrokerService();
         broker.setPersistent(false);
         String host = "localhost";
+        Integer port = randomPort.nextInt(500) + 6500;
         broker.setBrokerName(host);
         broker.setUseJmx(false);
-        String url = "vm://" + host ;
+        String url = "tcp://" + host + ":" + port;
+        broker.addConnector(url);
         broker.start();
         try {
             test.accept(new Context(url, broker));

@@ -59,9 +59,9 @@ private[jms] trait JmsConnector { this: GraphStageLogic with StageLogging =>
   }
 
   override def postStop(): Unit =
-    jmsSession.closeSession().onFailure {
+    Option(jmsSession).foreach(_.closeSession().onFailure {
       case e => log.error(e, "Error closing connection")
-    }
+    })
 }
 
 private[jms] case class JmsSession(connection: jms.Connection, session: jms.Session, destination: jms.Destination) {
