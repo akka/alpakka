@@ -18,8 +18,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -149,24 +147,17 @@ public class JmsConnectorsTest {
         BrokerService broker = new BrokerService();
         broker.setPersistent(false);
         String host = "localhost";
-        Integer port = getPort();
         broker.setBrokerName(host);
         broker.setUseJmx(false);
-        String url = "tcp://" + host + ":" + port;
-        broker.addConnector(url);
+        String url = "vm://" + host ;
         broker.start();
         try {
-            test.accept(new Context(host, port, url, broker));
+            test.accept(new Context(url, broker));
         } finally {
             if(broker.isStarted()) {
                 broker.stop();
             }
         }
-    }
-
-    private Integer getPort() throws IOException {
-        ServerSocket serverSocket = new ServerSocket(0);
-        return serverSocket.getLocalPort();
     }
 
     @FunctionalInterface
@@ -175,14 +166,10 @@ public class JmsConnectorsTest {
     }
 
     private static class Context {
-        final String host;
         final String url;
-        final Integer port;
         final BrokerService broker;
 
-        public Context(String host, Integer port, String url, BrokerService broker) {
-            this.host = host;
-            this.port = port;
+        public Context(String url, BrokerService broker) {
             this.url = url;
             this.broker = broker;
         }

@@ -3,14 +3,14 @@
  */
 package akka.stream.alpakka.jms
 
-import java.net.ServerSocket
-
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import org.apache.activemq.broker.BrokerService
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
+
+import scala.util.Random
 
 abstract class JmsSpec
     extends WordSpec
@@ -25,18 +25,25 @@ abstract class JmsSpec
   override protected def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
 
-  def withServer()(test: Context => Unit): Unit = {
+  val random = Random
+
+  def withServer(network: Boolean = false)(test: Context => Unit): Unit = {
     val broker = new BrokerService()
-    broker.setPersistent(false)
     val host: String = "localhost"
-    val serverSocket = new ServerSocket(0)
-    val port = serverSocket.getLocalPort
+    val url = if(network) {
+      val port = random.nextInt(1000) + 6000
+      val serverUrl = s"tcp://$host:$port"
+      broker.addConnector(serverUrl)
+      serverUrl
+    } else {
+      s"vm://$host"
+    }
+    broker.setPersistent(false)
     broker.setBrokerName(host)
     broker.setUseJmx(false)
-    broker.addConnector(s"tcp://$host:$port")
     broker.start()
     try {
-      test(Context(host, port, broker))
+      test(Context(url, broker))
     } finally {
       if (broker.isStarted) {
         broker.stop()
@@ -44,6 +51,6 @@ abstract class JmsSpec
     }
   }
 
-  case class Context(host: String, port: Int, broker: BrokerService)
+  case class Context(url: String, broker: BrokerService)
 
 }

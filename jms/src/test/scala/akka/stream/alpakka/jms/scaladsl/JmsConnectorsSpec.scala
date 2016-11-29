@@ -19,10 +19,9 @@ class JmsConnectorsSpec extends JmsSpec {
 
   "The JMS Connectors" should {
     "publish and consume elements through a queue" in withServer() { ctx =>
-      val host: String = ctx.host
-      val port: Int = ctx.port
+      val url: String = ctx.url
       //#connection-factory
-      val connectionFactory = new ActiveMQConnectionFactory(s"tcp://$host:$port")
+      val connectionFactory = new ActiveMQConnectionFactory(url)
       //#connection-factory
 
       //#create-sink
@@ -50,7 +49,7 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "applying backpressure when the consumer is slower than the producer" in withServer() { ctx =>
-      val connectionFactory = new ActiveMQConnectionFactory(s"tcp://${ctx.host}:${ctx.port}")
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
       val in = List("a", "b", "c")
       Source(in).runWith(JmsSink(JmsSinkSettings(connectionFactory).withQueue("test")))
 
@@ -64,7 +63,7 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "deconnection should fail the stage" in withServer() { ctx =>
-      val connectionFactory = new ActiveMQConnectionFactory(s"tcp://${ctx.host}:${ctx.port}")
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
       val result = JmsSource(JmsSourceSettings(connectionFactory).withQueue("test")).runWith(Sink.seq)
       Thread.sleep(500)
       ctx.broker.stop()
@@ -74,7 +73,7 @@ class JmsConnectorsSpec extends JmsSpec {
     "publish and consume elements through a topic " in withServer() { ctx =>
       import system.dispatcher
 
-      val connectionFactory = new ActiveMQConnectionFactory(s"tcp://${ctx.host}:${ctx.port}")
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       //#create-topic-sink
       val jmsTopicSink: Sink[String, NotUsed] = JmsSink(
