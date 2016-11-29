@@ -96,5 +96,4 @@ object Dependencies {
       "org.apache.activemq" % "activemq-client" % "5.14.1" % Test // ApacheV2
     )
   )
-
 }
