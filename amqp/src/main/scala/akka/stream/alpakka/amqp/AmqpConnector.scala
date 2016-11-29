@@ -15,7 +15,7 @@ private[amqp] trait AmqpConnector {
     val factory = new ConnectionFactory
     settings match {
       case AmqpConnectionUri(uri) => factory.setUri(uri)
-      case AmqpConnectionDetails(host, port, maybeCredentials, maybeVirtualHost) =>
+      case AmqpConnectionDetails(host, port, maybeCredentials, maybeVirtualHost, sslProtocol) =>
         factory.setHost(host)
         factory.setPort(port)
         maybeCredentials.foreach { credentials =>
@@ -23,7 +23,7 @@ private[amqp] trait AmqpConnector {
           factory.setPassword(credentials.password)
         }
         maybeVirtualHost.foreach(factory.setVirtualHost)
-
+        sslProtocol.foreach(factory.useSslProtocol)
       case DefaultAmqpConnection => // leave it be as is
     }
     factory
