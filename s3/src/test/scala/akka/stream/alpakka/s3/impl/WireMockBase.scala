@@ -22,7 +22,7 @@ object WireMockBase {
     |      ]
     |   stream.alpakka.s3.proxy {
     |     host = localhost
-    |     port = 8089
+    |     port = 8443
     |   }
     |}
   """.stripMargin
@@ -39,12 +39,13 @@ object WireMockBase {
   }
 }
 
-class WireMockBase(_system: ActorSystem) extends TestKit(_system) with FlatSpecLike with BeforeAndAfterAll {
+abstract class WireMockBase(_system: ActorSystem) extends TestKit(_system) with FlatSpecLike with BeforeAndAfterAll {
   def this() = this(ActorSystem(WireMockBase.getCallerName(getClass), ConfigFactory.load(WireMockBase.config)))
 
   val wireMockServer = new WireMockRule(
       wireMockConfig()
-        .httpsPort(8089)
+        .port(8080)
+        .httpsPort(8443)
         .keystorePath("./s3/src/test/resources/keystore.jks")
         .keystorePassword("abcdefg"))
 

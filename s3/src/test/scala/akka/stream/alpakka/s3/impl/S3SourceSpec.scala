@@ -15,7 +15,7 @@ import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class SourceSpec extends WireMockBase() with Matchers with ScalaFutures {
+class S3SourceSpec extends WireMockBase() with Matchers with ScalaFutures {
 
   implicit val mat = ActorMaterializer(ActorMaterializerSettings(system))
 
