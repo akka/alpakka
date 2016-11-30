@@ -124,7 +124,8 @@ final case class AmqpConnectionDetails(
     host: String,
     port: Int,
     credentials: Option[AmqpCredentials] = None,
-    virtualHost: Option[String] = None
+    virtualHost: Option[String] = None,
+    sslProtocol: Option[String] = None
 ) extends AmqpConnectionSettings {}
 
 object AmqpConnectionDetails {
