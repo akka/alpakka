@@ -18,6 +18,7 @@ import scala.concurrent.duration._
 class S3SourceSpec extends WireMockBase() with Matchers with ScalaFutures {
 
   implicit val mat = ActorMaterializer(ActorMaterializerSettings(system))
+  override implicit val patienceConfig = PatienceConfig(10.seconds)
 
   "S3SourceSpec" should "work in a happy case" in {
     val body = "<response>Some content</response>"

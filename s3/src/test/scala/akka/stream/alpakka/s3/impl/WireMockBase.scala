@@ -12,6 +12,7 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike}
+import scala.concurrent.duration._
 
 object WireMockBase {
   def config(port: Int) = ConfigFactory.parseString(
@@ -45,8 +46,6 @@ object WireMockBase {
         wireMockConfig()
           .dynamicPort()
           .dynamicHttpsPort()
-          //.port(8080)
-          //.httpsPort(8443)
           .keystorePath("./s3/src/test/resources/keystore.jks")
           .keystorePassword("abcdefg"))
     server.start()
