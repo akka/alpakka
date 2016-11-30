@@ -15,14 +15,15 @@ import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class S3SourceSpec extends WireMockBase() with Matchers with ScalaFutures {
+class S3SourceSpec extends WireMockBase with Matchers with ScalaFutures {
 
-  implicit val mat = ActorMaterializer(ActorMaterializerSettings(system))
+  implicit val mat = ActorMaterializer(ActorMaterializerSettings(system))(system)
   override implicit val patienceConfig = PatienceConfig(10.seconds)
 
   "S3SourceSpec" should "work in a happy case" in {
     val body = "<response>Some content</response>"
-    mock.register(get(urlEqualTo("/testKey")).willReturn(aResponse().withStatus(200).withHeader("ETag", "fba9dede5f27731c9771645a39863328").withBody(body)))
+    mock
+      .register(get(urlEqualTo("/testKey")).willReturn(aResponse().withStatus(200).withHeader("ETag", "fba9dede5f27731c9771645a39863328").withBody(body)))
 
     val result = new S3Client(AWSCredentials("", ""),
       "us-east-1").download("testBucket", "testKey").map(_.decodeString("utf8")).runWith(Sink.head)
