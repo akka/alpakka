@@ -10,10 +10,13 @@ Documentation
 
 See [reference](http://developer.lightbend.com/docs/alpakka/0.2/) and [API](http://developer.lightbend.com/docs/api/alpakka/0.2/akka/stream/alpakka/index.html) documentation pages.
 
-Contributions
--------------
+Contributions & Maintenance
+---------------------------
 
-Contributions are welcome, see [CONTRIBUTING.md](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md)
+*Alpakka does not have contributors, it only has maintainers—frequent and infrequent—but everyone helps out.*
+Alpakka loves new maintainers as well as old maintainers. :-)
+
+Contributions are very welcome, see [CONTRIBUTING.md](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md) or skim [existing tickets](https://github.com/akka/alpakka/issues) to see where you could help out.
 
 Caveat Emptor
 -------------
