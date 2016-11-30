@@ -12,3 +12,7 @@ services:
     image: rabbitmq:3
     ports:
       - "5672:5672"
+  elasticmq:
+    image: expert360/elasticmq:0.8.12
+    ports:
+      - "9324:9324"
