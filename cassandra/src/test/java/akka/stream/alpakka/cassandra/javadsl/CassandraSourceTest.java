@@ -3,7 +3,12 @@
  */
 package akka.stream.alpakka.cassandra.javadsl;
 
+import akka.Done;
+import akka.NotUsed;
 import akka.stream.alpakka.cassandra.CassandraSourceStage;
+import akka.stream.javadsl.Source;
+import com.datastax.driver.core.*;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -17,15 +22,12 @@ import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.testkit.*;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.SimpleStatement;
-import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.Row;
-
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -70,9 +72,6 @@ public class CassandraSourceTest {
     session.execute(
       "CREATE TABLE IF NOT EXISTS akka_stream_java_test.test (id int PRIMARY KEY);"
     );
-    for (Integer i = 1; i < 103; i++) {
-      session.execute("INSERT INTO akka_stream_java_test.test(id) VALUES (" + i + ")");
-    }
   }
 
   @AfterClass
@@ -83,8 +82,17 @@ public class CassandraSourceTest {
     JavaTestKit.shutdownActorSystem(system);
   }
 
+  @After
+  public void cleanUp() {
+    session.execute("truncate akka_stream_java_test.test");
+  }
+
   @Test
   public void streamStatementResult() throws Exception {
+    for (Integer i = 1; i < 103; i++) {
+      session.execute("INSERT INTO akka_stream_java_test.test(id) VALUES (" + i + ")");
+    }
+
     //#statement
     final Statement stmt = new SimpleStatement("SELECT * FROM akka_stream_java_test.test").setFetchSize(20);
     //#statement
@@ -99,4 +107,32 @@ public class CassandraSourceTest {
       rows.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(r -> r.getInt("id")).collect(Collectors.toSet()));
   }
 
+  @Test
+  public void sinkInputValues() throws Exception {
+
+    //#prepared-statement
+    final PreparedStatement preparedStatement = session.prepare("insert into akka_stream_java_test.test (id) values (?)");
+    //#prepared-statement
+
+    //#statement-binder
+    BiFunction<Integer, PreparedStatement,BoundStatement> statementBinder = (myInteger, statement) -> {
+      return statement.bind(myInteger);
+    };
+    //#statement-binder
+
+    Source<Integer, NotUsed> source = Source.from(IntStream.range(1, 10).boxed().collect(Collectors.toList()));
+
+
+    //#run-sink
+    final Sink<Integer, CompletionStage<Done>> sink = CassandraSink.create(2, preparedStatement, statementBinder, session, system.dispatcher());
+
+    CompletionStage<Done> result = source.runWith(sink, materializer);
+    //#run-sink
+
+    result.toCompletableFuture().get();
+
+    Set<Integer> found = session.execute("select * from akka_stream_java_test.test").all().stream().map(r -> r.getInt("id")).collect(Collectors.toSet());
+
+    assertEquals(found, IntStream.range(1, 10).boxed().collect(Collectors.toSet()));
+  }
 }

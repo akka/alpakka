@@ -5,13 +5,14 @@ package akka.stream.alpakka.cassandra.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Sink
-import com.datastax.driver.core.{ Cluster, SimpleStatement }
+import akka.stream.scaladsl.{ Sink, Source }
+import com.datastax.driver.core.{ Cluster, PreparedStatement, SimpleStatement }
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent._
 import scala.concurrent.duration._
+import scala.collection.JavaConverters._
 
 /**
  * All the tests must be run with a local Cassandra running on default port 9042.
@@ -110,6 +111,30 @@ class CassandraSourceSpec
       rows mustBe empty
     }
 
-  }
+    "sink should write to the table" in {
+      import system.dispatcher
 
+      val source = Source(0 to 10).map(i => i: Integer)
+
+      //#prepared-statement
+      val preparedStatement = session.prepare("INSERT INTO akka_stream_scala_test.test(id) VALUES (?)")
+      //#prepared-statement
+
+      //#statement-binder
+      val statementBinder = (myInteger: Integer, statement: PreparedStatement) => statement.bind(myInteger)
+      //#statement-binder
+
+      //#run-sink
+      val sink = CassandraSink[Integer](parallelism = 2, preparedStatement, statementBinder)
+
+      val result = source.runWith(sink)
+      //#run-sink
+
+      result.futureValue
+
+      val found = session.execute("select id from akka_stream_scala_test.test").all().asScala.map(_.getInt("id"))
+
+      found.toSet mustBe (0 to 10).toSet
+    }
+  }
 }
