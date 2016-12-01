@@ -5,7 +5,8 @@ package akka.stream.alpakka.s3.javadsl
 
 import akka.actor.ActorSystem
 import akka.http.impl.model.JavaUri
-import akka.http.javadsl.model.Uri
+import akka.http.javadsl.model.{ ContentType, Uri }
+import akka.http.scaladsl.model.{ ContentType => ScalaContentType, ContentTypes }
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.impl.CompleteMultipartUploadResult
 import akka.stream.alpakka.s3.auth.AWSCredentials
@@ -31,9 +32,14 @@ final class S3Client(credentials: AWSCredentials, region: String, system: ActorS
   def download(bucket: String, key: String): Source[ByteString, NotUsed] =
     impl.download(S3Location(bucket, key)).asJava
 
-  def multipartUpload(bucket: String, key: String): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+  def multipartUpload(bucket: String,
+                      key: String,
+                      contentType: ContentType): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     impl
-      .multipartUpload(S3Location(bucket, key))
+      .multipartUpload(S3Location(bucket, key), contentType.asInstanceOf[ScalaContentType])
       .mapMaterializedValue(_.map(MultipartUploadResult.create)(system.dispatcher).toJava)
       .asJava
+
+  def multipartUpload(bucket: String, key: String): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    multipartUpload(bucket, key, ContentTypes.`application/octet-stream`)
 }

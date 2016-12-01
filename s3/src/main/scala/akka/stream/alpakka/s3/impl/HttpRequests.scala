@@ -8,8 +8,9 @@ import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.headers.Host
+import akka.http.scaladsl.model.headers.{ Host, RawHeader }
 import akka.util.ByteString
+import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.scaladsl.Source
 import akka.http.scaladsl.model.RequestEntity
 import akka.http.scaladsl.model.RequestEntity
@@ -21,8 +22,12 @@ private[alpakka] object HttpRequests {
                 uriFn: (Uri => Uri) = identity): HttpRequest =
     HttpRequest(method).withHeaders(Host(requestHost(s3Location))).withUri(uriFn(requestUri(s3Location)))
 
-  def initiateMultipartUploadRequest(s3Location: S3Location): HttpRequest =
+  def initiateMultipartUploadRequest(s3Location: S3Location,
+                                     contentType: ContentType,
+                                     cannedAcl: CannedAcl): HttpRequest =
     s3Request(s3Location, HttpMethods.POST, _.withQuery(Query("uploads")))
+      .withDefaultHeaders(RawHeader("x-amz-acl", cannedAcl.value))
+      .withEntity(HttpEntity.empty(contentType))
 
   def getRequest(s3Location: S3Location): HttpRequest =
     s3Request(s3Location)

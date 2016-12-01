@@ -5,7 +5,7 @@ package akka.stream.alpakka.s3.auth
 
 import java.net.URLEncoder
 
-import akka.http.scaladsl.model.Uri.Query
+import akka.http.scaladsl.model.Uri.{ Path, Query }
 import akka.http.scaladsl.model.{ HttpHeader, HttpRequest }
 
 // Documentation: http://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
@@ -23,7 +23,7 @@ private[alpakka] object CanonicalRequest {
     val hashedBody = req.headers.find(_.name == "x-amz-content-sha256").map(_.value).getOrElse("")
     CanonicalRequest(
       req.method.value,
-      req.uri.path.toString,
+      preprocessPath(req.uri.path),
       canonicalQueryString(req.uri.query()),
       canonicalHeaderString(req.headers),
       signedHeadersString(req.headers),
@@ -35,6 +35,15 @@ private[alpakka] object CanonicalRequest {
     query.sortBy(_._1).map { case (a, b) => s"${uriEncode(a)}=${uriEncode(b)}" }.mkString("&")
 
   private def uriEncode(str: String) = URLEncoder.encode(str, "utf-8")
+
+  /**
+   * URL encodes the given string.  This allows us to pass special characters
+   * that would otherwise be rejected when building a URI instance.  Because we
+   * need to retain the URI's path structure we subsequently need to replace
+   * percent encoded path delimiters back to their decoded counterparts.
+   */
+  private def preprocessPath(path: Path): String =
+    uriEncode(path.toString).replace(":", "%3A").replace("%2F", "/")
 
   def canonicalHeaderString(headers: Seq[HttpHeader]): String = {
     val grouped = headers.groupBy(_.lowercaseName())
