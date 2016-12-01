@@ -24,7 +24,7 @@ private[jms] trait JmsConnector { this: GraphStageLogic with StageLogging =>
 
   private[jms] def onSessionOpened(): Unit
 
-  private[jms] def fail = getAsyncCallback[JMSException](e => failStage(e))
+  private[jms] def fail = getAsyncCallback[Exception](e => failStage(e))
 
   private def onSession =
     getAsyncCallback[JmsSession](session => {
@@ -55,6 +55,8 @@ private[jms] trait JmsConnector { this: GraphStageLogic with StageLogging =>
         case _ => throw new IllegalArgumentException("Destination is missing")
       }
       onSession.invoke(JmsSession(connection, session, dest))
+    }.onFailure {
+      case e: Exception => fail.invoke(e)
     }
   }
 

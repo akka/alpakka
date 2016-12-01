@@ -3,11 +3,11 @@
  */
 package akka.stream.alpakka.jms
 
-import javax.jms.{JMSException, MessageProducer, TextMessage}
+import javax.jms.{ JMSException, MessageProducer, TextMessage }
 
 import akka.Done
-import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, StageLogging}
-import akka.stream.{Attributes, Inlet, SinkShape}
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, StageLogging }
+import akka.stream.{ Attributes, Inlet, SinkShape }
 
 import scala.concurrent.Future
 

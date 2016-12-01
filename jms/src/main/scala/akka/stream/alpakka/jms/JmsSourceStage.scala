@@ -78,5 +78,10 @@ final class JmsSourceStage(settings: JmsSourceSettings) extends GraphStage[Sourc
             pushMessage(queue.dequeue())
           }
       })
+
+      override def postStop(): Unit = {
+        super.postStop()
+        queue.clear()
+      }
     }
 }

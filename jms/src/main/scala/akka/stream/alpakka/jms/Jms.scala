@@ -39,8 +39,8 @@ object JmsSinkSettings {
 }
 
 final case class JmsSinkSettings(connectionFactory: ConnectionFactory,
-                           destination: Option[Destination] = None,
-                           credentials: Option[Credentials] = None)
+                                 destination: Option[Destination] = None,
+                                 credentials: Option[Credentials] = None)
     extends JmsSettings {
   def withCredential(credentials: Credentials) = copy(credentials = Some(credentials))
   def withQueue(name: String) = copy(destination = Some(Queue(name)))

@@ -8,6 +8,7 @@ sbt
 :   @@@vars
     ```scala
     libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-jms" % "$version$"
+    libraryDependencies += "javax.jms" % "javax.jms-api" % "2.0.1"      
     ```
     @@@
 
@@ -19,6 +20,11 @@ Maven
       <artifactId>akka-stream-alpakka-jms_$scala.binaryVersion$</artifactId>
       <version>$version$</version>
     </dependency>
+    <dependency>
+      <groupId>javax.jms</groupId>
+      <artifactId>javax.jms-api</artifactId>
+      <version>2.0.1</version>
+    </dependency>
     ```
     @@@
 
@@ -27,6 +33,7 @@ Gradle
     ```gradle
     dependencies {
       compile group: "com.lightbend.akka", name: "akka-stream-alpakka-jms_$scala.binaryVersion$", version: "$version$"
+      compile group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
     }
     ```
     @@@
@@ -44,7 +51,7 @@ Java
 : @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #connection-factory }
 
 
-Create a sink, that accepts and forwards @scaladoc[String](java.lang.String)s to the JMS server.
+Create a sink, that accepts and forwards @scaladoc[String](`String`)s to the JMS server.
 
 Scala
 : @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-sink }
