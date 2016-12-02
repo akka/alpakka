@@ -43,7 +43,8 @@ private[ftp] trait FtpIOGraphStage[FtpClient]
       private[this] var isOpt: Option[InputStream] = None
       private[this] var readBytesTotal: Long = 0L
 
-      setHandler(out, new OutHandler {
+      setHandler(out,
+        new OutHandler {
         def onPull(): Unit =
           readChunk() match {
             case Some(bs) =>

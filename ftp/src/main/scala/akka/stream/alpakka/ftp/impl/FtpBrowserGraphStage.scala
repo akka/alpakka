@@ -30,7 +30,8 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient] extends GraphStage[SourceShap
 
       private[this] var buffer: Seq[FtpFile] = Seq.empty[FtpFile]
 
-      setHandler(out, new OutHandler {
+      setHandler(out,
+        new OutHandler {
         def onPull(): Unit = {
           fillBuffer()
           buffer match {
