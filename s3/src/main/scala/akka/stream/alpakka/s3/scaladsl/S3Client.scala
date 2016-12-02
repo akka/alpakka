@@ -36,9 +36,9 @@ final class S3Client(credentials: AWSCredentials, region: String)(implicit syste
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType = ContentTypes.`application/octet-stream`,
+                      cannedAcl: CannedAcl = CannedAcl.Private,
                       chunkSize: Int = MinChunkSize,
-                      chunkingParallelism: Int = 4,
-                      cannedAcl: CannedAcl = CannedAcl.Private): Sink[ByteString, Future[MultipartUploadResult]] =
+                      chunkingParallelism: Int = 4): Sink[ByteString, Future[MultipartUploadResult]] =
     impl
       .multipartUpload(S3Location(bucket, key), contentType, cannedAcl, chunkSize, chunkingParallelism)
       .mapMaterializedValue(_.map(MultipartUploadResult.apply)(system.dispatcher))
