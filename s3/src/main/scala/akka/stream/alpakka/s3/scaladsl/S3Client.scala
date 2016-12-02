@@ -6,12 +6,12 @@ package akka.stream.alpakka.s3.scaladsl
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import akka.stream.alpakka.s3.impl.S3Location
-import akka.stream.alpakka.s3.impl.S3Stream
+import akka.stream.alpakka.s3.impl.{ S3Location, S3Stream }
+import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.auth.AWSCredentials
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.{ ContentType, ContentTypes, Uri }
 import akka.stream.scaladsl.Sink
 import scala.concurrent.Future
 import akka.stream.alpakka.s3.impl.CompleteMultipartUploadResult
@@ -35,9 +35,11 @@ final class S3Client(credentials: AWSCredentials, region: String)(implicit syste
 
   def multipartUpload(bucket: String,
                       key: String,
+                      contentType: ContentType = ContentTypes.`application/octet-stream`,
                       chunkSize: Int = MinChunkSize,
-                      chunkingParallelism: Int = 4): Sink[ByteString, Future[MultipartUploadResult]] =
+                      chunkingParallelism: Int = 4,
+                      cannedAcl: CannedAcl = CannedAcl.Private): Sink[ByteString, Future[MultipartUploadResult]] =
     impl
-      .multipartUpload(S3Location(bucket, key), chunkSize, chunkingParallelism)
+      .multipartUpload(S3Location(bucket, key), contentType, cannedAcl, chunkSize, chunkingParallelism)
       .mapMaterializedValue(_.map(MultipartUploadResult.apply)(system.dispatcher))
 }
