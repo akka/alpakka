@@ -42,7 +42,8 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings, sqsCli
           .withMaxNumberOfMessages(settings.maxBatchSize)
           .withWaitTimeSeconds(settings.longPollingDuration.toSeconds.toInt)
 
-        sqsClient.receiveMessageAsync(request, new AsyncHandler[ReceiveMessageRequest, ReceiveMessageResult] {
+        sqsClient.receiveMessageAsync(request,
+          new AsyncHandler[ReceiveMessageRequest, ReceiveMessageResult] {
           override def onError(e: Exception): Unit =
             failureCallback.invoke(e)
 
@@ -67,7 +68,8 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings, sqsCli
         }
       }
 
-      setHandler(out, new OutHandler {
+      setHandler(out,
+        new OutHandler {
         override def onPull(): Unit =
           if (!buffer.isEmpty) {
             if (buffer.size == settings.maxBufferSize - settings.maxBatchSize) {
