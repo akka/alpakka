@@ -70,6 +70,13 @@ lazy val hbase = project
     fork in Test := true
   )
 
+lazy val ironmq = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-ironmq",
+    Dependencies.IronMq
+  )
+
 lazy val jms = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(

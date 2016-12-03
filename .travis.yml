@@ -38,6 +38,8 @@ deploy:
 
 env:
   global:
+    - IRONMQ_ENDPOINT=http://localhost:8080
+    - IRONMQ_TOKEN=adminToken
     # encrypt with: travis encrypt BINTRAY_USER=...
     - secure: "DLc1v2XMWrxtbPzVfoArkSQiwzT+O7/rwT7APqoA68K5A1pwxDw5BD3sOLpd6rKbPBulmwDAAQ1am3uE6lbmymCTMe8bvA3iHWy0Jg8baK4nC46EKFLabQz4Uaoq/bs92YGW1QH12rbBPyTA7uvPpvhmb8uyUbJqjT3uyROqHhHfhll89dsPVaK0NCY9DN2K356M87z7cp1SvtfAiF8qaNjNmlOfWjIEUSO1SiiqQBjT/GJvhrrW32J4htf5CqEEYBSoN+fqTCwwdo3GpOFFq+Zh5TSoyvKyi5xo+LVq0hW2SAYTHMMB5WhLd1cvQ0bvK6FpUhyfMcON/8ad3R7paNVxLpIGEu8hsUYGsENjdXaEK4g1TurDeVekWJRYyGMCmy2cCg5yHC+Pb56qOgpM7gmZACCitLap1jXUCWI27q+7cvxuxaBb6EPiDuWGNQXHH+OkbD/s4RJO3kQfv1Si64RON8+bZ+fqOWLK+BuakYi3YMukFgPngQozX3aMZOVcEBKJZtquwewCKsNV2VGItJxrp3MDol0HhuNvdUvIf5UydZZCyJTo1DBsK49yDUj7iKOEJk5Qc5oYfEhSEKcGRZs8Yl9n/kIJUh8ZYTT+35rwD27dHgsEkPkCEGpbMP/r0JewkWH7q9FfajPIYOlEpoP6tCsdP4mBOyF1uZH7omM="
     # encrypt with: travis encrypt BINTRAY_PASS=...
