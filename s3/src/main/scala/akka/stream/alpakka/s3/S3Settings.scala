@@ -31,19 +31,17 @@ object S3Settings {
   /**
    * Create [[S3Settings]] from a Config subsection.
    */
-  def apply(config: Config): S3Settings = {
-    val proxyConfig = if (config.hasPath("proxy")) config.getConfig("proxy") else ConfigFactory.empty()
-    new S3Settings(
-      bufferType = config.getString("buffer") match {
-        case "memory" => MemoryBufferType
-        case "disk" => DiskBufferType
-        case _ => throw new IllegalArgumentException("Buffer type must be 'memory' or 'disk'")
-      },
-      diskBufferPath = config.getString("disk-buffer-path"),
-      debugLogging = config.getBoolean("debug-logging"),
-      proxy =
-        if (proxyConfig.isEmpty) None
-        else Some(Proxy(proxyConfig.getString("host"), proxyConfig.getInt("port")))
-    )
-  }
+  def apply(config: Config): S3Settings = new S3Settings(
+    bufferType = config.getString("buffer") match {
+      case "memory" => MemoryBufferType
+      case "disk" => DiskBufferType
+      case _ => throw new IllegalArgumentException("Buffer type must be 'memory' or 'disk'")
+    },
+    diskBufferPath = config.getString("disk-buffer-path"),
+    debugLogging = config.getBoolean("debug-logging"),
+    proxy =
+      if (config.getString("proxy.host") != "")
+        Some(Proxy(config.getString("proxy.host"), config.getInt("proxy.port")))
+      else None
+  )
 }

@@ -28,7 +28,7 @@ private[alpakka] object Marshalling {
           (x \ "Location").text,
           (x \ "Bucket").text,
           (x \ "Key").text,
-          (x \ "Etag").text
+          (x \ "ETag").text.drop(1).dropRight(1)
         )
     }
   }

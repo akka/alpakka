@@ -11,7 +11,10 @@ import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ BeforeAndAfterAll, FlatSpecLike }
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{ BeforeAndAfterAll, FlatSpecLike, Matchers }
+
+import scala.concurrent.duration._
 
 object WireMockBase {
   def config(port: Int) = ConfigFactory.parseString(
@@ -55,9 +58,15 @@ object WireMockBase {
 abstract class WireMockBase(_system: ActorSystem, _wireMockServer: WireMockServer)
     extends TestKit(_system)
     with FlatSpecLike
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with Matchers
+    with ScalaFutures {
 
-  def this(mock: WireMockServer) = this(ActorSystem(getCallerName(getClass), config(mock.httpsPort())), mock)
+  implicit val defaultPatience =
+    PatienceConfig(timeout = 5.seconds, interval = 100.millis)
+
+  def this(mock: WireMockServer) =
+    this(ActorSystem(getCallerName(getClass), config(mock.httpsPort())), mock)
   def this() = this(initServer())
 
   val mock = new WireMock("localhost", _wireMockServer.port())
