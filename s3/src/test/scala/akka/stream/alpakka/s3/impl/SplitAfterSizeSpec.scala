@@ -15,6 +15,7 @@ import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import akka.stream.scaladsl.Sink
+import org.scalatest.time.{ Millis, Seconds, Span }
 
 class SplitAfterSizeSpec(_system: ActorSystem)
     extends TestKit(_system)
@@ -24,6 +25,8 @@ class SplitAfterSizeSpec(_system: ActorSystem)
     with ScalaFutures {
 
   def this() = this(ActorSystem("SplitAfterSizeSpec"))
+  implicit val defaultPatience =
+    PatienceConfig(timeout = Span(5, Seconds), interval = Span(30, Millis))
 
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
 

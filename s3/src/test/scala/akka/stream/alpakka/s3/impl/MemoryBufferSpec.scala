@@ -8,6 +8,7 @@ import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.testkit.TestKit
 import akka.util.ByteString
+import org.scalatest.time.{ Millis, Seconds, Span }
 import org.scalatest.{ BeforeAndAfterAll, FlatSpecLike, Matchers }
 import org.scalatest.concurrent.ScalaFutures
 
@@ -19,6 +20,9 @@ class MemoryBufferSpec(_system: ActorSystem)
     with ScalaFutures {
 
   def this() = this(ActorSystem("MemoryBufferSpec"))
+
+  implicit val defaultPatience =
+    PatienceConfig(timeout = Span(5, Seconds), interval = Span(30, Millis))
 
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
 
