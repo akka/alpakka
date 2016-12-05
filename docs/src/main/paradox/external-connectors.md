@@ -37,7 +37,11 @@ TODO: Add links to more connectors. [Contributions](https://github.com/akka/alpa
 
 ## FS2
 
-[An Akka Streams - Functional Streams for Scala (FS2) interface](https://github.com/krasserm/streamz#combinators-for-akka-stream)
+[Akka Streams - FS2 converters](https://github.com/krasserm/streamz#stream-converters)
+
+## Camel
+
+[Apache Camel DSL for Akka Streams](https://github.com/krasserm/streamz#dsl-for-as)
 
 ## MongoDB
 
