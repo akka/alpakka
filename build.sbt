@@ -17,6 +17,15 @@ lazy val cassandra = project
     Dependencies.Cassandra
   )
 
+lazy val dynamodb = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-dynamodb",
+    resolvers += "DynamoDBLocal" at "http://dynamodb-local.s3-website-us-west-2.amazonaws.com/release/",
+    Dependencies.DynamoDB,
+    parallelExecution in Test := false
+  )
+
 lazy val files = project // The name file is taken by `sbt.file`!
   .in(file("file"))
   .enablePlugins(AutomateHeaderPlugin)

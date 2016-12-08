@@ -4,6 +4,7 @@
 
 * [AMQP Connector](amqp.md)
 * [Cassandra Connector](cassandra.md)
+* [DynamoDB Connector](dynamodb.md)
 * [File Connectors](file.md)
 * [HBase Connectors](hbase.md)
 * [MQTT Connector](mqtt.md)

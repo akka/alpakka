@@ -55,6 +55,16 @@ object Dependencies {
     )
   }
 
+  val DynamoDB = Seq(
+    libraryDependencies ++= Seq(
+      "com.amazonaws"             % "aws-java-sdk-core"       % "1.11.73",          // ApacheV2
+      "com.amazonaws"             % "aws-java-sdk-dynamodb"   % "1.11.73",          // ApacheV2
+      "com.typesafe.akka"         %% "akka-http"              % AkkaHttpVersion,
+      "com.amazonaws"             % "DynamoDBLocal"           % "1.11.0"    % Test, // ApacheV2
+      "com.almworks.sqlite4java"  % "sqlite4java"             % "0.213"     % Test  // ApacheV2
+    )
+  )
+
   val Mqtt = Seq(
     libraryDependencies ++= Seq(
       "org.eclipse.paho" % "org.eclipse.paho.client.mqttv3" % "1.1.0",       // Eclipse Public License 1.0
