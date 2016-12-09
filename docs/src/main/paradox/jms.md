@@ -8,7 +8,7 @@ sbt
 :   @@@vars
     ```scala
     libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-jms" % "$version$"
-    libraryDependencies += "javax.jms" % "javax.jms-api" % "2.0.1"      
+    libraryDependencies += "javax.jms" % "jms" % "1.1"      
     ```
     @@@
 
@@ -22,8 +22,8 @@ Maven
     </dependency>
     <dependency>
       <groupId>javax.jms</groupId>
-      <artifactId>javax.jms-api</artifactId>
-      <version>2.0.1</version>
+      <artifactId>jms</artifactId>
+      <version>1.1</version>
     </dependency>
     ```
     @@@
@@ -33,7 +33,7 @@ Gradle
     ```gradle
     dependencies {
       compile group: "com.lightbend.akka", name: "akka-stream-alpakka-jms_$scala.binaryVersion$", version: "$version$"
-      compile group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
+      compile group: 'javax.jms', name: 'jms', version: '1.1'
     }
     ```
     @@@

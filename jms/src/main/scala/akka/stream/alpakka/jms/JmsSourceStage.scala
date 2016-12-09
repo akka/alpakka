@@ -6,7 +6,7 @@ package akka.stream.alpakka.jms
 import java.util.concurrent.Semaphore
 import javax.jms._
 
-import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, StageLogging }
+import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
 import akka.stream.{ Attributes, Outlet, SourceShape }
 
 import scala.collection.mutable
@@ -19,7 +19,7 @@ final class JmsSourceStage(settings: JmsSourceSettings) extends GraphStage[Sourc
   override def shape: SourceShape[Message] = SourceShape[Message](out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with JmsConnector with StageLogging {
+    new GraphStageLogic(shape) with JmsConnector {
 
       override private[jms] def jmsSettings = settings
 
@@ -39,6 +39,9 @@ final class JmsSourceStage(settings: JmsSourceSettings) extends GraphStage[Sourc
           queue.enqueue(msg)
         }
       })
+
+      override def preStart(): Unit =
+        initSessionAsync()
 
       private def pushMessage(msg: Message): Unit = {
         push(out, msg)
@@ -62,14 +65,7 @@ final class JmsSourceStage(settings: JmsSourceSettings) extends GraphStage[Sourc
               }
             })
           case Failure(e) =>
-            settings.destination match {
-              case Some(Queue(name)) =>
-                log.error(e, "Error creating consumer on queue {}", name)
-              case Some(Topic(name)) =>
-                log.error(e, "Error creating consumer on topic {}", name)
-              case _ =>
-            }
-            failStage(e)
+            fail.invoke(e)
         }
 
       setHandler(out, new OutHandler {
@@ -80,8 +76,10 @@ final class JmsSourceStage(settings: JmsSourceSettings) extends GraphStage[Sourc
       })
 
       override def postStop(): Unit = {
-        super.postStop()
         queue.clear()
+        Option(jmsSession).foreach(_.closeSessionAsync().onFailure {
+          case e => fail.invoke(e)
+        })
       }
     }
 }
