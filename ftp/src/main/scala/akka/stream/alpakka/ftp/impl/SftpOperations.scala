@@ -11,28 +11,24 @@ import scala.util.Try
 import java.io.InputStream
 import java.nio.file.Paths
 
-private[ftp] trait SftpOperations { _: FtpLike[JSch] =>
+private[ftp] trait SftpOperations { _: FtpLike[JSch, SftpSettings] =>
 
   type Handler = ChannelSftp
 
-  def connect(connectionSettings: RemoteFileSettings)(implicit ftpClient: JSch): Try[Handler] = Try {
-    connectionSettings match {
-      case SftpSettings(host, port, credentials, strictHostKeyChecking) =>
-        val session = ftpClient.getSession(
-          credentials.username,
-          host.getHostAddress,
-          port
-        )
-        session.setPassword(credentials.password)
-        val config = new java.util.Properties
-        config.setProperty("StrictHostKeyChecking", if (strictHostKeyChecking) "yes" else "no")
-        session.setConfig(config)
-        session.connect()
-        val channel = session.openChannel("sftp").asInstanceOf[ChannelSftp]
-        channel.connect()
-        channel
-      case _ => throw new IllegalArgumentException(s"Invalid configuration: $connectionSettings")
-    }
+  def connect(connectionSettings: SftpSettings)(implicit ftpClient: JSch): Try[Handler] = Try {
+    val session = ftpClient.getSession(
+      connectionSettings.credentials.username,
+      connectionSettings.host.getHostAddress,
+      connectionSettings.port
+    )
+    session.setPassword(connectionSettings.credentials.password)
+    val config = new java.util.Properties
+    config.setProperty("StrictHostKeyChecking", if (connectionSettings.strictHostKeyChecking) "yes" else "no")
+    session.setConfig(config)
+    session.connect()
+    val channel = session.openChannel("sftp").asInstanceOf[ChannelSftp]
+    channel.connect()
+    channel
   }
 
   def disconnect(handler: Handler)(implicit ftpClient: JSch): Unit = {

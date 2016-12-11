@@ -14,7 +14,7 @@ import scala.util.control.NonFatal
 import java.io.InputStream
 import java.nio.file.Path
 
-private[ftp] trait FtpIOGraphStage[FtpClient]
+private[ftp] trait FtpIOGraphStage[FtpClient, S <: RemoteFileSettings]
     extends GraphStageWithMaterializedValue[SourceShape[ByteString], Future[IOResult]] {
 
   def name: String
@@ -23,11 +23,11 @@ private[ftp] trait FtpIOGraphStage[FtpClient]
 
   def chunkSize: Int
 
-  def connectionSettings: RemoteFileSettings
+  def connectionSettings: S
 
   implicit def ftpClient: FtpClient
 
-  val ftpLike: FtpLike[FtpClient]
+  val ftpLike: FtpLike[FtpClient, S]
 
   override def initialAttributes: Attributes =
     super.initialAttributes and Attributes.name(name) and IODispatcher
@@ -38,7 +38,7 @@ private[ftp] trait FtpIOGraphStage[FtpClient]
 
     val matValuePromise = Promise[IOResult]()
 
-    val logic = new FtpGraphStageLogic[ByteString, FtpClient](shape, ftpLike, connectionSettings) {
+    val logic = new FtpGraphStageLogic[ByteString, FtpClient, S](shape, ftpLike, connectionSettings) {
 
       private[this] var isOpt: Option[InputStream] = None
       private[this] var readBytesTotal: Long = 0L

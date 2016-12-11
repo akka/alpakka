@@ -13,6 +13,8 @@ import java.nio.file.Path
 
 private[ftp] trait FtpSourceFactory[FtpClient] { self =>
 
+  type S <: RemoteFileSettings
+
   protected[this] final val DefaultChunkSize = 8192
 
   protected[this] def ftpClient: FtpClient
@@ -22,30 +24,28 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
   protected[this] def ftpIOSourceName: String
 
   protected[this] def createBrowserGraph(
-      _sourceName: String,
       _basePath: String,
-      _connectionSettings: RemoteFileSettings
-  )(implicit _ftpLike: FtpLike[FtpClient]): FtpBrowserGraphStage[FtpClient] =
-    new FtpBrowserGraphStage[FtpClient] {
-      val name: String = _sourceName
+      _connectionSettings: S
+  )(implicit _ftpLike: FtpLike[FtpClient, S]): FtpBrowserGraphStage[FtpClient, S] =
+    new FtpBrowserGraphStage[FtpClient, S] {
+      lazy val name: String = ftpBrowserSourceName
       val basePath: String = _basePath
-      val connectionSettings: RemoteFileSettings = _connectionSettings
+      val connectionSettings: S = _connectionSettings
       val ftpClient: FtpClient = self.ftpClient
-      val ftpLike: FtpLike[FtpClient] = _ftpLike
+      val ftpLike: FtpLike[FtpClient, S] = _ftpLike
     }
 
   protected[this] def createIOGraph(
-      _sourceName: String,
       _path: Path,
-      _connectionSettings: RemoteFileSettings,
+      _connectionSettings: S,
       _chunkSize: Int
-  )(implicit _ftpLike: FtpLike[FtpClient]): FtpIOGraphStage[FtpClient] =
-    new FtpIOGraphStage[FtpClient] {
-      val name: String = _sourceName
+  )(implicit _ftpLike: FtpLike[FtpClient, S]): FtpIOGraphStage[FtpClient, S] =
+    new FtpIOGraphStage[FtpClient, S] {
+      lazy val name: String = ftpIOSourceName
       val path: Path = _path
-      val connectionSettings: RemoteFileSettings = _connectionSettings
+      val connectionSettings: S = _connectionSettings
       val ftpClient: FtpClient = self.ftpClient
-      val ftpLike: FtpLike[FtpClient] = _ftpLike
+      val ftpLike: FtpLike[FtpClient, S] = _ftpLike
       val chunkSize: Int = _chunkSize
     }
 
@@ -53,10 +53,10 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
       hostname: String,
       username: Option[String] = None,
       password: Option[String] = None
-  ): RemoteFileSettings
+  ): S
 }
 
-private[ftp] trait FtpSource { _: FtpSourceFactory[_] =>
+private[ftp] trait FtpSource extends FtpSourceFactory[FTPClient] {
   protected final val FtpBrowserSourceName = "FtpBrowserSource"
   protected final val FtpIOSourceName = "FtpIOSource"
   protected def ftpClient: FTPClient = new FTPClient
@@ -64,7 +64,7 @@ private[ftp] trait FtpSource { _: FtpSourceFactory[_] =>
   protected val ftpIOSourceName: String = FtpIOSourceName
 }
 
-private[ftp] trait FtpsSource { _: FtpSourceFactory[_] =>
+private[ftp] trait FtpsSource extends FtpSourceFactory[FTPClient] {
   protected final val FtpsBrowserSourceName = "FtpsBrowserSource"
   protected final val FtpsIOSourceName = "FtpsIOSource"
   protected def ftpClient: FTPClient = new FTPClient
@@ -72,7 +72,7 @@ private[ftp] trait FtpsSource { _: FtpSourceFactory[_] =>
   protected val ftpIOSourceName: String = FtpsIOSourceName
 }
 
-private[ftp] trait SftpSource { _: FtpSourceFactory[_] =>
+private[ftp] trait SftpSource extends FtpSourceFactory[JSch] {
   protected final val sFtpBrowserSourceName = "sFtpBrowserSource"
   protected final val sFtpIOSourceName = "sFtpIOSource"
   protected def ftpClient: JSch = new JSch
@@ -85,7 +85,7 @@ private[ftp] trait FtpDefaultSettings {
       hostname: String,
       username: Option[String],
       password: Option[String]
-  ): RemoteFileSettings =
+  ): FtpSettings =
     FtpSettings(
       InetAddress.getByName(hostname),
       DefaultFtpPort,
@@ -101,7 +101,7 @@ private[ftp] trait FtpsDefaultSettings {
       hostname: String,
       username: Option[String],
       password: Option[String]
-  ): RemoteFileSettings =
+  ): FtpsSettings =
     FtpsSettings(
       InetAddress.getByName(hostname),
       DefaultFtpsPort,
@@ -117,7 +117,7 @@ private[ftp] trait SftpDefaultSettings {
       hostname: String,
       username: Option[String],
       password: Option[String]
-  ): RemoteFileSettings =
+  ): SftpSettings =
     SftpSettings(
       InetAddress.getByName(hostname),
       DefaultSftpPort,

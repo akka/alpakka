@@ -10,29 +10,23 @@ import scala.util.Try
 import java.io.{ IOException, InputStream }
 import java.nio.file.Paths
 
-private[ftp] trait FtpOperations { _: FtpLike[FTPClient] =>
+private[ftp] trait FtpOperations { _: FtpLike[FTPClient, FtpFileSettings] =>
 
   type Handler = FTPClient
 
-  def connect(
-      connectionSettings: RemoteFileSettings
-  )(implicit ftpClient: FTPClient): Try[Handler] = Try {
-    connectionSettings match {
-      case settings: FtpFileSettings =>
-        ftpClient.connect(settings.host, settings.port)
-        ftpClient.login(
-          settings.credentials.username,
-          settings.credentials.password
-        )
-        if (settings.binary) {
-          ftpClient.setFileType(FTP.BINARY_FILE_TYPE)
-        }
-        if (settings.passiveMode) {
-          ftpClient.enterLocalPassiveMode()
-        }
-        ftpClient
-      case _ => throw new IllegalArgumentException(s"Invalid configuration: $connectionSettings")
+  def connect(connectionSettings: FtpFileSettings)(implicit ftpClient: FTPClient): Try[Handler] = Try {
+    ftpClient.connect(connectionSettings.host, connectionSettings.port)
+    ftpClient.login(
+      connectionSettings.credentials.username,
+      connectionSettings.credentials.password
+    )
+    if (connectionSettings.binary) {
+      ftpClient.setFileType(FTP.BINARY_FILE_TYPE)
     }
+    if (connectionSettings.passiveMode) {
+      ftpClient.enterLocalPassiveMode()
+    }
+    ftpClient
   }
 
   def disconnect(handler: Handler)(implicit ftpClient: FTPClient): Unit =
