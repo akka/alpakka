@@ -118,14 +118,16 @@ public class JmsConnectorsTest {
                     .runWith(Sink.seq(), materializer)
                     .thenApply(l -> l.stream().sorted().collect(Collectors.toList()));
 
+            Thread.sleep(500);
+
             //#run-topic-sink
             Source.from(in).runWith(jmsTopicSink, materializer);
             //#run-topic-sink
             Source.from(inNumbers).runWith(jmsTopicSink2, materializer);
 
 
-            assertEquals(Stream.concat(in.stream(), inNumbers.stream()).sorted().collect(Collectors.toList()), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
-            assertEquals(Stream.concat(in.stream(), inNumbers.stream()).sorted().collect(Collectors.toList()), result2.toCompletableFuture().get(3, TimeUnit.SECONDS));
+            assertEquals(Stream.concat(in.stream(), inNumbers.stream()).sorted().collect(Collectors.toList()), result.toCompletableFuture().get(5, TimeUnit.SECONDS));
+            assertEquals(Stream.concat(in.stream(), inNumbers.stream()).sorted().collect(Collectors.toList()), result2.toCompletableFuture().get(5, TimeUnit.SECONDS));
         });
     }
 
@@ -144,13 +146,11 @@ public class JmsConnectorsTest {
         JavaTestKit.shutdownActorSystem(system);
     }
 
-    private final Random randomPort  = new Random();
-
     private void withServer(ConsumerChecked<Context> test) throws Exception {
         BrokerService broker = new BrokerService();
         broker.setPersistent(false);
         String host = "localhost";
-        Integer port = randomPort.nextInt(500) + 6500;
+        Integer port = akka.testkit.SocketUtil.temporaryServerAddress(host, false).getPort();
         broker.setBrokerName(host);
         broker.setUseJmx(false);
         String url = "tcp://" + host + ":" + port;

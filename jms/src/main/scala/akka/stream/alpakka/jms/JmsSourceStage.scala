@@ -6,8 +6,8 @@ package akka.stream.alpakka.jms
 import java.util.concurrent.Semaphore
 import javax.jms._
 
-import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
-import akka.stream.{ Attributes, Outlet, SourceShape }
+import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, StageLogging }
+import akka.stream.{ ActorAttributes, Attributes, Outlet, SourceShape }
 
 import scala.collection.mutable
 import scala.util.{ Failure, Success }
@@ -19,9 +19,17 @@ final class JmsSourceStage(settings: JmsSourceSettings) extends GraphStage[Sourc
   override def shape: SourceShape[Message] = SourceShape[Message](out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with JmsConnector {
+    new GraphStageLogic(shape) with JmsConnector with StageLogging {
 
       override private[jms] def jmsSettings = settings
+
+      private[jms] def getDispatcher =
+        inheritedAttributes.get[ActorAttributes.Dispatcher](
+          ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")) match {
+          case ActorAttributes.Dispatcher("") =>
+            ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
+          case d => d
+        }
 
       private val bufferSize = settings.bufferSize
       private val queue = mutable.Queue[Message]()
@@ -41,7 +49,7 @@ final class JmsSourceStage(settings: JmsSourceSettings) extends GraphStage[Sourc
       })
 
       override def preStart(): Unit =
-        initSessionAsync()
+        initSessionAsync(getDispatcher)
 
       private def pushMessage(msg: Message): Unit = {
         push(out, msg)
@@ -78,7 +86,7 @@ final class JmsSourceStage(settings: JmsSourceSettings) extends GraphStage[Sourc
       override def postStop(): Unit = {
         queue.clear()
         Option(jmsSession).foreach(_.closeSessionAsync().onFailure {
-          case e => fail.invoke(e)
+          case e => log.error(e, "Error closing jms session")
         })
       }
     }

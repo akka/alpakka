@@ -9,8 +9,7 @@ import akka.testkit.TestKit
 import org.apache.activemq.broker.BrokerService
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
-
-import scala.util.Random
+import akka.testkit.SocketUtil
 
 abstract class JmsSpec
     extends WordSpec
@@ -25,13 +24,11 @@ abstract class JmsSpec
   override protected def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
 
-  val random = Random
-
   def withServer(network: Boolean = true)(test: Context => Unit): Unit = {
     val broker = new BrokerService()
     val host: String = "localhost"
     val url = if (network) {
-      val port = random.nextInt(499) + 6000
+      val port = SocketUtil.temporaryServerAddress(host).getPort
       val serverUrl = s"tcp://$host:$port"
       broker.addConnector(serverUrl)
       serverUrl
