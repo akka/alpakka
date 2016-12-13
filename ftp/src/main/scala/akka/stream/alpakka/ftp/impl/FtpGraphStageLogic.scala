@@ -8,10 +8,10 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.{ Outlet, Shape }
 import scala.util.control.NonFatal
 
-private[ftp] abstract class FtpGraphStageLogic[T, FtpClient](
+private[ftp] abstract class FtpGraphStageLogic[T, FtpClient, S <: RemoteFileSettings](
     val shape: Shape,
-    val ftpLike: FtpLike[FtpClient],
-    val connectionSettings: RemoteFileSettings
+    val ftpLike: FtpLike[FtpClient, S],
+    val connectionSettings: S
 )(implicit ftpClient: FtpClient)
     extends GraphStageLogic(shape) {
 

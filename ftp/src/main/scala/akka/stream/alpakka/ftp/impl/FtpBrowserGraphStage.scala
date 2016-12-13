@@ -8,17 +8,17 @@ import akka.stream.stage.{ GraphStage, OutHandler }
 import akka.stream.{ Attributes, Outlet, SourceShape }
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 
-private[ftp] trait FtpBrowserGraphStage[FtpClient] extends GraphStage[SourceShape[FtpFile]] {
+private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] extends GraphStage[SourceShape[FtpFile]] {
 
   def name: String
 
   def basePath: String
 
-  def connectionSettings: RemoteFileSettings
+  def connectionSettings: S
 
   implicit def ftpClient: FtpClient
 
-  val ftpLike: FtpLike[FtpClient]
+  val ftpLike: FtpLike[FtpClient, S]
 
   val shape: SourceShape[FtpFile] = SourceShape(Outlet[FtpFile](s"$name.out"))
 
@@ -26,7 +26,7 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient] extends GraphStage[SourceShap
     super.initialAttributes and Attributes.name(name) and IODispatcher
 
   def createLogic(inheritedAttributes: Attributes) = {
-    val logic = new FtpGraphStageLogic[FtpFile, FtpClient](shape, ftpLike, connectionSettings) {
+    val logic = new FtpGraphStageLogic[FtpFile, FtpClient, S](shape, ftpLike, connectionSettings) {
 
       private[this] var buffer: Seq[FtpFile] = Seq.empty[FtpFile]
 
