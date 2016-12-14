@@ -1,7 +1,7 @@
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
-  .aggregate(amqp, cassandra, docs, files, mqtt, s3, sqs, ftp)
+  .aggregate(amqp, cassandra, docs, files, hbase, mqtt, s3, sqs, ftp)
 
 lazy val amqp = project
   .enablePlugins(AutomateHeaderPlugin)
@@ -23,6 +23,14 @@ lazy val files = project // The name file is taken by `sbt.file`!
   .settings(
     name := "akka-stream-alpakka-file",
     Dependencies.File
+  )
+
+lazy val hbase = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-hbase",
+    Dependencies.HBase,
+    fork in Test := true
   )
 
 lazy val mqtt = project

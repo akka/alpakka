@@ -38,6 +38,23 @@ object Dependencies {
     )
   )
 
+  val HBase = {
+    val hbaseVersion = "1.2.4"
+    val hadoopVersion = "2.5.1"
+    Seq(
+      libraryDependencies ++= Seq(
+        "org.apache.hbase" % "hbase-client" % hbaseVersion exclude("log4j", "log4j") exclude("org.slf4j", "slf4j-log4j12"), // ApacheV2,
+        "org.apache.hbase" % "hbase-common" % hbaseVersion exclude("log4j", "log4j") exclude("org.slf4j", "slf4j-log4j12"), // ApacheV2,
+        "org.apache.hadoop" % "hadoop-common" % hadoopVersion exclude("log4j", "log4j") exclude("org.slf4j", "slf4j-log4j12"), // ApacheV2,
+        "org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVersion exclude("log4j", "log4j") exclude("org.slf4j", "slf4j-log4j12"), // ApacheV2,
+        "org.slf4j" % "log4j-over-slf4j" % "1.7.21" % Test, // MIT like: http://www.slf4j.org/license.html
+        "org.slf4j" % "slf4j-api" % "1.7.21" % Test, // MIT like: http://www.slf4j.org/license.html
+        "ch.qos.logback" % "logback-classic" % "1.1.7" % Test, // Eclipse Public License 1.0: http://logback.qos.ch/license.html
+        "ch.qos.logback" % "logback-core" % "1.1.7" % Test // Eclipse Public License 1.0: http://logback.qos.ch/license.html
+      )
+    )
+  }
+
   val Mqtt = Seq(
     libraryDependencies ++= Seq(
       "org.eclipse.paho" % "org.eclipse.paho.client.mqttv3" % "1.1.0",       // Eclipse Public License 1.0

@@ -5,6 +5,7 @@
 * [AMQP Connector](amqp.md)
 * [Cassandra Connector](cassandra.md)
 * [File Connectors](file.md)
+* [HBase Connectors](hbase.md)
 * [MQTT Connector](mqtt.md)
 * [FTP Connector](ftp.md)
 * [SQS Connector](sqs.md)
