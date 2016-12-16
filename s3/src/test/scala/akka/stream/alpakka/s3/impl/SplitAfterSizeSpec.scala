@@ -30,8 +30,6 @@ class SplitAfterSizeSpec(_system: ActorSystem)
     PatienceConfig(timeout = Span(5, Seconds), interval = Span(30, Millis))
 
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
-  implicit val defaultPatience =
-    PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
   "SplitAfterSize" should "yield a single empty substream on no input" in {
     Source
