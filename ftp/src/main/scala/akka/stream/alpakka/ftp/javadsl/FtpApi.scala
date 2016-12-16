@@ -5,8 +5,7 @@ package akka.stream.alpakka.ftp.javadsl
 
 import akka.NotUsed
 import akka.stream.alpakka.ftp.impl._
-import akka.stream.alpakka.ftp.{ FtpFile, FtpFileSettings, RemoteFileSettings }
-import akka.stream.alpakka.ftp.RemoteFileSettings.SftpSettings
+import akka.stream.alpakka.ftp.{ FtpFile, RemoteFileSettings }
 import akka.stream.alpakka.ftp.impl.{ FtpLike, FtpSourceFactory }
 import akka.stream.IOResult
 import akka.stream.javadsl.Source
@@ -153,19 +152,9 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
     ScalaSource.fromGraph(createIOGraph(path, connectionSettings, chunkSize)).mapMaterializedValue(_.toJava).asJava
   }
 
-  /** Java API: needed because of the lack of implicit resolution in Java */
   protected[this] implicit def ftpLike: FtpLike[FtpClient, S]
 }
 
-object Ftp extends FtpApi[FTPClient] with FtpSource with FtpDefaultSettings {
-  type S = FtpFileSettings
-  protected[this] val ftpLike: FtpLike[FTPClient, S] = FtpLike.ftpLikeInstance
-}
-object Ftps extends FtpApi[FTPClient] with FtpsSource with FtpsDefaultSettings {
-  type S = FtpFileSettings
-  protected[this] val ftpLike: FtpLike[FTPClient, S] = FtpLike.ftpLikeInstance
-}
-object Sftp extends FtpApi[JSch] with SftpSource with SftpDefaultSettings {
-  type S = SftpSettings
-  protected[this] val ftpLike: FtpLike[JSch, S] = FtpLike.sFtpLikeInstance
-}
+object Ftp extends FtpApi[FTPClient] with FtpSourceParams
+object Ftps extends FtpApi[FTPClient] with FtpsSourceParams
+object Sftp extends FtpApi[JSch] with SftpSourceParams

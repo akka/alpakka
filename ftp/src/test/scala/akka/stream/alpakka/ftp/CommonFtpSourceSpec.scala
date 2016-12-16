@@ -4,7 +4,7 @@
 package akka.stream.alpakka.ftp
 
 import akka.stream.IOResult
-import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.{ Keep, Sink }
 import akka.stream.testkit.scaladsl.TestSink
 
 final class FtpSourceSpec extends BaseFtpSpec with CommonFtpSourceSpec
@@ -19,26 +19,22 @@ trait CommonFtpSourceSpec extends BaseSpec {
   implicit val system = getSystem
   implicit val mat = getMaterializer
 
-  "FtpBrowserSource" when {
-    "initialized from root directory" should {
-      "list all files" in {
-        checkFiles(
-          numFiles = 30,
-          pageSize = 10,
-          demand = 40,
-          basePath = ""
-        )
-      }
+  "FtpBrowserSource" should {
+    "list all files from root" in {
+      val basePath = ""
+      generateFiles(30, 10, basePath)
+      val probe =
+        listFiles(basePath).toMat(TestSink.probe)(Keep.right).run()
+      probe.request(40).expectNextN(30)
+      probe.expectComplete()
     }
-    "initialized from non-root directory" should {
-      "list all files" in {
-        checkFiles(
-          numFiles = 30,
-          pageSize = 10,
-          demand = 40,
-          basePath = "/foo"
-        )
-      }
+    "list all files from non-root" in {
+      val basePath = "/foo"
+      generateFiles(30, 10, basePath)
+      val probe =
+        listFiles(basePath).toMat(TestSink.probe)(Keep.right).run()
+      probe.request(40).expectNextN(30)
+      probe.expectComplete()
     }
   }
 
@@ -55,12 +51,24 @@ trait CommonFtpSourceSpec extends BaseSpec {
     }
   }
 
-  private[this] def checkFiles(numFiles: Int, pageSize: Int, demand: Int, basePath: String) = {
-    generateFiles(numFiles, pageSize, basePath)
-    val (_, probe) =
-      listFiles(basePath).toMat(TestSink.probe)(Keep.both).run()
-    probe.request(demand).expectNextN(numFiles.toLong)
-    ()
+  "FtpBrowserSource & FtpIOSource" should {
+    "work together retrieving a list of files" in {
+      val basePath = ""
+      val numOfFiles = 30
+      generateFiles(numOfFiles, 10, basePath)
+      val probe = listFiles(basePath)
+        .mapAsyncUnordered(4)(file => retrieveFromPath(file.path).to(Sink.ignore).run())
+        .toMat(TestSink.probe)(Keep.right)
+        .run()
+      val result = probe.request(100).expectNextN(30)
+      probe.expectComplete()
+
+      val expectedNumOfBytes = getLoremIpsum.getBytes().length * numOfFiles
+      val total = result.foldLeft(0L) {
+        case (acc, next) => acc + next.count
+      }
+      total shouldBe expectedNumOfBytes
+    }
   }
 
 }

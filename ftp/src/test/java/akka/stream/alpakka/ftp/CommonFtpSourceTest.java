@@ -41,6 +41,7 @@ interface CommonFtpSourceTest extends FtpSupport, AkkaSupport {
             source.toMat(TestSink.probe(system), Keep.both()).run(materializer);
     TestSubscriber.Probe<FtpFile> probe = pairResult.second();
     probe.request(demand).expectNextN(numFiles);
+    probe.expectComplete();
   }
 
   default void fromPath() throws Exception {

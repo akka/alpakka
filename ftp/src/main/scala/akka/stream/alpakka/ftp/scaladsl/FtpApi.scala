@@ -6,8 +6,7 @@ package akka.stream.alpakka.ftp.scaladsl
 import akka.NotUsed
 import akka.stream.alpakka.ftp.impl._
 import akka.stream.IOResult
-import akka.stream.alpakka.ftp.{ FtpFile, FtpFileSettings, RemoteFileSettings }
-import akka.stream.alpakka.ftp.RemoteFileSettings.SftpSettings
+import akka.stream.alpakka.ftp.{ FtpFile, RemoteFileSettings }
 import akka.stream.alpakka.ftp.impl.{ FtpLike, FtpSourceFactory }
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
@@ -28,10 +27,9 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    * By default, `anonymous` credentials will be used.
    *
    * @param host FTP, FTPs or SFTP host
-   * @param ftpLike Implicitly resolved typeclass instance for FTP, FTPs or SFTP operations
    * @return A [[Source]] of [[FtpFile]]s
    */
-  def ls(host: String)(implicit ftpLike: FtpLike[FtpClient, S]): Source[FtpFile, NotUsed] =
+  def ls(host: String): Source[FtpFile, NotUsed] =
     ls(host, basePath = "")
 
   /**
@@ -40,13 +38,9 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    *
    * @param host FTP, FTPs or SFTP host
    * @param basePath Base path from which traverse the remote file server
-   * @param ftpLike Implicitly resolved typeclass instance for FTP, FTPs or SFTP operations
    * @return A [[Source]] of [[FtpFile]]s
    */
-  def ls(
-      host: String,
-      basePath: String
-  )(implicit ftpLike: FtpLike[FtpClient, S]): Source[FtpFile, NotUsed] =
+  def ls(host: String, basePath: String): Source[FtpFile, NotUsed] =
     ls(basePath, defaultSettings(host))
 
   /**
@@ -55,14 +49,9 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    * @param host FTP, FTPs or SFTP host
    * @param username username
    * @param password password
-   * @param ftpLike Implicitly resolved typeclass instance for FTP, FTPs or SFTP operations
    * @return A [[Source]] of [[FtpFile]]s
    */
-  def ls(
-      host: String,
-      username: String,
-      password: String
-  )(implicit ftpLike: FtpLike[FtpClient, S]): Source[FtpFile, NotUsed] =
+  def ls(host: String, username: String, password: String): Source[FtpFile, NotUsed] =
     ls("", defaultSettings(host, Some(username), Some(password)))
 
   /**
@@ -72,15 +61,9 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    * @param username username
    * @param password password
    * @param basePath Base path from which traverse the remote file server
-   * @param ftpLike Implicitly resolved typeclass instance for FTP, FTPs or SFTP operations
    * @return A [[Source]] of [[FtpFile]]s
    */
-  def ls(
-      host: String,
-      username: String,
-      password: String,
-      basePath: String
-  )(implicit ftpLike: FtpLike[FtpClient, S]): Source[FtpFile, NotUsed] =
+  def ls(host: String, username: String, password: String, basePath: String): Source[FtpFile, NotUsed] =
     ls(basePath, defaultSettings(host, Some(username), Some(password)))
 
   /**
@@ -88,13 +71,9 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    *
    * @param basePath Base path from which traverse the remote file server
    * @param connectionSettings connection settings
-   * @param ftpLike Implicitly resolved typeclass instance for FTP, FTPs or SFTP operations
    * @return A [[Source]] of [[FtpFile]]s
    */
-  def ls(
-      basePath: String,
-      connectionSettings: S
-  )(implicit ftpLike: FtpLike[FtpClient, S]): Source[FtpFile, NotUsed] =
+  def ls(basePath: String, connectionSettings: S): Source[FtpFile, NotUsed] =
     Source.fromGraph(createBrowserGraph(basePath, connectionSettings))
 
   /**
@@ -102,13 +81,9 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    *
    * @param host FTP, FTPs or SFTP host
    * @param path the file path
-   * @param ftpLike Implicitly resolved typeclass instance for FTP, FTPs or SFTP operations
    * @return A [[Source]] of [[ByteString]] that materializes to a [[Future]] of [[IOResult]]
    */
-  def fromPath(
-      host: String,
-      path: Path
-  )(implicit ftpLike: FtpLike[FtpClient, S]): Source[ByteString, Future[IOResult]] =
+  def fromPath(host: String, path: Path): Source[ByteString, Future[IOResult]] =
     fromPath(path, defaultSettings(host))
 
   /**
@@ -118,15 +93,9 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    * @param username username
    * @param password password
    * @param path the file path
-   * @param ftpLike Implicitly resolved typeclass instance for FTP, FTPs or SFTP operations
    * @return A [[Source]] of [[ByteString]] that materializes to a [[Future]] of [[IOResult]]
    */
-  def fromPath(
-      host: String,
-      username: String,
-      password: String,
-      path: Path
-  )(implicit ftpLike: FtpLike[FtpClient, S]): Source[ByteString, Future[IOResult]] =
+  def fromPath(host: String, username: String, password: String, path: Path): Source[ByteString, Future[IOResult]] =
     fromPath(path, defaultSettings(host, Some(username), Some(password)))
 
   /**
@@ -135,23 +104,18 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    * @param path the file path
    * @param connectionSettings connection settings
    * @param chunkSize the size of transmitted [[ByteString]] chunks
-   * @param ftpLike Implicitly resolved typeclass instance for FTP, FTPs or SFTP operations
    * @return A [[Source]] of [[ByteString]] that materializes to a [[Future]] of [[IOResult]]
    */
   def fromPath(
       path: Path,
       connectionSettings: S,
       chunkSize: Int = DefaultChunkSize
-  )(implicit ftpLike: FtpLike[FtpClient, S]): Source[ByteString, Future[IOResult]] =
+  ): Source[ByteString, Future[IOResult]] =
     Source.fromGraph(createIOGraph(path, connectionSettings, chunkSize))
+
+  protected[this] implicit def ftpLike: FtpLike[FtpClient, S]
 }
 
-object Ftp extends FtpApi[FTPClient] with FtpSource with FtpDefaultSettings {
-  type S = FtpFileSettings
-}
-object Ftps extends FtpApi[FTPClient] with FtpsSource with FtpsDefaultSettings {
-  type S = FtpFileSettings
-}
-object sFtp extends FtpApi[JSch] with SftpSource with SftpDefaultSettings {
-  type S = SftpSettings
-}
+object Ftp extends FtpApi[FTPClient] with FtpSourceParams
+object Ftps extends FtpApi[FTPClient] with FtpsSourceParams
+object Sftp extends FtpApi[JSch] with SftpSourceParams

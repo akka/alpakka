@@ -8,9 +8,9 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import org.apache.mina.util.AvailablePortFinder;
 import java.io.File;
-import java.nio.file.FileSystem;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.IOException;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 
 abstract class FtpBaseSupport implements FtpSupport, AkkaSupport {
 
@@ -46,6 +46,22 @@ abstract class FtpBaseSupport implements FtpSupport, AkkaSupport {
             materializer = ActorMaterializer.create(system);
         } finally {
             port = BASE_PORT;
+        }
+    }
+
+    public void cleanFiles() {
+        for (Path rootDir : getFileSystem().getRootDirectories()) {
+            try {
+                Files.walkFileTree(rootDir, new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                        Files.deleteIfExists(file);
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
         }
     }
 
