@@ -3,41 +3,17 @@
  */
 package akka.stream.alpakka.sqs.scaladsl
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.scaladsl.Sink
-import com.amazonaws.auth.BasicAWSCredentials
-import com.amazonaws.services.sqs.AmazonSQSAsyncClient
 import com.amazonaws.services.sqs.model.QueueDoesNotExistException
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ AsyncWordSpec, BeforeAndAfterAll, Matchers }
+import org.scalatest.{ AsyncWordSpec, Matchers }
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.util.Random
-
-class SqsSourceSpec extends AsyncWordSpec with BeforeAndAfterAll with ScalaFutures with Matchers {
-
-  //#init-mat
-  implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
-  //#init-mat
-
-  //#init-client
-  val credentials = new BasicAWSCredentials("x", "x")
-  implicit val sqsClient: AmazonSQSAsyncClient =
-    new AmazonSQSAsyncClient(credentials).withEndpoint("http://localhost:9324")
-  //#init-client
-
-  override protected def afterAll(): Unit =
-    Await.ready(system.terminate(), 5.seconds)
-
-  def randomQueueUrl(): String = sqsClient.createQueue(s"queue-${Random.nextInt}").getQueueUrl
+class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with DefaultTestContext {
 
   "SqsSource" should {
 
-    "stream a single batch from the queue" in {
+    "stream a single batch from the queue" taggedAs Integration in {
 
       val queue = randomQueueUrl()
       sqsClient.sendMessage(queue, "alpakka")
@@ -46,7 +22,7 @@ class SqsSourceSpec extends AsyncWordSpec with BeforeAndAfterAll with ScalaFutur
 
     }
 
-    "stream multiple batches from the queue" in {
+    "stream multiple batches from the queue" taggedAs Integration in {
 
       val queue = randomQueueUrl()
 
@@ -64,18 +40,18 @@ class SqsSourceSpec extends AsyncWordSpec with BeforeAndAfterAll with ScalaFutur
 
     }
 
-    "continue streaming if receives an empty response" in {
+    "continue streaming if receives an empty response" taggedAs Integration in {
 
       val queue = randomQueueUrl()
 
-      val f = SqsSource(queue, SqsSourceSettings(0.seconds, 100, 10)).take(1).runWith(Sink.seq)
+      val f = SqsSource(queue, SqsSourceSettings(0, 100, 10)).take(1).runWith(Sink.seq)
 
       sqsClient.sendMessage(queue, s"alpakka")
 
       f.map(_ should have size 1)
     }
 
-    "should finish immediately if the queue does not exist" in {
+    "should finish immediately if the queue does not exist" taggedAs Integration in {
 
       val queue = "http://localhost:9324/queue/not-existing"
 
