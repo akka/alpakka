@@ -41,13 +41,13 @@ class SignerSpec4(_system: ActorSystem) extends TestKit(_system) with FlatSpecLi
   val scope = CredentialScope(LocalDate.of(2015, 8, 30), "us-east-1", "service")
   val signingKey = SigningKey(credentials, scope)
 
-  val reqs = Probes.loadExpectedResults(RequestProbe)
-  val creqs = Probes.loadExpectedResults(CanonicalRequestProbe)
-  val stss = Probes.loadExpectedResults(StringToSignProbe)
-  val authzs = Probes.loadExpectedResults(AuthorizationHeaderProbe)
-  val sreqs = Probes.loadExpectedResults(SignedRequestProbe)
+  private val reqs = Probes.loadExpectedResults(RequestProbe)
+  private val creqs = Probes.loadExpectedResults(CanonicalRequestProbe)
+  private val stss = Probes.loadExpectedResults(StringToSignProbe)
+  private val authzs = Probes.loadExpectedResults(AuthorizationHeaderProbe)
+  private val sreqs = Probes.loadExpectedResults(SignedRequestProbe)
 
-  val requests = reqs.map(_.map(_._2.fromSource))
+  private val requests = reqs.map(_.map(_._2.fromSource))
 
   it should "produce proper canonical requests" in {
     val probes: Try[List[(HttpRequest, (String, String))]] = for {
@@ -58,7 +58,6 @@ class SignerSpec4(_system: ActorSystem) extends TestKit(_system) with FlatSpecLi
     probes.toOption shouldBe defined
 
     probes.get.foreach(pair => testCanonicalRequest(pair._1, pair._2))
-
   }
 
   it should "produce a proper string to sign" in {
@@ -162,6 +161,10 @@ class SignerSpec4(_system: ActorSystem) extends TestKit(_system) with FlatSpecLi
 class HttpRequestFromSource(source: String) {
   private val pattern = """(^\s*\w+\s)(.+)(\sHTTP\/...)""".r
 
+  /**
+   * Transforms the string http content into a HttpRequest object.
+   * @return the HttpRequest object.
+   */
   def fromSource: HttpRequest = {
     val lines = source.split("\n")
     val pattern(rawMethod, rawUri, rawProtocol) = lines.head.filterNot(_ == '\uFEFF')
@@ -172,6 +175,11 @@ class HttpRequestFromSource(source: String) {
       headers, HttpEntity(body), HttpProtocols.getForKey(rawProtocol).getOrElse(HttpProtocols.`HTTP/1.1`))
   }
 
+  /**
+   * Encode the uri string, if it is requires.
+   * @param rawUri - the string URI.
+   * @return the Uri
+   */
   private def encodeIfRequired(rawUri: String): Uri = {
     val pattern = """^([!#$&-;=?-\[\]_a-z~]|%[0-9a-fA-F]{2})+$$""".r
     // TODO: this look like a bug in Uri parser in akka-http ("//" is generating empty path)
@@ -191,6 +199,12 @@ class HttpRequestFromSource(source: String) {
     }
   }
 
+  /**
+   * Extract and trasform the http headers.
+   *
+   * @param headers - a list of headers as string.
+   * @return a list of HttpHeaders.
+   */
   private def loadHeaders(headers: Seq[String]): List[HttpHeader] = {
 
     val lines: List[String] = headers.foldLeft(List.empty[String]) { (acc, current) =>
@@ -256,6 +270,12 @@ object Probes {
       .toList
   }
 
+  /**
+   * Loads a set of files specified by @code probeType.
+   *
+   * @param probeType - the type of the probe to be loaded.
+   * @return a list of pairs of file name, content.
+   */
   def loadExpectedResults(probeType: ProbeType): Try[List[(String, String)]] = {
     val paths = probes.map(_.filter(_.toString.endsWith(probeType.extension)))
     val sources = paths.map(ip => ip.map(t => (t.getFileName.toString, Source.fromFile(t.toFile, "UTF-8"))))
@@ -265,6 +285,9 @@ object Probes {
   }
 }
 
+/**
+ * Canonical request wrapper used for testing only, to avoid the addition of x-amz-content-sha256, that will break the tests.
+ */
 object WrappedCanonicalRequest {
 
   def canonicalRequest(request: HttpRequest)(implicit mat: Materializer): Future[CanonicalRequest] = {
@@ -277,6 +300,9 @@ object WrappedCanonicalRequest {
 
 }
 
+/**
+ * Signer wrapped for test purpose only, to use a canonical request without the addition of the x-amz-content-sha256 header.
+ */
 object WrappedSigner {
 
   import Signer._
