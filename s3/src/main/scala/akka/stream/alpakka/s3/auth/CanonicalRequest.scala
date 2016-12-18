@@ -7,13 +7,8 @@ import java.net.{ URLDecoder, URLEncoder }
 
 import akka.http.scaladsl.model.Uri.{ Path, Query }
 import akka.http.scaladsl.model.{ HttpHeader, HttpRequest }
-import akka.stream.Materializer
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import scala.util.Try
-
-import scala.concurrent.ExecutionContext.Implicits.global
 
 // Documentation: http://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
 private[alpakka] case class CanonicalRequest(method: String,
@@ -26,20 +21,21 @@ private[alpakka] case class CanonicalRequest(method: String,
 }
 
 private[alpakka] object CanonicalRequest {
-  def from(req: HttpRequest)(implicit mat: Materializer): CanonicalRequest = {
 
-    val hashedBody = req.entity.dataBytes.runWith(digest()).map {
-      case hash => encodeHex(hash.toArray)
-    }
+  def from(req: HttpRequest): CanonicalRequest = {
+    val hashedBody = req.headers.find(_.name == "x-amz-content-sha256").map(_.value).getOrElse("")
+    from(req, hashedBody)
+  }
+
+  def from(req: HttpRequest, hashedBody: String): CanonicalRequest =
     CanonicalRequest(
       req.method.value,
       preprocessPath(req.uri.path),
       canonicalQueryString(req.uri.query()),
       canonicalHeaderString(req.headers),
       signedHeadersString(req.headers),
-      Await.result(hashedBody, 10.seconds)
+      hashedBody
     )
-  }
 
   def canonicalQueryString(query: Query): String =
     query.sortBy(_._1).map { case (a, b) => encodeQueryParams(a, b) }.mkString("&")
