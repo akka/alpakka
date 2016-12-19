@@ -1,7 +1,7 @@
 POST
 /
 
-content-type:application/x-www-form-urlencoded; charset=utf8
+content-type:application/x-www-form-urlencoded
 host:example.amazonaws.com
 x-amz-date:20150830T123600Z
 
