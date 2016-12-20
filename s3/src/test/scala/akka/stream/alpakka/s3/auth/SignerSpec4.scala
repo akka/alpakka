@@ -117,7 +117,7 @@ class SignerSpec4(_system: ActorSystem) extends TestKit(_system) with FlatSpecLi
     whenReady(canonicalRequest) { cr =>
       withClue(s"According to expected canonical request stored in ${creq._1}") {
         if (creq._1 == "post-x-www-form-urlencoded.creq") {
-          // TODO: skip this test because we can't avaoid adding charset into http request as the test suite require.
+          // TODO: skip this test because we can't avoid adding charset into http request as the test suite require.
           true should equal(true)
         } else {
           cr.canonicalString should equal(creq._2)
@@ -133,7 +133,7 @@ class SignerSpec4(_system: ActorSystem) extends TestKit(_system) with FlatSpecLi
     whenReady(stsResult) { builtSts =>
       withClue(s"According to the expected string to sign stored in ${sts._1}") {
         if (sts._1 == "post-x-www-form-urlencoded.sts") {
-          // TODO: skip this test because we can't avaoid adding charset into http request as the test suite require.
+          // TODO: skip this test because we can't avoid adding charset into http request as the test suite require.
           true should equal(true)
         } else {
           builtSts should equal(sts._2)
@@ -149,7 +149,7 @@ class SignerSpec4(_system: ActorSystem) extends TestKit(_system) with FlatSpecLi
     whenReady(authzResult) { buildAuthz =>
       withClue(s"According to the expected authorization string in ${authz._1}") {
         if (authz._1 == "post-x-www-form-urlencoded.authz") {
-          // TODO: skip this test because we can't avaoid adding charset into http request as the test suite require.
+          // TODO: skip this test because we can't avoid adding charset into http request as the test suite require.
           true should equal(true)
         } else {
           buildAuthz should equal(authz._2)
@@ -164,7 +164,7 @@ class SignerSpec4(_system: ActorSystem) extends TestKit(_system) with FlatSpecLi
     whenReady(result) { builtSreq =>
       withClue(s"According to the expected authorization string in ${sreq._1}") {
         if (sreq._1 == "post-x-www-form-urlencoded.sreq") {
-          // TODO: skip this test because we can't avaoid adding charset into http request as the test suite require.
+          // TODO: skip this test because we can't avoid adding charset into http request as the test suite require.
           true should equal(true)
         } else {
           builtSreq.headers.find(_.name == "Authorization").map(_.toString) should equal(
