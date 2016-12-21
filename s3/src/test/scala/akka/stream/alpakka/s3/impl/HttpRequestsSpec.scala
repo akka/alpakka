@@ -3,14 +3,17 @@
  */
 package akka.stream.alpakka.s3.impl
 
-
-import akka.http.scaladsl.model.{ HttpEntity, MediaTypes }
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model.{ HttpEntity, MediaTypes }
+import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
 import org.scalatest.{ FlatSpec, Matchers }
 
 class HttpRequestsSpec extends FlatSpec with Matchers {
   it should "initiate multipart upload" in {
+    implicit val settings = S3Settings(ActorSystem())
+
     val location = S3Location("bucket", "image-1024@2x")
     val contentType = MediaTypes.`image/jpeg`
     val acl = CannedAcl.PublicRead

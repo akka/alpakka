@@ -14,6 +14,7 @@ import akka.util.ByteString
 import org.scalatest.time.{ Millis, Seconds, Span }
 import org.scalatest.{ BeforeAndAfterAll, FlatSpecLike, Matchers }
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
+import scala.concurrent.duration._
 
 class DiskBufferSpec(_system: ActorSystem)
     extends TestKit(_system)
@@ -24,7 +25,7 @@ class DiskBufferSpec(_system: ActorSystem)
     with Eventually {
 
   def this() = this(ActorSystem("DiskBufferSpec"))
-  
+
   implicit val defaultPatience =
     PatienceConfig(timeout = Span(2, Seconds), interval = Span(200, Millis))
 
