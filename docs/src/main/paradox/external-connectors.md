@@ -41,7 +41,9 @@ TODO: Add links to more connectors. [Contributions](https://github.com/akka/alpa
 
 ## Camel
 
-[Apache Camel DSL for Akka Streams](https://github.com/krasserm/streamz#dsl-for-as)
+[Camel Scala DSL for Akka Streams](https://github.com/krasserm/streamz/blob/master/streamz-camel-akka/README.md#scala-dsl)
+
+[Camel Java DSL for Akka Streams](https://github.com/krasserm/streamz/blob/master/streamz-camel-akka/README.md#java-dsl)
 
 ## MongoDB
 
