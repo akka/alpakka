@@ -88,4 +88,13 @@ object Dependencies {
       "com.amazonaws"   % "aws-java-sdk-sqs"    % "1.11.51" // ApacheV2
     )
   )
+
+  val Jms = Seq(
+    libraryDependencies ++= Seq(
+      "javax.jms" % "jms" % "1.1" % Provided, // CDDL + GPLv2
+      "org.apache.activemq" % "activemq-broker" % "5.14.1" % Test, // ApacheV2
+      "org.apache.activemq" % "activemq-client" % "5.14.1" % Test // ApacheV2
+    ),
+    resolvers += "jboss" at "https://repository.jboss.org/nexus/content/groups/public"
+  )
 }
