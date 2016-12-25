@@ -37,11 +37,7 @@ lazy val mqtt = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-mqtt",
-    Dependencies.Mqtt,
-
-    // Scala and Java tests start a separate MQTT broker.
-    // Make it not step on each other by running Scala and Java tests sequentially.
-    parallelExecution in Test := false
+    Dependencies.Mqtt
   )
 
 lazy val s3 = project
