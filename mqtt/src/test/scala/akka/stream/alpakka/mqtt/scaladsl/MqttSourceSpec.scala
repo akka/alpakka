@@ -3,12 +3,15 @@
  */
 package akka.stream.alpakka.mqtt.scaladsl
 
+import java.nio.file.Files
+
 import akka.actor.ActorSystem
 import akka.stream._
-import akka.stream.alpakka.mqtt.{ MqttConnectionSettings, MqttMessage, MqttQoS, MqttSourceSettings }
+import akka.stream.alpakka.mqtt._
 import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
+import io.moquette.BrokerConstants
 import io.moquette.proto.messages.AbstractMessage.QOSType
 import io.moquette.proto.messages.PublishMessage
 import io.moquette.server.Server
@@ -21,10 +24,12 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent._
 import scala.concurrent.duration._
+import scala.util.Random
 
 class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
 
   import MqttSourceSpec._
+  import AvailablePort._
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
@@ -62,7 +67,7 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
       //#create-settings
       val settings = MqttSourceSettings(
         MqttConnectionSettings(
-          "tcp://localhost:1883",
+          p.settings.connectionSettings.broker,
           "test-client",
           new MemoryPersistence
         ),
@@ -207,21 +212,34 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
     implicit val sys = ActorSystem("MqttSourceSpec")
     val mat = ActorMaterializer()
 
+    val server = new Server()
+    val authenticator = new IAuthenticator {
+      override def checkValid(username: String, password: Array[Byte]): Boolean =
+        serverAuth.fold(true) { case (u, p) => username == u && new String(password) == p }
+    }
+
+    val port = nextPort()
+    val webSocketPort = nextPort()
+
+    val persistentStore =
+      Files.createTempDirectory("mosquitto").resolve(BrokerConstants.DEFAULT_MOQUETTE_STORE_MAP_DB_FILENAME).toString
+
+    val serverConfig = new FilesystemConfig
+    serverConfig.setProperty(BrokerConstants.PORT_PROPERTY_NAME, port.toString)
+    serverConfig.setProperty(BrokerConstants.WEB_SOCKET_PORT_PROPERTY_NAME, webSocketPort.toString)
+    serverConfig.setProperty(BrokerConstants.PERSISTENT_STORE_PROPERTY_NAME, persistentStore)
+
+    server.startServer(serverConfig, null, null, authenticator, null)
+
     val settings = MqttSourceSettings(
       MqttConnectionSettings(
-        "tcp://localhost:1883",
+        s"tcp://localhost:$port",
         "test-client",
         new MemoryPersistence
       ),
       subscriptions
     )
 
-    val server = new Server()
-    val authenticator = new IAuthenticator {
-      override def checkValid(username: String, password: Array[Byte]): Boolean =
-        serverAuth.fold(true) { case (u, p) => username == u && new String(password) == p }
-    }
-    server.startServer(new FilesystemConfig, null, null, authenticator, null)
     try {
       test(FixtureParam(settings, server, sys, mat))
     } finally {

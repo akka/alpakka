@@ -4,6 +4,7 @@
 package akka.stream.alpakka.mqtt.javadsl;
 
 import akka.stream.alpakka.mqtt.*;
+import io.moquette.BrokerConstants;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -24,6 +25,7 @@ import io.moquette.server.Server;
 
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
+import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.*;
@@ -32,8 +34,9 @@ public class MqttSourceTest {
 
   static ActorSystem system;
   static Materializer materializer;
-
   static Server server;
+  static int serverPort;
+  static int serverWebSocketPort;
 
   public static Pair<ActorSystem, Materializer> setupMaterializer() {
     //#init-mat
@@ -45,12 +48,22 @@ public class MqttSourceTest {
 
   @BeforeClass
   public static void setup() throws Exception {
+    serverPort = AvailablePort$.MODULE$.nextPort();
+    serverWebSocketPort = AvailablePort$.MODULE$.nextPort();
+
     final Pair<ActorSystem, Materializer> sysmat = setupMaterializer();
     system = sysmat.first();
     materializer = sysmat.second();
 
+    String persistentStore = Files.createTempDirectory("mosquitto").resolve(BrokerConstants.DEFAULT_MOQUETTE_STORE_MAP_DB_FILENAME).toString();
+
+    Properties serverProperties = new Properties();
+    serverProperties.setProperty(BrokerConstants.PORT_PROPERTY_NAME, String.valueOf(serverPort));
+    serverProperties.setProperty(BrokerConstants.WEB_SOCKET_PORT_PROPERTY_NAME, String.valueOf(serverWebSocketPort));
+    serverProperties.setProperty(BrokerConstants.PERSISTENT_STORE_PROPERTY_NAME, persistentStore);
+
     server = new Server();
-    server.startServer();
+    server.startServer(serverProperties);
   }
 
   @AfterClass
@@ -72,7 +85,7 @@ public class MqttSourceTest {
     //#create-settings
     final MqttSourceSettings settings = MqttSourceSettings.create(
       MqttConnectionSettings.create(
-        "tcp://localhost:1883",
+        "tcp://localhost:" + serverPort,
         "test-client",
         new MemoryPersistence()
       )

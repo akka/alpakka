@@ -4,6 +4,8 @@ object Dependencies {
 
   val ScalaVersions = Seq("2.11.8", "2.12.1")
   val AkkaVersion = "2.4.16"
+  val Slf4jVersion = "1.7.21"
+  val logbackVersion = "1.1.7"
 
   val Common = Seq(
     libraryDependencies ++= Seq(
@@ -58,8 +60,11 @@ object Dependencies {
 
   val Mqtt = Seq(
     libraryDependencies ++= Seq(
-      "org.eclipse.paho" % "org.eclipse.paho.client.mqttv3" % "1.1.0",       // Eclipse Public License 1.0
-      "io.moquette"      % "moquette-broker"                % "0.8.1" % Test // ApacheV2
+      "org.eclipse.paho" % "org.eclipse.paho.client.mqttv3" % "1.1.0",                // Eclipse Public License 1.0
+      "io.moquette"      % "moquette-broker"                % "0.8.1"         % Test // ApacheV2
+        exclude("org.slf4j", "slf4j-log4j12"),
+      "ch.qos.logback"   % "logback-classic"                % logbackVersion  % Test, // Eclipse Public License 1.0
+      "ch.qos.logback"   % "logback-core"                   % logbackVersion  % Test  // Eclipse Public License 1.0
     ),
     resolvers += "moquette" at "http://dl.bintray.com/andsel/maven/"
   )
@@ -72,14 +77,14 @@ object Dependencies {
 
   val Ftp = Seq(
     libraryDependencies ++= Seq(
-      "commons-net"           % "commons-net"          % "3.5",             // ApacheV2
-      "com.jcraft"            % "jsch"                 % "0.1.54",          // BSD-style
-      "org.apache.ftpserver"  % "ftpserver-core"       % "1.0.6"    % Test, // ApacheV2
-      "org.apache.sshd"       % "sshd-core"            % "1.3.0"    % Test, // ApacheV2
-      "com.google.jimfs"      % "jimfs"                % "1.1"      % Test, // ApacheV2
-      "org.slf4j"             % "slf4j-api"            % "1.7.21"   % Test, // MIT
-      "ch.qos.logback"        % "logback-classic"      % "1.1.7"    % Test, // Eclipse Public License 1.0
-      "ch.qos.logback"        % "logback-core"         % "1.1.7"    % Test  // Eclipse Public License 1.0
+      "commons-net"           % "commons-net"          % "3.5",               // ApacheV2
+      "com.jcraft"            % "jsch"                 % "0.1.54",            // BSD-style
+      "org.apache.ftpserver"  % "ftpserver-core"       % "1.0.6"        % Test, // ApacheV2
+      "org.apache.sshd"       % "sshd-core"            % "1.3.0"        % Test, // ApacheV2
+      "com.google.jimfs"      % "jimfs"                % "1.1"          % Test, // ApacheV2
+      "org.slf4j"             % "slf4j-api"            % Slf4jVersion   % Test, // MIT
+      "ch.qos.logback"        % "logback-classic"      % logbackVersion % Test, // Eclipse Public License 1.0
+      "ch.qos.logback"        % "logback-core"         % logbackVersion % Test  // Eclipse Public License 1.0
     )
   )
 
