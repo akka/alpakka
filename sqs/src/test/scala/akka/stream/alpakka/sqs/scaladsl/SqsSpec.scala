@@ -3,10 +3,14 @@
  */
 package akka.stream.alpakka.sqs.scaladsl
 
+import akka.stream.alpakka.sqs.{ Ack, RequeueWithDelay }
 import akka.Done
 import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
+import com.amazonaws.services.sqs.model.{ DeleteMessageRequest, Message, SendMessageRequest }
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.{ spy, verify }
 import com.amazonaws.services.sqs.model.Message
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -47,5 +51,27 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val result = sqsClient.receiveMessage(queue2)
     result.getMessages.size() shouldBe 1
     result.getMessages.get(0).getBody shouldBe "alpakka"
+  }
+
+  it should "pull and delete message" taggedAs Integration in {
+    val queue = randomQueueUrl()
+    sqsClient.sendMessage(queue, "alpakka-2")
+
+    val awsClientSpy = spy(sqsClient)
+    val future = SqsSource(queue).take(1).map { (_, Ack()) }.runWith(SqsAckSink(queue)(awsClientSpy))
+
+    Await.result(future, 1.second) shouldBe Done
+    verify(awsClientSpy).deleteMessageAsync(any[DeleteMessageRequest], any())
+  }
+
+  it should "pull and requeue message" taggedAs Integration in {
+    val queue = randomQueueUrl()
+    sqsClient.sendMessage(queue, "alpakka-3")
+
+    val awsClientSpy = spy(sqsClient)
+    val future = SqsSource(queue).take(1).map { (_, RequeueWithDelay(5)) }.runWith(SqsAckSink(queue)(awsClientSpy))
+
+    Await.result(future, 1.second) shouldBe Done
+    verify(awsClientSpy).sendMessageAsync(any[SendMessageRequest], any())
   }
 }
