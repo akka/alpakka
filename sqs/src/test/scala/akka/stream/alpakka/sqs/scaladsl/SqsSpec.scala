@@ -58,7 +58,12 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     sqsClient.sendMessage(queue, "alpakka-2")
 
     val awsClientSpy = spy(sqsClient)
-    val future = SqsSource(queue).take(1).map { (_, Ack()) }.runWith(SqsAckSink(queue)(awsClientSpy))
+    val future = SqsSource(queue)
+      .take(1)
+      .map { m: Message =>
+        (m, Ack())
+      }
+      .runWith(SqsAckSink(queue)(awsClientSpy))
 
     Await.result(future, 1.second) shouldBe Done
     verify(awsClientSpy).deleteMessageAsync(any[DeleteMessageRequest], any())
@@ -69,7 +74,12 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     sqsClient.sendMessage(queue, "alpakka-3")
 
     val awsClientSpy = spy(sqsClient)
-    val future = SqsSource(queue).take(1).map { (_, RequeueWithDelay(5)) }.runWith(SqsAckSink(queue)(awsClientSpy))
+    val future = SqsSource(queue)
+      .take(1)
+      .map { m: Message =>
+        (m, RequeueWithDelay(5))
+      }
+      .runWith(SqsAckSink(queue)(awsClientSpy))
 
     Await.result(future, 1.second) shouldBe Done
     verify(awsClientSpy).sendMessageAsync(any[SendMessageRequest], any())
