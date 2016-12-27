@@ -42,14 +42,14 @@ private[alpakka] object CanonicalRequest {
 
   private def encodeQueryParams(name: String, value: String): String =
     if (name.contains(' ')) {
-      s"${uriEncode(name.takeWhile(_ != ' ')).replace("%7E", "~")}="
+      uriEncode(name.takeWhile(_ != ' ')).replace("%7E", "~") + "="
     } else {
-      s"${uriEncode(name).replace("%7E", "~")}=${uriEncode(value).replace("%7E", "~")}"
+      uriEncode(name).replace("%7E", "~") + "=" + uriEncode(value).replace("%7E", "~")
     }
 
   private def uriEncode(str: String) = if (isAlreadyURLEncoded(str)) str else URLEncoder.encode(str, "utf-8")
 
-  // TODO: this could be removed when the Uri class in akka-http will accept utf-8
+  // TODO: this could be removed when the Uri class in akka-http will accept utf-8. See https://github.com/akka/akka-http/issues/86
   private def isAlreadyURLEncoded(str: String): Boolean =
     Try {
       URLDecoder.decode(str, "utf-8")
