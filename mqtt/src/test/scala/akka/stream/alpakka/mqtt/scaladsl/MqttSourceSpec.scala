@@ -8,71 +8,63 @@ import akka.stream._
 import akka.stream.alpakka.mqtt.{ MqttConnectionSettings, MqttMessage, MqttQoS, MqttSourceSettings }
 import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.TestKit
 import akka.util.ByteString
-import io.moquette.proto.messages.AbstractMessage.QOSType
-import io.moquette.proto.messages.PublishMessage
-import io.moquette.server.Server
-import io.moquette.server.config.FilesystemConfig
-import io.moquette.spi.security.IAuthenticator
 import org.eclipse.paho.client.mqttv3.MqttException
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent._
+import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 
-class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
-
-  import MqttSourceSpec._
+class MqttSourceSpec
+    extends TestKit(ActorSystem("MqttSinkSpec"))
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with ScalaFutures {
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
+  implicit val mat = ActorMaterializer()
+
+  //#create-connection-settings
+  val connectionSettings = MqttConnectionSettings(
+    "tcp://localhost:1883",
+    "test-scala-client",
+    new MemoryPersistence
+  )
+  //#create-connection-settings
+
+  val topic1 = "source-spec/topic1"
+  val topic2 = "source-spec/topic2"
+  val secureTopic = "source-spec/secure-topic1"
+
+  val sourceSettings = connectionSettings.withClientId(clientId = "source-spec/source")
+  val sinkSettings = connectionSettings.withClientId(clientId = "source-spec/sink")
+
   "mqtt source" should {
-    "receive a message from a topic" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce)) { p =>
-      val f = fixture(p)
-      import f._
-
-      val (subscriptionFuture, probe) = MqttSource(p.settings, 8).toMat(TestSink.probe)(Keep.both).run()
+    "receive a message from a topic" in {
+      val settings = MqttSourceSettings(sourceSettings, Map(topic1 -> MqttQoS.AtLeastOnce))
+      val (subscriptionFuture, probe) = MqttSource(settings, 8).toMat(TestSink.probe)(Keep.both).run()
       whenReady(subscriptionFuture) { _ =>
-        publish("topic1", "ohi")
-        probe.requestNext shouldBe MqttMessage("topic1", ByteString("ohi"))
+        val msg = MqttMessage(topic1, ByteString("ohi"))
+        Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
+        probe.requestNext shouldBe msg
       }
     }
 
-    "receive messages from multiple topics" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce,
-        "topic2" -> MqttQoS.AtMostOnce)) { p =>
-      val f = fixture(p)
-      import f._
-
-      val (subscriptionFuture, probe) = MqttSource(p.settings, 8).toMat(TestSink.probe)(Keep.both).run()
-      whenReady(subscriptionFuture) { _ =>
-        publish("topic1", "ohi")
-        publish("topic2", "hello again")
-        probe.requestNext shouldBe MqttMessage("topic1", ByteString("ohi"))
-        probe.requestNext shouldBe MqttMessage("topic2", ByteString("hello again"))
-      }
-    }
-
-    "receive messages from multiple topics (for docs)" in withBroker(Map.empty) { p =>
-      val f = fixture(p)
-      import f._
-
-      //#create-settings
-      val settings = MqttSourceSettings(
-        MqttConnectionSettings(
-          "tcp://localhost:1883",
-          "test-client",
-          new MemoryPersistence
-        ),
-        Map("topic1" -> MqttQoS.AtMostOnce, "topic2" -> MqttQoS.AtMostOnce)
-      )
-      //#create-settings
-
+    "receive messages from multiple topics" in {
       val messageCount = 7
 
       //#create-source
+      val settings = MqttSourceSettings(
+        connectionSettings.withClientId("source-spec/source"),
+        Map(topic1 -> MqttQoS.AtLeastOnce, topic2 -> MqttQoS.AtLeastOnce)
+      )
+
       val mqttSource = MqttSource(settings, bufferSize = 8)
       //#create-source
 
@@ -86,164 +78,96 @@ class MqttSourceSpec extends WordSpec with Matchers with ScalaFutures {
 
       whenReady(subscriptionFuture) { _ =>
         val expected = (0 until messageCount).flatMap { i =>
-          publish("topic1", i.toString)
-          publish("topic2", i.toString)
-          Seq(s"topic1_$i", s"topic2_$i")
+          Seq(s"${topic1}_$i", s"${topic2}_$i")
         }
 
+        val messages = (0 until messageCount).flatMap { i =>
+          Seq(
+            MqttMessage(topic1, ByteString(i.toString)),
+            MqttMessage(topic2, ByteString(i.toString))
+          )
+        }
+
+        //#run-sink
+        Source(messages).runWith(MqttSink(connectionSettings.withClientId("source-spec/sink"), MqttQoS.AtLeastOnce))
+        //#run-sink
         result.futureValue shouldBe expected
       }
     }
 
-    "fail stream when disconnected" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce)) { p =>
-      val f = fixture(p)
-      import f._
-
-      val (subscriptionFuture, probe) = MqttSource(p.settings, 8).toMat(TestSink.probe)(Keep.both).run()
-      whenReady(subscriptionFuture) { _ =>
-        publish("topic1", "ohi")
-        probe.requestNext shouldBe MqttMessage("topic1", ByteString("ohi"))
-
-        server.stopServer()
-        probe.expectError.getMessage should be("Connection lost")
+    "fail connection when not providing the requested credentials" in {
+      val settings =
+        MqttSourceSettings(sourceSettings.withAuth("username1", "bad_password"),
+          Map(secureTopic -> MqttQoS.AtLeastOnce))
+      val first = MqttSource(settings, 8).runWith(Sink.head)
+      whenReady(first.failed) {
+        case e: MqttException => e.getMessage should be("Not authorized to connect")
+        case e => throw e
       }
     }
 
-    "fail connection when not providing the requested credentials" in withBroker(Map(), Some(("user", "passwd"))) {
-      p =>
-        val f = fixture(p)
-        import f._
-
-        val (subscriptionFuture, probe) = MqttSource(p.settings, 8).toMat(TestSink.probe)(Keep.both).run()
-        whenReady(subscriptionFuture.failed) {
-          case e: MqttException => e.getMessage should be("Connection lost")
-          case e => throw e
-        }
-    }
-
-    "receive a message from a topic with right credentials" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce),
-      Some(("user", "passwd"))) { p =>
-      val f = fixture(p)
-      import f._
-
-      val settings = withClientAuth(p.settings, ("user", "passwd"))
+    "receive a message from a topic with right credentials" in {
+      val settings =
+        MqttSourceSettings(sourceSettings.withAuth("username1", "password1"), Map(secureTopic -> MqttQoS.AtLeastOnce))
       val (subscriptionFuture, probe) = MqttSource(settings, 8).toMat(TestSink.probe)(Keep.both).run()
       whenReady(subscriptionFuture) { _ =>
-        publish("topic1", "ohi")
-        probe.requestNext shouldBe MqttMessage("topic1", ByteString("ohi"))
+        val msg = MqttMessage(secureTopic, ByteString("ohi"))
+        Source.single(msg).runWith(MqttSink(sinkSettings.withAuth("username1", "password1"), MqttQoS.AtLeastOnce))
+        probe.requestNext shouldBe msg
       }
     }
 
-    "signal backpressure" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce)) { p =>
-      val f = fixture(p)
-      import f._
-
+    "signal backpressure" in {
       val bufferSize = 8
       val overflow = 4
 
-      val (subscriptionFuture, probe) = MqttSource(p.settings, bufferSize).toMat(TestSink.probe)(Keep.both).run()
+      val settings = MqttSourceSettings(sourceSettings, Map(topic1 -> MqttQoS.AtLeastOnce))
+      val (subscriptionFuture, probe) = MqttSource(settings, bufferSize).toMat(TestSink.probe)(Keep.both).run()
       whenReady(subscriptionFuture) { _ =>
-        (1 to bufferSize + overflow) foreach { i =>
-          publish("topic1", s"ohi_$i")
-        }
+        Source(1 to bufferSize + overflow).map { i =>
+          MqttMessage(topic1, ByteString(s"ohi_$i"))
+        }.runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
 
         (1 to bufferSize + overflow) foreach { i =>
-          probe.requestNext shouldBe MqttMessage("topic1", ByteString(s"ohi_$i"))
+          probe.requestNext shouldBe MqttMessage(topic1, ByteString(s"ohi_$i"))
         }
       }
     }
 
-    "work with fast downstream" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce)) { p =>
-      val f = fixture(p)
-      import f._
-
+    "work with fast downstream" in {
       val bufferSize = 8
       val overflow = 4
 
-      val (subscriptionFuture, probe) = MqttSource(p.settings, bufferSize).toMat(TestSink.probe)(Keep.both).run()
+      val settings = MqttSourceSettings(sourceSettings, Map(topic1 -> MqttQoS.AtLeastOnce))
+      val (subscriptionFuture, probe) = MqttSource(settings, bufferSize).toMat(TestSink.probe)(Keep.both).run()
       whenReady(subscriptionFuture) { _ =>
         probe.request((bufferSize + overflow).toLong)
 
-        (1 to bufferSize + overflow) foreach { i =>
-          publish("topic1", s"ohi_$i")
-        }
+        Source(1 to bufferSize + overflow).map { i =>
+          MqttMessage(topic1, ByteString(s"ohi_$i"))
+        }.runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
 
         (1 to bufferSize + overflow) foreach { i =>
-          probe.expectNext() shouldBe MqttMessage("topic1", ByteString(s"ohi_$i"))
+          probe.expectNext() shouldBe MqttMessage(topic1, ByteString(s"ohi_$i"))
         }
       }
     }
 
-    "support multiple materialization" in withBroker(Map("topic1" -> MqttQoS.AtMostOnce)) { p =>
-      val f = fixture(p)
-      import f._
-
-      val source = MqttSource(p.settings, 8)
+    "support multiple materialization" in {
+      val settings = MqttSourceSettings(sourceSettings, Map(topic1 -> MqttQoS.AtLeastOnce))
+      val source = MqttSource(settings, 8)
 
       val (sub, elem) = source.toMat(Sink.head)(Keep.both).run()
       whenReady(sub) { _ =>
-        publish("topic1", s"ohi")
-        elem.futureValue shouldBe MqttMessage("topic1", ByteString("ohi"))
+        Source.single(MqttMessage(topic1, ByteString("ohi"))).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
+        elem.futureValue shouldBe MqttMessage(topic1, ByteString("ohi"))
       }
 
       val (sub2, elem2) = source.toMat(Sink.head)(Keep.both).run()
       whenReady(sub2) { _ =>
-        publish("topic1", s"ohi")
-        elem2.futureValue shouldBe MqttMessage("topic1", ByteString("ohi"))
+        Source.single(MqttMessage(topic1, ByteString("ohi"))).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
+        elem2.futureValue shouldBe MqttMessage(topic1, ByteString("ohi"))
       }
     }
   }
-
-  def publish(topic: String, payload: String)(implicit server: Server) = {
-    val msg = new PublishMessage()
-    msg.setPayload(ByteString(payload).toByteBuffer)
-    msg.setTopicName(topic)
-    msg.setQos(QOSType.valueOf(MqttQoS.AtMostOnce.byteValue))
-    server.internalPublish(msg)
-  }
-
-  def withBroker(subscriptions: Map[String, MqttQoS], serverAuth: Option[(String, String)] = None)(
-      test: FixtureParam => Any) = {
-    implicit val sys = ActorSystem("MqttSourceSpec")
-    val mat = ActorMaterializer()
-
-    val settings = MqttSourceSettings(
-      MqttConnectionSettings(
-        "tcp://localhost:1883",
-        "test-client",
-        new MemoryPersistence
-      ),
-      subscriptions
-    )
-
-    val server = new Server()
-    val authenticator = new IAuthenticator {
-      override def checkValid(username: String, password: Array[Byte]): Boolean =
-        serverAuth.fold(true) { case (u, p) => username == u && new String(password) == p }
-    }
-    server.startServer(new FilesystemConfig, null, null, authenticator, null)
-    try {
-      test(FixtureParam(settings, server, sys, mat))
-    } finally {
-      server.stopServer()
-    }
-
-    Await.ready(sys.terminate(), 5.seconds)
-  }
-
-  def withClientAuth(settings: MqttSourceSettings, auth: (String, String)): MqttSourceSettings =
-    settings.copy(connectionSettings = settings.connectionSettings.copy(auth = Some(auth)))
-
-}
-
-object MqttSourceSpec {
-
-  def fixture(p: FixtureParam) = new {
-    implicit val server = p.server
-    implicit val system = p.sys
-    implicit val materializer = p.mat
-  }
-
-  case class FixtureParam(settings: MqttSourceSettings, server: Server, sys: ActorSystem, mat: Materializer)
-
 }

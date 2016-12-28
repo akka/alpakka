@@ -16,3 +16,9 @@ services:
     image: expert360/elasticmq:0.8.12
     ports:
       - "9324:9324"
+  mqtt:
+    image: toke/mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mqtt/src/test/travis:/mqtt/config/conf.d

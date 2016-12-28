@@ -77,6 +77,9 @@ final case class MqttConnectionSettings(
 ) {
   def withAuth(username: String, password: String) =
     copy(auth = Some((username, password)))
+
+  def withClientId(clientId: String) =
+    copy(clientId = clientId)
 }
 
 object MqttConnectionSettings {
@@ -107,20 +110,18 @@ private[mqtt] trait MqttConnectorLogic { this: GraphStageLogic =>
   import MqttConnectorLogic._
 
   def connectionSettings: MqttConnectionSettings
+
   def handleConnection(client: IMqttAsyncClient): Unit
+  def handleConnectionLost(ex: Throwable): Unit
+
+  val onConnect = getAsyncCallback[IMqttAsyncClient](handleConnection)
+  val onConnectionLost = getAsyncCallback[Throwable](handleConnectionLost)
 
   /**
    * Callback, that is called from the MQTT client thread before invoking
    * message handler callback in the GraphStage context.
    */
-  def beforeHandleMessage(): Unit
-
-  def handleMessage(message: MqttMessage): Unit
-  def handleConnectionLost(ex: Throwable): Unit
-
-  val onConnect = getAsyncCallback[IMqttAsyncClient](handleConnection)
-  val onMessage = getAsyncCallback[MqttMessage](handleMessage)
-  val onConnectionLost = getAsyncCallback[Throwable](handleConnectionLost)
+  def onMessage(message: MqttMessage) = ()
 
   final override def preStart(): Unit = {
     val client = new MqttAsyncClient(
@@ -130,13 +131,11 @@ private[mqtt] trait MqttConnectorLogic { this: GraphStageLogic =>
     )
 
     client.setCallback(new MqttCallback {
-      def messageArrived(topic: String, message: PahoMqttMessage) = {
-        beforeHandleMessage()
-        onMessage.invoke(MqttMessage(topic, ByteString(message.getPayload)))
-      }
+      def messageArrived(topic: String, message: PahoMqttMessage) =
+        onMessage(MqttMessage(topic, ByteString(message.getPayload)))
 
       def deliveryComplete(token: IMqttDeliveryToken) =
-        println(s"Delivery complete $token")
+        ()
 
       def connectionLost(cause: Throwable) =
         onConnectionLost.invoke(cause)
@@ -147,11 +146,11 @@ private[mqtt] trait MqttConnectorLogic { this: GraphStageLogic =>
         connectOptions.setUserName(user)
         connectOptions.setPassword(password.toCharArray)
     }
-    client.connect(connectOptions, (), connectHandler(client))
+    client.connect(connectOptions, (), connectHandler)
   }
 
-  private val connectHandler: IMqttAsyncClient => Try[IMqttToken] => Unit = client => {
-    case Success(_) => onConnect.invoke(client)
+  private val connectHandler: Try[IMqttToken] => Unit = {
+    case Success(token) => onConnect.invoke(token.getClient)
     case Failure(ex) => onConnectionLost.invoke(ex)
   }
 }

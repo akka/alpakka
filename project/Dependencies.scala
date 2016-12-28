@@ -58,10 +58,8 @@ object Dependencies {
 
   val Mqtt = Seq(
     libraryDependencies ++= Seq(
-      "org.eclipse.paho" % "org.eclipse.paho.client.mqttv3" % "1.1.0",       // Eclipse Public License 1.0
-      "io.moquette"      % "moquette-broker"                % "0.8.1" % Test // ApacheV2
-    ),
-    resolvers += "moquette" at "http://dl.bintray.com/andsel/maven/"
+      "org.eclipse.paho" % "org.eclipse.paho.client.mqttv3" % "1.1.0" // Eclipse Public License 1.0
+    )
   )
 
   val File = Seq(
