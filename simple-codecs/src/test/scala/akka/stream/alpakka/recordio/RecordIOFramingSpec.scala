@@ -5,11 +5,12 @@ package akka.stream.alpakka.recordio
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
+import akka.stream.alpakka.recordio.scaladsl.RecordIOFraming
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.scaladsl.Framing.FramingException
 import akka.testkit.TestKit
 import akka.util.ByteString
-import org.scalatest.{ FlatSpecLike, Matchers }
+import org.scalatest.{FlatSpecLike, Matchers}
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.collection.immutable.Seq
@@ -19,7 +20,7 @@ class RecordIOFramingSpec(_system: ActorSystem)
     with FlatSpecLike
     with Matchers
     with ScalaFutures {
-  def this() = this(ActorSystem("CatalinSpec"))
+  def this() = this(ActorSystem("RecordIOFramingSpec"))
 
   implicit val mat = ActorMaterializer()
 

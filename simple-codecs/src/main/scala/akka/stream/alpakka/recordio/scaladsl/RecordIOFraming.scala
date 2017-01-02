@@ -1,18 +1,18 @@
 /*
  * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.recordio
+package akka.stream.alpakka.recordio.scaladsl
 
 import akka.NotUsed
 import akka.stream.Attributes.name
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Framing.FramingException
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
-import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
+import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
+import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.util.ByteString
 
 import scala.annotation.tailrec
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 // Provides a JSON framing flow that can separate records from an incoming RecordIO-formatted [[ByteString]] stream.
 object RecordIOFraming {
