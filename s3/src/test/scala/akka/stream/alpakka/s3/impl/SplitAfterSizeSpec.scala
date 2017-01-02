@@ -16,6 +16,7 @@ import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import akka.stream.scaladsl.Sink
 import org.scalatest.time.{ Millis, Seconds, Span }
+import scala.concurrent.duration._
 
 class SplitAfterSizeSpec(_system: ActorSystem)
     extends TestKit(_system)

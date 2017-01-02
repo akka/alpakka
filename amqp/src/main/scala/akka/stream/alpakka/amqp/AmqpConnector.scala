@@ -69,7 +69,7 @@ private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
           arguments.asJava
         )
 
-      case BindingDeclaration(exchange, queue, routingKey, arguments) =>
+      case BindingDeclaration(queue, exchange, routingKey, arguments) =>
         channel.queueBind(
           queue,
           exchange,

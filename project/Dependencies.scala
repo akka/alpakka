@@ -2,8 +2,8 @@ import sbt._, Keys._
 
 object Dependencies {
 
-  val ScalaVersions = Seq("2.11.8", "2.12.0")
-  val AkkaVersion = "2.4.14"
+  val ScalaVersions = Seq("2.11.8", "2.12.1")
+  val AkkaVersion = "2.4.16"
 
   val Common = Seq(
     libraryDependencies ++= Seq(
@@ -19,10 +19,11 @@ object Dependencies {
 
   val S3 = Seq(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-http"     % AkkaHttpVersion,
-      "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
+      "com.typesafe.akka"     %% "akka-http"     % AkkaHttpVersion,
+      "com.typesafe.akka"     %% "akka-http-xml" % AkkaHttpVersion,
       // in-memory filesystem for file related tests
-      "com.google.jimfs"   % "jimfs" % "1.1" % Test // ApacheV2
+      "com.google.jimfs"       % "jimfs"         % "1.1"   % Test, // ApacheV2
+      "com.github.tomakehurst" % "wiremock"      % "2.3.1" % Test //ApacheV2
     )
   )
 
@@ -86,5 +87,14 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "com.amazonaws"   % "aws-java-sdk-sqs"    % "1.11.51" // ApacheV2
     )
+  )
+
+  val Jms = Seq(
+    libraryDependencies ++= Seq(
+      "javax.jms" % "jms" % "1.1" % Provided, // CDDL + GPLv2
+      "org.apache.activemq" % "activemq-broker" % "5.14.1" % Test, // ApacheV2
+      "org.apache.activemq" % "activemq-client" % "5.14.1" % Test // ApacheV2
+    ),
+    resolvers += "jboss" at "https://repository.jboss.org/nexus/content/groups/public"
   )
 }
