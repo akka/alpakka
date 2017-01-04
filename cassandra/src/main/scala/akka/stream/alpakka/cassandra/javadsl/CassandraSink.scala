@@ -8,8 +8,8 @@ import java.util.function.BiFunction
 
 import akka.Done
 import akka.stream.javadsl.Sink
-import com.datastax.driver.core.{ BoundStatement, PreparedStatement, Session }
-import akka.stream.alpakka.cassandra.scaladsl.{ CassandraSink => ScalaCSink }
+import com.datastax.driver.core.{BoundStatement, PreparedStatement, Session}
+import akka.stream.alpakka.cassandra.scaladsl.{CassandraSink => ScalaCSink}
 
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext

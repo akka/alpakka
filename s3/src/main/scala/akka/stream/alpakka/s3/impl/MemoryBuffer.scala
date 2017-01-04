@@ -3,9 +3,9 @@
  */
 package akka.stream.alpakka.s3.impl
 
-import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
+import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.scaladsl.Source
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.util.ByteString
 
 /**

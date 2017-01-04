@@ -6,7 +6,7 @@ package akka.stream.alpakka.jms.javadsl
 import javax.jms.Message
 
 import akka.NotUsed
-import akka.stream.alpakka.jms.{ JmsSourceSettings, JmsSourceStage }
+import akka.stream.alpakka.jms.{JmsSourceSettings, JmsSourceStage}
 
 object JmsSource {
 

@@ -6,18 +6,18 @@ package akka.stream.alpakka.hbase.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.hbase.HTableSettings
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.{Sink, Source}
 import org.apache.hadoop.hbase.client.Put
 import org.apache.hadoop.hbase.util.Bytes
-import org.apache.hadoop.hbase.{ HBaseConfiguration, TableName }
-import org.scalatest.{ Matchers, WordSpec }
+import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
+import org.scalatest.{Matchers, WordSpec}
 
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.language.implicitConversions
-import scala.util.{ Failure, Success }
+import scala.util.{Failure, Success}
 
 class HBaseStageSpec extends WordSpec with Matchers {
 

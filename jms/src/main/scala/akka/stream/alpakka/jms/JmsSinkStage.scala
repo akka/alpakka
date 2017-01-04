@@ -3,10 +3,10 @@
  */
 package akka.stream.alpakka.jms
 
-import javax.jms.{ MessageProducer, TextMessage }
+import javax.jms.{MessageProducer, TextMessage}
 
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler }
-import akka.stream.{ ActorAttributes, Attributes, Inlet, SinkShape }
+import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler}
+import akka.stream.{ActorAttributes, Attributes, Inlet, SinkShape}
 
 final class JmsSinkStage(settings: JmsSettings) extends GraphStage[SinkShape[String]] {
 

@@ -6,8 +6,8 @@ package akka.stream.alpakka.s3.impl
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.S3Exception
 import akka.stream.alpakka.s3.auth.AWSCredentials
-import akka.stream.alpakka.s3.scaladsl.{ MultipartUploadResult, S3Client }
-import akka.stream.scaladsl.{ Keep, Sink, Source }
+import akka.stream.alpakka.s3.scaladsl.{MultipartUploadResult, S3Client}
+import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
 import com.github.tomakehurst.wiremock.client.WireMock._
 

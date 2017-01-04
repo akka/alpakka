@@ -5,8 +5,8 @@ package akka.stream.alpakka.hbase.javadsl
 
 import akka.stream.alpakka.hbase.HTableSettings
 import akka.stream.alpakka.hbase.internal.HBaseFlowStage
-import akka.stream.scaladsl.{ Flow, Keep, Sink }
-import akka.{ Done, NotUsed }
+import akka.stream.scaladsl.{Flow, Keep, Sink}
+import akka.{Done, NotUsed}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.TableName
 import org.apache.hadoop.hbase.client.Put

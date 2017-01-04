@@ -4,7 +4,7 @@
 package akka.stream.alpakka.jms.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.jms.{ JmsSinkSettings, JmsSinkStage }
+import akka.stream.alpakka.jms.{JmsSinkSettings, JmsSinkStage}
 import akka.stream.scaladsl.Sink
 
 object JmsSink {

@@ -5,12 +5,12 @@ package akka.stream.alpakka.sqs
 
 import akka.Done
 import akka.stream._
-import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, StageLogging }
+import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler, StageLogging}
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.AmazonSQSAsync
-import com.amazonaws.services.sqs.model.{ SendMessageRequest, SendMessageResult }
+import com.amazonaws.services.sqs.model.{SendMessageRequest, SendMessageResult}
 
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{Future, Promise}
 
 object SqsSinkSettings {
   val Defaults = SqsSinkSettings(maxInFlight = 10)

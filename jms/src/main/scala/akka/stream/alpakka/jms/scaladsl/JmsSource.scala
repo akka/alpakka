@@ -3,10 +3,10 @@
  */
 package akka.stream.alpakka.jms.scaladsl
 
-import javax.jms.{ Message, TextMessage }
+import javax.jms.{Message, TextMessage}
 
 import akka.NotUsed
-import akka.stream.alpakka.jms.{ JmsSourceSettings, JmsSourceStage }
+import akka.stream.alpakka.jms.{JmsSourceSettings, JmsSourceStage}
 import akka.stream.scaladsl.Source
 
 object JmsSource {

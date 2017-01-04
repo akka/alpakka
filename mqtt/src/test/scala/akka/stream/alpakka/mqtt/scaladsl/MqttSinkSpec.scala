@@ -7,7 +7,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.mqtt._
-import akka.stream.scaladsl.{ Keep, Sink, Source }
+import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.eclipse.paho.client.mqttv3.MqttSecurityException
