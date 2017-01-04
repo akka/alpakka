@@ -5,7 +5,7 @@ package akka.stream.alpakka.ftp
 package impl
 
 import akka.stream.alpakka.ftp.RemoteFileSettings.SftpSettings
-import com.jcraft.jsch.{ ChannelSftp, JSch }
+import com.jcraft.jsch.{ChannelSftp, JSch}
 import scala.collection.immutable
 import scala.util.Try
 import java.io.InputStream

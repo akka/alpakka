@@ -8,7 +8,7 @@ import java.util.concurrent.Semaphore
 import akka.Done
 import akka.stream._
 import akka.stream.stage._
-import org.eclipse.paho.client.mqttv3.{ IMqttAsyncClient, IMqttToken }
+import org.eclipse.paho.client.mqttv3.{IMqttAsyncClient, IMqttToken}
 
 import scala.collection.mutable
 import scala.concurrent._

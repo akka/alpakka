@@ -5,9 +5,9 @@ package akka.stream.alpakka.mqtt
 
 import akka.stream._
 import akka.stream.stage._
-import org.eclipse.paho.client.mqttv3.{ IMqttAsyncClient, IMqttToken, MqttMessage => PahoMqttMessage }
+import org.eclipse.paho.client.mqttv3.{IMqttAsyncClient, IMqttToken, MqttMessage => PahoMqttMessage}
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 final class MqttProducerStage(cs: MqttConnectionSettings, qos: MqttQoS)
     extends GraphStage[FlowShape[MqttMessage, MqttMessage]] {

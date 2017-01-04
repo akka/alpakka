@@ -4,7 +4,7 @@
 package akka.stream.alpakka.ftp
 
 import akka.stream.IOResult
-import akka.stream.scaladsl.{ Keep, Sink }
+import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.testkit.scaladsl.TestSink
 
 final class FtpSourceSpec extends BaseFtpSpec with CommonFtpSourceSpec

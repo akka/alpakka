@@ -6,28 +6,47 @@ package akka.stream.alpakka.s3.impl
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.{ RequestEntity, _ }
-import akka.http.scaladsl.model.headers.{ Host, RawHeader }
+import akka.http.scaladsl.model.headers.{Host, RawHeader}
+import akka.http.scaladsl.model.{RequestEntity, _}
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.collection.immutable
+import scala.collection.immutable.Seq
+import scala.concurrent.{ExecutionContext, Future}
+
+case class MetaHeaders(headers: Map[String, String])
 
 private[alpakka] object HttpRequests {
 
   def getDownloadRequest(s3Location: S3Location, region: String)(implicit conf: S3Settings): HttpRequest =
     s3Request(s3Location, region: String)
 
-  def initiateMultipartUploadRequest(s3Location: S3Location, contentType: ContentType, cannedAcl: CannedAcl, region: String)(
-    implicit conf: S3Settings): HttpRequest =
-    s3Request(s3Location, region, HttpMethods.POST, _.withQuery(Query("uploads")))
-      .withDefaultHeaders(RawHeader("x-amz-acl", cannedAcl.value))
-      .withEntity(HttpEntity.empty(contentType))
+  def initiateMultipartUploadRequest(s3Location: S3Location,
+                                     contentType: ContentType,
+                                     cannedAcl: CannedAcl,
+                                     region: String,
+                                     metaHeaders: MetaHeaders)(implicit conf: S3Settings): HttpRequest = {
 
-  def uploadPartRequest(upload: MultipartUpload, partNumber: Int, payload: Source[ByteString, _], payloadSize: Int, region: String)(
-      implicit conf: S3Settings): HttpRequest =
+    def buildHeaders(metaHeaders: MetaHeaders, cannedAcl: CannedAcl): immutable.Seq[HttpHeader] = {
+      val metaHttpHeaders = metaHeaders.headers.map { header =>
+        RawHeader(s"x-amz-meta-${header._1}", header._2)
+      }(collection.breakOut): Seq[HttpHeader]
+      metaHttpHeaders :+ RawHeader("x-amz-acl", cannedAcl.value)
+    }
+
+    s3Request(s3Location, region, HttpMethods.POST, _.withQuery(Query("uploads")))
+      .withDefaultHeaders(buildHeaders(metaHeaders, cannedAcl))
+      .withEntity(HttpEntity.empty(contentType))
+  }
+
+  def uploadPartRequest(upload: MultipartUpload,
+                        partNumber: Int,
+                        payload: Source[ByteString, _],
+                        payloadSize: Int,
+                        region: String)(implicit conf: S3Settings): HttpRequest =
     s3Request(
       upload.s3Location,
       region,
@@ -39,11 +58,15 @@ private[alpakka] object HttpRequests {
       implicit ec: ExecutionContext,
       conf: S3Settings): Future[HttpRequest] = {
 
+    //Do not let the start PartNumber,ETag and the end PartNumber,ETag be on different lines
+    //  They tend to get split when this file is formatted by IntelliJ unless http://stackoverflow.com/a/19492318/1216965
+    // @formatter:off
     val payload = <CompleteMultipartUpload>
                     {
                       parts.map { case (partNumber, etag) => <Part><PartNumber>{ partNumber }</PartNumber><ETag>{ etag }</ETag></Part> }
                     }
                   </CompleteMultipartUpload>
+    // @formatter:on
     for {
       entity <- Marshal(payload).to[RequestEntity]
     } yield {
@@ -75,6 +98,8 @@ private[alpakka] object HttpRequests {
       }
     }
 
-    HttpRequest(method).withHeaders(Host(requestHost(s3Location, region))).withUri(uriFn(requestUri(s3Location, region)))
+    HttpRequest(method)
+      .withHeaders(Host(requestHost(s3Location, region)))
+      .withUri(uriFn(requestUri(s3Location, region)))
   }
 }

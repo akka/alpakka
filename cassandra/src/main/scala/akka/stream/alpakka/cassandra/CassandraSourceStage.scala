@@ -4,11 +4,11 @@
 package akka.stream.alpakka.cassandra
 
 import akka.stream._
-import akka.stream.stage.{ AsyncCallback, GraphStage, GraphStageLogic, OutHandler }
-import com.datastax.driver.core.{ ResultSet, Row, Session, Statement }
+import akka.stream.stage.{AsyncCallback, GraphStage, GraphStageLogic, OutHandler}
+import com.datastax.driver.core.{ResultSet, Row, Session, Statement}
 
 import scala.concurrent.Future
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 import akka.stream.alpakka.cassandra.GuavaFutures._
 

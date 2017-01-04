@@ -7,8 +7,8 @@ import javax.jms.JMSException
 
 import akka.NotUsed
 import akka.stream.ThrottleMode
-import akka.stream.alpakka.jms.{ JmsSinkSettings, JmsSourceSettings, JmsSpec }
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.alpakka.jms.{JmsSinkSettings, JmsSourceSettings, JmsSpec}
+import akka.stream.scaladsl.{Sink, Source}
 import org.apache.activemq.ActiveMQConnectionFactory
 
 import scala.concurrent.duration._

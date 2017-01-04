@@ -6,7 +6,7 @@ package akka.stream.alpakka.s3
 import java.security.MessageDigest
 import javax.xml.bind.DatatypeConverter
 
-import akka.stream.scaladsl.{ Flow, Keep, Sink }
+import akka.stream.scaladsl.{Flow, Keep, Sink}
 import akka.util.ByteString
 
 import scala.concurrent.Future

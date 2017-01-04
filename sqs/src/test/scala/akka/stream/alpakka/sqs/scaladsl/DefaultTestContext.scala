@@ -7,7 +7,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient
-import org.scalatest.{ BeforeAndAfterAll, Suite, Tag }
+import org.scalatest.{BeforeAndAfterAll, Suite, Tag}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._

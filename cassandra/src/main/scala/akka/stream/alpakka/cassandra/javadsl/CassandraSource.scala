@@ -8,7 +8,7 @@ import java.util.concurrent.CompletableFuture
 import akka.NotUsed
 import akka.stream.alpakka.cassandra.CassandraSourceStage
 import akka.stream.javadsl.Source
-import com.datastax.driver.core.{ Row, Session, Statement }
+import com.datastax.driver.core.{Row, Session, Statement}
 
 import scala.concurrent.Future
 
