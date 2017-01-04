@@ -55,7 +55,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
   import Marshalling._
 
   implicit val conf = settings
-  val MinChunkSize = 5242880
+  val MinChunkSize = 5242880 //in bytes
   val signingKey = SigningKey(credentials, CredentialScope(LocalDate.now(), region, "s3"))
 
   def download(s3Location: S3Location): Source[ByteString, NotUsed] = {
@@ -72,25 +72,28 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
    */
   def multipartUpload(s3Location: S3Location,
                       contentType: ContentType = ContentTypes.`application/octet-stream`,
+                      metaHeaders: MetaHeaders,
                       cannedAcl: CannedAcl = CannedAcl.Private,
                       chunkSize: Int = MinChunkSize,
                       chunkingParallelism: Int = 4): Sink[ByteString, Future[CompleteMultipartUploadResult]] =
-    chunkAndRequest(s3Location, contentType, cannedAcl, chunkSize)(chunkingParallelism)
-      .toMat(completionSink(s3Location))(Keep.right)
+    chunkAndRequest(s3Location, contentType, metaHeaders, cannedAcl, chunkSize)(chunkingParallelism).toMat(
+        completionSink(s3Location))(Keep.right)
 
   private def initiateMultipartUpload(s3Location: S3Location,
                                       contentType: ContentType,
-                                      cannedAcl: CannedAcl): Future[MultipartUpload] = {
+                                      cannedAcl: CannedAcl,
+                                      metaHeaders: MetaHeaders): Future[MultipartUpload] = {
     import mat.executionContext
 
-    val req = HttpRequests.initiateMultipartUploadRequest(s3Location, contentType, cannedAcl)
+    val req = HttpRequests.initiateMultipartUploadRequest(s3Location, contentType, cannedAcl, metaHeaders)
 
     val response = for {
       signedReq <- Signer.signedRequest(req, signingKey)
       response <- Http().singleRequest(signedReq)
     } yield response
     response.flatMap {
-      case HttpResponse(status, _, entity, _) if status.isSuccess() => Unmarshal(entity).to[MultipartUpload]
+      case HttpResponse(status, _, entity, _) if status.isSuccess() =>
+        Unmarshal(entity).to[MultipartUpload]
       case HttpResponse(status, _, entity, _) =>
         Unmarshal(entity).to[String].flatMap {
           case err =>
@@ -113,26 +116,18 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
    */
   private def initiateUpload(s3Location: S3Location,
                              contentType: ContentType,
-                             cannedAcl: CannedAcl): Source[(MultipartUpload, Int), NotUsed] =
+                             cannedAcl: CannedAcl,
+                             metaHeaders: MetaHeaders): Source[(MultipartUpload, Int), NotUsed] =
     Source
       .single(s3Location)
-      .mapAsync(1)(initiateMultipartUpload(_, contentType, cannedAcl))
+      .mapAsync(1)(initiateMultipartUpload(_, contentType, cannedAcl, metaHeaders))
       .mapConcat { case r => Stream.continually(r) }
       .zip(Source.fromIterator(() => Iterator.from(1)))
 
-  /**
-   * Transforms a flow of ByteStrings into a flow of HTTPRequests to upload to S3.
-   *
-   * @param s3Location
-   * @param contentType
-   * @param cannedAcl
-   * @param chunkSize
-   * @param parallelism
-   * @return
-   */
   private def createRequests(
       s3Location: S3Location,
       contentType: ContentType,
+      metaHeaders: MetaHeaders,
       cannedAcl: CannedAcl = CannedAcl.Private,
       chunkSize: Int = MinChunkSize,
       parallelism: Int = 4): Flow[ByteString, (HttpRequest, (MultipartUpload, Int)), NotUsed] = {
@@ -140,17 +135,20 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
     assert(chunkSize >= MinChunkSize,
       "Chunk size must be at least 5242880B. See http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadUploadPart.html")
 
-    // First step of the multi part upload process - initiate!
-    //  The response is then used for subsequent requests
-    val requestInfo: Source[(MultipartUpload, Int), NotUsed] = initiateUpload(s3Location, contentType, cannedAcl)
+    // First step of the multi part upload process is made.
+    //  The response is then used to construct the subsequent individual upload part requests
+    val requestInfo: Source[(MultipartUpload, Int), NotUsed] =
+      initiateUpload(s3Location, contentType, cannedAcl, metaHeaders)
 
     SplitAfterSize(chunkSize)(Flow.apply[ByteString])
-      .via(getChunkBuffer(chunkSize))
+      .via(getChunkBuffer(chunkSize)) //creates the chunks
       .concatSubstreams
       .zipWith(requestInfo) {
-        case (payload, (uploadInfo, chunkIndex)) =>
-          (HttpRequests.uploadPartRequest(uploadInfo, chunkIndex, payload.data, payload.size),
-            (uploadInfo, chunkIndex))
+        case (chunkedPayload, (uploadInfo, chunkIndex)) =>
+          //each of the payload requests are created
+          val partRequest =
+            HttpRequests.uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload.data, chunkedPayload.size)
+          (partRequest, (uploadInfo, chunkIndex))
       }
       .mapAsync(parallelism) { case (req, info) => Signer.signedRequest(req, signingKey).zip(Future.successful(info)) }
   }
@@ -168,13 +166,16 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
   private def chunkAndRequest(
       s3Location: S3Location,
       contentType: ContentType,
+      metaHeaders: MetaHeaders,
       cannedAcl: CannedAcl = CannedAcl.Private,
       chunkSize: Int = MinChunkSize)(parallelism: Int = 4): Flow[ByteString, UploadPartResponse, NotUsed] = {
 
-    // The entire multipart upload happens in this request!
-    val requestFlow = createRequests(s3Location, contentType, cannedAcl, chunkSize, parallelism)
+    // Multipart upload requests (except for the completion api) are created here.
+    //  The initial upload request gets executed within this function as well.
+    //  The individual upload part requests are created.
+    val requestFlow = createRequests(s3Location, contentType, metaHeaders, cannedAcl, chunkSize, parallelism)
 
-    // The multipart upload flow is constructed by
+    // The individual upload part requests are processed here
     requestFlow.via(Http().superPool[(MultipartUpload, Int)]()).map {
       case (Success(r), (upload, index)) =>
         r.entity.dataBytes.runWith(Sink.ignore)

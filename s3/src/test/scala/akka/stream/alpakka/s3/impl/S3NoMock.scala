@@ -4,9 +4,7 @@
 package akka.stream.alpakka.s3.impl
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.ContentTypes
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.s3.auth.AWSCredentials
 import akka.stream.alpakka.s3.scaladsl.S3Client
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
@@ -16,10 +14,6 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-/**
- *
- * @author siva
- */
 class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with ScalaFutures {
 
   implicit val actorSystem = ActorSystem()
@@ -27,15 +21,18 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
 
   val bucket = "test-bucket"
   val objectKey = "test"
-  val objectValue = "Some content."
+
+  val objectValue = "Some String"
+  val metaHeaders: Map[String, String] = Map("location" -> "Africa", "datatype" -> "image")
 
   it should "upload with real credentials" ignore {
 
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
+    //val source: Source[ByteString, Any] = FileIO.fromPath(Paths.get("/tmp/IMG_0470.JPG"))
 
-    val result = source.runWith(S3Client().multipartUpload(bucket, objectKey, contentType = ContentTypes.`text/plain(UTF-8)`))
+    val result = source.runWith(S3Client().multipartUpload(bucket, objectKey, metaHeaders = MetaHeaders(metaHeaders)))
 
-    val multipartUploadResult = Await.ready(result, 5.seconds).futureValue
+    val multipartUploadResult = Await.ready(result, 90.seconds).futureValue
     multipartUploadResult.bucket shouldBe bucket
     multipartUploadResult.key shouldBe objectKey
   }
