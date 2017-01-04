@@ -4,18 +4,24 @@
 package akka.stream.alpakka.s3
 
 import akka.actor.ActorSystem
-import com.typesafe.config.{ Config, ConfigFactory }
+import akka.stream.alpakka.s3.auth.AWSCredentials
+import com.typesafe.config.Config
 
 final case class Proxy(host: String, port: Int)
 
 final class S3Settings(val bufferType: BufferType,
                        val diskBufferPath: String,
                        val debugLogging: Boolean,
-                       val proxy: Option[Proxy]) {
-  override def toString: String = s"S3Settings($bufferType,$diskBufferPath,$debugLogging,$proxy)"
+                       val proxy: Option[Proxy],
+                       val awsCredentials: AWSCredentials,
+                       val s3Region: String) {
+
+  override def toString: String =
+    s"S3Settings($bufferType,$diskBufferPath,$debugLogging,$proxy,$awsCredentials,$s3Region)"
 }
 
 sealed trait BufferType
+
 case object MemoryBufferType extends BufferType {
   def getInstance: BufferType = MemoryBufferType
 }
@@ -39,9 +45,12 @@ object S3Settings {
     },
     diskBufferPath = config.getString("disk-buffer-path"),
     debugLogging = config.getBoolean("debug-logging"),
-    proxy =
+    proxy = {
       if (config.getString("proxy.host") != "")
         Some(Proxy(config.getString("proxy.host"), config.getInt("proxy.port")))
       else None
+    },
+    awsCredentials = AWSCredentials(config.getString("aws.access-key-id"), config.getString("aws.secret-access-key")),
+    s3Region = config.getString("aws.default-region")
   )
 }
