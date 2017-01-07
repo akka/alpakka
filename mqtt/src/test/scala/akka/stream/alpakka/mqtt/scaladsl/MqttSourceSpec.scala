@@ -5,7 +5,7 @@ package akka.stream.alpakka.mqtt.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream._
-import akka.stream.alpakka.mqtt.{ MqttConnectionSettings, MqttMessage, MqttQoS, MqttSourceSettings }
+import akka.stream.alpakka.mqtt._
 import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestKit
@@ -41,6 +41,7 @@ class MqttSourceSpec
   val topic1 = "source-spec/topic1"
   val topic2 = "source-spec/topic2"
   val secureTopic = "source-spec/secure-topic1"
+  val willTopic = "source-spec/will"
 
   val sourceSettings = connectionSettings.withClientId(clientId = "source-spec/source")
   val sinkSettings = connectionSettings.withClientId(clientId = "source-spec/sink")
@@ -167,6 +168,43 @@ class MqttSourceSpec
       whenReady(sub2) { _ =>
         Source.single(MqttMessage(topic1, ByteString("ohi"))).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
         elem2.futureValue shouldBe MqttMessage(topic1, ByteString("ohi"))
+      }
+    }
+
+    "support will message" in {
+      import system.dispatcher
+
+      val (binding, connection) = Tcp().bind("localhost", 1337).toMat(Sink.head)(Keep.both).run()
+
+      val ks = connection.map(
+        _.handleWith(Tcp().outgoingConnection("localhost", 1883).viaMat(KillSwitches.single)(Keep.right))
+      )
+
+      whenReady(binding) { _ =>
+        val settings = MqttSourceSettings(
+            sourceSettings
+              .withClientId("source-spec/testator")
+              .withBroker("tcp://localhost:1337")
+              .withWill(Will(MqttMessage(willTopic, ByteString("ohi")), MqttQoS.AtLeastOnce, retained = true)),
+            Map(willTopic -> MqttQoS.AtLeastOnce))
+        val source = MqttSource(settings, 8)
+
+        val sub = source.toMat(Sink.head)(Keep.left).run()
+        whenReady(sub) { _ =>
+          whenReady(ks)(_.shutdown())
+        }
+      }
+
+      {
+        val settings =
+          MqttSourceSettings(sourceSettings.withClientId("source-spec/executor"),
+            Map(willTopic -> MqttQoS.AtLeastOnce))
+        val source = MqttSource(settings, 8)
+
+        val (sub, elem) = source.toMat(Sink.head)(Keep.both).run()
+        whenReady(sub) { _ =>
+          elem.futureValue shouldBe MqttMessage(willTopic, ByteString("ohi"))
+        }
       }
     }
   }
