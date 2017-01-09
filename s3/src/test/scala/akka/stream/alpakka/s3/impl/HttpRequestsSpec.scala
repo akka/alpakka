@@ -17,9 +17,10 @@ class HttpRequestsSpec extends FlatSpec with Matchers {
     val location = S3Location("bucket", "image-1024@2x")
     val contentType = MediaTypes.`image/jpeg`
     val acl = CannedAcl.PublicRead
-    val req = HttpRequests.initiateMultipartUploadRequest(location, contentType, acl)
+    val req = HttpRequests.initiateMultipartUploadRequest(location, contentType, acl, "us-east-1")
 
     req.entity shouldEqual HttpEntity.empty(contentType)
     req.headers should contain(RawHeader("x-amz-acl", acl.value))
+    req.uri.authority.host.toString shouldEqual "bucket.s3-us-east-1.amazonaws.com"
   }
 }
