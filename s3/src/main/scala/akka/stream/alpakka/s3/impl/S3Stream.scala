@@ -87,9 +87,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
 
     val response = for {
       signedReq <- Signer.signedRequest(req, signingKey)
-      _ <- Future(system.log.info("Request: {}", signedReq))
       response <- Http().singleRequest(signedReq)
-      _ <- Future(system.log.info("Response: {}", response))
     } yield response
     response.flatMap {
       case HttpResponse(status, _, entity, _) if status.isSuccess() => Unmarshal(entity).to[MultipartUpload]
