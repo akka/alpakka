@@ -9,6 +9,8 @@ interface FtpSupport {
 
     void stopServer();
 
+    void cleanFiles();
+
     void generateFiles();
 
     void generateFiles(int numFiles);

@@ -25,7 +25,7 @@ private[ftp] trait FtpIOGraphStage[FtpClient, S <: RemoteFileSettings]
 
   def connectionSettings: S
 
-  implicit def ftpClient: FtpClient
+  implicit def ftpClient: () => FtpClient
 
   val ftpLike: FtpLike[FtpClient, S]
 
@@ -38,7 +38,7 @@ private[ftp] trait FtpIOGraphStage[FtpClient, S <: RemoteFileSettings]
 
     val matValuePromise = Promise[IOResult]()
 
-    val logic = new FtpGraphStageLogic[ByteString, FtpClient, S](shape, ftpLike, connectionSettings) {
+    val logic = new FtpGraphStageLogic[ByteString, FtpClient, S](shape, ftpLike, connectionSettings, ftpClient) {
 
       private[this] var isOpt: Option[InputStream] = None
       private[this] var readBytesTotal: Long = 0L
