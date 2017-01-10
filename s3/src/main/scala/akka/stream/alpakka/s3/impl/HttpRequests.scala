@@ -54,14 +54,14 @@ private[alpakka] object HttpRequests {
       conf: S3Settings): Future[HttpRequest] = {
 
     //Do not let the start PartNumber,ETag and the end PartNumber,ETag be on different lines
-    //  They tend to get split when this file is formatted by IntelliJ
+    //  They tend to get split when this file is formatted by IntelliJ unless http://stackoverflow.com/a/19492318/1216965
+    // @formatter:off
     val payload = <CompleteMultipartUpload>
-      {parts.map { case (partNumber, etag) => <Part>
-        <PartNumber>{partNumber}</PartNumber>
-        <ETag>{etag}</ETag>
-      </Part>
-      }}
-    </CompleteMultipartUpload>
+                    {
+                      parts.map { case (partNumber, etag) => <Part><PartNumber>{ partNumber }</PartNumber><ETag>{ etag }</ETag></Part> }
+                    }
+                  </CompleteMultipartUpload>
+    // @formatter:on
     for {
       entity <- Marshal(payload).to[RequestEntity]
     } yield {
