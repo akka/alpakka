@@ -35,6 +35,15 @@ final class MqttSourceStage(settings: MqttSourceSettings, bufferSize: Int)
           Done
         })
       private val backpressure = new Semaphore(bufferSize)
+      private var mqttClient: Option[IMqttAsyncClient] = None
+      private val onMessage = getAsyncCallback[MqttMessage] { message =>
+        require(queue.size <= bufferSize)
+        if (isAvailable(out)) {
+          pushMessage(message)
+        } else {
+          queue.enqueue(message)
+        }
+      }
 
       override val connectionSettings = settings.connectionSettings
 
@@ -48,19 +57,13 @@ final class MqttSourceStage(settings: MqttSourceSettings, bufferSize: Int)
 
       override def handleConnection(client: IMqttAsyncClient) = {
         val (topics, qos) = settings.subscriptions.unzip
+        mqttClient = Some(client)
         client.subscribe(topics.toArray, qos.map(_.byteValue.toInt).toArray, (), mqttSubscriptionCallback)
       }
 
-      override def beforeHandleMessage(): Unit =
+      override def onMessage(message: MqttMessage): Unit = {
         backpressure.acquire()
-
-      override def handleMessage(message: MqttMessage): Unit = {
-        require(queue.size <= bufferSize)
-        if (isAvailable(out)) {
-          pushMessage(message)
-        } else {
-          queue.enqueue(message)
-        }
+        onMessage.invoke(message)
       }
 
       def pushMessage(message: MqttMessage): Unit = {
@@ -70,6 +73,12 @@ final class MqttSourceStage(settings: MqttSourceSettings, bufferSize: Int)
 
       override def handleConnectionLost(ex: Throwable) =
         failStage(ex)
+
+      override def postStop() =
+        mqttClient.foreach {
+          case c if c.isConnected => c.disconnect
+          case _ =>
+        }
 
     }, subscriptionPromise.future)
   }
