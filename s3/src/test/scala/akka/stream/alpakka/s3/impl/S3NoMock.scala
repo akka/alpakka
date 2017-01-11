@@ -16,10 +16,6 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-/**
- *
- * @author siva
- */
 class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with ScalaFutures {
 
   implicit val actorSystem = ActorSystem()
