@@ -12,15 +12,19 @@ import com.amazonaws.services.sqs.AmazonSQSAsyncClient
 import com.amazonaws.services.sqs.model.{ Message, ReceiveMessageRequest, ReceiveMessageResult }
 
 import scala.collection.JavaConverters._
-import scala.concurrent.duration.{ FiniteDuration, _ }
 
 object SqsSourceSettings {
-  val Defaults = SqsSourceSettings(20.seconds, 100, 10)
+  val Defaults = SqsSourceSettings(20, 100, 10)
 }
 
-final case class SqsSourceSettings(longPollingDuration: FiniteDuration, maxBufferSize: Int, maxBatchSize: Int) {
+//#SqsSourceSettings
+final case class SqsSourceSettings(waitTimeSeconds: Int, maxBufferSize: Int, maxBatchSize: Int) {
   require(maxBatchSize <= maxBufferSize)
+  // SQS requirements
+  require(waitTimeSeconds >= 0 && waitTimeSeconds <= 20)
+  require(maxBatchSize >= 1 && maxBatchSize <= 10)
 }
+//#SqsSourceSettings
 
 final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings, sqsClient: AmazonSQSAsyncClient)
     extends GraphStage[SourceShape[Message]] {
@@ -40,7 +44,7 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings, sqsCli
 
         val request = new ReceiveMessageRequest(queueUrl)
           .withMaxNumberOfMessages(settings.maxBatchSize)
-          .withWaitTimeSeconds(settings.longPollingDuration.toSeconds.toInt)
+          .withWaitTimeSeconds(settings.waitTimeSeconds)
 
         sqsClient.receiveMessageAsync(request,
           new AsyncHandler[ReceiveMessageRequest, ReceiveMessageResult] {
