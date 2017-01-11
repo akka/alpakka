@@ -5,16 +5,16 @@ package akka.stream.alpakka.s3.scaladsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.{ ContentType, ContentTypes, Uri }
 import akka.stream.Materializer
-import akka.stream.alpakka.s3.impl.{ S3Location, S3Stream }
+import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.auth.AWSCredentials
-import akka.stream.scaladsl.Source
+import akka.stream.alpakka.s3.impl.{ CompleteMultipartUploadResult, S3Location, S3Stream }
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
-import akka.http.scaladsl.model.{ ContentType, ContentTypes, Uri }
-import akka.stream.scaladsl.Sink
+
 import scala.concurrent.Future
-import akka.stream.alpakka.s3.impl.CompleteMultipartUploadResult
 
 final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
@@ -25,11 +25,18 @@ object MultipartUploadResult {
 
 object S3Client {
   val MinChunkSize = 5242880
+
+  def apply()(implicit system: ActorSystem, mat: Materializer): S3Client = {
+    val s3Settings = S3Settings(system)
+    new S3Client(s3Settings.awsCredentials, s3Settings.s3Region)
+  }
 }
 
 final class S3Client(credentials: AWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer) {
+
   import S3Client._
-  private val impl = new S3Stream(credentials, region)
+
+  private[this] val impl = S3Stream(credentials, region)
 
   def download(bucket: String, key: String): Source[ByteString, NotUsed] = impl.download(S3Location(bucket, key))
 

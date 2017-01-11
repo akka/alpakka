@@ -27,7 +27,7 @@ object MultipartUploadResult {
 }
 
 final class S3Client(credentials: AWSCredentials, region: String, system: ActorSystem, mat: Materializer) {
-  private val impl = new S3Stream(credentials, region)(system, mat)
+  private val impl = S3Stream(credentials, region)(system, mat)
 
   def download(bucket: String, key: String): Source[ByteString, NotUsed] =
     impl.download(S3Location(bucket, key)).asJava
