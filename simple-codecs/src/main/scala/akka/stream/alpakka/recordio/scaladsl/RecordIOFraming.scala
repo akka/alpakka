@@ -115,8 +115,8 @@ object RecordIOFraming {
                               s"Record of size $length bytes exceeds maximum of $maxRecordLength bytes."))
                     case Success(length) if length < 0 =>
                       failStage(
-                        new FramingException(
-                          s"Record size prefix $length is negative."))
+                          new FramingException(
+                              s"Record size prefix $length is negative."))
                     case Success(length) =>
                       currentRecordLength = Some(length)
                       doParse()

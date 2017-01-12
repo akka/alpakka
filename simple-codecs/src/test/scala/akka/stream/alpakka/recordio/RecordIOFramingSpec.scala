@@ -16,7 +16,7 @@ import org.scalatest.concurrent.ScalaFutures
 import scala.collection.immutable.Seq
 
 class RecordIOFramingSpec(_system: ActorSystem)
-  extends TestKit(_system)
+    extends TestKit(_system)
     with FlatSpecLike
     with Matchers
     with ScalaFutures
@@ -131,7 +131,7 @@ class RecordIOFramingSpec(_system: ActorSystem)
     result.failed.futureValue shouldBe a[FramingException]
   }
 
-  it should "reject an negative record size prefix" in {
+  it should "reject a negative record size prefix" in {
     // Given
     val recordIOInput = s"-1\n"
 
