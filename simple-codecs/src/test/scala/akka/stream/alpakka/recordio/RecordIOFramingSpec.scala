@@ -10,17 +10,20 @@ import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.scaladsl.Framing.FramingException
 import akka.testkit.TestKit
 import akka.util.ByteString
-import org.scalatest.{FlatSpecLike, Matchers}
+import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.collection.immutable.Seq
 
 class RecordIOFramingSpec(_system: ActorSystem)
-    extends TestKit(_system)
+  extends TestKit(_system)
     with FlatSpecLike
     with Matchers
-    with ScalaFutures {
+    with ScalaFutures
+    with BeforeAndAfterAll {
   def this() = this(ActorSystem("RecordIOFramingSpec"))
+
+  override protected def afterAll(): Unit = shutdown()
 
   implicit val mat = ActorMaterializer()
 
@@ -122,6 +125,19 @@ class RecordIOFramingSpec(_system: ActorSystem)
     // When
     val result = infinitePrefixSource via
       RecordIOFraming.scanner(1024) runWith
+      stringSeqSink
+
+    // Then
+    result.failed.futureValue shouldBe a[FramingException]
+  }
+
+  it should "reject an negative record size prefix" in {
+    // Given
+    val recordIOInput = s"-1\n"
+
+    // When
+    val result = Source.single(ByteString(recordIOInput)) via
+      RecordIOFraming.scanner() runWith
       stringSeqSink
 
     // Then

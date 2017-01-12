@@ -33,15 +33,14 @@ object RecordIOFraming {
   def scanner(maxRecordLength: Int = Int.MaxValue): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].via(new RecordIOFramingStage(maxRecordLength)).named("recordIOFraming")
 
-  final val LineFeed = '\n'.toByte
-  final val CarriageReturn = '\r'.toByte
-  final val Tab = '\t'.toByte
-  final val Space = ' '.toByte
+  private val LineFeed = '\n'.toByte
+  private val CarriageReturn = '\r'.toByte
+  private val Tab = '\t'.toByte
+  private val Space = ' '.toByte
 
-  final val Whitespace = Set(LineFeed, CarriageReturn, Tab, Space)
+  private val Whitespace: Set[Byte] = Set(LineFeed, CarriageReturn, Tab, Space)
 
-  def isWhitespace(input: Byte): Boolean =
-    Whitespace.contains(input)
+  private def isWhitespace(byte: Byte): Boolean = Whitespace.contains(byte)
 
   private class RecordIOFramingStage(maxRecordLength: Int) extends GraphStage[FlowShape[ByteString, ByteString]] {
 
@@ -59,8 +58,7 @@ object RecordIOFraming {
       new GraphStageLogic(shape) with InHandler with OutHandler {
         private var buffer = ByteString.empty
 
-        private def trimWhitespace(): Unit =
-          while (buffer.nonEmpty && isWhitespace(buffer.head)) buffer = buffer.drop(1)
+        private def trimWhitespace(): Unit = buffer = buffer.dropWhile(isWhitespace)
 
         private var currentRecordLength: Option[Int] = None // the byte length of the next record, if known
 
@@ -101,7 +99,7 @@ object RecordIOFraming {
               buffer.indexOf(LineFeed) match {
                 case -1 if buffer.size > maxRecordPrefixLength =>
                   failStage(
-                      new FramingException(s"Invalid record size prefix; expected a number up to $maxRecordLength."))
+                      new FramingException(s"Record size prefix is longer than $maxRecordPrefixLength."))
                 case -1 if isClosed(in) && buffer.isEmpty =>
                   completeStage()
                 case -1 =>
@@ -115,6 +113,10 @@ object RecordIOFraming {
                       failStage(
                           new FramingException(
                               s"Record of size $length bytes exceeds maximum of $maxRecordLength bytes."))
+                    case Success(length) if length < 0 =>
+                      failStage(
+                        new FramingException(
+                          s"Record size prefix $length is negative."))
                     case Success(length) =>
                       currentRecordLength = Some(length)
                       doParse()
