@@ -99,7 +99,7 @@ object RecordIOFraming {
               buffer.indexOf(LineFeed) match {
                 case -1 if buffer.size > maxRecordPrefixLength =>
                   failStage(
-                      new FramingException(s"Record size prefix is longer than $maxRecordPrefixLength."))
+                      new FramingException(s"Record size prefix is longer than $maxRecordPrefixLength bytes."))
                 case -1 if isClosed(in) && buffer.isEmpty =>
                   completeStage()
                 case -1 =>
