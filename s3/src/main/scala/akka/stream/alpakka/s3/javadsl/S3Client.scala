@@ -3,20 +3,20 @@
  */
 package akka.stream.alpakka.s3.javadsl
 
+import java.util.concurrent.CompletionStage
+
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.impl.model.JavaUri
 import akka.http.javadsl.model.{ ContentType, Uri }
-import akka.http.scaladsl.model.{ ContentType => ScalaContentType, ContentTypes }
+import akka.http.scaladsl.model.{ ContentTypes, HttpHeader, ContentType => ScalaContentType }
 import akka.stream.Materializer
-import akka.stream.alpakka.s3.impl.CompleteMultipartUploadResult
 import akka.stream.alpakka.s3.auth.AWSCredentials
-import akka.stream.alpakka.s3.impl.S3Stream
-import akka.stream.alpakka.s3.impl.S3Location
-import akka.stream.javadsl.Source
+import akka.stream.alpakka.s3.impl.{ CompleteMultipartUploadResult, MetaHeaders, S3Location, S3Stream }
+import akka.stream.javadsl.{ Sink, Source }
 import akka.util.ByteString
-import akka.NotUsed
-import akka.stream.javadsl.Sink
-import java.util.concurrent.CompletionStage
+
+import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
 
 final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
@@ -34,12 +34,13 @@ final class S3Client(credentials: AWSCredentials, region: String, system: ActorS
 
   def multipartUpload(bucket: String,
                       key: String,
-                      contentType: ContentType): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+                      contentType: ContentType,
+                      metaHeaders: MetaHeaders): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     impl
-      .multipartUpload(S3Location(bucket, key), contentType.asInstanceOf[ScalaContentType])
+      .multipartUpload(S3Location(bucket, key), contentType.asInstanceOf[ScalaContentType], metaHeaders)
       .mapMaterializedValue(_.map(MultipartUploadResult.create)(system.dispatcher).toJava)
       .asJava
 
   def multipartUpload(bucket: String, key: String): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    multipartUpload(bucket, key, ContentTypes.`application/octet-stream`)
+    multipartUpload(bucket, key, ContentTypes.`application/octet-stream`, MetaHeaders(Map()))
 }
