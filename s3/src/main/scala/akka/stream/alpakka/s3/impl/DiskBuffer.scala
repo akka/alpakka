@@ -3,7 +3,7 @@
  */
 package akka.stream.alpakka.s3.impl
 
-import java.io.{ File, FileOutputStream, RandomAccessFile }
+import java.io.{File, FileOutputStream, RandomAccessFile}
 import java.nio.channels.FileChannel
 import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicInteger

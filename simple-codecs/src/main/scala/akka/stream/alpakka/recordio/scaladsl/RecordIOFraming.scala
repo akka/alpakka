@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.recordio.scaladsl
 
@@ -18,18 +18,18 @@ import scala.util.{Failure, Success, Try}
 object RecordIOFraming {
 
   /**
-    * Returns a flow that parses an incoming RecordIO stream and emits the identified records.
-    *
-    * The incoming stream is expected to be a concatenation of records of the format:
-    *
-    *   [record length]\n[record data]
-    *
-    * The parser ignores whitespace before or after each record. It is agnostic to the record data contents.
-    *
-    * The flow will emit each record's data as a byte string.
-    *
-    * @param maxRecordLength The maximum record length allowed. If a record is indicated to be longer, this Flow will fail the stream.
-    */
+   * Returns a flow that parses an incoming RecordIO stream and emits the identified records.
+   *
+   * The incoming stream is expected to be a concatenation of records of the format:
+   *
+   *   [record length]\n[record data]
+   *
+   * The parser ignores whitespace before or after each record. It is agnostic to the record data contents.
+   *
+   * The flow will emit each record's data as a byte string.
+   *
+   * @param maxRecordLength The maximum record length allowed. If a record is indicated to be longer, this Flow will fail the stream.
+   */
   def scanner(maxRecordLength: Int = Int.MaxValue): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].via(new RecordIOFramingStage(maxRecordLength)).named("recordIOFraming")
 
@@ -98,8 +98,7 @@ object RecordIOFraming {
               trimWhitespace()
               buffer.indexOf(LineFeed) match {
                 case -1 if buffer.size > maxRecordPrefixLength =>
-                  failStage(
-                      new FramingException(s"Record size prefix is longer than $maxRecordPrefixLength bytes."))
+                  failStage(new FramingException(s"Record size prefix is longer than $maxRecordPrefixLength bytes."))
                 case -1 if isClosed(in) && buffer.isEmpty =>
                   completeStage()
                 case -1 =>
@@ -114,9 +113,7 @@ object RecordIOFraming {
                           new FramingException(
                               s"Record of size $length bytes exceeds maximum of $maxRecordLength bytes."))
                     case Success(length) if length < 0 =>
-                      failStage(
-                          new FramingException(
-                              s"Record size prefix $length is negative."))
+                      failStage(new FramingException(s"Record size prefix $length is negative."))
                     case Success(length) =>
                       currentRecordLength = Some(length)
                       doParse()

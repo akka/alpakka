@@ -4,12 +4,12 @@
 package akka.stream.alpakka.ftp
 package impl
 
-import akka.stream.stage.{ GraphStageWithMaterializedValue, OutHandler }
-import akka.stream.{ Attributes, IOResult, Outlet, SourceShape }
+import akka.stream.stage.{GraphStageWithMaterializedValue, OutHandler}
+import akka.stream.{Attributes, IOResult, Outlet, SourceShape}
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.util.ByteString
 import akka.util.ByteString.ByteString1C
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{Future, Promise}
 import scala.util.control.NonFatal
 import java.io.InputStream
 import java.nio.file.Path

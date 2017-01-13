@@ -4,8 +4,8 @@
 package akka.stream.alpakka.ftp
 package impl
 
-import akka.stream.stage.{ GraphStage, OutHandler }
-import akka.stream.{ Attributes, Outlet, SourceShape }
+import akka.stream.stage.{GraphStage, OutHandler}
+import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 
 private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] extends GraphStage[SourceShape[FtpFile]] {

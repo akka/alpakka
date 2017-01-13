@@ -4,7 +4,7 @@
 package akka.stream.alpakka.sqs.scaladsl
 
 import akka.stream.alpakka.sqs.SqsSourceSettings
-import org.scalatest.{ FlatSpec, Matchers }
+import org.scalatest.{FlatSpec, Matchers}
 
 class SqsSourceSettingsSpec extends FlatSpec with Matchers {
 

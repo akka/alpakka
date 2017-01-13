@@ -3,9 +3,9 @@
  */
 package akka.stream.alpakka.cassandra.scaladsl
 
-import akka.{ Done, NotUsed }
+import akka.{Done, NotUsed}
 import akka.stream.alpakka.cassandra.CassandraSourceStage
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.{Sink, Source}
 import com.datastax.driver.core._
 
 import scala.concurrent.Future

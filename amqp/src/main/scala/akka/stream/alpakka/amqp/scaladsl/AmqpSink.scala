@@ -4,7 +4,7 @@
 package akka.stream.alpakka.amqp.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.amqp.{ AmqpSinkSettings, AmqpSinkStage, OutgoingMessage }
+import akka.stream.alpakka.amqp.{AmqpSinkSettings, AmqpSinkStage, OutgoingMessage}
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
 

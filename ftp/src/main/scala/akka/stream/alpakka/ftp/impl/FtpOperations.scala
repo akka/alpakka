@@ -4,10 +4,10 @@
 package akka.stream.alpakka.ftp
 package impl
 
-import org.apache.commons.net.ftp.{ FTP, FTPClient }
+import org.apache.commons.net.ftp.{FTP, FTPClient}
 import scala.collection.immutable
 import scala.util.Try
-import java.io.{ IOException, InputStream }
+import java.io.{IOException, InputStream}
 import java.nio.file.Paths
 
 private[ftp] trait FtpOperations { _: FtpLike[FTPClient, FtpFileSettings] =>

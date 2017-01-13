@@ -4,7 +4,7 @@
 package akka.stream.alpakka.mqtt.scaladsl
 
 import akka.Done
-import akka.stream.alpakka.mqtt.{ MqttMessage, MqttSourceSettings, MqttSourceStage }
+import akka.stream.alpakka.mqtt.{MqttMessage, MqttSourceSettings, MqttSourceStage}
 import akka.stream.scaladsl.Source
 
 import scala.concurrent.Future

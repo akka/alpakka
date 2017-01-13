@@ -3,7 +3,7 @@
  */
 package akka.stream.alpakka.file.scaladsl
 
-import java.nio.charset.{ Charset, StandardCharsets }
+import java.nio.charset.{Charset, StandardCharsets}
 import java.nio.file.Path
 
 import akka.NotUsed

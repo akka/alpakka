@@ -4,10 +4,10 @@
 package akka.stream.alpakka.cassandra.scaladsl
 
 import akka.Done
-import akka.stream.scaladsl.{ Flow, Keep, Sink }
-import com.datastax.driver.core.{ BoundStatement, PreparedStatement, Session }
+import akka.stream.scaladsl.{Flow, Keep, Sink}
+import com.datastax.driver.core.{BoundStatement, PreparedStatement, Session}
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 import akka.stream.alpakka.cassandra.GuavaFutures._
 

@@ -3,9 +3,9 @@
  */
 package akka.stream.alpakka.cassandra
 
-import com.google.common.util.concurrent.{ FutureCallback, Futures, ListenableFuture }
+import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture}
 
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{Future, Promise}
 
 private[cassandra] object GuavaFutures {
   implicit final class GuavaFutureOpts[A](val guavaFut: ListenableFuture[A]) extends AnyVal {
