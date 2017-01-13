@@ -4,7 +4,7 @@
 package akka.stream.alpakka.amqp.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.amqp.{ AmqpSourceSettings, AmqpSourceStage, IncomingMessage }
+import akka.stream.alpakka.amqp.{AmqpSourceSettings, AmqpSourceStage, IncomingMessage}
 
 import akka.stream.scaladsl.Source
 

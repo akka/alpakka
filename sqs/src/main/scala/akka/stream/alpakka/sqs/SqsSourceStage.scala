@@ -5,11 +5,11 @@ package akka.stream.alpakka.sqs
 
 import java.util
 
-import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
-import akka.stream.{ Attributes, Outlet, SourceShape }
+import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
+import akka.stream.{Attributes, Outlet, SourceShape}
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient
-import com.amazonaws.services.sqs.model.{ Message, ReceiveMessageRequest, ReceiveMessageResult }
+import com.amazonaws.services.sqs.model.{Message, ReceiveMessageRequest, ReceiveMessageResult}
 
 import scala.collection.JavaConverters._
 

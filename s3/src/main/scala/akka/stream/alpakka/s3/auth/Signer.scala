@@ -5,10 +5,10 @@ package akka.stream.alpakka.s3.auth
 
 import java.security.MessageDigest
 import java.time.format.DateTimeFormatter
-import java.time.{ ZoneOffset, ZonedDateTime }
+import java.time.{ZoneOffset, ZonedDateTime}
 
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{ HttpHeader, HttpRequest }
+import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
 import akka.stream.Materializer
 
 import scala.concurrent.Future
@@ -34,21 +34,21 @@ private[alpakka] object Signer {
     }
   }
 
-  def sessionHeader(creds: AWSCredentials): Option[HttpHeader] = creds match {
+  private[this] def sessionHeader(creds: AWSCredentials): Option[HttpHeader] = creds match {
     case _: BasicCredentials => None
     case AWSSessionCredentials(_, _, sessionToken) => Some(RawHeader("X-Amz-Security-Token", sessionToken))
   }
 
-  def authorizationHeader(algorithm: String,
-                          key: SigningKey,
-                          requestDate: ZonedDateTime,
-                          canonicalRequest: CanonicalRequest): HttpHeader =
+  private[this] def authorizationHeader(algorithm: String,
+                                        key: SigningKey,
+                                        requestDate: ZonedDateTime,
+                                        canonicalRequest: CanonicalRequest): HttpHeader =
     RawHeader("Authorization", authorizationString(algorithm, key, requestDate, canonicalRequest))
 
-  def authorizationString(algorithm: String,
-                          key: SigningKey,
-                          requestDate: ZonedDateTime,
-                          canonicalRequest: CanonicalRequest): String = {
+  private[this] def authorizationString(algorithm: String,
+                                        key: SigningKey,
+                                        requestDate: ZonedDateTime,
+                                        canonicalRequest: CanonicalRequest): String = {
     val sign = key.hexEncodedSignature(stringToSign(algorithm, key, requestDate, canonicalRequest).getBytes())
     s"$algorithm Credential=${key.credentialString}, SignedHeaders=${canonicalRequest.signedHeaders}, Signature=$sign"
   }

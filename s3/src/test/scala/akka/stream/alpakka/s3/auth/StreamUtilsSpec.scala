@@ -4,13 +4,13 @@
 package akka.stream.alpakka.s3.auth
 
 import java.nio.charset.StandardCharsets._
-import java.nio.file.{ Files, Path }
+import java.nio.file.{Files, Path}
 import java.security.DigestInputStream
 import java.security.MessageDigest
 
 import scala.concurrent.Future
 
-import org.scalatest.{ BeforeAndAfterAll, FlatSpecLike, Matchers }
+import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.Millis
 import org.scalatest.time.Seconds
@@ -23,7 +23,7 @@ import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.StreamConverters
 import akka.testkit.TestKit
 import akka.util.ByteString
-import com.google.common.jimfs.{ Configuration, Jimfs }
+import com.google.common.jimfs.{Configuration, Jimfs}
 
 class StreamUtilsSpec(_system: ActorSystem)
     extends TestKit(_system)

@@ -4,7 +4,7 @@
 package akka.stream.alpakka.sqs.javadsl
 
 import akka.Done
-import akka.stream.alpakka.sqs.{ SqsSinkSettings, SqsSinkStage, SqsSourceStage }
+import akka.stream.alpakka.sqs.{SqsSinkSettings, SqsSinkStage, SqsSourceStage}
 import akka.stream.javadsl.Sink
 import com.amazonaws.services.sqs.AmazonSQSAsync
 

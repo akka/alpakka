@@ -5,8 +5,8 @@ package akka.stream.alpakka.s3.auth
 
 import java.net.URLEncoder
 
-import akka.http.scaladsl.model.Uri.{ Path, Query }
-import akka.http.scaladsl.model.{ HttpHeader, HttpRequest }
+import akka.http.scaladsl.model.Uri.{Path, Query}
+import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
 
 // Documentation: http://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
 private[alpakka] case class CanonicalRequest(method: String,

@@ -5,7 +5,7 @@ package akka.stream.alpakka.ftp
 package impl
 
 import akka.stream.stage.GraphStageLogic
-import akka.stream.{ Outlet, Shape }
+import akka.stream.{Outlet, Shape}
 import scala.util.control.NonFatal
 
 private[ftp] abstract class FtpGraphStageLogic[T, FtpClient, S <: RemoteFileSettings](

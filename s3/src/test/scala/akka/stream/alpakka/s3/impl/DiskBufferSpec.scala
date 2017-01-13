@@ -7,13 +7,13 @@ import java.nio.BufferOverflowException
 import java.nio.file.Files
 
 import akka.actor.ActorSystem
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
+import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import org.scalatest.time.{ Millis, Seconds, Span }
-import org.scalatest.{ BeforeAndAfterAll, FlatSpecLike, Matchers }
-import org.scalatest.concurrent.{ Eventually, ScalaFutures }
+import org.scalatest.time.{Millis, Seconds, Span}
+import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import scala.concurrent.duration._
 
 class DiskBufferSpec(_system: ActorSystem)

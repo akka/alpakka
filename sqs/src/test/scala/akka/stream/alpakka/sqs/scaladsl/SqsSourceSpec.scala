@@ -7,7 +7,7 @@ import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.scaladsl.Sink
 import com.amazonaws.services.sqs.model.QueueDoesNotExistException
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ AsyncWordSpec, Matchers }
+import org.scalatest.{AsyncWordSpec, Matchers}
 
 class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with DefaultTestContext {
 

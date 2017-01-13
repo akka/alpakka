@@ -6,7 +6,7 @@ package akka.stream.alpakka.mqtt.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.Done
-import akka.stream.alpakka.mqtt.{ MqttConnectionSettings, MqttMessage, MqttQoS }
+import akka.stream.alpakka.mqtt.{MqttConnectionSettings, MqttMessage, MqttQoS}
 
 object MqttSink {
 

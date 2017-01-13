@@ -4,13 +4,13 @@
 package akka.stream.alpakka.jms
 
 import javax.jms
-import javax.jms.{ ExceptionListener, JMSException }
+import javax.jms.{ExceptionListener, JMSException}
 
 import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.ActorMaterializer
 import akka.stream.stage.GraphStageLogic
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * Internal API

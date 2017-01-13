@@ -4,7 +4,7 @@
 package akka.stream.alpakka.sqs.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.sqs.{ SqsSourceSettings, SqsSourceStage }
+import akka.stream.alpakka.sqs.{SqsSourceSettings, SqsSourceStage}
 import akka.stream.scaladsl.Source
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient
 import com.amazonaws.services.sqs.model.Message

@@ -6,8 +6,8 @@ package akka.stream.alpakka.ftp.scaladsl
 import akka.NotUsed
 import akka.stream.alpakka.ftp.impl._
 import akka.stream.IOResult
-import akka.stream.alpakka.ftp.{ FtpFile, RemoteFileSettings }
-import akka.stream.alpakka.ftp.impl.{ FtpLike, FtpSourceFactory }
+import akka.stream.alpakka.ftp.{FtpFile, RemoteFileSettings}
+import akka.stream.alpakka.ftp.impl.{FtpLike, FtpSourceFactory}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.jcraft.jsch.JSch

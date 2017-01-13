@@ -6,13 +6,13 @@ package akka.stream.alpakka.hbase.internal
 import java.io.Closeable
 
 import akka.stream.stage.StageLogging
-import org.apache.hadoop.hbase.{ HColumnDescriptor, HTableDescriptor, TableName }
-import org.apache.hadoop.hbase.client.{ Connection, ConnectionFactory, Table }
+import org.apache.hadoop.hbase.{HColumnDescriptor, HTableDescriptor, TableName}
+import org.apache.hadoop.hbase.client.{Connection, ConnectionFactory, Table}
 import org.apache.hadoop.conf.Configuration
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ Await, Future }
-import scala.util.{ Failure, Success, Try }
+import scala.concurrent.{Await, Future}
+import scala.util.{Failure, Success, Try}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
