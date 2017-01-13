@@ -73,10 +73,21 @@ final case class MqttConnectionSettings(
     broker: String,
     clientId: String,
     persistence: MqttClientPersistence,
-    auth: Option[(String, String)] = None
+    auth: Option[(String, String)] = None,
+    cleanSession: Boolean = true,
+    will: Option[Will] = None
 ) {
+  def withBroker(broker: String) =
+    copy(broker = broker)
+
   def withAuth(username: String, password: String) =
     copy(auth = Some((username, password)))
+
+  def withCleanSession(cleanSession: Boolean) =
+    copy(cleanSession = cleanSession)
+
+  def withWill(will: Will) =
+    copy(will = Some(will))
 
   def withClientId(clientId: String) =
     copy(clientId = clientId)
@@ -92,6 +103,8 @@ object MqttConnectionSettings {
 }
 
 final case class MqttMessage(topic: String, payload: ByteString)
+
+final case class Will(message: MqttMessage, qos: MqttQoS, retained: Boolean)
 
 object MqttMessage {
 
@@ -146,6 +159,10 @@ private[mqtt] trait MqttConnectorLogic { this: GraphStageLogic =>
         connectOptions.setUserName(user)
         connectOptions.setPassword(password.toCharArray)
     }
+    connectionSettings.will.foreach { will =>
+      connectOptions.setWill(will.message.topic, will.message.payload.toArray, will.qos.byteValue.toInt, will.retained)
+    }
+    connectOptions.setCleanSession(connectionSettings.cleanSession)
     client.connect(connectOptions, (), connectHandler)
   }
 
