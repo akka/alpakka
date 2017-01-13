@@ -60,7 +60,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
 
   def download(s3Location: S3Location): Source[ByteString, NotUsed] = {
     import mat.executionContext
-    Source.fromFuture(signAndGet(HttpRequests.getDownloadRequest(s3Location)).map(_.dataBytes)).flatMapConcat(identity)
+    Source.fromFuture(signAndGet(HttpRequests.getDownloadRequest(s3Location, region)).map(_.dataBytes)).flatMapConcat(identity)
   }
 
   /**
@@ -83,7 +83,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
                                       cannedAcl: CannedAcl): Future[MultipartUpload] = {
     import mat.executionContext
 
-    val req = HttpRequests.initiateMultipartUploadRequest(s3Location, contentType, cannedAcl)
+    val req = HttpRequests.initiateMultipartUploadRequest(s3Location, contentType, cannedAcl, region)
 
     val response = for {
       signedReq <- Signer.signedRequest(req, signingKey)
@@ -103,8 +103,8 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
                                       parts: Seq[SuccessfulUploadPart]): Future[CompleteMultipartUploadResult] = {
     import mat.executionContext
 
-    for (req <- HttpRequests
-           .completeMultipartUploadRequest(parts.head.multipartUpload, parts.map { case p => (p.index, p.etag) });
+    for (req <- HttpRequests.completeMultipartUploadRequest(parts.head.multipartUpload,
+           parts.map { case p => (p.index, p.etag) }, region);
          res <- signAndGetAs[CompleteMultipartUploadResult](req)) yield res
   }
 
@@ -149,7 +149,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
       .concatSubstreams
       .zipWith(requestInfo) {
         case (payload, (uploadInfo, chunkIndex)) =>
-          (HttpRequests.uploadPartRequest(uploadInfo, chunkIndex, payload.data, payload.size),
+          (HttpRequests.uploadPartRequest(uploadInfo, chunkIndex, payload.data, payload.size, region),
             (uploadInfo, chunkIndex))
       }
       .mapAsync(parallelism) { case (req, info) => Signer.signedRequest(req, signingKey).zip(Future.successful(info)) }
