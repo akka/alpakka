@@ -27,6 +27,7 @@ class RecordIOFramingSpec(_system: ActorSystem)
 
   implicit val mat = ActorMaterializer()
 
+  //#test-data
   val FirstRecordData =
     """{"type": "SUBSCRIBED","subscribed": {"framework_id": {"value":"12220-3440-12532-2345"},"heartbeat_interval_seconds":15.0}"""
   val SecondRecordData = """{"type":"HEARTBEAT"}"""
@@ -34,19 +35,23 @@ class RecordIOFramingSpec(_system: ActorSystem)
   val FirstRecordWithPrefix = s"121\n$FirstRecordData"
   val SecondRecordWithPrefix = s"20\n$SecondRecordData"
 
+  val basicSource = Source.single(ByteString(FirstRecordWithPrefix + SecondRecordWithPrefix))
+  //#test-data
+
   val stringSeqSink = (Flow[ByteString] map (_.utf8String) toMat Sink.seq)(Keep.right)
 
   "RecordIO framing" should "parse a series of records" in {
-    // Given
-    val recordIOInput = FirstRecordWithPrefix + SecondRecordWithPrefix
-
     // When
-    val result = Source.single(ByteString(recordIOInput)) via
+    //#run-via-scanner
+    val result = basicSource via
       RecordIOFraming.scanner() runWith
-      stringSeqSink
+      Sink.seq
+    //#run-via-scanner
 
     // Then
-    result.futureValue shouldBe Seq(FirstRecordData, SecondRecordData)
+    //#result
+    result.futureValue shouldBe Seq(ByteString(FirstRecordData), ByteString(SecondRecordData))
+    //#result
   }
 
   it should "parse input with additional whitespace" in {
