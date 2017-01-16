@@ -158,6 +158,13 @@ lazy val kinesis = project
     parallelExecution in Test := false
   )
 
+lazy val mongodb = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-mongodb",
+    Dependencies.MongoDb
+  )
+
 lazy val mqtt = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
