@@ -41,7 +41,7 @@ Scala
 : @@snip (../../../../dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #init-client }
 
 Java
-: @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleJavaSpec.scala) { #init-client }
+: @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleJavaSpec.java) { #init-client }
 
 You can then create the client with a settings object.
 
@@ -49,7 +49,7 @@ Scala
 : @@snip (../../../../dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #client-construct }
 
 Java
-: @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleJavaSpec.scala) { #client-construct }
+: @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleJavaSpec.java) { #client-construct }
 
 We can now send requests to DynamoDB across the connection.
 
@@ -57,5 +57,4 @@ Scala
 : @@snip (../../../../dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #simple-request }
 
 Java
-: @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #simple-request }
-
+: @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleJavaSpec.java) { #simple-request }

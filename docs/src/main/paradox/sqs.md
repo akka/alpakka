@@ -35,7 +35,7 @@ Gradle
 
 ## Usage
 
-Sources provided by this connector need a prepared `AmazonSQSAsyncClient` to load messages from a queue. 
+Sources provided by this connector need a prepared `AmazonSQSAsyncClient` to load messages from a queue.
 
 Scala
 : @@snip (../../../../sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-client }
@@ -103,7 +103,7 @@ Options:
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
 
-> The test code uses [ElasticMQ](https://github.com/adamw/elasticmq) as queuing service which serves an AWS SQS 
+> The test code uses [ElasticMQ](https://github.com/adamw/elasticmq) as queuing service which serves an AWS SQS
 > compatible API.  You can start one quickly using docker:
 >
 > `docker run -p 9324:9324 -d s12v/elasticmq`
