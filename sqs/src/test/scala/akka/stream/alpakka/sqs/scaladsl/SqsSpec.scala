@@ -17,10 +17,10 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
   it should "publish and pull a message" taggedAs Integration in {
     val queue = randomQueueUrl()
 
-    //#sink
+    //#run
     val future = Source.single("alpakka").runWith(SqsSink(queue))
     Await.ready(future, 1.second)
-    //#sink
+    //#run
 
     val probe = SqsSource(queue).runWith(TestSink.probe[Message])
     probe.requestNext().getBody shouldBe "alpakka"
