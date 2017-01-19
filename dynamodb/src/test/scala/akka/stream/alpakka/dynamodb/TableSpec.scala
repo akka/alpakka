@@ -20,6 +20,11 @@ class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike
   val settings = DynamoSettings(system)
   val client = DynamoClient(settings)
 
+  override def beforeAll() = {
+    System.setProperty("aws.accessKeyId", "someKeyId")
+    System.setProperty("aws.secretKey", "someSecretKey")
+  }
+
   "DynamoDB Client" should {
 
     import TableSpecOps._
