@@ -41,6 +41,9 @@ public class ExampleTest {
 
     @BeforeClass
     public static void setup() throws Exception {
+        System.setProperty("aws.accessKeyId", "someKeyId");
+        System.setProperty("aws.secretKey", "someSecretKey");
+
         final Pair<ActorSystem, ActorMaterializer> sysmat = setupMaterializer();
         system = sysmat.first();
         materializer = sysmat.second();

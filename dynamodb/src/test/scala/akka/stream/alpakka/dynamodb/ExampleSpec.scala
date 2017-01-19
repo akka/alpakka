@@ -18,6 +18,11 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
 
   val settings = DynamoSettings(system)
 
+  override def beforeAll() = {
+    System.setProperty("aws.accessKeyId", "someKeyId")
+    System.setProperty("aws.secretKey", "someSecretKey")
+  }
+
   "DynamoDB Client" should {
 
     "provide a simple usage example" in {
