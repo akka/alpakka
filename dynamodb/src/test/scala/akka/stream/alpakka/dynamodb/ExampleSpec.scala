@@ -7,24 +7,16 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.dynamodb.impl.DynamoSettings
 import akka.stream.alpakka.dynamodb.scaladsl._
-import akka.testkit.{ SocketUtil, TestKit }
+import akka.testkit.TestKit
 import com.amazonaws.services.dynamodbv2.model._
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike with Matchers with BeforeAndAfterAll {
 
   val settings = DynamoSettings(system)
-  val localDynamo = new LocalDynamo(settings)
-
-  override def beforeAll(): Unit = localDynamo.start()
-
-  override def afterAll(): Unit = {
-    localDynamo.stop()
-    system.terminate()
-  }
 
   "DynamoDB Client" should {
 

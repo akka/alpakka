@@ -41,7 +41,7 @@ Scala
 : @@snip (../../../../dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #init-client }
 
 Java
-: @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleJavaSpec.java) { #init-client }
+: @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #init-client }
 
 You can then create the client with a settings object.
 
@@ -49,7 +49,7 @@ Scala
 : @@snip (../../../../dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #client-construct }
 
 Java
-: @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleJavaSpec.java) { #client-construct }
+: @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #client-construct }
 
 We can now send requests to DynamoDB across the connection.
 
@@ -57,4 +57,24 @@ Scala
 : @@snip (../../../../dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #simple-request }
 
 Java
-: @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleJavaSpec.java) { #simple-request }
+: @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #simple-request }
+
+### Running the example code
+
+The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
+
+> Test code requires DynamoDB server running in the background. You can start one quickly using docker:
+>
+> `docker run --rm -p 8001:8000 deangiberson/aws-dynamodb-local`
+
+Scala
+:   ```
+    sbt
+    > dynamodb/testOnly *Spec
+    ```
+
+Java
+:   ```
+    sbt
+    > dynamodb/testOnly *Test
+    ```

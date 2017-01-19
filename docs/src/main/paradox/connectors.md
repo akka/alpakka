@@ -3,14 +3,14 @@
 @@@ index
 
 * [AMQP Connector](amqp.md)
+* [AWS DynamoDB Connector](dynamodb.md)
+* [AWS SQS Connector](sqs.md)
 * [Cassandra Connector](cassandra.md)
-* [DynamoDB Connector](dynamodb.md)
 * [File Connectors](file.md)
-* [HBase Connectors](hbase.md)
-* [MQTT Connector](mqtt.md)
 * [FTP Connector](ftp.md)
-* [SQS Connector](sqs.md)
+* [HBase Connectors](hbase.md)
 * [JMS Connectors](jms.md)
+* [MQTT Connector](mqtt.md)
 * [External Connectors](external-connectors.md)
 
 @@@

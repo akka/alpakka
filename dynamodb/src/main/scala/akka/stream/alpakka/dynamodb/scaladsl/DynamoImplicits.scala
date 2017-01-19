@@ -8,7 +8,7 @@ import akka.stream.alpakka.dynamodb.impl.DynamoProtocol
 import com.amazonaws.http.HttpResponseHandler
 import com.amazonaws.services.dynamodbv2.model._
 import com.amazonaws.transform.Marshaller
-import com.amazonaws.{ AmazonWebServiceResponse, Request }
+import com.amazonaws.{AmazonWebServiceResponse, Request}
 
 object DynamoImplicits extends DynamoProtocol {
 
