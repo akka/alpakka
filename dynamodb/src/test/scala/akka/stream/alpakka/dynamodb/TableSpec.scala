@@ -5,26 +5,19 @@ package akka.stream.alpakka.dynamodb
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.dynamodb.impl.{ DynamoClientImpl, DynamoSettings }
+import akka.stream.alpakka.dynamodb.impl.DynamoSettings
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoClient
-import akka.testkit.{ SocketUtil, TestKit }
-import org.scalatest.{ AsyncWordSpecLike, BeforeAndAfterAll, Matchers }
+import akka.testkit.TestKit
+import org.scalatest.{AsyncWordSpecLike, BeforeAndAfterAll, Matchers}
+
+import scala.collection.JavaConverters._
 
 class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike with Matchers with BeforeAndAfterAll {
 
   implicit val materializer = ActorMaterializer()
   implicit val ec = system.dispatcher
 
-  val settings = DynamoSettings(system).copy(port = SocketUtil.temporaryServerAddress().getPort)
-  val localDynamo = new LocalDynamo(settings)
-
-  override def beforeAll(): Unit = localDynamo.start()
-
-  override def afterAll(): Unit = {
-    localDynamo.stop()
-    system.terminate()
-  }
-
+  val settings = DynamoSettings(system)
   val client = DynamoClient(settings)
 
   "DynamoDB Client" should {
@@ -37,7 +30,7 @@ class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike
     }
 
     "2) list tables" in {
-      client.single(listTablesRequest).map(_.getTableNames.size shouldEqual 1)
+      client.single(listTablesRequest).map(_.getTableNames.asScala.count(_ == tableName) shouldEqual 1)
     }
 
     "3) describe table" in {
@@ -56,7 +49,7 @@ class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike
       client
         .single(deleteTableRequest)
         .flatMap(_ => client.single(listTablesRequest))
-        .map(_.getTableNames.size shouldEqual 0)
+        .map(_.getTableNames.asScala.count(_ == tableName) shouldEqual 0)
     }
 
   }
