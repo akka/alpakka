@@ -9,7 +9,7 @@ import scala.collection.JavaConverters._
 
 trait TestOps {
 
-  val tableName = "test"
+  val tableName: String
   val keyCol = "kkey"
   val sortCol = "sort"
 
@@ -38,11 +38,15 @@ trait TestOps {
       )
 
     val describeTableRequest = new DescribeTableRequest().withTableName(tableName)
+
+    val deleteTableRequest = new DeleteTableRequest().withTableName(tableName)
   }
 
 }
 
 object ItemSpecOps extends TestOps {
+
+  override val tableName = "ItemSpecOps"
 
   val listTablesRequest = common.listTablesRequest
 
@@ -79,9 +83,13 @@ object ItemSpecOps extends TestOps {
       .withKeyConditionExpression(s"$keyCol = :k")
       .withExpressionAttributeValues(Map(":k" -> S("A")).asJava)
 
+  val deleteTableRequest = common.deleteTableRequest
+
 }
 
 object TableSpecOps extends TestOps {
+
+  override val tableName = "TableSpecOps"
 
   val createTableRequest = common.createTableRequest
 
@@ -96,6 +104,6 @@ object TableSpecOps extends TestOps {
     .withProvisionedThroughput(
         new ProvisionedThroughput().withWriteCapacityUnits(newMaxLimit).withReadCapacityUnits(newMaxLimit))
 
-  val deleteTableRequest = new DeleteTableRequest().withTableName(tableName)
+  val deleteTableRequest = common.deleteTableRequest
 
 }

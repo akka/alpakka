@@ -6,11 +6,11 @@ package akka.stream.alpakka.dynamodb.impl
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.MediaType.NotCompressible
-import akka.http.scaladsl.model.{ ContentType, MediaType }
+import akka.http.scaladsl.model.{ContentType, MediaType}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.dynamodb.AwsOp
-import akka.stream.alpakka.dynamodb.impl.AwsClient.{ AwsConnect, AwsRequestMetadata }
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.alpakka.dynamodb.impl.AwsClient.{AwsConnect, AwsRequestMetadata}
+import akka.stream.scaladsl.{Sink, Source}
 import com.amazonaws.AmazonServiceException
 import com.amazonaws.http.HttpResponseHandler
 
