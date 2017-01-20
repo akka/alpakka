@@ -6,6 +6,8 @@ package akka.stream.alpakka.ftp
 import akka.stream.IOResult
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.testkit.scaladsl.TestSink
+import org.scalatest.time.{Millis, Seconds, Span}
+import scala.util.Random
 
 final class FtpSourceSpec extends BaseFtpSpec with CommonFtpSourceSpec
 final class SftpSourceSpec extends BaseSftpSpec with CommonFtpSourceSpec
@@ -18,6 +20,8 @@ trait CommonFtpSourceSpec extends BaseSpec {
 
   implicit val system = getSystem
   implicit val mat = getMaterializer
+  implicit val defaultPatience =
+    PatienceConfig(timeout = Span(3, Seconds), interval = Span(300, Millis))
 
   "FtpBrowserSource" should {
     "list all files from root" in {
@@ -47,6 +51,18 @@ trait CommonFtpSourceSpec extends BaseSpec {
       probe.request(100).expectNextOrComplete()
 
       val expectedNumOfBytes = getLoremIpsum.getBytes().length
+      result.futureValue shouldBe IOResult.createSuccessful(expectedNumOfBytes)
+    }
+
+    "retrieve a bigger file (~2 MB) from path as a stream of bytes" in {
+      val fileName = "sample_bigger_file"
+      val fileContents = new Array[Byte](2000020)
+      Random.nextBytes(fileContents)
+      putFileOnFtpWithContents(FtpBaseSupport.FTP_ROOT_DIR, fileName, fileContents)
+      val (result, probe) = retrieveFromPath(s"/$fileName").toMat(TestSink.probe)(Keep.both).run()
+      probe.request(1000).expectNextOrComplete()
+
+      val expectedNumOfBytes = fileContents.length
       result.futureValue shouldBe IOResult.createSuccessful(expectedNumOfBytes)
     }
   }
