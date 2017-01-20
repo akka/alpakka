@@ -6,9 +6,9 @@ package akka.stream.alpakka.dynamodb.javadsl
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.dynamodb.AwsOp
-import akka.stream.alpakka.dynamodb.impl.{ DynamoClientImpl, DynamoSettings }
+import akka.stream.alpakka.dynamodb.impl.{DynamoClientImpl, DynamoSettings}
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.{Sink, Source}
 import com.amazonaws.services.dynamodbv2.model._
 
 import scala.concurrent.Future
