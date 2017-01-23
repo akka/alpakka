@@ -21,6 +21,9 @@ object AmqpSink {
   def simple(settings: AmqpSinkSettings): Sink[ByteString, Future[Done]] =
     apply(settings).contramap[ByteString](bytes => OutgoingMessage(bytes, false, false, None))
 
+  def replyTo(settings: AmqpReplyToSinkSettings): Sink[OutgoingMessage, Future[Done]] =
+    Sink.fromGraph(new AmqpReplyToStage(settings))
+
   /**
    * Scala API:
    *
