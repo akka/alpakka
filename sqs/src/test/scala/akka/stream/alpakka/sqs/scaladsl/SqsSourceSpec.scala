@@ -57,7 +57,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
       val queue = "http://localhost:9324/queue/not-existing"
 
-      val f = SqsSource(queue).runWith(Sink.seq)
+      val f = SqsSource(queue, sqsSourceSettings).runWith(Sink.seq)
 
       f.failed.map(_ shouldBe a[QueueDoesNotExistException])
     }

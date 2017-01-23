@@ -48,7 +48,7 @@ public class SqsSourceTest {
             .withEndpoint("http://localhost:9324");
         //#init-client
 
-        sqsSourceSettings = new SqsSourceSettings(20, 100, 10, new Some<>(credentials));
+        sqsSourceSettings = SqsSourceSettings.create(20, 100, 10, credentials);
     }
 
     @AfterClass

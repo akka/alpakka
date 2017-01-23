@@ -17,6 +17,16 @@ import scala.collection.JavaConverters._
 
 object SqsSourceSettings {
   val Defaults = SqsSourceSettings(20, 100, 10, None)
+
+  def create(waitTimeSeconds: Int,
+             maxBufferSize: Int,
+             maxBatchSize: Int,
+             credentials: AWSCredentials): SqsSourceSettings =
+    SqsSourceSettings(waitTimeSeconds, maxBufferSize, maxBatchSize, Some(credentials))
+
+  private def create(waitTimeSeconds: Int, maxBufferSize: Int, maxBatchSize: Int): SqsSourceSettings =
+    SqsSourceSettings(waitTimeSeconds, maxBufferSize, maxBatchSize, None)
+
 }
 
 //#SqsSourceSettings
