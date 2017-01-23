@@ -3,8 +3,6 @@
  */
 package akka.stream.alpakka.amqp
 
-import scala.collection.JavaConverters._
-
 /**
  * Internal API
  */
@@ -46,7 +44,7 @@ object NamedQueueSourceSettings {
   /**
    * Java API
    */
-  def create(connectionSettings: AmqpConnectionSettings, queue: String) =
+  def create(connectionSettings: AmqpConnectionSettings, queue: String): NamedQueueSourceSettings =
     NamedQueueSourceSettings(connectionSettings, queue)
 }
 
@@ -67,8 +65,31 @@ object TemporaryQueueSourceSettings {
   /**
    * Java API
    */
-  def create(connectionSettings: AmqpConnectionSettings, exchange: String) =
+  def create(connectionSettings: AmqpConnectionSettings, exchange: String): TemporaryQueueSourceSettings =
     TemporaryQueueSourceSettings(connectionSettings, exchange)
+}
+
+final case class AmqpReplyToSinkSettings(
+    connectionSettings: AmqpConnectionSettings,
+    failIfReplyToMissing: Boolean = true
+) extends AmqpConnectorSettings {
+  override final val declarations = Nil
+}
+
+object AmqpReplyToSinkSettings {
+
+  /**
+   * Java API
+   */
+  def create(connectionSettings: AmqpConnectionSettings): AmqpReplyToSinkSettings =
+    AmqpReplyToSinkSettings(connectionSettings)
+
+  /**
+   * Java API
+   */
+  def create(connectionSettings: AmqpConnectionSettings, failIfReplyToMissing: Boolean): AmqpReplyToSinkSettings =
+    AmqpReplyToSinkSettings(connectionSettings, failIfReplyToMissing)
+
 }
 
 final case class AmqpSinkSettings(
@@ -90,8 +111,13 @@ object AmqpSinkSettings {
   /**
    * Java API
    */
-  def create(connectionSettings: AmqpConnectionSettings) =
+  def create(connectionSettings: AmqpConnectionSettings): AmqpSinkSettings =
     AmqpSinkSettings(connectionSettings)
+
+  /**
+   * Java API
+   */
+  def create(): AmqpSinkSettings = AmqpSinkSettings.create(DefaultAmqpConnection)
 }
 
 /**
@@ -107,7 +133,7 @@ case object DefaultAmqpConnection extends AmqpConnectionSettings {
   /**
    * Java API
    */
-  def getInstance() = this
+  def getInstance(): DefaultAmqpConnection.type = this
 }
 
 final case class AmqpConnectionUri(uri: String) extends AmqpConnectionSettings
@@ -117,7 +143,7 @@ object AmqpConnectionUri {
   /**
    * Java API:
    */
-  def create(uri: String) = AmqpConnectionUri(uri)
+  def create(uri: String): AmqpConnectionUri = AmqpConnectionUri(uri)
 }
 
 final case class AmqpConnectionDetails(
@@ -133,7 +159,7 @@ object AmqpConnectionDetails {
   /**
    * Java API:
    */
-  def create(host: String, port: Int) =
+  def create(host: String, port: Int): AmqpConnectionDetails =
     AmqpConnectionDetails(host, port)
 }
 
@@ -146,7 +172,7 @@ object AmqpCredentials {
   /**
    * Java API
    */
-  def create(username: String, password: String) =
+  def create(username: String, password: String): AmqpCredentials =
     AmqpCredentials(username, password)
 }
 
@@ -178,7 +204,7 @@ object QueueDeclaration {
   /**
    * Java API
    */
-  def create(name: String) = QueueDeclaration(name)
+  def create(name: String): QueueDeclaration = QueueDeclaration(name)
 }
 
 final case class BindingDeclaration(
@@ -202,7 +228,7 @@ object BindingDeclaration {
   /**
    * Java API
    */
-  def create(queue: String, exchange: String) = BindingDeclaration(queue, exchange)
+  def create(queue: String, exchange: String): BindingDeclaration = BindingDeclaration(queue, exchange)
 }
 
 final case class ExchangeDeclaration(
@@ -232,5 +258,5 @@ object ExchangeDeclaration {
   /**
    * Java API
    */
-  def create(name: String, exchangeType: String) = ExchangeDeclaration(name, exchangeType)
+  def create(name: String, exchangeType: String): ExchangeDeclaration = ExchangeDeclaration(name, exchangeType)
 }
