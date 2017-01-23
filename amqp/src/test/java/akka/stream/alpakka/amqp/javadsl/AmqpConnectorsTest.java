@@ -4,6 +4,8 @@
 package akka.stream.alpakka.amqp.javadsl;
 
 import akka.stream.alpakka.amqp.*;
+import akka.stream.testkit.TestSubscriber;
+import akka.stream.testkit.javadsl.TestSink;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -18,6 +20,7 @@ import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
 import akka.util.ByteString;
+import scala.Some;
 import scala.concurrent.duration.Duration;
 
 import java.util.*;
@@ -51,8 +54,8 @@ public class AmqpConnectorsTest {
     //#queue-declaration
 
     //#create-sink
-    final Sink<ByteString, NotUsed> amqpSink = AmqpSink.createSimple(
-      AmqpSinkSettings.create(DefaultAmqpConnection.getInstance())
+    final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
+      AmqpSinkSettings.create()
         .withRoutingKey(queueName)
         .withDeclarations(queueDeclaration)
     );
@@ -82,6 +85,58 @@ public class AmqpConnectorsTest {
     assertEquals(input, result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
+
+  @Test
+  public void publishAndConsumeRpc() throws Exception {
+
+    final String queueName = "amqp-conn-it-spec-rpc-queue-" + System.currentTimeMillis();
+    final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
+
+    //#create-rpc-flow
+    final Flow<ByteString,ByteString, CompletionStage<String>> ampqRpcFlow = AmqpRpcFlow.createSimple(
+        AmqpSinkSettings.create().withRoutingKey(queueName).withDeclarations(queueDeclaration), 1);
+    //#create-rpc-flow
+
+    final Integer bufferSize = 10;
+    final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.create(
+        NamedQueueSourceSettings.create(
+            DefaultAmqpConnection.getInstance(),
+            queueName
+        ).withDeclarations(queueDeclaration),
+        bufferSize
+    );
+
+    //#run-rpc-flow
+    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
+    TestSubscriber.Probe<ByteString> probe =
+        Source.from(input)
+            .map(ByteString::fromString)
+            .via(ampqRpcFlow)
+            .runWith(TestSink.probe(system), materializer);
+    //#run-rpc-flow
+
+    Sink<OutgoingMessage, CompletionStage<Done>> amqpSink = AmqpSink.createReplyTo(
+        AmqpReplyToSinkSettings.create(DefaultAmqpConnection.getInstance())
+    );
+
+    amqpSource.map(b ->
+        new OutgoingMessage(b.bytes().concat(ByteString.fromString("a")), false, false, Some.apply(b.properties()))
+      ).runWith(amqpSink, materializer);
+
+    probe.request(5)
+      .expectNextUnordered(
+          ByteString.fromString("onea"),
+          ByteString.fromString("twoa"),
+          ByteString.fromString("threea"),
+          ByteString.fromString("foura"),
+          ByteString.fromString("fivea")
+      ).expectComplete();
+
+    final CompletionStage<List<String>> result =
+        amqpSource.map(m -> m.bytes().utf8String()).take(input.size()).runWith(Sink.seq(), materializer);
+
+  }
+
   @Test
   public void publishFanoutAndConsume() throws Exception {
     //#exchange-declaration
@@ -90,8 +145,8 @@ public class AmqpConnectorsTest {
     //#exchange-declaration
 
     //#create-exchange-sink
-    final Sink<ByteString, NotUsed> amqpSink = AmqpSink.createSimple(
-      AmqpSinkSettings.create(DefaultAmqpConnection.getInstance())
+    final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
+      AmqpSinkSettings.create()
         .withExchange(exchangeName)
         .withDeclarations(exchangeDeclaration)
     );
