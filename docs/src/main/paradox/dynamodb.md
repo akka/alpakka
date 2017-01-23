@@ -7,7 +7,7 @@ The AWS DynamoDB connector provides a flow for streaming DynamoDB requests. For 
 sbt
 :   @@@vars
     ```scala
-    libraryDependencies += "com.typesafe.akka" %% "akka-stream-alpakka-dynamodb" % "$version$"
+    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-dynamodb" % "$version$"
     ```
     @@@
 
@@ -15,7 +15,7 @@ Maven
 :   @@@vars
     ```xml
     <dependency>
-      <groupId>com.typesafe.akka</groupId>
+      <groupId>com.lightbend.akka</groupId>
       <artifactId>akka-stream-alpakka-dynamodb_$scala.binaryVersion$</artifactId>
       <version>$version$</version>
     </dependency>
@@ -26,7 +26,7 @@ Gradle
 :   @@@vars
     ```gradle
     dependencies {
-      compile group: "com.typesafe.akka", name: "akka-stream-alpakka-dynamodb_$scala.binaryVersion$", version: "$version$"
+      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-dynamodb_$scala.binaryVersion$", version: "$version$"
     }
     ```
     @@@
