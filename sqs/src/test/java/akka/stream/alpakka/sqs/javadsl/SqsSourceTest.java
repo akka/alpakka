@@ -5,6 +5,7 @@ package akka.stream.alpakka.sqs.javadsl;
 
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.alpakka.sqs.SqsSourceSettings;
 import akka.stream.javadsl.Sink;
 import akka.testkit.JavaTestKit;
 import com.amazonaws.auth.AWSCredentials;
@@ -13,6 +14,7 @@ import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.Some;
 import scala.concurrent.duration.Duration;
 
 import java.util.List;
@@ -30,7 +32,7 @@ public class SqsSourceTest {
     static ActorMaterializer materializer;
     static AWSCredentials credentials;
     static AmazonSQSAsyncClient sqsClient;
-
+    static SqsSourceSettings sqsSourceSettings;
 
     @BeforeClass
     public static void setup() {
@@ -46,6 +48,7 @@ public class SqsSourceTest {
             .withEndpoint("http://localhost:9324");
         //#init-client
 
+        sqsSourceSettings = new SqsSourceSettings(20, 100, 10, new Some<>(credentials));
     }
 
     @AfterClass
@@ -66,7 +69,7 @@ public class SqsSourceTest {
         input.forEach(m -> sqsClient.sendMessage(queueUrl, m));
 
         //#run
-        final CompletionStage<List<String>> cs = SqsSource.create(queueUrl, sqsClient)
+        final CompletionStage<List<String>> cs = SqsSource.create(queueUrl, sqsSourceSettings)
             .map(m -> m.getBody())
             .take(100)
             .runWith(Sink.seq(), materializer);

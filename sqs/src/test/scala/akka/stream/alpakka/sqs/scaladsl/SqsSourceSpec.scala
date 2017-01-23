@@ -11,6 +11,8 @@ import org.scalatest.{AsyncWordSpec, Matchers}
 
 class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with DefaultTestContext {
 
+  private val sqsSourceSettings = SqsSourceSettings.Defaults.copy(credentials = Some(credentials))
+
   "SqsSource" should {
 
     "stream a single batch from the queue" taggedAs Integration in {
@@ -18,7 +20,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
       val queue = randomQueueUrl()
       sqsClient.sendMessage(queue, "alpakka")
 
-      SqsSource(queue).take(1).runWith(Sink.seq).map(_.map(_.getBody) should contain("alpakka"))
+      SqsSource(queue, sqsSourceSettings).take(1).runWith(Sink.seq).map(_.map(_.getBody) should contain("alpakka"))
 
     }
 
@@ -35,7 +37,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
       }
 
       //#run
-      SqsSource(queue).take(100).runWith(Sink.seq).map(_ should have size 100)
+      SqsSource(queue, sqsSourceSettings).take(100).runWith(Sink.seq).map(_ should have size 100)
       //#run
 
     }
@@ -44,7 +46,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
       val queue = randomQueueUrl()
 
-      val f = SqsSource(queue, SqsSourceSettings(0, 100, 10, None)).take(1).runWith(Sink.seq)
+      val f = SqsSource(queue, SqsSourceSettings(0, 100, 10, Some(credentials))).take(1).runWith(Sink.seq)
 
       sqsClient.sendMessage(queue, s"alpakka")
 
