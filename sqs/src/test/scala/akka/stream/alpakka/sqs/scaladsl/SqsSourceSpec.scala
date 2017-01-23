@@ -44,7 +44,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
       val queue = randomQueueUrl()
 
-      val f = SqsSource(queue, SqsSourceSettings(0, 100, 10)).take(1).runWith(Sink.seq)
+      val f = SqsSource(queue, SqsSourceSettings(0, 100, 10, None)).take(1).runWith(Sink.seq)
 
       sqsClient.sendMessage(queue, s"alpakka")
 

@@ -25,7 +25,7 @@ trait DefaultTestContext extends BeforeAndAfterAll { this: Suite =>
   //#init-client
   val credentials = new BasicAWSCredentials("x", "x")
   implicit val sqsClient: AmazonSQSAsyncClient =
-    new AmazonSQSAsyncClient(credentials).withEndpoint("http://localhost:9324")
+    new AmazonSQSAsyncClient(credentials).withEndpoint[AmazonSQSAsyncClient]("http://localhost:9324")
   //#init-client
 
   def randomQueueUrl(): String = sqsClient.createQueue(s"queue-${Random.nextInt}").getQueueUrl

@@ -16,6 +16,6 @@ object SqsSource {
    */
   def apply(queueUrl: String, settings: SqsSourceSettings = SqsSourceSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsyncClient): Source[Message, NotUsed] =
-    Source.fromGraph(new SqsSourceStage(queueUrl, settings, sqsClient))
+    Source.fromGraph(new SqsSourceStage(queueUrl, settings))
 
 }
