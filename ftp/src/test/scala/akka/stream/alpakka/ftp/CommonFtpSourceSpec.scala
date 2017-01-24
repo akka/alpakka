@@ -40,6 +40,16 @@ trait CommonFtpSourceSpec extends BaseSpec {
       probe.request(40).expectNextN(30)
       probe.expectComplete()
     }
+
+    "list all files in sparse directory tree" in {
+      val deepDir = "/foo/bar/baz/foobar"
+      val basePath = "/"
+      generateFiles(1, -1, deepDir)
+      val probe =
+        listFiles(basePath).toMat(TestSink.probe)(Keep.right).run()
+      probe.request(2).expectNextN(1)
+      probe.expectComplete()
+    }
   }
 
   "FtpIOSource" should {
