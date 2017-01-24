@@ -1,6 +1,6 @@
 # MongoDB Connector
 
-The MongoDB connector provides a way to provide the result of a MongoDB query as a stream of documents.
+The MongoDB connector allows you to read and save documents. You can query as a stream of documents from @scaladoc[MongoSource](akka.stream.alpakka.mongodb.scaladsl.MongoSource$) or save documents to a collection with @scaladoc[MongoSink](akka.stream.alpakka.mongodb.scaladsl.MongoSink$).
 
 ## Artifacts
 
@@ -36,7 +36,14 @@ And finally we can run it.
 Scala
 : @@snip ($alpakka$/mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSourceSpec.scala) { #run-source }
 
-Here we used a basic sink to complete the stream by collecting all of the stream elements to a collection. The power of streams comes from building larger data pipelines which leverage backpressure to ensure efficient flow control. Feel free to edit the example code and build @extref[more advanced stream topologies](akka-docs:scala/stream/stream-introduction).
+Here we used a basic sink to complete the stream by collecting all of the stream elements to a collection.
+
+### Sink Usage
+
+We can take a Source of documents and save them to a mongo collection using MongoSink.
+
+Scala
+: @@snip (../../../../mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSinkSpec.scala) { #create-sink }
 
 ### Running the example code
 
