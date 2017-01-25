@@ -8,11 +8,11 @@ import javax.jms.{MessageProducer, TextMessage}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler}
 import akka.stream.{ActorAttributes, Attributes, Inlet, SinkShape}
 
-final class JmsSinkStage(settings: JmsSettings) extends GraphStage[SinkShape[String]] {
+final class JmsSinkStage(settings: JmsSettings) extends GraphStage[SinkShape[JmsMessage]] {
 
-  private val in = Inlet[String]("JmsSink.in")
+  private val in = Inlet[JmsMessage]("JmsSink.in")
 
-  override def shape: SinkShape[String] = SinkShape.of(in)
+  override def shape: SinkShape[JmsMessage] = SinkShape.of(in)
 
   override protected def initialAttributes: Attributes =
     ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher")
@@ -33,8 +33,18 @@ final class JmsSinkStage(settings: JmsSettings) extends GraphStage[SinkShape[Str
       setHandler(in,
         new InHandler {
         override def onPush(): Unit = {
-          val elem = grab(in)
-          val textMessage: TextMessage = jmsSession.session.createTextMessage(elem)
+          val elem: JmsMessage = grab(in)
+          val textMessage: TextMessage = jmsSession.session.createTextMessage(elem.body)
+          elem.properties.map {
+            case (key, v) =>
+              v match {
+                case v: String => textMessage.setStringProperty(key, v)
+                case v: Int => textMessage.setIntProperty(key, v)
+                case v: Boolean => textMessage.setBooleanProperty(key, v)
+                case v: Byte => textMessage.setByteProperty(key, v)
+                // TODO: map the rest!
+              }
+          }
           jmsProducer.send(textMessage)
           pull(in)
         }

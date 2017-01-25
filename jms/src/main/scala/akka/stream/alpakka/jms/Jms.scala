@@ -3,6 +3,8 @@
  */
 package akka.stream.alpakka.jms
 
+import scala.collection.JavaConversions._
+import java.util
 import javax.jms.ConnectionFactory
 
 sealed trait JmsSettings {
@@ -14,6 +16,17 @@ sealed trait JmsSettings {
 sealed trait Destination
 final case class Topic(name: String) extends Destination
 final case class Queue(name: String) extends Destination
+
+final case class JmsMessage(body: String, properties: Map[String, Any] = Map.empty)
+
+object JmsMessage {
+
+  /**
+   * Java API: create  [[JmsMessage]]
+   */
+  def create(body: String) = JmsMessage(body, Map.empty)
+  def create(body: String, properties: util.HashMap[String, Any]) = JmsMessage(body, properties.toMap)
+}
 
 object JmsSourceSettings {
 

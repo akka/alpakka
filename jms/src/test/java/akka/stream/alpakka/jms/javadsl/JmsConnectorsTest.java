@@ -39,7 +39,7 @@ public class JmsConnectorsTest {
             //#connection-factory
 
             //#create-sink
-            Sink<String, NotUsed> jmsSink = JmsSink.create(
+            Sink<String, NotUsed> jmsSink = JmsTextSink.create(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -80,13 +80,13 @@ public class JmsConnectorsTest {
             List<String> inNumbers = IntStream.range(0, 10).boxed().map(String::valueOf).collect(Collectors.toList());
 
             //#create-topic-sink
-            Sink<String, NotUsed> jmsTopicSink = JmsSink.create(
+            Sink<String, NotUsed> jmsTopicSink = JmsTextSink.create(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withTopic("topic")
             );
             //#create-topic-sink
-            Sink<String, NotUsed> jmsTopicSink2 = JmsSink.create(
+            Sink<String, NotUsed> jmsTopicSink2 = JmsTextSink.create(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withTopic("topic")
