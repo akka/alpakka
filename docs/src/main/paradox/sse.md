@@ -33,14 +33,12 @@ Gradle
 
 ## Usage
 
-### Sending messages to JMS server
-
 Simply define an `EventSource` by giving a URI, a function for sending HTTP requests and an optional initial value for Last-Evend-ID header:  
 
 Scala
 : @@snip (../../../../sse/src/test/scala/akka/stream/alpakka/sse/scaladsl/EventSourceSpec.scala) { #event-source }
 
-Then happily consume `ServerSentEvent`s: 
+Then happily consume `ServerSentEvent`s:
 
 Scala
 : @@snip (../../../../sse/src/test/scala/akka/stream/alpakka/sse/scaladsl/EventSourceSpec.scala) { #consume-events }
