@@ -104,4 +104,12 @@ object Dependencies {
     ),
     resolvers += "jboss" at "https://repository.jboss.org/nexus/content/groups/public"
   )
+
+  val AwsLambda = Seq(
+    libraryDependencies ++= Seq(
+      "com.amazonaws"   % "aws-java-sdk-lambda"    % "1.11.51", // ApacheV2
+      "org.mockito"   % "mockito-core"     % "2.3.7"    % Test  // MIT
+    )
+  )
+
 }
