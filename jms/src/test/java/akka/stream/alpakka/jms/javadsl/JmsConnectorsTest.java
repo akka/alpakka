@@ -20,7 +20,6 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -39,7 +38,7 @@ public class JmsConnectorsTest {
             //#connection-factory
 
             //#create-sink
-            Sink<String, NotUsed> jmsSink = JmsTextSink.create(
+            Sink<String, NotUsed> jmsSink = JmsSink.create(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -80,13 +79,13 @@ public class JmsConnectorsTest {
             List<String> inNumbers = IntStream.range(0, 10).boxed().map(String::valueOf).collect(Collectors.toList());
 
             //#create-topic-sink
-            Sink<String, NotUsed> jmsTopicSink = JmsTextSink.create(
+            Sink<String, NotUsed> jmsTopicSink = JmsSink.create(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withTopic("topic")
             );
             //#create-topic-sink
-            Sink<String, NotUsed> jmsTopicSink2 = JmsTextSink.create(
+            Sink<String, NotUsed> jmsTopicSink2 = JmsSink.create(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withTopic("topic")

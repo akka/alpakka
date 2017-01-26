@@ -7,7 +7,7 @@ import javax.jms.JMSException
 
 import akka.NotUsed
 import akka.stream.ThrottleMode
-import akka.stream.alpakka.jms.{JmsMessage, JmsSinkSettings, JmsSourceSettings, JmsSpec}
+import akka.stream.alpakka.jms.{JmsSinkSettings, JmsSourceSettings, JmsSpec, JmsTextMessage$}
 import akka.stream.scaladsl.{Sink, Source}
 import org.apache.activemq.ActiveMQConnectionFactory
 
@@ -25,7 +25,7 @@ class JmsConnectorsSpec extends JmsSpec {
       //#connection-factory
 
       //#create-sink
-      val jmsSink: Sink[String, NotUsed] = JmsTextSink(
+      val jmsSink: Sink[String, NotUsed] = JmsSink(
         JmsSinkSettings(connectionFactory).withQueue("test")
       )
       //#create-sink
@@ -51,7 +51,7 @@ class JmsConnectorsSpec extends JmsSpec {
     "applying backpressure when the consumer is slower than the producer" in withServer() { ctx =>
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
       val in = List("a", "b", "c")
-      Source(in).runWith(JmsTextSink(JmsSinkSettings(connectionFactory).withQueue("test")))
+      Source(in).runWith(JmsSink(JmsSinkSettings(connectionFactory).withQueue("test")))
 
       val result = JmsSource
         .textSource(JmsSourceSettings(connectionFactory).withBufferSize(1).withQueue("test"))
@@ -76,11 +76,11 @@ class JmsConnectorsSpec extends JmsSpec {
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       //#create-topic-sink
-      val jmsTopicSink: Sink[String, NotUsed] = JmsTextSink(
+      val jmsTopicSink: Sink[String, NotUsed] = JmsSink(
         JmsSinkSettings(connectionFactory).withTopic("topic")
       )
       //#create-topic-sink
-      val jmsTopicSink2: Sink[String, NotUsed] = JmsTextSink(
+      val jmsTopicSink2: Sink[String, NotUsed] = JmsSink(
         JmsSinkSettings(connectionFactory).withTopic("topic")
       )
 

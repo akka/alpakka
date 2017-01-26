@@ -4,28 +4,28 @@
 package akka.stream.alpakka.jms.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.jms.{JmsMessage, JmsSinkSettings, JmsSinkStage}
+import akka.stream.alpakka.jms.{JmsSinkSettings, JmsSinkStage, JmsTextMessage}
 import akka.stream.scaladsl.{Flow, Keep, Sink}
 
-object JmsTextSink {
+object JmsSink {
 
   /**
-   * Scala API: Creates an [[JmsTextSink]]
+   * Scala API: Creates an [[JmsSink]]
    */
   def apply(jmsSettings: JmsSinkSettings): Sink[String, NotUsed] = {
-    val msgSink: Sink[JmsMessage, NotUsed] = Sink.fromGraph(new JmsSinkStage(jmsSettings))
-    val mappingFlow: Flow[String, JmsMessage, NotUsed] = Flow[String].map { m: String =>
-      JmsMessage(m)
+    val msgSink: Sink[JmsTextMessage, NotUsed] = Sink.fromGraph(new JmsSinkStage(jmsSettings))
+    val mappingFlow: Flow[String, JmsTextMessage, NotUsed] = Flow[String].map { m: String =>
+      JmsTextMessage(m)
     }
     mappingFlow.to(msgSink)
   }
 }
 
-object JmsMessageSink {
+object JmsTextMessageSink {
 
   /**
-   * Scala API: Creates an [[JmsMessage]]
+   * Scala API: Creates an [[JmsTextMessage]]
    */
-  def apply(jmsSettings: JmsSinkSettings): Sink[JmsMessage, NotUsed] =
+  def apply(jmsSettings: JmsSinkSettings): Sink[JmsTextMessage, NotUsed] =
     Sink.fromGraph(new JmsSinkStage(jmsSettings))
 }

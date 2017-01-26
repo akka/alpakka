@@ -17,15 +17,15 @@ sealed trait Destination
 final case class Topic(name: String) extends Destination
 final case class Queue(name: String) extends Destination
 
-final case class JmsMessage(body: String, properties: Map[String, Any] = Map.empty)
+final case class JmsTextMessage(body: String, properties: Map[String, Any] = Map.empty)
 
-object JmsMessage {
+object JmsTextMessage {
 
   /**
-   * Java API: create  [[JmsMessage]]
+   * Java API: create  [[JmsTextMessage]]
    */
-  def create(body: String) = JmsMessage(body, Map.empty)
-  def create(body: String, properties: util.HashMap[String, Any]) = JmsMessage(body, properties.toMap)
+  def create(body: String) = JmsTextMessage(body, Map.empty)
+  def create(body: String, properties: util.HashMap[String, Any]) = JmsTextMessage(body, properties.toMap)
 }
 
 object JmsSourceSettings {
