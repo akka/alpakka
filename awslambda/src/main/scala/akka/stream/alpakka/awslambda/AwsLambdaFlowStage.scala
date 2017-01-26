@@ -11,9 +11,7 @@ import com.amazonaws.services.lambda.model.{InvokeRequest, InvokeResult}
 
 import scala.util.control.NonFatal
 
-class AwsLambdaFlowStage(
-                          awsLambdaClient: AWSLambdaAsyncClient
-                        )(parallelism: Int)
+final class AwsLambdaFlowStage(awsLambdaClient: AWSLambdaAsyncClient)(parallelism: Int)
   extends GraphStage[FlowShape[InvokeRequest, InvokeResult]] {
 
   val in = Inlet[InvokeRequest]("AwsLambda.in")
@@ -55,7 +53,7 @@ class AwsLambdaFlowStage(
         if (inFlight == 0) completeStage()
 
       override def onPull(): Unit = {
-        if (isClosed(in)) completeStage()
+        if (isClosed(in) && inFlight == 0) completeStage()
         if (inFlight < parallelism && !hasBeenPulled(in)) tryPull(in)
       }
 
@@ -63,6 +61,6 @@ class AwsLambdaFlowStage(
 
     }
 
-  override def shape: FlowShape[InvokeRequest, InvokeResult] = FlowShape.of(in, out)
+  override val shape: FlowShape[InvokeRequest, InvokeResult] = FlowShape.of(in, out)
 
 }

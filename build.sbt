@@ -89,8 +89,7 @@ lazy val awslambda = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-awslambda",
-    Dependencies.AwsLambda,
-    parallelExecution in Test := false
+    Dependencies.AwsLambda
   )
 
 lazy val docs = project

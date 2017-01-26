@@ -21,9 +21,6 @@ import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-
 class AwsLambdaFlowSpec
     extends TestKit(ActorSystem("AwsLambdaFlowSpec"))
     with WordSpecLike
@@ -45,7 +42,7 @@ class AwsLambdaFlowSpec
   }
 
   override protected def afterAll(): Unit =
-    Await.ready(system.terminate(), 5.seconds)
+    TestKit.shutdownActorSystem(system)
 
   "AwsLambdaFlow" should {
 
@@ -60,7 +57,7 @@ class AwsLambdaFlowSpec
           mockitoAny[AsyncHandler[InvokeRequest, InvokeResult]]())).thenAnswer(new Answer[AnyRef] {
         override def answer(invocation: InvocationOnMock): AnyRef = {
           invocation.getArgument[AsyncHandler[InvokeRequest, InvokeResult]](1).onSuccess(invokeRequest, invokeResult)
-          new CompletableFuture
+          CompletableFuture.completedFuture(invokeResult)
         }
       })
 
@@ -79,10 +76,11 @@ class AwsLambdaFlowSpec
       when(awsLambdaClient.invokeAsync(mockitoAny[InvokeRequest](),
           mockitoAny[AsyncHandler[InvokeRequest, InvokeResult]]())).thenAnswer(new Answer[Future[InvokeResult]] {
         override def answer(invocation: InvocationOnMock): Future[InvokeResult] = {
-          invocation
-            .getArgument[AsyncHandler[InvokeRequest, InvokeResult]](1)
-            .onError(new RuntimeException("Error in lambda"))
-          new CompletableFuture[InvokeResult]()
+          val exception = new RuntimeException("Error in lambda")
+          invocation.getArgument[AsyncHandler[InvokeRequest, InvokeResult]](1).onError(exception)
+          val future = new CompletableFuture[InvokeResult]()
+          future.completeExceptionally(exception)
+          future
         }
       })
 
