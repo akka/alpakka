@@ -16,8 +16,8 @@ import de.heikoseeberger.akkasse.headers.`Last-Event-ID`
 import de.heikoseeberger.akkasse.{EventStreamUnmarshalling, ServerSentEvent}
 import scala.concurrent.{Future, Promise}
 
-/**
- * This stream processing stage establishes a continuous source of server-sent events from the given URI.
+/**This stream processing stage establishes a continuous source of server-sent events from the given URI
+ * .
  *
  * A single source of server-sent events is obtained from the URI. Once completed, either normally or by failure, a next
  * one is obtained thereby sending a Last-Evend-ID header if available. This continues in an endless cycle.

@@ -128,9 +128,16 @@ class EventSourceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       val nrOfSamples = 20
       val (host, port) = hostAndPort()
       val server = system.actorOf(Props(new Server(host, port, 2, true)))
+
+      //#event-source
       val eventSource = EventSource(Uri(s"http://$host:$port"), send, Some("2"))
+      //#event-source
+
+      //#consume-events
       val events =
         eventSource.throttle(1, 500.milliseconds, 1, ThrottleMode.Shaping).take(nrOfSamples).runWith(Sink.seq)
+      //#consume-events
+
       val expected = Seq.tabulate(nrOfSamples)(_ + 3).map(toServerSentEvent(true))
       events.map(_ shouldBe expected).andThen { case _ => system.stop(server) }
     }
