@@ -14,6 +14,7 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters
 import scala.compat.java8.OptionConverters
+import java.util.function.{Function => JFunction}
 
 /**
  * This stream processing stage establishes a continuous source of server-sent events from the given URI.
@@ -70,7 +71,7 @@ object EventSource {
    * @return continuous source of server-sent events
    */
   def create(uri: Uri,
-             send: HttpRequest => CompletionStage[HttpResponse],
+             send: JFunction[HttpRequest, CompletionStage[HttpResponse]],
              lastEventId: Optional[String],
              mat: Materializer): Source[ServerSentEvent, NotUsed] = {
     val eventSource =
