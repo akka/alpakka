@@ -17,7 +17,9 @@ sealed trait Destination
 final case class Topic(name: String) extends Destination
 final case class Queue(name: String) extends Destination
 
-final case class JmsTextMessage(body: String, properties: Map[String, Any] = Map.empty)
+final case class JmsTextMessage(body: String, properties: Map[String, Any] = Map.empty) {
+  def withProperty(name: String, value: Any) = copy(properties = properties + (name -> value))
+}
 
 object JmsTextMessage {
 
@@ -37,12 +39,14 @@ object JmsSourceSettings {
 final case class JmsSourceSettings(connectionFactory: ConnectionFactory,
                                    destination: Option[Destination] = None,
                                    credentials: Option[Credentials] = None,
-                                   bufferSize: Int = 100)
+                                   bufferSize: Int = 100,
+                                   selector: Option[String] = None)
     extends JmsSettings {
   def withCredential(credentials: Credentials) = copy(credentials = Some(credentials))
   def withBufferSize(size: Int) = copy(bufferSize = size)
   def withQueue(name: String) = copy(destination = Some(Queue(name)))
   def withTopic(name: String) = copy(destination = Some(Topic(name)))
+  def withSelector(selector: String) = copy(selector = Some(selector))
 }
 
 object JmsSinkSettings {

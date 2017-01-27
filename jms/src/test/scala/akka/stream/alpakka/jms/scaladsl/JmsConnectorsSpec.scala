@@ -3,15 +3,16 @@
  */
 package akka.stream.alpakka.jms.scaladsl
 
-import javax.jms.JMSException
+import javax.jms.{JMSException, Message}
 
 import akka.NotUsed
 import akka.stream.ThrottleMode
-import akka.stream.alpakka.jms.{JmsSinkSettings, JmsSourceSettings, JmsSpec, JmsTextMessage$}
+import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Sink, Source}
 import org.apache.activemq.ActiveMQConnectionFactory
 
 import scala.concurrent.duration._
+import collection.JavaConverters._
 
 class JmsConnectorsSpec extends JmsSpec {
 
@@ -46,6 +47,67 @@ class JmsConnectorsSpec extends JmsSpec {
       //#run-source
 
       result.futureValue shouldEqual in
+    }
+
+    "publish and consume JMS text messages with properties through a queue" in withServer() { ctx =>
+      val url: String = ctx.url
+      val connectionFactory = new ActiveMQConnectionFactory(url)
+
+      val jmsSink: Sink[JmsTextMessage, NotUsed] = JmsTextMessageSink(
+        JmsSinkSettings(connectionFactory).withQueue("numbers")
+      )
+
+      val msgsIn = (1 to 10).toList.map { n =>
+        JmsTextMessage(n.toString)
+          .withProperty("Number", n)
+          .withProperty("IsOdd", n % 2 == 1)
+          .withProperty("IsEven", n % 2 == 0)
+      }
+      Source(msgsIn).runWith(jmsSink)
+
+      val jmsSource: Source[Message, NotUsed] = JmsSource(
+        JmsSourceSettings(connectionFactory).withBufferSize(10).withQueue("numbers")
+      )
+
+      val result = jmsSource.take(msgsIn.size).runWith(Sink.seq)
+      // The sent message and the receiving one should have the same properties
+      result.futureValue.zip(msgsIn).foreach {
+        case (out, in) =>
+          out.getIntProperty("Number") shouldEqual in.properties("Number")
+          out.getBooleanProperty("IsOdd") shouldEqual in.properties("IsOdd")
+          out.getBooleanProperty("IsEven") shouldEqual in.properties("IsEven")
+      }
+    }
+
+    "publish JMS text messages with properties through a queue and consume them with selector" in withServer() { ctx =>
+      val url: String = ctx.url
+      val connectionFactory = new ActiveMQConnectionFactory(url)
+
+      val jmsSink: Sink[JmsTextMessage, NotUsed] = JmsTextMessageSink(
+        JmsSinkSettings(connectionFactory).withQueue("numbers")
+      )
+
+      val msgsIn = (1 to 10).toList.map { n =>
+        JmsTextMessage(n.toString)
+          .withProperty("Number", n)
+          .withProperty("IsOdd", n % 2 == 1)
+          .withProperty("IsEven", n % 2 == 0)
+      }
+      Source(msgsIn).runWith(jmsSink)
+
+      val jmsSource: Source[Message, NotUsed] = JmsSource(
+        JmsSourceSettings(connectionFactory).withBufferSize(10).withQueue("numbers").withSelector("IsOdd = TRUE")
+      )
+
+      val oddMsgsIn = msgsIn.filter(msg => msg.body.toInt % 2 == 1)
+      val result = jmsSource.take(oddMsgsIn.size).runWith(Sink.seq)
+      // We should have only received the odd numbers in the list
+      result.futureValue.zip(oddMsgsIn).foreach {
+        case (out, in) =>
+          out.getIntProperty("Number") shouldEqual in.properties("Number")
+          out.getBooleanProperty("IsOdd") shouldEqual in.properties("IsOdd")
+          out.getBooleanProperty("IsEven") shouldEqual in.properties("IsEven")
+      }
     }
 
     "applying backpressure when the consumer is slower than the producer" in withServer() { ctx =>
