@@ -19,10 +19,7 @@ object AmqpSink {
    * or because of an amqp failure
    */
   def simple(settings: AmqpSinkSettings): Sink[ByteString, Future[Done]] =
-    apply(settings).contramap[ByteString](bytes => OutgoingMessage(bytes, false, false, None))
-
-  def replyTo(settings: AmqpReplyToSinkSettings): Sink[OutgoingMessage, Future[Done]] =
-    Sink.fromGraph(new AmqpReplyToStage(settings))
+    apply(settings).contramap[ByteString](bytes => OutgoingMessage[ByteString](bytes, false, false, None))
 
   /**
    * Scala API:
@@ -34,7 +31,7 @@ object AmqpSink {
    * This stage materializes to a `Future[Done]`, which can be used to know when the Sink completes, either normally
    * or because of an amqp failure
    */
-  def replyTo(settings: AmqpReplyToSinkSettings): Sink[OutgoingMessage, Future[Done]] =
+  def replyTo(settings: AmqpReplyToSinkSettings): Sink[OutgoingMessage[ByteString], Future[Done]] =
     Sink.fromGraph(new AmqpReplyToSinkStage(settings))
 
   /**
@@ -47,7 +44,7 @@ object AmqpSink {
    * This stage materializes to a Future[Done], which can be used to know when the Sink completes, either normally
    * or because of an amqp failure
    */
-  def apply(settings: AmqpSinkSettings): Sink[OutgoingMessage, Future[Done]] =
+  def apply(settings: AmqpSinkSettings): Sink[OutgoingMessage[ByteString], Future[Done]] =
     Sink.fromGraph(new AmqpSinkStage(settings))
 
 }
