@@ -58,17 +58,17 @@ class MongoSourceSpec
 
       val rows = MongoSource(numbersObservable).runWith(Sink.seq).futureValue
 
-      rows.map(_ \ "_id").map(_.as[Int]) must contain theSameElementsAs data
+      rows.map(_.getInteger("_id")) must contain theSameElementsAs data
     }
 
     "support multiple materializations" in {
       val data: Seq[Int] = seed()
       val numbersObservable = numbersColl.find()
 
-      val rows = MongoSource(numbersObservable).runWith(Sink.seq).futureValue
+      val source = MongoSource(numbersObservable)
 
-      rows.map(_ \ "_id").map(_.as[Int]) must contain theSameElementsAs data
-      rows.map(_ \ "_id").map(_.as[Int]) must contain theSameElementsAs data
+      source.runWith(Sink.seq).futureValue.map(_.getInteger("_id")) must contain theSameElementsAs data
+      source.runWith(Sink.seq).futureValue.map(_.getInteger("_id")) must contain theSameElementsAs data
     }
 
     "stream the result of Mongo query that results in no data" in {
