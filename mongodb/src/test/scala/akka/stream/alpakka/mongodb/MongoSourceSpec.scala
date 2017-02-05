@@ -27,7 +27,7 @@ class MongoSourceSpec
 
   implicit val mat = ActorMaterializer()
 
-  val db = Mongo.db
+  val db = MongoConnectionDetails("alpakka-mongo", "localhost", 27017).db
   val numbersColl = db.getCollection("numbers")
 
   implicit val defaultPatience =
