@@ -14,13 +14,13 @@ import scala.concurrent.duration._
 object SqsSource {
 
   /**
-   * Java API: creates a [[SqsSourceStage]] for a SQS queue using an [[AmazonSQSAsyncClient]]
+   * Java API: creates a [[SqsSourceStage]] for a SQS queue.
    */
   def create(queueUrl: String, settings: SqsSourceSettings): Source[Message, NotUsed] =
     Source.fromGraph(new SqsSourceStage(queueUrl, settings))
 
   /**
-   * Java API: creates a [[SqsSourceStage]] for a SQS queue using an [[AmazonSQSAsyncClient]] with default settings.
+   * Java API: creates a [[SqsSourceStage]] for a SQS queue with default settings.
    */
   def create(queueUrl: String): Source[Message, NotUsed] =
     Source.fromGraph(new SqsSourceStage(queueUrl, SqsSourceSettings.Defaults))
