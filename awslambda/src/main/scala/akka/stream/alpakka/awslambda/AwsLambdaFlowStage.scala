@@ -23,7 +23,7 @@ final class AwsLambdaFlowStage(awsLambdaClient: AWSLambdaAsyncClient)(parallelis
 
       private var inFlight = 0
 
-      def invokeComplete(result: InvokeResult): Unit = {
+      private def invokeComplete(result: InvokeResult): Unit = {
         inFlight -= 1
         if (isAvailable(out)) {
           if (!hasBeenPulled(in)) tryPull(in)
@@ -31,16 +31,22 @@ final class AwsLambdaFlowStage(awsLambdaClient: AWSLambdaAsyncClient)(parallelis
         }
       }
 
-      private val asyncCallback = getAsyncCallback(invokeComplete)
+      private def invokeFailed(ex: Throwable): Unit = {
+        failStage(ex)
+      }
+
+      private val successHandler = getAsyncCallback(invokeComplete)
+      private val failureHandler = getAsyncCallback(invokeFailed)
 
       private val asyncHandler = new AsyncHandler[InvokeRequest, InvokeResult] {
         override def onError(exception: Exception): Unit =
           exception match {
-            case NonFatal(ex) => failStage(ex)
+            case NonFatal(ex) =>
+              failureHandler.invoke(ex)
           }
 
         override def onSuccess(request: InvokeRequest, result: InvokeResult): Unit =
-          asyncCallback.invoke(result)
+          successHandler.invoke(result)
       }
 
       override def onPush(): Unit = {

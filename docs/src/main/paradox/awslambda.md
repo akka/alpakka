@@ -54,7 +54,7 @@ This is all preparation that we are going to need.
 
 ### Flow messages to AWS Lambda
 
-Now we can stream AWS Java SDK Lambda `InvoreRequest` to AWS Lambda functions
+Now we can stream AWS Java SDK Lambda `InvokeRequest` to AWS Lambda functions
 @scaladoc[AwsLambdaFlow](akka.stream.alpakka.awslambda.scaladsl.AwsLambdaFlow$) factory.
 
 Scala
