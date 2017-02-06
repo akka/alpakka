@@ -20,6 +20,7 @@ trait BaseFtpSpec extends PlainFtpSupportImpl with BaseSpec {
     InetAddress.getByName("localhost"),
     getPort,
     AnonFtpCredentials,
+    binary = true,
     passiveMode = true
   )
   //#create-settings
