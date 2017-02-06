@@ -14,8 +14,6 @@ import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.Some;
-import scala.concurrent.duration.Duration;
 
 import java.util.List;
 import java.util.Random;

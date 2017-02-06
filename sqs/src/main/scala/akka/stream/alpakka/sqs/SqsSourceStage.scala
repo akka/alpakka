@@ -36,10 +36,12 @@ final case class SqsSourceSettings(
     maxBatchSize: Int,
     credentials: Option[AWSCredentials]
 ) {
-  require(maxBatchSize <= maxBufferSize)
+  require(maxBatchSize <= maxBufferSize, "maxBatchSize must be lower or equal than maxBufferSize")
   // SQS requirements
-  require(waitTimeSeconds >= 0 && waitTimeSeconds <= 20)
-  require(maxBatchSize >= 1 && maxBatchSize <= 10)
+  require(waitTimeSeconds >= 0 && waitTimeSeconds <= 20,
+    "Invalid value for waitTimeSeconds. Requirement: 0 <= waitTimeSeconds <= 20 ")
+  require(maxBatchSize >= 1 && maxBatchSize <= 10,
+    "Invalid value for maxBatchSize. Requirement: 1 <= waitTimeSeconds <= 10 ")
 }
 //#SqsSourceSettings
 
@@ -95,12 +97,12 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings) extend
       def handleSuccess(result: ReceiveMessageResult): Unit = {
 
         currentRequests = currentRequests - 1
-        maxCurrentConcurrency = if (result.getMessages.size() == 0) 1 else maxConcurrency
+        maxCurrentConcurrency = if (result.getMessages.isEmpty) 1 else maxConcurrency
 
-        result.getMessages.asScala.reverse.foreach(buffer.addFirst)
+        result.getMessages.asScala.reverse.foreach(buffer.offer)
 
         if (!buffer.isEmpty && isAvailable(out)) {
-          push(out, buffer.removeLast())
+          push(out, buffer.poll())
         }
 
         if (canReceiveNewMessages) {
@@ -112,7 +114,7 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings) extend
         new OutHandler {
         override def onPull(): Unit =
           if (!buffer.isEmpty) {
-            push(out, buffer.removeLast())
+            push(out, buffer.poll())
             if (canReceiveNewMessages) {
               receiveMessages()
             }
@@ -121,5 +123,7 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings) extend
           }
       })
 
+      override def postStop(): Unit =
+        sqsClient.shutdown() //shuts down the underlying thread pool as well
     }
 }
