@@ -1,8 +1,7 @@
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
-  .aggregate(amqp, cassandra, dynamodb, docs, files, ftp, hbase, jms, mqtt, s3, simpleCodecs, sqs, awslambda)
-
+  .aggregate(amqp, cassandra, dynamodb, docs, files, ftp, hbase, jms, mqtt, s3, simpleCodecs, sqs, awslambda, sse)
 lazy val amqp = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
@@ -90,6 +89,13 @@ lazy val awslambda = project
   .settings(
     name := "akka-stream-alpakka-awslambda",
     Dependencies.AwsLambda
+  )
+
+lazy val sse = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-sse",
+    Dependencies.Sse
   )
 
 lazy val docs = project

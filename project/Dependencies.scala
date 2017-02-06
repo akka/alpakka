@@ -9,7 +9,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-stream"         % AkkaVersion,
       "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion   % Test,
-      "org.scalatest"     %% "scalatest"           % "3.0.0"       % Test, // ApacheV2
+      "org.scalatest"     %% "scalatest"           % "3.0.1"       % Test, // ApacheV2
       "com.novocode"       % "junit-interface"     % "0.11"        % Test, // BSD-style
       "junit"              % "junit"               % "4.12"        % Test  // Eclipse Public License 1.0
     )
@@ -72,20 +72,28 @@ object Dependencies {
 
   val File = Seq(
     libraryDependencies ++= Seq(
-      "com.google.jimfs"  %  "jimfs"               % "1.1"  % Test  // ApacheV2
+      "com.google.jimfs" % "jimfs" % "1.1"  % Test  // ApacheV2
     )
   )
 
   val Ftp = Seq(
     libraryDependencies ++= Seq(
-      "commons-net"           % "commons-net"          % "3.5",             // ApacheV2
-      "com.jcraft"            % "jsch"                 % "0.1.54",          // BSD-style
-      "org.apache.ftpserver"  % "ftpserver-core"       % "1.0.6"    % Test, // ApacheV2
-      "org.apache.sshd"       % "sshd-core"            % "1.3.0"    % Test, // ApacheV2
-      "com.google.jimfs"      % "jimfs"                % "1.1"      % Test, // ApacheV2
-      "org.slf4j"             % "slf4j-api"            % "1.7.21"   % Test, // MIT
-      "ch.qos.logback"        % "logback-classic"      % "1.1.7"    % Test, // Eclipse Public License 1.0
-      "ch.qos.logback"        % "logback-core"         % "1.1.7"    % Test  // Eclipse Public License 1.0
+      "commons-net"          % "commons-net"     % "3.5",            // ApacheV2
+      "com.jcraft"           % "jsch"            % "0.1.54",         // BSD-style
+      "org.apache.ftpserver" % "ftpserver-core"  % "1.0.6"  % Test, // ApacheV2
+      "org.apache.sshd"      % "sshd-core"       % "1.3.0"  % Test, // ApacheV2
+      "com.google.jimfs"     % "jimfs"           % "1.1"    % Test, // ApacheV2
+      "org.slf4j"            % "slf4j-api"       % "1.7.21" % Test, // MIT
+      "ch.qos.logback"       % "logback-classic" % "1.1.7"  % Test, // Eclipse Public License 1.0
+      "ch.qos.logback"       % "logback-core"    % "1.1.7"  % Test  // Eclipse Public License 1.0
+    )
+  )
+
+  val Sse = Seq(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-http"         % AkkaHttpVersion,
+      "de.heikoseeberger" %% "akka-sse"          % "2.0.0", // ApacheV2
+      "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion % Test
     )
   )
 
