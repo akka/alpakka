@@ -62,6 +62,7 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] exte
       private[this] def initBuffer(basePath: String) =
         getFilesFromPath(basePath)
 
+      @scala.annotation.tailrec
       private[this] def fillBuffer(): Unit = buffer match {
         case head +: tail if head.isDirectory => {
           buffer = getFilesFromPath(head.path) ++ tail
