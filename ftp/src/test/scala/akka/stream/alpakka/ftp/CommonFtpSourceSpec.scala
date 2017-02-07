@@ -21,7 +21,7 @@ trait CommonFtpSourceSpec extends BaseSpec {
   implicit val system = getSystem
   implicit val mat = getMaterializer
   implicit val defaultPatience =
-    PatienceConfig(timeout = Span(3, Seconds), interval = Span(300, Millis))
+    PatienceConfig(timeout = Span(10, Seconds), interval = Span(300, Millis))
 
   "FtpBrowserSource" should {
     "list all files from root" in {

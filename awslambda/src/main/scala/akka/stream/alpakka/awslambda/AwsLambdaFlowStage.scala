@@ -12,7 +12,7 @@ import com.amazonaws.services.lambda.model.{InvokeRequest, InvokeResult}
 import scala.util.control.NonFatal
 
 final class AwsLambdaFlowStage(awsLambdaClient: AWSLambdaAsyncClient)(parallelism: Int)
-  extends GraphStage[FlowShape[InvokeRequest, InvokeResult]] {
+    extends GraphStage[FlowShape[InvokeRequest, InvokeResult]] {
 
   val in = Inlet[InvokeRequest]("AwsLambda.in")
   val out = Outlet[InvokeResult]("AwsLambda.out")
@@ -31,9 +31,8 @@ final class AwsLambdaFlowStage(awsLambdaClient: AWSLambdaAsyncClient)(parallelis
         }
       }
 
-      private def invokeFailed(ex: Throwable): Unit = {
+      private def invokeFailed(ex: Throwable): Unit =
         failStage(ex)
-      }
 
       private val successHandler = getAsyncCallback(invokeComplete)
       private val failureHandler = getAsyncCallback(invokeFailed)

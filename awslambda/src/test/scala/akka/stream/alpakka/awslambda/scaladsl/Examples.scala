@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.awslambda.scaladsl
 
 import java.util.concurrent.Executors
@@ -11,7 +14,6 @@ import com.amazonaws.services.lambda.model.InvokeRequest
 
 object Examples {
 
-
   //#init-mat
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
@@ -24,9 +26,7 @@ object Examples {
   //#init-client
 
   //#run
-  val request = new InvokeRequest()
-    .withFunctionName("lambda-function-name")
-    .withPayload("test-payload")
+  val request = new InvokeRequest().withFunctionName("lambda-function-name").withPayload("test-payload")
   Source.single(request).via(AwsLambdaFlow(1)).runWith(Sink.seq)
   //#run
 }
