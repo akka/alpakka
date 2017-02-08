@@ -36,6 +36,8 @@ Documentation should be written in two forms:
 1. API documentation in the form of scaladoc/javadoc comments on the Scala and Java user API.
 2. Guide documentation in [docs](docs/) subproject using [Paradox](https://github.com/lightbend/paradox) documentation tool. This documentation should give a short introduction of how a given connector should be used.
 
+Run `sbt docs/local:paradox` to generate reference docs while developing. Generated documentation can be found in the `./docs/target/paradox/site/local` directory.
+
 ## External Dependencies
 
 All the external runtime dependencies for the project, including transitive dependencies, must have an open source license that is equal to, or compatible with, [Apache 2](http://www.apache.org/licenses/LICENSE-2.0).
