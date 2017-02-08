@@ -8,7 +8,7 @@ sbt
 :   @@@vars
     ```scala
     libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-jms" % "$version$"
-    libraryDependencies += "javax.jms" % "jms" % "1.1"      
+    libraryDependencies += "javax.jms" % "jms" % "1.1"
     ```
     @@@
 
@@ -42,7 +42,7 @@ Gradle
 
 ### Sending messages to JMS server
 
-First define a jms `ConnectionFactory` depending on the implementation you're using. Here we're using Active MQ. 
+First define a jms `ConnectionFactory` depending on the implementation you're using. Here we're using Active MQ.
 
 Scala
 : @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }
@@ -51,7 +51,7 @@ Java
 : @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #connection-factory }
 
 
-Create a sink, that accepts and forwards @scaladoc[String](`String`)s to the JMS server.
+Create a sink, that accepts and forwards @extref[String](java-api:java.lang.String)s to the JMS server.
 
 Scala
 : @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-sink }
