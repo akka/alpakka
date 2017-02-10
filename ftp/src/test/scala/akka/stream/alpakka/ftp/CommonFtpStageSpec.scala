@@ -4,21 +4,22 @@
 package akka.stream.alpakka.ftp
 
 import akka.stream.IOResult
-import akka.stream.scaladsl.{Keep, Sink}
+import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
+import akka.util.ByteString
 import org.scalatest.time.{Millis, Seconds, Span}
 import scala.concurrent.duration._
 import scala.util.Random
 import java.nio.file.attribute.PosixFilePermission
 
-final class FtpSourceSpec extends BaseFtpSpec with CommonFtpSourceSpec
-final class SftpSourceSpec extends BaseSftpSpec with CommonFtpSourceSpec
-final class FtpsSourceSpec extends BaseFtpsSpec with CommonFtpSourceSpec {
+final class FtpStageSpec extends BaseFtpSpec with CommonFtpStageSpec
+final class SftpStageSpec extends BaseSftpSpec with CommonFtpStageSpec
+final class FtpsStageSpec extends BaseFtpsSpec with CommonFtpStageSpec {
   setAuthValue("TLS")
   setUseImplicit(false)
 }
 
-trait CommonFtpSourceSpec extends BaseSpec {
+trait CommonFtpStageSpec extends BaseSpec {
 
   implicit val system = getSystem
   implicit val mat = getMaterializer
@@ -116,6 +117,49 @@ trait CommonFtpSourceSpec extends BaseSpec {
       val total = result.map(_.count).sum
       total shouldBe expectedNumOfBytes
     }
+  }
+
+  "FtpIOSink" should {
+    "write a file to a path from a stream of bytes" in {
+      val fileName = "sample_io"
+      val result = Source.single(ByteString(getLoremIpsum)).runWith(storeToPath(s"/$fileName")).futureValue
+
+      val expectedNumOfBytes = getLoremIpsum.getBytes().length
+      result shouldBe IOResult.createSuccessful(expectedNumOfBytes)
+
+      val storedContents = getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName)
+      storedContents shouldBe getLoremIpsum.getBytes
+    }
+
+    "write a bigger file (~2 MB) to a path from a stream of bytes" in {
+      val fileName = "sample_bigger_file"
+      val fileContents = new Array[Byte](2000020)
+      Random.nextBytes(fileContents)
+
+      val result = Source[Byte](fileContents.toList)
+        .grouped(8192)
+        .map(s ⇒ ByteString.apply(s.toArray))
+        .runWith(storeToPath(s"/$fileName"))
+        .futureValue
+
+      val expectedNumOfBytes = fileContents.length
+      result shouldBe IOResult.createSuccessful(expectedNumOfBytes)
+
+      val storedContents = getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName)
+      storedContents shouldBe fileContents
+    }
+
+    "overwrite a file if it's already present" in {
+      val fileName = "sample_io"
+      putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName)
+
+      val reversedLoremIpsum = getLoremIpsum.reverse
+      Source.single(ByteString(reversedLoremIpsum)).runWith(storeToPath(s"/$fileName")).futureValue
+
+      val storedContents = getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName)
+      storedContents shouldBe reversedLoremIpsum.getBytes
+    }
+
   }
 
 }

@@ -114,6 +114,16 @@ abstract class FtpBaseSupport implements FtpSupport, AkkaSupport {
         }
     }
 
+    public byte[] getFtpFileContents(String path, String fileName) {
+        try {
+            Path baseDir = getFileSystem().getPath(path);
+            Path filePath = baseDir.resolve(fileName);
+            return Files.readAllBytes(filePath);
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
     public ActorSystem getSystem() {
         return system;
     }
