@@ -22,6 +22,8 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] exte
 
   val shape: SourceShape[FtpFile] = SourceShape(Outlet[FtpFile](s"$name.out"))
 
+  val out = shape.outlets.head.asInstanceOf[Outlet[FtpFile]]
+
   override def initialAttributes: Attributes =
     super.initialAttributes and Attributes.name(name) and IODispatcher
 
