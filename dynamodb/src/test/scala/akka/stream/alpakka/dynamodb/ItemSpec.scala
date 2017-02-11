@@ -7,33 +7,31 @@ import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.alpakka.dynamodb.impl.DynamoSettings
 import akka.stream.alpakka.dynamodb.scaladsl._
-import akka.testkit.{ SocketUtil, TestKit }
+import akka.testkit.TestKit
 import org.scalatest._
+
+import scala.collection.JavaConverters._
 
 class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike with Matchers with BeforeAndAfterAll {
 
   implicit val materializer = ActorMaterializer()
   implicit val ec = system.dispatcher
 
-  val settings = DynamoSettings(system).copy(port = SocketUtil.temporaryServerAddress().getPort)
-  val localDynamo = new LocalDynamo(settings)
-
+  val settings = DynamoSettings(system)
   val client = DynamoClient(settings)
 
-  override def beforeAll(): Unit = localDynamo.start()
-
-  override def afterAll(): Unit = {
-    localDynamo.stop()
-    system.terminate()
+  override def beforeAll() = {
+    System.setProperty("aws.accessKeyId", "someKeyId")
+    System.setProperty("aws.secretKey", "someSecretKey")
   }
 
   "DynamoDB Client" should {
 
-    import ItemSpecOps._
     import DynamoImplicits._
+    import ItemSpecOps._
 
     "1) list zero tables" in {
-      client.single(listTablesRequest).map(_.getTableNames.size shouldBe 0)
+      client.single(listTablesRequest).map(_.getTableNames.asScala.count(_ == tableName) shouldBe 0)
     }
 
     "2) create a table" in {
@@ -41,7 +39,7 @@ class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike w
     }
 
     "3) find a new table" in {
-      client.single(listTablesRequest).map(_.getTableNames.size shouldBe 1)
+      client.single(listTablesRequest).map(_.getTableNames.asScala.count(_ == tableName) shouldBe 1)
     }
 
     "4) put an item and read it back" in {
@@ -57,6 +55,13 @@ class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike w
 
     "6) delete an item" in {
       client.single(deleteItemRequest).flatMap(_ => client.single(getItemRequest)).map(_.getItem() shouldEqual null)
+    }
+
+    "7) delete table" in {
+      client
+        .single(deleteTableRequest)
+        .flatMap(_ => client.single(listTablesRequest))
+        .map(_.getTableNames.asScala.count(_ == tableName) shouldEqual 0)
     }
 
   }

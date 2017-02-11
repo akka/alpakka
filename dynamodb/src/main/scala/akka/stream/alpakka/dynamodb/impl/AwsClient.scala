@@ -3,23 +3,23 @@
  */
 package akka.stream.alpakka.dynamodb.impl
 
-import java.io.{ ByteArrayInputStream, InputStream }
+import java.io.{ByteArrayInputStream, InputStream}
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http.HostConnectionPool
-import akka.http.scaladsl.model.{ ContentType, HttpEntity, _ }
+import akka.http.scaladsl.model.{ContentType, HttpEntity, _}
 import akka.stream.alpakka.dynamodb.AwsOp
-import akka.stream.alpakka.dynamodb.impl.AwsClient.{ AwsConnect, AwsRequestMetadata }
+import akka.stream.alpakka.dynamodb.impl.AwsClient.{AwsConnect, AwsRequestMetadata}
 import akka.stream.scaladsl.Flow
-import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
-import com.amazonaws.auth.{ AWS4Signer, DefaultAWSCredentialsProviderChain }
-import com.amazonaws.http.{ HttpMethodName, HttpResponseHandler, HttpResponse => AWSHttpResponse }
-import com.amazonaws.{ DefaultRequest, HttpMethod => _, _ }
+import akka.stream.{ActorAttributes, ActorMaterializer, Supervision}
+import com.amazonaws.auth.{AWS4Signer, DefaultAWSCredentialsProviderChain}
+import com.amazonaws.http.{HttpMethodName, HttpResponseHandler, HttpResponse => AWSHttpResponse}
+import com.amazonaws.{DefaultRequest, HttpMethod => _, _}
 
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success, Try }
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 private[alpakka] object AwsClient {
 
