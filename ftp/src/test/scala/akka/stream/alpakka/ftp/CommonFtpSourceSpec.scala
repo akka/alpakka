@@ -21,7 +21,7 @@ trait CommonFtpSourceSpec extends BaseSpec {
   implicit val system = getSystem
   implicit val mat = getMaterializer
   implicit val defaultPatience =
-    PatienceConfig(timeout = Span(3, Seconds), interval = Span(300, Millis))
+    PatienceConfig(timeout = Span(10, Seconds), interval = Span(300, Millis))
 
   "FtpBrowserSource" should {
     "list all files from root" in {
@@ -38,6 +38,16 @@ trait CommonFtpSourceSpec extends BaseSpec {
       val probe =
         listFiles(basePath).toMat(TestSink.probe)(Keep.right).run()
       probe.request(40).expectNextN(30)
+      probe.expectComplete()
+    }
+
+    "list all files in sparse directory tree" in {
+      val deepDir = "/foo/bar/baz/foobar"
+      val basePath = "/"
+      generateFiles(1, -1, deepDir)
+      val probe =
+        listFiles(basePath).toMat(TestSink.probe)(Keep.right).run()
+      probe.request(2).expectNextN(1)
       probe.expectComplete()
     }
   }

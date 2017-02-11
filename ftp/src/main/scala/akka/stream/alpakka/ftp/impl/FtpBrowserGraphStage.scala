@@ -35,25 +35,12 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] exte
         def onPull(): Unit = {
           fillBuffer()
           buffer match {
-            case Seq() =>
-              finalize()
-            case head +: Seq() =>
-              if (!head.isDirectory)
-                push(out, head)
-              finalize()
             case head +: tail =>
               buffer = tail
-              if (!head.isDirectory)
-                push(out, head)
-              else
-                onPull()
+              push(out, head)
+            case _ => finalize()
           }
-          def finalize() =
-            try {
-              disconnect()
-            } finally {
-              complete(out)
-            }
+          def finalize() = try { disconnect() } finally { complete(out) }
         } // end of onPull
 
         override def onDownstreamFinish(): Unit =
@@ -75,14 +62,14 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] exte
       private[this] def initBuffer(basePath: String) =
         getFilesFromPath(basePath)
 
-      private[this] def fillBuffer() =
-        buffer match {
-          case Seq() => // Nothing to do
-          case head +: tail =>
-            if (head.isDirectory) {
-              buffer = getFilesFromPath(head.path) ++ tail
-            }
+      @scala.annotation.tailrec
+      private[this] def fillBuffer(): Unit = buffer match {
+        case head +: tail if head.isDirectory => {
+          buffer = getFilesFromPath(head.path) ++ tail
+          fillBuffer()
         }
+        case _ => // do nothing
+      }
 
       private[this] def getFilesFromPath(basePath: String) =
         if (basePath.isEmpty)
