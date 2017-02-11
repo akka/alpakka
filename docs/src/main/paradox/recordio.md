@@ -1,6 +1,21 @@
 # RecordIO Framing
 
-The codec parses an incoming RecordIO-formatted stream of ByteStrings into distinct frames.
+The codec parses a ByteString stream in the
+[RecordIO format](http://mesos.apache.org/documentation/latest/scheduler-http-api/#recordio-response-format) into distinct frames.
+
+For instance, the response body:
+```
+128\n
+{"type": "SUBSCRIBED","subscribed": {"framework_id": {"value":"12220-3440-12532-2345"},"heartbeat_interval_seconds":15.0}20\n
+{"type":"HEARTBEAT"}
+```
+is parsed into frames:
+```
+{"type": "SUBSCRIBED","subscribed": {"framework_id": {"value":"12220-3440-12532-2345"},"heartbeat_interval_seconds":15.0}
+```
+```
+{"type":"HEARTBEAT"}
+```
 
 ## Artifacts
 
@@ -33,7 +48,8 @@ Gradle
 
 ## Usage
 
-The helper object @scaladoc[RecordIOFraming](akka.stream.alpakka.recordio.scaladsl.RecordIOFraming) provides a `Flow[ByteString, ByteString, _]` which parses out RecordIO frames.
+The helper object @scaladoc[RecordIOFraming](akka.stream.alpakka.recordio.scaladsl.RecordIOFraming$) provides a `scanner`
+factory method for a `Flow[ByteString, ByteString, _]` which parses out RecordIO frames.
 
 For instance, given the sample input:
 
