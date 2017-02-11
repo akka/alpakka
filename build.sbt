@@ -1,7 +1,7 @@
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
-  .aggregate(amqp, cassandra, docs, files, hbase, mqtt, s3, simpleCodecs, sqs, ftp, jms)
+  .aggregate(amqp, cassandra, dynamodb, docs, files, ftp, hbase, jms, mqtt, s3, simpleCodecs, sqs, sse)
 
 lazy val amqp = project
   .enablePlugins(AutomateHeaderPlugin)
@@ -21,9 +21,7 @@ lazy val dynamodb = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-dynamodb",
-    resolvers += "DynamoDBLocal" at "http://dynamodb-local.s3-website-us-west-2.amazonaws.com/release/",
-    Dependencies.DynamoDB,
-    parallelExecution in Test := false
+    Dependencies.DynamoDB
   )
 
 lazy val files = project // The name file is taken by `sbt.file`!
@@ -34,12 +32,28 @@ lazy val files = project // The name file is taken by `sbt.file`!
     Dependencies.File
   )
 
+lazy val ftp = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-ftp",
+    Dependencies.Ftp,
+    parallelExecution in Test := false
+  )
+
 lazy val hbase = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-hbase",
     Dependencies.HBase,
     fork in Test := true
+  )
+
+lazy val jms = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-jms",
+    Dependencies.Jms,
+    parallelExecution in Test := false
   )
 
 lazy val mqtt = project
@@ -56,35 +70,26 @@ lazy val s3 = project
     Dependencies.S3
   )
 
-lazy val sqs = project
-    .in(file("sqs"))
-    .enablePlugins(AutomateHeaderPlugin)
-    .settings(
-      name := "akka-stream-alpakka-sqs",
-      Dependencies.Sqs
-    )
-
-lazy val ftp = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-ftp",
-    Dependencies.Ftp,
-    parallelExecution in Test := false
-  )
-
-lazy val jms = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-jms",
-    Dependencies.Jms,
-    parallelExecution in Test := false
-  )
-
 lazy val simpleCodecs = project
   .in(file("simple-codecs"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-simple-codecs"
+  )
+
+lazy val sqs = project
+  .in(file("sqs"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-sqs",
+    Dependencies.Sqs
+  )
+
+lazy val sse = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-sse",
+    Dependencies.Sse
   )
 
 lazy val docs = project

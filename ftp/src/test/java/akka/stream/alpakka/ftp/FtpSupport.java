@@ -21,5 +21,7 @@ interface FtpSupport {
 
     void putFileOnFtp(String path, String fileName);
 
+    void putFileOnFtpWithContents(String path, String fileName, byte[] fileContents);
+
     String getLoremIpsum();
 }

@@ -6,8 +6,8 @@ package akka.stream.alpakka.dynamodb.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.dynamodb.AwsOp
-import akka.stream.alpakka.dynamodb.impl.{ DynamoClientImpl, DynamoSettings }
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.alpakka.dynamodb.impl.{DynamoClientImpl, DynamoSettings}
+import akka.stream.scaladsl.{Sink, Source}
 
 object DynamoClient {
   def apply(settings: DynamoSettings)(implicit system: ActorSystem, materializer: ActorMaterializer) =
