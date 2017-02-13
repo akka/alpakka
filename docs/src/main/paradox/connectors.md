@@ -5,6 +5,7 @@
 * [AMQP Connector](amqp.md)
 * [AWS DynamoDB Connector](dynamodb.md)
 * [AWS SQS Connector](sqs.md)
+* [AWS Lambda Connector](awslambda.md)
 * [Cassandra Connector](cassandra.md)
 * [File Connectors](file.md)
 * [FTP Connector](ftp.md)
