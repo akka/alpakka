@@ -1,5 +1,11 @@
 # Data Transformations
 
+@@@ index
+
+* [RecordIO Framing](recordio.md)
+
+@@@
+
 TODO: Data transformation is an important part of integration with external systems. Add stages for typical transformations or parsers, such as CSV, XML. [Contributions](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md) are very welcome.
 [Creating an issue](https://github.com/akka/alpakka/issues) for discussion is a good first step for such contributions.
 
