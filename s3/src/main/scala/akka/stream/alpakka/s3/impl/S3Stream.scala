@@ -42,6 +42,8 @@ final case class FailedUpload(reasons: Seq[Throwable]) extends Exception
 
 final case class CompleteMultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
+final case class ListBucketResult(is_truncated: Boolean, continuation_token: Option[String], keys: Seq[String])
+
 object S3Stream {
 
   def apply(credentials: AWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer): S3Stream =
@@ -57,6 +59,25 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
   implicit val conf = settings
   val MinChunkSize = 5242880 //in bytes
   val signingKey = SigningKey(credentials, CredentialScope(LocalDate.now(), region, "s3"))
+
+  def listBucket(bucket: String, prefix: Option[String] = None): Source[String, NotUsed] = {
+    import mat.executionContext
+    def listBucketCall(continuation_token: Option[String] = None) =
+      signAndGet(HttpRequests.listBucket(bucket, region, prefix, continuation_token)).flatMap { entity =>
+        Unmarshal(entity).to[ListBucketResult]
+      }
+    def fileSourceFromFuture(f: Future[ListBucketResult]): Source[String, NotUsed] =
+      Source
+        .fromFuture(f)
+        .flatMapConcat(res => {
+          val keys = Source.fromIterator(() => res.keys.toIterator)
+          if (res.is_truncated) {
+            keys.concat(fileSourceFromFuture(listBucketCall(res.continuation_token)))
+          } else
+            keys
+        })
+    fileSourceFromFuture(listBucketCall())
+  }
 
   def download(s3Location: S3Location): Source[ByteString, NotUsed] = {
     import mat.executionContext
