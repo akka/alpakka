@@ -4,8 +4,10 @@
 package akka.stream.alpakka.ftp
 
 import akka.stream.alpakka.ftp.FtpCredentials.AnonFtpCredentials
+
 import scala.language.implicitConversions
 import java.net.InetAddress
+import java.nio.file.attribute.PosixFilePermission
 
 /**
  * FTP remote file descriptor.
@@ -14,11 +16,17 @@ import java.net.InetAddress
  * @param path remote file path as viewed by the logged user.
  *             It should always start by '/'
  * @param isDirectory the descriptor is a directory
+ * @param size the file size in bytes
+ * @param lastModified the timestamp of the file last modification
+ * @param permissions the permissions of the file
  */
 final case class FtpFile(
     name: String,
     path: String,
-    isDirectory: Boolean
+    isDirectory: Boolean,
+    size: Long,
+    lastModified: Long,
+    permissions: Set[PosixFilePermission]
 ) {
   val isFile: Boolean = !this.isDirectory
 }

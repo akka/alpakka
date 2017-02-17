@@ -8,8 +8,10 @@ import akka.stream.alpakka.ftp.RemoteFileSettings.SftpSettings
 import com.jcraft.jsch.{ChannelSftp, JSch}
 import scala.collection.immutable
 import scala.util.Try
+import scala.collection.JavaConverters._
 import java.io.InputStream
 import java.nio.file.Paths
+import java.nio.file.attribute.PosixFilePermissions
 
 private[ftp] trait SftpOperations { _: FtpLike[JSch, SftpSettings] =>
 
@@ -49,9 +51,24 @@ private[ftp] trait SftpOperations { _: FtpLike[JSch, SftpSettings] =>
     } // TODO
     entries.map {
       case entry: Handler#LsEntry =>
-        FtpFile(entry.getFilename, Paths.get(s"$path/${entry.getFilename}").normalize.toString, entry.getAttrs.isDir)
+        FtpFile(
+          entry.getFilename,
+          Paths.get(s"$path/${entry.getFilename}").normalize.toString,
+          entry.getAttrs.isDir,
+          entry.getAttrs.getSize,
+          entry.getAttrs.getMTime * 1000L,
+          getPosixFilePermissions(entry.getAttrs.getPermissionsString)
+        )
     }.toVector
   }
+
+  private def getPosixFilePermissions(permissions: String) =
+    PosixFilePermissions
+      .fromString(
+        permissions.replace('s', '-').drop(1)
+      )
+      .asScala
+      .toSet
 
   def listFiles(handler: Handler): immutable.Seq[FtpFile] = listFiles(".", handler) // TODO
 
