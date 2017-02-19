@@ -4,7 +4,7 @@
 package akka.stream.alpakka.sqs.scaladsl
 
 import akka.Done
-import akka.stream.alpakka.sqs.{ MessageActionPair, SqsAckSinkSettings, SqsAckSinkStage }
+import akka.stream.alpakka.sqs.{MessageActionPair, SqsAckSinkSettings, SqsAckSinkStage}
 import akka.stream.scaladsl.Sink
 import com.amazonaws.services.sqs.AmazonSQSAsync
 

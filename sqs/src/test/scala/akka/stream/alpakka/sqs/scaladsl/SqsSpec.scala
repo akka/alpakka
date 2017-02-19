@@ -8,7 +8,7 @@ import akka.Done
 import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
-import com.amazonaws.services.sqs.model.{ DeleteMessageRequest, Message, SendMessageRequest }
+import com.amazonaws.services.sqs.model.{DeleteMessageRequest, Message, SendMessageRequest}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{ spy, verify }
 import com.amazonaws.services.sqs.model.Message
