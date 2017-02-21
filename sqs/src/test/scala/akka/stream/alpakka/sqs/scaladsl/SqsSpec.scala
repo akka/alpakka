@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 
 class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
-  private val sqsSourceSettings = SqsSourceSettings.Defaults.copy(credentials = Some(credentials))
+  private val sqsSourceSettings = SqsSourceSettings.Defaults
 
   it should "publish and pull a message" taggedAs Integration in {
     val queue = randomQueueUrl()

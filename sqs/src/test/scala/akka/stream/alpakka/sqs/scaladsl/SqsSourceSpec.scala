@@ -11,7 +11,7 @@ import org.scalatest.{AsyncWordSpec, Matchers}
 
 class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with DefaultTestContext {
 
-  private val sqsSourceSettings = SqsSourceSettings.Defaults.copy(credentials = Some(credentials))
+  private val sqsSourceSettings = SqsSourceSettings.Defaults
 
   "SqsSource" should {
 
@@ -46,7 +46,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
       val queue = randomQueueUrl()
 
-      val f = SqsSource(queue, SqsSourceSettings(0, 100, 10, Some(credentials))).take(1).runWith(Sink.seq)
+      val f = SqsSource(queue, SqsSourceSettings(0, 100, 10)).take(1).runWith(Sink.seq)
 
       sqsClient.sendMessage(queue, s"alpakka")
 

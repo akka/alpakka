@@ -46,12 +46,13 @@ public class SqsSourceTest {
             .withEndpoint("http://localhost:9324");
         //#init-client
 
-        sqsSourceSettings = SqsSourceSettings.create(20, 100, 10, credentials);
+        sqsSourceSettings = SqsSourceSettings.create(20, 100, 10);
     }
 
     @AfterClass
     public static void teardown() {
         JavaTestKit.shutdownActorSystem(system);
+        sqsClient.shutdown();
     }
 
     static String randomQueueUrl() {
@@ -67,7 +68,7 @@ public class SqsSourceTest {
         input.forEach(m -> sqsClient.sendMessage(queueUrl, m));
 
         //#run
-        final CompletionStage<List<String>> cs = SqsSource.create(queueUrl, sqsSourceSettings)
+        final CompletionStage<List<String>> cs = SqsSource.create(queueUrl, sqsSourceSettings, sqsClient)
             .map(m -> m.getBody())
             .take(100)
             .runWith(Sink.seq(), materializer);

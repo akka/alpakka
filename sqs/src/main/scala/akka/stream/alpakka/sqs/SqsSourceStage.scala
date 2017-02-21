@@ -4,28 +4,20 @@
 package akka.stream.alpakka.sqs
 
 import java.util
-import java.util.concurrent.Executors
 
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import akka.stream.{Attributes, Outlet, SourceShape}
-import com.amazonaws.auth.{AWSCredentials, DefaultAWSCredentialsProviderChain}
 import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.sqs.AmazonSQSAsyncClient
+import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model.{Message, ReceiveMessageRequest, ReceiveMessageResult}
 
 import scala.collection.JavaConverters._
 
 object SqsSourceSettings {
-  val Defaults = SqsSourceSettings(20, 100, 10, None)
+  val Defaults = SqsSourceSettings(20, 100, 10)
 
-  def create(waitTimeSeconds: Int,
-             maxBufferSize: Int,
-             maxBatchSize: Int,
-             credentials: AWSCredentials): SqsSourceSettings =
-    SqsSourceSettings(waitTimeSeconds, maxBufferSize, maxBatchSize, Some(credentials))
-
-  private def create(waitTimeSeconds: Int, maxBufferSize: Int, maxBatchSize: Int): SqsSourceSettings =
-    SqsSourceSettings(waitTimeSeconds, maxBufferSize, maxBatchSize, None)
+  def create(waitTimeSeconds: Int, maxBufferSize: Int, maxBatchSize: Int): SqsSourceSettings =
+    SqsSourceSettings(waitTimeSeconds, maxBufferSize, maxBatchSize)
 
 }
 
@@ -33,8 +25,7 @@ object SqsSourceSettings {
 final case class SqsSourceSettings(
     waitTimeSeconds: Int,
     maxBufferSize: Int,
-    maxBatchSize: Int,
-    credentials: Option[AWSCredentials]
+    maxBatchSize: Int
 ) {
   require(maxBatchSize <= maxBufferSize, "maxBatchSize must be lower or equal than maxBufferSize")
   // SQS requirements
@@ -45,7 +36,8 @@ final case class SqsSourceSettings(
 }
 //#SqsSourceSettings
 
-final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings) extends GraphStage[SourceShape[Message]] {
+final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings)(implicit sqsClient: AmazonSQSAsync)
+    extends GraphStage[SourceShape[Message]] {
 
   val out: Outlet[Message] = Outlet("SqsSource.out")
   override val shape: SourceShape[Message] = SourceShape(out)
@@ -53,12 +45,7 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings) extend
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
 
-      private val credentials =
-        settings.credentials.getOrElse(DefaultAWSCredentialsProviderChain.getInstance().getCredentials)
-
       private val maxConcurrency = settings.maxBufferSize / settings.maxBatchSize
-      private val threadPool = Executors.newFixedThreadPool(maxConcurrency)
-      private val sqsClient = new AmazonSQSAsyncClient(credentials, threadPool)
       private val buffer = new util.ArrayDeque[Message]()
 
       private val successCallback = getAsyncCallback[ReceiveMessageResult](handleSuccess)
@@ -122,8 +109,5 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings) extend
             receiveMessages()
           }
       })
-
-      override def postStop(): Unit =
-        sqsClient.shutdown() //shuts down the underlying thread pool as well
     }
 }
