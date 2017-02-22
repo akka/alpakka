@@ -3,7 +3,13 @@
  */
 package akka.stream.alpakka.ftp
 
+import java.io.File
+import java.net.InetAddress
+import java.nio.file.{Files, Paths}
+
 import akka.stream.IOResult
+import akka.stream.alpakka.ftp.FtpCredentials.NonAnonFtpCredentials
+import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
@@ -17,6 +23,40 @@ final class SftpStageSpec extends BaseSftpSpec with CommonFtpStageSpec
 final class FtpsStageSpec extends BaseFtpsSpec with CommonFtpStageSpec {
   setAuthValue("TLS")
   setUseImplicit(false)
+}
+
+final class RawKeySftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
+  override val settings = SftpSettings(
+    InetAddress.getByName("localhost"),
+    getPort,
+    NonAnonFtpCredentials("different user and password", "will fail password auth"),
+    strictHostKeyChecking = false,
+    knownHosts = None,
+    Some(RawKeySftpIdentity("id", Files.readAllBytes(Paths.get("ftp/src/test/resources/client.pem"))))
+  )
+}
+
+final class KeyFileSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
+  override val settings = SftpSettings(
+    InetAddress.getByName("localhost"),
+    getPort,
+    NonAnonFtpCredentials("different user and password", "will fail password auth"),
+    strictHostKeyChecking = false,
+    knownHosts = None,
+    Some(KeyFileSftpIdentity("ftp/src/test/resources/client.pem"))
+  )
+}
+
+final class StrictHostCheckingSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
+  override val settings = SftpSettings(
+    InetAddress.getByName("localhost"),
+    getPort,
+    NonAnonFtpCredentials("different user and password", "will fail password auth"),
+    strictHostKeyChecking = true,
+    knownHosts = Some(new File("ftp/src/test/resources/known_hosts").getAbsolutePath),
+    Some(KeyFileSftpIdentity("ftp/src/test/resources/client.pem", None, None)),
+    options = Map("HostKeyAlgorithms" -> "+ssh-dss")
+  )
 }
 
 trait CommonFtpStageSpec extends BaseSpec {
