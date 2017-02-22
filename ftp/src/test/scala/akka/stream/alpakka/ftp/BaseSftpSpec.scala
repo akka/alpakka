@@ -4,7 +4,6 @@
 package akka.stream.alpakka.ftp
 
 import akka.NotUsed
-import akka.stream.alpakka.ftp.RemoteFileSettings.SftpSettings
 import akka.stream.alpakka.ftp.FtpCredentials.AnonFtpCredentials
 import akka.stream.alpakka.ftp.scaladsl.Sftp
 import akka.stream.IOResult
@@ -21,7 +20,10 @@ trait BaseSftpSpec extends SftpSupportImpl with BaseSpec {
     InetAddress.getByName("localhost"),
     getPort,
     AnonFtpCredentials,
-    strictHostKeyChecking = false
+    strictHostKeyChecking = false,
+    knownHosts = None,
+    sftpIdentity = None,
+    options = Map.empty
   )
   //#create-settings
 
