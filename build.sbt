@@ -9,6 +9,7 @@ lazy val alpakka = project
              dynamodb,
              files,
              ftp,
+             geode,
              googleCloudPubSub,
              hbase,
              ironmq,
@@ -95,6 +96,15 @@ lazy val ftp = project
   .settings(
     name := "akka-stream-alpakka-ftp",
     Dependencies.Ftp,
+    parallelExecution in Test := false
+  )
+
+lazy val geode = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-geode",
+    Dependencies.Geode,
+    fork in Test := true,
     parallelExecution in Test := false
   )
 
