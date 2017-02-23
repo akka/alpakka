@@ -31,10 +31,10 @@ class JmsConnectorsSpec extends JmsSpec {
       )
       //#create-text-sink
 
-      //#run-sink
+      //#run-text-sink
       val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
       Source(in).runWith(jmsSink)
-      //#run-sink
+      //#run-text-sink
 
       //#create-text-source
       val jmsSource: Source[String, NotUsed] = JmsSource.textSource(
@@ -70,11 +70,16 @@ class JmsConnectorsSpec extends JmsSpec {
 
       Source(msgsIn).runWith(jmsSink)
 
+      //#create-jms-source
       val jmsSource: Source[Message, NotUsed] = JmsSource(
         JmsSourceSettings(connectionFactory).withBufferSize(10).withQueue("numbers")
       )
+      //#create-jms-source
 
+      //#run-jms-source
       val result = jmsSource.take(msgsIn.size).runWith(Sink.seq)
+      //#run-jms-source
+
       // The sent message and the receiving one should have the same properties
       result.futureValue.zip(msgsIn).foreach {
         case (out, in) =>
@@ -101,10 +106,13 @@ class JmsConnectorsSpec extends JmsSpec {
         }
         Source(msgsIn).runWith(jmsSink)
 
-        val jmsSource: Source[Message, NotUsed] = JmsSource(
+        //#create-jms-source-with-selector
+        val jmsSource = JmsSource(
           JmsSourceSettings(connectionFactory).withBufferSize(10).withQueue("numbers").withSelector("IsOdd = TRUE")
         )
+        //#create-jms-source-with-selector
 
+        //#assert-only-odd-messages-received
         val oddMsgsIn = msgsIn.filter(msg => msg.body.toInt % 2 == 1)
         val result = jmsSource.take(oddMsgsIn.size).runWith(Sink.seq)
         // We should have only received the odd numbers in the list
@@ -116,6 +124,7 @@ class JmsConnectorsSpec extends JmsSpec {
             // Make sure we are only receiving odd numbers
             out.getIntProperty("Number") % 2 shouldEqual 1
         }
+      //#assert-only-odd-messages-received
     }
 
     "applying backpressure when the consumer is slower than the producer" in withServer() { ctx =>

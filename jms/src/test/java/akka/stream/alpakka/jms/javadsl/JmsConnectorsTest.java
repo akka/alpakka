@@ -31,7 +31,8 @@ import static org.junit.Assert.assertEquals;
 
 public class JmsConnectorsTest {
 
-    protected List<JmsTextMessage> createTestMessageList() {
+    //#create-test-message-list
+    private List<JmsTextMessage> createTestMessageList() {
         List<Integer> intsIn = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
         List<JmsTextMessage> msgsIn = new ArrayList<>();
         for(Integer n: intsIn) {
@@ -45,6 +46,7 @@ public class JmsConnectorsTest {
 
         return msgsIn;
     }
+    //#create-test-message-list
 
     @Test
     public void publishAndConsume() throws Exception {
@@ -79,7 +81,7 @@ public class JmsConnectorsTest {
             CompletionStage<List<String>> result = jmsSource
                     .take(in.size())
                     .runWith(Sink.seq(), materializer);
-            //#run-source
+            //#run-text-source
 
             assertEquals(in, result.toCompletableFuture().get(3, TimeUnit.SECONDS));
         });
@@ -99,7 +101,9 @@ public class JmsConnectorsTest {
             );
             //#create-jms-sink
 
+            //#create-messages-with-properties
             List<JmsTextMessage> msgsIn = createTestMessageList();
+            //#create-messages-with-properties
 
             //#run-jms-sink
             Source.from(msgsIn).runWith(jmsSink, materializer);
@@ -145,18 +149,19 @@ public class JmsConnectorsTest {
 
             Source.from(msgsIn).runWith(jmsSink, materializer);
 
+            //#create-jms-source-with-selector
             Source<Message, NotUsed> jmsSource = JmsSource.create(JmsSourceSettings
                     .create(connectionFactory)
                     .withQueue("test")
                     .withBufferSize(10)
                     .withSelector("IsOdd = TRUE")
             );
+            //#create-jms-source-with-selector
 
-            //#run-jms-source
+            //#assert-only-odd-messages-received
             CompletionStage<List<Message>> result = jmsSource
                     .take(msgsIn.size())
                     .runWith(Sink.seq(), materializer);
-            //#run-jms-source
 
             List<Message> outMessages = result.toCompletableFuture().get(4, TimeUnit.SECONDS);
             int msgIdx = 0;
@@ -167,6 +172,7 @@ public class JmsConnectorsTest {
                 assertEquals(1, outMsg.getIntProperty("Number") % 2);
                 msgIdx++;
             }
+            //#assert-only-odd-messages-received
         });
     }
 
