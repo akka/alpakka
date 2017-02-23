@@ -97,6 +97,13 @@ object Dependencies {
     )
   )
 
+  val Sns = Seq(
+    libraryDependencies ++= Seq(
+      "com.amazonaws" % "aws-java-sdk-sns" % "1.11.95",        // ApacheV2
+      "org.mockito"   % "mockito-core"     % "2.7.11"    % Test // MIT
+    )
+  )
+
   val Sqs = Seq(
     libraryDependencies ++= Seq(
       "com.amazonaws" % "aws-java-sdk-sqs" % "1.11.76",        // ApacheV2

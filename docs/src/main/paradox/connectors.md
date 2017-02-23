@@ -4,6 +4,7 @@
 
 * [AMQP Connector](amqp.md)
 * [AWS DynamoDB Connector](dynamodb.md)
+* [AWS SNS Connector](sns.md)
 * [AWS SQS Connector](sqs.md)
 * [AWS Lambda Connector](awslambda.md)
 * [Cassandra Connector](cassandra.md)
