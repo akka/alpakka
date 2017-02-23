@@ -159,16 +159,21 @@ public class JmsConnectorsTest {
             //#create-jms-source-with-selector
 
             //#assert-only-odd-messages-received
+            List<JmsTextMessage> oddMsgsIn = msgsIn.stream()
+                    .filter(msg -> Integer.valueOf(msg.body()) % 2 == 1)
+                    .collect(Collectors.toList());
+            assertEquals(5, oddMsgsIn.size());
+
             CompletionStage<List<Message>> result = jmsSource
-                    .take(msgsIn.size())
+                    .take(oddMsgsIn.size())
                     .runWith(Sink.seq(), materializer);
 
             List<Message> outMessages = result.toCompletableFuture().get(4, TimeUnit.SECONDS);
             int msgIdx = 0;
             for(Message outMsg: outMessages) {
-                assertEquals(outMsg.getIntProperty("Number"), msgsIn.get(msgIdx).properties().get("Number").get());
-                assertEquals(outMsg.getBooleanProperty("IsOdd"), msgsIn.get(msgIdx).properties().get("IsOdd").get());
-                assertEquals(outMsg.getBooleanProperty("IsEven"), (msgsIn.get(msgIdx).properties().get("IsEven").get()));
+                assertEquals(outMsg.getIntProperty("Number"), oddMsgsIn.get(msgIdx).properties().get("Number").get());
+                assertEquals(outMsg.getBooleanProperty("IsOdd"), oddMsgsIn.get(msgIdx).properties().get("IsOdd").get());
+                assertEquals(outMsg.getBooleanProperty("IsEven"), (oddMsgsIn.get(msgIdx).properties().get("IsEven").get()));
                 assertEquals(1, outMsg.getIntProperty("Number") % 2);
                 msgIdx++;
             }
