@@ -12,20 +12,14 @@ object JmsSink {
   /**
    * Scala API: Creates an [[JmsSink]]
    */
-  def apply(jmsSettings: JmsSinkSettings): Sink[String, NotUsed] = {
-    val msgSink: Sink[JmsTextMessage, NotUsed] = Sink.fromGraph(new JmsSinkStage(jmsSettings))
-    val mappingFlow: Flow[String, JmsTextMessage, NotUsed] = Flow[String].map { m: String =>
-      JmsTextMessage(m)
-    }
-    mappingFlow.to(msgSink)
-  }
-}
-
-object JmsTextMessageSink {
-
-  /**
-   * Scala API: Creates an [[JmsTextMessage]]
-   */
   def apply(jmsSettings: JmsSinkSettings): Sink[JmsTextMessage, NotUsed] =
     Sink.fromGraph(new JmsSinkStage(jmsSettings))
+
+  /**
+   * Scala API: Creates an [[JmsSink]]
+   */
+  def textSink(jmsSettings: JmsSinkSettings): Sink[String, NotUsed] = {
+    val jmsMsgSink = Sink.fromGraph(new JmsSinkStage(jmsSettings))
+    Flow.fromFunction((s: String) => JmsTextMessage(s)).to(jmsMsgSink)
+  }
 }

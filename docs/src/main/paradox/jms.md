@@ -1,6 +1,6 @@
 # JMS Connector
 
-The JMS connector provides Akka Stream sources and sinks to connect to JMS servers.
+The JMS connector provides Akka Stream sources and sinks to connect to JMS providers.
 
 ## Artifacts
 
@@ -8,7 +8,7 @@ sbt
 :   @@@vars
     ```scala
     libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-jms" % "$version$"
-    libraryDependencies += "javax.jms" % "jms" % "1.1"      
+    libraryDependencies += "javax.jms" % "jms" % "1.1"
     ```
     @@@
 
@@ -40,9 +40,13 @@ Gradle
 
 ## Usage
 
-### Sending messages to JMS server
+The JMS message model supports several types of message body (see @extref(javaee-api:javax.jms.Message)) and Alpakka currently supports messages with a body containing a @extref[String](java-api:java.lang.String) object.
 
-First define a jms `ConnectionFactory` depending on the implementation you're using. Here we're using Active MQ. 
+Use the case class @scaladoc[JmsTextMessage](akka.stream.alpakka.jms.JmsTextMessage$) to wrap the messages you want to send and optionally set their properties (see below for an example).
+
+### Sending messages to a JMS provider
+
+First define a jms `ConnectionFactory` depending on the implementation you're using. Here we're using Active MQ.
 
 Scala
 : @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }
@@ -51,23 +55,33 @@ Java
 : @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #connection-factory }
 
 
-Create a sink, that accepts and forwards @scaladoc[String](`String`)s to the JMS server.
+Create a sink, that accepts and forwards @extref[String](java-api:java.lang.String)s to the JMS provider.
 
 Scala
-: @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-sink }
+: @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-string-sink }
 
 Java
-: @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-sink }
+: @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-string-sink }
 
-@scaladoc[JmsSink](akka.stream.alpakka.jms.JmsSink$) is a collection of factory methods that facilitates creation of sinks.
+@scaladoc[JmsSink](akka.stream.alpakka.jms.JmsSink$) contains factory methods to facilitate the creation of sinks.
 
-Last step is to @extref[materialize](akka-docs:scala/stream/stream-flows-and-basics) and run the sink we have created.
+Last step is to @extref[materialize](akka-docs:scala/stream/stream-flows-and-basics) and run the sink(s) we have created.
 
 Scala
 : @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-sink }
 
 Java
 : @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-sink }
+
+### Sending messages with properties to a JMS provider
+
+Create a sink, that accepts and forwards @scaladoc[JmsTextMessage](akka.stream.alpakka.jms.JmsTextMessage$)s to the JMS provider:
+
+Scala
+: @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-properties }
+
+Java
+: @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-messages-with-properties }
 
 ### Receiving messages from JMS server
 

@@ -12,21 +12,12 @@ object JmsSink {
   /**
    * Java API: Creates an [[JmsSink]]
    */
-  def create(jmsSinkSettings: JmsSinkSettings): akka.stream.javadsl.Sink[String, NotUsed] = {
-    val msgSink: Sink[JmsTextMessage, NotUsed] = Sink.fromGraph(new JmsSinkStage(jmsSinkSettings))
-    val mappingFlow: Flow[String, JmsTextMessage, NotUsed] = Flow[String].map { m: String =>
-      JmsTextMessage(m)
-    }
-    mappingFlow.to(msgSink).asJava
-  }
-}
-
-object JmsTextMessageSink {
-
-  /**
-   * Java API: Creates an [[JmsTextMessageSink]]
-   */
   def create(jmsSinkSettings: JmsSinkSettings): akka.stream.javadsl.Sink[JmsTextMessage, NotUsed] =
     akka.stream.javadsl.Sink.fromGraph(new JmsSinkStage(jmsSinkSettings))
 
+  /**
+   * Java API: Creates an [[JmsSink]]
+   */
+  def textSink(jmsSinkSettings: JmsSinkSettings): akka.stream.javadsl.Sink[String, NotUsed] =
+    akka.stream.alpakka.jms.scaladsl.JmsSink.textSink(jmsSinkSettings).asJava
 }

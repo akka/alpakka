@@ -27,7 +27,7 @@ object JmsTextMessage {
    * Java API: create  [[JmsTextMessage]]
    */
   def create(body: String) = JmsTextMessage(body, Map.empty)
-  def create(body: String, properties: util.HashMap[String, Any]) = JmsTextMessage(body, properties.toMap)
+  def create(body: String, properties: util.Map[String, Any]) = JmsTextMessage(body, properties.toMap)
 }
 
 object JmsSourceSettings {
