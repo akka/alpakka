@@ -3,6 +3,8 @@
  */
 package akka.stream.alpakka.jms
 
+import scala.collection.JavaConversions._
+import java.util
 import javax.jms.ConnectionFactory
 
 sealed trait JmsSettings {
@@ -15,6 +17,19 @@ sealed trait Destination
 final case class Topic(name: String) extends Destination
 final case class Queue(name: String) extends Destination
 
+final case class JmsTextMessage(body: String, properties: Map[String, Any] = Map.empty) {
+  def withProperty(name: String, value: Any) = copy(properties = properties + (name -> value))
+}
+
+object JmsTextMessage {
+
+  /**
+   * Java API: create  [[JmsTextMessage]]
+   */
+  def create(body: String) = JmsTextMessage(body, Map.empty)
+  def create(body: String, properties: util.Map[String, Any]) = JmsTextMessage(body, properties.toMap)
+}
+
 object JmsSourceSettings {
 
   def create(connectionFactory: ConnectionFactory) = JmsSourceSettings(connectionFactory)
@@ -24,12 +39,14 @@ object JmsSourceSettings {
 final case class JmsSourceSettings(connectionFactory: ConnectionFactory,
                                    destination: Option[Destination] = None,
                                    credentials: Option[Credentials] = None,
-                                   bufferSize: Int = 100)
+                                   bufferSize: Int = 100,
+                                   selector: Option[String] = None)
     extends JmsSettings {
   def withCredential(credentials: Credentials) = copy(credentials = Some(credentials))
   def withBufferSize(size: Int) = copy(bufferSize = size)
   def withQueue(name: String) = copy(destination = Some(Queue(name)))
   def withTopic(name: String) = copy(destination = Some(Topic(name)))
+  def withSelector(selector: String) = copy(selector = Some(selector))
 }
 
 object JmsSinkSettings {
