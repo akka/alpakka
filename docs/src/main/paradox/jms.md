@@ -8,7 +8,7 @@ sbt
 :   @@@vars
     ```scala
     libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-jms" % "$version$"
-    libraryDependencies += "javax.jms" % "jms" % "1.1"
+    libraryDependencies += "javax.jms" % "jms" % "1.1"      
     ```
     @@@
 
@@ -46,7 +46,7 @@ Use the case class @scaladoc[JmsTextMessage](akka.stream.alpakka.jms.JmsTextMess
 
 ### Sending messages to a JMS provider
 
-First define a jms `ConnectionFactory` depending on the implementation you're using. Here we're using Active MQ.
+First define a jms `ConnectionFactory` depending on the implementation you're using. Here we're using Active MQ. 
 
 Scala
 : @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }
