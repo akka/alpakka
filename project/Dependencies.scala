@@ -27,6 +27,18 @@ object Dependencies {
     )
   )
 
+  val circeVersion = "0.7.0"
+  val BackblazeB2 = Seq(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka"     %% "akka-http"     % AkkaHttpVersion,
+      "de.heikoseeberger"     %% "akka-http-circe" % "1.12.0" // ApacheV2
+    ) ++ Seq( // ApacheV2
+      "io.circe" %% "circe-core",
+      "io.circe" %% "circe-generic",
+      "io.circe" %% "circe-parser"
+    ).map(_ % circeVersion)
+  )
+
   val Amqp = Seq(
     libraryDependencies ++= Seq(
       "com.rabbitmq" % "amqp-client" % "3.6.1" // APLv2

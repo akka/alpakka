@@ -70,6 +70,13 @@ lazy val s3 = project
     Dependencies.S3
   )
 
+lazy val backblazeb2 = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "backblaze-b2",
+    Dependencies.BackblazeB2
+  )
+
 lazy val simpleCodecs = project
   .in(file("simple-codecs"))
   .enablePlugins(AutomateHeaderPlugin)
