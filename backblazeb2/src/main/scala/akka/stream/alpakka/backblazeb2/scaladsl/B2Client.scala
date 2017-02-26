@@ -9,16 +9,18 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream.Materializer
 import akka.stream.alpakka.backblazeb2.B2Exception
 import akka.stream.alpakka.backblazeb2.Protocol._
 import akka.stream.alpakka.backblazeb2.JsonSupport._
-import scala.concurrent.{ExecutionContext, Future}
+import akka.util.ByteString
+import scala.concurrent.Future
 
 class B2Client(implicit system: ActorSystem, materializer: Materializer) {
   implicit val executionContext = materializer.executionContext
   private val version = "b2api/v1"
+  private val DefaultContentType = "b2/x-auto"
 
   /**
    * https://www.backblaze.com/b2/docs/b2_authorize_account.html
@@ -33,8 +35,7 @@ class B2Client(implicit system: ActorSystem, materializer: Materializer) {
 
     for {
       response <- Http().singleRequest(request)
-      entity <- entityForSuccess(response)
-      result <- parseAuthorizeAccountResponse(entity)
+      result <- parseResponse[AuthorizeAccountResponse](response)
     } yield result
   }
 
@@ -54,28 +55,59 @@ class B2Client(implicit system: ActorSystem, materializer: Materializer) {
 
     for {
       response <- Http().singleRequest(request)
-      entity <- entityForSuccess(response)
-      result <- parseGetUploadUrlResponse(entity)
+      result <- parseResponse[GetUploadUrlResponse](response)
     } yield result
   }
 
-  private def entityForSuccess(resp: HttpResponse)(implicit ctx: ExecutionContext): Future[ResponseEntity] =
-    resp match {
+  def upload(
+    apiUrl: ApiUrl,
+    bucketId: BucketId,
+    accountAuthorizationToken: AccountAuthorizationToken,
+    fileName: FileName,
+    data: ByteString,
+    contentType: String = DefaultContentType
+  ): Future[UploadFileResponse] = {
+    val uploadUrlResponse = getUploadUrl(apiUrl, bucketId, accountAuthorizationToken)
+    uploadUrlResponse flatMap { uploadUrlResponse =>
+      uploadFile(uploadUrlResponse.uploadUrl, fileName, data, contentType)
+    }
+  }
+
+  /**
+    * https://www.backblaze.com/b2/docs/b2_upload_file.html
+    */
+  def uploadFile(
+    uploadUrl: UploadUrl,
+    fileName: FileName,
+    data: ByteString,
+    contentType: String = DefaultContentType
+  ): Future[UploadFileResponse] = {
+    ???
+  }
+
+  /**
+    * https://www.backblaze.com/b2/docs/b2_download_file_by_name.html
+    */
+  def downloadFileByName(
+    fileName: FileName
+  ): Future[DownloadFileByNameResponse] = {
+    ???
+  }
+
+  private def parseResponse[T : FromEntityUnmarshaller](response: HttpResponse): Future[T] = {
+    for {
+      entity <- entityForSuccess(response)
+      result <- Unmarshal(entity).to[T]
+    } yield result
+  }
+
+  private def entityForSuccess(response: HttpResponse): Future[ResponseEntity] = {
+    response match {
       case HttpResponse(status, _, entity, _) if status.isSuccess() =>
         Future.successful(entity)
 
       case HttpResponse(status, _, entity, _) =>
         Unmarshal(entity).to[String].flatMap(result => Future.failed(new B2Exception(s"HTTP error $status - $result")))
     }
-
-  private def parseAuthorizeAccountResponse(entity: ResponseEntity): Future[AuthorizeAccountResponse] = {
-    Unmarshal(entity).to[AuthorizeAccountResponse]
   }
-
-  private def parseGetUploadUrlResponse(entity: ResponseEntity): Future[GetUploadUrlResponse] = {
-    Unmarshal(entity).to[GetUploadUrlResponse]
-  }
-
-  // https://www.backblaze.com/b2/docs/b2_download_file_by_name.html
-  // https://www.backblaze.com/b2/docs/b2_upload_file.html
 }

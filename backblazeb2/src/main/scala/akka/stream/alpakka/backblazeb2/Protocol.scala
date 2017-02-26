@@ -32,15 +32,42 @@ object Protocol {
     override def toString: String = value
   }
 
+  case class FileId(value: String) extends AnyVal {
+    override def toString: String = value
+  }
+
+  case class FileName(value: String) extends AnyVal {
+    override def toString: String = value
+  }
+
+  case class Sha1(value: String) extends AnyVal {
+    override def toString: String = value
+  }
+
+  case class AuthorizeAccountResponse(
+    accountId: AccountId,
+    apiUrl: ApiUrl,
+    authorizationToken: AccountAuthorizationToken
+  )
+
   case class GetUploadUrlResponse(
     bucketId: BucketId,
     uploadUrl: UploadUrl,
     authorizationToken: UploadAuthorizationToken
   )
 
-  case class AuthorizeAccountResponse(
+  case class UploadFileResponse(
+    fileId: FileId,
+    fileName: FileName,
     accountId: AccountId,
-    apiUrl: ApiUrl,
-    authorizationToken: AccountAuthorizationToken
+    bucketId: BucketId,
+    contentLength: Long,
+    contentSha1: Sha1,
+    contentType: String,
+    fileInfo: Map[String, String]
+  )
+
+  case class DownloadFileByNameResponse(
+    // TODO
   )
 }
