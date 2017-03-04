@@ -3,10 +3,15 @@
  */
 package akka.stream.alpakka.backblazeb2
 
+import java.nio.charset.StandardCharsets
+import java.util.UUID
+
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.ContentTypes
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.backblazeb2.Protocol.{AccountId, ApplicationKey, BucketId}
+import akka.stream.alpakka.backblazeb2.Protocol._
 import akka.stream.alpakka.backblazeb2.scaladsl.B2Client
+import akka.util.ByteString
 import org.scalatest.AsyncFlatSpec
 import org.scalatest.Matchers._
 
@@ -28,24 +33,38 @@ class B2ClientSpec extends AsyncFlatSpec {
   private val client = new B2Client
   private val timeout = 10.seconds
 
-  it should "authorize account" in {
-    val result = client.authorizeAccount(accountId, applicationKey)
-    result map { result =>
-      result.authorizationToken.value should not be empty
-      result.apiUrl.value should not be empty
-      result.accountId.value should not be empty
-    }
-  }
+  private val testRun = UUID.randomUUID().toString
+  private val fileName = FileName(s"test-$testRun.txt")
 
-  it should "get upload url" in {
-    val authorizationF = client.authorizeAccount(accountId, applicationKey)
-    val authorization = Await.result(authorizationF, timeout)
+  it should "work in happy case" in {
+    val authorizationResultF = client.authorizeAccount(accountId, applicationKey)
+    val authorizationResult = Await.result(authorizationResultF, timeout)
+    authorizationResult.authorizationToken.value should not be empty
+    authorizationResult.apiUrl.value should not be empty
+    authorizationResult.accountId.value should not be empty
 
-    val result = client.getUploadUrl(authorization.apiUrl, bucketId, authorization.authorizationToken)
-    result map { result =>
-      result.authorizationToken.value should not be empty
-      result.uploadUrl.value should not be empty
-      result.bucketId.value should not be empty
-    }
+    val text = "this is test data"
+    val data = ByteString(text.getBytes(StandardCharsets.UTF_8.name))
+    val uploadResultF = client.upload(
+      apiUrl = authorizationResult.apiUrl,
+      bucketId = bucketId,
+      accountAuthorizationToken = authorizationResult.authorizationToken,
+      fileName = fileName,
+      data = data,
+      contentType = ContentTypes.`text/plain(UTF-8)`
+    )
+
+    val uploadResult = Await.result(uploadResultF, timeout)
+    uploadResult.fileId.value should not be empty
+
+    val downloadResultF = client.downloadFileByName(fileName)
+    val downloadResult = Await.result(downloadResultF, timeout)
+    downloadResult.data shouldEqual data
+    val receivedText = new String(downloadResult.data.toArray, StandardCharsets.UTF_8.name)
+    receivedText shouldEqual text
+
+    val deleteResultF = client.delete(fileName)
+    val deleteResult = Await.result(deleteResultF, timeout)
+    deleteResult shouldEqual uploadResult.fileId :: Nil
   }
 }

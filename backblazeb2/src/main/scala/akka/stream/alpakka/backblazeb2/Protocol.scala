@@ -3,6 +3,8 @@
  */
 package akka.stream.alpakka.backblazeb2
 
+import akka.util.ByteString
+
 object Protocol {
   case class AccountAuthorizationToken(value: String) extends AnyVal {
     override def toString: String = value
@@ -44,6 +46,10 @@ object Protocol {
     override def toString: String = value
   }
 
+  case class FileVersion(
+    // TODO
+  )
+
   case class AuthorizeAccountResponse(
     accountId: AccountId,
     apiUrl: ApiUrl,
@@ -68,6 +74,6 @@ object Protocol {
   )
 
   case class DownloadFileByNameResponse(
-    // TODO
+    data: ByteString
   )
 }

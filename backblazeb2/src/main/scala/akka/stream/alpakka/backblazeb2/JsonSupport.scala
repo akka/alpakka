@@ -32,6 +32,24 @@ object JsonSupport {
   implicit val bucketIdDecoder: Decoder[BucketId] =
     Decoder.decodeString.map(BucketId)
 
+  implicit val fileIdEncoder: Encoder[FileId] =
+    Encoder.encodeString.contramap(_.value)
+
+  implicit val fileIdDecoder: Decoder[FileId] =
+    Decoder.decodeString.map(FileId)
+
+  implicit val fileNameEncoder: Encoder[FileName] =
+    Encoder.encodeString.contramap(_.value)
+
+  implicit val fileNameDecoder: Decoder[FileName] =
+    Decoder.decodeString.map(FileName)
+
+  implicit val sha1Encoder: Encoder[Sha1] =
+    Encoder.encodeString.contramap(_.value)
+
+  implicit val sha1Decoder: Decoder[Sha1] =
+    Decoder.decodeString.map(Sha1)
+
   implicit val apiUrlEncoder: Encoder[ApiUrl] =
     Encoder.encodeString.contramap(_.value)
 
@@ -46,7 +64,9 @@ object JsonSupport {
 
   implicit val authorizeAccountResponseDecoder = Decoder[AuthorizeAccountResponse]
   implicit val getUploadUrlResponseDecoder = Decoder[GetUploadUrlResponse]
+  implicit val uploadFileResponseDecoder = Decoder[UploadFileResponse]
 
   implicit val authorizeAccountResponseUnmarshaller = circeUnmarshaller[AuthorizeAccountResponse]
   implicit val getUploadUrlResponseUnmarshaller = circeUnmarshaller[GetUploadUrlResponse]
+  implicit val getUploadFileResponseUnmarshaller = circeUnmarshaller[UploadFileResponse]
 }
