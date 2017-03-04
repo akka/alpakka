@@ -3,9 +3,9 @@
  */
 package akka.stream.alpakka.backblazeb2
 
-import akka.util.ByteString
-
 object Protocol {
+  case class Credentials(accountId: AccountId, applicationKey: ApplicationKey)
+
   case class AccountAuthorizationToken(value: String) extends AnyVal {
     override def toString: String = value
   }
@@ -42,13 +42,13 @@ object Protocol {
     override def toString: String = value
   }
 
-  case class Sha1(value: String) extends AnyVal {
+  case class BucketName(value: String) extends AnyVal {
     override def toString: String = value
   }
 
-  case class FileVersion(
-    // TODO
-  )
+  case class Sha1(value: String) extends AnyVal {
+    override def toString: String = value
+  }
 
   case class AuthorizeAccountResponse(
     accountId: AccountId,
@@ -73,7 +73,12 @@ object Protocol {
     fileInfo: Map[String, String]
   )
 
-  case class DownloadFileByNameResponse(
-    data: ByteString
+  case class ListFileVersionsResponse(
+    files: List[FileVersionInfo]
+  )
+
+  case class FileVersionInfo(
+    fileName: FileName,
+    fileId: FileId
   )
 }

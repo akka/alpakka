@@ -18,7 +18,7 @@ import akka.util.ByteString
 import scala.concurrent.Future
 import cats.syntax.either._
 
-class B2Client(implicit system: ActorSystem, materializer: Materializer) {
+class B2Client(credentials: Credentials)(implicit system: ActorSystem, materializer: Materializer) {
   implicit val executionContext = materializer.executionContext
   private val version = "b2api/v1"
   private val DefaultContentType = ContentType.parse("b2/x-auto") getOrElse sys.error("Failed to parse b2/x-auto")
@@ -26,8 +26,8 @@ class B2Client(implicit system: ActorSystem, materializer: Materializer) {
   /**
    * https://www.backblaze.com/b2/docs/b2_authorize_account.html
    */
-  def authorizeAccount(accountId: AccountId, applicationKey: ApplicationKey): Future[AuthorizeAccountResponse] = {
-    val encodedCredentials = encodeBase64(s"$accountId:$applicationKey")
+  def authorizeAccount(): Future[AuthorizeAccountResponse] = {
+    val encodedCredentials = encodeBase64(s"${credentials.accountId}:${credentials.applicationKey}")
     val authorization = s"Basic $encodedCredentials"
     val request = HttpRequest(
       uri = s"https://api.backblazeb2.com/$version/b2_authorize_account",
@@ -43,10 +43,10 @@ class B2Client(implicit system: ActorSystem, materializer: Materializer) {
   def getUploadUrl(
     apiUrl: ApiUrl,
     bucketId: BucketId,
-    accountAuthorizationToken: AccountAuthorizationToken
+    accountAuthorization: AccountAuthorizationToken
   ): Future[GetUploadUrlResponse] = {
     val uri = Uri(s"$apiUrl/$version/b2_get_upload_url").withQuery(Query("bucketId" -> bucketId.value))
-    val headers = RawHeader("Authorization", accountAuthorizationToken.value)
+    val headers = RawHeader("Authorization", accountAuthorization.value)
     val request = HttpRequest(
       uri = uri,
       method = HttpMethods.GET
@@ -56,35 +56,18 @@ class B2Client(implicit system: ActorSystem, materializer: Materializer) {
   }
 
   /**
-    * Upload a file
-    */
-  def upload(
-    apiUrl: ApiUrl,
-    bucketId: BucketId,
-    accountAuthorizationToken: AccountAuthorizationToken,
-    fileName: FileName,
-    data: ByteString,
-    contentType: ContentType = DefaultContentType
-  ): Future[UploadFileResponse] = {
-    val uploadUrlResponse = getUploadUrl(apiUrl, bucketId, accountAuthorizationToken)
-    uploadUrlResponse flatMap { uploadUrlResponse =>
-      uploadFile(uploadUrlResponse.uploadUrl, fileName, data, uploadUrlResponse.authorizationToken, contentType)
-    }
-  }
-
-  /**
     * https://www.backblaze.com/b2/docs/b2_upload_file.html
     */
   def uploadFile(
     uploadUrl: UploadUrl,
     fileName: FileName,
     data: ByteString,
-    authorizationToken: UploadAuthorizationToken,
+    uploadAuthorization: UploadAuthorizationToken,
     contentType: ContentType = DefaultContentType
   ): Future[UploadFileResponse] = {
     val uri = Uri(uploadUrl.value)
     val headers =
-      RawHeader("Authorization", authorizationToken.value) ::
+      RawHeader("Authorization", uploadAuthorization.value) ::
       RawHeader("X-Bz-File-Name", B2Encoder.encode(fileName.value)) ::
       RawHeader("X-Bz-Content-Sha1", B2Encoder.sha1String(data)) ::
       Nil
@@ -108,23 +91,66 @@ class B2Client(implicit system: ActorSystem, materializer: Materializer) {
     }
   }
 
+  private def authorizationHeaders(authorization: Option[AccountAuthorizationToken]) = {
+    authorization.map(authorizationHeader).toSeq
+  }
+
+  private def authorizationHeader(authorization: AccountAuthorizationToken) = {
+    RawHeader("Authorization", authorization.value)
+  }
+
   /**
     * https://www.backblaze.com/b2/docs/b2_download_file_by_name.html
     */
   def downloadFileByName(
-    fileName: FileName
-  ): Future[DownloadFileByNameResponse] = {
-    ???
+    fileName: FileName,
+    bucketName: BucketName,
+    apiUrl: ApiUrl,
+    accountAuthorization: Option[AccountAuthorizationToken]
+  ): Future[ByteString] = {
+    val uri = Uri(s"$apiUrl/file/$bucketName/$fileName")
+    val request = HttpRequest(
+      uri = uri,
+      method = HttpMethods.GET
+    ).withHeaders(authorizationHeaders(accountAuthorization) :_*)
+
+    requestAndParse[ByteString](request)
   }
 
   /**
-    * Delete all versions for a file identified by a filename.
+    * https://www.backblaze.com/b2/docs/b2_download_file_by_id.html
+    */
+  def downloadFileById(
+    fileId: FileId,
+    apiUrl: ApiUrl,
+    accountAuthorization: Option[AccountAuthorizationToken]
+  ): Future[ByteString] = {
+    val uri = Uri(s"$apiUrl/b2api/v1/b2_download_file_by_id")
+      .withQuery(Query("fileId" -> fileId.value))
+
+    val request = HttpRequest(
+      uri = uri,
+      method = HttpMethods.GET
+    ).withHeaders(authorizationHeaders(accountAuthorization) :_*)
+
+    requestAndParse[ByteString](request)
+  }
+
+  /**
+    * Delete all versions of a file
     */
   def delete(
-    fileName: FileName
-  ): Future[List[FileId]] = {
-    listFileVersions(fileName) flatMap { x =>
-      Future.sequence(x map deleteFileVersion)
+    bucketId: BucketId,
+    fileId: FileId,
+    fileName: FileName,
+    apiUrl: ApiUrl,
+    accountAuthorization: AccountAuthorizationToken
+  ): Future[List[FileVersionInfo]] = {
+    listFileVersions(bucketId, fileId, fileName, apiUrl, accountAuthorization) flatMap { fileVersions =>
+      val futures = fileVersions.files map { x =>
+        deleteFileVersion(apiUrl, x, accountAuthorization)
+      }
+      Future.sequence(futures)
     }
   }
 
@@ -132,18 +158,48 @@ class B2Client(implicit system: ActorSystem, materializer: Materializer) {
     * https://www.backblaze.com/b2/docs/b2_list_file_versions.html
     */
   def listFileVersions(
-    fileName: FileName
-  ): Future[List[FileVersion]] = {
-    ???
+    bucketId: BucketId,
+    fileId: FileId,
+    fileName: FileName,
+    apiUrl: ApiUrl,
+    accountAuthorization: AccountAuthorizationToken
+  ): Future[ListFileVersionsResponse] = {
+    val uri = Uri(s"$apiUrl/b2api/v1/b2_list_file_versions")
+      .withQuery(Query(
+        "bucketId" -> bucketId.value,
+        "startFileId" -> fileId.value,
+        "startFileName" -> fileName.value,
+        "maxFileCount" -> 1.toString
+      ))
+
+    val request = HttpRequest(
+      uri = uri,
+      method = HttpMethods.GET
+    ).withHeaders(authorizationHeader(accountAuthorization))
+
+    requestAndParse[ListFileVersionsResponse](request)
   }
 
   /**
     * https://www.backblaze.com/b2/docs/b2_delete_file_version.html
     */
   def deleteFileVersion(
-    fileVersion: FileVersion
-  ): Future[FileId] = {
-    ???
+    apiUrl: ApiUrl,
+    fileVersion: FileVersionInfo,
+    accountAuthorization: AccountAuthorizationToken
+  ): Future[FileVersionInfo] = {
+    val uri = Uri(s"$apiUrl/b2api/v1/b2_delete_file_version")
+      .withQuery(Query(
+        "fileId" -> fileVersion.fileId.value,
+        "fileName" -> fileVersion.fileName.value
+      ))
+
+    val request = HttpRequest(
+      uri = uri,
+      method = HttpMethods.GET
+    ).withHeaders(authorizationHeader(accountAuthorization))
+
+    requestAndParse[FileVersionInfo](request)
   }
 
   private def parseResponse[T : FromEntityUnmarshaller](response: HttpResponse): Future[T] = {

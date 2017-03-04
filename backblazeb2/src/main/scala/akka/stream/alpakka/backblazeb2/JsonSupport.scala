@@ -2,7 +2,7 @@
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.backblazeb2
-import akka.stream.alpakka.backblazeb2.Protocol._
+import akka.stream.alpakka.backblazeb2.Protocol.{ListFileVersionsResponse, _}
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.auto._
 import de.heikoseeberger.akkahttpcirce.CirceSupport._
@@ -65,8 +65,12 @@ object JsonSupport {
   implicit val authorizeAccountResponseDecoder = Decoder[AuthorizeAccountResponse]
   implicit val getUploadUrlResponseDecoder = Decoder[GetUploadUrlResponse]
   implicit val uploadFileResponseDecoder = Decoder[UploadFileResponse]
+  implicit val listFileVersionsResponseDecoder = Decoder[ListFileVersionsResponse]
+  implicit val fileVersionInfoDecoder = Decoder[FileVersionInfo]
 
   implicit val authorizeAccountResponseUnmarshaller = circeUnmarshaller[AuthorizeAccountResponse]
   implicit val getUploadUrlResponseUnmarshaller = circeUnmarshaller[GetUploadUrlResponse]
   implicit val getUploadFileResponseUnmarshaller = circeUnmarshaller[UploadFileResponse]
+  implicit val listFileVersionsResponseUnmarshaller = circeUnmarshaller[ListFileVersionsResponse]
+  implicit val fileVersionInfoUnmarshaller = circeUnmarshaller[FileVersionInfo]
 }
