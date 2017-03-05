@@ -1,13 +1,20 @@
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
-  .aggregate(amqp, cassandra, dynamodb, files, ftp, hbase, jms, mqtt, s3, simpleCodecs, sqs, sse, awslambda)
+  .aggregate(amqp, cassandra, csv, dynamodb, files, ftp, hbase, jms, mqtt, s3, simpleCodecs, sqs, sse, awslambda)
 
 lazy val amqp = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-amqp",
     Dependencies.Amqp
+  )
+
+lazy val csv = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-csv",
+    Dependencies.Csv
   )
 
 lazy val cassandra = project
