@@ -6,17 +6,15 @@ import akka.stream.alpakka.backblazeb2.Protocol._
 import akka.stream.alpakka.backblazeb2.scaladsl.B2Client
 import akka.util.ByteString
 import com.github.tomakehurst.wiremock.client.WireMock._
-import io.circe.syntax._
-import scala.concurrent.duration._
-import scala.concurrent.Await
 import org.scalatest.Matchers._
 import JsonSupport._
+import akka.http.scaladsl.model.StatusCodes
+import io.circe.syntax._
 
 class B2ClientSpec extends WireMockBase {
   val accountId = AccountId("accountId")
   val applicationKey = ApplicationKey("applicationKey")
   val credentials = B2AccountCredentials(accountId, applicationKey)
-  val timeout = 10.seconds
 
   implicit val system = ActorSystem("B2ClientSpec-system", config)
   implicit val materializer = ActorMaterializer()
@@ -30,7 +28,7 @@ class B2ClientSpec extends WireMockBase {
 
   private def successfulJsonResponse(returnData: String) = {
     aResponse()
-      .withStatus(200)
+      .withStatus(StatusCodes.OK.intValue)
       .withHeader("Content-Type", "application/json; charset=UTF-8")
       .withBody(returnData)
   }
@@ -49,33 +47,31 @@ class B2ClientSpec extends WireMockBase {
     )
   }
 
+  val successfulAuthorizeAccountResponse = AuthorizeAccountResponse(accountId, ApiUrl(s"https://$hostAndPort"), AccountAuthorizationToken("accountAuthorizationToken"))
+  val successfulAuthorizeAccountResponseJson = successfulAuthorizeAccountResponse.asJson.noSpaces
+  val successfulUploadUrl = UploadUrl(s"https://$hostAndPort/successfulUploadUrl")
+  val successfulUploadAuthorizationToken = UploadAuthorizationToken("successfulUploadAuthorizationToken")
+  val successfulGetUploadUrlResponse = GetUploadUrlResponse(bucketId, successfulUploadUrl, successfulUploadAuthorizationToken)
+  val successfulGetUploadUrlResponseJson = successfulGetUploadUrlResponse.asJson.noSpaces
+  val successfulUploadFileResponse = UploadFileResponse(
+    fileId = FileId("fileId"),
+    fileName = fileName,
+    accountId = accountId,
+    bucketId = bucketId,
+    contentLength = 0,
+    contentSha1 = Sha1("sha1"),
+    contentType = "application/text",
+    fileInfo = Map.empty
+  )
+  val successfulUploadFileResponseJson = successfulUploadFileResponse.asJson.noSpaces
+
   it should "work for happy case" in {
-    val successfulAuthorizeAccountResponse = AuthorizeAccountResponse(accountId, ApiUrl(s"https://$hostAndPort"), AccountAuthorizationToken("accountAuthorizationToken"))
-    val successfulAuthorizeAccountResponseJson = successfulAuthorizeAccountResponse.asJson.noSpaces
-
     mockGet("/b2api/v1/b2_authorize_account", successfulAuthorizeAccountResponseJson)
-
-    val successfulUploadUrl = UploadUrl(s"https://$hostAndPort/successfulUploadUrl")
-    val successfulUploadAuthorizationToken = UploadAuthorizationToken("successfulUploadAuthorizationToken")
-    val successfulGetUploadUrlResponse = GetUploadUrlResponse(bucketId, successfulUploadUrl, successfulUploadAuthorizationToken)
-    val successfulGetUploadUrlResponseJson = successfulGetUploadUrlResponse.asJson.noSpaces
     mockGet(s"/b2api/v1/b2_get_upload_url?bucketId=$bucketId", successfulGetUploadUrlResponseJson)
-
-    val successfulUploadFileResponse = UploadFileResponse(
-      fileId = FileId("fileId"),
-      fileName = fileName,
-      accountId = accountId,
-      bucketId = bucketId,
-      contentLength = 0,
-      contentSha1 = Sha1("sha1"),
-      contentType = "application/text",
-      fileInfo = Map.empty
-    )
-    val successfulUploadFileResponseJson = successfulUploadFileResponse.asJson.noSpaces
     mockPost("/successfulUploadUrl", successfulUploadFileResponseJson)
 
     val resultF = client.upload(fileName, data)
-    val result = Await.result(resultF, timeout)
+    val result = extractFromResponse(resultF)
     result shouldBe a[UploadFileResponse]
   }
 }

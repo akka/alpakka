@@ -14,8 +14,6 @@ import akka.stream.alpakka.backblazeb2.scaladsl.B2API
 import akka.util.ByteString
 import org.scalatest.AsyncFlatSpec
 import org.scalatest.Matchers._
-import scala.concurrent.duration._
-import scala.concurrent.Await
 
 /** Integration test, requires access to B2 and configured B2_ACCOUNT_ID and B2_APPLICATION_KEY environment variables */
 class B2APISpec extends AsyncFlatSpec {
@@ -33,7 +31,6 @@ class B2APISpec extends AsyncFlatSpec {
 
   private val credentials = B2AccountCredentials(accountId, applicationKey)
   private val api = new B2API()
-  private val timeout = 10.seconds
 
   private val testRun = UUID.randomUUID().toString
   private val fileName = FileName(s"test-$testRun.txt")
@@ -45,7 +42,7 @@ class B2APISpec extends AsyncFlatSpec {
 
   it should "work in happy case" in {
     val authorizationResultF = api.authorizeAccount(credentials)
-    val authorizationResult = Await.result(authorizationResultF, timeout)
+    val authorizationResult = extractFromResponse(authorizationResultF)
     authorizationResult.authorizationToken.value should not be empty
     authorizationResult.apiUrl.value should not be empty
     authorizationResult.accountId.value should not be empty
@@ -57,7 +54,7 @@ class B2APISpec extends AsyncFlatSpec {
     val data = ByteString(text.getBytes(StandardCharsets.UTF_8.name))
 
     val getUploadUrlF = api.getUploadUrl(authorizationResult, bucketId)
-    val getUploadUrl = Await.result(getUploadUrlF, timeout)
+    val getUploadUrl = extractFromResponse(getUploadUrlF)
 
     getUploadUrl.authorizationToken.value should not be empty
     getUploadUrl.uploadUrl.value should not be empty
@@ -69,21 +66,21 @@ class B2APISpec extends AsyncFlatSpec {
       contentType = ContentTypes.`text/plain(UTF-8)`
     )
 
-    val uploadResult = Await.result(uploadResultF, timeout)
+    val uploadResult = extractFromResponse(uploadResultF)
     uploadResult.fileId.value should not be empty
 
     val fileId = uploadResult.fileId
 
     val downloadByNameResultF = api.downloadFileByName(fileName, bucketName, apiUrl, accountAuthorization.some)
-    val downloadByNameResult = Await.result(downloadByNameResultF, timeout)
+    val downloadByNameResult = extractFromResponse(downloadByNameResultF)
     checkData(downloadByNameResult, text)
 
     val downloadByIdResultF = api.downloadFileById(uploadResult.fileId, apiUrl, accountAuthorization.some)
-    val downloadByIdResult = Await.result(downloadByIdResultF, timeout)
+    val downloadByIdResult = extractFromResponse(downloadByIdResultF)
     checkData(downloadByIdResult, text)
 
-    val deleteResultF = api.delete(bucketId, fileId, fileName, apiUrl, accountAuthorization)
-    val deleteResult = Await.result(deleteResultF, timeout)
-    deleteResult shouldEqual FileVersionInfo(uploadResult.fileName, uploadResult.fileId) :: Nil
+    val deleteResultF = api.deleteFileVersion(apiUrl, FileVersionInfo(fileName, fileId), accountAuthorization)
+    val deleteResult = extractFromResponse(deleteResultF)
+    deleteResult shouldEqual FileVersionInfo(uploadResult.fileName, uploadResult.fileId)
   }
 }

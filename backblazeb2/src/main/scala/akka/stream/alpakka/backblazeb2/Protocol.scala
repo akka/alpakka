@@ -3,7 +3,15 @@
  */
 package akka.stream.alpakka.backblazeb2
 
+import akka.http.scaladsl.model.StatusCode
+
+import scala.concurrent.Future
+
 object Protocol {
+  type B2Response[T] = Future[Either[B2Error, T]]
+
+  case class B2Error(statusCode: StatusCode, message: String)
+
   case class B2AccountCredentials(accountId: AccountId, applicationKey: ApplicationKey)
 
   case class AccountAuthorizationToken(value: String) extends AnyVal {

@@ -4,13 +4,14 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.backblazeb2.Protocol._
 import akka.util.ByteString
-import cats.syntax.option._
-
-import scala.concurrent.{Future, Promise}
+import cats.data.EitherT
+import cats.syntax.either._
+import scala.concurrent.Promise
 
 /**
   * Not thread safe.
   */
+/* TODO - https://www.backblaze.com/b2/docs/calling.html#error_handling */
 /*
  * TODO - Thread safety / Multithreading uploads
  *
@@ -31,36 +32,54 @@ class B2Client(accountCredentials: B2AccountCredentials, bucketId: BucketId, hos
   /**
     * Return the saved AuthorizeAccountResponse if it exists or obtain a new one if it doesn't
     */
-  private def obtainAuthorizeAccountResponse(): Future[AuthorizeAccountResponse] = {
-    if (authorizeAccountResponse.isCompleted) {
-      authorizeAccountResponse.future
-    } else {
-      val result = api.authorizeAccount(accountCredentials)
-      authorizeAccountResponse.completeWith(result)
-      result
-    }
+  private def obtainAuthorizeAccountResponse(): B2Response[AuthorizeAccountResponse] = {
+    returnOrObtain(authorizeAccountResponse, callAuthorizeAccount)
   }
 
   /**
     * Return the saved GetUploadUrlResponse if it exists or obtain a new one if it doesn't
     */
-  private def obtainGetUploadUrlResponse(): Future[GetUploadUrlResponse] = {
-    if (getUploadUrlResponse.isCompleted) {
-      getUploadUrlResponse.future
+  private def obtainGetUploadUrlResponse(): B2Response[GetUploadUrlResponse] = {
+    returnOrObtain(getUploadUrlResponse, callGetUploadUrl)
+  }
+
+  private def callAuthorizeAccount() = {
+    api.authorizeAccount(accountCredentials)
+  }
+
+  private def callGetUploadUrl() = {
+    import cats.implicits._
+    val eitherT = for {
+      authorizeAccountResponse <- EitherT(obtainAuthorizeAccountResponse())
+      response <- EitherT(api.getUploadUrl(authorizeAccountResponse, bucketId))
+    } yield response
+
+    eitherT.value
+  }
+
+  private def returnOrObtain[T](promise: Promise[T], f: () => B2Response[T]): B2Response[T] = {
+    if (promise.isCompleted) {
+      promise.future.map(x => x.asRight[B2Error])
     } else {
-      obtainAuthorizeAccountResponse() flatMap { authorizeAccountResponse =>
-        val result = api.getUploadUrl(authorizeAccountResponse, bucketId)
-        getUploadUrlResponse.completeWith(result)
-        result
+      val result = f()
+
+      result map { either => // saving if successful
+        either map { x =>
+          promise.success(x)
+        }
       }
+
+      result
     }
   }
 
-  def upload(fileName: FileName, data: ByteString): Future[UploadFileResponse] = {
-    val getUploadUrlResponse = obtainGetUploadUrlResponse()
+  def upload(fileName: FileName, data: ByteString): B2Response[UploadFileResponse] = {
+    import cats.implicits._
+    val result = for {
+      getUploadUrlResponse <- EitherT(obtainGetUploadUrlResponse())
+      upload <- EitherT(api.uploadFile(getUploadUrlResponse, fileName, data))
+    } yield upload
 
-    getUploadUrlResponse flatMap { getUploadUrlResponse =>
-      api.uploadFile(getUploadUrlResponse, fileName, data)
-    }
+    result.value
   }
 }
