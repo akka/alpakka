@@ -92,6 +92,13 @@ lazy val sse = project
     Dependencies.Sse
   )
 
+lazy val googlePubSub = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-google-pubsub",
+    Dependencies.GooglePubSub
+  )
+
 val Local = config("local")
 val defaultParadoxSettings: Seq[Setting[_]] = Seq(
   paradoxTheme := Some(builtinParadoxTheme("generic")),
