@@ -4,7 +4,7 @@
 package akka.stream.alpakka.backblazeb2
 
 object Protocol {
-  case class Credentials(accountId: AccountId, applicationKey: ApplicationKey)
+  case class B2AccountCredentials(accountId: AccountId, applicationKey: ApplicationKey)
 
   case class AccountAuthorizationToken(value: String) extends AnyVal {
     override def toString: String = value

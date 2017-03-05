@@ -63,14 +63,20 @@ object JsonSupport {
     Decoder.decodeString.map(UploadUrl)
 
   implicit val authorizeAccountResponseDecoder = Decoder[AuthorizeAccountResponse]
-  implicit val getUploadUrlResponseDecoder = Decoder[GetUploadUrlResponse]
-  implicit val uploadFileResponseDecoder = Decoder[UploadFileResponse]
-  implicit val listFileVersionsResponseDecoder = Decoder[ListFileVersionsResponse]
-  implicit val fileVersionInfoDecoder = Decoder[FileVersionInfo]
-
+  implicit val authorizeAccountResponseEncoder = Encoder[AuthorizeAccountResponse]
   implicit val authorizeAccountResponseUnmarshaller = circeUnmarshaller[AuthorizeAccountResponse]
+
+  implicit val getUploadUrlResponseDecoder = Decoder[GetUploadUrlResponse]
+  implicit val getUploadUrlResponseEncoder = Encoder[GetUploadUrlResponse]
   implicit val getUploadUrlResponseUnmarshaller = circeUnmarshaller[GetUploadUrlResponse]
+
+  implicit val uploadFileResponseDecoder = Decoder[UploadFileResponse]
+  implicit val uploadFileResponseEncoder = Encoder[UploadFileResponse]
   implicit val getUploadFileResponseUnmarshaller = circeUnmarshaller[UploadFileResponse]
+
+  implicit val listFileVersionsResponseDecoder = Decoder[ListFileVersionsResponse]
   implicit val listFileVersionsResponseUnmarshaller = circeUnmarshaller[ListFileVersionsResponse]
+
+  implicit val fileVersionInfoDecoder = Decoder[FileVersionInfo]
   implicit val fileVersionInfoUnmarshaller = circeUnmarshaller[FileVersionInfo]
 }

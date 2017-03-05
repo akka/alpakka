@@ -1,89 +1,81 @@
-/*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
- */
 package akka.stream.alpakka.backblazeb2
 
-import java.nio.charset.StandardCharsets
-import java.util.UUID
-import cats.syntax.option._
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.ContentTypes
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.backblazeb2.Protocol._
 import akka.stream.alpakka.backblazeb2.scaladsl.B2Client
 import akka.util.ByteString
-import org.scalatest.AsyncFlatSpec
-import org.scalatest.Matchers._
+import com.github.tomakehurst.wiremock.client.WireMock._
+import io.circe.syntax._
 import scala.concurrent.duration._
 import scala.concurrent.Await
+import org.scalatest.Matchers._
+import JsonSupport._
 
-class B2ClientSpec extends AsyncFlatSpec {
-  private def readEnv(key: String): String = {
-    Option(System.getenv(key)) getOrElse sys.error(s"Please set $key environment variable to run the tests")
-  }
+class B2ClientSpec extends WireMockBase {
+  val accountId = AccountId("accountId")
+  val applicationKey = ApplicationKey("applicationKey")
+  val credentials = B2AccountCredentials(accountId, applicationKey)
+  val timeout = 10.seconds
 
-  private val accountId = AccountId(readEnv("B2_ACCOUNT_ID"))
-  private val applicationKey = ApplicationKey(readEnv("B2_APPLICATION_KEY"))
-  private val bucketName = BucketName("alpakka-test") // TODO: create new using b2_create_bucket then remove after
-  private val bucketId = BucketId(readEnv("B2_BUCKET_ID")) // TODO: read using b2_list_buckets API call
-
-  implicit val system = ActorSystem()
+  implicit val system = ActorSystem("B2ClientSpec-system", config)
   implicit val materializer = ActorMaterializer()
 
-  private val credentials = Credentials(accountId, applicationKey)
-  private val client = new B2Client(credentials)
-  private val timeout = 10.seconds
+  val bucketId = BucketId("testBucketId")
+  val hostAndPort = s"localhost:${mockServer.httpsPort}"
+  val client = new B2Client(credentials, bucketId, hostAndPort)
 
-  private val testRun = UUID.randomUUID().toString
-  private val fileName = FileName(s"test-$testRun.txt")
+  val fileName = FileName("test")
+  val data = ByteString("test")
 
-  private def checkData(obtained: ByteString, expected: String) = {
-    val receivedText = new String(obtained.toArray, StandardCharsets.UTF_8.name)
-    receivedText shouldEqual expected
+  private def successfulJsonResponse(returnData: String) = {
+    aResponse()
+      .withStatus(200)
+      .withHeader("Content-Type", "application/json; charset=UTF-8")
+      .withBody(returnData)
   }
 
-  it should "work in happy case" in {
-    val authorizationResultF = client.authorizeAccount()
-    val authorizationResult = Await.result(authorizationResultF, timeout)
-    authorizationResult.authorizationToken.value should not be empty
-    authorizationResult.apiUrl.value should not be empty
-    authorizationResult.accountId.value should not be empty
+  private def mockGet(url: String, returnData: String) = {
+    mock.register(
+      get(urlEqualTo(url))
+        .willReturn(successfulJsonResponse(returnData))
+      )
+  }
 
-    val apiUrl = authorizationResult.apiUrl
-    val accountAuthorization = authorizationResult.authorizationToken
-
-    val text = "this is test data"
-    val data = ByteString(text.getBytes(StandardCharsets.UTF_8.name))
-
-    val getUploadUrlF = client.getUploadUrl(apiUrl, bucketId, accountAuthorization)
-    val getUploadUrl = Await.result(getUploadUrlF, timeout)
-
-    getUploadUrl.authorizationToken.value should not be empty
-    getUploadUrl.uploadUrl.value should not be empty
-
-    val uploadResultF = client.uploadFile(
-      uploadUrl = getUploadUrl.uploadUrl,
-      fileName = fileName,
-      data = data,
-      uploadAuthorization = getUploadUrl.authorizationToken,
-      contentType = ContentTypes.`text/plain(UTF-8)`
+  private def mockPost(url: String, returnData: String) = {
+    mock.register(
+      post(urlEqualTo(url))
+        .willReturn(successfulJsonResponse(returnData))
     )
+  }
 
-    val uploadResult = Await.result(uploadResultF, timeout)
-    uploadResult.fileId.value should not be empty
+  it should "work for happy case" in {
+    val successfulAuthorizeAccountResponse = AuthorizeAccountResponse(accountId, ApiUrl(s"https://$hostAndPort"), AccountAuthorizationToken("accountAuthorizationToken"))
+    val successfulAuthorizeAccountResponseJson = successfulAuthorizeAccountResponse.asJson.noSpaces
 
-    val fileId = uploadResult.fileId
+    mockGet("/b2api/v1/b2_authorize_account", successfulAuthorizeAccountResponseJson)
 
-    val downloadByNameResultF = client.downloadFileByName(fileName, bucketName, apiUrl, accountAuthorization.some)
-    val downloadByNameResult = Await.result(downloadByNameResultF, timeout)
-    checkData(downloadByNameResult, text)
+    val successfulUploadUrl = UploadUrl(s"https://$hostAndPort/successfulUploadUrl")
+    val successfulUploadAuthorizationToken = UploadAuthorizationToken("successfulUploadAuthorizationToken")
+    val successfulGetUploadUrlResponse = GetUploadUrlResponse(bucketId, successfulUploadUrl, successfulUploadAuthorizationToken)
+    val successfulGetUploadUrlResponseJson = successfulGetUploadUrlResponse.asJson.noSpaces
+    mockGet(s"/b2api/v1/b2_get_upload_url?bucketId=$bucketId", successfulGetUploadUrlResponseJson)
 
-    val downloadByIdResultF = client.downloadFileById(uploadResult.fileId, apiUrl, accountAuthorization.some)
-    val downloadByIdResult = Await.result(downloadByIdResultF, timeout)
-    checkData(downloadByIdResult, text)
+    val successfulUploadFileResponse = UploadFileResponse(
+      fileId = FileId("fileId"),
+      fileName = fileName,
+      accountId = accountId,
+      bucketId = bucketId,
+      contentLength = 0,
+      contentSha1 = Sha1("sha1"),
+      contentType = "application/text",
+      fileInfo = Map.empty
+    )
+    val successfulUploadFileResponseJson = successfulUploadFileResponse.asJson.noSpaces
+    mockPost("/successfulUploadUrl", successfulUploadFileResponseJson)
 
-    val deleteResultF = client.delete(bucketId, fileId, fileName, apiUrl, accountAuthorization)
-    val deleteResult = Await.result(deleteResultF, timeout)
-    deleteResult shouldEqual FileVersionInfo(uploadResult.fileName, uploadResult.fileId) :: Nil
+    val resultF = client.upload(fileName, data)
+    val result = Await.result(resultF, timeout)
+    result shouldBe a[UploadFileResponse]
   }
 }
