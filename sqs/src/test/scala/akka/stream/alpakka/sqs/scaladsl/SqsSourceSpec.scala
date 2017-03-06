@@ -3,8 +3,12 @@
  */
 package akka.stream.alpakka.sqs.scaladsl
 
+import java.util.concurrent.{ExecutorService, Executors}
+
 import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.scaladsl.Sink
+import com.amazonaws.auth.BasicAWSCredentials
+import com.amazonaws.services.sqs.AmazonSQSAsyncClient
 import com.amazonaws.services.sqs.model.QueueDoesNotExistException
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{AsyncWordSpec, Matchers}
@@ -22,6 +26,20 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
       SqsSource(queue, sqsSourceSettings).take(1).runWith(Sink.seq).map(_.map(_.getBody) should contain("alpakka"))
 
+    }
+
+    "stream a single batch from the queue with custom client" taggedAs Integration in {
+
+      //#init-custom-client
+      val executor: ExecutorService = Executors.newFixedThreadPool(10)
+      implicit val sqsClient: AmazonSQSAsyncClient =
+        new AmazonSQSAsyncClient(credentials, executor).withEndpoint[AmazonSQSAsyncClient]("http://localhost:9324")
+      //#init-custom-client
+
+      val queue = randomQueueUrl()
+      sqsClient.sendMessage(queue, "alpakka")
+
+      SqsSource(queue, sqsSourceSettings).take(1).runWith(Sink.seq).map(_.map(_.getBody) should contain("alpakka"))
     }
 
     "stream multiple batches from the queue" taggedAs Integration in {

@@ -18,6 +18,8 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -61,6 +63,31 @@ public class SqsSourceTest {
 
     @Test
     public void streamFromQueue() throws Exception {
+
+        final String queueUrl = randomQueueUrl();
+
+        final List<String> input = IntStream.range(0, 100).boxed().map(i -> String.format("alpakka-%s", i)).collect(Collectors.toList());
+        input.forEach(m -> sqsClient.sendMessage(queueUrl, m));
+
+        //#run
+        final CompletionStage<List<String>> cs = SqsSource.create(queueUrl, sqsSourceSettings, sqsClient)
+            .map(m -> m.getBody())
+            .take(100)
+            .runWith(Sink.seq(), materializer);
+        //#run
+
+        assertEquals(input.size(), cs.toCompletableFuture().get(3, TimeUnit.SECONDS).size());
+
+    }
+
+    @Test
+    public void streamFromQueueWithCustomClient() throws Exception {
+
+        //#init-custom-client
+        final ExecutorService executor = Executors.newFixedThreadPool(10);
+        final AmazonSQSAsyncClient sqsClient = new AmazonSQSAsyncClient(credentials, executor)
+            .withEndpoint("http://localhost:9324");
+        //#init-custom-client
 
         final String queueUrl = randomQueueUrl();
 
