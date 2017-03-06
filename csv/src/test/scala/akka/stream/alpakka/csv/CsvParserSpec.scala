@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.csv
 
 import akka.stream.alpakka.csv.CsvParser.MalformedCSVException
@@ -42,7 +45,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       val in = ByteString.empty
       val parser = new CsvParser()
       parser.offer(in)
-      parser.poll() should be ('empty)
+      parser.poll() should be('empty)
     }
 
     "parse leading comma to be an empty column" in {
@@ -75,7 +78,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       parser.offer(in)
       val res = parser.poll()
       res.value.map(_.utf8String) should be(List(""))
-      parser.poll() should be ('empty)
+      parser.poll() should be('empty)
     }
 
     "parse an empty line with CR, LF into a single column" in {
@@ -208,7 +211,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       parser.offer(in)
       val res = parser.poll()
       res.value.map(_.utf8String) should be(List("one", "two", "three"))
-      parser.poll() should be ('empty)
+      parser.poll() should be('empty)
     }
 
     "ignore trailing \\n\\r" in {
