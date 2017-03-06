@@ -2,8 +2,6 @@ package akka.stream.alpakka.csv
 
 import akka.util.{ByteString, ByteStringBuilder}
 
-import scala.annotation.switch
-
 object CsvParser {
 
   class MalformedCSVException(position: Int, msg: String) extends Exception
@@ -15,7 +13,7 @@ object CsvParser {
   private final val End = 3
   private final val QuoteStarted = 4
   private final val QuoteEnd = 5
-  private final val QuotedField = 6
+  private final val WithinQuotedField = 6
 }
 
 class CsvParser(escapeChar: Byte = '\\', delimiter: Byte = ',', quoteChar: Byte = '"') {
@@ -28,7 +26,7 @@ class CsvParser(escapeChar: Byte = '\\', delimiter: Byte = ',', quoteChar: Byte 
   def offer(input: ByteString) =
     buffer ++= input
 
-  def poll(): Option[List[ByteString]] = {
+  def poll(): Option[List[ByteString]] =
     if (buffer.nonEmpty) {
       val line = parseLine()
       if (line.nonEmpty) {
@@ -36,7 +34,6 @@ class CsvParser(escapeChar: Byte = '\\', delimiter: Byte = ',', quoteChar: Byte 
       }
       line
     } else None
-  }
 
   private def dropReadBuffer() = {
     buffer = buffer.drop(pos)
@@ -44,285 +41,245 @@ class CsvParser(escapeChar: Byte = '\\', delimiter: Byte = ',', quoteChar: Byte 
     fieldStart = 0
   }
 
+  /** FieldBuilder will just cut the required part out of the incoming ByteBuffer
+   * as long as non escaping is used.
+   */
+  protected class FieldBuilder(buf: ByteString) {
+
+    private var useBuilder = false
+    private var builder: ByteStringBuilder = null
+
+    /** Set up the ByteString builder instead of relying on `ByteString.slice`.
+     */
+    @inline def init(x: Byte): Unit =
+      if (!useBuilder) {
+        builder = ByteString.newBuilder ++= buf.slice(fieldStart, pos) += x
+        useBuilder = true
+      }
+
+    @inline def add(x: Byte): Unit =
+      if (useBuilder) builder += x
+
+    @inline def result(pos: Int): ByteString =
+      if (useBuilder) {
+        useBuilder = false
+        builder.result()
+      } else buf.slice(fieldStart, pos)
+
+  }
+
   protected def parseLine(): Option[List[ByteString]] = {
     val buf = buffer
-    var columns: Vector[ByteString] = Vector()
-    var field: ByteStringBuilder = null
-    var fieldCollect = false
+    var columns = Vector[ByteString]()
     var state: State = LineStart
+    val fieldBuilder = new FieldBuilder(buf)
 
-    def fieldCollector(): Unit = {
-      if (!fieldCollect) {
-        field = ByteString.newBuilder ++= buf.slice(fieldStart, pos)
-        fieldCollect = true
-      }
-    }
-
-    def fieldAdd(x: Byte): Unit = {
-      if (fieldCollect) field += x
-    }
-
-    def currentField(pos: Int): ByteString = {
-      if (fieldCollect) {
-        fieldCollect = false
-        field.result()
-      } else buf.slice(fieldStart, pos)
-    }
-
-    def wrongCharEscaped() = throw new MalformedCSVException(pos, s"wrong escaping at $pos, only escape or delimiter may be escaped")
+    def wrongCharEscaped() =
+      throw new MalformedCSVException(pos, s"wrong escaping at $pos, only escape or delimiter may be escaped")
+    def wrongCharEscapedWithinQuotes() =
+      throw new MalformedCSVException(pos,
+        s"wrong escaping at $pos, only escape or quote may be escaped within quotes")
     def noCharEscaped() = throw new MalformedCSVException(pos, s"wrong escaping at $pos, no character after escape")
 
+    @inline def readPastLf() =
+      if (pos < buf.length && buf(pos) == '\n') {
+        pos += 1
+      }
+
     while (state != End && pos < buf.length) {
-      val c = buf(pos)
-      (state: @switch) match {
-        case LineStart => {
-          c match {
-            case `quoteChar` => {
+      val byte = buf(pos)
+      state match {
+        case LineStart =>
+          byte match {
+            case `quoteChar` =>
               state = QuoteStarted
               pos += 1
               fieldStart = pos
-            }
-            case `delimiter` => {
+            case `delimiter` =>
               columns :+= ByteString.empty
               state = AfterDelimiter
               pos += 1
               fieldStart = pos
-            }
-            case '\n' | '\u2028' | '\u2029' | '\u0085' => {
+            case '\n' => //| '\u2028' | '\u2029' | '\u0085' => {
               columns :+= ByteString.empty
               state = End
               pos += 1
               fieldStart = pos
-            }
-            case '\r' => {
+            case '\r' =>
               columns :+= ByteString.empty
               state = End
               pos += 1
-              if (pos < buf.length && buf(pos) == '\n') {
-                pos += 1
-              }
+              readPastLf()
               fieldStart = pos
-            }
-            case x => {
-              fieldAdd(x)
+            case x =>
+              fieldBuilder.add(x)
               state = WithinField
               pos += 1
-            }
           }
-        }
-        case AfterDelimiter => {
-          c match {
-            case `quoteChar` => {
+
+        case AfterDelimiter =>
+          byte match {
+            case `quoteChar` =>
               state = QuoteStarted
               pos += 1
               fieldStart = pos
-            }
-            case `escapeChar` => {
-              if (pos + 1 < buf.length
-                && (buf(pos + 1) == escapeChar || buf(pos + 1) == delimiter)) {
-                fieldCollector()
-                fieldAdd(buf(pos + 1))
-                state = WithinField
-                pos += 2
-              } else {
-                wrongCharEscaped()
-              }
-            }
-            case `delimiter` => {
-              columns :+= ByteString.empty
-              state = AfterDelimiter
-              pos += 1
-              fieldStart = pos
-            }
-            case '\n' | '\u2028' | '\u2029' | '\u0085' => {
-              columns :+= ByteString.empty
-              state = End
-              pos += 1
-              fieldStart = pos
-            }
-            case '\r' => {
-              columns :+= ByteString.empty
-              state = End
-              pos += 1
-              if (pos < buf.length && buf(pos) == '\n') {
-                pos += 1
-              }
-              fieldStart = pos
-            }
-            case x => {
-              fieldAdd(x)
-              state = WithinField
-              pos += 1
-            }
-          }
-        }
-        case WithinField => {
-          c match {
-            case `escapeChar` => {
+            case `escapeChar` =>
               if (pos + 1 < buf.length) {
-                if (buf(pos + 1) == escapeChar
-                  || buf(pos + 1) == delimiter) {
-                  fieldAdd(buf(pos + 1))
+                if (buf(pos + 1) == escapeChar || buf(pos + 1) == delimiter) {
+                  fieldBuilder.init(buf(pos + 1))
                   state = WithinField
                   pos += 2
-                } else {
-                  wrongCharEscaped()
-                }
-              } else {
-                state = QuoteEnd
-                pos += 1
-              }
-            }
-            case `delimiter` => {
-              columns :+= currentField(pos)
+                } else wrongCharEscaped()
+              } else noCharEscaped()
+            case `delimiter` =>
+              columns :+= ByteString.empty
               state = AfterDelimiter
               pos += 1
               fieldStart = pos
-            }
-            case '\n' | '\u2028' | '\u2029' | '\u0085' => {
-              columns :+= currentField(pos)
+            case '\n' => // | '\u2028' | '\u2029' | '\u0085' =>
+              columns :+= ByteString.empty
               state = End
               pos += 1
               fieldStart = pos
-            }
-            case '\r' => {
-              columns :+= currentField(pos)
+            case '\r' =>
+              columns :+= ByteString.empty
               state = End
               pos += 1
-              if (pos < buf.length && buf(pos) == '\n') {
-                pos += 1
-              }
+              readPastLf()
               fieldStart = pos
-            }
-            case x => {
-              fieldAdd(x)
+            case x =>
+              fieldBuilder.add(x)
               state = WithinField
               pos += 1
-            }
           }
-        }
-        case QuoteStarted => {
-          c match {
-            case `escapeChar` if escapeChar != quoteChar => {
+
+        case WithinField =>
+          byte match {
+            case `escapeChar` =>
               if (pos + 1 < buf.length) {
-                if (buf(pos + 1) == escapeChar
-                  || buf(pos + 1) == quoteChar) {
-                  fieldAdd(buf(pos + 1))
-                  state = QuotedField
+                if (buf(pos + 1) == escapeChar || buf(pos + 1) == delimiter) {
+                  fieldBuilder.add(buf(pos + 1))
+                  state = WithinField
                   pos += 2
-                } else {
-                  wrongCharEscaped()
-                }
-              } else {
-                noCharEscaped()
-              }
-            }
-            case `quoteChar` => {
-              if (pos + 1 < buf.length && buf(pos + 1) == quoteChar) {
-                fieldCollector()
-                fieldAdd(c)
-                state = QuotedField
-                pos += 2
-              } else {
-                state = QuoteEnd
-                pos += 1
-              }
-            }
-            case x => {
-              fieldAdd(x)
-              state = QuotedField
-              pos += 1
-            }
-          }
-        }
-        case QuoteEnd => {
-          c match {
-            case `delimiter` => {
-              columns :+= currentField(pos - 1)
+                } else wrongCharEscaped()
+              } else noCharEscaped()
+            case `delimiter` =>
+              columns :+= fieldBuilder.result(pos)
               state = AfterDelimiter
               pos += 1
               fieldStart = pos
-            }
-            case '\n' | '\u2028' | '\u2029' | '\u0085' => {
-              columns :+= currentField(pos - 1)
+            case '\n' => //| '\u2028' | '\u2029' | '\u0085' => {
+              columns :+= fieldBuilder.result(pos)
               state = End
               pos += 1
               fieldStart = pos
-            }
-            case '\r' => {
-              columns :+= currentField(pos - 1)
+            case '\r' =>
+              columns :+= fieldBuilder.result(pos)
               state = End
               pos += 1
-              if (pos < buf.length && buf(pos) == '\n') {
-                pos += 1
-              }
+              readPastLf()
               fieldStart = pos
-            }
-            case _ => {
-              throw new MalformedCSVException(pos, "expected delimiter or end of line")
-            }
+            case x =>
+              fieldBuilder.add(x)
+              state = WithinField
+              pos += 1
           }
-        }
-        case QuotedField => {
-          c match {
-            case `escapeChar` if escapeChar != quoteChar => {
+
+        case QuoteStarted =>
+          byte match {
+            case `escapeChar` if escapeChar != quoteChar =>
               if (pos + 1 < buf.length) {
-                if (buf(pos + 1) == escapeChar
-                  || buf(pos + 1) == quoteChar) {
-                  fieldCollector()
-                  fieldAdd(buf(pos + 1))
-                  state = QuotedField
+                if (buf(pos + 1) == escapeChar || buf(pos + 1) == quoteChar) {
+                  fieldBuilder.init(buf(pos + 1))
+                  state = WithinQuotedField
                   pos += 2
-                } else {
-                  wrongCharEscaped()
-                }
-              } else {
-                noCharEscaped()
-              }
-            }
-            case `quoteChar` => {
+                } else wrongCharEscapedWithinQuotes()
+              } else noCharEscaped()
+            case `quoteChar` =>
               if (pos + 1 < buf.length && buf(pos + 1) == quoteChar) {
-                fieldCollector()
-                fieldAdd(c)
-                state = QuotedField
+                fieldBuilder.init(byte)
+                state = WithinQuotedField
                 pos += 2
               } else {
                 state = QuoteEnd
                 pos += 1
               }
-            }
-            case x => {
-              fieldAdd(x)
-              state = QuotedField
+            case x =>
+              fieldBuilder.add(x)
+              state = WithinQuotedField
               pos += 1
-            }
           }
-        }
-        case End => {
+
+        case QuoteEnd =>
+          byte match {
+            case `delimiter` =>
+              columns :+= fieldBuilder.result(pos - 1)
+              state = AfterDelimiter
+              pos += 1
+              fieldStart = pos
+            case '\n' => //| '\u2028' | '\u2029' | '\u0085' =>
+              columns :+= fieldBuilder.result(pos - 1)
+              state = End
+              pos += 1
+              fieldStart = pos
+            case '\r' =>
+              columns :+= fieldBuilder.result(pos - 1)
+              state = End
+              pos += 1
+              readPastLf()
+              fieldStart = pos
+            case _ =>
+              throw new MalformedCSVException(pos, "expected delimiter or end of line")
+          }
+
+        case WithinQuotedField =>
+          byte match {
+            case `escapeChar` if escapeChar != quoteChar =>
+              if (pos + 1 < buf.length) {
+                if (buf(pos + 1) == escapeChar || buf(pos + 1) == quoteChar) {
+                  fieldBuilder.init(buf(pos + 1))
+                  state = WithinQuotedField
+                  pos += 2
+                } else wrongCharEscapedWithinQuotes()
+              } else noCharEscaped()
+
+            case `quoteChar` =>
+              if (pos + 1 < buf.length && buf(pos + 1) == quoteChar) {
+                fieldBuilder.init(byte)
+                state = WithinQuotedField
+                pos += 2
+              } else {
+                state = QuoteEnd
+                pos += 1
+              }
+            case x =>
+              fieldBuilder.add(x)
+              state = WithinQuotedField
+              pos += 1
+          }
+
+        case End =>
           sys.error("unexpected error")
-        }
       }
     }
-    (state: @switch) match {
-      case AfterDelimiter => {
+    state match {
+      case AfterDelimiter =>
         columns :+= ByteString.empty
         Some(columns.toList)
-      }
-      case QuotedField => {
+
+      case WithinQuotedField =>
         None
-      }
-      case _ => {
+
+      case _ =>
         state match {
           case WithinField =>
-            columns :+= currentField(pos)
-          case QuoteEnd => {
-            columns :+= currentField(pos - 1)
-          }
-          case _ => {
-          }
+            columns :+= fieldBuilder.result(pos)
+          case QuoteEnd =>
+            columns :+= fieldBuilder.result(pos - 1)
+          case _ =>
         }
         Some(columns.toList)
-      }
+
     }
 
   }

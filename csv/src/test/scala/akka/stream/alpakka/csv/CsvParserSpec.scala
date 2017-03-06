@@ -94,6 +94,22 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       res.value.map(_.utf8String) should be(List("a", "ñÅë", "อักษรไทย"))
     }
 
+    "parse double quote chars into empty column" in {
+      val in = ByteString("""a,"",c""")
+      val parser = new CsvParser()
+      parser.offer(in)
+      val res = parser.poll()
+      res.value.map(_.utf8String) should be(List("a", "", "c"))
+    }
+
+    "parse double quote chars within quotes into one quote" in {
+      val in = ByteString("a,\"\"\"\",c")
+      val parser = new CsvParser()
+      parser.offer(in)
+      val res = parser.poll()
+      res.value.map(_.utf8String) should be(List("a", "\"", "c"))
+    }
+
     "parse double escape chars into one escape char" in {
       val in = ByteString("""a,\\,c""")
       val parser = new CsvParser()
@@ -117,6 +133,65 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       assertThrows[MalformedCSVException] {
         parser.poll()
       }
+    }
+
+    "fail on escape at line end" in {
+      val in = ByteString("""a,\""")
+      val parser = new CsvParser()
+      parser.offer(in)
+      assertThrows[MalformedCSVException] {
+        parser.poll()
+      }
+    }
+
+    "fail on escape within field at line end" in {
+      val in = ByteString("""a,b\""")
+      val parser = new CsvParser()
+      parser.offer(in)
+      assertThrows[MalformedCSVException] {
+        parser.poll()
+      }
+    }
+
+    "fail on escape within quoted field at line end" in {
+      val in = ByteString("""a,"\""")
+      val parser = new CsvParser()
+      parser.offer(in)
+      assertThrows[MalformedCSVException] {
+        parser.poll()
+      }
+    }
+
+    "parse escaped escape within quotes into quote" in {
+      val in = ByteString("""a,"\\",c""")
+      val parser = new CsvParser()
+      parser.offer(in)
+      val res = parser.poll()
+      res.value.map(_.utf8String) should be(List("a", "\\", "c"))
+    }
+
+    "parse escaped quote within quotes into quote" in {
+      val in = ByteString("""a,"\"",c""")
+      val parser = new CsvParser()
+      parser.offer(in)
+      val res = parser.poll()
+      res.value.map(_.utf8String) should be(List("a", "\"", "c"))
+    }
+
+    "parse escaped escape in text within quotes into quote" in {
+      val in = ByteString("""a,"abc\\def",c""")
+      val parser = new CsvParser()
+      parser.offer(in)
+      val res = parser.poll()
+      res.value.map(_.utf8String) should be(List("a", "abc\\def", "c"))
+    }
+
+    "parse escaped quote in text within quotes into quote" in {
+      val in = ByteString("""a,"abc\"def",c""")
+      val parser = new CsvParser()
+      parser.offer(in)
+      val res = parser.poll()
+      res.value.map(_.utf8String) should be(List("a", "abc\"def", "c"))
     }
 
     "empty line special results in single column" ignore {
