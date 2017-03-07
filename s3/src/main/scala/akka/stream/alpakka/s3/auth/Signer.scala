@@ -3,14 +3,12 @@
  */
 package akka.stream.alpakka.s3.auth
 
-import java.security.MessageDigest
-import java.time.format.DateTimeFormatter
-import java.time.{ZoneOffset, ZonedDateTime}
-
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
 import akka.stream.Materializer
-
+import java.security.MessageDigest
+import java.time.format.DateTimeFormatter
+import java.time.{ZoneOffset, ZonedDateTime}
 import scala.concurrent.Future
 
 private[alpakka] object Signer {

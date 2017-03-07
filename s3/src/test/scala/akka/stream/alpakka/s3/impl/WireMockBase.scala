@@ -28,6 +28,7 @@ object WireMockBase {
     |  stream.alpakka.s3.proxy {
     |   host = localhost
     |   port = $port
+    |   schema = https
     | }
     |}
   """.stripMargin
