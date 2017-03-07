@@ -13,27 +13,35 @@ object CsvParser {
   private final val LineStart = 0
   private final val WithinField = 1
   private final val AfterDelimiter = 2
-  private final val End = 3
+  private final val LineEnd = 3
   private final val QuoteStarted = 4
   private final val QuoteEnd = 5
   private final val WithinQuotedField = 6
+
+  private final val LF: Byte = '\n'
+  private final val CR: Byte = '\r'
 }
 
-class CsvParser(escapeChar: Byte = '\\', delimiter: Byte = ',', quoteChar: Byte = '"') {
+class CsvParser(escapeChar: Byte = '\\', delimiter: Byte = ',', quoteChar: Byte = '"', requireLineEnd: Boolean = true) {
   import CsvParser._
 
   private var buffer = ByteString.empty
   private var pos = 0
   private var fieldStart = 0
 
-  def offer(input: ByteString) =
+  def offer(input: ByteString): Unit =
     buffer ++= input
 
   def poll(): Option[List[ByteString]] =
     if (buffer.nonEmpty) {
+      val prePos = pos
+      val preFieldStart = fieldStart
       val line = parseLine()
       if (line.nonEmpty) {
         dropReadBuffer()
+      } else {
+        pos = prePos
+        fieldStart = preFieldStart
       }
       line
     } else None
@@ -50,7 +58,7 @@ class CsvParser(escapeChar: Byte = '\\', delimiter: Byte = ',', quoteChar: Byte 
   protected class FieldBuilder(buf: ByteString) {
 
     private var useBuilder = false
-    private var builder: ByteStringBuilder = null
+    private var builder: ByteStringBuilder = _
 
     /** Set up the ByteString builder instead of relying on `ByteString.slice`.
      */
@@ -85,11 +93,11 @@ class CsvParser(escapeChar: Byte = '\\', delimiter: Byte = ',', quoteChar: Byte 
     def noCharEscaped() = throw new MalformedCSVException(pos, s"wrong escaping at $pos, no character after escape")
 
     @inline def readPastLf() =
-      if (pos < buf.length && buf(pos) == '\n') {
+      if (pos < buf.length && buf(pos) == LF) {
         pos += 1
       }
 
-    while (state != End && pos < buf.length) {
+    while (state != LineEnd && pos < buf.length) {
       val byte = buf(pos)
       state match {
         case LineStart =>
@@ -103,19 +111,19 @@ class CsvParser(escapeChar: Byte = '\\', delimiter: Byte = ',', quoteChar: Byte 
               state = AfterDelimiter
               pos += 1
               fieldStart = pos
-            case '\n' => //| '\u2028' | '\u2029' | '\u0085' => {
+            case LF =>
               columns :+= ByteString.empty
-              state = End
+              state = LineEnd
               pos += 1
               fieldStart = pos
-            case '\r' =>
+            case CR =>
               columns :+= ByteString.empty
-              state = End
+              state = LineEnd
               pos += 1
               readPastLf()
               fieldStart = pos
-            case x =>
-              fieldBuilder.add(x)
+            case b =>
+              fieldBuilder.add(b)
               state = WithinField
               pos += 1
           }
@@ -139,19 +147,19 @@ class CsvParser(escapeChar: Byte = '\\', delimiter: Byte = ',', quoteChar: Byte 
               state = AfterDelimiter
               pos += 1
               fieldStart = pos
-            case '\n' => // | '\u2028' | '\u2029' | '\u0085' =>
+            case LF =>
               columns :+= ByteString.empty
-              state = End
+              state = LineEnd
               pos += 1
               fieldStart = pos
-            case '\r' =>
+            case CR =>
               columns :+= ByteString.empty
-              state = End
+              state = LineEnd
               pos += 1
               readPastLf()
               fieldStart = pos
-            case x =>
-              fieldBuilder.add(x)
+            case b =>
+              fieldBuilder.add(b)
               state = WithinField
               pos += 1
           }
@@ -171,19 +179,19 @@ class CsvParser(escapeChar: Byte = '\\', delimiter: Byte = ',', quoteChar: Byte 
               state = AfterDelimiter
               pos += 1
               fieldStart = pos
-            case '\n' => //| '\u2028' | '\u2029' | '\u0085' => {
+            case LF =>
               columns :+= fieldBuilder.result(pos)
-              state = End
+              state = LineEnd
               pos += 1
               fieldStart = pos
-            case '\r' =>
+            case CR =>
               columns :+= fieldBuilder.result(pos)
-              state = End
+              state = LineEnd
               pos += 1
               readPastLf()
               fieldStart = pos
-            case x =>
-              fieldBuilder.add(x)
+            case b =>
+              fieldBuilder.add(b)
               state = WithinField
               pos += 1
           }
@@ -207,8 +215,8 @@ class CsvParser(escapeChar: Byte = '\\', delimiter: Byte = ',', quoteChar: Byte 
                 state = QuoteEnd
                 pos += 1
               }
-            case x =>
-              fieldBuilder.add(x)
+            case b =>
+              fieldBuilder.add(b)
               state = WithinQuotedField
               pos += 1
           }
@@ -220,14 +228,14 @@ class CsvParser(escapeChar: Byte = '\\', delimiter: Byte = ',', quoteChar: Byte 
               state = AfterDelimiter
               pos += 1
               fieldStart = pos
-            case '\n' => //| '\u2028' | '\u2029' | '\u0085' =>
+            case LF =>
               columns :+= fieldBuilder.result(pos - 1)
-              state = End
+              state = LineEnd
               pos += 1
               fieldStart = pos
-            case '\r' =>
+            case CR =>
               columns :+= fieldBuilder.result(pos - 1)
-              state = End
+              state = LineEnd
               pos += 1
               readPastLf()
               fieldStart = pos
@@ -255,36 +263,37 @@ class CsvParser(escapeChar: Byte = '\\', delimiter: Byte = ',', quoteChar: Byte 
                 state = QuoteEnd
                 pos += 1
               }
-            case x =>
-              fieldBuilder.add(x)
+            case b =>
+              fieldBuilder.add(b)
               state = WithinQuotedField
               pos += 1
           }
-
-        case End =>
-          sys.error("unexpected error")
       }
     }
-    state match {
-      case AfterDelimiter =>
-        columns :+= ByteString.empty
-        Some(columns.toList)
-
-      case WithinQuotedField =>
-        None
-
+    if (requireLineEnd) {
+      state match {
+        case LineEnd =>
+          Some(columns.toList)
       case _ =>
-        state match {
-          case WithinField =>
-            columns :+= fieldBuilder.result(pos)
-          case QuoteEnd =>
-            columns :+= fieldBuilder.result(pos - 1)
-          case _ =>
-        }
-        Some(columns.toList)
-
+          None
+      }
+    } else {
+      state match {
+        case AfterDelimiter =>
+          columns :+= ByteString.empty
+          Some(columns.toList)
+        case WithinQuotedField =>
+          None
+        case WithinField =>
+          columns :+= fieldBuilder.result(pos)
+          Some(columns.toList)
+        case QuoteEnd =>
+          columns :+= fieldBuilder.result(pos - 1)
+          Some(columns.toList)
+        case _ =>
+          Some(columns.toList)
+      }
     }
-
   }
 
 }

@@ -11,7 +11,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
 
   "CSV parser" should {
     "read comma separated values into a list" in {
-      val in = ByteString("one,two,three")
+      val in = ByteString("one,two,three\n")
       val parser = new CsvParser()
       parser.offer(in)
       val res = parser.poll()
@@ -19,8 +19,24 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       parser.poll() should be('empty)
     }
 
+    "not deliver input until end of line is reached" in {
+      val in = ByteString("one,two,three")
+      val parser = new CsvParser()
+      parser.offer(in)
+      parser.poll() should be('empty)
+    }
+
+    "read a line if line end is not required" in {
+      val in = ByteString("one,two,three")
+      val parser = new CsvParser(requireLineEnd = false)
+      parser.offer(in)
+      val res = parser.poll()
+      res.value.map(_.utf8String) should be(List("one", "two", "three"))
+      parser.poll() should be('empty)
+    }
+
     "read two lines into two lists" in {
-      val in = ByteString("one,two,three\n1,2,3")
+      val in = ByteString("one,two,three\n1,2,3\n")
       val parser = new CsvParser()
       parser.offer(in)
       val res1 = parser.poll()
@@ -49,7 +65,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "parse leading comma to be an empty column" in {
-      val in = ByteString(",one,two,three")
+      val in = ByteString(",one,two,three\n")
       val parser = new CsvParser()
       parser.offer(in)
       val res = parser.poll()
@@ -57,7 +73,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "parse trailing comma to be an empty column" in {
-      val in = ByteString("one,two,three,")
+      val in = ByteString("one,two,three,\n")
       val parser = new CsvParser()
       parser.offer(in)
       val res = parser.poll()
@@ -65,7 +81,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "parse double comma to be an empty column" in {
-      val in = ByteString("one,,two,three")
+      val in = ByteString("one,,two,three\n")
       val parser = new CsvParser()
       parser.offer(in)
       val res = parser.poll()
@@ -90,7 +106,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "parse UTF-8 chars unchanged" in {
-      val in = ByteString("""a,ñÅë,อักษรไทย""", ByteString.UTF_8)
+      val in = ByteString("a,ñÅë,อักษรไทย\n", ByteString.UTF_8)
       val parser = new CsvParser()
       parser.offer(in)
       val res = parser.poll()
@@ -98,7 +114,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "parse double quote chars into empty column" in {
-      val in = ByteString("""a,"",c""")
+      val in = ByteString("a,\"\",c\n")
       val parser = new CsvParser()
       parser.offer(in)
       val res = parser.poll()
@@ -106,7 +122,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "parse double quote chars within quotes into one quote" in {
-      val in = ByteString("a,\"\"\"\",c")
+      val in = ByteString("a,\"\"\"\",c\n")
       val parser = new CsvParser()
       parser.offer(in)
       val res = parser.poll()
@@ -114,7 +130,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "parse double escape chars into one escape char" in {
-      val in = ByteString("""a,\\,c""")
+      val in = ByteString("a,\\\\,c\n")
       val parser = new CsvParser()
       parser.offer(in)
       val res = parser.poll()
@@ -122,7 +138,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "parse escaped comma into comma" in {
-      val in = ByteString("""a,\,,c""")
+      val in = ByteString("a,\\,,c\n")
       val parser = new CsvParser()
       parser.offer(in)
       val res = parser.poll()
@@ -130,7 +146,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "fail on escaped quote as quotes are escaped by doubled quote chars" in {
-      val in = ByteString("""a,\",c""")
+      val in = ByteString("a,\\\",c\n")
       val parser = new CsvParser()
       parser.offer(in)
       assertThrows[MalformedCSVException] {
@@ -166,7 +182,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "parse escaped escape within quotes into quote" in {
-      val in = ByteString("""a,"\\",c""")
+      val in = ByteString("a,\"\\\\\",c\n")
       val parser = new CsvParser()
       parser.offer(in)
       val res = parser.poll()
@@ -174,7 +190,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "parse escaped quote within quotes into quote" in {
-      val in = ByteString("""a,"\"",c""")
+      val in = ByteString("a,\"\\\"\",c\n")
       val parser = new CsvParser()
       parser.offer(in)
       val res = parser.poll()
@@ -182,7 +198,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "parse escaped escape in text within quotes into quote" in {
-      val in = ByteString("""a,"abc\\def",c""")
+      val in = ByteString("a,\"abc\\\\def\",c\n")
       val parser = new CsvParser()
       parser.offer(in)
       val res = parser.poll()
@@ -190,7 +206,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "parse escaped quote in text within quotes into quote" in {
-      val in = ByteString("""a,"abc\"def",c""")
+      val in = ByteString("a,\"abc\\\"def\",c\n")
       val parser = new CsvParser()
       parser.offer(in)
       val res = parser.poll()
@@ -223,7 +239,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "keep whitespace" in {
-      val in = ByteString("""one, two ,three  """)
+      val in = ByteString("one, two ,three  \n")
       val parser = new CsvParser()
       parser.offer(in)
       val res = parser.poll()
@@ -231,7 +247,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "quoted values keep whitespace" in {
-      val in = ByteString("""" one "," two ","three  """")
+      val in = ByteString("\" one \",\" two \",\"three  \"\n")
       val parser = new CsvParser()
       parser.offer(in)
       val res = parser.poll()
@@ -241,7 +257,8 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     "quoted values may contain LF" in {
       val in = ByteString("""one,"two
           |two",three
-          |1,2,3""".stripMargin)
+          |1,2,3
+          |""".stripMargin)
       val parser = new CsvParser()
       parser.offer(in)
       val res1 = parser.poll()
@@ -251,7 +268,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "quoted values may contain CR, LF" in {
-      val in = ByteString("one,\"two\r\ntwo\",three")
+      val in = ByteString("one,\"two\r\ntwo\",three\n")
       val parser = new CsvParser()
       parser.offer(in)
       val res1 = parser.poll()
@@ -259,7 +276,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "take double \" as single" in {
-      val in = ByteString("""one,"tw""o",three""")
+      val in = ByteString("one,\"tw\"\"o\",three\n")
       val parser = new CsvParser()
       parser.offer(in)
       val res = parser.poll()
@@ -267,7 +284,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "read values with different separator" in {
-      val in = ByteString("""$Foo $#$Bar $#$Baz $""")
+      val in = ByteString("$Foo $#$Bar $#$Baz $\n")
       val parser = new CsvParser('\\', '#', '$')
       parser.offer(in)
       val res = parser.poll()

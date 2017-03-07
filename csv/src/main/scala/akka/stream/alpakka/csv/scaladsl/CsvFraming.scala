@@ -21,8 +21,8 @@ object CsvFraming {
                   quoteChar: Byte = '"'): Flow[ByteString, List[ByteString], NotUsed] =
     Flow[ByteString].via(new GraphStage[FlowShape[ByteString, List[ByteString]]] {
 
-      val in = Inlet[ByteString](Logging.simpleName(this) + ".in")
-      val out = Outlet[List[ByteString]](Logging.simpleName(this) + ".out")
+      private val in = Inlet[ByteString](Logging.simpleName(this) + ".in")
+      private val out = Outlet[List[ByteString]](Logging.simpleName(this) + ".out")
       override val shape = FlowShape(in, out)
 
       override protected def initialAttributes: Attributes = Attributes.name("CsvFraming.lineScanner")
@@ -35,11 +35,11 @@ object CsvFraming {
 
           override def onPush(): Unit = {
             buffer.offer(grab(in))
-            tryPopBuffer()
+            tryPollBuffer()
           }
 
           override def onPull(): Unit =
-            tryPopBuffer()
+            tryPollBuffer()
 
           override def onUpstreamFinish(): Unit =
             buffer.poll() match {
@@ -47,9 +47,9 @@ object CsvFraming {
               case _ ⇒ completeStage()
             }
 
-          def tryPopBuffer() =
+          private def tryPollBuffer() =
             try buffer.poll() match {
-              case Some(json) ⇒ push(out, json)
+              case Some(csvLine) ⇒ push(out, csvLine)
               case _ ⇒ if (isClosed(in)) completeStage() else pull(in)
             } catch {
               case NonFatal(ex) ⇒ failStage(ex)
