@@ -285,7 +285,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
 
     "read values with different separator" in {
       val in = ByteString("$Foo $#$Bar $#$Baz $\n")
-      val parser = new CsvParser('\\', '#', '$')
+      val parser = new CsvParser(delimiter = '#', quoteChar = '$', escapeChar = '\\')
       parser.offer(in)
       val res = parser.poll()
       res.value.map(_.utf8String) should be(List("Foo ", "Bar ", "Baz "))

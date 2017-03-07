@@ -3,13 +3,15 @@
  */
 package akka.stream.alpakka.csv.scaladsl
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpec}
+
 import scala.collection.immutable.Seq
 import scala.concurrent.duration.DurationInt
 
@@ -28,14 +30,23 @@ abstract class CsvSpec
 }
 
 class CsvFramingSpec extends CsvSpec {
-  override implicit val patienceConfig = PatienceConfig(2.seconds)
+
+  def documentation: Unit = {
+    // #flow-type
+    val flow: Flow[ByteString, scala.List[ByteString], NotUsed]
+      = CsvFraming.lineScanner()
+    // #flow-type
+  }
 
   "CSV Framing" should {
     "parse one line" in {
+      val fut =
       // #line-scanner
-      val fut = Source.single(ByteString("eins,zwei,drei\n")).via(CsvFraming.lineScanner()).runWith(Sink.seq)
+        Source.single(ByteString("eins,zwei,drei\n"))
+          .via(CsvFraming.lineScanner())
+          .runWith(Sink.head)
       // #line-scanner
-      fut.futureValue.head should be(List(ByteString("eins"), ByteString("zwei"), ByteString("drei")))
+      fut.futureValue should be(List(ByteString("eins"), ByteString("zwei"), ByteString("drei")))
     }
 
     "parse two lines" in {

@@ -16,9 +16,13 @@ import scala.util.control.NonFatal
 /** Provides CSV framing stages that can separate CSV lines from incoming [[ByteString]] objects. */
 object CsvFraming {
 
-  def lineScanner(escapeChar: Byte = '\\',
-                  delimiter: Byte = ',',
-                  quoteChar: Byte = '"'): Flow[ByteString, List[ByteString], NotUsed] =
+  val backslash: Byte = '\\'
+  val comma: Byte = ','
+  val doubleQuote: Byte = '"'
+
+  def lineScanner(delimiter: Byte = comma,
+                  quoteChar: Byte = doubleQuote,
+                  escapeChar: Byte = backslash): Flow[ByteString, List[ByteString], NotUsed] =
     Flow[ByteString].via(new GraphStage[FlowShape[ByteString, List[ByteString]]] {
 
       private val in = Inlet[ByteString](Logging.simpleName(this) + ".in")
@@ -29,7 +33,7 @@ object CsvFraming {
 
       override def createLogic(inheritedAttributes: Attributes) =
         new GraphStageLogic(shape) with InHandler with OutHandler {
-          private val buffer = new CsvParser(escapeChar, delimiter, quoteChar)
+          private val buffer = new CsvParser(delimiter, quoteChar, escapeChar)
 
           setHandlers(in, out, this)
 

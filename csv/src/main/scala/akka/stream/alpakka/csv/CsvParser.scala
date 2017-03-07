@@ -22,7 +22,7 @@ object CsvParser {
   private final val CR: Byte = '\r'
 }
 
-class CsvParser(escapeChar: Byte = '\\', delimiter: Byte = ',', quoteChar: Byte = '"', requireLineEnd: Boolean = true) {
+class CsvParser(delimiter: Byte = ',', quoteChar: Byte = '"', escapeChar: Byte = '\\', requireLineEnd: Boolean = true) {
   import CsvParser._
 
   private var buffer = ByteString.empty

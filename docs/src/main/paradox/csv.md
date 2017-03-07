@@ -1,6 +1,19 @@
-# Comma Separated Files - CSV
+# Comma-Separated Values - CSV
 
-Blah blah.
+Comma-Separated Values are used as interchange format for tabular data 
+of text. This format is supported by most 
+
+Despite the name the values are often separated by a semicolon `;`.
+
+Even though the format is interpreted differently there exists a formal specification in [RFC4180](https://tools.ietf.org/html/rfc4180).
+
+The format uses three different characters to structure the data:
+
+* Field Delimiter - separates the columns from each other (e.g. `,` or `;`)
+* Quote - marks columns that may contain other structuring characters (such as Field Delimiters or line break) (e.g. `"`)
+* Escape Character - used to escape Field Delimiters in columns (e.g. `\`)
+
+Lines are separated by either Line Feed (`\n` = ASCII 10) or Carriage Return and Line Feed (`\r` = ASCII 13 + `\n` = ASCII 10).
 
 ## Artifacts
 
@@ -33,38 +46,20 @@ Gradle
 
 ## Usage
 
-### CSV parsing
+### CSV parsing and framing 
 
-Blah blah.
-
-In this sample we ...:
+CSV framing offers a flow that takes a stream of `akka.util.ByteString` and issues a stream of lists of `ByteString`.
 
 Scala
-: @@snip (../../../../file/src/test/scala/akka/stream/alpakka/file/scaladsl/FileTailSourceSpec.scala) { #simple-lines }
+: @@snip (../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFramingSpec.scala) { #flow-type }
 
 Java
-: @@snip (../../../../file/src/test/java/akka/stream/alpakka/file/javadsl/FileTailSourceTest.java) { #simple-lines }
+: @@snip (../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFramingTest.java) { #flow-type }
 
+In this sample we read a single line of CSV formatted data into a list of column elements:
 
-### Running the example code
-
-Both the samples are contained in standalone runnable mains, they can be run
- from `sbt` like this:
- 
 Scala
-:   ```
-    sbt
-    // tail source
-    > akka-stream-alpakka-file/test:runMain akka.stream.alpakka.file.scaladsl.FileTailSourceSpec /some/path/toa/file
-    // or directory changes
-    > akka-stream-alpakka-file/test:runMain akka.stream.alpakka.file.scaladsl.DirectoryChangesSourceSpec /some/directory/path
-    ```
+: @@snip (../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFramingSpec.scala) { #line-scanner }
 
 Java
-:   ```
-    sbt
-    // tail source
-    > akka-stream-alpakka-file/test:runMain akka.stream.alpakka.file.javadsl.FileTailSourceTest /some/path/toa/file
-    // or directory changes
-    > akka-stream-alpakka-file/test:runMain akka.stream.alpakka.file.javadsl.DirectoryChangesSourceTest /some/directory/path
-    ```
+: @@snip (../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFramingTest.java) { #line-scanner }
