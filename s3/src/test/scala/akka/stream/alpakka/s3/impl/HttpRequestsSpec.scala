@@ -27,7 +27,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers {
 
     req.entity shouldEqual HttpEntity.empty(contentType)
     req.headers should contain(RawHeader("x-amz-acl", acl.value))
-    req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
+    req.uri.authority.host.toString shouldEqual "s3-us-east-1.amazonaws.com"
 
     metaHeaders.map { m =>
       req.headers should contain(RawHeader(s"x-amz-meta-${m._1}", m._2))
@@ -47,7 +47,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers {
 
     req.entity shouldEqual HttpEntity.empty(contentType)
     req.headers should contain(RawHeader("x-amz-acl", acl.value))
-    req.uri.authority.host.toString shouldEqual "bucket.s3-us-east-2.amazonaws.com"
+    req.uri.authority.host.toString shouldEqual "s3-us-east-2.amazonaws.com"
 
     metaHeaders.map { m =>
       req.headers should contain(RawHeader(s"x-amz-meta-${m._1}", m._2))

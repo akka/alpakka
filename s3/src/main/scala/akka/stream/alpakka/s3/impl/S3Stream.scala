@@ -3,9 +3,6 @@
  */
 package akka.stream.alpakka.s3.impl
 
-import java.nio.file.Paths
-import java.time.LocalDate
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -17,12 +14,15 @@ import akka.stream.alpakka.s3.auth.{AWSCredentials, CredentialScope, Signer, Sig
 import akka.stream.alpakka.s3.{DiskBufferType, MemoryBufferType, S3Exception, S3Settings}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
-
+import java.nio.file.Paths
+import java.time.LocalDate
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 final case class S3Location(bucket: String, key: String)
+
+final case class S3PrefixLocation(bucket: String, prefix: Option[String])
 
 final case class MultipartUpload(s3Location: S3Location, uploadId: String)
 
@@ -62,6 +62,17 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
     import mat.executionContext
     Source
       .fromFuture(signAndGet(HttpRequests.getDownloadRequest(s3Location, region)).map(_.dataBytes))
+      .flatMapConcat(identity)
+  }
+
+  def listBuckets(
+    s3PrefixLocation: S3PrefixLocation,
+    maxKeys: Option[Int],
+    marker: Option[String]): Source[ByteString, NotUsed] = {
+    import mat.executionContext
+    Source
+      .fromFuture(signAndGet(HttpRequests.listBuckets(s3PrefixLocation, region, maxKeys, marker))
+        .map(_.dataBytes))
       .flatMapConcat(identity)
   }
 
