@@ -33,7 +33,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
     val googlePubSub = new GooglePubSub {
       val httpApi = mockHttpApi
 
-      def getAuth(clientEmail: String, privateKey: PrivateKey) = auth
+      def getSession(clientEmail: String, privateKey: PrivateKey) = auth
     }
   }
 
