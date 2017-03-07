@@ -121,7 +121,7 @@ private[alpakka] object HttpRequests {
     conf.proxy match {
       case None =>
         region match {
-          case "us-east-1" => Uri.Host("s3.amazonaws.com/bucket")
+          case "us-east-1" => Uri.Host("s3.amazonaws.com")
           case _ => Uri.Host(s"s3-$region.amazonaws.com")
         }
       case Some(proxy) => Uri.Host(proxy.host)
