@@ -15,13 +15,13 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object GooglePubSub extends GooglePubSub {
   private[googlepubsub] override val httpApi = HttpApi
-  private[googlepubsub] def getAuth(clientEmail: String, privateKey: PrivateKey): Session =
+  private[googlepubsub] def getSession(clientEmail: String, privateKey: PrivateKey): Session =
     new Session(clientEmail, privateKey)
 }
 
 protected[googlepubsub] trait GooglePubSub {
   private[googlepubsub] def httpApi: HttpApi
-  private[googlepubsub] def getAuth(clientEmail: String, privateKey: PrivateKey): Session
+  private[googlepubsub] def getSession(clientEmail: String, privateKey: PrivateKey): Session
 
   private implicit def matToEx(implicit mat: Materializer): ExecutionContext = mat.executionContext
 
@@ -35,10 +35,10 @@ protected[googlepubsub] trait GooglePubSub {
               topic: String,
               parallelism: Int = 1)(implicit actorSystem: ActorSystem,
                                     materializer: Materializer): Flow[PublishRequest, Seq[String], NotUsed] = {
-    val auth = getAuth(clientEmail, privateKey)
+    val session = getSession(clientEmail, privateKey)
 
     Flow[PublishRequest].mapAsync(parallelism) { request =>
-      auth.getToken().flatMap { accessToken =>
+      session.getToken().flatMap { accessToken =>
         httpApi.publish(projectId, topic, accessToken, apiKey, request)
       }
     }
@@ -47,8 +47,8 @@ protected[googlepubsub] trait GooglePubSub {
   def subscribe(projectId: String, apiKey: String, clientEmail: String, privateKey: PrivateKey, subscription: String)(
       implicit actorSystem: ActorSystem,
       materializer: Materializer): Source[ReceivedMessage, NotUsed] = {
-    val auth = getAuth(clientEmail, privateKey)
-    Source.fromGraph(new SubscriptionSourceStage(projectId = projectId, apiKey = apiKey, auth = auth,
+    val session = getSession(clientEmail, privateKey)
+    Source.fromGraph(new SubscriptionSourceStage(projectId = projectId, apiKey = apiKey, session = session,
         subscription = subscription, httpApi = httpApi))
   }
 
@@ -59,11 +59,11 @@ protected[googlepubsub] trait GooglePubSub {
                   subscription: String,
                   parallelism: Int = 1)(implicit actorSystem: ActorSystem,
                                         materializer: Materializer): Sink[AcknowledgeRequest, Future[Done]] = {
-    val auth = getAuth(clientEmail, privateKey)
+    val session = getSession(clientEmail, privateKey)
 
     Flow[AcknowledgeRequest]
       .mapAsync(parallelism) { ackReq =>
-        auth.getToken().flatMap { accessToken =>
+        session.getToken().flatMap { accessToken =>
           httpApi.acknowledge(project = projectId, subscription = subscription, accessToken = accessToken,
             apiKey = apiKey, request = ackReq)
         }

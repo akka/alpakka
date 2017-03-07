@@ -11,7 +11,7 @@ import scala.util.Try
 
 final class SubscriptionSourceStage(projectId: String,
                                     apiKey: String,
-                                    auth: Session,
+                                    session: Session,
                                     subscription: String,
                                     httpApi: HttpApi)(implicit as: ActorSystem)
     extends GraphStage[SourceShape[ReceivedMessage]] {
@@ -31,7 +31,7 @@ final class SubscriptionSourceStage(projectId: String,
       def fetch(implicit mat: Materializer): Unit = {
         import mat.executionContext
 
-        val req = auth.getToken().flatMap { token =>
+        val req = session.getToken().flatMap { token =>
           httpApi.pull(project = projectId, subscription = subscription, accessToken = token, apiKey = apiKey)
         }
         req.onComplete { tr =>
