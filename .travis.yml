@@ -16,7 +16,7 @@ before_install:
   - docker-compose up -d
 
 script:
-  - sbt -J-XX:ReservedCodeCacheSize=128m ++$TRAVIS_SCALA_VERSION ";test;docs/paradox"
+  - sbt -J-XX:ReservedCodeCacheSize=128m ++$TRAVIS_SCALA_VERSION ";test;docs/paradox;scalafmtTest"
 
 before_cache:
   - find $HOME/.ivy2 -name "ivydata-*.properties" -print -delete

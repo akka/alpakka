@@ -3,8 +3,6 @@ import sbt.Keys._
 import sbt.plugins.JvmPlugin
 import de.heikoseeberger.sbtheader._
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
-import org.scalafmt.sbt.ScalaFmtPlugin
-import org.scalafmt.sbt.ScalaFmtPlugin.autoImport._
 
 object Common extends AutoPlugin {
 
@@ -18,8 +16,7 @@ object Common extends AutoPlugin {
 
   override def requires = JvmPlugin && HeaderPlugin
 
-  override lazy val projectSettings = reformatOnCompileSettings ++
-    Dependencies.Common ++ Seq(
+  override lazy val projectSettings = Dependencies.Common ++ Seq(
     organization := "com.lightbend.akka",
     organizationName := "Lightbend Inc.",
     homepage := Some(url("https://github.com/akka/alpakka")),
@@ -63,8 +60,6 @@ object Common extends AutoPlugin {
       "java" -> FileHeader
     ),
 
-    formatSbtFiles := false,
-    scalafmtConfig := Some(baseDirectory.in(ThisBuild).value / ".scalafmt.conf"),
     ivyScala := ivyScala.value.map(_.copy(overrideScalaVersion = sbtPlugin.value)) // TODO Remove once this workaround no longer needed (https://github.com/sbt/sbt/issues/2786)!
   )
 }

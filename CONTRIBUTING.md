@@ -26,6 +26,7 @@ For a Pull Request to be considered at all it has to meet these requirements:
 4. The code must be well documented (see the [Documentation](#documentation) section below).
 5. The commit messages must properly describe the changes, see [further below](#creating-commits-and-writing-commit-messages).
 6. Do not use ``@author`` tags since it does not encourage [Collective Code Ownership](http://www.extremeprogramming.org/rules/collective.html). Contributors get the credit they deserve in the release notes.
+7. Format your code with `sbt scalafmt`
 
 If these requirements are not met then the code should **not** be merged into master, or even reviewed - regardless of how good or important it is. No exceptions.
 
