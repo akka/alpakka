@@ -124,18 +124,18 @@ private[alpakka] object HttpRequests {
     }
 
   private[this] def requestUri(bucket: String, region: String)(implicit conf: S3Settings): Uri = {
-    val uri = Uri(s"/$bucket").withHost(requestHost(region)).withScheme("https")
+    val uri = Uri(s"/$bucket").withHost(requestHost(region))
     conf.proxy match {
-      case None => uri
-      case Some(proxy) => uri.withPort(proxy.port)
+      case None => uri.withScheme("https")
+      case Some(proxy) => uri.withPort(proxy.port).withScheme(proxy.schema)
     }
   }
 
   private[this] def requestUriWithKey(bucket: String, key: String, region: String)(implicit conf: S3Settings): Uri = {
-    val uri = Uri(s"/$bucket/$key").withHost(requestHost(region)).withScheme("https")
+    val uri = Uri(s"/$bucket/$key").withHost(requestHost(region))
     conf.proxy match {
-      case None => uri
-      case Some(proxy) => uri.withPort(proxy.port)
+      case None => uri.withScheme("https")
+      case Some(proxy) => uri.withPort(proxy.port).withScheme(proxy.schema)
     }
   }
 }
