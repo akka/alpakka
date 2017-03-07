@@ -119,7 +119,11 @@ private[alpakka] object HttpRequests {
 
   private[this] def requestHost(region: String)(implicit conf: S3Settings): Uri.Host =
     conf.proxy match {
-      case None => Uri.Host(s"s3-$region.amazonaws.com")
+      case None =>
+        region match {
+          case "us-east-1" => Uri.Host("s3.amazonaws.com/bucket")
+          case _ => Uri.Host(s"s3-$region.amazonaws.com")
+        }
       case Some(proxy) => Uri.Host(proxy.host)
     }
 
