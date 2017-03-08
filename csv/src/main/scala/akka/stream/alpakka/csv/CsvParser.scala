@@ -7,7 +7,7 @@ import akka.util.{ByteString, ByteStringBuilder}
 
 object CsvParser {
 
-  class MalformedCSVException(position: Int, msg: String) extends Exception
+  class MalformedCsvException(position: Int, msg: String) extends Exception
 
   private type State = Int
   private final val LineStart = 0
@@ -22,7 +22,7 @@ object CsvParser {
   private final val CR: Byte = '\r'
 }
 
-class CsvParser(delimiter: Byte = ',', quoteChar: Byte = '"', escapeChar: Byte = '\\', requireLineEnd: Boolean = true) {
+class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar: Byte, requireLineEnd: Boolean) {
   import CsvParser._
 
   private var buffer = ByteString.empty
@@ -86,11 +86,11 @@ class CsvParser(delimiter: Byte = ',', quoteChar: Byte = '"', escapeChar: Byte =
     val fieldBuilder = new FieldBuilder(buf)
 
     def wrongCharEscaped() =
-      throw new MalformedCSVException(pos, s"wrong escaping at $pos, only escape or delimiter may be escaped")
+      throw new MalformedCsvException(pos, s"wrong escaping at $pos, only escape or delimiter may be escaped")
     def wrongCharEscapedWithinQuotes() =
-      throw new MalformedCSVException(pos,
+      throw new MalformedCsvException(pos,
         s"wrong escaping at $pos, only escape or quote may be escaped within quotes")
-    def noCharEscaped() = throw new MalformedCSVException(pos, s"wrong escaping at $pos, no character after escape")
+    def noCharEscaped() = throw new MalformedCsvException(pos, s"wrong escaping at $pos, no character after escape")
 
     @inline def readPastLf() =
       if (pos < buf.length && buf(pos) == LF) {
@@ -240,7 +240,7 @@ class CsvParser(delimiter: Byte = ',', quoteChar: Byte = '"', escapeChar: Byte =
               readPastLf()
               fieldStart = pos
             case _ =>
-              throw new MalformedCSVException(pos, "expected delimiter or end of line")
+              throw new MalformedCsvException(pos, "expected delimiter or end of line")
           }
 
         case WithinQuotedField =>
@@ -274,7 +274,7 @@ class CsvParser(delimiter: Byte = ',', quoteChar: Byte = '"', escapeChar: Byte =
       state match {
         case LineEnd =>
           Some(columns.toList)
-      case _ =>
+        case _ =>
           None
       }
     } else {

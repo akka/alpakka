@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.csv.javadsl;
 
 import akka.NotUsed;
@@ -9,12 +12,14 @@ import java.util.Collection;
 
 public class CsvFraming {
 
-    public static final byte backslash = '\\';
-    public static final byte comma = ',';
-    public static final byte doubleQuote = '"';
+    public static final byte BACKSLASH = '\\';
+    public static final byte COMMA = ',';
+    public static final byte SEMI_COLON = ';';
+    public static final byte COLON = ':';
+    public static final byte DOUBLE_QUOTE = '"';
 
     public static Flow<ByteString, Collection<ByteString>, NotUsed> lineScanner() {
-        return lineScanner(comma, doubleQuote, backslash);
+        return lineScanner(COMMA, DOUBLE_QUOTE, BACKSLASH);
     }
 
     public static Flow<ByteString, Collection<ByteString>, NotUsed> lineScanner(byte delimiter, byte quoteChar, byte escapeChar) {
@@ -22,6 +27,4 @@ public class CsvFraming {
                 .lineScanner(delimiter, quoteChar, escapeChar).asJava()
                 .map(JavaConversions::asJavaCollection);
     }
-
-
 }

@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.csv.javadsl;
 
 import akka.NotUsed;
@@ -24,9 +27,12 @@ public class CsvFramingTest {
     private static Materializer materializer;
 
     public void documentation() {
+        byte delimiter = CsvFraming.COMMA;
+        byte quoteChar = CsvFraming.DOUBLE_QUOTE;
+        byte escapeChar = CsvFraming.BACKSLASH;
         // #flow-type
         Flow<ByteString, Collection<ByteString>, NotUsed> flow
-                = CsvFraming.lineScanner();
+                = CsvFraming.lineScanner(delimiter, quoteChar, escapeChar);
         // #flow-type
     }
 

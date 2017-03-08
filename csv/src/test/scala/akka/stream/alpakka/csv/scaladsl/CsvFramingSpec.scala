@@ -1,40 +1,26 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.csv.scaladsl
 
 import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
-import akka.testkit.TestKit
 import akka.util.ByteString
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpec}
 
 import scala.collection.immutable.Seq
-import scala.concurrent.duration.DurationInt
 
-abstract class CsvSpec
-    extends WordSpec
-    with Matchers
-    with BeforeAndAfterAll
-    with BeforeAndAfterEach
-    with ScalaFutures {
 
-  implicit val system = ActorSystem(this.getClass.getSimpleName)
-  implicit val materializer = ActorMaterializer()
-
-  override protected def afterAll(): Unit =
-    TestKit.shutdownActorSystem(system)
-}
 
 class CsvFramingSpec extends CsvSpec {
 
-  def documentation: Unit = {
+  def documentation(): Unit = {
+    import CsvFraming._
+    val delimiter: Byte = Comma
+    val quoteChar: Byte = DoubleQuote
+    val escapeChar: Byte = Backslash
     // #flow-type
-    val flow: Flow[ByteString, scala.List[ByteString], NotUsed]
-      = CsvFraming.lineScanner()
+    val flow: Flow[ByteString, List[ByteString], NotUsed]
+      = CsvFraming.lineScanner(delimiter, quoteChar, escapeChar)
     // #flow-type
   }
 
@@ -82,7 +68,6 @@ class CsvFramingSpec extends CsvSpec {
       val res = fut.futureValue
       res.head should be(List("eins", "zwei", "drei"))
       res(1) should be(List("uno", "dos", "tres"))
-
     }
   }
 }
