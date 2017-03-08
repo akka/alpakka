@@ -37,14 +37,14 @@ final class S3Client(credentials: AWSCredentials, region: String)(implicit syste
 
   private[this] val impl = S3Stream(credentials, region)
 
-  /** listBucket lists files in a bucket, filtered by an optional prefix 
-    * 
-    * @param bucket name of the bucket
-    * @param prefix optional prefix
-    * @return A akka Source with keys
-    * 
-    */
-  def listBucket(bucket: String, prefix: Option[String]) : Source[String, NotUsed] = impl.listBucket(bucket, prefix)
+  /** listBucket lists files in a bucket, filtered by an optional prefix
+   *
+   * @param bucket name of the bucket
+   * @param prefix optional prefix
+   * @return A akka Source with keys
+   *
+   */
+  def listBucket(bucket: String, prefix: Option[String]): Source[String, NotUsed] = impl.listBucket(bucket, prefix)
 
   def download(bucket: String, key: String): Source[ByteString, NotUsed] = impl.download(S3Location(bucket, key))
 

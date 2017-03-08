@@ -33,12 +33,12 @@ private[alpakka] object HttpRequests {
           "&continuation-token=" + continuation_token.get.replaceAll("=", "%3D").replaceAll("[+]", "%2B")
         else ""
 
-      val uriBeforeProxy = Uri(s"/$bucket/?list-type=2" + prefixString + continuation_token_string)
-        .withHost(requestHost(region))
+      val uriBeforeProxy =
+        Uri(s"/$bucket/?list-type=2" + prefixString + continuation_token_string)
 
       conf.proxy match {
-        case None => uriBeforeProxy.withScheme("https")
-        case Some(proxy) => uriBeforeProxy.withPort(proxy.port).withScheme(proxy.scheme)
+        case None => uriBeforeProxy.withHost(requestHost(region)).withScheme("https")
+        case Some(proxy) => uriBeforeProxy.withHost(proxy.host).withPort(proxy.port).withScheme(proxy.scheme)
       }
     }
 
@@ -106,25 +106,21 @@ private[alpakka] object HttpRequests {
   }
 
   private[this] def requestHost(region: String)(implicit conf: S3Settings): Uri.Host =
-    conf.proxy match {
-      case None =>
-        region match {
-          case "us-east-1" => Uri.Host("s3.amazonaws.com")
-          case _ => Uri.Host(s"s3-$region.amazonaws.com")
-        }
-      case Some(proxy) => Uri.Host(proxy.host)
+    region match {
+      case "us-east-1" => Uri.Host("s3.amazonaws.com")
+      case _ => Uri.Host(s"s3-$region.amazonaws.com")
     }
 
   private[this] def s3Request(s3Location: S3Location,
-    region: String,
-    method: HttpMethod = HttpMethods.GET,
-    uriFn: (Uri => Uri) = identity)(implicit conf: S3Settings): HttpRequest = {
+                              region: String,
+                              method: HttpMethod = HttpMethods.GET,
+                              uriFn: (Uri => Uri) = identity)(implicit conf: S3Settings): HttpRequest = {
 
     def requestUri(s3Location: S3Location, region: String)(implicit conf: S3Settings): Uri = {
-      val uri = Uri(s"/${s3Location.bucket}/${s3Location.key}").withHost(requestHost(region))
+      val uri = Uri(s"/${s3Location.bucket}/${s3Location.key}")
       conf.proxy match {
-        case None => uri.withScheme("https")
-        case Some(proxy) => uri.withPort(proxy.port).withScheme(proxy.scheme)
+        case None => uri.withHost(requestHost(region)).withScheme("https")
+        case Some(proxy) => uri.withHost(proxy.host).withPort(proxy.port).withScheme(proxy.scheme)
       }
     }
 

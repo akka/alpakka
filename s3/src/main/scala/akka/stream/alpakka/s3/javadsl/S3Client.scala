@@ -29,7 +29,8 @@ final class S3Client(credentials: AWSCredentials, region: String, system: ActorS
   def download(bucket: String, key: String): Source[ByteString, NotUsed] =
     impl.download(S3Location(bucket, key)).asJava
 
-  def listBucket(bucket: String, prefix: Option[String]) : Source[String, NotUsed] = impl.listBucket(bucket, prefix).asJava
+  def listBucket(bucket: String, prefix: Option[String]): Source[String, NotUsed] =
+    impl.listBucket(bucket, prefix).asJava
 
   def multipartUpload(bucket: String,
                       key: String,
