@@ -5,15 +5,13 @@ package akka.stream.alpakka.s3.impl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.s3.S3Settings
+import akka.stream.alpakka.s3.auth.AWSCredentials
 import akka.stream.alpakka.s3.scaladsl.S3Client
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
-
-import akka.stream.alpakka.s3.auth.AWSCredentials
-import akka.stream.alpakka.s3.S3Settings
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 

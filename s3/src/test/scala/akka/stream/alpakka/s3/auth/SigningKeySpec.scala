@@ -4,7 +4,6 @@
 package akka.stream.alpakka.s3.auth
 
 import java.time.LocalDate
-
 import org.scalatest.{FlatSpec, Matchers}
 
 class SigningKeySpec extends FlatSpec with Matchers {

@@ -3,25 +3,15 @@
  */
 package akka.stream.alpakka.s3.auth
 
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-
-import org.scalatest.FlatSpecLike
-import org.scalatest.Matchers
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.Millis
-import org.scalatest.time.Seconds
-import org.scalatest.time.Span
-
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpMethods
-import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.headers.Host
-import akka.http.scaladsl.model.headers.RawHeader
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
+import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
+import akka.http.scaladsl.model.headers.{Host, RawHeader}
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
+import java.time.{LocalDate, LocalDateTime, ZoneOffset}
+import org.scalatest.{FlatSpecLike, Matchers}
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{Millis, Seconds, Span}
 
 class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLike with Matchers with ScalaFutures {
   def this() = this(ActorSystem("SignerSpec"))
