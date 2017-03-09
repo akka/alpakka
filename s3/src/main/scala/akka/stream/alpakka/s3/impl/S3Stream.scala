@@ -3,9 +3,6 @@
  */
 package akka.stream.alpakka.s3.impl
 
-import java.nio.file.Paths
-import java.time.LocalDate
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -17,7 +14,8 @@ import akka.stream.alpakka.s3.auth.{AWSCredentials, CredentialScope, Signer, Sig
 import akka.stream.alpakka.s3.{DiskBufferType, MemoryBufferType, S3Exception, S3Settings}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
-
+import java.nio.file.Paths
+import java.time.LocalDate
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -60,13 +58,13 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
   val MinChunkSize = 5242880 //in bytes
   val signingKey = SigningKey(credentials, CredentialScope(LocalDate.now(), region, "s3"))
 
-  /** listBucket lists files in a bucket, filtered by an optional prefix 
-    * 
-    * @param bucket name of the bucket
-    * @param prefix optional prefix
-    * @return A akka Source with keys
-    * 
-    */
+  /** listBucket lists files in a bucket, filtered by an optional prefix
+   *
+   * @param bucket name of the bucket
+   * @param prefix optional prefix
+   * @return A akka Source with keys
+   *
+   */
   def listBucket(bucket: String, prefix: Option[String] = None): Source[String, NotUsed] = {
     import mat.executionContext
     def listBucketCall(continuation_token: Option[String] = None) =

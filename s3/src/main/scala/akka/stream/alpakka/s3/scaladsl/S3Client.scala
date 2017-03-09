@@ -5,7 +5,7 @@ package akka.stream.alpakka.s3.scaladsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpHeader, Uri}
+import akka.http.scaladsl.model.{ContentType, ContentTypes, Uri}
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
@@ -13,8 +13,6 @@ import akka.stream.alpakka.s3.auth.AWSCredentials
 import akka.stream.alpakka.s3.impl.{CompleteMultipartUploadResult, MetaHeaders, S3Location, S3Stream}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
-
-import scala.collection.immutable
 import scala.concurrent.Future
 
 final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
@@ -39,14 +37,14 @@ final class S3Client(credentials: AWSCredentials, region: String)(implicit syste
 
   private[this] val impl = S3Stream(credentials, region)
 
-  /** listBucket lists files in a bucket, filtered by an optional prefix 
-    * 
-    * @param bucket name of the bucket
-    * @param prefix optional prefix
-    * @return A akka Source with keys
-    * 
-    */
-  def listBucket(bucket: String, prefix: Option[String]) : Source[String, NotUsed] = impl.listBucket(bucket, prefix)
+  /** listBucket lists files in a bucket, filtered by an optional prefix
+   *
+   * @param bucket name of the bucket
+   * @param prefix optional prefix
+   * @return A akka Source with keys
+   *
+   */
+  def listBucket(bucket: String, prefix: Option[String]): Source[String, NotUsed] = impl.listBucket(bucket, prefix)
 
   def download(bucket: String, key: String): Source[ByteString, NotUsed] = impl.download(S3Location(bucket, key))
 
