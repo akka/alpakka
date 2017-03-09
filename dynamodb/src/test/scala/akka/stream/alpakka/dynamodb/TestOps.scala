@@ -68,9 +68,10 @@ object ItemSpecOps extends TestOps {
   val batchWriteItemRequest = new BatchWriteItemRequest().withRequestItems(
       Map(
           tableName ->
-          List(new WriteRequest(new PutRequest().withItem((keyMap("B", 0) + ("data" -> S(test5Data))).asJava)),
-            new WriteRequest(new PutRequest().withItem((keyMap("B",
-                  1) + ("data" -> S(test5Data))).asJava))).asJava).asJava)
+          List(
+            new WriteRequest(new PutRequest().withItem((keyMap("B", 0) + ("data" -> S(test5Data))).asJava)),
+            new WriteRequest(new PutRequest().withItem((keyMap("B", 1) + ("data" -> S(test5Data))).asJava))
+          ).asJava).asJava)
 
   val deleteItemRequest = new DeleteItemRequest().withTableName(tableName).withKey(keyMap("A", 0).asJava)
 
