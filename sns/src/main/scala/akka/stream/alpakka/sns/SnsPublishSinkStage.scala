@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.sns
 
 import akka.Done
@@ -19,57 +22,52 @@ final class SnsPublishSinkStage(topicArn: String, snsClient: AmazonSNSAsync)
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val completed = Promise[Done]()
 
-    val logic = new GraphStageLogic(shape) with StageLogging {
+    val logic = new GraphStageLogic(shape) with InHandler with StageLogging {
+
+      private def handleFailure(ex: Throwable): Unit = {
+        failStage(ex)
+        completed.tryFailure(ex)
+      }
+
+      private def handleSuccess(result: PublishResult): Unit = {
+        log.debug("Published SNS message: {}", result.getMessageId)
+        completed.trySuccess(Done)
+
+        if (!hasBeenPulled(in)) tryPull(in)
+      }
 
       private val failureCallback = getAsyncCallback[Throwable](handleFailure)
       private val successCallback = getAsyncCallback[PublishResult](handleSuccess)
 
-      setHandler(in,
-        new InHandler {
-        override def onPush(): Unit = {
-          val request = new PublishRequest().withTopicArn(topicArn).withMessage(grab(in))
+      override def onPush(): Unit = {
+        val request = new PublishRequest().withTopicArn(topicArn).withMessage(grab(in))
 
-          snsClient.publishAsync(request,
-            new AsyncHandler[PublishRequest, PublishResult] {
-            override def onError(exception: Exception): Unit =
-              failureCallback.invoke(exception)
+        snsClient.publishAsync(request,
+          new AsyncHandler[PublishRequest, PublishResult] {
+          override def onError(exception: Exception): Unit =
+            failureCallback.invoke(exception)
 
-            override def onSuccess(request: PublishRequest, result: PublishResult): Unit =
-              successCallback.invoke(result)
-          })
-        }
+          override def onSuccess(request: PublishRequest, result: PublishResult): Unit =
+            successCallback.invoke(result)
+        })
+      }
 
-        override def onUpstreamFinish(): Unit = {
-          completeStage()
-          completed.trySuccess(Done)
-        }
+      override def onUpstreamFinish(): Unit = {
+        completeStage()
+        completed.trySuccess(Done)
+      }
 
-        override def onUpstreamFailure(ex: Throwable): Unit = {
-          log.error(ex, "Upstream failure: {}", ex.getMessage)
-          failStage(ex)
-          completed.tryFailure(ex)
-        }
-      })
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        failStage(ex)
+        completed.tryFailure(ex)
+      }
 
       override def preStart(): Unit = {
         setKeepGoing(true)
         pull(in)
       }
 
-      def handleFailure(ex: Throwable): Unit = {
-        log.error(ex, "AmazonSNSAsync failure: {}", ex.getMessage)
-        failStage(ex)
-        completed.tryFailure(ex)
-      }
-
-      def handleSuccess(result: PublishResult): Unit = {
-        log.debug("Published SNS message: {}", result.getMessageId)
-        completed.trySuccess(Done)
-
-        if (!isClosed(in) && !hasBeenPulled(in)) {
-          pull(in)
-        }
-      }
+      setHandler(in, this)
     }
 
     (logic, completed.future)

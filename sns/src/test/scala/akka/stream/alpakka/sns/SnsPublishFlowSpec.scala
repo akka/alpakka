@@ -5,9 +5,8 @@ package akka.stream.alpakka.sns
 
 import java.util.concurrent.{CompletableFuture, Future}
 
-import akka.Done
-import akka.stream.alpakka.sns.scaladsl.SnsPublishSink
-import akka.stream.scaladsl.Keep
+import akka.stream.alpakka.sns.scaladsl.SnsPublishFlow
+import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.testkit.scaladsl.TestSource
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sns.model.{PublishRequest, PublishResult}
@@ -15,12 +14,12 @@ import org.mockito.ArgumentMatchers.{any, eq => meq}
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.scalatest._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class SnsPublishSinkSpec extends FlatSpec with DefaultTestContext with MustMatchers {
+class SnsPublishFlowSpec extends FlatSpec with DefaultTestContext with MustMatchers {
 
   it should "publish a single message to sns" in {
     val publishRequest = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message")
@@ -37,10 +36,10 @@ class SnsPublishSinkSpec extends FlatSpec with DefaultTestContext with MustMatch
       }
     )
 
-    val (probe, future) = TestSource.probe[String].toMat(SnsPublishSink("topic-arn"))(Keep.both).run()
+    val (probe, future) = TestSource.probe[String].via(SnsPublishFlow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
     probe.sendNext("sns-message").sendComplete()
 
-    Await.result(future, 1.second) mustBe Done
+    Await.result(future, 1.second) mustBe "message-id" :: Nil
     verify(snsClient, times(1)).publishAsync(meq(publishRequest), any())
   }
 
@@ -59,10 +58,10 @@ class SnsPublishSinkSpec extends FlatSpec with DefaultTestContext with MustMatch
       }
     )
 
-    val (probe, future) = TestSource.probe[String].toMat(SnsPublishSink("topic-arn"))(Keep.both).run()
+    val (probe, future) = TestSource.probe[String].via(SnsPublishFlow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
     probe.sendNext("sns-message-1").sendNext("sns-message-2").sendNext("sns-message-3").sendComplete()
 
-    Await.result(future, 1.second) mustBe Done
+    Await.result(future, 1.second) mustBe "message-id" :: "message-id" :: "message-id" :: Nil
 
     val expectedFirst = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message-1")
     verify(snsClient, times(1)).publishAsync(meq(expectedFirst), any())
@@ -74,7 +73,7 @@ class SnsPublishSinkSpec extends FlatSpec with DefaultTestContext with MustMatch
     verify(snsClient, times(1)).publishAsync(meq(expectedThird), any())
   }
 
-  it should "fail stage and materialized value if AmazonSNSAsyncClient request failed" in {
+  it should "fail stage if AmazonSNSAsyncClient request failed" in {
     val publishRequest = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message")
 
     when(snsClient.publishAsync(meq(publishRequest), any())).thenAnswer(
@@ -90,7 +89,7 @@ class SnsPublishSinkSpec extends FlatSpec with DefaultTestContext with MustMatch
       }
     )
 
-    val (probe, future) = TestSource.probe[String].toMat(SnsPublishSink("topic-arn"))(Keep.both).run()
+    val (probe, future) = TestSource.probe[String].via(SnsPublishFlow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
     probe.sendNext("sns-message").sendComplete()
 
     a[RuntimeException] should be thrownBy {
@@ -99,8 +98,8 @@ class SnsPublishSinkSpec extends FlatSpec with DefaultTestContext with MustMatch
     verify(snsClient, times(1)).publishAsync(meq(publishRequest), any())
   }
 
-  it should "fail stage and materialized value if upstream failure occurs" in {
-    val (probe, future) = TestSource.probe[String].toMat(SnsPublishSink("topic-arn"))(Keep.both).run()
+  it should "fail stage if upstream failure occurs" in {
+    val (probe, future) = TestSource.probe[String].via(SnsPublishFlow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
     probe.sendError(new RuntimeException("upstream failure"))
 
     a[RuntimeException] should be thrownBy {

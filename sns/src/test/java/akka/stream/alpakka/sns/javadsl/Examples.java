@@ -1,8 +1,12 @@
+/*
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.sns.javadsl;
 
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -24,7 +28,11 @@ public class Examples {
     //#init-system
 
     //#use-sink
-    CompletionStage<Done> done = Source.single("message").runWith(SnsPublishSink.create("topic-arn", snsClient), materializer);
+    CompletionStage<Done> sink = Source.single("message").runWith(SnsPublishSink.create("topic-arn", snsClient), materializer);
     //#use-sink
+
+    //#use-flow
+    CompletionStage<Done> flow = Source.single("message").via(SnsPublishFlow.create("topic-arn", snsClient)).runWith(Sink.ignore(), materializer);
+    //#use-flow
 
 }

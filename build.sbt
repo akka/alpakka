@@ -78,7 +78,6 @@ lazy val simpleCodecs = project
   )
 
 lazy val sns = project
-  .in(file("sns"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-sns",

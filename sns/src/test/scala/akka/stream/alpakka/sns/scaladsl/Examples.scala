@@ -1,9 +1,12 @@
+/*
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.sns.scaladsl
 
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Sink, Source}
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.services.sns.{AmazonSNSAsync, AmazonSNSAsyncClientBuilder}
 
@@ -23,7 +26,11 @@ object Examples {
   //#init-system
 
   //#use-sink
-  val done: Future[Done] = Source.single("message").runWith(SnsPublishSink("topic-arn"))
+  val sink: Future[Done] = Source.single("message").runWith(SnsPublishSink("topic-arn"))
   //#use-sink
+
+  //#use-flow
+  val flow: Future[Done] = Source.single("message").via(SnsPublishFlow("topic-arn")).runWith(Sink.ignore)
+  //#use-flow
 
 }
