@@ -39,7 +39,7 @@ class SnsPublishFlowSpec extends FlatSpec with DefaultTestContext with MustMatch
     val (probe, future) = TestSource.probe[String].via(SnsPublishFlow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
     probe.sendNext("sns-message").sendComplete()
 
-    Await.result(future, 1.second) mustBe "message-id" :: Nil
+    Await.result(future, 1.second) mustBe publishResult :: Nil
     verify(snsClient, times(1)).publishAsync(meq(publishRequest), any())
   }
 
@@ -61,7 +61,7 @@ class SnsPublishFlowSpec extends FlatSpec with DefaultTestContext with MustMatch
     val (probe, future) = TestSource.probe[String].via(SnsPublishFlow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
     probe.sendNext("sns-message-1").sendNext("sns-message-2").sendNext("sns-message-3").sendComplete()
 
-    Await.result(future, 1.second) mustBe "message-id" :: "message-id" :: "message-id" :: Nil
+    Await.result(future, 1.second) mustBe publishResult :: publishResult :: publishResult :: Nil
 
     val expectedFirst = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message-1")
     verify(snsClient, times(1)).publishAsync(meq(expectedFirst), any())

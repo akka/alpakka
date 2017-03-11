@@ -10,15 +10,15 @@ import com.amazonaws.services.sns.AmazonSNSAsync
 import com.amazonaws.services.sns.model.{PublishRequest, PublishResult}
 
 final class SnsPublishFlowStage(topicArn: String, snsClient: AmazonSNSAsync)
-    extends GraphStage[FlowShape[String, String]] {
+    extends GraphStage[FlowShape[String, PublishResult]] {
 
   private val in = Inlet[String]("SnsPublishFlow.in")
-  private val out = Outlet[String]("SnsPublishFlow.out")
+  private val out = Outlet[PublishResult]("SnsPublishFlow.out")
 
-  override def shape: FlowShape[String, String] = FlowShape.of(in, out)
+  override def shape: FlowShape[String, PublishResult] = FlowShape.of(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
-    val logic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+    new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
       private val failureCallback = getAsyncCallback[Throwable](handleFailure)
       private val successCallback = getAsyncCallback[PublishResult](handleSuccess)
@@ -31,7 +31,7 @@ final class SnsPublishFlowStage(topicArn: String, snsClient: AmazonSNSAsync)
 
         if (isAvailable(out)) {
           if (!hasBeenPulled(in)) tryPull(in)
-          push(out, result.getMessageId)
+          push(out, result)
         }
       }
 
@@ -55,7 +55,5 @@ final class SnsPublishFlowStage(topicArn: String, snsClient: AmazonSNSAsync)
 
       setHandlers(in, out, this)
     }
-
-    logic
   }
 }

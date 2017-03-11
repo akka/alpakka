@@ -7,13 +7,14 @@ import akka.NotUsed
 import akka.stream.alpakka.sns.SnsPublishFlowStage
 import akka.stream.scaladsl.Flow
 import com.amazonaws.services.sns.AmazonSNSAsync
+import com.amazonaws.services.sns.model.PublishResult
 
 object SnsPublishFlow {
 
   /**
    * Scala API: creates a [[SnsPublishFlowStage]] for a SNS topic using an [[AmazonSNSAsync]]
    */
-  def apply(topicArn: String)(implicit snsClient: AmazonSNSAsync): Flow[String, String, NotUsed] =
+  def apply(topicArn: String)(implicit snsClient: AmazonSNSAsync): Flow[String, PublishResult, NotUsed] =
     Flow.fromGraph(new SnsPublishFlowStage(topicArn, snsClient))
 
 }
