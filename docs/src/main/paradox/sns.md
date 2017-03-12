@@ -68,8 +68,9 @@ Java
 : @@snip (../../../../sns/src/test/java/akka/stream/alpakka/sns/javadsl/Examples.java) { #use-flow }
 
 As you can see, this would publish the messages from the source to the specified AWS SNS topic.
-After a message has been successfully published, the messageId of the published notification
-will be pushed to the downstream.
+After a message has been successfully published, a
+[PublishResult](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/sns/model/PublishResult.html)
+will be pushed downstream.
 
 ### SnsPublishSink
 
