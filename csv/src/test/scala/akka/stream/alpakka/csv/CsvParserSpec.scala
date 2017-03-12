@@ -29,9 +29,9 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
 
     "parse empty input to None" in {
       val in = ByteString.empty
-      val parser = new CsvParser(',', '-', '.', requireLineEnd = true)
+      val parser = new CsvParser(',', '-', '.')
       parser.offer(in)
-      parser.poll() should be('empty)
+      parser.poll(requireLineEnd = true) should be('empty)
     }
 
     "parse leading comma to be an empty column" in {
@@ -76,37 +76,37 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
 
     "fail on escaped quote as quotes are escaped by doubled quote chars" in {
       val in = ByteString("a,\\\",c\n")
-      val parser = new CsvParser(',', '"', '\\', requireLineEnd = true)
+      val parser = new CsvParser(',', '"', '\\')
       parser.offer(in)
       assertThrows[MalformedCsvException] {
-        parser.poll()
+        parser.poll(requireLineEnd = true)
       }
     }
 
     "fail on escape at line end" in {
       val in = ByteString("""a,\""")
-      val parser = new CsvParser(',', '"', '\\', requireLineEnd = true)
+      val parser = new CsvParser(',', '"', '\\')
       parser.offer(in)
       assertThrows[MalformedCsvException] {
-        parser.poll()
+        parser.poll(requireLineEnd = true)
       }
     }
 
     "fail on escape within field at line end" in {
       val in = ByteString("""a,b\""")
-      val parser = new CsvParser(',', '"', '\\', requireLineEnd = true)
+      val parser = new CsvParser(',', '"', '\\')
       parser.offer(in)
       assertThrows[MalformedCsvException] {
-        parser.poll()
+        parser.poll(requireLineEnd = true)
       }
     }
 
     "fail on escape within quoted field at line end" in {
       val in = ByteString("""a,"\""")
-      val parser = new CsvParser(',', '"', '\\', requireLineEnd = true)
+      val parser = new CsvParser(',', '"', '\\')
       parser.offer(in)
       assertThrows[MalformedCsvException] {
-        parser.poll()
+        parser.poll(requireLineEnd = true)
       }
     }
 
@@ -128,9 +128,9 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
 
     "empty line special results in single column" ignore {
       val in = ByteString("\u2028")
-      val parser = new CsvParser(',', '"', '\\', requireLineEnd = true)
+      val parser = new CsvParser(',', '"', '\\')
       parser.offer(in)
-      val res = parser.poll()
+      val res = parser.poll(requireLineEnd = true)
       res.value.map(_.utf8String) should be(List(""))
     }
 
@@ -175,12 +175,12 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
                                                        quoteChar: Byte = '"',
                                                        escapeChar: Byte = '\\',
                                                        requireLineEnd: Boolean = true): Unit = {
-    val parser = new CsvParser(delimiter, quoteChar, escapeChar, requireLineEnd)
+    val parser = new CsvParser(delimiter, quoteChar, escapeChar)
     parser.offer(ByteString(in))
     expected.foreach { out =>
-      parser.poll().value.map(_.utf8String) should be(out)
+      parser.poll(requireLineEnd).value.map(_.utf8String) should be(out)
     }
-    parser.poll() should be('empty)
+    parser.poll(requireLineEnd = true) should be('empty)
   }
 
 }

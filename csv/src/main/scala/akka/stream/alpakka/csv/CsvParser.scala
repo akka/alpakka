@@ -22,7 +22,7 @@ object CsvParser {
   private final val CR: Byte = '\r'
 }
 
-class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar: Byte, requireLineEnd: Boolean) {
+class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar: Byte) {
   import CsvParser._
 
   private var buffer = ByteString.empty
@@ -32,11 +32,11 @@ class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar: Byte, requireLineE
   def offer(input: ByteString): Unit =
     buffer ++= input
 
-  def poll(): Option[List[ByteString]] =
+  def poll(requireLineEnd: Boolean): Option[List[ByteString]] =
     if (buffer.nonEmpty) {
       val prePos = pos
       val preFieldStart = fieldStart
-      val line = parseLine()
+      val line = parseLine(requireLineEnd)
       if (line.nonEmpty) {
         dropReadBuffer()
       } else {
@@ -79,7 +79,7 @@ class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar: Byte, requireLineE
 
   }
 
-  protected def parseLine(): Option[List[ByteString]] = {
+  protected def parseLine(requireLineEnd: Boolean): Option[List[ByteString]] = {
     val buf = buffer
     var columns = Vector[ByteString]()
     var state: State = LineStart
