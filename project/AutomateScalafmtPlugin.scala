@@ -62,5 +62,5 @@ object AutomateScalafmtPlugin extends AutoPlugin {
 
   override def projectSettings =
     (includeFilter.in(scalafmtInc) := "*.scala") +: autoImport.automateScalafmtFor(Compile, Test)
-  
+
 }
