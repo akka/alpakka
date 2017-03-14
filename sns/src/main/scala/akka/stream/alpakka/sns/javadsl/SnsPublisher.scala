@@ -23,7 +23,6 @@ object SnsPublisher {
    * Java API: creates a [[akka.stream.javadsl.Sink]] from a [[SnsPublishFlowStage]] for a SNS topic using an [[AmazonSNSAsync]]
    */
   def createSink(topicArn: String, snsClient: AmazonSNSAsync): Sink[String, CompletionStage[Done]] =
-    createFlow(topicArn, snsClient)
-      .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
+    createFlow(topicArn, snsClient).toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
 }
