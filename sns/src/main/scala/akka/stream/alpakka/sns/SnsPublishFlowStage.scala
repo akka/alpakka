@@ -17,9 +17,10 @@ final class SnsPublishFlowStage(topicArn: String, snsClient: AmazonSNSAsync)
 
   override def shape: FlowShape[String, PublishResult] = FlowShape.of(in, out)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
+      private var inFlight = 0
       private val failureCallback = getAsyncCallback[Throwable](handleFailure)
       private val successCallback = getAsyncCallback[PublishResult](handleSuccess)
 
@@ -28,32 +29,34 @@ final class SnsPublishFlowStage(topicArn: String, snsClient: AmazonSNSAsync)
 
       private def handleSuccess(result: PublishResult): Unit = {
         log.debug("Published SNS message: {}", result.getMessageId)
-
+        inFlight -= 1
         if (isAvailable(out)) {
           if (!hasBeenPulled(in)) tryPull(in)
           push(out, result)
         }
       }
 
+      private val asyncHandler = new AsyncHandler[PublishRequest, PublishResult] {
+        override def onError(exception: Exception): Unit =
+          failureCallback.invoke(exception)
+        override def onSuccess(request: PublishRequest, result: PublishResult): Unit =
+          successCallback.invoke(result)
+      }
+
       override def onPush(): Unit = {
+        inFlight += 1
         val request = new PublishRequest().withTopicArn(topicArn).withMessage(grab(in))
-
-        snsClient.publishAsync(request,
-          new AsyncHandler[PublishRequest, PublishResult] {
-          override def onError(exception: Exception): Unit =
-            failureCallback.invoke(exception)
-
-          override def onSuccess(request: PublishRequest, result: PublishResult): Unit =
-            successCallback.invoke(result)
-        })
+        snsClient.publishAsync(request, asyncHandler)
       }
 
       override def onPull(): Unit = {
-        if (isClosed(in)) completeStage()
+        if (isClosed(in) && inFlight == 0) completeStage()
         if (!hasBeenPulled(in)) tryPull(in)
       }
 
+      override def onUpstreamFinish(): Unit =
+        if (inFlight == 0) completeStage()
+
       setHandlers(in, out, this)
     }
-  }
 }

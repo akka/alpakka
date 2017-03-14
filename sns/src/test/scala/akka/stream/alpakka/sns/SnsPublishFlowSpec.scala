@@ -5,7 +5,7 @@ package akka.stream.alpakka.sns
 
 import java.util.concurrent.{CompletableFuture, Future}
 
-import akka.stream.alpakka.sns.scaladsl.SnsPublishFlow
+import akka.stream.alpakka.sns.scaladsl.SnsPublisher
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.testkit.scaladsl.TestSource
 import com.amazonaws.handlers.AsyncHandler
@@ -36,7 +36,7 @@ class SnsPublishFlowSpec extends FlatSpec with DefaultTestContext with MustMatch
       }
     )
 
-    val (probe, future) = TestSource.probe[String].via(SnsPublishFlow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
+    val (probe, future) = TestSource.probe[String].via(SnsPublisher.flow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
     probe.sendNext("sns-message").sendComplete()
 
     Await.result(future, 1.second) mustBe publishResult :: Nil
@@ -58,7 +58,7 @@ class SnsPublishFlowSpec extends FlatSpec with DefaultTestContext with MustMatch
       }
     )
 
-    val (probe, future) = TestSource.probe[String].via(SnsPublishFlow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
+    val (probe, future) = TestSource.probe[String].via(SnsPublisher.flow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
     probe.sendNext("sns-message-1").sendNext("sns-message-2").sendNext("sns-message-3").sendComplete()
 
     Await.result(future, 1.second) mustBe publishResult :: publishResult :: publishResult :: Nil
@@ -89,7 +89,7 @@ class SnsPublishFlowSpec extends FlatSpec with DefaultTestContext with MustMatch
       }
     )
 
-    val (probe, future) = TestSource.probe[String].via(SnsPublishFlow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
+    val (probe, future) = TestSource.probe[String].via(SnsPublisher.flow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
     probe.sendNext("sns-message").sendComplete()
 
     a[RuntimeException] should be thrownBy {
@@ -99,7 +99,7 @@ class SnsPublishFlowSpec extends FlatSpec with DefaultTestContext with MustMatch
   }
 
   it should "fail stage if upstream failure occurs" in {
-    val (probe, future) = TestSource.probe[String].via(SnsPublishFlow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
+    val (probe, future) = TestSource.probe[String].via(SnsPublisher.flow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
     probe.sendError(new RuntimeException("upstream failure"))
 
     a[RuntimeException] should be thrownBy {
