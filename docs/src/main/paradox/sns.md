@@ -56,10 +56,9 @@ This is all preparation that we are going to need.
 ### Publish messages to a SNS topic
 
 Now we can publish a String message to any SNS topic where we have access to by providing the topic ARN to the
-@scaladoc[SnsPublishFlow](akka.stream.alpakka.sns.scaladsl.SnsPublishFlow$) or
-@scaladoc[SnsPublishSink](akka.stream.alpakka.sns.scaladsl.SnsPublishSink$) factory.
+@scaladoc[SnsPublisher](akka.stream.alpakka.sns.scaladsl.SnsPublisher$) Flow or Sink factory method.
 
-### SnsPublishFlow
+### Using a Flow
 
 Scala
 : @@snip (../../../../sns/src/test/scala/akka/stream/alpakka/sns/scaladsl/Examples.scala) { #use-flow }
@@ -72,7 +71,7 @@ After a message has been successfully published, a
 [PublishResult](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/sns/model/PublishResult.html)
 will be pushed downstream.
 
-### SnsPublishSink
+### Using a Sink
 
 Scala
 : @@snip (../../../../sns/src/test/scala/akka/stream/alpakka/sns/scaladsl/Examples.scala) { #use-sink }

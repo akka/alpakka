@@ -28,11 +28,11 @@ public class Examples {
     //#init-system
 
     //#use-sink
-    CompletionStage<Done> sink = Source.single("message").runWith(SnsPublishSink.create("topic-arn", snsClient), materializer);
+    CompletionStage<Done> sink = Source.single("message").runWith(SnsPublisher.createSink("topic-arn", snsClient), materializer);
     //#use-sink
 
     //#use-flow
-    CompletionStage<Done> flow = Source.single("message").via(SnsPublishFlow.create("topic-arn", snsClient)).runWith(Sink.ignore(), materializer);
+    CompletionStage<Done> flow = Source.single("message").via(SnsPublisher.createFlow("topic-arn", snsClient)).runWith(Sink.ignore(), materializer);
     //#use-flow
 
 }

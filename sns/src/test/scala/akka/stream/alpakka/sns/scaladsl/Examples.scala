@@ -26,11 +26,11 @@ object Examples {
   //#init-system
 
   //#use-sink
-  val sink: Future[Done] = Source.single("message").runWith(SnsPublishSink("topic-arn"))
+  val sink: Future[Done] = Source.single("message").runWith(SnsPublisher.sink("topic-arn"))
   //#use-sink
 
   //#use-flow
-  val flow: Future[Done] = Source.single("message").via(SnsPublishFlow("topic-arn")).runWith(Sink.ignore)
+  val flow: Future[Done] = Source.single("message").via(SnsPublisher.flow("topic-arn")).runWith(Sink.ignore)
   //#use-flow
 
 }
