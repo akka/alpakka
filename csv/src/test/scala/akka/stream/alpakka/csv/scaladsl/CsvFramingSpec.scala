@@ -18,6 +18,8 @@ class CsvFramingSpec extends CsvSpec {
     val escapeChar: Byte = Backslash
     // format: off
     // #flow-type
+    import akka.stream.alpakka.csv.scaladsl.CsvFraming
+
     val flow: Flow[ByteString, List[ByteString], NotUsed]
       = CsvFraming.lineScanner(delimiter, quoteChar, escapeChar)
     // #flow-type
@@ -26,12 +28,16 @@ class CsvFramingSpec extends CsvSpec {
 
   "CSV Framing" should {
     "parse one line" in {
+      // #line-scanner
+      import akka.stream.alpakka.csv.scaladsl.CsvFraming
+
+      // #line-scanner
       val fut =
         // format: off
       // #line-scanner
-        Source.single(ByteString("eins,zwei,drei\n"))
-          .via(CsvFraming.lineScanner())
-          .runWith(Sink.head)
+      Source.single(ByteString("eins,zwei,drei\n"))
+        .via(CsvFraming.lineScanner())
+        .runWith(Sink.head)
       // #line-scanner
       // format: on
       fut.futureValue should be(List(ByteString("eins"), ByteString("zwei"), ByteString("drei")))

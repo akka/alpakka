@@ -60,6 +60,7 @@ Scala
 Java
 : @@snip (../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFramingTest.java) { #flow-type }
 
+
 In this sample we read a single line of CSV formatted data into a list of column elements:
 
 Scala
@@ -74,14 +75,27 @@ The column-based nature of CSV files can be used to read it into a map of column
 and their `ByteStrng` values. The column names can be either provided in code or the first line 
 of data can be interpreted as the column names.
 
+Scala
+: @@snip (../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvToMapSpec.scala) { #flow-type }
+
+Java
+: @@snip (../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java) { #flow-type }
+
+
 This sample uses the first line in the CSV data as column names:
 
 Scala
 : @@snip (../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvToMapSpec.scala) { #header-line }
 
+Java
+: @@snip (../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java) { #header-line }
+
+
 This sample will generate the same output as above, but the column names are specified
-in code:
+in the code:
 
 Scala
 : @@snip (../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvToMapSpec.scala) { #column-names }
 
+Java
+: @@snip (../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java) { #column-names }
