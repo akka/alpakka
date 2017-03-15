@@ -5,7 +5,10 @@ package akka.stream.alpakka.csv
 
 import akka.util.{ByteString, ByteStringBuilder}
 
-object CsvParser {
+/**
+ * INTERNAL API: Use [[akka.stream.alpakka.csv.scaladsl.CsvFraming]] instead.
+ */
+private[csv] object CsvParser {
 
   class MalformedCsvException(position: Int, msg: String) extends Exception
 
@@ -22,7 +25,10 @@ object CsvParser {
   private final val CR: Byte = '\r'
 }
 
-class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar: Byte) {
+/**
+ * INTERNAL API: Use [[akka.stream.alpakka.csv.scaladsl.CsvFraming]] instead.
+ */
+private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar: Byte) {
   import CsvParser._
 
   private var buffer = ByteString.empty

@@ -20,5 +20,5 @@ object CsvFraming {
   def lineScanner(delimiter: Byte = Comma,
                   quoteChar: Byte = DoubleQuote,
                   escapeChar: Byte = Backslash): Flow[ByteString, List[ByteString], NotUsed] =
-    Flow[ByteString].via(new CsvFramingStage(delimiter, quoteChar, escapeChar)).named("csvFraming")
+    Flow[ByteString].via(new CsvFramingStage(delimiter, quoteChar, escapeChar))
 }

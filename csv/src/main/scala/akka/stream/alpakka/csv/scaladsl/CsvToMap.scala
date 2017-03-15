@@ -13,18 +13,18 @@ import akka.util.ByteString
 object CsvToMap {
 
   /**
-    * A flow translating incoming [[List]] of [[ByteString]] to a [[Map[String, ByteString]]] using the streams first
-    * element's values as keys.
-    * @param charset the charset to decode [[ByteString]] to [[String]], defaults to UTF-8
-    */
+   * A flow translating incoming [[List]] of [[ByteString]] to a [[Map[String, ByteString]]] using the streams first
+   * element's values as keys.
+   * @param charset the charset to decode [[ByteString]] to [[String]], defaults to UTF-8
+   */
   def toMap(charset: Charset = StandardCharsets.UTF_8): Flow[List[ByteString], Map[String, ByteString], NotUsed] =
     Flow[List[ByteString]].via(new CsvToMapStage(columnNames = None, charset)).named("csvToMap")
 
   /**
-    * A flow translating incoming [[List[ByteString]]] to a [[Map[String, ByteString]]] using the given headers
-    * as keys.
-    * @param headers column names to be used as map keys
-    */
+   * A flow translating incoming [[List[ByteString]]] to a [[Map[String, ByteString]]] using the given headers
+   * as keys.
+   * @param headers column names to be used as map keys
+   */
   def withHeaders(headers: String*): Flow[List[ByteString], Map[String, ByteString], NotUsed] =
     Flow[List[ByteString]].via(new CsvToMapStage(Some(headers.toList), StandardCharsets.UTF_8)).named("csvToMap")
 }

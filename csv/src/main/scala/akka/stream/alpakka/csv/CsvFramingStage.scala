@@ -11,16 +11,17 @@ import akka.util.ByteString
 
 import scala.util.control.NonFatal
 
-class CsvFramingStage(delimiter: Byte = CsvFraming.Comma,
-                      quoteChar: Byte = CsvFraming.DoubleQuote,
-                      escapeChar: Byte = CsvFraming.Backslash)
+/**
+ * Internal API: Use [[akka.stream.alpakka.csv.scaladsl.CsvFraming]] instead.
+ */
+private[csv] class CsvFramingStage(delimiter: Byte, quoteChar: Byte, escapeChar: Byte)
     extends GraphStage[FlowShape[ByteString, List[ByteString]]] {
 
   private val in = Inlet[ByteString](Logging.simpleName(this) + ".in")
   private val out = Outlet[List[ByteString]](Logging.simpleName(this) + ".out")
   override val shape = FlowShape(in, out)
 
-  override protected def initialAttributes: Attributes = Attributes.name("CsvFraming.lineScanner")
+  override protected def initialAttributes: Attributes = Attributes.name("CsvFraming")
 
   override def createLogic(inheritedAttributes: Attributes) =
     new GraphStageLogic(shape) with InHandler with OutHandler {
