@@ -1,10 +1,10 @@
+/*
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.csv
-
-import java.nio.charset.StandardCharsets
 
 import akka.util.ByteString
 
-import scala.annotation.switch
 import scala.collection.immutable
 
 /**
@@ -13,20 +13,24 @@ import scala.collection.immutable
 private[csv] class CsvFormatter(delimiter: Char,
                                 quoteChar: Char,
                                 escapeChar: Char,
-                                endOfLine: ByteString,
-                                quotingStyle: CsvQuotingStyle) {
+                                endOfLine: String,
+                                quotingStyle: CsvQuotingStyle,
+                                charsetName: String = ByteString.UTF_8) {
 
-  private[this] val charsetName = StandardCharsets.UTF_8.name()
+  private[this] val delimiterBs = ByteString(String.valueOf(delimiter), charsetName)
+  private[this] val quoteBs = ByteString(String.valueOf(quoteChar), charsetName)
+  private[this] val duplicatedQuote = ByteString(String.valueOf(Array(quoteChar, quoteChar)), charsetName)
+  private[this] val duplicatedEscape = ByteString(String.valueOf(Array(escapeChar, escapeChar)), charsetName)
+  private[this] val endOfLineBs = ByteString(endOfLine, charsetName)
 
   def toCsv(fields: immutable.Seq[Any]): ByteString =
-    if (fields.nonEmpty) nonEmptyToCsv(fields) else endOfLine
+    if (fields.nonEmpty) nonEmptyToCsv(fields)
+    else endOfLineBs
 
   private def nonEmptyToCsv(fields: immutable.Seq[Any]) = {
     val builder = ByteString.createBuilder
 
     def splitAndDuplicateQuotesAndEscapes(field: String, splitAt: Int) = {
-      val duplicatedQuote = ByteString(String.valueOf(Array(quoteChar, quoteChar)), charsetName)
-      val duplicatedEscape = ByteString(String.valueOf(Array(escapeChar, escapeChar)), charsetName)
 
       @inline def indexOfQuoteOrEscape(lastIndex: Int) = {
         var index = lastIndex
@@ -43,8 +47,8 @@ private[csv] class CsvFormatter(delimiter: Char,
       var index = splitAt
       while (index > -1) {
         builder ++= ByteString.apply(field.substring(lastIndex, index), charsetName)
-        val at = field.charAt(index)
-        if (at == quoteChar) {
+        val char = field.charAt(index)
+        if (char == quoteChar) {
           builder ++= duplicatedQuote
         } else {
           builder ++= duplicatedEscape
@@ -58,22 +62,20 @@ private[csv] class CsvFormatter(delimiter: Char,
     }
 
     def append(field: String) = {
-      val (quoteIt, splitIt) = requiresQuotesOrSplit(field)
+      val (quoteIt, splitAt) = requiresQuotesOrSplit(field)
       if (quoteIt || quotingStyle == CsvQuotingStyle.ALWAYS) {
-        val quoteByteString = ByteString(String.valueOf(quoteChar), charsetName)
-        builder ++= quoteByteString
-        if (splitIt != -1) {
-          splitAndDuplicateQuotesAndEscapes(field, splitIt)
+        builder ++= quoteBs
+        if (splitAt != -1) {
+          splitAndDuplicateQuotesAndEscapes(field, splitAt)
         } else {
           builder ++= ByteString(field, charsetName)
         }
-        builder ++= quoteByteString
+        builder ++= quoteBs
       } else {
         builder ++= ByteString(field, charsetName)
       }
     }
 
-    val delimiterBs = ByteString(String.valueOf(delimiter), charsetName)
     val iterator = fields.iterator
     var hasNext = iterator.hasNext
     while (hasNext) {
@@ -86,7 +88,7 @@ private[csv] class CsvFormatter(delimiter: Char,
         builder ++= delimiterBs
       }
     }
-    builder ++= endOfLine
+    builder ++= endOfLineBs
     builder.result()
   }
 

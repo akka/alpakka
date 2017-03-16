@@ -45,9 +45,7 @@ Gradle
     ```
     @@@
 
-## Usage
-
-### CSV parsing and framing 
+## CSV parsing
 
 CSV framing offers a flow that takes a stream of `akka.util.ByteString` and issues a stream of lists of `ByteString`.
 
@@ -69,7 +67,7 @@ Scala
 Java
 : @@snip (../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFramingTest.java) { #line-scanner }
 
-### CSV parsing and conversion into a map
+## CSV conversion into a map
 
 The column-based nature of CSV files can be used to read it into a map of column names 
 and their `ByteStrng` values. The column names can be either provided in code or the first line 
@@ -82,7 +80,7 @@ Java
 : @@snip (../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java) { #flow-type }
 
 
-This sample uses the first line in the CSV data as column names:
+This example uses the first line in the CSV data as column names:
 
 Scala
 : @@snip (../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvToMapSpec.scala) { #header-line }
@@ -99,3 +97,24 @@ Scala
 
 Java
 : @@snip (../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java) { #column-names }
+
+## CSV formatting
+
+To emit CSV files ``immutable.Seq[String]`` can be formatted into ``ByteString`` e.g to be written to file.
+The formatter takes care of quoting and escaping.
+
+Scala
+: @@snip (../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFormattingSpec.scala) { #flow-type }
+
+This example uses the default configuration:
+
+- Delimiter: comma (,)
+- Quote char: double quote (")
+- Escape char: backslash (\\)
+- Line ending: Carriage Return and Line Feed (`\r` = ASCII 13 + `\n` = ASCII 10)
+- Quoting style: quote only if required
+- Charset: UTF-8
+
+Scala
+: @@snip (../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFormattingSpec.scala) { #formatting }
+

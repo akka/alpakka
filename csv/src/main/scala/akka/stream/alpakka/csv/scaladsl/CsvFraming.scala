@@ -15,6 +15,7 @@ object CsvFraming {
   val Comma: Byte = ','
   val SemiColon: Byte = ';'
   val Colon: Byte = ':'
+  val Tab: Byte = '\t'
   val DoubleQuote: Byte = '"'
 
   def lineScanner(delimiter: Byte = Comma,

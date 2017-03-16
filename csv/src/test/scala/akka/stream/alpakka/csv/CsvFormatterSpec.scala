@@ -1,13 +1,11 @@
 package akka.stream.alpakka.csv
 
-import akka.stream.alpakka.csv.scaladsl.CsvFraming
-import akka.util.ByteString
 import org.scalatest.{Matchers, WordSpec}
 
 class CsvFormatterSpec extends WordSpec with Matchers {
 
   "CSV Formatter comma as delimiter" should {
-    val formatter = new CsvFormatter(',', '\"', '\\', ByteString("\r\n"), CsvQuotingStyle.REQUIRED)
+    val formatter = new CsvFormatter(',', '\"', '\\', "\r\n", CsvQuotingStyle.REQUIRED)
 
     "format Strings" in {
       expectInOut(formatter, "ett", "två", "tre")("ett,två,tre\r\n")
@@ -24,7 +22,7 @@ class CsvFormatterSpec extends WordSpec with Matchers {
   }
 
   "CSV Formatter quoting everything" should {
-    val formatter = new CsvFormatter(',', '\"', '\\', ByteString("\r\n"), CsvQuotingStyle.ALWAYS)
+    val formatter = new CsvFormatter(',', '\"', '\\', "\r\n", CsvQuotingStyle.ALWAYS)
 
     "format Strings" in {
       expectInOut(formatter, "ett", "två", "tre")(""""ett","två","tre"""" + "\r\n")
@@ -45,7 +43,7 @@ class CsvFormatterSpec extends WordSpec with Matchers {
   }
 
   "CSV Formatter with required quoting" should {
-    val formatter = new CsvFormatter(';', '\"', '\\', ByteString("\r\n"), CsvQuotingStyle.REQUIRED)
+    val formatter = new CsvFormatter(';', '\"', '\\', "\r\n", CsvQuotingStyle.REQUIRED)
 
     "format Strings" in {
       expectInOut(formatter, "ett", "två", "tre")("ett;två;tre\r\n")
@@ -81,6 +79,18 @@ class CsvFormatterSpec extends WordSpec with Matchers {
 
     "duplicate escape chars and quotes" in {
       expectInOut(formatter, "ett", "one\\two\"three\\four", "tre")("ett;\"one\\\\two\"\"three\\\\four\";tre\r\n")
+    }
+  }
+
+  "CSV Formatter with non-standard charset" should {
+    val charsetName = "UTF-16LE"
+    val formatter = new CsvFormatter(';', '\"', '\\', "\r\n", CsvQuotingStyle.REQUIRED, charsetName)
+
+    "get the encoding right" in {
+      val csv = formatter.toCsv(List("ett", "två", "อักษรไทย"))
+      val arr1 = new Array[Byte](csv.length)
+      csv.copyToArray(arr1)
+      new String(arr1, charsetName) should be("ett;två;อักษรไทย\r\n")
     }
   }
 
