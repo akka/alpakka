@@ -62,11 +62,11 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfter {
         """{"match_all": {}}""",
         ElasticsearchSourceSettings(5)
       ).map { message =>
-        IncomingMessage(message.id, message.source)
+        IncomingMessage(Some(message.id), message.source)
       }.runWith(ElasticsearchSink(
           "sink",
           "book",
-          ElasticsearchSinkSettings()
+          ElasticsearchSinkSettings(5)
         ))
 
       Await.result(f1, Duration.Inf)
@@ -76,8 +76,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfter {
       val f2 = ElasticsearchSource(
         "sink",
         "book",
-        """{"match_all": {}}""",
-        ElasticsearchSourceSettings(5)
+        """{"match_all": {}}"""
       ).map { message =>
         message.source.fields("title").asInstanceOf[JsString].value
       }.runWith(Sink.seq)

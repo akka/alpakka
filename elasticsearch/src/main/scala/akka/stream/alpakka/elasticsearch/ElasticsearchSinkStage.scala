@@ -17,7 +17,7 @@ import scala.concurrent.{Future, Promise}
 
 final case class ElasticsearchSinkSettings(bufferSize: Int = 10)
 
-final case class IncomingMessage(id: String, source: JsObject)
+final case class IncomingMessage(id: Option[String], source: JsObject)
 
 final class ElasticsearchSinkStage(indexName: String,
                                    typeName: String,
@@ -68,8 +68,10 @@ final class ElasticsearchSinkStage(indexName: String,
         private def sendBulkRequest(messages: Seq[IncomingMessage]): Unit =
           try {
             val json = messages.map { message =>
-              s"""{"index": {"_index": "${indexName}", "_type": "${typeName}", "_id": "${message.id}"}}
-                   |${message.source.toString}""".stripMargin
+              s"""{"index": {"_index": "${indexName}", "_type": "${typeName}"${message.id.map { id =>
+                   s""", "_id": "${id}""""
+                 }.getOrElse("")}}
+                  |${message.source.toString}""".stripMargin
             }.mkString("", "\n", "\n")
 
             client.performRequest(
