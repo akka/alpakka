@@ -3,10 +3,12 @@
  */
 package akka.stream.alpakka.elasticsearch.javadsl
 
-import akka.NotUsed
+import akka.Done
 import akka.stream.alpakka.elasticsearch.{ElasticsearchSinkSettings, ElasticsearchSinkStage, IncomingMessage}
 import akka.stream.scaladsl.Sink
 import org.elasticsearch.client.RestClient
+
+import scala.concurrent.Future
 
 object ElasticsearchSink {
 
@@ -16,13 +18,13 @@ object ElasticsearchSink {
   def create(indexName: String,
              typeName: String,
              settings: ElasticsearchSinkSettings,
-             client: RestClient): Sink[IncomingMessage, NotUsed] =
+             client: RestClient): Sink[IncomingMessage, Future[Done]] =
     Sink.fromGraph(new ElasticsearchSinkStage(indexName, typeName, client, settings))
 
   /**
    * Java API: creates a [[ElasticsearchSinkStage]] for Elasticsearch using an [[RestClient]] with default settings
    */
-  def simple(indexName: String, typeName: String, client: RestClient): Sink[IncomingMessage, NotUsed] =
+  def simple(indexName: String, typeName: String, client: RestClient): Sink[IncomingMessage, Future[Done]] =
     Sink.fromGraph(new ElasticsearchSinkStage(indexName, typeName, client, ElasticsearchSinkSettings()))
 
 }

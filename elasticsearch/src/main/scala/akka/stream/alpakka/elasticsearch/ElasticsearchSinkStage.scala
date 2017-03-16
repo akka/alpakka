@@ -5,13 +5,15 @@ package akka.stream.alpakka.elasticsearch
 
 import java.util
 
+import akka.Done
 import akka.stream._
-import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler}
+import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler}
 import org.apache.http.entity.StringEntity
 import org.elasticsearch.client.RestClient
 import spray.json._
 
 import scala.collection.JavaConverters._
+import scala.concurrent.{Future, Promise}
 
 final case class ElasticsearchSinkSettings(bufferSize: Int = 10)
 
@@ -21,14 +23,16 @@ final class ElasticsearchSinkStage(indexName: String,
                                    typeName: String,
                                    client: RestClient,
                                    settings: ElasticsearchSinkSettings)
-    extends GraphStage[SinkShape[IncomingMessage]] {
+    extends GraphStageWithMaterializedValue[SinkShape[IncomingMessage], Future[Done]] {
 
   val in = Inlet[IncomingMessage]("ElasticsearchSink.in")
 
   override def shape: SinkShape[IncomingMessage] = SinkShape.of(in)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) {
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
+    val promise = Promise[Done]()
+
+    val logic = new GraphStageLogic(shape) {
 
       private val buffer = new util.ArrayDeque[IncomingMessage]()
 
@@ -47,8 +51,10 @@ final class ElasticsearchSinkStage(indexName: String,
           pull(in)
         }
 
-        override def onUpstreamFailure(exception: Throwable): Unit =
+        override def onUpstreamFailure(exception: Throwable): Unit = {
           failStage(exception)
+          promise.tryFailure(exception)
+        }
 
         override def onUpstreamFinish(): Unit = {
           if (!buffer.isEmpty) {
@@ -56,13 +62,14 @@ final class ElasticsearchSinkStage(indexName: String,
             buffer.clear()
           }
           completeStage()
+          promise.trySuccess(Done)
         }
 
         private def sendBulkRequest(messages: Seq[IncomingMessage]): Unit =
           try {
             val json = messages.map { message =>
               s"""{"index": {"_index": "${indexName}", "_type": "${typeName}", "_id": "${message.id}"}}
-                 |${message.source.toString}""".stripMargin
+                   |${message.source.toString}""".stripMargin
             }.mkString("", "\n", "\n")
 
             client.performRequest(
@@ -76,5 +83,8 @@ final class ElasticsearchSinkStage(indexName: String,
           }
       })
     }
+
+    (logic, promise.future)
+  }
 
 }

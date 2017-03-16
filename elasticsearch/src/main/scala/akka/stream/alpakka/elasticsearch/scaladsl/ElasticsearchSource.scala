@@ -13,7 +13,10 @@ object ElasticsearchSource {
   /**
    * Scala API: creates a [[ElasticsearchSourceStage]] for Elasticsearch using an [[RestClient]]
    */
-  def apply(indexName: String, typeName: String, query: String, settings: ElasticsearchSourceSettings)(
+  def apply(indexName: String,
+            typeName: String,
+            query: String,
+            settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings())(
       implicit client: RestClient): Source[OutgoingMessage, NotUsed] =
     Source.fromGraph(new ElasticsearchSourceStage(indexName, typeName, query, client, settings))
 

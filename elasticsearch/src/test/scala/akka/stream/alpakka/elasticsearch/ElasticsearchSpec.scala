@@ -56,7 +56,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfter {
 
   "Elasticsearch connector" should {
     "consume and publish documents through Elasticsearch" in {
-      ElasticsearchSource(
+      val f1 = ElasticsearchSource(
         "source",
         "book",
         """{"match_all": {}}""",
@@ -69,11 +69,11 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfter {
           ElasticsearchSinkSettings()
         ))
 
-      Thread.sleep(1000)
+      Await.result(f1, Duration.Inf)
 
       flush("sink")
 
-      val f = ElasticsearchSource(
+      val f2 = ElasticsearchSource(
         "sink",
         "book",
         """{"match_all": {}}""",
@@ -82,7 +82,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfter {
         message.source.fields("title").asInstanceOf[JsString].value
       }.runWith(Sink.seq)
 
-      val result = Await.result(f, Duration.Inf)
+      val result = Await.result(f2, Duration.Inf)
 
       result.sorted shouldEqual Seq(
         "Akka Concurrency",
