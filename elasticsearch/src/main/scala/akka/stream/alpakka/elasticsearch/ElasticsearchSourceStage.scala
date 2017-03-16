@@ -74,8 +74,8 @@ final class ElasticsearchSourceStage(indexName: String,
 
         val jsObj = json.parseJson.asJsObject
 
-        jsObj.getFields("error") match {
-          case Nil => {
+        jsObj.fields.get("error") match {
+          case None => {
             val hits = jsObj.fields("hits").asJsObject.fields("hits").asInstanceOf[JsArray]
             if (hits.elements.isEmpty && scrollId != null) {
               //completeStage()
@@ -89,7 +89,7 @@ final class ElasticsearchSourceStage(indexName: String,
               }
             }
           }
-          case error :: _ => {
+          case Some(error) => {
             failStage(new IllegalStateException(error.toString))
           }
         }
