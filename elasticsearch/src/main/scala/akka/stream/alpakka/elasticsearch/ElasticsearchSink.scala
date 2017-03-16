@@ -10,7 +10,7 @@ import org.elasticsearch.client.RestClient
 object ElasticsearchSink {
 
   def apply(indexName: String, typeName: String, settings: ElasticsearchSinkSettings)(
-      implicit client: RestClient): Sink[Map[String, Any], NotUsed] =
+      implicit client: RestClient): Sink[IncomingMessage, NotUsed] =
     Sink.fromGraph(new ElasticsearchSinkStage(indexName, typeName, client, settings))
 
 }

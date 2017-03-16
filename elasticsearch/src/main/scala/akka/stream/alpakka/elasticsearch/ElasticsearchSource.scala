@@ -10,7 +10,7 @@ import org.elasticsearch.client.RestClient
 object ElasticsearchSource {
 
   def apply(indexName: String, typeName: String, query: String, settings: ElasticsearchSourceSettings)(
-      implicit client: RestClient): Source[Map[String, Any], NotUsed] =
+      implicit client: RestClient): Source[OutgoingMessage, NotUsed] =
     Source.fromGraph(new ElasticsearchSourceStage(indexName, typeName, query, client, settings))
 
 }

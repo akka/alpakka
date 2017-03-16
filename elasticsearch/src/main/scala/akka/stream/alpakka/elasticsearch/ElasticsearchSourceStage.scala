@@ -3,36 +3,37 @@
  */
 package akka.stream.alpakka.elasticsearch
 
+import java.io.ByteArrayOutputStream
 import java.util
 
 import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
-import org.apache.commons.io.IOUtils
 import org.apache.http.entity.StringEntity
-import org.elasticsearch.client.{Response, ResponseListener, RestClient}
+import org.elasticsearch.client.{Response, RestClient}
+import spray.json._
+import DefaultJsonProtocol._
 
 import scala.collection.JavaConverters._
 
-final case class ElasticsearchSourceSettings(maxBufferSize: Int, maxBatchSize: Int) {
-  require(maxBatchSize <= maxBufferSize)
-  require(maxBatchSize >= 1 && maxBatchSize <= 10)
-}
+final case class ElasticsearchSourceSettings(bufferSize: Int = 10)
+
+final case class OutgoingMessage(id: String, source: JsObject)
 
 final class ElasticsearchSourceStage(indexName: String,
                                      typeName: String,
                                      query: String,
                                      client: RestClient,
                                      settings: ElasticsearchSourceSettings)
-    extends GraphStage[SourceShape[Map[String, Any]]] {
+    extends GraphStage[SourceShape[OutgoingMessage]] {
 
-  val out: Outlet[Map[String, Any]] = Outlet("ElasticsearchSource.out")
-  override val shape: SourceShape[Map[String, Any]] = SourceShape(out)
+  val out: Outlet[OutgoingMessage] = Outlet("ElasticsearchSource.out")
+  override val shape: SourceShape[OutgoingMessage] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
 
       private var scrollId: String = null
-      private val buffer = new util.ArrayDeque[Map[String, Any]]()
+      private val buffer = new util.ArrayDeque[OutgoingMessage]()
 
       def receiveMessages(): Unit =
         try {
@@ -41,14 +42,14 @@ final class ElasticsearchSourceStage(indexName: String,
               "POST",
               s"$indexName/$typeName/_search",
               Map("scroll" -> "5m", "sort" -> "_doc").asJava,
-              new StringEntity(query)
+              new StringEntity(s"""{"size": ${settings.bufferSize}, "query": ${query}}""")
             )
           } else {
             client.performRequest(
               "POST",
               s"/_search/scroll",
               Map[String, String]().asJava,
-              new StringEntity(JsonUtils.serialize(Map("scroll" -> "5m", "scroll_id" -> scrollId)))
+              new StringEntity(Map("scroll" -> "5m", "scroll_id" -> scrollId).toJson.toString)
             )
           }
           handleSuccess(res)
@@ -61,28 +62,35 @@ final class ElasticsearchSourceStage(indexName: String,
         failStage(ex)
 
       def handleSuccess(res: Response): Unit = {
-        val in = res.getEntity.getContent
-
-        val json = try {
-          IOUtils.toString(in, "UTF-8")
-        } finally {
-          in.close()
+        val json = {
+          val out = new ByteArrayOutputStream()
+          try {
+            res.getEntity.writeTo(out)
+            new String(out.toByteArray, "UTF-8")
+          } finally {
+            out.close()
+          }
         }
 
-        val map = JsonUtils.deserialize[Map[String, Any]](json)
+        val jsObj = json.parseJson.asJsObject
 
-        map.get("error") match {
-          case Some(error) => {
-            failStage(new IllegalStateException(error.toString))
-          }
-          case None => {
-            val list = map("hits").asInstanceOf[Map[String, Any]]("hits").asInstanceOf[Seq[Map[String, Any]]]
-            if (list.isEmpty && scrollId != null) {
-              completeStage()
+        jsObj.getFields("error") match {
+          case Nil => {
+            val hits = jsObj.fields("hits").asJsObject.fields("hits").asInstanceOf[JsArray]
+            if (hits.elements.isEmpty && scrollId != null) {
+              //completeStage()
             } else {
-              scrollId = map("_scroll_id").toString
-              list.reverse.foreach(buffer.addFirst)
+              scrollId = jsObj.fields("_scroll_id").asInstanceOf[JsString].value
+              hits.elements.reverse.foreach { element =>
+                val doc = element.asJsObject
+                val id = doc.fields("_id").asInstanceOf[JsString].value
+                val source = doc.fields("_source").asJsObject
+                buffer.addFirst(OutgoingMessage(id, source))
+              }
             }
+          }
+          case error :: _ => {
+            failStage(new IllegalStateException(error.toString))
           }
         }
       }
@@ -90,15 +98,13 @@ final class ElasticsearchSourceStage(indexName: String,
       setHandler(out,
         new OutHandler {
         override def onPull(): Unit = {
-          if (!buffer.isEmpty) {
-            if (buffer.size == settings.maxBufferSize - settings.maxBatchSize) {
-              receiveMessages()
-            }
-          } else {
+          if (buffer.isEmpty) {
             receiveMessages()
           }
           if (!buffer.isEmpty) {
             push(out, buffer.removeLast())
+          } else {
+            completeStage()
           }
         }
       })
