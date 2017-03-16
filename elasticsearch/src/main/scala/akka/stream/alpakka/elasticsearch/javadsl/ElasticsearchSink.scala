@@ -22,9 +22,7 @@ object ElasticsearchSink {
   /**
    * Java API: creates a [[ElasticsearchSinkStage]] for Elasticsearch using an [[RestClient]] with default settings
    */
-  def simple(indexName: String,
-             typeName: String,
-             client: RestClient): Sink[IncomingMessage, NotUsed] =
+  def simple(indexName: String, typeName: String, client: RestClient): Sink[IncomingMessage, NotUsed] =
     Sink.fromGraph(new ElasticsearchSinkStage(indexName, typeName, client, ElasticsearchSinkSettings()))
 
 }
