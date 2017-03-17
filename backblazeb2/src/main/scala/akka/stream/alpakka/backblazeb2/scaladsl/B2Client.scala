@@ -27,7 +27,7 @@ class B2Client(accountCredentials: B2AccountCredentials, bucketId: BucketId, hos
   private val api = new B2API(hostAndPort)
 
   private var authorizeAccountResponse: Promise[AuthorizeAccountResponse] = Promise()
-  private var getUploadUrlResponse: Promise[GetUploadUrlResponse] = Promise()
+  private var getUploadUrlPromise: Promise[GetUploadUrlResponse] = Promise()
 
   /**
     * Return the saved AuthorizeAccountResponse if it exists or obtain a new one if it doesn't
@@ -36,9 +36,9 @@ class B2Client(accountCredentials: B2AccountCredentials, bucketId: BucketId, hos
     returnOrObtain(authorizeAccountResponse, callAuthorizeAccount)
   }
 
-  private def tryAgainIfExpired[T](afterInvalidation: => B2Response[T])(x: Either[B2Error, T]) = x match {
+  private def tryAgainIfExpired[T](fallbackIfExpired: => B2Response[T])(x: Either[B2Error, T]) = x match {
     case Left(error) if error.isExpiredToken =>
-      afterInvalidation
+      fallbackIfExpired
 
     case success: Right[B2Error, T] =>
       Future.successful(success)
@@ -48,7 +48,7 @@ class B2Client(accountCredentials: B2AccountCredentials, bucketId: BucketId, hos
     * Return the saved GetUploadUrlResponse if it exists or obtain a new one if it doesn't
     */
   private def obtainGetUploadUrlResponse(): B2Response[GetUploadUrlResponse] = {
-    returnOrObtain(getUploadUrlResponse, callGetUploadUrl) flatMap {
+    returnOrObtain(getUploadUrlPromise, callGetUploadUrl) flatMap {
       tryAgainIfExpired {
         authorizeAccountResponse = Promise()
         callGetUploadUrl()
@@ -86,18 +86,22 @@ class B2Client(accountCredentials: B2AccountCredentials, bucketId: BucketId, hos
     }
   }
 
+  private def uploadFileHandlingExpired(getUploadUrlResponse: GetUploadUrlResponse, fileName: FileName, data: ByteString) = {
+    api.uploadFile(getUploadUrlResponse, fileName, data) flatMap {
+      tryAgainIfExpired {
+        getUploadUrlPromise = Promise()
+        upload(fileName, data)
+      }
+    }
+  }
+
   def upload(fileName: FileName, data: ByteString): B2Response[UploadFileResponse] = {
     import cats.implicits._
     val result = for {
       getUploadUrlResponse <- EitherT(obtainGetUploadUrlResponse())
-      upload <- EitherT(api.uploadFile(getUploadUrlResponse, fileName, data))
+      upload <- EitherT(uploadFileHandlingExpired(getUploadUrlResponse, fileName, data))
     } yield upload
 
-    result.value flatMap {
-      tryAgainIfExpired {
-        getUploadUrlResponse = Promise()
-        upload(fileName, data)
-      }
-    }
+    result.value
   }
 }
