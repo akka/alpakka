@@ -205,8 +205,9 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
         Future.successful(entity.asRight)
 
       case HttpResponse(status, _, entity, _) =>
-        Unmarshal(entity).to[String].flatMap { result =>
-          Future.successful(B2Error(status, result).asLeft)
+        Unmarshal(entity).to[B2ErrorResponse].flatMap { result =>
+          require(status.intValue == result.status, s"Expected statuses to match but got $status from HTTP response but ${result.status} in JSON")
+          Future.successful(B2Error(status, result.code, result.message).asLeft)
         }
     }
   }

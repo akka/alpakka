@@ -79,4 +79,8 @@ object JsonSupport {
 
   implicit val fileVersionInfoDecoder = Decoder[FileVersionInfo]
   implicit val fileVersionInfoUnmarshaller = circeUnmarshaller[FileVersionInfo]
+
+  implicit val b2ErrorResponseDecoder = Decoder[B2ErrorResponse]
+  implicit val b2ErrorResponseEncoder = Encoder[B2ErrorResponse]
+  implicit val b2ErrorResponseUnmarshaller = circeUnmarshaller[B2ErrorResponse]
 }

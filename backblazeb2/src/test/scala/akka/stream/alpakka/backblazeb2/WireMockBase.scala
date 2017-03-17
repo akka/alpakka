@@ -2,6 +2,7 @@ package akka.stream.alpakka.backblazeb2
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.common.ConsoleNotifier
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike}
@@ -23,10 +24,12 @@ abstract class WireMockBase extends FlatSpecLike with BeforeAndAfterAll {
   private def createMockServer(): WireMockServer = {
     val server = new WireMockServer(
       options()
+        .notifier(new ConsoleNotifier(true))
         .dynamicPort()
         .dynamicHttpsPort()
         .keystorePath("./backblazeb2/src/test/resources/keystore.jks")
-        .keystorePassword("abcdefg"))
+        .keystorePassword("abcdefg")
+    )
 
     server.start()
     server

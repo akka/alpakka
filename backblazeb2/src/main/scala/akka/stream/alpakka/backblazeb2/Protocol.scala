@@ -10,7 +10,11 @@ import scala.concurrent.Future
 object Protocol {
   type B2Response[T] = Future[Either[B2Error, T]]
 
-  case class B2Error(statusCode: StatusCode, message: String)
+  /** Representation of a B2 Error */
+  case class B2Error(statusCode: StatusCode, code: String, message: String)
+
+  /** https://www.backblaze.com/b2/docs/calling.html#error_handling */
+  case class B2ErrorResponse(status: Int, code: String, message: String)
 
   case class B2AccountCredentials(accountId: AccountId, applicationKey: ApplicationKey)
 
