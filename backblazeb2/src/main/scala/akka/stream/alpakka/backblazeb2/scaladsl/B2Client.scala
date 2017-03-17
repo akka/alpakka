@@ -7,7 +7,6 @@ import akka.stream.alpakka.backblazeb2.Protocol._
 import akka.util.ByteString
 import cats.data.EitherT
 import cats.syntax.either._
-import cats.syntax.option._
 import scala.concurrent.{Future, Promise}
 
 /**
@@ -27,7 +26,7 @@ class B2Client(accountCredentials: B2AccountCredentials, bucketId: BucketId, hos
     returnOrObtain(authorizeAccountPromise, callAuthorizeAccount)
   }
 
-  private def tryAgainIfExpired[T](fallbackIfExpired: => B2Response[T])(x: Either[B2Error, T]) = x match {
+  private def tryAgainIfExpired[T](x: B2Response[T])(fallbackIfExpired: => B2Response[T]) = x flatMap {
     case Left(error) if error.isExpiredToken =>
       fallbackIfExpired
 
@@ -53,11 +52,9 @@ class B2Client(accountCredentials: B2AccountCredentials, bucketId: BucketId, hos
       response <- EitherT(api.getUploadUrl(authorizeAccountResponse, bucketId))
     } yield response
 
-    eitherT.value flatMap {
-      tryAgainIfExpired {
-        authorizeAccountPromise = Promise()
-        callGetUploadUrl()
-      }
+    tryAgainIfExpired(eitherT.value) {
+      authorizeAccountPromise = Promise()
+      callGetUploadUrl()
     }
   }
 
@@ -84,11 +81,9 @@ class B2Client(accountCredentials: B2AccountCredentials, bucketId: BucketId, hos
       upload <- EitherT(api.uploadFile(getUploadUrlResponse, fileName, data, contentType))
     } yield upload
 
-    result.value flatMap {
-      tryAgainIfExpired {
-        getUploadUrlPromise = Promise()
-        upload(fileName, data, contentType)
-      }
+    tryAgainIfExpired(result.value) {
+      getUploadUrlPromise = Promise()
+      upload(fileName, data, contentType)
     }
   }
 
@@ -99,11 +94,9 @@ class B2Client(accountCredentials: B2AccountCredentials, bucketId: BucketId, hos
       download <- EitherT(api.downloadFileById(fileId, authorizeAccountResponse.apiUrl, authorizeAccountResponse.authorizationToken.some))
     } yield DownloadFileByIdResponse(fileId, download)
 
-    result.value flatMap {
-      tryAgainIfExpired {
-        authorizeAccountPromise = Promise()
-        download(fileId)
-      }
+    tryAgainIfExpired(result.value) {
+      authorizeAccountPromise = Promise()
+      download(fileId)
     }
   }
 }
