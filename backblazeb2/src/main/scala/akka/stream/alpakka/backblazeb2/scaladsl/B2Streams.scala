@@ -1,8 +1,13 @@
 package akka.stream.alpakka.backblazeb2.scaladsl
 
 import akka.NotUsed
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import akka.stream.alpakka.backblazeb2.Protocol._
 import akka.stream.scaladsl.Flow
+import cats.syntax.either._
+
+// FIXME: consider thread safety
 
 /**
   * Uploading in Parallel https://www.backblaze.com/b2/docs/uploading.html
@@ -15,12 +20,33 @@ import akka.stream.scaladsl.Flow
   * If your tool is uploading many files, the best performance will be achieved by multithreading the upload and launching multiple threads simultaneously.
   * When initializing upload threads, call b2_get_upload_url or b2_get_upload_part_url for each thread. The returned upload URL / upload authorization token should be used in this thread to upload files until one of the error conditions described above occurs. When that happens, simply call b2_get_upload_url or b2_get_upload_part_url again and resume the uploads.
  */
-class B2Streams(credentials: B2AccountCredentials) {
+class B2Streams(accountCredentials: B2AccountCredentials)(implicit val system: ActorSystem, materializer: ActorMaterializer) {
+  implicit val executionContext = materializer.executionContext
+  private val parallelism = 1
+
+  /**
+    * Warning: The returned flow is not thread safe
+    */
   def uploadFiles(bucketId: BucketId): Flow[UploadFileRequest, UploadFileResponse, NotUsed] = {
-    ???
+    val client = new B2Client(accountCredentials, bucketId)
+    Flow[UploadFileRequest]
+      .mapAsyncUnordered(parallelism) { x =>
+        client
+          .upload(x.fileName, x.data, x.contentType)
+          .map(_ getOrElse sys.error(s"Failed to upload $x"))
+      }
   }
 
+  /**
+    * Warning: The returned flow is not thread safe
+    */
   def downloadFilesById(bucketId: BucketId): Flow[FileId, DownloadFileByIdResponse, NotUsed] = {
-    ???
+    val client = new B2Client(accountCredentials, bucketId)
+    Flow[FileId]
+      .mapAsyncUnordered(parallelism) { x =>
+        client
+          .download(x)
+          .map(_ getOrElse sys.error(s"Failed to download $x"))
+      }
   }
 }

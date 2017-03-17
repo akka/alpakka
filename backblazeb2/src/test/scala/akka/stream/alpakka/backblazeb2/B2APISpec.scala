@@ -16,20 +16,10 @@ import org.scalatest.AsyncFlatSpec
 import org.scalatest.Matchers._
 
 /** Integration test, requires access to B2 and configured B2_ACCOUNT_ID and B2_APPLICATION_KEY environment variables */
-class B2APISpec extends AsyncFlatSpec {
-  private def readEnv(key: String): String = {
-    Option(System.getenv(key)) getOrElse sys.error(s"Please set $key environment variable to run the tests")
-  }
-
-  private val accountId = AccountId(readEnv("B2_ACCOUNT_ID"))
-  private val applicationKey = ApplicationKey(readEnv("B2_APPLICATION_KEY"))
-  private val bucketName = BucketName("alpakka-test") // TODO: create new using b2_create_bucket then remove after
-  private val bucketId = BucketId(readEnv("B2_BUCKET_ID")) // TODO: read using b2_list_buckets API call
-
+class B2APISpec extends AsyncFlatSpec with B2IntegrationTest {
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
 
-  private val credentials = B2AccountCredentials(accountId, applicationKey)
   private val api = new B2API()
 
   private val testRun = UUID.randomUUID().toString
