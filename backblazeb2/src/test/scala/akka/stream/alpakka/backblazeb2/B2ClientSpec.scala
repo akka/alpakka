@@ -9,10 +9,12 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import org.scalatest.Matchers._
 import JsonSupport._
 import akka.http.scaladsl.model.StatusCodes
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.stubbing.Scenario
 import io.circe.syntax._
+import org.scalatest.{Assertion, BeforeAndAfterEach}
 
-class B2ClientSpec extends WireMockBase {
+class B2ClientSpec extends WireMockBase with BeforeAndAfterEach {
   val accountId = AccountId("accountId")
   val applicationKey = ApplicationKey("applicationKey")
   val credentials = B2AccountCredentials(accountId, applicationKey)
@@ -35,18 +37,11 @@ class B2ClientSpec extends WireMockBase {
       .withBody(returnData)
   }
 
-  private def mockGet(url: String, returnData: String) = {
+  private def mockGet(url: String, returnData: String, status: Int = StatusCodes.OK.intValue) = {
     mock.register(
       get(urlEqualTo(url))
-        .willReturn(jsonResponse(returnData))
+        .willReturn(jsonResponse(returnData, status))
       )
-  }
-
-  private def mockPost(url: String, returnData: String) = {
-    mock.register(
-      post(urlEqualTo(url))
-        .willReturn(jsonResponse(returnData))
-    )
   }
 
   val validAccountAuthorizationToken = "validAccountAuthorizationToken"
@@ -60,10 +55,20 @@ class B2ClientSpec extends WireMockBase {
   val expiredTokenResponse = B2ErrorResponse(Errors.ExpiredAuthToken, "expired_auth_token", "Authorization token has expired")
   val expiredTokenResponseJson = expiredTokenResponse.asJson.noSpaces
 
-  val successfulUploadUrl = UploadUrl(s"https://$hostAndPort/successfulUploadUrl")
-  val successfulUploadAuthorizationToken = UploadAuthorizationToken("successfulUploadAuthorizationToken")
-  val successfulGetUploadUrlResponse = GetUploadUrlResponse(bucketId, successfulUploadUrl, successfulUploadAuthorizationToken)
+  val successfulUploadUrlPath = "/successfulUploadUrl"
+  val successfulUploadUrl = UploadUrl(s"https://$hostAndPort$successfulUploadUrlPath")
+  val validUploadAuthorizationToken = "validUploadAuthorizationToken"
+
+  val expiredUploadUrlPath = "/expiredUploadUrl"
+  val expiredUploadUrl = UploadUrl(s"https://$hostAndPort$expiredUploadUrlPath")
+  val expiredUploadAuthorizationToken = "expiredUploadAuthorizationToken"
+
+  val successfulGetUploadUrlResponse = GetUploadUrlResponse(bucketId, successfulUploadUrl, UploadAuthorizationToken(validUploadAuthorizationToken))
   val successfulGetUploadUrlResponseJson = successfulGetUploadUrlResponse.asJson.noSpaces
+
+  val expiredGetUploadUrlResponse = GetUploadUrlResponse(bucketId, expiredUploadUrl, UploadAuthorizationToken(expiredUploadAuthorizationToken))
+  val expiredGetUploadUrlResponseJson = expiredGetUploadUrlResponse.asJson.noSpaces
+
   val successfulUploadFileResponse = UploadFileResponse(
     fileId = FileId("fileId"),
     fileName = fileName,
@@ -76,23 +81,44 @@ class B2ClientSpec extends WireMockBase {
   )
   val successfulUploadFileResponseJson = successfulUploadFileResponse.asJson.noSpaces
 
-  private def mockGetUploadUrl() = {
-    val url = s"/b2api/v1/b2_get_upload_url?bucketId=$bucketId"
+  val getUploadUrlPath = s"/b2api/v1/b2_get_upload_url?bucketId=$bucketId"
+  val AuthorizationHeader = "Authorization"
+
+  private def basicToken(x: String) = equalTo(s"Basic $x")
+
+  private def mockSuccessfulAuthorizeAccount() = {
+    mockGet("/b2api/v1/b2_authorize_account", successfulAuthorizeAccountResponseJson)
+  }
+
+  private def mockUploadPaths() = {
+    mock.register(
+      post(urlEqualTo(expiredUploadUrlPath))
+        .withHeader(AuthorizationHeader, equalTo(expiredUploadAuthorizationToken))
+        .willReturn(jsonResponse(expiredTokenResponseJson, Errors.ExpiredAuthToken))
+    )
 
     mock.register(
-      get(urlEqualTo(url))
-        .withHeader("Authorization", equalTo(validAccountAuthorizationToken))
+      post(urlEqualTo(successfulUploadUrlPath))
+        .withHeader(AuthorizationHeader, equalTo(validUploadAuthorizationToken))
+        .willReturn(jsonResponse(successfulUploadFileResponseJson))
+    )
+  }
+
+  private def mockGetUploadUrl() = {
+    mock.register(
+      get(urlEqualTo(getUploadUrlPath))
+        .withHeader(AuthorizationHeader, equalTo(validAccountAuthorizationToken))
         .willReturn(jsonResponse(successfulGetUploadUrlResponseJson))
     )
 
     mock.register(
-      get(urlEqualTo(url))
-        .withHeader("Authorization", equalTo(expiredAccountAuthorizationToken))
+      get(urlEqualTo(getUploadUrlPath))
+        .withHeader(AuthorizationHeader, equalTo(expiredAccountAuthorizationToken))
         .willReturn(jsonResponse(expiredTokenResponseJson, Errors.ExpiredAuthToken))
     )
   }
 
-  private def uploadTest(client: B2Client) = {
+  private def uploadTest(client: B2Client): Assertion = {
     val resultF = client.upload(fileName, data)
     val result = extractFromResponse(resultF)
     result shouldBe a[UploadFileResponse]
@@ -101,21 +127,20 @@ class B2ClientSpec extends WireMockBase {
   it should "work for happy case" in {
     val client = createClient()
 
-    mockGet("/b2api/v1/b2_authorize_account", successfulAuthorizeAccountResponseJson)
+    mockSuccessfulAuthorizeAccount()
     mockGetUploadUrl()
-
-    mockPost("/successfulUploadUrl", successfulUploadFileResponseJson)
+    mockUploadPaths()
 
     uploadTest(client)
   }
 
+  val expiredAlreadyReturned = "expiredAlreadyReturned"
+
   /**
     * Returns an expired authorize account response upon the first invocation, then a successful one on consequent ones
     */
-  private def mockAuthorizeAccountFirstExpiredThenValid() = {
-    val scenario = "Authorize Account"
+  private def mockAuthorizeAccountFirstExpiredThenValid(scenario: String = "Authorize Account") = {
     val url = "/b2api/v1/b2_authorize_account"
-    val expiredAlreadyReturned = "expiredAlreadyReturned"
 
     mock.register(
       get(urlEqualTo(url))
@@ -130,7 +155,6 @@ class B2ClientSpec extends WireMockBase {
         .inScenario(scenario)
         .whenScenarioStateIs(expiredAlreadyReturned)
         .willReturn(jsonResponse(successfulAuthorizeAccountResponseJson))
-        .willSetStateTo(Scenario.STARTED)
     )
   }
 
@@ -139,8 +163,46 @@ class B2ClientSpec extends WireMockBase {
 
     mockAuthorizeAccountFirstExpiredThenValid()
     mockGetUploadUrl()
-    mockPost("/successfulUploadUrl", successfulUploadFileResponseJson)
+    mockUploadPaths()
 
     uploadTest(client)
+  }
+
+  /**
+    * Returns an expired "get upload URL" response upon the first invocation, then a successful one on consequent ones
+    */
+  private def mockUploadUrlFirstExpiredThenValid(scenario: String = "Get upload URL") = {
+    mock.register(
+      get(urlEqualTo(getUploadUrlPath))
+        .inScenario(scenario)
+        .whenScenarioStateIs(Scenario.STARTED)
+        .withHeader(AuthorizationHeader, equalTo(validAccountAuthorizationToken))
+        .willReturn(jsonResponse(expiredGetUploadUrlResponseJson))
+        .willSetStateTo(expiredAlreadyReturned)
+    )
+
+    mock.register(
+      get(urlEqualTo(getUploadUrlPath))
+        .inScenario(scenario)
+        .whenScenarioStateIs(expiredAlreadyReturned)
+        .withHeader(AuthorizationHeader, equalTo(validAccountAuthorizationToken))
+        .willReturn(jsonResponse(successfulGetUploadUrlResponseJson))
+    )
+  }
+
+  it should "handle expired upload authorization token" in {
+    val client = createClient()
+
+    mockSuccessfulAuthorizeAccount()
+    mockUploadUrlFirstExpiredThenValid()
+    mockUploadPaths()
+
+    uploadTest(client)
+  }
+
+  override protected def afterEach(): Unit = {
+    mock.resetScenarios()
+    mock.resetMappings()
+    mock.resetRequests()
   }
 }

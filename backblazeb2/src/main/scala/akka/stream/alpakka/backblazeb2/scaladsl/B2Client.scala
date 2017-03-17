@@ -27,7 +27,7 @@ class B2Client(accountCredentials: B2AccountCredentials, bucketId: BucketId, hos
   private val api = new B2API(hostAndPort)
 
   private var authorizeAccountResponse: Promise[AuthorizeAccountResponse] = Promise()
-  private val getUploadUrlResponse: Promise[GetUploadUrlResponse] = Promise()
+  private var getUploadUrlResponse: Promise[GetUploadUrlResponse] = Promise()
 
   /**
     * Return the saved AuthorizeAccountResponse if it exists or obtain a new one if it doesn't
@@ -36,17 +36,23 @@ class B2Client(accountCredentials: B2AccountCredentials, bucketId: BucketId, hos
     returnOrObtain(authorizeAccountResponse, callAuthorizeAccount)
   }
 
+  private def tryAgainIfExpired[T](afterInvalidation: => B2Response[T])(x: Either[B2Error, T]) = x match {
+    case Left(error) if error.isExpiredToken =>
+      afterInvalidation
+
+    case success: Right[B2Error, T] =>
+      Future.successful(success)
+  }
+
   /**
     * Return the saved GetUploadUrlResponse if it exists or obtain a new one if it doesn't
     */
   private def obtainGetUploadUrlResponse(): B2Response[GetUploadUrlResponse] = {
     returnOrObtain(getUploadUrlResponse, callGetUploadUrl) flatMap {
-      case Left(error) if error.isExpiredToken =>
+      tryAgainIfExpired {
         authorizeAccountResponse = Promise()
         callGetUploadUrl()
-
-      case success: Right[B2Error, GetUploadUrlResponse] =>
-        Future.successful(success)
+      }
     }
   }
 
@@ -87,6 +93,11 @@ class B2Client(accountCredentials: B2AccountCredentials, bucketId: BucketId, hos
       upload <- EitherT(api.uploadFile(getUploadUrlResponse, fileName, data))
     } yield upload
 
-    result.value // TODO: handle expired auth token
+    result.value flatMap {
+      tryAgainIfExpired {
+        getUploadUrlResponse = Promise()
+        upload(fileName, data)
+      }
+    }
   }
 }
