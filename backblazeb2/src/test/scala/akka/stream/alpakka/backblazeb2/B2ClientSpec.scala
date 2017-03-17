@@ -57,8 +57,7 @@ class B2ClientSpec extends WireMockBase {
   val expiredAuthorizeAccountResponse = AuthorizeAccountResponse(accountId, ApiUrl(s"https://$hostAndPort"), AccountAuthorizationToken(expiredAccountAuthorizationToken))
   val expiredAuthorizeAccountResponseJson = expiredAuthorizeAccountResponse.asJson.noSpaces
 
-  val ExpiredAuthToken = 401
-  val expiredTokenResponse = B2ErrorResponse(ExpiredAuthToken, "expired_auth_token", "Authorization token has expired")
+  val expiredTokenResponse = B2ErrorResponse(Errors.ExpiredAuthToken, "expired_auth_token", "Authorization token has expired")
   val expiredTokenResponseJson = expiredTokenResponse.asJson.noSpaces
 
   val successfulUploadUrl = UploadUrl(s"https://$hostAndPort/successfulUploadUrl")
@@ -89,7 +88,7 @@ class B2ClientSpec extends WireMockBase {
     mock.register(
       get(urlEqualTo(url))
         .withHeader("Authorization", equalTo(expiredAccountAuthorizationToken))
-        .willReturn(jsonResponse(expiredTokenResponseJson, ExpiredAuthToken))
+        .willReturn(jsonResponse(expiredTokenResponseJson, Errors.ExpiredAuthToken))
     )
   }
 
@@ -131,10 +130,11 @@ class B2ClientSpec extends WireMockBase {
         .inScenario(scenario)
         .whenScenarioStateIs(expiredAlreadyReturned)
         .willReturn(jsonResponse(successfulAuthorizeAccountResponseJson))
+        .willSetStateTo(Scenario.STARTED)
     )
   }
 
-  it should "handle expired account authorization token" in pendingUntilFixed {
+  it should "handle expired account authorization token" in {
     val client = createClient()
 
     mockAuthorizeAccountFirstExpiredThenValid()

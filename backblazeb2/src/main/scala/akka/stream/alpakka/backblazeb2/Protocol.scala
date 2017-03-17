@@ -8,10 +8,16 @@ import akka.http.scaladsl.model.StatusCode
 import scala.concurrent.Future
 
 object Protocol {
+  object Errors {
+    val ExpiredAuthToken = 401
+  }
+
   type B2Response[T] = Future[Either[B2Error, T]]
 
   /** Representation of a B2 Error */
-  case class B2Error(statusCode: StatusCode, code: String, message: String)
+  case class B2Error(statusCode: StatusCode, code: String, message: String) {
+    def isExpiredToken = statusCode.intValue == Errors.ExpiredAuthToken
+  }
 
   /** https://www.backblaze.com/b2/docs/calling.html#error_handling */
   case class B2ErrorResponse(status: Int, code: String, message: String)
