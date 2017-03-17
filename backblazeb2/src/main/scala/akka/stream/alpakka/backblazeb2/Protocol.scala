@@ -3,12 +3,15 @@
  */
 package akka.stream.alpakka.backblazeb2
 
-import akka.http.scaladsl.model.StatusCode
-
+import akka.http.scaladsl.model.{ContentType, StatusCode}
+import akka.util.ByteString
+import cats.syntax.either._
 import scala.concurrent.Future
 
 object Protocol {
-  object Errors {
+  val DefaultContentType = ContentType.parse("b2/x-auto") getOrElse sys.error("Failed to parse b2/x-auto")
+
+  object ErrorCodes {
     val ExpiredAuthToken = 401
   }
 
@@ -16,7 +19,7 @@ object Protocol {
 
   /** Representation of a B2 Error */
   case class B2Error(statusCode: StatusCode, code: String, message: String) {
-    def isExpiredToken = statusCode.intValue == Errors.ExpiredAuthToken
+    def isExpiredToken: Boolean = statusCode.intValue == ErrorCodes.ExpiredAuthToken
   }
 
   /** https://www.backblaze.com/b2/docs/calling.html#error_handling */
@@ -91,6 +94,12 @@ object Protocol {
     fileInfo: Map[String, String]
   )
 
+  case class UploadFileRequest(
+    fileName: FileName,
+    data: ByteString,
+    contentType: ContentType = DefaultContentType
+  )
+
   case class ListFileVersionsResponse(
     files: List[FileVersionInfo]
   )
@@ -98,5 +107,10 @@ object Protocol {
   case class FileVersionInfo(
     fileName: FileName,
     fileId: FileId
+  )
+
+  case class DownloadFileByIdResponse(
+    fileId: FileId,
+    data: ByteString
   )
 }

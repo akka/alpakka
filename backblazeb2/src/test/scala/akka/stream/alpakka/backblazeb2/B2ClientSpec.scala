@@ -9,7 +9,6 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import org.scalatest.Matchers._
 import JsonSupport._
 import akka.http.scaladsl.model.StatusCodes
-import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.stubbing.Scenario
 import io.circe.syntax._
 import org.scalatest.{Assertion, BeforeAndAfterEach}
@@ -52,7 +51,7 @@ class B2ClientSpec extends WireMockBase with BeforeAndAfterEach {
   val expiredAuthorizeAccountResponse = AuthorizeAccountResponse(accountId, ApiUrl(s"https://$hostAndPort"), AccountAuthorizationToken(expiredAccountAuthorizationToken))
   val expiredAuthorizeAccountResponseJson = expiredAuthorizeAccountResponse.asJson.noSpaces
 
-  val expiredTokenResponse = B2ErrorResponse(Errors.ExpiredAuthToken, "expired_auth_token", "Authorization token has expired")
+  val expiredTokenResponse = B2ErrorResponse(ErrorCodes.ExpiredAuthToken, "expired_auth_token", "Authorization token has expired")
   val expiredTokenResponseJson = expiredTokenResponse.asJson.noSpaces
 
   val successfulUploadUrlPath = "/successfulUploadUrl"
@@ -69,8 +68,10 @@ class B2ClientSpec extends WireMockBase with BeforeAndAfterEach {
   val expiredGetUploadUrlResponse = GetUploadUrlResponse(bucketId, expiredUploadUrl, UploadAuthorizationToken(expiredUploadAuthorizationToken))
   val expiredGetUploadUrlResponseJson = expiredGetUploadUrlResponse.asJson.noSpaces
 
+  val fileId = FileId("fileId")
+
   val successfulUploadFileResponse = UploadFileResponse(
-    fileId = FileId("fileId"),
+    fileId = fileId,
     fileName = fileName,
     accountId = accountId,
     bucketId = bucketId,
@@ -84,17 +85,17 @@ class B2ClientSpec extends WireMockBase with BeforeAndAfterEach {
   val getUploadUrlPath = s"/b2api/v1/b2_get_upload_url?bucketId=$bucketId"
   val AuthorizationHeader = "Authorization"
 
-  private def basicToken(x: String) = equalTo(s"Basic $x")
-
   private def mockSuccessfulAuthorizeAccount() = {
     mockGet("/b2api/v1/b2_authorize_account", successfulAuthorizeAccountResponseJson)
   }
+
+  private val expiredTokenJson = jsonResponse(expiredTokenResponseJson, ErrorCodes.ExpiredAuthToken)
 
   private def mockUploadPaths() = {
     mock.register(
       post(urlEqualTo(expiredUploadUrlPath))
         .withHeader(AuthorizationHeader, equalTo(expiredUploadAuthorizationToken))
-        .willReturn(jsonResponse(expiredTokenResponseJson, Errors.ExpiredAuthToken))
+        .willReturn(expiredTokenJson)
     )
 
     mock.register(
@@ -114,7 +115,7 @@ class B2ClientSpec extends WireMockBase with BeforeAndAfterEach {
     mock.register(
       get(urlEqualTo(getUploadUrlPath))
         .withHeader(AuthorizationHeader, equalTo(expiredAccountAuthorizationToken))
-        .willReturn(jsonResponse(expiredTokenResponseJson, Errors.ExpiredAuthToken))
+        .willReturn(expiredTokenJson)
     )
   }
 
@@ -198,6 +199,39 @@ class B2ClientSpec extends WireMockBase with BeforeAndAfterEach {
     mockUploadPaths()
 
     uploadTest(client)
+  }
+
+  private def downloadTest(client: B2Client): Assertion = {
+    val downloadF = client.download(fileId)
+    val download = extractFromResponse[DownloadFileByIdResponse](downloadF)
+    download.fileId shouldEqual fileId
+    download.data shouldEqual data
+  }
+
+  it should "handle download" in {
+    val client = createClient()
+
+    mockAuthorizeAccountFirstExpiredThenValid()
+
+    val downloadUrl = s"/b2api/v1/b2_download_file_by_id?fileId=$fileId"
+    mock.register(
+      get(urlEqualTo(downloadUrl))
+        .withHeader(AuthorizationHeader, equalTo(validAccountAuthorizationToken))
+        .willReturn(
+          aResponse()
+            .withStatus(StatusCodes.OK.intValue)
+            .withHeader("Content-Type", "application/json; charset=UTF-8")
+            .withBody(data.toArray)
+        )
+    )
+
+    mock.register(
+      get(urlEqualTo(downloadUrl))
+        .withHeader(AuthorizationHeader, equalTo(expiredAccountAuthorizationToken))
+        .willReturn(expiredTokenJson)
+    )
+
+    downloadTest(client)
   }
 
   override protected def afterEach(): Unit = {

@@ -23,10 +23,12 @@ object B2API {
   val DefaultHostAndPort = "api.backblazeb2.com"
 }
 
+/**
+  * Handles the interface with the Backblaze B2 API, but doesn't handle any expired tokens or retries
+  */
 class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: ActorSystem, materializer: Materializer) {
   implicit val executionContext = materializer.executionContext
   private val version = "b2api/v1"
-  private val DefaultContentType = ContentType.parse("b2/x-auto") getOrElse sys.error("Failed to parse b2/x-auto")
 
   /**
    * https://www.backblaze.com/b2/docs/b2_authorize_account.html
