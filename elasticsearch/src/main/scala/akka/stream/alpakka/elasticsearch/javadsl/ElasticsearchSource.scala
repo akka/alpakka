@@ -4,29 +4,37 @@
 package akka.stream.alpakka.elasticsearch.javadsl
 
 import akka.NotUsed
-import akka.stream.alpakka.elasticsearch.{ElasticsearchSourceSettings, ElasticsearchSourceStage, OutgoingMessage}
+import akka.stream.alpakka.elasticsearch.{
+  ElasticsearchSourceSettings,
+  ElasticsearchSourceStage,
+  ElasticsearchSourceStageTyped,
+  OutgoingMessage
+}
 import akka.stream.scaladsl.Source
 import org.elasticsearch.client.RestClient
+import spray.json.{JsObject, JsonReader}
 
 class ElasticsearchSource {
 
   /**
-   * Java API: creates a [[ElasticsearchSourceStage]] for Elasticsearch using an [[RestClient]]
+   * Java API: creates a [[ElasticsearchSourceStage]] that consumes as JsObject
    */
   def create(indexName: String,
              typeName: String,
              query: String,
              settings: ElasticsearchSourceSettings,
-             client: RestClient): Source[OutgoingMessage, NotUsed] =
+             client: RestClient): Source[OutgoingMessage[JsObject], NotUsed] =
     Source.fromGraph(new ElasticsearchSourceStage(indexName, typeName, query, client, settings))
 
   /**
-   * Java API: creates a [[ElasticsearchSourceStage]] for Elasticsearch using an [[RestClient]] with default settings.
+   * Java API: creates a [[ElasticsearchSourceStage]] that consumes as specific type
    */
-  def simple(indexName: String,
-             typeName: String,
-             query: String,
-             client: RestClient): Source[OutgoingMessage, NotUsed] =
-    Source.fromGraph(new ElasticsearchSourceStage(indexName, typeName, query, client, ElasticsearchSourceSettings()))
+  def typed[T](indexName: String,
+               typeName: String,
+               query: String,
+               settings: ElasticsearchSourceSettings,
+               client: RestClient,
+               reader: JsonReader[T]): Source[OutgoingMessage[T], NotUsed] =
+    Source.fromGraph(new ElasticsearchSourceStageTyped(indexName, typeName, query, client, settings)(reader))
 
 }

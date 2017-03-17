@@ -12,14 +12,16 @@ import org.apache.http.HttpHost
 import org.apache.http.entity.StringEntity
 import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner
 import org.elasticsearch.client.RestClient
-import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 import spray.json.JsString
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.collection.JavaConverters._
+import spray.json._
+import DefaultJsonProtocol._
 
-class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfter {
+class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   private val runner = new ElasticsearchClusterRunner()
 
@@ -27,7 +29,10 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfter {
   implicit val materializer = ActorMaterializer()
   implicit val client = RestClient.builder(new HttpHost("localhost", 9201)).build()
 
-  before {
+  case class Book(title: String)
+  implicit val format = jsonFormat1(Book)
+
+  override def beforeAll() = {
     runner.build(ElasticsearchClusterRunner.newConfigs().numOfNode(1))
     runner.ensureYellow()
 
@@ -41,7 +46,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfter {
     flush("source")
   }
 
-  after {
+  override def afterAll() = {
     runner.close()
     client.close()
     TestKit.shutdownActorSystem(system)
@@ -55,7 +60,8 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfter {
       new StringEntity(s"""{"title": "$title"}"""))
 
   "Elasticsearch connector" should {
-    "consume and publish documents through Elasticsearch" in {
+    "consume and publish documents as JsObject" in {
+      // Copy source/book to sink1/book through JsObject stream
       val f1 = ElasticsearchSource(
         "source",
         "book",
@@ -64,22 +70,74 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfter {
       ).map { message =>
         IncomingMessage(Some(message.id), message.source)
       }.runWith(ElasticsearchSink(
-          "sink",
+          "sink1",
           "book",
           ElasticsearchSinkSettings(5)
         ))
 
       Await.result(f1, Duration.Inf)
 
-      flush("sink")
+      flush("sink1")
 
+      // Assert docs in sink1/book
       val f2 = ElasticsearchSource(
-        "sink",
+        "sink1",
         "book",
-        """{"match_all": {}}"""
+        """{"match_all": {}}""",
+        ElasticsearchSourceSettings()
       ).map { message =>
         message.source.fields("title").asInstanceOf[JsString].value
       }.runWith(Sink.seq)
+
+      val result = Await.result(f2, Duration.Inf)
+
+      result.sorted shouldEqual Seq(
+        "Akka Concurrency",
+        "Akka in Action",
+        "Effective Akka",
+        "Learning Scala",
+        "Programming in Scala",
+        "Scala Puzzlers",
+        "Scala for Spark in Production"
+      )
+    }
+  }
+
+  "Typed Elasticsearch connector" should {
+    "consume and publish documents as specific type" in {
+      // Copy source/book to sink2/book through typed stream
+      val f1 = ElasticsearchSource
+        .typed[Book](
+          "source",
+          "book",
+          """{"match_all": {}}""",
+          ElasticsearchSourceSettings(5)
+        )
+        .map { message =>
+          IncomingMessage(Some(message.id), message.source)
+        }
+        .runWith(ElasticsearchSink.typed[Book](
+            "sink2",
+            "book",
+            ElasticsearchSinkSettings(5)
+          ))
+
+      Await.result(f1, Duration.Inf)
+
+      flush("sink2")
+
+      // Assert docs in sink2/book
+      val f2 = ElasticsearchSource
+        .typed[Book](
+          "sink2",
+          "book",
+          """{"match_all": {}}""",
+          ElasticsearchSourceSettings()
+        )
+        .map { message =>
+          message.source.title
+        }
+        .runWith(Sink.seq)
 
       val result = Await.result(f2, Duration.Inf)
 
