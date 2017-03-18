@@ -13,11 +13,10 @@ import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.handlers.AsyncHandler;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
-import com.amazonaws.services.sqs.model.DeleteMessageRequest;
-import com.amazonaws.services.sqs.model.Message;
-import com.amazonaws.services.sqs.model.SendMessageRequest;
+import com.amazonaws.services.sqs.model.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -26,11 +25,11 @@ import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 public class SqsAckSinkTest {
 
@@ -60,7 +59,16 @@ public class SqsAckSinkTest {
     @Test
     public void testAcknowledge() throws Exception {
         final String queueUrl = "none";
-        AmazonSQSAsync awsClient = spy(AmazonSQSAsync.class);
+        AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
+        when(awsClient.deleteMessageAsync(any(DeleteMessageRequest.class), any())).thenAnswer(
+                invocation -> {
+                    DeleteMessageRequest request = invocation.getArgument(0);
+                    invocation
+                            .<AsyncHandler< DeleteMessageRequest, DeleteMessageResult>>getArgument(1)
+                            .onSuccess(request, new DeleteMessageResult());
+                    return new CompletableFuture<DeleteMessageResult>();
+                }
+        );
 
         //#run
         Tuple2<Message, MessageAction> pair = new Tuple2<>(
@@ -70,6 +78,7 @@ public class SqsAckSinkTest {
         Future<Done> done = Source
                 .single(pair)
                 .runWith(SqsAckSink.create(queueUrl, awsClient), materializer);
+        Await.ready(done, new FiniteDuration(1, TimeUnit.SECONDS));
         //#run
 
         verify(awsClient).deleteMessageAsync(any(DeleteMessageRequest.class), any());
@@ -78,7 +87,16 @@ public class SqsAckSinkTest {
     @Test
     public void testRequeueWithDelay() throws Exception {
         final String queueUrl = "none";
-        AmazonSQSAsync awsClient = spy(AmazonSQSAsync.class);
+        AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
+        when(awsClient.sendMessageAsync(any(SendMessageRequest.class), any())).thenAnswer(
+                invocation -> {
+                    SendMessageRequest request = invocation.getArgument(0);
+                    invocation
+                            .<AsyncHandler<SendMessageRequest, SendMessageResult>>getArgument(1)
+                            .onSuccess(request, new SendMessageResult());
+                    return new CompletableFuture<SendMessageResult>();
+                }
+        );
 
         //#run
         Tuple2<Message, MessageAction> pair = new Tuple2<>(
@@ -88,6 +106,7 @@ public class SqsAckSinkTest {
         Future<Done> done = Source
                 .single(pair)
                 .runWith(SqsAckSink.create(queueUrl, awsClient), materializer);
+        Await.ready(done, new FiniteDuration(1, TimeUnit.SECONDS));
         //#run
 
         verify(awsClient)

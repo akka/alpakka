@@ -3,15 +3,13 @@
  */
 package akka.stream.alpakka.sqs.scaladsl
 
-import akka.stream.alpakka.sqs.{ Ack, RequeueWithDelay }
 import akka.Done
-import akka.stream.alpakka.sqs.SqsSourceSettings
+import akka.stream.alpakka.sqs.{Ack, RequeueWithDelay, SqsSourceSettings}
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
 import com.amazonaws.services.sqs.model.{DeleteMessageRequest, Message, SendMessageRequest}
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{ spy, verify }
-import com.amazonaws.services.sqs.model.Message
+import org.mockito.Mockito.{spy, verify}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.Await
