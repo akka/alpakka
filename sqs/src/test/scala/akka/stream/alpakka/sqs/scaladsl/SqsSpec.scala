@@ -55,31 +55,35 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val queue = randomQueueUrl()
     sqsClient.sendMessage(queue, "alpakka-2")
 
-    val awsClientSpy = spy(sqsClient)
-    val future = SqsSource(queue)
+    val awsSqsClient = spy(sqsClient)
+    //#ack
+    val future = SqsSource(queue)(awsSqsClient)
       .take(1)
       .map { m: Message =>
         (m, Ack())
       }
-      .runWith(SqsAckSink(queue)(awsClientSpy))
+      .runWith(SqsAckSink(queue)(awsSqsClient))
+    //#ack
 
     Await.result(future, 1.second) shouldBe Done
-    verify(awsClientSpy).deleteMessageAsync(any[DeleteMessageRequest], any())
+    verify(awsSqsClient).deleteMessageAsync(any[DeleteMessageRequest], any)
   }
 
   it should "pull and requeue message" taggedAs Integration in {
     val queue = randomQueueUrl()
     sqsClient.sendMessage(queue, "alpakka-3")
 
-    val awsClientSpy = spy(sqsClient)
-    val future = SqsSource(queue)
+    val awsSqsClient = spy(sqsClient)
+    //#requeue
+    val future = SqsSource(queue)(awsSqsClient)
       .take(1)
       .map { m: Message =>
         (m, RequeueWithDelay(5))
       }
-      .runWith(SqsAckSink(queue)(awsClientSpy))
+      .runWith(SqsAckSink(queue)(awsSqsClient))
+    //#requeue
 
     Await.result(future, 1.second) shouldBe Done
-    verify(awsClientSpy).sendMessageAsync(any[SendMessageRequest], any())
+    verify(awsSqsClient).sendMessageAsync(any[SendMessageRequest], any)
   }
 }

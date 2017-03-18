@@ -70,7 +70,7 @@ public class SqsAckSinkTest {
                 }
         );
 
-        //#run
+        //#ack
         Tuple2<Message, MessageAction> pair = new Tuple2<>(
                 new Message().withBody("test"),
                 new Ack()
@@ -79,7 +79,7 @@ public class SqsAckSinkTest {
                 .single(pair)
                 .runWith(SqsAckSink.create(queueUrl, awsClient), materializer);
         Await.ready(done, new FiniteDuration(1, TimeUnit.SECONDS));
-        //#run
+        //#ack
 
         verify(awsClient).deleteMessageAsync(any(DeleteMessageRequest.class), any());
     }
@@ -98,7 +98,7 @@ public class SqsAckSinkTest {
                 }
         );
 
-        //#run
+        //#requeue
         Tuple2<Message, MessageAction> pair = new Tuple2<>(
                 new Message().withBody("test"),
                 new RequeueWithDelay(12)
@@ -107,7 +107,7 @@ public class SqsAckSinkTest {
                 .single(pair)
                 .runWith(SqsAckSink.create(queueUrl, awsClient), materializer);
         Await.ready(done, new FiniteDuration(1, TimeUnit.SECONDS));
-        //#run
+        //#requeue
 
         verify(awsClient)
                 .sendMessageAsync(
