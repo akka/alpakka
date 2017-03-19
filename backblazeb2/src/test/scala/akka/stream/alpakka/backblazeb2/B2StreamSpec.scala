@@ -15,7 +15,8 @@ import org.scalatest.Matchers._
 class B2StreamSpec extends AsyncFlatSpec with B2IntegrationTest {
   val thisRun = System.currentTimeMillis().toString
 
-  val datas = (0 until 10) map { x =>
+  val n = 10
+  val datas = (0 until n) map { x =>
     s"$thisRun-file-$x" -> s"$thisRun-${UUID.randomUUID()}-data-$x"
   }
 
@@ -24,7 +25,8 @@ class B2StreamSpec extends AsyncFlatSpec with B2IntegrationTest {
 
   val streams = new B2Streams(credentials)
 
-  it should "upload then download" in pendingUntilFixed { // TODO: add "delete" in the end to clean up afterwards
+  // TODO: add "delete" in the end to clean up afterwards
+  it should "upload then download" in {
     val upload = streams.uploadFiles(bucketId)
     val uploadedFiles = Source(datas)
       .map { case (fileName, data) =>
@@ -44,7 +46,7 @@ class B2StreamSpec extends AsyncFlatSpec with B2IntegrationTest {
       val downloaded = Source(lookup.keySet)
         .via(download)
         .map { x =>
-          lookup(x.fileId) -> x.data.decodeString(StandardCharsets.UTF_8)
+          lookup(x.fileId).value -> x.data.decodeString(StandardCharsets.UTF_8)
         }
         .runWith(Sink.seq)
 
