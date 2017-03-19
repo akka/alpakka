@@ -19,6 +19,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+// #header-line
+            import akka.stream.alpakka.csv.javadsl.CsvFraming;
+            import akka.stream.alpakka.csv.javadsl.CsvToMap;
+
+// #header-line
+
+// #column-names
+            import akka.stream.alpakka.csv.javadsl.CsvFraming;
+            import akka.stream.alpakka.csv.javadsl.CsvToMap;
+
+// #column-names
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -44,7 +55,8 @@ public class CsvToMapTest {
     public void parsedLineShouldBecomeMapKeys() {
         CompletionStage<Map<String, ByteString>> completionStage =
         // #header-line
-            Source.single(ByteString.fromString("eins,zwei,drei\n1,2,3"))
+            Source
+                .single(ByteString.fromString("eins,zwei,drei\n1,2,3"))
                 .via(CsvFraming.lineScanner())
                 .via(CsvToMap.toMap(StandardCharsets.UTF_8))
                 .runWith(Sink.head(), materializer);
@@ -61,10 +73,11 @@ public class CsvToMapTest {
     public void givenHeadersShouldBecomeMapKeys() {
         CompletionStage<Map<String, ByteString>> completionStage =
         // #column-names
-            Source.single(ByteString.fromString("1,2,3"))
-                    .via(CsvFraming.lineScanner())
-                    .via(CsvToMap.withHeaders("eins", "zwei", "drei"))
-                    .runWith(Sink.head(), materializer);
+            Source
+                .single(ByteString.fromString("1,2,3"))
+                .via(CsvFraming.lineScanner())
+                .via(CsvToMap.withHeaders("eins", "zwei", "drei"))
+                .runWith(Sink.head(), materializer);
         // #column-names
         completionStage.thenAccept((map) -> {
             assertThat(map.get("eins"), equalTo("1"));

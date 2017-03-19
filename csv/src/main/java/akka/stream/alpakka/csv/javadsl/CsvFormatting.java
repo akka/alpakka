@@ -4,7 +4,7 @@
 package akka.stream.alpakka.csv.javadsl;
 
 import akka.NotUsed;
-import akka.stream.alpakka.csv.CsvQuotingStyle;
+import akka.stream.alpakka.csv.scaladsl.CsvQuotingStyle$;
 import akka.stream.javadsl.Flow;
 import akka.util.ByteString;
 import scala.collection.JavaConversions;
@@ -12,7 +12,8 @@ import scala.collection.immutable.List;
 
 import java.util.Collection;
 
-/** Provides CSV formatting flows that convert a sequence of String into their CSV representation
+/**
+ * Provides CSV formatting flows that convert a sequence of String into their CSV representation
  * in {@see akka.util.ByteString}.
  */
 public class CsvFormatting {
@@ -27,6 +28,7 @@ public class CsvFormatting {
 
     /**
      * Generates standard CSV format (with commas).
+     *
      * @param <T> Any collection implementation
      * @return The formatting flow
      */
@@ -36,18 +38,21 @@ public class CsvFormatting {
 
     /**
      * Generates CSV with the specified special characters and character set.
-     * @param delimiter Delimiter between columns
-     * @param quoteChar Quoting character
-     * @param escapeChar Escape character
-     * @param endOfLine End of line character sequence
+     *
+     * @param delimiter    Delimiter between columns
+     * @param quoteChar    Quoting character
+     * @param escapeChar   Escape character
+     * @param endOfLine    End of line character sequence
      * @param quotingStyle Quote all values or as required
-     * @param charsetName Character set to be used
-     * @param <T> Any collection implementation
+     * @param charsetName  Character set to be used
+     * @param <T>          Any collection implementation
      * @return The formatting flow
      */
     public static <T extends Collection<String>> Flow<T, ByteString, NotUsed> format(char delimiter, char quoteChar, char escapeChar, String endOfLine, CsvQuotingStyle quotingStyle, String charsetName) {
-        akka.stream.scaladsl.Flow<List<String>, ByteString, NotUsed> formattingFlow = akka.stream.alpakka.csv.scaladsl.CsvFormatting
-                .format(delimiter, quoteChar, escapeChar, endOfLine, quotingStyle, charsetName);
+        akka.stream.alpakka.csv.scaladsl.CsvQuotingStyle qs = CsvQuotingStyle$.MODULE$.asScala(quotingStyle);
+        akka.stream.scaladsl.Flow<List<String>, ByteString, NotUsed> formattingFlow
+            = akka.stream.alpakka.csv.scaladsl.CsvFormatting
+                .format(delimiter, quoteChar, escapeChar, endOfLine, qs, charsetName);
         return Flow.<T>create()
                 .map(c -> JavaConversions.collectionAsScalaIterable(c).toList())
                 .via(formattingFlow);

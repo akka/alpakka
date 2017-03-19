@@ -6,7 +6,6 @@ package akka.stream.alpakka.csv.javadsl;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.csv.CsvQuotingStyle;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;

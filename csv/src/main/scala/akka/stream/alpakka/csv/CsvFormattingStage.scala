@@ -4,7 +4,7 @@
 package akka.stream.alpakka.csv
 
 import akka.event.Logging
-import akka.stream.alpakka.csv.scaladsl.CsvQuoting
+import akka.stream.alpakka.csv.scaladsl.CsvQuotingStyle
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.util.ByteString
@@ -18,7 +18,7 @@ private[csv] class CsvFormattingStage(delimiter: Char,
                                       quoteChar: Char,
                                       escapeChar: Char,
                                       endOfLine: String,
-                                      quotingStyle: CsvQuoting,
+                                      quotingStyle: CsvQuotingStyle,
                                       charsetName: String = ByteString.UTF_8)
     extends GraphStage[FlowShape[immutable.Iterable[Any], ByteString]] {
 

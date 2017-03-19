@@ -3,7 +3,7 @@
  */
 package akka.stream.alpakka.csv
 
-import akka.stream.alpakka.csv.scaladsl.CsvQuoting
+import akka.stream.alpakka.csv.scaladsl.CsvQuotingStyle
 import akka.util.ByteString
 
 import scala.collection.immutable
@@ -15,7 +15,7 @@ private[csv] class CsvFormatter(delimiter: Char,
                                 quoteChar: Char,
                                 escapeChar: Char,
                                 endOfLine: String,
-                                quotingStyle: CsvQuoting,
+                                quotingStyle: CsvQuotingStyle,
                                 charsetName: String = ByteString.UTF_8) {
 
   private[this] val delimiterBs = ByteString(String.valueOf(delimiter), charsetName)
@@ -64,7 +64,7 @@ private[csv] class CsvFormatter(delimiter: Char,
 
     def append(field: String) = {
       val (quoteIt, splitAt) = requiresQuotesOrSplit(field)
-      if (quoteIt || quotingStyle == CsvQuotingStyle.ALWAYS) {
+      if (quoteIt || quotingStyle == CsvQuotingStyle.Always) {
         builder ++= quoteBs
         if (splitAt != -1) {
           splitAndDuplicateQuotesAndEscapes(field, splitAt)
@@ -94,7 +94,7 @@ private[csv] class CsvFormatter(delimiter: Char,
   }
 
   private def requiresQuotesOrSplit(field: String): (Boolean, Int) = {
-    var quotes = CsvQuoting.Always == quotingStyle
+    var quotes = CsvQuotingStyle.Always == quotingStyle
     var split = -1
     var index = 0
     while (index < field.length && !(quotes && split != -1)) {

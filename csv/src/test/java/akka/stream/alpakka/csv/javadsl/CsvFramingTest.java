@@ -16,6 +16,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+// #line-scanner
+            import akka.stream.alpakka.csv.javadsl.CsvFraming;
+
+// #line-scanner
 import java.util.Collection;
 import java.util.concurrent.CompletionStage;
 
