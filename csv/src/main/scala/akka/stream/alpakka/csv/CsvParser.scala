@@ -31,9 +31,9 @@ private[csv] object CsvParser {
 private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar: Byte) {
   import CsvParser._
 
-  private var buffer = ByteString.empty
-  private var pos = 0
-  private var fieldStart = 0
+  private[this] var buffer = ByteString.empty
+  private[this] var pos = 0
+  private[this] var fieldStart = 0
 
   def offer(input: ByteString): Unit =
     buffer ++= input
@@ -61,10 +61,10 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
   /** FieldBuilder will just cut the required part out of the incoming ByteBuffer
    * as long as non escaping is used.
    */
-  protected class FieldBuilder(buf: ByteString) {
+  private final class FieldBuilder(buf: ByteString) {
 
-    private var useBuilder = false
-    private var builder: ByteStringBuilder = _
+    private[this] var useBuilder = false
+    private[this] var builder: ByteStringBuilder = _
 
     /** Set up the ByteString builder instead of relying on `ByteString.slice`.
      */

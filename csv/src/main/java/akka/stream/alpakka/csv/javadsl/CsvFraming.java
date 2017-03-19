@@ -16,6 +16,7 @@ public class CsvFraming {
     public static final byte COMMA = ',';
     public static final byte SEMI_COLON = ';';
     public static final byte COLON = ':';
+    public static final byte TAB = '\t';
     public static final byte DOUBLE_QUOTE = '"';
 
     public static Flow<ByteString, Collection<ByteString>, NotUsed> lineScanner() {

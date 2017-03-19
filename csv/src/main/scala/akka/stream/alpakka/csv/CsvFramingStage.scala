@@ -25,7 +25,7 @@ private[csv] class CsvFramingStage(delimiter: Byte, quoteChar: Byte, escapeChar:
 
   override def createLogic(inheritedAttributes: Attributes) =
     new GraphStageLogic(shape) with InHandler with OutHandler {
-      private val buffer = new CsvParser(delimiter, quoteChar, escapeChar)
+      private[this] val buffer = new CsvParser(delimiter, quoteChar, escapeChar)
 
       setHandlers(in, out, this)
 

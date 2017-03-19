@@ -4,6 +4,7 @@
 package akka.stream.alpakka.csv
 
 import akka.event.Logging
+import akka.stream.alpakka.csv.scaladsl.CsvQuoting
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.util.ByteString
@@ -17,11 +18,11 @@ private[csv] class CsvFormattingStage(delimiter: Char,
                                       quoteChar: Char,
                                       escapeChar: Char,
                                       endOfLine: String,
-                                      quotingStyle: CsvQuotingStyle,
+                                      quotingStyle: CsvQuoting,
                                       charsetName: String = ByteString.UTF_8)
-    extends GraphStage[FlowShape[immutable.Seq[Any], ByteString]] {
+    extends GraphStage[FlowShape[immutable.Iterable[Any], ByteString]] {
 
-  private val in = Inlet[immutable.Seq[Any]](Logging.simpleName(this) + ".in")
+  private val in = Inlet[immutable.Iterable[Any]](Logging.simpleName(this) + ".in")
   private val out = Outlet[ByteString](Logging.simpleName(this) + ".out")
   override val shape = FlowShape(in, out)
 

@@ -26,13 +26,13 @@ private[csv] class CsvToMapJavaStage(columnNames: ju.Optional[ju.Collection[Stri
   private val out = Outlet[ju.Map[String, ByteString]]("CsvToMap.out")
   override val shape = FlowShape.of(in, out)
 
-  private val decodeByteString = new java.util.function.Function[ByteString, String]() {
+  private final val decodeByteString = new java.util.function.Function[ByteString, String]() {
     override def apply(t: ByteString): String = t.decodeString(charset)
   }
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
-      private var headers = columnNames
+      private[this] var headers = columnNames
 
       setHandler(
         in,
@@ -40,11 +40,11 @@ private[csv] class CsvToMapJavaStage(columnNames: ju.Optional[ju.Collection[Stri
           override def onPush(): Unit = {
             val elem = grab(in)
             if (headers.isPresent) {
-              headers = ju.Optional.of(decode(elem))
-              pull(in)
-            } else {
               val map = zipWithHeaders(elem)
               push(out, map)
+            } else {
+              headers = ju.Optional.of(decode(elem))
+              pull(in)
             }
           }
         }

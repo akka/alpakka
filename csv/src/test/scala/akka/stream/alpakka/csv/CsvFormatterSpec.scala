@@ -94,7 +94,7 @@ class CsvFormatterSpec extends WordSpec with Matchers {
     }
   }
 
-  def expectInOut(formatter: CsvFormatter, in: String*)(expect: String): Unit =
+  private def expectInOut(formatter: CsvFormatter, in: String*)(expect: String): Unit =
     formatter.toCsv(in.toList).utf8String should be(expect)
 
 }

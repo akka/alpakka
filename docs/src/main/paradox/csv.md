@@ -106,6 +106,9 @@ The formatter takes care of quoting and escaping.
 Scala
 : @@snip (../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFormattingSpec.scala) { #flow-type }
 
+Java
+: @@snip (../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFormattingTest.java) { #flow-type }
+
 This example uses the default configuration:
 
 - Delimiter: comma (,)
@@ -118,3 +121,5 @@ This example uses the default configuration:
 Scala
 : @@snip (../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFormattingSpec.scala) { #formatting }
 
+Java
+: @@snip (../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFormattingTest.java) { #formatting }

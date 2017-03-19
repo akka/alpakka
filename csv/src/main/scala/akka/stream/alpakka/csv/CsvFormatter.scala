@@ -3,6 +3,7 @@
  */
 package akka.stream.alpakka.csv
 
+import akka.stream.alpakka.csv.scaladsl.CsvQuoting
 import akka.util.ByteString
 
 import scala.collection.immutable
@@ -14,7 +15,7 @@ private[csv] class CsvFormatter(delimiter: Char,
                                 quoteChar: Char,
                                 escapeChar: Char,
                                 endOfLine: String,
-                                quotingStyle: CsvQuotingStyle,
+                                quotingStyle: CsvQuoting,
                                 charsetName: String = ByteString.UTF_8) {
 
   private[this] val delimiterBs = ByteString(String.valueOf(delimiter), charsetName)
@@ -23,11 +24,11 @@ private[csv] class CsvFormatter(delimiter: Char,
   private[this] val duplicatedEscape = ByteString(String.valueOf(Array(escapeChar, escapeChar)), charsetName)
   private[this] val endOfLineBs = ByteString(endOfLine, charsetName)
 
-  def toCsv(fields: immutable.Seq[Any]): ByteString =
+  def toCsv(fields: immutable.Iterable[Any]): ByteString =
     if (fields.nonEmpty) nonEmptyToCsv(fields)
     else endOfLineBs
 
-  private def nonEmptyToCsv(fields: immutable.Seq[Any]) = {
+  private def nonEmptyToCsv(fields: immutable.Iterable[Any]) = {
     val builder = ByteString.createBuilder
 
     def splitAndDuplicateQuotesAndEscapes(field: String, splitAt: Int) = {
@@ -93,7 +94,7 @@ private[csv] class CsvFormatter(delimiter: Char,
   }
 
   private def requiresQuotesOrSplit(field: String): (Boolean, Int) = {
-    var quotes = false
+    var quotes = CsvQuoting.Always == quotingStyle
     var split = -1
     var index = 0
     while (index < field.length && !(quotes && split != -1)) {

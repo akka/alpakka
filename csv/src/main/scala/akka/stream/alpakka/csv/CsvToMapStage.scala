@@ -35,12 +35,12 @@ private[csv] class CsvToMapStage(columnNames: Option[immutable.Seq[String]], cha
 
       override def onPush(): Unit = {
         val elem = grab(in)
-        if (headers.isEmpty) {
-          headers = Some(elem.map(_.decodeString(charset)))
-          pull(in)
-        } else {
+        if (headers.isDefined) {
           val map = headers.get.zip(elem).toMap
           push(out, map)
+        } else {
+          headers = Some(elem.map(_.decodeString(charset)))
+          pull(in)
         }
       }
 
