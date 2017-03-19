@@ -3,29 +3,34 @@
  */
 package akka.stream.alpakka.amqp.javadsl;
 
-import akka.stream.alpakka.amqp.*;
-import akka.stream.testkit.TestSubscriber;
-import akka.stream.testkit.javadsl.TestSink;
+import static org.junit.Assert.assertEquals;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
-
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.*;
-import akka.stream.javadsl.*;
+import akka.stream.ActorMaterializer;
+import akka.stream.Materializer;
+import akka.stream.alpakka.amqp.*;
+import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+import akka.stream.testkit.TestSubscriber;
+import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.JavaTestKit;
 import akka.util.ByteString;
 import scala.Some;
 import scala.concurrent.duration.Duration;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.stream.*;
 
 /**
  * Needs a local running AMQP server on the default port with no password.
@@ -53,9 +58,13 @@ public class AmqpConnectorsTest {
     final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
     //#queue-declaration
 
+    @SuppressWarnings("unchecked")
+    AmqpConnectionDetails amqpConnectionDetails = AmqpConnectionDetails.create("invalid", 5673)
+          .withHostsAndPorts(Pair.create("localhost", 5672), Pair.create("localhost", 5674));
+
     //#create-sink
     final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
-      AmqpSinkSettings.create()
+      AmqpSinkSettings.create(amqpConnectionDetails)
         .withRoutingKey(queueName)
         .withDeclarations(queueDeclaration)
     );

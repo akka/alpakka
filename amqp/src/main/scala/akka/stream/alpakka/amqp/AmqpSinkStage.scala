@@ -46,6 +46,8 @@ final class AmqpSinkStage(settings: AmqpSinkSettings)
       private val routingKey = settings.routingKey.getOrElse("")
 
       override def connectionFactoryFrom(settings: AmqpConnectionSettings) = stage.connectionFactoryFrom(settings)
+      override def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings) =
+        stage.newConnection(factory, settings)
 
       override def whenConnected(): Unit = {
         val shutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
@@ -124,6 +126,8 @@ final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings)
       override val settings = stage.settings
 
       override def connectionFactoryFrom(settings: AmqpConnectionSettings) = stage.connectionFactoryFrom(settings)
+      override def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings): Connection =
+        stage.newConnection(factory, settings)
 
       override def whenConnected(): Unit = {
         val shutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
