@@ -7,9 +7,9 @@ import akka.stream.alpakka.backblazeb2.Protocol._
 import akka.stream.scaladsl.Flow
 import cats.syntax.either._
 
-// FIXME: consider thread safety
-
 /**
+  * Warning - the returned flows are not thread safe.
+  *
   * Uploading in Parallel https://www.backblaze.com/b2/docs/uploading.html
   *
   * The URL and authorization token that you get from b2_get_upload_url can be used by only one thread at a time. If you want multiple threads running, each one needs to get its own URL and auth token. It can keep using that URL and auth token for multiple uploads, until it gets a returned status indicating that it should get a new upload URL.
@@ -52,6 +52,9 @@ class B2Streams(accountCredentials: B2AccountCredentials)(implicit val system: A
       }
   }
 
+  /**
+    * Warning: The returned flow is not thread safe
+    */
   def deleteFileVersions(bucketId: BucketId): Flow[FileVersionInfo, FileVersionInfo, NotUsed] = {
     val client = createClient(bucketId)
     Flow[FileVersionInfo]
