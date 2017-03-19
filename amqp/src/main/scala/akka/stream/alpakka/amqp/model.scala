@@ -3,6 +3,9 @@
  */
 package akka.stream.alpakka.amqp
 
+import com.rabbitmq.client.ExceptionHandler
+import scala.collection.JavaConverters._
+
 /**
  * Internal API
  */
@@ -147,14 +150,69 @@ object AmqpConnectionUri {
 }
 
 final case class AmqpConnectionDetails(
-    host: String,
-    port: Int,
+    hostAndPortList: Seq[(String, Int)],
     credentials: Option[AmqpCredentials] = None,
     virtualHost: Option[String] = None,
-    sslProtocol: Option[String] = None
-) extends AmqpConnectionSettings {}
+    sslProtocol: Option[String] = None,
+    requestedHeartbeat: Option[Int] = None,
+    connectionTimeout: Option[Int] = None,
+    handshakeTimeout: Option[Int] = None,
+    shutdownTimeout: Option[Int] = None,
+    networkRecoveryInterval: Option[Int] = None,
+    automaticRecoveryEnabled: Option[Boolean] = None,
+    topologyRecoveryEnabled: Option[Boolean] = None,
+    exceptionHandler: Option[ExceptionHandler] = None
+) extends AmqpConnectionSettings {
+
+  def withHostsAndPorts(hostAndPort: (String, Int), hostAndPorts: (String, Int)*): AmqpConnectionDetails =
+    copy(hostAndPortList = (hostAndPort +: hostAndPorts).toList)
+
+  def withCredentials(amqpCredentials: AmqpCredentials): AmqpConnectionDetails =
+    copy(credentials = Option(amqpCredentials))
+
+  def withVirtualHost(virtualHost: String): AmqpConnectionDetails =
+    copy(virtualHost = Option(virtualHost))
+
+  def withSslProtocol(sslProtocol: String): AmqpConnectionDetails =
+    copy(sslProtocol = Option(sslProtocol))
+
+  def withRequestedHeartbeat(requestedHeartbeat: Int): AmqpConnectionDetails =
+    copy(requestedHeartbeat = Option(requestedHeartbeat))
+
+  def withConnectionTimeout(connectionTimeout: Int): AmqpConnectionDetails =
+    copy(connectionTimeout = Option(connectionTimeout))
+
+  def withHandshakeTimeout(handshakeTimeout: Int): AmqpConnectionDetails =
+    copy(handshakeTimeout = Option(handshakeTimeout))
+
+  def withShutdownTimeout(shutdownTimeout: Int): AmqpConnectionDetails =
+    copy(shutdownTimeout = Option(shutdownTimeout))
+
+  def withNetworkRecoveryInterval(networkRecoveryInterval: Int): AmqpConnectionDetails =
+    copy(networkRecoveryInterval = Option(networkRecoveryInterval))
+
+  def withAutomaticRecoveryEnabled(automaticRecoveryEnabled: Boolean): AmqpConnectionDetails =
+    copy(automaticRecoveryEnabled = Option(automaticRecoveryEnabled))
+
+  def withTopologyRecoveryEnabled(topologyRecoveryEnabled: Boolean): AmqpConnectionDetails =
+    copy(topologyRecoveryEnabled = Option(topologyRecoveryEnabled))
+
+  def withExceptionHandler(exceptionHandler: ExceptionHandler): AmqpConnectionDetails =
+    copy(exceptionHandler = Option(exceptionHandler))
+
+  /**
+   * Java API:
+   */
+  @annotation.varargs
+  def withHostsAndPorts(hostAndPort: akka.japi.Pair[String, Int],
+                        hostAndPorts: akka.japi.Pair[String, Int]*): AmqpConnectionDetails =
+    copy(hostAndPortList = (hostAndPort +: hostAndPorts).map(_.toScala).toList)
+}
 
 object AmqpConnectionDetails {
+
+  def apply(host: String, port: Int): AmqpConnectionDetails =
+    AmqpConnectionDetails(List((host, port)))
 
   /**
    * Java API:
