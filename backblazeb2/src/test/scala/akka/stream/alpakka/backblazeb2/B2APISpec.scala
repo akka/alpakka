@@ -67,9 +67,9 @@ class B2APISpec extends AsyncFlatSpec with B2IntegrationTest {
 
     val downloadByIdResultF = api.downloadFileById(uploadResult.fileId, apiUrl, accountAuthorization.some)
     val downloadByIdResult = extractFromResponse(downloadByIdResultF)
-    checkData(downloadByIdResult, text)
+    checkData(downloadByIdResult.data, text)
 
-    val deleteResultF = api.deleteFileVersion(apiUrl, FileVersionInfo(fileName, fileId), accountAuthorization)
+    val deleteResultF = api.deleteFileVersion(FileVersionInfo(fileName, fileId), apiUrl, accountAuthorization)
     val deleteResult = extractFromResponse(deleteResultF)
     deleteResult shouldEqual FileVersionInfo(uploadResult.fileName, uploadResult.fileId)
   }

@@ -92,11 +92,24 @@ class B2Client(accountCredentials: B2AccountCredentials, bucketId: BucketId, hos
     val result = for {
       authorizeAccountResponse <- EitherT(obtainAuthorizeAccountResponse())
       download <- EitherT(api.downloadFileById(fileId, authorizeAccountResponse.apiUrl, authorizeAccountResponse.authorizationToken.some))
-    } yield DownloadFileByIdResponse(fileId, download)
+    } yield download
 
     tryAgainIfExpired(result.value) {
       authorizeAccountPromise = Promise()
       download(fileId)
+    }
+  }
+
+  def deleteFileVersion(fileVersionInfo: FileVersionInfo): B2Response[FileVersionInfo] = {
+    import cats.implicits._
+    val result = for {
+      authorizeAccountResponse <- EitherT(obtainAuthorizeAccountResponse())
+      delete <- EitherT(api.deleteFileVersion(fileVersionInfo, authorizeAccountResponse.apiUrl, authorizeAccountResponse.authorizationToken))
+    } yield delete
+
+    tryAgainIfExpired(result.value) {
+      authorizeAccountPromise = Promise()
+      deleteFileVersion(fileVersionInfo)
     }
   }
 }

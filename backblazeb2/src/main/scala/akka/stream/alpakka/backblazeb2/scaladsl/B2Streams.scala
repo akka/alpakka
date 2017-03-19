@@ -24,11 +24,13 @@ class B2Streams(accountCredentials: B2AccountCredentials)(implicit val system: A
   implicit val executionContext = materializer.executionContext
   private val parallelism = 1
 
+  private def createClient(bucketId: BucketId) = new B2Client(accountCredentials, bucketId)
+
   /**
     * Warning: The returned flow is not thread safe
     */
   def uploadFiles(bucketId: BucketId): Flow[UploadFileRequest, UploadFileResponse, NotUsed] = {
-    val client = new B2Client(accountCredentials, bucketId)
+    val client = createClient(bucketId)
     Flow[UploadFileRequest]
       .mapAsyncUnordered(parallelism) { x =>
         client
@@ -41,12 +43,21 @@ class B2Streams(accountCredentials: B2AccountCredentials)(implicit val system: A
     * Warning: The returned flow is not thread safe
     */
   def downloadFilesById(bucketId: BucketId): Flow[FileId, DownloadFileByIdResponse, NotUsed] = {
-    val client = new B2Client(accountCredentials, bucketId)
+    val client = createClient(bucketId)
     Flow[FileId]
       .mapAsyncUnordered(parallelism) { x =>
         client
           .download(x)
           .map(_ getOrElse sys.error(s"Failed to download $x"))
+      }
+  }
+
+  def deleteFileVersions(bucketId: BucketId): Flow[FileVersionInfo, FileVersionInfo, NotUsed] = {
+    val client = createClient(bucketId)
+    Flow[FileVersionInfo]
+      .mapAsyncUnordered(parallelism) { x =>
+        client.deleteFileVersion(x)
+          .map(_ getOrElse sys.error(s"Failed to delete $x"))
       }
   }
 }

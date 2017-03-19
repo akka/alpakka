@@ -2,12 +2,18 @@
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.backblazeb2
+
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
+import akka.stream.Materializer
 import akka.stream.alpakka.backblazeb2.Protocol.{ListFileVersionsResponse, _}
+import akka.util.ByteString
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.auto._
 import de.heikoseeberger.akkahttpcirce.CirceSupport._
+import scala.concurrent.{ExecutionContext, Future}
 
-object JsonSupport {
+object SerializationSupport {
   implicit val accountAuthorizationTokenEncoder: Encoder[AccountAuthorizationToken] =
     Encoder.encodeString.contramap(_.value)
 
@@ -83,4 +89,28 @@ object JsonSupport {
   implicit val b2ErrorResponseDecoder = Decoder[B2ErrorResponse]
   implicit val b2ErrorResponseEncoder = Encoder[B2ErrorResponse]
   implicit val b2ErrorResponseUnmarshaller = circeUnmarshaller[B2ErrorResponse]
+
+  implicit val downloadFileByIdResponseUnmarshaller = new Unmarshaller[HttpResponse, DownloadFileByIdResponse] {
+    private def rawHeader(response: HttpResponse, headerName: String): String = {
+      val found = response.headers.find { header =>
+        header.name.toLowerCase == headerName.toLowerCase
+      } getOrElse {
+        sys.error(s"Failed to find header $headerName in $response")
+      }
+
+      found.value
+    }
+
+    override def apply(value: HttpResponse)(implicit ec: ExecutionContext, materializer: Materializer): Future[DownloadFileByIdResponse] = {
+      Unmarshal(value.entity).to[ByteString] map { data =>
+        DownloadFileByIdResponse(
+          fileId = FileId(rawHeader(value, "X-Bz-File-Id")),
+          fileName = FileName(rawHeader(value, "X-Bz-File-Name")),
+          contentSha1 = Sha1(rawHeader(value,  "X-Bz-Content-Sha1")),
+          contentLength = value.entity.contentLengthOption,
+          data: ByteString
+        )
+      }
+    }
+  }
 }

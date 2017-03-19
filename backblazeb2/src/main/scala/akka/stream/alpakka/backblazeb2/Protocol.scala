@@ -111,6 +111,11 @@ object Protocol {
 
   case class DownloadFileByIdResponse(
     fileId: FileId,
+    fileName: FileName,
+    contentSha1: Sha1,
+    contentLength: Option[Long],
     data: ByteString
-  )
+  ) {
+    def fileVersion: FileVersionInfo = FileVersionInfo(fileName, fileId)
+  }
 }

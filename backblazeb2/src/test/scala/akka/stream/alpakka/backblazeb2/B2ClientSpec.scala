@@ -7,7 +7,7 @@ import akka.stream.alpakka.backblazeb2.scaladsl.B2Client
 import akka.util.ByteString
 import com.github.tomakehurst.wiremock.client.WireMock._
 import org.scalatest.Matchers._
-import JsonSupport._
+import SerializationSupport._
 import akka.http.scaladsl.model.StatusCodes
 import com.github.tomakehurst.wiremock.stubbing.Scenario
 import io.circe.syntax._
@@ -221,6 +221,9 @@ class B2ClientSpec extends WireMockBase with BeforeAndAfterEach {
           aResponse()
             .withStatus(StatusCodes.OK.intValue)
             .withHeader("Content-Type", "application/json; charset=UTF-8")
+            .withHeader("X-Bz-File-Id".toLowerCase, fileId.value)
+            .withHeader("X-Bz-File-Name".toLowerCase, fileName.value)
+            .withHeader("X-Bz-Content-Sha1".toLowerCase, "sha1")
             .withBody(data.toArray)
         )
     )

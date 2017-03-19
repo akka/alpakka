@@ -2,7 +2,6 @@ package akka.stream.alpakka.backblazeb2
 
 import java.nio.charset.StandardCharsets
 import java.util.UUID
-
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.backblazeb2.Protocol.{FileName, UploadFileRequest}
@@ -25,8 +24,7 @@ class B2StreamSpec extends AsyncFlatSpec with B2IntegrationTest {
 
   val streams = new B2Streams(credentials)
 
-  // TODO: add "delete" in the end to clean up afterwards
-  it should "upload then download" in {
+  it should "upload then download then delete" in {
     val upload = streams.uploadFiles(bucketId)
     val uploadedFiles = Source(datas)
       .map { case (fileName, data) =>
@@ -42,16 +40,32 @@ class B2StreamSpec extends AsyncFlatSpec with B2IntegrationTest {
     uploadedFiles flatMap { uploadedFiles =>
       val lookup = uploadedFiles.toMap
       lookup.size shouldEqual datas.size
+      val fileIds = Source(lookup.keySet)
 
-      val downloaded = Source(lookup.keySet)
+      val downloaded = fileIds
         .via(download)
-        .map { x =>
-          lookup(x.fileId).value -> x.data.decodeString(StandardCharsets.UTF_8)
-        }
         .runWith(Sink.seq)
 
       downloaded flatMap { downloaded =>
-        downloaded.toSet shouldEqual datas.toSet
+        val downloadedData = downloaded.map { x =>
+          lookup(x.fileId).value -> x.data.decodeString(StandardCharsets.UTF_8)
+        }
+
+        downloadedData.toSet shouldEqual datas.toSet
+
+        val delete = streams.deleteFileVersions(bucketId)
+        val fileVersions = downloaded
+          .map { x =>
+            x.fileVersion
+          }
+
+        val deleted = Source(fileVersions)
+          .via(delete)
+          .runWith(Sink.seq)
+
+        deleted map { deleted =>
+          deleted.toSet shouldEqual fileVersions.toSet
+        }
       }
     }
   }

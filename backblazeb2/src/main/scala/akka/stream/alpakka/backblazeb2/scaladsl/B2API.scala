@@ -9,14 +9,15 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
+import akka.http.scaladsl.unmarshalling.{FromResponseUnmarshaller, Unmarshal}
 import akka.stream.Materializer
 import akka.stream.alpakka.backblazeb2.B2Encoder
 import akka.stream.alpakka.backblazeb2.Protocol._
-import akka.stream.alpakka.backblazeb2.JsonSupport._
+import akka.stream.alpakka.backblazeb2.SerializationSupport._
 import akka.util.ByteString
 import cats.data.EitherT
 import cats.syntax.either._
+
 import scala.concurrent.Future
 
 object B2API {
@@ -89,7 +90,7 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
     requestAndParse[UploadFileResponse](request)
   }
 
-  private def requestAndParse[T : FromEntityUnmarshaller](request: HttpRequest): B2Response[T] = {
+  private def requestAndParse[T : FromResponseUnmarshaller](request: HttpRequest): B2Response[T] = {
     Http().singleRequest(request) flatMap { response =>
       parseResponse[T](response)
         .recover { case t: Throwable => // this adds useful debug info to the error
@@ -131,7 +132,7 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
     fileId: FileId,
     apiUrl: ApiUrl,
     accountAuthorization: Option[AccountAuthorizationToken]
-  ): B2Response[ByteString] = {
+  ): B2Response[DownloadFileByIdResponse] = {
     val uri = Uri(s"$apiUrl/b2api/v1/b2_download_file_by_id")
       .withQuery(Query("fileId" -> fileId.value))
 
@@ -140,7 +141,7 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
       method = HttpMethods.GET
     ).withHeaders(authorizationHeaders(accountAuthorization) :_*)
 
-    requestAndParse[ByteString](request)
+    requestAndParse[DownloadFileByIdResponse](request)
   }
 
   /**
@@ -173,8 +174,8 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
     * https://www.backblaze.com/b2/docs/b2_delete_file_version.html
     */
   def deleteFileVersion(
-    apiUrl: ApiUrl,
     fileVersion: FileVersionInfo,
+    apiUrl: ApiUrl,
     accountAuthorization: AccountAuthorizationToken
   ): B2Response[FileVersionInfo] = {
     val uri = Uri(s"$apiUrl/b2api/v1/b2_delete_file_version")
@@ -191,20 +192,20 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
     requestAndParse[FileVersionInfo](request)
   }
 
-  private def parseResponse[T : FromEntityUnmarshaller](response: HttpResponse): B2Response[T] = {
+  private def parseResponse[T : FromResponseUnmarshaller](response: HttpResponse): B2Response[T] = {
     import cats.implicits._
     val result = for {
-      entity <- EitherT(entityForSuccess(response))
-      unmarshalled <- EitherT(Unmarshal(entity).to[T].map(x => x.asRight[B2Error]))
+      reponse <- EitherT(ensureSuccessfulResponse(response))
+      unmarshalled <- EitherT(Unmarshal(reponse).to[T].map(x => x.asRight[B2Error]))
     } yield unmarshalled
 
     result.value
   }
 
-  private def entityForSuccess(response: HttpResponse): B2Response[ResponseEntity] = {
+  private def ensureSuccessfulResponse(response: HttpResponse): B2Response[HttpResponse] = {
     response match {
-      case HttpResponse(status, _, entity, _) if status.isSuccess() =>
-        Future.successful(entity.asRight)
+      case x @ HttpResponse(status, _, _, _) if status.isSuccess() =>
+        Future.successful(x.asRight)
 
       case HttpResponse(status, _, entity, _) =>
         Unmarshal(entity).to[B2ErrorResponse].flatMap { result =>
