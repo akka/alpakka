@@ -4,7 +4,7 @@
 package akka.stream.alpakka.ftp
 package impl
 
-import org.apache.commons.net.ftp.{FTP, FTPClient}
+import org.apache.commons.net.ftp.{FTP, FTPClient, FTPFile}
 import scala.collection.immutable
 import scala.util.Try
 import java.io.{IOException, InputStream}
@@ -39,8 +39,9 @@ private[ftp] trait FtpOperations { _: FtpLike[FTPClient, FtpFileSettings] =>
     val path = if (!basePath.isEmpty && basePath.head != '/') s"/$basePath" else basePath
     handler
       .listFiles(path)
-      .map { file =>
-        FtpFile(file.getName, Paths.get(s"$path/${file.getName}").normalize.toString, file.isDirectory)
+      .collect {
+        case file: FTPFile if file.getName != "." && file.getName != ".." =>
+          FtpFile(file.getName, Paths.get(s"$path/${file.getName}").normalize.toString, file.isDirectory)
       }
       .toVector
   }
