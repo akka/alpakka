@@ -18,7 +18,7 @@ object CsvToMap {
    * @param charset the charset to decode [[ByteString]] to [[String]], defaults to UTF-8
    */
   def toMap(charset: Charset = StandardCharsets.UTF_8): Flow[List[ByteString], Map[String, ByteString], NotUsed] =
-    Flow[List[ByteString]].via(new CsvToMapStage(columnNames = None, charset)).named("csvToMap")
+    Flow.fromGraph(new CsvToMapStage(columnNames = None, charset))
 
   /**
    * A flow translating incoming [[List[ByteString]]] to a [[Map[String, ByteString]]] using the given headers
@@ -26,5 +26,5 @@ object CsvToMap {
    * @param headers column names to be used as map keys
    */
   def withHeaders(headers: String*): Flow[List[ByteString], Map[String, ByteString], NotUsed] =
-    Flow[List[ByteString]].via(new CsvToMapStage(Some(headers.toList), StandardCharsets.UTF_8)).named("csvToMap")
+    Flow.fromGraph(new CsvToMapStage(Some(headers.toList), StandardCharsets.UTF_8))
 }

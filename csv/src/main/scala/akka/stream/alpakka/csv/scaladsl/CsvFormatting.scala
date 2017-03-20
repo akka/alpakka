@@ -40,6 +40,5 @@ object CsvFormatting {
                                               endOfLine: String = "\r\n",
                                               quotingStyle: CsvQuotingStyle = CsvQuotingStyle.Required,
                                               charsetName: String = ByteString.UTF_8): Flow[T, ByteString, NotUsed] =
-    Flow[immutable.Iterable[String]]
-      .via(new CsvFormattingStage(delimiter, quoteChar, escapeChar, endOfLine, quotingStyle, charsetName))
+    Flow.fromGraph(new CsvFormattingStage(delimiter, quoteChar, escapeChar, endOfLine, quotingStyle, charsetName))
 }

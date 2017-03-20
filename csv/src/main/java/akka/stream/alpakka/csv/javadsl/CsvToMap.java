@@ -32,8 +32,7 @@ class CsvToMap {
      * @param charset the charset to decode {@link ByteString} to {@link String}
      */
     public static Flow<Collection<ByteString>, Map<String, ByteString>, ?> toMap(Charset charset) {
-        CsvToMapJavaStage stage = new CsvToMapJavaStage(Optional.empty(), charset);
-        return Flow.fromGraph(stage);
+        return Flow.fromGraph(new CsvToMapJavaStage(Optional.empty(), charset));
     }
 
     /**
@@ -41,9 +40,7 @@ class CsvToMap {
      * as keys.
      * @param headers column names to be used as map keys
      */
-    @SafeVarargs
     public static Flow<Collection<ByteString>, Map<String, ByteString>, ?> withHeaders(String... headers) {
-        CsvToMapJavaStage stage = new CsvToMapJavaStage(Optional.ofNullable(Arrays.asList(headers)), StandardCharsets.UTF_8);
-        return Flow.fromGraph(stage);
+        return Flow.fromGraph(new CsvToMapJavaStage(Optional.of(Arrays.asList(headers)), StandardCharsets.UTF_8));
     }
 }
