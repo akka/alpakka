@@ -9,10 +9,7 @@ import akka.http.scaladsl.model.{HttpEntity, MediaTypes}
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
 import com.typesafe.config.ConfigFactory
-import org.scalatest.Inspectors.{forAll => iforAll}
 import org.scalatest.{FlatSpec, Matchers}
-
-import scala.collection.immutable.Seq
 
 class HttpRequestsSpec extends FlatSpec with Matchers {
 
