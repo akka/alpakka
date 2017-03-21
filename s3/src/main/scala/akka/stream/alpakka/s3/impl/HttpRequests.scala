@@ -88,14 +88,28 @@ private[alpakka] object HttpRequests {
       conf.proxy match {
         case None =>
           region match {
-            case "us-east-1" => Uri.Host(s"${s3Location.bucket}.s3.amazonaws.com")
-            case _ => Uri.Host(s"${s3Location.bucket}.s3-$region.amazonaws.com")
+            case "us-east-1" =>
+              if (conf.pathStyleAccess) {
+                Uri.Host("s3.amazonaws.com")
+              } else {
+                Uri.Host(s"${s3Location.bucket}.s3.amazonaws.com")
+              }
+            case _ =>
+              if (conf.pathStyleAccess) {
+                Uri.Host(s"s3-$region.amazonaws.com")
+              } else {
+                Uri.Host(s"${s3Location.bucket}.s3-$region.amazonaws.com")
+              }
           }
         case Some(proxy) => Uri.Host(proxy.host)
       }
 
     def requestUri(s3Location: S3Location, region: String)(implicit conf: S3Settings): Uri = {
-      val uri = Uri(s"/${s3Location.key}").withHost(requestHost(s3Location, region)).withScheme("https")
+      val uri = if (conf.pathStyleAccess) {
+        Uri(s"/${s3Location.bucket}/${s3Location.key}").withHost(requestHost(s3Location, region)).withScheme("https")
+      } else {
+        Uri(s"/${s3Location.key}").withHost(requestHost(s3Location, region)).withScheme("https")
+      }
       conf.proxy match {
         case None => uri
         case Some(proxy) => uri.withPort(proxy.port)

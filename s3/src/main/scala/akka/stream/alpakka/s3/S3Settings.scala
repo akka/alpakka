@@ -14,10 +14,11 @@ final class S3Settings(val bufferType: BufferType,
                        val debugLogging: Boolean,
                        val proxy: Option[Proxy],
                        val awsCredentials: AWSCredentials,
-                       val s3Region: String) {
+                       val s3Region: String,
+                       val pathStyleAccess: Boolean) {
 
   override def toString: String =
-    s"S3Settings($bufferType,$diskBufferPath,$debugLogging,$proxy,$awsCredentials,$s3Region)"
+    s"S3Settings($bufferType,$diskBufferPath,$debugLogging,$proxy,$awsCredentials,$s3Region,$pathStyleAccess)"
 }
 
 sealed trait BufferType
@@ -51,6 +52,7 @@ object S3Settings {
       else None
     },
     awsCredentials = AWSCredentials(config.getString("aws.access-key-id"), config.getString("aws.secret-access-key")),
-    s3Region = config.getString("aws.default-region")
+    s3Region = config.getString("aws.default-region"),
+    pathStyleAccess = config.getBoolean("path-style-access")
   )
 }
