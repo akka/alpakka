@@ -85,8 +85,8 @@ object DynamoImplicits extends DynamoProtocol {
   implicit class PutItem(val request: PutItemRequest) extends AwsOp {
     override type A = PutItemRequest
     override type B = PutItemResult
-    override val handler: HttpResponseHandler[AmazonWebServiceResponse[PutItemResult]] = putItemU
-    override val marshaller: Marshaller[Request[PutItemRequest], PutItemRequest] = putItemM
+    override val handler = putItemU
+    override val marshaller = putItemM
   }
 
   implicit class BatchWriteItem(val request: BatchWriteItemRequest) extends AwsOp {
