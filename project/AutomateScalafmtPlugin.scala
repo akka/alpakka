@@ -1,3 +1,4 @@
+
 import org.scalafmt.bootstrap.ScalafmtBootstrap
 import org.scalafmt.sbt.ScalafmtPlugin
 import sbt._
@@ -47,7 +48,7 @@ object AutomateScalafmtPlugin extends AutoPlugin {
               def formattingHandler(files: Set[File]) =
                 if (files.nonEmpty) {
                   val filesArg = files.map(_.getAbsolutePath).mkString(",")
-                  scalafmt.foreach(_.cli.main(Array("--non-interactive", "-i", "-f", filesArg)))
+                  ScalafmtBootstrap.main(List("--non-interactive", "-i", "-f", filesArg))
                 }
 
               format(formattingHandler, "Formatting")
@@ -56,12 +57,6 @@ object AutomateScalafmtPlugin extends AutoPlugin {
           )
         )
       }
-  }
-
-  val scalafmt: Option[ScalafmtBootstrap] = {
-    val either = ScalafmtBootstrap.fromVersion("0.6.3")
-    either.left.foreach(_.printStackTrace())
-    either.right.toOption
   }
 
   private val scalafmtInc = taskKey[Unit]("Incrementally format modified sources")
