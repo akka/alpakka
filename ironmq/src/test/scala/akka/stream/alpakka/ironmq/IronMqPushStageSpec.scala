@@ -8,7 +8,7 @@ import akka.stream.scaladsl._
 
 import scala.concurrent.ExecutionContext
 
-class IronMqPushMessageStageSpec extends UnitSpec with IronMqFixture with AkkaStreamFixture {
+class IronMqPushStageSpec extends UnitSpec with IronMqFixture with AkkaStreamFixture {
 
   implicit val ec: ExecutionContext = ExecutionContexts.global()
 
@@ -16,7 +16,7 @@ class IronMqPushMessageStageSpec extends UnitSpec with IronMqFixture with AkkaSt
     "push messages to the queue" in {
 
       val queue = givenQueue()
-      val flow = Flow.fromGraph(new IronMqPushMessageStage(queue.name, () => IronMqClient(IronMqSettings())))
+      val flow = Flow.fromGraph(new IronMqPushStage(queue.name, IronMqSettings()))
 
       val expectedMessagesBodies = List("test-1", "test-2")
 

@@ -36,7 +36,7 @@ Gradle
 IronMq can be used either in cloud or on-premise. Either way you need a authentication token and a project ID. These can
 be set in the typesafe config:
 
-: @@snip (../../../../ironmq/src/resources/reference.conf)
+: @@snip (../../../../ironmq/src/main/resources/reference.conf)
 
 ### Producer
 
@@ -61,12 +61,13 @@ if the producer will implement a batch mechanism in the future.
 
 At this time only a at-most-once guarantee consumer is supported (the messages are deleted straight away on consumption). 
 
-The consumer is pull one. It will pull every `n` milliseconds, waiting for `m` milliseconds to consume new messages and
-will push them to the downstream. These parameters are not configurable at the moment.
+The consumer is poll based one. It will poll every `n` milliseconds, waiting for `m` milliseconds to consume new messages and
+will push them to the downstream. All These parameters are configurable by the typesafe config.
 
 The consumer could be instantiated using the @scaladoc[IronMqConsumer](akka.stream.alpakka.ironmq.scaladsl.IronMqConsumer). 
-It provides methods to obtain either a `Source[Message, NotUsed]`. You will need a different consumer for each queue, but
-a client can be shared across for all the producers and consumers on the same project ID.
+It provides methods to obtain either a `Source[Message, NotUsed]` or `Source[CommittableMessage, NotUsed]`. The latter 
+will will allow you to implement a at-least-one delivery semantic. You will need a different consumer for each queue.
 
-It is possible to pass an already existing @scaladoc[IronMqClient](akka.stream.alpakka.ironmq.IronMqClient) or a provider. 
-In the latter case, the Stage will close the client on completion.
+IronMq is a simple point-to-point queue, but it is possible to implement a fan-out semantic by configure the queue as push
+queue and set other queue as subscribers. More information about that could be found on 
+[IronMq documentation](https://www.iron.io/ironmq-fan-out-support/)

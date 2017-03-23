@@ -8,11 +8,20 @@ import akka.stream.stage._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class IronMqPushMessageStage(queue: Queue.Name, clientProvider: () => IronMqClient)
+/**
+ * It is a very trivial IronMQ push stage. It push the message to IronMq as soon as they are pushed to this Stage.
+ *
+ * Because of that it does not guarantee the order of the produced messages and does not apply any backpressure. A more
+ * sophisticated implementation will buffer the messages before pushing them and allow only a certain amount of parallel
+ * requests.
+ */
+class IronMqPushStage(queue: Queue.Name, settings: IronMqSettings)
     extends GraphStage[FlowShape[PushMessage, Future[Message.Ids]]] {
 
-  val in: Inlet[PushMessage] = Inlet("in")
-  val out: Outlet[Future[Message.Ids]] = Outlet("out")
+  val in: Inlet[PushMessage] = Inlet("IronMqPush.in")
+  val out: Outlet[Future[Message.Ids]] = Outlet("IronMqPush.out")
+
+  override protected def initialAttributes: Attributes = Attributes.name("IronMqPush")
 
   override val shape: FlowShape[PushMessage, Future[Message.Ids]] = FlowShape(in, out)
 
@@ -21,12 +30,16 @@ class IronMqPushMessageStage(queue: Queue.Name, clientProvider: () => IronMqClie
 
       implicit def ec: ExecutionContext = materializer.executionContext
 
-      override protected val logSource: Class[_] = classOf[IronMqPushMessageStage]
+      override protected val logSource: Class[_] = classOf[IronMqPushStage]
 
       private var runningFutures: Int = 0
       private var exceptionFromUpstream: Option[Throwable] = None
+      private var client: IronMqClient = _ // set in preStart
 
-      private val client = clientProvider()
+      override def preStart(): Unit = {
+        super.preStart()
+        client = IronMqClient(settings)(ActorMaterializerHelper.downcast(materializer).system, materializer)
+      }
 
       setHandler(in,
         new InHandler {
@@ -36,6 +49,7 @@ class IronMqPushMessageStage(queue: Queue.Name, clientProvider: () => IronMqClie
 
           val future = client.pushMessages(queue, pushMessage)
           runningFutures = runningFutures + 1
+          setKeepGoing(true)
 
           push(out, future)
 
