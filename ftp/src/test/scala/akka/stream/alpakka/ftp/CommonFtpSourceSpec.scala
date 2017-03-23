@@ -7,7 +7,9 @@ import akka.stream.IOResult
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.testkit.scaladsl.TestSink
 import org.scalatest.time.{Millis, Seconds, Span}
+import scala.concurrent.duration._
 import scala.util.Random
+import java.nio.file.attribute.PosixFilePermission
 
 final class FtpSourceSpec extends BaseFtpSpec with CommonFtpSourceSpec
 final class SftpSourceSpec extends BaseSftpSpec with CommonFtpSourceSpec
@@ -32,6 +34,7 @@ trait CommonFtpSourceSpec extends BaseSpec {
       probe.request(40).expectNextN(30)
       probe.expectComplete()
     }
+
     "list all files from non-root" in {
       val basePath = "/foo"
       generateFiles(30, 10, basePath)
@@ -49,6 +52,26 @@ trait CommonFtpSourceSpec extends BaseSpec {
         listFiles(basePath).toMat(TestSink.probe)(Keep.right).run()
       probe.request(2).expectNextN(1)
       probe.expectComplete()
+    }
+
+    "retrieve relevant file attributes" in {
+      val fileName = "sample"
+      val basePath = "/"
+
+      putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName)
+
+      val files = listFiles(basePath).runWith(Sink.seq).futureValue
+
+      files should have size 1
+      inside(files.head) {
+        case FtpFile(actualFileName, actualPath, isDirectory, size, lastModified, perms) ⇒
+          actualFileName shouldBe fileName
+          actualPath shouldBe s"$basePath$fileName"
+          isDirectory shouldBe false
+          size shouldBe getLoremIpsum.length
+          System.currentTimeMillis().millis - lastModified.millis should be < 1.minute
+          perms should contain allOf (PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)
+      }
     }
   }
 
@@ -90,9 +113,7 @@ trait CommonFtpSourceSpec extends BaseSpec {
       probe.expectComplete()
 
       val expectedNumOfBytes = getLoremIpsum.getBytes().length * numOfFiles
-      val total = result.foldLeft(0L) {
-        case (acc, next) => acc + next.count
-      }
+      val total = result.map(_.count).sum
       total shouldBe expectedNumOfBytes
     }
   }
