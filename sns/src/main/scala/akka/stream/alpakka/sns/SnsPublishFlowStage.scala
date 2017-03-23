@@ -9,7 +9,7 @@ import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sns.AmazonSNSAsync
 import com.amazonaws.services.sns.model.{PublishRequest, PublishResult}
 
-final class SnsPublishFlowStage(topicArn: String, snsClient: AmazonSNSAsync)
+private[akka] final class SnsPublishFlowStage(topicArn: String, snsClient: AmazonSNSAsync)
     extends GraphStage[FlowShape[String, PublishResult]] {
 
   private val in = Inlet[String]("SnsPublishFlow.in")
