@@ -44,8 +44,8 @@ class RecordIOFramingSpec(_system: ActorSystem)
     // When
     //#run-via-scanner
     val result = basicSource via
-      RecordIOFraming.scanner() runWith
-      Sink.seq
+    RecordIOFraming.scanner() runWith
+    Sink.seq
     //#run-via-scanner
 
     // Then
@@ -60,8 +60,8 @@ class RecordIOFramingSpec(_system: ActorSystem)
 
     // When
     val result = Source.single(ByteString(recordIOInput)) via
-      RecordIOFraming.scanner() runWith
-      stringSeqSink
+    RecordIOFraming.scanner() runWith
+    stringSeqSink
 
     // Then
     result.futureValue shouldBe Seq(FirstRecordData, SecondRecordData)
@@ -79,8 +79,8 @@ class RecordIOFramingSpec(_system: ActorSystem)
 
     // When
     val result = Source(chunkedInput) via
-      RecordIOFraming.scanner() runWith
-      stringSeqSink
+    RecordIOFraming.scanner() runWith
+    stringSeqSink
 
     // Then
     result.futureValue shouldBe Seq(FirstRecordData, SecondRecordData)
@@ -89,9 +89,9 @@ class RecordIOFramingSpec(_system: ActorSystem)
   it should "handle an empty stream" in {
     // When
     val result =
-      Source.empty via
-      RecordIOFraming.scanner() runWith
-      stringSeqSink
+    Source.empty via
+    RecordIOFraming.scanner() runWith
+    stringSeqSink
 
     // Then
     result.futureValue shouldBe Seq.empty
@@ -103,8 +103,8 @@ class RecordIOFramingSpec(_system: ActorSystem)
 
     // When
     val result = Source(input) via
-      RecordIOFraming.scanner() runWith
-      stringSeqSink
+    RecordIOFraming.scanner() runWith
+    stringSeqSink
 
     // Then
     result.futureValue shouldBe Seq.empty
@@ -116,8 +116,8 @@ class RecordIOFramingSpec(_system: ActorSystem)
 
     // When
     val result = Source.single(ByteString(recordIOInput)) via
-      RecordIOFraming.scanner(1024) runWith
-      stringSeqSink
+    RecordIOFraming.scanner(1024) runWith
+    stringSeqSink
 
     // Then
     result.failed.futureValue shouldBe a[NumberFormatException]
@@ -129,8 +129,8 @@ class RecordIOFramingSpec(_system: ActorSystem)
 
     // When
     val result = infinitePrefixSource via
-      RecordIOFraming.scanner(1024) runWith
-      stringSeqSink
+    RecordIOFraming.scanner(1024) runWith
+    stringSeqSink
 
     // Then
     result.failed.futureValue shouldBe a[FramingException]
@@ -142,8 +142,8 @@ class RecordIOFramingSpec(_system: ActorSystem)
 
     // When
     val result = Source.single(ByteString(recordIOInput)) via
-      RecordIOFraming.scanner() runWith
-      stringSeqSink
+    RecordIOFraming.scanner() runWith
+    stringSeqSink
 
     // Then
     result.failed.futureValue shouldBe a[FramingException]
@@ -155,8 +155,8 @@ class RecordIOFramingSpec(_system: ActorSystem)
 
     // When
     val result = Source.single(ByteString(recordIOInput)) via
-      RecordIOFraming.scanner(FirstRecordData.length - 1) runWith
-      stringSeqSink
+    RecordIOFraming.scanner(FirstRecordData.length - 1) runWith
+    stringSeqSink
 
     // Then
     result.failed.futureValue shouldBe a[FramingException]
@@ -168,8 +168,8 @@ class RecordIOFramingSpec(_system: ActorSystem)
 
     // When
     val result = Source.single(ByteString(recordIOInput)) via
-      RecordIOFraming.scanner() runWith
-      stringSeqSink
+    RecordIOFraming.scanner() runWith
+    stringSeqSink
 
     // Then
     result.failed.futureValue shouldBe a[FramingException]

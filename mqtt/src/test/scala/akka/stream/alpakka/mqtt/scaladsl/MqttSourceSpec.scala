@@ -125,9 +125,11 @@ class MqttSourceSpec
       val settings = MqttSourceSettings(sourceSettings, Map(topic1 -> MqttQoS.AtLeastOnce))
       val (subscriptionFuture, probe) = MqttSource(settings, bufferSize).toMat(TestSink.probe)(Keep.both).run()
       whenReady(subscriptionFuture) { _ =>
-        Source(1 to bufferSize + overflow).map { i =>
-          MqttMessage(topic1, ByteString(s"ohi_$i"))
-        }.runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
+        Source(1 to bufferSize + overflow)
+          .map { i =>
+            MqttMessage(topic1, ByteString(s"ohi_$i"))
+          }
+          .runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
 
         (1 to bufferSize + overflow) foreach { i =>
           probe.requestNext shouldBe MqttMessage(topic1, ByteString(s"ohi_$i"))
@@ -144,9 +146,11 @@ class MqttSourceSpec
       whenReady(subscriptionFuture) { _ =>
         probe.request((bufferSize + overflow).toLong)
 
-        Source(1 to bufferSize + overflow).map { i =>
-          MqttMessage(topic1, ByteString(s"ohi_$i"))
-        }.runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
+        Source(1 to bufferSize + overflow)
+          .map { i =>
+            MqttMessage(topic1, ByteString(s"ohi_$i"))
+          }
+          .runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
 
         (1 to bufferSize + overflow) foreach { i =>
           probe.expectNext() shouldBe MqttMessage(topic1, ByteString(s"ohi_$i"))
@@ -182,11 +186,12 @@ class MqttSourceSpec
 
       whenReady(binding) { _ =>
         val settings = MqttSourceSettings(
-            sourceSettings
-              .withClientId("source-spec/testator")
-              .withBroker("tcp://localhost:1337")
-              .withWill(Will(MqttMessage(willTopic, ByteString("ohi")), MqttQoS.AtLeastOnce, retained = true)),
-            Map(willTopic -> MqttQoS.AtLeastOnce))
+          sourceSettings
+            .withClientId("source-spec/testator")
+            .withBroker("tcp://localhost:1337")
+            .withWill(Will(MqttMessage(willTopic, ByteString("ohi")), MqttQoS.AtLeastOnce, retained = true)),
+          Map(willTopic -> MqttQoS.AtLeastOnce)
+        )
         val source = MqttSource(settings, 8)
 
         val sub = source.toMat(Sink.head)(Keep.left).run()

@@ -48,9 +48,9 @@ object S3Stream {
     new S3Stream(credentials, region, S3Settings(system))
 }
 
-private[alpakka] final class S3Stream(credentials: AWSCredentials, region: String, val settings: S3Settings)(
-    implicit system: ActorSystem,
-    mat: Materializer) {
+private[alpakka] final class S3Stream(credentials: AWSCredentials,
+                                      region: String,
+                                      val settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
 
   import Marshalling._
 
@@ -132,7 +132,8 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
       metaHeaders: MetaHeaders,
       cannedAcl: CannedAcl = CannedAcl.Private,
       chunkSize: Int = MinChunkSize,
-      parallelism: Int = 4): Flow[ByteString, (HttpRequest, (MultipartUpload, Int)), NotUsed] = {
+      parallelism: Int = 4
+  ): Flow[ByteString, (HttpRequest, (MultipartUpload, Int)), NotUsed] = {
 
     assert(chunkSize >= MinChunkSize,
       "Chunk size must be at least 5242880B. See http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadUploadPart.html")
@@ -170,7 +171,8 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
       contentType: ContentType,
       metaHeaders: MetaHeaders,
       cannedAcl: CannedAcl = CannedAcl.Private,
-      chunkSize: Int = MinChunkSize)(parallelism: Int = 4): Flow[ByteString, UploadPartResponse, NotUsed] = {
+      chunkSize: Int = MinChunkSize
+  )(parallelism: Int = 4): Flow[ByteString, UploadPartResponse, NotUsed] = {
 
     // Multipart upload requests (except for the completion api) are created here.
     //  The initial upload request gets executed within this function as well.
@@ -195,18 +197,20 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
 
     Sink.seq[UploadPartResponse].mapMaterializedValue {
       case responseFuture: Future[Seq[UploadPartResponse]] =>
-        responseFuture.flatMap {
-          case responses: Seq[UploadPartResponse] =>
-            val successes = responses.collect { case r: SuccessfulUploadPart => r }
-            val failures = responses.collect { case r: FailedUploadPart => r }
-            if (responses.isEmpty) {
-              Future.failed(new RuntimeException("No Responses"))
-            } else if (failures.isEmpty) {
-              Future.successful(successes.sortBy(_.index))
-            } else {
-              Future.failed(FailedUpload(failures.map(_.exception)))
-            }
-        }.flatMap(completeMultipartUpload(s3Location, _))
+        responseFuture
+          .flatMap {
+            case responses: Seq[UploadPartResponse] =>
+              val successes = responses.collect { case r: SuccessfulUploadPart => r }
+              val failures = responses.collect { case r: FailedUploadPart => r }
+              if (responses.isEmpty) {
+                Future.failed(new RuntimeException("No Responses"))
+              } else if (failures.isEmpty) {
+                Future.successful(successes.sortBy(_.index))
+              } else {
+                Future.failed(FailedUpload(failures.map(_.exception)))
+              }
+          }
+          .flatMap(completeMultipartUpload(s3Location, _))
     }
   }
 

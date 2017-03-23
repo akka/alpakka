@@ -73,7 +73,8 @@ object EventSource {
    * @return continuous source of server-sent events
    */
   def apply(uri: Uri, send: HttpRequest => Future[HttpResponse], lastEventId: Option[String] = None)(
-      implicit mat: Materializer): EventSource = {
+      implicit mat: Materializer
+  ): EventSource = {
     import EventStreamUnmarshalling._
     import mat.executionContext
 
