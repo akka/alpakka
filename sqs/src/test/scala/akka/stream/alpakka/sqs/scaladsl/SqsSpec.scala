@@ -4,6 +4,7 @@
 package akka.stream.alpakka.sqs.scaladsl
 
 import akka.Done
+import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
 import com.amazonaws.services.sqs.model.Message
@@ -14,6 +15,8 @@ import scala.concurrent.duration._
 
 class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
+  private val sqsSourceSettings = SqsSourceSettings.Defaults
+
   it should "publish and pull a message" taggedAs Integration in {
     val queue = randomQueueUrl()
 
@@ -22,7 +25,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     Await.ready(future, 1.second)
     //#run
 
-    val probe = SqsSource(queue).runWith(TestSink.probe[Message])
+    val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
     probe.requestNext().getBody shouldBe "alpakka"
     probe.cancel()
   }
@@ -33,7 +36,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     sqsClient.sendMessage(queue1, "alpakka")
 
-    val future = SqsSource(queue1)
+    val future = SqsSource(queue1, sqsSourceSettings)
       .take(1)
       .map { m: Message =>
         m.getBody

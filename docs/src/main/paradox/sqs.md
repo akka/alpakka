@@ -35,7 +35,7 @@ Gradle
 
 ## Usage
 
-Sources provided by this connector need a prepared `AmazonSQSAsyncClient` to load messages from a queue.
+Sources and Sinks provided by this connector need a prepared `AmazonSQSAsyncClient` to load messages from a queue.
 
 Scala
 : @@snip (../../../../sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-client }
@@ -78,6 +78,22 @@ Options:
  - `maxBufferSize` - internal buffer size used by the `Source`. Default: 100 messages
  - `waitTimeSeconds` - the duration for which the call waits for a message to arrive in the queue before
     returning (see `WaitTimeSeconds` in AWS docs). Default: 20 seconds
+
+Be aware that the `SqsSource` runs multiple requests to Amazon SQS in parallel. The maximum number of concurrent
+requests is limited by `parallelism = maxBufferSize / maxBatchSize`. E.g.: By default `maxBatchSize` is set to 10 and
+`maxBufferSize` is set to 100 so at the maximum, `SqsSource` will run 10 concurrent requests to Amazon SQS. `AmazonSQSAsyncClient`
+uses a fixed thread pool with 50 threads by default. To tune the thread pool used by
+`AmazonSQSAsyncClient` you can supply a custom `ExecutorService` on client creation.
+
+Scala
+: @@snip (../../../../sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSourceSpec.scala) { #init-custom-client }
+
+Java
+: @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSourceTest.java) { #init-custom-client }
+
+Please make sure to configure a big enough thread pool to avoid resource starvation. This is especially important
+if you share the client between multiple Sources, Sinks and Flows. For the SQS Sinks and Sources the sum of all
+`parallelism` (Source) and `maxInFlight` (Sink) must be less than or equal to the thread pool size.
 
 ### Stream messages to a SQS queue
 
