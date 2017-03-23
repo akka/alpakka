@@ -4,15 +4,20 @@
 package akka.stream.alpakka.ironmq.scaladsl
 
 import akka.NotUsed
+import akka.actor.ActorSystem
+import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.ironmq._
 import akka.stream.scaladsl._
 
 object IronMqConsumer {
 
-  def atMostOneConsumerSource(queueName: Queue.Name, clientProvider: () => IronMqClient): Source[Message, NotUsed] =
-    Source.fromGraph(new IronMqSourceStage(queueName, clientProvider))
+  def atMostOneConsumerSource(queueName: Queue.Name, settings: IronMqSettings): Source[Message, NotUsed] =
+    Source.fromGraph(new IronMqPullStage(queueName, settings)).mapAsync(1) { cm =>
+      cm.commit().map(_ => cm.message)(ExecutionContexts.sameThreadExecutionContext)
+    }
 
-  def atMostOneConsumerSource(queueName: Queue.Name, client: IronMqClient): Source[Message, NotUsed] =
-    atMostOneConsumerSource(queueName, () => client)
+  def atLeastOnceConsumerSource[K, V](queueName: Queue.Name,
+                                      settings: IronMqSettings): Source[CommittableMessage, NotUsed] =
+    Source.fromGraph(new IronMqPullStage(queueName, settings))
 
 }
