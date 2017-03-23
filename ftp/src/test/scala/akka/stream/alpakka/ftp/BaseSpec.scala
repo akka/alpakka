@@ -7,8 +7,9 @@ import akka.NotUsed
 import akka.stream.IOResult
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, Inside, Matchers, WordSpecLike}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, Matchers, WordSpecLike}
+
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
@@ -18,6 +19,7 @@ trait BaseSpec
     with BeforeAndAfter
     with BeforeAndAfterAll
     with ScalaFutures
+    with Inside
     with AkkaSupport
     with FtpSupport {
 
