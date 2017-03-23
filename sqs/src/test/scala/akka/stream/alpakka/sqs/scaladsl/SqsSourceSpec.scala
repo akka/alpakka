@@ -7,7 +7,6 @@ import java.util.concurrent.{ExecutorService, Executors}
 
 import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.scaladsl.Sink
-import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient
 import com.amazonaws.services.sqs.model.QueueDoesNotExistException
 import org.scalatest.concurrent.ScalaFutures
@@ -24,7 +23,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
       val queue = randomQueueUrl()
       sqsClient.sendMessage(queue, "alpakka")
 
-      SqsSource(queue, sqsSourceSettings).take(1).runWith(Sink.seq).map(_.map(_.getBody) should contain("alpakka"))
+      SqsSource(queue, sqsSourceSettings).take(1).runWith(Sink.head).map(_.getBody shouldBe "alpakka")
 
     }
 
@@ -39,7 +38,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
       val queue = randomQueueUrl()
       sqsClient.sendMessage(queue, "alpakka")
 
-      SqsSource(queue, sqsSourceSettings).take(1).runWith(Sink.seq).map(_.map(_.getBody) should contain("alpakka"))
+      SqsSource(queue, sqsSourceSettings).take(1).runWith(Sink.head).map(_.getBody shouldBe "alpakka")
     }
 
     "stream multiple batches from the queue" taggedAs Integration in {
