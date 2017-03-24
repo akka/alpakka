@@ -29,10 +29,10 @@ final case class SqsSourceSettings(
 ) {
   require(maxBatchSize <= maxBufferSize, "maxBatchSize must be lower or equal than maxBufferSize")
   // SQS requirements
-  require(waitTimeSeconds >= 0 && waitTimeSeconds <= 20,
-    "Invalid value for waitTimeSeconds. Requirement: 0 <= waitTimeSeconds <= 20 ")
-  require(maxBatchSize >= 1 && maxBatchSize <= 10,
-    "Invalid value for maxBatchSize. Requirement: 1 <= waitTimeSeconds <= 10 ")
+  require(0 <= waitTimeSeconds && waitTimeSeconds <= 20,
+    s"Invalid value ($waitTimeSeconds) for waitTimeSeconds. Requirement: 0 <= waitTimeSeconds <= 20 ")
+  require(1 <= maxBatchSize && maxBatchSize <= 10,
+    s"Invalid value ($maxBatchSize) for maxBatchSize. Requirement: 1 <= maxBatchSize <= 10 ")
 }
 //#SqsSourceSettings
 
