@@ -7,7 +7,7 @@ package impl
 import org.apache.commons.net.ftp.{FTP, FTPClient, FTPFile}
 import scala.collection.immutable
 import scala.util.Try
-import java.io.{IOException, InputStream}
+import java.io.{IOException, InputStream, OutputStream}
 import java.nio.file.Paths
 import java.nio.file.attribute.PosixFilePermission
 
@@ -40,7 +40,7 @@ private[ftp] trait FtpOperations { _: FtpLike[FTPClient, FtpFileSettings] =>
     val path = if (!basePath.isEmpty && basePath.head != '/') s"/$basePath" else basePath
     handler
       .listFiles(path)
-      .collect  { 
+      .collect {
         case file: FTPFile if file.getName != "." && file.getName != ".." =>
           FtpFile(
             file.getName,
@@ -74,5 +74,10 @@ private[ftp] trait FtpOperations { _: FtpLike[FTPClient, FtpFileSettings] =>
   def retrieveFileInputStream(name: String, handler: Handler): Try[InputStream] = Try {
     val is = handler.retrieveFileStream(name)
     if (is != null) is else throw new IOException(s"$name: No such file or directory")
+  }
+
+  def storeFileStream(name: String, handler: Handler): Try[OutputStream] = Try {
+    val os = handler.storeFileStream(name)
+    if (os != null) os else throw new IOException(s"Could not write to $name")
   }
 }

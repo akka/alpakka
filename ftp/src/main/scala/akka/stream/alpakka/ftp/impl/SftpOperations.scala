@@ -6,10 +6,11 @@ package impl
 
 import akka.stream.alpakka.ftp.RemoteFileSettings.SftpSettings
 import com.jcraft.jsch.{ChannelSftp, JSch}
+
 import scala.collection.immutable
 import scala.util.Try
 import scala.collection.JavaConverters._
-import java.io.InputStream
+import java.io.{InputStream, OutputStream}
 import java.nio.file.Paths
 import java.nio.file.attribute.PosixFilePermissions
 
@@ -74,5 +75,9 @@ private[ftp] trait SftpOperations { _: FtpLike[JSch, SftpSettings] =>
 
   def retrieveFileInputStream(name: String, handler: Handler): Try[InputStream] = Try {
     handler.get(name)
+  }
+
+  def storeFileStream(name: String, handler: Handler): Try[OutputStream] = Try {
+    handler.put(name)
   }
 }
