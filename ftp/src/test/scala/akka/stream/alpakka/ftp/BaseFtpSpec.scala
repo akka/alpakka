@@ -5,11 +5,12 @@ package akka.stream.alpakka.ftp
 
 import akka.NotUsed
 import akka.stream.IOResult
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.alpakka.ftp.RemoteFileSettings.FtpSettings
 import akka.stream.alpakka.ftp.FtpCredentials.AnonFtpCredentials
 import akka.stream.alpakka.ftp.scaladsl.Ftp
 import akka.util.ByteString
+
 import scala.concurrent.Future
 import java.net.InetAddress
 
@@ -32,6 +33,11 @@ trait BaseFtpSpec extends PlainFtpSupportImpl with BaseSpec {
 
   //#retrieving
   protected def retrieveFromPath(path: String): Source[ByteString, Future[IOResult]] =
-    Ftp.fromPath(getFileSystem.getPath(path), settings)
+    Ftp.fromPath(path, settings)
   //#retrieving
+
+  //#storing
+  protected def storeToPath(path: String): Sink[ByteString, Future[IOResult]] =
+    Ftp.toPath(path, settings)
+  //#storing
 }
