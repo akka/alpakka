@@ -14,13 +14,13 @@ import scala.concurrent.Future
 object SnsPublisher {
 
   /**
-   * Scala API: creates a [[Flow]] from a [[SnsPublishFlowStage]] for a SNS topic using an [[AmazonSNSAsync]]
+   * Scala API: creates a [[Sink]] to publish messages to a SNS topic using an [[AmazonSNSAsync]]
    */
   def flow(topicArn: String)(implicit snsClient: AmazonSNSAsync): Flow[String, PublishResult, NotUsed] =
     Flow.fromGraph(new SnsPublishFlowStage(topicArn, snsClient))
 
   /**
-   * Scala API: creates a [[Sink]] from a [[SnsPublishFlowStage]] for a SNS topic using an [[AmazonSNSAsync]]
+   * Scala API: creates a [[Sink]] to publish messages to a SNS topic using an [[AmazonSNSAsync]]
    */
   def sink(topicArn: String)(implicit snsClient: AmazonSNSAsync): Sink[String, Future[Done]] =
     flow(topicArn).toMat(Sink.ignore)(Keep.right)
