@@ -11,8 +11,6 @@ import akka.stream.alpakka.s3.acl.CannedAcl
 import org.scalatest.Inspectors.{forAll => iforAll}
 import org.scalatest.{FlatSpec, Matchers}
 
-import scala.collection.immutable.Seq
-
 class HttpRequestsSpec extends FlatSpec with Matchers {
   it should "initiate multipart upload when the region is us-east-1" in {
     implicit val settings = S3Settings(ActorSystem())
@@ -27,7 +25,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers {
 
     req.entity shouldEqual HttpEntity.empty(contentType)
     req.headers should contain(RawHeader("x-amz-acl", acl.value))
-    req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
+    req.uri.authority.host.toString shouldEqual "s3.amazonaws.com"
 
     metaHeaders.map { m =>
       req.headers should contain(RawHeader(s"x-amz-meta-${m._1}", m._2))
@@ -47,7 +45,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers {
 
     req.entity shouldEqual HttpEntity.empty(contentType)
     req.headers should contain(RawHeader("x-amz-acl", acl.value))
-    req.uri.authority.host.toString shouldEqual "bucket.s3-us-east-2.amazonaws.com"
+    req.uri.authority.host.toString shouldEqual "s3-us-east-2.amazonaws.com"
 
     metaHeaders.map { m =>
       req.headers should contain(RawHeader(s"x-amz-meta-${m._1}", m._2))

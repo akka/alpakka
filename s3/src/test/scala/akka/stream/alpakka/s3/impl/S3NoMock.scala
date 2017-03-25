@@ -5,12 +5,13 @@ package akka.stream.alpakka.s3.impl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.s3.S3Settings
+import akka.stream.alpakka.s3.auth.AWSCredentials
 import akka.stream.alpakka.s3.scaladsl.S3Client
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -44,5 +45,16 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     val result = download.map(_.decodeString("utf8")).runWith(Sink.head)
 
     Await.ready(result, 5.seconds).futureValue shouldBe objectValue
+  }
+
+  it should "list contents of file " ignore {
+    val region = "us-west-2"
+    val client = new S3Stream(
+      AWSCredentials("", ""),
+      region = region,
+      settings = S3Settings(actorSystem)
+    )
+    val a = client.listBucket("salesreports").runWith(Sink.foreach(println))
+    Await.ready(a, 20.seconds).futureValue shouldBe (akka.Done)
   }
 }

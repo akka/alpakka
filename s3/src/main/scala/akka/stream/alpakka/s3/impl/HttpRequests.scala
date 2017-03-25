@@ -12,7 +12,6 @@ import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-
 import scala.collection.immutable
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
@@ -20,6 +19,33 @@ import scala.concurrent.{ExecutionContext, Future}
 case class MetaHeaders(headers: Map[String, String])
 
 private[alpakka] object HttpRequests {
+
+  def listBucket(
+      bucket: String,
+      region: String,
+      prefix: Option[String] = None,
+      continuation_token: Option[String] = None
+  )(implicit conf: S3Settings): HttpRequest = {
+    val uri: Uri = {
+      val prefixString = if (prefix.isDefined) "&prefix=" + prefix.get else ""
+      val continuation_token_string =
+        if (continuation_token.isDefined)
+          "&continuation-token=" + continuation_token.get.replaceAll("=", "%3D").replaceAll("[+]", "%2B")
+        else ""
+
+      val uriBeforeProxy =
+        Uri(s"/$bucket/?list-type=2" + prefixString + continuation_token_string)
+
+      conf.proxy match {
+        case None => uriBeforeProxy.withHost(requestHost(region)).withScheme("https")
+        case Some(proxy) => uriBeforeProxy.withHost(proxy.host).withPort(proxy.port).withScheme(proxy.scheme)
+      }
+    }
+
+    HttpRequest(HttpMethods.GET)
+      .withHeaders(Host(requestHost(region)))
+      .withUri(uri)
+  }
 
   def getDownloadRequest(s3Location: S3Location, region: String)(implicit conf: S3Settings): HttpRequest =
     s3Request(s3Location, region: String)
@@ -79,31 +105,27 @@ private[alpakka] object HttpRequests {
     }
   }
 
+  private[this] def requestHost(region: String)(implicit conf: S3Settings): Uri.Host =
+    region match {
+      case "us-east-1" => Uri.Host("s3.amazonaws.com")
+      case _ => Uri.Host(s"s3-$region.amazonaws.com")
+    }
+
   private[this] def s3Request(s3Location: S3Location,
                               region: String,
                               method: HttpMethod = HttpMethods.GET,
                               uriFn: (Uri => Uri) = identity)(implicit conf: S3Settings): HttpRequest = {
 
-    def requestHost(s3Location: S3Location, region: String)(implicit conf: S3Settings): Uri.Host =
-      conf.proxy match {
-        case None =>
-          region match {
-            case "us-east-1" => Uri.Host(s"${s3Location.bucket}.s3.amazonaws.com")
-            case _ => Uri.Host(s"${s3Location.bucket}.s3-$region.amazonaws.com")
-          }
-        case Some(proxy) => Uri.Host(proxy.host)
-      }
-
     def requestUri(s3Location: S3Location, region: String)(implicit conf: S3Settings): Uri = {
-      val uri = Uri(s"/${s3Location.key}").withHost(requestHost(s3Location, region)).withScheme("https")
+      val uri = Uri(s"/${s3Location.bucket}/${s3Location.key}")
       conf.proxy match {
-        case None => uri
-        case Some(proxy) => uri.withPort(proxy.port)
+        case None => uri.withHost(requestHost(region)).withScheme("https")
+        case Some(proxy) => uri.withHost(proxy.host).withPort(proxy.port).withScheme(proxy.scheme)
       }
     }
 
     HttpRequest(method)
-      .withHeaders(Host(requestHost(s3Location, region)))
+      .withHeaders(Host(requestHost(region)))
       .withUri(uriFn(requestUri(s3Location, region)))
   }
 }
