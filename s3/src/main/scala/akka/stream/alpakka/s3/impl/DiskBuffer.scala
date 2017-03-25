@@ -3,25 +3,16 @@
  */
 package akka.stream.alpakka.s3.impl
 
-import java.io.{File, FileOutputStream, RandomAccessFile}
-import java.nio.channels.FileChannel
-import java.nio.file.Files
-import java.util.concurrent.atomic.AtomicInteger
-
 import akka.NotUsed
 import akka.dispatch.ExecutionContexts
-import akka.stream.ActorAttributes
-import akka.stream.Attributes
-import akka.stream.FlowShape
-import akka.stream.Inlet
-import akka.stream.Outlet
+import akka.stream.{ActorAttributes, Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.scaladsl.FileIO
-import akka.stream.stage.GraphStage
-import akka.stream.stage.GraphStageLogic
-import akka.stream.stage.InHandler
-import akka.stream.stage.OutHandler
+import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.util.ByteString
-import java.nio.file.Path
+import java.io.{File, FileOutputStream, RandomAccessFile}
+import java.nio.channels.FileChannel
+import java.nio.file.{Files, Path}
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Buffers the complete incoming stream into a file, which can then be read several times afterwards.

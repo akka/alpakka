@@ -5,16 +5,14 @@ package akka.stream.alpakka.s3.scaladsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpHeader, Uri}
+import akka.http.scaladsl.model.{ContentType, ContentTypes, Uri}
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.auth.AWSCredentials
-import akka.stream.alpakka.s3.impl.{CompleteMultipartUploadResult, MetaHeaders, S3Location, S3Stream}
+import akka.stream.alpakka.s3.impl.{CompleteMultipartUploadResult, MetaHeaders, S3Location, S3PrefixLocation, S3Stream}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
-
-import scala.collection.immutable
 import scala.concurrent.Future
 
 final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
@@ -40,6 +38,10 @@ final class S3Client(credentials: AWSCredentials, region: String)(implicit syste
   private[this] val impl = S3Stream(credentials, region)
 
   def download(bucket: String, key: String): Source[ByteString, NotUsed] = impl.download(S3Location(bucket, key))
+
+  def listBuckets(s3PrefixLocation: S3PrefixLocation,
+                  maxKeys: Option[Int],
+                  marker: Option[String]): Source[ByteString, NotUsed] = impl.listBuckets(s3PrefixLocation, maxKeys, marker)
 
   def multipartUpload(bucket: String,
                       key: String,
