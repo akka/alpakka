@@ -3,18 +3,24 @@
  */
 package akka.stream.alpakka.ironmq.javadsl
 
-import akka.NotUsed
+import java.util.concurrent.CompletionStage
+
+import akka.{Done, NotUsed}
 import akka.stream.alpakka.ironmq._
 import akka.stream.javadsl.{Flow, Sink}
 import akka.stream.alpakka.ironmq.scaladsl.{IronMqProducer => ScalaIronMqProducer}
 
+import scala.compat.java8.FutureConverters
+
 object IronMqProducer {
+
+  import FutureConverters._
 
   def producerFlow(queueName: String, settings: IronMqSettings): Flow[PushMessage, Message.Id, NotUsed] =
     ScalaIronMqProducer.producerFlow(Queue.Name(queueName), settings).asJava
 
-  def producerSink(queueName: String, settings: IronMqSettings): Sink[PushMessage, NotUsed] =
-    ScalaIronMqProducer.producerSink(Queue.Name(queueName), settings).asJava
+  def producerSink(queueName: String, settings: IronMqSettings): Sink[PushMessage, CompletionStage[Done]] =
+    ScalaIronMqProducer.producerSink(Queue.Name(queueName), settings).mapMaterializedValue(_.toJava).asJava
 
   def atLeastOnceProducerFlow(queueName: String,
                               settings: IronMqSettings): Flow[(PushMessage, Committable), Message.Id, NotUsed] =

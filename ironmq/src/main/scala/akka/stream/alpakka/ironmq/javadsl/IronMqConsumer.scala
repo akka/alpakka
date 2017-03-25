@@ -10,10 +10,10 @@ import akka.stream.alpakka.ironmq.scaladsl.{IronMqConsumer => ScalaIronMqConsume
 
 object IronMqConsumer {
 
-  def atMostOneConsumerSource(queueName: Queue.Name, settings: IronMqSettings): Source[Message, NotUsed] =
-    ScalaIronMqConsumer.atMostOneConsumerSource(queueName, settings).asJava
+  def atMostOnceConsumerSource(queueName: Queue.Name, settings: IronMqSettings): Source[Message, NotUsed] =
+    ScalaIronMqConsumer.atMostOnceConsumerSource(queueName, settings).asJava
 
-  def atLeastOneConsumerSource(queueName: Queue.Name, settings: IronMqSettings): Source[CommittableMessage, NotUsed] =
+  def atLeastOnceConsumerSource(queueName: Queue.Name, settings: IronMqSettings): Source[CommittableMessage, NotUsed] =
     ScalaIronMqConsumer.atLeastOnceConsumerSource(queueName, settings).asJava
 
 }
