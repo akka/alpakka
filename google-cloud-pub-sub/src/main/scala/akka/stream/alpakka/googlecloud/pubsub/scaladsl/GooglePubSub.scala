@@ -1,29 +1,31 @@
 /*
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.googlepubsub.scaladsl
+package akka.stream.alpakka.googlecloud.pubsub.scaladsl
 
 import java.security.PrivateKey
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import akka.stream.alpakka.googlepubsub._
+import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.collection.immutable
+import scala.concurrent.Future
 
 object GooglePubSub extends GooglePubSub {
-  private[googlepubsub] override val httpApi = HttpApi
-  private[googlepubsub] def getSession(clientEmail: String, privateKey: PrivateKey): Session =
+  private[pubsub] override val httpApi = HttpApi
+  @akka.annotation.InternalApi
+  private[pubsub] def getSession(clientEmail: String, privateKey: PrivateKey): Session =
     new Session(clientEmail, privateKey)
 }
 
-protected[googlepubsub] trait GooglePubSub {
-  private[googlepubsub] def httpApi: HttpApi
-  private[googlepubsub] def getSession(clientEmail: String, privateKey: PrivateKey): Session
+protected[pubsub] trait GooglePubSub {
+  private[pubsub] def httpApi: HttpApi
 
-  private implicit def matToEx(implicit mat: Materializer): ExecutionContext = mat.executionContext
+  @akka.annotation.InternalApi
+  private[pubsub] def getSession(clientEmail: String, privateKey: PrivateKey): Session
 
   /**
    * Creates a flow to that publish messages to a topic and emits the message ids
@@ -33,8 +35,10 @@ protected[googlepubsub] trait GooglePubSub {
               clientEmail: String,
               privateKey: PrivateKey,
               topic: String,
-              parallelism: Int = 1)(implicit actorSystem: ActorSystem,
-                                    materializer: Materializer): Flow[PublishRequest, Seq[String], NotUsed] = {
+              parallelism: Int = 1)(
+      implicit actorSystem: ActorSystem,
+      materializer: Materializer): Flow[PublishRequest, immutable.Seq[String], NotUsed] = {
+    import materializer.executionContext
     val session = getSession(clientEmail, privateKey)
 
     Flow[PublishRequest].mapAsync(parallelism) { request =>
@@ -48,7 +52,7 @@ protected[googlepubsub] trait GooglePubSub {
       implicit actorSystem: ActorSystem,
       materializer: Materializer): Source[ReceivedMessage, NotUsed] = {
     val session = getSession(clientEmail, privateKey)
-    Source.fromGraph(new SubscriptionSourceStage(projectId = projectId, apiKey = apiKey, session = session,
+    Source.fromGraph(new GooglePubSubSource(projectId = projectId, apiKey = apiKey, session = session,
         subscription = subscription, httpApi = httpApi))
   }
 
@@ -59,6 +63,7 @@ protected[googlepubsub] trait GooglePubSub {
                   subscription: String,
                   parallelism: Int = 1)(implicit actorSystem: ActorSystem,
                                         materializer: Materializer): Sink[AcknowledgeRequest, Future[Done]] = {
+    import materializer.executionContext
     val session = getSession(clientEmail, privateKey)
 
     Flow[AcknowledgeRequest]

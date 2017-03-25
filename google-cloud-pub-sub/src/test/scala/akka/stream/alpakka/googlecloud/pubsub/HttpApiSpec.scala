@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.googlepubsub
+package akka.stream.alpakka.googlecloud.pubsub
 
 import java.security.KeyFactory
 import java.security.spec.PKCS8EncodedKeySpec
@@ -12,11 +12,13 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, any, anyUrl, urlEqualTo}
+import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, any, urlEqualTo}
+import com.github.tomakehurst.wiremock.common.ConsoleNotifier
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
+import scala.collection.immutable.Seq
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -29,7 +31,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
   val wiremockServer = new WireMockServer(
-    wireMockConfig().dynamicPort()
+    wireMockConfig().dynamicPort().notifier(new ConsoleNotifier(false))
   )
   wiremockServer.start()
 
@@ -40,13 +42,12 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
     val GoogleApisHost = s"http://localhost:${wiremockServer.port()}"
   }
 
-  it should "request a auth token" in {
-    mock.register(any(anyUrl()).willReturn(aResponse().withStatus(404).withBody("nope")))
+  val accessToken =
+    "ya29.Elz4A2XkfGKJ4CoS5x_umUBHsvjGdeWQzu6gRRCnNXI0fuIyoDP_6aYktBQEOI4YAhLNgUl2OpxWQaN8Z3hd5YfFw1y4EGAtr2o28vSID-c8ul_xxHuudE7RmhH9sg"
 
+  it should "request a auth token" in {
     val expectedRequest =
       "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.CnsKICJpc3MiOiAidGVzdC1YWFhAdGVzdC1YWFhYWC5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsCiAic2NvcGUiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vYXV0aC9wdWJzdWIiLAogImF1ZCI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9vYXV0aDIvdjQvdG9rZW4iLAogImV4cCI6IDM2MDAsCiAiaWF0IjogMAp9CiAgICAgIA==.PG_qpgReiRycZftM4evJAiIETNO2yjqL6O0VjtsGaOtrqv8mIl2fI7kSizBxp4f9AY-WIBpAh60T2JpHlUGui0-TNklSH-g3RRGiPk348hi01crSThnk3WjV2WB4F_nfunTWiPR96zVkwPUweBk-Lj151eOHkNEhAHnngvsRAZpVfOiKKi9XA-tPfLCM_VF_e9o7WBrswTA-a-RjI-WZu-S_cJVd2xaxFo1CbccA7n7yzI-3eshaJuqoloSe-u_JAlLo66CdhCRViN06XpveTtwuej4xG-H6BLvNNkF8XxTU2FnbBwLITG4bg_K3T4lfQphpxBqD7Ic7_ciFRKQDAw=="
-    val accessToken =
-      "ya29.Elz4A2XkfGKJ4CoS5x_umUBHsvjGdeWQzu6gRRCnNXI0fuIyoDP_6aYktBQEOI4YAhLNgUl2OpxWQaN8Z3hd5YfFw1y4EGAtr2o28vSID-c8ul_xxHuudE7RmhH9sg"
     val authResult =
       s"""{
         | "access_token": "$accessToken",
@@ -65,11 +66,94 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
     result.futureValue shouldBe AccessTokenExpiry(accessToken, 3600)
   }
 
+  it should "publish" in {
+
+    val publishMessage =
+      PubSubMessage(messageId = "1", data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
+    val publishRequest = PublishRequest(Seq(publishMessage))
+
+    val expectedPublishRequest =
+      """{"messages":[{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1"}]}"""
+    val publishResponse = """{"messageIds":["1"]}"""
+
+    mock.register(
+        WireMock
+          .post(urlEqualTo(
+                s"/v1/projects/${TestCredentials.projectId}/topics/topic1:publish?key=${TestCredentials.apiKey}"))
+          .withRequestBody(WireMock.equalTo(expectedPublishRequest))
+          .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
+          .willReturn(aResponse()
+              .withStatus(200)
+              .withBody(publishResponse)
+              .withHeader("Content-Type", "application/json")))
+
+    val result =
+      TestHttpApi.publish(TestCredentials.projectId, "topic1", accessToken, TestCredentials.apiKey, publishRequest)
+
+    result.futureValue shouldBe Seq("1")
+  }
+
+  it should "Pull with results" in {
+
+    val publishMessage =
+      PubSubMessage(messageId = "1", data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
+
+    val pullResponse =
+      """{"receivedMessages":[{"ackId":"ack1","message":{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1"}}]}"""
+
+    val pullRequest = """{"returnImmediately":true,"maxMessages":1000}"""
+
+    mock.register(WireMock
+        .post(urlEqualTo(
+              s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:pull?key=${TestCredentials.apiKey}"))
+        .withRequestBody(WireMock.equalTo(pullRequest))
+        .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
+        .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json")))
+
+    val result = TestHttpApi.pull(TestCredentials.projectId, "sub1", accessToken, TestCredentials.apiKey)
+    result.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", publishMessage))))
+
+  }
+
+  it should "Pull without results" in {
+
+    val pullResponse = "{}"
+
+    val pullRequest = """{"returnImmediately":true,"maxMessages":1000}"""
+
+    mock.register(WireMock
+        .post(urlEqualTo(
+              s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:pull?key=${TestCredentials.apiKey}"))
+        .withRequestBody(WireMock.equalTo(pullRequest))
+        .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
+        .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json")))
+
+    val result = TestHttpApi.pull(TestCredentials.projectId, "sub1", accessToken, TestCredentials.apiKey)
+    result.futureValue shouldBe PullResponse(None)
+
+  }
+
+  it should "acknowledge" in {
+    val ackRequest = """{"ackIds":["ack1"]}"""
+    mock.register(WireMock
+        .post(urlEqualTo(
+              s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:acknowledge?key=${TestCredentials.apiKey}"))
+        .withRequestBody(WireMock.equalTo(ackRequest))
+        .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
+        .willReturn(aResponse().withStatus(200)))
+
+    val acknowledgeRequest = AcknowledgeRequest(Seq("ack1"))
+
+    val result = TestHttpApi.acknowledge(TestCredentials.projectId, "sub1", accessToken, TestCredentials.apiKey,
+      acknowledgeRequest)
+
+    result.futureValue shouldBe (())
+  }
+
   override def afterAll(): Unit = {
     wiremockServer.stop()
     Await.result(system.terminate(), 5.seconds)
   }
-
 }
 
 object TestCredentials {

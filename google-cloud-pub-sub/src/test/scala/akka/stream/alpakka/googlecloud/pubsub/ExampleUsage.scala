@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.googlepubsub
+package akka.stream.alpakka.googlecloud.pubsub
 
 import java.security.{KeyFactory, PrivateKey}
 import java.security.spec.PKCS8EncodedKeySpec
@@ -9,10 +9,11 @@ import java.util.Base64
 
 import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, ClosedShape}
-import akka.stream.alpakka.googlepubsub.scaladsl.GooglePubSub
-import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, RunnableGraph, Sink, Source}
+import akka.stream.ActorMaterializer
+import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
+import akka.stream.scaladsl.{Flow, Sink, Source}
 
+import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -52,17 +53,17 @@ class ExampleUsage {
     PubSubMessage(messageId = "1", data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
   val publishRequest = PublishRequest(Seq(publishMessage))
 
-  val source: Source[PublishRequest, NotUsed] = Source(List(publishRequest))
+  val source: Source[PublishRequest, NotUsed] = Source.single(publishRequest)
 
   val publishFlow: Flow[PublishRequest, Seq[String], NotUsed] =
     GooglePubSub.publish(projectId, apiKey, clientEmail, privateKey, topic)
 
-  val publishedMessageIds = source.via(publishFlow).to(Sink.seq)
+  val publishedMessageIds: Future[Seq[Seq[String]]] = source.via(publishFlow).runWith(Sink.seq)
   //#publish-single
 
   //#publish-fast
   val messageSource: Source[PubSubMessage, NotUsed] = Source(List(publishMessage, publishMessage))
-  messageSource.groupedWithin(1000, 1.minute).map(PublishRequest).via(publishFlow).to(Sink.seq)
+  messageSource.groupedWithin(1000, 1.minute).map(PublishRequest.apply).via(publishFlow).to(Sink.seq)
   //#publish-fast
 
   //#subscribe
@@ -76,23 +77,17 @@ class ExampleUsage {
     // do something fun
 
     message.ackId
-  }.groupedWithin(1000, 1.minute).map(AcknowledgeRequest).to(ackSink)
+  }.groupedWithin(1000, 1.minute).map(AcknowledgeRequest.apply).to(ackSink)
   //#subscribe
 
   //#subscribe-auto-ack
-  val messageSink: Sink[ReceivedMessage, NotUsed] = ???
+  val subscribeMessageSoruce: Source[ReceivedMessage, NotUsed] = ???
+  val processMessage: Sink[ReceivedMessage, NotUsed] = ???
 
-  val graph = RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
-    import GraphDSL.Implicits._
-    val bcast = b.add(Broadcast[ReceivedMessage](2))
+  val batchAckSink =
+    Flow[ReceivedMessage].map(_.ackId).groupedWithin(1000, 1.minute).map(AcknowledgeRequest.apply).to(ackSink)
 
-    subscriptionSource ~> bcast
-
-    bcast.map(_.ackId).groupedWithin(1000, 1.minutes).map(AcknowledgeRequest) ~> ackSink
-    bcast ~> messageSink
-
-    ClosedShape
-  })
+  val q = subscribeMessageSoruce.alsoTo(batchAckSink).to(processMessage)
   //#subscribe-auto-ack
 
 }
