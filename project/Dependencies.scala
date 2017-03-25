@@ -22,7 +22,7 @@ object Dependencies {
       "com.typesafe.akka"     %% "akka-http-xml" % AkkaHttpVersion,
       // in-memory filesystem for file related tests
       "com.google.jimfs"       % "jimfs"         % "1.1"   % Test, // ApacheV2
-      "com.github.tomakehurst" % "wiremock"      % "2.3.1" % Test //ApacheV2
+      "com.github.tomakehurst" % "wiremock"      % "2.5.1" % Test //ApacheV2
     )
   )
 
@@ -123,7 +123,7 @@ object Dependencies {
       "com.typesafe.akka"     %% "akka-http"     % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
       "org.mockito"   % "mockito-core"     % "2.3.7"    % Test, // MIT
-      "com.github.tomakehurst" % "wiremock"      % "2.3.1" % Test //ApacheV2
+      "com.github.tomakehurst" % "wiremock"      % "2.5.1" % Test //ApacheV2
     )
   )
 
