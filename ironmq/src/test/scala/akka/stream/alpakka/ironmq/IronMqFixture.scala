@@ -30,7 +30,7 @@ trait IronMqFixture extends AkkaStreamFixture with BeforeAndAfterEach with Scala
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    mutableIronMqClient = Option(IronMqClient(IronMqSettings(config)))
+    mutableIronMqClient = Option(IronMqClient(IronMqSettings(config.getConfig("akka.stream.alpakka.ironmq"))))
   }
 
   override protected def afterEach(): Unit = {

@@ -110,7 +110,7 @@ class IronMqPullStage(queue: Queue.Name, settings: IronMqSettings)
             override val message =
               messageToDelivery.message
             override def commit() =
-              client.deleteMessage(queue, messageToDelivery.reservation).map(_ => Done)
+              client.deleteMessages(queue, messageToDelivery.reservation).map(_ => Done)
           }
 
           push(out, committableMessage)

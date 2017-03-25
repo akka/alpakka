@@ -3,10 +3,12 @@
  */
 package akka.stream.alpakka.ironmq.scaladsl
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.stream.FlowShape
 import akka.stream.alpakka.ironmq._
 import akka.stream.scaladsl._
+
+import scala.concurrent.Future
 
 object IronMqProducer {
 
@@ -14,13 +16,14 @@ object IronMqProducer {
    * This is plain producer [[Flow]] that consume [[PushMessage]] and emit [[Message.Id]] for each produced message.
    */
   def producerFlow(queueName: Queue.Name, settings: IronMqSettings): Flow[PushMessage, Message.Id, NotUsed] =
-    Flow.fromGraph(new IronMqPushStage(queueName, settings)).mapAsync(3)(identity).mapConcat(_.ids)
+    // The parallelism MUST be 1 to guarantee the order of the messages
+    Flow.fromGraph(new IronMqPushStage(queueName, settings)).mapAsync(1)(identity).mapConcat(_.ids)
 
   /**
    * A plain producer [[Sink]] that consume [[PushMessage]] and push them on IronMq.
    */
-  def producerSink(queueName: Queue.Name, settings: IronMqSettings): Sink[PushMessage, NotUsed] =
-    producerFlow(queueName, settings).to(Sink.ignore)
+  def producerSink(queueName: Queue.Name, settings: IronMqSettings): Sink[PushMessage, Future[Done]] =
+    producerFlow(queueName, settings).toMat(Sink.ignore)(Keep.right)
 
   /**
    * A [[Committable]] aware producer [[Flow]] that consume [[(PushMessage, Committable)]], push messages on IronMq and
@@ -28,6 +31,7 @@ object IronMqProducer {
    */
   def atLeastOnceProducerFlow(queueName: Queue.Name,
                               settings: IronMqSettings): Flow[(PushMessage, Committable), Message.Id, NotUsed] =
+    // TODO Not sure about parallelism, as the commits should not be in-order, maybe add it as parameter?
     atLeastOnceProducerFlow(queueName, settings, Flow[Committable].mapAsync(1)(_.commit())).map(_._1)
 
   /**

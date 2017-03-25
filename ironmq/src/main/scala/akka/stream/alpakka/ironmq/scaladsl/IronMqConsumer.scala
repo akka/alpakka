@@ -11,7 +11,7 @@ import akka.stream.scaladsl._
 
 object IronMqConsumer {
 
-  def atMostOneConsumerSource(queueName: Queue.Name, settings: IronMqSettings): Source[Message, NotUsed] =
+  def atMostOnceConsumerSource(queueName: Queue.Name, settings: IronMqSettings): Source[Message, NotUsed] =
     Source.fromGraph(new IronMqPullStage(queueName, settings)).mapAsync(1) { cm =>
       cm.commit().map(_ => cm.message)(ExecutionContexts.sameThreadExecutionContext)
     }
