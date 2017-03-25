@@ -41,7 +41,7 @@ protected[pubsub] trait GooglePubSub {
     import materializer.executionContext
     val session = getSession(clientEmail, privateKey)
 
-    Flow[PublishRequest].mapAsync(parallelism) { request =>
+    Flow[PublishRequest].mapAsyncUnordered(parallelism) { request =>
       session.getToken().flatMap { accessToken =>
         httpApi.publish(projectId, topic, accessToken, apiKey, request)
       }
@@ -67,7 +67,7 @@ protected[pubsub] trait GooglePubSub {
     val session = getSession(clientEmail, privateKey)
 
     Flow[AcknowledgeRequest]
-      .mapAsync(parallelism) { ackReq =>
+      .mapAsyncUnordered(parallelism) { ackReq =>
         session.getToken().flatMap { accessToken =>
           httpApi.acknowledge(project = projectId, subscription = subscription, accessToken = accessToken,
             apiKey = apiKey, request = ackReq)
