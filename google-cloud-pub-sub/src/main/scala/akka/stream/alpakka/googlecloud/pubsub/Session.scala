@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.googlepubsub
+package akka.stream.alpakka.googlecloud.pubsub
 
 import java.security.PrivateKey
 import java.time.Instant
@@ -11,8 +11,9 @@ import akka.stream.Materializer
 
 import scala.concurrent.Future
 
-private[googlepubsub] class Session(clientEmail: String, privateKey: PrivateKey) {
-  var maybeAccessToken: Option[Future[AccessTokenExpiry]] = None
+@akka.annotation.InternalApi
+private[pubsub] class Session(clientEmail: String, privateKey: PrivateKey) {
+  protected var maybeAccessToken: Option[Future[AccessTokenExpiry]] = None
   protected def now = Instant.now()
   protected val httpApi: HttpApi = HttpApi
 
