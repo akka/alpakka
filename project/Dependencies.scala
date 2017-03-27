@@ -97,8 +97,8 @@ object Dependencies {
 
   val Sqs = Seq(
     libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-sqs" % "1.11.76",        // ApacheV2
-      "org.mockito"   % "mockito-core"     % "2.3.7"    % Test // MIT
+      "com.amazonaws" % "aws-java-sdk-sqs" % "1.11.105",        // ApacheV2
+      "org.mockito"   % "mockito-core"     % "2.7.17"    % Test // MIT
     )
   )
 
@@ -113,8 +113,8 @@ object Dependencies {
 
   val AwsLambda = Seq(
     libraryDependencies ++= Seq(
-      "com.amazonaws"   % "aws-java-sdk-lambda"    % "1.11.51", // ApacheV2
-      "org.mockito"   % "mockito-core"     % "2.3.7"    % Test  // MIT
+      "com.amazonaws"   % "aws-java-sdk-lambda"    % "1.11.105", // ApacheV2
+      "org.mockito"   % "mockito-core"     % "2.7.17"    % Test  // MIT
     )
   )
 

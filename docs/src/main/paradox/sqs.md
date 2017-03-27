@@ -105,7 +105,6 @@ Scala
 Java
 : @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #run }
 
-
 #### Sink configuration
 
 Scala
@@ -114,6 +113,40 @@ Scala
 Options:
 
  - `maxInFlight` - maximum number of messages being processed by `AmazonSQSAsync` at the same time. Default: 10
+
+
+### Message processing with acknowledgement
+
+`SqsAckSink` provides possibility to acknowledge (delete) or requeue a message.
+
+Your flow must decide which action to take and push it with message:
+
+ - `Ack` - delete message from the queue
+ - `RequeueWithDelay(delaySeconds: Int)` - schedule a retry
+ 
+Scala (ack)
+: @@snip (../../../../sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #ack }
+
+Scala (requeue)
+: @@snip (../../../../sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #requeue }
+
+Java (ack)
+: @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #ack }
+
+Java (requeue)
+: @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #requeue }
+
+#### SqsAckSink configuration
+
+Same as the normal `SqsSink`:
+
+Scala
+: @@snip (../../../../sqs/src/main/scala/akka/stream/alpakka/sqs/SqsAckSinkStage.scala) { #SqsAckSinkSettings }
+
+Options:
+
+ - `maxInFlight` - maximum number of messages being processed by `AmazonSQSAsync` at the same time. Default: 10
+
 
 ### Running the example code
 
