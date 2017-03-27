@@ -15,6 +15,7 @@ object SqsAckSink {
    * Scala API: creates a sink based on [[SqsAckFlowStage]] for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]]
    */
   def apply(queueUrl: String, settings: SqsAckSinkSettings = SqsAckSinkSettings.Defaults)(
-      implicit sqsClient: AmazonSQSAsync): Sink[MessageActionPair, Future[Done]] =
+      implicit sqsClient: AmazonSQSAsync
+  ): Sink[MessageActionPair, Future[Done]] =
     SqsAckFlow.apply(queueUrl, settings).toMat(Sink.ignore)(Keep.right)
 }

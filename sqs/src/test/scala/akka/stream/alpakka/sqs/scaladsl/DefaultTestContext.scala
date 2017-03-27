@@ -31,7 +31,13 @@ trait DefaultTestContext extends BeforeAndAfterAll { this: Suite =>
   implicit val mat = ActorMaterializer()
   //#init-mat
 
-  implicit val sqsClient = SqsUtils.createAsyncClient(sqsEndpoint)
+  val credentialsProvider = new AWSCredentialsProvider {
+    override def refresh() = ()
+
+    override def getCredentials = new BasicAWSCredentials("x", "x")
+  }
+
+  implicit val sqsClient = createAsyncClient(sqsEndpoint, credentialsProvider)
 
   def randomQueueUrl(): String = sqsClient.createQueue(s"queue-${Random.nextInt}").getQueueUrl
 
@@ -40,21 +46,16 @@ trait DefaultTestContext extends BeforeAndAfterAll { this: Suite =>
     sqsServer.stopAndWait()
     Await.ready(system.terminate(), 5.seconds)
   }
-}
 
-object SqsUtils {
-  def createAsyncClient(sqsEndpoint: String): AmazonSQSAsync = {
+  def createAsyncClient(sqsEndpoint: String, credentialsProvider: AWSCredentialsProvider): AmazonSQSAsync = {
     //#init-client
-    val clientBuilder = AmazonSQSAsyncClientBuilder.standard()
-    val credentialsProvider = new AWSCredentialsProvider {
-      override def refresh(): Unit = ()
-      override def getCredentials = new BasicAWSCredentials("x", "x")
-    }
-
-    clientBuilder
+    val client: AmazonSQSAsync = AmazonSQSAsyncClientBuilder
+      .standard()
       .withCredentials(credentialsProvider)
       .withEndpointConfiguration(new EndpointConfiguration(sqsEndpoint, "eu-central-1"))
       .build()
     //#init-client
+    client
   }
+
 }

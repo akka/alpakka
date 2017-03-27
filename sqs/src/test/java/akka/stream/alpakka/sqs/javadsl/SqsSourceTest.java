@@ -7,19 +7,16 @@ import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.sqs.SqsSourceSettings;
 import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
+import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.services.sqs.AmazonSQSAsync;
+import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -71,13 +68,25 @@ public class SqsSourceTest extends BaseSqsTest {
     public void streamFromQueueWithCustomClient() throws Exception {
 
         final String queueUrl = randomQueueUrl();
+
+        //#init-custom-client
+        AmazonSQSAsync customSqsClient =
+          AmazonSQSAsyncClientBuilder
+            .standard()
+            .withCredentials(credentialsProvider)
+            .withExecutorFactory(() -> Executors.newFixedThreadPool(10))
+            .withEndpointConfiguration(
+                    new AwsClientBuilder.EndpointConfiguration(sqsEndpoint, "eu-central-1"))
+            .build();
+        //#init-custom-client
+
         sqsClient.sendMessage(queueUrl, "alpakka");
 
         //#run
-        final CompletionStage<String> cs = SqsSource.create(queueUrl, sqsSourceSettings, sqsClient)
-            .map(m -> m.getBody())
-            .take(1)
-            .runWith(Sink.head(), materializer);
+        final CompletionStage<String> cs = SqsSource.create(queueUrl, sqsSourceSettings, customSqsClient)
+                .map(m -> m.getBody())
+                .take(1)
+                .runWith(Sink.head(), materializer);
         //#run
 
         assertEquals("alpakka", cs.toCompletableFuture().get(10, TimeUnit.SECONDS));

@@ -58,8 +58,8 @@ public class SqsSinkTest extends BaseSqsTest {
 
         //#run
         CompletionStage<Done> done = Source
-                .single("alpakka")
-                .runWith(SqsSink.create(queueUrl, sqsClient), materializer);
+          .single("alpakka")
+          .runWith(SqsSink.create(queueUrl, sqsClient), materializer);
 
         done.toCompletableFuture().get(1, TimeUnit.SECONDS);
         //#run
@@ -67,5 +67,41 @@ public class SqsSinkTest extends BaseSqsTest {
 
         assertEquals(1, messages.size());
         assertEquals("alpakka", messages.get(0).getBody());
+    }
+
+    @Test
+    public void sendViaFlow() throws Exception {
+        final String queueUrl = randomQueueUrl();
+
+        //#flow
+        CompletionStage<Done> done = Source
+                .single("alpakka-flow")
+                .via(SqsFlow.create(queueUrl, sqsClient))
+                .runWith(Sink.ignore(), materializer);
+
+        done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        //#flow
+        List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
+
+        assertEquals(1, messages.size());
+        assertEquals("alpakka-flow", messages.get(0).getBody());
+    }
+
+    @Test
+    public void ackViaFlow() throws Exception {
+        final String queueUrl = randomQueueUrl();
+
+        //#flow
+        CompletionStage<Done> done = Source
+                .single("alpakka-flow")
+                .via(SqsFlow.create(queueUrl, sqsClient))
+                .runWith(Sink.ignore(), materializer);
+
+        done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        //#flow
+        List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
+
+        assertEquals(1, messages.size());
+        assertEquals("alpakka-flow", messages.get(0).getBody());
     }
 }

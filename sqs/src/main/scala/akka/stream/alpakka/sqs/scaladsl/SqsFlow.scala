@@ -15,6 +15,7 @@ object SqsFlow {
    * Scala API: creates a [[SqsFlowStage]] for a SQS queue using an [[AmazonSQSAsync]]
    */
   def apply(queueUrl: String, settings: SqsSinkSettings = SqsSinkSettings.Defaults)(
-      implicit sqsClient: AmazonSQSAsync): Flow[String, SendMessageResult, NotUsed] =
+      implicit sqsClient: AmazonSQSAsync
+  ): Flow[String, SendMessageResult, NotUsed] =
     Flow.fromGraph(new SqsFlowStage(queueUrl, sqsClient)).mapAsync(settings.maxInFlight)(identity)
 }

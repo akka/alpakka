@@ -10,6 +10,7 @@ import akka.stream.alpakka.sqs.Ack;
 import akka.stream.alpakka.sqs.MessageAction;
 import akka.stream.alpakka.sqs.RequeueWithDelay;
 import akka.stream.javadsl.Source;
+import akka.stream.javadsl.Sink;
 import akka.testkit.JavaTestKit;
 import com.amazonaws.handlers.AsyncHandler;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
@@ -70,6 +71,35 @@ public class SqsAckSinkTest extends BaseSqsTest {
 
         done.toCompletableFuture().get(1, TimeUnit.SECONDS);
         //#ack
+        verify(awsClient).deleteMessageAsync(any(DeleteMessageRequest.class), any());
+    }
+
+    @Test
+    public void testAcknowledgeViaFlow() throws Exception {
+        final String queueUrl = "none";
+        AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
+        when(awsClient.deleteMessageAsync(any(DeleteMessageRequest.class), any())).thenAnswer(
+                invocation -> {
+                    DeleteMessageRequest request = invocation.getArgument(0);
+                    invocation
+                            .<AsyncHandler< DeleteMessageRequest, DeleteMessageResult>>getArgument(1)
+                            .onSuccess(request, new DeleteMessageResult());
+                    return new CompletableFuture<DeleteMessageResult>();
+                }
+        );
+
+        //#flow-ack
+        Tuple2<Message, MessageAction> pair = new Tuple2<>(
+                new Message().withBody("test-ack-flow"),
+                new Ack()
+        );
+        CompletionStage<Done> done = Source
+                .single(pair)
+                .via(SqsAckFlow.create(queueUrl, awsClient))
+                .runWith(Sink.ignore(), materializer);
+
+        done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        //#flow-ack
         verify(awsClient).deleteMessageAsync(any(DeleteMessageRequest.class), any());
     }
 

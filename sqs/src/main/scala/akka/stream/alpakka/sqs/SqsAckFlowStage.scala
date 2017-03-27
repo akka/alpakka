@@ -50,8 +50,7 @@ class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
         checkForCompletion()
       }
 
-      setHandler(out,
-        new OutHandler {
+      setHandler(out, new OutHandler {
         override def onPull() =
           tryPull(in)
       })
@@ -86,34 +85,38 @@ class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
             val r = Promise[AmazonWebServiceResult[ResponseMetadata]]
             action match {
               case Ack() =>
-                sqsClient.deleteMessageAsync(new DeleteMessageRequest(queueUrl, message.getReceiptHandle),
+                sqsClient.deleteMessageAsync(
+                  new DeleteMessageRequest(queueUrl, message.getReceiptHandle),
                   new AsyncHandler[DeleteMessageRequest, DeleteMessageResult] {
 
-                  override def onError(exception: Exception): Unit = {
-                    r.failure(exception)
-                    onComplete()
-                  }
-
-                  override def onSuccess(request: DeleteMessageRequest, result: DeleteMessageResult): Unit = {
-                    r.success(result)
-                    onComplete()
-                  }
-                })
-              case RequeueWithDelay(delaySeconds) =>
-                sqsClient
-                  .sendMessageAsync(new SendMessageRequest(queueUrl, message.getBody).withDelaySeconds(delaySeconds),
-                    new AsyncHandler[SendMessageRequest, SendMessageResult] {
-
                     override def onError(exception: Exception): Unit = {
-                      r.tryFailure(exception)
+                      r.failure(exception)
                       onComplete()
                     }
 
-                    override def onSuccess(request: SendMessageRequest, result: SendMessageResult): Unit = {
+                    override def onSuccess(request: DeleteMessageRequest, result: DeleteMessageResult): Unit = {
                       r.success(result)
                       onComplete()
                     }
-                  })
+                  }
+                )
+              case RequeueWithDelay(delaySeconds) =>
+                sqsClient
+                  .sendMessageAsync(
+                    new SendMessageRequest(queueUrl, message.getBody).withDelaySeconds(delaySeconds),
+                    new AsyncHandler[SendMessageRequest, SendMessageResult] {
+
+                      override def onError(exception: Exception): Unit = {
+                        r.tryFailure(exception)
+                        onComplete()
+                      }
+
+                      override def onSuccess(request: SendMessageRequest, result: SendMessageResult): Unit = {
+                        r.success(result)
+                        onComplete()
+                      }
+                    }
+                  )
             }
 
             inFlight.incrementAndGet()

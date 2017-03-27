@@ -42,8 +42,7 @@ class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
         checkForCompletion()
       }
 
-      setHandler(out,
-        new OutHandler {
+      setHandler(out, new OutHandler {
         override def onPull() =
           tryPull(in)
       })
