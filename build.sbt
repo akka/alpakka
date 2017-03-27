@@ -1,7 +1,7 @@
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
-  .aggregate(amqp, cassandra, dynamodb, files, ftp, hbase, jms, mqtt, s3, simpleCodecs, sqs, sse, awslambda)
+  .aggregate(amqp, cassandra, dynamodb, files, ftp, googleCloudPubSub, hbase, jms, mqtt, s3, simpleCodecs, sqs, sse, awslambda)
 
 lazy val amqp = project
   .enablePlugins(AutomateHeaderPlugin)
@@ -90,6 +90,14 @@ lazy val sse = project
   .settings(
     name := "akka-stream-alpakka-sse",
     Dependencies.Sse
+  )
+
+lazy val googleCloudPubSub = project
+  .in(file("google-cloud-pub-sub"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-google-cloud-pub-sub",
+    Dependencies.GooglePubSub
   )
 
 val Local = config("local")
