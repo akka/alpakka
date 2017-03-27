@@ -14,6 +14,8 @@ import java.nio.file.Paths
 import scala.collection.JavaConversions._
 import java.nio.file.attribute.PosixFilePermissions
 
+import com.jcraft.jsch.ChannelSftp.{APPEND, OVERWRITE}
+
 private[ftp] trait SftpOperations { _: FtpLike[JSch, SftpSettings] =>
 
   type Handler = ChannelSftp
@@ -87,7 +89,7 @@ private[ftp] trait SftpOperations { _: FtpLike[JSch, SftpSettings] =>
     handler.get(name)
   }
 
-  def storeFileStream(name: String, handler: Handler): Try[OutputStream] = Try {
-    handler.put(name)
+  def storeFileOutputStream(name: String, handler: Handler, append: Boolean): Try[OutputStream] = Try {
+    handler.put(name, if (append) APPEND else OVERWRITE)
   }
 }

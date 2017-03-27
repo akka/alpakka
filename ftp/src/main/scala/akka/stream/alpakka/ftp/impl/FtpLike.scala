@@ -25,7 +25,7 @@ protected[ftp] trait FtpLike[FtpClient, S <: RemoteFileSettings] {
 
   def retrieveFileInputStream(name: String, handler: Handler): Try[InputStream]
 
-  def storeFileStream(name: String, handler: Handler): Try[OutputStream]
+  def storeFileOutputStream(name: String, handler: Handler, append: Boolean): Try[OutputStream]
 }
 
 object FtpLike {

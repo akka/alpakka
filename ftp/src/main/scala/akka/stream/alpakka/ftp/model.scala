@@ -164,6 +164,7 @@ object FtpCredentials {
 
   /**
    * Non-anonymous credentials
+   *
    * @param username the username
    * @param password the password
    */
