@@ -9,6 +9,7 @@ part of this project as well as links to components that are maintained by other
 @@@ index
 
 * [Connectors](connectors.md)
+* [External connectors](external-connectors.md) (hosted separately)
 * [Integration Patterns](patterns.md)
 * [Data Transformations](data-transformations.md)
 
