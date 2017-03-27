@@ -7,7 +7,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.amazonaws.auth.{AWSCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
-import com.amazonaws.services.sqs.{AmazonSQSAsyncClient, AmazonSQSAsyncClientBuilder}
+import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
 import org.elasticmq.rest.sqs.{SQSRestServer, SQSRestServerBuilder}
 import org.scalatest.{BeforeAndAfterAll, Suite, Tag}
 
@@ -31,9 +31,7 @@ trait DefaultTestContext extends BeforeAndAfterAll { this: Suite =>
   implicit val mat = ActorMaterializer()
   //#init-mat
 
-  //#init-client
   implicit val sqsClient = SqsUtils.createAsyncClient(sqsEndpoint)
-  //#init-client
 
   def randomQueueUrl(): String = sqsClient.createQueue(s"queue-${Random.nextInt}").getQueueUrl
 
@@ -45,7 +43,8 @@ trait DefaultTestContext extends BeforeAndAfterAll { this: Suite =>
 }
 
 object SqsUtils {
-  def createAsyncClient(sqsEndpoint: String): AmazonSQSAsyncClient = {
+  def createAsyncClient(sqsEndpoint: String): AmazonSQSAsync = {
+    //#init-client
     val clientBuilder = AmazonSQSAsyncClientBuilder.standard()
     val credentialsProvider = new AWSCredentialsProvider {
       override def refresh(): Unit = ()
@@ -56,6 +55,6 @@ object SqsUtils {
       .withCredentials(credentialsProvider)
       .withEndpointConfiguration(new EndpointConfiguration(sqsEndpoint, "eu-central-1"))
       .build()
-      .asInstanceOf[AmazonSQSAsyncClient]
+    //#init-client
   }
 }

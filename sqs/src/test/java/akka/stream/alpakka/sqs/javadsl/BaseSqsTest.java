@@ -2,8 +2,9 @@
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.sqs.javadsl;
+
 import akka.stream.alpakka.sqs.scaladsl.SqsUtils$;
-import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
+import com.amazonaws.services.sqs.AmazonSQSAsync;
 import org.elasticmq.rest.sqs.SQSRestServer;
 import org.elasticmq.rest.sqs.SQSRestServerBuilder;
 import org.junit.After;
@@ -19,7 +20,7 @@ public abstract class BaseSqsTest {
     private InetSocketAddress sqsAddress;
     private int sqsPort = 0;
     private String sqsEndpoint;
-    protected AmazonSQSAsyncClient sqsClient;
+    protected AmazonSQSAsync sqsClient;
 
     @Before
     public void setupBefore() {
