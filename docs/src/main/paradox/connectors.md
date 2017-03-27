@@ -9,6 +9,7 @@
 * [Cassandra Connector](cassandra.md)
 * [File Connectors](file.md)
 * [FTP Connector](ftp.md)
+* [Google Cloud Pub/Sub Connector](google-cloud-pub-sub.md)
 * [HBase Connectors](hbase.md)
 * [JMS Connectors](jms.md)
 * [MQTT Connector](mqtt.md)
