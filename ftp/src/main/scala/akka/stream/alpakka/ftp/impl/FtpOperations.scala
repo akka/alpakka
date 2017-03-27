@@ -42,7 +42,14 @@ private[ftp] trait FtpOperations { _: FtpLike[FTPClient, FtpFileSettings] =>
       .listFiles(path)
       .collect {
         case file: FTPFile if file.getName != "." && file.getName != ".." =>
-          FtpFile(file.getName, Paths.get(s"$path/${file.getName}").normalize.toString, file.isDirectory)
+          FtpFile(
+            file.getName,
+            Paths.get(s"$path/${file.getName}").normalize.toString,
+            file.isDirectory,
+            file.getSize,
+            file.getTimestamp.getTimeInMillis,
+            getPosixFilePermissions(file)
+          )
       }
       .toVector
   }
