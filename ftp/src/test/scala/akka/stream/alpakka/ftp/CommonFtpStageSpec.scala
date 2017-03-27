@@ -61,6 +61,8 @@ trait CommonFtpStageSpec extends BaseSpec {
 
       putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName)
 
+      val timestamp = System.currentTimeMillis().millis
+
       val files = listFiles(basePath).runWith(Sink.seq).futureValue
 
       files should have size 1
@@ -70,7 +72,7 @@ trait CommonFtpStageSpec extends BaseSpec {
           actualPath shouldBe s"$basePath$fileName"
           isDirectory shouldBe false
           size shouldBe getLoremIpsum.length
-          System.currentTimeMillis().millis - lastModified.millis should be < 1.minute
+          timestamp - lastModified.millis should be < 1.minute
           perms should contain allOf (PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)
       }
     }
