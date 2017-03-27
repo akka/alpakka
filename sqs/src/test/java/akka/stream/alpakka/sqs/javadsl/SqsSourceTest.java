@@ -25,12 +25,10 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
-public class SqsSourceTest {
+public class SqsSourceTest extends BaseSqsTest {
 
     static ActorSystem system;
     static ActorMaterializer materializer;
-    static AWSCredentials credentials;
-    static AmazonSQSAsyncClient sqsClient;
     static SqsSourceSettings sqsSourceSettings;
 
     @BeforeClass
@@ -41,22 +39,15 @@ public class SqsSourceTest {
         materializer = ActorMaterializer.create(system);
         //#init-mat
 
-        //#init-client
-        credentials = new BasicAWSCredentials("x", "x");
-        sqsClient = new AmazonSQSAsyncClient(credentials)
-            .withEndpoint("http://localhost:9324");
-        //#init-client
-
         sqsSourceSettings = SqsSourceSettings.create(20, 100, 10);
     }
 
     @AfterClass
     public static void teardown() {
         JavaTestKit.shutdownActorSystem(system);
-        sqsClient.shutdown();
     }
 
-    static String randomQueueUrl() {
+    String randomQueueUrl() {
         return sqsClient.createQueue(String.format("queue-%s", new Random().nextInt())).getQueueUrl();
     }
 
@@ -78,12 +69,6 @@ public class SqsSourceTest {
 
     @Test
     public void streamFromQueueWithCustomClient() throws Exception {
-
-        //#init-custom-client
-        final ExecutorService executor = Executors.newFixedThreadPool(10);
-        final AmazonSQSAsyncClient sqsClient = new AmazonSQSAsyncClient(credentials, executor)
-            .withEndpoint("http://localhost:9324");
-        //#init-custom-client
 
         final String queueUrl = randomQueueUrl();
         sqsClient.sendMessage(queueUrl, "alpakka");

@@ -31,8 +31,6 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
       //#init-custom-client
       val executor: ExecutorService = Executors.newFixedThreadPool(10)
-      implicit val sqsClient: AmazonSQSAsyncClient =
-        new AmazonSQSAsyncClient(credentials, executor).withEndpoint[AmazonSQSAsyncClient]("http://localhost:9324")
       //#init-custom-client
 
       val queue = randomQueueUrl()
@@ -72,7 +70,8 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
     "should finish immediately if the queue does not exist" taggedAs Integration in {
 
-      val queue = "http://localhost:9324/queue/not-existing"
+      sqsEndpoint
+      val queue = s"$sqsEndpoint/queue/not-existing"
 
       val f = SqsSource(queue, sqsSourceSettings).runWith(Sink.seq)
 

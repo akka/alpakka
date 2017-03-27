@@ -5,8 +5,10 @@ package akka.stream.alpakka.sqs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import com.amazonaws.auth.BasicAWSCredentials
-import com.amazonaws.services.sqs.AmazonSQSAsyncClient
+import com.amazonaws.auth.{AWSCredentialsProvider, BasicAWSCredentials}
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
+import com.amazonaws.services.sqs.{AmazonSQSAsyncClient, AmazonSQSAsyncClientBuilder}
+import org.elasticmq.rest.sqs.{SQSRestServer, SQSRestServerBuilder}
 import org.scalatest.{BeforeAndAfterAll, Suite, Tag}
 
 import scala.concurrent.Await
@@ -14,6 +16,13 @@ import scala.concurrent.duration._
 import scala.util.Random
 
 trait DefaultTestContext extends BeforeAndAfterAll { this: Suite =>
+
+  lazy val sqsServer: SQSRestServer = SQSRestServerBuilder.withDynamicPort().start()
+  lazy val sqsAddress = sqsServer.waitUntilStarted().localAddress
+  lazy val sqsPort = sqsAddress.getPort
+  lazy val sqsEndpoint: String = {
+    s"http://${sqsAddress.getHostName}:$sqsPort"
+  }
 
   object Integration extends Tag("akka.stream.alpakka.sqs.scaladsl.Integration")
 
@@ -23,13 +32,30 @@ trait DefaultTestContext extends BeforeAndAfterAll { this: Suite =>
   //#init-mat
 
   //#init-client
-  val credentials = new BasicAWSCredentials("x", "x")
-  implicit val sqsClient: AmazonSQSAsyncClient =
-    new AmazonSQSAsyncClient(credentials).withEndpoint[AmazonSQSAsyncClient]("http://localhost:9324")
+  implicit val sqsClient = SqsUtils.createAsyncClient(sqsEndpoint)
   //#init-client
 
   def randomQueueUrl(): String = sqsClient.createQueue(s"queue-${Random.nextInt}").getQueueUrl
 
-  override protected def afterAll(): Unit =
+  override protected def afterAll(): Unit = {
+    super.afterAll()
+    sqsServer.stopAndWait()
     Await.ready(system.terminate(), 5.seconds)
+  }
+}
+
+object SqsUtils {
+  def createAsyncClient(sqsEndpoint: String): AmazonSQSAsyncClient = {
+    val clientBuilder = AmazonSQSAsyncClientBuilder.standard()
+    val credentialsProvider = new AWSCredentialsProvider {
+      override def refresh(): Unit = ()
+      override def getCredentials = new BasicAWSCredentials("x", "x")
+    }
+
+    clientBuilder
+      .withCredentials(credentialsProvider)
+      .withEndpointConfiguration(new EndpointConfiguration(sqsEndpoint, "eu-central-1"))
+      .build()
+      .asInstanceOf[AmazonSQSAsyncClient]
+  }
 }

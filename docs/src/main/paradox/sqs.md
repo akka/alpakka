@@ -152,10 +152,8 @@ Options:
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
 
-> The test code uses [ElasticMQ](https://github.com/adamw/elasticmq) as queuing service which serves an AWS SQS
-> compatible API.  You can start one quickly using docker:
->
-> `docker run -p 9324:9324 -d s12v/elasticmq`
+> The test code uses embedded [ElasticMQ](https://github.com/adamw/elasticmq) as queuing service which serves an AWS SQS
+> compatible API.
 
 Scala
 :   ```
