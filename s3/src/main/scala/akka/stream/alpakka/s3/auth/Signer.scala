@@ -19,18 +19,15 @@ private[alpakka] object Signer {
   def signedRequest(request: HttpRequest, key: SigningKey, date: ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC))(
       implicit mat: Materializer): Future[HttpRequest] = {
     import mat.executionContext
-    val hashedBody = request.entity.dataBytes.runWith(digest()).map {
-      case hash => encodeHex(hash.toArray)
-    }
+    val hashedBody = request.entity.dataBytes.runWith(digest()).map(hash => encodeHex(hash.toArray))
 
-    hashedBody.map {
-      case hb =>
-        val headersToAdd = Vector(RawHeader("x-amz-date", date.format(dateFormatter)),
-            RawHeader("x-amz-content-sha256", hb)) ++ sessionHeader(key.credentials)
-        val reqWithHeaders = request.withHeaders(request.headers ++ headersToAdd)
-        val cr = CanonicalRequest.from(reqWithHeaders)
-        val authHeader = authorizationHeader("AWS4-HMAC-SHA256", key, date, cr)
-        reqWithHeaders.withHeaders(reqWithHeaders.headers :+ authHeader)
+    hashedBody.map { hb =>
+      val headersToAdd = Vector(RawHeader("x-amz-date", date.format(dateFormatter)),
+          RawHeader("x-amz-content-sha256", hb)) ++ sessionHeader(key.credentials)
+      val reqWithHeaders = request.withHeaders(request.headers ++ headersToAdd)
+      val cr = CanonicalRequest.from(reqWithHeaders)
+      val authHeader = authorizationHeader("AWS4-HMAC-SHA256", key, date, cr)
+      reqWithHeaders.withHeaders(reqWithHeaders.headers :+ authHeader)
     }
   }
 

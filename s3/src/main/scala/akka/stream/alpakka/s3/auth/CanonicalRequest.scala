@@ -3,10 +3,12 @@
  */
 package akka.stream.alpakka.s3.auth
 
-import java.net.URLEncoder
+import java.net.{ URLDecoder, URLEncoder }
 
 import akka.http.scaladsl.model.Uri.{Path, Query}
 import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
+
+import scala.util.Try
 
 // Documentation: http://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
 private[alpakka] case class CanonicalRequest(method: String,
@@ -19,8 +21,13 @@ private[alpakka] case class CanonicalRequest(method: String,
 }
 
 private[alpakka] object CanonicalRequest {
+
   def from(req: HttpRequest): CanonicalRequest = {
     val hashedBody = req.headers.find(_.name == "x-amz-content-sha256").map(_.value).getOrElse("")
+    from(req, hashedBody)
+  }
+
+  def from(req: HttpRequest, hashedBody: String): CanonicalRequest =
     CanonicalRequest(
       req.method.value,
       preprocessPath(req.uri.path),
@@ -29,12 +36,27 @@ private[alpakka] object CanonicalRequest {
       signedHeadersString(req.headers),
       hashedBody
     )
-  }
 
   def canonicalQueryString(query: Query): String =
-    query.sortBy(_._1).map { case (a, b) => s"${uriEncode(a)}=${uriEncode(b)}" }.mkString("&")
+    query.sortBy(_._1).map { case (a, b) => encodeQueryParams(a, b) }.mkString("&")
 
-  private def uriEncode(str: String) = URLEncoder.encode(str, "utf-8")
+  private def encodeQueryParams(name: String, value: String): String =
+    if (name.contains(' ')) {
+      uriEncode(name.takeWhile(_ != ' ')).replace("%7E", "~") + "="
+    } else {
+      uriEncode(name).replace("%7E", "~") + "=" + uriEncode(value).replace("%7E", "~")
+    }
+
+  private def uriEncode(str: String) = if (isAlreadyURLEncoded(str)) str else URLEncoder.encode(str, "utf-8")
+
+  // TODO: this could be removed when the Uri class in akka-http will accept utf-8. See https://github.com/akka/akka-http/issues/86
+  private def isAlreadyURLEncoded(str: String): Boolean =
+    Try {
+      URLDecoder.decode(str, "utf-8")
+    }.getOrElse(str) != str
+
+  private def removeRedundantAndRelativePath(path: String): String =
+    if (path.contains("..")) "/" else path.replace("./", "")
 
   /**
    * URL encodes the given string.  This allows us to pass special characters
@@ -43,13 +65,20 @@ private[alpakka] object CanonicalRequest {
    * percent encoded path delimiters back to their decoded counterparts.
    */
   private def preprocessPath(path: Path): String =
-    uriEncode(path.toString).replace(":", "%3A").replace("%2F", "/")
+    uriEncode(removeRedundantAndRelativePath(path.toString))
+      .replace(":", "%3A")
+      .replace("%2F", "/")
+      .replace("%7E", "~")
+      .replace("+", "%20")
 
   def canonicalHeaderString(headers: Seq[HttpHeader]): String = {
     val grouped = headers.groupBy(_.lowercaseName())
-    val combined = grouped.mapValues(_.map(_.value.replaceAll("\\s+", " ").trim).mkString(","))
-    combined.toList.sortBy(_._1).map { case (k, v) => s"$k:$v" }.mkString("\n")
+    val combined = grouped.mapValues(_.map(_.value.replaceAll("\\s+", " ")).mkString(","))
+    fixContentTypeHeaderParameter(combined.toList.sortBy(_._1).map { case (k, v) => s"$k:$v" }.mkString("\n"))
   }
+
+  private def fixContentTypeHeaderParameter(headers: String): String =
+    headers.replace("charset=UTF-8", "charset=utf8")
 
   def signedHeadersString(headers: Seq[HttpHeader]): String =
     headers.map(_.lowercaseName()).distinct.sorted.mkString(";")
