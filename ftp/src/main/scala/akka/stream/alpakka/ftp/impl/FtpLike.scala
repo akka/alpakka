@@ -4,7 +4,6 @@
 package akka.stream.alpakka.ftp
 package impl
 
-import akka.stream.alpakka.ftp.RemoteFileSettings.SftpSettings
 import com.jcraft.jsch.JSch
 import org.apache.commons.net.ftp.FTPClient
 

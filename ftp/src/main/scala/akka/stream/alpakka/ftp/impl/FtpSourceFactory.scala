@@ -4,7 +4,7 @@
 package akka.stream.alpakka.ftp.impl
 
 import akka.stream.alpakka.ftp.FtpCredentials.{AnonFtpCredentials, NonAnonFtpCredentials}
-import akka.stream.alpakka.ftp.{FtpFileSettings, RemoteFileSettings}
+import akka.stream.alpakka.ftp.{FtpFileSettings, RemoteFileSettings, SftpSettings}
 import akka.stream.alpakka.ftp.RemoteFileSettings._
 import com.jcraft.jsch.JSch
 import org.apache.commons.net.ftp.FTPClient

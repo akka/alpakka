@@ -12,9 +12,11 @@ import akka.util.ByteString;
 import org.junit.Test;
 
 import java.net.InetAddress;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.concurrent.CompletionStage;
 
-public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest {
+public class RawKeySftpSourceTest extends SftpSupportImpl implements CommonFtpStageTest {
 
   @Test
   public void listFiles() throws Exception {
@@ -24,11 +26,6 @@ public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest
   @Test
   public void fromPath() throws Exception {
     CommonFtpStageTest.super.fromPath();
-  }
-
-  @Test
-  public void toPath() throws Exception {
-    CommonFtpStageTest.super.toPath();
   }
 
   public Source<FtpFile, NotUsed> getBrowserSource(String basePath) throws Exception {
@@ -45,11 +42,12 @@ public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest
 
   private SftpSettings settings() throws Exception {
     //#create-settings
-    final SftpSettings settings = SftpSettings.create(
-            InetAddress.getByName("localhost"))
+    final SftpSettings settings = SftpSettings.create(InetAddress.getByName("localhost"))
             .withPort(getPort())
-            .withCredentials(FtpCredentials.createAnonCredentials())
-            .withStrictHostKeyChecking(false);
+            .withCredentials(new FtpCredentials.NonAnonFtpCredentials("different user and password", "will fail password auth"))
+            .withStrictHostKeyChecking(false) // strictHostKeyChecking
+            .withSftpIdentity(SftpIdentity.createRawSftpIdentity("id", Files.readAllBytes(Paths.get("ftp/src/test/resources/client.pem")))
+    );
     //#create-settings
     return settings;
   }
