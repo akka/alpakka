@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.dynamodb.impl
 
@@ -42,20 +42,20 @@ private[alpakka] trait DynamoProtocol {
   val errorResponseHandler: HttpResponseHandler[AmazonServiceException] =
     protocol.createErrorResponseHandler(new JsonErrorResponseMetadata())
 
-  protected val batchGetItemM = new BatchGetItemRequestMarshaller(protocol)
-  protected val batchWriteItemM = new BatchWriteItemRequestMarshaller(protocol)
-  protected val createTableM = new CreateTableRequestMarshaller(protocol)
-  protected val deleteItemM = new DeleteItemRequestMarshaller(protocol)
-  protected val deleteTableM = new DeleteTableRequestMarshaller(protocol)
-  protected val describeLimitsM = new DescribeLimitsRequestMarshaller(protocol)
-  protected val describeTableM = new DescribeTableRequestMarshaller(protocol)
-  protected val getItemM = new GetItemRequestMarshaller(protocol)
-  protected val listTablesM = new ListTablesRequestMarshaller(protocol)
-  protected val putItemM = new PutItemRequestMarshaller(protocol)
-  protected val queryM = new QueryRequestMarshaller(protocol)
-  protected val scanM = new ScanRequestMarshaller(protocol)
-  protected val updateItemM = new UpdateItemRequestMarshaller(protocol)
-  protected val updateTableM = new UpdateTableRequestMarshaller(protocol)
+  protected val batchGetItemM = new BatchGetItemRequestProtocolMarshaller(protocol)
+  protected val batchWriteItemM = new BatchWriteItemRequestProtocolMarshaller(protocol)
+  protected val createTableM = new CreateTableRequestProtocolMarshaller(protocol)
+  protected val deleteItemM = new DeleteItemRequestProtocolMarshaller(protocol)
+  protected val deleteTableM = new DeleteTableRequestProtocolMarshaller(protocol)
+  protected val describeLimitsM = new DescribeLimitsRequestProtocolMarshaller(protocol)
+  protected val describeTableM = new DescribeTableRequestProtocolMarshaller(protocol)
+  protected val getItemM = new GetItemRequestProtocolMarshaller(protocol)
+  protected val listTablesM = new ListTablesRequestProtocolMarshaller(protocol)
+  protected val putItemM = new PutItemRequestProtocolMarshaller(protocol)
+  protected val queryM = new QueryRequestProtocolMarshaller(protocol)
+  protected val scanM = new ScanRequestProtocolMarshaller(protocol)
+  protected val updateItemM = new UpdateItemRequestProtocolMarshaller(protocol)
+  protected val updateTableM = new UpdateTableRequestProtocolMarshaller(protocol)
 
   protected val batchGetItemU = protocol.createResponseHandler(meta, new BatchGetItemResultJsonUnmarshaller)
   protected val batchWriteItemU = protocol.createResponseHandler(meta, new BatchWriteItemResultJsonUnmarshaller)
