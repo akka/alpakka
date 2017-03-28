@@ -1,15 +1,20 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.sqs.scaladsl
 
+import java.util.concurrent.{ExecutorService, Executors}
+
 import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.scaladsl.Sink
+import com.amazonaws.services.sqs.AmazonSQSAsyncClient
 import com.amazonaws.services.sqs.model.QueueDoesNotExistException
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{AsyncWordSpec, Matchers}
 
 class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with DefaultTestContext {
+
+  private val sqsSourceSettings = SqsSourceSettings.Defaults
 
   "SqsSource" should {
 
@@ -18,8 +23,22 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
       val queue = randomQueueUrl()
       sqsClient.sendMessage(queue, "alpakka")
 
-      SqsSource(queue).take(1).runWith(Sink.seq).map(_.map(_.getBody) should contain("alpakka"))
+      SqsSource(queue, sqsSourceSettings).take(1).runWith(Sink.head).map(_.getBody shouldBe "alpakka")
 
+    }
+
+    "stream a single batch from the queue with custom client" taggedAs Integration in {
+
+      //#init-custom-client
+      val executor: ExecutorService = Executors.newFixedThreadPool(10)
+      implicit val sqsClient: AmazonSQSAsyncClient =
+        new AmazonSQSAsyncClient(credentials, executor).withEndpoint[AmazonSQSAsyncClient]("http://localhost:9324")
+      //#init-custom-client
+
+      val queue = randomQueueUrl()
+      sqsClient.sendMessage(queue, "alpakka")
+
+      SqsSource(queue, sqsSourceSettings).take(1).runWith(Sink.head).map(_.getBody shouldBe "alpakka")
     }
 
     "stream multiple batches from the queue" taggedAs Integration in {
@@ -35,7 +54,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
       }
 
       //#run
-      SqsSource(queue).take(100).runWith(Sink.seq).map(_ should have size 100)
+      SqsSource(queue, sqsSourceSettings).take(100).runWith(Sink.seq).map(_ should have size 100)
       //#run
 
     }
@@ -55,7 +74,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
       val queue = "http://localhost:9324/queue/not-existing"
 
-      val f = SqsSource(queue).runWith(Sink.seq)
+      val f = SqsSource(queue, sqsSourceSettings).runWith(Sink.seq)
 
       f.failed.map(_ shouldBe a[QueueDoesNotExistException])
     }

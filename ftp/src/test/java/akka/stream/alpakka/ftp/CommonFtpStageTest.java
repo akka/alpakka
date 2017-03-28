@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.ftp;
 
@@ -9,19 +9,24 @@ import akka.japi.Pair;
 import akka.stream.IOResult;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Keep;
+import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.util.ByteString;
+import org.junit.Assert;
+
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 
-interface CommonFtpSourceTest extends FtpSupport, AkkaSupport {
+interface CommonFtpStageTest extends FtpSupport, AkkaSupport {
 
   Source<FtpFile, NotUsed> getBrowserSource(String basePath) throws Exception;
 
   Source<ByteString, CompletionStage<IOResult>> getIOSource(String path) throws Exception;
+
+  Sink<ByteString, CompletionStage<IOResult>> getIOSink(String path) throws Exception;
 
   default void listFiles() throws Exception {
     final int numFiles = 30;
@@ -61,7 +66,26 @@ interface CommonFtpSourceTest extends FtpSupport, AkkaSupport {
     IOResult result = pairResult.first().toCompletableFuture().get(3, TimeUnit.SECONDS);
 
     assertEquals(IOResult.createSuccessful(expectedNumOfBytes), result);
+  }
 
+  default void toPath() throws Exception {
+    String fileName = "sample_io";
+
+    final Materializer materializer = getMaterializer();
+
+    final ByteString fileContent = ByteString.fromString(getLoremIpsum());
+
+    Sink<ByteString, CompletionStage<IOResult>> sink = getIOSink("/" + fileName);
+    CompletionStage<IOResult> resultCompletionStage =
+            Source.single(fileContent).runWith(sink, materializer);
+
+    int expectedNumOfBytes = getLoremIpsum().getBytes().length;
+    IOResult result = resultCompletionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    byte[] actualStoredContent = getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName);
+
+    assertEquals(IOResult.createSuccessful(expectedNumOfBytes), result);
+    Assert.assertArrayEquals(actualStoredContent, getLoremIpsum().getBytes());
   }
 
 }

@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.ftp
 package impl
 
-import akka.stream.alpakka.ftp.RemoteFileSettings.SftpSettings
 import com.jcraft.jsch.JSch
 import org.apache.commons.net.ftp.FTPClient
+
 import scala.collection.immutable
 import scala.util.Try
-import java.io.InputStream
+import java.io.{InputStream, OutputStream}
 
 protected[ftp] trait FtpLike[FtpClient, S <: RemoteFileSettings] {
 
@@ -24,6 +24,8 @@ protected[ftp] trait FtpLike[FtpClient, S <: RemoteFileSettings] {
   def listFiles(handler: Handler): immutable.Seq[FtpFile]
 
   def retrieveFileInputStream(name: String, handler: Handler): Try[InputStream]
+
+  def storeFileStream(name: String, handler: Handler): Try[OutputStream]
 }
 
 object FtpLike {

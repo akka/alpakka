@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.s3.impl
 
@@ -19,7 +19,7 @@ class S3SourceSpec extends WireMockBase {
   "S3Source" should "work in a happy case" in {
     val body = "<response>Some content</response>"
     mock
-      .register(get(urlEqualTo("/testKey")).willReturn(aResponse().withStatus(200).withHeader("ETag", "fba9dede5f27731c9771645a39863328").withBody(body)))
+      .register(get(urlEqualTo("/testKey")).willReturn(aResponse().withStatus(200).withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""").withBody(body)))
 
     val result = new S3Client(AWSCredentials("", ""),
       "us-east-1").download("testBucket", "testKey").map(_.decodeString("utf8")).runWith(Sink.head)

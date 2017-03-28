@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.ftp
 package impl
@@ -21,6 +21,8 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] exte
   val ftpLike: FtpLike[FtpClient, S]
 
   val shape: SourceShape[FtpFile] = SourceShape(Outlet[FtpFile](s"$name.out"))
+
+  val out = shape.outlets.head.asInstanceOf[Outlet[FtpFile]]
 
   override def initialAttributes: Attributes =
     super.initialAttributes and Attributes.name(name) and IODispatcher

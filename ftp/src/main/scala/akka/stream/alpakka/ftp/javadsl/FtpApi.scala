@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.ftp.javadsl
 
@@ -9,11 +9,12 @@ import akka.stream.alpakka.ftp.{FtpFile, RemoteFileSettings}
 import akka.stream.alpakka.ftp.impl.{FtpLike, FtpSourceFactory}
 import akka.stream.IOResult
 import akka.stream.javadsl.Source
+import akka.stream.javadsl.Sink
 import akka.stream.scaladsl.{Source => ScalaSource}
+import akka.stream.scaladsl.{Sink => ScalaSink}
 import akka.util.ByteString
 import com.jcraft.jsch.JSch
 import org.apache.commons.net.ftp.FTPClient
-import java.nio.file.Path
 import java.util.concurrent.CompletionStage
 
 sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
@@ -93,7 +94,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
     ScalaSource.fromGraph(createBrowserGraph(basePath, connectionSettings)).asJava
 
   /**
-   * Java API: creates a [[Source]] of [[ByteString]] from some file [[Path]].
+   * Java API: creates a [[Source]] of [[ByteString]] from some file path.
    *
    * @param host FTP, FTPs or SFTP host
    * @param path the file path
@@ -101,12 +102,12 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    */
   def fromPath(
       host: String,
-      path: Path
+      path: String
   ): Source[ByteString, CompletionStage[IOResult]] =
     fromPath(path, defaultSettings(host))
 
   /**
-   * Java API: creates a [[Source]] of [[ByteString]] from some file [[Path]].
+   * Java API: creates a [[Source]] of [[ByteString]] from some file path.
    *
    * @param host FTP, FTPs or SFTP host
    * @param username username
@@ -118,25 +119,25 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
       host: String,
       username: String,
       password: String,
-      path: Path
+      path: String
   ): Source[ByteString, CompletionStage[IOResult]] =
     fromPath(path, defaultSettings(host, Some(username), Some(password)))
 
   /**
-   * Java API: creates a [[Source]] of [[ByteString]] from some file [[Path]].
+   * Java API: creates a [[Source]] of [[ByteString]] from some file path.
    *
    * @param path the file path
    * @param connectionSettings connection settings
    * @return A [[Source]] of [[ByteString]] that materializes to a [[CompletionStage]] of [[IOResult]]
    */
   def fromPath(
-      path: Path,
+      path: String,
       connectionSettings: S
   ): Source[ByteString, CompletionStage[IOResult]] =
     fromPath(path, connectionSettings, DefaultChunkSize)
 
   /**
-   * Java API: creates a [[Source]] of [[ByteString]] from some file [[Path]].
+   * Java API: creates a [[Source]] of [[ByteString]] from some file path.
    *
    * @param path the file path
    * @param connectionSettings connection settings
@@ -144,12 +145,27 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    * @return A [[Source]] of [[ByteString]] that materializes to a [[CompletionStage]] of [[IOResult]]
    */
   def fromPath(
-      path: Path,
+      path: String,
       connectionSettings: S,
       chunkSize: Int = DefaultChunkSize
   ): Source[ByteString, CompletionStage[IOResult]] = {
     import scala.compat.java8.FutureConverters._
-    ScalaSource.fromGraph(createIOGraph(path, connectionSettings, chunkSize)).mapMaterializedValue(_.toJava).asJava
+    ScalaSource.fromGraph(createIOSource(path, connectionSettings, chunkSize)).mapMaterializedValue(_.toJava).asJava
+  }
+
+  /**
+   * Java API: creates a [[Sink]] of [[ByteString]] to some file path.
+   *
+   * @param path the file path
+   * @param connectionSettings connection settings
+   * @return A [[Sink]] of [[ByteString]] that materializes to a [[CompletionStage]] of [[IOResult]]
+   */
+  def toPath(
+      path: String,
+      connectionSettings: S
+  ): Sink[ByteString, CompletionStage[IOResult]] = {
+    import scala.compat.java8.FutureConverters._
+    ScalaSink.fromGraph(createIOSink(path, connectionSettings)).mapMaterializedValue(_.toJava).asJava
   }
 
   protected[this] implicit def ftpLike: FtpLike[FtpClient, S]

@@ -4,7 +4,8 @@ object Dependencies {
 
   val ScalaVersions = Seq("2.11.8", "2.12.1")
   val AkkaVersion = "2.4.17"
-
+  val AkkaHttpVersion = "10.0.5"
+  
   val Common = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-stream"         % AkkaVersion,
@@ -15,15 +16,13 @@ object Dependencies {
     )
   )
 
-  val AkkaHttpVersion = "10.0.3"
-
   val S3 = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka"     %% "akka-http"     % AkkaHttpVersion,
       "com.typesafe.akka"     %% "akka-http-xml" % AkkaHttpVersion,
       // in-memory filesystem for file related tests
       "com.google.jimfs"       % "jimfs"         % "1.1"   % Test, // ApacheV2
-      "com.github.tomakehurst" % "wiremock"      % "2.3.1" % Test //ApacheV2
+      "com.github.tomakehurst" % "wiremock"      % "2.5.1" % Test //ApacheV2
     )
   )
 
@@ -63,9 +62,8 @@ object Dependencies {
 
   val DynamoDB = Seq(
     libraryDependencies ++= Seq(
-      "com.amazonaws"             % "aws-java-sdk-core"       % "1.11.73",          // ApacheV2
-      "com.amazonaws"             % "aws-java-sdk-dynamodb"   % "1.11.73",          // ApacheV2
-      "com.typesafe.akka"         %% "akka-http"              % AkkaHttpVersion
+      "com.amazonaws"     % "aws-java-sdk-dynamodb" % "1.11.106",          // ApacheV2
+      "com.typesafe.akka" %% "akka-http"            % AkkaHttpVersion
     )
   )
 
@@ -104,8 +102,8 @@ object Dependencies {
 
   val Sqs = Seq(
     libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-sqs" % "1.11.76",        // ApacheV2
-      "org.mockito"   % "mockito-core"     % "2.3.7"    % Test // MIT
+      "com.amazonaws" % "aws-java-sdk-sqs" % "1.11.105",        // ApacheV2
+      "org.mockito"   % "mockito-core"     % "2.7.17"    % Test // MIT
     )
   )
 
@@ -120,8 +118,17 @@ object Dependencies {
 
   val AwsLambda = Seq(
     libraryDependencies ++= Seq(
-      "com.amazonaws"   % "aws-java-sdk-lambda"    % "1.11.51", // ApacheV2
-      "org.mockito"   % "mockito-core"     % "2.3.7"    % Test  // MIT
+      "com.amazonaws"   % "aws-java-sdk-lambda"    % "1.11.105", // ApacheV2
+      "org.mockito"   % "mockito-core"     % "2.7.17"    % Test  // MIT
+    )
+  )
+
+  val GooglePubSub = Seq(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka"     %% "akka-http"     % AkkaHttpVersion,
+      "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+      "org.mockito"   % "mockito-core"     % "2.3.7"    % Test, // MIT
+      "com.github.tomakehurst" % "wiremock"      % "2.5.1" % Test //ApacheV2
     )
   )
 

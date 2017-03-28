@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.ftp;
 
@@ -18,7 +18,9 @@ import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.junit.After;
 import org.junit.Before;
+
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.PublicKey;
 import java.util.Arrays;
@@ -30,7 +32,7 @@ abstract class SftpSupportImpl extends FtpBaseSupport {
 
     SftpSupportImpl() {
         keyPairProviderFile =
-                new File(getClass().getClassLoader().getResource("hostkey.pem").getFile());
+                new File("ftp/src/test/resources/hostkey.pem");
     }
 
     @Before
@@ -66,6 +68,11 @@ abstract class SftpSupportImpl extends FtpBaseSupport {
 
             // start
             sshd.start();
+
+            // create home dir
+            if (!Files.exists(home)) {
+                Files.createDirectories(home);
+            }
 
         } catch(Throwable t) {
             throw new RuntimeException(t);

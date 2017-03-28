@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.ftp
 package impl
 
+import akka.stream.Shape
 import akka.stream.stage.GraphStageLogic
-import akka.stream.{Outlet, Shape}
+
 import scala.util.control.NonFatal
 
 private[ftp] abstract class FtpGraphStageLogic[T, FtpClient, S <: RemoteFileSettings](
@@ -16,7 +17,6 @@ private[ftp] abstract class FtpGraphStageLogic[T, FtpClient, S <: RemoteFileSett
 ) extends GraphStageLogic(shape) {
 
   protected[this] implicit val client = ftpClient()
-  protected[this] val out = shape.outlets.head.asInstanceOf[Outlet[T]]
   protected[this] var handler: Option[ftpLike.Handler] = Option.empty[ftpLike.Handler]
   protected[this] var isConnected: Boolean = false
 

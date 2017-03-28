@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpHeader, Uri}
+import akka.http.scaladsl.model._
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
@@ -14,7 +14,6 @@ import akka.stream.alpakka.s3.impl.{CompleteMultipartUploadResult, MetaHeaders, 
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 
-import scala.collection.immutable
 import scala.concurrent.Future
 
 final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
@@ -38,6 +37,8 @@ final class S3Client(credentials: AWSCredentials, region: String)(implicit syste
   import S3Client._
 
   private[this] val impl = S3Stream(credentials, region)
+
+  def request(bucket: String, key: String): Future[HttpResponse] = impl.request(S3Location(bucket, key))
 
   def download(bucket: String, key: String): Source[ByteString, NotUsed] = impl.download(S3Location(bucket, key))
 
