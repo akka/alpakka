@@ -14,7 +14,7 @@ import org.junit.Test;
 import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
 
-public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest {
+public class KeyFileSftpSourceTest extends SftpSupportImpl implements CommonFtpStageTest {
 
   @Test
   public void listFiles() throws Exception {
@@ -24,11 +24,6 @@ public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest
   @Test
   public void fromPath() throws Exception {
     CommonFtpStageTest.super.fromPath();
-  }
-
-  @Test
-  public void toPath() throws Exception {
-    CommonFtpStageTest.super.toPath();
   }
 
   public Source<FtpFile, NotUsed> getBrowserSource(String basePath) throws Exception {
@@ -48,8 +43,10 @@ public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest
     final SftpSettings settings = SftpSettings.create(
             InetAddress.getByName("localhost"))
             .withPort(getPort())
-            .withCredentials(FtpCredentials.createAnonCredentials())
-            .withStrictHostKeyChecking(false);
+            .withCredentials(new FtpCredentials.NonAnonFtpCredentials("different user and password", "will fail password auth"))
+            .withStrictHostKeyChecking(false) // strictHostKeyChecking
+            .withSftpIdentity(SftpIdentity.createFileSftpIdentity("ftp/src/test/resources/client.pem")
+     );
     //#create-settings
     return settings;
   }
