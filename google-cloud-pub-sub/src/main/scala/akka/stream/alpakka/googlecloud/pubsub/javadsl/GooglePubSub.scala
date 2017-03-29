@@ -27,8 +27,12 @@ object GooglePubSub {
               actorSystem: ActorSystem,
               materializer: Materializer): Flow[PublishRequest, java.util.List[String], NotUsed] =
     GPubSub
-      .publish(projectId = projectId, apiKey = apiKey, clientEmail = clientEmail, privateKey = privateKey,
-        topic = topic, parallelism = parallelism)(actorSystem, materializer)
+      .publish(projectId = projectId,
+               apiKey = apiKey,
+               clientEmail = clientEmail,
+               privateKey = privateKey,
+               topic = topic,
+               parallelism = parallelism)(actorSystem, materializer)
       .map(_.asJava)
       .asJava
 
@@ -40,8 +44,11 @@ object GooglePubSub {
                 actorSystem: ActorSystem,
                 materializer: Materializer): Source[ReceivedMessage, NotUsed] =
     GPubSub
-      .subscribe(projectId = projectId, apiKey = apiKey, clientEmail = clientEmail, privateKey = privateKey,
-        subscription = subscription)(actorSystem, materializer)
+      .subscribe(projectId = projectId,
+                 apiKey = apiKey,
+                 clientEmail = clientEmail,
+                 privateKey = privateKey,
+                 subscription = subscription)(actorSystem, materializer)
       .asJava
 
   def acknowledge(projectId: String,
@@ -53,8 +60,12 @@ object GooglePubSub {
                   actorSystem: ActorSystem,
                   materializer: Materializer): Sink[AcknowledgeRequest, CompletionStage[Done]] =
     GPubSub
-      .acknowledge(projectId = projectId, apiKey = apiKey, clientEmail = clientEmail, privateKey = privateKey,
-        subscription = subscription, parallelism = parallelism)(actorSystem, materializer)
+      .acknowledge(projectId = projectId,
+                   apiKey = apiKey,
+                   clientEmail = clientEmail,
+                   privateKey = privateKey,
+                   subscription = subscription,
+                   parallelism = parallelism)(actorSystem, materializer)
       .mapMaterializedValue(_.toJava)
       .asJava
 }

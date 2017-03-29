@@ -46,7 +46,8 @@ private[internal] trait HBaseCapabilities { this: StageLogging =>
     Await.result(Future(ConnectionFactory.createConnection(conf)), timeout seconds)
 
   private[internal] def getOrCreateTable(tableName: TableName, columnFamilies: Seq[String])(
-      implicit connection: Connection): Try[Table] = twr(connection.getAdmin) { admin =>
+      implicit connection: Connection
+  ): Try[Table] = twr(connection.getAdmin) { admin =>
     val table =
       if (admin.isTableAvailable(tableName))
         connection.getTable(tableName)

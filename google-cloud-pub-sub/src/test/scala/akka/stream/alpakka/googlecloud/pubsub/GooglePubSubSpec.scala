@@ -40,16 +40,26 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
   }
 
   it should "auth and publish the message" in new Fixtures {
-    val flow = googlePubSub.publish(projectId = TestCredentials.projectId, apiKey = TestCredentials.apiKey,
-      clientEmail = TestCredentials.clientEmail, privateKey = TestCredentials.privateKey, topic = "topic1")
+    val flow = googlePubSub.publish(
+      projectId = TestCredentials.projectId,
+      apiKey = TestCredentials.apiKey,
+      clientEmail = TestCredentials.clientEmail,
+      privateKey = TestCredentials.privateKey,
+      topic = "topic1"
+    )
 
     val request = PublishRequest(Seq(PubSubMessage(messageId = "1", data = base64String("Hello Google!"))))
 
     val source = Source(List(request))
 
     when(auth.getToken()).thenReturn(Future.successful("ok"))
-    when(mockHttpApi.publish(project = TestCredentials.projectId, topic = "topic1", accessToken = "ok",
-        apiKey = TestCredentials.apiKey, request = request)).thenReturn(Future.successful(Seq("id1")))
+    when(
+      mockHttpApi.publish(project = TestCredentials.projectId,
+                          topic = "topic1",
+                          accessToken = "ok",
+                          apiKey = TestCredentials.apiKey,
+                          request = request)
+    ).thenReturn(Future.successful(Seq("id1")))
 
     val result = source.via(flow).runWith(Sink.seq)
 
@@ -61,11 +71,20 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       ReceivedMessage(ackId = "1", message = PubSubMessage(messageId = "1", data = base64String("Hello Google!")))
 
     when(auth.getToken()).thenReturn(Future.successful("ok"))
-    when(mockHttpApi.pull(project = TestCredentials.projectId, subscription = "sub1", apiKey = TestCredentials.apiKey,
-        accessToken = "ok")).thenReturn(Future.successful(PullResponse(receivedMessages = Some(Seq(message)))))
+    when(
+      mockHttpApi.pull(project = TestCredentials.projectId,
+                       subscription = "sub1",
+                       apiKey = TestCredentials.apiKey,
+                       accessToken = "ok")
+    ).thenReturn(Future.successful(PullResponse(receivedMessages = Some(Seq(message)))))
 
-    val source = googlePubSub.subscribe(projectId = TestCredentials.projectId, apiKey = TestCredentials.apiKey,
-      clientEmail = TestCredentials.clientEmail, privateKey = TestCredentials.privateKey, subscription = "sub1")
+    val source = googlePubSub.subscribe(
+      projectId = TestCredentials.projectId,
+      apiKey = TestCredentials.apiKey,
+      clientEmail = TestCredentials.clientEmail,
+      privateKey = TestCredentials.privateKey,
+      subscription = "sub1"
+    )
 
     val result = source.take(1).runWith(Sink.seq)
 
@@ -74,12 +93,21 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
 
   it should "auth and acknowledge a message" in new Fixtures {
     when(auth.getToken()).thenReturn(Future.successful("ok"))
-    when(mockHttpApi.acknowledge(project = TestCredentials.projectId, subscription = "sub1",
-        apiKey = TestCredentials.apiKey, accessToken = "ok", request = AcknowledgeRequest(ackIds = Seq("a1"))))
-      .thenReturn(Future.successful(()))
+    when(
+      mockHttpApi.acknowledge(project = TestCredentials.projectId,
+                              subscription = "sub1",
+                              apiKey = TestCredentials.apiKey,
+                              accessToken = "ok",
+                              request = AcknowledgeRequest(ackIds = Seq("a1")))
+    ).thenReturn(Future.successful(()))
 
-    val sink = googlePubSub.acknowledge(projectId = TestCredentials.projectId, apiKey = TestCredentials.apiKey,
-      clientEmail = TestCredentials.clientEmail, privateKey = TestCredentials.privateKey, subscription = "sub1")
+    val sink = googlePubSub.acknowledge(
+      projectId = TestCredentials.projectId,
+      apiKey = TestCredentials.apiKey,
+      clientEmail = TestCredentials.clientEmail,
+      privateKey = TestCredentials.privateKey,
+      subscription = "sub1"
+    )
 
     val source = Source(List(AcknowledgeRequest(List("a1"))))
 

@@ -57,21 +57,23 @@ final class AmqpSinkStage(settings: AmqpSinkSettings)
         pull(in)
       }
 
-      setHandler(in,
+      setHandler(
+        in,
         new InHandler {
-        override def onPush(): Unit = {
-          val elem = grab(in)
-          channel.basicPublish(
-            exchange,
-            routingKey,
-            elem.mandatory,
-            elem.immediate,
-            elem.props.orNull,
-            elem.bytes.toArray
-          )
-          pull(in)
+          override def onPush(): Unit = {
+            val elem = grab(in)
+            channel.basicPublish(
+              exchange,
+              routingKey,
+              elem.mandatory,
+              elem.immediate,
+              elem.props.orNull,
+              elem.bytes.toArray
+            )
+            pull(in)
+          }
         }
-      })
+      )
 
     }
 
