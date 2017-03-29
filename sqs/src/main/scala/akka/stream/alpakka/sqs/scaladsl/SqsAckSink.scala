@@ -16,6 +16,7 @@ object SqsAckSink {
    * Scala API: creates a [[SqsAckSinkStage]] for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]]
    */
   def apply(queueUrl: String, settings: SqsAckSinkSettings = SqsAckSinkSettings.Defaults)(
-      implicit sqsClient: AmazonSQSAsync): Sink[MessageActionPair, Future[Done]] =
+      implicit sqsClient: AmazonSQSAsync
+  ): Sink[MessageActionPair, Future[Done]] =
     Sink.fromGraph(new SqsAckSinkStage(queueUrl, settings, sqsClient))
 }

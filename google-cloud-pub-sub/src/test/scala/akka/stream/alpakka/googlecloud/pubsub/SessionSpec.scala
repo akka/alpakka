@@ -38,8 +38,8 @@ class SessionSpec extends FlatSpec with ScalaFutures with MockitoSugar with Befo
 
     session.getToken().futureValue shouldBe accessToken
 
-    verify(mockHttpApi, times(1)).getAccessToken(TestCredentials.clientEmail, TestCredentials.privateKey,
-      Instant.ofEpochSecond(0))
+    verify(mockHttpApi, times(1))
+      .getAccessToken(TestCredentials.clientEmail, TestCredentials.privateKey, Instant.ofEpochSecond(0))
   }
 
   it should "uses the cached value for the second request" in new Fixtures {
@@ -51,8 +51,8 @@ class SessionSpec extends FlatSpec with ScalaFutures with MockitoSugar with Befo
 
     session.getToken().futureValue shouldBe accessToken
 
-    verify(mockHttpApi, times(0)).getAccessToken(TestCredentials.clientEmail, TestCredentials.privateKey,
-      Instant.ofEpochSecond(0))
+    verify(mockHttpApi, times(0))
+      .getAccessToken(TestCredentials.clientEmail, TestCredentials.privateKey, Instant.ofEpochSecond(0))
   }
 
   it should "requests a new session if current is about to expire" in new Fixtures {
@@ -62,13 +62,14 @@ class SessionSpec extends FlatSpec with ScalaFutures with MockitoSugar with Befo
       this.maybeAccessToken = Some(Future.successful(AccessTokenExpiry("t1", 3600)))
     }
 
-    when(mockHttpApi.getAccessToken(TestCredentials.clientEmail, TestCredentials.privateKey,
-        Instant.ofEpochSecond(3599))).thenReturn(Future.successful(AccessTokenExpiry(accessToken, 3600)))
+    when(
+      mockHttpApi.getAccessToken(TestCredentials.clientEmail, TestCredentials.privateKey, Instant.ofEpochSecond(3599))
+    ).thenReturn(Future.successful(AccessTokenExpiry(accessToken, 3600)))
 
     session.getToken().futureValue shouldBe accessToken
 
-    verify(mockHttpApi, times(1)).getAccessToken(TestCredentials.clientEmail, TestCredentials.privateKey,
-      Instant.ofEpochSecond(3599))
+    verify(mockHttpApi, times(1))
+      .getAccessToken(TestCredentials.clientEmail, TestCredentials.privateKey, Instant.ofEpochSecond(3599))
   }
 
   override def afterAll(): Unit =

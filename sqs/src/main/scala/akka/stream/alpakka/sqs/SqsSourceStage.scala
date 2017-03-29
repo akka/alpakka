@@ -30,9 +30,9 @@ final case class SqsSourceSettings(
   require(maxBatchSize <= maxBufferSize, "maxBatchSize must be lower or equal than maxBufferSize")
   // SQS requirements
   require(0 <= waitTimeSeconds && waitTimeSeconds <= 20,
-    s"Invalid value ($waitTimeSeconds) for waitTimeSeconds. Requirement: 0 <= waitTimeSeconds <= 20 ")
+          s"Invalid value ($waitTimeSeconds) for waitTimeSeconds. Requirement: 0 <= waitTimeSeconds <= 20 ")
   require(1 <= maxBatchSize && maxBatchSize <= 10,
-    s"Invalid value ($maxBatchSize) for maxBatchSize. Requirement: 1 <= maxBatchSize <= 10 ")
+          s"Invalid value ($maxBatchSize) for maxBatchSize. Requirement: 1 <= maxBatchSize <= 10 ")
 }
 //#SqsSourceSettings
 
@@ -68,14 +68,16 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings)(implic
           .withMaxNumberOfMessages(settings.maxBatchSize)
           .withWaitTimeSeconds(settings.waitTimeSeconds)
 
-        sqsClient.receiveMessageAsync(request,
+        sqsClient.receiveMessageAsync(
+          request,
           new AsyncHandler[ReceiveMessageRequest, ReceiveMessageResult] {
-          override def onError(e: Exception): Unit =
-            failureCallback.invoke(e)
+            override def onError(e: Exception): Unit =
+              failureCallback.invoke(e)
 
-          override def onSuccess(request: ReceiveMessageRequest, result: ReceiveMessageResult): Unit =
-            successCallback.invoke(result)
-        })
+            override def onSuccess(request: ReceiveMessageRequest, result: ReceiveMessageResult): Unit =
+              successCallback.invoke(result)
+          }
+        )
       }
 
       def handleFailure(ex: Exception): Unit =
@@ -97,17 +99,19 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings)(implic
         }
       }
 
-      setHandler(out,
+      setHandler(
+        out,
         new OutHandler {
-        override def onPull(): Unit =
-          if (!buffer.isEmpty) {
-            push(out, buffer.poll())
-            if (canReceiveNewMessages) {
+          override def onPull(): Unit =
+            if (!buffer.isEmpty) {
+              push(out, buffer.poll())
+              if (canReceiveNewMessages) {
+                receiveMessages()
+              }
+            } else {
               receiveMessages()
             }
-          } else {
-            receiveMessages()
-          }
-      })
+        }
+      )
     }
 }
