@@ -49,7 +49,8 @@ private trait HttpApi {
 
   def pull(project: String, subscription: String, accessToken: String, apiKey: String)(
       implicit as: ActorSystem,
-      materializer: Materializer): Future[PullResponse] = {
+      materializer: Materializer
+  ): Future[PullResponse] = {
     import materializer.executionContext
 
     val uri: Uri = s"$PubSubGoogleApisHost/v1/projects/$project/subscriptions/$subscription:pull?key=$apiKey"
@@ -88,7 +89,8 @@ private trait HttpApi {
 
   def publish(project: String, topic: String, accessToken: String, apiKey: String, request: PublishRequest)(
       implicit as: ActorSystem,
-      materializer: Materializer): Future[immutable.Seq[String]] = {
+      materializer: Materializer
+  ): Future[immutable.Seq[String]] = {
     import materializer.executionContext
 
     val url: Uri = s"$PubSubGoogleApisHost/v1/projects/$project/topics/$topic:publish?key=$apiKey"
@@ -102,7 +104,8 @@ private trait HttpApi {
 
   def getAccessToken(clientEmail: String, privateKey: PrivateKey, when: Instant)(
       implicit as: ActorSystem,
-      materializer: Materializer): Future[AccessTokenExpiry] = {
+      materializer: Materializer
+  ): Future[AccessTokenExpiry] = {
     import materializer.executionContext
     val expiresAt = when.getEpochSecond + 3600
     val request = buildAuthRequest(clientEmail, when.getEpochSecond, expiresAt, privateKey)

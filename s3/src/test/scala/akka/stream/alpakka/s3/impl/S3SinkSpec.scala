@@ -26,27 +26,52 @@ class S3SinkSpec extends WireMockBase {
     val etag = "5b27a21a97fcf8a7004dd1d906e7a5ba"
     val url = s"http://testbucket.s3.amazonaws.com/testKey"
     mock
-      .register(post(urlEqualTo(s"/$key?uploads")).willReturn(aResponse().withStatus(200).withHeader("x-amz-id-2", "Uuag1LuByRx9e6j5Onimru9pO4ZVKnJ2Qz7/C1NPcfTWAtRPfTaOFg==").withHeader("x-amz-request-id", "656c76696e6727732072657175657374").withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+      .register(
+        post(urlEqualTo(s"/$key?uploads")).willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("x-amz-id-2", "Uuag1LuByRx9e6j5Onimru9pO4ZVKnJ2Qz7/C1NPcfTWAtRPfTaOFg==")
+            .withHeader("x-amz-request-id", "656c76696e6727732072657175657374")
+            .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
                     |<InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                     |  <Bucket>$bucket</Bucket>
                     |  <Key>$key</Key>
                     |  <UploadId>$uploadId</UploadId>
-                    |</InitiateMultipartUploadResult>""".stripMargin)))
+                    |</InitiateMultipartUploadResult>""".stripMargin)
+        )
+      )
 
-    mock.register(put(urlEqualTo(s"/$key?partNumber=1&uploadId=$uploadId"))
+    mock.register(
+      put(urlEqualTo(s"/$key?partNumber=1&uploadId=$uploadId"))
         .withRequestBody(matching(body))
-        .willReturn(aResponse().withStatus(200).withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt").withHeader("x-amz-request-id", "5A37448A37622243").withHeader("ETag", "\"" + etag + "\"")))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt")
+            .withHeader("x-amz-request-id", "5A37448A37622243")
+            .withHeader("ETag", "\"" + etag + "\"")
+        )
+    )
 
-    mock.register(post(urlEqualTo(s"/$key?uploadId=$uploadId"))
+    mock.register(
+      post(urlEqualTo(s"/$key?uploadId=$uploadId"))
         .withRequestBody(containing("CompleteMultipartUpload"))
         .withRequestBody(containing(etag))
-        .willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/xml; charset=UTF-8").withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt").withHeader("x-amz-request-id", "5A37448A3762224333").withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/xml; charset=UTF-8")
+            .withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt")
+            .withHeader("x-amz-request-id", "5A37448A3762224333")
+            .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
                     |<CompleteMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                     |  <Location>$url</Location>
                     |  <Bucket>$bucket</Bucket>
                     |  <Key>$key</Key>
                     |  <ETag>"$etag"</ETag>
-                    |</CompleteMultipartUploadResult>""".stripMargin)))
+                    |</CompleteMultipartUploadResult>""".stripMargin)
+        )
+    )
 
     val result = Source(ByteString(body) :: Nil)
       .toMat(new S3Client(AWSCredentials("", ""), "us-east-1").multipartUpload(bucket, key))(Keep.right)
@@ -56,8 +81,10 @@ class S3SinkSpec extends WireMockBase {
   }
 
   it should "fail if request returns 404" in {
-    val result = new S3Client(AWSCredentials("", ""),
-      "us-east-1").download("sometest4398673", "30000184.xml").map(_.decodeString("utf8")).runWith(Sink.head)
+    val result = new S3Client(AWSCredentials("", ""), "us-east-1")
+      .download("sometest4398673", "30000184.xml")
+      .map(_.decodeString("utf8"))
+      .runWith(Sink.head)
     whenReady(result.failed) { e =>
       e shouldBe a[S3Exception]
       e.asInstanceOf[S3Exception].code should equal("NoSuchKey")

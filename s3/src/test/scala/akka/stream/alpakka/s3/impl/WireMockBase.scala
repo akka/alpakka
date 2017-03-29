@@ -34,8 +34,8 @@ object WireMockBase {
   )
 
   def getCallerName(clazz: Class[_]): String = {
-    val s = (Thread.currentThread.getStackTrace map (_.getClassName) drop 1).dropWhile(
-        _ matches "(java.lang.Thread|.*WireMockBase.?$)")
+    val s = (Thread.currentThread.getStackTrace map (_.getClassName) drop 1)
+      .dropWhile(_ matches "(java.lang.Thread|.*WireMockBase.?$)")
     val reduced = s.lastIndexWhere(_ == clazz.getName) match {
       case -1 ⇒ s
       case z ⇒ s drop (z + 1)
@@ -45,11 +45,12 @@ object WireMockBase {
 
   def initServer(): WireMockServer = {
     val server = new WireMockServer(
-        wireMockConfig()
-          .dynamicPort()
-          .dynamicHttpsPort()
-          .keystorePath("./s3/src/test/resources/keystore.jks")
-          .keystorePassword("abcdefg"))
+      wireMockConfig()
+        .dynamicPort()
+        .dynamicHttpsPort()
+        .keystorePath("./s3/src/test/resources/keystore.jks")
+        .keystorePassword("abcdefg")
+    )
     server.start()
     server
   }
@@ -73,11 +74,15 @@ abstract class WireMockBase(_system: ActorSystem, _wireMockServer: WireMockServe
 
   override def beforeAll(): Unit =
     mock.register(
-        any(anyUrl()).willReturn(
-            aResponse()
-              .withStatus(404)
-              .withBody("<Error><Code>NoSuchKey</Code><Message>No key found</Message>" +
-                "<RequestId>XXXX</RequestId><HostId>XXXX</HostId></Error>")))
+      any(anyUrl()).willReturn(
+        aResponse()
+          .withStatus(404)
+          .withBody(
+            "<Error><Code>NoSuchKey</Code><Message>No key found</Message>" +
+            "<RequestId>XXXX</RequestId><HostId>XXXX</HostId></Error>"
+          )
+      )
+    )
   override def afterAll(): Unit = _wireMockServer.stop()
 
 }
