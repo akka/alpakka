@@ -48,31 +48,33 @@ private[ftp] trait FtpIOSourceStage[FtpClient, S <: RemoteFileSettings]
       private[this] var isOpt: Option[InputStream] = None
       private[this] var readBytesTotal: Long = 0L
 
-      setHandler(out,
+      setHandler(
+        out,
         new OutHandler {
-        def onPull(): Unit =
-          readChunk() match {
-            case Some(bs) =>
-              push(out, bs)
-            case None =>
-              try {
-                isOpt.foreach(_.close())
-                disconnect()
-              } finally {
-                matSuccess()
-                complete(out)
-              }
-          }
+          def onPull(): Unit =
+            readChunk() match {
+              case Some(bs) =>
+                push(out, bs)
+              case None =>
+                try {
+                  isOpt.foreach(_.close())
+                  disconnect()
+                } finally {
+                  matSuccess()
+                  complete(out)
+                }
+            }
 
-        override def onDownstreamFinish(): Unit =
-          try {
-            isOpt.foreach(_.close())
-            disconnect()
-          } finally {
-            matSuccess()
-            super.onDownstreamFinish()
-          }
-      }) // end of handler
+          override def onDownstreamFinish(): Unit =
+            try {
+              isOpt.foreach(_.close())
+              disconnect()
+            } finally {
+              matSuccess()
+              super.onDownstreamFinish()
+            }
+        }
+      ) // end of handler
 
       override def postStop(): Unit =
         try {
@@ -129,22 +131,24 @@ private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
       private[this] var osOpt: Option[OutputStream] = None
       private[this] var writtenBytesTotal: Long = 0L
 
-      setHandler(in,
+      setHandler(
+        in,
         new InHandler {
-        override def onPush(): Unit = {
-          write(grab(in))
-          pull(in)
-        }
-
-        override def onUpstreamFinish(): Unit =
-          try {
-            osOpt.foreach(_.close())
-            disconnect()
-          } finally {
-            matSuccess()
-            super.onUpstreamFinish()
+          override def onPush(): Unit = {
+            write(grab(in))
+            pull(in)
           }
-      }) // end of handler
+
+          override def onUpstreamFinish(): Unit =
+            try {
+              osOpt.foreach(_.close())
+              disconnect()
+            } finally {
+              matSuccess()
+              super.onUpstreamFinish()
+            }
+        }
+      ) // end of handler
 
       override def postStop(): Unit =
         try {

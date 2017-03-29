@@ -25,7 +25,8 @@ final class JmsSourceStage(settings: JmsSourceSettings) extends GraphStage[Sourc
 
       private[jms] def getDispatcher =
         inheritedAttributes.get[ActorAttributes.Dispatcher](
-            ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")) match {
+          ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
+        ) match {
           case ActorAttributes.Dispatcher("") =>
             ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
           case d => d
@@ -76,8 +77,7 @@ final class JmsSourceStage(settings: JmsSourceSettings) extends GraphStage[Sourc
             fail.invoke(e)
         }
 
-      setHandler(out,
-        new OutHandler {
+      setHandler(out, new OutHandler {
         override def onPull(): Unit =
           if (queue.nonEmpty) {
             pushMessage(queue.dequeue())

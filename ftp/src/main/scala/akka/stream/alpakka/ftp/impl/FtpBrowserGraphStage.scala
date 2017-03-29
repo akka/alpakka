@@ -32,27 +32,29 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] exte
 
       private[this] var buffer: Seq[FtpFile] = Seq.empty[FtpFile]
 
-      setHandler(out,
+      setHandler(
+        out,
         new OutHandler {
-        def onPull(): Unit = {
-          fillBuffer()
-          buffer match {
-            case head +: tail =>
-              buffer = tail
-              push(out, head)
-            case _ => finalize()
-          }
-          def finalize() = try { disconnect() } finally { complete(out) }
-        } // end of onPull
+          def onPull(): Unit = {
+            fillBuffer()
+            buffer match {
+              case head +: tail =>
+                buffer = tail
+                push(out, head)
+              case _ => finalize()
+            }
+            def finalize() = try { disconnect() } finally { complete(out) }
+          } // end of onPull
 
-        override def onDownstreamFinish(): Unit =
-          try {
-            disconnect()
-          } finally {
-            matSuccess()
-            super.onDownstreamFinish()
-          }
-      }) // end of handler
+          override def onDownstreamFinish(): Unit =
+            try {
+              disconnect()
+            } finally {
+              matSuccess()
+              super.onDownstreamFinish()
+            }
+        }
+      ) // end of handler
 
       protected[this] def doPreStart(): Unit =
         buffer = initBuffer(basePath)

@@ -59,26 +59,28 @@ private final class GooglePubSubSource(projectId: String,
           }
       }
 
-      setHandler(out,
+      setHandler(
+        out,
         new OutHandler {
-        override def onPull(): Unit =
-          state match {
-            case Pending =>
-              state = Fetching
-              fetch(materializer)
-            case Fetching =>
-            // do nothing we will push on request result
-            case HoldingMessages(xs) =>
-              xs match {
-                case head :: tail =>
-                  state = HoldingMessages(tail)
-                  push(out, head)
-                case Nil =>
-                  state = Fetching
-                  fetch(materializer)
-              }
-          }
-      })
+          override def onPull(): Unit =
+            state match {
+              case Pending =>
+                state = Fetching
+                fetch(materializer)
+              case Fetching =>
+              // do nothing we will push on request result
+              case HoldingMessages(xs) =>
+                xs match {
+                  case head :: tail =>
+                    state = HoldingMessages(tail)
+                    push(out, head)
+                  case Nil =>
+                    state = Fetching
+                    fetch(materializer)
+                }
+            }
+        }
+      )
     }
 }
 

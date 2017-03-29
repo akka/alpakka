@@ -14,30 +14,32 @@ private[alpakka] trait DynamoProtocol {
   val meta = new JsonOperationMetadata().withPayloadJson(true)
 
   val protocol: SdkJsonProtocolFactory = new SdkJsonProtocolFactory(
-      new JsonClientMetadata()
-        .addAllErrorMetadata(
-            new JsonErrorShapeMetadata()
-              .withErrorCode("ItemCollectionSizeLimitExceededException")
-              .withModeledClass(classOf[ItemCollectionSizeLimitExceededException]),
-            new JsonErrorShapeMetadata()
-              .withErrorCode("ResourceInUseException")
-              .withModeledClass(classOf[ResourceInUseException]),
-            new JsonErrorShapeMetadata()
-              .withErrorCode("ResourceNotFoundException")
-              .withModeledClass(classOf[ResourceNotFoundException]),
-            new JsonErrorShapeMetadata()
-              .withErrorCode("ProvisionedThroughputExceededException")
-              .withModeledClass(classOf[ProvisionedThroughputExceededException]),
-            new JsonErrorShapeMetadata()
-              .withErrorCode("ConditionalCheckFailedException")
-              .withModeledClass(classOf[ConditionalCheckFailedException]),
-            new JsonErrorShapeMetadata()
-              .withErrorCode("InternalServerError")
-              .withModeledClass(classOf[InternalServerErrorException]),
-            new JsonErrorShapeMetadata()
-              .withErrorCode("LimitExceededException")
-              .withModeledClass(classOf[LimitExceededException]))
-        .withBaseServiceExceptionClass(classOf[com.amazonaws.services.dynamodbv2.model.AmazonDynamoDBException]))
+    new JsonClientMetadata()
+      .addAllErrorMetadata(
+        new JsonErrorShapeMetadata()
+          .withErrorCode("ItemCollectionSizeLimitExceededException")
+          .withModeledClass(classOf[ItemCollectionSizeLimitExceededException]),
+        new JsonErrorShapeMetadata()
+          .withErrorCode("ResourceInUseException")
+          .withModeledClass(classOf[ResourceInUseException]),
+        new JsonErrorShapeMetadata()
+          .withErrorCode("ResourceNotFoundException")
+          .withModeledClass(classOf[ResourceNotFoundException]),
+        new JsonErrorShapeMetadata()
+          .withErrorCode("ProvisionedThroughputExceededException")
+          .withModeledClass(classOf[ProvisionedThroughputExceededException]),
+        new JsonErrorShapeMetadata()
+          .withErrorCode("ConditionalCheckFailedException")
+          .withModeledClass(classOf[ConditionalCheckFailedException]),
+        new JsonErrorShapeMetadata()
+          .withErrorCode("InternalServerError")
+          .withModeledClass(classOf[InternalServerErrorException]),
+        new JsonErrorShapeMetadata()
+          .withErrorCode("LimitExceededException")
+          .withModeledClass(classOf[LimitExceededException])
+      )
+      .withBaseServiceExceptionClass(classOf[com.amazonaws.services.dynamodbv2.model.AmazonDynamoDBException])
+  )
 
   val errorResponseHandler: HttpResponseHandler[AmazonServiceException] =
     protocol.createErrorResponseHandler(new JsonErrorResponseMetadata())
