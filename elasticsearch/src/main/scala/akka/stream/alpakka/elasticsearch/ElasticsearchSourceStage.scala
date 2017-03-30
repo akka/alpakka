@@ -4,7 +4,6 @@
 package akka.stream.alpakka.elasticsearch
 
 import java.io.ByteArrayOutputStream
-import java.util
 
 import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
@@ -63,7 +62,6 @@ sealed abstract class ElasticsearchSourceLogic[T](indexName: String,
     extends GraphStageLogic(shape) {
 
   private var scrollId: String = null
-  private val buffer = new util.ArrayDeque[OutgoingMessage[T]]()
 
   protected def convert(jsObj: JsObject): T
 
@@ -110,15 +108,16 @@ sealed abstract class ElasticsearchSourceLogic[T](indexName: String,
       case None => {
         val hits = jsObj.fields("hits").asJsObject.fields("hits").asInstanceOf[JsArray]
         if (hits.elements.isEmpty && scrollId != null) {
-          //completeStage()
+          completeStage()
         } else {
           scrollId = jsObj.fields("_scroll_id").asInstanceOf[JsString].value
-          hits.elements.reverse.foreach { element =>
+          val messages = hits.elements.reverse.map { element =>
             val doc = element.asJsObject
             val id = doc.fields("_id").asInstanceOf[JsString].value
             val source = doc.fields("_source").asJsObject
-            buffer.addFirst(OutgoingMessage(id, convert(source)))
+            OutgoingMessage(id, convert(source))
           }
+          emitMultiple(out, messages)
         }
       }
       case Some(error) => {
@@ -129,16 +128,8 @@ sealed abstract class ElasticsearchSourceLogic[T](indexName: String,
 
   setHandler(out,
     new OutHandler {
-    override def onPull(): Unit = {
-      if (buffer.isEmpty) {
-        receiveMessages()
-      }
-      if (!buffer.isEmpty) {
-        push(out, buffer.removeLast())
-      } else {
-        completeStage()
-      }
-    }
+    override def onPull(): Unit =
+      receiveMessages()
   })
 
 }
