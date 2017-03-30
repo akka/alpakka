@@ -71,6 +71,7 @@ sealed abstract class ElasticsearchSinkLogic[T](indexName: String,
 
   private val state = new AtomicReference[State](Idle)
   private val buffer = new util.concurrent.ConcurrentLinkedQueue[IncomingMessage[T]]()
+  private val failureHandler = getAsyncCallback[Throwable](handleFailure)
   private val sentHandler = getAsyncCallback[Unit](_ => handleSent())
 
   protected def convert(value: T): JsObject
@@ -108,7 +109,7 @@ sealed abstract class ElasticsearchSinkLogic[T](indexName: String,
           val messages = (1 to settings.bufferSize).flatMap { _ =>
             Option(buffer.poll())
           }
-          sendBulkRequest(messages)
+          sendBulkUpdateRequest(messages)
         }
         case _ => ()
       }
@@ -126,7 +127,7 @@ sealed abstract class ElasticsearchSinkLogic[T](indexName: String,
         case Finished => ()
       }
 
-    private def sendBulkRequest(messages: Seq[IncomingMessage[T]]): Unit =
+    private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T]]): Unit =
       try {
         val json = messages.map { message =>
           s"""{"index": {"_index": "${indexName}", "_type": "${typeName}"${message.id.map { id =>
@@ -141,7 +142,7 @@ sealed abstract class ElasticsearchSinkLogic[T](indexName: String,
           Map[String, String]().asJava,
           new StringEntity(json),
           new ResponseListener {
-            override def onFailure(exception: Exception): Unit = handleFailure(exception)
+            override def onFailure(exception: Exception): Unit = failureHandler.invoke(exception)
 
             override def onSuccess(response: Response): Unit = {
               val messages = (1 to settings.bufferSize).flatMap { _ =>
@@ -154,7 +155,7 @@ sealed abstract class ElasticsearchSinkLogic[T](indexName: String,
                   case _ => state.set(Idle)
                 }
               } else {
-                sendBulkRequest(messages)
+                sendBulkUpdateRequest(messages)
               }
 
               sentHandler.invoke(())

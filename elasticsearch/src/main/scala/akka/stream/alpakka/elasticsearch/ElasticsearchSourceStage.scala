@@ -8,7 +8,7 @@ import java.io.ByteArrayOutputStream
 import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import org.apache.http.entity.StringEntity
-import org.elasticsearch.client.{Response, RestClient}
+import org.elasticsearch.client.{Response, ResponseListener, RestClient}
 import spray.json._
 import DefaultJsonProtocol._
 
@@ -61,37 +61,46 @@ sealed abstract class ElasticsearchSourceLogic[T](indexName: String,
                                                   shape: SourceShape[OutgoingMessage[T]])
     extends GraphStageLogic(shape) {
 
+  private var started = false
   private var scrollId: String = null
+  private val responseHandler = getAsyncCallback[Response](handleResponse)
+  private val failureHandler = getAsyncCallback[Throwable](handleFailure)
 
   protected def convert(jsObj: JsObject): T
 
-  def receiveMessages(): Unit =
+  def sendScrollScanRequest(): Unit =
     try {
-      val res = if (scrollId == null) {
-        client.performRequest(
+      if (scrollId == null) {
+        client.performRequestAsync(
           "POST",
           s"$indexName/$typeName/_search",
           Map("scroll" -> "5m", "sort" -> "_doc").asJava,
-          new StringEntity(s"""{"size": ${settings.bufferSize}, "query": ${query}}""")
+          new StringEntity(s"""{"size": ${settings.bufferSize}, "query": ${query}}"""),
+          new ResponseListener {
+            override def onFailure(exception: Exception) = failureHandler.invoke(exception)
+            override def onSuccess(response: Response) = responseHandler.invoke(response)
+          }
         )
       } else {
-        client.performRequest(
+        client.performRequestAsync(
           "POST",
           s"/_search/scroll",
           Map[String, String]().asJava,
-          new StringEntity(Map("scroll" -> "5m", "scroll_id" -> scrollId).toJson.toString)
+          new StringEntity(Map("scroll" -> "5m", "scroll_id" -> scrollId).toJson.toString),
+          new ResponseListener {
+            override def onFailure(exception: Exception) = failureHandler.invoke(exception)
+            override def onSuccess(response: Response) = responseHandler.invoke(response)
+          }
         )
       }
-      handleSuccess(res)
-
     } catch {
       case ex: Exception => handleFailure(ex)
     }
 
-  def handleFailure(ex: Exception): Unit =
+  def handleFailure(ex: Throwable): Unit =
     failStage(ex)
 
-  def handleSuccess(res: Response): Unit = {
+  def handleResponse(res: Response): Unit = {
     val json = {
       val out = new ByteArrayOutputStream()
       try {
@@ -118,6 +127,7 @@ sealed abstract class ElasticsearchSourceLogic[T](indexName: String,
             OutgoingMessage(id, convert(source))
           }
           emitMultiple(out, messages)
+          sendScrollScanRequest()
         }
       }
       case Some(error) => {
@@ -129,7 +139,10 @@ sealed abstract class ElasticsearchSourceLogic[T](indexName: String,
   setHandler(out,
     new OutHandler {
     override def onPull(): Unit =
-      receiveMessages()
+      if (started == false) {
+        started = true
+        sendScrollScanRequest()
+      }
   })
 
 }
