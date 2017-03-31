@@ -13,6 +13,7 @@
 * [HBase Connectors](hbase.md)
 * [JMS Connectors](jms.md)
 * [MQTT Connector](mqtt.md)
+* [S3 Connector](s3.md)
 * [Server-sent Events (SSE)](sse.md)
 
 @@@
