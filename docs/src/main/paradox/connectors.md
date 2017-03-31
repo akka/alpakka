@@ -4,8 +4,9 @@
 
 * [AMQP Connector](amqp.md)
 * [AWS DynamoDB Connector](dynamodb.md)
-* [AWS SQS Connector](sqs.md)
 * [AWS Lambda Connector](awslambda.md)
+* [AWS S3 Connector](s3.md)
+* [AWS SQS Connector](sqs.md)
 * [Cassandra Connector](cassandra.md)
 * [File Connectors](file.md)
 * [FTP Connector](ftp.md)
@@ -13,7 +14,6 @@
 * [HBase Connectors](hbase.md)
 * [JMS Connectors](jms.md)
 * [MQTT Connector](mqtt.md)
-* [S3 Connector](s3.md)
 * [Server-sent Events (SSE)](sse.md)
 
 @@@
