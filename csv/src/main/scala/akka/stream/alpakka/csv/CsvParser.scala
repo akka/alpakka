@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.csv
 
 import akka.util.{ByteString, ByteStringBuilder}
 
 /**
- * INTERNAL API: Use [[akka.stream.alpakka.csv.scaladsl.CsvFraming]] instead.
+ * INTERNAL API: Use [[akka.stream.alpakka.csv.scaladsl.CsvParsing]] instead.
  */
 private[csv] object CsvParser {
 
@@ -26,7 +26,7 @@ private[csv] object CsvParser {
 }
 
 /**
- * INTERNAL API: Use [[akka.stream.alpakka.csv.scaladsl.CsvFraming]] instead.
+ * INTERNAL API: Use [[akka.stream.alpakka.csv.scaladsl.CsvParsing]] instead.
  */
 private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar: Byte) {
   import CsvParser._

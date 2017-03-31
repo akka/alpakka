@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.csv.javadsl;
 
@@ -17,7 +17,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 // #line-scanner
-            import akka.stream.alpakka.csv.javadsl.CsvFraming;
 
 // #line-scanner
 import java.util.Collection;
@@ -26,17 +25,17 @@ import java.util.concurrent.CompletionStage;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
-public class CsvFramingTest {
+public class CsvParsingTest {
     private static ActorSystem system;
     private static Materializer materializer;
 
     public void documentation() {
-        byte delimiter = CsvFraming.COMMA;
-        byte quoteChar = CsvFraming.DOUBLE_QUOTE;
-        byte escapeChar = CsvFraming.BACKSLASH;
+        byte delimiter = CsvParsing.COMMA;
+        byte quoteChar = CsvParsing.DOUBLE_QUOTE;
+        byte escapeChar = CsvParsing.BACKSLASH;
         // #flow-type
         Flow<ByteString, Collection<ByteString>, NotUsed> flow
-                = CsvFraming.lineScanner(delimiter, quoteChar, escapeChar);
+                = CsvParsing.lineScanner(delimiter, quoteChar, escapeChar);
         // #flow-type
     }
 
@@ -45,7 +44,7 @@ public class CsvFramingTest {
         CompletionStage<Collection<ByteString>> completionStage =
         // #line-scanner
             Source.single(ByteString.fromString("eins,zwei,drei\n"))
-                .via(CsvFraming.lineScanner())
+                .via(CsvParsing.lineScanner())
                 .runWith(Sink.head(), materializer);
         // #line-scanner
         completionStage.thenAccept((list) -> {

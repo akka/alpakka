@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.csv.javadsl;
 
@@ -20,14 +20,10 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 // #header-line
-            import akka.stream.alpakka.csv.javadsl.CsvFraming;
-            import akka.stream.alpakka.csv.javadsl.CsvToMap;
 
 // #header-line
 
 // #column-names
-            import akka.stream.alpakka.csv.javadsl.CsvFraming;
-            import akka.stream.alpakka.csv.javadsl.CsvToMap;
 
 // #column-names
 
@@ -57,7 +53,7 @@ public class CsvToMapTest {
         // #header-line
             Source
                 .single(ByteString.fromString("eins,zwei,drei\n1,2,3"))
-                .via(CsvFraming.lineScanner())
+                .via(CsvParsing.lineScanner())
                 .via(CsvToMap.toMap(StandardCharsets.UTF_8))
                 .runWith(Sink.head(), materializer);
         // #header-line
@@ -75,7 +71,7 @@ public class CsvToMapTest {
         // #column-names
             Source
                 .single(ByteString.fromString("1,2,3"))
-                .via(CsvFraming.lineScanner())
+                .via(CsvParsing.lineScanner())
                 .via(CsvToMap.withHeaders("eins", "zwei", "drei"))
                 .runWith(Sink.head(), materializer);
         // #column-names

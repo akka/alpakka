@@ -47,25 +47,25 @@ Gradle
 
 ## CSV parsing
 
-CSV framing offers a flow that takes a stream of `akka.util.ByteString` and issues a stream of lists of `ByteString`.
+CSV parsing offers a flow that takes a stream of `akka.util.ByteString` and issues a stream of lists of `ByteString`.
 
 The incoming data must contain line ends to allow line base framing. The CSV special characters
-can be specified (as bytes), suitable values are available as constants in `CsvFraming`.
+can be specified (as bytes), suitable values are available as constants in `CsvParsing`.
 
 Scala
-: @@snip (../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFramingSpec.scala) { #flow-type }
+: @@snip (../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvParsingSpec.scala) { #flow-type }
 
 Java
-: @@snip (../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFramingTest.java) { #flow-type }
+: @@snip (../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvParsingTest.java) { #flow-type }
 
 
 In this sample we read a single line of CSV formatted data into a list of column elements:
 
 Scala
-: @@snip (../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFramingSpec.scala) { #line-scanner }
+: @@snip (../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvParsingSpec.scala) { #line-scanner }
 
 Java
-: @@snip (../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFramingTest.java) { #line-scanner }
+: @@snip (../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvParsingTest.java) { #line-scanner }
 
 ## CSV conversion into a map
 

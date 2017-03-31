@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.csv.scaladsl
 
@@ -31,7 +31,7 @@ class CsvToMapSpec extends CsvSpec {
   "CSV to Map" should {
     "parse header line and data line into map" in {
       // #header-line
-      import akka.stream.alpakka.csv.scaladsl.{CsvFraming, CsvToMap}
+      import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
 
       // #header-line
       val future =
@@ -40,7 +40,7 @@ class CsvToMapSpec extends CsvSpec {
       Source
         .single(ByteString("""eins,zwei,drei
                              |1,2,3""".stripMargin))
-        .via(CsvFraming.lineScanner())
+        .via(CsvParsing.lineScanner())
         .via(CsvToMap.toMap())
         .runWith(Sink.head)
       // #header-line
@@ -54,7 +54,7 @@ class CsvToMapSpec extends CsvSpec {
         Source
           .single(ByteString("""eins,zwei
                                |1,2,3""".stripMargin))
-          .via(CsvFraming.lineScanner())
+          .via(CsvParsing.lineScanner())
           .via(CsvToMap.toMap())
           .runWith(Sink.head)
       future.futureValue should be(Map("eins" -> ByteString("1"), "zwei" -> ByteString("2")))
@@ -65,7 +65,7 @@ class CsvToMapSpec extends CsvSpec {
         Source
           .single(ByteString("""eins,zwei,drei,vier
                                |1,2,3""".stripMargin))
-          .via(CsvFraming.lineScanner())
+          .via(CsvParsing.lineScanner())
           .via(CsvToMap.toMap())
           .runWith(Sink.head)
       future.futureValue should be(Map("eins" -> ByteString("1"), "zwei" -> ByteString("2"),
@@ -74,7 +74,7 @@ class CsvToMapSpec extends CsvSpec {
 
     "use column names and data line into map" in {
       // #column-names
-      import akka.stream.alpakka.csv.scaladsl.{CsvFraming, CsvToMap}
+      import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
 
       // #column-names
       val future =
@@ -82,7 +82,7 @@ class CsvToMapSpec extends CsvSpec {
       // #column-names
       Source
         .single(ByteString("""1,2,3"""))
-        .via(CsvFraming.lineScanner())
+        .via(CsvParsing.lineScanner())
         .via(CsvToMap.withHeaders("eins", "zwei", "drei"))
         .runWith(Sink.head)
       // #column-names

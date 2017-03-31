@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.csv.javadsl;
 
@@ -10,7 +10,7 @@ import scala.collection.JavaConversions;
 
 import java.util.Collection;
 
-public class CsvFraming {
+public class CsvParsing {
 
     public static final byte BACKSLASH = '\\';
     public static final byte COMMA = ',';
@@ -24,7 +24,7 @@ public class CsvFraming {
     }
 
     public static Flow<ByteString, Collection<ByteString>, NotUsed> lineScanner(byte delimiter, byte quoteChar, byte escapeChar) {
-        return akka.stream.alpakka.csv.scaladsl.CsvFraming
+        return akka.stream.alpakka.csv.scaladsl.CsvParsing
                 .lineScanner(delimiter, quoteChar, escapeChar).asJava()
                 .map(JavaConversions::asJavaCollection);
     }
