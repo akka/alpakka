@@ -1,11 +1,11 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.s3.impl
+package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.s3.scaladsl.S3Client
+import akka.stream.alpakka.s3.impl.MetaHeaders
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
