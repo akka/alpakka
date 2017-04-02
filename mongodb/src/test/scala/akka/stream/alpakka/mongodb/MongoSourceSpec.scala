@@ -1,9 +1,14 @@
+/*
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.mongodb
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.mongodb.scaladsl.MongoSource
 import akka.stream.scaladsl.Sink
+import org.mongodb.scala.MongoClient
 import org.mongodb.scala.bson.collection.immutable.Document
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
@@ -27,8 +32,9 @@ class MongoSourceSpec
 
   implicit val mat = ActorMaterializer()
 
-  val db = MongoConnectionDetails("alpakka-mongo", "localhost", 27017).db
-  val numbersColl = db.getCollection("numbers")
+  private lazy val client = MongoClient(s"mongodb://localhost:27017")
+  private lazy val db = client.getDatabase("alpakka-mongo")
+  private val numbersColl = db.getCollection("numbers")
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 50.millis)
@@ -41,7 +47,7 @@ class MongoSourceSpec
     Await.result(system.terminate(), 5.seconds)
   }
 
-  def seed() = {
+  private def seed() = {
     val numbers = 1 until 10
     Await.result(
       numbersColl.insertMany {
