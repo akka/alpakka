@@ -107,13 +107,13 @@ private[alpakka] object HttpRequests {
 
     def requestUri(s3Location: S3Location, region: String)(implicit conf: S3Settings): Uri = {
       val uri = if (conf.pathStyleAccess) {
-        Uri(s"/${s3Location.bucket}/${s3Location.key}").withHost(requestHost(s3Location, region)).withScheme("https")
+        Uri(s"/${s3Location.bucket}/${s3Location.key}").withHost(requestHost(s3Location, region))
       } else {
-        Uri(s"/${s3Location.key}").withHost(requestHost(s3Location, region)).withScheme("https")
+        Uri(s"/${s3Location.key}").withHost(requestHost(s3Location, region))
       }
       conf.proxy match {
-        case None => uri
-        case Some(proxy) => uri.withPort(proxy.port)
+        case None => uri.withScheme("https")
+        case Some(proxy) => uri.withPort(proxy.port).withScheme(proxy.scheme)
       }
     }
 
