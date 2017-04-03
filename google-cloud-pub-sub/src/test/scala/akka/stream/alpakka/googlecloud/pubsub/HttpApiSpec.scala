@@ -56,9 +56,10 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
         |}""".stripMargin
 
     mock.register(
-        any(urlEqualTo("/oauth2/v4/token"))
-          .withRequestBody(WireMock.equalTo(expectedRequest))
-          .willReturn(aResponse().withStatus(200).withBody(authResult).withHeader("Content-Type", "application/json")))
+      any(urlEqualTo("/oauth2/v4/token"))
+        .withRequestBody(WireMock.equalTo(expectedRequest))
+        .willReturn(aResponse().withStatus(200).withBody(authResult).withHeader("Content-Type", "application/json"))
+    )
 
     val result =
       TestHttpApi.getAccessToken(TestCredentials.clientEmail, TestCredentials.privateKey, Instant.ofEpochSecond(0))
@@ -77,15 +78,19 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
     val publishResponse = """{"messageIds":["1"]}"""
 
     mock.register(
-        WireMock
-          .post(urlEqualTo(
-                s"/v1/projects/${TestCredentials.projectId}/topics/topic1:publish?key=${TestCredentials.apiKey}"))
-          .withRequestBody(WireMock.equalTo(expectedPublishRequest))
-          .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
-          .willReturn(aResponse()
-              .withStatus(200)
-              .withBody(publishResponse)
-              .withHeader("Content-Type", "application/json")))
+      WireMock
+        .post(
+          urlEqualTo(s"/v1/projects/${TestCredentials.projectId}/topics/topic1:publish?key=${TestCredentials.apiKey}")
+        )
+        .withRequestBody(WireMock.equalTo(expectedPublishRequest))
+        .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(publishResponse)
+            .withHeader("Content-Type", "application/json")
+        )
+    )
 
     val result =
       TestHttpApi.publish(TestCredentials.projectId, "topic1", accessToken, TestCredentials.apiKey, publishRequest)
@@ -103,12 +108,17 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
 
     val pullRequest = """{"returnImmediately":true,"maxMessages":1000}"""
 
-    mock.register(WireMock
-        .post(urlEqualTo(
-              s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:pull?key=${TestCredentials.apiKey}"))
+    mock.register(
+      WireMock
+        .post(
+          urlEqualTo(
+            s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:pull?key=${TestCredentials.apiKey}"
+          )
+        )
         .withRequestBody(WireMock.equalTo(pullRequest))
         .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
-        .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json")))
+        .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
+    )
 
     val result = TestHttpApi.pull(TestCredentials.projectId, "sub1", accessToken, TestCredentials.apiKey)
     result.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", publishMessage))))
@@ -121,12 +131,17 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
 
     val pullRequest = """{"returnImmediately":true,"maxMessages":1000}"""
 
-    mock.register(WireMock
-        .post(urlEqualTo(
-              s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:pull?key=${TestCredentials.apiKey}"))
+    mock.register(
+      WireMock
+        .post(
+          urlEqualTo(
+            s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:pull?key=${TestCredentials.apiKey}"
+          )
+        )
         .withRequestBody(WireMock.equalTo(pullRequest))
         .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
-        .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json")))
+        .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
+    )
 
     val result = TestHttpApi.pull(TestCredentials.projectId, "sub1", accessToken, TestCredentials.apiKey)
     result.futureValue shouldBe PullResponse(None)
@@ -135,17 +150,25 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
 
   it should "acknowledge" in {
     val ackRequest = """{"ackIds":["ack1"]}"""
-    mock.register(WireMock
-        .post(urlEqualTo(
-              s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:acknowledge?key=${TestCredentials.apiKey}"))
+    mock.register(
+      WireMock
+        .post(
+          urlEqualTo(
+            s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:acknowledge?key=${TestCredentials.apiKey}"
+          )
+        )
         .withRequestBody(WireMock.equalTo(ackRequest))
         .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
-        .willReturn(aResponse().withStatus(200)))
+        .willReturn(aResponse().withStatus(200))
+    )
 
     val acknowledgeRequest = AcknowledgeRequest(Seq("ack1"))
 
-    val result = TestHttpApi.acknowledge(TestCredentials.projectId, "sub1", accessToken, TestCredentials.apiKey,
-      acknowledgeRequest)
+    val result = TestHttpApi.acknowledge(TestCredentials.projectId,
+                                         "sub1",
+                                         accessToken,
+                                         TestCredentials.apiKey,
+                                         acknowledgeRequest)
 
     result.futureValue shouldBe (())
   }

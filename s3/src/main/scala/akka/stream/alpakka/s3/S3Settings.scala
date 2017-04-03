@@ -11,14 +11,13 @@ final case class Proxy(host: String, port: Int)
 
 final class S3Settings(val bufferType: BufferType,
                        val diskBufferPath: String,
-                       val debugLogging: Boolean,
                        val proxy: Option[Proxy],
                        val awsCredentials: AWSCredentials,
                        val s3Region: String,
                        val pathStyleAccess: Boolean) {
 
   override def toString: String =
-    s"S3Settings($bufferType,$diskBufferPath,$debugLogging,$proxy,$awsCredentials,$s3Region,$pathStyleAccess)"
+    s"S3Settings($bufferType,$diskBufferPath,$proxy,$awsCredentials,$s3Region,$pathStyleAccess)"
 }
 
 sealed trait BufferType
@@ -45,7 +44,6 @@ object S3Settings {
       case _ => throw new IllegalArgumentException("Buffer type must be 'memory' or 'disk'")
     },
     diskBufferPath = config.getString("disk-buffer-path"),
-    debugLogging = config.getBoolean("debug-logging"),
     proxy = {
       if (config.getString("proxy.host") != "")
         Some(Proxy(config.getString("proxy.host"), config.getInt("proxy.port")))

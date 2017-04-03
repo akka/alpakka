@@ -56,7 +56,8 @@ private[alpakka] object HttpRequests {
 
   def completeMultipartUploadRequest(upload: MultipartUpload, parts: Seq[(Int, String)], region: String)(
       implicit ec: ExecutionContext,
-      conf: S3Settings): Future[HttpRequest] = {
+      conf: S3Settings
+  ): Future[HttpRequest] = {
 
     //Do not let the start PartNumber,ETag and the end PartNumber,ETag be on different lines
     //  They tend to get split when this file is formatted by IntelliJ unless http://stackoverflow.com/a/19492318/1216965
