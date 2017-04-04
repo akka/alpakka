@@ -56,10 +56,11 @@ class UdpSpec extends TestKit(ActorSystem("udp-test"))
         case Success(port) ⇒
           val messagesToSend = 100
           val receivedCount = new AtomicInteger(0)
+          val address = new InetSocketAddress("localhost", port)
 
           val server = TestActorRef(new Actor {
             override def preStart(): Unit = {
-              IO(Udp) ! Udp.Bind(self, new InetSocketAddress("localhost", port))
+              IO(Udp) ! Udp.Bind(self, address)
             }
             def receive = {
               case Udp.Bound(_) ⇒
@@ -73,7 +74,7 @@ class UdpSpec extends TestKit(ActorSystem("udp-test"))
 
           Source(1 to messagesToSend)
             .map({ i ⇒ ByteString(s"message $i") })
-            .map(UdpMessage(_, new InetSocketAddress("localhost", port)))
+            .map(UdpMessage(_, address))
             .runWith(new UdpSink)
 
           eventually {
