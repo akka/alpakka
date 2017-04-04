@@ -29,6 +29,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   sqs,
   sse,
   text,
+  udp,
   unixdomainsocket,
   xml
 )

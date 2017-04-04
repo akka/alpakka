@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.udp.sink
 
 import java.net.InetSocketAddress
@@ -10,7 +13,8 @@ import akka.util.ByteString
 
 final case class UdpMessage(data: ByteString, remote: InetSocketAddress)
 
-class UdpSinkStageLogic(val shape: SinkShape[UdpMessage])(implicit val system: ActorSystem) extends GraphStageLogic(shape) {
+class UdpSinkStageLogic(val shape: SinkShape[UdpMessage])(implicit val system: ActorSystem)
+    extends GraphStageLogic(shape) {
   implicit def self: ActorRef = stageActor.ref
   private def in = shape.in
   private var udpSender: Option[ActorRef] = None
@@ -28,24 +32,26 @@ class UdpSinkStageLogic(val shape: SinkShape[UdpMessage])(implicit val system: A
         pull(in);
     }
   }
-  setHandler(in, new InHandler {
-    override def onPush() = {
-      grab(in) match {
-        case impl: UdpMessage ⇒
-          udpSender.foreach { sender ⇒
-            sender ! Udp.Send(impl.data, impl.remote)
-          }
-        case _ ⇒
+  setHandler(
+    in,
+    new InHandler {
+      override def onPush() = {
+        grab(in) match {
+          case impl: UdpMessage ⇒
+            udpSender.foreach { sender ⇒
+              sender ! Udp.Send(impl.data, impl.remote)
+            }
+          case _ ⇒
+        }
+        pull(in)
       }
-      pull(in)
     }
-  })
+  )
 }
 
 class UdpSink(implicit val system: ActorSystem) extends GraphStage[SinkShape[UdpMessage]] {
   val in: Inlet[UdpMessage] = Inlet("UdpSink.in")
   val shape: SinkShape[UdpMessage] = SinkShape.of(in)
-  override def createLogic(inheritedAttributes: Attributes) = {
+  override def createLogic(inheritedAttributes: Attributes) =
     new UdpSinkStageLogic(shape)
-  }
 }
