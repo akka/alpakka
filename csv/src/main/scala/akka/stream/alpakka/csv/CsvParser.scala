@@ -3,6 +3,8 @@
  */
 package akka.stream.alpakka.csv
 
+import java.nio.charset.UnsupportedCharsetException
+
 import akka.util.{ByteString, ByteStringBuilder}
 
 /**
@@ -29,9 +31,11 @@ private[csv] object CsvParser {
  * INTERNAL API: Use [[akka.stream.alpakka.csv.scaladsl.CsvParsing]] instead.
  */
 private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar: Byte) {
+
   import CsvParser._
 
   private[this] var buffer = ByteString.empty
+  private[this] var firstData = true
   private[this] var pos = 0
   private[this] var fieldStart = 0
 
@@ -40,12 +44,14 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
 
   def poll(requireLineEnd: Boolean): Option[List[ByteString]] =
     if (buffer.nonEmpty) {
+      val preFirstData = firstData
       val prePos = pos
       val preFieldStart = fieldStart
       val line = parseLine(requireLineEnd)
       if (line.nonEmpty) {
         dropReadBuffer()
       } else {
+        firstData = preFirstData
         pos = prePos
         fieldStart = preFieldStart
       }
@@ -93,15 +99,40 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
 
     def wrongCharEscaped() =
       throw new MalformedCsvException(pos, s"wrong escaping at $pos, only escape or delimiter may be escaped")
+
     def wrongCharEscapedWithinQuotes() =
       throw new MalformedCsvException(pos,
         s"wrong escaping at $pos, only escape or quote may be escaped within quotes")
+
     def noCharEscaped() = throw new MalformedCsvException(pos, s"wrong escaping at $pos, no character after escape")
 
     @inline def readPastLf() =
       if (pos < buf.length && buf(pos) == LF) {
         pos += 1
       }
+
+    def checkForByteOrderMark(): Unit =
+      if (buf.length >= 2) {
+        if (buf.startsWith(ByteOrderMark.UTF_8)) {
+          pos = 3
+          fieldStart = 3
+        } else {
+          if (buf.startsWith(ByteOrderMark.UTF_16_LE)) {
+            throw new UnsupportedCharsetException("UTF-16 LE and UTF-32 LE")
+          }
+          if (buf.startsWith(ByteOrderMark.UTF_16_BE)) {
+            throw new UnsupportedCharsetException("UTF-16 BE")
+          }
+          if (buf.startsWith(ByteOrderMark.UTF_32_BE)) {
+            throw new UnsupportedCharsetException("UTF-32 BE")
+          }
+        }
+      }
+
+    if (firstData) {
+      checkForByteOrderMark()
+      firstData = false
+    }
 
     while (state != LineEnd && pos < buf.length) {
       val byte = buf(pos)

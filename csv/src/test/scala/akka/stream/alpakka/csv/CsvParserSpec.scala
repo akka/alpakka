@@ -3,8 +3,9 @@
  */
 package akka.stream.alpakka.csv
 
+import java.nio.charset.{StandardCharsets, UnsupportedCharsetException}
+
 import akka.stream.alpakka.csv.CsvParser.MalformedCsvException
-import akka.stream.alpakka.csv.scaladsl.CsvParsing
 import akka.util.ByteString
 import org.scalatest.{Matchers, OptionValues, WordSpec}
 
@@ -55,7 +56,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "parse UTF-8 chars unchanged" in {
-      expectInOut("a,ñÅë,อักษรไทย\n", List("a", "ñÅë", "อักษรไทย"))
+      expectInOut("ℵ,a,ñÅë,อักษรไทย\n", List("ℵ", "a", "ñÅë", "อักษรไทย"))
     }
 
     "parse double quote chars into empty column" in {
@@ -175,12 +176,47 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
   }
 
+  "CSV parsing with Byte Order Mark" should {
+    "accept UTF-8 BOM" in {
+      val in = ByteOrderMark.UTF_8 ++ ByteString("one,two,three\n", StandardCharsets.UTF_8.name())
+      expectBsInOut(in, List("one", "two", "three"))
+    }
+
+    "fail for UTF-16 LE BOM" in {
+      val in = ByteOrderMark.UTF_16_LE ++ ByteString("one,two,three\n", StandardCharsets.UTF_16LE.name())
+      a[UnsupportedCharsetException] should be thrownBy expectBsInOut(in, List("one", "two", "three"))
+    }
+
+    "fail for UTF-16 BE BOM" in {
+      val in = ByteOrderMark.UTF_16_BE ++ ByteString("one,two,three\n", StandardCharsets.UTF_16BE.name())
+      a[UnsupportedCharsetException] should be thrownBy expectBsInOut(in, List("one", "two", "three"))
+    }
+
+    "fail for UTF-32 LE BOM" in {
+      val in = ByteOrderMark.UTF_32_LE ++ ByteString("one,two,three\n", "UTF-32LE")
+      a[UnsupportedCharsetException] should be thrownBy expectBsInOut(in, List("one", "two", "three"))
+    }
+
+    "fail for UTF-32 BE BOM" in {
+      val in = ByteOrderMark.UTF_32_BE ++ ByteString("one,two,three\n", "UTF-32BE")
+      a[UnsupportedCharsetException] should be thrownBy expectBsInOut(in, List("one", "two", "three"))
+    }
+  }
+
   def expectInOut(in: String, expected: List[String]*)(implicit delimiter: Byte = ',',
                                                        quoteChar: Byte = '"',
                                                        escapeChar: Byte = '\\',
                                                        requireLineEnd: Boolean = true): Unit = {
+    val bsIn = ByteString(in)
+    expectBsInOut(bsIn, expected: _*)(delimiter, quoteChar, escapeChar, requireLineEnd)
+  }
+
+  def expectBsInOut(bsIn: ByteString, expected: List[String]*)(implicit delimiter: Byte = ',',
+                                                               quoteChar: Byte = '"',
+                                                               escapeChar: Byte = '\\',
+                                                               requireLineEnd: Boolean = true): Unit = {
     val parser = new CsvParser(delimiter, quoteChar, escapeChar)
-    parser.offer(ByteString(in))
+    parser.offer(bsIn)
     expected.foreach { out =>
       parser.poll(requireLineEnd).value.map(_.utf8String) should be(out)
     }
