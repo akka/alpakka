@@ -64,17 +64,15 @@ public class SqsSourceTest {
     public void streamFromQueue() throws Exception {
 
         final String queueUrl = randomQueueUrl();
-
-        Source.range(0, 100).map(i -> String.format("alpakka-%s", i)).runForeach((m) -> sqsClient.sendMessage(queueUrl, m), materializer);
+        sqsClient.sendMessage(queueUrl, "alpakka");
 
         //#run
-        final CompletionStage<List<String>> cs = SqsSource.create(queueUrl, sqsSourceSettings, sqsClient)
+        final CompletionStage<String> cs = SqsSource.create(queueUrl, sqsSourceSettings, sqsClient)
             .map(m -> m.getBody())
-            .take(100)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.head(), materializer);
         //#run
 
-        assertEquals(100, cs.toCompletableFuture().get(3, TimeUnit.SECONDS).size());
+        assertEquals("alpakka", cs.toCompletableFuture().get(10, TimeUnit.SECONDS));
 
     }
 
@@ -88,17 +86,16 @@ public class SqsSourceTest {
         //#init-custom-client
 
         final String queueUrl = randomQueueUrl();
-
-        Source.range(0, 100).map(i -> String.format("alpakka-%s", i)).runForeach((m) -> sqsClient.sendMessage(queueUrl, m), materializer);
+        sqsClient.sendMessage(queueUrl, "alpakka");
 
         //#run
-        final CompletionStage<List<String>> cs = SqsSource.create(queueUrl, sqsSourceSettings, sqsClient)
+        final CompletionStage<String> cs = SqsSource.create(queueUrl, sqsSourceSettings, sqsClient)
             .map(m -> m.getBody())
-            .take(100)
-            .runWith(Sink.seq(), materializer);
+            .take(1)
+            .runWith(Sink.head(), materializer);
         //#run
 
-        assertEquals(100, cs.toCompletableFuture().get(3, TimeUnit.SECONDS).size());
+        assertEquals("alpakka", cs.toCompletableFuture().get(10, TimeUnit.SECONDS));
 
     }
 }
