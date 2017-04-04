@@ -170,6 +170,8 @@ lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse)
 
 lazy val text = alpakkaProject("text", "text")
 
+lazy val udp = alpakkaProject("udp", "udp")
+
 lazy val unixdomainsocket = alpakkaProject("unix-domain-socket", "unixdomainsocket", Dependencies.UnixDomainSocket)
 
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
