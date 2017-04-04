@@ -8,10 +8,12 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpEntity, MediaTypes}
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
+import akka.stream.scaladsl.Source
 import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, Matchers}
 
-class HttpRequestsSpec extends FlatSpec with Matchers {
+class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
   // test fixtures
   val pathStyleAcessConfig =
@@ -31,10 +33,29 @@ class HttpRequestsSpec extends FlatSpec with Matchers {
      |path-style-access = true
    """.stripMargin
 
+  val proxyConfig =
+    """
+      |buffer = "memory"
+      |disk-buffer-path = ""
+      |debug-logging = false
+      |proxy {
+      |  host = "localhost"
+      |  port = 8080
+      |  secure = false
+      |}
+      |aws {
+      |  access-key-id = ""
+      |  secret-access-key = ""
+      |  default-region = "us-east-1"
+      |}
+      |path-style-access = false
+    """.stripMargin
+
   val location = S3Location("bucket", "image-1024@2x")
   val contentType = MediaTypes.`image/jpeg`
   val acl = CannedAcl.PublicRead
   val metaHeaders: Map[String, String] = Map("location" -> "San Francisco", "orientation" -> "portrait")
+  val multipartUpload = MultipartUpload(S3Location("testBucket", "testKey"), "uploadId")
 
   it should "initiate multipart upload when the region is us-east-1" in {
     implicit val settings = S3Settings(ActorSystem())
@@ -105,5 +126,41 @@ class HttpRequestsSpec extends FlatSpec with Matchers {
 
     req.uri.authority.host.toString shouldEqual "s3-eu-west-1.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/image-1024@2x"
+  }
+
+  it should "support download requests via HTTP when such scheme configured for `proxy`" in {
+    implicit val settings = S3Settings(ConfigFactory.parseString(proxyConfig))
+
+    val req = HttpRequests.getDownloadRequest(location, "region")
+
+    req.uri.scheme shouldEqual "http"
+  }
+
+  it should "support multipart init upload requests via HTTP when such scheme configured for `proxy`" in {
+    implicit val settings = S3Settings(ConfigFactory.parseString(proxyConfig))
+
+    val req =
+      HttpRequests.initiateMultipartUploadRequest(location, contentType, acl, "region", MetaHeaders(metaHeaders))
+
+    req.uri.scheme shouldEqual "http"
+  }
+
+  it should "support multipart upload part requests via HTTP when such scheme configured for `proxy`" in {
+    implicit val settings = S3Settings(ConfigFactory.parseString(proxyConfig))
+
+    val req =
+      HttpRequests.uploadPartRequest(multipartUpload, 1, Source.empty, 1, "region")
+
+    req.uri.scheme shouldEqual "http"
+  }
+
+  it should "support multipart upload complete requests via HTTP when such scheme configured for `proxy`" in {
+    implicit val settings = S3Settings(ConfigFactory.parseString(proxyConfig))
+    implicit val executionContext = scala.concurrent.ExecutionContext.global
+
+    val reqFuture =
+      HttpRequests.completeMultipartUploadRequest(multipartUpload, (1, "part") :: Nil, "region")
+
+    reqFuture.futureValue.uri.scheme shouldEqual "http"
   }
 }

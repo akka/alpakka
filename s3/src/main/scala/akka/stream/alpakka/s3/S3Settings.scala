@@ -7,7 +7,7 @@ import akka.actor.ActorSystem
 import akka.stream.alpakka.s3.auth.AWSCredentials
 import com.typesafe.config.Config
 
-final case class Proxy(host: String, port: Int)
+final case class Proxy(host: String, port: Int, scheme: String)
 
 final class S3Settings(val bufferType: BufferType,
                        val diskBufferPath: String,
@@ -45,9 +45,10 @@ object S3Settings {
     },
     diskBufferPath = config.getString("disk-buffer-path"),
     proxy = {
-      if (config.getString("proxy.host") != "")
-        Some(Proxy(config.getString("proxy.host"), config.getInt("proxy.port")))
-      else None
+      if (config.getString("proxy.host") != "") {
+        val scheme = if (config.getBoolean("proxy.secure")) "https" else "http"
+        Some(Proxy(config.getString("proxy.host"), config.getInt("proxy.port"), scheme))
+      } else None
     },
     awsCredentials = AWSCredentials(config.getString("aws.access-key-id"), config.getString("aws.secret-access-key")),
     s3Region = config.getString("aws.default-region"),
