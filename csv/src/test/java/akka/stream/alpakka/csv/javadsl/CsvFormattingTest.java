@@ -17,6 +17,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -32,13 +33,14 @@ public class CsvFormattingTest {
         char escapeChar = CsvFormatting.BACKSLASH;
         String endOfLine = CsvFormatting.CR_LF;
         String charsetName = ByteString.UTF_8();
+        Optional<ByteString> byteOrderMark = Optional.empty();
         // #flow-type
         Flow<Collection<String>, ByteString, ?> flow1
                 = CsvFormatting.format();
 
         Flow<Collection<String>, ByteString, ?> flow2
                 = CsvFormatting.format(delimiter, quoteChar, escapeChar, endOfLine,
-                                       CsvQuotingStyle.REQUIRED, charsetName);
+                                       CsvQuotingStyle.REQUIRED, charsetName, byteOrderMark);
         // #flow-type
     }
 

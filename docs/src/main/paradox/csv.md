@@ -103,6 +103,12 @@ Java
 To emit CSV files ``immutable.Seq[String]`` can be formatted into ``ByteString`` e.g to be written to file.
 The formatter takes care of quoting and escaping.
 
+Certain CSV readers (e.g. Microsoft Excel) require CSV files to indicate their character encoding with a *Byte 
+Order Mark* (BOM) in the first bytes of the file. Choose an appropriate Byte Order Mark matching the
+selected character set from the constants in `ByteOrderMark` 
+([Unicode FAQ on Byte Order Mark](http://www.unicode.org/faq/utf_bom.html#bom1)).
+
+
 Scala
 : @@snip (../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFormattingSpec.scala) { #flow-type }
 
@@ -117,6 +123,7 @@ This example uses the default configuration:
 - Line ending: Carriage Return and Line Feed (`\r` = ASCII 13 + `\n` = ASCII 10)
 - Quoting style: quote only if required
 - Charset: UTF-8
+- No Byte Order Mark
 
 Scala
 : @@snip (../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFormattingSpec.scala) { #formatting }

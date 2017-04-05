@@ -5,6 +5,7 @@ package akka.stream.alpakka.csv
 
 import java.nio.charset.UnsupportedCharsetException
 
+import akka.stream.alpakka.csv.scaladsl.ByteOrderMark
 import akka.util.{ByteString, ByteStringBuilder}
 
 /**

@@ -6,6 +6,7 @@ package akka.stream.alpakka.csv
 import java.nio.charset.{StandardCharsets, UnsupportedCharsetException}
 
 import akka.stream.alpakka.csv.CsvParser.MalformedCsvException
+import akka.stream.alpakka.csv.scaladsl.ByteOrderMark
 import akka.util.ByteString
 import org.scalatest.{Matchers, OptionValues, WordSpec}
 

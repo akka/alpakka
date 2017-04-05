@@ -4,7 +4,6 @@
 package akka.stream.alpakka.csv.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.csv.ByteOrderMark
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
 
@@ -20,13 +19,14 @@ class CsvFormattingSpec extends CsvSpec {
     val endOfLine = "\r\n"
     // format: off
     // #flow-type
-    val flow: Flow[immutable.Seq[String], ByteString, NotUsed]
+    val flow: Flow[immutable.Seq[String], ByteString, _]
       = CsvFormatting.format(delimiter,
                              quoteChar,
                              escapeChar,
                              endOfLine,
                              CsvQuotingStyle.Required,
-                             charsetName = "UTF-8")
+                             charsetName = "UTF-8",
+                             byteOrderMark = None)
     // #flow-type
     // format: on
   }

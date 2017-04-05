@@ -10,18 +10,6 @@ import akka.util.ByteString
 
 import scala.collection.immutable
 
-sealed trait CsvQuotingStyle
-object CsvQuotingStyle {
-  case object Required extends CsvQuotingStyle
-  case object Always extends CsvQuotingStyle
-
-  def asScala(qs: javadsl.CsvQuotingStyle): CsvQuotingStyle = qs match {
-    case javadsl.CsvQuotingStyle.ALWAYS => CsvQuotingStyle.Always
-    case javadsl.CsvQuotingStyle.REQUIRED => CsvQuotingStyle.Required
-  }
-
-}
-
 /** Provides CSV formatting flows that convert a sequence of String into their CSV representation
  * in [[akka.util.ByteString]].
  */
@@ -35,10 +23,12 @@ object CsvFormatting {
   val DoubleQuote: Char = '"'
 
   /**
-    *
-    * @param charsetName
-    * @param byteOrderMark Certain CSV readers (namely Microsoft Excel) require a
-    */
+   * Create a Flow for converting iterables to ByteString.
+   * @param endOfLine Line ending (default CR, LF)
+   * @param quotingStyle Quote all fields, or only fields requiring quotes (default)
+   * @param charsetName Character set name, defaults to UTF-8
+   * @param byteOrderMark Certain CSV readers (namely Microsoft Excel) require a Byte Order mark, defaults to None
+   */
   def format[T <: immutable.Iterable[String]](
       delimiter: Char = Comma,
       quoteChar: Char = DoubleQuote,
@@ -51,15 +41,9 @@ object CsvFormatting {
     val formatter =
       new CsvFormatter(delimiter, quoteChar, escapeChar, endOfLine, quotingStyle, charsetName)
     byteOrderMark.fold {
-      Flow[T].map { t =>
-        formatter.toCsv(t)
-      }.named("CsvFormatting")
+      Flow[T].map(formatter.toCsv).named("CsvFormatting")
     } { bom =>
-      Flow[T]
-        .map { t =>
-          formatter.toCsv(t)
-        }.named("CsvFormatting")
-        .prepend(Source.single(bom))
+      Flow[T].map(formatter.toCsv).named("CsvFormatting").prepend(Source.single(bom))
     }
 
   }

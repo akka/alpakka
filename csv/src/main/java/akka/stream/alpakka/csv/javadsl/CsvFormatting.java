@@ -8,10 +8,12 @@ import akka.stream.alpakka.csv.scaladsl.CsvQuotingStyle$;
 import akka.stream.javadsl.Flow;
 import akka.util.ByteString;
 import scala.Option;
+import scala.Some;
 import scala.collection.JavaConversions;
 import scala.collection.immutable.List;
 
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * Provides CSV formatting flows that convert a sequence of String into their CSV representation
@@ -34,7 +36,7 @@ public class CsvFormatting {
      * @return The formatting flow
      */
     public static <T extends Collection<String>> Flow<T, ByteString, NotUsed> format() {
-        return format(COMMA, DOUBLE_QUOTE, BACKSLASH, CR_LF, CsvQuotingStyle.REQUIRED, ByteString.UTF_8());
+        return format(COMMA, DOUBLE_QUOTE, BACKSLASH, CR_LF, CsvQuotingStyle.REQUIRED, ByteString.UTF_8(), Optional.empty());
     }
 
     /**
@@ -49,11 +51,12 @@ public class CsvFormatting {
      * @param <T>          Any collection implementation
      * @return The formatting flow
      */
-    public static <T extends Collection<String>> Flow<T, ByteString, NotUsed> format(char delimiter, char quoteChar, char escapeChar, String endOfLine, CsvQuotingStyle quotingStyle, String charsetName) {
+    public static <T extends Collection<String>> Flow<T, ByteString, NotUsed> format(char delimiter, char quoteChar, char escapeChar, String endOfLine, CsvQuotingStyle quotingStyle, String charsetName, Optional<ByteString> byteOrderMark) {
         akka.stream.alpakka.csv.scaladsl.CsvQuotingStyle qs = CsvQuotingStyle$.MODULE$.asScala(quotingStyle);
+        Option byteOrderMarkScala = byteOrderMark.<Option>map(Some::apply).orElse(Option.<ByteString>empty());
         akka.stream.scaladsl.Flow<List<String>, ByteString, NotUsed> formattingFlow
             = akka.stream.alpakka.csv.scaladsl.CsvFormatting
-                .format(delimiter, quoteChar, escapeChar, endOfLine, qs, charsetName, Option.empty());
+                .format(delimiter, quoteChar, escapeChar, endOfLine, qs, charsetName, byteOrderMarkScala);
         return Flow.<T>create()
                 .map(c -> JavaConversions.collectionAsScalaIterable(c).toList())
                 .via(formattingFlow);
