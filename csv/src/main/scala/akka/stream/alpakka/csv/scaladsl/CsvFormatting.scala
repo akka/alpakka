@@ -4,8 +4,8 @@
 package akka.stream.alpakka.csv.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.csv.{javadsl, CsvFormattingStage}
-import akka.stream.scaladsl.Flow
+import akka.stream.alpakka.csv.{javadsl, CsvFormatter}
+import akka.stream.scaladsl.{Flow, Source}
 import akka.util.ByteString
 
 import scala.collection.immutable
@@ -34,11 +34,33 @@ object CsvFormatting {
   val Tab: Char = '\t'
   val DoubleQuote: Char = '"'
 
-  def format[T <: immutable.Iterable[String]](delimiter: Char = Comma,
-                                              quoteChar: Char = DoubleQuote,
-                                              escapeChar: Char = Backslash,
-                                              endOfLine: String = "\r\n",
-                                              quotingStyle: CsvQuotingStyle = CsvQuotingStyle.Required,
-                                              charsetName: String = ByteString.UTF_8): Flow[T, ByteString, NotUsed] =
-    Flow.fromGraph(new CsvFormattingStage(delimiter, quoteChar, escapeChar, endOfLine, quotingStyle, charsetName))
+  /**
+    *
+    * @param charsetName
+    * @param byteOrderMark Certain CSV readers (namely Microsoft Excel) require a
+    */
+  def format[T <: immutable.Iterable[String]](
+      delimiter: Char = Comma,
+      quoteChar: Char = DoubleQuote,
+      escapeChar: Char = Backslash,
+      endOfLine: String = "\r\n",
+      quotingStyle: CsvQuotingStyle = CsvQuotingStyle.Required,
+      charsetName: String = ByteString.UTF_8,
+      byteOrderMark: Option[ByteString] = None
+  ): Flow[T, ByteString, NotUsed] = {
+    val formatter =
+      new CsvFormatter(delimiter, quoteChar, escapeChar, endOfLine, quotingStyle, charsetName)
+    byteOrderMark.fold {
+      Flow[T].map { t =>
+        formatter.toCsv(t)
+      }.named("CsvFormatting")
+    } { bom =>
+      Flow[T]
+        .map { t =>
+          formatter.toCsv(t)
+        }.named("CsvFormatting")
+        .prepend(Source.single(bom))
+    }
+
+  }
 }

@@ -7,6 +7,7 @@ import akka.NotUsed;
 import akka.stream.alpakka.csv.scaladsl.CsvQuotingStyle$;
 import akka.stream.javadsl.Flow;
 import akka.util.ByteString;
+import scala.Option;
 import scala.collection.JavaConversions;
 import scala.collection.immutable.List;
 
@@ -52,7 +53,7 @@ public class CsvFormatting {
         akka.stream.alpakka.csv.scaladsl.CsvQuotingStyle qs = CsvQuotingStyle$.MODULE$.asScala(quotingStyle);
         akka.stream.scaladsl.Flow<List<String>, ByteString, NotUsed> formattingFlow
             = akka.stream.alpakka.csv.scaladsl.CsvFormatting
-                .format(delimiter, quoteChar, escapeChar, endOfLine, qs, charsetName);
+                .format(delimiter, quoteChar, escapeChar, endOfLine, qs, charsetName, Option.empty());
         return Flow.<T>create()
                 .map(c -> JavaConversions.collectionAsScalaIterable(c).toList())
                 .via(formattingFlow);

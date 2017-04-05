@@ -4,6 +4,7 @@
 package akka.stream.alpakka.csv.scaladsl
 
 import akka.NotUsed
+import akka.stream.alpakka.csv.ByteOrderMark
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
 
@@ -46,6 +47,24 @@ class CsvFormattingSpec extends CsvSpec {
       // #formatting
       // format: on
       fut.futureValue should be(ByteString("eins,zwei,drei\r\n"))
+    }
+
+    "include Byte Order Mark" in {
+      // #formatting-bom
+      import akka.stream.alpakka.csv.scaladsl.CsvFormatting
+
+      // #formatting-bom
+      val fut =
+        // format: off
+      // #formatting-bom
+        Source
+          .apply(List(List("eins", "zwei", "drei"), List("uno", "dos", "tres")))
+          .via(CsvFormatting.format(byteOrderMark = Some(ByteOrderMark.UTF_8)))
+          .runWith(Sink.seq)
+      // #formatting-bom
+      // format: on
+      fut.futureValue should be(List(ByteOrderMark.UTF_8, ByteString("eins,zwei,drei\r\n"),
+          ByteString("uno,dos,tres\r\n")))
     }
 
   }
