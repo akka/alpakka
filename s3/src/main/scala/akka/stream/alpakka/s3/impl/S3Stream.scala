@@ -5,7 +5,6 @@ package akka.stream.alpakka.s3.impl
 
 import java.nio.file.Paths
 import java.time.LocalDate
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -17,7 +16,6 @@ import akka.stream.alpakka.s3.auth.{AWSCredentials, CredentialScope, Signer, Sig
 import akka.stream.alpakka.s3.{DiskBufferType, MemoryBufferType, S3Exception, S3Settings}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
-
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -42,6 +40,9 @@ final case class FailedUpload(reasons: Seq[Throwable]) extends Exception
 
 final case class CompleteMultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
+final case class ListBucketResult(is_truncated: Boolean, continuation_token: Option[String], keys: Seq[String])
+
+
 object S3Stream {
 
   def apply(credentials: AWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer): S3Stream =
@@ -62,6 +63,34 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
   def download(s3Location: S3Location): Source[ByteString, NotUsed] = {
     import mat.executionContext
     Source.fromFuture(request(s3Location).flatMap(entityForSuccess).map(_.dataBytes)).flatMapConcat(identity)
+  }
+
+  def listBucket(bucket: String, prefix: Option[String] = None): Source[String, NotUsed] = {
+    import mat.executionContext
+
+    def listBucketCall(continuation_token: Option[String] = None): Future[ListBucketResult] =
+      signAndGet(HttpRequests.listBucket(bucket, region, prefix, continuation_token)).flatMap { entity =>
+        Unmarshal(entity).to[ListBucketResult]
+      }
+
+    def fileSourceFromFuture(f: Future[ListBucketResult]): Source[String, NotUsed] =
+      Source
+        .fromFuture(f)
+        .flatMapConcat((res: ListBucketResult) => {
+          val keys = Source.fromIterator(() => res.keys.toIterator)
+          if (res.is_truncated) {
+            keys.concat(fileSourceFromFuture(listBucketCall(res.continuation_token)).recoverWithRetries(3, {
+              case _: S3Exception =>
+                fileSourceFromFuture(listBucketCall(res.continuation_token))
+            }))
+          } else
+            keys
+        })
+
+    fileSourceFromFuture(listBucketCall()).recoverWithRetries(3, {
+      case _: S3Exception =>
+        fileSourceFromFuture(listBucketCall())
+    })
   }
 
   def request(s3Location: S3Location): Future[HttpResponse] =
