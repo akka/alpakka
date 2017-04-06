@@ -180,6 +180,8 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     val req =
       HttpRequests.listBucket(location.bucket, "region", Some("random/prefix"), Some("randomToken"))
 
-    req.uri.query() shouldEqual Query("list-type" -> "2", "prefix" -> "random/prefix", "continuation-token" -> "randomToken")
+    req.uri.query() shouldEqual Query("list-type" -> "2",
+                                      "prefix" -> "random/prefix",
+                                      "continuation-token" -> "randomToken")
   }
 }

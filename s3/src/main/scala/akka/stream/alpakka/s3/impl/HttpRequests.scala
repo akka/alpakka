@@ -21,15 +21,16 @@ case class MetaHeaders(headers: Map[String, String])
 private[alpakka] object HttpRequests {
 
   def listBucket(
-    bucket: String,
-    region: String,
-    prefix: Option[String] = None,
-    continuation_token: Option[String] = None
+      bucket: String,
+      region: String,
+      prefix: Option[String] = None,
+      continuation_token: Option[String] = None
   )(implicit conf: S3Settings): HttpRequest = {
 
     val listTypeQuery: (String, String) = "list-type" -> "2"
     val prefixQuery: Option[(String, String)] = prefix.map("prefix" -> _)
-    val continuationTokenQuery: Option[(String, String)] = continuation_token.map("continuation-token" -> _.replaceAll("=", "%3D"))
+    val continuationTokenQuery: Option[(String, String)] =
+      continuation_token.map("continuation-token" -> _.replaceAll("=", "%3D"))
 
     val query = Query((prefixQuery, continuationTokenQuery) match {
       case (Some(pre), Some(token)) => Map(listTypeQuery, pre, token)
@@ -38,7 +39,9 @@ private[alpakka] object HttpRequests {
       case (None, None) => Map(listTypeQuery)
     })
 
-    HttpRequest(HttpMethods.GET).withHeaders(Host(requestHost(bucket, region))).withUri(requestUri(bucket, None, region).withQuery(query))
+    HttpRequest(HttpMethods.GET)
+      .withHeaders(Host(requestHost(bucket, region)))
+      .withUri(requestUri(bucket, None, region).withQuery(query))
   }
 
   def getDownloadRequest(s3Location: S3Location, region: String)(implicit conf: S3Settings): HttpRequest =
@@ -103,41 +106,37 @@ private[alpakka] object HttpRequests {
   private[this] def s3Request(s3Location: S3Location,
                               region: String,
                               method: HttpMethod = HttpMethods.GET,
-                              uriFn: (Uri => Uri) = identity)(implicit conf: S3Settings): HttpRequest = {
-
-
+                              uriFn: (Uri => Uri) = identity)(implicit conf: S3Settings): HttpRequest =
     HttpRequest(method)
-        .withHeaders(Host(requestHost(s3Location.bucket, region)))
-        .withUri(uriFn(requestUri(s3Location.bucket, Some(s3Location.key), region)))
-  }
+      .withHeaders(Host(requestHost(s3Location.bucket, region)))
+      .withUri(uriFn(requestUri(s3Location.bucket, Some(s3Location.key), region)))
 
   private[this] def requestHost(bucket: String, region: String)(implicit conf: S3Settings): Uri.Host =
-  conf.proxy match {
-    case None =>
-      region match {
-        case "us-east-1" =>
-          if (conf.pathStyleAccess) {
-            Uri.Host("s3.amazonaws.com")
-          } else {
-            Uri.Host(s"$bucket.s3.amazonaws.com")
-          }
-        case _ =>
-          if (conf.pathStyleAccess) {
-            Uri.Host(s"s3-$region.amazonaws.com")
-          } else {
-            Uri.Host(s"$bucket.s3-$region.amazonaws.com")
-          }
-      }
-    case Some(proxy) => Uri.Host(proxy.host)
-  }
+    conf.proxy match {
+      case None =>
+        region match {
+          case "us-east-1" =>
+            if (conf.pathStyleAccess) {
+              Uri.Host("s3.amazonaws.com")
+            } else {
+              Uri.Host(s"$bucket.s3.amazonaws.com")
+            }
+          case _ =>
+            if (conf.pathStyleAccess) {
+              Uri.Host(s"s3-$region.amazonaws.com")
+            } else {
+              Uri.Host(s"$bucket.s3-$region.amazonaws.com")
+            }
+        }
+      case Some(proxy) => Uri.Host(proxy.host)
+    }
 
-  private[this] def requestUri(bucket: String, key: Option[String], region: String)(implicit conf: S3Settings): Uri =
-  {
+  private[this] def requestUri(bucket: String, key: Option[String], region: String)(implicit conf: S3Settings): Uri = {
     val uri = if (conf.pathStyleAccess) {
-      Uri(s"/${ bucket }${ key.fold("")((someKey) => s"/$someKey") }")
+      Uri(s"/${bucket}${key.fold("")((someKey) => s"/$someKey")}")
         .withHost(requestHost(bucket, region))
     } else {
-      Uri(s"${ key.fold("")((someKey) => s"/$someKey") }").withHost(requestHost(bucket, region))
+      Uri(s"${key.fold("")((someKey) => s"/$someKey")}").withHost(requestHost(bucket, region))
     }
     conf.proxy match {
       case None => uri.withScheme("https")

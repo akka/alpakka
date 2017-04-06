@@ -42,7 +42,6 @@ final case class CompleteMultipartUploadResult(location: Uri, bucket: String, ke
 
 final case class ListBucketResult(is_truncated: Boolean, continuation_token: Option[String], keys: Seq[String])
 
-
 object S3Stream {
 
   def apply(credentials: AWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer): S3Stream =
@@ -79,18 +78,12 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
         .flatMapConcat((res: ListBucketResult) => {
           val keys = Source.fromIterator(() => res.keys.toIterator)
           if (res.is_truncated) {
-            keys.concat(fileSourceFromFuture(listBucketCall(res.continuation_token)).recoverWithRetries(3, {
-              case _: S3Exception =>
-                fileSourceFromFuture(listBucketCall(res.continuation_token))
-            }))
+            keys.concat(fileSourceFromFuture(listBucketCall(res.continuation_token)))
           } else
             keys
         })
 
-    fileSourceFromFuture(listBucketCall()).recoverWithRetries(3, {
-      case _: S3Exception =>
-        fileSourceFromFuture(listBucketCall())
-    })
+    fileSourceFromFuture(listBucketCall())
   }
 
   def request(s3Location: S3Location): Future[HttpResponse] =
