@@ -26,23 +26,12 @@ private[alpakka] object HttpRequests {
     prefix: Option[String] = None,
     continuation_token: Option[String] = None
   )(implicit conf: S3Settings): HttpRequest = {
-    val uri: Uri = {
-      val prefixString = if (prefix.isDefined) "&prefix=" + prefix.get else ""
-      val continuation_token_string =
-        if (continuation_token.isDefined)
-          "&continuation-token=" + continuation_token.get.replaceAll("=", "%3D").replaceAll("[+]", "%2B")
-        else ""
 
-      val uriBeforeProxy =
-        Uri(s"/$bucket/?list-type=2" + prefixString + continuation_token_string)
+    val listTypeQuery: Query = Query("list-type" -> "2")
+    val prefixQuery: Query = prefix.fold(Query())( (prefixOpt) => Query("prefix" -> prefixOpt))
+    val continuationTokenQuery = continuation_token.fold(Query())( (tokenOpt) => Query("continuation-token" -> tokenOpt.replaceAll("=", "%3D")))
 
-      conf.proxy match {
-        case None => uriBeforeProxy.withHost(requestHost(bucket, region)).withScheme("https")
-        case Some(proxy) => uriBeforeProxy.withHost(proxy.host).withPort(proxy.port).withScheme(proxy.scheme)
-      }
-    }
-
-    HttpRequest(HttpMethods.GET).withHeaders(Host(requestHost(bucket, region))).withUri(uri)
+    HttpRequest(HttpMethods.GET).withHeaders(Host(requestHost(bucket, region))).withUri(requestUri(bucket, None, region).withQuery(listTypeQuery).withQuery(prefixQuery).withQuery(continuationTokenQuery))
   }
 
   def getDownloadRequest(s3Location: S3Location, region: String)(implicit conf: S3Settings): HttpRequest =
