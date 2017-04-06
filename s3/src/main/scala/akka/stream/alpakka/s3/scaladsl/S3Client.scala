@@ -10,7 +10,7 @@ import akka.stream.Materializer
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.auth.AWSCredentials
-import akka.stream.alpakka.s3.impl.{CompleteMultipartUploadResult, MetaHeaders, S3Location, S3Stream}
+import akka.stream.alpakka.s3.impl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 
@@ -48,8 +48,24 @@ final class S3Client(credentials: AWSCredentials, region: String)(implicit syste
                       metaHeaders: MetaHeaders = MetaHeaders(Map()),
                       cannedAcl: CannedAcl = CannedAcl.Private,
                       chunkSize: Int = MinChunkSize,
-                      chunkingParallelism: Int = 4): Sink[ByteString, Future[MultipartUploadResult]] =
+                      chunkingParallelism: Int = 4,
+                      amzHeaders: Option[AmzHeaders] = None): Sink[ByteString, Future[MultipartUploadResult]] = {
+
+    val s3Headers = S3Headers(
+      cannedAcl,
+      metaHeaders,
+      amzHeaders
+    )
+
     impl
-      .multipartUpload(S3Location(bucket, key), contentType, metaHeaders, cannedAcl, chunkSize, chunkingParallelism)
+      .multipartUpload(
+        S3Location(bucket, key),
+        contentType,
+        s3Headers,
+        chunkSize,
+        chunkingParallelism
+      )
       .mapMaterializedValue(_.map(MultipartUploadResult.apply)(system.dispatcher))
+
+  }
 }

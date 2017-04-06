@@ -6,18 +6,14 @@ package akka.stream.alpakka.s3.impl
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.headers.{Host, RawHeader}
-import akka.http.scaladsl.model.{RequestEntity, _}
+import akka.http.scaladsl.model.headers.Host
+import akka.http.scaladsl.model.{ContentTypes, RequestEntity, _}
 import akka.stream.alpakka.s3.S3Settings
-import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
-import scala.collection.immutable
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
-
-case class MetaHeaders(headers: Map[String, String])
 
 private[alpakka] object HttpRequests {
 
@@ -26,21 +22,11 @@ private[alpakka] object HttpRequests {
 
   def initiateMultipartUploadRequest(s3Location: S3Location,
                                      contentType: ContentType,
-                                     cannedAcl: CannedAcl,
                                      region: String,
-                                     metaHeaders: MetaHeaders)(implicit conf: S3Settings): HttpRequest = {
-
-    def buildHeaders(metaHeaders: MetaHeaders, cannedAcl: CannedAcl): immutable.Seq[HttpHeader] = {
-      val metaHttpHeaders = metaHeaders.headers.map { header =>
-        RawHeader(s"x-amz-meta-${header._1}", header._2)
-      }(collection.breakOut): Seq[HttpHeader]
-      metaHttpHeaders :+ RawHeader("x-amz-acl", cannedAcl.value)
-    }
-
+                                     s3Headers: S3Headers)(implicit conf: S3Settings): HttpRequest =
     s3Request(s3Location, region, HttpMethods.POST, _.withQuery(Query("uploads")))
-      .withDefaultHeaders(buildHeaders(metaHeaders, cannedAcl))
+      .withDefaultHeaders(s3Headers.headers)
       .withEntity(HttpEntity.empty(contentType))
-  }
 
   def uploadPartRequest(upload: MultipartUpload,
                         partNumber: Int,

@@ -11,8 +11,9 @@ import akka.http.impl.model.JavaUri
 import akka.http.javadsl.model.{ContentType, HttpResponse, Uri}
 import akka.http.scaladsl.model.{ContentTypes, ContentType => ScalaContentType}
 import akka.stream.Materializer
+import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.auth.AWSCredentials
-import akka.stream.alpakka.s3.impl.{CompleteMultipartUploadResult, MetaHeaders, S3Location, S3Stream}
+import akka.stream.alpakka.s3.impl._
 import akka.stream.javadsl.{Sink, Source}
 import akka.util.ByteString
 
@@ -37,12 +38,29 @@ final class S3Client(credentials: AWSCredentials, region: String, system: ActorS
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
-                      metaHeaders: MetaHeaders): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+                      cannedAcl: CannedAcl,
+                      metaHeaders: MetaHeaders,
+                      amzHeaders: AmzHeaders): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     impl
-      .multipartUpload(S3Location(bucket, key), contentType.asInstanceOf[ScalaContentType], metaHeaders)
+      .multipartUpload(S3Location(bucket, key),
+                       contentType.asInstanceOf[ScalaContentType],
+                       S3Headers(cannedAcl, metaHeaders, Some(amzHeaders)))
       .mapMaterializedValue(_.map(MultipartUploadResult.create)(system.dispatcher).toJava)
       .asJava
 
+  def multipartUpload(bucket: String,
+                      key: String,
+                      contentType: ContentType,
+                      cannedAcl: CannedAcl,
+                      metaHeaders: MetaHeaders): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    multipartUpload(bucket, key, ContentTypes.`application/octet-stream`, cannedAcl, metaHeaders, AmzHeaders(Nil))
+
+  def multipartUpload(bucket: String,
+                      key: String,
+                      contentType: ContentType,
+                      metaHeaders: MetaHeaders): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    multipartUpload(bucket, key, ContentTypes.`application/octet-stream`, CannedAcl.Private, MetaHeaders(Map()))
+
   def multipartUpload(bucket: String, key: String): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    multipartUpload(bucket, key, ContentTypes.`application/octet-stream`, MetaHeaders(Map()))
+    multipartUpload(bucket, key, ContentTypes.`application/octet-stream`, CannedAcl.Private, MetaHeaders(Map()))
 }
