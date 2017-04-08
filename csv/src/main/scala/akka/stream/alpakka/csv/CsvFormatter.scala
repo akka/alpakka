@@ -3,6 +3,8 @@
  */
 package akka.stream.alpakka.csv
 
+import java.nio.charset.{Charset, StandardCharsets}
+
 import akka.stream.alpakka.csv.scaladsl.CsvQuotingStyle
 import akka.util.ByteString
 
@@ -16,7 +18,9 @@ private[csv] class CsvFormatter(delimiter: Char,
                                 escapeChar: Char,
                                 endOfLine: String,
                                 quotingStyle: CsvQuotingStyle,
-                                charsetName: String = ByteString.UTF_8) {
+                                charset: Charset = StandardCharsets.UTF_8) {
+
+  private[this] val charsetName = charset.name()
 
   private[this] val delimiterBs = ByteString(String.valueOf(delimiter), charsetName)
   private[this] val quoteBs = ByteString(String.valueOf(quoteChar), charsetName)

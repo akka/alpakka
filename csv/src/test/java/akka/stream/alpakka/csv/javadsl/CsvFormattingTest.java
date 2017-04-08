@@ -15,6 +15,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
@@ -32,7 +34,7 @@ public class CsvFormattingTest {
         char quoteChar = CsvFormatting.DOUBLE_QUOTE;
         char escapeChar = CsvFormatting.BACKSLASH;
         String endOfLine = CsvFormatting.CR_LF;
-        String charsetName = ByteString.UTF_8();
+        Charset charset = StandardCharsets.UTF_8;
         Optional<ByteString> byteOrderMark = Optional.empty();
         // #flow-type
         Flow<Collection<String>, ByteString, ?> flow1
@@ -40,7 +42,7 @@ public class CsvFormattingTest {
 
         Flow<Collection<String>, ByteString, ?> flow2
                 = CsvFormatting.format(delimiter, quoteChar, escapeChar, endOfLine,
-                                       CsvQuotingStyle.REQUIRED, charsetName, byteOrderMark);
+                                       CsvQuotingStyle.REQUIRED, charset, byteOrderMark);
         // #flow-type
     }
 

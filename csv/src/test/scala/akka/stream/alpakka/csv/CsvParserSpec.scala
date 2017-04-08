@@ -84,40 +84,40 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       val in = ByteString("a,\\\",c\n")
       val parser = new CsvParser(',', '"', '\\')
       parser.offer(in)
-      val exception = the [MalformedCsvException] thrownBy {
+      val exception = the[MalformedCsvException] thrownBy {
         parser.poll(requireLineEnd = true)
       }
-      exception.getMessage should be ("wrong escaping at 1:2, only escape or delimiter may be escaped")
+      exception.getMessage should be("wrong escaping at 1:2, only escape or delimiter may be escaped")
     }
 
     "fail on escape at line end" in {
       val in = ByteString("""a,\""")
       val parser = new CsvParser(',', '"', '\\')
       parser.offer(in)
-      val exception = the [MalformedCsvException] thrownBy {
+      val exception = the[MalformedCsvException] thrownBy {
         parser.poll(requireLineEnd = true)
       }
-      exception.getMessage should be ("wrong escaping at 1:2, no character after escape")
+      exception.getMessage should be("wrong escaping at 1:2, no character after escape")
     }
 
     "fail on escape within field at line end" in {
       val in = ByteString("""a,b\""")
       val parser = new CsvParser(',', '"', '\\')
       parser.offer(in)
-      val exception = the [MalformedCsvException] thrownBy {
+      val exception = the[MalformedCsvException] thrownBy {
         parser.poll(requireLineEnd = true)
       }
-      exception.getMessage should be ("wrong escaping at 1:3, no character after escape")
+      exception.getMessage should be("wrong escaping at 1:3, no character after escape")
     }
 
     "fail on escape within quoted field at line end" in {
       val in = ByteString("""a,"\""")
       val parser = new CsvParser(',', '"', '\\')
       parser.offer(in)
-      val exception = the [MalformedCsvException] thrownBy  {
+      val exception = the[MalformedCsvException] thrownBy {
         parser.poll(requireLineEnd = true)
       }
-      exception.getMessage should be ("wrong escaping at 1:3, no character after escape")
+      exception.getMessage should be("wrong escaping at 1:3, no character after escape")
     }
 
     "parse escaped escape within quotes into quote" in {

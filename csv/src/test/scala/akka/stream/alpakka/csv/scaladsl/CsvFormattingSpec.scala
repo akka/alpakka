@@ -3,6 +3,8 @@
  */
 package akka.stream.alpakka.csv.scaladsl
 
+import java.nio.charset.StandardCharsets
+
 import akka.NotUsed
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
@@ -25,7 +27,7 @@ class CsvFormattingSpec extends CsvSpec {
                              escapeChar,
                              endOfLine,
                              CsvQuotingStyle.Required,
-                             charsetName = "UTF-8",
+                             charset = StandardCharsets.UTF_8,
                              byteOrderMark = None)
     // #flow-type
     // format: on

@@ -16,6 +16,7 @@ The format uses three different characters to structure the data:
 
 Lines are separated by either Line Feed (`\n` = ASCII 10) or Carriage Return and Line Feed (`\r` = ASCII 13 + `\n` = ASCII 10).
 
+
 ## Artifacts
 
 sbt
@@ -51,6 +52,16 @@ CSV parsing offers a flow that takes a stream of `akka.util.ByteString` and issu
 
 The incoming data must contain line ends to allow line base framing. The CSV special characters
 can be specified (as bytes), suitable values are available as constants in `CsvParsing`.
+
+@@@ note
+
+The current parser is limited to byte-based character sets (UTF-8, ISO-8859-1, ASCII) and can't
+parse double-byte encodings (e.g. UTF-16).
+
+The parser accepts Byte Order Mark (BOM) for UTF-8, but will fail for UTF-16 and UTF-32 
+Byte Order Marks.
+
+@@@
 
 Scala
 : @@snip (../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvParsingSpec.scala) { #flow-type }

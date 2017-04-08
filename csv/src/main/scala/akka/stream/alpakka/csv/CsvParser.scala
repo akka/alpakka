@@ -101,12 +101,15 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
     val fieldBuilder = new FieldBuilder(buf)
 
     def wrongCharEscaped() =
-      throw new MalformedCsvException(s"wrong escaping at $currentLineNo:$pos, only escape or delimiter may be escaped")
+      throw new MalformedCsvException(
+          s"wrong escaping at $currentLineNo:$pos, only escape or delimiter may be escaped")
 
     def wrongCharEscapedWithinQuotes() =
-      throw new MalformedCsvException(s"wrong escaping at $currentLineNo:$pos, only escape or quote may be escaped within quotes")
+      throw new MalformedCsvException(
+          s"wrong escaping at $currentLineNo:$pos, only escape or quote may be escaped within quotes")
 
-    def noCharEscaped() = throw new MalformedCsvException(s"wrong escaping at $currentLineNo:$pos, no character after escape")
+    def noCharEscaped() =
+      throw new MalformedCsvException(s"wrong escaping at $currentLineNo:$pos, no character after escape")
 
     @inline def readPastLf() =
       if (pos < buf.length && buf(pos) == LF) {

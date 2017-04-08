@@ -3,6 +3,8 @@
  */
 package akka.stream.alpakka.csv
 
+import java.nio.charset.StandardCharsets
+
 import akka.stream.alpakka.csv.scaladsl.CsvQuotingStyle
 import org.scalatest.{Matchers, WordSpec}
 
@@ -87,14 +89,14 @@ class CsvFormatterSpec extends WordSpec with Matchers {
   }
 
   "CSV Formatter with non-standard charset" should {
-    val charsetName = "UTF-16LE"
-    val formatter = new CsvFormatter(';', '\"', '\\', "\r\n", CsvQuotingStyle.Required, charsetName)
+    val charset = StandardCharsets.UTF_16LE
+    val formatter = new CsvFormatter(';', '\"', '\\', "\r\n", CsvQuotingStyle.Required, charset)
 
     "get the encoding right" in {
       val csv = formatter.toCsv(List("ett", "två", "อักษรไทย"))
       val arr1 = new Array[Byte](csv.length)
       csv.copyToArray(arr1)
-      new String(arr1, charsetName) should be("ett;två;อักษรไทย\r\n")
+      new String(arr1, charset) should be("ett;två;อักษรไทย\r\n")
     }
   }
 
