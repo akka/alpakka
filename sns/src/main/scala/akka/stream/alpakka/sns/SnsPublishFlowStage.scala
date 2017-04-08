@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.sns
 
@@ -20,7 +20,7 @@ private[akka] final class SnsPublishFlowStage(topicArn: String, snsClient: Amazo
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
-      private var inFlight = 0
+      private var isMessageInFlight = false
       private val failureCallback = getAsyncCallback[Throwable](handleFailure)
       private val successCallback = getAsyncCallback[PublishResult](handleSuccess)
 
@@ -29,11 +29,8 @@ private[akka] final class SnsPublishFlowStage(topicArn: String, snsClient: Amazo
 
       private def handleSuccess(result: PublishResult): Unit = {
         log.debug("Published SNS message: {}", result.getMessageId)
-        inFlight -= 1
-        if (isAvailable(out)) {
-          if (!hasBeenPulled(in)) tryPull(in)
-          push(out, result)
-        }
+        isMessageInFlight = false
+        if (!isClosed(out)) push(out, result)
       }
 
       private val asyncHandler = new AsyncHandler[PublishRequest, PublishResult] {
@@ -44,18 +41,18 @@ private[akka] final class SnsPublishFlowStage(topicArn: String, snsClient: Amazo
       }
 
       override def onPush(): Unit = {
-        inFlight += 1
+        isMessageInFlight = true
         val request = new PublishRequest().withTopicArn(topicArn).withMessage(grab(in))
         snsClient.publishAsync(request, asyncHandler)
       }
 
       override def onPull(): Unit = {
-        if (isClosed(in) && inFlight == 0) completeStage()
+        if (isClosed(in) && !isMessageInFlight) completeStage()
         if (!hasBeenPulled(in)) tryPull(in)
       }
 
       override def onUpstreamFinish(): Unit =
-        if (inFlight == 0) completeStage()
+        if (!isMessageInFlight) completeStage()
 
       setHandlers(in, out, this)
     }
