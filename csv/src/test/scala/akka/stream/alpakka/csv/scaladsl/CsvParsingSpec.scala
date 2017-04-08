@@ -3,8 +3,11 @@
  */
 package akka.stream.alpakka.csv.scaladsl
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.Paths
+
 import akka.NotUsed
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{FileIO, Flow, Sink, Source}
 import akka.util.ByteString
 
 import scala.collection.immutable.Seq
@@ -35,9 +38,9 @@ class CsvParsingSpec extends CsvSpec {
       val fut =
         // format: off
       // #line-scanner
-      Source.single(ByteString("eins,zwei,drei\n"))
-        .via(CsvParsing.lineScanner())
-        .runWith(Sink.head)
+        Source.single(ByteString("eins,zwei,drei\n"))
+          .via(CsvParsing.lineScanner())
+          .runWith(Sink.head)
       // #line-scanner
       // format: on
       fut.futureValue should be(List(ByteString("eins"), ByteString("zwei"), ByteString("drei")))
@@ -84,6 +87,30 @@ class CsvParsingSpec extends CsvSpec {
       val res = fut.futureValue
       res.head should be(List("eins", "zwei", "drei"))
       res(1) should be(List("uno", "dos", "tres"))
+    }
+
+    "parse Apple Numbers exported file" in {
+      val fut =
+        FileIO
+          .fromPath(Paths.get("csv/src/test/resources/numbers-utf-8.csv"))
+          .via(CsvParsing.lineScanner(delimiter = CsvParsing.SemiColon, escapeChar = '\u0001'))
+          .map(_.map(_.utf8String))
+          .runWith(Sink.seq)
+      val res = fut.futureValue
+      res(0) should be(List("abc", "def", "ghi", "", "", "", ""))
+      res(1) should be(List("\"", "\\\\;", "a\"\nbc", "", "", "", ""))
+    }
+
+    "parse Google Docs exported file" in {
+      val fut =
+        FileIO
+          .fromPath(Paths.get("csv/src/test/resources/google-docs.csv"))
+          .via(CsvParsing.lineScanner(escapeChar = '\u0001'))
+          .map(_.map(_.utf8String))
+          .runWith(Sink.seq)
+      val res = fut.futureValue
+      res(0) should be(List("abc", "def", "ghi"))
+      res(1) should be(List("\"", "\\\\,", "a\"\nbc"))
     }
   }
 }

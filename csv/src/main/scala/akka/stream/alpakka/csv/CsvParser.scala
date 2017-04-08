@@ -13,7 +13,7 @@ import akka.util.{ByteString, ByteStringBuilder}
  */
 private[csv] object CsvParser {
 
-  class MalformedCsvException(position: Int, msg: String) extends Exception
+  class MalformedCsvException(msg: String) extends Exception(msg)
 
   private type State = Int
   private final val LineStart = 0
@@ -39,6 +39,7 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
   private[this] var firstData = true
   private[this] var pos = 0
   private[this] var fieldStart = 0
+  private[this] var currentLineNo = 1L
 
   def offer(input: ByteString): Unit =
     buffer ++= input
@@ -50,6 +51,7 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
       val preFieldStart = fieldStart
       val line = parseLine(requireLineEnd)
       if (line.nonEmpty) {
+        currentLineNo += 1
         dropReadBuffer()
       } else {
         firstData = preFirstData
@@ -99,13 +101,12 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
     val fieldBuilder = new FieldBuilder(buf)
 
     def wrongCharEscaped() =
-      throw new MalformedCsvException(pos, s"wrong escaping at $pos, only escape or delimiter may be escaped")
+      throw new MalformedCsvException(s"wrong escaping at $currentLineNo:$pos, only escape or delimiter may be escaped")
 
     def wrongCharEscapedWithinQuotes() =
-      throw new MalformedCsvException(pos,
-        s"wrong escaping at $pos, only escape or quote may be escaped within quotes")
+      throw new MalformedCsvException(s"wrong escaping at $currentLineNo:$pos, only escape or quote may be escaped within quotes")
 
-    def noCharEscaped() = throw new MalformedCsvException(pos, s"wrong escaping at $pos, no character after escape")
+    def noCharEscaped() = throw new MalformedCsvException(s"wrong escaping at $currentLineNo:$pos, no character after escape")
 
     @inline def readPastLf() =
       if (pos < buf.length && buf(pos) == LF) {
@@ -277,8 +278,8 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
               pos += 1
               readPastLf()
               fieldStart = pos
-            case _ =>
-              throw new MalformedCsvException(pos, "expected delimiter or end of line")
+            case c =>
+              throw new MalformedCsvException(s"expected delimiter or end of line at $currentLineNo:$pos")
           }
 
         case WithinQuotedField =>

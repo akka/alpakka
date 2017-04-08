@@ -84,36 +84,40 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       val in = ByteString("a,\\\",c\n")
       val parser = new CsvParser(',', '"', '\\')
       parser.offer(in)
-      assertThrows[MalformedCsvException] {
+      val exception = the [MalformedCsvException] thrownBy {
         parser.poll(requireLineEnd = true)
       }
+      exception.getMessage should be ("wrong escaping at 1:2, only escape or delimiter may be escaped")
     }
 
     "fail on escape at line end" in {
       val in = ByteString("""a,\""")
       val parser = new CsvParser(',', '"', '\\')
       parser.offer(in)
-      assertThrows[MalformedCsvException] {
+      val exception = the [MalformedCsvException] thrownBy {
         parser.poll(requireLineEnd = true)
       }
+      exception.getMessage should be ("wrong escaping at 1:2, no character after escape")
     }
 
     "fail on escape within field at line end" in {
       val in = ByteString("""a,b\""")
       val parser = new CsvParser(',', '"', '\\')
       parser.offer(in)
-      assertThrows[MalformedCsvException] {
+      val exception = the [MalformedCsvException] thrownBy {
         parser.poll(requireLineEnd = true)
       }
+      exception.getMessage should be ("wrong escaping at 1:3, no character after escape")
     }
 
     "fail on escape within quoted field at line end" in {
       val in = ByteString("""a,"\""")
       val parser = new CsvParser(',', '"', '\\')
       parser.offer(in)
-      assertThrows[MalformedCsvException] {
+      val exception = the [MalformedCsvException] thrownBy  {
         parser.poll(requireLineEnd = true)
       }
+      exception.getMessage should be ("wrong escaping at 1:3, no character after escape")
     }
 
     "parse escaped escape within quotes into quote" in {
@@ -132,12 +136,12 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       expectInOut("a,\"abc\\\"def\",c\n", List("a", "abc\"def", "c"))
     }
 
-    "empty line special results in single column" ignore {
-      val in = ByteString("\u2028")
+    "allow Unicode L SEP 0x2028 as line separator" ignore {
+      val in = ByteString("abc\u2028")
       val parser = new CsvParser(',', '"', '\\')
       parser.offer(in)
       val res = parser.poll(requireLineEnd = true)
-      res.value.map(_.utf8String) should be(List(""))
+      res.value.map(_.utf8String) should be(List("abc"))
     }
 
     "ignore trailing \\n" in {
