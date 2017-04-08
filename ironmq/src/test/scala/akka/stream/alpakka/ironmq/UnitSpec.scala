@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.ironmq
 
-import org.scalatest.concurrent.PatienceConfiguration.{ Interval, Timeout }
+import org.scalatest.concurrent.PatienceConfiguration.{Interval, Timeout}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.{Matchers, WordSpec}
 
 import scala.concurrent.duration._
 

@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.ironmq
 
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.{ BeforeAndAfterEach, Suite }
+import com.typesafe.config.{Config, ConfigFactory}
+import org.scalatest.{BeforeAndAfterEach, Suite}
 
 trait ConfigFixture extends BeforeAndAfterEach { _: Suite =>
 

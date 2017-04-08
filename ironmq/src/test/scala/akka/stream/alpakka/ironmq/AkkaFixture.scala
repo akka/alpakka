@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.ironmq
 
@@ -13,8 +13,8 @@ trait AkkaFixture extends ConfigFixture with BeforeAndAfterEach { _: Suite =>
   import AkkaFixture._
 
   /**
-    * Override to tune the time the test will wait for the actor system to terminate.
-    */
+   * Override to tune the time the test will wait for the actor system to terminate.
+   */
   def actorSystemTerminateTimeout: Duration = DefaultActorSystemTerminateTimeout
 
   private var mutableActorSystem = Option.empty[ActorSystem]
@@ -35,4 +35,3 @@ trait AkkaFixture extends ConfigFixture with BeforeAndAfterEach { _: Suite =>
 object AkkaFixture {
   val DefaultActorSystemTerminateTimeout: Duration = 10.seconds
 }
-
