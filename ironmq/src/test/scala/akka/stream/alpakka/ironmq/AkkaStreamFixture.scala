@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.ironmq
 
-import akka.stream.{ ActorMaterializer, Materializer }
-import org.scalatest.{ BeforeAndAfterEach, Suite }
+import akka.stream.{ActorMaterializer, Materializer}
+import org.scalatest.{BeforeAndAfterEach, Suite}
 
 trait AkkaStreamFixture extends AkkaFixture with BeforeAndAfterEach { _: Suite =>
 
