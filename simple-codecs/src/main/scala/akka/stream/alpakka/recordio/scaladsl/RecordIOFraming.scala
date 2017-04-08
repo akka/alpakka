@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.recordio.scaladsl
 
@@ -110,8 +110,10 @@ object RecordIOFraming {
                   Try(recordSizePrefix.utf8String.toInt) match {
                     case Success(length) if length > maxRecordLength =>
                       failStage(
-                          new FramingException(
-                              s"Record of size $length bytes exceeds maximum of $maxRecordLength bytes."))
+                        new FramingException(
+                          s"Record of size $length bytes exceeds maximum of $maxRecordLength bytes."
+                        )
+                      )
                     case Success(length) if length < 0 =>
                       failStage(new FramingException(s"Record size prefix $length is negative."))
                     case Success(length) =>

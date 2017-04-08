@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.jms
 
@@ -30,15 +30,17 @@ final class JmsSinkStage(settings: JmsSettings) extends GraphStage[SinkShape[Str
         pull(in)
       }
 
-      setHandler(in,
+      setHandler(
+        in,
         new InHandler {
-        override def onPush(): Unit = {
-          val elem = grab(in)
-          val textMessage: TextMessage = jmsSession.session.createTextMessage(elem)
-          jmsProducer.send(textMessage)
-          pull(in)
+          override def onPush(): Unit = {
+            val elem = grab(in)
+            val textMessage: TextMessage = jmsSession.session.createTextMessage(elem)
+            jmsProducer.send(textMessage)
+            pull(in)
+          }
         }
-      })
+      )
 
       override def postStop(): Unit =
         Option(jmsSession).foreach(_.closeSession())

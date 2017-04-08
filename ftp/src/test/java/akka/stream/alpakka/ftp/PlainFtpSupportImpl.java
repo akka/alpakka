@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.ftp;
 
@@ -18,7 +18,8 @@ abstract class PlainFtpSupportImpl extends FtpSupportImpl {
     static final String DEFAULT_LISTENER = "default";
 
     protected FtpServerFactory createFtpServerFactory(Integer port) {
-        setFileSystem(Jimfs.newFileSystem(Configuration.unix()));
+        Configuration fsConfig = Configuration.unix().toBuilder().setAttributeViews("basic", "posix").build();
+        setFileSystem(Jimfs.newFileSystem(fsConfig));
         JimfsFactory fsf = new JimfsFactory(getFileSystem());
         fsf.setCreateHome(true);
 

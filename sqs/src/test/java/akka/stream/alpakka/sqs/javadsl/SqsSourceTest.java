@@ -1,11 +1,13 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.sqs.javadsl;
 
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.alpakka.sqs.SqsSourceSettings;
 import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -13,14 +15,13 @@ import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.duration.Duration;
 
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
 
@@ -30,7 +31,7 @@ public class SqsSourceTest {
     static ActorMaterializer materializer;
     static AWSCredentials credentials;
     static AmazonSQSAsyncClient sqsClient;
-
+    static SqsSourceSettings sqsSourceSettings;
 
     @BeforeClass
     public static void setup() {
@@ -46,11 +47,13 @@ public class SqsSourceTest {
             .withEndpoint("http://localhost:9324");
         //#init-client
 
+        sqsSourceSettings = SqsSourceSettings.create(20, 100, 10);
     }
 
     @AfterClass
     public static void teardown() {
         JavaTestKit.shutdownActorSystem(system);
+        sqsClient.shutdown();
     }
 
     static String randomQueueUrl() {
@@ -61,18 +64,38 @@ public class SqsSourceTest {
     public void streamFromQueue() throws Exception {
 
         final String queueUrl = randomQueueUrl();
-
-        final List<String> input = IntStream.range(0, 100).boxed().map(i -> String.format("alpakka-%s", i)).collect(Collectors.toList());
-        input.forEach(m -> sqsClient.sendMessage(queueUrl, m));
+        sqsClient.sendMessage(queueUrl, "alpakka");
 
         //#run
-        final CompletionStage<List<String>> cs = SqsSource.create(queueUrl, sqsClient)
+        final CompletionStage<String> cs = SqsSource.create(queueUrl, sqsSourceSettings, sqsClient)
             .map(m -> m.getBody())
-            .take(100)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.head(), materializer);
         //#run
 
-        assertEquals(input.size(), cs.toCompletableFuture().get(3, TimeUnit.SECONDS).size());
+        assertEquals("alpakka", cs.toCompletableFuture().get(10, TimeUnit.SECONDS));
+
+    }
+
+    @Test
+    public void streamFromQueueWithCustomClient() throws Exception {
+
+        //#init-custom-client
+        final ExecutorService executor = Executors.newFixedThreadPool(10);
+        final AmazonSQSAsyncClient sqsClient = new AmazonSQSAsyncClient(credentials, executor)
+            .withEndpoint("http://localhost:9324");
+        //#init-custom-client
+
+        final String queueUrl = randomQueueUrl();
+        sqsClient.sendMessage(queueUrl, "alpakka");
+
+        //#run
+        final CompletionStage<String> cs = SqsSource.create(queueUrl, sqsSourceSettings, sqsClient)
+            .map(m -> m.getBody())
+            .take(1)
+            .runWith(Sink.head(), materializer);
+        //#run
+
+        assertEquals("alpakka", cs.toCompletableFuture().get(10, TimeUnit.SECONDS));
 
     }
 }

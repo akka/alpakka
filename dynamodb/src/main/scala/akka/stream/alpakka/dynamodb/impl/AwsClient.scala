@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.dynamodb.impl
 
@@ -88,13 +88,16 @@ private[alpakka] trait AwsClient[S <: ClientSettings] {
     val amzHeaders = original.getHeaders
     val body = read(original.getContent)
 
-    val httpr = HttpRequest(uri = signableUrl, method = original.getHttpMethod,
+    val httpr = HttpRequest(
+      uri = signableUrl,
+      method = original.getHttpMethod,
       headers = List(
         headers.RawHeader("x-amz-date", amzHeaders.get("X-Amz-Date")),
         headers.RawHeader("authorization", amzHeaders.get("Authorization")),
         headers.RawHeader("x-amz-target", amzHeaders.get("X-Amz-Target"))
       ),
-      entity = HttpEntity(defaultContentType, body))
+      entity = HttpEntity(defaultContentType, body)
+    )
 
     httpr -> AwsRequestMetadata(requestId.getAndIncrement(), s)
   }

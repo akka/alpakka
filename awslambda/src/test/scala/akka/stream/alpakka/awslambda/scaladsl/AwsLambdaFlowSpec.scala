@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.awslambda.scaladsl
 
@@ -53,8 +53,9 @@ class AwsLambdaFlowSpec
 
     "call a single invoke request" in {
 
-      when(awsLambdaClient.invokeAsync(mockitoEq(invokeRequest),
-          mockitoAny[AsyncHandler[InvokeRequest, InvokeResult]]())).thenAnswer(new Answer[AnyRef] {
+      when(
+        awsLambdaClient.invokeAsync(mockitoEq(invokeRequest), mockitoAny[AsyncHandler[InvokeRequest, InvokeResult]]())
+      ).thenAnswer(new Answer[AnyRef] {
         override def answer(invocation: InvocationOnMock): AnyRef = {
           invocation.getArgument[AsyncHandler[InvokeRequest, InvokeResult]](1).onSuccess(invokeRequest, invokeResult)
           CompletableFuture.completedFuture(invokeResult)
@@ -67,14 +68,16 @@ class AwsLambdaFlowSpec
 
       future.map(_ shouldBe invokeResult)
       verify(awsLambdaClient, times(1)).invokeAsync(mockitoEq(invokeRequest),
-        mockitoAny[AsyncHandler[InvokeRequest, InvokeResult]]())
+                                                    mockitoAny[AsyncHandler[InvokeRequest, InvokeResult]]())
 
     }
 
     "call with exception" in {
 
-      when(awsLambdaClient.invokeAsync(mockitoAny[InvokeRequest](),
-          mockitoAny[AsyncHandler[InvokeRequest, InvokeResult]]())).thenAnswer(new Answer[Future[InvokeResult]] {
+      when(
+        awsLambdaClient.invokeAsync(mockitoAny[InvokeRequest](),
+                                    mockitoAny[AsyncHandler[InvokeRequest, InvokeResult]]())
+      ).thenAnswer(new Answer[Future[InvokeResult]] {
         override def answer(invocation: InvocationOnMock): Future[InvokeResult] = {
           val exception = new RuntimeException("Error in lambda")
           invocation.getArgument[AsyncHandler[InvokeRequest, InvokeResult]](1).onError(exception)

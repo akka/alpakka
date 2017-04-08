@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.s3.auth
 
@@ -48,7 +48,8 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
     val date = LocalDateTime.of(2015, 8, 30, 12, 36, 0).atZone(ZoneOffset.UTC)
     val stringToSign: String = Signer.stringToSign("AWS4-HMAC-SHA256", signingKey, date, cr)
     stringToSign should equal(
-        "AWS4-HMAC-SHA256\n20150830T123600Z\n20150830/us-east-1/iam/aws4_request\nf536975d06c0309214f805bb90ccff089219ecd68b2577efef23edd43b7e1a59")
+      "AWS4-HMAC-SHA256\n20150830T123600Z\n20150830/us-east-1/iam/aws4_request\nf536975d06c0309214f805bb90ccff089219ecd68b2577efef23edd43b7e1a59"
+    )
   }
 
   it should "add the date, content hash, and authorization headers to a request" in {
@@ -71,8 +72,10 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
               RawHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8"),
               RawHeader("x-amz-date", "20150830T123600Z"),
               RawHeader("x-amz-content-sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
-              RawHeader("Authorization",
-                "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/iam/aws4_request, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=dd479fa8a80364edf2119ec24bebde66712ee9c9cb2b0d92eb3ab9ccdc0c3947")
+              RawHeader(
+                "Authorization",
+                "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/iam/aws4_request, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=dd479fa8a80364edf2119ec24bebde66712ee9c9cb2b0d92eb3ab9ccdc0c3947"
+              )
             )
         )
     }

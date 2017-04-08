@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.sqs
 
@@ -51,25 +51,27 @@ private[sqs] class SqsSinkStageLogic(
   private var isShutdownInProgress = false
   private var amazonSendMessageHandler: AsyncHandler[SendMessageRequest, SendMessageResult] = _
 
-  setHandler(in,
+  setHandler(
+    in,
     new InHandler {
-    override def onPush(): Unit = {
-      inFlight += 1
-      sqsClient.sendMessageAsync(new SendMessageRequest(queueUrl, grab(in)), amazonSendMessageHandler)
-      tryPull()
-    }
+      override def onPush(): Unit = {
+        inFlight += 1
+        sqsClient.sendMessageAsync(new SendMessageRequest(queueUrl, grab(in)), amazonSendMessageHandler)
+        tryPull()
+      }
 
-    override def onUpstreamFailure(exception: Throwable): Unit = {
-      log.error(exception, "Upstream failure: {}", exception.getMessage)
-      failStage(exception)
-      promise.tryFailure(exception)
-    }
+      override def onUpstreamFailure(exception: Throwable): Unit = {
+        log.error(exception, "Upstream failure: {}", exception.getMessage)
+        failStage(exception)
+        promise.tryFailure(exception)
+      }
 
-    override def onUpstreamFinish(): Unit = {
-      isShutdownInProgress = true
-      tryShutdown()
+      override def onUpstreamFinish(): Unit = {
+        isShutdownInProgress = true
+        tryShutdown()
+      }
     }
-  })
+  )
 
   override def preStart(): Unit = {
     setKeepGoing(true)

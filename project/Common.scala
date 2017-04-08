@@ -3,14 +3,12 @@ import sbt.Keys._
 import sbt.plugins.JvmPlugin
 import de.heikoseeberger.sbtheader._
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
-import org.scalafmt.sbt.ScalaFmtPlugin
-import org.scalafmt.sbt.ScalaFmtPlugin.autoImport._
 
 object Common extends AutoPlugin {
 
   val FileHeader = (HeaderPattern.cStyleBlockComment,
     """|/*
-       | * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+       | * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
        | */
        |""".stripMargin)
 
@@ -18,7 +16,7 @@ object Common extends AutoPlugin {
 
   override def requires = JvmPlugin && HeaderPlugin
 
-  override lazy val projectSettings = reformatOnCompileSettings ++
+  override lazy val projectSettings =
     Dependencies.Common ++ Seq(
     organization := "com.lightbend.akka",
     organizationName := "Lightbend Inc.",
@@ -61,10 +59,6 @@ object Common extends AutoPlugin {
     headers := headers.value ++ Map(
       "scala" -> FileHeader,
       "java" -> FileHeader
-    ),
-
-    formatSbtFiles := false,
-    scalafmtConfig := Some(baseDirectory.in(ThisBuild).value / ".scalafmt.conf"),
-    ivyScala := ivyScala.value.map(_.copy(overrideScalaVersion = sbtPlugin.value)) // TODO Remove once this workaround no longer needed (https://github.com/sbt/sbt/issues/2786)!
+    )
   )
 }

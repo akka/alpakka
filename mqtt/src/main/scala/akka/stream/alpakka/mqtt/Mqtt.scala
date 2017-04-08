@@ -1,7 +1,9 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.mqtt
+
+import javax.net.ssl.SSLSocketFactory
 
 import akka.stream.stage._
 import akka.util.ByteString
@@ -74,6 +76,7 @@ final case class MqttConnectionSettings(
     clientId: String,
     persistence: MqttClientPersistence,
     auth: Option[(String, String)] = None,
+    socketFactory: Option[SSLSocketFactory] = None,
     cleanSession: Boolean = true,
     will: Option[Will] = None
 ) {
@@ -158,6 +161,9 @@ private[mqtt] trait MqttConnectorLogic { this: GraphStageLogic =>
       case (user, password) =>
         connectOptions.setUserName(user)
         connectOptions.setPassword(password.toCharArray)
+    }
+    connectionSettings.socketFactory.foreach { socketFactory =>
+      connectOptions.setSocketFactory(socketFactory)
     }
     connectionSettings.will.foreach { will =>
       connectOptions.setWill(will.message.topic, will.message.payload.toArray, will.qos.byteValue.toInt, will.retained)

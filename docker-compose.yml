@@ -13,7 +13,7 @@ services:
     ports:
       - "5672:5672"
   sqs:
-    image: s12v/elasticmq:0.12.0
+    image: s12v/elasticmq:0.13.2
     ports:
       - "9324:9324"
   mqtt:

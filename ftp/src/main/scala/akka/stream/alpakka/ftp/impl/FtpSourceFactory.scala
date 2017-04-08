@@ -1,15 +1,14 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.ftp.impl
 
 import akka.stream.alpakka.ftp.FtpCredentials.{AnonFtpCredentials, NonAnonFtpCredentials}
-import akka.stream.alpakka.ftp.{FtpFileSettings, RemoteFileSettings}
+import akka.stream.alpakka.ftp.{FtpFileSettings, RemoteFileSettings, SftpSettings}
 import akka.stream.alpakka.ftp.RemoteFileSettings._
 import com.jcraft.jsch.JSch
 import org.apache.commons.net.ftp.FTPClient
 import java.net.InetAddress
-import java.nio.file.Path
 
 private[ftp] trait FtpSourceFactory[FtpClient] { self =>
 
@@ -23,6 +22,8 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
 
   protected[this] def ftpIOSourceName: String
 
+  protected[this] def ftpIOSinkName: String
+
   protected[this] def createBrowserGraph(
       _basePath: String,
       _connectionSettings: S
@@ -35,18 +36,30 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
       val ftpLike: FtpLike[FtpClient, S] = _ftpLike
     }
 
-  protected[this] def createIOGraph(
-      _path: Path,
+  protected[this] def createIOSource(
+      _path: String,
       _connectionSettings: S,
       _chunkSize: Int
-  )(implicit _ftpLike: FtpLike[FtpClient, S]): FtpIOGraphStage[FtpClient, S] =
-    new FtpIOGraphStage[FtpClient, S] {
+  )(implicit _ftpLike: FtpLike[FtpClient, S]): FtpIOSourceStage[FtpClient, S] =
+    new FtpIOSourceStage[FtpClient, S] {
       lazy val name: String = ftpIOSourceName
-      val path: Path = _path
+      val path: String = _path
       val connectionSettings: S = _connectionSettings
       val ftpClient: () => FtpClient = self.ftpClient
       val ftpLike: FtpLike[FtpClient, S] = _ftpLike
       val chunkSize: Int = _chunkSize
+    }
+
+  protected[this] def createIOSink(
+      _path: String,
+      _connectionSettings: S
+  )(implicit _ftpLike: FtpLike[FtpClient, S]): FtpIOSinkStage[FtpClient, S] =
+    new FtpIOSinkStage[FtpClient, S] {
+      lazy val name: String = ftpIOSinkName
+      val path: String = _path
+      val connectionSettings: S = _connectionSettings
+      val ftpClient: () => FtpClient = self.ftpClient
+      val ftpLike: FtpLike[FtpClient, S] = _ftpLike
     }
 
   protected[this] def defaultSettings(
@@ -59,25 +72,31 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
 private[ftp] trait FtpSource extends FtpSourceFactory[FTPClient] {
   protected final val FtpBrowserSourceName = "FtpBrowserSource"
   protected final val FtpIOSourceName = "FtpIOSource"
+  protected final val FtpIOSinkName = "FtpIOSink"
   protected val ftpClient: () => FTPClient = () => new FTPClient
   protected val ftpBrowserSourceName: String = FtpBrowserSourceName
   protected val ftpIOSourceName: String = FtpIOSourceName
+  protected val ftpIOSinkName: String = FtpIOSinkName
 }
 
 private[ftp] trait FtpsSource extends FtpSourceFactory[FTPClient] {
   protected final val FtpsBrowserSourceName = "FtpsBrowserSource"
   protected final val FtpsIOSourceName = "FtpsIOSource"
+  protected final val FtpsIOSinkName = "FtpsIOSink"
   protected val ftpClient: () => FTPClient = () => new FTPClient
   protected val ftpBrowserSourceName: String = FtpsBrowserSourceName
   protected val ftpIOSourceName: String = FtpsIOSourceName
+  protected val ftpIOSinkName: String = FtpsIOSinkName
 }
 
 private[ftp] trait SftpSource extends FtpSourceFactory[JSch] {
   protected final val sFtpBrowserSourceName = "sFtpBrowserSource"
   protected final val sFtpIOSourceName = "sFtpIOSource"
+  protected final val sFtpIOSinkName = "sFtpIOSink"
   protected val ftpClient: () => JSch = () => new JSch
   protected val ftpBrowserSourceName: String = sFtpBrowserSourceName
   protected val ftpIOSourceName: String = sFtpIOSourceName
+  protected val ftpIOSinkName: String = sFtpIOSinkName
 }
 
 private[ftp] trait FtpDefaultSettings {

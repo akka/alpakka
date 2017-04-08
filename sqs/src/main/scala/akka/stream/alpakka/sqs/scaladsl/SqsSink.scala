@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.sqs.scaladsl
 
@@ -16,6 +16,7 @@ object SqsSink {
    * Scala API: creates a [[SqsSinkStage]] for a SQS queue using an [[AmazonSQSAsync]]
    */
   def apply(queueUrl: String, settings: SqsSinkSettings = SqsSinkSettings.Defaults)(
-      implicit sqsClient: AmazonSQSAsync): Sink[String, Future[Done]] =
+      implicit sqsClient: AmazonSQSAsync
+  ): Sink[String, Future[Done]] =
     Sink.fromGraph(new SqsSinkStage(queueUrl, settings, sqsClient))
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.amqp
 
@@ -110,8 +110,7 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
           }
         }
 
-      setHandler(out,
-        new OutHandler {
+      setHandler(out, new OutHandler {
         override def onPull(): Unit =
           if (queue.nonEmpty) {
             pushAndAckMessage(queue.dequeue())

@@ -1,13 +1,20 @@
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
-  .aggregate(amqp, cassandra, dynamodb, files, ftp, hbase, jms, mqtt, s3, simpleCodecs, sns, sqs, sse, awslambda)
+  .aggregate(amqp, awslambda, cassandra, dynamodb, files, ftp, googleCloudPubSub, hbase, jms, mqtt, s3, simpleCodecs, sns, sqs, sse)
 
 lazy val amqp = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-amqp",
     Dependencies.Amqp
+  )
+
+lazy val awslambda = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-awslambda",
+    Dependencies.AwsLambda
   )
 
 lazy val cassandra = project
@@ -38,6 +45,14 @@ lazy val ftp = project
     name := "akka-stream-alpakka-ftp",
     Dependencies.Ftp,
     parallelExecution in Test := false
+  )
+
+lazy val googleCloudPubSub = project
+  .in(file("google-cloud-pub-sub"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-google-cloud-pub-sub",
+    Dependencies.GooglePubSub
   )
 
 lazy val hbase = project
@@ -113,13 +128,6 @@ val defaultParadoxSettings: Seq[Setting[_]] = Seq(
   ),
   sourceDirectory := baseDirectory.value / "src" / "main"
 )
-
-lazy val awslambda = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-awslambda",
-    Dependencies.AwsLambda
-  )
 
 lazy val docs = project
   .enablePlugins(ParadoxPlugin, NoPublish)
