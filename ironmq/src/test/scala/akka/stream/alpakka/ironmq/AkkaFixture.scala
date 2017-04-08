@@ -4,9 +4,18 @@
 package akka.stream.alpakka.ironmq
 
 import akka.actor.ActorSystem
-import org.scalatest.{ BeforeAndAfterEach, Suite }
+import org.scalatest.{BeforeAndAfterEach, Suite}
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 trait AkkaFixture extends ConfigFixture with BeforeAndAfterEach { _: Suite =>
+  import AkkaFixture._
+
+  /**
+    * Override to tune the time the test will wait for the actor system to terminate.
+    */
+  def actorSystemTerminateTimeout: Duration = DefaultActorSystemTerminateTimeout
 
   private var mutableActorSystem = Option.empty[ActorSystem]
   implicit def actorSystem: ActorSystem =
@@ -18,7 +27,12 @@ trait AkkaFixture extends ConfigFixture with BeforeAndAfterEach { _: Suite =>
   }
 
   override protected def afterEach(): Unit = {
-    actorSystem.terminate()
+    Await.result(actorSystem.terminate(), actorSystemTerminateTimeout)
     super.afterEach()
   }
 }
+
+object AkkaFixture {
+  val DefaultActorSystemTerminateTimeout: Duration = 10.seconds
+}
+
