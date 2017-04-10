@@ -65,12 +65,8 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
   }
 
   def listBucket(bucket: String, prefix: Option[String] = None): Source[String, NotUsed] = {
-    import mat.executionContext
-
     def listBucketCall(continuation_token: Option[String] = None): Future[ListBucketResult] =
-      signAndGet(HttpRequests.listBucket(bucket, region, prefix, continuation_token)).flatMap { entity =>
-        Unmarshal(entity).to[ListBucketResult]
-      }
+      signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, region, prefix, continuation_token))
 
     def fileSourceFromFuture(f: Future[ListBucketResult]): Source[String, NotUsed] =
       Source
