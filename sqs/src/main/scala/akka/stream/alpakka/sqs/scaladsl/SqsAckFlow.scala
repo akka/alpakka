@@ -16,6 +16,16 @@ object SqsAckFlow {
    */
   def apply(queueUrl: String, settings: SqsAckSinkSettings = SqsAckSinkSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
-  ): Flow[MessageActionPair, AmazonWebServiceResult[ResponseMetadata], NotUsed] =
+  ): Flow[MessageActionPair, AckResult, NotUsed] =
     Flow.fromGraph(new SqsAckFlowStage(queueUrl, sqsClient)).mapAsync(settings.maxInFlight)(identity)
 }
+
+/**
+ * Messages returned by a SqsFlow.
+ * @param metadata metadata with AWS response details.
+ * @param message message body.
+ */
+final case class AckResult(
+    metadata: AmazonWebServiceResult[ResponseMetadata],
+    message: String
+)

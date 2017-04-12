@@ -3,11 +3,9 @@
  */
 package akka.stream.alpakka.sqs
 
-import java.util.concurrent.atomic.AtomicInteger
-
+import akka.stream.alpakka.sqs.scaladsl.AckResult
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
-import com.amazonaws.{AmazonWebServiceResult, ResponseMetadata}
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model.{
@@ -16,39 +14,65 @@ import com.amazonaws.services.sqs.model.{
   SendMessageRequest,
   SendMessageResult
 }
-
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
-class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
-    extends GraphStage[FlowShape[MessageActionPair, Future[AmazonWebServiceResult[ResponseMetadata]]]] {
+private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
+    extends GraphStage[FlowShape[MessageActionPair, Future[AckResult]]] {
 
   private val in = Inlet[MessageActionPair]("messages")
-  private val out = Outlet[Future[AmazonWebServiceResult[ResponseMetadata]]]("result")
+  private val out = Outlet[Future[AckResult]]("result")
   override val shape = FlowShape(in, out)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
-
-    val logic = new GraphStageLogic(shape) with StageLogging {
-      private var inFlight = new AtomicInteger(0)
-      @volatile private var inIsClosed = false
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with StageLogging {
+      private var inFlight = 0
+      private var inIsClosed = false
 
       var completionState: Option[Try[Unit]] = None
+
+      private def handleFailure(exception: Exception): Unit = {
+        log.error(exception, "Client failure: {}", exception.getMessage)
+        inFlight -= 1
+        failStage(exception)
+        if (inFlight == 0 && inIsClosed)
+          checkForCompletion()
+      }
+
+      private def handleSend(result: SendMessageResult): Unit = {
+        log.debug(s"Sent message {}", result.getMessageId)
+        inFlight -= 1
+        if (inFlight == 0 && inIsClosed)
+          checkForCompletion()
+      }
+      private def handleDelete(request: DeleteMessageRequest): Unit = {
+        log.debug(s"Deleted message {}", request.getReceiptHandle)
+        inFlight -= 1
+        if (inFlight == 0 && inIsClosed)
+          checkForCompletion()
+      }
+
+      var failureCallback: AsyncCallback[Exception] = _
+      var sendCallback: AsyncCallback[SendMessageResult] = _
+      var deleteCallback: AsyncCallback[DeleteMessageRequest] = _
+
+      override def preStart(): Unit = {
+        super.preStart()
+        failureCallback = getAsyncCallback[Exception](handleFailure)
+        sendCallback = getAsyncCallback[SendMessageResult](handleSend)
+        deleteCallback = getAsyncCallback[DeleteMessageRequest](handleDelete)
+      }
 
       override protected def logSource: Class[_] = classOf[SqsAckFlowStage]
 
       def checkForCompletion() =
-        if (isClosed(in) && inFlight.get == 0) {
+        if (isClosed(in) && inFlight == 0) {
           completionState match {
             case Some(Success(_)) => completeStage()
             case Some(Failure(ex)) => failStage(ex)
             case None => failStage(new IllegalStateException("Stage completed, but there is no info about status"))
           }
         }
-
-      val checkForCompletionCB = getAsyncCallback[Unit] { _ =>
-        checkForCompletion()
-      }
 
       setHandler(out, new OutHandler {
         override def onPull() =
@@ -71,18 +95,10 @@ class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
             checkForCompletion()
           }
 
-          def onComplete(): Unit =
-            if (inFlight.decrementAndGet() == 0 && inIsClosed)
-              checkForCompletionCB.invoke(())
-
           override def onPush() = {
-
-            def onComplete(): Unit =
-              if (inFlight.decrementAndGet() == 0 && inIsClosed)
-                checkForCompletionCB.invoke(())
-
+            inFlight += 1
             val (message, action) = grab(in)
-            val r = Promise[AmazonWebServiceResult[ResponseMetadata]]
+            val responsePromise = Promise[AckResult]
             action match {
               case Ack() =>
                 sqsClient.deleteMessageAsync(
@@ -90,13 +106,13 @@ class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
                   new AsyncHandler[DeleteMessageRequest, DeleteMessageResult] {
 
                     override def onError(exception: Exception): Unit = {
-                      r.failure(exception)
-                      onComplete()
+                      responsePromise.failure(exception)
+                      failureCallback.invoke(exception)
                     }
 
                     override def onSuccess(request: DeleteMessageRequest, result: DeleteMessageResult): Unit = {
-                      r.success(result)
-                      onComplete()
+                      responsePromise.success(AckResult(result, message.getBody))
+                      deleteCallback.invoke(request)
                     }
                   }
                 )
@@ -107,28 +123,20 @@ class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
                     new AsyncHandler[SendMessageRequest, SendMessageResult] {
 
                       override def onError(exception: Exception): Unit = {
-                        r.tryFailure(exception)
-                        onComplete()
+                        responsePromise.failure(exception)
+                        failureCallback.invoke(exception)
                       }
 
                       override def onSuccess(request: SendMessageRequest, result: SendMessageResult): Unit = {
-                        r.success(result)
-                        onComplete()
+                        responsePromise.success(AckResult(result, message.getBody))
+                        sendCallback.invoke(result)
                       }
                     }
                   )
             }
-
-            inFlight.incrementAndGet()
-            push(out, r.future)
-
+            push(out, responsePromise.future)
           }
         }
       )
-
     }
-    logic
-
-  }
-
 }

@@ -3,7 +3,7 @@
  */
 package akka.stream.alpakka.sqs
 
-import java.util.concurrent.atomic.AtomicInteger
+import akka.stream.alpakka.sqs.scaladsl.Result
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
@@ -12,35 +12,53 @@ import com.amazonaws.services.sqs.model.{SendMessageRequest, SendMessageResult}
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
-class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
-    extends GraphStage[FlowShape[String, Future[SendMessageResult]]] {
+private[sqs] final class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
+    extends GraphStage[FlowShape[String, Future[Result]]] {
 
   private val in = Inlet[String]("messages")
-  private val out = Outlet[Future[SendMessageResult]]("result")
+  private val out = Outlet[Future[Result]]("result")
   override val shape = FlowShape(in, out)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
-
-    val logic = new GraphStageLogic(shape) with StageLogging {
-      private var inFlight = new AtomicInteger(0)
-      @volatile var inIsClosed = false
-
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with StageLogging {
+      private var inFlight = 0
+      var inIsClosed = false
       var completionState: Option[Try[Unit]] = None
 
       override protected def logSource: Class[_] = classOf[SqsFlowStage]
 
+      var failureCallback: AsyncCallback[Exception] = _
+      var sendCallback: AsyncCallback[SendMessageResult] = _
+
+      override def preStart(): Unit = {
+        super.preStart()
+        failureCallback = getAsyncCallback[Exception](handleFailure)
+        sendCallback = getAsyncCallback[SendMessageResult](handleSend)
+      }
+
+      private def handleFailure(exception: Exception): Unit = {
+        log.error(exception, "Client failure: {}", exception.getMessage)
+        inFlight -= 1
+        failStage(exception)
+        if (inFlight == 0 && inIsClosed)
+          checkForCompletion()
+      }
+
+      private def handleSend(result: SendMessageResult): Unit = {
+        log.debug(s"Sent message {}", result.getMessageId)
+        inFlight -= 1
+        if (inFlight == 0 && inIsClosed)
+          checkForCompletion()
+      }
+
       def checkForCompletion() =
-        if (isClosed(in) && inFlight.get == 0) {
+        if (isClosed(in) && inFlight <= 0) {
           completionState match {
             case Some(Success(_)) => completeStage()
             case Some(Failure(ex)) => failStage(ex)
             case None => failStage(new IllegalStateException("Stage completed, but there is no info about status"))
           }
         }
-
-      val checkForCompletionCB = getAsyncCallback[Unit] { _ =>
-        checkForCompletion()
-      }
 
       setHandler(out, new OutHandler {
         override def onPull() =
@@ -64,35 +82,28 @@ class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
           }
 
           override def onPush() = {
+            inFlight += 1
             val msg = grab(in)
-            val r = Promise[SendMessageResult]
+            val responsePromise = Promise[Result]
+
             sqsClient.sendMessageAsync(
               new SendMessageRequest(queueUrl, msg),
               new AsyncHandler[SendMessageRequest, SendMessageResult] {
 
                 override def onError(exception: Exception): Unit = {
-                  r.failure(exception)
-                  onComplete()
+                  responsePromise.failure(exception)
+                  failureCallback.invoke(exception)
                 }
 
                 override def onSuccess(request: SendMessageRequest, result: SendMessageResult): Unit = {
-                  r.success(result)
-                  onComplete()
+                  responsePromise.success(Result(result, msg))
+                  sendCallback.invoke(result)
                 }
-
-                def onComplete(): Unit =
-                  if (inFlight.decrementAndGet() == 0 && inIsClosed)
-                    checkForCompletionCB.invoke(())
               }
             )
-            inFlight.incrementAndGet()
-            push(out, r.future)
-
+            push(out, responsePromise.future)
           }
         }
       )
     }
-    logic
-  }
-
 }
