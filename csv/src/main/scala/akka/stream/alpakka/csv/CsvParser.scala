@@ -102,11 +102,13 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
 
     def wrongCharEscaped() =
       throw new MalformedCsvException(
-          s"wrong escaping at $currentLineNo:$pos, only escape or delimiter may be escaped")
+        s"wrong escaping at $currentLineNo:$pos, only escape or delimiter may be escaped"
+      )
 
     def wrongCharEscapedWithinQuotes() =
       throw new MalformedCsvException(
-          s"wrong escaping at $currentLineNo:$pos, only escape or quote may be escaped within quotes")
+        s"wrong escaping at $currentLineNo:$pos, only escape or quote may be escaped within quotes"
+      )
 
     def noCharEscaped() =
       throw new MalformedCsvException(s"wrong escaping at $currentLineNo:$pos, no character after escape")

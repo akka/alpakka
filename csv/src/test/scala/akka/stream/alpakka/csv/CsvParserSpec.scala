@@ -176,8 +176,9 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "read values with different separator" in {
-      expectInOut("$Foo $#$Bar $#$Baz $\n", List("Foo ", "Bar ", "Baz "))(delimiter = '#', quoteChar = '$',
-        escapeChar = '\\')
+      expectInOut("$Foo $#$Bar $#$Baz $\n", List("Foo ", "Bar ", "Baz "))(delimiter = '#',
+                                                                          quoteChar = '$',
+                                                                          escapeChar = '\\')
     }
   }
 

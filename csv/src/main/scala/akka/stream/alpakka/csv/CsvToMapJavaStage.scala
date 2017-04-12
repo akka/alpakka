@@ -50,8 +50,7 @@ private[csv] class CsvToMapJavaStage(columnNames: ju.Optional[ju.Collection[Stri
         }
       )
 
-      setHandler(out,
-        new OutHandler {
+      setHandler(out, new OutHandler {
         override def onPull(): Unit = pull(in)
       })
 

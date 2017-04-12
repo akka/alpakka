@@ -65,8 +65,9 @@ class CsvFormattingSpec extends CsvSpec {
           .runWith(Sink.seq)
       // #formatting-bom
       // format: on
-      fut.futureValue should be(List(ByteOrderMark.UTF_8, ByteString("eins,zwei,drei\r\n"),
-          ByteString("uno,dos,tres\r\n")))
+      fut.futureValue should be(
+        List(ByteOrderMark.UTF_8, ByteString("eins,zwei,drei\r\n"), ByteString("uno,dos,tres\r\n"))
+      )
     }
 
   }

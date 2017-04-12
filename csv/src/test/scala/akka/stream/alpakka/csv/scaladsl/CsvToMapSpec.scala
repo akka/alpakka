@@ -45,8 +45,9 @@ class CsvToMapSpec extends CsvSpec {
         .runWith(Sink.head)
       // #header-line
       // format: on
-      future.futureValue should be(Map("eins" -> ByteString("1"), "zwei" -> ByteString("2"),
-          "drei" -> ByteString("3")))
+      future.futureValue should be(
+        Map("eins" -> ByteString("1"), "zwei" -> ByteString("2"), "drei" -> ByteString("3"))
+      )
     }
 
     "be OK with fewer header columns than data" in {
@@ -68,8 +69,9 @@ class CsvToMapSpec extends CsvSpec {
           .via(CsvParsing.lineScanner())
           .via(CsvToMap.toMap())
           .runWith(Sink.head)
-      future.futureValue should be(Map("eins" -> ByteString("1"), "zwei" -> ByteString("2"),
-          "drei" -> ByteString("3")))
+      future.futureValue should be(
+        Map("eins" -> ByteString("1"), "zwei" -> ByteString("2"), "drei" -> ByteString("3"))
+      )
     }
 
     "use column names and data line into map" in {
@@ -87,8 +89,9 @@ class CsvToMapSpec extends CsvSpec {
         .runWith(Sink.head)
       // #column-names
       // format: on
-      future.futureValue should be(Map("eins" -> ByteString("1"), "zwei" -> ByteString("2"),
-          "drei" -> ByteString("3")))
+      future.futureValue should be(
+        Map("eins" -> ByteString("1"), "zwei" -> ByteString("2"), "drei" -> ByteString("3"))
+      )
     }
 
   }
