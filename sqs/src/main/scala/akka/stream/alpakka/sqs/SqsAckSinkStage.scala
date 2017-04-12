@@ -56,39 +56,41 @@ private[sqs] class SqsAckSinkStageLogic(
   private var amazonSendMessageHandler: AsyncHandler[SendMessageRequest, SendMessageResult] = _
   private var amazonDeleteMessageHandler: AsyncHandler[DeleteMessageRequest, DeleteMessageResult] = _
 
-  setHandler(in,
+  setHandler(
+    in,
     new InHandler {
-    override def onPush(): Unit = {
-      inFlight += 1
-      val (message, action) = grab(in)
-      action match {
-        case Ack() =>
-          sqsClient.deleteMessageAsync(
-            new DeleteMessageRequest(queueUrl, message.getReceiptHandle),
-            amazonDeleteMessageHandler
-          )
-        case RequeueWithDelay(delaySeconds) =>
-          sqsClient.sendMessageAsync(
-            new SendMessageRequest(queueUrl, message.getBody).withDelaySeconds(delaySeconds),
-            amazonSendMessageHandler
-          )
+      override def onPush(): Unit = {
+        inFlight += 1
+        val (message, action) = grab(in)
+        action match {
+          case Ack() =>
+            sqsClient.deleteMessageAsync(
+              new DeleteMessageRequest(queueUrl, message.getReceiptHandle),
+              amazonDeleteMessageHandler
+            )
+          case RequeueWithDelay(delaySeconds) =>
+            sqsClient.sendMessageAsync(
+              new SendMessageRequest(queueUrl, message.getBody).withDelaySeconds(delaySeconds),
+              amazonSendMessageHandler
+            )
+        }
+
+        tryPull()
       }
 
-      tryPull()
-    }
+      override def onUpstreamFailure(exception: Throwable): Unit = {
+        log.error(exception, "Upstream failure: {}", exception.getMessage)
+        failStage(exception)
+        promise.tryFailure(exception)
+      }
 
-    override def onUpstreamFailure(exception: Throwable): Unit = {
-      log.error(exception, "Upstream failure: {}", exception.getMessage)
-      failStage(exception)
-      promise.tryFailure(exception)
+      override def onUpstreamFinish(): Unit = {
+        log.debug("Upstream finish")
+        isShutdownInProgress = true
+        tryShutdown()
+      }
     }
-
-    override def onUpstreamFinish(): Unit = {
-      log.debug("Upstream finish")
-      isShutdownInProgress = true
-      tryShutdown()
-    }
-  })
+  )
 
   override def preStart(): Unit = {
     setKeepGoing(true)

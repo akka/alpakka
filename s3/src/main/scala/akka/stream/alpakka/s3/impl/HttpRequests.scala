@@ -56,7 +56,8 @@ private[alpakka] object HttpRequests {
 
   def completeMultipartUploadRequest(upload: MultipartUpload, parts: Seq[(Int, String)], region: String)(
       implicit ec: ExecutionContext,
-      conf: S3Settings): Future[HttpRequest] = {
+      conf: S3Settings
+  ): Future[HttpRequest] = {
 
     //Do not let the start PartNumber,ETag and the end PartNumber,ETag be on different lines
     //  They tend to get split when this file is formatted by IntelliJ unless http://stackoverflow.com/a/19492318/1216965
@@ -88,17 +89,31 @@ private[alpakka] object HttpRequests {
       conf.proxy match {
         case None =>
           region match {
-            case "us-east-1" => Uri.Host(s"${s3Location.bucket}.s3.amazonaws.com")
-            case _ => Uri.Host(s"${s3Location.bucket}.s3-$region.amazonaws.com")
+            case "us-east-1" =>
+              if (conf.pathStyleAccess) {
+                Uri.Host("s3.amazonaws.com")
+              } else {
+                Uri.Host(s"${s3Location.bucket}.s3.amazonaws.com")
+              }
+            case _ =>
+              if (conf.pathStyleAccess) {
+                Uri.Host(s"s3-$region.amazonaws.com")
+              } else {
+                Uri.Host(s"${s3Location.bucket}.s3-$region.amazonaws.com")
+              }
           }
         case Some(proxy) => Uri.Host(proxy.host)
       }
 
     def requestUri(s3Location: S3Location, region: String)(implicit conf: S3Settings): Uri = {
-      val uri = Uri(s"/${s3Location.key}").withHost(requestHost(s3Location, region)).withScheme("https")
+      val uri = if (conf.pathStyleAccess) {
+        Uri(s"/${s3Location.bucket}/${s3Location.key}").withHost(requestHost(s3Location, region))
+      } else {
+        Uri(s"/${s3Location.key}").withHost(requestHost(s3Location, region))
+      }
       conf.proxy match {
-        case None => uri
-        case Some(proxy) => uri.withPort(proxy.port)
+        case None => uri.withScheme("https")
+        case Some(proxy) => uri.withPort(proxy.port).withScheme(proxy.scheme)
       }
     }
 

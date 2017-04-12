@@ -1,7 +1,7 @@
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
-  .aggregate(amqp, cassandra, csv, dynamodb, files, ftp, googleCloudPubSub, hbase, jms, mqtt, s3, simpleCodecs, sqs, sse, awslambda)
+  .aggregate(amqp, awslambda, cassandra, csv, dynamodb, files, ftp, googleCloudPubSub, hbase, jms, mqtt, s3, simpleCodecs, sqs, sse)
 
 lazy val amqp = project
   .enablePlugins(AutomateHeaderPlugin)
@@ -10,11 +10,11 @@ lazy val amqp = project
     Dependencies.Amqp
   )
 
-lazy val csv = project
+lazy val awslambda = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
-    name := "akka-stream-alpakka-csv",
-    Dependencies.Csv
+    name := "akka-stream-alpakka-awslambda",
+    Dependencies.AwsLambda
   )
 
 lazy val cassandra = project
@@ -22,6 +22,13 @@ lazy val cassandra = project
   .settings(
     name := "akka-stream-alpakka-cassandra",
     Dependencies.Cassandra
+  )
+
+lazy val csv = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-csv",
+    Dependencies.Csv
   )
 
 lazy val dynamodb = project
@@ -45,6 +52,14 @@ lazy val ftp = project
     name := "akka-stream-alpakka-ftp",
     Dependencies.Ftp,
     parallelExecution in Test := false
+  )
+
+lazy val googleCloudPubSub = project
+  .in(file("google-cloud-pub-sub"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-google-cloud-pub-sub",
+    Dependencies.GooglePubSub
   )
 
 lazy val hbase = project
@@ -99,14 +114,6 @@ lazy val sse = project
     Dependencies.Sse
   )
 
-lazy val googleCloudPubSub = project
-  .in(file("google-cloud-pub-sub"))
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-google-cloud-pub-sub",
-    Dependencies.GooglePubSub
-  )
-
 val Local = config("local")
 val defaultParadoxSettings: Seq[Setting[_]] = Seq(
   paradoxTheme := Some(builtinParadoxTheme("generic")),
@@ -121,13 +128,6 @@ val defaultParadoxSettings: Seq[Setting[_]] = Seq(
   ),
   sourceDirectory := baseDirectory.value / "src" / "main"
 )
-
-lazy val awslambda = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-awslambda",
-    Dependencies.AwsLambda
-  )
 
 lazy val docs = project
   .enablePlugins(ParadoxPlugin, NoPublish)
