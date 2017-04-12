@@ -45,8 +45,9 @@ class MqttSinkSpec
       val msg = MqttMessage(topic, ByteString("ohi"))
 
       val (subscribed, message) =
-        MqttSource(MqttSourceSettings(sourceSettings, Map(topic -> MqttQoS.atLeastOnce)),
-          8).toMat(Sink.head)(Keep.both).run()
+        MqttSource(MqttSourceSettings(sourceSettings, Map(topic -> MqttQoS.atLeastOnce)), 8)
+          .toMat(Sink.head)(Keep.both)
+          .run()
 
       whenReady(subscribed) { _ =>
         Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
@@ -60,8 +61,10 @@ class MqttSinkSpec
       val numOfMessages = 42
 
       val (subscribed, messages) =
-        MqttSource(MqttSourceSettings(sourceSettings, Map(topic -> MqttQoS.atLeastOnce)),
-          8).grouped(numOfMessages).toMat(Sink.head)(Keep.both).run()
+        MqttSource(MqttSourceSettings(sourceSettings, Map(topic -> MqttQoS.atLeastOnce)), 8)
+          .grouped(numOfMessages)
+          .toMat(Sink.head)(Keep.both)
+          .run()
 
       whenReady(subscribed) { _ =>
         Source(1 to numOfMessages).map(_ => msg).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))

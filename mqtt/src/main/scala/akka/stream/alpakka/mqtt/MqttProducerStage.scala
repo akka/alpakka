@@ -30,22 +30,23 @@ final class MqttProducerStage(cs: MqttConnectionSettings, qos: MqttQoS)
         failStage(ex)
     }
 
-    setHandler(in,
+    setHandler(
+      in,
       new InHandler {
-      override def onPush() = {
-        val msg = grab(in)
-        val pahoMsg = new PahoMqttMessage(msg.payload.toArray)
-        pahoMsg.setQos(qos.byteValue)
-        mqttClient match {
-          case Some(client) => client.publish(msg.topic, pahoMsg, msg, onPublished.invoke _)
-          case None => failStage(MqttProducerStage.NoClientException)
+        override def onPush() = {
+          val msg = grab(in)
+          val pahoMsg = new PahoMqttMessage(msg.payload.toArray)
+          pahoMsg.setQos(qos.byteValue)
+          mqttClient match {
+            case Some(client) => client.publish(msg.topic, pahoMsg, msg, onPublished.invoke _)
+            case None => failStage(MqttProducerStage.NoClientException)
+          }
+
         }
-
       }
-    })
+    )
 
-    setHandler(out,
-      new OutHandler {
+    setHandler(out, new OutHandler {
       override def onPull() =
         if (mqttClient.isDefined) pull(in)
     })

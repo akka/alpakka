@@ -7,17 +7,17 @@ import akka.actor.ActorSystem
 import akka.stream.alpakka.s3.auth.AWSCredentials
 import com.typesafe.config.Config
 
-final case class Proxy(host: String, port: Int)
+final case class Proxy(host: String, port: Int, scheme: String)
 
 final class S3Settings(val bufferType: BufferType,
                        val diskBufferPath: String,
-                       val debugLogging: Boolean,
                        val proxy: Option[Proxy],
                        val awsCredentials: AWSCredentials,
-                       val s3Region: String) {
+                       val s3Region: String,
+                       val pathStyleAccess: Boolean) {
 
   override def toString: String =
-    s"S3Settings($bufferType,$diskBufferPath,$debugLogging,$proxy,$awsCredentials,$s3Region)"
+    s"S3Settings($bufferType,$diskBufferPath,$proxy,$awsCredentials,$s3Region,$pathStyleAccess)"
 }
 
 sealed trait BufferType
@@ -44,13 +44,14 @@ object S3Settings {
       case _ => throw new IllegalArgumentException("Buffer type must be 'memory' or 'disk'")
     },
     diskBufferPath = config.getString("disk-buffer-path"),
-    debugLogging = config.getBoolean("debug-logging"),
     proxy = {
-      if (config.getString("proxy.host") != "")
-        Some(Proxy(config.getString("proxy.host"), config.getInt("proxy.port")))
-      else None
+      if (config.getString("proxy.host") != "") {
+        val scheme = if (config.getBoolean("proxy.secure")) "https" else "http"
+        Some(Proxy(config.getString("proxy.host"), config.getInt("proxy.port"), scheme))
+      } else None
     },
     awsCredentials = AWSCredentials(config.getString("aws.access-key-id"), config.getString("aws.secret-access-key")),
-    s3Region = config.getString("aws.default-region")
+    s3Region = config.getString("aws.default-region"),
+    pathStyleAccess = config.getBoolean("path-style-access")
   )
 }

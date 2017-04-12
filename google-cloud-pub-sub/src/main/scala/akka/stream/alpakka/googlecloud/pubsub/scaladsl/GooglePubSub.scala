@@ -37,7 +37,8 @@ protected[pubsub] trait GooglePubSub {
               topic: String,
               parallelism: Int = 1)(
       implicit actorSystem: ActorSystem,
-      materializer: Materializer): Flow[PublishRequest, immutable.Seq[String], NotUsed] = {
+      materializer: Materializer
+  ): Flow[PublishRequest, immutable.Seq[String], NotUsed] = {
     import materializer.executionContext
     val session = getSession(clientEmail, privateKey)
 
@@ -50,27 +51,37 @@ protected[pubsub] trait GooglePubSub {
 
   def subscribe(projectId: String, apiKey: String, clientEmail: String, privateKey: PrivateKey, subscription: String)(
       implicit actorSystem: ActorSystem,
-      materializer: Materializer): Source[ReceivedMessage, NotUsed] = {
+      materializer: Materializer
+  ): Source[ReceivedMessage, NotUsed] = {
     val session = getSession(clientEmail, privateKey)
-    Source.fromGraph(new GooglePubSubSource(projectId = projectId, apiKey = apiKey, session = session,
-        subscription = subscription, httpApi = httpApi))
+    Source.fromGraph(
+      new GooglePubSubSource(projectId = projectId,
+                             apiKey = apiKey,
+                             session = session,
+                             subscription = subscription,
+                             httpApi = httpApi)
+    )
   }
 
-  def acknowledge(projectId: String,
-                  apiKey: String,
-                  clientEmail: String,
-                  privateKey: PrivateKey,
-                  subscription: String,
-                  parallelism: Int = 1)(implicit actorSystem: ActorSystem,
-                                        materializer: Materializer): Sink[AcknowledgeRequest, Future[Done]] = {
+  def acknowledge(
+      projectId: String,
+      apiKey: String,
+      clientEmail: String,
+      privateKey: PrivateKey,
+      subscription: String,
+      parallelism: Int = 1
+  )(implicit actorSystem: ActorSystem, materializer: Materializer): Sink[AcknowledgeRequest, Future[Done]] = {
     import materializer.executionContext
     val session = getSession(clientEmail, privateKey)
 
     Flow[AcknowledgeRequest]
       .mapAsyncUnordered(parallelism) { ackReq =>
         session.getToken().flatMap { accessToken =>
-          httpApi.acknowledge(project = projectId, subscription = subscription, accessToken = accessToken,
-            apiKey = apiKey, request = ackReq)
+          httpApi.acknowledge(project = projectId,
+                              subscription = subscription,
+                              accessToken = accessToken,
+                              apiKey = apiKey,
+                              request = ackReq)
         }
       }
       .toMat(Sink.ignore)(Keep.right)

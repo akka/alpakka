@@ -48,9 +48,9 @@ object S3Stream {
     new S3Stream(credentials, region, S3Settings(system))
 }
 
-private[alpakka] final class S3Stream(credentials: AWSCredentials, region: String, val settings: S3Settings)(
-    implicit system: ActorSystem,
-    mat: Materializer) {
+private[alpakka] final class S3Stream(credentials: AWSCredentials,
+                                      region: String,
+                                      val settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
 
   import Marshalling._
   import HttpRequests._
@@ -76,8 +76,8 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
                       cannedAcl: CannedAcl = CannedAcl.Private,
                       chunkSize: Int = MinChunkSize,
                       chunkingParallelism: Int = 4): Sink[ByteString, Future[CompleteMultipartUploadResult]] =
-    chunkAndRequest(s3Location, contentType, metaHeaders, cannedAcl, chunkSize)(chunkingParallelism).toMat(
-        completionSink(s3Location))(Keep.right)
+    chunkAndRequest(s3Location, contentType, metaHeaders, cannedAcl, chunkSize)(chunkingParallelism)
+      .toMat(completionSink(s3Location))(Keep.right)
 
   private def initiateMultipartUpload(s3Location: S3Location,
                                       contentType: ContentType,
@@ -128,10 +128,13 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
       metaHeaders: MetaHeaders,
       cannedAcl: CannedAcl = CannedAcl.Private,
       chunkSize: Int = MinChunkSize,
-      parallelism: Int = 4): Flow[ByteString, (HttpRequest, (MultipartUpload, Int)), NotUsed] = {
+      parallelism: Int = 4
+  ): Flow[ByteString, (HttpRequest, (MultipartUpload, Int)), NotUsed] = {
 
-    assert(chunkSize >= MinChunkSize,
-      "Chunk size must be at least 5242880B. See http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadUploadPart.html")
+    assert(
+      chunkSize >= MinChunkSize,
+      "Chunk size must be at least 5242880B. See http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadUploadPart.html"
+    )
 
     // First step of the multi part upload process is made.
     //  The response is then used to construct the subsequent individual upload part requests
@@ -166,7 +169,8 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
       contentType: ContentType,
       metaHeaders: MetaHeaders,
       cannedAcl: CannedAcl = CannedAcl.Private,
-      chunkSize: Int = MinChunkSize)(parallelism: Int = 4): Flow[ByteString, UploadPartResponse, NotUsed] = {
+      chunkSize: Int = MinChunkSize
+  )(parallelism: Int = 4): Flow[ByteString, UploadPartResponse, NotUsed] = {
 
     // Multipart upload requests (except for the completion api) are created here.
     //  The initial upload request gets executed within this function as well.
@@ -190,17 +194,19 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials, region: Strin
     import mat.executionContext
 
     Sink.seq[UploadPartResponse].mapMaterializedValue { responseFuture: Future[Seq[UploadPartResponse]] =>
-      responseFuture.flatMap { responses: Seq[UploadPartResponse] =>
-        val successes = responses.collect { case r: SuccessfulUploadPart => r }
-        val failures = responses.collect { case r: FailedUploadPart => r }
-        if (responses.isEmpty) {
-          Future.failed(new RuntimeException("No Responses"))
-        } else if (failures.isEmpty) {
-          Future.successful(successes.sortBy(_.index))
-        } else {
-          Future.failed(FailedUpload(failures.map(_.exception)))
+      responseFuture
+        .flatMap { responses: Seq[UploadPartResponse] =>
+          val successes = responses.collect { case r: SuccessfulUploadPart => r }
+          val failures = responses.collect { case r: FailedUploadPart => r }
+          if (responses.isEmpty) {
+            Future.failed(new RuntimeException("No Responses"))
+          } else if (failures.isEmpty) {
+            Future.successful(successes.sortBy(_.index))
+          } else {
+            Future.failed(FailedUpload(failures.map(_.exception)))
+          }
         }
-      }.flatMap(completeMultipartUpload(s3Location, _))
+        .flatMap(completeMultipartUpload(s3Location, _))
     }
   }
 
