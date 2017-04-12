@@ -5,7 +5,7 @@ package akka.stream.alpakka.sqs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import com.amazonaws.auth.{AWSCredentialsProvider, BasicAWSCredentials}
+import com.amazonaws.auth.{AWSCredentialsProvider, AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
 import org.elasticmq.rest.sqs.{SQSRestServer, SQSRestServerBuilder}
@@ -31,11 +31,7 @@ trait DefaultTestContext extends BeforeAndAfterAll { this: Suite =>
   implicit val mat = ActorMaterializer()
   //#init-mat
 
-  val credentialsProvider = new AWSCredentialsProvider {
-    override def refresh() = ()
-
-    override def getCredentials = new BasicAWSCredentials("x", "x")
-  }
+  val credentialsProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"))
 
   implicit val sqsClient = createAsyncClient(sqsEndpoint, credentialsProvider)
 

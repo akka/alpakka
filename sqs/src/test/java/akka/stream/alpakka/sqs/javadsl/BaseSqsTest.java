@@ -4,6 +4,7 @@
 package akka.stream.alpakka.sqs.javadsl;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
@@ -23,17 +24,8 @@ public abstract class BaseSqsTest {
     private InetSocketAddress sqsAddress;
     private int sqsPort = 0;
     protected String sqsEndpoint;
-    protected AWSCredentialsProvider credentialsProvider = new AWSCredentialsProvider() {
-        @Override
-        public AWSCredentials getCredentials() {
-            return new BasicAWSCredentials("x", "x");
-        }
-
-        @Override
-        public void refresh() {
-
-        }
-    };
+    protected AWSCredentialsProvider credentialsProvider =
+            new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"));
     protected AmazonSQSAsync sqsClient;
 
     @Before
