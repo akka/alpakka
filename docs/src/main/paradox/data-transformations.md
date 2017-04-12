@@ -2,6 +2,7 @@
 
 @@@ index
 
+* [Comma Separated Files - CSV](csv.md)
 * [RecordIO Framing](recordio.md)
 
 @@@
