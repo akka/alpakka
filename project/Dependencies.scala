@@ -38,10 +38,7 @@ object Dependencies {
     )
   )
 
-  val Csv = Seq(
-    libraryDependencies ++= Seq(
-    )
-  )
+  val Csv = Seq()
 
   val HBase = {
     val hbaseVersion = "1.2.4"
