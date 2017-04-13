@@ -99,8 +99,9 @@ object Dependencies {
 
   val Sqs = Seq(
     libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-sqs" % "1.11.105",        // ApacheV2
-      "org.mockito"   % "mockito-core"     % "2.7.17"    % Test // MIT
+      "com.amazonaws" % "aws-java-sdk-sqs"    % "1.11.109",         // ApacheV2
+      "org.elasticmq" %% "elasticmq-rest-sqs" % "0.13.2",           // ApacheV2
+      "org.mockito"   % "mockito-core"        % "2.7.17"    % Test  // MIT
     )
   )
 

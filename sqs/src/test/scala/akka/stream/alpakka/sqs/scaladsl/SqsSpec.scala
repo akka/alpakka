@@ -5,7 +5,7 @@ package akka.stream.alpakka.sqs.scaladsl
 
 import akka.Done
 import akka.stream.alpakka.sqs.{Ack, RequeueWithDelay, SqsSourceSettings}
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import com.amazonaws.services.sqs.model.{DeleteMessageRequest, Message, SendMessageRequest}
 import org.mockito.ArgumentMatchers.any
@@ -69,6 +69,42 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     verify(awsSqsClient).deleteMessageAsync(any[DeleteMessageRequest], any)
   }
 
+  it should "pull and delete message via flow" taggedAs Integration in {
+    val queue = randomQueueUrl()
+    sqsClient.sendMessage(queue, "alpakka-flow-ack")
+
+    val awsSqsClient = spy(sqsClient)
+    //#flow-ack
+    val future = SqsSource(queue)(awsSqsClient)
+      .take(1)
+      .map { m: Message =>
+        (m, Ack())
+      }
+      .via(SqsAckFlow(queue)(awsSqsClient))
+      .runWith(Sink.ignore)
+    //#flow-ack
+
+    Await.result(future, 1.second) shouldBe Done
+    verify(awsSqsClient).deleteMessageAsync(any[DeleteMessageRequest], any)
+  }
+
+  it should "put message in a flow, then pass the result further" in {
+    val queue = randomQueueUrl()
+
+    //#flow
+    val future = Source.single("alpakka").via(SqsFlow(queue)).runWith(Sink.ignore)
+    //#flow
+
+    Await.result(future, 1.second) shouldBe Done
+
+    SqsSource(queue, sqsSourceSettings)
+      .map(_.getBody)
+      .runWith(TestSink.probe[String])
+      .request(1)
+      .expectNext("alpakka")
+      .cancel()
+  }
+
   it should "pull and requeue message" taggedAs Integration in {
     val queue = randomQueueUrl()
     sqsClient.sendMessage(queue, "alpakka-3")
@@ -86,4 +122,5 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     Await.result(future, 1.second) shouldBe Done
     verify(awsSqsClient).sendMessageAsync(any[SendMessageRequest], any)
   }
+
 }
