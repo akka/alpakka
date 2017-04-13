@@ -38,6 +38,8 @@ object Dependencies {
     )
   )
 
+  val Csv = Seq()
+
   val HBase = {
     val hbaseVersion = "1.2.4"
     val hadoopVersion = "2.5.1"
