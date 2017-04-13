@@ -57,6 +57,16 @@ object Dependencies {
     )
   }
 
+  val Druid = Seq(
+    libraryDependencies ++= Seq(
+      "com.metamx" %% "scala-util" % "1.11.6" exclude("log4j", "log4j") , // ApacheV2
+      "com.metamx" % "java-util" % "0.27.9" exclude("log4j", "log4j"),    // ApacheV2
+      "io.druid" %% "tranquility-core" % "0.8.2",                        // ApacheV2
+      "ch.qos.logback" % "logback-classic" % "1.1.3" % Test
+    ) ++ Seq("circe-core", "circe-parser", "circe-generic")
+      .map("io.circe" %% _ % "0.6.0" % "test")
+  )
+
   val DynamoDB = Seq(
     libraryDependencies ++= Seq(
       "com.amazonaws"     % "aws-java-sdk-dynamodb" % "1.11.106",          // ApacheV2
