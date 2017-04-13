@@ -1,17 +1,18 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.ironmq
+package akka.stream.alpakka.ironmq.javadsl
+
+import java.util.concurrent.CompletionStage
 
 import akka.Done
-
-import scala.concurrent.Future
+import akka.stream.alpakka.ironmq.Message
 
 /**
  * Commit an offset that is included in a [[CommittableMessage]].
  */
 trait Committable {
-  def commit(): Future[Done]
+  def commit(): CompletionStage[Done]
 }
 
 /**

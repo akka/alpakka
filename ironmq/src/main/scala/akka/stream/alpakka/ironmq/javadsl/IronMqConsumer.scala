@@ -5,8 +5,8 @@ package akka.stream.alpakka.ironmq.javadsl
 
 import akka.NotUsed
 import akka.stream.alpakka.ironmq._
-import akka.stream.javadsl._
 import akka.stream.alpakka.ironmq.scaladsl.{IronMqConsumer => ScalaIronMqConsumer}
+import akka.stream.javadsl._
 
 object IronMqConsumer {
 
@@ -14,6 +14,6 @@ object IronMqConsumer {
     ScalaIronMqConsumer.atMostOnceConsumerSource(queueName, settings).asJava
 
   def atLeastOnceConsumerSource(queueName: Queue.Name, settings: IronMqSettings): Source[CommittableMessage, NotUsed] =
-    ScalaIronMqConsumer.atLeastOnceConsumerSource(queueName, settings).asJava
+    ScalaIronMqConsumer.atLeastOnceConsumerSource(queueName, settings).map(_.asJava).asJava
 
 }

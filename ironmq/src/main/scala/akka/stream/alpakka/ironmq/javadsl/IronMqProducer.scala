@@ -8,6 +8,7 @@ import java.util.concurrent.CompletionStage
 import akka.{Done, NotUsed}
 import akka.stream.alpakka.ironmq._
 import akka.stream.javadsl.{Flow, Sink}
+import akka.stream.scaladsl.{Flow => ScalaFlow}
 import akka.stream.alpakka.ironmq.scaladsl.{IronMqProducer => ScalaIronMqProducer}
 
 import scala.compat.java8.FutureConverters
@@ -24,10 +25,14 @@ object IronMqProducer {
 
   def atLeastOnceProducerFlow(queueName: String,
                               settings: IronMqSettings): Flow[(PushMessage, Committable), Message.Id, NotUsed] =
-    ScalaIronMqProducer.atLeastOnceProducerFlow(Queue.Name(queueName), settings).asJava
+    ScalaFlow[(PushMessage, Committable)].map { case (pm, c) => pm -> c.asScala }
+      .via(ScalaIronMqProducer.atLeastOnceProducerFlow(Queue.Name(queueName), settings))
+      .asJava
 
   def atLeastOnceProducerSink(queueName: String, settings: IronMqSettings): Sink[(PushMessage, Committable), NotUsed] =
-    ScalaIronMqProducer.atLeastOnceProducerSink(Queue.Name(queueName), settings).asJava
+    ScalaFlow[(PushMessage, Committable)].map { case (pm, c) => pm -> c.asScala }
+      .to(ScalaIronMqProducer.atLeastOnceProducerSink(Queue.Name(queueName), settings))
+      .asJava
 
   def atLeastOnceProducerFlow[ToCommit, CommitResult, CommitMat](queueName: String,
                                                                  settings: IronMqSettings,

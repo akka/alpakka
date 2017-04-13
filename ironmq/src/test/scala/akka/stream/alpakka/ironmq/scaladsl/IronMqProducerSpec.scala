@@ -4,14 +4,7 @@
 package akka.stream.alpakka.ironmq.scaladsl
 
 import akka.dispatch.ExecutionContexts
-import akka.stream.alpakka.ironmq.{
-  AkkaStreamFixture,
-  Committable,
-  IronMqFixture,
-  IronMqSettings,
-  PushMessage,
-  UnitSpec
-}
+import akka.stream.alpakka.ironmq.{AkkaStreamFixture, IronMqFixture, IronMqSettings, PushMessage, UnitSpec}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
 
