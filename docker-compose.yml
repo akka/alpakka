@@ -12,10 +12,6 @@ services:
     image: rabbitmq:3
     ports:
       - "5672:5672"
-  sqs:
-    image: s12v/elasticmq:0.13.2
-    ports:
-      - "9324:9324"
   mqtt:
     image: toke/mosquitto
     ports:

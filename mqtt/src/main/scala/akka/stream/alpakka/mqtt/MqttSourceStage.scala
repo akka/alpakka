@@ -70,8 +70,10 @@ final class MqttSourceStage(settings: MqttSourceSettings, bufferSize: Int)
         backpressure.release()
       }
 
-      override def handleConnectionLost(ex: Throwable) =
+      override def handleConnectionLost(ex: Throwable) = {
         failStage(ex)
+        subscriptionPromise.tryFailure(ex)
+      }
 
       override def postStop() =
         mqttClient.foreach {

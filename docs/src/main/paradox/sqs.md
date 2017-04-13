@@ -35,13 +35,13 @@ Gradle
 
 ## Usage
 
-Sources and Sinks provided by this connector need a prepared `AmazonSQSAsyncClient` to load messages from a queue.
+Sources, Flows and Sinks provided by this connector need a prepared `AmazonSQSAsync` to load messages from a queue.
 
 Scala
 : @@snip (../../../../sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-client }
 
 Java
-: @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSourceTest.java) { #init-client }
+: @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/BaseSqsTest.java) { #init-client }
 
 We will also need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
 
@@ -108,7 +108,7 @@ Java
 #### Sink configuration
 
 Scala
-: @@snip (../../../../sqs/src/main/scala/akka/stream/alpakka/sqs/SqsSinkStage.scala) { #SqsSinkSettings }
+: @@snip (../../../../sqs/src/main/scala/akka/stream/alpakka/sqs/SqsSinkSettings.scala) { #SqsSinkSettings }
 
 Options:
 
@@ -141,21 +141,35 @@ Java (requeue)
 Same as the normal `SqsSink`:
 
 Scala
-: @@snip (../../../../sqs/src/main/scala/akka/stream/alpakka/sqs/SqsAckSinkStage.scala) { #SqsAckSinkSettings }
+: @@snip (../../../../sqs/src/main/scala/akka/stream/alpakka/sqs/SqsAckSinkSettings.scala) { #SqsAckSinkSettings }
 
 Options:
 
  - `maxInFlight` - maximum number of messages being processed by `AmazonSQSAsync` at the same time. Default: 10
 
+### Using SQS as a Flow
+
+You can also build flow stages which put or acknowledge messages in SQS, backpressure on queue response and then forward
+responses further down the stream. The API is similar to creating Sinks.
+
+Scala (flow)
+: @@snip (../../../../sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #flow }
+
+Java (flow)
+: @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #flow }
+
+Scala (flow with ack)
+: @@snip (../../../../sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #flow-ack }
+
+Java (flow with ack)
+: @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #flow-ack }
 
 ### Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
 
-> The test code uses [ElasticMQ](https://github.com/adamw/elasticmq) as queuing service which serves an AWS SQS
-> compatible API.  You can start one quickly using docker:
->
-> `docker run -p 9324:9324 -d s12v/elasticmq`
+> The test code uses embedded [ElasticMQ](https://github.com/adamw/elasticmq) as queuing service which serves an AWS SQS
+> compatible API.
 
 Scala
 :   ```

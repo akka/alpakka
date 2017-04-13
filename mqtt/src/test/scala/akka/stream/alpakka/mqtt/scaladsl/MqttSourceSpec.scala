@@ -26,7 +26,7 @@ class MqttSourceSpec
     with ScalaFutures {
 
   implicit val defaultPatience =
-    PatienceConfig(timeout = 5.seconds, interval = 100.millis)
+    PatienceConfig(timeout = 10.seconds, interval = 100.millis)
 
   implicit val mat = ActorMaterializer()
 

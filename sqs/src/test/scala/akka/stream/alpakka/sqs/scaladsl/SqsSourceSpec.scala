@@ -3,12 +3,14 @@
  */
 package akka.stream.alpakka.sqs.scaladsl
 
-import java.util.concurrent.{ExecutorService, Executors}
+import java.util.concurrent.Executors
 
 import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.scaladsl.Sink
-import com.amazonaws.services.sqs.AmazonSQSAsyncClient
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
+import com.amazonaws.client.builder.ExecutorFactory
 import com.amazonaws.services.sqs.model.QueueDoesNotExistException
+import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{AsyncWordSpec, Matchers}
 
@@ -28,17 +30,22 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
     }
 
     "stream a single batch from the queue with custom client" taggedAs Integration in {
-
       //#init-custom-client
-      val executor: ExecutorService = Executors.newFixedThreadPool(10)
-      implicit val sqsClient: AmazonSQSAsyncClient =
-        new AmazonSQSAsyncClient(credentials, executor).withEndpoint[AmazonSQSAsyncClient]("http://localhost:9324")
+      val customSqsClient: AmazonSQSAsync =
+        AmazonSQSAsyncClientBuilder
+          .standard()
+          .withCredentials(credentialsProvider)
+          .withExecutorFactory(new ExecutorFactory {
+            override def newExecutor() = Executors.newFixedThreadPool(10)
+          })
+          .withEndpointConfiguration(new EndpointConfiguration(sqsEndpoint, "eu-central-1"))
+          .build()
       //#init-custom-client
 
       val queue = randomQueueUrl()
-      sqsClient.sendMessage(queue, "alpakka")
+      customSqsClient.sendMessage(queue, "alpakka")
 
-      SqsSource(queue, sqsSourceSettings).take(1).runWith(Sink.head).map(_.getBody shouldBe "alpakka")
+      SqsSource(queue, sqsSourceSettings)(customSqsClient).take(1).runWith(Sink.head).map(_.getBody shouldBe "alpakka")
     }
 
     "stream multiple batches from the queue" taggedAs Integration in {
@@ -72,7 +79,8 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
     "should finish immediately if the queue does not exist" taggedAs Integration in {
 
-      val queue = "http://localhost:9324/queue/not-existing"
+      sqsEndpoint
+      val queue = s"$sqsEndpoint/queue/not-existing"
 
       val f = SqsSource(queue, sqsSourceSettings).runWith(Sink.seq)
 

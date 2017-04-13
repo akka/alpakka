@@ -7,30 +7,25 @@ import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.sqs.SqsSourceSettings;
 import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
+import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.services.sqs.AmazonSQSAsync;
+import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
-public class SqsSourceTest {
+public class SqsSourceTest extends BaseSqsTest {
 
     static ActorSystem system;
     static ActorMaterializer materializer;
-    static AWSCredentials credentials;
-    static AmazonSQSAsyncClient sqsClient;
     static SqsSourceSettings sqsSourceSettings;
 
     @BeforeClass
@@ -41,22 +36,15 @@ public class SqsSourceTest {
         materializer = ActorMaterializer.create(system);
         //#init-mat
 
-        //#init-client
-        credentials = new BasicAWSCredentials("x", "x");
-        sqsClient = new AmazonSQSAsyncClient(credentials)
-            .withEndpoint("http://localhost:9324");
-        //#init-client
-
         sqsSourceSettings = SqsSourceSettings.create(20, 100, 10);
     }
 
     @AfterClass
     public static void teardown() {
         JavaTestKit.shutdownActorSystem(system);
-        sqsClient.shutdown();
     }
 
-    static String randomQueueUrl() {
+    String randomQueueUrl() {
         return sqsClient.createQueue(String.format("queue-%s", new Random().nextInt())).getQueueUrl();
     }
 
@@ -79,20 +67,26 @@ public class SqsSourceTest {
     @Test
     public void streamFromQueueWithCustomClient() throws Exception {
 
+        final String queueUrl = randomQueueUrl();
+
         //#init-custom-client
-        final ExecutorService executor = Executors.newFixedThreadPool(10);
-        final AmazonSQSAsyncClient sqsClient = new AmazonSQSAsyncClient(credentials, executor)
-            .withEndpoint("http://localhost:9324");
+        AmazonSQSAsync customSqsClient =
+          AmazonSQSAsyncClientBuilder
+            .standard()
+            .withCredentials(credentialsProvider)
+            .withExecutorFactory(() -> Executors.newFixedThreadPool(10))
+            .withEndpointConfiguration(
+                    new AwsClientBuilder.EndpointConfiguration(sqsEndpoint, "eu-central-1"))
+            .build();
         //#init-custom-client
 
-        final String queueUrl = randomQueueUrl();
         sqsClient.sendMessage(queueUrl, "alpakka");
 
         //#run
-        final CompletionStage<String> cs = SqsSource.create(queueUrl, sqsSourceSettings, sqsClient)
-            .map(m -> m.getBody())
-            .take(1)
-            .runWith(Sink.head(), materializer);
+        final CompletionStage<String> cs = SqsSource.create(queueUrl, sqsSourceSettings, customSqsClient)
+                .map(m -> m.getBody())
+                .take(1)
+                .runWith(Sink.head(), materializer);
         //#run
 
         assertEquals("alpakka", cs.toCompletableFuture().get(10, TimeUnit.SECONDS));
