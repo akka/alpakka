@@ -14,6 +14,10 @@ This is the process for committing code into master.
 
 In case of questions about the contribution process or for discussion of specific issues please visit the [akka/dev gitter chat](https://gitter.im/akka/dev).
 
+## Testing
+
+Some tests (cassandra, rabbitmq, mqtt, dynamodb) require a server to be running. A set of servers can easily be started with `docker-compose up`.
+
 ## Pull Request Requirements
 
 For a Pull Request to be considered at all it has to meet these requirements:
