@@ -6,6 +6,7 @@
 * [AWS DynamoDB Connector](dynamodb.md)
 * [AWS Lambda Connector](awslambda.md)
 * [AWS S3 Connector](s3.md)
+* [AWS SNS Connector](sns.md)
 * [AWS SQS Connector](sqs.md)
 * [Cassandra Connector](cassandra.md)
 * [File Connectors](file.md)
