@@ -10,6 +10,7 @@ import akka.stream._
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success}
 import IronMqSettings.ConsumerSettings
+import akka.stream.alpakka.ironmq.scaladsl.CommittableMessage
 
 object IronMqPullStage {
 
