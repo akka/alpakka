@@ -56,8 +56,10 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     client.performRequest("POST", s"$indexName/_flush")
 
   private def register(indexName: String, title: String): Unit =
-    client.performRequest("POST", s"$indexName/book", Map[String, String]().asJava,
-      new StringEntity(s"""{"title": "$title"}"""))
+    client.performRequest("POST",
+                          s"$indexName/book",
+                          Map[String, String]().asJava,
+                          new StringEntity(s"""{"title": "$title"}"""))
 
   "Elasticsearch connector" should {
     "consume and publish documents as JsObject" in {
@@ -68,12 +70,15 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         """{"match_all": {}}""",
         ElasticsearchSourceSettings(5)
       ).map { message =>
-        IncomingMessage(Some(message.id), message.source)
-      }.runWith(ElasticsearchSink(
-          "sink1",
-          "book",
-          ElasticsearchSinkSettings(5)
-        ))
+          IncomingMessage(Some(message.id), message.source)
+        }
+        .runWith(
+          ElasticsearchSink(
+            "sink1",
+            "book",
+            ElasticsearchSinkSettings(5)
+          )
+        )
 
       Await.result(f1, Duration.Inf)
 
@@ -86,8 +91,9 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         """{"match_all": {}}""",
         ElasticsearchSourceSettings()
       ).map { message =>
-        message.source.fields("title").asInstanceOf[JsString].value
-      }.runWith(Sink.seq)
+          message.source.fields("title").asInstanceOf[JsString].value
+        }
+        .runWith(Sink.seq)
 
       val result = Await.result(f2, Duration.Inf)
 
@@ -116,11 +122,13 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         .map { message =>
           IncomingMessage(Some(message.id), message.source)
         }
-        .runWith(ElasticsearchSink.typed[Book](
+        .runWith(
+          ElasticsearchSink.typed[Book](
             "sink2",
             "book",
             ElasticsearchSinkSettings(5)
-          ))
+          )
+        )
 
       Await.result(f1, Duration.Inf)
 

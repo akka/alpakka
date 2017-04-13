@@ -20,30 +20,10 @@ final case class ElasticsearchSinkSettings(bufferSize: Int = 10)
 
 final case class IncomingMessage[T](id: Option[String], source: T)
 
-final class ElasticsearchSinkStage(indexName: String,
-                                   typeName: String,
-                                   client: RestClient,
-                                   settings: ElasticsearchSinkSettings)
-    extends GraphStageWithMaterializedValue[SinkShape[IncomingMessage[JsObject]], Future[Done]] {
-
-  val in = Inlet[IncomingMessage[JsObject]]("ElasticsearchSink.in")
-
-  override def shape: SinkShape[IncomingMessage[JsObject]] = SinkShape.of(in)
-
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
-    val promise = Promise[Done]()
-    val logic = new ElasticsearchSinkLogic(indexName, typeName, client, settings, shape, in, promise) {
-      override protected def convert(value: JsObject): JsObject = value
-    }
-    (logic, promise.future)
-  }
-
-}
-
-final class ElasticsearchSinkStageTyped[T](indexName: String,
-                                           typeName: String,
-                                           client: RestClient,
-                                           settings: ElasticsearchSinkSettings)(implicit writer: JsonWriter[T])
+final class ElasticsearchSinkStage[T](indexName: String,
+                                      typeName: String,
+                                      client: RestClient,
+                                      settings: ElasticsearchSinkSettings)(implicit writer: JsonWriter[T])
     extends GraphStageWithMaterializedValue[SinkShape[IncomingMessage[T]], Future[Done]] {
 
   val in = Inlet[IncomingMessage[T]]("ElasticsearchSink.in")
@@ -52,29 +32,27 @@ final class ElasticsearchSinkStageTyped[T](indexName: String,
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val promise = Promise[Done]()
-    val logic = new ElasticsearchSinkLogic(indexName, typeName, client, settings, shape, in, promise) {
-      override protected def convert(value: T): JsObject = value.toJson.asJsObject
-    }
+    val logic =
+      new ElasticsearchSinkLogic(indexName, typeName, client, settings, shape, in, promise)
+
     (logic, promise.future)
   }
 
 }
 
-sealed abstract class ElasticsearchSinkLogic[T](indexName: String,
-                                                typeName: String,
-                                                client: RestClient,
-                                                settings: ElasticsearchSinkSettings,
-                                                shape: SinkShape[IncomingMessage[T]],
-                                                in: Inlet[IncomingMessage[T]],
-                                                promise: Promise[Done])
+sealed class ElasticsearchSinkLogic[T](indexName: String,
+                                       typeName: String,
+                                       client: RestClient,
+                                       settings: ElasticsearchSinkSettings,
+                                       shape: SinkShape[IncomingMessage[T]],
+                                       in: Inlet[IncomingMessage[T]],
+                                       promise: Promise[Done])(implicit writer: JsonWriter[T])
     extends GraphStageLogic(shape) {
 
   private val state = new AtomicReference[State](Idle)
   private val buffer = new util.concurrent.ConcurrentLinkedQueue[IncomingMessage[T]]()
   private val failureHandler = getAsyncCallback[Throwable](handleFailure)
   private val sentHandler = getAsyncCallback[Unit](_ => handleSent())
-
-  protected def convert(value: T): JsObject
 
   override def preStart(): Unit =
     pull(in)
@@ -97,75 +75,81 @@ sealed abstract class ElasticsearchSinkLogic[T](indexName: String,
   private def handleSent(): Unit =
     tryPull()
 
-  setHandler(in,
+  setHandler(
+    in,
     new InHandler {
-    override def onPush(): Unit = {
-      val message = grab(in)
-      buffer.add(message)
+      override def onPush(): Unit = {
+        val message = grab(in)
+        buffer.add(message)
 
-      state.get match {
-        case Idle => {
-          state.set(Sending)
-          val messages = (1 to settings.bufferSize).flatMap { _ =>
-            Option(buffer.poll())
-          }
-          sendBulkUpdateRequest(messages)
-        }
-        case _ => ()
-      }
-
-      tryPull()
-    }
-
-    override def onUpstreamFailure(exception: Throwable): Unit =
-      handleFailure(exception)
-
-    override def onUpstreamFinish(): Unit =
-      state.get match {
-        case Idle => handleSuccess()
-        case Sending => state.set(Finished)
-        case Finished => ()
-      }
-
-    private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T]]): Unit =
-      try {
-        val json = messages.map { message =>
-          s"""{"index": {"_index": "${indexName}", "_type": "${typeName}"${message.id.map { id =>
-               s""", "_id": "${id}""""
-             }.getOrElse("")}}
-          |${convert(message.source).toString}""".stripMargin
-        }.mkString("", "\n", "\n")
-
-        client.performRequestAsync(
-          "POST",
-          "_bulk",
-          Map[String, String]().asJava,
-          new StringEntity(json),
-          new ResponseListener {
-            override def onFailure(exception: Exception): Unit = failureHandler.invoke(exception)
-
-            override def onSuccess(response: Response): Unit = {
-              val messages = (1 to settings.bufferSize).flatMap { _ =>
-                Option(buffer.poll())
-              }
-
-              if (messages.isEmpty) {
-                state.get match {
-                  case Finished => handleSuccess()
-                  case _ => state.set(Idle)
-                }
-              } else {
-                sendBulkUpdateRequest(messages)
-              }
-
-              sentHandler.invoke(())
+        state.get match {
+          case Idle => {
+            state.set(Sending)
+            val messages = (1 to settings.bufferSize).flatMap { _ =>
+              Option(buffer.poll())
             }
+            sendBulkUpdateRequest(messages)
           }
-        )
-      } catch {
-        case ex: Exception => failStage(ex)
+          case _ => ()
+        }
+
+        tryPull()
       }
-  })
+
+      override def onUpstreamFailure(exception: Throwable): Unit =
+        handleFailure(exception)
+
+      override def onUpstreamFinish(): Unit =
+        state.get match {
+          case Idle => handleSuccess()
+          case Sending => state.set(Finished)
+          case Finished => ()
+        }
+
+      private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T]]): Unit =
+        try {
+          val json = messages
+            .map { message =>
+              s"""{"index": {"_index": "${indexName}", "_type": "${typeName}"${message.id
+                   .map { id =>
+                     s""", "_id": "${id}""""
+                   }
+                   .getOrElse("")}}
+          |${message.source.toJson.asJsObject.toString}""".stripMargin
+            }
+            .mkString("", "\n", "\n")
+
+          client.performRequestAsync(
+            "POST",
+            "_bulk",
+            Map[String, String]().asJava,
+            new StringEntity(json),
+            new ResponseListener {
+              override def onFailure(exception: Exception): Unit = failureHandler.invoke(exception)
+
+              override def onSuccess(response: Response): Unit = {
+                val messages = (1 to settings.bufferSize).flatMap { _ =>
+                  Option(buffer.poll())
+                }
+
+                if (messages.isEmpty) {
+                  state.get match {
+                    case Finished => handleSuccess()
+                    case _ => state.set(Idle)
+                  }
+                } else {
+                  sendBulkUpdateRequest(messages)
+                }
+
+                sentHandler.invoke(())
+              }
+            }
+          )
+        } catch {
+          case ex: Exception => failStage(ex)
+        }
+    }
+  )
 
 }
 

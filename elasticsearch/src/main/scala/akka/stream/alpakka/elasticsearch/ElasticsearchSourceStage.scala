@@ -18,55 +18,35 @@ final case class ElasticsearchSourceSettings(bufferSize: Int = 10)
 
 final case class OutgoingMessage[T](id: String, source: T)
 
-final class ElasticsearchSourceStage(indexName: String,
-                                     typeName: String,
-                                     query: String,
-                                     client: RestClient,
-                                     settings: ElasticsearchSourceSettings)
-    extends GraphStage[SourceShape[OutgoingMessage[JsObject]]] {
-
-  val out: Outlet[OutgoingMessage[JsObject]] = Outlet("ElasticsearchSource.out")
-  override val shape: SourceShape[OutgoingMessage[JsObject]] = SourceShape(out)
-
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new ElasticsearchSourceLogic[JsObject](indexName, typeName, query, client, settings, out, shape) {
-      override protected def convert(jsObj: JsObject): JsObject = jsObj
-    }
-
-}
-
-final class ElasticsearchSourceStageTyped[T](indexName: String,
-                                             typeName: String,
-                                             query: String,
-                                             client: RestClient,
-                                             settings: ElasticsearchSourceSettings)(implicit reader: JsonReader[T])
+final class ElasticsearchSourceStage[T](indexName: String,
+                                        typeName: String,
+                                        query: String,
+                                        client: RestClient,
+                                        settings: ElasticsearchSourceSettings)(implicit reader: JsonReader[T])
     extends GraphStage[SourceShape[OutgoingMessage[T]]] {
 
   val out: Outlet[OutgoingMessage[T]] = Outlet("ElasticsearchSource.out")
   override val shape: SourceShape[OutgoingMessage[T]] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new ElasticsearchSourceLogic[T](indexName, typeName, query, client, settings, out, shape) {
-      override protected def convert(jsObj: JsObject): T = jsObj.convertTo[T]
-    }
+    new ElasticsearchSourceLogic[T](indexName, typeName, query, client, settings, out, shape)
 
 }
 
-sealed abstract class ElasticsearchSourceLogic[T](indexName: String,
-                                                  typeName: String,
-                                                  query: String,
-                                                  client: RestClient,
-                                                  settings: ElasticsearchSourceSettings,
-                                                  out: Outlet[OutgoingMessage[T]],
-                                                  shape: SourceShape[OutgoingMessage[T]])
-    extends GraphStageLogic(shape) {
+sealed class ElasticsearchSourceLogic[T](indexName: String,
+                                         typeName: String,
+                                         query: String,
+                                         client: RestClient,
+                                         settings: ElasticsearchSourceSettings,
+                                         out: Outlet[OutgoingMessage[T]],
+                                         shape: SourceShape[OutgoingMessage[T]])(implicit reader: JsonReader[T])
+    extends GraphStageLogic(shape)
+    with ResponseListener {
 
   private var started = false
   private var scrollId: String = null
   private val responseHandler = getAsyncCallback[Response](handleResponse)
   private val failureHandler = getAsyncCallback[Throwable](handleFailure)
-
-  protected def convert(jsObj: JsObject): T
 
   def sendScrollScanRequest(): Unit =
     try {
@@ -76,10 +56,7 @@ sealed abstract class ElasticsearchSourceLogic[T](indexName: String,
           s"$indexName/$typeName/_search",
           Map("scroll" -> "5m", "sort" -> "_doc").asJava,
           new StringEntity(s"""{"size": ${settings.bufferSize}, "query": ${query}}"""),
-          new ResponseListener {
-            override def onFailure(exception: Exception) = failureHandler.invoke(exception)
-            override def onSuccess(response: Response) = responseHandler.invoke(response)
-          }
+          this
         )
       } else {
         client.performRequestAsync(
@@ -87,15 +64,15 @@ sealed abstract class ElasticsearchSourceLogic[T](indexName: String,
           s"/_search/scroll",
           Map[String, String]().asJava,
           new StringEntity(Map("scroll" -> "5m", "scroll_id" -> scrollId).toJson.toString),
-          new ResponseListener {
-            override def onFailure(exception: Exception) = failureHandler.invoke(exception)
-            override def onSuccess(response: Response) = responseHandler.invoke(response)
-          }
+          this
         )
       }
     } catch {
       case ex: Exception => handleFailure(ex)
     }
+
+  override def onFailure(exception: Exception) = failureHandler.invoke(exception)
+  override def onSuccess(response: Response) = responseHandler.invoke(response)
 
   def handleFailure(ex: Throwable): Unit =
     failStage(ex)
@@ -124,7 +101,7 @@ sealed abstract class ElasticsearchSourceLogic[T](indexName: String,
             val doc = element.asJsObject
             val id = doc.fields("_id").asInstanceOf[JsString].value
             val source = doc.fields("_source").asJsObject
-            OutgoingMessage(id, convert(source))
+            OutgoingMessage(id, source.convertTo[T])
           }
           emitMultiple(out, messages)
           sendScrollScanRequest()
@@ -136,10 +113,9 @@ sealed abstract class ElasticsearchSourceLogic[T](indexName: String,
     }
   }
 
-  setHandler(out,
-    new OutHandler {
+  setHandler(out, new OutHandler {
     override def onPull(): Unit =
-      if (started == false) {
+      if (!started) {
         started = true
         sendScrollScanRequest()
       }
