@@ -47,12 +47,13 @@ sealed class ElasticsearchSinkLogic[T](indexName: String,
                                        shape: SinkShape[IncomingMessage[T]],
                                        in: Inlet[IncomingMessage[T]],
                                        promise: Promise[Done])(implicit writer: JsonWriter[T])
-    extends GraphStageLogic(shape) {
+    extends GraphStageLogic(shape)
+    with ResponseListener {
 
   private val state = new AtomicReference[State](Idle)
   private val buffer = new util.concurrent.ConcurrentLinkedQueue[IncomingMessage[T]]()
   private val failureHandler = getAsyncCallback[Throwable](handleFailure)
-  private val sentHandler = getAsyncCallback[Unit](_ => handleSent())
+  private val responseHandler = getAsyncCallback[Response](handleResponse)
 
   override def preStart(): Unit =
     pull(in)
@@ -72,8 +73,51 @@ sealed class ElasticsearchSinkLogic[T](indexName: String,
     promise.trySuccess(Done)
   }
 
-  private def handleSent(): Unit =
+  private def handleResponse(response: Response): Unit =
     tryPull()
+
+  override def onFailure(exception: Exception): Unit = failureHandler.invoke(exception)
+
+  override def onSuccess(response: Response): Unit = {
+    val messages = (1 to settings.bufferSize).flatMap { _ =>
+      Option(buffer.poll())
+    }
+
+    if (messages.isEmpty) {
+      state.get match {
+        case Finished => handleSuccess()
+        case _ => state.set(Idle)
+      }
+    } else {
+      sendBulkUpdateRequest(messages)
+    }
+
+    responseHandler.invoke(response)
+  }
+
+  private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T]]): Unit =
+    try {
+      val json = messages
+        .map { message =>
+          s"""{"index": {"_index": "${indexName}", "_type": "${typeName}"${message.id
+               .map { id =>
+                 s""", "_id": "${id}""""
+               }
+               .getOrElse("")}}
+             |${message.source.toJson.asJsObject.toString}""".stripMargin
+        }
+        .mkString("", "\n", "\n")
+
+      client.performRequestAsync(
+        "POST",
+        "_bulk",
+        Map[String, String]().asJava,
+        new StringEntity(json),
+        this
+      )
+    } catch {
+      case ex: Exception => failStage(ex)
+    }
 
   setHandler(
     in,
@@ -104,49 +148,6 @@ sealed class ElasticsearchSinkLogic[T](indexName: String,
           case Idle => handleSuccess()
           case Sending => state.set(Finished)
           case Finished => ()
-        }
-
-      private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T]]): Unit =
-        try {
-          val json = messages
-            .map { message =>
-              s"""{"index": {"_index": "${indexName}", "_type": "${typeName}"${message.id
-                   .map { id =>
-                     s""", "_id": "${id}""""
-                   }
-                   .getOrElse("")}}
-          |${message.source.toJson.asJsObject.toString}""".stripMargin
-            }
-            .mkString("", "\n", "\n")
-
-          client.performRequestAsync(
-            "POST",
-            "_bulk",
-            Map[String, String]().asJava,
-            new StringEntity(json),
-            new ResponseListener {
-              override def onFailure(exception: Exception): Unit = failureHandler.invoke(exception)
-
-              override def onSuccess(response: Response): Unit = {
-                val messages = (1 to settings.bufferSize).flatMap { _ =>
-                  Option(buffer.poll())
-                }
-
-                if (messages.isEmpty) {
-                  state.get match {
-                    case Finished => handleSuccess()
-                    case _ => state.set(Idle)
-                  }
-                } else {
-                  sendBulkUpdateRequest(messages)
-                }
-
-                sentHandler.invoke(())
-              }
-            }
-          )
-        } catch {
-          case ex: Exception => failStage(ex)
         }
     }
   )
