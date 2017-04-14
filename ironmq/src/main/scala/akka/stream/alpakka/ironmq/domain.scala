@@ -3,9 +3,19 @@
  */
 package akka.stream.alpakka.ironmq
 
+import java.util.concurrent.TimeUnit
+
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
-case class PushMessage(body: String, delay: Duration = Duration.Zero)
+case class PushMessage(body: String, delay: FiniteDuration = Duration.Zero)
+
+object PushMessage {
+
+  def create(body: String): PushMessage = PushMessage(body)
+
+  def create(body: String, duration: java.time.Duration): PushMessage =
+    PushMessage(body, FiniteDuration(duration.getSeconds, TimeUnit.SECONDS))
+}
 
 /**
  * The message consumed from IronMq.

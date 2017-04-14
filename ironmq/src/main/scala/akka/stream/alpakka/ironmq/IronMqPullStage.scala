@@ -61,18 +61,20 @@ class IronMqPullStage(queue: Queue.Name, settings: IronMqSettings)
       override def postStop(): Unit =
         super.postStop()
 
-      setHandler(out,
+      setHandler(
+        out,
         new OutHandler {
 
-        override def onPull(): Unit = {
+          override def onPull(): Unit = {
 
-          if (!isTimerActive(FetchMessagesTimerKey)) {
-            schedulePeriodically(FetchMessagesTimerKey, fetchInterval)
+            if (!isTimerActive(FetchMessagesTimerKey)) {
+              schedulePeriodically(FetchMessagesTimerKey, fetchInterval)
+            }
+
+            deliveryMessages()
           }
-
-          deliveryMessages()
         }
-      })
+      )
 
       override protected def onTimer(timerKey: Any): Unit = timerKey match {
 

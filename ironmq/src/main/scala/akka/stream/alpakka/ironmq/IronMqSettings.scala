@@ -14,7 +14,7 @@ import scala.concurrent.duration.FiniteDuration
 /**
  * IronMQ settings. To a detailed documentation please refer to the reference.conf.
  */
-trait IronMqSettings {
+abstract class IronMqSettings {
 
   /**
    * The IronMq endpoint. It is available on the IronMQ project page and change based on availability zone and region.
@@ -82,6 +82,15 @@ object IronMqSettings {
   def apply()(implicit as: ActorSystem): IronMqSettings =
     apply(as.settings.config.getConfig("akka.stream.alpakka.ironmq"))
 
+  /**
+   * Java API.
+   */
+  def create(config: Config): IronMqSettings = apply(config)
+
+  /**
+   * Java API.
+   */
+  def create(as: ActorSystem): IronMqSettings = apply()(as)
 }
 
 object ConfigIronMqSettings {
