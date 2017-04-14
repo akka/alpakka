@@ -1,7 +1,7 @@
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
-  .aggregate(amqp, awslambda, cassandra, csv, dynamodb, files, ftp, ironmq, googleCloudPubSub, hbase, jms, mqtt, s3, simpleCodecs, sns, sqs, sse)
+  .aggregate(amqp, awslambda, cassandra, csv, dynamodb, files, ftp, googleCloudPubSub, hbase, ironmq, jms, mqtt, s3, simpleCodecs, sns, sqs, sse)
 
 lazy val amqp = project
   .enablePlugins(AutomateHeaderPlugin)
