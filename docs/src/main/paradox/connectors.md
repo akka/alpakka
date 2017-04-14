@@ -13,6 +13,7 @@
 * [FTP Connector](ftp.md)
 * [Google Cloud Pub/Sub Connector](google-cloud-pub-sub.md)
 * [HBase Connectors](hbase.md)
+* [IronMq Connectors](ironmq.md)
 * [JMS Connectors](jms.md)
 * [MQTT Connector](mqtt.md)
 * [Server-sent Events (SSE)](sse.md)

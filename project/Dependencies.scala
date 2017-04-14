@@ -5,7 +5,7 @@ object Dependencies {
   val ScalaVersions = Seq("2.11.8", "2.12.1")
   val AkkaVersion = "2.4.17"
   val AkkaHttpVersion = "10.0.5"
-  
+
   val Common = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-stream"         % AkkaVersion,
@@ -137,4 +137,10 @@ object Dependencies {
     )
   )
 
+  val IronMq = Seq(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka"   %% "akka-http"                        % AkkaHttpVersion,
+      "de.heikoseeberger"   %% "akka-http-circe"                  % "1.11.0"  // ApacheV2
+    )
+  )
 }
