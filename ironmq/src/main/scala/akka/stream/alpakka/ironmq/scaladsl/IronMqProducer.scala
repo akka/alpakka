@@ -47,10 +47,11 @@ object IronMqProducer {
    * user is responsible to supply the committing flow. The result of the commit is emitted as well as the materialized
    * value of the committing flow.
    */
-  def atLeastOnceProducerFlow[ToCommit, CommitResult, CommitMat](queueName: Queue.Name,
-                                                                 settings: IronMqSettings,
-                                                                 commitFlow: Flow[ToCommit, CommitResult, CommitMat])
-    : Flow[(PushMessage, ToCommit), (Message.Id, CommitResult), CommitMat] = {
+  def atLeastOnceProducerFlow[ToCommit, CommitResult, CommitMat](
+      queueName: Queue.Name,
+      settings: IronMqSettings,
+      commitFlow: Flow[ToCommit, CommitResult, CommitMat]
+  ): Flow[(PushMessage, ToCommit), (Message.Id, CommitResult), CommitMat] = {
 
     // This graph is used to pass the ToCommit through the producer. It assume a 1-to-1 semantic on the producer
     val producerGraph = GraphDSL.create(producerFlow(queueName, settings)) { implicit builder => producer =>
@@ -91,7 +92,8 @@ object IronMqProducer {
   def atLeastOnceProducerSink[ToCommit, CommitResult, CommitMat](
       queueName: Queue.Name,
       settings: IronMqSettings,
-      commitFlow: Flow[ToCommit, CommitResult, CommitMat]): Sink[(PushMessage, ToCommit), CommitMat] =
+      commitFlow: Flow[ToCommit, CommitResult, CommitMat]
+  ): Sink[(PushMessage, ToCommit), CommitMat] =
     atLeastOnceProducerFlow(queueName, settings, commitFlow).to(Sink.ignore)
 
 }

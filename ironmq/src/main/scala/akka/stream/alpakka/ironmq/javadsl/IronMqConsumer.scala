@@ -10,10 +10,10 @@ import akka.stream.javadsl._
 
 object IronMqConsumer {
 
-  def atMostOnceConsumerSource(queueName: Queue.Name, settings: IronMqSettings): Source[Message, NotUsed] =
-    ScalaIronMqConsumer.atMostOnceConsumerSource(queueName, settings).asJava
+  def atMostOnceConsumerSource(queueName: String, settings: IronMqSettings): Source[Message, NotUsed] =
+    ScalaIronMqConsumer.atMostOnceConsumerSource(Queue.Name(queueName), settings).asJava
 
-  def atLeastOnceConsumerSource(queueName: Queue.Name, settings: IronMqSettings): Source[CommittableMessage, NotUsed] =
-    ScalaIronMqConsumer.atLeastOnceConsumerSource(queueName, settings).map(_.asJava).asJava
+  def atLeastOnceConsumerSource(queueName: String, settings: IronMqSettings): Source[CommittableMessage, NotUsed] =
+    ScalaIronMqConsumer.atLeastOnceConsumerSource(Queue.Name(queueName), settings).map(_.asJava).asJava
 
 }

@@ -69,9 +69,13 @@ class IronMqProducerSpec extends UnitSpec with IronMqFixture with AkkaStreamFixt
         new MockCommittable
       )
 
-      whenReady(messages.zip(Source(committables)).via(atLeastOnceProducerFlow(queue.name, settings, Flow[Committable].mapAsync(1)(_.commit()))).runWith(Sink.ignore)) {
-        _ =>
-          committables.forall(_.committed) shouldBe true
+      whenReady(
+        messages
+          .zip(Source(committables))
+          .via(atLeastOnceProducerFlow(queue.name, settings, Flow[Committable].mapAsync(1)(_.commit())))
+          .runWith(Sink.ignore)
+      ) { _ =>
+        committables.forall(_.committed) shouldBe true
       }
     }
   }

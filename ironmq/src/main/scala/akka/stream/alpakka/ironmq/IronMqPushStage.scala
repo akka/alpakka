@@ -41,34 +41,35 @@ class IronMqPushStage(queue: Queue.Name, settings: IronMqSettings)
         client = IronMqClient(settings)(ActorMaterializerHelper.downcast(materializer).system, materializer)
       }
 
-      setHandler(in,
+      setHandler(
+        in,
         new InHandler {
 
-        override def onPush(): Unit = {
-          val pushMessage = grab(in)
+          override def onPush(): Unit = {
+            val pushMessage = grab(in)
 
-          val future = client.pushMessages(queue, pushMessage)
-          runningFutures = runningFutures + 1
-          setKeepGoing(true)
+            val future = client.pushMessages(queue, pushMessage)
+            runningFutures = runningFutures + 1
+            setKeepGoing(true)
 
-          push(out, future)
+            push(out, future)
 
-          future.onComplete { _ =>
-            futureCompleted.invoke(())
+            future.onComplete { _ =>
+              futureCompleted.invoke(())
+            }
+          }
+
+          override def onUpstreamFinish(): Unit =
+            checkForCompletion()
+
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            exceptionFromUpstream = Some(ex)
+            checkForCompletion()
           }
         }
+      )
 
-        override def onUpstreamFinish(): Unit =
-          checkForCompletion()
-
-        override def onUpstreamFailure(ex: Throwable): Unit = {
-          exceptionFromUpstream = Some(ex)
-          checkForCompletion()
-        }
-      })
-
-      setHandler(out,
-        new OutHandler {
+      setHandler(out, new OutHandler {
         override def onPull(): Unit =
           tryPull(in)
       })
