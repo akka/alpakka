@@ -11,6 +11,7 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import com.typesafe.config.ConfigFactory
 import S3WireMockBase._
+import com.github.tomakehurst.wiremock.matching.EqualToPattern
 
 abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockServer) extends TestKit(_system) {
 
@@ -35,17 +36,33 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
 
   val body = "<response>Some content</response>"
   val bucketKey = "testKey"
+  val bucketKeyForRanged = "testKeyForRanged"
   val bucket = "testBucket"
   val uploadId = "VXBsb2FkIElEIGZvciA2aWWpbmcncyBteS1tb3ZpZS5tMnRzIHVwbG9hZA"
   val etag = "5b27a21a97fcf8a7004dd1d906e7a5ba"
   val url = s"http://testbucket.s3.amazonaws.com/testKey"
+  val (bytesRangeStart, bytesRangeEnd) = (2, 10)
+  val rangeOfBody = body.getBytes.slice(bytesRangeStart, bytesRangeEnd + 1)
 
   def mockDownload(): Unit =
     mock
       .register(
-        get(urlEqualTo("/testKey")).willReturn(
+        get(urlEqualTo(s"/$bucketKey")).willReturn(
           aResponse().withStatus(200).withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""").withBody(body)
         )
+      )
+
+  def mockRangedDownload(): Unit =
+    mock
+      .register(
+        get(urlEqualTo(s"/$bucketKeyForRanged"))
+          .withHeader("Range", new EqualToPattern(s"bytes=$bytesRangeStart-$bytesRangeEnd"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""")
+              .withBody(rangeOfBody)
+          )
       )
 
   def mockUpload(): Unit = {
@@ -120,8 +137,8 @@ private object S3WireMockBase {
     val s = (Thread.currentThread.getStackTrace map (_.getClassName) drop 1)
       .dropWhile(_ matches "(java.lang.Thread|.*WireMockBase.?$)")
     val reduced = s.lastIndexWhere(_ == clazz.getName) match {
-      case -1 ⇒ s
-      case z ⇒ s drop (z + 1)
+      case -1 => s
+      case z => s drop (z + 1)
     }
     reduced.head.replaceFirst(""".*\.""", "").replaceAll("[^a-zA-Z_0-9]", "_")
   }

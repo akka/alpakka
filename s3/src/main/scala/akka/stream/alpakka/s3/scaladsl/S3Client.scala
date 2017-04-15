@@ -6,6 +6,7 @@ package akka.stream.alpakka.s3.scaladsl
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.ByteRange
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
@@ -41,6 +42,9 @@ final class S3Client(credentials: AWSCredentials, region: String)(implicit syste
   def request(bucket: String, key: String): Future[HttpResponse] = impl.request(S3Location(bucket, key))
 
   def download(bucket: String, key: String): Source[ByteString, NotUsed] = impl.download(S3Location(bucket, key))
+
+  def download(bucket: String, key: String, range: ByteRange): Source[ByteString, NotUsed] =
+    impl.download(S3Location(bucket, key), Some(range))
 
   def multipartUpload(bucket: String,
                       key: String,

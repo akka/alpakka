@@ -8,8 +8,10 @@ import java.util.concurrent.CompletionStage
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.impl.model.JavaUri
+import akka.http.javadsl.model.headers.ByteRange
 import akka.http.javadsl.model.{ContentType, HttpResponse, Uri}
 import akka.http.scaladsl.model.{ContentTypes, ContentType => ScalaContentType}
+import akka.http.scaladsl.model.headers.{ByteRange => ScalaByteRange}
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.auth.AWSCredentials
 import akka.stream.alpakka.s3.impl.{CompleteMultipartUploadResult, MetaHeaders, S3Location, S3Stream}
@@ -33,6 +35,11 @@ final class S3Client(credentials: AWSCredentials, region: String, system: ActorS
 
   def download(bucket: String, key: String): Source[ByteString, NotUsed] =
     impl.download(S3Location(bucket, key)).asJava
+
+  def download(bucket: String, key: String, range: ByteRange): Source[ByteString, NotUsed] = {
+    val scalaRange = range.asInstanceOf[ScalaByteRange]
+    impl.download(S3Location(bucket, key), Some(scalaRange)).asJava
+  }
 
   def multipartUpload(bucket: String,
                       key: String,
