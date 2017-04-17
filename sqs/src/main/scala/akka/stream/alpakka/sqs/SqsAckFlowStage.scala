@@ -8,12 +8,8 @@ import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.AmazonSQSAsync
-import com.amazonaws.services.sqs.model.{
-  DeleteMessageRequest,
-  DeleteMessageResult,
-  SendMessageRequest,
-  SendMessageResult
-}
+import com.amazonaws.services.sqs.model._
+
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
@@ -39,8 +35,8 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
           checkForCompletion()
       }
 
-      private def handleSend(result: SendMessageResult): Unit = {
-        log.debug(s"Sent message {}", result.getMessageId)
+      private def handleChangeVisibility(result: ChangeMessageVisibilityResult): Unit = {
+        log.debug(s"Set visibility")
         inFlight -= 1
         if (inFlight == 0 && inIsClosed)
           checkForCompletion()
@@ -53,13 +49,13 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
       }
 
       var failureCallback: AsyncCallback[Exception] = _
-      var sendCallback: AsyncCallback[SendMessageResult] = _
+      var changeVisibilityCallback: AsyncCallback[ChangeMessageVisibilityResult] = _
       var deleteCallback: AsyncCallback[DeleteMessageRequest] = _
 
       override def preStart(): Unit = {
         super.preStart()
         failureCallback = getAsyncCallback[Exception](handleFailure)
-        sendCallback = getAsyncCallback[SendMessageResult](handleSend)
+        changeVisibilityCallback = getAsyncCallback[ChangeMessageVisibilityResult](handleChangeVisibility)
         deleteCallback = getAsyncCallback[DeleteMessageRequest](handleDelete)
       }
 
@@ -100,7 +96,7 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
             val (message, action) = grab(in)
             val responsePromise = Promise[AckResult]
             action match {
-              case Ack() =>
+              case Delete() =>
                 sqsClient.deleteMessageAsync(
                   new DeleteMessageRequest(queueUrl, message.getReceiptHandle),
                   new AsyncHandler[DeleteMessageRequest, DeleteMessageResult] {
@@ -116,20 +112,21 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
                     }
                   }
                 )
-              case RequeueWithDelay(delaySeconds) =>
+              case ChangeMessageVisibility(delaySeconds) =>
                 sqsClient
-                  .sendMessageAsync(
-                    new SendMessageRequest(queueUrl, message.getBody).withDelaySeconds(delaySeconds),
-                    new AsyncHandler[SendMessageRequest, SendMessageResult] {
+                  .changeMessageVisibilityAsync(
+                    new ChangeMessageVisibilityRequest(queueUrl, message.getReceiptHandle, delaySeconds),
+                    new AsyncHandler[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult] {
 
                       override def onError(exception: Exception): Unit = {
                         responsePromise.failure(exception)
                         failureCallback.invoke(exception)
                       }
 
-                      override def onSuccess(request: SendMessageRequest, result: SendMessageResult): Unit = {
+                      override def onSuccess(request: ChangeMessageVisibilityRequest,
+                                             result: ChangeMessageVisibilityResult): Unit = {
                         responsePromise.success(AckResult(result, message.getBody))
-                        sendCallback.invoke(result)
+                        changeVisibilityCallback.invoke(result)
                       }
                     }
                   )

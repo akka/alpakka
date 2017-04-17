@@ -4,10 +4,11 @@
 package akka.stream.alpakka.sqs.scaladsl
 
 import akka.Done
-import akka.stream.alpakka.sqs.{Ack, RequeueWithDelay, SqsSourceSettings}
+import akka.stream.alpakka.sqs.{ChangeMessageVisibility, Delete, SqsSourceSettings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
-import com.amazonaws.services.sqs.model.{DeleteMessageRequest, Message, SendMessageRequest}
+import com.amazonaws.handlers.AsyncHandler
+import com.amazonaws.services.sqs.model._
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{spy, verify}
 import org.scalatest.{FlatSpec, Matchers}
@@ -60,7 +61,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val future = SqsSource(queue)(awsSqsClient)
       .take(1)
       .map { m: Message =>
-        (m, Ack())
+        (m, Delete())
       }
       .runWith(SqsAckSink(queue)(awsSqsClient))
     //#ack
@@ -78,7 +79,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val future = SqsSource(queue)(awsSqsClient)
       .take(1)
       .map { m: Message =>
-        (m, Ack())
+        (m, Delete())
       }
       .via(SqsAckFlow(queue)(awsSqsClient))
       .runWith(Sink.ignore)
@@ -105,7 +106,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       .cancel()
   }
 
-  it should "pull and requeue message" taggedAs Integration in {
+  it should "pull and delay a message" taggedAs Integration in {
     val queue = randomQueueUrl()
     sqsClient.sendMessage(queue, "alpakka-3")
 
@@ -114,13 +115,16 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val future = SqsSource(queue)(awsSqsClient)
       .take(1)
       .map { m: Message =>
-        (m, RequeueWithDelay(5))
+        (m, ChangeMessageVisibility(5))
       }
       .runWith(SqsAckSink(queue)(awsSqsClient))
     //#requeue
 
     Await.result(future, 1.second) shouldBe Done
-    verify(awsSqsClient).sendMessageAsync(any[SendMessageRequest], any)
+    verify(awsSqsClient).changeMessageVisibilityAsync(
+      any[ChangeMessageVisibilityRequest],
+      any[AsyncHandler[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult]]
+    )
   }
 
 }

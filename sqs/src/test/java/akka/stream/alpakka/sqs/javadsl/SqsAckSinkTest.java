@@ -6,9 +6,9 @@ package akka.stream.alpakka.sqs.javadsl;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
-import akka.stream.alpakka.sqs.Ack;
+import akka.stream.alpakka.sqs.Delete;
 import akka.stream.alpakka.sqs.MessageAction;
-import akka.stream.alpakka.sqs.RequeueWithDelay;
+import akka.stream.alpakka.sqs.ChangeMessageVisibility;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
 import akka.testkit.JavaTestKit;
@@ -63,7 +63,7 @@ public class SqsAckSinkTest extends BaseSqsTest {
         //#ack
         Tuple2<Message, MessageAction> pair = new Tuple2<>(
                 new Message().withBody("test"),
-                new Ack()
+                new Delete()
         );
         CompletionStage<Done> done = Source
                 .single(pair)
@@ -91,7 +91,7 @@ public class SqsAckSinkTest extends BaseSqsTest {
         //#flow-ack
         Tuple2<Message, MessageAction> pair = new Tuple2<>(
                 new Message().withBody("test-ack-flow"),
-                new Ack()
+                new Delete()
         );
         CompletionStage<Done> done = Source
                 .single(pair)
@@ -104,23 +104,23 @@ public class SqsAckSinkTest extends BaseSqsTest {
     }
 
     @Test
-    public void testRequeueWithDelay() throws Exception {
+    public void testChangeMessageVisibility() throws Exception {
         final String queueUrl = "none";
         AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
-        when(awsClient.sendMessageAsync(any(SendMessageRequest.class), any())).thenAnswer(
+        when(awsClient.changeMessageVisibilityAsync(any(ChangeMessageVisibilityRequest.class), any())).thenAnswer(
                 invocation -> {
-                    SendMessageRequest request = invocation.getArgument(0);
+                    ChangeMessageVisibilityRequest request = invocation.getArgument(0);
                     invocation
-                            .<AsyncHandler<SendMessageRequest, SendMessageResult>>getArgument(1)
-                            .onSuccess(request, new SendMessageResult());
-                    return new CompletableFuture<SendMessageResult>();
+                            .<AsyncHandler<ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult>>getArgument(1)
+                            .onSuccess(request, new ChangeMessageVisibilityResult());
+                    return new CompletableFuture<ChangeMessageVisibilityResult>();
                 }
         );
 
         //#requeue
         Tuple2<Message, MessageAction> pair = new Tuple2<>(
                 new Message().withBody("test"),
-                new RequeueWithDelay(12)
+                new ChangeMessageVisibility(12)
         );
         CompletionStage<Done> done = Source
                 .single(pair)
@@ -129,8 +129,8 @@ public class SqsAckSinkTest extends BaseSqsTest {
         //#requeue
 
         verify(awsClient)
-                .sendMessageAsync(
-                        any(SendMessageRequest.class),
+                .changeMessageVisibilityAsync(
+                        any(ChangeMessageVisibilityRequest.class),
                         any()
                 );
     }
