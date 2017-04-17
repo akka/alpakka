@@ -32,7 +32,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     //#rangedDownload
     val s3Source: Source[ByteString, NotUsed] =
-      s3Client.download(bucket, bucketKeyForRanged, ByteRange(bytesRangeStart, bytesRangeEnd))
+      s3Client.download(bucket, bucketKey, ByteRange(bytesRangeStart, bytesRangeEnd))
     //#rangedDownload
 
     val result: Future[Array[Byte]] = s3Source.map(_.toArray).runWith(Sink.head)

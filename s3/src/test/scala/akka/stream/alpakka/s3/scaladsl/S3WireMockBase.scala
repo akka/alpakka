@@ -36,7 +36,6 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
 
   val body = "<response>Some content</response>"
   val bucketKey = "testKey"
-  val bucketKeyForRanged = "testKeyForRanged"
   val bucket = "testBucket"
   val uploadId = "VXBsb2FkIElEIGZvciA2aWWpbmcncyBteS1tb3ZpZS5tMnRzIHVwbG9hZA"
   val etag = "5b27a21a97fcf8a7004dd1d906e7a5ba"
@@ -55,7 +54,7 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
   def mockRangedDownload(): Unit =
     mock
       .register(
-        get(urlEqualTo(s"/$bucketKeyForRanged"))
+        get(urlEqualTo(s"/$bucketKey"))
           .withHeader("Range", new EqualToPattern(s"bytes=$bytesRangeStart-$bytesRangeEnd"))
           .willReturn(
             aResponse()

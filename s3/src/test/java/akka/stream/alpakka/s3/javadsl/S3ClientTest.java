@@ -72,7 +72,7 @@ public class S3ClientTest extends S3WireMockBase {
         mockRangedDownload();
 
         //#rangedDownload
-        final Source<ByteString, NotUsed> source = client.download(bucket(), bucketKeyForRanged(),
+        final Source<ByteString, NotUsed> source = client.download(bucket(), bucketKey(),
                 ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()));
         //#rangedDownload
 
