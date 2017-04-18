@@ -53,13 +53,18 @@ final class S3Client(credentials: AWSCredentials, region: String, system: ActorS
                       contentType: ContentType,
                       cannedAcl: CannedAcl,
                       metaHeaders: MetaHeaders): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    multipartUpload(bucket, key, ContentTypes.`application/octet-stream`, cannedAcl, metaHeaders, AmzHeaders(Nil))
+    multipartUpload(bucket, key, contentType, cannedAcl, metaHeaders, AmzHeaders(Nil))
 
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
-                      metaHeaders: MetaHeaders): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    multipartUpload(bucket, key, ContentTypes.`application/octet-stream`, CannedAcl.Private, MetaHeaders(Map()))
+                      cannedAcl: CannedAcl): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    multipartUpload(bucket, key, contentType, cannedAcl, MetaHeaders(Map()))
+
+  def multipartUpload(bucket: String,
+                      key: String,
+                      contentType: ContentType): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    multipartUpload(bucket, key, contentType, CannedAcl.Private, MetaHeaders(Map()))
 
   def multipartUpload(bucket: String, key: String): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     multipartUpload(bucket, key, ContentTypes.`application/octet-stream`, CannedAcl.Private, MetaHeaders(Map()))
