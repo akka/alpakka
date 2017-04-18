@@ -9,7 +9,6 @@ import java.nio.file.{Files, Paths}
 
 import akka.stream.IOResult
 import akka.stream.alpakka.ftp.FtpCredentials.NonAnonFtpCredentials
-import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
@@ -146,13 +145,13 @@ trait CommonFtpStageSpec extends BaseSpec {
   "FtpBrowserSource & FtpIOSource" should {
     "work together retrieving a list of files" in {
       val basePath = ""
-      val numOfFiles = 30
+      val numOfFiles = 20
       generateFiles(numOfFiles, 10, basePath)
       val probe = listFiles(basePath)
-        .mapAsyncUnordered(4)(file => retrieveFromPath(file.path).to(Sink.ignore).run())
+        .mapAsyncUnordered(1)(file => retrieveFromPath(file.path).to(Sink.ignore).run())
         .toMat(TestSink.probe)(Keep.right)
         .run()
-      val result = probe.request(100).expectNextN(30)
+      val result = probe.request(21).expectNextN(20)
       probe.expectComplete()
 
       val expectedNumOfBytes = getLoremIpsum.getBytes().length * numOfFiles
