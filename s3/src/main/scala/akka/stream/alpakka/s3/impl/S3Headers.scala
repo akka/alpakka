@@ -13,12 +13,14 @@ import scala.collection.immutable
  * Container for headers used in s3 uploads like acl, server side encryption, storage class,
  * metadata or custom headers for more advanced use cases.
  */
-case class S3Headers(cannedAcl: CannedAcl = CannedAcl.Private,
-                     metaHeaders: MetaHeaders = MetaHeaders(Map()),
+case class S3Headers(cannedAcl: Option[CannedAcl] = None,
+                     metaHeaders: Option[MetaHeaders] = None,
                      customHeaders: Option[AmzHeaders] = None) {
 
   def headers: immutable.Seq[HttpHeader] =
-    metaHeaders.headers ++ customHeaders.map(_.headers).getOrElse(Nil) :+ cannedAcl.header
+    metaHeaders.map(_.headers).getOrElse(Nil) ++
+    customHeaders.map(_.headers).getOrElse(Nil) ++
+    cannedAcl.map((acl) => Seq(acl.header)).getOrElse(Nil)
 }
 
 case class MetaHeaders(metaHeaders: Map[String, String]) {

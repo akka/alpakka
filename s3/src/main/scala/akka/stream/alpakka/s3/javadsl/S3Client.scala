@@ -44,7 +44,7 @@ final class S3Client(credentials: AWSCredentials, region: String, system: ActorS
     impl
       .multipartUpload(S3Location(bucket, key),
                        contentType.asInstanceOf[ScalaContentType],
-                       S3Headers(cannedAcl, metaHeaders, Some(amzHeaders)))
+                       S3Headers(Some(cannedAcl), Some(metaHeaders), Some(amzHeaders)))
       .mapMaterializedValue(_.map(MultipartUploadResult.create)(system.dispatcher).toJava)
       .asJava
 

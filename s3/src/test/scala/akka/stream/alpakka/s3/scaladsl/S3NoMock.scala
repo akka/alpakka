@@ -5,7 +5,7 @@ package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.s3.impl.MetaHeaders
+import akka.stream.alpakka.s3.impl.{MetaHeaders, S3Headers}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
@@ -29,8 +29,8 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
 
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
     //val source: Source[ByteString, Any] = FileIO.fromPath(Paths.get("/tmp/IMG_0470.JPG"))
-
-    val result = source.runWith(S3Client().multipartUpload(bucket, objectKey, metaHeaders = MetaHeaders(metaHeaders)))
+    val headers = Some(S3Headers(None, Some(MetaHeaders(metaHeaders)), None))
+    val result = source.runWith(S3Client().multipartUpload(bucket, objectKey, s3Headers = headers))
 
     val multipartUploadResult = Await.ready(result, 90.seconds).futureValue
     multipartUploadResult.bucket shouldBe bucket

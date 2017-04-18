@@ -45,27 +45,17 @@ final class S3Client(credentials: AWSCredentials, region: String)(implicit syste
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType = ContentTypes.`application/octet-stream`,
-                      metaHeaders: MetaHeaders = MetaHeaders(Map()),
-                      cannedAcl: CannedAcl = CannedAcl.Private,
                       chunkSize: Int = MinChunkSize,
                       chunkingParallelism: Int = 4,
-                      amzHeaders: Option[AmzHeaders] = None): Sink[ByteString, Future[MultipartUploadResult]] = {
-
-    val s3Headers = S3Headers(
-      cannedAcl,
-      metaHeaders,
-      amzHeaders
-    )
-
+                      s3Headers: Option[S3Headers] = None): Sink[ByteString, Future[MultipartUploadResult]] =
     impl
       .multipartUpload(
         S3Location(bucket, key),
         contentType,
-        s3Headers,
+        s3Headers.getOrElse(S3Headers(None, None, None)),
         chunkSize,
         chunkingParallelism
       )
       .mapMaterializedValue(_.map(MultipartUploadResult.apply)(system.dispatcher))
 
-  }
 }
