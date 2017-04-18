@@ -5,6 +5,8 @@ package akka.stream.alpakka.awslambda.scaladsl
 
 import java.util.concurrent.{CompletableFuture, Future}
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Keep, Sink}
@@ -66,7 +68,7 @@ class AwsLambdaFlowSpec
       probe.sendNext(invokeRequest)
       probe.sendComplete()
 
-      future.map(_ shouldBe invokeResult)
+      Await.result(future, 3.seconds) shouldBe Vector(invokeResult)
       verify(awsLambdaClient, times(1)).invokeAsync(mockitoEq(invokeRequest),
                                                     mockitoAny[AsyncHandler[InvokeRequest, InvokeResult]]())
 
@@ -92,8 +94,7 @@ class AwsLambdaFlowSpec
       probe.sendNext(invokeFailureRequest)
       probe.sendComplete()
 
-      future.failed.map(_ shouldBe a[RuntimeException])
-
+      Await.result(future.failed, 3.seconds) shouldBe a[RuntimeException]
     }
 
   }
