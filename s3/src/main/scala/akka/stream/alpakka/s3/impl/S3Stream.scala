@@ -72,20 +72,18 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
    */
   def multipartUpload(s3Location: S3Location,
                       contentType: ContentType = ContentTypes.`application/octet-stream`,
-                      metaHeaders: MetaHeaders,
-                      cannedAcl: CannedAcl = CannedAcl.Private,
+                      s3Headers: S3Headers,
                       chunkSize: Int = MinChunkSize,
                       chunkingParallelism: Int = 4): Sink[ByteString, Future[CompleteMultipartUploadResult]] =
-    chunkAndRequest(s3Location, contentType, metaHeaders, cannedAcl, chunkSize)(chunkingParallelism)
+    chunkAndRequest(s3Location, contentType, s3Headers, chunkSize)(chunkingParallelism)
       .toMat(completionSink(s3Location))(Keep.right)
 
   private def initiateMultipartUpload(s3Location: S3Location,
                                       contentType: ContentType,
-                                      cannedAcl: CannedAcl,
-                                      metaHeaders: MetaHeaders): Future[MultipartUpload] = {
+                                      s3Headers: S3Headers): Future[MultipartUpload] = {
     import mat.executionContext
 
-    val req = initiateMultipartUploadRequest(s3Location, contentType, cannedAcl, region, metaHeaders)
+    val req = initiateMultipartUploadRequest(s3Location, contentType, region, s3Headers)
 
     val response = for {
       signedReq <- Signer.signedRequest(req, signingKey)
@@ -114,19 +112,17 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
    */
   private def initiateUpload(s3Location: S3Location,
                              contentType: ContentType,
-                             cannedAcl: CannedAcl,
-                             metaHeaders: MetaHeaders): Source[(MultipartUpload, Int), NotUsed] =
+                             s3Headers: S3Headers): Source[(MultipartUpload, Int), NotUsed] =
     Source
       .single(s3Location)
-      .mapAsync(1)(initiateMultipartUpload(_, contentType, cannedAcl, metaHeaders))
+      .mapAsync(1)(initiateMultipartUpload(_, contentType, s3Headers))
       .mapConcat(r => Stream.continually(r))
       .zip(Source.fromIterator(() => Iterator.from(1)))
 
   private def createRequests(
       s3Location: S3Location,
       contentType: ContentType,
-      metaHeaders: MetaHeaders,
-      cannedAcl: CannedAcl = CannedAcl.Private,
+      s3Headers: S3Headers,
       chunkSize: Int = MinChunkSize,
       parallelism: Int = 4
   ): Flow[ByteString, (HttpRequest, (MultipartUpload, Int)), NotUsed] = {
@@ -139,7 +135,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
     // First step of the multi part upload process is made.
     //  The response is then used to construct the subsequent individual upload part requests
     val requestInfo: Source[(MultipartUpload, Int), NotUsed] =
-      initiateUpload(s3Location, contentType, cannedAcl, metaHeaders)
+      initiateUpload(s3Location, contentType, s3Headers)
 
     SplitAfterSize(chunkSize)(Flow.apply[ByteString])
       .via(getChunkBuffer(chunkSize)) //creates the chunks
@@ -167,15 +163,14 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
   private def chunkAndRequest(
       s3Location: S3Location,
       contentType: ContentType,
-      metaHeaders: MetaHeaders,
-      cannedAcl: CannedAcl = CannedAcl.Private,
+      s3Headers: S3Headers,
       chunkSize: Int = MinChunkSize
   )(parallelism: Int = 4): Flow[ByteString, UploadPartResponse, NotUsed] = {
 
     // Multipart upload requests (except for the completion api) are created here.
     //  The initial upload request gets executed within this function as well.
     //  The individual upload part requests are created.
-    val requestFlow = createRequests(s3Location, contentType, metaHeaders, cannedAcl, chunkSize, parallelism)
+    val requestFlow = createRequests(s3Location, contentType, s3Headers, chunkSize, parallelism)
 
     // The individual upload part requests are processed here
     requestFlow.via(Http().superPool[(MultipartUpload, Int)]()).map {
