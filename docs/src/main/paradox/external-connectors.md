@@ -1,8 +1,10 @@
 # External Connectors
 
-Connectors that are maintained by other projects.
+[![alpakka]][alpakka-scaladex] Feel free to tag your project with *alpakka* keyword in Scaladex for easier discoverability.
 
-TODO: Add links to more connectors. [Contributions](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md) are very welcome.
+Below is a non-complete list of connectors that are maintained by other projects.
+
+[Contributions](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md) are very welcome.
 [Creating an issue](https://github.com/akka/alpakka/issues) for discussion is a good first step for such contributions.
 
 ## HTTP Client
@@ -48,3 +50,6 @@ TODO: Add links to more connectors. [Contributions](https://github.com/akka/alpa
 ## MongoDB
 
 [ReactiveMongo](http://reactivemongo.org/releases/0.12/documentation/release-details.html#akka-stream)
+
+[alpakka]: https://index.scala-lang.org/count.svg?q=keywords:alpakka&subject=alpakka&style=flat-square "Alpakka"
+[alpakka-scaladex]: https://index.scala-lang.org/search?q=keywords:alpakka
