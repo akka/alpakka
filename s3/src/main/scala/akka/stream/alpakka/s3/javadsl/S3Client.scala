@@ -38,13 +38,9 @@ final class S3Client(credentials: AWSCredentials, region: String, system: ActorS
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
-                      cannedAcl: CannedAcl,
-                      metaHeaders: MetaHeaders,
-                      amzHeaders: AmzHeaders): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+                      s3Headers: S3Headers): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     impl
-      .multipartUpload(S3Location(bucket, key),
-                       contentType.asInstanceOf[ScalaContentType],
-                       S3Headers(Some(cannedAcl), Some(metaHeaders), Some(amzHeaders)))
+      .multipartUpload(S3Location(bucket, key), contentType.asInstanceOf[ScalaContentType], s3Headers)
       .mapMaterializedValue(_.map(MultipartUploadResult.create)(system.dispatcher).toJava)
       .asJava
 
@@ -53,7 +49,7 @@ final class S3Client(credentials: AWSCredentials, region: String, system: ActorS
                       contentType: ContentType,
                       cannedAcl: CannedAcl,
                       metaHeaders: MetaHeaders): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    multipartUpload(bucket, key, contentType, cannedAcl, metaHeaders, AmzHeaders(Nil))
+    multipartUpload(bucket, key, contentType, S3Headers(cannedAcl, metaHeaders))
 
   def multipartUpload(bucket: String,
                       key: String,

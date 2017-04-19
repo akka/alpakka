@@ -4,6 +4,7 @@
 package akka.stream.alpakka.s3.impl
 
 import akka.http.scaladsl.model.headers.RawHeader
+import akka.stream.alpakka.s3.acl.CannedAcl
 import org.scalatest.{FlatSpec, Matchers}
 
 class S3HeadersSpec extends FlatSpec with Matchers {
@@ -26,10 +27,14 @@ class S3HeadersSpec extends FlatSpec with Matchers {
     StorageClass.InfrequentAccess.header shouldEqual RawHeader("x-amz-storage-class", "STANDARD_IA")
   }
 
-  "AmzHeaders" should "have aggregate headers to one sequence" in {
-    val amz = AmzHeaders(ServerSideEncryption.AES256,
-                         Seq(RawHeader("Cache-Control", "no-cache")),
-                         StorageClass.ReducedRedundancy)
-    amz.headers.size shouldEqual 3
+  "S3Headers" should "aggregate headers to one sequence" in {
+    val s3Headers = S3Headers(
+      cannedAcl = CannedAcl.PublicRead,
+      metaHeaders = MetaHeaders(Map("custom-meta" -> "custom")),
+      encryption = ServerSideEncryption.AES256,
+      customHeaders = Seq(RawHeader("Cache-Control", "no-cache")),
+      storageClass = StorageClass.ReducedRedundancy
+    )
+    s3Headers.headers.size shouldEqual 5
   }
 }

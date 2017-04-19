@@ -25,7 +25,7 @@ private[alpakka] object HttpRequests {
                                      region: String,
                                      s3Headers: S3Headers)(implicit conf: S3Settings): HttpRequest =
     s3Request(s3Location, region, HttpMethods.POST, _.withQuery(Query("uploads")))
-      .withDefaultHeaders(s3Headers.headers)
+      .withDefaultHeaders(s3Headers.headers: _*)
       .withEntity(HttpEntity.empty(contentType))
 
   def uploadPartRequest(upload: MultipartUpload,

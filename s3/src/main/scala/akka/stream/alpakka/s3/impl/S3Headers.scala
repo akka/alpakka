@@ -13,15 +13,7 @@ import scala.collection.immutable
  * Container for headers used in s3 uploads like acl, server side encryption, storage class,
  * metadata or custom headers for more advanced use cases.
  */
-case class S3Headers(cannedAcl: Option[CannedAcl] = None,
-                     metaHeaders: Option[MetaHeaders] = None,
-                     customHeaders: Option[AmzHeaders] = None) {
-
-  def headers: immutable.Seq[HttpHeader] =
-    metaHeaders.map(_.headers).getOrElse(Nil) ++
-    customHeaders.map(_.headers).getOrElse(Nil) ++
-    cannedAcl.map((acl) => Seq(acl.header)).getOrElse(Nil)
-}
+case class S3Headers(headers: Seq[HttpHeader])
 
 case class MetaHeaders(metaHeaders: Map[String, String]) {
   def headers =
@@ -30,22 +22,29 @@ case class MetaHeaders(metaHeaders: Map[String, String]) {
     }(collection.breakOut): immutable.Seq[HttpHeader]
 }
 
-case class AmzHeaders(headers: Seq[HttpHeader])
-
 /**
- * Convenience apply methods for creation of encryption, storage class or custom headers.
+ * Convenience apply methods for creation of canned acl, meta, encryption, storage class or custom headers.
  */
-object AmzHeaders {
-  def apply(storageClass: StorageClass): AmzHeaders = new AmzHeaders(Seq(storageClass.header))
-  def apply(encryption: ServerSideEncryption): AmzHeaders = new AmzHeaders(encryption.headers)
-  def apply(customHeaders: Map[String, String]): AmzHeaders =
-    new AmzHeaders(customHeaders.map { header =>
+object S3Headers {
+  val empty = S3Headers(Seq())
+  def apply(cannedAcl: CannedAcl): S3Headers = S3Headers(Seq(cannedAcl.header))
+  def apply(metaHeaders: MetaHeaders): S3Headers = S3Headers(metaHeaders.headers)
+  def apply(cannedAcl: CannedAcl, metaHeaders: MetaHeaders): S3Headers =
+    S3Headers(metaHeaders.headers :+ cannedAcl.header)
+  def apply(storageClass: StorageClass): S3Headers = S3Headers(Seq(storageClass.header))
+  def apply(encryption: ServerSideEncryption): S3Headers = S3Headers(encryption.headers)
+  def apply(customHeaders: Map[String, String]): S3Headers =
+    S3Headers(customHeaders.map { header =>
       RawHeader(header._1, header._2)
     }(collection.breakOut))
-  def apply(encryption: ServerSideEncryption, storageClass: StorageClass): AmzHeaders =
-    new AmzHeaders(encryption.headers :+ storageClass.header)
-  def apply(encryption: ServerSideEncryption, customHeaders: Seq[HttpHeader], storageClass: StorageClass): AmzHeaders =
-    new AmzHeaders(encryption.headers ++ customHeaders :+ storageClass.header)
+  def apply(cannedAcl: CannedAcl = CannedAcl.Private,
+            metaHeaders: MetaHeaders = MetaHeaders(Map()),
+            storageClass: StorageClass = StorageClass.Standard,
+            encryption: ServerSideEncryption = ServerSideEncryption.AES256,
+            customHeaders: Seq[HttpHeader] = Seq()): S3Headers = {
+    val headers = metaHeaders.headers ++ encryption.headers ++ customHeaders :+ cannedAcl.header :+ storageClass.header
+    S3Headers(headers)
+  }
 }
 
 /**

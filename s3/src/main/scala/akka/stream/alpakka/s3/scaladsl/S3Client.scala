@@ -45,14 +45,33 @@ final class S3Client(credentials: AWSCredentials, region: String)(implicit syste
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType = ContentTypes.`application/octet-stream`,
+                      metaHeaders: MetaHeaders = MetaHeaders(Map()),
+                      cannedAcl: CannedAcl = CannedAcl.Private,
                       chunkSize: Int = MinChunkSize,
-                      chunkingParallelism: Int = 4,
-                      s3Headers: Option[S3Headers] = None): Sink[ByteString, Future[MultipartUploadResult]] =
+                      chunkingParallelism: Int = 4): Sink[ByteString, Future[MultipartUploadResult]] =
     impl
       .multipartUpload(
         S3Location(bucket, key),
         contentType,
-        s3Headers.getOrElse(S3Headers(None, None, None)),
+        S3Headers(cannedAcl, metaHeaders),
+        chunkSize,
+        chunkingParallelism
+      )
+      .mapMaterializedValue(_.map(MultipartUploadResult.apply)(system.dispatcher))
+
+  def multipartUploadWithHeaders(
+      bucket: String,
+      key: String,
+      contentType: ContentType = ContentTypes.`application/octet-stream`,
+      chunkSize: Int = MinChunkSize,
+      chunkingParallelism: Int = 4,
+      s3Headers: Option[S3Headers] = None
+  ): Sink[ByteString, Future[MultipartUploadResult]] =
+    impl
+      .multipartUpload(
+        S3Location(bucket, key),
+        contentType,
+        s3Headers.getOrElse(S3Headers.empty),
         chunkSize,
         chunkingParallelism
       )

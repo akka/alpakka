@@ -5,6 +5,7 @@ package akka.stream.alpakka.s3.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+
 import akka.http.javadsl.model.Uri;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
@@ -37,6 +38,23 @@ public class S3ClientTest extends S3WireMockBase {
 
         //#upload
         final Sink<ByteString, CompletionStage<MultipartUploadResult>> sink = client.multipartUpload(bucket(), bucketKey());
+        //#upload
+
+        final CompletionStage<MultipartUploadResult> resultCompletionStage =
+                Source.single(ByteString.fromString(body())).runWith(sink, materializer);
+
+        MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertEquals(new MultipartUploadResult(Uri.create(url()), bucket(), bucketKey(), etag()), result);
+    }
+
+    @Test
+    public void multipartUploadWithHeaders() throws Exception {
+
+        mockUpload();
+
+        //#upload
+        final Sink<ByteString, CompletionStage<MultipartUploadResult>> sink = client.multipartUpload(bucket(), bucketKey(), akka.http.javadsl.model.headers.ContentType.);
         //#upload
 
         final CompletionStage<MultipartUploadResult> resultCompletionStage =
