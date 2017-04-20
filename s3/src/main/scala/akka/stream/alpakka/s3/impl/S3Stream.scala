@@ -10,6 +10,7 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.ByteRange
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.acl.CannedAcl
@@ -59,13 +60,18 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
   val MinChunkSize = 5242880 //in bytes
   val signingKey = SigningKey(credentials, CredentialScope(LocalDate.now(), region, "s3"))
 
-  def download(s3Location: S3Location): Source[ByteString, NotUsed] = {
+  def download(s3Location: S3Location, range: Option[ByteRange] = None): Source[ByteString, NotUsed] = {
     import mat.executionContext
-    Source.fromFuture(request(s3Location).flatMap(entityForSuccess).map(_.dataBytes)).flatMapConcat(identity)
+    Source.fromFuture(request(s3Location, range).flatMap(entityForSuccess).map(_.dataBytes)).flatMapConcat(identity)
   }
 
-  def request(s3Location: S3Location): Future[HttpResponse] =
-    signAndGet(getDownloadRequest(s3Location, region))
+  def request(s3Location: S3Location, rangeOption: Option[ByteRange] = None): Future[HttpResponse] = {
+    val downloadRequest = getDownloadRequest(s3Location, region)
+    signAndGet(rangeOption match {
+      case Some(range) => downloadRequest.withHeaders(headers.Range(range))
+      case _ => downloadRequest
+    })
+  }
 
   /**
    * Uploads a stream of ByteStrings to a specified location as a multipart upload.
