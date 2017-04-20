@@ -12,10 +12,6 @@ services:
     image: rabbitmq:3
     ports:
       - "5672:5672"
-  sqs:
-    image: s12v/elasticmq:0.13.2
-    ports:
-      - "9324:9324"
   mqtt:
     image: toke/mosquitto
     ports:
@@ -26,3 +22,16 @@ services:
     image: deangiberson/aws-dynamodb-local
     ports:
       - "8001:8000"
+  ironauth:
+    image: iron/auth
+    ports:
+      - "8090:8090"
+  ironmq:
+    image: iron/mq
+    links:
+      - "ironauth:ironauth"
+    environment:
+      - "AUTH_HOST=http://ironauth:8090"
+    ports:
+      - "8080:8080"
+

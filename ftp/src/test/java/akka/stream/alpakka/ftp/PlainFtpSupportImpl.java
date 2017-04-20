@@ -15,6 +15,7 @@ import org.apache.ftpserver.usermanager.PropertiesUserManagerFactory;
 
 abstract class PlainFtpSupportImpl extends FtpSupportImpl {
 
+    private static final int MAX_LOGINS = 1000;
     static final String DEFAULT_LISTENER = "default";
 
     protected FtpServerFactory createFtpServerFactory(Integer port) {
@@ -35,7 +36,10 @@ abstract class PlainFtpSupportImpl extends FtpSupportImpl {
         FtpServerFactory serverFactory = new FtpServerFactory();
         serverFactory.setUserManager(userMgr);
         serverFactory.setFileSystem(fsf);
-        serverFactory.setConnectionConfig(new ConnectionConfigFactory().createConnectionConfig());
+        ConnectionConfigFactory configFactory = new ConnectionConfigFactory();
+        configFactory.setMaxLogins(MAX_LOGINS);
+        configFactory.setMaxAnonymousLogins(MAX_LOGINS);
+        serverFactory.setConnectionConfig(configFactory.createConnectionConfig());
         serverFactory.addListener(DEFAULT_LISTENER, factory.createListener());
 
         return serverFactory;
