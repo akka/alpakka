@@ -130,6 +130,7 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
                       }
                     }
                   )
+              case Ignore() => // do nothing
             }
             push(out, responsePromise.future)
           }
