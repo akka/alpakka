@@ -4,8 +4,8 @@
 package akka.stream.alpakka.s3.javadsl;
 
 import akka.NotUsed;
-import akka.actor.ActorSystem;
 import akka.http.javadsl.model.Uri;
+import akka.http.javadsl.model.headers.ByteRange;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.s3.auth.AWSCredentials;
@@ -16,10 +16,12 @@ import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class S3ClientTest extends S3WireMockBase {
 
@@ -62,5 +64,23 @@ public class S3ClientTest extends S3WireMockBase {
         String result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
         assertEquals(body(), result);
+    }
+
+    @Test
+    public void rangedDownload() throws Exception {
+
+        mockRangedDownload();
+
+        //#rangedDownload
+        final Source<ByteString, NotUsed> source = client.download(bucket(), bucketKey(),
+                ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()));
+        //#rangedDownload
+
+        final CompletionStage<byte[]> resultCompletionStage =
+                source.map(ByteString::toArray).runWith(Sink.head(), materializer);
+
+        byte[] result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertTrue(Arrays.equals(rangeOfBody(), result));
     }
 }

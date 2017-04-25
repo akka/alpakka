@@ -22,3 +22,16 @@ services:
     image: deangiberson/aws-dynamodb-local
     ports:
       - "8001:8000"
+  ironauth:
+    image: iron/auth
+    ports:
+      - "8090:8090"
+  ironmq:
+    image: iron/mq
+    links:
+      - "ironauth:ironauth"
+    environment:
+      - "AUTH_HOST=http://ironauth:8090"
+    ports:
+      - "8080:8080"
+

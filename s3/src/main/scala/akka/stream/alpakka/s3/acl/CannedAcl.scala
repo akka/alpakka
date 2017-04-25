@@ -3,10 +3,15 @@
  */
 package akka.stream.alpakka.s3.acl
 
+import akka.http.scaladsl.model.HttpHeader
+import akka.http.scaladsl.model.headers.RawHeader
+
 /**
  * Documentation: http://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
  */
-sealed abstract class CannedAcl(val value: String)
+sealed abstract class CannedAcl(val value: String) {
+  def header: HttpHeader = RawHeader("x-amz-acl", value)
+}
 
 object CannedAcl {
   case object AuthenticatedRead extends CannedAcl("authenticated-read")

@@ -4,6 +4,7 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.NotUsed
+import akka.http.scaladsl.model.headers.ByteRange
 import akka.stream.alpakka.s3.S3Exception
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
@@ -17,12 +18,26 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockDownload()
 
     //#download
-    val s3Source: Source[ByteString, NotUsed] = s3Client.download("testBucket", "testKey")
+    val s3Source: Source[ByteString, NotUsed] = s3Client.download(bucket, bucketKey)
     //#download
 
     val result: Future[String] = s3Source.map(_.utf8String).runWith(Sink.head)
 
     result.futureValue shouldBe body
+  }
+
+  it should "download a range of file's bytes from S3 if bytes range given" in {
+
+    mockRangedDownload()
+
+    //#rangedDownload
+    val s3Source: Source[ByteString, NotUsed] =
+      s3Client.download(bucket, bucketKey, ByteRange(bytesRangeStart, bytesRangeEnd))
+    //#rangedDownload
+
+    val result: Future[Array[Byte]] = s3Source.map(_.toArray).runWith(Sink.head)
+
+    result.futureValue shouldBe rangeOfBody
   }
 
   it should "fail if request returns 404" in {
