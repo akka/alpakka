@@ -117,11 +117,12 @@ Options:
 
 ### Message processing with acknowledgement
 
-`SqsAckSink` provides possibility to acknowledge (delete) or postpone a message.
+`SqsAckSink` provides possibility to acknowledge (delete), ignore, or postpone a message.
 
 Your flow must decide which action to take and push it with message:
 
  - `Delete` - delete message from the queue
+ - `Ignore` - ignore the message and let it reappear in the queue after visibility timeout
  - `ChangeMessageVisibility(visibility: Int)` - can be used to postpone a message, or make
  the message immediately visible to other consumers. See [official documentation](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html)
 for more details. 
