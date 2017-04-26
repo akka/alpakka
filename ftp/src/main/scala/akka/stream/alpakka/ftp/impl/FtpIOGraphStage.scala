@@ -119,6 +119,9 @@ private[ftp] trait FtpIOSourceStage[FtpClient, S <: RemoteFileSettings]
 
 private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
     extends FtpIOGraphStage[FtpClient, S, SinkShape[ByteString]] {
+
+  def append: Boolean
+
   val shape: SinkShape[ByteString] = SinkShape(Inlet[ByteString](s"$name.in"))
   val in: Inlet[ByteString] = shape.inlets.head.asInstanceOf[Inlet[ByteString]]
 
@@ -147,6 +150,11 @@ private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
               matSuccess()
               super.onUpstreamFinish()
             }
+
+          override def onUpstreamFailure(exception: Throwable): Unit = {
+            matFailure(exception)
+            failStage(exception)
+          }
         }
       ) // end of handler
 
@@ -158,7 +166,7 @@ private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
         }
 
       protected[this] def doPreStart(): Unit = {
-        osOpt = Some(ftpLike.storeFileStream(path, handler.get).get)
+        osOpt = Some(ftpLike.storeFileOutputStream(path, handler.get, append).get)
         pull(in)
       }
 

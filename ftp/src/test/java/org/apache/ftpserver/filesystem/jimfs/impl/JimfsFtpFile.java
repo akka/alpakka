@@ -19,6 +19,9 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
 
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
+
 public class JimfsFtpFile implements FtpFile {
 
     private final Logger LOG = LoggerFactory.getLogger(JimfsFtpFile.class);
@@ -306,7 +309,9 @@ public class JimfsFtpFile implements FtpFile {
             throw new IOException("No write permission : " + path.getFileName());
         }
 
-        return Files.newOutputStream(path, StandardOpenOption.CREATE);
+        final OpenOption openOption = offset > 0 ? APPEND : CREATE;
+
+        return Files.newOutputStream(path, openOption);
     }
 
     public InputStream createInputStream(long offset)

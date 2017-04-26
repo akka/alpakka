@@ -160,18 +160,58 @@ trait CommonFtpStageSpec extends BaseSpec {
     }
   }
 
-  "FtpIOSink" should {
-    "write a file to a path from a stream of bytes" in {
-      val fileName = "sample_io"
-      val result = Source.single(ByteString(getLoremIpsum)).runWith(storeToPath(s"/$fileName")).futureValue
+  "FTPIOSink" when {
+    val fileName = "sample_io"
 
-      val expectedNumOfBytes = getLoremIpsum.getBytes().length
-      result shouldBe IOResult.createSuccessful(expectedNumOfBytes)
+    "no file is already present at the target location" should {
+      "create a new file from the provided stream of bytes regardless of the append mode" in {
+        List(true, false).foreach { mode ⇒
+          val result = Source.single(ByteString(getLoremIpsum)).runWith(storeToPath(s"/$fileName", mode)).futureValue
 
-      val storedContents = getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName)
-      storedContents shouldBe getLoremIpsum.getBytes
+          val expectedNumOfBytes = getLoremIpsum.getBytes().length
+          result shouldBe IOResult.createSuccessful(expectedNumOfBytes)
+
+          val storedContents = getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName)
+          storedContents shouldBe getLoremIpsum.getBytes
+
+          cleanFiles()
+        }
+      }
     }
 
+    "a file is already present at the target location" should {
+
+      val reversedLoremIpsum = getLoremIpsum.reverse
+      val expectedNumOfBytes = reversedLoremIpsum.length
+
+      "overwrite it when not in append mode" in {
+        putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName)
+
+        val result =
+          Source.single(ByteString(reversedLoremIpsum)).runWith(storeToPath(s"/$fileName", append = false)).futureValue
+
+        result shouldBe IOResult.createSuccessful(expectedNumOfBytes)
+
+        val storedContents = getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName)
+        storedContents shouldBe reversedLoremIpsum.getBytes
+      }
+
+      "append to its contents when in append mode" in {
+        putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName)
+
+        val result =
+          Source.single(ByteString(reversedLoremIpsum)).runWith(storeToPath(s"/$fileName", append = true)).futureValue
+
+        result shouldBe IOResult.createSuccessful(expectedNumOfBytes)
+
+        val storedContents = getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName)
+
+        storedContents shouldBe getLoremIpsum.getBytes ++ reversedLoremIpsum.getBytes
+      }
+    }
+  }
+
+  it should {
     "write a bigger file (~2 MB) to a path from a stream of bytes" in {
       val fileName = "sample_bigger_file"
       val fileContents = new Array[Byte](2000020)
@@ -180,7 +220,7 @@ trait CommonFtpStageSpec extends BaseSpec {
       val result = Source[Byte](fileContents.toList)
         .grouped(8192)
         .map(s ⇒ ByteString.apply(s.toArray))
-        .runWith(storeToPath(s"/$fileName"))
+        .runWith(storeToPath(s"/$fileName", append = false))
         .futureValue
 
       val expectedNumOfBytes = fileContents.length
@@ -190,17 +230,14 @@ trait CommonFtpStageSpec extends BaseSpec {
       storedContents shouldBe fileContents
     }
 
-    "overwrite a file if it's already present" in {
+    "fail and report the exception in the result status if upstream fails" in {
       val fileName = "sample_io"
-      putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName)
+      val brokenSource = Source(10.to(0, -1)).map(x ⇒ ByteString(10 / x))
 
-      val reversedLoremIpsum = getLoremIpsum.reverse
-      Source.single(ByteString(reversedLoremIpsum)).runWith(storeToPath(s"/$fileName")).futureValue
+      val result = brokenSource.runWith(storeToPath(s"/$fileName", append = false)).futureValue
 
-      val storedContents = getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName)
-      storedContents shouldBe reversedLoremIpsum.getBytes
+      result.status.failed.get shouldBe a[ArithmeticException]
     }
-
   }
 
 }
