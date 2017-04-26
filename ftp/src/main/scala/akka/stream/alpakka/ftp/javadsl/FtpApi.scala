@@ -10,8 +10,8 @@ import akka.stream.alpakka.ftp.impl.{FtpLike, FtpSourceFactory}
 import akka.stream.IOResult
 import akka.stream.javadsl.Source
 import akka.stream.javadsl.Sink
-import akka.stream.scaladsl.{Source => ScalaSource}
-import akka.stream.scaladsl.{Sink => ScalaSink}
+import akka.stream.scaladsl.{Source ⇒ ScalaSource}
+import akka.stream.scaladsl.{Sink ⇒ ScalaSink}
 import akka.util.ByteString
 import com.jcraft.jsch.JSch
 import org.apache.commons.net.ftp.FTPClient
@@ -158,15 +158,31 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    *
    * @param path the file path
    * @param connectionSettings connection settings
+   * @param append append data if a file already exists, overwrite the file if not
+   * @return A [[Sink]] of [[ByteString]] that materializes to a [[CompletionStage]] of [[IOResult]]
+   */
+  def toPath(
+      path: String,
+      connectionSettings: S,
+      append: Boolean
+  ): Sink[ByteString, CompletionStage[IOResult]] = {
+    import scala.compat.java8.FutureConverters._
+    ScalaSink.fromGraph(createIOSink(path, connectionSettings, append)).mapMaterializedValue(_.toJava).asJava
+  }
+
+  /**
+   * Java API: creates a [[Sink]] of [[ByteString]] to some file path.
+   * If a file already exists at the specified target path, it will get overwritten.
+   *
+   * @param path the file path
+   * @param connectionSettings connection settings
    * @return A [[Sink]] of [[ByteString]] that materializes to a [[CompletionStage]] of [[IOResult]]
    */
   def toPath(
       path: String,
       connectionSettings: S
-  ): Sink[ByteString, CompletionStage[IOResult]] = {
-    import scala.compat.java8.FutureConverters._
-    ScalaSink.fromGraph(createIOSink(path, connectionSettings)).mapMaterializedValue(_.toJava).asJava
-  }
+  ): Sink[ByteString, CompletionStage[IOResult]] =
+    toPath(path, connectionSettings, append = false)
 
   protected[this] implicit def ftpLike: FtpLike[FtpClient, S]
 }

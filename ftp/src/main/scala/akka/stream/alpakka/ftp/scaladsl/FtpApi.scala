@@ -116,13 +116,15 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    *
    * @param path the file path
    * @param connectionSettings connection settings
+   * @param append append data if a file already exists, overwrite the file if not
    * @return A [[Sink]] of [[ByteString]] that materializes to a [[Future]] of [[IOResult]]
    */
   def toPath(
       path: String,
-      connectionSettings: S
+      connectionSettings: S,
+      append: Boolean = false
   ): Sink[ByteString, Future[IOResult]] =
-    Sink.fromGraph(createIOSink(path, connectionSettings))
+    Sink.fromGraph(createIOSink(path, connectionSettings, append))
 
   protected[this] implicit def ftpLike: FtpLike[FtpClient, S]
 }
