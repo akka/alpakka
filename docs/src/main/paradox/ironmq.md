@@ -20,7 +20,7 @@ Maven
     ```xml
     <dependency>
       <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-ironmq_$scala.binaryVersion$</artifactId>
+      <artifactId>akka-stream-alpakka-ironmq_$scalaBinaryVersion$</artifactId>
       <version>$version$</version>
     </dependency>
     ```
@@ -30,7 +30,7 @@ Gradle
 :   @@@vars
     ```gradle
     dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-ironmq_$scala.binaryVersion$", version: "$version$"
+      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-ironmq_$scalaBinaryVersion$", version: "$version$"
     }
     ```
     @@@
