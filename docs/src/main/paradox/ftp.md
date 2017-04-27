@@ -19,7 +19,7 @@ Maven
     ```xml
     <dependency>
       <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-ftp_$scala.binaryVersion$</artifactId>
+      <artifactId>akka-stream-alpakka-ftp_$scalaBinaryVersion$</artifactId>
       <version>$version$</version>
     </dependency>
     ```
@@ -29,7 +29,7 @@ Gradle
 :   @@@vars
     ```gradle
     dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-ftp_$scala.binaryVersion$", version: "$version$"
+      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-ftp_$scalaBinaryVersion$", version: "$version$"
     }
     ```
     @@@
