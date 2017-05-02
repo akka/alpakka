@@ -1,6 +1,6 @@
 # MQTT Connector
 
-The MQTT connector provides Akka Stream sources to connect to AMQP servers.
+The MQTT connector provides Akka Stream sources to connect to MQTT servers.
 
 ## Artifacts
 
