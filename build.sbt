@@ -17,7 +17,8 @@ lazy val alpakka = project
              simpleCodecs,
              sns,
              sqs,
-             sse)
+             sse,
+             xml)
 
 lazy val amqp = project
   .enablePlugins(AutomateHeaderPlugin)
@@ -142,6 +143,13 @@ lazy val sse = project
   .settings(
     name := "akka-stream-alpakka-sse",
     Dependencies.Sse
+  )
+
+lazy val xml = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-xml",
+    Dependencies.Xml
   )
 
 val Local = config("local")
