@@ -1,60 +1,105 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package com.drewhk.stream.xml
+package akka.stream.alpakka.xml
 
-import akka.NotUsed
-import akka.stream.scaladsl.Flow
-import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import java.util.Optional
+
+import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
+import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.util.ByteString
-import com.fasterxml.aalto.{ AsyncByteArrayFeeder, AsyncXMLInputFactory, AsyncXMLStreamReader }
 import com.fasterxml.aalto.stax.InputFactoryImpl
+import com.fasterxml.aalto.{AsyncByteArrayFeeder, AsyncXMLInputFactory, AsyncXMLStreamReader}
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.collection.JavaConverters._
+import scala.compat.java8.OptionConverters._
+
+/**
+ * XML parsing events emitted by the parser flow. These roughly correspond to Java XMLEvent types.
+ */
+sealed trait ParseEvent
+sealed trait TextEvent extends ParseEvent {
+  def text: String
+}
+
+case object StartDocument extends ParseEvent {
+
+  /**
+   * Java API
+   */
+  def getInstance(): StartDocument.type = this
+}
+
+case object EndDocument extends ParseEvent {
+
+  /**
+   * Java API
+   */
+  def getInstance(): EndDocument.type = this
+}
+final case class StartElement(localName: String, attributes: Map[String, String]) extends ParseEvent
+object StartElement {
+
+  /**
+   * Java API
+   */
+  def create(localName: String, attributes: java.util.Map[String, String]): StartElement =
+    StartElement(localName, attributes.asScala.toMap)
+}
+final case class EndElement(localName: String) extends ParseEvent
+object EndElement {
+
+  /**
+   * Java API
+   */
+  def create(localName: String) =
+    EndElement(localName)
+}
+final case class Characters(text: String) extends TextEvent
+object Characters {
+
+  /**
+   * Java API
+   */
+  def create(text: String) =
+    Characters(text)
+}
+final case class ProcessingInstruction(target: Option[String], data: Option[String]) extends ParseEvent
+object ProcessingInstruction {
+
+  /**
+   * Java API
+   */
+  def create(target: Optional[String], data: Optional[String]) =
+    ProcessingInstruction(target.asScala, data.asScala)
+}
+final case class Comment(text: String) extends ParseEvent
+object Comment {
+
+  /**
+   * Java API
+   */
+  def create(text: String) =
+    Comment(text)
+}
+final case class CData(text: String) extends TextEvent
+object CData {
+
+  /**
+   * Java API
+   */
+  def create(text: String) =
+    CData(text)
+}
 
 object Xml {
 
   /**
-   * XML parsing events emitted by the parser flow. These roughly correspond to Java XMLEvent types.
+   * Internal API
    */
-  sealed trait ParseEvent
-  sealed trait TextEvent extends ParseEvent {
-    def text: String
-  }
-
-  case object StartDocument extends ParseEvent
-  case object EndDocument extends ParseEvent
-  final case class StartElement(localName: String, attributes: Map[String, String]) extends ParseEvent
-  final case class EndElement(localName: String) extends ParseEvent
-  final case class Characters(text: String) extends TextEvent
-  final case class ProcessingInstruction(target: Option[String], data: Option[String]) extends ParseEvent
-  final case class Comment(text: String) extends ParseEvent
-  final case class CData(text: String) extends TextEvent
-
-  /**
-   * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
-   */
-  val parser: Flow[ByteString, ParseEvent, NotUsed] =
-    Flow.fromGraph(new StreamingXmlParser)
-
-  /**
-   * A Flow that transforms a stream of XML ParseEvents. This stage coalesces consequitive CData and Characters
-   * events into a single Characters event or fails if the buffered string is larger than the maximum defined.
-   */
-  def coalesce(maximumTextLength: Int): Flow[ParseEvent, ParseEvent, NotUsed] =
-    Flow.fromGraph(new Coalesce(maximumTextLength))
-
-  /**
-   * A Flow that transforms a stream of XML ParseEvents. This stage filters out any event not corresponding to
-   * a certain path in the XML document. Any event that is under the specified path (including subpaths) is passed
-   * through.
-   */
-  def subslice(path: immutable.Seq[String]): Flow[ParseEvent, ParseEvent, NotUsed] =
-    Flow.fromGraph(new Subslice(path))
-
-  private class StreamingXmlParser extends GraphStage[FlowShape[ByteString, ParseEvent]] {
+  private[xml] class StreamingXmlParser extends GraphStage[FlowShape[ByteString, ParseEvent]] {
     val in: Inlet[ByteString] = Inlet("XMLParser.in")
     val out: Outlet[ParseEvent] = Outlet("XMLParser.out")
     override val shape: FlowShape[ByteString, ParseEvent] = FlowShape(in, out)
@@ -83,7 +128,7 @@ object Xml {
           else if (isAvailable(out)) advanceParser()
         }
 
-        @tailrec private def advanceParser(): Unit = {
+        @tailrec private def advanceParser(): Unit =
           if (parser.hasNext) {
             parser.next() match {
               case AsyncXMLStreamReader.EVENT_INCOMPLETE =>
@@ -127,11 +172,13 @@ object Xml {
                 else completeStage()
             }
           } else completeStage()
-        }
       }
   }
 
-  private class Coalesce(maximumTextLength: Int) extends GraphStage[FlowShape[ParseEvent, ParseEvent]] {
+  /**
+   * Internal API
+   */
+  private[xml] class Coalesce(maximumTextLength: Int) extends GraphStage[FlowShape[ParseEvent, ParseEvent]] {
     val in: Inlet[ParseEvent] = Inlet("XMLCoalesce.in")
     val out: Outlet[ParseEvent] = Outlet("XMLCoalesce.out")
     override val shape: FlowShape[ParseEvent, ParseEvent] = FlowShape(in, out)
@@ -146,8 +193,12 @@ object Xml {
         override def onPush(): Unit = grab(in) match {
           case t: TextEvent =>
             if (t.text.length + buffer.length > maximumTextLength)
-              failStage(new IllegalStateException(s"Too long character sequence, maximum is $maximumTextLength but got " +
-                s"${t.text.length + buffer.length - maximumTextLength} more "))
+              failStage(
+                new IllegalStateException(
+                  s"Too long character sequence, maximum is $maximumTextLength but got " +
+                  s"${t.text.length + buffer.length - maximumTextLength} more "
+                )
+              )
             else {
               buffer.append(t.text)
               isBuffering = true
@@ -158,24 +209,24 @@ object Xml {
               val coalesced = buffer.toString()
               isBuffering = false
               buffer.clear()
-              emit(out, Characters(coalesced),
-                () => emit(out, other,
-                  () => if (isClosed(in)) completeStage()))
+              emit(out, Characters(coalesced), () => emit(out, other, () => if (isClosed(in)) completeStage()))
             } else {
               push(out, other)
             }
         }
 
-        override def onUpstreamFinish(): Unit = {
+        override def onUpstreamFinish(): Unit =
           if (isBuffering) emit(out, Characters(buffer.toString()), () => completeStage())
           else completeStage()
-        }
 
         setHandlers(in, out, this)
       }
   }
 
-  private class Subslice(path: immutable.Seq[String]) extends GraphStage[FlowShape[ParseEvent, ParseEvent]] {
+  /**
+   * Internal API
+   */
+  private[xml] class Subslice(path: immutable.Seq[String]) extends GraphStage[FlowShape[ParseEvent, ParseEvent]] {
     val in: Inlet[ParseEvent] = Inlet("XMLSubslice.in")
     val out: Outlet[ParseEvent] = Outlet("XMLSubslice.out")
     override val shape: FlowShape[ParseEvent, ParseEvent] = FlowShape(in, out)
@@ -186,9 +237,6 @@ object Xml {
         private var matchedSoFar: List[String] = Nil
 
         override def onPull(): Unit = pull(in)
-
-        if (path.isEmpty) setHandler(in, passThrough) else setHandler(in, partialMatch)
-        setHandler(out, this)
 
         val passThrough: InHandler = new InHandler {
           var depth = 0
@@ -211,6 +259,9 @@ object Xml {
               push(out, other)
           }
         }
+
+        if (path.isEmpty) setHandler(in, passThrough) else setHandler(in, partialMatch)
+        setHandler(out, this)
 
         lazy val partialMatch: InHandler = new InHandler {
 

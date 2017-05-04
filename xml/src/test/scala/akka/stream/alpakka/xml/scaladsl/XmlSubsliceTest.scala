@@ -1,28 +1,31 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package com.drewhk.stream.xml
+package akka.stream.alpakka.xml.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
+import akka.stream.alpakka.xml._
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
-import com.drewhk.stream.xml.Xml._
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class SubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
+class XmlSubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
   implicit val system = ActorSystem("Test")
   implicit val mat = ActorMaterializer()
 
-  val parse = Flow[String].map(ByteString(_))
-    .via(Xml.parser)
-    .via(Xml.subslice("doc" :: "elem" :: "item" :: Nil))
+  //#subslice
+  val parse = Flow[String]
+    .map(ByteString(_))
+    .via(XmlParsing.parser)
+    .via(XmlParsing.subslice("doc" :: "elem" :: "item" :: Nil))
     .toMat(Sink.seq)(Keep.right)
+  //#subslice
 
-  "XML subsslice support" must {
+  "XML subslice support" must {
 
     "properly extract subslices of events" in {
       val doc =
@@ -36,15 +39,19 @@ class SubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
           |</doc>
         """.stripMargin
 
-      Await.result(Source.single(doc).runWith(parse), 3.seconds) should ===(List(
-        Characters("i1"),
-        Characters("i2"),
-        Characters("i3")
-      ))
+      Await.result(Source.single(doc).runWith(parse), 3.seconds) should ===(
+        List(
+          Characters("i1"),
+          Characters("i2"),
+          Characters("i3")
+        )
+      )
 
     }
 
     "properly extract subslices of nested events" in {
+
+      //#subslice-usage
       val doc =
         """
           |<doc>
@@ -55,14 +62,18 @@ class SubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
           |  </elem>
           |</doc>
         """.stripMargin
+      val resultFuture = Source.single(doc).runWith(parse)
+      //#subslice-usage
 
-      Await.result(Source.single(doc).runWith(parse), 3.seconds) should ===(List(
-        Characters("i1"),
-        StartElement("sub", Map.empty),
-        Characters("i2"),
-        EndElement("sub"),
-        Characters("i3")
-      ))
+      Await.result(resultFuture, 3.seconds) should ===(
+        List(
+          Characters("i1"),
+          StartElement("sub", Map.empty),
+          Characters("i2"),
+          EndElement("sub"),
+          Characters("i3")
+        )
+      )
 
     }
 
@@ -114,14 +125,16 @@ class SubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
           |</doc>
         """.stripMargin
 
-      Await.result(Source.single(doc).runWith(parse), 3.seconds) should ===(List(
-        Characters("i1"),
-        StartElement("sub", Map.empty),
-        Characters("i2"),
-        EndElement("sub"),
-        Characters("i3"),
-        Characters("i4")
-      ))
+      Await.result(Source.single(doc).runWith(parse), 3.seconds) should ===(
+        List(
+          Characters("i1"),
+          StartElement("sub", Map.empty),
+          Characters("i2"),
+          EndElement("sub"),
+          Characters("i3"),
+          Characters("i4")
+        )
+      )
     }
   }
 
