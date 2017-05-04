@@ -24,6 +24,12 @@ class AmqpConnectorsSpec extends AmqpSpec {
   "The AMQP Connectors" should {
 
     "publish and consume elements through a simple queue again in the same JVM" in {
+
+      // use a list of host/port pairs where one is normally invalid, but
+      // it should still work as expected,
+      val connectionSettings =
+        AmqpConnectionDetails(List(("invalid", 5673))).withHostsAndPorts(("localhost", 5672))
+
       //#queue-declaration
       val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
@@ -31,13 +37,13 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       //#create-sink
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(DefaultAmqpConnection).withRoutingKey(queueName).withDeclarations(queueDeclaration)
+        AmqpSinkSettings(connectionSettings).withRoutingKey(queueName).withDeclarations(queueDeclaration)
       )
       //#create-sink
 
       //#create-source
       val amqpSource = AmqpSource(
-        NamedQueueSourceSettings(DefaultAmqpConnection, queueName).withDeclarations(queueDeclaration),
+        NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration),
         bufferSize = 10
       )
       //#create-source

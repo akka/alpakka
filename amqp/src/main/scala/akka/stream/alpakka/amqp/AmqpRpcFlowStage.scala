@@ -7,7 +7,7 @@ import akka.stream._
 import akka.stream.stage._
 import akka.util.ByteString
 import com.rabbitmq.client.AMQP.BasicProperties
-import com.rabbitmq.client.{DefaultConsumer, Envelope, ShutdownSignalException}
+import com.rabbitmq.client._
 
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
@@ -49,6 +49,8 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
       private var outstandingMessages = 0
 
       override def connectionFactoryFrom(settings: AmqpConnectionSettings) = stage.connectionFactoryFrom(settings)
+      override def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings): Connection =
+        stage.newConnection(factory, settings)
 
       override def whenConnected(): Unit = {
         import scala.collection.JavaConverters._

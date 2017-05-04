@@ -41,6 +41,8 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
 
       override val settings = stage.settings
       override def connectionFactoryFrom(settings: AmqpConnectionSettings) = stage.connectionFactoryFrom(settings)
+      override def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings) =
+        stage.newConnection(factory, settings)
 
       private val queue = mutable.Queue[IncomingMessage]()
 
