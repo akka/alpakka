@@ -3,6 +3,7 @@ lazy val alpakka = project
   .enablePlugins(PublishUnidoc)
   .aggregate(amqp,
              awslambda,
+	           azureStorageQueue,
              cassandra,
              csv,
              dynamodb,
@@ -32,6 +33,15 @@ lazy val awslambda = project
     name := "akka-stream-alpakka-awslambda",
     Dependencies.AwsLambda
   )
+
+lazy val azureStorageQueue = project
+  .in(file("azure-storage-queue"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-azure-storage-queue",
+    Dependencies.AzureStorageQueue
+  )
+
 
 lazy val cassandra = project
   .enablePlugins(AutomateHeaderPlugin)

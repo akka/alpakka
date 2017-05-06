@@ -32,6 +32,12 @@ object Dependencies {
     )
   )
 
+  val AzureStorageQueue = Seq(
+    libraryDependencies ++= Seq(
+      "com.microsoft.azure" % "azure-storage" % "5.0.0" // ApacheV2
+    )
+  )
+
   val Cassandra = Seq(
     libraryDependencies ++= Seq(
       "com.datastax.cassandra" % "cassandra-driver-core" % "3.1.0" // ApacheV2
