@@ -209,9 +209,11 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
   it should "initiate multipart upload with custom s3 headers" in {
     implicit val settings = S3Settings(ActorSystem())
     val s3Headers = S3Headers(Map("Cache-Control" -> "no-cache"))
-    val req = HttpRequests.initiateMultipartUploadRequest(location, contentType, "us-east-2", s3Headers)
+    val req = HttpRequests
+      .initiateMultipartUploadRequest(location, contentType, "us-east-2", s3Headers)
 
     req.headers should contain(RawHeader("Cache-Control", "no-cache"))
+  }
     
   it should "properly construct the list bucket request with no prefix or continuation token passed" in {
     implicit val settings = S3Settings(ConfigFactory.parseString(pathStyleAcessConfig))

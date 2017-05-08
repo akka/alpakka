@@ -28,7 +28,8 @@ private[alpakka] object HttpRequests {
         "list-type" -> Some("2"),
         "prefix" -> prefix,
         "continuation-token" -> continuationToken.map(_.replaceAll("=", "%3D"))
-      ).collect { case (k, Some(v)) => k -> v }.toMap)
+      ).collect { case (k, Some(v)) => k -> v }.toMap
+    )
 
     HttpRequest(HttpMethods.GET)
       .withHeaders(Host(requestHost(bucket, region)))

@@ -66,6 +66,8 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
   }
 
   def listBucket(bucket: String, prefix: Option[String] = None): Source[String, NotUsed] = {
+    import system.dispatcher
+
     /**
      *
      * @param args The Option[String] is our continuation token and the Boolean is our holder
@@ -73,8 +75,8 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
      *             and the first call Boolean is false, we know that we are done getting keys.
      * @return
      */
-    def listBucketCall(args: (Option[String], Boolean)): Future[Option[((Option[String], Boolean), Seq[String])]] = {
-      if(!args._2 && args._1.isEmpty) {
+    def listBucketCall(args: (Option[String], Boolean)): Future[Option[((Option[String], Boolean), Seq[String])]] =
+      if (!args._2 && args._1.isEmpty) {
         Future.successful(None)
       } else {
         val results = signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, region, prefix, args._1))
@@ -82,9 +84,9 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
           Some(((res.continuationToken, false), res.keys))
         }
       }
-    }
 
-    Source.unfoldAsync[(Option[String], Boolean), Seq[String]]((None, true))(listBucketCall)
+    Source
+      .unfoldAsync[(Option[String], Boolean), Seq[String]]((None, true))(listBucketCall)
       .mapConcat(identity)
   }
 
