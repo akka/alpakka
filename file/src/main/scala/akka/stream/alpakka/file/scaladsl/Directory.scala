@@ -21,7 +21,7 @@ object Directory {
   }
 
   /**
-   * Recursively list files in the given directory and its subdirectories. Listing is done
+   * Recursively list files and directories in the given directory and its subdirectories. Listing is done
    * depth first.
    *
    * @param maxDepth If defined limits the depth of the directory structure to walk through
