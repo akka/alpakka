@@ -19,6 +19,7 @@ import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.nio.file.FileSystem;
+import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -79,6 +80,28 @@ public class DirectoryTest {
     final List<Path> result = source.runWith(Sink.seq(), materializer)
         .toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(result, Arrays.asList(root, subdir1, file1, subdir2, file2));
+  }
+
+  @Test
+  public void walkAFileTreeWithOptions() throws Exception {
+    final Path root = fs.getPath("walk2");
+    Files.createDirectories(root);
+    final Path subdir1 = root.resolve("subdir1");
+    Files.createDirectories(subdir1);
+    final Path file1 = subdir1.resolve("file1");
+    Files.createFile(file1);
+    final Path subdir2 = root.resolve("subdir2");
+    Files.createDirectories(subdir2);
+    final Path file2 = subdir2.resolve("file2");
+    Files.createFile(file2);
+
+    // #walk
+    final Source<Path, NotUsed> source = Directory.walk(root, 1, FileVisitOption.FOLLOW_LINKS);
+    // #walk
+
+    final List<Path> result = source.runWith(Sink.seq(), materializer)
+        .toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertEquals(result, Arrays.asList(root, subdir1, subdir2));
   }
 
   @After

@@ -3,12 +3,12 @@
  */
 package akka.stream.alpakka.file.scaladsl
 
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{Files, Path}
-import java.util.function.BiPredicate
+import java.nio.file.{FileVisitOption, Files, Path}
 
 import akka.NotUsed
 import akka.stream.scaladsl.{Source, StreamConverters}
+
+import scala.collection.immutable
 
 object Directory {
 
@@ -23,14 +23,24 @@ object Directory {
   /**
    * Recursively list files in the given directory and its subdirectories. Listing is done
    * depth first.
+   *
+   * @param maxDepth If defined limits the depth of the directory structure to walk through
+   * @param fileVisitOptions See `java.nio.files.Files.walk()` for details
    */
-  def walk(directory: Path): Source[Path, NotUsed] = {
+  def walk(directory: Path,
+           maxDepth: Option[Int] = None,
+           fileVisitOptions: immutable.Seq[FileVisitOption] = Nil): Source[Path, NotUsed] = {
     require(Files.isDirectory(directory), s"Path must be a directory, $directory isn't")
-    StreamConverters.fromJavaStream(() => Files.walk(directory))
-  }
+    val factory = maxDepth match {
+      case None =>
+        () =>
+          Files.walk(directory, fileVisitOptions: _*)
+      case Some(maxDepth) =>
+        () =>
+          Files.walk(directory, maxDepth, fileVisitOptions: _*)
+    }
 
-  private def allFilesFilter = new BiPredicate[Path, BasicFileAttributes] {
-    override def test(t: Path, u: BasicFileAttributes): Boolean = true
+    StreamConverters.fromJavaStream(factory)
   }
 
 }
