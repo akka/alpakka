@@ -11,10 +11,10 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Source}
 import akka.stream.{Materializer, SourceShape}
-import de.heikoseeberger.akkasse.MediaTypes.`text/event-stream`
-import de.heikoseeberger.akkasse.headers.`Last-Event-ID`
-import de.heikoseeberger.akkasse.{EventStreamUnmarshalling, ServerSentEvent}
-import de.heikoseeberger.akkasse.ServerSentEvent.heartbeat
+import de.heikoseeberger.akkasse.scaladsl.model.MediaTypes.`text/event-stream`
+import de.heikoseeberger.akkasse.scaladsl.model.ServerSentEvent
+import de.heikoseeberger.akkasse.scaladsl.model.headers.`Last-Event-ID`
+import de.heikoseeberger.akkasse.scaladsl.unmarshalling.EventStreamUnmarshalling
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
@@ -67,7 +67,7 @@ object EventSource {
 
   private val noEvents = Future.successful(Source.empty[ServerSentEvent])
 
-  private val singleDelimiter = Source.single(heartbeat)
+  private val singleDelimiter = Source.single(ServerSentEvent.heartbeat)
 
   /**
    * @param uri URI with absolute path, e.g. "http://myserver/events
@@ -113,7 +113,7 @@ object EventSource {
       val trigger = builder.add(Source.single(initialLastEventId))
       val merge = builder.add(Merge[Option[String]](2))
       val bcast = builder.add(Broadcast[ServerSentEvent](2))
-      val events = builder.add(Flow[ServerSentEvent].filter(_ != heartbeat))
+      val events = builder.add(Flow[ServerSentEvent].filter(_ != ServerSentEvent.heartbeat))
       val delay = builder.add(Flow[Option[String]].delay(retryDelay))
       // format: OFF
       trigger ~> merge ~>   continuousEvents   ~> bcast ~> events
