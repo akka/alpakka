@@ -14,9 +14,10 @@ import akka.pattern.pipe
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, ThrottleMode}
 import akka.testkit.SocketUtil
-import de.heikoseeberger.akkasse.MediaTypes.`text/event-stream`
-import de.heikoseeberger.akkasse.headers.`Last-Event-ID`
-import de.heikoseeberger.akkasse.{EventStreamMarshalling, ServerSentEvent}
+import de.heikoseeberger.akkasse.scaladsl.model.MediaTypes.`text/event-stream`
+import de.heikoseeberger.akkasse.scaladsl.model.ServerSentEvent
+import de.heikoseeberger.akkasse.scaladsl.model.headers.`Last-Event-ID`
+import de.heikoseeberger.akkasse.scaladsl.marshalling.EventStreamMarshalling
 import java.net.InetSocketAddress
 import java.nio.charset.StandardCharsets.UTF_8
 import org.scalatest.{AsyncWordSpec, BeforeAndAfterAll, Matchers}
@@ -38,7 +39,9 @@ object EventSourceSpec {
           try {
             val fromSeqNo = lastEventId.map(_.trim.toInt).getOrElse(0) + 1
             complete {
-              Source(fromSeqNo.until(fromSeqNo + size)).map(toServerSentEvent(setEventId))
+              Source(fromSeqNo.until(fromSeqNo + size))
+                .map(toServerSentEvent(setEventId))
+                .intersperse(ServerSentEvent.heartbeat)
             }
           } catch {
             case _: NumberFormatException =>
@@ -105,9 +108,9 @@ object EventSourceSpec {
   }
 
   private def toServerSentEvent(setEventId: Boolean)(n: Int) = {
-    val data = Some(n.toString)
+    val data = n.toString
     val event = ServerSentEvent(data)
-    if (setEventId) event.copy(id = data) else event
+    if (setEventId) event.copy(id = Some(data)) else event
   }
 
   private def hostAndPort() = {

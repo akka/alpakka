@@ -2,9 +2,9 @@ import sbt._, Keys._
 
 object Dependencies {
 
-  val ScalaVersions = Seq("2.11.8", "2.12.1")
+  val ScalaVersions = Seq("2.11.11", "2.12.2")
   val AkkaVersion = "2.4.17"
-  val AkkaHttpVersion = "10.0.5"
+  val AkkaHttpVersion = "10.0.6"
 
   val Common = Seq(
     libraryDependencies ++= Seq(
@@ -92,7 +92,7 @@ object Dependencies {
   val Sse = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http"         % AkkaHttpVersion,
-      "de.heikoseeberger" %% "akka-sse"          % "2.0.0", // ApacheV2
+      "de.heikoseeberger" %% "akka-sse"          % "3.0.0", // ApacheV2
       "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion % Test
     )
   )
