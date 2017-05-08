@@ -5,7 +5,7 @@ object Dependencies {
   val ScalaVersions = Seq("2.11.8", "2.12.1")
   val AkkaVersion = "2.4.17"
   val AkkaHttpVersion = "10.0.5"
-  
+
   val Common = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-stream"         % AkkaVersion,
@@ -37,6 +37,8 @@ object Dependencies {
       "com.datastax.cassandra" % "cassandra-driver-core" % "3.1.0" // ApacheV2
     )
   )
+
+  val Csv = Seq()
 
   val HBase = {
     val hbaseVersion = "1.2.4"
@@ -95,10 +97,18 @@ object Dependencies {
     )
   )
 
+  val Sns = Seq(
+    libraryDependencies ++= Seq(
+      "com.amazonaws" % "aws-java-sdk-sns" % "1.11.95",        // ApacheV2
+      "org.mockito"   % "mockito-core"     % "2.7.11"    % Test // MIT
+    )
+  )
+
   val Sqs = Seq(
     libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-sqs" % "1.11.105",        // ApacheV2
-      "org.mockito"   % "mockito-core"     % "2.7.17"    % Test // MIT
+      "com.amazonaws" % "aws-java-sdk-sqs"    % "1.11.109",         // ApacheV2
+      "org.elasticmq" %% "elasticmq-rest-sqs" % "0.13.2",           // ApacheV2
+      "org.mockito"   % "mockito-core"        % "2.7.17"    % Test  // MIT
     )
   )
 
@@ -127,4 +137,10 @@ object Dependencies {
     )
   )
 
+  val IronMq = Seq(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka"   %% "akka-http"                        % AkkaHttpVersion,
+      "de.heikoseeberger"   %% "akka-http-circe"                  % "1.11.0"  // ApacheV2
+    )
+  )
 }
