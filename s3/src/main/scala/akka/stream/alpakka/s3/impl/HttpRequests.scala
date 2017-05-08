@@ -24,20 +24,15 @@ private[alpakka] object HttpRequests {
       bucket: String,
       region: String,
       prefix: Option[String] = None,
-      continuation_token: Option[String] = None
+      continuationToken: Option[String] = None
   )(implicit conf: S3Settings): HttpRequest = {
 
-    val listTypeQuery: (String, String) = "list-type" -> "2"
-    val prefixQuery: Option[(String, String)] = prefix.map("prefix" -> _)
-    val continuationTokenQuery: Option[(String, String)] =
-      continuation_token.map("continuation-token" -> _.replaceAll("=", "%3D"))
-
-    val query = Query((prefixQuery, continuationTokenQuery) match {
-      case (Some(pre), Some(token)) => Map(listTypeQuery, pre, token)
-      case (Some(pre), None) => Map(listTypeQuery, pre)
-      case (None, Some(token)) => Map(listTypeQuery, token)
-      case (None, None) => Map(listTypeQuery)
-    })
+    val query = Query(
+      Seq(
+        "list-type" -> Some("2"),
+        "prefix" -> prefix,
+        "continuation-token" -> continuationToken.map(_.replaceAll("=", "%3D"))
+      ).collect { case (k, Some(v)) => k -> v }.toMap)
 
     HttpRequest(HttpMethods.GET)
       .withHeaders(Host(requestHost(bucket, region)))

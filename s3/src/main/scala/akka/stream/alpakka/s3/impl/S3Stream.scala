@@ -40,7 +40,7 @@ final case class FailedUpload(reasons: Seq[Throwable]) extends Exception
 
 final case class CompleteMultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
-final case class ListBucketResult(is_truncated: Boolean, continuation_token: Option[String], keys: Seq[String])
+final case class ListBucketResult(isTruncated: Boolean, continuationToken: Option[String], keys: Seq[String])
 
 object S3Stream {
 
@@ -65,21 +65,26 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
   }
 
   def listBucket(bucket: String, prefix: Option[String] = None): Source[String, NotUsed] = {
-    def listBucketCall(continuation_token: Option[String] = None): Future[ListBucketResult] =
-      signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, region, prefix, continuation_token))
+    /**
+     *
+     * @param args The Option[String] is our continuation token and the Boolean is our holder
+     *             for wether this is the first time the method was called. When the token is None
+     *             and the first call Boolean is false, we know that we are done getting keys.
+     * @return
+     */
+    def listBucketCall(args: (Option[String], Boolean)): Future[Option[((Option[String], Boolean), Seq[String])]] = {
+      if(!args._2 && args._1.isEmpty) {
+        Future.successful(None)
+      } else {
+        val results = signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, region, prefix, args._1))
+        results.map { (res: ListBucketResult) =>
+          Some(((res.continuationToken, false), res.keys))
+        }
+      }
+    }
 
-    def fileSourceFromFuture(f: Future[ListBucketResult]): Source[String, NotUsed] =
-      Source
-        .fromFuture(f)
-        .flatMapConcat((res: ListBucketResult) => {
-          val keys = Source.fromIterator(() => res.keys.toIterator)
-          if (res.is_truncated) {
-            keys.concat(fileSourceFromFuture(listBucketCall(res.continuation_token)))
-          } else
-            keys
-        })
-
-    fileSourceFromFuture(listBucketCall())
+    Source.unfoldAsync[(Option[String], Boolean), Seq[String]]((None, true))(listBucketCall)
+      .mapConcat(identity)
   }
 
   def request(s3Location: S3Location): Future[HttpResponse] =
