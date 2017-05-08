@@ -214,7 +214,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     req.headers should contain(RawHeader("Cache-Control", "no-cache"))
   }
-    
+
   it should "properly construct the list bucket request with no prefix or continuation token passed" in {
     implicit val settings = S3Settings(ConfigFactory.parseString(pathStyleAcessConfig))
 
