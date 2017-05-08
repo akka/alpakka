@@ -3,7 +3,7 @@ import sbt._, Keys._
 object Dependencies {
 
   val ScalaVersions = Seq("2.11.11", "2.12.2")
-  val AkkaVersion = "2.4.17"
+  val AkkaVersion = "2.4.18"
   val AkkaHttpVersion = "10.0.6"
 
   val Common = Seq(
@@ -118,7 +118,8 @@ object Dependencies {
       "org.apache.activemq" % "activemq-broker" % "5.14.1" % Test, // ApacheV2
       "org.apache.activemq" % "activemq-client" % "5.14.1" % Test // ApacheV2
     ),
-    resolvers += "jboss" at "https://repository.jboss.org/nexus/content/groups/public"
+    // Having JBoss as a first resolver is a workaround for https://github.com/coursier/coursier/issues/200
+    externalResolvers := ("jboss" at "https://repository.jboss.org/nexus/content/groups/public") +: externalResolvers.value
   )
 
   val AwsLambda = Seq(
