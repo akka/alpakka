@@ -43,6 +43,11 @@ final case class CompleteMultipartUploadResult(location: Uri, bucket: String, ke
 
 final case class ListBucketResult(isTruncated: Boolean, continuationToken: Option[String], keys: Seq[String])
 
+sealed trait ListBucketState
+case object Starting extends ListBucketState
+case class Running(continuationToken: String) extends ListBucketState
+case object Finished extends ListBucketState
+
 object S3Stream {
 
   def apply(credentials: AWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer): S3Stream =
@@ -68,25 +73,21 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
   def listBucket(bucket: String, prefix: Option[String] = None): Source[String, NotUsed] = {
     import system.dispatcher
 
-    /**
-     *
-     * @param args The Option[String] is our continuation token and the Boolean is our holder
-     *             for wether this is the first time the method was called. When the token is None
-     *             and the first call Boolean is false, we know that we are done getting keys.
-     * @return
-     */
-    def listBucketCall(args: (Option[String], Boolean)): Future[Option[((Option[String], Boolean), Seq[String])]] =
-      if (!args._2 && args._1.isEmpty) {
-        Future.successful(None)
-      } else {
-        val results = signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, region, prefix, args._1))
-        results.map { (res: ListBucketResult) =>
-          Some(((res.continuationToken, false), res.keys))
+    def listBucketCall(token: Option[String]): Future[Option[(ListBucketState, Seq[String])]] =
+      signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, region, prefix, token))
+        .map { (res: ListBucketResult) =>
+          Some(
+            res.continuationToken
+              .fold[(ListBucketState, Seq[String])]((Finished, res.keys))(t => (Running(t), res.keys))
+          )
         }
-      }
 
     Source
-      .unfoldAsync[(Option[String], Boolean), Seq[String]]((None, true))(listBucketCall)
+      .unfoldAsync[ListBucketState, Seq[String]](Starting) {
+        case Finished => Future.successful(None)
+        case Starting => listBucketCall(None)
+        case Running(token) => listBucketCall(Some(token))
+      }
       .mapConcat(identity)
   }
 
