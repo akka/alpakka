@@ -11,7 +11,7 @@ sealed trait DeleteOrUpdateMessage
 case object Delete extends DeleteOrUpdateMessage
 case class UpdateVisibility(timeout: Int) extends DeleteOrUpdateMessage
 
-object AzureQueueSinkFunctions {
+private[storagequeue] object AzureQueueSinkFunctions {
   def addMessage(
       cloudQueue: CloudQueue
   )(msg: CloudQueueMessage, timeToLive: Int = 0, initialVisibilityTimeout: Int = 0)(

@@ -8,9 +8,9 @@ import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import scala.concurrent.{ExecutionContext, Future}
 
 /** This flow does just a map
-  * with the exception that is also hands the ExecutionContext
-  * of the materializer to the function f
-  */
+ * with the exception that is also hands the ExecutionContext
+ * of the materializer to the function f
+ */
 private[storagequeue] class FlowMapECStage[In, Out](f: (In, ExecutionContext) => Out)
     extends GraphStage[FlowShape[In, Out]] {
   private val in = Inlet[In]("in")

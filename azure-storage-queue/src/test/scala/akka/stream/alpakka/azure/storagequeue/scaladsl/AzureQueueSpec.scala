@@ -16,7 +16,6 @@ import scala.util.Properties
 import akka.stream.alpakka.azure.storagequeue._
 import scala.collection.JavaConverters._
 
-
 // These tests are all live since the Azure Storage Emulator
 // does not run on Linux/Docker yet
 class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with BeforeAndAfterAll {

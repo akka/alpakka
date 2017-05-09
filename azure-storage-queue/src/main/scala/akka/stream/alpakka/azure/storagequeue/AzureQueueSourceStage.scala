@@ -10,7 +10,7 @@ import scala.collection.mutable.Queue
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-case class AzureQueueSourceSettings(
+final case class AzureQueueSourceSettings(
     waitTimeSeconds: Int,
     maxBufferSize: Int,
     maxBatchSize: Int
@@ -20,9 +20,15 @@ case class AzureQueueSourceSettings(
 
 object AzureQueueSourceSettings {
   val default = AzureQueueSourceSettings(20, 100, 10)
+
+  /**
+   *  Java API
+   */
+  def create(waitTimeSeconds: Int, maxBufferSize: Int, maxBatchSize: Int): AzureQueueSourceSettings =
+    AzureQueueSourceSettings(waitTimeSeconds, maxBufferSize, maxBatchSize)
 }
 
-class AzureQueueSourceStage(cloudQueue: CloudQueue, settings: AzureQueueSourceSettings)
+private[storagequeue] final class AzureQueueSourceStage(cloudQueue: CloudQueue, settings: AzureQueueSourceSettings)
     extends GraphStage[SourceShape[CloudQueueMessage]] {
   val out: Outlet[CloudQueueMessage] = Outlet("AzureCloudQueue.out")
   override val shape: SourceShape[CloudQueueMessage] = SourceShape(out)
