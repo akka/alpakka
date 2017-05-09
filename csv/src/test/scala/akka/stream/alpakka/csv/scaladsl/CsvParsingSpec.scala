@@ -98,7 +98,7 @@ class CsvParsingSpec extends CsvSpec {
           .runWith(Sink.seq)
       val res = fut.futureValue
       res(0) should be(List("abc", "def", "ghi", "", "", "", ""))
-      res(1) should be(List("\"", "\\\\;", "a\"\nbc", "", "", "", ""))
+      res(1) should be(List("\"", "\\\\;", "a\"\nb\"\"c", "", "", "", ""))
     }
 
     "parse Google Docs exported file" in {
@@ -110,7 +110,64 @@ class CsvParsingSpec extends CsvSpec {
           .runWith(Sink.seq)
       val res = fut.futureValue
       res(0) should be(List("abc", "def", "ghi"))
-      res(1) should be(List("\"", "\\\\,", "a\"\nbc"))
+      res(1) should be(List("\"", "\\\\,", "a\"\nb\"\"c"))
+    }
+
+    "parse uniVocity correctness test" in { // see https://github.com/uniVocity/csv-parsers-comparison
+      val fut =
+        FileIO
+          .fromPath(Paths.get("csv/src/test/resources/correctness.csv"))
+          .via(CsvParsing.lineScanner())
+          .via(CsvToMap.toMap())
+          .map(_.mapValues(_.utf8String))
+          .runWith(Sink.seq)
+      val res = fut.futureValue
+      res(0) should be(
+        Map(
+          "Year" -> "1997",
+          "Make" -> "Ford",
+          "Model" -> "E350",
+          "Description" -> "ac, abs, moon",
+          "Price" -> "3000.00"
+        )
+      )
+      res(1) should be(
+        Map(
+          "Year" -> "1999",
+          "Make" -> "Chevy",
+          "Model" -> "Venture \"Extended Edition\"",
+          "Description" -> "",
+          "Price" -> "4900.00"
+        )
+      )
+      res(2) should be(
+        Map(
+          "Year" -> "1996",
+          "Make" -> "Jeep",
+          "Model" -> "Grand Cherokee",
+          "Description" -> """MUST SELL!
+                            |air, moon roof, loaded""".stripMargin,
+          "Price" -> "4799.00"
+        )
+      )
+      res(3) should be(
+        Map(
+          "Year" -> "1999",
+          "Make" -> "Chevy",
+          "Model" -> "Venture \"Extended Edition, Very Large\"",
+          "Description" -> "",
+          "Price" -> "5000.00"
+        )
+      )
+      res(4) should be(
+        Map(
+          "Year" -> "",
+          "Make" -> "",
+          "Model" -> "Venture \"Extended Edition\"",
+          "Description" -> "",
+          "Price" -> "4900.00"
+        )
+      )
     }
   }
 }

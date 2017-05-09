@@ -81,6 +81,8 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
       if (!useBuilder) {
         builder = ByteString.newBuilder ++= buf.slice(fieldStart, pos) += x
         useBuilder = true
+      } else {
+        builder += x
       }
 
     @inline def add(x: Byte): Unit =
