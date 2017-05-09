@@ -2,8 +2,10 @@ import sbt._, Keys._
 
 object Dependencies {
 
-  val ScalaVersions = Seq("2.11.11", "2.12.2")
-  val AkkaVersion = "2.4.17"
+  val AkkaVersion = sys.env.get("akka.series") match {
+    case Some("2.5") => "2.5.1"
+    case _ => "2.4.18"
+  }
   val AkkaHttpVersion = "10.0.6"
 
   val Common = Seq(
