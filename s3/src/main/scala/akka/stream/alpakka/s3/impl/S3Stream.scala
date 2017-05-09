@@ -43,11 +43,6 @@ final case class CompleteMultipartUploadResult(location: Uri, bucket: String, ke
 
 final case class ListBucketResult(isTruncated: Boolean, continuationToken: Option[String], keys: Seq[String])
 
-sealed trait ListBucketState
-case object Starting extends ListBucketState
-case class Running(continuationToken: String) extends ListBucketState
-case object Finished extends ListBucketState
-
 object S3Stream {
 
   def apply(credentials: AWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer): S3Stream =
@@ -71,6 +66,11 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
   }
 
   def listBucket(bucket: String, prefix: Option[String] = None): Source[String, NotUsed] = {
+    sealed trait ListBucketState
+    case object Starting extends ListBucketState
+    case class Running(continuationToken: String) extends ListBucketState
+    case object Finished extends ListBucketState
+
     import system.dispatcher
 
     def listBucketCall(token: Option[String]): Future[Option[(ListBucketState, Seq[String])]] =
