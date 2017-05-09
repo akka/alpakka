@@ -104,7 +104,6 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
             OutgoingMessage(id, source.convertTo[T])
           }
           emitMultiple(out, messages)
-          sendScrollScanRequest()
         }
       }
       case Some(error) => {
@@ -114,11 +113,7 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
   }
 
   setHandler(out, new OutHandler {
-    override def onPull(): Unit =
-      if (!started) {
-        started = true
-        sendScrollScanRequest()
-      }
+    override def onPull(): Unit = sendScrollScanRequest()
   })
 
 }
