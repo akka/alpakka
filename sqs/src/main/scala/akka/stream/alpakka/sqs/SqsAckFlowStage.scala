@@ -35,8 +35,8 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
           checkForCompletion()
       }
 
-      private def handleChangeVisibility(result: ChangeMessageVisibilityResult): Unit = {
-        log.debug(s"Set visibility")
+      private def handleChangeVisibility(request: ChangeMessageVisibilityRequest): Unit = {
+        log.debug(s"Set visibility timeout for message {} to {}", request.getReceiptHandle, request.getVisibilityTimeout)
         inFlight -= 1
         if (inFlight == 0 && inIsClosed)
           checkForCompletion()
@@ -49,13 +49,13 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
       }
 
       var failureCallback: AsyncCallback[Exception] = _
-      var changeVisibilityCallback: AsyncCallback[ChangeMessageVisibilityResult] = _
+      var changeVisibilityCallback: AsyncCallback[ChangeMessageVisibilityRequest] = _
       var deleteCallback: AsyncCallback[DeleteMessageRequest] = _
 
       override def preStart(): Unit = {
         super.preStart()
         failureCallback = getAsyncCallback[Exception](handleFailure)
-        changeVisibilityCallback = getAsyncCallback[ChangeMessageVisibilityResult](handleChangeVisibility)
+        changeVisibilityCallback = getAsyncCallback[ChangeMessageVisibilityRequest](handleChangeVisibility)
         deleteCallback = getAsyncCallback[DeleteMessageRequest](handleDelete)
       }
 
@@ -112,10 +112,10 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
                     }
                   }
                 )
-              case ChangeMessageVisibility(delaySeconds) =>
+              case ChangeMessageVisibility(visibilityTimeout) =>
                 sqsClient
                   .changeMessageVisibilityAsync(
-                    new ChangeMessageVisibilityRequest(queueUrl, message.getReceiptHandle, delaySeconds),
+                    new ChangeMessageVisibilityRequest(queueUrl, message.getReceiptHandle, visibilityTimeout),
                     new AsyncHandler[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult] {
 
                       override def onError(exception: Exception): Unit = {
@@ -126,7 +126,7 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
                       override def onSuccess(request: ChangeMessageVisibilityRequest,
                                              result: ChangeMessageVisibilityResult): Unit = {
                         responsePromise.success(AckResult(result, message.getBody))
-                        changeVisibilityCallback.invoke(result)
+                        changeVisibilityCallback.invoke(request)
                       }
                     }
                   )

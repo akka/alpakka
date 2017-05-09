@@ -16,7 +16,7 @@ final case class SqsAckSinkSettings(maxInFlight: Int) {
 sealed trait MessageAction
 final case class Delete() extends MessageAction
 final case class Ignore() extends MessageAction
-final case class ChangeMessageVisibility(visibility: Int) extends MessageAction {
+final case class ChangeMessageVisibility(visibilityTimeout: Int) extends MessageAction {
   // SQS requirements
-  require(0 <= visibility && visibility <= 43200)
+  require(0 <= visibilityTimeout && visibilityTimeout <= 43200)
 }
