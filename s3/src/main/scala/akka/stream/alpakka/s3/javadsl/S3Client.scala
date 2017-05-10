@@ -28,8 +28,8 @@ object MultipartUploadResult {
     new MultipartUploadResult(JavaUri(r.location), r.bucket, r.key, r.etag)
 }
 
-final class S3Client(credentials: AWSCredentials, region: String, system: ActorSystem, mat: Materializer) {
-  private val impl = S3Stream(credentials, region)(system, mat)
+final class S3Client(credentials: AWSCredentials, system: ActorSystem, mat: Materializer) {
+  private val impl = S3Stream(credentials)(system, mat)
 
   def request(bucket: String, key: String): CompletionStage[HttpResponse] =
     impl.request(S3Location(bucket, key)).map(_.asInstanceOf[HttpResponse])(system.dispatcher).toJava

@@ -29,7 +29,7 @@ public class S3ClientTest extends S3WireMockBase {
 
     //#client
     final AWSCredentials credentials = new BasicCredentials("my-AWS-access-key-ID", "my-AWS-password");
-    final S3Client client = new S3Client(credentials, "us-east-1", system(), materializer);
+    final S3Client client = new S3Client(credentials, system(), materializer);
     //#client
 
     @Test

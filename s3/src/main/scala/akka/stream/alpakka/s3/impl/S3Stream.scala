@@ -45,12 +45,11 @@ final case class CompleteMultipartUploadResult(location: Uri, bucket: String, ke
 
 object S3Stream {
 
-  def apply(credentials: AWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer): S3Stream =
-    new S3Stream(credentials, region, S3Settings(system))
+  def apply(credentials: AWSCredentials)(implicit system: ActorSystem, mat: Materializer): S3Stream =
+    new S3Stream(credentials, S3Settings(system))
 }
 
 private[alpakka] final class S3Stream(credentials: AWSCredentials,
-                                      region: String,
                                       val settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
 
   import Marshalling._
@@ -58,7 +57,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
 
   implicit val conf = settings
   val MinChunkSize = 5242880 //in bytes
-  val signingKey = SigningKey(credentials, CredentialScope(LocalDate.now(), region, "s3"))
+  val signingKey = SigningKey(credentials, CredentialScope(LocalDate.now(), settings.s3Region, "s3"))
 
   def download(s3Location: S3Location, range: Option[ByteRange] = None): Source[ByteString, NotUsed] = {
     import mat.executionContext
@@ -66,7 +65,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
   }
 
   def request(s3Location: S3Location, rangeOption: Option[ByteRange] = None): Future[HttpResponse] = {
-    val downloadRequest = getDownloadRequest(s3Location, region)
+    val downloadRequest = getDownloadRequest(s3Location)
     signAndGet(rangeOption match {
       case Some(range) => downloadRequest.withHeaders(headers.Range(range))
       case _ => downloadRequest
@@ -89,7 +88,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
                                       s3Headers: S3Headers): Future[MultipartUpload] = {
     import mat.executionContext
 
-    val req = initiateMultipartUploadRequest(s3Location, contentType, region, s3Headers)
+    val req = initiateMultipartUploadRequest(s3Location, contentType, s3Headers)
 
     val response = for {
       signedReq <- Signer.signedRequest(req, signingKey)
@@ -109,7 +108,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
                                       parts: Seq[SuccessfulUploadPart]): Future[CompleteMultipartUploadResult] = {
     import mat.executionContext
 
-    for (req <- completeMultipartUploadRequest(parts.head.multipartUpload, parts.map(p => p.index -> p.etag), region);
+    for (req <- completeMultipartUploadRequest(parts.head.multipartUpload, parts.map(p => p.index -> p.etag));
          res <- signAndGetAs[CompleteMultipartUploadResult](req)) yield res
   }
 
@@ -150,7 +149,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
         case (chunkedPayload, (uploadInfo, chunkIndex)) =>
           //each of the payload requests are created
           val partRequest =
-            uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload.data, chunkedPayload.size, region)
+            uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload.data, chunkedPayload.size)
           (partRequest, (uploadInfo, chunkIndex))
       }
       .mapAsync(parallelism) { case (req, info) => Signer.signedRequest(req, signingKey).zip(Future.successful(info)) }

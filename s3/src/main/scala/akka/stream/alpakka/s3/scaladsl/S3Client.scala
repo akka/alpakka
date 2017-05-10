@@ -29,15 +29,15 @@ object S3Client {
 
   def apply()(implicit system: ActorSystem, mat: Materializer): S3Client = {
     val s3Settings = S3Settings(system)
-    new S3Client(s3Settings.awsCredentials, s3Settings.s3Region)
+    new S3Client(s3Settings.awsCredentials)
   }
 }
 
-final class S3Client(credentials: AWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer) {
+final class S3Client(credentials: AWSCredentials)(implicit system: ActorSystem, mat: Materializer) {
 
   import S3Client._
 
-  private[this] val impl = S3Stream(credentials, region)
+  private[this] val impl = S3Stream(credentials)
 
   def request(bucket: String, key: String): Future[HttpResponse] = impl.request(S3Location(bucket, key))
 

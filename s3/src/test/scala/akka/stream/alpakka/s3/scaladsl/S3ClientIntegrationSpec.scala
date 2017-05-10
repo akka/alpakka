@@ -21,7 +21,7 @@ trait S3ClientIntegrationSpec
 
   //#client
   val awsCredentials = AWSCredentials(accessKeyId = "my-AWS-access-key-ID", secretAccessKey = "my-AWS-password")
-  val s3Client = new S3Client(credentials = awsCredentials, region = "us-east-1")(system, materializer)
+  val s3Client = new S3Client(credentials = awsCredentials)(system, materializer)
   //#client
 
 }
