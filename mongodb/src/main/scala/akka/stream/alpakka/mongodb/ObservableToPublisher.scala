@@ -9,8 +9,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import org.mongodb.{scala => mongoDB}
 import org.{reactivestreams => rxStreams}
 
-import scala.language.implicitConversions
-
 private[mongodb] final case class ObservableToPublisher[T](observable: mongoDB.Observable[T]) extends rxStreams.Publisher[T] {
   def subscribe(subscriber: rxStreams.Subscriber[_ >: T]): Unit = {
     observable.subscribe(
