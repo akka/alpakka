@@ -4,6 +4,7 @@
 package akka.stream.alpakka.s3.impl
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpEntity, MediaTypes}
 import akka.stream.alpakka.s3.S3Settings
@@ -208,8 +209,29 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
   it should "initiate multipart upload with custom s3 headers" in {
     implicit val settings = S3Settings(ActorSystem())
     val s3Headers = S3Headers(Map("Cache-Control" -> "no-cache"))
-    val req = HttpRequests.initiateMultipartUploadRequest(location, contentType, "us-east-2", s3Headers)
+    val req = HttpRequests
+      .initiateMultipartUploadRequest(location, contentType, "us-east-2", s3Headers)
 
     req.headers should contain(RawHeader("Cache-Control", "no-cache"))
+  }
+
+  it should "properly construct the list bucket request with no prefix or continuation token passed" in {
+    implicit val settings = S3Settings(ConfigFactory.parseString(pathStyleAcessConfig))
+
+    val req =
+      HttpRequests.listBucket(location.bucket, "region")
+
+    req.uri.query() shouldEqual Query("list-type" -> "2")
+  }
+
+  it should "properly construct the list bucket request with a prefix and token passed" in {
+    implicit val settings = S3Settings(ConfigFactory.parseString(pathStyleAcessConfig))
+
+    val req =
+      HttpRequests.listBucket(location.bucket, "region", Some("random/prefix"), Some("randomToken"))
+
+    req.uri.query() shouldEqual Query("list-type" -> "2",
+                                      "prefix" -> "random/prefix",
+                                      "continuation-token" -> "randomToken")
   }
 }
