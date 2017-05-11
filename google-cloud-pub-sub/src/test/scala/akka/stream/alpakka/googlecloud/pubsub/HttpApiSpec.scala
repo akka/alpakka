@@ -173,6 +173,18 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
     result.futureValue shouldBe (())
   }
 
+  private val httpApi = HttpApi
+  if (httpApi.PubSubEmulatorHost.isDefined) it should "honor emulator host variables" in {
+    val emulatorVar = sys.props
+      .get(httpApi.PubSubEmulatorHostVarName)
+      .orElse(sys.env.get(httpApi.PubSubEmulatorHostVarName))
+
+    emulatorVar.foreach { emulatorHost =>
+      httpApi.PubSubGoogleApisHost shouldEqual s"http://$emulatorHost"
+      httpApi.GoogleApisHost shouldEqual s"http://$emulatorHost"
+    }
+  }
+
   override def afterAll(): Unit = {
     wiremockServer.stop()
     Await.result(system.terminate(), 5.seconds)

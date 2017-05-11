@@ -27,8 +27,17 @@ import scala.collection.immutable
  */
 @akka.annotation.InternalApi
 private object HttpApi extends HttpApi {
-  val PubSubGoogleApisHost = "https://pubsub.googleapis.com"
-  val GoogleApisHost = "https://www.googleapis.com"
+  val DefaultPubSubGoogleApisHost = "https://pubsub.googleapis.com"
+  val DefaultGoogleApisHost = "https://www.googleapis.com"
+  val PubSubEmulatorHostVarName = "PUBSUB_EMULATOR_HOST"
+
+  val PubSubGoogleApisHost: String = PubSubEmulatorHost.getOrElse(DefaultPubSubGoogleApisHost)
+  val GoogleApisHost: String = PubSubEmulatorHost.getOrElse(DefaultGoogleApisHost)
+
+  private[pubsub] lazy val PubSubEmulatorHost: Option[String] = sys.props
+    .get(PubSubEmulatorHostVarName)
+    .orElse(sys.env.get(PubSubEmulatorHostVarName))
+    .map(host => s"http://$host")
 
   private case class PullRequest(returnImmediately: Boolean, maxMessages: Int)
 }
