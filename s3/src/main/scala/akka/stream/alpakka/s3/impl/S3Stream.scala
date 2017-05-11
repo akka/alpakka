@@ -5,7 +5,6 @@ package akka.stream.alpakka.s3.impl
 
 import java.nio.file.Paths
 import java.time.LocalDate
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -18,7 +17,6 @@ import akka.stream.alpakka.s3.auth.{AWSCredentials, CredentialScope, Signer, Sig
 import akka.stream.alpakka.s3.{DiskBufferType, MemoryBufferType, S3Exception, S3Settings}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
-
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -43,6 +41,8 @@ final case class FailedUpload(reasons: Seq[Throwable]) extends Exception
 
 final case class CompleteMultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
+final case class ListBucketResult(isTruncated: Boolean, continuationToken: Option[String], keys: Seq[String])
+
 object S3Stream {
 
   def apply(credentials: AWSCredentials)(implicit system: ActorSystem, mat: Materializer): S3Stream =
@@ -62,6 +62,32 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
   def download(s3Location: S3Location, range: Option[ByteRange] = None): Source[ByteString, NotUsed] = {
     import mat.executionContext
     Source.fromFuture(request(s3Location, range).flatMap(entityForSuccess).map(_.dataBytes)).flatMapConcat(identity)
+  }
+
+  def listBucket(bucket: String, prefix: Option[String] = None): Source[String, NotUsed] = {
+    sealed trait ListBucketState
+    case object Starting extends ListBucketState
+    case class Running(continuationToken: String) extends ListBucketState
+    case object Finished extends ListBucketState
+
+    import system.dispatcher
+
+    def listBucketCall(token: Option[String]): Future[Option[(ListBucketState, Seq[String])]] =
+      signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, prefix, token))
+        .map { (res: ListBucketResult) =>
+          Some(
+            res.continuationToken
+              .fold[(ListBucketState, Seq[String])]((Finished, res.keys))(t => (Running(t), res.keys))
+          )
+        }
+
+    Source
+      .unfoldAsync[ListBucketState, Seq[String]](Starting) {
+        case Finished => Future.successful(None)
+        case Starting => listBucketCall(None)
+        case Running(token) => listBucketCall(Some(token))
+      }
+      .mapConcat(identity)
   }
 
   def request(s3Location: S3Location, rangeOption: Option[ByteRange] = None): Future[HttpResponse] = {
