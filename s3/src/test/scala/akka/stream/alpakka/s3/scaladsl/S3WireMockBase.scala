@@ -15,10 +15,11 @@ import com.github.tomakehurst.wiremock.matching.EqualToPattern
 
 abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockServer) extends TestKit(_system) {
 
-  def this(mock: WireMockServer) = this(ActorSystem(getCallerName(getClass), config(mock.httpsPort())), mock)
+  def this(mock: WireMockServer) = this(ActorSystem(getCallerName(getClass)), mock)
   def this() = this(initServer())
 
   val mock = new WireMock("localhost", _wireMockServer.port())
+  val port = _wireMockServer.port()
 
   def mock404s(): Unit =
     mock.register(
@@ -116,21 +117,6 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
 }
 
 private object S3WireMockBase {
-  def config(port: Int) = ConfigFactory.parseString(
-    s"""
-    |akka {
-    |  loggers = ["akka.testkit.TestEventListener"]
-    |
-    |  ssl-config.trustManager.stores = [
-    |        {type = "PEM", path = "./s3/src/test/resources/rootCA.crt"}
-    |      ]
-    |  stream.alpakka.s3.proxy {
-    |   host = localhost
-    |   port = $port
-    | }
-    |}
-  """.stripMargin
-  )
 
   def getCallerName(clazz: Class[_]): String = {
     val s = (Thread.currentThread.getStackTrace map (_.getClassName) drop 1)

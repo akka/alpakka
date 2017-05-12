@@ -45,19 +45,18 @@ final case class ListBucketResult(isTruncated: Boolean, continuationToken: Optio
 
 object S3Stream {
 
-  def apply(credentials: AWSCredentials)(implicit system: ActorSystem, mat: Materializer): S3Stream =
-    new S3Stream(credentials, S3Settings(system))
+  def apply(settings: S3Settings)(implicit system: ActorSystem, mat: Materializer): S3Stream =
+    new S3Stream(settings)
 }
 
-private[alpakka] final class S3Stream(credentials: AWSCredentials,
-                                      val settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
+private[alpakka] final class S3Stream(val settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
 
   import Marshalling._
   import HttpRequests._
 
   implicit val conf = settings
   val MinChunkSize = 5242880 //in bytes
-  val signingKey = SigningKey(credentials, CredentialScope(LocalDate.now(), settings.s3Region, "s3"))
+  val signingKey = SigningKey(settings.awsCredentials, CredentialScope(LocalDate.now(), settings.s3Region, "s3"))
 
   def download(s3Location: S3Location, range: Option[ByteRange] = None): Source[ByteString, NotUsed] = {
     import mat.executionContext

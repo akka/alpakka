@@ -8,6 +8,10 @@ import akka.http.javadsl.model.Uri;
 import akka.http.javadsl.model.headers.ByteRange;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.s3.BufferType;
+import akka.stream.alpakka.s3.MemoryBufferType;
+import akka.stream.alpakka.s3.Proxy;
+import akka.stream.alpakka.s3.S3Settings;
 import akka.stream.alpakka.s3.auth.AWSCredentials;
 import akka.stream.alpakka.s3.auth.BasicCredentials;
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase;
@@ -15,6 +19,7 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import org.junit.Test;
+import scala.Some;
 
 import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
@@ -29,7 +34,9 @@ public class S3ClientTest extends S3WireMockBase {
 
     //#client
     final AWSCredentials credentials = new BasicCredentials("my-AWS-access-key-ID", "my-AWS-password");
-    final S3Client client = new S3Client(credentials, system(), materializer);
+    final Proxy proxy = new Proxy("localhost",port(),"http");
+    final S3Settings settings = new S3Settings(MemoryBufferType.getInstance(),"", Some.apply(proxy),credentials,"us-east-1",false);
+    final S3Client client = new S3Client(settings, system(), materializer);
     //#client
 
     @Test
