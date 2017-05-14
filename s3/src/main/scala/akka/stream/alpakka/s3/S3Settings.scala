@@ -9,12 +9,12 @@ import com.typesafe.config.{Config, ConfigFactory}
 
 final case class Proxy(host: String, port: Int, scheme: String)
 
-case class S3Settings(bufferType: BufferType,
-                      diskBufferPath: String,
-                      proxy: Option[Proxy],
-                      awsCredentials: AWSCredentials,
-                      s3Region: String,
-                      pathStyleAccess: Boolean) {
+final case class S3Settings(bufferType: BufferType,
+                            diskBufferPath: String,
+                            proxy: Option[Proxy],
+                            awsCredentials: AWSCredentials,
+                            s3Region: String,
+                            pathStyleAccess: Boolean) {
 
   override def toString: String =
     s"S3Settings($bufferType,$diskBufferPath,$proxy,$awsCredentials,$s3Region,$pathStyleAccess)"
@@ -31,12 +31,14 @@ case object DiskBufferType extends BufferType {
 }
 
 object S3Settings {
-  //def apply(system: ActorSystem): S3Settings = apply(system.settings.config.getConfig("akka.stream.alpakka.s3"))
-
-  def apply(): S3Settings = apply(ConfigFactory.load())
 
   /**
-   * Create [[S3Settings]] from a Config subsection.
+   * Scala API: Creates [[S3Settings]] from the [[Config]] attached to an [[ActorSystem]].
+   */
+  def apply()(implicit system: ActorSystem): S3Settings = apply(system.settings.config)
+
+  /**
+   * Scala API: Creates [[S3Settings]] from a [[Config]] object.
    */
   def apply(config: Config): S3Settings = new S3Settings(
     bufferType = config.getString("akka.stream.alpakka.s3.buffer") match {
@@ -60,4 +62,14 @@ object S3Settings {
     s3Region = config.getString("akka.stream.alpakka.s3.aws.default-region"),
     pathStyleAccess = config.getBoolean("akka.stream.alpakka.s3.path-style-access")
   )
+
+  /**
+   * Java API: Creates [[S3Settings]] from the [[Config]] attached to an [[ActorSystem]].
+   */
+  def create(system: ActorSystem) = apply()(system)
+
+  /**
+   * Java API: Creates [[S3Settings]] from a [[Config]].
+   */
+  def create(config: Config) = apply(config)
 }

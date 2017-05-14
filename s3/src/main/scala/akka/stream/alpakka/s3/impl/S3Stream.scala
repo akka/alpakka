@@ -49,7 +49,7 @@ object S3Stream {
     new S3Stream(settings)
 }
 
-private[alpakka] final class S3Stream(val settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
+private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
 
   import Marshalling._
   import HttpRequests._
