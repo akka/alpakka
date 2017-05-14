@@ -22,24 +22,26 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
   implicit val materializer = ActorMaterializer()
 
   val timeout = 10.seconds
+  val queueName = s"testqueue${scala.util.Random.nextInt(100000)}"
+  val azureConnStringOpt = Properties.envOrNone("AZURE_CONNECTION_STRING")
 
-  val queueOpt: Option[CloudQueue] = {
-    Properties.envOrNone("AZURE_CONNECTION_STRING").map { storageConnectionString =>
+  def queueOpt: Option[CloudQueue] =
+    azureConnStringOpt.map { storageConnectionString =>
       val storageAccount = CloudStorageAccount.parse(storageConnectionString)
       val queueClient = storageAccount.createCloudQueueClient
-      val r = scala.util.Random
-      val queue = queueClient.getQueueReference(s"testqueue${r.nextInt(100000)}")
-      queue.createIfNotExists
+      val queue = queueClient.getQueueReference(queueName)
       queue
     }
-  }
-  def queue = queueOpt.get
+  val queueFactory = () => queueOpt.get
+  val queue = queueFactory()
 
   override def withFixture(test: NoArgAsyncTest) = {
     assume(queueOpt.isDefined, "Queue is not defined. Please set AZURE_CONNECTION_STRING")
     queueOpt.map(_.clear)
     test()
   }
+  override def beforeAll: Unit =
+    queueOpt.map(_.createIfNotExists)
   override def afterAll: Unit = {
     queueOpt.map(_.deleteIfExists)
     TestKit.shutdownActorSystem(system)
@@ -60,8 +62,7 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
     val msgs = (1 to 10).map(_ => queueTestMsg)
     msgs.foreach(m => queue.addMessage(m))
 
-    AzureQueueSource(queue)
-      .take(10)
+    AzureQueueSource(queueFactory)
       .runWith(Sink.seq)
       .map(
         dequeuedMsgs =>
@@ -69,38 +70,39 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
       )
   }
 
-  it should "wait for messages queued later" in {
+  it should "observe retrieveRetryTimeout and retrieve messages queued later" in {
     val msgs = (1 to 10).map(_ => queueTestMsg)
 
-    val futureAssertion = AzureQueueSource(queue, AzureQueueSourceSettings.default.copy(waitTimeSeconds = 1))
-      .take(10)
-      .runWith(Sink.seq)
-      .map(
-        dequeuedMsgs =>
-          assert(msgs.map(_.getMessageContentAsString).toSet == dequeuedMsgs.map(_.getMessageContentAsString).toSet)
-      )
+    val futureAssertion =
+      AzureQueueSource(queueFactory, AzureQueueSourceSettings.default.copy(retrieveRetryTimeout = Some(1.seconds)))
+        .take(10)
+        .runWith(Sink.seq)
+        .map(
+          dequeuedMsgs =>
+            assert(msgs.map(_.getMessageContentAsString).toSet == dequeuedMsgs.map(_.getMessageContentAsString).toSet)
+        )
     Thread.sleep(3000)
     msgs.foreach(m => queue.addMessage(m))
 
     futureAssertion
   }
 
-  it should "observe maxBufferSize, maxBatchSize and not pull too many message in from the CouldQueue into the buffer" in {
+  it should "observe batchSize and not pull too many message in from the CouldQueue into the buffer" in {
     val msgs = (1 to 11).map(_ => queueTestMsg)
     msgs.foreach(m => queue.addMessage(m))
 
-    Await.result(AzureQueueSource(queue, AzureQueueSourceSettings.default.copy(maxBufferSize = 10, maxBatchSize = 10))
-                   .take(1)
+    Await.result(AzureQueueSource(queueFactory, AzureQueueSourceSettings.default.copy(batchSize = 10))
+                   .take(10)
                    .runWith(Sink.seq),
                  timeout)
 
-    assert(queue.retrieveMessage() != null, "There should be a 12th message on queue")
+    assert(queue.retrieveMessage() != null, "There should be a 11th message on queue")
     assertCannotGetMessageFromQueue
   }
 
   "AzureQueueSink" should "be able to queue messages" in {
     val msgs = (1 to 10).map(_ => queueTestMsg)
-    Await.result(Source(msgs).runWith(AzureQueueSink(queue)), timeout)
+    Await.result(Source(msgs).runWith(AzureQueueSink(queueFactory)), timeout)
 
     val dequeuedMsgs = queue.retrieveMessages(10).asScala
     assert(msgs.map(_.getMessageContentAsString).toSet == dequeuedMsgs.map(_.getMessageContentAsString).toSet)
@@ -109,7 +111,7 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
 
   "AzureQueueWithTimeoutsSinks" should "be able to queue messages" in {
     val msgs = (1 to 10).map(_ => (queueTestMsg, 0, 0))
-    Await.result(Source(msgs).runWith(AzureQueueWithTimeoutsSink(queue)), timeout)
+    Await.result(Source(msgs).runWith(AzureQueueWithTimeoutsSink(queueFactory)), timeout)
 
     val dequeuedMsgs = queue.retrieveMessages(10).asScala
     assert(msgs.map(_._1.getMessageContentAsString).toSet == dequeuedMsgs.map(_.getMessageContentAsString).toSet)
@@ -117,7 +119,7 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
 
   it should "observe initalTimeout" in {
     val msgs = (1 to 10).map(_ => (queueTestMsg, 0, 120))
-    Await.result(Source(msgs).runWith(AzureQueueWithTimeoutsSink(queue)), timeout)
+    Await.result(Source(msgs).runWith(AzureQueueWithTimeoutsSink(queueFactory)), timeout)
 
     assertCannotGetMessageFromQueue
   }
@@ -127,7 +129,7 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
     val msgs = (1 to 10).map(_ => queueTestMsg)
     msgs.foreach(m => queue.addMessage(m))
     // and deleting 10 message
-    Await.result(AzureQueueSource(queue).take(10).runWith(AzureQueueDeleteSink(queue)), timeout)
+    Await.result(AzureQueueSource(queueFactory).take(10).runWith(AzureQueueDeleteSink(queueFactory)), timeout)
 
     // then there should be no messages on the queue anymore
     assertCannotGetMessageFromQueue
@@ -136,7 +138,7 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
   it should "fail for messages not on the queue" in {
     val msgs = (1 to 10).map(_ => queueTestMsg)
     assertThrows[java.lang.IllegalArgumentException] {
-      Await.result(Source(msgs).runWith(AzureQueueDeleteSink(queue)), timeout)
+      Await.result(Source(msgs).runWith(AzureQueueDeleteSink(queueFactory)), timeout)
     }
   }
 
@@ -147,10 +149,10 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
 
     // Update the visibility to much later for 10 messages
     Await.result(
-      AzureQueueSource(queue)
+      AzureQueueSource(queueFactory)
         .take(10)
         .map(msg => (msg, UpdateVisibility(120)))
-        .runWith(AzureQueueDeleteOrUpdateSink(queue)),
+        .runWith(AzureQueueDeleteOrUpdateSink(queueFactory)),
       timeout
     )
 
@@ -165,10 +167,10 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
 
     // Delete 10 messages
     Await.result(
-      AzureQueueSource(queue)
+      AzureQueueSource(queueFactory)
         .take(10)
         .map(msg => (msg, Delete))
-        .runWith(AzureQueueDeleteOrUpdateSink(queue)),
+        .runWith(AzureQueueDeleteOrUpdateSink(queueFactory)),
       timeout
     )
 

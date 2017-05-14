@@ -4,8 +4,6 @@
 package akka.stream.alpakka.azure.storagequeue
 
 import com.microsoft.azure.storage.queue.{CloudQueue, CloudQueueMessage}
-import scala.concurrent.{ExecutionContext, Future}
-import akka.Done
 
 sealed trait DeleteOrUpdateMessage
 case object Delete extends DeleteOrUpdateMessage
@@ -14,32 +12,20 @@ case class UpdateVisibility(timeout: Int) extends DeleteOrUpdateMessage
 private[storagequeue] object AzureQueueSinkFunctions {
   def addMessage(
       cloudQueue: CloudQueue
-  )(msg: CloudQueueMessage, timeToLive: Int = 0, initialVisibilityTimeout: Int = 0)(
-      implicit executionContext: ExecutionContext
-  ): Future[Done] =
-    Future {
-      cloudQueue.addMessage(msg, timeToLive, initialVisibilityTimeout, null, null)
-      Done
-    }
+  )(msg: CloudQueueMessage, timeToLive: Int = 0, initialVisibilityTimeout: Int = 0): Unit =
+    cloudQueue.addMessage(msg, timeToLive, initialVisibilityTimeout, null, null)
 
   def deleteMessage(
       cloudQueue: CloudQueue
-  )(msg: CloudQueueMessage)(implicit executionContext: ExecutionContext): Future[Done] =
-    Future {
-      cloudQueue.deleteMessage(msg)
-      Done
-    }
+  )(msg: CloudQueueMessage): Unit =
+    cloudQueue.deleteMessage(msg)
 
-  def updateMessage(cloudQueue: CloudQueue)(msg: CloudQueueMessage,
-                                            timeout: Int)(implicit executionContext: ExecutionContext): Future[Done] =
-    Future {
-      cloudQueue.updateMessage(msg, timeout)
-      Done
-    }
+  def updateMessage(cloudQueue: CloudQueue)(msg: CloudQueueMessage, timeout: Int): Unit =
+    cloudQueue.updateMessage(msg, timeout)
 
   def deleteOrUpdateMessage(
       cloudQueue: CloudQueue
-  )(msg: CloudQueueMessage, op: DeleteOrUpdateMessage)(implicit executionContext: ExecutionContext): Future[Done] =
+  )(msg: CloudQueueMessage, op: DeleteOrUpdateMessage): Unit =
     op match {
       case Delete => deleteMessage(cloudQueue)(msg)
       case UpdateVisibility(timeout) => updateMessage(cloudQueue)(msg, timeout)

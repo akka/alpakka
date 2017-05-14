@@ -18,6 +18,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -29,20 +30,32 @@ import org.scalatest.junit.JUnitSuite;
 public class JavaDslTest extends JUnitSuite {
   private static ActorSystem system;
   private static ActorMaterializer materializer;
-  private static CloudQueue queue = null;
+  private static final String storageConnectionString = System.getenv("AZURE_CONNECTION_STRING");
+  private static final Supplier<CloudQueue> queueSupplier = new Supplier<CloudQueue>() {
+      public CloudQueue get() {
+        try {
+          if (storageConnectionString == null) {
+            return null;
+          }
+          CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
+          CloudQueueClient queueClient = storageAccount.createCloudQueueClient();
+          return queueClient.getQueueReference("testqueue");       
+        }
+        catch (Exception ex) {
+          throw new RuntimeException("Could not create CloudQueue", ex);
+        }
+      }
+    };
+
+  private static final CloudQueue queue = queueSupplier.get();
 
   @BeforeClass
   public static void setup()
-      throws StorageException, java.net.URISyntaxException, java.security.InvalidKeyException {
+    throws StorageException, java.net.URISyntaxException, java.security.InvalidKeyException {
     system = ActorSystem.create();
     materializer = ActorMaterializer.create(system);
 
-    String storageConnectionString = System.getenv("AZURE_CONNECTION_STRING");
-
-    if (storageConnectionString != null) {
-      CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
-      CloudQueueClient queueClient = storageAccount.createCloudQueueClient();
-      queue = queueClient.getQueueReference("testqueue");
+    if (queue != null) {
       queue.createIfNotExists();
     }
   }
@@ -64,13 +77,13 @@ public class JavaDslTest extends JUnitSuite {
 
   @Test
   public void testAzureQueueSink()
-      throws StorageException, InterruptedException, ExecutionException, TimeoutException {
+    throws StorageException, InterruptedException, ExecutionException, TimeoutException {
     Assume.assumeNotNull(queue);
     final Source<Integer, NotUsed> sourceInt = Source.range(1, 10);
     final Source<CloudQueueMessage, NotUsed> source =
-        sourceInt.map(i -> new CloudQueueMessage("Java Azure Cloud Test " + i.toString()));
+      sourceInt.map(i -> new CloudQueueMessage("Java Azure Cloud Test " + i.toString()));
 
-    final Sink<CloudQueueMessage, CompletionStage<Done>> sink = AzureQueueSink.create(queue);
+    final Sink<CloudQueueMessage, CompletionStage<Done>> sink = AzureQueueSink.create(queueSupplier);
 
     source.runWith(sink, materializer).toCompletableFuture().get(10, TimeUnit.SECONDS);
 
@@ -79,27 +92,27 @@ public class JavaDslTest extends JUnitSuite {
 
   @Test
   public void testAzureQueueWithTimeoutsSink()
-      throws StorageException, InterruptedException, ExecutionException, TimeoutException {
+    throws StorageException, InterruptedException, ExecutionException, TimeoutException {
     Assume.assumeNotNull(queue);
     final Source<Integer, NotUsed> sourceInt = Source.range(1, 10);
     final Source<MessageWithTimeouts, NotUsed> source =
-        sourceInt.map(
-            i ->
-                new MessageWithTimeouts(
-                    new CloudQueueMessage("Java Azure Cloud Test " + i.toString()), 0, 600));
+      sourceInt.map(
+                    i ->
+                    new MessageWithTimeouts(
+                                            new CloudQueueMessage("Java Azure Cloud Test " + i.toString()), 0, 600));
 
     final Sink<MessageWithTimeouts, CompletionStage<Done>> sink =
-        AzureQueueWithTimeoutsSink.create(queue);
+      AzureQueueWithTimeoutsSink.create(queueSupplier);
 
     source.runWith(sink, materializer).toCompletableFuture().get(10, TimeUnit.SECONDS);
 
     Assert.assertNull(
-        queue.retrieveMessage()); // There should be no message because of inital visibility timeout
+                      queue.retrieveMessage()); // There should be no message because of inital visibility timeout
   }
 
   @Test
   public void testAzureQueueSource()
-      throws StorageException, InterruptedException, ExecutionException, TimeoutException {
+    throws StorageException, InterruptedException, ExecutionException, TimeoutException {
     Assume.assumeNotNull(queue);
 
     // Queue 10 Messages
@@ -107,17 +120,17 @@ public class JavaDslTest extends JUnitSuite {
       queue.addMessage(new CloudQueueMessage("Java Test " + Integer.toString(i)));
     }
 
-    final Source<CloudQueueMessage, NotUsed> source = AzureQueueSource.create(queue);
+    final Source<CloudQueueMessage, NotUsed> source = AzureQueueSource.create(queueSupplier);
 
     final CompletionStage<List<CloudQueueMessage>> msgs =
-        source.take(10).runWith(Sink.seq(), materializer);
+      source.take(10).runWith(Sink.seq(), materializer);
 
     msgs.toCompletableFuture().get(10, TimeUnit.SECONDS);
   }
 
   @Test
   public void testAzureQueueDeleteSink()
-      throws StorageException, InterruptedException, ExecutionException, TimeoutException {
+    throws StorageException, InterruptedException, ExecutionException, TimeoutException {
     Assume.assumeNotNull(queue);
 
     // Queue 10 Messages
@@ -127,10 +140,10 @@ public class JavaDslTest extends JUnitSuite {
 
     // We limit us to buffers of size 1 here, so that there are no stale message in the buffer
     final Source<CloudQueueMessage, NotUsed> source =
-        AzureQueueSource.create(queue, new AzureQueueSourceSettings(20, 1, 1));
+      AzureQueueSource.create(queueSupplier, AzureQueueSourceSettings.create(20, 1, 0));
 
     final Sink<CloudQueueMessage, CompletionStage<Done>> deleteSink =
-        AzureQueueDeleteSink.create(queue);
+      AzureQueueDeleteSink.create(queueSupplier);
 
     final CompletionStage<Done> done = source.take(10).runWith(deleteSink, materializer);
 
@@ -141,7 +154,7 @@ public class JavaDslTest extends JUnitSuite {
 
   @Test
   public void testAzureQueueDeleteOrUpdateSink()
-      throws StorageException, InterruptedException, ExecutionException, TimeoutException {
+    throws StorageException, InterruptedException, ExecutionException, TimeoutException {
     Assume.assumeNotNull(queue);
 
     // Queue 10 Messages
@@ -151,16 +164,16 @@ public class JavaDslTest extends JUnitSuite {
 
     // We limit us to buffers of size 1 here, so that there are no stale message in the buffer
     final Source<CloudQueueMessage, NotUsed> source =
-        AzureQueueSource.create(queue, new AzureQueueSourceSettings(20, 1, 1));
+      AzureQueueSource.create(queueSupplier, AzureQueueSourceSettings.create(20, 1, 0));
 
     final Sink<MessageAndDeleteOrUpdate, CompletionStage<Done>> deleteOrUpdateSink =
-        AzureQueueDeleteOrUpdateSink.create(queue);
+      AzureQueueDeleteOrUpdateSink.create(queueSupplier);
 
     final CompletionStage<Done> done =
-        source
-            .take(10)
-            .map(msg -> new MessageAndDeleteOrUpdate(msg, MessageAndDeleteOrUpdate.delete()))
-            .runWith(deleteOrUpdateSink, materializer);
+      source
+      .take(10)
+      .map(msg -> new MessageAndDeleteOrUpdate(msg, MessageAndDeleteOrUpdate.delete()))
+      .runWith(deleteOrUpdateSink, materializer);
 
     done.toCompletableFuture().get(10, TimeUnit.SECONDS);
 

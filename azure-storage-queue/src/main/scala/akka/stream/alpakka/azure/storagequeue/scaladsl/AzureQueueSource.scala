@@ -14,8 +14,8 @@ object AzureQueueSource {
    * Scala API: creates a [[AzureQueueSource]] for a Azure CloudQueue.
    */
   def apply(
-      cloudQueue: CloudQueue,
+      cloudQueue: () => CloudQueue,
       settings: AzureQueueSourceSettings = AzureQueueSourceSettings.default
   ): Source[CloudQueueMessage, NotUsed] =
-    Source.fromGraph(new AzureQueueSourceStage(cloudQueue, settings))
+    Source.fromGraph(new AzureQueueSourceStage(cloudQueue(), settings))
 }

@@ -3,7 +3,7 @@ lazy val alpakka = project
   .enablePlugins(PublishUnidoc)
   .aggregate(amqp,
              awslambda,
-	           azureStorageQueue,
+             azureStorageQueue,
              cassandra,
              csv,
              dynamodb,

@@ -4,28 +4,41 @@
 package akka.stream.alpakka.azure.storagequeue
 
 import com.microsoft.azure.storage.queue.{CloudQueue, CloudQueueMessage}
-import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
+import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, TimerGraphStageLogic}
 import akka.stream.{Attributes, Outlet, SourceShape}
+import akka.actor.ActorSystem
 import scala.collection.mutable.Queue
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.concurrent.duration._
+import akka.NotUsed
 
+/** Settings for AzureQueueSource
+ *
+ * @param initalVisibilityTimeout Specifies how many seconds a message becomes invisible after it has been dequeued.
+ *        See parameter of the same name in [[com.microsoft.azure.storage.queue.CloudQueue$.retrieveMessages]].
+ * @param batchSize Specifies how many message are fetched in one batch.
+ *        (This is the numberOfMessages parameter in [[com.microsoft.azure.storage.queue.CloudQueue$.retrieveMessages]].)
+ * @param retrieveRetryTimeout If None the [[AzureQueueSource]] will be completed if the queue is empty.
+ *        If Some(timeout) [[AzureQueueSource]] will retry after timeout to get new messages. Do not set timeout to low.
+ */
 final case class AzureQueueSourceSettings(
-    waitTimeSeconds: Int,
-    maxBufferSize: Int,
-    maxBatchSize: Int
-) {
-  require(maxBatchSize <= maxBufferSize, "maxBatchSize must be lower or equal than maxBufferSize")
-}
+    initialVisibilityTimeout: Int,
+    batchSize: Int,
+    retrieveRetryTimeout: Option[FiniteDuration]
+)
 
 object AzureQueueSourceSettings {
-  val default = AzureQueueSourceSettings(20, 100, 10)
+  // default initialVisibilityTimeout (30) is from
+  // com.microsoft.azure.storage.queue.QueueConstants.DEFAULT_VISIBILITY_MESSAGE_TIMEOUT_IN_SECONDS
+  val default = AzureQueueSourceSettings(30, 10, None)
 
   /**
-   *  Java API
+   *  Java API: Constructor for [[AzureQueueSourceSettings]]
+   *  @param retrieveRetryTimeout in seconds. If <= 0 retrying of message retrieval is disable.
    */
-  def create(waitTimeSeconds: Int, maxBufferSize: Int, maxBatchSize: Int): AzureQueueSourceSettings =
-    AzureQueueSourceSettings(waitTimeSeconds, maxBufferSize, maxBatchSize)
+  def create(initialVisibilityTimeout: Int, batchSize: Int, retrieveRetryTimeout: Int): AzureQueueSourceSettings = {
+    val rrTimeout = if (retrieveRetryTimeout > 0) Some(retrieveRetryTimeout.seconds) else None
+    AzureQueueSourceSettings(initialVisibilityTimeout, batchSize, rrTimeout)
+  }
 }
 
 private[storagequeue] final class AzureQueueSourceStage(cloudQueue: CloudQueue, settings: AzureQueueSourceSettings)
@@ -33,57 +46,43 @@ private[storagequeue] final class AzureQueueSourceStage(cloudQueue: CloudQueue, 
   val out: Outlet[CloudQueueMessage] = Outlet("AzureCloudQueue.out")
   override val shape: SourceShape[CloudQueueMessage] = SourceShape(out)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-    val buffer = new Queue[CloudQueueMessage]
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
+    private val buffer = new Queue[CloudQueueMessage]
 
-    private val maxConcurrency = settings.maxBufferSize / settings.maxBatchSize
-    private var maxCurrentConcurrency = maxConcurrency
-    private var currentRequests = 0
+    override def onTimer(timerKey: Any): Unit =
+      retrieveMessages()
 
-    private val successCallback = getAsyncCallback(handleSuccess)
-    private val failureCallback = getAsyncCallback(handleFailure)
+    def retrieveMessages(): Unit = {
+      import scala.collection.JavaConverters._
+      val res = cloudQueue
+        .retrieveMessages(settings.batchSize, settings.initialVisibilityTimeout, null, null)
+        .asScala
+        .toList
 
-    private def canReceiveNewMessages: Boolean = {
-      val currentFreeRequests = (settings.maxBufferSize - buffer.size) / settings.maxBatchSize
-      currentFreeRequests > currentRequests && maxCurrentConcurrency > currentRequests
-    }
-
-    def receiveMessages(): Unit =
-      if (canReceiveNewMessages) {
-        implicit val executionContext = materializer.executionContext
-        currentRequests += 1
-
-        Future {
-          import scala.collection.JavaConverters._
-          val res = cloudQueue.retrieveMessages(settings.maxBatchSize, settings.waitTimeSeconds, null, null)
-          res.asScala.toList
-        } onComplete {
-          case Success(res) => successCallback.invoke(res)
-          case Failure(t) => failureCallback.invoke(t)
+      if (res.isEmpty) {
+        settings.retrieveRetryTimeout match {
+          case Some(timeout) =>
+            if (isAvailable(out)) {
+              scheduleOnce(NotUsed, timeout)
+            }
+          case None => complete(out)
         }
-
-      }
-
-    def handleFailure(ex: Throwable): Unit = failStage(ex)
-
-    def handleSuccess(result: List[CloudQueueMessage]): Unit = {
-      currentRequests -= 1
-      maxCurrentConcurrency = if (result.isEmpty) 1 else maxConcurrency
-      buffer ++= result
-
-      if (!buffer.isEmpty && isAvailable(out)) {
+      } else {
+        buffer ++= res
         push(out, buffer.dequeue)
       }
-      receiveMessages
     }
 
-    setHandler(out, new OutHandler {
-      override def onPull: Unit = {
-        if (!buffer.isEmpty) {
-          push(out, buffer.dequeue)
-        }
-        receiveMessages
+    setHandler(
+      out,
+      new OutHandler {
+        override def onPull: Unit =
+          if (!buffer.isEmpty) {
+            push(out, buffer.dequeue)
+          } else {
+            retrieveMessages()
+          }
       }
-    })
+    )
   }
 }
