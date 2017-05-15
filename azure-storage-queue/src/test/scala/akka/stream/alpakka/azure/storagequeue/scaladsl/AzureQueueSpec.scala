@@ -33,7 +33,7 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
       queue
     }
   val queueFactory = () => queueOpt.get
-  val queue = queueFactory()
+  def queue = queueFactory()
 
   override def withFixture(test: NoArgAsyncTest) = {
     assume(queueOpt.isDefined, "Queue is not defined. Please set AZURE_CONNECTION_STRING")
@@ -88,16 +88,15 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
   }
 
   it should "observe batchSize and not pull too many message in from the CouldQueue into the buffer" in {
-    val msgs = (1 to 11).map(_ => queueTestMsg)
+    val msgs = (1 to 20).map(_ => queueTestMsg)
     msgs.foreach(m => queue.addMessage(m))
 
-    Await.result(AzureQueueSource(queueFactory, AzureQueueSourceSettings.default.copy(batchSize = 10))
-                   .take(10)
+    Await.result(AzureQueueSource(queueFactory, AzureQueueSourceSettings.default.copy(batchSize = 2))
+                   .take(1)
                    .runWith(Sink.seq),
                  timeout)
 
     assert(queue.retrieveMessage() != null, "There should be a 11th message on queue")
-    assertCannotGetMessageFromQueue
   }
 
   "AzureQueueSink" should "be able to queue messages" in {

@@ -11,20 +11,20 @@ case class UpdateVisibility(timeout: Int) extends DeleteOrUpdateMessage
 
 private[storagequeue] object AzureQueueSinkFunctions {
   def addMessage(
-      cloudQueue: CloudQueue
+      cloudQueue: () => CloudQueue
   )(msg: CloudQueueMessage, timeToLive: Int = 0, initialVisibilityTimeout: Int = 0): Unit =
-    cloudQueue.addMessage(msg, timeToLive, initialVisibilityTimeout, null, null)
+    cloudQueue().addMessage(msg, timeToLive, initialVisibilityTimeout, null, null)
 
   def deleteMessage(
-      cloudQueue: CloudQueue
+      cloudQueue: () => CloudQueue
   )(msg: CloudQueueMessage): Unit =
-    cloudQueue.deleteMessage(msg)
+    cloudQueue().deleteMessage(msg)
 
-  def updateMessage(cloudQueue: CloudQueue)(msg: CloudQueueMessage, timeout: Int): Unit =
-    cloudQueue.updateMessage(msg, timeout)
+  def updateMessage(cloudQueue: () => CloudQueue)(msg: CloudQueueMessage, timeout: Int): Unit =
+    cloudQueue().updateMessage(msg, timeout)
 
   def deleteOrUpdateMessage(
-      cloudQueue: CloudQueue
+      cloudQueue: () => CloudQueue
   )(msg: CloudQueueMessage, op: DeleteOrUpdateMessage): Unit =
     op match {
       case Delete => deleteMessage(cloudQueue)(msg)

@@ -10,6 +10,7 @@ import akka.actor.ActorSystem
 import scala.collection.mutable.Queue
 import scala.concurrent.duration._
 import akka.NotUsed
+import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 
 /** Settings for AzureQueueSource
  *
@@ -41,20 +42,26 @@ object AzureQueueSourceSettings {
   }
 }
 
-private[storagequeue] final class AzureQueueSourceStage(cloudQueue: CloudQueue, settings: AzureQueueSourceSettings)
+private[storagequeue] final class AzureQueueSourceStage(cloudQueue: () => CloudQueue,
+                                                        settings: AzureQueueSourceSettings)
     extends GraphStage[SourceShape[CloudQueueMessage]] {
   val out: Outlet[CloudQueueMessage] = Outlet("AzureCloudQueue.out")
   override val shape: SourceShape[CloudQueueMessage] = SourceShape(out)
 
+  override def initialAttributes: Attributes =
+    super.initialAttributes and IODispatcher
+
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     private val buffer = new Queue[CloudQueueMessage]
+
+    lazy val cloudQueueBuilt = cloudQueue()
 
     override def onTimer(timerKey: Any): Unit =
       retrieveMessages()
 
     def retrieveMessages(): Unit = {
       import scala.collection.JavaConverters._
-      val res = cloudQueue
+      val res = cloudQueueBuilt
         .retrieveMessages(settings.batchSize, settings.initialVisibilityTimeout, null, null)
         .asScala
         .toList
