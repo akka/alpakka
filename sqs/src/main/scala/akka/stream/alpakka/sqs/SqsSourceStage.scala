@@ -19,13 +19,26 @@ object SqsSourceSettings {
   def create(waitTimeSeconds: Int, maxBufferSize: Int, maxBatchSize: Int): SqsSourceSettings =
     SqsSourceSettings(waitTimeSeconds, maxBufferSize, maxBatchSize)
 
+  def create(waitTimeSeconds: Int,
+             maxBufferSize: Int,
+             maxBatchSize: Int,
+             attributeNames: util.List[String],
+             messageAttributeNames: util.List[String]): SqsSourceSettings =
+    SqsSourceSettings(waitTimeSeconds,
+                      maxBufferSize,
+                      maxBatchSize,
+                      attributeNames.asScala,
+                      messageAttributeNames.asScala)
+
 }
 
 //#SqsSourceSettings
 final case class SqsSourceSettings(
     waitTimeSeconds: Int,
     maxBufferSize: Int,
-    maxBatchSize: Int
+    maxBatchSize: Int,
+    attributeNames: Seq[String] = Seq(),
+    messageAttributeNames: Seq[String] = Seq()
 ) {
   require(maxBatchSize <= maxBufferSize, "maxBatchSize must be lower or equal than maxBufferSize")
   // SQS requirements
@@ -33,6 +46,42 @@ final case class SqsSourceSettings(
           s"Invalid value ($waitTimeSeconds) for waitTimeSeconds. Requirement: 0 <= waitTimeSeconds <= 20 ")
   require(1 <= maxBatchSize && maxBatchSize <= 10,
           s"Invalid value ($maxBatchSize) for maxBatchSize. Requirement: 1 <= maxBatchSize <= 10 ")
+
+  private val validNames = Seq(
+    "All",
+    "Policy",
+    "VisibilityTimeout",
+    "MaximumMessageSize",
+    "MessageRetentionPeriod",
+    "ApproximateNumberOfMessages",
+    "ApproximateNumberOfMessagesNotVisible",
+    "CreatedTimestamp",
+    "LastModifiedTimestamp",
+    "QueueArn",
+    "ApproximateNumberOfMessagesDelayed",
+    "DelaySeconds",
+    "ReceiveMessageWaitTimeSeconds",
+    "RedrivePolicy",
+    "FifoQueue",
+    "ContentBasedDeduplication",
+    "KmsMasterKeyId",
+    "KmsDataKeyReusePeriodSeconds"
+  )
+
+  require(attributeNames.forall(name => validNames.contains(name)), s"AttributeName must be one of $validNames")
+
+  require(
+    messageAttributeNames.forall(name => name.matches("[0-9a-zA-Z_\\-.]+")),
+    "MessageAttributeNames may only contain alphanumeric characters and the underscore (_), hyphen (-), and period (.)"
+  )
+
+  require(
+    messageAttributeNames.forall(name => !name.matches("(^\\.[^*].*)|(.*\\.\\..*)|(.*\\.$)")),
+    "MessageAttributeNames cannot start or end with a period (.) or have multiple periods in succession (..)"
+  )
+
+  require(messageAttributeNames.forall(name => name.length <= 256),
+          "MessageAttributeNames may not be longer than 256 characters")
 }
 //#SqsSourceSettings
 
@@ -65,6 +114,8 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings)(implic
         currentRequests = currentRequests + 1
 
         val request = new ReceiveMessageRequest(queueUrl)
+          .withAttributeNames(settings.attributeNames.asJava)
+          .withMessageAttributeNames(settings.messageAttributeNames.asJava)
           .withMaxNumberOfMessages(settings.maxBatchSize)
           .withWaitTimeSeconds(settings.waitTimeSeconds)
 
