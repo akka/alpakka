@@ -4,6 +4,7 @@
 
 * [Comma Separated Files - CSV](csv.md)
 * [RecordIO Framing](recordio.md)
+* [Extensible Markup Language - XML](xml.md)
 
 @@@
 

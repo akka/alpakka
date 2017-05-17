@@ -149,4 +149,11 @@ object Dependencies {
       "de.heikoseeberger"   %% "akka-http-circe"                  % "1.11.0"  // ApacheV2
     )
   )
+
+  val Xml = Seq(
+    libraryDependencies ++= Seq(
+      "com.fasterxml" % "aalto-xml" % "1.0.0", // ApacheV2,
+      "org.scala-lang.modules" %% "scala-java8-compat" % "0.8.0" // BSD-style
+    )
+  )
 }
