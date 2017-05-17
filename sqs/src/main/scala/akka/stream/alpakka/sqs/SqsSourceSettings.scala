@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.sqs
 
 import java.util
@@ -16,27 +19,27 @@ object SqsSourceSettings {
              attributeNames: util.List[AttributeName],
              messageAttributeNames: util.List[MessageAttributeName]): SqsSourceSettings =
     SqsSourceSettings(waitTimeSeconds,
-      maxBufferSize,
-      maxBatchSize,
-      attributeNames.asScala,
-      messageAttributeNames.asScala)
+                      maxBufferSize,
+                      maxBatchSize,
+                      attributeNames.asScala,
+                      messageAttributeNames.asScala)
 
 }
 
 //#SqsSourceSettings
 final case class SqsSourceSettings(
-                                    waitTimeSeconds: Int,
-                                    maxBufferSize: Int,
-                                    maxBatchSize: Int,
-                                    attributeNames: Seq[AttributeName] = Seq(),
-                                    messageAttributeNames: Seq[MessageAttributeName] = Seq()
-                                  ) {
+    waitTimeSeconds: Int,
+    maxBufferSize: Int,
+    maxBatchSize: Int,
+    attributeNames: Seq[AttributeName] = Seq(),
+    messageAttributeNames: Seq[MessageAttributeName] = Seq()
+) {
   require(maxBatchSize <= maxBufferSize, "maxBatchSize must be lower or equal than maxBufferSize")
   // SQS requirements
   require(0 <= waitTimeSeconds && waitTimeSeconds <= 20,
-    s"Invalid value ($waitTimeSeconds) for waitTimeSeconds. Requirement: 0 <= waitTimeSeconds <= 20 ")
+          s"Invalid value ($waitTimeSeconds) for waitTimeSeconds. Requirement: 0 <= waitTimeSeconds <= 20 ")
   require(1 <= maxBatchSize && maxBatchSize <= 10,
-    s"Invalid value ($maxBatchSize) for maxBatchSize. Requirement: 1 <= maxBatchSize <= 10 ")
+          s"Invalid value ($maxBatchSize) for maxBatchSize. Requirement: 1 <= maxBatchSize <= 10 ")
 }
 //#SqsSourceSettings
 
@@ -73,4 +76,3 @@ case object FifoQueue extends AttributeName("FifoQueue")
 case object ContentBasedDeduplication extends AttributeName("ContentBasedDeduplication")
 case object KmsMasterKeyId extends AttributeName("KmsMasterKeyId")
 case object KmsDataKeyReusePeriodSeconds extends AttributeName("KmsDataKeyReusePeriodSeconds")
-
