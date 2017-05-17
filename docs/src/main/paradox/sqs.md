@@ -70,7 +70,7 @@ SQS queues never finishes because there is no direct way to determine the end of
 #### Source configuration
 
 Scala
-: @@snip (../../../../sqs/src/main/scala/akka/stream/alpakka/sqs/SqsSourceStage.scala) { #SqsSourceSettings }
+: @@snip (../../../../sqs/src/main/scala/akka/stream/alpakka/sqs/SqsSourceSettings.scala) { #SqsSourceSettings }
 
 Options:
 
