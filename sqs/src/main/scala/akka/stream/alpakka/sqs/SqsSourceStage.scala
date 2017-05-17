@@ -22,8 +22,8 @@ object SqsSourceSettings {
   def create(waitTimeSeconds: Int,
              maxBufferSize: Int,
              maxBatchSize: Int,
-             attributeNames: util.List[String],
-             messageAttributeNames: util.List[String]): SqsSourceSettings =
+             attributeNames: util.List[AttributeName],
+             messageAttributeNames: util.List[MessageAttributeName]): SqsSourceSettings =
     SqsSourceSettings(waitTimeSeconds,
                       maxBufferSize,
                       maxBatchSize,
@@ -32,13 +32,47 @@ object SqsSourceSettings {
 
 }
 
+sealed abstract class AttributeName(val name: String)
+case object All extends AttributeName("All")
+case object Policy extends AttributeName("Policy")
+case object VisibilityTimeout extends AttributeName("VisibilityTimeout")
+case object MaximumMessageSize extends AttributeName("MaximumMessageSize")
+case object MessageRetentionPeriod extends AttributeName("MessageRetentionPeriod")
+case object ApproximateNumberOfMessages extends AttributeName("ApproximateNumberOfMessages")
+case object ApproximateNumberOfMessagesNotVisible extends AttributeName("ApproximateNumberOfMessagesNotVisible")
+case object CreatedTimestamp extends AttributeName("CreatedTimestamp")
+case object LastModifiedTimestamp extends AttributeName("LastModifiedTimestamp")
+case object QueueArn extends AttributeName("QueueArn")
+case object ApproximateNumberOfMessagesDelayed extends AttributeName("ApproximateNumberOfMessagesDelayed")
+case object DelaySeconds extends AttributeName("DelaySeconds")
+case object ReceiveMessageWaitTimeSeconds extends AttributeName("ReceiveMessageWaitTimeSeconds")
+case object RedrivePolicy extends AttributeName("RedrivePolicy")
+case object FifoQueue extends AttributeName("FifoQueue")
+case object ContentBasedDeduplication extends AttributeName("ContentBasedDeduplication")
+case object KmsMasterKeyId extends AttributeName("KmsMasterKeyId")
+case object KmsDataKeyReusePeriodSeconds extends AttributeName("KmsDataKeyReusePeriodSeconds")
+
+final case class MessageAttributeName(name: String) {
+  require(
+    name.matches("[0-9a-zA-Z_\\-.]+"),
+    "MessageAttributeNames may only contain alphanumeric characters and the underscore (_), hyphen (-), and period (.)"
+  )
+
+  require(
+    !name.matches("(^\\.[^*].*)|(.*\\.\\..*)|(.*\\.$)"),
+    "MessageAttributeNames cannot start or end with a period (.) or have multiple periods in succession (..)"
+  )
+
+  require(name.length <= 256, "MessageAttributeNames may not be longer than 256 characters")
+}
+
 //#SqsSourceSettings
 final case class SqsSourceSettings(
     waitTimeSeconds: Int,
     maxBufferSize: Int,
     maxBatchSize: Int,
-    attributeNames: Seq[String] = Seq(),
-    messageAttributeNames: Seq[String] = Seq()
+    attributeNames: Seq[AttributeName] = Seq(),
+    messageAttributeNames: Seq[MessageAttributeName] = Seq()
 ) {
   require(maxBatchSize <= maxBufferSize, "maxBatchSize must be lower or equal than maxBufferSize")
   // SQS requirements
@@ -46,42 +80,6 @@ final case class SqsSourceSettings(
           s"Invalid value ($waitTimeSeconds) for waitTimeSeconds. Requirement: 0 <= waitTimeSeconds <= 20 ")
   require(1 <= maxBatchSize && maxBatchSize <= 10,
           s"Invalid value ($maxBatchSize) for maxBatchSize. Requirement: 1 <= maxBatchSize <= 10 ")
-
-  private val validNames = Seq(
-    "All",
-    "Policy",
-    "VisibilityTimeout",
-    "MaximumMessageSize",
-    "MessageRetentionPeriod",
-    "ApproximateNumberOfMessages",
-    "ApproximateNumberOfMessagesNotVisible",
-    "CreatedTimestamp",
-    "LastModifiedTimestamp",
-    "QueueArn",
-    "ApproximateNumberOfMessagesDelayed",
-    "DelaySeconds",
-    "ReceiveMessageWaitTimeSeconds",
-    "RedrivePolicy",
-    "FifoQueue",
-    "ContentBasedDeduplication",
-    "KmsMasterKeyId",
-    "KmsDataKeyReusePeriodSeconds"
-  )
-
-  require(attributeNames.forall(name => validNames.contains(name)), s"AttributeName must be one of $validNames")
-
-  require(
-    messageAttributeNames.forall(name => name.matches("[0-9a-zA-Z_\\-.]+")),
-    "MessageAttributeNames may only contain alphanumeric characters and the underscore (_), hyphen (-), and period (.)"
-  )
-
-  require(
-    messageAttributeNames.forall(name => !name.matches("(^\\.[^*].*)|(.*\\.\\..*)|(.*\\.$)")),
-    "MessageAttributeNames cannot start or end with a period (.) or have multiple periods in succession (..)"
-  )
-
-  require(messageAttributeNames.forall(name => name.length <= 256),
-          "MessageAttributeNames may not be longer than 256 characters")
 }
 //#SqsSourceSettings
 
@@ -114,8 +112,8 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings)(implic
         currentRequests = currentRequests + 1
 
         val request = new ReceiveMessageRequest(queueUrl)
-          .withAttributeNames(settings.attributeNames.asJava)
-          .withMessageAttributeNames(settings.messageAttributeNames.asJava)
+          .withAttributeNames(settings.attributeNames.map(_.name).asJava)
+          .withMessageAttributeNames(settings.messageAttributeNames.map(_.name).asJava)
           .withMaxNumberOfMessages(settings.maxBatchSize)
           .withWaitTimeSeconds(settings.waitTimeSeconds)
 
