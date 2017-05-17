@@ -20,6 +20,9 @@ object AzureQueueSink {
   def apply(cloudQueue: () => CloudQueue): Sink[CloudQueueMessage, Future[Done]] =
     fromFunction(AzureQueueSinkFunctions.addMessage(cloudQueue)(_))
 
+  /**
+   * Internal API
+   */
   def fromFunction[T](f: T => Unit): Sink[T, Future[Done]] =
     Flow
       .fromFunction(f)

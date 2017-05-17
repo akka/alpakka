@@ -74,7 +74,7 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
     val msgs = (1 to 10).map(_ => queueTestMsg)
 
     val futureAssertion =
-      AzureQueueSource(queueFactory, AzureQueueSourceSettings.default.copy(retrieveRetryTimeout = Some(1.seconds)))
+      AzureQueueSource(queueFactory, AzureQueueSourceSettings.Default.copy(retrieveRetryTimeout = Some(1.seconds)))
         .take(10)
         .runWith(Sink.seq)
         .map(
@@ -91,7 +91,7 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
     val msgs = (1 to 20).map(_ => queueTestMsg)
     msgs.foreach(m => queue.addMessage(m))
 
-    Await.result(AzureQueueSource(queueFactory, AzureQueueSourceSettings.default.copy(batchSize = 2))
+    Await.result(AzureQueueSource(queueFactory, AzureQueueSourceSettings.Default.copy(batchSize = 2))
                    .take(1)
                    .runWith(Sink.seq),
                  timeout)

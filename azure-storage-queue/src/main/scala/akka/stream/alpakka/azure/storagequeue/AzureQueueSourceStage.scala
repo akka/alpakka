@@ -28,9 +28,13 @@ final case class AzureQueueSourceSettings(
 )
 
 object AzureQueueSourceSettings {
-  // default initialVisibilityTimeout (30) is from
-  // com.microsoft.azure.storage.queue.QueueConstants.DEFAULT_VISIBILITY_MESSAGE_TIMEOUT_IN_SECONDS
-  val default = AzureQueueSourceSettings(30, 10, None)
+
+  /** Default settings
+   *
+   * initialVisibilityTimeout (30) is taken from
+   * [[com.microsoft.azure.storage.queue.QueueConstants.DEFAULT_VISIBILITY_MESSAGE_TIMEOUT_IN_SECONDS]]
+   */
+  val Default = AzureQueueSourceSettings(30, 10, None)
 
   /**
    *  Java API: Constructor for [[AzureQueueSourceSettings]]

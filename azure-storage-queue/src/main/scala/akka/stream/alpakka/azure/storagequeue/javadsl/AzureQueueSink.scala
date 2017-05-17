@@ -24,6 +24,9 @@ object AzureQueueSink {
   def create(cloudQueue: Supplier[CloudQueue]): Sink[CloudQueueMessage, CompletionStage[Done]] =
     fromFunction(AzureQueueSinkFunctions.addMessage(() => cloudQueue.get)(_))
 
+  /**
+   * Internal API
+   */
   private[javadsl] def fromFunction[T](f: T => Unit): Sink[T, CompletionStage[Done]] = {
     import akka.stream.alpakka.azure.storagequeue.scaladsl.{AzureQueueSink => AzureQueueSinkScalaDSL}
     import scala.compat.java8.FutureConverters._
