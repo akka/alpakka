@@ -72,49 +72,49 @@ object Protocol {
   }
 
   case class AuthorizeAccountResponse(
-    accountId: AccountId,
-    apiUrl: ApiUrl,
-    authorizationToken: AccountAuthorizationToken
+      accountId: AccountId,
+      apiUrl: ApiUrl,
+      authorizationToken: AccountAuthorizationToken
   )
 
   case class GetUploadUrlResponse(
-    bucketId: BucketId,
-    uploadUrl: UploadUrl,
-    authorizationToken: UploadAuthorizationToken
+      bucketId: BucketId,
+      uploadUrl: UploadUrl,
+      authorizationToken: UploadAuthorizationToken
   )
 
   case class UploadFileResponse(
-    fileId: FileId,
-    fileName: FileName,
-    accountId: AccountId,
-    bucketId: BucketId,
-    contentLength: Long,
-    contentSha1: Sha1,
-    contentType: String,
-    fileInfo: Map[String, String]
+      fileId: FileId,
+      fileName: FileName,
+      accountId: AccountId,
+      bucketId: BucketId,
+      contentLength: Long,
+      contentSha1: Sha1,
+      contentType: String,
+      fileInfo: Map[String, String]
   )
 
   case class UploadFileRequest(
-    fileName: FileName,
-    data: ByteString,
-    contentType: ContentType = DefaultContentType
+      fileName: FileName,
+      data: ByteString,
+      contentType: ContentType = DefaultContentType
   )
 
   case class ListFileVersionsResponse(
-    files: List[FileVersionInfo]
+      files: List[FileVersionInfo]
   )
 
   case class FileVersionInfo(
-    fileName: FileName,
-    fileId: FileId
+      fileName: FileName,
+      fileId: FileId
   )
 
   case class DownloadFileByIdResponse(
-    fileId: FileId,
-    fileName: FileName,
-    contentSha1: Sha1,
-    contentLength: Option[Long],
-    data: ByteString
+      fileId: FileId,
+      fileName: FileName,
+      contentSha1: Sha1,
+      contentLength: Option[Long],
+      data: ByteString
   ) {
     def fileVersion: FileVersionInfo = FileVersionInfo(fileName, fileId)
   }

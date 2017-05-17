@@ -101,16 +101,16 @@ object SerializationSupport {
       found.value
     }
 
-    override def apply(value: HttpResponse)(implicit ec: ExecutionContext, materializer: Materializer): Future[DownloadFileByIdResponse] = {
+    override def apply(value: HttpResponse)(implicit ec: ExecutionContext,
+                                            materializer: Materializer): Future[DownloadFileByIdResponse] =
       Unmarshal(value.entity).to[ByteString] map { data =>
         DownloadFileByIdResponse(
           fileId = FileId(rawHeader(value, "X-Bz-File-Id")),
           fileName = FileName(rawHeader(value, "X-Bz-File-Name")),
-          contentSha1 = Sha1(rawHeader(value,  "X-Bz-Content-Sha1")),
+          contentSha1 = Sha1(rawHeader(value, "X-Bz-Content-Sha1")),
           contentLength = value.entity.contentLengthOption,
           data: ByteString
         )
       }
-    }
   }
 }

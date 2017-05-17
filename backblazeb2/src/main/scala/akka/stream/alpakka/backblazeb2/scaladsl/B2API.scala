@@ -25,8 +25,8 @@ object B2API {
 }
 
 /**
-  * Handles the interface with the Backblaze B2 API, but doesn't handle any expired tokens or retries
-  */
+ * Handles the interface with the Backblaze B2 API, but doesn't handle any expired tokens or retries
+ */
 class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: ActorSystem, materializer: Materializer) {
   implicit val executionContext = materializer.executionContext
   private val version = "b2api/v1"
@@ -46,11 +46,11 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
   }
 
   /**
-    * https://www.backblaze.com/b2/docs/b2_get_upload_url.html
-    */
+   * https://www.backblaze.com/b2/docs/b2_get_upload_url.html
+   */
   def getUploadUrl(
-    authorizeAccountResponse: AuthorizeAccountResponse,
-    bucketId: BucketId
+      authorizeAccountResponse: AuthorizeAccountResponse,
+      bucketId: BucketId
   ): B2Response[GetUploadUrlResponse] = {
     val apiUrl = authorizeAccountResponse.apiUrl
     val accountAuthorization = authorizeAccountResponse.authorizationToken
@@ -65,13 +65,13 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
   }
 
   /**
-    * https://www.backblaze.com/b2/docs/b2_upload_file.html
-    */
+   * https://www.backblaze.com/b2/docs/b2_upload_file.html
+   */
   def uploadFile(
-    uploadCredentials: GetUploadUrlResponse,
-    fileName: FileName,
-    data: ByteString,
-    contentType: ContentType = DefaultContentType
+      uploadCredentials: GetUploadUrlResponse,
+      fileName: FileName,
+      data: ByteString,
+      contentType: ContentType = DefaultContentType
   ): B2Response[UploadFileResponse] = {
     val uri = Uri(uploadCredentials.uploadUrl.value)
     val headers =
@@ -90,77 +90,73 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
     requestAndParse[UploadFileResponse](request)
   }
 
-  private def requestAndParse[T : FromResponseUnmarshaller](request: HttpRequest): B2Response[T] = {
+  private def requestAndParse[T: FromResponseUnmarshaller](request: HttpRequest): B2Response[T] =
     Http().singleRequest(request) flatMap { response =>
-      parseResponse[T](response)
-        .recover { case t: Throwable => // this adds useful debug info to the error
+      parseResponse[T](response).recover {
+        case t: Throwable => // this adds useful debug info to the error
           throw new RuntimeException(s"Failed to decode $response for $request", t)
-        }
+      }
     }
-  }
 
-  private def authorizationHeaders(authorization: Option[AccountAuthorizationToken]) = {
+  private def authorizationHeaders(authorization: Option[AccountAuthorizationToken]) =
     authorization.map(authorizationHeader).toSeq
-  }
 
-  private def authorizationHeader(authorization: AccountAuthorizationToken) = {
+  private def authorizationHeader(authorization: AccountAuthorizationToken) =
     RawHeader("Authorization", authorization.value)
-  }
 
   /**
-    * https://www.backblaze.com/b2/docs/b2_download_file_by_name.html
-    */
+   * https://www.backblaze.com/b2/docs/b2_download_file_by_name.html
+   */
   def downloadFileByName(
-    fileName: FileName,
-    bucketName: BucketName,
-    apiUrl: ApiUrl,
-    accountAuthorization: Option[AccountAuthorizationToken]
+      fileName: FileName,
+      bucketName: BucketName,
+      apiUrl: ApiUrl,
+      accountAuthorization: Option[AccountAuthorizationToken]
   ): B2Response[ByteString] = {
     val uri = Uri(s"$apiUrl/file/$bucketName/$fileName")
     val request = HttpRequest(
       uri = uri,
       method = HttpMethods.GET
-    ).withHeaders(authorizationHeaders(accountAuthorization) :_*)
+    ).withHeaders(authorizationHeaders(accountAuthorization): _*)
 
     requestAndParse[ByteString](request)
   }
 
   /**
-    * https://www.backblaze.com/b2/docs/b2_download_file_by_id.html
-    */
+   * https://www.backblaze.com/b2/docs/b2_download_file_by_id.html
+   */
   def downloadFileById(
-    fileId: FileId,
-    apiUrl: ApiUrl,
-    accountAuthorization: Option[AccountAuthorizationToken]
+      fileId: FileId,
+      apiUrl: ApiUrl,
+      accountAuthorization: Option[AccountAuthorizationToken]
   ): B2Response[DownloadFileByIdResponse] = {
-    val uri = Uri(s"$apiUrl/b2api/v1/b2_download_file_by_id")
-      .withQuery(Query("fileId" -> fileId.value))
+    val uri = Uri(s"$apiUrl/b2api/v1/b2_download_file_by_id").withQuery(Query("fileId" -> fileId.value))
 
     val request = HttpRequest(
       uri = uri,
       method = HttpMethods.GET
-    ).withHeaders(authorizationHeaders(accountAuthorization) :_*)
+    ).withHeaders(authorizationHeaders(accountAuthorization): _*)
 
     requestAndParse[DownloadFileByIdResponse](request)
   }
 
   /**
-    * https://www.backblaze.com/b2/docs/b2_list_file_versions.html
-    */
+   * https://www.backblaze.com/b2/docs/b2_list_file_versions.html
+   */
   def listFileVersions(
-    bucketId: BucketId,
-    fileId: FileId,
-    fileName: FileName,
-    apiUrl: ApiUrl,
-    accountAuthorization: AccountAuthorizationToken
+      bucketId: BucketId,
+      fileId: FileId,
+      fileName: FileName,
+      apiUrl: ApiUrl,
+      accountAuthorization: AccountAuthorizationToken
   ): B2Response[ListFileVersionsResponse] = {
-    val uri = Uri(s"$apiUrl/b2api/v1/b2_list_file_versions")
-      .withQuery(Query(
-        "bucketId" -> bucketId.value,
-        "startFileId" -> fileId.value,
-        "startFileName" -> fileName.value,
-        "maxFileCount" -> 1.toString
-      ))
+    val uri = Uri(s"$apiUrl/b2api/v1/b2_list_file_versions").withQuery(
+        Query(
+          "bucketId" -> bucketId.value,
+          "startFileId" -> fileId.value,
+          "startFileName" -> fileName.value,
+          "maxFileCount" -> 1.toString
+        ))
 
     val request = HttpRequest(
       uri = uri,
@@ -171,18 +167,18 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
   }
 
   /**
-    * https://www.backblaze.com/b2/docs/b2_delete_file_version.html
-    */
+   * https://www.backblaze.com/b2/docs/b2_delete_file_version.html
+   */
   def deleteFileVersion(
-    fileVersion: FileVersionInfo,
-    apiUrl: ApiUrl,
-    accountAuthorization: AccountAuthorizationToken
+      fileVersion: FileVersionInfo,
+      apiUrl: ApiUrl,
+      accountAuthorization: AccountAuthorizationToken
   ): B2Response[FileVersionInfo] = {
-    val uri = Uri(s"$apiUrl/b2api/v1/b2_delete_file_version")
-      .withQuery(Query(
-        "fileId" -> fileVersion.fileId.value,
-        "fileName" -> fileVersion.fileName.value
-      ))
+    val uri = Uri(s"$apiUrl/b2api/v1/b2_delete_file_version").withQuery(
+        Query(
+          "fileId" -> fileVersion.fileId.value,
+          "fileName" -> fileVersion.fileName.value
+        ))
 
     val request = HttpRequest(
       uri = uri,
@@ -192,7 +188,7 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
     requestAndParse[FileVersionInfo](request)
   }
 
-  private def parseResponse[T : FromResponseUnmarshaller](response: HttpResponse): B2Response[T] = {
+  private def parseResponse[T: FromResponseUnmarshaller](response: HttpResponse): B2Response[T] = {
     import cats.implicits._
     val result = for {
       reponse <- EitherT(ensureSuccessfulResponse(response))
@@ -202,16 +198,16 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
     result.value
   }
 
-  private def ensureSuccessfulResponse(response: HttpResponse): B2Response[HttpResponse] = {
+  private def ensureSuccessfulResponse(response: HttpResponse): B2Response[HttpResponse] =
     response match {
       case x @ HttpResponse(status, _, _, _) if status.isSuccess() =>
         Future.successful(x.asRight)
 
       case HttpResponse(status, _, entity, _) =>
         Unmarshal(entity).to[B2ErrorResponse].flatMap { result =>
-          require(status.intValue == result.status, s"Expected statuses to match but got $status from HTTP response but ${result.status} in JSON")
+          require(status.intValue == result.status,
+            s"Expected statuses to match but got $status from HTTP response but ${result.status} in JSON")
           Future.successful(B2Error(status, result.code, result.message).asLeft)
         }
     }
-  }
 }
