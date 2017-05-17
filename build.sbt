@@ -1,7 +1,7 @@
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
-  .aggregate(amqp, cassandra, dynamodb, files, ftp, hbase, jms, mqtt, s3, simpleCodecs, sqs, sse, awslambda)
+  .aggregate(amqp, cassandra, dynamodb, files, ftp, hbase, jms, mqtt, s3, backblazeb2, simpleCodecs, sqs, sse, awslambda)
 
 lazy val amqp = project
   .enablePlugins(AutomateHeaderPlugin)
@@ -73,7 +73,7 @@ lazy val s3 = project
 lazy val backblazeb2 = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
-    name := "backblaze-b2",
+    name := "akka-stream-backblaze-b2",
     Dependencies.BackblazeB2
   )
 
