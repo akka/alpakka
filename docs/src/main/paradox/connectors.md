@@ -8,6 +8,7 @@
 * [AWS S3 Connector](s3.md)
 * [AWS SNS Connector](sns.md)
 * [AWS SQS Connector](sqs.md)
+* [Azure Storage Queue](azure-storage-queue.md)
 * [Cassandra Connector](cassandra.md)
 * [File Connectors](file.md)
 * [FTP Connector](ftp.md)
