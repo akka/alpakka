@@ -5,7 +5,6 @@ package akka.stream.alpakka.s3.impl
 
 import java.nio.file.Paths
 import java.time.LocalDate
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -18,7 +17,6 @@ import akka.stream.alpakka.s3.auth.{AWSCredentials, CredentialScope, Signer, Sig
 import akka.stream.alpakka.s3.{DiskBufferType, MemoryBufferType, S3Exception, S3Settings}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
-
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -43,30 +41,56 @@ final case class FailedUpload(reasons: Seq[Throwable]) extends Exception
 
 final case class CompleteMultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
+final case class ListBucketResult(isTruncated: Boolean, continuationToken: Option[String], keys: Seq[String])
+
 object S3Stream {
 
-  def apply(credentials: AWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer): S3Stream =
-    new S3Stream(credentials, region, S3Settings(system))
+  def apply(settings: S3Settings)(implicit system: ActorSystem, mat: Materializer): S3Stream =
+    new S3Stream(settings)
 }
 
-private[alpakka] final class S3Stream(credentials: AWSCredentials,
-                                      region: String,
-                                      val settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
+private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
 
   import Marshalling._
   import HttpRequests._
 
   implicit val conf = settings
   val MinChunkSize = 5242880 //in bytes
-  val signingKey = SigningKey(credentials, CredentialScope(LocalDate.now(), region, "s3"))
+  val signingKey = SigningKey(settings.awsCredentials, CredentialScope(LocalDate.now(), settings.s3Region, "s3"))
 
   def download(s3Location: S3Location, range: Option[ByteRange] = None): Source[ByteString, NotUsed] = {
     import mat.executionContext
     Source.fromFuture(request(s3Location, range).flatMap(entityForSuccess).map(_.dataBytes)).flatMapConcat(identity)
   }
 
+  def listBucket(bucket: String, prefix: Option[String] = None): Source[String, NotUsed] = {
+    sealed trait ListBucketState
+    case object Starting extends ListBucketState
+    case class Running(continuationToken: String) extends ListBucketState
+    case object Finished extends ListBucketState
+
+    import system.dispatcher
+
+    def listBucketCall(token: Option[String]): Future[Option[(ListBucketState, Seq[String])]] =
+      signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, prefix, token))
+        .map { (res: ListBucketResult) =>
+          Some(
+            res.continuationToken
+              .fold[(ListBucketState, Seq[String])]((Finished, res.keys))(t => (Running(t), res.keys))
+          )
+        }
+
+    Source
+      .unfoldAsync[ListBucketState, Seq[String]](Starting) {
+        case Finished => Future.successful(None)
+        case Starting => listBucketCall(None)
+        case Running(token) => listBucketCall(Some(token))
+      }
+      .mapConcat(identity)
+  }
+
   def request(s3Location: S3Location, rangeOption: Option[ByteRange] = None): Future[HttpResponse] = {
-    val downloadRequest = getDownloadRequest(s3Location, region)
+    val downloadRequest = getDownloadRequest(s3Location)
     signAndGet(rangeOption match {
       case Some(range) => downloadRequest.withHeaders(headers.Range(range))
       case _ => downloadRequest
@@ -89,7 +113,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
                                       s3Headers: S3Headers): Future[MultipartUpload] = {
     import mat.executionContext
 
-    val req = initiateMultipartUploadRequest(s3Location, contentType, region, s3Headers)
+    val req = initiateMultipartUploadRequest(s3Location, contentType, s3Headers)
 
     val response = for {
       signedReq <- Signer.signedRequest(req, signingKey)
@@ -109,7 +133,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
                                       parts: Seq[SuccessfulUploadPart]): Future[CompleteMultipartUploadResult] = {
     import mat.executionContext
 
-    for (req <- completeMultipartUploadRequest(parts.head.multipartUpload, parts.map(p => p.index -> p.etag), region);
+    for (req <- completeMultipartUploadRequest(parts.head.multipartUpload, parts.map(p => p.index -> p.etag));
          res <- signAndGetAs[CompleteMultipartUploadResult](req)) yield res
   }
 
@@ -150,7 +174,7 @@ private[alpakka] final class S3Stream(credentials: AWSCredentials,
         case (chunkedPayload, (uploadInfo, chunkIndex)) =>
           //each of the payload requests are created
           val partRequest =
-            uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload.data, chunkedPayload.size, region)
+            uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload.data, chunkedPayload.size)
           (partRequest, (uploadInfo, chunkIndex))
       }
       .mapAsync(parallelism) { case (req, info) => Signer.signedRequest(req, signingKey).zip(Future.successful(info)) }

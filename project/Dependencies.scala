@@ -2,8 +2,10 @@ import sbt._, Keys._
 
 object Dependencies {
 
-  val ScalaVersions = Seq("2.11.11", "2.12.2")
-  val AkkaVersion = "2.4.18"
+  val AkkaVersion = sys.env.get("akka.series") match {
+    case Some("2.5") => "2.5.1"
+    case _ => "2.4.18"
+  }
   val AkkaHttpVersion = "10.0.6"
 
   val Common = Seq(
@@ -29,6 +31,12 @@ object Dependencies {
   val Amqp = Seq(
     libraryDependencies ++= Seq(
       "com.rabbitmq" % "amqp-client" % "3.6.1" // APLv2
+    )
+  )
+
+  val AzureStorageQueue = Seq(
+    libraryDependencies ++= Seq(
+      "com.microsoft.azure" % "azure-storage" % "5.0.0" // ApacheV2
     )
   )
 
@@ -107,7 +115,7 @@ object Dependencies {
   val Sqs = Seq(
     libraryDependencies ++= Seq(
       "com.amazonaws" % "aws-java-sdk-sqs"    % "1.11.109",         // ApacheV2
-      "org.elasticmq" %% "elasticmq-rest-sqs" % "0.13.2",           // ApacheV2
+      "org.elasticmq" %% "elasticmq-rest-sqs" % "0.13.2"    % Test, // ApacheV2
       "org.mockito"   % "mockito-core"        % "2.7.17"    % Test  // MIT
     )
   )
@@ -142,6 +150,13 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "com.typesafe.akka"   %% "akka-http"                        % AkkaHttpVersion,
       "de.heikoseeberger"   %% "akka-http-circe"                  % "1.11.0"  // ApacheV2
+    )
+  )
+
+  val Xml = Seq(
+    libraryDependencies ++= Seq(
+      "com.fasterxml" % "aalto-xml" % "1.0.0", // ApacheV2,
+      "org.scala-lang.modules" %% "scala-java8-compat" % "0.8.0" // BSD-style
     )
   )
 }

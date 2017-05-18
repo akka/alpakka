@@ -3,6 +3,7 @@ lazy val alpakka = project
   .enablePlugins(PublishUnidoc)
   .aggregate(amqp,
              awslambda,
+             azureStorageQueue,
              cassandra,
              csv,
              dynamodb,
@@ -17,7 +18,8 @@ lazy val alpakka = project
              simpleCodecs,
              sns,
              sqs,
-             sse)
+             sse,
+             xml)
   .settings(
     onLoadMessage :=
       """
@@ -49,6 +51,15 @@ lazy val awslambda = project
     name := "akka-stream-alpakka-awslambda",
     Dependencies.AwsLambda
   )
+
+lazy val azureStorageQueue = project
+  .in(file("azure-storage-queue"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-azure-storage-queue",
+    Dependencies.AzureStorageQueue
+  )
+
 
 lazy val cassandra = project
   .enablePlugins(AutomateHeaderPlugin)
@@ -159,6 +170,13 @@ lazy val sse = project
   .settings(
     name := "akka-stream-alpakka-sse",
     Dependencies.Sse
+  )
+
+lazy val xml = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-xml",
+    Dependencies.Xml
   )
 
 val Local = config("local")
