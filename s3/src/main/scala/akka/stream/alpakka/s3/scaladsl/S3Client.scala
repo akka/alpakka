@@ -52,7 +52,10 @@ final class S3Client(s3Settings: S3Settings)(implicit system: ActorSystem, mat: 
   def download(bucket: String, key: String, range: ByteRange): Source[ByteString, NotUsed] =
     impl.download(S3Location(bucket, key), Some(range))
 
-  def listBucket(bucket: String, prefix: Option[String]): Source[String, NotUsed] = impl.listBucket(bucket, prefix)
+  // #list-bucket
+  def listBucket(bucket: String, prefix: Option[String]): Source[String, NotUsed] =
+  // #list-bucket
+    impl.listBucket(bucket, prefix)
 
   def multipartUpload(bucket: String,
                       key: String,
