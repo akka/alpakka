@@ -58,9 +58,8 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
 
   // #list-bucket
   def listBucket(bucket: String, prefix: Option[String]): Source[String, NotUsed] =
-  // #list-bucket
+    // #list-bucket
     impl.listBucket(bucket, prefix).asJava
-
 
   def multipartUpload(bucket: String,
                       key: String,
