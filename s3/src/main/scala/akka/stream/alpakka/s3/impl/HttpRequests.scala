@@ -18,7 +18,6 @@ private[alpakka] object HttpRequests {
 
   def listBucket(
       bucket: String,
-      region: String,
       prefix: Option[String] = None,
       continuationToken: Option[String] = None
   )(implicit conf: S3Settings): HttpRequest = {
@@ -32,34 +31,30 @@ private[alpakka] object HttpRequests {
     )
 
     HttpRequest(HttpMethods.GET)
-      .withHeaders(Host(requestHost(bucket, region)))
-      .withUri(requestUri(bucket, None, region).withQuery(query))
+      .withHeaders(Host(requestHost(bucket, conf.s3Region)))
+      .withUri(requestUri(bucket, None).withQuery(query))
   }
 
-  def getDownloadRequest(s3Location: S3Location, region: String)(implicit conf: S3Settings): HttpRequest =
-    s3Request(s3Location, region: String)
+  def getDownloadRequest(s3Location: S3Location)(implicit conf: S3Settings): HttpRequest =
+    s3Request(s3Location)
 
-  def initiateMultipartUploadRequest(s3Location: S3Location,
-                                     contentType: ContentType,
-                                     region: String,
-                                     s3Headers: S3Headers)(implicit conf: S3Settings): HttpRequest =
-    s3Request(s3Location, region, HttpMethods.POST, _.withQuery(Query("uploads")))
+  def initiateMultipartUploadRequest(s3Location: S3Location, contentType: ContentType, s3Headers: S3Headers)(
+      implicit conf: S3Settings
+  ): HttpRequest =
+    s3Request(s3Location, HttpMethods.POST, _.withQuery(Query("uploads")))
       .withDefaultHeaders(s3Headers.headers: _*)
       .withEntity(HttpEntity.empty(contentType))
 
-  def uploadPartRequest(upload: MultipartUpload,
-                        partNumber: Int,
-                        payload: Source[ByteString, _],
-                        payloadSize: Int,
-                        region: String)(implicit conf: S3Settings): HttpRequest =
+  def uploadPartRequest(upload: MultipartUpload, partNumber: Int, payload: Source[ByteString, _], payloadSize: Int)(
+      implicit conf: S3Settings
+  ): HttpRequest =
     s3Request(
       upload.s3Location,
-      region,
       HttpMethods.PUT,
       _.withQuery(Query("partNumber" -> partNumber.toString, "uploadId" -> upload.uploadId))
     ).withEntity(HttpEntity(ContentTypes.`application/octet-stream`, payloadSize, payload))
 
-  def completeMultipartUploadRequest(upload: MultipartUpload, parts: Seq[(Int, String)], region: String)(
+  def completeMultipartUploadRequest(upload: MultipartUpload, parts: Seq[(Int, String)])(
       implicit ec: ExecutionContext,
       conf: S3Settings
   ): Future[HttpRequest] = {
@@ -78,7 +73,6 @@ private[alpakka] object HttpRequests {
     } yield {
       s3Request(
         upload.s3Location,
-        region,
         HttpMethods.POST,
         _.withQuery(Query("uploadId" -> upload.uploadId))
       ).withEntity(entity)
@@ -86,12 +80,11 @@ private[alpakka] object HttpRequests {
   }
 
   private[this] def s3Request(s3Location: S3Location,
-                              region: String,
                               method: HttpMethod = HttpMethods.GET,
                               uriFn: (Uri => Uri) = identity)(implicit conf: S3Settings): HttpRequest =
     HttpRequest(method)
-      .withHeaders(Host(requestHost(s3Location.bucket, region)))
-      .withUri(uriFn(requestUri(s3Location.bucket, Some(s3Location.key), region)))
+      .withHeaders(Host(requestHost(s3Location.bucket, conf.s3Region)))
+      .withUri(uriFn(requestUri(s3Location.bucket, Some(s3Location.key))))
 
   private[this] def requestHost(bucket: String, region: String)(implicit conf: S3Settings): Uri.Host =
     conf.proxy match {
@@ -113,12 +106,12 @@ private[alpakka] object HttpRequests {
       case Some(proxy) => Uri.Host(proxy.host)
     }
 
-  private[this] def requestUri(bucket: String, key: Option[String], region: String)(implicit conf: S3Settings): Uri = {
+  private[this] def requestUri(bucket: String, key: Option[String])(implicit conf: S3Settings): Uri = {
     val uri = if (conf.pathStyleAccess) {
       Uri(s"/${bucket}${key.fold("")((someKey) => s"/$someKey")}")
-        .withHost(requestHost(bucket, region))
+        .withHost(requestHost(bucket, conf.s3Region))
     } else {
-      Uri(s"${key.fold("")((someKey) => s"/$someKey")}").withHost(requestHost(bucket, region))
+      Uri(s"${key.fold("")((someKey) => s"/$someKey")}").withHost(requestHost(bucket, conf.s3Region))
     }
     conf.proxy match {
       case None => uri.withScheme("https")

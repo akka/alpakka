@@ -13,11 +13,13 @@ import akka.http.javadsl.model.{ContentType, HttpResponse, Uri}
 import akka.http.scaladsl.model.{ContentTypes, ContentType => ScalaContentType}
 import akka.http.scaladsl.model.headers.{ByteRange => ScalaByteRange}
 import akka.stream.Materializer
+import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.auth.AWSCredentials
 import akka.stream.alpakka.s3.impl._
 import akka.stream.javadsl.{Sink, Source}
 import akka.util.ByteString
+import com.typesafe.config.ConfigFactory
 
 import scala.compat.java8.FutureConverters._
 
@@ -28,8 +30,20 @@ object MultipartUploadResult {
     new MultipartUploadResult(JavaUri(r.location), r.bucket, r.key, r.etag)
 }
 
-final class S3Client(credentials: AWSCredentials, region: String, system: ActorSystem, mat: Materializer) {
-  private val impl = S3Stream(credentials, region)(system, mat)
+object S3Client {
+  def create(system: ActorSystem, mat: Materializer): S3Client =
+    new S3Client(S3Settings(ConfigFactory.load()), system, mat)
+
+  def create(credentials: AWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer): S3Client = {
+    val settings = S3Settings
+      .apply(ConfigFactory.load())
+      .copy(awsCredentials = credentials, s3Region = region)
+    new S3Client(settings, system, mat)
+  }
+}
+
+final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materializer) {
+  private val impl = S3Stream(s3Settings)(system, mat)
 
   def request(bucket: String, key: String): CompletionStage[HttpResponse] =
     impl.request(S3Location(bucket, key)).map(_.asInstanceOf[HttpResponse])(system.dispatcher).toJava
