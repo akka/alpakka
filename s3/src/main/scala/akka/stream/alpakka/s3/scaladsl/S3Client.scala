@@ -14,6 +14,7 @@ import akka.stream.alpakka.s3.auth.AWSCredentials
 import akka.stream.alpakka.s3.impl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Future
 
@@ -27,17 +28,22 @@ object MultipartUploadResult {
 object S3Client {
   val MinChunkSize = 5242880
 
-  def apply()(implicit system: ActorSystem, mat: Materializer): S3Client = {
-    val s3Settings = S3Settings(system)
-    new S3Client(s3Settings.awsCredentials, s3Settings.s3Region)
+  def apply()(implicit system: ActorSystem, mat: Materializer): S3Client =
+    new S3Client(S3Settings(ConfigFactory.load()))
+
+  def apply(credentials: AWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer): S3Client = {
+    val settings = S3Settings
+      .apply(ConfigFactory.load())
+      .copy(awsCredentials = credentials, s3Region = region)
+    new S3Client(settings)
   }
 }
 
-final class S3Client(credentials: AWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer) {
+final class S3Client(s3Settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
 
   import S3Client._
 
-  private[this] val impl = S3Stream(credentials, region)
+  private[this] val impl = S3Stream(s3Settings)
 
   def request(bucket: String, key: String): Future[HttpResponse] = impl.request(S3Location(bucket, key))
 

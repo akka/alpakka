@@ -3,6 +3,8 @@
  */
 package akka.stream.alpakka.s3.scaladsl
 
+import akka.stream.alpakka.s3.auth.AWSCredentials
+import akka.stream.alpakka.s3.{MemoryBufferType, Proxy, S3Settings}
 import akka.stream.alpakka.s3.impl.{S3Headers, ServerSideEncryption}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
@@ -10,6 +12,11 @@ import akka.util.ByteString
 import scala.concurrent.Future
 
 class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
+
+  val awsCredentials = AWSCredentials(accessKeyId = "my-AWS-access-key-ID", secretAccessKey = "my-AWS-password")
+  val proxy = Option(Proxy("localhost", port, "http"))
+  val settings = new S3Settings(MemoryBufferType, "", proxy, awsCredentials, "us-east-1", false)
+  val s3Client = new S3Client(settings)(system, materializer)
 
   "S3Sink" should "upload a stream of bytes to S3" in {
 
