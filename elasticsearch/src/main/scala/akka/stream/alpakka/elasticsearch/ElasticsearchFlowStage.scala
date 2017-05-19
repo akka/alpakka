@@ -3,21 +3,20 @@
  */
 package akka.stream.alpakka.elasticsearch
 
-import java.util
-import java.util.concurrent.atomic.AtomicReference
-
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import org.apache.http.entity.StringEntity
 import org.elasticsearch.client.{Response, ResponseListener, RestClient}
 import spray.json.JsonWriter
 
+import scala.collection.mutable
 import scala.collection.JavaConverters._
 import spray.json._
 
 import scala.concurrent.Future
+import ElasticsearchFlowStage._
 
-final case class ElasticsearchSinkSettings(bufferSize: Int = 10, parallelism: Int = 1)
+final case class ElasticsearchSinkSettings(bufferSize: Int = 10)
 
 final case class IncomingMessage[T](id: Option[String], source: T)
 
@@ -34,10 +33,10 @@ class ElasticsearchFlowStage[T](
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with ResponseListener {
+    new GraphStageLogic(shape) with ResponseListener with InHandler with OutHandler {
 
-      private val state = new AtomicReference[State](Idle)
-      private val buffer = new util.concurrent.ConcurrentLinkedQueue[IncomingMessage[T]]()
+      private var state: State = Idle
+      private val queue = new mutable.Queue[IncomingMessage[T]]()
       private val failureHandler = getAsyncCallback[Throwable](handleFailure)
       private val responseHandler = getAsyncCallback[Response](handleResponse)
 
@@ -45,7 +44,7 @@ class ElasticsearchFlowStage[T](
         pull(in)
 
       private def tryPull(): Unit =
-        if (buffer.size < settings.bufferSize && !isClosed(in) && !hasBeenPulled(in)) {
+        if (queue.size < settings.bufferSize && !isClosed(in) && !hasBeenPulled(in)) {
           pull(in)
         }
 
@@ -57,13 +56,13 @@ class ElasticsearchFlowStage[T](
 
       private def handleResponse(response: Response): Unit = {
         val messages = (1 to settings.bufferSize).flatMap { _ =>
-          Option(buffer.poll())
+          queue.dequeueFirst(_ => true)
         }
 
         if (messages.isEmpty) {
-          state.get match {
+          state match {
             case Finished => handleSuccess()
-            case _ => state.set(Idle)
+            case _ => state = Idle
           }
         } else {
           sendBulkUpdateRequest(messages)
@@ -76,71 +75,72 @@ class ElasticsearchFlowStage[T](
 
       override def onSuccess(response: Response): Unit = responseHandler.invoke(response)
 
-      private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T]]): Unit =
-        try {
-          val json = messages
-            .map { message =>
-              s"""{"index": {"_index": "${indexName}", "_type": "${typeName}"${message.id
-                   .map { id =>
-                     s""", "_id": "${id}""""
-                   }
-                   .getOrElse("")}}
-                 |${message.source.toJson.asJsObject.toString}""".stripMargin
-            }
-            .mkString("", "\n", "\n")
-
-          client.performRequestAsync(
-            "POST",
-            "_bulk",
-            Map[String, String]().asJava,
-            new StringEntity(json),
-            this
-          )
-        } catch {
-          case ex: Exception => failStage(ex)
-        }
-
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = tryPull()
-      })
-
-      setHandler(
-        in,
-        new InHandler {
-          override def onPush(): Unit = {
-            val message = grab(in)
-            buffer.add(message)
-
-            state.get match {
-              case Idle => {
-                state.set(Sending)
-                val messages = (1 to settings.bufferSize).flatMap { _ =>
-                  Option(buffer.poll())
-                }
-                sendBulkUpdateRequest(messages)
-              }
-              case _ => ()
-            }
-
-            tryPull()
+      private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T]]): Unit = {
+        val json = messages
+          .map { message =>
+            JsObject(
+              "index" -> JsObject(
+                Seq(
+                  Option("_index" -> JsString(indexName)),
+                  Option("_type" -> JsString(typeName)),
+                  message.id.map { id =>
+                    "_id" -> JsString(id)
+                  }
+                ).flatten: _*
+              )
+            ).toString + "\n" + message.source.toJson.asJsObject.toString
           }
+          .mkString("", "\n", "\n")
 
-          override def onUpstreamFailure(exception: Throwable): Unit =
-            handleFailure(exception)
+        client.performRequestAsync(
+          "POST",
+          "_bulk",
+          Map[String, String]().asJava,
+          new StringEntity(json),
+          this
+        )
+      }
 
-          override def onUpstreamFinish(): Unit =
-            state.get match {
-              case Idle => handleSuccess()
-              case Sending => state.set(Finished)
-              case Finished => ()
+      setHandlers(in, out, this)
+
+      override def onPull(): Unit = tryPull()
+
+      override def onPush(): Unit = {
+        val message = grab(in)
+        queue.enqueue(message)
+
+        state match {
+          case Idle => {
+            state = Sending
+            val messages = (1 to settings.bufferSize).flatMap { _ =>
+              queue.dequeueFirst(_ => true)
             }
+            sendBulkUpdateRequest(messages)
+          }
+          case _ => ()
         }
-      )
+
+        tryPull()
+      }
+
+      override def onUpstreamFailure(exception: Throwable): Unit =
+        handleFailure(exception)
+
+      override def onUpstreamFinish(): Unit =
+        state match {
+          case Idle => handleSuccess()
+          case Sending => state = Finished
+          case Finished => ()
+        }
     }
 
 }
 
-private sealed trait State
-private case object Idle extends State
-private case object Sending extends State
-private case object Finished extends State
+object ElasticsearchFlowStage {
+
+  private sealed trait State
+  private case object Idle extends State
+  private case object Sending extends State
+  private case object Finished extends State
+
+}

@@ -41,9 +41,9 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
                                          out: Outlet[OutgoingMessage[T]],
                                          shape: SourceShape[OutgoingMessage[T]])(implicit reader: JsonReader[T])
     extends GraphStageLogic(shape)
-    with ResponseListener {
+    with ResponseListener
+    with OutHandler {
 
-  private var started = false
   private var scrollId: String = null
   private val responseHandler = getAsyncCallback[Response](handleResponse)
   private val failureHandler = getAsyncCallback[Throwable](handleFailure)
@@ -112,8 +112,8 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
     }
   }
 
-  setHandler(out, new OutHandler {
-    override def onPull(): Unit = sendScrollScanRequest()
-  })
+  setHandler(out, this)
+
+  override def onPull(): Unit = sendScrollScanRequest()
 
 }

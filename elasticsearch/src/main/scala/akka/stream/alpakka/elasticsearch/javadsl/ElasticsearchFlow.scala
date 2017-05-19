@@ -21,7 +21,7 @@ object ElasticsearchFlow {
       .fromGraph(
         new ElasticsearchFlowStage(indexName, typeName, client, settings)(DefaultJsonProtocol.RootJsObjectFormat)
       )
-      .mapAsync(settings.parallelism)(identity)
+      .mapAsync(1)(identity)
 
   /**
    * Java API: creates a [[ElasticsearchFlowStage]] that accepts specific type
@@ -32,6 +32,6 @@ object ElasticsearchFlow {
   ): Flow[IncomingMessage[T], Response, NotUsed] =
     Flow
       .fromGraph(new ElasticsearchFlowStage[T](indexName, typeName, client, settings))
-      .mapAsync(settings.parallelism)(identity)
+      .mapAsync(1)(identity)
 
 }
