@@ -20,6 +20,23 @@ lazy val alpakka = project
              sqs,
              sse,
              xml)
+  .settings(
+    onLoadMessage :=
+      """
+        |*** Welcome to the sbt build definition for Alpakka! ***
+        |
+        |Useful sbt tasks:
+        |
+        |  docs/local:paradox - builds documentation with locally
+        |    linked Scala API docs, which can be found at
+        |    docs/target/paradox/site/local
+        |
+        |  test - runs all the tests for all of the connectors.
+        |   Make sure to run `docker-compose up` first.
+        |
+        |  mqtt/testOnly *.MqttSourceSpec - runs a single test
+      """.stripMargin
+  )
 
 lazy val amqp = project
   .enablePlugins(AutomateHeaderPlugin)
