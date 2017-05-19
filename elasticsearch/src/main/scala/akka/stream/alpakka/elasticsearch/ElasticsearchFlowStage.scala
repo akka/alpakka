@@ -3,6 +3,8 @@
  */
 package akka.stream.alpakka.elasticsearch
 
+import java.io.ByteArrayOutputStream
+
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import org.apache.http.entity.StringEntity
@@ -55,6 +57,24 @@ class ElasticsearchFlowStage[T](
         completeStage()
 
       private def handleResponse(response: Response): Unit = {
+        val results = {
+          val out = new ByteArrayOutputStream()
+          try {
+            response.getEntity.writeTo(out)
+            new String(out.toByteArray, "UTF-8").split("\n")
+          } finally {
+            out.close()
+          }
+        }
+
+        // If some commands in bulk request failed, this stage fails.
+        val errors = results.filter { result =>
+          !result.parseJson.asJsObject.fields.get("errors").exists(_ == JsBoolean(false))
+        }
+        if (errors.nonEmpty) {
+          failStage(new IllegalStateException(errors.mkString("\n")))
+        }
+
         val messages = (1 to settings.bufferSize).flatMap { _ =>
           queue.dequeueFirst(_ => true)
         }
