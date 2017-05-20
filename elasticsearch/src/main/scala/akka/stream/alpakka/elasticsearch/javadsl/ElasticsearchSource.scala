@@ -5,7 +5,7 @@ package akka.stream.alpakka.elasticsearch.javadsl
 
 import akka.NotUsed
 import akka.stream.alpakka.elasticsearch.{ElasticsearchSourceSettings, ElasticsearchSourceStage, OutgoingMessage}
-import akka.stream.scaladsl.Source
+import akka.stream.javadsl.Source
 import org.elasticsearch.client.RestClient
 import spray.json.{DefaultJsonProtocol, JsObject, JsonReader}
 
