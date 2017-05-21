@@ -9,6 +9,7 @@
 * [AWS SNS Connector](sns.md)
 * [AWS SQS Connector](sqs.md)
 * [Cassandra Connector](cassandra.md)
+* [Elasticsearch Connectors](elasticsearch.md)
 * [File Connectors](file.md)
 * [FTP Connector](ftp.md)
 * [Google Cloud Pub/Sub Connector](google-cloud-pub-sub.md)
