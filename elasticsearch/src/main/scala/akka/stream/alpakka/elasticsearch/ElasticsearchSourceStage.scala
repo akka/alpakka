@@ -20,18 +20,26 @@ final case class ElasticsearchSourceSettings(bufferSize: Int = 10)
 
 final case class OutgoingMessage[T](id: String, source: T)
 
+case class ScrollResponse[T](error: Option[String], result: Option[ScrollResult[T]])
+case class ScrollResult[T](scrollId: String, messages: Seq[OutgoingMessage[T]])
+
+trait MessageReader[T] {
+  def convert(json: String): ScrollResponse[T]
+}
+
 final class ElasticsearchSourceStage[T](indexName: String,
                                         typeName: String,
                                         query: String,
                                         client: RestClient,
-                                        settings: ElasticsearchSourceSettings)(implicit reader: JsonReader[T])
+                                        settings: ElasticsearchSourceSettings,
+                                        reader: MessageReader[T])
     extends GraphStage[SourceShape[OutgoingMessage[T]]] {
 
   val out: Outlet[OutgoingMessage[T]] = Outlet("ElasticsearchSource.out")
   override val shape: SourceShape[OutgoingMessage[T]] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new ElasticsearchSourceLogic[T](indexName, typeName, query, client, settings, out, shape)
+    new ElasticsearchSourceLogic[T](indexName, typeName, query, client, settings, out, shape, reader)
 
 }
 
@@ -41,7 +49,8 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
                                          client: RestClient,
                                          settings: ElasticsearchSourceSettings,
                                          out: Outlet[OutgoingMessage[T]],
-                                         shape: SourceShape[OutgoingMessage[T]])(implicit reader: JsonReader[T])
+                                         shape: SourceShape[OutgoingMessage[T]],
+                                         reader: MessageReader[T])
     extends GraphStageLogic(shape)
     with ResponseListener
     with OutHandler {
@@ -90,27 +99,14 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
       }
     }
 
-    val jsObj = json.parseJson.asJsObject
-
-    jsObj.fields.get("error") match {
-      case None => {
-        val hits = jsObj.fields("hits").asJsObject.fields("hits").asInstanceOf[JsArray]
-        if (hits.elements.isEmpty && scrollId != null) {
-          completeStage()
-        } else {
-          scrollId = jsObj.fields("_scroll_id").asInstanceOf[JsString].value
-          val messages = hits.elements.reverse.map { element =>
-            val doc = element.asJsObject
-            val id = doc.fields("_id").asInstanceOf[JsString].value
-            val source = doc.fields("_source").asJsObject
-            OutgoingMessage(id, source.convertTo[T])
-          }
-          emitMultiple(out, messages)
-        }
-      }
-      case Some(error) => {
-        failStage(new IllegalStateException(error.toString))
-      }
+    reader.convert(json) match {
+      case ScrollResponse(Some(error), _) =>
+        failStage(new IllegalStateException(error))
+      case ScrollResponse(None, Some(result)) if result.messages.isEmpty && scrollId != null =>
+        completeStage()
+      case ScrollResponse(_, Some(result)) =>
+        scrollId = result.scrollId
+        emitMultiple(out, result.messages.toIterator)
     }
   }
 

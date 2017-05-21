@@ -9,7 +9,6 @@ import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import org.apache.http.entity.StringEntity
 import org.elasticsearch.client.{Response, ResponseListener, RestClient}
-import spray.json.JsonWriter
 
 import scala.collection.mutable
 import scala.collection.JavaConverters._
@@ -24,13 +23,17 @@ final case class ElasticsearchSinkSettings(bufferSize: Int = 10)
 
 final case class IncomingMessage[T](id: Option[String], source: T)
 
+trait MessageWriter[T] {
+  def convert(message: T): String
+}
+
 class ElasticsearchFlowStage[T](
     indexName: String,
     typeName: String,
     client: RestClient,
-    settings: ElasticsearchSinkSettings
-)(implicit writer: JsonWriter[T])
-    extends GraphStage[FlowShape[IncomingMessage[T], Future[Response]]] {
+    settings: ElasticsearchSinkSettings,
+    writer: MessageWriter[T]
+) extends GraphStage[FlowShape[IncomingMessage[T], Future[Response]]] {
 
   private val in = Inlet[IncomingMessage[T]]("messages")
   private val out = Outlet[Future[Response]]("result")
@@ -110,7 +113,7 @@ class ElasticsearchFlowStage[T](
                   }
                 ).flatten: _*
               )
-            ).toString + "\n" + message.source.toJson.asJsObject.toString
+            ).toString + "\n" + writer.convert(message.source)
           }
           .mkString("", "\n", "\n")
 

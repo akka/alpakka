@@ -18,18 +18,12 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.Some;
-import spray.json.JsString;
-import spray.json.JsValue;
-import spray.json.JsonFormat;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 
 import static org.junit.Assert.assertEquals;
-//#import-spray-json-support
-import static akka.stream.alpakka.elasticsearch.javadsl.SprayJsonSupport.*;
-//#import-spray-json-support
 
 public class ElasticsearchTest {
 
@@ -39,31 +33,9 @@ public class ElasticsearchTest {
   private static ActorMaterializer materializer;
 
   //#define-jsonformat
-  class Book {
-    private String title;
-
-    public Book(String title){
-      this.title = title;
-    }
-
-    public String getTitie(){
-      return this.title;
-    }
+  public static class Book {
+    public String title;
   }
-
-  JsonFormat<Book> format = new JsonFormat<Book>() {
-    @Override
-    public Book read(JsValue json) {
-      return new Book(new JsonObject(json.asJsObject()).getField("title").getStringValue());
-    }
-
-    @Override
-    public JsValue write(Book obj) {
-      return new JsonObject()
-        .addField(new JsonField("title", new JsonString(obj.getTitie())))
-        .toJson();
-    }
-  };
   //#define-jsonformat
 
   @BeforeClass
@@ -144,7 +116,7 @@ public class ElasticsearchTest {
       "{\"match_all\": {}}",
       new ElasticsearchSourceSettings(5),
       client)
-    .map(m -> ((JsString) m.source().fields().apply("title")).value())
+    .map(m -> (String) m.source().get("title"))
     .runWith(Sink.seq(), materializer);
 
     List<String> result = new ArrayList<>(f2.toCompletableFuture().get());
@@ -173,15 +145,14 @@ public class ElasticsearchTest {
       "{\"match_all\": {}}",
       new ElasticsearchSourceSettings(5),
       client,
-      format)
+      Book.class)
       .map(m -> new IncomingMessage<>(new Some<String>(m.id()), m.source()))
       .runWith(
         ElasticsearchSink.typed(
           "sink1",
           "book",
           new ElasticsearchSinkSettings(5),
-          client,
-          format),
+          client),
         materializer);
     //#run-typed
 
@@ -196,8 +167,8 @@ public class ElasticsearchTest {
       "{\"match_all\": {}}",
       new ElasticsearchSourceSettings(5),
       client,
-      format)
-      .map(m -> m.source().getTitie())
+      Book.class)
+      .map(m -> m.source().title)
       .runWith(Sink.seq(), materializer);
 
     List<String> result = new ArrayList<>(f2.toCompletableFuture().get());
