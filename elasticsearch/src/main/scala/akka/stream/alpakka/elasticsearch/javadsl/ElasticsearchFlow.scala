@@ -6,9 +6,9 @@ package akka.stream.alpakka.elasticsearch.javadsl
 import akka.NotUsed
 import akka.stream.alpakka.elasticsearch.{
   ElasticsearchFlowStage,
-  MessageWriter,
   ElasticsearchSinkSettings,
-  IncomingMessage
+  IncomingMessage,
+  MessageWriter
 }
 import akka.stream.scaladsl.Flow
 import com.fasterxml.jackson.databind.ObjectMapper

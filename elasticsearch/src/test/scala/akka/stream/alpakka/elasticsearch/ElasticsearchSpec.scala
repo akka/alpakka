@@ -5,7 +5,7 @@ package akka.stream.alpakka.elasticsearch
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.elasticsearch.scaladsl.{ElasticsearchSink, ElasticsearchSource}
+import akka.stream.alpakka.elasticsearch.scaladsl.{ElasticsearchFlow, ElasticsearchSink, ElasticsearchSource}
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit
 import org.apache.http.HttpHost
@@ -161,6 +161,64 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val result = Await.result(f2, Duration.Inf)
 
       result.sorted shouldEqual Seq(
+        "Akka Concurrency",
+        "Akka in Action",
+        "Effective Akka",
+        "Learning Scala",
+        "Programming in Scala",
+        "Scala Puzzlers",
+        "Scala for Spark in Production"
+      )
+    }
+  }
+
+  "ElasticsearchFlow" should {
+    "store documents and pass Responses" in {
+      // Copy source/book to sink3/book through typed stream
+      //#run-flow
+      val f1 = ElasticsearchSource
+        .typed[Book](
+          "source",
+          "book",
+          """{"match_all": {}}""",
+          ElasticsearchSourceSettings(5)
+        )
+        .map { message: OutgoingMessage[Book] =>
+          IncomingMessage(Some(message.id), message.source)
+        }
+        .via(
+          ElasticsearchFlow.typed[Book](
+            "sink3",
+            "book",
+            ElasticsearchSinkSettings(5)
+          )
+        )
+        .runWith(Sink.seq)
+      //#run-flow
+
+      val result1 = Await.result(f1, Duration.Inf)
+      flush("sink3")
+
+      // Assert responses
+      val results = result1.map(_.getStatusLine.getStatusCode)
+      assert(results == Seq(200, 200))
+
+      // Assert docs in sink3/book
+      val f2 = ElasticsearchSource
+        .typed[Book](
+          "sink3",
+          "book",
+          """{"match_all": {}}""",
+          ElasticsearchSourceSettings()
+        )
+        .map { message =>
+          message.source.title
+        }
+        .runWith(Sink.seq)
+
+      val result2 = Await.result(f2, Duration.Inf)
+
+      result2.sorted shouldEqual Seq(
         "Akka Concurrency",
         "Akka in Action",
         "Effective Akka",

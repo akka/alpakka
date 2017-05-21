@@ -6,9 +6,9 @@ package akka.stream.alpakka.elasticsearch.scaladsl
 import akka.NotUsed
 import akka.stream.alpakka.elasticsearch.{
   ElasticsearchFlowStage,
-  MessageWriter,
   ElasticsearchSinkSettings,
-  IncomingMessage
+  IncomingMessage,
+  MessageWriter
 }
 import akka.stream.scaladsl.Flow
 import org.elasticsearch.client.{Response, RestClient}

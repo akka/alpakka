@@ -6,6 +6,7 @@ package akka.stream.alpakka.elasticsearch;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchFlow;
 import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSink;
 import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSource;
 import akka.stream.javadsl.Sink;
@@ -13,6 +14,7 @@ import akka.testkit.JavaTestKit;
 import org.apache.http.HttpHost;
 import org.apache.http.entity.StringEntity;
 import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner;
+import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -137,7 +139,7 @@ public class ElasticsearchTest {
 
   @Test
   public void typedStream() throws Exception {
-    // Copy source/book to sink1/book through JsObject stream
+    // Copy source/book to sink2/book through JsObject stream
     //#run-typed
     CompletionStage<Done> f1 = ElasticsearchSource.typed(
       "source",
@@ -149,7 +151,7 @@ public class ElasticsearchTest {
       .map(m -> new IncomingMessage<>(new Some<String>(m.id()), m.source()))
       .runWith(
         ElasticsearchSink.typed(
-          "sink1",
+          "sink2",
           "book",
           new ElasticsearchSinkSettings(5),
           client),
@@ -158,11 +160,11 @@ public class ElasticsearchTest {
 
     f1.toCompletableFuture().get();
 
-    flush("sink1");
+    flush("sink2");
 
-    // Assert docs in sink1/book
+    // Assert docs in sink2/book
     CompletionStage<List<String>> f2 = ElasticsearchSource.typed(
-      "sink1",
+      "sink2",
       "book",
       "{\"match_all\": {}}",
       new ElasticsearchSourceSettings(5),
@@ -185,6 +187,60 @@ public class ElasticsearchTest {
 
     Collections.sort(result);
     assertEquals(expect, result);
+  }
+
+  @Test
+  public void flow() throws Exception {
+    // Copy source/book to sink3/book through JsObject stream
+    //#run-flow
+    CompletionStage<List<Response>> f1 = ElasticsearchSource.typed(
+        "source",
+        "book",
+        "{\"match_all\": {}}",
+        new ElasticsearchSourceSettings(5),
+        client,
+        Book.class)
+        .map(m -> new IncomingMessage<>(new Some<String>(m.id()), m.source()))
+        .via(ElasticsearchFlow.typed(
+                "sink3",
+                "book",
+                new ElasticsearchSinkSettings(5),
+                client))
+        .runWith(Sink.seq(), materializer);
+    //#run-flow
+
+    List<Response> result1 = f1.toCompletableFuture().get();
+    flush("sink3");
+
+    assertEquals(2, result1.size());
+    assertEquals(200, result1.get(0).getStatusLine().getStatusCode());
+    assertEquals(200, result1.get(1).getStatusLine().getStatusCode());
+
+    // Assert docs in sink3/book
+    CompletionStage<List<String>> f2 = ElasticsearchSource.typed(
+        "sink3",
+        "book",
+        "{\"match_all\": {}}",
+        new ElasticsearchSourceSettings(5),
+        client,
+        Book.class)
+        .map(m -> m.source().title)
+        .runWith(Sink.seq(), materializer);
+
+    List<String> result2 = new ArrayList<>(f2.toCompletableFuture().get());
+
+    List<String> expect = Arrays.asList(
+        "Akka Concurrency",
+        "Akka in Action",
+        "Effective Akka",
+        "Learning Scala",
+        "Programming in Scala",
+        "Scala Puzzlers",
+        "Scala for Spark in Production"
+    );
+
+    Collections.sort(result2);
+    assertEquals(expect, result2);
   }
 
 }

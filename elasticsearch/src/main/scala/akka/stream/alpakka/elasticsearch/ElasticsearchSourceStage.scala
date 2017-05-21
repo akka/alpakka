@@ -102,7 +102,7 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
     reader.convert(json) match {
       case ScrollResponse(Some(error), _) =>
         failStage(new IllegalStateException(error))
-      case ScrollResponse(None, Some(result)) if result.messages.isEmpty && scrollId != null =>
+      case ScrollResponse(None, Some(result)) if result.messages.isEmpty =>
         completeStage()
       case ScrollResponse(_, Some(result)) =>
         scrollId = result.scrollId

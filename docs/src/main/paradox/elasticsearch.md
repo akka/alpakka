@@ -103,20 +103,13 @@ Scala (sink)
 
 ### Using Elasticsearch as a Flow
 
-You can also build flow stages which put or acknowledge messages in Elasticsearch, backpressure on queue response and then forward
-responses further down the stream. The API is similar to creating Sinks.
+You can also build flow stages. The API is similar to creating Sinks.
 
 Scala (flow)
-: TBA
+: @@snip (../../../../elasticsearch/src/test/scala/akka/stream/alpakka/elasticsearch/ElasticsearchSpec.scala) { #run-flow }
 
 Java (flow)
-: TBA
-
-Scala (flow with ack)
-: TBA
-
-Java (flow with ack)
-: TBA
+: @@snip (../../../../elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #run-flow }
 
 ### Running the example code
 
