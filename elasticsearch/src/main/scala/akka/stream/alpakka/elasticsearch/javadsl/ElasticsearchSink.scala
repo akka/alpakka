@@ -13,7 +13,7 @@ import spray.json.{JsObject, JsonWriter}
 
 import scala.compat.java8.FutureConverters.FutureOps
 
-class ElasticsearchSink {
+object ElasticsearchSink {
 
   /**
    * Java API: creates a sink based on [[ElasticsearchFlowStage]] that accepts as JsObject

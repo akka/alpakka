@@ -9,7 +9,7 @@ import akka.stream.javadsl.Source
 import org.elasticsearch.client.RestClient
 import spray.json.{DefaultJsonProtocol, JsObject, JsonReader}
 
-class ElasticsearchSource {
+object ElasticsearchSource {
 
   /**
    * Java API: creates a [[ElasticsearchSourceStage]] that consumes as JsObject

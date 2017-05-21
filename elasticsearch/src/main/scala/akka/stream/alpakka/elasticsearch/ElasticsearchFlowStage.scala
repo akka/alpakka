@@ -18,7 +18,9 @@ import spray.json._
 import scala.concurrent.Future
 import ElasticsearchFlowStage._
 
+//#sink-settings
 final case class ElasticsearchSinkSettings(bufferSize: Int = 10)
+//#sink-settings
 
 final case class IncomingMessage[T](id: Option[String], source: T)
 

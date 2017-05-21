@@ -25,15 +25,21 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   private val runner = new ElasticsearchClusterRunner()
 
-  implicit val system = ActorSystem(this.getClass.getSimpleName)
+  //#init-mat
+  implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
+  //#init-mat
+  //#init-client
   implicit val client = RestClient.builder(new HttpHost("localhost", 9201)).build()
+  //#init-client
 
+  //#define-jsonformat
   case class Book(title: String)
   implicit val format = jsonFormat1(Book)
+  //#define-jsonformat
 
   override def beforeAll() = {
-    runner.build(ElasticsearchClusterRunner.newConfigs().numOfNode(1))
+    runner.build(ElasticsearchClusterRunner.newConfigs().baseHttpPort(9200).baseTransportPort(9300).numOfNode(1))
     runner.ensureYellow()
 
     register("source", "Akka in Action")
@@ -48,6 +54,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   override def afterAll() = {
     runner.close()
+    runner.clean()
     client.close()
     TestKit.shutdownActorSystem(system)
   }
@@ -64,12 +71,13 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   "Elasticsearch connector" should {
     "consume and publish documents as JsObject" in {
       // Copy source/book to sink1/book through JsObject stream
+      //#run-jsobject
       val f1 = ElasticsearchSource(
         "source",
         "book",
         """{"match_all": {}}""",
         ElasticsearchSourceSettings(5)
-      ).map { message =>
+      ).map { message: OutgoingMessage[JsObject] =>
           IncomingMessage(Some(message.id), message.source)
         }
         .runWith(
@@ -79,6 +87,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
             ElasticsearchSinkSettings(5)
           )
         )
+      //#run-jsobject
 
       Await.result(f1, Duration.Inf)
 
@@ -112,6 +121,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   "Typed Elasticsearch connector" should {
     "consume and publish documents as specific type" in {
       // Copy source/book to sink2/book through typed stream
+      //#run-typed
       val f1 = ElasticsearchSource
         .typed[Book](
           "source",
@@ -119,7 +129,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           """{"match_all": {}}""",
           ElasticsearchSourceSettings(5)
         )
-        .map { message =>
+        .map { message: OutgoingMessage[Book] =>
           IncomingMessage(Some(message.id), message.source)
         }
         .runWith(
@@ -129,6 +139,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
             ElasticsearchSinkSettings(5)
           )
         )
+      //#run-typed
 
       Await.result(f1, Duration.Inf)
 
