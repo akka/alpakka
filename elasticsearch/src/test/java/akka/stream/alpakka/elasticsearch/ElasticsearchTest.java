@@ -32,11 +32,11 @@ public class ElasticsearchTest {
   private static ActorSystem system;
   private static ActorMaterializer materializer;
 
-  //#define-jsonformat
+  //#define-class
   public static class Book {
     public String title;
   }
-  //#define-jsonformat
+  //#define-class
 
   @BeforeClass
   public static void setup() throws IOException {

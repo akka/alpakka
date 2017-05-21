@@ -33,10 +33,10 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   implicit val client = RestClient.builder(new HttpHost("localhost", 9201)).build()
   //#init-client
 
-  //#define-jsonformat
+  //#define-class
   case class Book(title: String)
   implicit val format = jsonFormat1(Book)
-  //#define-jsonformat
+  //#define-class
 
   override def beforeAll() = {
     runner.build(ElasticsearchClusterRunner.newConfigs().baseHttpPort(9200).baseTransportPort(9300).numOfNode(1))

@@ -55,7 +55,8 @@ This is all preparation that we are going to need.
 
 ### JsObject message
 
-Now we can stream messages which contains spray-json's `JsObject` from or to Elasticsearch where we have access to by providing the `RestClient` to the
+Now we can stream messages which contains spray-json's `JsObject` (in Scala) or `java.util.Map<String, Object>` (in Java) 
+from or to Elasticsearch where we have access to by providing the `RestClient` to the
 @scaladoc[ElasticsearchSource](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSource$) or the 
 @scaladoc[ElasticsearchSink](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSink$).
 
@@ -68,27 +69,20 @@ Java
 
 ### Typed messages
 
-Also, it's possible to stream messages which contains any classes by defining `JsonFormat`.
+Also, it's possible to stream messages which contains any classes. In Scala, spray-json is used for JSON conversion, 
+so defining the mapped class and `JsonFormat` for it is necessary. In Java, Jackson is used, so just define the mapped class.
 
 Scala
-: @@snip (../../../../elasticsearch/src/test/scala/akka/stream/alpakka/elasticsearch/ElasticsearchSpec.scala) { #define-jsonformat }
+: @@snip (../../../../elasticsearch/src/test/scala/akka/stream/alpakka/elasticsearch/ElasticsearchSpec.scala) { #define-class }
+
+Java
+: @@snip (../../../../elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #define-class }
+
 
 Use `ElasticsearchSource.typed` and `ElasticsearchSink.typed` to create source and sink instead.
 
 Scala
 : @@snip (../../../../elasticsearch/src/test/scala/akka/stream/alpakka/elasticsearch/ElasticsearchSpec.scala) { #run-typed }
-
-In Java, import @scaladoc[SprayJsonSupport](akka.stream.alpakka.elasticsearch.javadsl.SprayJsonSupport$) members statically to use spray-json easily.
-
-Java
-: @@snip (../../../../elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #import-spray-json-support }
-
-and define `JsonFormat` as following:
-
-Java
-: @@snip (../../../../elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #define-jsonformat }
-
-Then we can stream typed messages in Java.
 
 Java
 : @@snip (../../../../elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #run-typed }
