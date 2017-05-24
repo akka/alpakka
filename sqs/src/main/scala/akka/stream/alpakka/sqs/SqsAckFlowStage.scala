@@ -36,7 +36,9 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
       }
 
       private def handleChangeVisibility(request: ChangeMessageVisibilityRequest): Unit = {
-        log.debug(s"Set visibility timeout for message {} to {}", request.getReceiptHandle, request.getVisibilityTimeout)
+        log.debug(s"Set visibility timeout for message {} to {}",
+                  request.getReceiptHandle,
+                  request.getVisibilityTimeout)
         inFlight -= 1
         if (inFlight == 0 && inIsClosed)
           checkForCompletion()
@@ -107,7 +109,7 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
                     }
 
                     override def onSuccess(request: DeleteMessageRequest, result: DeleteMessageResult): Unit = {
-                      responsePromise.success(AckResult(result, message.getBody))
+                      responsePromise.success(AckResult(Some(result), message.getBody))
                       deleteCallback.invoke(request)
                     }
                   }
@@ -125,12 +127,13 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
 
                       override def onSuccess(request: ChangeMessageVisibilityRequest,
                                              result: ChangeMessageVisibilityResult): Unit = {
-                        responsePromise.success(AckResult(result, message.getBody))
+                        responsePromise.success(AckResult(Some(result), message.getBody))
                         changeVisibilityCallback.invoke(request)
                       }
                     }
                   )
-              case Ignore() => // do nothing
+              case Ignore() =>
+                responsePromise.success(AckResult(None, message.getBody))
             }
             push(out, responsePromise.future)
           }
