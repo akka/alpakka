@@ -4,7 +4,7 @@
 package akka.stream.alpakka.sqs.scaladsl
 
 import akka.Done
-import akka.stream.alpakka.sqs.{ChangeMessageVisibility, Delete, SqsSourceSettings}
+import akka.stream.alpakka.sqs.{ChangeMessageVisibility, Delete, Ignore, SqsSourceSettings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import com.amazonaws.handlers.AsyncHandler
@@ -125,6 +125,23 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       any[ChangeMessageVisibilityRequest],
       any[AsyncHandler[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult]]
     )
+  }
+
+  it should "pull and ignore a message" taggedAs Integration in {
+    val queue = randomQueueUrl()
+    sqsClient.sendMessage(queue, "alpakka-4")
+
+    val awsSqsClient = spy(sqsClient)
+    //#ignore
+    val future = SqsSource(queue)(awsSqsClient)
+      .take(1)
+      .map { m: Message =>
+        (m, Ignore())
+      }
+      .runWith(SqsAckSink(queue)(awsSqsClient))
+    //#ignore
+
+    Await.result(future, 1.second) shouldBe Done
   }
 
 }
