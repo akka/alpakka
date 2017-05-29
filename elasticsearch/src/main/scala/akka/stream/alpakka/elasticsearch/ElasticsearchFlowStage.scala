@@ -16,6 +16,7 @@ import spray.json._
 
 import scala.concurrent.Future
 import ElasticsearchFlowStage._
+import org.apache.http.message.BasicHeader
 
 //#sink-settings
 final case class ElasticsearchSinkSettings(bufferSize: Int = 10)
@@ -119,10 +120,11 @@ class ElasticsearchFlowStage[T](
 
         client.performRequestAsync(
           "POST",
-          "_bulk",
+          "/_bulk",
           Map[String, String]().asJava,
           new StringEntity(json),
-          this
+          this,
+          new BasicHeader("Content-Type", "application/x-ndjson")
         )
       }
 

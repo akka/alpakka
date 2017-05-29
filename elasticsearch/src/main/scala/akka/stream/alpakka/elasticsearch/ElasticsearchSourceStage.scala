@@ -11,6 +11,7 @@ import org.apache.http.entity.StringEntity
 import org.elasticsearch.client.{Response, ResponseListener, RestClient}
 import spray.json._
 import DefaultJsonProtocol._
+import org.apache.http.message.BasicHeader
 
 import scala.collection.JavaConverters._
 
@@ -64,10 +65,11 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
       if (scrollId == null) {
         client.performRequestAsync(
           "POST",
-          s"$indexName/$typeName/_search",
+          s"/$indexName/$typeName/_search",
           Map("scroll" -> "5m", "sort" -> "_doc").asJava,
           new StringEntity(s"""{"size": ${settings.bufferSize}, "query": ${query}}"""),
-          this
+          this,
+          new BasicHeader("Content-Type", "application/json")
         )
       } else {
         client.performRequestAsync(
@@ -75,7 +77,8 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
           s"/_search/scroll",
           Map[String, String]().asJava,
           new StringEntity(Map("scroll" -> "5m", "scroll_id" -> scrollId).toJson.toString),
-          this
+          this,
+          new BasicHeader("Content-Type", "application/json")
         )
       }
     } catch {
