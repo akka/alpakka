@@ -103,7 +103,9 @@ lazy val googleCloudPubSub = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-google-cloud-pub-sub",
-    Dependencies.GooglePubSub
+    Dependencies.GooglePubSub,
+    fork in Test := true,
+    envVars in Test := Map("PUBSUB_EMULATOR_HOST" -> "localhost:8538")
   )
 
 lazy val hbase = project
