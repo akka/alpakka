@@ -109,7 +109,7 @@ object Protocol {
       fileId: FileId
   )
 
-  case class DownloadFileByIdResponse(
+  case class DownloadFileResponse(
       fileId: FileId,
       fileName: FileName,
       contentSha1: Sha1,

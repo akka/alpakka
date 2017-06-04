@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.backblazeb2
 
 import com.github.tomakehurst.wiremock.WireMockServer
@@ -24,7 +27,7 @@ abstract class WireMockBase extends FlatSpecLike with BeforeAndAfterAll {
   private def createMockServer(): WireMockServer = {
     val server = new WireMockServer(
       options()
-        .notifier(new ConsoleNotifier(true))
+        .notifier(new ConsoleNotifier(false))
         .dynamicPort()
         .dynamicHttpsPort()
         .keystorePath("./backblazeb2/src/test/resources/keystore.jks")

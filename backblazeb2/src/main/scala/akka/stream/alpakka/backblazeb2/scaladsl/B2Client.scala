@@ -31,7 +31,7 @@ class B2Client(
   private def obtainAuthorizeAccountResponse(): B2Response[AuthorizeAccountResponse] =
     returnOrObtain(authorizeAccountPromise, callAuthorizeAccount)
 
-  private def tryAgainIfExpired[T](x: B2Response[T])(fallbackIfExpired: => B2Response[T]): Future[Either[B2Error, T]] = {
+  private def tryAgainIfExpired[T](x: B2Response[T])(fallbackIfExpired: => B2Response[T]): Future[Either[B2Error, T]] =
     x flatMap {
       case Left(error) if error.isExpiredToken =>
         fallbackIfExpired
@@ -42,7 +42,6 @@ class B2Client(
       case success: Right[B2Error, T] =>
         Future.successful(success)
     }
-  }
 
   /**
    * Return the saved GetUploadUrlResponse if it exists or obtain a new one if it doesn't
@@ -96,7 +95,7 @@ class B2Client(
     }
   }
 
-  def download(fileId: FileId): B2Response[DownloadFileByIdResponse] = {
+  def downloadById(fileId: FileId): B2Response[DownloadFileResponse] = {
     import cats.implicits._
     val result = for {
       authorizeAccountResponse <- EitherT(obtainAuthorizeAccountResponse())
@@ -106,7 +105,26 @@ class B2Client(
 
     tryAgainIfExpired(result.value) {
       authorizeAccountPromise = Promise()
-      download(fileId)
+      downloadById(fileId)
+    }
+  }
+
+  def downloadByName(fileName: FileName, bucketName: BucketName): B2Response[DownloadFileResponse] = {
+    import cats.implicits._
+    val result = for {
+      authorizeAccountResponse <- EitherT(obtainAuthorizeAccountResponse())
+      download <- EitherT(
+          api.downloadFileByName(
+            fileName,
+            bucketName,
+            authorizeAccountResponse.apiUrl,
+            authorizeAccountResponse.authorizationToken.some
+          ))
+    } yield download
+
+    tryAgainIfExpired(result.value) {
+      authorizeAccountPromise = Promise()
+      downloadByName(fileName, bucketName)
     }
   }
 

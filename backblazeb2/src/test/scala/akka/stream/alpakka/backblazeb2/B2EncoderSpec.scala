@@ -31,9 +31,8 @@ class B2EncoderSpec extends FlatSpec {
     testCases foreach checkB2
   }
 
-  private def checkBase64Encode(value: String, expected: String) = {
+  private def checkBase64Encode(value: String, expected: String) =
     B2Encoder.encodeBase64(value) shouldEqual expected
-  }
 
   it should "encode base 64" in { // from https://www.ietf.org/rfc/rfc4648.txt
     checkBase64Encode("", "")

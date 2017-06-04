@@ -112,14 +112,14 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
       bucketName: BucketName,
       apiUrl: ApiUrl,
       accountAuthorization: Option[AccountAuthorizationToken]
-  ): B2Response[ByteString] = {
+  ): B2Response[DownloadFileResponse] = {
     val uri = Uri(s"$apiUrl/file/$bucketName/$fileName")
     val request = HttpRequest(
       uri = uri,
       method = HttpMethods.GET
     ).withHeaders(authorizationHeaders(accountAuthorization): _*)
 
-    requestAndParse[ByteString](request)
+    requestAndParse[DownloadFileResponse](request)
   }
 
   /**
@@ -129,7 +129,7 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
       fileId: FileId,
       apiUrl: ApiUrl,
       accountAuthorization: Option[AccountAuthorizationToken]
-  ): B2Response[DownloadFileByIdResponse] = {
+  ): B2Response[DownloadFileResponse] = {
     val uri = Uri(s"$apiUrl/b2api/v1/b2_download_file_by_id").withQuery(Query("fileId" -> fileId.value))
 
     val request = HttpRequest(
@@ -137,7 +137,7 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
       method = HttpMethods.GET
     ).withHeaders(authorizationHeaders(accountAuthorization): _*)
 
-    requestAndParse[DownloadFileByIdResponse](request)
+    requestAndParse[DownloadFileResponse](request)
   }
 
   /**

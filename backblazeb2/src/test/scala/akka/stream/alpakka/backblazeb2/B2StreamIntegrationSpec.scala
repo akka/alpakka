@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.backblazeb2
 
 import java.nio.charset.StandardCharsets
@@ -11,7 +14,7 @@ import akka.util.ByteString
 import org.scalatest.AsyncFlatSpec
 import org.scalatest.Matchers._
 
-class B2StreamSpec extends AsyncFlatSpec with B2IntegrationTest {
+class B2StreamIntegrationSpec extends AsyncFlatSpec with B2IntegrationTest {
   val thisRun = System.currentTimeMillis().toString
 
   val n = 10
@@ -26,11 +29,10 @@ class B2StreamSpec extends AsyncFlatSpec with B2IntegrationTest {
 
   it should "upload then download then delete" in {
     val upload = streams.uploadFiles(bucketId)
-    val uploadedFiles = Source(datas)
-      .map { case (fileName, data) =>
+    val uploadedFiles = Source(datas).map {
+      case (fileName, data) =>
         UploadFileRequest(FileName(fileName), ByteString(data))
-      }
-      .via(upload)
+    }.via(upload)
       .map { x =>
         x.fileId -> x.fileName
       }
@@ -42,9 +44,7 @@ class B2StreamSpec extends AsyncFlatSpec with B2IntegrationTest {
       lookup.size shouldEqual datas.size
       val fileIds = Source(lookup.keySet)
 
-      val downloaded = fileIds
-        .via(download)
-        .runWith(Sink.seq)
+      val downloaded = fileIds.via(download).runWith(Sink.seq)
 
       downloaded flatMap { downloaded =>
         val downloadedData = downloaded.map { x =>
@@ -54,14 +54,11 @@ class B2StreamSpec extends AsyncFlatSpec with B2IntegrationTest {
         downloadedData.toSet shouldEqual datas.toSet
 
         val delete = streams.deleteFileVersions(bucketId)
-        val fileVersions = downloaded
-          .map { x =>
-            x.fileVersion
-          }
+        val fileVersions = downloaded.map { x =>
+          x.fileVersion
+        }
 
-        val deleted = Source(fileVersions)
-          .via(delete)
-          .runWith(Sink.seq)
+        val deleted = Source(fileVersions).via(delete).runWith(Sink.seq)
 
         deleted map { deleted =>
           deleted.toSet shouldEqual fileVersions.toSet

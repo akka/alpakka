@@ -43,10 +43,10 @@ class B2Streams(accountCredentials: B2AccountCredentials)(implicit val system: A
   /**
    * Warning: The returned flow is not thread safe
    */
-  def downloadFilesById(bucketId: BucketId): Flow[FileId, DownloadFileByIdResponse, NotUsed] = {
+  def downloadFilesById(bucketId: BucketId): Flow[FileId, DownloadFileResponse, NotUsed] = {
     val client = createClient(bucketId)
     Flow[FileId].mapAsyncUnordered(parallelism) { x =>
-      client.download(x).map(_ getOrElse sys.error(s"Failed to download $x"))
+      client.downloadById(x).map(_ getOrElse sys.error(s"Failed to download $x"))
     }
   }
 

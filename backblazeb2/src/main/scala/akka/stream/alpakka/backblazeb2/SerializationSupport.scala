@@ -90,7 +90,7 @@ object SerializationSupport {
   implicit val b2ErrorResponseEncoder = Encoder[B2ErrorResponse]
   implicit val b2ErrorResponseUnmarshaller = circeUnmarshaller[B2ErrorResponse]
 
-  implicit val downloadFileByIdResponseUnmarshaller = new Unmarshaller[HttpResponse, DownloadFileByIdResponse] {
+  implicit val downloadFileByIdResponseUnmarshaller = new Unmarshaller[HttpResponse, DownloadFileResponse] {
     private def rawHeader(response: HttpResponse, headerName: String): String = {
       val found = response.headers.find { header =>
         header.name.toLowerCase == headerName.toLowerCase
@@ -102,9 +102,9 @@ object SerializationSupport {
     }
 
     override def apply(value: HttpResponse)(implicit ec: ExecutionContext,
-                                            materializer: Materializer): Future[DownloadFileByIdResponse] =
+                                            materializer: Materializer): Future[DownloadFileResponse] =
       Unmarshal(value.entity).to[ByteString] map { data =>
-        DownloadFileByIdResponse(
+        DownloadFileResponse(
           fileId = FileId(rawHeader(value, "X-Bz-File-Id")),
           fileName = FileName(rawHeader(value, "X-Bz-File-Name")),
           contentSha1 = Sha1(rawHeader(value, "X-Bz-Content-Sha1")),
