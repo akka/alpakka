@@ -31,12 +31,17 @@ class B2Client(
   private def obtainAuthorizeAccountResponse(): B2Response[AuthorizeAccountResponse] =
     returnOrObtain(authorizeAccountPromise, callAuthorizeAccount)
 
-  private def tryAgainIfExpired[T](x: B2Response[T])(fallbackIfExpired: => B2Response[T]) = x flatMap {
-    case Left(error) if error.isExpiredToken =>
-      fallbackIfExpired
+  private def tryAgainIfExpired[T](x: B2Response[T])(fallbackIfExpired: => B2Response[T]): Future[Either[B2Error, T]] = {
+    x flatMap {
+      case Left(error) if error.isExpiredToken =>
+        fallbackIfExpired
 
-    case success: Right[B2Error, T] =>
-      Future.successful(success)
+      case Left(error) =>
+        Future.successful(error.asLeft)
+
+      case success: Right[B2Error, T] =>
+        Future.successful(success)
+    }
   }
 
   /**

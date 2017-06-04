@@ -40,7 +40,7 @@ class B2APISpec extends AsyncFlatSpec with B2IntegrationTest {
     val apiUrl = authorizationResult.apiUrl
     val accountAuthorization = authorizationResult.authorizationToken
 
-    val text = "this is test data"
+    val text = "This is test data!"
     val data = ByteString(text.getBytes(StandardCharsets.UTF_8.name))
 
     val getUploadUrlF = api.getUploadUrl(authorizationResult, bucketId)
