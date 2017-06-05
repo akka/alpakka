@@ -94,11 +94,9 @@ object EventSource {
         }
         send(request).flatMap(Unmarshal(_).to[EventSource]).fallbackTo(noEvents)
       }
-      def recover(eventSource: EventSource) = eventSource.recoverWithRetries(1, { case _ => Source.empty })
-      def delimit(eventSource: EventSource) = eventSource.concat(singleDelimiter)
-      Flow[Option[String]]
-        .mapAsync(1)(getEventSource)
-        .flatMapConcat((recover _).andThen(delimit))
+      def recoverAndDelimit(eventSource: EventSource) =
+        eventSource.recoverWithRetries(0, { case _ => Source.empty }).concat(singleDelimiter)
+      Flow[Option[String]].mapAsync(1)(getEventSource).flatMapConcat(recoverAndDelimit)
     }
 
     val lastEventId =
