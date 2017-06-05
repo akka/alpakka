@@ -3,16 +3,30 @@
  */
 package akka.stream.alpakka.csv.scaladsl
 
-import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
 import akka.NotUsed
-import akka.stream.scaladsl.{FileIO, Flow, Sink, Source}
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{FileIO, Flow, Keep, Sink, Source}
+import akka.stream.testkit.scaladsl.{TestSink, TestSource}
+import akka.testkit.TestKit
 import akka.util.ByteString
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpecLike}
 
 import scala.collection.immutable.Seq
+import scala.concurrent.duration.DurationInt
 
-class CsvParsingSpec extends CsvSpec {
+class CsvParsingSpec
+    extends TestKit(ActorSystem(classOf[CsvParsingSpec].getSimpleName))
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach
+    with ScalaFutures {
+
+  implicit val materializer = ActorMaterializer()
 
   def documentation(): Unit = {
     import CsvParsing._
@@ -87,6 +101,23 @@ class CsvParsingSpec extends CsvSpec {
       val res = fut.futureValue
       res.head should be(List("eins", "zwei", "drei"))
       res(1) should be(List("uno", "dos", "tres"))
+    }
+
+    "emit completion even without new line at end" in {
+      val (source, sink) = TestSource
+        .probe[ByteString]
+        .via(CsvParsing.lineScanner())
+        .map(_.map(_.utf8String))
+        .toMat(TestSink.probe[List[String]])(Keep.both)
+        .run()
+      source.sendNext(ByteString("eins,zwei,drei\nuno,dos,tres\n1,2,3"))
+      sink.request(3)
+      sink.expectNext(List("eins", "zwei", "drei"))
+      sink.expectNext(List("uno", "dos", "tres"))
+      sink.expectNoMsg(100.millis)
+      source.sendComplete()
+      sink.expectNext(List("1", "2", "3"))
+      sink.expectComplete()
     }
 
     "parse Apple Numbers exported file" in {
