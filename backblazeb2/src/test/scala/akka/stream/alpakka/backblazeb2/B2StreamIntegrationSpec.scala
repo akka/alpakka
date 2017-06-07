@@ -30,8 +30,8 @@ class B2StreamIntegrationSpec extends AsyncFlatSpec with B2IntegrationTest {
   it should "upload then download then delete" in {
     val upload = streams.uploadFiles(bucketId)
     val uploadedFiles = Source(datas).map {
-      case (fileName, data) =>
-        UploadFileRequest(FileName(fileName), ByteString(data))
+      case (fn, data) =>
+        UploadFileRequest(FileName(fn), ByteString(data))
     }.via(upload)
       .map { x =>
         x.fileId -> x.fileName

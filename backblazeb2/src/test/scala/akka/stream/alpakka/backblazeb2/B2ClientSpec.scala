@@ -28,7 +28,7 @@ class B2ClientSpec extends WireMockBase with BeforeAndAfterEach {
   val bucketId = BucketId("testBucketId")
   val hostAndPort = s"localhost:${mockServer.httpsPort}"
 
-  def createClient() = new B2Client(credentials, bucketId, hostAndPort)
+  def createClient() = new B2Client(credentials, bucketId, eagerAuthorization = false, hostAndPort)
 
   val fileName = FileName("testFileName")
   val data = ByteString("testData")

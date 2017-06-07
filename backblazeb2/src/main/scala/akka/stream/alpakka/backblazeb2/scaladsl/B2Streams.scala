@@ -28,7 +28,7 @@ class B2Streams(accountCredentials: B2AccountCredentials)(implicit val system: A
   implicit val executionContext = materializer.executionContext
   private val parallelism = 1
 
-  private def createClient(bucketId: BucketId) = new B2Client(accountCredentials, bucketId)
+  private def createClient(bucketId: BucketId) = new B2Client(accountCredentials, bucketId, eagerAuthorization = true)
 
   /**
    * Warning: The returned flow is not thread safe

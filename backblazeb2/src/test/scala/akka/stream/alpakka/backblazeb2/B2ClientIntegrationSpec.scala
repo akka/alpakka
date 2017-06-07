@@ -16,7 +16,7 @@ class B2ClientIntegrationSpec extends FlatSpec with B2IntegrationTest {
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
 
-  val client = new B2Client(credentials, bucketId)
+  val client = new B2Client(credentials, bucketId, eagerAuthorization = true)
 
   it should "handle happy path by id" in {
     val uploadResultF = client.upload(fileName, dataByteString)

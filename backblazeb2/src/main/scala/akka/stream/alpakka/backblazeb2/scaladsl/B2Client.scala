@@ -19,12 +19,17 @@ import scala.concurrent.{Future, Promise}
 class B2Client(
     accountCredentials: B2AccountCredentials,
     bucketId: BucketId,
+    eagerAuthorization: Boolean,
     hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: ActorSystem, materializer: ActorMaterializer) {
   implicit val executionContext = materializer.executionContext
   private val api = new B2API(hostAndPort)
 
   private var authorizeAccountPromise: Promise[AuthorizeAccountResponse] = Promise()
   private var getUploadUrlPromise: Promise[GetUploadUrlResponse] = Promise()
+
+  if (eagerAuthorization) { // if authorization is eager, let us start with this upon construction
+    val _ = obtainAuthorizeAccountResponse()
+  }
 
   /**
    * Return the saved AuthorizeAccountResponse if it exists or obtain a new one if it doesn't
