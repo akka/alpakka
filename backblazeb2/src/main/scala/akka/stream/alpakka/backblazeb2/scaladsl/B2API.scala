@@ -3,6 +3,8 @@
  */
 package akka.stream.alpakka.backblazeb2.scaladsl
 
+import java.util.UUID
+
 import akka.stream.alpakka.backblazeb2.B2Encoder.encodeBase64
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -17,6 +19,7 @@ import akka.stream.alpakka.backblazeb2.SerializationSupport._
 import akka.util.ByteString
 import cats.data.EitherT
 import cats.syntax.either._
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.Future
 
@@ -27,7 +30,8 @@ object B2API {
 /**
  * Handles the interface with the Backblaze B2 API, but doesn't handle any expired tokens or retries
  */
-class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: ActorSystem, materializer: Materializer) {
+class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: ActorSystem, materializer: Materializer)
+    extends LazyLogging {
   implicit val executionContext = materializer.executionContext
   private val version = "b2api/v1"
 
@@ -90,13 +94,26 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
     requestAndParse[UploadFileResponse](request)
   }
 
-  private def requestAndParse[T: FromResponseUnmarshaller](request: HttpRequest): B2Response[T] =
-    Http().singleRequest(request) flatMap { response =>
-      parseResponse[T](response).recover {
-        case t: Throwable => // this adds useful debug info to the error
-          throw new RuntimeException(s"Failed to decode $response for $request", t)
+  private def requestAndParse[T: FromResponseUnmarshaller](request: HttpRequest): B2Response[T] = {
+    val requestId = UUID.randomUUID()
+    val start = System.nanoTime()
+    logger.trace(s"request $requestId: Invoking ${request.uri}")
+
+    Http()
+      .singleRequest(request)
+      .map { x =>
+        val end = System.nanoTime()
+        val delta = (end - start) / 1000000
+        logger.debug(s"request $requestId: Invoking ${request.uri} done in $delta ms with status ${x.status}")
+        x
       }
-    }
+      .flatMap { response =>
+        parseResponse[T](response).recover {
+          case t: Throwable => // this adds useful debug info to the error
+            throw new RuntimeException(s"Failed to decode $response for $request", t)
+        }
+      }
+  }
 
   private def authorizationHeaders(authorization: Option[AccountAuthorizationToken]) =
     authorization.map(authorizationHeader).toSeq

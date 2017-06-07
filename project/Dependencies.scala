@@ -32,6 +32,8 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "com.typesafe.akka"     %% "akka-http"     % AkkaHttpVersion,
       "de.heikoseeberger"     %% "akka-http-circe" % "1.12.0", // ApacheV2
+      "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0", // ApacheV2
+      "ch.qos.logback" % "logback-classic" % "1.1.7", // EPL v1.0 or LGPL 2.1
       "com.github.tomakehurst" % "wiremock"      % "2.5.1" % Test //ApacheV2
     ) ++ Seq( // ApacheV2
       "io.circe" %% "circe-core",
