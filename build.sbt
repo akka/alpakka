@@ -126,6 +126,14 @@ lazy val hbase = project
     fork in Test := true
   )
 
+lazy val marshal = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-marshal",
+    Dependencies.Marshal,
+    fork in Test := true
+  )
+
 lazy val ironmq = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(

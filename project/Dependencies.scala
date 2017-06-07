@@ -28,6 +28,20 @@ object Dependencies {
     )
   )
 
+  val Marshal = Seq(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka"     %% "akka-http"     % AkkaHttpVersion,
+      "org.slf4j" % "slf4j-log4j12" % "1.7.12",
+      "io.javaslang" % "javaslang" % "2.0.5",
+      "com.fasterxml.jackson.core" % "jackson-core" % "2.7.4",
+      "com.fasterxml" % "aalto-xml" % "1.0.0",
+      "de.undercouch" % "actson" % "1.1.0",
+      "org.assertj" % "assertj-core" % "3.2.0" % "test",
+      "org.forgerock.cuppa" % "cuppa" % "1.3.1" % "test",
+      "org.forgerock.cuppa" % "cuppa-junit" % "1.3.1" % "test"
+    )
+  )
+
   val Amqp = Seq(
     libraryDependencies ++= Seq(
       "com.rabbitmq" % "amqp-client" % "3.6.1" // APLv2
