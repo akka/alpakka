@@ -17,6 +17,7 @@ trait B2IntegrationTest {
 
   def checkDownloadResponse(result: DownloadFileResponse): Assertion = {
     val receivedText = new String(result.data.toArray, StandardCharsets.UTF_8.name)
+    result.fileName shouldEqual fileName
     receivedText shouldEqual dataText
   }
 

@@ -10,6 +10,7 @@ import akka.stream.alpakka.backblazeb2.Protocol._
 import akka.util.ByteString
 import cats.data.EitherT
 import cats.syntax.either._
+import cats.syntax.option._
 import scala.concurrent.{Future, Promise}
 
 /**
@@ -52,18 +53,23 @@ class B2Client(
   private def callAuthorizeAccount(): B2Response[AuthorizeAccountResponse] =
     api.authorizeAccount(accountCredentials)
 
-  private def callGetUploadUrl(): B2Response[GetUploadUrlResponse] = {
+  private def withAuthorization[T](f: AuthorizeAccountResponse => B2Response[T]): B2Response[T] = {
     import cats.implicits._
-    val eitherT = for {
+    val result = for {
       authorizeAccountResponse <- EitherT(obtainAuthorizeAccountResponse())
-      response <- EitherT(api.getUploadUrl(authorizeAccountResponse, bucketId))
-    } yield response
+      operation <- EitherT(f(authorizeAccountResponse))
+    } yield operation
 
-    tryAgainIfExpired(eitherT.value) {
+    tryAgainIfExpired(result.value) {
       authorizeAccountPromise = Promise()
-      callGetUploadUrl()
+      withAuthorization(f)
     }
   }
+
+  private def callGetUploadUrl(): B2Response[GetUploadUrlResponse] =
+    withAuthorization { authorizeAccountResponse =>
+      api.getUploadUrl(authorizeAccountResponse, bucketId)
+    }
 
   private def returnOrObtain[T](promise: Promise[T], f: () => B2Response[T]): B2Response[T] =
     if (promise.isCompleted) {
@@ -95,50 +101,67 @@ class B2Client(
     }
   }
 
-  def downloadById(fileId: FileId): B2Response[DownloadFileResponse] = {
-    import cats.implicits._
-    val result = for {
-      authorizeAccountResponse <- EitherT(obtainAuthorizeAccountResponse())
-      download <- EitherT(api.downloadFileById(fileId, authorizeAccountResponse.apiUrl,
-          authorizeAccountResponse.authorizationToken.some))
-    } yield download
-
-    tryAgainIfExpired(result.value) {
-      authorizeAccountPromise = Promise()
-      downloadById(fileId)
+  def downloadById(fileId: FileId): B2Response[DownloadFileResponse] =
+    withAuthorization { authorizeAccountResponse =>
+      api.downloadFileById(fileId, authorizeAccountResponse.apiUrl, authorizeAccountResponse.authorizationToken.some)
     }
-  }
 
-  def downloadByName(fileName: FileName, bucketName: BucketName): B2Response[DownloadFileResponse] = {
-    import cats.implicits._
-    val result = for {
-      authorizeAccountResponse <- EitherT(obtainAuthorizeAccountResponse())
-      download <- EitherT(
-          api.downloadFileByName(
-            fileName,
-            bucketName,
-            authorizeAccountResponse.apiUrl,
-            authorizeAccountResponse.authorizationToken.some
-          ))
-    } yield download
-
-    tryAgainIfExpired(result.value) {
-      authorizeAccountPromise = Promise()
-      downloadByName(fileName, bucketName)
+  def downloadByName(fileName: FileName, bucketName: BucketName): B2Response[DownloadFileResponse] =
+    withAuthorization { authorizeAccountResponse =>
+      api.downloadFileByName(
+        fileName,
+        bucketName,
+        authorizeAccountResponse.apiUrl,
+        authorizeAccountResponse.authorizationToken.some
+      )
     }
-  }
 
-  def deleteFileVersion(fileVersionInfo: FileVersionInfo): B2Response[FileVersionInfo] = {
-    import cats.implicits._
-    val result = for {
-      authorizeAccountResponse <- EitherT(obtainAuthorizeAccountResponse())
-      delete <- EitherT(api.deleteFileVersion(fileVersionInfo, authorizeAccountResponse.apiUrl,
-          authorizeAccountResponse.authorizationToken))
-    } yield delete
+  def deleteFileVersion(fileVersionInfo: FileVersionInfo): B2Response[FileVersionInfo] =
+    withAuthorization { authorizeAccountResponse =>
+      api.deleteFileVersion(fileVersionInfo, authorizeAccountResponse.apiUrl,
+        authorizeAccountResponse.authorizationToken)
+    }
 
-    tryAgainIfExpired(result.value) {
-      authorizeAccountPromise = Promise()
-      deleteFileVersion(fileVersionInfo)
+  def listFileVersions(fileName: FileName): B2Response[ListFileVersionsResponse] =
+    withAuthorization { authorizeAccountResponse =>
+      api.listFileVersions(
+        bucketId,
+        startFileId = None,
+        startFileName = fileName.some,
+        maxFileCount = 1,
+        apiUrl = authorizeAccountResponse.apiUrl,
+        accountAuthorization = authorizeAccountResponse.authorizationToken
+      )
+    }
+
+  def deleteAllFileVersions(fileName: FileName): Future[DeleteAllFileVersionsResponse] = {
+    def deleteFileVersions(versions: List[FileVersionInfo]): Future[DeleteAllFileVersionsResponse] = {
+      val deletionFutures = versions map { file =>
+        deleteFileVersion(file)
+      }
+
+      Future.sequence(deletionFutures).map { data =>
+        val (lefts, rights) = data.partition(_.isLeft)
+        val failures = lefts.collect {
+          case Left(x) => x
+        }
+        val successes = rights.collect {
+          case Right(x) => x
+        }
+        DeleteAllFileVersionsResponse(successes = successes, failures = failures)
+      }
+    }
+
+    listFileVersions(fileName) flatMap {
+      case Left(x) =>
+        Future.successful(
+            DeleteAllFileVersionsResponse(
+              failures = x :: Nil,
+              successes = Nil
+            ))
+
+      case Right(x) =>
+        deleteFileVersions(x.files)
     }
   }
 }

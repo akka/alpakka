@@ -118,4 +118,9 @@ object Protocol {
   ) {
     def fileVersion: FileVersionInfo = FileVersionInfo(fileName, fileId)
   }
+
+  case class DeleteAllFileVersionsResponse(
+      failures: List[B2Error],
+      successes: List[FileVersionInfo]
+  )
 }

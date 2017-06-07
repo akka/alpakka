@@ -47,6 +47,17 @@ class B2APIIntegrationSpec extends AsyncFlatSpec with B2IntegrationTest {
 
     val fileId = uploadResult.fileId
 
+    val fileVersionsResponseF = api.listFileVersions(
+      bucketId,
+      startFileId = None,
+      startFileName = fileName.some,
+      maxFileCount = 1,
+      apiUrl = apiUrl,
+      accountAuthorization = accountAuthorization
+    )
+    val fileVersionsResponse = extractFromResponse(fileVersionsResponseF)
+    fileVersionsResponse.files shouldEqual List(FileVersionInfo(fileName, fileId))
+
     val downloadByNameResultF = api.downloadFileByName(fileName, bucketName, apiUrl, accountAuthorization.some)
     val downloadByNameResult = extractFromResponse(downloadByNameResultF)
     checkDownloadResponse(downloadByNameResult)

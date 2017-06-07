@@ -145,18 +145,21 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
    */
   def listFileVersions(
       bucketId: BucketId,
-      fileId: FileId,
-      fileName: FileName,
+      startFileId: Option[FileId],
+      startFileName: Option[FileName],
+      maxFileCount: Int,
       apiUrl: ApiUrl,
       accountAuthorization: AccountAuthorizationToken
   ): B2Response[ListFileVersionsResponse] = {
-    val uri = Uri(s"$apiUrl/b2api/v1/b2_list_file_versions").withQuery(
-        Query(
-          "bucketId" -> bucketId.value,
-          "startFileId" -> fileId.value,
-          "startFileName" -> fileName.value,
-          "maxFileCount" -> 1.toString
-        ))
+    val query =
+      List(
+        "bucketId" -> bucketId.value,
+        "maxFileCount" -> maxFileCount.toString
+      ) ++
+      startFileId.map { "startFileId" -> _.value }.toList ++
+      startFileName.map { "startFileName" -> _.value }.toList
+
+    val uri = Uri(s"$apiUrl/b2api/v1/b2_list_file_versions").withQuery(Query(query: _*))
 
     val request = HttpRequest(
       uri = uri,
