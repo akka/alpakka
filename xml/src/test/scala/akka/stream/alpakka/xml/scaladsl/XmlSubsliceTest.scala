@@ -39,14 +39,14 @@ class XmlSubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
           |</doc>
         """.stripMargin
 
-      Await.result(Source.single(doc).runWith(parse), 3.seconds) should ===(
+      val result = Await.result(Source.single(doc).runWith(parse), 3.seconds)
+      result should ===(
         List(
           Characters("i1"),
           Characters("i2"),
           Characters("i3")
         )
       )
-
     }
 
     "properly extract subslices of nested events" in {
@@ -65,7 +65,8 @@ class XmlSubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
       val resultFuture = Source.single(doc).runWith(parse)
       //#subslice-usage
 
-      Await.result(resultFuture, 3.seconds) should ===(
+      val result = Await.result(resultFuture, 3.seconds)
+      result should ===(
         List(
           Characters("i1"),
           StartElement("sub", Map.empty),
@@ -74,7 +75,6 @@ class XmlSubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
           Characters("i3")
         )
       )
-
     }
 
     "properly ignore matches not deep enough" in {
@@ -87,7 +87,8 @@ class XmlSubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
           |</doc>
         """.stripMargin
 
-      Await.result(Source.single(doc).runWith(parse), 3.seconds) should ===(Nil)
+      val result = Await.result(Source.single(doc).runWith(parse), 3.seconds)
+      result should ===(Nil)
     }
 
     "properly ignore partial matches" in {
@@ -103,7 +104,8 @@ class XmlSubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
           |</doc>
         """.stripMargin
 
-      Await.result(Source.single(doc).runWith(parse), 3.seconds) should ===(Nil)
+      val result = Await.result(Source.single(doc).runWith(parse), 3.seconds)
+      result should ===(Nil)
     }
 
     "properly filter from the combination of the above" in {
@@ -125,7 +127,8 @@ class XmlSubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
           |</doc>
         """.stripMargin
 
-      Await.result(Source.single(doc).runWith(parse), 3.seconds) should ===(
+      val result = Await.result(Source.single(doc).runWith(parse), 3.seconds)
+      result should ===(
         List(
           Characters("i1"),
           StartElement("sub", Map.empty),
@@ -136,6 +139,7 @@ class XmlSubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
         )
       )
     }
+
   }
 
   override protected def afterAll(): Unit = system.terminate()
