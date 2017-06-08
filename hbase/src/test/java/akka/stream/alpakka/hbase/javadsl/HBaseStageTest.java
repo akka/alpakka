@@ -10,6 +10,8 @@ import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.hbase.HTableSettings;
+import akka.stream.alpakka.hbase.Utils.HBaseMockConfiguration;
+import akka.stream.alpakka.hbase.Utils.MockHTable;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -26,8 +28,11 @@ import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -37,7 +42,6 @@ import java.util.function.Function;
 /**
  * Created by olivier.nouguier@gmail.com on 27/11/2016.
  */
-@Ignore
 public class HBaseStageTest {
 
     static ActorSystem system;
@@ -67,12 +71,28 @@ public class HBaseStageTest {
     };
     //#create-converter
 
+    //#create-multi-put-converter
+    Function<Person, List<Put>> hBaseMultiPutConverter = person -> {
+        List<Put> puts = new ArrayList<>();
+        try {
+            Put put = new Put(String.format("id_%d", person.id).getBytes("UTF-8"));
+            put.addColumn("info".getBytes("UTF-8"), "name".getBytes("UTF-8"), person.name.getBytes("UTF-8"));
+            puts.add(put);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return puts;
+    };
+    //#create-multi-put-converter
+
 
     @Test
-    public void sink() throws ExecutionException, InterruptedException, TimeoutException {
+    public void sink() throws ExecutionException, InterruptedException, TimeoutException, IOException {
 
         //#create-settings
-        HTableSettings<Person> tableSettings = HTableSettings.create(HBaseConfiguration.create(), TableName.valueOf("person1"), Arrays.asList("info"), hBaseConverter);
+        TableName table = TableName.valueOf("person1");
+        HBaseMockConfiguration conf = HBaseMockConfiguration.create(Collections.singletonList(new MockHTable(table)));
+        HTableSettings<Person> tableSettings = HTableSettings.create(conf, table, Collections.singletonList("info"), hBaseConverter);
         //#create-settings
 
         //#sink
@@ -81,14 +101,14 @@ public class HBaseStageTest {
         //#sink
 
         Await.ready(o, Duration.Inf());
-
-
     }
 
     @Test
-    public void flow() throws ExecutionException, InterruptedException {
+    public void flow() throws ExecutionException, InterruptedException, IOException {
 
-        HTableSettings<Person> tableSettings = HTableSettings.create(HBaseConfiguration.create(), TableName.valueOf("person2"), Arrays.asList("info"), hBaseConverter);
+        TableName table = TableName.valueOf("person2");
+        HBaseMockConfiguration conf = HBaseMockConfiguration.create(Collections.singletonList(new MockHTable(table)));
+        HTableSettings<Person> tableSettings = HTableSettings.create(conf, table, Collections.singletonList("info"), hBaseConverter);
 
         //#flow
         Flow<Person, Person, NotUsed> flow = HTableStage.flow(tableSettings);
@@ -97,9 +117,71 @@ public class HBaseStageTest {
         //#flow
 
         run.second().toCompletableFuture().get();
-
     }
 
+    @Test
+    public void sinkWithMultiPuts() throws Exception {
+        //#create-settings
+        TableName table = TableName.valueOf("person1");
+        HBaseMockConfiguration conf = HBaseMockConfiguration.create(Collections.singletonList(new MockHTable(table)));
+        HTableSettings<Person> tableSettings = HTableSettings.createMulti(conf, table, Collections.singletonList("info"), hBaseMultiPutConverter);
+        //#create-settings
+
+        //#sink
+        final Sink<Person, scala.concurrent.Future<Done>> sink = HTableStage.sink(tableSettings);
+        Future<Done> o = Source.from(Arrays.asList(100, 101, 102, 103, 104)).map((i) -> new Person(i, String.format("name %d", i))).runWith(sink, materializer);
+        //#sink
+
+        Await.ready(o, Duration.Inf());
+    }
+
+    @Test
+    public void sinkWithMultiPutsSettingsWithTable() throws Exception {
+        //#create-settings
+        TableName table = TableName.valueOf("person1");
+        HBaseMockConfiguration conf = HBaseMockConfiguration.create(Collections.singletonList(new MockHTable(table)));
+        HTableSettings<Person> tableSettings = HTableStage.tableMulti(conf, table, Collections.singletonList("info"), hBaseMultiPutConverter);
+        //#create-settings
+
+        //#sink
+        final Sink<Person, scala.concurrent.Future<Done>> sink = HTableStage.sink(tableSettings);
+        Future<Done> o = Source.from(Arrays.asList(100, 101, 102, 103, 104)).map((i) -> new Person(i, String.format("name %d", i))).runWith(sink, materializer);
+        //#sink
+
+        Await.ready(o, Duration.Inf());
+    }
+
+    @Test
+    public void flowWithMultiPuts() throws ExecutionException, InterruptedException, IOException {
+
+        TableName table = TableName.valueOf("person2");
+        HBaseMockConfiguration conf = HBaseMockConfiguration.create(Collections.singletonList(new MockHTable(table)));
+        HTableSettings<Person> tableSettings = HTableSettings.createMulti(conf, table, Collections.singletonList("info"), hBaseMultiPutConverter);
+
+        //#flow
+        Flow<Person, Person, NotUsed> flow = HTableStage.flow(tableSettings);
+        Pair<NotUsed, CompletionStage<List<Person>>> run = Source.from(Arrays.asList(200, 201, 202, 203, 204)).map((i)
+                -> new Person(i, String.format("name_%d", i))).via(flow).toMat(Sink.seq(), Keep.both()).run(materializer);
+        //#flow
+
+        run.second().toCompletableFuture().get();
+    }
+
+    @Test
+    public void flowWithMultiPutsSettingsWithTable() throws ExecutionException, InterruptedException, IOException {
+
+        TableName table = TableName.valueOf("person2");
+        HBaseMockConfiguration conf = HBaseMockConfiguration.create(Collections.singletonList(new MockHTable(table)));
+        HTableSettings<Person> tableSettings = HTableStage.tableMulti(conf, table, Collections.singletonList("info"), hBaseMultiPutConverter);
+
+        //#flow
+        Flow<Person, Person, NotUsed> flow = HTableStage.flow(tableSettings);
+        Pair<NotUsed, CompletionStage<List<Person>>> run = Source.from(Arrays.asList(200, 201, 202, 203, 204)).map((i)
+                -> new Person(i, String.format("name_%d", i))).via(flow).toMat(Sink.seq(), Keep.both()).run(materializer);
+        //#flow
+
+        run.second().toCompletableFuture().get();
+    }
 }
 
 class Person {
