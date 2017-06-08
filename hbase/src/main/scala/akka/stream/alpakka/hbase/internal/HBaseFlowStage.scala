@@ -8,6 +8,7 @@ import akka.stream.alpakka.hbase.HTableSettings
 import akka.stream.stage._
 import org.apache.hadoop.hbase.client.Table
 
+import scala.collection.JavaConverters
 import scala.util.control.NonFatal
 
 private[hbase] class HBaseFlowStage[A](settings: HTableSettings[A]) extends GraphStage[FlowShape[A, A]] {
@@ -38,7 +39,7 @@ private[hbase] class HBaseFlowStage[A](settings: HTableSettings[A]) extends Grap
         override def onPush() = {
           val msg = grab(in)
 
-          table.put(settings.converter(msg))
+          table.put(JavaConverters.seqAsJavaList(settings.converter(msg)))
 
           push(out, msg)
         }
