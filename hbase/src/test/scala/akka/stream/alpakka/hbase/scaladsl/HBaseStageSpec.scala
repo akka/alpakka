@@ -75,7 +75,8 @@ class HBaseStageSpec extends WordSpec with Matchers {
         implicit val materilizer = ActorMaterializer()
 
         //#sink
-        val sink = HTableStage.sink[Person](HTableSettings(configuration, table, immutable.Seq("info"), hBaseMultiConverter))
+        val sink =
+          HTableStage.sink[Person](HTableSettings(configuration, table, immutable.Seq("info"), hBaseMultiConverter))
 
         val f = Source(1 to 10).map(i => Person(i, s"zozo_$i")).runWith(sink)
         //#sink
@@ -114,7 +115,8 @@ class HBaseStageSpec extends WordSpec with Matchers {
         implicit val materilizer = ActorMaterializer()
 
         //#flow
-        val flow = HTableStage.flow[Person](HTableSettings(configuration, table, immutable.Seq("info"), hBaseMultiConverter))
+        val flow =
+          HTableStage.flow[Person](HTableSettings(configuration, table, immutable.Seq("info"), hBaseMultiConverter))
 
         val f = Source(11 to 20).map(i => Person(i, s"zozo_$i")).via(flow).runWith(Sink.fold(0)((a, d) => a + d.id))
         //#flow

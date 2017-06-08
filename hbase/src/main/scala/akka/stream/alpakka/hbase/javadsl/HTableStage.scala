@@ -21,15 +21,21 @@ object HTableStage {
                columnFamilies: java.util.List[String],
                converter: java.util.function.Function[T, Put]): HTableSettings[T] = {
     import scala.collection.JavaConverters._
-    HTableSettings(conf, tableName, immutable.Seq(columnFamilies.asScala: _*), (t: T) => immutable.List(converter.apply(t)))
+    HTableSettings(conf,
+                   tableName,
+                   immutable.Seq(columnFamilies.asScala: _*),
+                   (t: T) => immutable.List(converter.apply(t)))
   }
 
   def tableMulti[T](conf: Configuration,
-                            tableName: TableName,
-                            columnFamilies: java.util.List[String],
-                            converter: java.util.function.Function[T, java.util.List[Put]]): HTableSettings[T] = {
+                    tableName: TableName,
+                    columnFamilies: java.util.List[String],
+                    converter: java.util.function.Function[T, java.util.List[Put]]): HTableSettings[T] = {
     import scala.collection.JavaConverters._
-    HTableSettings(conf, tableName, immutable.Seq(columnFamilies.asScala: _*), (t: T) => converter.apply(t).asScala.toList)
+    HTableSettings(conf,
+                   tableName,
+                   immutable.Seq(columnFamilies.asScala: _*),
+                   (t: T) => converter.apply(t).asScala.toList)
   }
 
   def sink[A](config: HTableSettings[A]): akka.stream.javadsl.Sink[A, Future[Done]] =

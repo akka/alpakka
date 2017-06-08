@@ -110,7 +110,7 @@ public class MockHBaseAdmin implements Admin {
         }
 
         @Override
-        public HTableDescriptor getTableDescriptor(TableName tableName) throws TableNotFoundException, IOException {
+        public HTableDescriptor getTableDescriptor(TableName tableName) throws IOException {
             return null;
         }
 
@@ -510,7 +510,7 @@ public class MockHBaseAdmin implements Admin {
         }
 
         @Override
-        public void rollWALWriter(ServerName serverName) throws IOException, FailedLogCloseException {
+        public void rollWALWriter(ServerName serverName) throws IOException {
 
         }
 
@@ -540,62 +540,62 @@ public class MockHBaseAdmin implements Admin {
         }
 
         @Override
-        public void snapshot(String snapshotName, TableName tableName) throws IOException, SnapshotCreationException, IllegalArgumentException {
+        public void snapshot(String snapshotName, TableName tableName) throws IOException, IllegalArgumentException {
 
         }
 
         @Override
-        public void snapshot(byte[] snapshotName, TableName tableName) throws IOException, SnapshotCreationException, IllegalArgumentException {
+        public void snapshot(byte[] snapshotName, TableName tableName) throws IOException, IllegalArgumentException {
 
         }
 
         @Override
-        public void snapshot(String snapshotName, TableName tableName, HBaseProtos.SnapshotDescription.Type type) throws IOException, SnapshotCreationException, IllegalArgumentException {
+        public void snapshot(String snapshotName, TableName tableName, HBaseProtos.SnapshotDescription.Type type) throws IOException, IllegalArgumentException {
 
         }
 
         @Override
-        public void snapshot(HBaseProtos.SnapshotDescription snapshot) throws IOException, SnapshotCreationException, IllegalArgumentException {
+        public void snapshot(HBaseProtos.SnapshotDescription snapshot) throws IOException, IllegalArgumentException {
 
         }
 
         @Override
-        public MasterProtos.SnapshotResponse takeSnapshotAsync(HBaseProtos.SnapshotDescription snapshot) throws IOException, SnapshotCreationException {
+        public MasterProtos.SnapshotResponse takeSnapshotAsync(HBaseProtos.SnapshotDescription snapshot) throws IOException {
             return null;
         }
 
         @Override
-        public boolean isSnapshotFinished(HBaseProtos.SnapshotDescription snapshot) throws IOException, HBaseSnapshotException, UnknownSnapshotException {
+        public boolean isSnapshotFinished(HBaseProtos.SnapshotDescription snapshot) throws IOException {
             return false;
         }
 
         @Override
-        public void restoreSnapshot(byte[] snapshotName) throws IOException, RestoreSnapshotException {
+        public void restoreSnapshot(byte[] snapshotName) throws IOException {
 
         }
 
         @Override
-        public void restoreSnapshot(String snapshotName) throws IOException, RestoreSnapshotException {
+        public void restoreSnapshot(String snapshotName) throws IOException {
 
         }
 
         @Override
-        public void restoreSnapshot(byte[] snapshotName, boolean takeFailSafeSnapshot) throws IOException, RestoreSnapshotException {
+        public void restoreSnapshot(byte[] snapshotName, boolean takeFailSafeSnapshot) throws IOException {
 
         }
 
         @Override
-        public void restoreSnapshot(String snapshotName, boolean takeFailSafeSnapshot) throws IOException, RestoreSnapshotException {
+        public void restoreSnapshot(String snapshotName, boolean takeFailSafeSnapshot) throws IOException {
 
         }
 
         @Override
-        public void cloneSnapshot(byte[] snapshotName, TableName tableName) throws IOException, TableExistsException, RestoreSnapshotException {
+        public void cloneSnapshot(byte[] snapshotName, TableName tableName) throws IOException {
 
         }
 
         @Override
-        public void cloneSnapshot(String snapshotName, TableName tableName) throws IOException, TableExistsException, RestoreSnapshotException {
+        public void cloneSnapshot(String snapshotName, TableName tableName) throws IOException {
 
         }
 
