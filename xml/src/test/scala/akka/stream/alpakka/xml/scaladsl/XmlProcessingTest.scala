@@ -133,12 +133,12 @@ class XmlProcessingTest extends WordSpec with Matchers with BeforeAndAfterAll {
       val resultFuture = documentStream
         .map(ByteString(_))
         .via(XmlParsing.parser)
-        .filter(_ match {
+        .filter {
           case EndDocument => false
           case StartDocument => false
           case EndElement("elem") => false
           case _ => true
-        })
+        }
         .splitWhen(_ match {
           case StartElement("elem", _) => true
           case _ => false
@@ -150,6 +150,7 @@ class XmlProcessingTest extends WordSpec with Matchers with BeforeAndAfterAll {
         .runWith(Sink.seq)
 
       val result = Await.result(resultFuture, 3.seconds)
+      result should ===(elements)
     }
 
   }
