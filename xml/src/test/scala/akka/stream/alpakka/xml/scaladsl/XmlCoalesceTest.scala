@@ -32,7 +32,8 @@ class XmlCoalesceTest extends WordSpec with Matchers with BeforeAndAfterAll {
           .concat(Source((0 to 9).map(_.toString)))
           .concat(Source.single("</doc>"))
 
-      Await.result(docStream.runWith(parse), 3.seconds) should ===(
+      val result = Await.result(docStream.runWith(parse), 3.seconds)
+      result should ===(
         List(
           StartDocument,
           StartElement("doc", Map.empty),
@@ -41,7 +42,6 @@ class XmlCoalesceTest extends WordSpec with Matchers with BeforeAndAfterAll {
           EndDocument
         )
       )
-
     }
 
     "properly unify a chain of CDATA chunks" in {
@@ -51,7 +51,8 @@ class XmlCoalesceTest extends WordSpec with Matchers with BeforeAndAfterAll {
           .concat(Source((0 to 9).map(i => s"<![CDATA[$i]]>")))
           .concat(Source.single("</doc>"))
 
-      Await.result(docStream.runWith(parse), 3.seconds) should ===(
+      val result = Await.result(docStream.runWith(parse), 3.seconds)
+      result should ===(
         List(
           StartDocument,
           StartElement("doc", Map.empty),
@@ -60,7 +61,6 @@ class XmlCoalesceTest extends WordSpec with Matchers with BeforeAndAfterAll {
           EndDocument
         )
       )
-
     }
 
     "properly unify a chain of CDATA and character chunks" in {
@@ -73,7 +73,8 @@ class XmlCoalesceTest extends WordSpec with Matchers with BeforeAndAfterAll {
           }))
           .concat(Source.single("</doc>"))
 
-      Await.result(docStream.runWith(parse), 3.seconds) should ===(
+      val result = Await.result(docStream.runWith(parse), 3.seconds)
+      result should ===(
         List(
           StartDocument,
           StartElement("doc", Map.empty),
@@ -82,7 +83,6 @@ class XmlCoalesceTest extends WordSpec with Matchers with BeforeAndAfterAll {
           EndDocument
         )
       )
-
     }
 
     "properly report an error if text limit is exceeded" in {
@@ -92,7 +92,7 @@ class XmlCoalesceTest extends WordSpec with Matchers with BeforeAndAfterAll {
           .concat(Source((0 to 10).map(_.toString)))
           .concat(Source.single("</doc>"))
 
-      an[IllegalStateException] shouldBe thrownBy { Await.result(docStream.runWith(parse), 3.seconds) }
+      an[IllegalStateException] shouldBe thrownBy(Await.result(docStream.runWith(parse), 3.seconds))
     }
 
   }
