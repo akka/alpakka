@@ -48,32 +48,6 @@ object Dependencies {
 
   val Csv = Seq()
 
-  val DynamoDB = Seq(
-    libraryDependencies ++= Seq(
-      "com.amazonaws"     % "aws-java-sdk-dynamodb" % "1.11.106",          // ApacheV2
-      "com.typesafe.akka" %% "akka-http"            % AkkaHttpVersion
-    )
-  )
-
-  val File = Seq(
-    libraryDependencies ++= Seq(
-      "com.google.jimfs" % "jimfs" % "1.1"  % Test  // ApacheV2
-    )
-  )
-
-  val Ftp = Seq(
-    libraryDependencies ++= Seq(
-      "commons-net"          % "commons-net"     % "3.5",            // ApacheV2
-      "com.jcraft"           % "jsch"            % "0.1.54",         // BSD-style
-      "org.apache.ftpserver" % "ftpserver-core"  % "1.0.6"  % Test, // ApacheV2
-      "org.apache.sshd"      % "sshd-core"       % "1.3.0"  % Test, // ApacheV2
-      "com.google.jimfs"     % "jimfs"           % "1.1"    % Test, // ApacheV2
-      "org.slf4j"            % "slf4j-api"       % "1.7.21" % Test, // MIT
-      "ch.qos.logback"       % "logback-classic" % "1.1.7"  % Test, // Eclipse Public License 1.0
-      "ch.qos.logback"       % "logback-core"    % "1.1.7"  % Test  // Eclipse Public License 1.0
-    )
-  )
-
   val Geode = {
     val geodeVersion = "1.1.1"
     Seq(
@@ -88,15 +62,6 @@ object Dependencies {
       )
     )
   }
-
-  val GooglePubSub = Seq(
-    libraryDependencies ++= Seq(
-      "com.typesafe.akka"     %% "akka-http"     % AkkaHttpVersion,
-      "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-      "org.mockito"   % "mockito-core"     % "2.3.7"    % Test, // MIT
-      "com.github.tomakehurst" % "wiremock"      % "2.5.1" % Test //ApacheV2
-    )
-  )
 
   val HBase = {
     val hbaseVersion = "1.2.4"
