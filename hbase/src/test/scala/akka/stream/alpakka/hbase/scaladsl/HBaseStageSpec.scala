@@ -7,6 +7,7 @@ package akka.stream.alpakka.hbase.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.hbase.HTableSettings
+import akka.stream.alpakka.hbase.Utils.DNSUtils
 import akka.stream.scaladsl.{Sink, Source}
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.util.Bytes
@@ -85,9 +86,17 @@ class HBaseStageSpec extends WordSpec with Matchers {
   //#create-converter-complex
 
   //#create-settings
+  val table: TableName = TableName.valueOf("person")
+  private val config = HBaseConfiguration.create()
+  DNSUtils.setupDNS("hbase")
+  config.clear()
+  config.set("hbase.zookeeper.quorum", "localhost")
+  config.set("hbase.zookeeper.property.clientPort", "2181")
+  config.set("hbase.master.port", "60000")
   val tableSettings =
-    HTableSettings(HBaseConfiguration.create(), TableName.valueOf("person"), immutable.Seq("info"), hBaseConverter)
+    HTableSettings(config, table, immutable.Seq("info"), hBaseConverter)
   //#create-settings
+
   hbaseIT.foreach { hbase =>
     "HBase stages " must {
 
@@ -128,6 +137,5 @@ class HBaseStageSpec extends WordSpec with Matchers {
         Await.ready(f, Duration.Inf)
       }
     }
-
   }
 }
