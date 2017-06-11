@@ -5,7 +5,6 @@ package akka.stream.alpakka.hbase.Utils;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
 import sun.net.spi.nameservice.NameService;
-import sun.net.util.IPAddressUtil;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -29,8 +28,7 @@ public class DNSUtils implements sun.net.spi.nameservice.NameService {
         if (hostName.equals(paramString)) {
             final byte[] arrayOfByte = sun.net.util.IPAddressUtil.textToNumericFormatV4(HBASE);
             final InetAddress address = InetAddress.getByAddress(paramString, arrayOfByte);
-            final InetAddress address6 = InetAddress.getByAddress(paramString, IPAddressUtil.textToNumericFormatV6("::1"));
-            return new InetAddress[]{address6, address};
+            return new InetAddress[]{address};
         } else {
             throw new UnknownHostException();
         }
