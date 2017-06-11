@@ -11,17 +11,19 @@ import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.hbase.HTableSettings;
+import akka.stream.alpakka.hbase.Utils.DNSUtils;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
@@ -36,22 +38,32 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
-/** Created by olivier.nouguier@gmail.com on 27/11/2016. */
-@Ignore
 public class HBaseStageTest {
 
   private static ActorSystem system;
   private static Materializer materializer;
 
+  private Configuration config;
+
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create();
     materializer = ActorMaterializer.create(system);
+    DNSUtils.setupDNS("hbase");
   }
 
   @AfterClass
   public static void teardown() {
     TestKit.shutdownActorSystem(system);
+  }
+
+  @Before
+  public void setUp() throws Exception {
+    config = HBaseConfiguration.create();
+    config.clear();
+    config.set("hbase.zookeeper.quorum", "localhost");
+    config.set("hbase.zookeeper.property.clientPort", "2181");
+    config.set("hbase.master.port", "60000");
   }
 
   // #create-converter-put
