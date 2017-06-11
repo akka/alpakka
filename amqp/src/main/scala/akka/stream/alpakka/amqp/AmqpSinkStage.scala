@@ -9,6 +9,7 @@ import akka.stream.{ActorAttributes, Attributes, Inlet, SinkShape}
 import akka.util.ByteString
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client._
+import com.rabbitmq.client.impl.recovery.AutorecoveringChannel
 
 import scala.concurrent.{Future, Promise}
 
@@ -51,8 +52,10 @@ final class AmqpSinkStage(settings: AmqpSinkSettings)
 
       override def whenConnected(): Unit = {
         val shutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
-          promise.failure(ex)
-          failStage(ex)
+          if (!autoRecoverEnabled) {
+            promise.failure(ex)
+            failStage(ex)
+          }
         }
         channel.addShutdownListener(
           new ShutdownListener {
@@ -60,6 +63,15 @@ final class AmqpSinkStage(settings: AmqpSinkSettings)
               shutdownCallback.invoke(cause)
           }
         )
+        if (autoRecoverEnabled)
+          channel
+            .asInstanceOf[AutorecoveringChannel]
+            .addRecoveryListener(
+              new RecoveryListener {
+                override def handleRecovery(recoverable: Recoverable): Unit =
+                  pull(in)
+              }
+            )
         pull(in)
       }
 
@@ -77,18 +89,19 @@ final class AmqpSinkStage(settings: AmqpSinkSettings)
             super.onUpstreamFinish()
           }
 
-          override def onPush(): Unit = {
-            val elem = grab(in)
-            channel.basicPublish(
-              exchange,
-              routingKey,
-              elem.mandatory,
-              elem.immediate,
-              elem.props.orNull,
-              elem.bytes.toArray
-            )
-            pull(in)
-          }
+          override def onPush(): Unit =
+            if (channel.isOpen) {
+              val elem = grab(in)
+              channel.basicPublish(
+                exchange,
+                routingKey,
+                elem.mandatory,
+                elem.immediate,
+                elem.props.orNull,
+                elem.bytes.toArray
+              )
+              pull(in)
+            }
         }
       )
     }, promise.future)
@@ -131,8 +144,10 @@ final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings)
 
       override def whenConnected(): Unit = {
         val shutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
-          promise.failure(ex)
-          failStage(ex)
+          if (!autoRecoverEnabled) {
+            promise.failure(ex)
+            failStage(ex)
+          }
         }
         channel.addShutdownListener(
           new ShutdownListener {
@@ -140,6 +155,15 @@ final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings)
               shutdownCallback.invoke(cause)
           }
         )
+        if (autoRecoverEnabled)
+          channel
+            .asInstanceOf[AutorecoveringChannel]
+            .addRecoveryListener(
+              new RecoveryListener {
+                override def handleRecovery(recoverable: Recoverable): Unit =
+                  pull(in)
+              }
+            )
         pull(in)
       }
 
@@ -162,28 +186,29 @@ final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings)
             super.onUpstreamFinish()
           }
 
-          override def onPush(): Unit = {
-            val elem = grab(in)
+          override def onPush(): Unit =
+            if (channel.isOpen()) {
+              val elem = grab(in)
 
-            val replyTo = elem.props.map(_.getReplyTo)
+              val replyTo = elem.props.map(_.getReplyTo)
 
-            if (replyTo.isDefined) {
-              channel.basicPublish(
-                "",
-                replyTo.get,
-                elem.mandatory,
-                elem.immediate,
-                elem.props.orNull,
-                elem.bytes.toArray
-              )
-            } else if (settings.failIfReplyToMissing) {
-              val ex = new RuntimeException("Reply-to header was not set")
-              promise.failure(ex)
-              failStage(ex)
+              if (replyTo.isDefined) {
+                channel.basicPublish(
+                  "",
+                  replyTo.get,
+                  elem.mandatory,
+                  elem.immediate,
+                  elem.props.orNull,
+                  elem.bytes.toArray
+                )
+              } else if (settings.failIfReplyToMissing) {
+                val ex = new RuntimeException("Reply-to header was not set")
+                promise.failure(ex)
+                failStage(ex)
+              }
+
+              tryPull(in)
             }
-
-            tryPull(in)
-          }
         }
       )
     }, promise.future)

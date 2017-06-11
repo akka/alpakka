@@ -159,8 +159,8 @@ final case class AmqpConnectionDetails(
     handshakeTimeout: Option[Int] = None,
     shutdownTimeout: Option[Int] = None,
     networkRecoveryInterval: Option[Int] = None,
-    automaticRecoveryEnabled: Option[Boolean] = None,
-    topologyRecoveryEnabled: Option[Boolean] = None,
+    automaticRecoveryEnabled: Option[Boolean] = Some(true),
+    topologyRecoveryEnabled: Option[Boolean] = Some(true),
     exceptionHandler: Option[ExceptionHandler] = None
 ) extends AmqpConnectionSettings {
 

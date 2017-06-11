@@ -52,7 +52,7 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
         channel.basicQos(bufferSize, true)
         val consumerCallback = getAsyncCallback(handleDelivery)
         val shutdownCallback = getAsyncCallback[Option[ShutdownSignalException]] {
-          case Some(ex) => failStage(ex)
+          case Some(ex) => if (!autoRecoverEnabled) failStage(ex)
           case None => completeStage()
         }
 
