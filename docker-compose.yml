@@ -54,4 +54,18 @@ services:
       - "AUTH_HOST=http://ironauth:8090"
     ports:
       - "8080:8080"
+  zookeeper:
+    image: zookeeper
+    ports:
+      - 2181:2181
+  hbase:
+    image: yiftizur/hbase-docker:ver-1.2.4
+    hostname: hbase
+    ports:
+      - 60000:60000
+      - 60010:60010
+      - 60020:60020
+      - 60030:60030
+    links:
+      - zookeeper:zookeeper
 

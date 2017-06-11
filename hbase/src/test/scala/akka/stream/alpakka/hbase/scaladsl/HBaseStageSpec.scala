@@ -6,11 +6,11 @@ package akka.stream.alpakka.hbase.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.hbase.HTableSettings
-import akka.stream.alpakka.hbase.Utils.{HBaseMockConfiguration, MockHTable}
+import akka.stream.alpakka.hbase.Utils.DNSUtils
 import akka.stream.scaladsl.{Sink, Source}
-import org.apache.hadoop.hbase.TableName
 import org.apache.hadoop.hbase.client.Put
 import org.apache.hadoop.hbase.util.Bytes
+import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.collection.immutable
@@ -43,11 +43,17 @@ class HBaseStageSpec extends WordSpec with Matchers {
   //#create-converter
 
   //#create-settings
-  val table = TableName.valueOf("person")
-  private val configuration = HBaseMockConfiguration.create(new MockHTable(table))
+  val table: TableName = TableName.valueOf("person")
+  private val config = HBaseConfiguration.create()
+  DNSUtils.setupDNS("hbase")
+  config.clear()
+  config.set("hbase.zookeeper.quorum", "localhost")
+  config.set("hbase.zookeeper.property.clientPort", "2181")
+  config.set("hbase.master.port", "60000")
   val tableSettings =
-    HTableSettings(configuration, table, immutable.Seq("info"), hBaseConverter)
+    HTableSettings(config, table, immutable.Seq("info"), hBaseConverter)
   //#create-settings
+
   hbaseIT.foreach { hbase =>
     "HBase stages " must {
 
@@ -61,10 +67,7 @@ class HBaseStageSpec extends WordSpec with Matchers {
         val f = Source(1 to 10).map(i => Person(i, s"zozo_$i")).runWith(sink)
         //#sink
 
-        f.onComplete {
-          case e =>
-            actorSystem.terminate()
-        }
+        f.onComplete(e => actorSystem.terminate())
 
         Await.ready(f, Duration.Inf)
 
@@ -76,7 +79,7 @@ class HBaseStageSpec extends WordSpec with Matchers {
 
         //#sink
         val sink =
-          HTableStage.sink[Person](HTableSettings(configuration, table, immutable.Seq("info"), hBaseMultiConverter))
+          HTableStage.sink[Person](HTableSettings(config, table, immutable.Seq("info"), hBaseMultiConverter))
 
         val f = Source(1 to 10).map(i => Person(i, s"zozo_$i")).runWith(sink)
         //#sink
@@ -116,7 +119,7 @@ class HBaseStageSpec extends WordSpec with Matchers {
 
         //#flow
         val flow =
-          HTableStage.flow[Person](HTableSettings(configuration, table, immutable.Seq("info"), hBaseMultiConverter))
+          HTableStage.flow[Person](HTableSettings(config, table, immutable.Seq("info"), hBaseMultiConverter))
 
         val f = Source(11 to 20).map(i => Person(i, s"zozo_$i")).via(flow).runWith(Sink.fold(0)((a, d) => a + d.id))
         //#flow
@@ -132,6 +135,5 @@ class HBaseStageSpec extends WordSpec with Matchers {
         Await.ready(f, Duration.Inf)
       }
     }
-
   }
 }

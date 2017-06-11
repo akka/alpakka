@@ -10,19 +10,19 @@ import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.hbase.HTableSettings;
-import akka.stream.alpakka.hbase.Utils.HBaseMockConfiguration;
-import akka.stream.alpakka.hbase.Utils.MockHTable;
+import akka.stream.alpakka.hbase.Utils.DNSUtils;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Put;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
@@ -47,10 +47,13 @@ public class HBaseStageTest {
     static ActorSystem system;
     static Materializer materializer;
 
+    private Configuration config;
+
     @BeforeClass
     public static void setup() {
         system = ActorSystem.create();
         materializer = ActorMaterializer.create(system);
+        DNSUtils.setupDNS("hbase");
     }
 
     @AfterClass
@@ -58,8 +61,17 @@ public class HBaseStageTest {
         JavaTestKit.shutdownActorSystem(system);
     }
 
+    @Before
+    public void setUp() throws Exception {
+        config = HBaseConfiguration.create();
+        config.clear();
+        config.set("hbase.zookeeper.quorum", "localhost");
+        config.set("hbase.zookeeper.property.clientPort", "2181");
+        config.set("hbase.master.port", "60000");
+    }
+
     //#create-converter
-    Function<Person, Put> hBaseConverter = person -> {
+    private Function<Person, Put> hBaseConverter = person -> {
         Put put = null;
         try {
             put = new Put(String.format("id_%d", person.id).getBytes("UTF-8"));
@@ -72,7 +84,7 @@ public class HBaseStageTest {
     //#create-converter
 
     //#create-multi-put-converter
-    Function<Person, List<Put>> hBaseMultiPutConverter = person -> {
+    private Function<Person, List<Put>> hBaseMultiPutConverter = person -> {
         List<Put> puts = new ArrayList<>();
         try {
             Put put = new Put(String.format("id_%d", person.id).getBytes("UTF-8"));
@@ -91,8 +103,7 @@ public class HBaseStageTest {
 
         //#create-settings
         TableName table = TableName.valueOf("person1");
-        HBaseMockConfiguration conf = HBaseMockConfiguration.create(Collections.singletonList(new MockHTable(table)));
-        HTableSettings<Person> tableSettings = HTableSettings.create(conf, table, Collections.singletonList("info"), hBaseConverter);
+        HTableSettings<Person> tableSettings = HTableSettings.create(config, table, Collections.singletonList("info"), hBaseConverter);
         //#create-settings
 
         //#sink
@@ -107,8 +118,7 @@ public class HBaseStageTest {
     public void flow() throws ExecutionException, InterruptedException, IOException {
 
         TableName table = TableName.valueOf("person2");
-        HBaseMockConfiguration conf = HBaseMockConfiguration.create(Collections.singletonList(new MockHTable(table)));
-        HTableSettings<Person> tableSettings = HTableSettings.create(conf, table, Collections.singletonList("info"), hBaseConverter);
+        HTableSettings<Person> tableSettings = HTableSettings.create(config, table, Collections.singletonList("info"), hBaseConverter);
 
         //#flow
         Flow<Person, Person, NotUsed> flow = HTableStage.flow(tableSettings);
@@ -123,8 +133,7 @@ public class HBaseStageTest {
     public void sinkWithMultiPuts() throws Exception {
         //#create-settings
         TableName table = TableName.valueOf("person1");
-        HBaseMockConfiguration conf = HBaseMockConfiguration.create(Collections.singletonList(new MockHTable(table)));
-        HTableSettings<Person> tableSettings = HTableSettings.createMulti(conf, table, Collections.singletonList("info"), hBaseMultiPutConverter);
+        HTableSettings<Person> tableSettings = HTableSettings.createMulti(config, table, Collections.singletonList("info"), hBaseMultiPutConverter);
         //#create-settings
 
         //#sink
@@ -139,8 +148,7 @@ public class HBaseStageTest {
     public void sinkWithMultiPutsSettingsWithTable() throws Exception {
         //#create-settings
         TableName table = TableName.valueOf("person1");
-        HBaseMockConfiguration conf = HBaseMockConfiguration.create(Collections.singletonList(new MockHTable(table)));
-        HTableSettings<Person> tableSettings = HTableStage.tableMulti(conf, table, Collections.singletonList("info"), hBaseMultiPutConverter);
+        HTableSettings<Person> tableSettings = HTableStage.tableMulti(config, table, Collections.singletonList("info"), hBaseMultiPutConverter);
         //#create-settings
 
         //#sink
@@ -155,8 +163,7 @@ public class HBaseStageTest {
     public void flowWithMultiPuts() throws ExecutionException, InterruptedException, IOException {
 
         TableName table = TableName.valueOf("person2");
-        HBaseMockConfiguration conf = HBaseMockConfiguration.create(Collections.singletonList(new MockHTable(table)));
-        HTableSettings<Person> tableSettings = HTableSettings.createMulti(conf, table, Collections.singletonList("info"), hBaseMultiPutConverter);
+        HTableSettings<Person> tableSettings = HTableSettings.createMulti(config, table, Collections.singletonList("info"), hBaseMultiPutConverter);
 
         //#flow
         Flow<Person, Person, NotUsed> flow = HTableStage.flow(tableSettings);
@@ -171,8 +178,7 @@ public class HBaseStageTest {
     public void flowWithMultiPutsSettingsWithTable() throws ExecutionException, InterruptedException, IOException {
 
         TableName table = TableName.valueOf("person2");
-        HBaseMockConfiguration conf = HBaseMockConfiguration.create(Collections.singletonList(new MockHTable(table)));
-        HTableSettings<Person> tableSettings = HTableStage.tableMulti(conf, table, Collections.singletonList("info"), hBaseMultiPutConverter);
+        HTableSettings<Person> tableSettings = HTableStage.tableMulti(config, table, Collections.singletonList("info"), hBaseMultiPutConverter);
 
         //#flow
         Flow<Person, Person, NotUsed> flow = HTableStage.flow(tableSettings);

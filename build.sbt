@@ -61,7 +61,6 @@ lazy val azureStorageQueue = project
     Dependencies.AzureStorageQueue
   )
 
-
 lazy val cassandra = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
