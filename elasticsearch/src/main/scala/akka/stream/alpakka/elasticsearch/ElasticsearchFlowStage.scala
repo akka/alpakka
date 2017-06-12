@@ -3,8 +3,6 @@
  */
 package akka.stream.alpakka.elasticsearch
 
-import java.io.ByteArrayOutputStream
-
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import org.apache.http.entity.StringEntity
@@ -17,6 +15,7 @@ import spray.json._
 import scala.concurrent.Future
 import ElasticsearchFlowStage._
 import org.apache.http.message.BasicHeader
+import org.apache.http.util.EntityUtils
 
 //#sink-settings
 final case class ElasticsearchSinkSettings(bufferSize: Int = 10)
@@ -63,20 +62,19 @@ class ElasticsearchFlowStage[T](
         completeStage()
 
       private def handleResponse(response: Response): Unit = {
-        val results = {
-          val out = new ByteArrayOutputStream()
-          try {
-            response.getEntity.writeTo(out)
-            new String(out.toByteArray, "UTF-8").split("\n")
-          } finally {
-            out.close()
+        val responseJson = EntityUtils.toString(response.getEntity).parseJson
+
+        // If some commands in bulk request failed, this stage fails.
+        val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
+        val errors = items.elements.flatMap { item =>
+          val result = item.asJsObject.fields("index").asJsObject.fields("result").asInstanceOf[JsString].value
+          if(result == "created" || result == "updated"){
+            None
+          } else {
+            Some(result)
           }
         }
 
-        // If some commands in bulk request failed, this stage fails.
-        val errors = results.filter { result =>
-          !result.parseJson.asJsObject.fields.get("errors").exists(_ == JsBoolean(false))
-        }
         if (errors.nonEmpty) {
           failStage(new IllegalStateException(errors.mkString("\n")))
         }
