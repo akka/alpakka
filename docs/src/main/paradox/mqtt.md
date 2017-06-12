@@ -1,6 +1,6 @@
 # MQTT Connector
 
-The MQTT connector provides Akka Stream sources to connect to AMQP servers.
+The MQTT connector provides Akka Stream sources to connect to MQTT servers.
 
 ## Artifacts
 
@@ -16,7 +16,7 @@ Maven
     ```xml
     <dependency>
       <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-mqtt_$scala.binaryVersion$</artifactId>
+      <artifactId>akka-stream-alpakka-mqtt_$scalaBinaryVersion$</artifactId>
       <version>$version$</version>
     </dependency>
     ```
@@ -26,7 +26,7 @@ Gradle
 :   @@@vars
     ```gradle
     dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-mqtt_$scala.binaryVersion$", version: "$version$"
+      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-mqtt_$scalaBinaryVersion$", version: "$version$"
     }
     ```
     @@@

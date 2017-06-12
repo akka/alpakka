@@ -3,11 +3,13 @@
 @@@ index
 
 * [AMQP Connector](amqp.md)
+* [Apache Geode Connector](geode.md)
 * [AWS DynamoDB Connector](dynamodb.md)
 * [AWS Lambda Connector](awslambda.md)
 * [AWS S3 Connector](s3.md)
 * [AWS SNS Connector](sns.md)
 * [AWS SQS Connector](sqs.md)
+* [Azure Storage Queue](azure-storage-queue.md)
 * [Cassandra Connector](cassandra.md)
 * [Elasticsearch Connectors](elasticsearch.md)
 * [File Connectors](file.md)

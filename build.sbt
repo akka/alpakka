@@ -3,12 +3,14 @@ lazy val alpakka = project
   .enablePlugins(PublishUnidoc)
   .aggregate(amqp,
              awslambda,
+             azureStorageQueue,
              cassandra,
              csv,
              dynamodb,
              elasticsearch,
              files,
              ftp,
+             geode,
              googleCloudPubSub,
              hbase,
              ironmq,
@@ -18,7 +20,25 @@ lazy val alpakka = project
              simpleCodecs,
              sns,
              sqs,
-             sse)
+             sse,
+             xml)
+  .settings(
+    onLoadMessage :=
+      """
+        |*** Welcome to the sbt build definition for Alpakka! ***
+        |
+        |Useful sbt tasks:
+        |
+        |  docs/local:paradox - builds documentation with locally
+        |    linked Scala API docs, which can be found at
+        |    docs/target/paradox/site/local
+        |
+        |  test - runs all the tests for all of the connectors.
+        |   Make sure to run `docker-compose up` first.
+        |
+        |  mqtt/testOnly *.MqttSourceSpec - runs a single test
+      """.stripMargin
+  )
 
 lazy val amqp = project
   .enablePlugins(AutomateHeaderPlugin)
@@ -33,6 +53,15 @@ lazy val awslambda = project
     name := "akka-stream-alpakka-awslambda",
     Dependencies.AwsLambda
   )
+
+lazy val azureStorageQueue = project
+  .in(file("azure-storage-queue"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-azure-storage-queue",
+    Dependencies.AzureStorageQueue
+  )
+
 
 lazy val cassandra = project
   .enablePlugins(AutomateHeaderPlugin)
@@ -78,12 +107,23 @@ lazy val ftp = project
     parallelExecution in Test := false
   )
 
+lazy val geode = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-geode",
+    Dependencies.Geode,
+    fork in Test := true,
+    parallelExecution in Test := false
+  )
+
 lazy val googleCloudPubSub = project
   .in(file("google-cloud-pub-sub"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-google-cloud-pub-sub",
-    Dependencies.GooglePubSub
+    Dependencies.GooglePubSub,
+    fork in Test := true,
+    envVars in Test := Map("PUBSUB_EMULATOR_HOST" -> "localhost:8538")
   )
 
 lazy val hbase = project
@@ -150,6 +190,13 @@ lazy val sse = project
   .settings(
     name := "akka-stream-alpakka-sse",
     Dependencies.Sse
+  )
+
+lazy val xml = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-xml",
+    Dependencies.Xml
   )
 
 val Local = config("local")

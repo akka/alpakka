@@ -37,7 +37,7 @@ trait BaseFtpSpec extends PlainFtpSupportImpl with BaseSpec {
   //#retrieving
 
   //#storing
-  protected def storeToPath(path: String): Sink[ByteString, Future[IOResult]] =
-    Ftp.toPath(path, settings)
+  protected def storeToPath(path: String, append: Boolean): Sink[ByteString, Future[IOResult]] =
+    Ftp.toPath(path, settings, append)
   //#storing
 }

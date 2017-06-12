@@ -13,7 +13,7 @@ import akka.stream.{ActorMaterializer, Materializer}
 
 import scala.concurrent.duration._
 
-object FileTailSourceSpec extends {
+object FileTailSourceSpec {
 
   // small sample of usage, tails the first argument file path
   def main(args: Array[String]): Unit = {

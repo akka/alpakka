@@ -22,6 +22,26 @@ services:
     image: deangiberson/aws-dynamodb-local
     ports:
       - "8001:8000"
+  geode:
+    container_name: geode
+    image: apachegeode/geode
+    hostname: geode
+    mem_limit: 2g
+    expose:
+      - "10334"
+      - "1099"
+      - "7575"
+      - "40404"
+    ports:
+      - "1099:1099"
+      - "10334:10334"
+      - "7575:7575"
+      - "7070:7070"
+      - "40404:40404"
+      - "8081:8080"
+    volumes:
+      - ./geode/scripts/:/scripts/
+    command: /scripts/geode.sh
   ironauth:
     image: iron/auth
     ports:

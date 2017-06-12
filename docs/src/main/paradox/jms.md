@@ -17,7 +17,7 @@ Maven
     ```xml
     <dependency>
       <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-jms_$scala.binaryVersion$</artifactId>
+      <artifactId>akka-stream-alpakka-jms_$scalaBinaryVersion$</artifactId>
       <version>$version$</version>
     </dependency>
     <dependency>
@@ -32,7 +32,7 @@ Gradle
 :   @@@vars
     ```gradle
     dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-jms_$scala.binaryVersion$", version: "$version$"
+      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-jms_$scalaBinaryVersion$", version: "$version$"
       compile group: 'javax.jms', name: 'jms', version: '1.1'
     }
     ```

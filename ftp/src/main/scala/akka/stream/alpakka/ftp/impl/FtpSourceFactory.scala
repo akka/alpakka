@@ -52,7 +52,8 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
 
   protected[this] def createIOSink(
       _path: String,
-      _connectionSettings: S
+      _connectionSettings: S,
+      _append: Boolean
   )(implicit _ftpLike: FtpLike[FtpClient, S]): FtpIOSinkStage[FtpClient, S] =
     new FtpIOSinkStage[FtpClient, S] {
       lazy val name: String = ftpIOSinkName
@@ -60,6 +61,7 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
       val connectionSettings: S = _connectionSettings
       val ftpClient: () => FtpClient = self.ftpClient
       val ftpLike: FtpLike[FtpClient, S] = _ftpLike
+      val append: Boolean = _append
     }
 
   protected[this] def defaultSettings(

@@ -3,16 +3,30 @@
  */
 package akka.stream.alpakka.csv.scaladsl
 
-import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
 import akka.NotUsed
-import akka.stream.scaladsl.{FileIO, Flow, Sink, Source}
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{FileIO, Flow, Keep, Sink, Source}
+import akka.stream.testkit.scaladsl.{TestSink, TestSource}
+import akka.testkit.TestKit
 import akka.util.ByteString
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpecLike}
 
 import scala.collection.immutable.Seq
+import scala.concurrent.duration.DurationInt
 
-class CsvParsingSpec extends CsvSpec {
+class CsvParsingSpec
+    extends TestKit(ActorSystem(classOf[CsvParsingSpec].getSimpleName))
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach
+    with ScalaFutures {
+
+  implicit val materializer = ActorMaterializer()
 
   def documentation(): Unit = {
     import CsvParsing._
@@ -89,6 +103,23 @@ class CsvParsingSpec extends CsvSpec {
       res(1) should be(List("uno", "dos", "tres"))
     }
 
+    "emit completion even without new line at end" in {
+      val (source, sink) = TestSource
+        .probe[ByteString]
+        .via(CsvParsing.lineScanner())
+        .map(_.map(_.utf8String))
+        .toMat(TestSink.probe[List[String]])(Keep.both)
+        .run()
+      source.sendNext(ByteString("eins,zwei,drei\nuno,dos,tres\n1,2,3"))
+      sink.request(3)
+      sink.expectNext(List("eins", "zwei", "drei"))
+      sink.expectNext(List("uno", "dos", "tres"))
+      sink.expectNoMsg(100.millis)
+      source.sendComplete()
+      sink.expectNext(List("1", "2", "3"))
+      sink.expectComplete()
+    }
+
     "parse Apple Numbers exported file" in {
       val fut =
         FileIO
@@ -98,7 +129,7 @@ class CsvParsingSpec extends CsvSpec {
           .runWith(Sink.seq)
       val res = fut.futureValue
       res(0) should be(List("abc", "def", "ghi", "", "", "", ""))
-      res(1) should be(List("\"", "\\\\;", "a\"\nbc", "", "", "", ""))
+      res(1) should be(List("\"", "\\\\;", "a\"\nb\"\"c", "", "", "", ""))
     }
 
     "parse Google Docs exported file" in {
@@ -110,7 +141,64 @@ class CsvParsingSpec extends CsvSpec {
           .runWith(Sink.seq)
       val res = fut.futureValue
       res(0) should be(List("abc", "def", "ghi"))
-      res(1) should be(List("\"", "\\\\,", "a\"\nbc"))
+      res(1) should be(List("\"", "\\\\,", "a\"\nb\"\"c"))
+    }
+
+    "parse uniVocity correctness test" in { // see https://github.com/uniVocity/csv-parsers-comparison
+      val fut =
+        FileIO
+          .fromPath(Paths.get("csv/src/test/resources/correctness.csv"))
+          .via(CsvParsing.lineScanner())
+          .via(CsvToMap.toMap())
+          .map(_.mapValues(_.utf8String))
+          .runWith(Sink.seq)
+      val res = fut.futureValue
+      res(0) should be(
+        Map(
+          "Year" -> "1997",
+          "Make" -> "Ford",
+          "Model" -> "E350",
+          "Description" -> "ac, abs, moon",
+          "Price" -> "3000.00"
+        )
+      )
+      res(1) should be(
+        Map(
+          "Year" -> "1999",
+          "Make" -> "Chevy",
+          "Model" -> "Venture \"Extended Edition\"",
+          "Description" -> "",
+          "Price" -> "4900.00"
+        )
+      )
+      res(2) should be(
+        Map(
+          "Year" -> "1996",
+          "Make" -> "Jeep",
+          "Model" -> "Grand Cherokee",
+          "Description" -> """MUST SELL!
+                            |air, moon roof, loaded""".stripMargin,
+          "Price" -> "4799.00"
+        )
+      )
+      res(3) should be(
+        Map(
+          "Year" -> "1999",
+          "Make" -> "Chevy",
+          "Model" -> "Venture \"Extended Edition, Very Large\"",
+          "Description" -> "",
+          "Price" -> "5000.00"
+        )
+      )
+      res(4) should be(
+        Map(
+          "Year" -> "",
+          "Make" -> "",
+          "Model" -> "Venture \"Extended Edition\"",
+          "Description" -> "",
+          "Price" -> "4900.00"
+        )
+      )
     }
   }
 }

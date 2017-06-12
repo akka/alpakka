@@ -33,6 +33,6 @@ trait BaseSftpSpec extends SftpSupportImpl with BaseSpec {
   protected def retrieveFromPath(path: String): Source[ByteString, Future[IOResult]] =
     Sftp.fromPath(path, settings)
 
-  protected def storeToPath(path: String): Sink[ByteString, Future[IOResult]] =
-    Sftp.toPath(path, settings)
+  protected def storeToPath(path: String, append: Boolean): Sink[ByteString, Future[IOResult]] =
+    Sftp.toPath(path, settings, append)
 }

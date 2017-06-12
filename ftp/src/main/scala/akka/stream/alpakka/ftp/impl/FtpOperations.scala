@@ -76,8 +76,8 @@ private[ftp] trait FtpOperations { _: FtpLike[FTPClient, FtpFileSettings] =>
     if (is != null) is else throw new IOException(s"$name: No such file or directory")
   }
 
-  def storeFileStream(name: String, handler: Handler): Try[OutputStream] = Try {
-    val os = handler.storeFileStream(name)
+  def storeFileOutputStream(name: String, handler: Handler, append: Boolean): Try[OutputStream] = Try {
+    val os = if (append) handler.appendFileStream(name) else handler.storeFileStream(name)
     if (os != null) os else throw new IOException(s"Could not write to $name")
   }
 }

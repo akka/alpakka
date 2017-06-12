@@ -18,7 +18,7 @@ Maven
     ```xml
     <dependency>
       <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-sqs_$scala.binaryVersion$</artifactId>
+      <artifactId>akka-stream-alpakka-sqs_$scalaBinaryVersion$</artifactId>
       <version>$version$</version>
     </dependency>
     ```
@@ -28,7 +28,7 @@ Gradle
 :   @@@vars
     ```gradle
     dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-sqs_$scala.binaryVersion$", version: "$version$"
+      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-sqs_$scalaBinaryVersion$", version: "$version$"
     }
     ```
     @@@
@@ -70,7 +70,7 @@ SQS queues never finishes because there is no direct way to determine the end of
 #### Source configuration
 
 Scala
-: @@snip (../../../../sqs/src/main/scala/akka/stream/alpakka/sqs/SqsSourceStage.scala) { #SqsSourceSettings }
+: @@snip (../../../../sqs/src/main/scala/akka/stream/alpakka/sqs/SqsSourceSettings.scala) { #SqsSourceSettings }
 
 Options:
 

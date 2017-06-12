@@ -9,12 +9,14 @@ import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Sink, Source, Unzip}
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Source}
 import akka.stream.{Materializer, SourceShape}
-import de.heikoseeberger.akkasse.MediaTypes.`text/event-stream`
-import de.heikoseeberger.akkasse.headers.`Last-Event-ID`
-import de.heikoseeberger.akkasse.{EventStreamUnmarshalling, ServerSentEvent}
-import scala.concurrent.{Future, Promise}
+import de.heikoseeberger.akkasse.scaladsl.model.MediaTypes.`text/event-stream`
+import de.heikoseeberger.akkasse.scaladsl.model.ServerSentEvent
+import de.heikoseeberger.akkasse.scaladsl.model.headers.`Last-Event-ID`
+import de.heikoseeberger.akkasse.scaladsl.unmarshalling.EventStreamUnmarshalling
+import scala.concurrent.Future
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 /**
  * This stream processing stage establishes a continuous source of server-sent events from the given URI.
@@ -40,20 +42,20 @@ import scala.concurrent.{Future, Promise}
  * |            |                                           |            |
  *              |                             Option[String]|
  * |            |                                           v            |
- *   +----------o----------+                     +----------o----------+
- * | | currentLastEventId  |                     |    eventSources     | |
- *   +----------o----------+                     +----------o----------+
+ *   +--------o--------+                         +----------o----------+
+ * | |   lastEventId   |                         |   continuousEvents  | |
+ *   +--------o--------+                         +----------o----------+
  * |            ^                                           |            |
- *              |      (EventSource, Future[Option[String]])|
+ *              |     ServerSentEvent (including delimiters)|
  * |            |                                           v            |
  *              |                                +----------o----------+
- * |            +--------------------------------o        unzip        | |
- *              Future[Option[String]]           +----------o----------+
+ * |            +--------------------------------o        bcast        | |
+ *              ServerSentEvent (incl. delim.)   +----------o----------+
  * |                                                        |            |
- *                                               EventSource|
+ *                    ServerSentEvent (including delimiters)|
  * |                                                        v            |
  *                                               +----------o----------+
- * |                                  +----------o       flatten       | |
+ * |                                  +----------o       events        | |
  *                     ServerSentEvent|          +---------------------+
  * |                                  v                                  |
  *  - - - - - - - - - - - - - - - - - o - - - - - - - - - - - - - - - - -
@@ -65,20 +67,26 @@ object EventSource {
 
   private val noEvents = Future.successful(Source.empty[ServerSentEvent])
 
+  private val singleDelimiter = Source.single(ServerSentEvent.heartbeat)
+
   /**
    * @param uri URI with absolute path, e.g. "http://myserver/events
    * @param send function to send a HTTP request
-   * @param lastEventId initial value for Last-Evend-ID header, optional
-   * @param mat implicit `Materializer`
+   * @param initialLastEventId initial value for Last-Evend-ID header, `None` by default
+   * @param retryDelay delay for retrying after completion, `0` by default
+   * @param mat implicit `Materializer`, needed to obtain server-sent events
    * @return continuous source of server-sent events
    */
-  def apply(uri: Uri, send: HttpRequest => Future[HttpResponse], lastEventId: Option[String] = None)(
+  def apply(uri: Uri,
+            send: HttpRequest => Future[HttpResponse],
+            initialLastEventId: Option[String] = None,
+            retryDelay: FiniteDuration = Duration.Zero)(
       implicit mat: Materializer
   ): EventSource = {
     import EventStreamUnmarshalling._
     import mat.executionContext
 
-    val eventSources = {
+    val continuousEvents = {
       def getEventSource(lastEventId: Option[String]) = {
         val request = {
           val r = Get(uri).addHeader(Accept(`text/event-stream`))
@@ -86,37 +94,32 @@ object EventSource {
         }
         send(request).flatMap(Unmarshal(_).to[EventSource]).fallbackTo(noEvents)
       }
-      def enrichWithLastEventId(eventSource: EventSource) = {
-        val p = Promise[Option[String]]()
-        val enriched =
-          eventSource.alsoToMat(Sink.lastOption) {
-            case (m, f) =>
-              p.completeWith(f.map(_.flatMap(_.id)))
-              m
-          }
-        (enriched, p.future)
-      }
-      Flow[Option[String]].mapAsync(1)(getEventSource).map(enrichWithLastEventId)
+      def recover(eventSource: EventSource) = eventSource.recoverWithRetries(1, { case _ => Source.empty })
+      def delimit(eventSource: EventSource) = eventSource.concat(singleDelimiter)
+      Flow[Option[String]]
+        .mapAsync(1)(getEventSource)
+        .flatMapConcat((recover _).andThen(delimit))
     }
 
-    val currentLastEventId =
-      Flow[Future[Option[String]]]
-        .mapAsync(1)(identity) // There can only be one request in flight
-        .scan(lastEventId)((prev, current) => current.orElse(prev))
+    val lastEventId =
+      Flow[ServerSentEvent]
+        .sliding(2)
+        .collect { case Seq(last, event) if event == ServerSentEvent.heartbeat => last }
+        .scan(initialLastEventId)((prev, current) => current.id.orElse(prev))
         .drop(1)
 
     Source.fromGraph(GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._
-      val trigger = builder.add(Source.single(lastEventId))
+      val trigger = builder.add(Source.single(initialLastEventId))
       val merge = builder.add(Merge[Option[String]](2))
-      val unzip = builder.add(Unzip[EventSource, Future[Option[String]]]())
-      val flatten = builder.add(Flow[EventSource].flatMapConcat(identity))
+      val bcast = builder.add(Broadcast[ServerSentEvent](2))
+      val events = builder.add(Flow[ServerSentEvent].filter(_ != ServerSentEvent.heartbeat))
+      val delay = builder.add(Flow[Option[String]].delay(retryDelay))
       // format: OFF
-                                                unzip.out0 ~> flatten
-      trigger ~> merge ~>    eventSources    ~> unzip.in
-                 merge <~ currentLastEventId <~ unzip.out1
+      trigger ~> merge ~>   continuousEvents   ~> bcast ~> events
+                 merge <~ delay <~ lastEventId <~ bcast
       // format: ON
-      SourceShape(flatten.out)
+      SourceShape(events.out)
     })
   }
 }
