@@ -76,7 +76,7 @@ object Dependencies {
     Seq(
       libraryDependencies ++= Seq("com.chuusai" %% "shapeless" % "2.3.2") ++
         Seq("geode-core","geode-cq")
-        .map("org.apache.geode" % _ % geodeVersion exclude("org.slf4j", "slf4j-log4j12")) ++
+          .map("org.apache.geode" % _ % geodeVersion exclude("org.slf4j", "slf4j-log4j12")) ++
         Seq("org.slf4j" % "log4j-over-slf4j" % "1.7.21" % Test, // MIT like: http://www.slf4j.org/license.html
           "org.slf4j" % "slf4j-api" % "1.7.21" % Test, // MIT like: http://www.slf4j.org/license.html
           "ch.qos.logback" % "logback-classic" % "1.1.7" % Test, // Eclipse Public License 1.0: http://logback.qos.ch/license.html
@@ -129,6 +129,14 @@ object Dependencies {
     externalResolvers := ("jboss" at "https://repository.jboss.org/nexus/content/groups/public") +: externalResolvers.value
   )
 
+  val KairosDB = Seq (
+    libraryDependencies ++= Seq (
+      "org.kairosdb"    % "client"         % "2.1.1",           // ApacheV2
+      "org.mockito"     % "mockito-core"   % "2.3.7"    % Test  // MIT
+
+    )
+  )
+
   val Mqtt = Seq(
     libraryDependencies ++= Seq(
       "org.eclipse.paho" % "org.eclipse.paho.client.mqttv3" % "1.1.0" // Eclipse Public License 1.0
@@ -158,7 +166,7 @@ object Dependencies {
       "org.elasticmq"     %% "elasticmq-rest-sqs"  % "0.13.4"        % Test excludeAll(
         // elasticmq-rest-sqs depends on Akka 2.5, exclude it, so we can choose Akka version
         ExclusionRule(organization = "com.typesafe.akka") //
-      ), // ApacheV2
+        ), // ApacheV2
       // elasticmq-rest-sqs depends on akka-slf4j which was excluded
       "com.typesafe.akka" %% "akka-slf4j"           % AkkaVersion    % Test, // ApacheV2
       // pull up akka-http version to the latest version for elasticmq-rest-sqs

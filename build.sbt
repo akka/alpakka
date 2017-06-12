@@ -2,25 +2,27 @@ lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
   .aggregate(amqp,
-             awslambda,
-             azureStorageQueue,
-             cassandra,
-             csv,
-             dynamodb,
-             files,
-             ftp,
-             geode,
-             googleCloudPubSub,
-             hbase,
-             ironmq,
-             jms,
-             mqtt,
-             s3,
-             simpleCodecs,
-             sns,
-             sqs,
-             sse,
-             xml)
+    awslambda,
+    azureStorageQueue,
+    cassandra,
+    csv,
+    dynamodb,
+    files,
+    ftp,
+    geode,
+    googleCloudPubSub,
+    hbase,
+    ironmq,
+    jms,
+    mqtt,
+    s3,
+    simpleCodecs,
+    sns,
+    sqs,
+    sse,
+    xml,
+    kairosdb
+  )
   .settings(
     onLoadMessage :=
       """
@@ -141,6 +143,13 @@ lazy val jms = project
     parallelExecution in Test := false
   )
 
+lazy val kairosdb = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-kairosdb",
+    Dependencies.KairosDB
+  )
+
 lazy val mqtt = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
@@ -190,6 +199,7 @@ lazy val xml = project
     name := "akka-stream-alpakka-xml",
     Dependencies.Xml
   )
+
 
 val Local = config("local")
 val defaultParadoxSettings: Seq[Setting[_]] = Seq(

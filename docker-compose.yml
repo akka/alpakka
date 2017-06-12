@@ -22,6 +22,10 @@ services:
     image: deangiberson/aws-dynamodb-local
     ports:
       - "8001:8000"
+  kairossb:
+    image: ivangallego/kairosdb-docker
+    ports:
+      - "9090:8080"
   geode:
     container_name: geode
     image: apachegeode/geode
@@ -54,4 +58,3 @@ services:
       - "AUTH_HOST=http://ironauth:8090"
     ports:
       - "8080:8080"
-
