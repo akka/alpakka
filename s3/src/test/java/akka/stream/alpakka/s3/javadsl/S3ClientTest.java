@@ -19,6 +19,8 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import org.junit.Test;
+
+import scala.Option;
 import scala.Some;
 
 import java.util.Arrays;
@@ -89,5 +91,22 @@ public class S3ClientTest extends S3WireMockBase {
         byte[] result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
         assertTrue(Arrays.equals(rangeOfBody(), result));
+    }
+
+    @Test
+    public void listBucket() throws Exception {
+
+        mockListBucket();
+
+        //#list-bucket
+        final Source<ListBucketResultContents, NotUsed> keySource = client.listBucket(bucket(), Option.apply(listPrefix()));
+        //#list-bucket
+
+        final CompletionStage<ListBucketResultContents> resultCompletionStage = keySource.runWith(Sink.head(), materializer);
+
+        ListBucketResultContents result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertEquals(result.key(), listKey());
+
     }
 }

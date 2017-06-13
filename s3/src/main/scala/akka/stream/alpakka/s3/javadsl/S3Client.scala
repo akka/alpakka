@@ -72,9 +72,14 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
     impl.download(S3Location(bucket, key), Some(scalaRange)).asJava
   }
 
-  // #list-bucket
+  /**
+   * Will return a source of object metadata for a given bucket with optional prefix.
+   * This will automatically page through all keys with the given parameters.
+   * @param bucket Which bucket that you list object metadata for
+   * @param prefix Prefix of the keys you want to list under passed bucket
+   * @return Source of object metadata
+   */
   def listBucket(bucket: String, prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
-    // #list-bucket
     impl
       .listBucket(bucket, prefix)
       .map { scalaContents =>
