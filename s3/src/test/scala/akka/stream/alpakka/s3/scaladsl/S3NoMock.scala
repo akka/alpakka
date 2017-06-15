@@ -18,6 +18,7 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
 
   implicit val actorSystem = ActorSystem()
   implicit val materializer = ActorMaterializer()
+  implicit val ec = materializer.executionContext
 
   val bucket = "test-bucket"
   val objectKey = "test"
@@ -44,5 +45,22 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     val result = download.map(_.decodeString("utf8")).runWith(Sink.head)
 
     Await.ready(result, 5.seconds).futureValue shouldBe objectValue
+  }
+
+  it should "upload and download with spaces in the key" ignore {
+    val objectKey = "test folder/test file.txt"
+    val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
+
+    val client = S3Client()
+    val results = for {
+      upload <- source.runWith(S3Client().multipartUpload(bucket, objectKey, metaHeaders = MetaHeaders(metaHeaders)))
+      download <- client.download(bucket, objectKey).map(_.decodeString("utf8")).runWith(Sink.head)
+    } yield (upload, download)
+
+    val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
+
+    multipartUploadResult.bucket shouldBe bucket
+    multipartUploadResult.key shouldBe objectKey
+    downloaded shouldBe objectValue
   }
 }
