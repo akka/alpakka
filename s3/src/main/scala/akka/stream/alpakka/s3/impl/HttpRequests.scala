@@ -26,7 +26,7 @@ private[alpakka] object HttpRequests {
       Seq(
         "list-type" -> Some("2"),
         "prefix" -> prefix,
-        "continuation-token" -> continuationToken.map(_.replaceAll("=", "%3D"))
+        "continuation-token" -> continuationToken
       ).collect { case (k, Some(v)) => k -> v }.toMap
     )
 
