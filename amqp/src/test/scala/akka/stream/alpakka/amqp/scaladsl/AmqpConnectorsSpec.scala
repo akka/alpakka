@@ -50,7 +50,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       //#run-sink
       val input = Vector("one", "two", "three", "four", "five")
-      Source(input).map(s => ByteString(s)).runWith(amqpSink)
+      Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
       //#run-sink
 
       //#run-source
@@ -81,7 +81,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val (rpcQueueF, probe) =
         Source(input).map(s => ByteString(s)).viaMat(amqpRpcFlow)(Keep.right).toMat(TestSink.probe)(Keep.both).run
       //#run-rpc-flow
-      val rpqCqueue = rpcQueueF.futureValue
+      rpcQueueF.futureValue
 
       val amqpSink = AmqpSink.replyTo(
         AmqpReplyToSinkSettings(DefaultAmqpConnection)
@@ -111,7 +111,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val input = Vector("one", "two", "three", "four", "five")
       val (rpcQueueF, probe) =
         Source(input).map(s => ByteString(s)).viaMat(amqpRpcFlow)(Keep.right).toMat(TestSink.probe)(Keep.both).run
-      val rpqCqueue = rpcQueueF.futureValue
+      rpcQueueF.futureValue
 
       val amqpSink = AmqpSink.replyTo(
         AmqpReplyToSinkSettings(DefaultAmqpConnection)
