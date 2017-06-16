@@ -29,7 +29,7 @@ private object NullExecutionContext extends ExecutionContext {
 }
 
 class KairosDBSinkStage(settings: KairosSinkSettings,
-                        kairosClient: Client)(implicit executionContext: ExecutionContext = NullExecutionContext)
+                        kairosClient: Client)(implicit executionContext: ExecutionContext)
     extends GraphStageWithMaterializedValue[SinkShape[MetricBuilder], Future[Done]] {
 
   val in: Inlet[MetricBuilder] = Inlet("KairosSink.in")
@@ -38,7 +38,7 @@ class KairosDBSinkStage(settings: KairosSinkSettings,
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val promise = Promise[Done]()
-    val logic = new KairosSinkStageLogic(in, shape, kairosClient, promise, settings)(executionContext)
+    val logic = new KairosSinkStageLogic(in, shape, kairosClient, promise, settings)
 
     (logic, promise.future)
   }
@@ -50,12 +50,9 @@ private[kairosdb] class KairosSinkStageLogic(
     kairosClient: Client,
     promise: Promise[Done],
     settings: KairosSinkSettings
-)(executionContext: ExecutionContext)
+)(implicit executionContext: ExecutionContext)
     extends GraphStageLogic(shape)
     with StageLogging {
-
-  implicit lazy val ec: ExecutionContext =
-    if (executionContext == NullExecutionContext) materializer.executionContext else executionContext
 
   private var runningPushes = 0
   private var isShutdownInProgress = false

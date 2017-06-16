@@ -14,15 +14,14 @@ lazy val alpakka = project
     hbase,
     ironmq,
     jms,
+    kairosdb,
     mqtt,
     s3,
     simpleCodecs,
     sns,
     sqs,
     sse,
-    xml,
-    kairosdb
-  )
+    xml)
   .settings(
     onLoadMessage :=
       """

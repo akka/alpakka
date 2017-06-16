@@ -17,18 +17,16 @@ import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
 import org.mockito.Mockito._
 import org.mockito.ArgumentMatchers._
 import org.scalatest.mockito.MockitoSugar.mock
-
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
-/**
- * Created by SOROOSH on 3/20/17.
- */
+
 class KairosSinkSpec extends WordSpec with Matchers with BeforeAndAfter {
 
   //#init-mat
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
+  implicit val ec = system.dispatcher
   //#init-mat
 
   implicit val client = mock[HttpClient]
