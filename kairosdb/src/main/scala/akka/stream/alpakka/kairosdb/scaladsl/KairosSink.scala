@@ -14,7 +14,6 @@ import scala.concurrent.{ExecutionContext, Future}
 object KairosSink {
   def apply(
       settings: KairosSinkSettings = KairosSinkSettings.Defaults
-  )(implicit kairosClient: HttpClient,
-    executionContext: ExecutionContext): Sink[MetricBuilder, Future[Done]] =
+  )(implicit kairosClient: HttpClient, executionContext: ExecutionContext): Sink[MetricBuilder, Future[Done]] =
     Sink.fromGraph(new KairosDBSinkStage(settings, kairosClient))
 }

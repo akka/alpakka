@@ -21,7 +21,6 @@ object KairosSink {
              executionContext: ExecutionContext): Sink[MetricBuilder, Future[Done]] =
     Sink.fromGraph(new KairosDBSinkStage(settings, kairosClient)(executionContext))
 
-
   /**
    * Java API
    */
