@@ -20,7 +20,8 @@ lazy val alpakka = project
              sns,
              sqs,
              sse,
-             xml)
+             xml,
+             awsses)
   .settings(
     onLoadMessage :=
       """
@@ -190,6 +191,13 @@ lazy val xml = project
     name := "akka-stream-alpakka-xml",
     Dependencies.Xml
   )
+
+  lazy val awsses = project
+    .enablePlugins(AutomateHeaderPlugin)
+    .settings(
+      name := "akka-stream-alpakka-awsses",
+      Dependencies.AwsSes
+    )
 
 val Local = config("local")
 val defaultParadoxSettings: Seq[Setting[_]] = Seq(

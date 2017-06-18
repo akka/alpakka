@@ -7,6 +7,7 @@
 * [AWS DynamoDB Connector](dynamodb.md)
 * [AWS Lambda Connector](awslambda.md)
 * [AWS S3 Connector](s3.md)
+* [AWS SES Connector](awsses.md)
 * [AWS SNS Connector](sns.md)
 * [AWS SQS Connector](sqs.md)
 * [Azure Storage Queue](azure-storage-queue.md)
@@ -24,4 +25,3 @@
 
 TODO: Implement more connectors. [Contributions](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md) are very welcome.
 [Creating an issue](https://github.com/akka/alpakka/issues) for discussion is a good first step for such contributions.
-
