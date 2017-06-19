@@ -10,6 +10,9 @@ import org.scalatest.{FlatSpecLike, Matchers}
 import akka.stream.alpakka.s3.Proxy
 import scala.collection.JavaConverters._
 
+/*
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 class S3ClientSpec extends FlatSpecLike with Matchers {
   it should "reuse application config from actor system" in {
     val config = ConfigFactory.parseMap(
