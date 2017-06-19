@@ -29,17 +29,17 @@ object S3Client {
   val MinChunkSize = 5242880
 
   def apply()(implicit system: ActorSystem, mat: Materializer): S3Client =
-    new S3Client(S3Settings(ConfigFactory.load()))
+    new S3Client(S3Settings(system.settings.config))
 
   def apply(credentials: AWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer): S3Client = {
     val settings = S3Settings
-      .apply(ConfigFactory.load())
+      .apply(system.settings.config)
       .copy(awsCredentials = credentials, s3Region = region)
     new S3Client(settings)
   }
 }
 
-final class S3Client(s3Settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
+final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
 
   import S3Client._
 
