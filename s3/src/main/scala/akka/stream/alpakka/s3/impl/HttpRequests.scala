@@ -5,12 +5,13 @@ package akka.stream.alpakka.s3.impl
 
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling.Marshal
-import akka.http.scaladsl.model.Uri.Query
+import akka.http.scaladsl.model.Uri.{Authority, Query}
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.{ContentTypes, RequestEntity, _}
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -115,11 +116,7 @@ private[alpakka] object HttpRequests {
     val path = key.fold(basePath) { someKey =>
       someKey.split("/").foldLeft(basePath)((acc, p) => acc / p)
     }
-    // this will fail if the key starts with a / and path style access disabled
-    // do we want to throw a specific exception in that case?
-    // als for path style access you will end up with a empty string folder in the root
-    // what does the official client do?
-    val uri = Uri.Empty.withPath(path).withHost(requestHost(bucket, conf.s3Region))
+    val uri = Uri(path = path, authority = Authority(requestHost(bucket, conf.s3Region)))
     conf.proxy match {
       case None => uri.withScheme("https")
       case Some(proxy) => uri.withPort(proxy.port).withScheme(proxy.scheme)

@@ -109,6 +109,21 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     req.uri.scheme shouldEqual "http"
   }
 
+  it should "support download requests with keys starting with /" in {
+    // the official client supports this and this translates
+    // into an object at path /[empty string]/...
+    // added this test because of a tricky uri building issue
+    // in case of pathStyleAccess = false
+    implicit val settings = getSettings()
+
+    val location = S3Location("bucket", "/test/foo.txt")
+
+    val req = HttpRequests.getDownloadRequest(location)
+
+    req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
+    req.uri.path.toString shouldEqual "//test/foo.txt"
+  }
+
   it should "support download requests with keys containing spaces" in {
     implicit val settings = getSettings()
 
