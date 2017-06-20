@@ -47,7 +47,7 @@ final case class JmsSinkSettings(connectionFactory: ConnectionFactory,
   def withCredential(credentials: Credentials) = copy(credentials = Some(credentials))
   def withQueue(name: String) = copy(destination = Some(Queue(name)))
   def withTopic(name: String) = copy(destination = Some(Topic(name)))
-  def withTimeToLive(ttl: Duration)  = copy(timeToLive = Some(ttl))
+  def withTimeToLive(ttl: Duration) = copy(timeToLive = Some(ttl))
 }
 
 final case class Credentials(username: String, password: String)

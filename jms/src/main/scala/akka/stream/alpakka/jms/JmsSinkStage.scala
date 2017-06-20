@@ -27,7 +27,7 @@ final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape
       override def preStart(): Unit = {
         jmsSession = openSession()
         jmsProducer = jmsSession.session.createProducer(jmsSession.destination)
-        if(settings.timeToLive.nonEmpty){
+        if (settings.timeToLive.nonEmpty) {
           jmsProducer.setTimeToLive(settings.timeToLive.get.toMillis)
         }
         pull(in)
