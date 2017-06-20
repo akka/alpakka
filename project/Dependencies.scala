@@ -3,10 +3,10 @@ import sbt._, Keys._
 object Dependencies {
 
   val AkkaVersion = sys.env.get("AKKA_SERIES") match {
-    case Some("2.5") => "2.5.1"
-    case _ => "2.4.18"
+    case Some("2.5") => "2.5.3"
+    case _ => "2.4.19"
   }
-  val AkkaHttpVersion = "10.0.6"
+  val AkkaHttpVersion = "10.0.8"
 
   val Common = Seq(
     libraryDependencies ++= Seq(
