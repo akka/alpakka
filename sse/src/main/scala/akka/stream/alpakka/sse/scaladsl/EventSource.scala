@@ -11,10 +11,10 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Source}
 import akka.stream.{Materializer, SourceShape}
-import de.heikoseeberger.akkasse.scaladsl.model.MediaTypes.`text/event-stream`
-import de.heikoseeberger.akkasse.scaladsl.model.ServerSentEvent
-import de.heikoseeberger.akkasse.scaladsl.model.headers.`Last-Event-ID`
-import de.heikoseeberger.akkasse.scaladsl.unmarshalling.EventStreamUnmarshalling
+import akka.http.scaladsl.model.sse.ServerSentEvent
+import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
+import akka.http.scaladsl.model.headers.`Last-Event-ID`
+import akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
