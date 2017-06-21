@@ -6,7 +6,7 @@ object Dependencies {
     case Some("2.5") => "2.5.1"
     case _ => "2.4.18"
   }
-  val AkkaHttpVersion = "10.0.6"
+  val AkkaHttpVersion = "10.0.8"
 
   val Common = Seq(
     libraryDependencies ++= Seq(
@@ -170,7 +170,6 @@ object Dependencies {
   val Sse = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http"         % AkkaHttpVersion,
-      "de.heikoseeberger" %% "akka-sse"          % "3.0.0", // ApacheV2
       "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion % Test
     )
   )
