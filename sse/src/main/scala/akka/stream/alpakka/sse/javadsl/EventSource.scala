@@ -9,7 +9,7 @@ import akka.http.javadsl.model.{HttpRequest, HttpResponse, Uri}
 import akka.http.scaladsl.model.{HttpResponse => SHttpResponse}
 import akka.stream.Materializer
 import akka.stream.javadsl.Source
-import de.heikoseeberger.akkasse.javadsl.model.ServerSentEvent
+import akka.http.javadsl.model.sse.ServerSentEvent
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 import java.util.function.{Function => JFunction}

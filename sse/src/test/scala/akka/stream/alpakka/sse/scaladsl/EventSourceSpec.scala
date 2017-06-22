@@ -14,10 +14,10 @@ import akka.pattern.pipe
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, ThrottleMode}
 import akka.testkit.SocketUtil
-import de.heikoseeberger.akkasse.scaladsl.model.MediaTypes.`text/event-stream`
-import de.heikoseeberger.akkasse.scaladsl.model.ServerSentEvent
-import de.heikoseeberger.akkasse.scaladsl.model.headers.`Last-Event-ID`
-import de.heikoseeberger.akkasse.scaladsl.marshalling.EventStreamMarshalling
+import akka.http.scaladsl.model.sse.ServerSentEvent
+import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
+import akka.http.scaladsl.model.headers.`Last-Event-ID`
+import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling
 import java.net.InetSocketAddress
 import java.nio.charset.StandardCharsets.UTF_8
 import org.scalatest.{AsyncWordSpec, BeforeAndAfterAll, Matchers}
