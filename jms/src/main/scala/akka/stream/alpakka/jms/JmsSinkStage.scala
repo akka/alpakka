@@ -8,7 +8,7 @@ import javax.jms.{MessageProducer, TextMessage}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler}
 import akka.stream.{ActorAttributes, Attributes, Inlet, SinkShape}
 
-final class JmsSinkStage(settings: JmsSettings) extends GraphStage[SinkShape[String]] {
+final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape[String]] {
 
   private val in = Inlet[String]("JmsSink.in")
 
@@ -27,6 +27,9 @@ final class JmsSinkStage(settings: JmsSettings) extends GraphStage[SinkShape[Str
       override def preStart(): Unit = {
         jmsSession = openSession()
         jmsProducer = jmsSession.session.createProducer(jmsSession.destination)
+        if (settings.timeToLive.nonEmpty) {
+          jmsProducer.setTimeToLive(settings.timeToLive.get.toMillis)
+        }
         pull(in)
       }
 
