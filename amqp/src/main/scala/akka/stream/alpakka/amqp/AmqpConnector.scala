@@ -65,6 +65,7 @@ private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
 
   private var connection: Connection = _
   protected var channel: Channel = _
+  protected var autoRecoverEnabled: Boolean = _
 
   def settings: AmqpConnectorSettings
   def connectionFactoryFrom(settings: AmqpConnectionSettings): ConnectionFactory
@@ -76,9 +77,17 @@ private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
 
     connection = newConnection(factory, settings.connectionSettings)
     channel = connection.createChannel()
+    autoRecoverEnabled = factory.isAutomaticRecoveryEnabled()
 
     val connShutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
-      if (!ex.isInitiatedByApplication) failStage(ex)
+      if (autoRecoverEnabled) {
+        if (ex.isInitiatedByApplication) completeStage()
+      } else {
+        if (!ex.isInitiatedByApplication)
+          failStage(ex)
+        else
+          completeStage()
+      }
     }
     val shutdownListener = new ShutdownListener {
       override def shutdownCompleted(cause: ShutdownSignalException): Unit = connShutdownCallback.invoke(cause)
