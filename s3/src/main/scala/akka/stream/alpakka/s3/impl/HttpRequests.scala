@@ -5,12 +5,13 @@ package akka.stream.alpakka.s3.impl
 
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling.Marshal
-import akka.http.scaladsl.model.Uri.Query
+import akka.http.scaladsl.model.Uri.{Authority, Query}
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.{ContentTypes, RequestEntity, _}
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -107,12 +108,15 @@ private[alpakka] object HttpRequests {
     }
 
   private[this] def requestUri(bucket: String, key: Option[String])(implicit conf: S3Settings): Uri = {
-    val uri = if (conf.pathStyleAccess) {
-      Uri(s"/${bucket}${key.fold("")((someKey) => s"/$someKey")}")
-        .withHost(requestHost(bucket, conf.s3Region))
+    val basePath = if (conf.pathStyleAccess) {
+      Uri.Path / bucket
     } else {
-      Uri(s"${key.fold("")((someKey) => s"/$someKey")}").withHost(requestHost(bucket, conf.s3Region))
+      Uri.Path.Empty
     }
+    val path = key.fold(basePath) { someKey =>
+      someKey.split("/").foldLeft(basePath)((acc, p) => acc / p)
+    }
+    val uri = Uri(path = path, authority = Authority(requestHost(bucket, conf.s3Region)))
     conf.proxy match {
       case None => uri.withScheme("https")
       case Some(proxy) => uri.withPort(proxy.port).withScheme(proxy.scheme)
