@@ -52,4 +52,25 @@ class CanonicalRequestSpec extends FlatSpec with Matchers {
         |testhash""".stripMargin
     )
   }
+
+  it should "correctly build a canonicalString for us-east-1 with empty path" in {
+    val req = HttpRequest(
+      HttpMethods.GET,
+      Uri("https://mytestbucket.s3.amazonaws.com")
+    ).withHeaders(
+      RawHeader("x-amz-content-sha256", "testhash"),
+      `Content-Type`(ContentTypes.`application/json`)
+    )
+    val canonical = CanonicalRequest.from(req)
+    canonical.canonicalString should equal(
+      """GET
+        |/
+        |
+        |content-type:application/json
+        |x-amz-content-sha256:testhash
+        |
+        |content-type;x-amz-content-sha256
+        |testhash""".stripMargin
+    )
+  }
 }
