@@ -3,6 +3,7 @@
  */
 package akka.stream.alpakka.s3.javadsl
 
+import java.time.Instant
 import java.util.concurrent.CompletionStage
 
 import akka.NotUsed
@@ -24,6 +25,21 @@ import com.typesafe.config.ConfigFactory
 import scala.compat.java8.FutureConverters._
 
 final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
+
+final case class ListBucketResultContents(
+    /** The name of the bucket in which this object is stored */
+    bucketName: String,
+    /** The key under which this object is stored */
+    key: String,
+    /** Hex encoded MD5 hash of this object's contents, as computed by Amazon S3 */
+    eTag: String,
+    /** The size of this object, in bytes */
+    size: Long,
+    /** The date, according to Amazon S3, when this object was last modified */
+    lastModified: Instant,
+    /** The class of storage used by Amazon S3 to store this object */
+    storageClass: String
+)
 
 object MultipartUploadResult {
   def create(r: CompleteMultipartUploadResult): MultipartUploadResult =
@@ -57,9 +73,19 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
   }
 
   // #list-bucket
-  def listBucket(bucket: String, prefix: Option[String]): Source[String, NotUsed] =
+  def listBucket(bucket: String, prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
     // #list-bucket
-    impl.listBucket(bucket, prefix).asJava
+    impl
+      .listBucket(bucket, prefix)
+      .map { scalaContents =>
+        ListBucketResultContents(scalaContents.bucketName,
+                                 scalaContents.key,
+                                 scalaContents.eTag,
+                                 scalaContents.size,
+                                 scalaContents.lastModified,
+                                 scalaContents.storageClass)
+      }
+      .asJava
 
   def multipartUpload(bucket: String,
                       key: String,
