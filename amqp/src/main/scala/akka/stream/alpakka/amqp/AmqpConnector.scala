@@ -6,6 +6,8 @@ package akka.stream.alpakka.amqp
 import akka.stream.stage.GraphStageLogic
 import com.rabbitmq.client._
 
+import scala.util.control.NonFatal
+
 /**
  * Internal API
  */
@@ -70,55 +72,61 @@ private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
   def connectionFactoryFrom(settings: AmqpConnectionSettings): ConnectionFactory
   def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings): Connection
   def whenConnected(): Unit
+  def onFailure(ex: Throwable): Unit
 
-  final override def preStart(): Unit = {
-    val factory = connectionFactoryFrom(settings.connectionSettings)
+  final override def preStart(): Unit =
+    try {
+      val factory = connectionFactoryFrom(settings.connectionSettings)
 
-    connection = newConnection(factory, settings.connectionSettings)
-    channel = connection.createChannel()
+      connection = newConnection(factory, settings.connectionSettings)
+      channel = connection.createChannel()
 
-    val connShutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
-      if (!ex.isInitiatedByApplication) failStage(ex)
+      val connShutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
+        if (!ex.isInitiatedByApplication) failStage(ex)
+      }
+      val shutdownListener = new ShutdownListener {
+        override def shutdownCompleted(cause: ShutdownSignalException): Unit = connShutdownCallback.invoke(cause)
+      }
+      connection.addShutdownListener(shutdownListener)
+      channel.addShutdownListener(shutdownListener)
+
+      import scala.collection.JavaConverters._
+
+      settings.declarations.foreach {
+        case QueueDeclaration(name, durable, exclusive, autoDelete, arguments) =>
+          channel.queueDeclare(
+            name,
+            durable,
+            exclusive,
+            autoDelete,
+            arguments.asJava
+          )
+
+        case BindingDeclaration(queue, exchange, routingKey, arguments) =>
+          channel.queueBind(
+            queue,
+            exchange,
+            routingKey.getOrElse(""),
+            arguments.asJava
+          )
+
+        case ExchangeDeclaration(name, exchangeType, durable, autoDelete, internal, arguments) =>
+          channel.exchangeDeclare(
+            name,
+            exchangeType,
+            durable,
+            autoDelete,
+            internal,
+            arguments.asJava
+          )
+      }
+
+      whenConnected()
+    } catch {
+      case NonFatal(e) =>
+        onFailure(e)
+        throw e
     }
-    val shutdownListener = new ShutdownListener {
-      override def shutdownCompleted(cause: ShutdownSignalException): Unit = connShutdownCallback.invoke(cause)
-    }
-    connection.addShutdownListener(shutdownListener)
-    channel.addShutdownListener(shutdownListener)
-
-    import scala.collection.JavaConverters._
-
-    settings.declarations.foreach {
-      case QueueDeclaration(name, durable, exclusive, autoDelete, arguments) =>
-        channel.queueDeclare(
-          name,
-          durable,
-          exclusive,
-          autoDelete,
-          arguments.asJava
-        )
-
-      case BindingDeclaration(queue, exchange, routingKey, arguments) =>
-        channel.queueBind(
-          queue,
-          exchange,
-          routingKey.getOrElse(""),
-          arguments.asJava
-        )
-
-      case ExchangeDeclaration(name, exchangeType, durable, autoDelete, internal, arguments) =>
-        channel.exchangeDeclare(
-          name,
-          exchangeType,
-          durable,
-          autoDelete,
-          internal,
-          arguments.asJava
-        )
-    }
-
-    whenConnected()
-  }
 
   /** remember to call if overriding! */
   override def postStop(): Unit = {

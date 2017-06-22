@@ -129,7 +129,7 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
           false // just this single message
         )
       }
-
+      override def onFailure(ex: Throwable): Unit = {}
     }
 
 }
