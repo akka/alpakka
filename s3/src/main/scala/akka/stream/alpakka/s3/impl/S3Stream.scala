@@ -250,7 +250,8 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
   private def entityForSuccess(resp: HttpResponse)(implicit ctx: ExecutionContext): Future[ResponseEntity] =
     resp match {
-      case HttpResponse(status, _, entity, _) if status.isSuccess() => Future.successful(entity)
+      case HttpResponse(status, _, entity, _) if status.isSuccess() && !status.isRedirection() =>
+        Future.successful(entity)
       case HttpResponse(_, _, entity, _) =>
         Unmarshal(entity).to[String].flatMap { err =>
           Future.failed(new S3Exception(err))
