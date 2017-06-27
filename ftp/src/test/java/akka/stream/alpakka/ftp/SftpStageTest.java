@@ -9,11 +9,13 @@ import akka.stream.alpakka.ftp.javadsl.Sftp;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
 
+@Ignore("Disabled until we fix https://github.com/akka/alpakka/issues/365")
 public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest {
 
   @Test
