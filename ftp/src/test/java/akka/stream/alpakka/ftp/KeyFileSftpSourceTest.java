@@ -9,6 +9,7 @@ import akka.stream.alpakka.ftp.javadsl.Sftp;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.net.InetAddress;
@@ -17,6 +18,7 @@ import java.util.concurrent.CompletionStage;
 public class KeyFileSftpSourceTest extends SftpSupportImpl implements CommonFtpStageTest {
 
   @Test
+  @Ignore("Disabled until we fix https://github.com/akka/alpakka/issues/365")
   public void listFiles() throws Exception {
     CommonFtpStageTest.super.listFiles();
   }
