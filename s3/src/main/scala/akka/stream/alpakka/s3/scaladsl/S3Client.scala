@@ -3,6 +3,8 @@
  */
 package akka.stream.alpakka.s3.scaladsl
 
+import java.time.Instant
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
@@ -24,6 +26,21 @@ object MultipartUploadResult {
   def apply(r: CompleteMultipartUploadResult): MultipartUploadResult =
     new MultipartUploadResult(r.location, r.bucket, r.key, r.etag)
 }
+
+final case class ListBucketResultContents(
+    /** The name of the bucket in which this object is stored */
+    bucketName: String,
+    /** The key under which this object is stored */
+    key: String,
+    /** Hex encoded MD5 hash of this object's contents, as computed by Amazon S3 */
+    eTag: String,
+    /** The size of this object, in bytes */
+    size: Long,
+    /** The date, according to Amazon S3, when this object was last modified */
+    lastModified: Instant,
+    /** The class of storage used by Amazon S3 to store this object */
+    storageClass: String
+)
 
 object S3Client {
   val MinChunkSize = 5242880
@@ -53,7 +70,7 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
     impl.download(S3Location(bucket, key), Some(range))
 
   // #list-bucket
-  def listBucket(bucket: String, prefix: Option[String]): Source[String, NotUsed] =
+  def listBucket(bucket: String, prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
     // #list-bucket
     impl.listBucket(bucket, prefix)
 
