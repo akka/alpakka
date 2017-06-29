@@ -5,6 +5,7 @@ package akka.stream.alpakka.s3.impl
 
 import java.nio.file.Paths
 import java.time.LocalDate
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -12,11 +13,12 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.stream.Materializer
-import akka.stream.alpakka.s3.acl.CannedAcl
-import akka.stream.alpakka.s3.auth.{AWSCredentials, CredentialScope, Signer, SigningKey}
+import akka.stream.alpakka.s3.auth.{CredentialScope, Signer, SigningKey}
+import akka.stream.alpakka.s3.scaladsl.ListBucketResultContents
 import akka.stream.alpakka.s3.{DiskBufferType, MemoryBufferType, S3Exception, S3Settings}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
+
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -41,7 +43,9 @@ final case class FailedUpload(reasons: Seq[Throwable]) extends Exception
 
 final case class CompleteMultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
-final case class ListBucketResult(isTruncated: Boolean, continuationToken: Option[String], keys: Seq[String])
+final case class ListBucketResult(isTruncated: Boolean,
+                                  continuationToken: Option[String],
+                                  contents: Seq[ListBucketResultContents])
 
 object S3Stream {
 
@@ -63,7 +67,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     Source.fromFuture(request(s3Location, range).flatMap(entityForSuccess).map(_.dataBytes)).flatMapConcat(identity)
   }
 
-  def listBucket(bucket: String, prefix: Option[String] = None): Source[String, NotUsed] = {
+  def listBucket(bucket: String, prefix: Option[String] = None): Source[ListBucketResultContents, NotUsed] = {
     sealed trait ListBucketState
     case object Starting extends ListBucketState
     case class Running(continuationToken: String) extends ListBucketState
@@ -71,17 +75,19 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
     import system.dispatcher
 
-    def listBucketCall(token: Option[String]): Future[Option[(ListBucketState, Seq[String])]] =
+    def listBucketCall(token: Option[String]): Future[Option[(ListBucketState, Seq[ListBucketResultContents])]] =
       signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, prefix, token))
         .map { (res: ListBucketResult) =>
           Some(
             res.continuationToken
-              .fold[(ListBucketState, Seq[String])]((Finished, res.keys))(t => (Running(t), res.keys))
+              .fold[(ListBucketState, Seq[ListBucketResultContents])]((Finished, res.contents))(
+                t => (Running(t), res.contents)
+              )
           )
         }
 
     Source
-      .unfoldAsync[ListBucketState, Seq[String]](Starting) {
+      .unfoldAsync[ListBucketState, Seq[ListBucketResultContents]](Starting) {
         case Finished => Future.successful(None)
         case Starting => listBucketCall(None)
         case Running(token) => listBucketCall(Some(token))
@@ -250,7 +256,8 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
   private def entityForSuccess(resp: HttpResponse)(implicit ctx: ExecutionContext): Future[ResponseEntity] =
     resp match {
-      case HttpResponse(status, _, entity, _) if status.isSuccess() => Future.successful(entity)
+      case HttpResponse(status, _, entity, _) if status.isSuccess() && !status.isRedirection() =>
+        Future.successful(entity)
       case HttpResponse(_, _, entity, _) =>
         Unmarshal(entity).to[String].flatMap { err =>
           Future.failed(new S3Exception(err))
