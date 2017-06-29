@@ -13,17 +13,22 @@ import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
 import org.scalatest.time.{Millis, Seconds, Span}
+import org.scalatest.Ignore
 import scala.concurrent.duration._
 import scala.util.Random
 import java.nio.file.attribute.PosixFilePermission
 
 final class FtpStageSpec extends BaseFtpSpec with CommonFtpStageSpec
+/* Disabled until we fix https://github.com/akka/alpakka/issues/365 */
+@Ignore
 final class SftpStageSpec extends BaseSftpSpec with CommonFtpStageSpec
 final class FtpsStageSpec extends BaseFtpsSpec with CommonFtpStageSpec {
   setAuthValue("TLS")
   setUseImplicit(false)
 }
 
+/* Disabled until we fix https://github.com/akka/alpakka/issues/365 */
+@Ignore
 final class RawKeySftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
   override val settings = SftpSettings(
     InetAddress.getByName("localhost"),
@@ -35,6 +40,8 @@ final class RawKeySftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
   )
 }
 
+/* Disabled until we fix https://github.com/akka/alpakka/issues/365 */
+@Ignore
 final class KeyFileSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
   override val settings = SftpSettings(
     InetAddress.getByName("localhost"),
@@ -46,6 +53,8 @@ final class KeyFileSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
   )
 }
 
+/* Disabled until we fix https://github.com/akka/alpakka/issues/365 */
+@Ignore
 final class StrictHostCheckingSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
   override val settings = SftpSettings(
     InetAddress.getByName("localhost"),
