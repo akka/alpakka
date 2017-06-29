@@ -47,8 +47,10 @@ private[alpakka] object CanonicalRequest {
   def signedHeadersString(headers: Seq[HttpHeader]): String =
     headers.map(_.lowercaseName()).distinct.sorted.mkString(";")
 
-  private def pathEncode(path: Path): String =
-    pathEncodeRec(new StringBuilder, path).toString()
+  private def pathEncode(path: Path): String = path match {
+    case p if p.isEmpty => "/"
+    case nonEmptyPath => pathEncodeRec(new StringBuilder, nonEmptyPath).toString()
+  }
 
   @tailrec private def pathEncodeRec(builder: StringBuilder, path: Path): StringBuilder = path match {
     case Path.Empty ⇒ builder
