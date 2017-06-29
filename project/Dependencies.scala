@@ -180,4 +180,11 @@ object Dependencies {
       "org.scala-lang.modules" %% "scala-java8-compat" % "0.8.0" // BSD-style
     )
   )
+
+  val Kinesis = Seq(
+    libraryDependencies ++= Seq(
+      "com.amazonaws" % "aws-java-sdk-kinesis" % "1.11.95",        // ApacheV2
+      "org.mockito"   % "mockito-core"     % "2.7.11"    % Test // MIT
+    )
+  )
 }
