@@ -14,6 +14,7 @@ lazy val alpakka = project
              hbase,
              ironmq,
              jms,
+             kinesis,
              mqtt,
              s3,
              simpleCodecs,
@@ -139,6 +140,13 @@ lazy val jms = project
     name := "akka-stream-alpakka-jms",
     Dependencies.Jms,
     parallelExecution in Test := false
+  )
+
+lazy val kinesis = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-kinesis",
+    Dependencies.Kinesis
   )
 
 lazy val mqtt = project
