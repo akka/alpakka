@@ -23,6 +23,8 @@
 
 @@@
 
-TODO: Implement more connectors. [Contributions](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md) are very welcome.
+@@ toc { depth=1 }
+
+[Contributions](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md) are very welcome.
 [Creating an issue](https://github.com/akka/alpakka/issues) for discussion is a good first step for such contributions.
 
