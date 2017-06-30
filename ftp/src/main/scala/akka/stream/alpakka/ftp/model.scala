@@ -4,8 +4,6 @@
 package akka.stream.alpakka.ftp
 
 import akka.stream.alpakka.ftp.FtpCredentials.AnonFtpCredentials
-
-import scala.language.implicitConversions
 import java.net.InetAddress
 import java.nio.file.attribute.PosixFilePermission
 
@@ -103,7 +101,6 @@ object RemoteFileSettings {
  * @param strictHostKeyChecking sets whether to use strict host key checking.
  * @param knownHosts known hosts file to be used when connecting
  * @param sftpIdentity private/public key config to use when connecting
- * @param options additional options for ssh connection
  */
 final case class SftpSettings(
     host: InetAddress,
@@ -111,30 +108,27 @@ final case class SftpSettings(
     credentials: FtpCredentials = AnonFtpCredentials,
     strictHostKeyChecking: Boolean = true,
     knownHosts: Option[String] = None,
-    sftpIdentity: Option[SftpIdentity] = None,
-    options: Map[String, String] = Map.empty
+    sftpIdentity: Option[SftpIdentity] = None
 ) extends RemoteFileSettings {
-  def withPort(port: Int) = copy(port = port)
+  def withPort(port: Int): SftpSettings =
+    copy(port = port)
 
-  def withCredentials(credentials: FtpCredentials) = copy(credentials = credentials)
+  def withCredentials(credentials: FtpCredentials): SftpSettings =
+    copy(credentials = credentials)
 
-  def withStrictHostKeyChecking(strictHostKeyChecking: Boolean) = copy(strictHostKeyChecking = strictHostKeyChecking)
+  def withStrictHostKeyChecking(strictHostKeyChecking: Boolean): SftpSettings =
+    copy(strictHostKeyChecking = strictHostKeyChecking)
 
-  def withKnownHosts(knownHosts: String) = copy(knownHosts = Some(knownHosts))
+  def withKnownHosts(knownHosts: String): SftpSettings =
+    copy(knownHosts = Some(knownHosts))
 
-  def withSftpIdentity(sftpIdentity: SftpIdentity) = copy(sftpIdentity = Some(sftpIdentity))
-
-  def withOptions(option: (String, String), options: (String, String)*) =
-    copy(options = (option +: options).toMap)
-
-  @annotation.varargs
-  def withOptions(option: akka.japi.Pair[String, String], options: akka.japi.Pair[String, String]*) =
-    copy(options = (option +: options).map(_.toScala).toMap)
-
+  def withSftpIdentity(sftpIdentity: SftpIdentity): SftpSettings =
+    copy(sftpIdentity = Some(sftpIdentity))
 }
 
 object SftpSettings {
-  def create(host: InetAddress) = SftpSettings(host)
+  def create(host: InetAddress): SftpSettings =
+    SftpSettings(host)
 
   def createEmptyIdentity(): Option[SftpIdentity] = None
 
@@ -174,56 +168,65 @@ object FtpCredentials {
 object SftpIdentity {
 
   /** Java API */
-  def createRawSftpIdentity(name: String, privateKey: Array[Byte]): RawKeySftpIdentity =
-    RawKeySftpIdentity(name, privateKey)
+  def createRawSftpIdentity(privateKey: Array[Byte]): RawKeySftpIdentity =
+    RawKeySftpIdentity(privateKey)
+
+  def createRawSftpIdentity(privateKey: Array[Byte], privateKeyFilePassphrase: Array[Byte]): RawKeySftpIdentity =
+    RawKeySftpIdentity(privateKey, Some(privateKeyFilePassphrase))
+
+  def createRawSftpIdentity(
+      privateKey: Array[Byte],
+      privateKeyFilePassphrase: Array[Byte],
+      publicKey: Array[Byte]
+  ): RawKeySftpIdentity =
+    RawKeySftpIdentity(privateKey, Some(privateKeyFilePassphrase), Some(publicKey))
 
   def createFileSftpIdentity(privateKey: String): KeyFileSftpIdentity =
     KeyFileSftpIdentity(privateKey)
+
+  def createFileSftpIdentity(privateKey: String, privateKeyFilePassphrase: Array[Byte]): KeyFileSftpIdentity =
+    KeyFileSftpIdentity(privateKey, Some(privateKeyFilePassphrase))
 }
 
 sealed abstract class SftpIdentity {
   type KeyType
   val privateKey: KeyType
-  val publicKey: Option[KeyType]
-  val password: Option[Array[Byte]]
+  val privateKeyFilePassphrase: Option[Array[Byte]]
 }
 
 /**
  * SFTP identity for authenticating using private/public key value
  *
- * @param name name of identity
  * @param privateKey private key value to use when connecting
- * @param password password to use to decrypt private key
+ * @param privateKeyFilePassphrase password to use to decrypt private key
  * @param publicKey public key value to use when connecting
  */
-final case class RawKeySftpIdentity(name: String,
-                                    privateKey: Array[Byte],
-                                    password: Option[Array[Byte]] = None,
-                                    publicKey: Option[Array[Byte]] = None)
-    extends SftpIdentity {
+final case class RawKeySftpIdentity(
+    privateKey: Array[Byte],
+    privateKeyFilePassphrase: Option[Array[Byte]] = None,
+    publicKey: Option[Array[Byte]] = None
+) extends SftpIdentity {
+  type KeyType = Array[Byte]
 
-  override type KeyType = Array[Byte]
+  def withPrivateKeyFilePassphrase(privateKeyFilePassphrase: Array[Byte]): RawKeySftpIdentity =
+    copy(privateKeyFilePassphrase = Some(privateKeyFilePassphrase))
 
-  def withPassword(password: Array[Byte]) = copy(password = Some(password))
-
-  def withPublicKey(publicKey: KeyType) = copy(publicKey = Some(publicKey))
+  def withPublicKey(publicKey: KeyType): RawKeySftpIdentity =
+    copy(publicKey = Some(publicKey))
 }
 
 /**
  * SFTP identity for authenticating using private/public key file
  *
  * @param privateKey private key file to use when connecting
- * @param password password to use to decrypt private key file
- * @param publicKey public key file to use when connecting
+ * @param privateKeyFilePassphrase password to use to decrypt private key file
  */
-final case class KeyFileSftpIdentity(privateKey: String,
-                                     password: Option[Array[Byte]] = None,
-                                     publicKey: Option[String] = None)
-    extends SftpIdentity {
+final case class KeyFileSftpIdentity(
+    privateKey: String,
+    privateKeyFilePassphrase: Option[Array[Byte]] = None
+) extends SftpIdentity {
+  type KeyType = String
 
-  override type KeyType = String
-
-  def withPassword(password: Array[Byte]) = copy(password = Some(password))
-
-  def withPublicKey(publicKey: String) = copy(publicKey = Some(publicKey))
+  def withPrivateKeyFilePassphrase(privateKeyFilePassphrase: Array[Byte]): KeyFileSftpIdentity =
+    copy(privateKeyFilePassphrase = Some(privateKeyFilePassphrase))
 }

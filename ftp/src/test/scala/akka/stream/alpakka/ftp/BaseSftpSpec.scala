@@ -22,8 +22,7 @@ trait BaseSftpSpec extends SftpSupportImpl with BaseSpec {
     AnonFtpCredentials,
     strictHostKeyChecking = false,
     knownHosts = None,
-    sftpIdentity = None,
-    options = Map.empty
+    sftpIdentity = None
   )
   //#create-settings
 
