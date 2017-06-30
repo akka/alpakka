@@ -118,8 +118,8 @@ private[alpakka] object HttpRequests {
     }
     val uri = Uri(path = path, authority = Authority(requestHost(bucket, conf.s3Region)))
     conf.proxy match {
-      case None => uri.withScheme("https")
-      case Some(proxy) => uri.withPort(proxy.port).withScheme(proxy.scheme)
+      case None => uri.withScheme("https").withHost(requestHost(bucket, conf.s3Region))
+      case Some(proxy) => uri.withPort(proxy.port).withScheme(proxy.scheme).withHost(proxy.host)
     }
   }
 }
