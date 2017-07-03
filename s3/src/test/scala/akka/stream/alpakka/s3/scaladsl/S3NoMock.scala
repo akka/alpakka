@@ -11,16 +11,21 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
+import org.scalatest.time.{Millis, Seconds, Span}
+import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Ignore, Matchers}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+@Ignore
 class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with ScalaFutures {
 
   implicit val actorSystem = ActorSystem()
   implicit val materializer = ActorMaterializer()
   implicit val ec = materializer.executionContext
+
+  implicit val defaultPatience =
+    PatienceConfig(timeout = Span(5, Seconds), interval = Span(30, Millis))
 
   val defaultRegion = "us-east-1"
   val defaultRegionBucket = "my-test-us-east-1"
@@ -39,7 +44,21 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
   val objectValue = "Some String"
   val metaHeaders: Map[String, String] = Map("location" -> "Africa", "datatype" -> "image")
 
-  it should "upload with real credentials" ignore {
+  it should "list with real credentials" in {
+    val result = defaultRegionClient.listBucket(defaultRegionBucket, None).runWith(Sink.seq)
+
+    val listingResult = result.futureValue
+    listingResult.size shouldBe 3
+  }
+
+  it should "list with real credentials in non us-east-1 zone" in {
+    val result = otherRegionClient.listBucket(otherRegionBucket, None).runWith(Sink.seq)
+
+    val listingResult = result.futureValue
+    listingResult.size shouldBe 2
+  }
+
+  it should "upload with real credentials" in {
 
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
     //val source: Source[ByteString, Any] = FileIO.fromPath(Paths.get("/tmp/IMG_0470.JPG"))
@@ -54,7 +73,7 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     multipartUploadResult.key shouldBe objectKey
   }
 
-  it should "download with real credentials" ignore {
+  it should "download with real credentials" in {
 
     val download = defaultRegionClient.download(defaultRegionBucket, objectKey)
 
@@ -63,7 +82,7 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     Await.ready(result, 5.seconds).futureValue shouldBe objectValue
   }
 
-  it should "upload and download with spaces in the key" ignore {
+  it should "upload and download with spaces in the key" in {
     val objectKey = "test folder/test file.txt"
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
@@ -84,7 +103,7 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     downloaded shouldBe objectValue
   }
 
-  it should "upload and download with brackets in the key" ignore {
+  it should "upload and download with brackets in the key" in {
     val objectKey = "abc/DEF/2017/06/15/1234 (1).TXT"
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
@@ -105,7 +124,7 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     downloaded shouldBe objectValue
   }
 
-  it should "upload and download with spaces in the key in non us-east-1 zone" ignore {
+  it should "upload and download with spaces in the key in non us-east-1 zone" in {
     val objectKey = "test folder/test file.txt"
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
@@ -126,8 +145,9 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     downloaded shouldBe objectValue
   }
 
-  it should "upload and download with brackets in the key in non us-east-1 zone" ignore {
-    val objectKey = "abc/DEF/2017/06/15/1234 (1).TXT"
+  it should "upload and download with speical characters in the key in non us-east-1 zone" in {
+    // we want ASCII and other UTF-8 characters!
+    val objectKey = "føldęrü/1234()[]><!? .TXT"
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
     val results = for {
