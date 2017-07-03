@@ -59,7 +59,13 @@ private[alpakka] object CanonicalRequest {
       pathEncodeRec(builder ++= uriEncodePath(head), tail)
   }
 
-  private def toHexUtf8(ch: Char): String = "%" + Integer.toHexString(ch.toInt)
+  private def toHexUtf8(ch: Char): String = ch match {
+    case asciiChar if ch >= 0 && ch <= 127 =>
+      "%" + Integer.toHexString(asciiChar.toInt).toUpperCase
+    case otherChar =>
+      // I guess this adds quite some overhead but the detailed api is not public
+      Path(otherChar.toString).toString()
+  }
 
   // translated from java example at http://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
   private def uriEncodePath(input: String, encodeSlash: Boolean = true): String =
@@ -73,4 +79,5 @@ private[alpakka] object CanonicalRequest {
       case ch =>
         toHexUtf8(ch)
     }
+
 }
