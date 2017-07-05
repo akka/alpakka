@@ -11,10 +11,12 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import org.junit.Test;
+import org.junit.Ignore;
 
 import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
 
+@Ignore("Disabled until we fix https://github.com/akka/alpakka/issues/365")
 public class StrictHostCheckingSftpSourceTest extends SftpSupportImpl implements CommonFtpStageTest {
 
   @Test
