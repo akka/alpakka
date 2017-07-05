@@ -11,6 +11,7 @@ import akka.util.ByteString
 import akka.util.ByteString.ByteString1C
 import scala.concurrent.{Future, Promise}
 import java.io.{InputStream, OutputStream}
+import scala.util.control.NonFatal
 
 private[ftp] trait FtpIOGraphStage[FtpClient, S <: RemoteFileSettings, Sh <: Shape]
     extends GraphStageWithMaterializedValue[Sh, Future[IOResult]] {
@@ -137,10 +138,18 @@ private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
       setHandler(
         in,
         new InHandler {
-          override def onPush(): Unit = {
-            write(grab(in))
-            pull(in)
-          }
+          override def onPush(): Unit =
+            try {
+              write(grab(in))
+              pull(in)
+            } catch {
+              case NonFatal(e) ⇒
+                matFailure(e)
+                try osOpt.foreach(_.close())
+                catch { case NonFatal(_) ⇒ }
+                osOpt = None
+                throw e
+            }
 
           override def onUpstreamFinish(): Unit =
             try {
