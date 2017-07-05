@@ -47,37 +47,12 @@ private[alpakka] object CanonicalRequest {
   def signedHeadersString(headers: Seq[HttpHeader]): String =
     headers.map(_.lowercaseName()).distinct.sorted.mkString(";")
 
-  private def pathEncode(path: Path): String = path match {
-    case p if p.isEmpty => "/"
-    case nonEmptyPath => pathEncodeRec(new StringBuilder, nonEmptyPath).toString()
-  }
-
-  @tailrec private def pathEncodeRec(builder: StringBuilder, path: Path): StringBuilder = path match {
-    case Path.Empty ⇒ builder
-    case Path.Slash(tail) ⇒ pathEncodeRec(builder += '/', tail)
-    case Path.Segment(head, tail) ⇒
-      pathEncodeRec(builder ++= uriEncodePath(head), tail)
-  }
-
-  private def toHexUtf8(ch: Char): String = ch match {
-    case asciiChar if ch >= 0 && ch <= 127 =>
-      "%" + Integer.toHexString(asciiChar.toInt).toUpperCase
-    case otherChar =>
-      // I guess this adds quite some overhead but the detailed api is not public
-      Path(otherChar.toString).toString()
-  }
-
-  // translated from java example at http://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
-  private def uriEncodePath(input: String, encodeSlash: Boolean = true): String =
-    input.flatMap {
-      case '/' =>
-        if (encodeSlash) "%2F"
-        else "/"
-      case ch
-          if (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '_' || ch == '-' || ch == '~' || ch == '.' =>
-        ch.toString
-      case ch =>
-        toHexUtf8(ch)
-    }
+  private def pathEncode(path: Path): String =
+    if (path.isEmpty) "/"
+    else
+      path.toString().flatMap {
+        case ch if "!$&'()*+,;=".contains(ch) => "%" + Integer.toHexString(ch.toInt).toUpperCase
+        case other => other.toString
+      }
 
 }
