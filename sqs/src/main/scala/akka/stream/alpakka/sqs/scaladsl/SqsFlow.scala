@@ -25,7 +25,6 @@ object SqsFlow {
   def grouped(queueUrl: String, batchSize: Int, settings: SqsSinkSettings = SqsSinkSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
   ): Flow[String, Result, NotUsed] = {
-
     val graph = GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._
       val groupingStage: FlowShape[String, Seq[String]] = builder.add(Flow[String].grouped(batchSize))
