@@ -19,4 +19,14 @@ object SqsSink {
       implicit sqsClient: AmazonSQSAsync
   ): Sink[String, Future[Done]] =
     SqsFlow.apply(queueUrl, settings).toMat(Sink.ignore)(Keep.right)
+
+  def grouped(queueUrl: String, batchSize: Int, settings: SqsSinkSettings = SqsSinkSettings.Defaults)(
+      implicit sqsClient: AmazonSQSAsync
+  ): Sink[String, Future[Done]] =
+    SqsFlow.grouped(queueUrl, batchSize, settings).toMat(Sink.ignore)(Keep.right)
+
+  def batched(queueUrl: String, settings: SqsSinkSettings = SqsSinkSettings.Defaults)(
+      implicit sqsClient: AmazonSQSAsync
+  ): Sink[Seq[String], Future[Done]] =
+    SqsFlow.batch(queueUrl, settings).toMat(Sink.ignore)(Keep.right)
 }
