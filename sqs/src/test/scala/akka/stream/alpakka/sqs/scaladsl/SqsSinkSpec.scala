@@ -279,7 +279,8 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
           "notused - 2",
           "notused - 3",
           "notused - 4"
-        ))
+        )
+      )
       .sendComplete()
     Await.result(future, 1.second) shouldBe Done
 
