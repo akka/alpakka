@@ -133,15 +133,17 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val awsSqsClient = spy(sqsClient)
     //#ignore
-    val future = SqsSource(queue)(awsSqsClient)
+    val result = SqsSource(queue)(awsSqsClient)
       .take(1)
       .map { m: Message =>
         (m, Ignore())
       }
-      .runWith(SqsAckSink(queue)(awsSqsClient))
+      .via(SqsAckFlow(queue)(awsSqsClient))
+      .runWith(TestSink.probe[AckResult])
+      .requestNext(1.second)
     //#ignore
 
-    Await.result(future, 1.second) shouldBe Done
+    result.metadata shouldBe empty
+    result.message shouldBe "alpakka-4"
   }
-
 }
