@@ -7,7 +7,7 @@ import java.util.UUID
 import java.util.concurrent.{CompletableFuture, Future}
 
 import akka.Done
-import akka.stream.alpakka.sqs.BatchException
+import akka.stream.alpakka.sqs.{BatchException, SqsFlowSettings}
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.testkit.scaladsl.TestSource
 import com.amazonaws.handlers.AsyncHandler
@@ -131,7 +131,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       }
     )
 
-    val (probe, future) = TestSource.probe[String].toMat(SqsSink.grouped("notused", 10))(Keep.both).run()
+    val (probe, future) = TestSource.probe[String].toMat(SqsSink.grouped("notused"))(Keep.both).run()
     probe.sendNext("notused").sendComplete()
     Await.result(future, 1.second) shouldBe Done
 
@@ -160,8 +160,9 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
         }
       }
     )
+    val settings: SqsFlowSettings = SqsFlowSettings(5, 500.millis, 1)
 
-    val (probe, future) = TestSource.probe[String].toMat(SqsSink.grouped("notused", 5))(Keep.both).run()
+    val (probe, future) = TestSource.probe[String].toMat(SqsSink.grouped("notused", settings))(Keep.both).run()
     probe
       .sendNext("notused - 1")
       .sendNext("notused - 2")
@@ -205,7 +206,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       }
     )
 
-    val (probe, future) = TestSource.probe[String].toMat(SqsSink.grouped("notused", 5))(Keep.both).run()
+    val (probe, future) = TestSource.probe[String].toMat(SqsSink.grouped("notused"))(Keep.both).run()
     probe
       .sendNext("notused - 1")
       .sendNext("notused - 2")
@@ -234,7 +235,8 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       }
     )
 
-    val (probe, future) = TestSource.probe[String].toMat(SqsSink.grouped("notused", 5))(Keep.both).run()
+    val settings: SqsFlowSettings = SqsFlowSettings(5, 500.millis, 1)
+    val (probe, future) = TestSource.probe[String].toMat(SqsSink.grouped("notused", settings))(Keep.both).run()
     probe
       .sendNext("notused - 1")
       .sendNext("notused - 2")
@@ -249,7 +251,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
     verify(sqsClient, times(1)).sendMessageBatchAsync(any[SendMessageBatchRequest](), any())
   }
 
-  it should "sends all messages in batch" in {
+  it should "send all messages in batch" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
     when(sqsClient.sendMessageBatchAsync(any[SendMessageBatchRequest](), any())).thenAnswer(
       new Answer[AnyRef] {
