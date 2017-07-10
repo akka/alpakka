@@ -7,8 +7,10 @@ import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.sqs.Delete;
+import akka.stream.alpakka.sqs.Ignore;
 import akka.stream.alpakka.sqs.MessageAction;
 import akka.stream.alpakka.sqs.ChangeMessageVisibility;
+import akka.stream.alpakka.sqs.scaladsl.AckResult;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
 import akka.testkit.JavaTestKit;
@@ -18,6 +20,7 @@ import com.amazonaws.services.sqs.model.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.Option;
 import scala.Tuple2;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -25,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
 
 public class SqsAckSinkTest extends BaseSqsTest {
 
@@ -133,5 +137,26 @@ public class SqsAckSinkTest extends BaseSqsTest {
                         any(ChangeMessageVisibilityRequest.class),
                         any()
                 );
+    }
+
+    @Test
+    public void testIgnore() throws Exception {
+        final String queueUrl = "none";
+        AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
+
+        //#ignore
+        Tuple2<Message, MessageAction> pair = new Tuple2<>(
+                new Message().withBody("test"),
+                new Ignore()
+        );
+        CompletionStage<AckResult> stage = Source
+                .single(pair)
+                .via(SqsAckFlow.create(queueUrl, awsClient))
+                .runWith(Sink.head(), materializer);
+        AckResult result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        //#ignore
+
+        assertEquals(Option.empty(), result.metadata());
+        assertEquals("test", result.message());
     }
 }
