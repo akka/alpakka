@@ -8,8 +8,6 @@ import java.net.URLEncoder
 import akka.http.scaladsl.model.Uri.{Path, Query}
 import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
 
-import scala.annotation.tailrec
-
 // Documentation: http://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
 private[alpakka] case class CanonicalRequest(method: String,
                                              uri: String,
