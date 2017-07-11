@@ -17,6 +17,21 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Ignore, Matchers}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+
+/*
+ * This is an integration test and ignored by default
+ *
+ * For running the tests you need to create 2 buckets:
+ *  - one in region us-east-1
+ *  - one in an other region (eg eu-central-1)
+ * Update the bucket name and regions in the code below
+ *
+ * Set your keys aws access-key-id and secret-access-key in src/test/resources/application.conf
+ *
+ * Comment @ignore and run the tests
+ * (tests that do listing counts might need some tweaking)
+ *
+ */
 @Ignore
 class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with ScalaFutures {
 
