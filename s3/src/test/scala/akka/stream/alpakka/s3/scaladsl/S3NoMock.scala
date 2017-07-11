@@ -17,7 +17,6 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Ignore, Matchers}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-
 /*
  * This is an integration test and ignored by default
  *
