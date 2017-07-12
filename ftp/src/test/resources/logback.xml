@@ -29,7 +29,13 @@
         </encoder>
     </appender>
 
-    <!-- Log at the INFO level. Change the main loglevel here. -->
+    <!--
+    <logger name="org.apache.sshd.server" level="debug" />
+    <logger name="net.schmizz.sshj" level="debug"/>
+    <logger name="net.schmizz.sshj.transport" level="trace" />
+    -->
+
+    <!-- Log at the error level. Change the main loglevel here. -->
     <!-- Note that custom loggers obey their own levels. -->
     <root level="error">
         <appender-ref ref="console"/>

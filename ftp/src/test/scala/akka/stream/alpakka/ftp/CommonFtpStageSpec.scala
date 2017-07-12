@@ -3,32 +3,26 @@
  */
 package akka.stream.alpakka.ftp
 
-import java.io.File
-import java.net.InetAddress
-import java.nio.file.{Files, Paths}
-
 import akka.stream.IOResult
 import akka.stream.alpakka.ftp.FtpCredentials.NonAnonFtpCredentials
+import akka.stream.alpakka.ftp.SftpSupportImpl.{CLIENT_PRIVATE_KEY_PASSPHRASE => ClientPrivateKeyPassphrase}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
 import org.scalatest.time.{Millis, Seconds, Span}
-import org.scalatest.Ignore
 import scala.concurrent.duration._
 import scala.util.Random
 import java.nio.file.attribute.PosixFilePermission
+import java.nio.file.{Files, Paths}
+import java.net.InetAddress
 
 final class FtpStageSpec extends BaseFtpSpec with CommonFtpStageSpec
-/* Disabled until we fix https://github.com/akka/alpakka/issues/365 */
-@Ignore
 final class SftpStageSpec extends BaseSftpSpec with CommonFtpStageSpec
 final class FtpsStageSpec extends BaseFtpsSpec with CommonFtpStageSpec {
   setAuthValue("TLS")
   setUseImplicit(false)
 }
 
-/* Disabled until we fix https://github.com/akka/alpakka/issues/365 */
-@Ignore
 final class RawKeySftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
   override val settings = SftpSettings(
     InetAddress.getByName("localhost"),
@@ -36,12 +30,15 @@ final class RawKeySftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
     NonAnonFtpCredentials("different user and password", "will fail password auth"),
     strictHostKeyChecking = false,
     knownHosts = None,
-    Some(RawKeySftpIdentity("id", Files.readAllBytes(Paths.get("ftp/src/test/resources/client.pem"))))
+    Some(
+      RawKeySftpIdentity(
+        Files.readAllBytes(Paths.get(getClientPrivateKeyFile.getPath)),
+        privateKeyFilePassphrase = Some(ClientPrivateKeyPassphrase)
+      )
+    )
   )
 }
 
-/* Disabled until we fix https://github.com/akka/alpakka/issues/365 */
-@Ignore
 final class KeyFileSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
   override val settings = SftpSettings(
     InetAddress.getByName("localhost"),
@@ -49,21 +46,22 @@ final class KeyFileSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
     NonAnonFtpCredentials("different user and password", "will fail password auth"),
     strictHostKeyChecking = false,
     knownHosts = None,
-    Some(KeyFileSftpIdentity("ftp/src/test/resources/client.pem"))
+    Some(
+      KeyFileSftpIdentity(getClientPrivateKeyFile.getPath, Some(ClientPrivateKeyPassphrase))
+    )
   )
 }
 
-/* Disabled until we fix https://github.com/akka/alpakka/issues/365 */
-@Ignore
 final class StrictHostCheckingSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
   override val settings = SftpSettings(
     InetAddress.getByName("localhost"),
     getPort,
     NonAnonFtpCredentials("different user and password", "will fail password auth"),
     strictHostKeyChecking = true,
-    knownHosts = Some(new File("ftp/src/test/resources/known_hosts").getAbsolutePath),
-    Some(KeyFileSftpIdentity("ftp/src/test/resources/client.pem", None, None)),
-    options = Map("HostKeyAlgorithms" -> "+ssh-dss")
+    knownHosts = Some(getKnownHostsFile.getPath),
+    Some(
+      KeyFileSftpIdentity(getClientPrivateKeyFile.getPath, Some(ClientPrivateKeyPassphrase))
+    )
   )
 }
 
@@ -154,13 +152,13 @@ trait CommonFtpStageSpec extends BaseSpec {
   "FtpBrowserSource & FtpIOSource" should {
     "work together retrieving a list of files" in {
       val basePath = ""
-      val numOfFiles = 20
-      generateFiles(numOfFiles, 10, basePath)
+      val numOfFiles = 10
+      generateFiles(numOfFiles, numOfFiles, basePath)
       val probe = listFiles(basePath)
         .mapAsyncUnordered(1)(file => retrieveFromPath(file.path).to(Sink.ignore).run())
         .toMat(TestSink.probe)(Keep.right)
         .run()
-      val result = probe.request(21).expectNextN(20)
+      val result = probe.request(numOfFiles + 1).expectNextN(numOfFiles)
       probe.expectComplete()
 
       val expectedNumOfBytes = getLoremIpsum.getBytes().length * numOfFiles
@@ -182,8 +180,6 @@ trait CommonFtpStageSpec extends BaseSpec {
 
           val storedContents = getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName)
           storedContents shouldBe getLoremIpsum.getBytes
-
-          cleanFiles()
         }
       }
     }
@@ -248,5 +244,4 @@ trait CommonFtpStageSpec extends BaseSpec {
       result.status.failed.get shouldBe a[ArithmeticException]
     }
   }
-
 }

@@ -4,92 +4,108 @@
 package akka.stream.alpakka.ftp
 package impl
 
-import com.jcraft.jsch.{ChannelSftp, JSch}
-
+import net.schmizz.sshj.SSHClient
+import net.schmizz.sshj.sftp.{OpenMode, RemoteResourceInfo, SFTPClient}
+import net.schmizz.sshj.transport.verification.PromiscuousVerifier
+import net.schmizz.sshj.userauth.keyprovider.OpenSSHKeyFile
+import net.schmizz.sshj.userauth.password.PasswordUtils
+import net.schmizz.sshj.xfer.FilePermission
 import scala.collection.immutable
 import scala.util.Try
 import scala.collection.JavaConverters._
-import java.io.{InputStream, OutputStream}
-import java.nio.file.Paths
-import scala.collection.JavaConversions._
-import java.nio.file.attribute.PosixFilePermissions
+import java.nio.file.attribute.PosixFilePermission
+import java.io.{File, IOException, InputStream, OutputStream}
 
-import com.jcraft.jsch.ChannelSftp.{APPEND, OVERWRITE}
+private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
 
-private[ftp] trait SftpOperations { _: FtpLike[JSch, SftpSettings] =>
+  type Handler = SFTPClient
 
-  type Handler = ChannelSftp
+  def connect(connectionSettings: SftpSettings)(implicit ssh: SSHClient): Try[Handler] = Try {
+    import connectionSettings._
 
-  private def configureIdentity(sftpIdentity: SftpIdentity)(implicit ftpClient: JSch) = sftpIdentity match {
-    case identity: RawKeySftpIdentity =>
-      ftpClient.addIdentity(identity.name, identity.privateKey, identity.publicKey.orNull, identity.password.orNull)
-    case identity: KeyFileSftpIdentity =>
-      ftpClient.addIdentity(identity.privateKey, identity.publicKey.orNull, identity.password.orNull)
+    if (!strictHostKeyChecking)
+      ssh.addHostKeyVerifier(new PromiscuousVerifier)
+    else
+      knownHosts.foreach(path => ssh.loadKnownHosts(new File(path)))
+
+    ssh.connect(host.getHostAddress, port)
+
+    if (credentials.password != "" && sftpIdentity.isEmpty)
+      ssh.authPassword(credentials.username, credentials.password)
+
+    sftpIdentity.foreach(setIdentity(_, credentials.username))
+
+    ssh.newSFTPClient()
   }
 
-  def connect(connectionSettings: SftpSettings)(implicit ftpClient: JSch): Try[Handler] = Try {
-    connectionSettings.sftpIdentity.foreach(configureIdentity)
-    connectionSettings.knownHosts.foreach(ftpClient.setKnownHosts)
-    val session = ftpClient.getSession(
-      connectionSettings.credentials.username,
-      connectionSettings.host.getHostAddress,
-      connectionSettings.port
-    )
-    session.setPassword(connectionSettings.credentials.password)
-    val config = new java.util.Properties
-    config.setProperty("StrictHostKeyChecking", if (connectionSettings.strictHostKeyChecking) "yes" else "no")
-    config.putAll(connectionSettings.options)
-    session.setConfig(config)
-    session.connect()
-    val channel = session.openChannel("sftp").asInstanceOf[ChannelSftp]
-    channel.connect()
-    channel
-  }
-
-  def disconnect(handler: Handler)(implicit ftpClient: JSch): Unit = {
-    val session = handler.getSession
-    if (session.isConnected) {
-      session.disconnect()
-    }
-    if (handler.isConnected) {
-      handler.disconnect()
-    }
+  def disconnect(handler: Handler)(implicit ssh: SSHClient): Unit = {
+    handler.close()
+    if (ssh.isConnected) ssh.disconnect()
   }
 
   def listFiles(basePath: String, handler: Handler): immutable.Seq[FtpFile] = {
     val path = if (!basePath.isEmpty && basePath.head != '/') s"/$basePath" else basePath
-    import scala.collection.JavaConversions.iterableAsScalaIterable
-    val entries = handler.ls(path).toSeq.filter {
-      case entry: Handler#LsEntry => entry.getFilename != "." && entry.getFilename != ".."
-    } // TODO
-    entries.map {
-      case entry: Handler#LsEntry =>
-        FtpFile(
-          entry.getFilename,
-          Paths.get(s"$path/${entry.getFilename}").normalize.toString,
-          entry.getAttrs.isDir,
-          entry.getAttrs.getSize,
-          entry.getAttrs.getMTime * 1000L,
-          getPosixFilePermissions(entry.getAttrs.getPermissionsString)
-        )
+    val entries = handler.ls(path).asScala
+    entries.map { file =>
+      FtpFile(
+        file.getName,
+        file.getPath,
+        file.isDirectory,
+        file.getAttributes.getSize,
+        file.getAttributes.getMtime * 1000L,
+        getPosixFilePermissions(file)
+      )
     }.toVector
   }
 
-  private def getPosixFilePermissions(permissions: String) =
-    PosixFilePermissions
-      .fromString(
-        permissions.replace('s', '-').drop(1)
-      )
-      .asScala
-      .toSet
+  private def getPosixFilePermissions(file: RemoteResourceInfo) = {
+    import FilePermission._, PosixFilePermission._
+    file.getAttributes.getPermissions.asScala.collect {
+      case USR_R => OWNER_READ
+      case USR_W => OWNER_WRITE
+      case USR_X => OWNER_EXECUTE
+      case GRP_R => GROUP_READ
+      case GRP_W => GROUP_WRITE
+      case GRP_X => GROUP_EXECUTE
+      case OTH_R => OTHERS_READ
+      case OTH_W => OTHERS_WRITE
+      case OTH_X => OTHERS_EXECUTE
+    }.toSet
+  }
 
-  def listFiles(handler: Handler): immutable.Seq[FtpFile] = listFiles(".", handler) // TODO
+  def listFiles(handler: Handler): immutable.Seq[FtpFile] = listFiles(".", handler)
 
   def retrieveFileInputStream(name: String, handler: Handler): Try[InputStream] = Try {
-    handler.get(name)
+    val remoteFile = handler.open(name, Set(OpenMode.READ).asJava)
+    val is = new remoteFile.RemoteFileInputStream()
+    Option(is).getOrElse(throw new IOException(s"$name: No such file or directory"))
   }
 
   def storeFileOutputStream(name: String, handler: Handler, append: Boolean): Try[OutputStream] = Try {
-    handler.put(name, if (append) APPEND else OVERWRITE)
+    import OpenMode._
+    val openModes = Set(WRITE, CREAT) ++ (if (append) Set(APPEND) else Set())
+    val remoteFile = handler.open(name, openModes.asJava)
+    val os = new remoteFile.RemoteFileOutputStream()
+    Option(os).getOrElse(throw new IOException(s"Could not write to $name"))
+  }
+
+  private[this] def setIdentity(identity: SftpIdentity, username: String)(implicit ssh: SSHClient) = {
+    def bats(array: Array[Byte]): String = new String(array, "UTF-8")
+
+    def initKey(f: OpenSSHKeyFile => Unit) = {
+      val key = new OpenSSHKeyFile
+      f(key)
+      ssh.authPublickey(username, key)
+    }
+
+    val passphrase =
+      identity.privateKeyFilePassphrase.map(pass => PasswordUtils.createOneOff(bats(pass).toCharArray)).orNull
+
+    identity match {
+      case id: RawKeySftpIdentity =>
+        initKey(_.init(bats(id.privateKey), id.publicKey.map(bats).orNull, passphrase))
+      case id: KeyFileSftpIdentity =>
+        initKey(_.init(new File(id.privateKey), passphrase))
+    }
   }
 }
