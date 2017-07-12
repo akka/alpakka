@@ -6,7 +6,7 @@ package akka.stream.alpakka.ftp.impl
 import akka.stream.alpakka.ftp.FtpCredentials.{AnonFtpCredentials, NonAnonFtpCredentials}
 import akka.stream.alpakka.ftp.{FtpFileSettings, RemoteFileSettings, SftpSettings}
 import akka.stream.alpakka.ftp.RemoteFileSettings._
-import com.jcraft.jsch.JSch
+import net.schmizz.sshj.SSHClient
 import org.apache.commons.net.ftp.FTPClient
 import java.net.InetAddress
 
@@ -91,11 +91,11 @@ private[ftp] trait FtpsSource extends FtpSourceFactory[FTPClient] {
   protected val ftpIOSinkName: String = FtpsIOSinkName
 }
 
-private[ftp] trait SftpSource extends FtpSourceFactory[JSch] {
+private[ftp] trait SftpSource extends FtpSourceFactory[SSHClient] {
   protected final val sFtpBrowserSourceName = "sFtpBrowserSource"
   protected final val sFtpIOSourceName = "sFtpIOSource"
   protected final val sFtpIOSinkName = "sFtpIOSink"
-  protected val ftpClient: () => JSch = () => new JSch
+  protected val ftpClient: () => SSHClient = () => new SSHClient
   protected val ftpBrowserSourceName: String = sFtpBrowserSourceName
   protected val ftpIOSourceName: String = sFtpIOSourceName
   protected val ftpIOSinkName: String = sFtpIOSinkName
@@ -161,5 +161,5 @@ private[ftp] trait FtpsSourceParams extends FtpsSource with FtpsDefaultSettings 
 
 private[ftp] trait SftpSourceParams extends SftpSource with SftpDefaultSettings {
   type S = SftpSettings
-  protected[this] val ftpLike: FtpLike[JSch, S] = FtpLike.sFtpLikeInstance
+  protected[this] val ftpLike: FtpLike[SSHClient, S] = FtpLike.sFtpLikeInstance
 }

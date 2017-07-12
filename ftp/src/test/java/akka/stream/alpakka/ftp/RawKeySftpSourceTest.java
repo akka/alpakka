@@ -10,7 +10,6 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import org.junit.Test;
-
 import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -46,7 +45,10 @@ public class RawKeySftpSourceTest extends SftpSupportImpl implements CommonFtpSt
             .withPort(getPort())
             .withCredentials(new FtpCredentials.NonAnonFtpCredentials("different user and password", "will fail password auth"))
             .withStrictHostKeyChecking(false) // strictHostKeyChecking
-            .withSftpIdentity(SftpIdentity.createRawSftpIdentity("id", Files.readAllBytes(Paths.get("ftp/src/test/resources/client.pem")))
+            .withSftpIdentity(
+                    SftpIdentity.createRawSftpIdentity(
+                            Files.readAllBytes(Paths.get(getClientPrivateKeyFile().getPath())),
+                            CLIENT_PRIVATE_KEY_PASSPHRASE)
     );
     //#create-settings
     return settings;

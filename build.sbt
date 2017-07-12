@@ -97,7 +97,8 @@ lazy val ftp = project
   .settings(
     name := "akka-stream-alpakka-ftp",
     Dependencies.Ftp,
-    parallelExecution in Test := false
+    parallelExecution in Test := false,
+    fork in Test := true
   )
 
 lazy val geode = project
