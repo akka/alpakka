@@ -8,8 +8,6 @@ import java.net.URLEncoder
 import akka.http.scaladsl.model.Uri.{Path, Query}
 import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
 
-import scala.annotation.tailrec
-
 // Documentation: http://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
 private[alpakka] case class CanonicalRequest(method: String,
                                              uri: String,
@@ -47,30 +45,12 @@ private[alpakka] object CanonicalRequest {
   def signedHeadersString(headers: Seq[HttpHeader]): String =
     headers.map(_.lowercaseName()).distinct.sorted.mkString(";")
 
-  private def pathEncode(path: Path): String = path match {
-    case p if p.isEmpty => "/"
-    case nonEmptyPath => pathEncodeRec(new StringBuilder, nonEmptyPath).toString()
-  }
+  private def pathEncode(path: Path): String =
+    if (path.isEmpty) "/"
+    else
+      path.toString().flatMap {
+        case ch if "!$&'()*+,;=".contains(ch) => "%" + Integer.toHexString(ch.toInt).toUpperCase
+        case other => other.toString
+      }
 
-  @tailrec private def pathEncodeRec(builder: StringBuilder, path: Path): StringBuilder = path match {
-    case Path.Empty ⇒ builder
-    case Path.Slash(tail) ⇒ pathEncodeRec(builder += '/', tail)
-    case Path.Segment(head, tail) ⇒
-      pathEncodeRec(builder ++= uriEncodePath(head), tail)
-  }
-
-  private def toHexUtf8(ch: Char): String = "%" + Integer.toHexString(ch.toInt)
-
-  // translated from java example at http://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
-  private def uriEncodePath(input: String, encodeSlash: Boolean = true): String =
-    input.flatMap {
-      case '/' =>
-        if (encodeSlash) "%2F"
-        else "/"
-      case ch
-          if (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '_' || ch == '-' || ch == '~' || ch == '.' =>
-        ch.toString
-      case ch =>
-        toHexUtf8(ch)
-    }
 }
