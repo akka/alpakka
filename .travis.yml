@@ -1,6 +1,6 @@
 language: scala
 
-sudo: required
+sudo: false
 
 scala:
   - "2.11.11"
