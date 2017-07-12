@@ -39,7 +39,7 @@ final case class SuccessfulUploadPart(multipartUpload: MultipartUpload, index: I
 final case class FailedUploadPart(multipartUpload: MultipartUpload, index: Int, exception: Throwable)
     extends UploadPartResponse
 
-final case class FailedUpload(reasons: Seq[Throwable]) extends Exception
+final case class FailedUpload(reasons: Seq[Throwable]) extends Exception(reasons.map(_.getMessage).mkString(", "))
 
 final case class CompleteMultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
