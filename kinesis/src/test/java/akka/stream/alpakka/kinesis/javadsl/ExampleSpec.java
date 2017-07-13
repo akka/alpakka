@@ -15,6 +15,7 @@ import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.model.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import scala.concurrent.duration.FiniteDuration;
@@ -59,6 +60,7 @@ public class ExampleSpec {
         amazonKinesisAsync = setclient.second();
     }
 
+    @Ignore("This test appears to trigger a deadlock, see https://github.com/akka/alpakka/issues/390")
     @Test
     public void PullRecord() throws Exception {
 
