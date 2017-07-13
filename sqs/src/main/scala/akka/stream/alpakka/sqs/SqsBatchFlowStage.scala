@@ -102,8 +102,14 @@ private[sqs] final class SqsBatchFlowStage(queueUrl: String, sqsClient: AmazonSQ
 
                 override def onSuccess(request: SendMessageBatchRequest, result: SendMessageBatchResult): Unit =
                   if (!result.getFailed.isEmpty) {
+                    val nrOfFailedMessages: Int = result.getFailed.size()
                     val batchException: BatchException =
-                      BatchException(messages.length, new Exception("Some messages are failed to send"))
+                      BatchException(
+                        batchSize = messages.length,
+                        cause = new Exception(
+                          s"Some messages are failed to send. $nrOfFailedMessages of $nrOfMessages messages are failed"
+                        )
+                      )
                     responsePromise.failure(batchException)
                     failureCallback.invoke(batchException)
                   } else {

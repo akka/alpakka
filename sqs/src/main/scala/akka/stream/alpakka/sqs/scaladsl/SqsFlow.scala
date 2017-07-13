@@ -5,10 +5,10 @@ package akka.stream.alpakka.sqs.scaladsl
 
 import akka.NotUsed
 import akka.stream.FlowShape
-import akka.stream.alpakka.sqs.{SqsBatchFlowStage, SqsFlowSettings, SqsFlowStage, SqsSinkSettings}
+import akka.stream.alpakka.sqs.{SqsBatchFlowSettings, SqsBatchFlowStage, SqsFlowStage, SqsSinkSettings}
 import akka.stream.scaladsl.{Flow, GraphDSL}
 import com.amazonaws.services.sqs.AmazonSQSAsync
-import com.amazonaws.services.sqs.model.{SendMessageBatchResult, SendMessageResult}
+import com.amazonaws.services.sqs.model.SendMessageResult
 
 import scala.concurrent.Future
 
@@ -22,7 +22,7 @@ object SqsFlow {
   ): Flow[String, Result, NotUsed] =
     Flow.fromGraph(new SqsFlowStage(queueUrl, sqsClient)).mapAsync(settings.maxInFlight)(identity)
 
-  def grouped(queueUrl: String, settings: SqsFlowSettings = SqsFlowSettings.Defaults)(
+  def grouped(queueUrl: String, settings: SqsBatchFlowSettings = SqsBatchFlowSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
   ): Flow[String, Result, NotUsed] = {
     val graph = GraphDSL.create() { implicit builder =>
@@ -46,10 +46,10 @@ object SqsFlow {
     Flow.fromGraph(graph)
   }
 
-  def batch(queueUrl: String, settings: SqsSinkSettings = SqsSinkSettings.Defaults)(
+  def batch(queueUrl: String, settings: SqsBatchFlowSettings = SqsBatchFlowSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
   ): Flow[Seq[String], List[Result], NotUsed] =
-    Flow.fromGraph(new SqsBatchFlowStage(queueUrl, sqsClient)).mapAsync(settings.maxInFlight)(identity)
+    Flow.fromGraph(new SqsBatchFlowStage(queueUrl, sqsClient)).mapAsync(settings.concurrentRequest)(identity)
 }
 
 /**

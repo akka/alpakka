@@ -18,8 +18,36 @@ object SqsFlow {
     scaladsl.SqsFlow.apply(queueUrl, settings)(sqsClient).asJava
 
   /**
+   * Java API: creates a flow based on [[SqsBatchFlowStage]] for a SQS queue using an [[AmazonSQSAsync]]
+   */
+  def grouped(queueUrl: String,
+              settings: SqsBatchFlowSettings,
+              sqsClient: AmazonSQSAsync): Flow[String, Result, NotUsed] =
+    scaladsl.SqsFlow.grouped(queueUrl, settings)(sqsClient).asJava
+
+  /**
+   * Java API: creates a flow based on [[SqsBatchFlowStage]] for a SQS queue using an [[AmazonSQSAsync]]
+   */
+  def batch(queueUrl: String,
+            settings: SqsBatchFlowSettings,
+            sqsClient: AmazonSQSAsync): Flow[Seq[String], Seq[Result], NotUsed] =
+    scaladsl.SqsFlow.batch(queueUrl, settings)(sqsClient).asJava
+
+  /**
    * Java API: creates a flow based on [[SqsFlowStage]] for a SQS queue using an [[AmazonSQSAsync]] with default settings.
    */
   def create(queueUrl: String, sqsClient: AmazonSQSAsync): Flow[String, Result, NotUsed] =
     create(queueUrl, SqsSinkSettings.Defaults, sqsClient)
+
+  /**
+   * Java API: creates a flow based on [[SqsBatchFlowStage]] for a SQS queue using an [[AmazonSQSAsync]] with default settings
+   */
+  def grouped(queueUrl: String, sqsClient: AmazonSQSAsync): Flow[String, Result, NotUsed] =
+    grouped(queueUrl, SqsBatchFlowSettings.Defaults, sqsClient)
+
+  /**
+   * Java API: creates a flow based on [[SqsBatchFlowStage]] for a SQS queue using an [[AmazonSQSAsync]] with default settings
+   */
+  def batch(queueUrl: String, sqsClient: AmazonSQSAsync): Flow[Seq[String], Seq[Result], NotUsed] =
+    scaladsl.SqsFlow.batch(queueUrl, SqsBatchFlowSettings.Defaults)(sqsClient).asJava
 }

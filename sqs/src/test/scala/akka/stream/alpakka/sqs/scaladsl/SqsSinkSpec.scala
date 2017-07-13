@@ -7,7 +7,7 @@ import java.util.UUID
 import java.util.concurrent.{CompletableFuture, Future}
 
 import akka.Done
-import akka.stream.alpakka.sqs.{BatchException, SqsFlowSettings}
+import akka.stream.alpakka.sqs.{BatchException, SqsBatchFlowSettings}
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.testkit.scaladsl.TestSource
 import com.amazonaws.handlers.AsyncHandler
@@ -160,7 +160,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
         }
       }
     )
-    val settings: SqsFlowSettings = SqsFlowSettings(5, 500.millis, 1)
+    val settings: SqsBatchFlowSettings = SqsBatchFlowSettings(5, 500.millis, 1)
 
     val (probe, future) = TestSource.probe[String].toMat(SqsSink.grouped("notused", settings))(Keep.both).run()
     probe
@@ -235,7 +235,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       }
     )
 
-    val settings: SqsFlowSettings = SqsFlowSettings(5, 500.millis, 1)
+    val settings: SqsBatchFlowSettings = SqsBatchFlowSettings(5, 500.millis, 1)
     val (probe, future) = TestSource.probe[String].toMat(SqsSink.grouped("notused", settings))(Keep.both).run()
     probe
       .sendNext("notused - 1")
@@ -251,7 +251,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
     verify(sqsClient, times(1)).sendMessageBatchAsync(any[SendMessageBatchRequest](), any())
   }
 
-  it should "send all messages in batch" in {
+  it should "send all batches of messages" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
     when(sqsClient.sendMessageBatchAsync(any[SendMessageBatchRequest](), any())).thenAnswer(
       new Answer[AnyRef] {
@@ -273,7 +273,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       }
     )
 
-    val (probe, future) = TestSource.probe[Seq[String]].toMat(SqsSink.batched("notused"))(Keep.both).run()
+    val (probe, future) = TestSource.probe[Seq[String]].toMat(SqsSink.batch("notused"))(Keep.both).run()
     probe
       .sendNext(
         Seq(
@@ -283,9 +283,17 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
           "notused - 4"
         )
       )
+      .sendNext(
+        Seq(
+          "notused - 5",
+          "notused - 6",
+          "notused - 7",
+          "notused - 8"
+        )
+      )
       .sendComplete()
     Await.result(future, 1.second) shouldBe Done
 
-    verify(sqsClient, times(1)).sendMessageBatchAsync(any[SendMessageBatchRequest](), any())
+    verify(sqsClient, times(2)).sendMessageBatchAsync(any[SendMessageBatchRequest](), any())
   }
 }
