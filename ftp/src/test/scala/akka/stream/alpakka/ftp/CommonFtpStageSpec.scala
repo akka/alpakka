@@ -15,6 +15,7 @@ import scala.util.Random
 import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.{Files, Paths}
 import java.net.InetAddress
+import org.scalatest.concurrent.Eventually
 
 final class FtpStageSpec extends BaseFtpSpec with CommonFtpStageSpec
 final class SftpStageSpec extends BaseSftpSpec with CommonFtpStageSpec
@@ -65,7 +66,7 @@ final class StrictHostCheckingSftpSourceSpec extends BaseSftpSpec with CommonFtp
   )
 }
 
-trait CommonFtpStageSpec extends BaseSpec {
+trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
   implicit val system = getSystem
   implicit val mat = getMaterializer
@@ -242,6 +243,25 @@ trait CommonFtpStageSpec extends BaseSpec {
       val result = brokenSource.runWith(storeToPath(s"/$fileName", append = false)).futureValue
 
       result.status.failed.get shouldBe a[ArithmeticException]
+    }
+
+    "fail and report the exception in the result status if connection fails" in {
+      def waitForUploadToStart(fileName: String) =
+        eventually {
+          noException should be thrownBy getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName)
+          getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName).length shouldBe >(0)
+        }
+
+      val fileName = "sample_io"
+      val infiniteSource = Source.repeat(ByteString(0x00))
+
+      val future = infiniteSource.runWith(storeToPath(s"/$fileName", append = false))
+      waitForUploadToStart(fileName)
+      stopServer()
+      val result = future.futureValue
+      startServer()
+
+      result.status.failed.get shouldBe a[Exception]
     }
   }
 }
