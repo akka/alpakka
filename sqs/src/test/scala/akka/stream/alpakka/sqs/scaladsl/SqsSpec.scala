@@ -3,7 +3,7 @@
  */
 package akka.stream.alpakka.sqs.scaladsl
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.stream.alpakka.sqs.{Ack, RequeueWithDelay, SqsSourceSettings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
@@ -12,7 +12,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{spy, verify}
 import org.scalatest.{FlatSpec, Matchers}
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
@@ -121,6 +121,48 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     Await.result(future, 1.second) shouldBe Done
     verify(awsSqsClient).sendMessageAsync(any[SendMessageRequest], any)
+  }
+
+  it should "publish messages by grouping and pull them" taggedAs Integration in {
+    val queue = randomQueueUrl()
+
+    //#group
+    val messages = for (i <- 0 until 20) yield s"Message - $i"
+
+    val future = Source(messages).runWith(SqsSink.grouped(queue))
+    Await.ready(future, 1.second)
+    //#group
+
+    val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
+    var nrOfMessages = 0
+    for (i <- 0 until 20) {
+      probe.requestNext()
+      nrOfMessages += 1
+    }
+
+    assert(nrOfMessages == 20)
+    probe.cancel()
+  }
+
+  it should "publish batch of messages and pull them" taggedAs Integration in {
+    val queue = randomQueueUrl()
+
+    //#batch
+    val messages = for (i <- 0 until 20) yield s"Message - $i"
+
+    val future = Source.fromIterator(() => messages.grouped(10)).runWith(SqsSink.batch(queue))
+    Await.ready(future, 1.second)
+    //#batch
+
+    val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
+    var nrOfMessages = 0
+    for (i <- 0 until 20) {
+      probe.requestNext()
+      nrOfMessages += 1
+    }
+
+    assert(nrOfMessages == 20)
+    probe.cancel()
   }
 
 }

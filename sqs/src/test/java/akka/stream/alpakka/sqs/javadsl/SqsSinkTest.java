@@ -13,6 +13,7 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import com.amazonaws.services.sqs.model.Message;
+import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -20,6 +21,7 @@ import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletionStage;
@@ -85,6 +87,29 @@ public class SqsSinkTest extends BaseSqsTest {
 
         assertEquals(1, messages.size());
         assertEquals("alpakka-flow", messages.get(0).getBody());
+    }
+
+    @Test
+    public void sendToQueueWithBatches() throws Exception {
+        final String queueUrl = randomQueueUrl();
+
+        //#group
+        ArrayList<String> messagesToSend = new ArrayList<String>();
+        for (int i = 0; i < 20; i++) {
+            messagesToSend.add("message - " + i);
+        }
+
+        CompletionStage<Done> done = Source
+                .from(messagesToSend)
+                .runWith(SqsSink.grouped(queueUrl,sqsClient), materializer);
+
+        done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        //#group
+
+        List<Message> messagesFirstBatch = sqsClient.receiveMessage(new ReceiveMessageRequest().withQueueUrl(queueUrl).withMaxNumberOfMessages(10)).getMessages();
+        List<Message> messagesSecondBatch = sqsClient.receiveMessage(new ReceiveMessageRequest().withQueueUrl(queueUrl).withMaxNumberOfMessages(10)).getMessages();
+
+        assertEquals(20, messagesFirstBatch.size() + messagesSecondBatch.size());
     }
 
     @Test
