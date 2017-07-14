@@ -138,19 +138,21 @@ private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
       setHandler(
         in,
         new InHandler {
-          override def onPush(): Unit =
+          override def onPush(): Unit = {
             try {
               write(grab(in))
-              pull(in)
             } catch {
               case NonFatal(e) ⇒
                 matFailure(e)
                 try osOpt.foreach(_.close())
-                catch { case NonFatal(_) ⇒ }
+                catch {
+                  case NonFatal(_) ⇒
+                }
                 osOpt = None
                 throw e
             }
-
+            pull(in)
+          }
           override def onUpstreamFinish(): Unit =
             try {
               osOpt.foreach(_.close())
