@@ -246,14 +246,17 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
     }
 
     "fail and report the exception in the result status if connection fails" in {
+      def waitForUploadToStart(fileName: String) =
+        eventually {
+          noException should be thrownBy getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName)
+          getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName).length shouldBe >(0)
+        }
+
       val fileName = "sample_io"
       val infiniteSource = Source.repeat(ByteString(0x00))
 
       val future = infiniteSource.runWith(storeToPath(s"/$fileName", append = false))
-      eventually {
-        noException should be thrownBy getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName)
-        getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName).length shouldBe >(0)
-      }
+      waitForUploadToStart(fileName)
       stopServer()
       val result = future.futureValue
       startServer()
