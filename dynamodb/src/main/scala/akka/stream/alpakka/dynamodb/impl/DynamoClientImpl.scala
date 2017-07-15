@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.dynamodb.impl
 
@@ -14,10 +14,10 @@ import akka.stream.scaladsl.{Sink, Source}
 import com.amazonaws.AmazonServiceException
 import com.amazonaws.http.HttpResponseHandler
 
-class DynamoClientImpl(val settings: DynamoSettings,
-                       val errorResponseHandler: HttpResponseHandler[AmazonServiceException])(
-    implicit protected val system: ActorSystem,
-    implicit protected val materializer: ActorMaterializer)
+class DynamoClientImpl(
+    val settings: DynamoSettings,
+    val errorResponseHandler: HttpResponseHandler[AmazonServiceException]
+)(implicit protected val system: ActorSystem, implicit protected val materializer: ActorMaterializer)
     extends AwsClient[DynamoSettings] {
 
   override protected val service = "dynamodb"

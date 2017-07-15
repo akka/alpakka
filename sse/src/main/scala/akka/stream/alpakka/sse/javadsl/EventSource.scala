@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.sse
 package javadsl
@@ -9,12 +9,12 @@ import akka.http.javadsl.model.{HttpRequest, HttpResponse, Uri}
 import akka.http.scaladsl.model.{HttpResponse => SHttpResponse}
 import akka.stream.Materializer
 import akka.stream.javadsl.Source
-import de.heikoseeberger.akkasse.japi.ServerSentEvent
+import akka.http.javadsl.model.sse.ServerSentEvent
 import java.util.Optional
 import java.util.concurrent.CompletionStage
+import java.util.function.{Function => JFunction}
 import scala.compat.java8.FutureConverters
 import scala.compat.java8.OptionConverters
-import java.util.function.{Function => JFunction}
 
 /**
  * This stream processing stage establishes a continuous source of server-sent events from the given URI.

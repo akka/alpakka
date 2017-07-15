@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package org.apache.ftpserver.filesystem.jimfs.impl;
 
@@ -13,11 +13,14 @@ import java.io.*;
 import java.nio.file.*;
 
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.*;
+
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
 
 public class JimfsFtpFile implements FtpFile {
 
@@ -46,7 +49,7 @@ public class JimfsFtpFile implements FtpFile {
             throw new IllegalArgumentException("fileName can not be empty");
         } else if (fileName.charAt(0) != '/') {
             throw new IllegalArgumentException(
-                    "fileName must be an absolut path");
+                    "fileName must be an absolute path");
         }
 
         this.fileName = fileName;
@@ -236,7 +239,11 @@ public class JimfsFtpFile implements FtpFile {
         boolean retVal = false;
         try {
             if (isWritable()) {
-                Files.createDirectory(path);
+                Set<PosixFilePermission> perms =
+                        PosixFilePermissions.fromString("rw-------");
+                FileAttribute<Set<PosixFilePermission>> attr =
+                        PosixFilePermissions.asFileAttribute(perms);
+                Files.createDirectory(path, attr);
                 retVal = true;
             }
         } catch (IOException t) {
@@ -302,20 +309,9 @@ public class JimfsFtpFile implements FtpFile {
             throw new IOException("No write permission : " + path.getFileName());
         }
 
-        // create output stream
-        final RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw");
-        raf.setLength(offset);
-        raf.seek(offset);
+        final OpenOption openOption = offset > 0 ? APPEND : CREATE;
 
-        // The IBM jre needs to have both the stream and the random access file
-        // objects closed to actually close the file
-        return new FileOutputStream(raf.getFD()) {
-            @Override
-            public void close() throws IOException {
-                super.close();
-                raf.close();
-            }
-        };
+        return Files.newOutputStream(path, openOption);
     }
 
     public InputStream createInputStream(long offset)

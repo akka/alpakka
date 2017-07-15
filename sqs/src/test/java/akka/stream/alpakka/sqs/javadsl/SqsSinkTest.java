@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.sqs.javadsl;
 
@@ -22,15 +22,15 @@ import scala.concurrent.duration.FiniteDuration;
 
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
-public class SqsSinkTest {
+public class SqsSinkTest extends BaseSqsTest {
 
     private static ActorSystem system;
     private static ActorMaterializer materializer;
-    private static AmazonSQSAsyncClient sqsClient;
 
 
     @BeforeClass
@@ -40,12 +40,6 @@ public class SqsSinkTest {
         system = ActorSystem.create();
         materializer = ActorMaterializer.create(system);
         //#init-mat
-
-        //#init-client
-        AWSCredentials credentials = new BasicAWSCredentials("x", "x");
-        sqsClient = new AmazonSQSAsyncClient(credentials).withEndpoint("http://localhost:9324");
-        //#init-client
-
     }
 
     @AfterClass
@@ -53,7 +47,7 @@ public class SqsSinkTest {
         JavaTestKit.shutdownActorSystem(system);
     }
 
-    private static String randomQueueUrl() {
+    private String randomQueueUrl() {
         return sqsClient.createQueue(String.format("queue-%s", new Random().nextInt())).getQueueUrl();
     }
 
@@ -63,14 +57,51 @@ public class SqsSinkTest {
         final String queueUrl = randomQueueUrl();
 
         //#run
-        Future<Done> done = Source
-                .single("alpakka")
-                .runWith(SqsSink.create(queueUrl, sqsClient), materializer);
-        Await.ready(done, new FiniteDuration(1, TimeUnit.SECONDS));
+        CompletionStage<Done> done = Source
+          .single("alpakka")
+          .runWith(SqsSink.create(queueUrl, sqsClient), materializer);
+
+        done.toCompletableFuture().get(1, TimeUnit.SECONDS);
         //#run
         List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
 
         assertEquals(1, messages.size());
         assertEquals("alpakka", messages.get(0).getBody());
+    }
+
+    @Test
+    public void sendViaFlow() throws Exception {
+        final String queueUrl = randomQueueUrl();
+
+        //#flow
+        CompletionStage<Done> done = Source
+                .single("alpakka-flow")
+                .via(SqsFlow.create(queueUrl, sqsClient))
+                .runWith(Sink.ignore(), materializer);
+
+        done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        //#flow
+        List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
+
+        assertEquals(1, messages.size());
+        assertEquals("alpakka-flow", messages.get(0).getBody());
+    }
+
+    @Test
+    public void ackViaFlow() throws Exception {
+        final String queueUrl = randomQueueUrl();
+
+        //#flow
+        CompletionStage<Done> done = Source
+                .single("alpakka-flow")
+                .via(SqsFlow.create(queueUrl, sqsClient))
+                .runWith(Sink.ignore(), materializer);
+
+        done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        //#flow
+        List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
+
+        assertEquals(1, messages.size());
+        assertEquals("alpakka-flow", messages.get(0).getBody());
     }
 }

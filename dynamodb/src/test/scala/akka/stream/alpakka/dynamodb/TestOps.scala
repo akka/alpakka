@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.dynamodb
 
@@ -66,11 +66,14 @@ object ItemSpecOps extends TestOps {
     new PutItemRequest().withTableName(tableName).withItem((keyMap("A", 1) + ("data" -> S(test5Data))).asJava)
 
   val batchWriteItemRequest = new BatchWriteItemRequest().withRequestItems(
-      Map(
-          tableName ->
-          List(new WriteRequest(new PutRequest().withItem((keyMap("B", 0) + ("data" -> S(test5Data))).asJava)),
-            new WriteRequest(new PutRequest().withItem((keyMap("B",
-                  1) + ("data" -> S(test5Data))).asJava))).asJava).asJava)
+    Map(
+      tableName ->
+      List(
+        new WriteRequest(new PutRequest().withItem((keyMap("B", 0) + ("data" -> S(test5Data))).asJava)),
+        new WriteRequest(new PutRequest().withItem((keyMap("B", 1) + ("data" -> S(test5Data))).asJava))
+      ).asJava
+    ).asJava
+  )
 
   val deleteItemRequest = new DeleteItemRequest().withTableName(tableName).withKey(keyMap("A", 0).asJava)
 
@@ -102,7 +105,8 @@ object TableSpecOps extends TestOps {
   val updateTableRequest = new UpdateTableRequest()
     .withTableName(tableName)
     .withProvisionedThroughput(
-        new ProvisionedThroughput().withWriteCapacityUnits(newMaxLimit).withReadCapacityUnits(newMaxLimit))
+      new ProvisionedThroughput().withWriteCapacityUnits(newMaxLimit).withReadCapacityUnits(newMaxLimit)
+    )
 
   val deleteTableRequest = common.deleteTableRequest
 

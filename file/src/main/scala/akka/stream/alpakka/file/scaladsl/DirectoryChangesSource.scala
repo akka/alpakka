@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.file.scaladsl
 
@@ -8,7 +8,6 @@ import java.util.function.BiFunction
 
 import akka.NotUsed
 import akka.stream.alpakka.file.DirectoryChange
-import akka.stream.alpakka.file.javadsl.DirectoryChangesSource
 import akka.stream.scaladsl.Source
 
 import scala.concurrent.duration.FiniteDuration
@@ -30,6 +29,8 @@ object DirectoryChangesSource {
   def apply(directoryPath: Path,
             pollInterval: FiniteDuration,
             maxBufferSize: Int): Source[(Path, DirectoryChange), NotUsed] =
-    Source.fromGraph(new DirectoryChangesSource(directoryPath, pollInterval, maxBufferSize, tupler))
+    Source.fromGraph(
+      new akka.stream.alpakka.file.javadsl.DirectoryChangesSource(directoryPath, pollInterval, maxBufferSize, tupler)
+    )
 
 }

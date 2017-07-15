@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.file.scaladsl
 
@@ -13,7 +13,7 @@ import akka.stream.{ActorMaterializer, Materializer}
 
 import scala.concurrent.duration._
 
-object FileTailSourceSpec extends {
+object FileTailSourceSpec {
 
   // small sample of usage, tails the first argument file path
   def main(args: Array[String]): Unit = {

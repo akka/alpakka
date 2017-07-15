@@ -16,7 +16,7 @@ Maven
     ```xml
     <dependency>
       <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-amqp_$scala.binaryVersion$</artifactId>
+      <artifactId>akka-stream-alpakka-amqp_$scalaBinaryVersion$</artifactId>
       <version>$version$</version>
     </dependency>
     ```
@@ -26,7 +26,7 @@ Gradle
 :   @@@vars
     ```gradle
     dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-amqp_$scala.binaryVersion$", version: "$version$"
+      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-amqp_$scalaBinaryVersion$", version: "$version$"
     }
     ```
     @@@
@@ -114,6 +114,23 @@ Java
 We merge all sources into one and add the index of the source to all incoming messages, so we can distinguish which source the incoming message came from.
 
 Such sink and source can be started the same way as in the previous example.
+
+### Using rabbitmq as an RPC mechanism
+
+If you have remote workers that you want to incorporate into a stream, you can do it using rabbit RPC workflow [RabbitMQ RPC](https://www.rabbitmq.com/tutorials/tutorial-six-java.html)
+
+Scala
+: @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { #create-rpc-flow }
+
+Java
+: @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { #create-rpc-flow }
+
+
+Scala
+: @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { #run-rpc-flow }
+
+Java
+: @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { #run-rpc-flow }
 
 ### Running the example code
 

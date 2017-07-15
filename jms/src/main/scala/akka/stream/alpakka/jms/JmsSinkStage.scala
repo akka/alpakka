@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.jms
 
@@ -8,7 +8,8 @@ import javax.jms.{MessageProducer, TextMessage}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler}
 import akka.stream.{ActorAttributes, Attributes, Inlet, SinkShape}
 
-final class JmsSinkStage(settings: JmsSettings) extends GraphStage[SinkShape[JmsTextMessage]] {
+final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape[JmsTextMessage]] {
+
 
   private val in = Inlet[JmsTextMessage]("JmsSink.in")
 
@@ -27,10 +28,14 @@ final class JmsSinkStage(settings: JmsSettings) extends GraphStage[SinkShape[Jms
       override def preStart(): Unit = {
         jmsSession = openSession()
         jmsProducer = jmsSession.session.createProducer(jmsSession.destination)
+        if (settings.timeToLive.nonEmpty) {
+          jmsProducer.setTimeToLive(settings.timeToLive.get.toMillis)
+        }
         pull(in)
       }
 
-      setHandler(in,
+      setHandler(
+        in,
         new InHandler {
         override def onPush(): Unit = {
           val elem: JmsTextMessage = grab(in)
@@ -49,8 +54,9 @@ final class JmsSinkStage(settings: JmsSettings) extends GraphStage[SinkShape[Jms
           }
           jmsProducer.send(textMessage)
           pull(in)
+          }
         }
-      })
+      )
 
       override def postStop(): Unit =
         Option(jmsSession).foreach(_.closeSession())

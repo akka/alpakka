@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.sse
 package scaladsl
@@ -7,16 +7,17 @@ package scaladsl
 import akka.Done
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props, Status}
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling
+import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes.BadRequest
+import akka.http.scaladsl.model.headers.`Last-Event-ID`
+import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.pipe
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, ThrottleMode}
 import akka.testkit.SocketUtil
-import de.heikoseeberger.akkasse.MediaTypes.`text/event-stream`
-import de.heikoseeberger.akkasse.headers.`Last-Event-ID`
-import de.heikoseeberger.akkasse.{EventStreamMarshalling, ServerSentEvent}
 import java.net.InetSocketAddress
 import java.nio.charset.StandardCharsets.UTF_8
 import org.scalatest.{AsyncWordSpec, BeforeAndAfterAll, Matchers}
@@ -25,10 +26,10 @@ import scala.concurrent.duration.DurationInt
 
 object EventSourceSpec {
 
-  object Server {
+  final object Server {
 
-    private case object Bind
-    private case object Unbind
+    private final case object Bind
+    private final case object Unbind
 
     private def route(size: Int, setEventId: Boolean): Route = {
       import Directives._
@@ -38,7 +39,9 @@ object EventSourceSpec {
           try {
             val fromSeqNo = lastEventId.map(_.trim.toInt).getOrElse(0) + 1
             complete {
-              Source(fromSeqNo.until(fromSeqNo + size)).map(toServerSentEvent(setEventId))
+              Source(fromSeqNo.until(fromSeqNo + size))
+                .map(toServerSentEvent(setEventId))
+                .intersperse(ServerSentEvent.heartbeat)
             }
           } catch {
             case _: NumberFormatException =>
@@ -57,7 +60,7 @@ object EventSourceSpec {
     }
   }
 
-  class Server(address: String, port: Int, size: Int, shouldSetEventId: Boolean = false)
+  final class Server(address: String, port: Int, size: Int, shouldSetEventId: Boolean = false)
       extends Actor
       with ActorLogging {
     import Server._
@@ -65,7 +68,7 @@ object EventSourceSpec {
 
     private implicit val mat = ActorMaterializer()
 
-    self ! Bind
+    context.system.scheduler.scheduleOnce(1.second, self, Bind)
 
     override def receive = unbound
 
@@ -105,9 +108,9 @@ object EventSourceSpec {
   }
 
   private def toServerSentEvent(setEventId: Boolean)(n: Int) = {
-    val data = Some(n.toString)
+    val data = n.toString
     val event = ServerSentEvent(data)
-    if (setEventId) event.copy(id = data) else event
+    if (setEventId) event.copy(id = Some(data)) else event
   }
 
   private def hostAndPort() = {
@@ -116,7 +119,7 @@ object EventSourceSpec {
   }
 }
 
-class EventSourceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll {
+final class EventSourceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll {
   import EventSourceSpec._
 
   private implicit val system = ActorSystem()
@@ -130,7 +133,7 @@ class EventSourceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       val server = system.actorOf(Props(new Server(host, port, 2, true)))
 
       //#event-source
-      val eventSource = EventSource(Uri(s"http://$host:$port"), send, Some("2"))
+      val eventSource = EventSource(Uri(s"http://$host:$port"), send, Some("2"), 1.second)
       //#event-source
 
       //#consume-events
@@ -146,7 +149,7 @@ class EventSourceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       val nrOfSamples = 20
       val (host, port) = hostAndPort()
       val server = system.actorOf(Props(new Server(host, port, 2)))
-      val eventSource = EventSource(Uri(s"http://$host:$port"), send, Some("2"))
+      val eventSource = EventSource(Uri(s"http://$host:$port"), send, Some("2"), 1.second)
       val events = eventSource.take(nrOfSamples).runWith(Sink.seq)
       val expected = Seq.tabulate(nrOfSamples)(_ % 2 + 3).map(toServerSentEvent(false))
       events.map(_ shouldBe expected).andThen { case _ => system.stop(server) }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.awslambda.scaladsl
 
@@ -14,8 +14,9 @@ object AwsLambdaFlow {
   /**
    * Scala API: creates a [[AwsLambdaFlowStage]] for a AWS Lambda function invocation using [[AWSLambdaClient]]
    */
-  def apply(parallelism: Int)(
-      implicit awsLambdaClient: AWSLambdaAsyncClient): Flow[InvokeRequest, InvokeResult, NotUsed] =
+  def apply(
+      parallelism: Int
+  )(implicit awsLambdaClient: AWSLambdaAsyncClient): Flow[InvokeRequest, InvokeResult, NotUsed] =
     Flow.fromGraph(new AwsLambdaFlowStage(awsLambdaClient)(parallelism))
 
 }
