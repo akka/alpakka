@@ -8,7 +8,6 @@ import java.util
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.stream.alpakka.kinesis.KinesisSourceErrors.NoShardsError
 import akka.stream.alpakka.kinesis.scaladsl.KinesisSource
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
@@ -131,7 +130,7 @@ class KinesisSourceSpec extends WordSpecLike with Matchers with DefaultTestConte
     with WithGetRecordsFailure {
       val probe = KinesisSource.basic(shardSettings, amazonKinesisAsync).runWith(TestSink.probe)
       probe.request(1)
-      probe.expectError() shouldBe an[KinesisSourceErrors.GetRecordsError.type]
+      probe.expectError() shouldBe an[KinesisErrors.GetRecordsError.type]
     }
   }
 
