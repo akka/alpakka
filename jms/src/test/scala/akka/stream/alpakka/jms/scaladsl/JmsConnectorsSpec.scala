@@ -61,10 +61,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-messages-with-properties
       val msgsIn = (1 to 10).toList.map { n =>
-        JmsTextMessage(n.toString)
-          .withProperty("Number", n)
-          .withProperty("IsOdd", n % 2 == 1)
-          .withProperty("IsEven", n % 2 == 0)
+        JmsTextMessage(n.toString).add("Number", n).add("IsOdd", n % 2 == 1).add("IsEven", n % 2 == 0)
       }
       //#create-messages-with-properties
 
@@ -99,10 +96,7 @@ class JmsConnectorsSpec extends JmsSpec {
         )
 
         val msgsIn = (1 to 10).toList.map { n =>
-          JmsTextMessage(n.toString)
-            .withProperty("Number", n)
-            .withProperty("IsOdd", n % 2 == 1)
-            .withProperty("IsEven", n % 2 == 0)
+          JmsTextMessage(n.toString).add("Number", n).add("IsOdd", n % 2 == 1).add("IsEven", n % 2 == 0)
         }
         Source(msgsIn).runWith(jmsSink)
 
