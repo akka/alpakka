@@ -10,7 +10,6 @@ import akka.stream.{ActorAttributes, Attributes, Inlet, SinkShape}
 
 final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape[JmsTextMessage]] {
 
-
   private val in = Inlet[JmsTextMessage]("JmsSink.in")
 
   override def shape: SinkShape[JmsTextMessage] = SinkShape.of(in)
@@ -37,23 +36,23 @@ final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape
       setHandler(
         in,
         new InHandler {
-        override def onPush(): Unit = {
-          val elem: JmsTextMessage = grab(in)
-          val textMessage: TextMessage = jmsSession.session.createTextMessage(elem.body)
-          elem.properties.foreach {
-            case (key, v) =>
-              v match {
-                case v: String => textMessage.setStringProperty(key, v)
-                case v: Int => textMessage.setIntProperty(key, v)
-                case v: Boolean => textMessage.setBooleanProperty(key, v)
-                case v: Byte => textMessage.setByteProperty(key, v)
-                case v: Short => textMessage.setShortProperty(key, v)
-                case v: Long => textMessage.setLongProperty(key, v)
-                case v: Double => textMessage.setDoubleProperty(key, v)
-              }
-          }
-          jmsProducer.send(textMessage)
-          pull(in)
+          override def onPush(): Unit = {
+            val elem: JmsTextMessage = grab(in)
+            val textMessage: TextMessage = jmsSession.session.createTextMessage(elem.body)
+            elem.properties.foreach {
+              case (key, v) =>
+                v match {
+                  case v: String => textMessage.setStringProperty(key, v)
+                  case v: Int => textMessage.setIntProperty(key, v)
+                  case v: Boolean => textMessage.setBooleanProperty(key, v)
+                  case v: Byte => textMessage.setByteProperty(key, v)
+                  case v: Short => textMessage.setShortProperty(key, v)
+                  case v: Long => textMessage.setLongProperty(key, v)
+                  case v: Double => textMessage.setDoubleProperty(key, v)
+                }
+            }
+            jmsProducer.send(textMessage)
+            pull(in)
           }
         }
       )

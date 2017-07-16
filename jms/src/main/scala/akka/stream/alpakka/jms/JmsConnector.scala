@@ -86,8 +86,9 @@ private[jms] case class JmsSession(connection: jms.Connection, session: jms.Sess
       session.createProducer(destination)
     }
 
-  private[jms] def createConsumer(selector: Option[String])(
-      implicit ec: ExecutionContext): Future[jms.MessageConsumer] =
+  private[jms] def createConsumer(
+      selector: Option[String]
+  )(implicit ec: ExecutionContext): Future[jms.MessageConsumer] =
     Future {
       selector match {
         case None => session.createConsumer(destination)
