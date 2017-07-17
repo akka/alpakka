@@ -17,7 +17,6 @@ import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.{Files, Paths}
 import java.net.InetAddress
 import org.scalatest.concurrent.Eventually
-import net.schmizz.sshj.sftp.SFTPException
 
 final class FtpStageSpec extends BaseFtpSpec with CommonFtpStageSpec
 final class SftpStageSpec extends BaseSftpSpec with CommonFtpStageSpec
@@ -259,7 +258,9 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
       val resultFuture = infiniteSource.runWith(storeToPath(s"/$fileName", append = false))
       waitForUploadToStart(fileName)
-      EventFilter[SFTPException](occurrences = 1) intercept {
+
+      // Could be an SFTPException or a SocketException
+      EventFilter[Exception](occurrences = 1) intercept {
         stopServer()
       }
       startServer()
