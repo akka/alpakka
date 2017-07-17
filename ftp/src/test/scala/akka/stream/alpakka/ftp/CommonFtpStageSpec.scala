@@ -9,6 +9,7 @@ import akka.stream.alpakka.ftp.SftpSupportImpl.{CLIENT_PRIVATE_KEY_PASSPHRASE =>
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
+import akka.testkit.EventFilter
 import org.scalatest.time.{Millis, Seconds, Span}
 import scala.concurrent.duration._
 import scala.util.Random
@@ -16,6 +17,7 @@ import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.{Files, Paths}
 import java.net.InetAddress
 import org.scalatest.concurrent.Eventually
+import net.schmizz.sshj.sftp.SFTPException
 
 final class FtpStageSpec extends BaseFtpSpec with CommonFtpStageSpec
 final class SftpStageSpec extends BaseSftpSpec with CommonFtpStageSpec
@@ -255,13 +257,14 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val fileName = "sample_io"
       val infiniteSource = Source.repeat(ByteString(0x00))
 
-      val future = infiniteSource.runWith(storeToPath(s"/$fileName", append = false))
+      val resultFuture = infiniteSource.runWith(storeToPath(s"/$fileName", append = false))
       waitForUploadToStart(fileName)
-      stopServer()
-      val result = future.futureValue
+      EventFilter[SFTPException](occurrences = 1) intercept {
+        stopServer()
+      }
       startServer()
 
-      result.status.failed.get shouldBe a[Exception]
+      resultFuture.futureValue.status.failed.get shouldBe a[Exception]
     }
   }
 }
