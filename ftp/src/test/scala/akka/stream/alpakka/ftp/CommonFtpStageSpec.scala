@@ -237,7 +237,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
     }
 
     "fail and report the exception in the result status if upstream fails" in {
-      val fileName = "sample_io"
+      val fileName = "sample_io_upstream"
       val brokenSource = Source(10.to(0, -1)).map(x ⇒ ByteString(10 / x))
 
       val result = brokenSource.runWith(storeToPath(s"/$fileName", append = false)).futureValue
@@ -252,7 +252,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
           getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName).length shouldBe >(0)
         }
 
-      val fileName = "sample_io"
+      val fileName = "sample_io_connection"
       val infiniteSource = Source.repeat(ByteString(0x00))
 
       val future = infiniteSource.runWith(storeToPath(s"/$fileName", append = false))
