@@ -25,7 +25,7 @@ lazy val alpakka = project
   .settings(
     onLoadMessage :=
       """
-        |*** Welcome to the sbt build definition for Alpakka! ***
+        |** Welcome to the sbt build definition for Alpakka! **
         |
         |Useful sbt tasks:
         |
