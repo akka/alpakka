@@ -168,7 +168,11 @@ lazy val simpleCodecs = project
   .in(file("simple-codecs"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
-    name := "akka-stream-alpakka-simple-codecs"
+    name := "akka-stream-alpakka-simple-codecs",
+    // By default scalatest futures time out in 150 ms, dilate that to 600ms.
+    // This should not impact the total test time as we don't expect to hit this
+    // timeout, and indeed it doesn't appear to.
+    testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4")
   )
 
 lazy val sns = project
