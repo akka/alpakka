@@ -136,6 +136,49 @@ public class SqsSinkTest extends BaseSqsTest {
     }
 
     @Test
+    public void sendMessageWithBatchesAsFlow() throws Exception {
+        final String queueUrl = randomQueueUrl();
+
+        ArrayList<String> messagesToSend = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            messagesToSend.add("Message - " + i);
+        }
+
+        CompletionStage<Done> done = Source
+                .from(messagesToSend)
+                .via(SqsFlow.grouped(queueUrl,sqsClient))
+                .runWith(Sink.ignore(), materializer);
+
+        done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+
+        List<Message> messagesFirstBatch = sqsClient.receiveMessage(new ReceiveMessageRequest().withQueueUrl(queueUrl).withMaxNumberOfMessages(10)).getMessages();
+
+        assertEquals(10, messagesFirstBatch.size());
+    }
+
+    @Test
+    public void sendBatchesAsFlow() throws Exception {
+        final String queueUrl = randomQueueUrl();
+
+        ArrayList<String> messagesToSend = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            messagesToSend.add("Message - " + i);
+        }
+        Iterable<String> it = messagesToSend;
+
+        CompletionStage<Done> done = Source
+                .single(it)
+                .via(SqsFlow.batch(queueUrl,sqsClient))
+                .runWith(Sink.ignore(), materializer);
+
+        done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+
+        List<Message> messagesFirstBatch = sqsClient.receiveMessage(new ReceiveMessageRequest().withQueueUrl(queueUrl).withMaxNumberOfMessages(10)).getMessages();
+
+        assertEquals(10, messagesFirstBatch.size());
+    }
+
+    @Test
     public void ackViaFlow() throws Exception {
         final String queueUrl = randomQueueUrl();
 

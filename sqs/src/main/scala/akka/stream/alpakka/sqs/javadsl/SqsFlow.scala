@@ -7,7 +7,10 @@ import akka.NotUsed
 import akka.stream.alpakka.sqs.scaladsl.Result
 import akka.stream.alpakka.sqs.{SqsFlowStage, SqsSinkSettings, _}
 import akka.stream.javadsl.Flow
+import akka.stream.scaladsl.{Flow => SFlow}
 import com.amazonaws.services.sqs.AmazonSQSAsync
+import java.lang.{Iterable => JIterable}
+import scala.collection.JavaConverters._
 
 object SqsFlow {
 
@@ -48,6 +51,10 @@ object SqsFlow {
   /**
    * Java API: creates a flow based on [[SqsBatchFlowStage]] for a SQS queue using an [[AmazonSQSAsync]] with default settings
    */
-  def batch(queueUrl: String, sqsClient: AmazonSQSAsync): Flow[Seq[String], Seq[Result], NotUsed] =
-    scaladsl.SqsFlow.batch(queueUrl, SqsBatchFlowSettings.Defaults)(sqsClient).asJava
+  def batch(queueUrl: String, sqsClient: AmazonSQSAsync): Flow[JIterable[String], JIterable[Result], NotUsed] =
+    SFlow[JIterable[String]]
+      .map(jIterable => jIterable.asScala)
+      .via(scaladsl.SqsFlow.batch(queueUrl, SqsBatchFlowSettings.Defaults)(sqsClient))
+      .map(sIterable => sIterable.asJava)
+      .asJava
 }
