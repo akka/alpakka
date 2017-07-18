@@ -73,4 +73,26 @@ class CanonicalRequestSpec extends FlatSpec with Matchers {
         |testhash""".stripMargin
     )
   }
+
+  it should "correctly build a canonicalString with special characters in the path" in {
+    // this corresponds with not encode path: /føldęrü/1234()[]><!? .TXT
+    val req = HttpRequest(
+      HttpMethods.GET,
+      Uri("https://mytestbucket.s3.amazonaws.com/f%C3%B8ld%C4%99r%C3%BC/1234()%5B%5D%3E%3C!%3F%20.TXT")
+    ).withHeaders(
+      RawHeader("x-amz-content-sha256", "testhash"),
+      `Content-Type`(ContentTypes.`application/json`)
+    )
+    val canonical = CanonicalRequest.from(req)
+    canonical.canonicalString should equal(
+      """GET
+        |/f%C3%B8ld%C4%99r%C3%BC/1234%28%29%5B%5D%3E%3C%21%3F%20.TXT
+        |
+        |content-type:application/json
+        |x-amz-content-sha256:testhash
+        |
+        |content-type;x-amz-content-sha256
+        |testhash""".stripMargin
+    )
+  }
 }

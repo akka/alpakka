@@ -6,9 +6,11 @@ package akka.stream.alpakka.sqs.javadsl;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
-import akka.stream.alpakka.sqs.Ack;
+import akka.stream.alpakka.sqs.Delete;
+import akka.stream.alpakka.sqs.Ignore;
 import akka.stream.alpakka.sqs.MessageAction;
-import akka.stream.alpakka.sqs.RequeueWithDelay;
+import akka.stream.alpakka.sqs.ChangeMessageVisibility;
+import akka.stream.alpakka.sqs.scaladsl.AckResult;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
 import akka.testkit.JavaTestKit;
@@ -18,6 +20,7 @@ import com.amazonaws.services.sqs.model.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.Option;
 import scala.Tuple2;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -25,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
 
 public class SqsAckSinkTest extends BaseSqsTest {
 
@@ -63,7 +67,7 @@ public class SqsAckSinkTest extends BaseSqsTest {
         //#ack
         Tuple2<Message, MessageAction> pair = new Tuple2<>(
                 new Message().withBody("test"),
-                new Ack()
+                new Delete()
         );
         CompletionStage<Done> done = Source
                 .single(pair)
@@ -91,7 +95,7 @@ public class SqsAckSinkTest extends BaseSqsTest {
         //#flow-ack
         Tuple2<Message, MessageAction> pair = new Tuple2<>(
                 new Message().withBody("test-ack-flow"),
-                new Ack()
+                new Delete()
         );
         CompletionStage<Done> done = Source
                 .single(pair)
@@ -104,23 +108,23 @@ public class SqsAckSinkTest extends BaseSqsTest {
     }
 
     @Test
-    public void testRequeueWithDelay() throws Exception {
+    public void testChangeMessageVisibility() throws Exception {
         final String queueUrl = "none";
         AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
-        when(awsClient.sendMessageAsync(any(SendMessageRequest.class), any())).thenAnswer(
+        when(awsClient.changeMessageVisibilityAsync(any(ChangeMessageVisibilityRequest.class), any())).thenAnswer(
                 invocation -> {
-                    SendMessageRequest request = invocation.getArgument(0);
+                    ChangeMessageVisibilityRequest request = invocation.getArgument(0);
                     invocation
-                            .<AsyncHandler<SendMessageRequest, SendMessageResult>>getArgument(1)
-                            .onSuccess(request, new SendMessageResult());
-                    return new CompletableFuture<SendMessageResult>();
+                            .<AsyncHandler<ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult>>getArgument(1)
+                            .onSuccess(request, new ChangeMessageVisibilityResult());
+                    return new CompletableFuture<ChangeMessageVisibilityResult>();
                 }
         );
 
         //#requeue
         Tuple2<Message, MessageAction> pair = new Tuple2<>(
                 new Message().withBody("test"),
-                new RequeueWithDelay(12)
+                new ChangeMessageVisibility(12)
         );
         CompletionStage<Done> done = Source
                 .single(pair)
@@ -129,9 +133,30 @@ public class SqsAckSinkTest extends BaseSqsTest {
         //#requeue
 
         verify(awsClient)
-                .sendMessageAsync(
-                        any(SendMessageRequest.class),
+                .changeMessageVisibilityAsync(
+                        any(ChangeMessageVisibilityRequest.class),
                         any()
                 );
+    }
+
+    @Test
+    public void testIgnore() throws Exception {
+        final String queueUrl = "none";
+        AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
+
+        //#ignore
+        Tuple2<Message, MessageAction> pair = new Tuple2<>(
+                new Message().withBody("test"),
+                new Ignore()
+        );
+        CompletionStage<AckResult> stage = Source
+                .single(pair)
+                .via(SqsAckFlow.create(queueUrl, awsClient))
+                .runWith(Sink.head(), materializer);
+        AckResult result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        //#ignore
+
+        assertEquals(Option.empty(), result.metadata());
+        assertEquals("test", result.message());
     }
 }

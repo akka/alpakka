@@ -10,10 +10,10 @@ import akka.stream.alpakka.ftp.impl.{FtpLike, FtpSourceFactory}
 import akka.stream.IOResult
 import akka.stream.javadsl.Source
 import akka.stream.javadsl.Sink
-import akka.stream.scaladsl.{Source ⇒ ScalaSource}
-import akka.stream.scaladsl.{Sink ⇒ ScalaSink}
+import akka.stream.scaladsl.{Source => ScalaSource}
+import akka.stream.scaladsl.{Sink => ScalaSink}
 import akka.util.ByteString
-import com.jcraft.jsch.JSch
+import net.schmizz.sshj.SSHClient
 import org.apache.commons.net.ftp.FTPClient
 import java.util.concurrent.CompletionStage
 
@@ -189,4 +189,4 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
 
 object Ftp extends FtpApi[FTPClient] with FtpSourceParams
 object Ftps extends FtpApi[FTPClient] with FtpsSourceParams
-object Sftp extends FtpApi[JSch] with SftpSourceParams
+object Sftp extends FtpApi[SSHClient] with SftpSourceParams

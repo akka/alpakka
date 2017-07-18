@@ -153,23 +153,32 @@ Options:
 
 ### Message processing with acknowledgement
 
-`SqsAckSink` provides possibility to acknowledge (delete) or requeue a message.
+`SqsAckSink` provides possibility to acknowledge (delete), ignore, or postpone a message.
 
 Your flow must decide which action to take and push it with message:
 
- - `Ack` - delete message from the queue
- - `RequeueWithDelay(delaySeconds: Int)` - schedule a retry
+ - `Delete` - delete message from the queue
+ - `Ignore` - ignore the message and let it reappear in the queue after visibility timeout
+ - `ChangeMessageVisibility(visibilityTimeout: Int)` - can be used to postpone a message, or make
+ the message immediately visible to other consumers. See [official documentation](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html)
+for more details. 
  
 Scala (ack)
 : @@snip (../../../../sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #ack }
 
-Scala (requeue)
+Scala (ignore)
+: @@snip (../../../../sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #ignore }
+
+Scala (change visibility timeout)
 : @@snip (../../../../sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #requeue }
 
 Java (ack)
 : @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #ack }
 
-Java (requeue)
+Java (ignore)
+: @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #ignore }
+
+Java (change visibility timeout)
 : @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #requeue }
 
 #### SqsAckSink configuration
@@ -209,12 +218,10 @@ The code in this guide is part of runnable tests of this project. You are welcom
 
 Scala
 :   ```
-    sbt
-    > sqs/testOnly *.SqsSourceSpec
+    sbt 'project sqs' test
     ```
 
 Java
 :   ```
-    sbt
-    > sqs/testOnly *.SqsSourceTest
+    sbt 'project sqs' test
     ```

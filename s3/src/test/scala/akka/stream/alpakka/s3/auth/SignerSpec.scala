@@ -62,22 +62,21 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
 
     val srFuture =
       Signer.signedRequest(req, signingKey, LocalDateTime.of(2015, 8, 30, 12, 36, 0).atZone(ZoneOffset.UTC))
-    whenReady(srFuture) {
-      case signedRequest =>
-        signedRequest should equal(
-          HttpRequest(HttpMethods.GET)
-            .withUri("https://iam.amazonaws.com/?Action=ListUsers&Version=2010-05-08")
-            .withHeaders(
-              Host("iam.amazonaws.com"),
-              RawHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8"),
-              RawHeader("x-amz-date", "20150830T123600Z"),
-              RawHeader("x-amz-content-sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
-              RawHeader(
-                "Authorization",
-                "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/iam/aws4_request, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=dd479fa8a80364edf2119ec24bebde66712ee9c9cb2b0d92eb3ab9ccdc0c3947"
-              )
+    whenReady(srFuture) { signedRequest =>
+      signedRequest should equal(
+        HttpRequest(HttpMethods.GET)
+          .withUri("https://iam.amazonaws.com/?Action=ListUsers&Version=2010-05-08")
+          .withHeaders(
+            Host("iam.amazonaws.com"),
+            RawHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8"),
+            RawHeader("x-amz-date", "20150830T123600Z"),
+            RawHeader("x-amz-content-sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
+            RawHeader(
+              "Authorization",
+              "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/iam/aws4_request, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=dd479fa8a80364edf2119ec24bebde66712ee9c9cb2b0d92eb3ab9ccdc0c3947"
             )
-        )
+          )
+      )
     }
   }
 

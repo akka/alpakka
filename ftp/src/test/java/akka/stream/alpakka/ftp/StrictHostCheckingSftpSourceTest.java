@@ -4,14 +4,12 @@
 package akka.stream.alpakka.ftp;
 
 import akka.NotUsed;
-import akka.japi.Pair;
 import akka.stream.IOResult;
 import akka.stream.alpakka.ftp.javadsl.Sftp;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import org.junit.Test;
-
 import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
 
@@ -45,9 +43,11 @@ public class StrictHostCheckingSftpSourceTest extends SftpSupportImpl implements
             .withPort(getPort())
             .withCredentials(new FtpCredentials.NonAnonFtpCredentials("different user and password", "will fail password auth"))
             .withStrictHostKeyChecking(true) // strictHostKeyChecking
-            .withKnownHosts("ftp/src/test/resources/known_hosts")
-            .withSftpIdentity(SftpIdentity.createFileSftpIdentity("ftp/src/test/resources/client.pem"))
-            .withOptions(new Pair("HostKeyAlgorithms", "+ssh-dss"));
+            .withKnownHosts(getKnownHostsFile().getPath())
+            .withSftpIdentity(
+                    SftpIdentity.createFileSftpIdentity(
+                            getClientPrivateKeyFile().getPath(),
+                            CLIENT_PRIVATE_KEY_PASSPHRASE));
     //#create-settings
     return settings;
   }
