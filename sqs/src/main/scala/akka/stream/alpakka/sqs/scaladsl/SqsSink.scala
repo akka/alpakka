@@ -27,6 +27,6 @@ object SqsSink {
 
   def batch(queueUrl: String, settings: SqsBatchFlowSettings = SqsBatchFlowSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
-  ): Sink[Seq[String], Future[Done]] =
+  ): Sink[Iterable[String], Future[Done]] =
     SqsFlow.batch(queueUrl, settings).toMat(Sink.ignore)(Keep.right)
 }
