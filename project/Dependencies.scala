@@ -72,15 +72,17 @@ object Dependencies {
   )
 
   val Geode = {
-    val geodeVersion = "1.1.1"
+    val geodeVersion = "1.2.0"
+    val slf4jVerson = "1.7.25"
+    val logbackVersin = "1.2.3"
     Seq(
       libraryDependencies ++= Seq("com.chuusai" %% "shapeless" % "2.3.2") ++
         Seq("geode-core","geode-cq")
         .map("org.apache.geode" % _ % geodeVersion exclude("org.slf4j", "slf4j-log4j12")) ++
-        Seq("org.slf4j" % "log4j-over-slf4j" % "1.7.21" % Test, // MIT like: http://www.slf4j.org/license.html
-          "org.slf4j" % "slf4j-api" % "1.7.21" % Test, // MIT like: http://www.slf4j.org/license.html
-          "ch.qos.logback" % "logback-classic" % "1.1.7" % Test, // Eclipse Public License 1.0: http://logback.qos.ch/license.html
-          "ch.qos.logback" % "logback-core" % "1.1.7" % Test // Eclipse Public License 1.0: http://logback.qos.ch/license.html
+        Seq("org.slf4j" % "log4j-over-slf4j" % slf4jVerson % Test, // MIT like: http://www.slf4j.org/license.html
+          "org.slf4j" % "slf4j-api" % slf4jVerson % Test, // MIT like: http://www.slf4j.org/license.html
+          "ch.qos.logback" % "logback-classic" % logbackVersin % Test, // Eclipse Public License 1.0: http://logback.qos.ch/license.html
+          "ch.qos.logback" % "logback-core" % logbackVersin % Test // Eclipse Public License 1.0: http://logback.qos.ch/license.html
         )
 
     )
