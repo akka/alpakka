@@ -51,7 +51,9 @@ lazy val awslambda = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-awslambda",
-    Dependencies.AwsLambda
+    Dependencies.AwsLambda,
+    // For mockito https://github.com/akka/alpakka/issues/390
+    parallelExecution in Test := false
   )
 
 lazy val azureStorageQueue = project
@@ -117,7 +119,9 @@ lazy val googleCloudPubSub = project
     name := "akka-stream-alpakka-google-cloud-pub-sub",
     Dependencies.GooglePubSub,
     fork in Test := true,
-    envVars in Test := Map("PUBSUB_EMULATOR_HOST" -> "localhost:8538")
+    envVars in Test := Map("PUBSUB_EMULATOR_HOST" -> "localhost:8538"),
+    // For mockito https://github.com/akka/alpakka/issues/390
+    parallelExecution in Test := false
   )
 
 lazy val hbase = project
@@ -147,7 +151,9 @@ lazy val kinesis = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-kinesis",
-    Dependencies.Kinesis
+    Dependencies.Kinesis,
+    // For mockito https://github.com/akka/alpakka/issues/390
+    parallelExecution in Test := false
   )
 
 lazy val mqtt = project
@@ -179,7 +185,9 @@ lazy val sns = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-sns",
-    Dependencies.Sns
+    Dependencies.Sns,
+    // For mockito https://github.com/akka/alpakka/issues/390
+    parallelExecution in Test := false
   )
 
 lazy val sqs = project
@@ -187,7 +195,9 @@ lazy val sqs = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-sqs",
-    Dependencies.Sqs
+    Dependencies.Sqs,
+    // For mockito https://github.com/akka/alpakka/issues/390
+    parallelExecution in Test := false
   )
 
 lazy val sse = project
