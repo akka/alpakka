@@ -119,7 +119,7 @@ public class SqsSinkTest extends BaseSqsTest {
         //#batch
         ArrayList<String> messagesToSend = new ArrayList<String>();
         for (int i = 0; i < 10; i++) {
-            messagesToSend.add("message - " + i);
+            messagesToSend.add("Message - " + i);
         }
         Iterable<String> it = messagesToSend;
 
