@@ -1,6 +1,6 @@
 addSbtPlugin("de.heikoseeberger"                 % "sbt-header"       % "1.6.0")
 addSbtPlugin("com.geirsson"                      % "sbt-scalafmt"     % "0.6.6")
-addSbtPlugin("com.dwijnand"                      % "sbt-dynver"       % "1.1.1")
+addSbtPlugin("com.dwijnand"                      % "sbt-dynver"       % "2.0.0")
 addSbtPlugin("com.typesafe.sbt"                  % "sbt-git"          % "0.9.3")
 addSbtPlugin("com.dwijnand"                      % "sbt-travisci"     % "1.1.0")
 addSbtPlugin("com.lightbend.paradox"             % "sbt-paradox"      % "0.2.9")
