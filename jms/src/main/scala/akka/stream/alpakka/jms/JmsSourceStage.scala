@@ -58,7 +58,7 @@ final class JmsSourceStage(settings: JmsSourceSettings) extends GraphStage[Sourc
       }
 
       override private[jms] def onSessionOpened(): Unit =
-        jmsSession.createConsumer().onComplete {
+        jmsSession.createConsumer(settings.selector).onComplete {
           case Success(consumer) =>
             consumer.setMessageListener(new MessageListener {
               override def onMessage(message: Message): Unit = {
