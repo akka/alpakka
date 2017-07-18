@@ -10,7 +10,13 @@ object SqsBatchFlowSettings {
   val Defaults = SqsBatchFlowSettings(
     maxBatchSize = 10,
     maxBatchWait = 500.millis,
-    concurrentRequest = 1
+    concurrentRequests = 1
   )
 }
-final case class SqsBatchFlowSettings(maxBatchSize: Int, maxBatchWait: FiniteDuration, concurrentRequest: Int) {}
+
+//#SqsBatchFlowSettings
+final case class SqsBatchFlowSettings(maxBatchSize: Int, maxBatchWait: FiniteDuration, concurrentRequests: Int) {
+  require(maxBatchSize > 0 && maxBatchSize < 10,
+          "Invalid value for maxBatchSize. It should be 0 < maxBatchSize < 10, due to the Amazon SQS requirements.")
+}
+//#SqsBatchFlowSettings

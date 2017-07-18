@@ -105,6 +105,36 @@ Scala
 Java
 : @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #run }
 
+### Stream messages to a SQS queue with underlying batching
+
+Create a sink, that forwards `String` to the SQS queue. However, the main difference from the previous use case, it batches items and sends as a one request.
+
+Scala
+: @@snip (../../../../sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #group }
+
+Java
+: @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #group }
+
+#### Batch configuration
+
+Scala
+: @@snip (../../../../sqs/src/main/scala/akka/stream/alpakka/sqs/SqsBatchFlowSettings.scala) { #SqsBatchFlowSettings }
+
+Options:
+
+ - `maxBatchSize` - the maximum number of messages in batch to send SQS. Default: 10.
+ - `maxBatchWait` - the maximum duration for which the stage waits until `maxBatchSize` messages arrived.
+    Sends what is collects at the end of the time period
+    even though the `maxBatchSize` is not fulfilled. Default: 500 milliseconds
+ - `concurrentRequests` - the number of batches sending to SQS concurrently.
+    
+### Stream batches of messages to a SQS queue
+
+Create a sink, that forwards `Seq[String]` to the SQS queue.
+
+Scala
+: @@snip (../../../../sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch }
+
 #### Sink configuration
 
 Scala

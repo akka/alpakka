@@ -35,7 +35,7 @@ object SqsFlow {
         builder.add(new SqsBatchFlowStage(queueUrl, sqsClient))
 
       val flattenFutures: FlowShape[Future[List[Result]], List[Result]] =
-        builder.add(Flow[Future[List[Result]]].mapAsync(settings.concurrentRequest)(identity))
+        builder.add(Flow[Future[List[Result]]].mapAsync(settings.concurrentRequests)(identity))
 
       val flattenResults: FlowShape[List[Result], Result] = builder.add(Flow[List[Result]].mapConcat(identity))
       groupingStage ~> sqsStage ~> flattenFutures ~> flattenResults
@@ -49,7 +49,7 @@ object SqsFlow {
   def batch(queueUrl: String, settings: SqsBatchFlowSettings = SqsBatchFlowSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
   ): Flow[Seq[String], List[Result], NotUsed] =
-    Flow.fromGraph(new SqsBatchFlowStage(queueUrl, sqsClient)).mapAsync(settings.concurrentRequest)(identity)
+    Flow.fromGraph(new SqsBatchFlowStage(queueUrl, sqsClient)).mapAsync(settings.concurrentRequests)(identity)
 }
 
 /**
