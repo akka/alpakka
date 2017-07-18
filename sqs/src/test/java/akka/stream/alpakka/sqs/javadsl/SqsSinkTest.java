@@ -94,7 +94,7 @@ public class SqsSinkTest extends BaseSqsTest {
         final String queueUrl = randomQueueUrl();
 
         //#group
-        ArrayList<String> messagesToSend = new ArrayList<String>();
+        ArrayList<String> messagesToSend = new ArrayList<>();
         for (int i = 0; i < 20; i++) {
             messagesToSend.add("message - " + i);
         }
@@ -117,7 +117,7 @@ public class SqsSinkTest extends BaseSqsTest {
         final String queueUrl = randomQueueUrl();
 
         //#batch
-        ArrayList<String> messagesToSend = new ArrayList<String>();
+        ArrayList<String> messagesToSend = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             messagesToSend.add("Message - " + i);
         }
