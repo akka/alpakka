@@ -4,7 +4,7 @@
 package akka.stream.alpakka.sqs.scaladsl
 
 import akka.{Done, NotUsed}
-import akka.stream.alpakka.sqs.{Ack, RequeueWithDelay, SqsSourceSettings}
+
 import akka.stream.alpakka.sqs.{ChangeMessageVisibility, Delete, Ignore, SqsSourceSettings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
