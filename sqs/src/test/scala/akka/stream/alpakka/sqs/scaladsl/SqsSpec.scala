@@ -3,8 +3,7 @@
  */
 package akka.stream.alpakka.sqs.scaladsl
 
-import akka.{Done, NotUsed}
-
+import akka.Done
 import akka.stream.alpakka.sqs.{ChangeMessageVisibility, Delete, Ignore, SqsSourceSettings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
@@ -14,7 +13,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{spy, verify}
 import org.scalatest.{FlatSpec, Matchers}
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
