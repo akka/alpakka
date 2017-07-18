@@ -48,7 +48,7 @@ object SqsFlow {
 
   def batch(queueUrl: String, settings: SqsBatchFlowSettings = SqsBatchFlowSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
-  ): Flow[Seq[String], List[Result], NotUsed] =
+  ): Flow[Iterable[String], List[Result], NotUsed] =
     Flow.fromGraph(new SqsBatchFlowStage(queueUrl, sqsClient)).mapAsync(settings.concurrentRequest)(identity)
 }
 

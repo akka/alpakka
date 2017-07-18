@@ -113,6 +113,29 @@ public class SqsSinkTest extends BaseSqsTest {
     }
 
     @Test
+    public void sendBatchesToQueue() throws Exception {
+        final String queueUrl = randomQueueUrl();
+
+        //#batch
+        ArrayList<String> messagesToSend = new ArrayList<String>();
+        for (int i = 0; i < 10; i++) {
+            messagesToSend.add("message - " + i);
+        }
+        Iterable<String> it = messagesToSend;
+
+        CompletionStage<Done> done = Source
+                .single(it)
+                .runWith(SqsSink.batch(queueUrl,sqsClient), materializer);
+
+        done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        //#batch
+
+        List<Message> messagesFirstBatch = sqsClient.receiveMessage(new ReceiveMessageRequest().withQueueUrl(queueUrl).withMaxNumberOfMessages(10)).getMessages();
+
+        assertEquals(10, messagesFirstBatch.size());
+    }
+
+    @Test
     public void ackViaFlow() throws Exception {
         final String queueUrl = randomQueueUrl();
 

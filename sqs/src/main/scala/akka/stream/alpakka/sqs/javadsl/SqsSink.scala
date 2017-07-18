@@ -9,6 +9,10 @@ import akka.Done
 import akka.stream.alpakka.sqs._
 import akka.stream.javadsl.Sink
 import com.amazonaws.services.sqs.AmazonSQSAsync
+import akka.stream.scaladsl.{Flow, Keep}
+
+import java.lang.{Iterable => JIterable}
+import scala.collection.JavaConverters._
 
 import scala.compat.java8.FutureConverters.FutureOps
 
@@ -53,6 +57,11 @@ object SqsSink {
   /**
    * Java API: creates a sink based on [[SqsBatchFlowStage]] running in batch mode for a SQS queue using an [[AmazonSQSAsync]] with default settings.
    */
-  def batch(queueUrl: String, sqsClient: AmazonSQSAsync): Sink[Seq[String], CompletionStage[Done]] =
-    scaladsl.SqsSink.batch(queueUrl, SqsBatchFlowSettings.Defaults)(sqsClient).mapMaterializedValue(_.toJava).asJava
+  def batch(queueUrl: String, sqsClient: AmazonSQSAsync): Sink[JIterable[String], CompletionStage[Done]] =
+    Flow[JIterable[String]]
+      .map(jIterable => jIterable.asScala)
+      .toMat(scaladsl.SqsSink.batch(queueUrl, SqsBatchFlowSettings.Defaults)(sqsClient))(Keep.right)
+      .mapMaterializedValue(_.toJava)
+      .asJava
+
 }

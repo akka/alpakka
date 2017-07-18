@@ -17,11 +17,11 @@ import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 private[sqs] final class SqsBatchFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
-    extends GraphStage[FlowShape[Seq[String], Future[List[Result]]]] {
-  private val in = Inlet[Seq[String]]("messageBatch")
+    extends GraphStage[FlowShape[Iterable[String], Future[List[Result]]]] {
+  private val in = Inlet[Iterable[String]]("messageBatch")
   private val out = Outlet[Future[List[Result]]]("batchResult")
 
-  override def shape: FlowShape[Seq[String], Future[List[Result]]] = FlowShape(in, out)
+  override def shape: FlowShape[Iterable[String], Future[List[Result]]] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {

@@ -148,20 +148,20 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val queue = randomQueueUrl()
 
     //#batch
-    val messages = for (i <- 0 until 20) yield s"Message - $i"
+    val messages = for (i <- 0 until 10) yield s"Message - $i"
 
-    val future = Source.fromIterator(() => messages.grouped(10)).runWith(SqsSink.batch(queue))
+    val future = Source.single(messages).runWith(SqsSink.batch(queue))
     Await.ready(future, 1.second)
     //#batch
 
     val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
     var nrOfMessages = 0
-    for (i <- 0 until 20) {
+    for (i <- 0 until 10) {
       probe.requestNext()
       nrOfMessages += 1
     }
 
-    assert(nrOfMessages == 20)
+    assert(nrOfMessages == 10)
     probe.cancel()
   }
 
