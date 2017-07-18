@@ -132,8 +132,14 @@ Options:
 
 Create a sink, that forwards `Seq[String]` to the SQS queue.
 
+Be aware that the size of the batch must be less than or equal to 10 because Amazon SQS has a limit for batch request.
+If the batch has more than 10 entries, the request will fail.
+
 Scala
 : @@snip (../../../../sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch }
+
+Java
+: @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #batch }
 
 #### Sink configuration
 
