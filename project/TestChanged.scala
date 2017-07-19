@@ -15,7 +15,7 @@ object TestChanged extends AutoPlugin {
   override lazy val buildSettings = Seq(
     changedDirectories := {
       val log = streams.value.log
-      val target = "master"
+      val target = "origin/master"
 
       // TODO could use jgit
       val diffOutput = s"git diff $target --name-only".!!.split("\n")
