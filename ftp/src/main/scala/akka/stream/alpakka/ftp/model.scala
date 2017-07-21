@@ -46,51 +46,82 @@ sealed abstract class FtpFileSettings extends RemoteFileSettings {
   def passiveMode: Boolean
 }
 
-object RemoteFileSettings {
+/**
+ * FTP settings
+ *
+ * @param host host
+ * @param port port
+ * @param credentials credentials (username and password)
+ * @param binary specifies the file transfer mode, BINARY or ASCII. Default is ASCII (false)
+ * @param passiveMode specifies whether to use passive mode connections. Default is active mode (false)
+ */
+final case class FtpSettings(
+    host: InetAddress,
+    port: Int = FtpSettings.DefaultFtpPort,
+    credentials: FtpCredentials = AnonFtpCredentials,
+    binary: Boolean = false,
+    passiveMode: Boolean = false
+) extends FtpFileSettings {
+  def withPort(port: Int): FtpSettings =
+    copy(port = port)
+
+  def withCredentials(credentials: FtpCredentials): FtpSettings =
+    copy(credentials = credentials)
+
+  def withBinary(binary: Boolean): FtpSettings =
+    copy(binary = binary)
+
+  def withPassiveMode(passiveMode: Boolean): FtpSettings =
+    copy(passiveMode = passiveMode)
+}
+
+object FtpSettings {
 
   /** Default FTP port */
   final val DefaultFtpPort = 21
 
+  /** Java API */
+  def create(host: InetAddress): FtpSettings =
+    FtpSettings(host)
+}
+
+/**
+ * FTPs settings
+ *
+ * @param host host
+ * @param port port
+ * @param credentials credentials (username and password)
+ * @param binary specifies the file transfer mode, BINARY or ASCII. Default is ASCII (false)
+ * @param passiveMode specifies whether to use passive mode connections. Default is active mode (false)
+ */
+final case class FtpsSettings(
+    host: InetAddress,
+    port: Int = FtpsSettings.DefaultFtpsPort,
+    credentials: FtpCredentials = AnonFtpCredentials,
+    binary: Boolean = false,
+    passiveMode: Boolean = false
+) extends FtpFileSettings {
+  def withPort(port: Int): FtpsSettings =
+    copy(port = port)
+
+  def withCredentials(credentials: FtpCredentials): FtpsSettings =
+    copy(credentials = credentials)
+
+  def withBinary(binary: Boolean): FtpsSettings =
+    copy(binary = binary)
+
+  def withPassiveMode(passiveMode: Boolean): FtpsSettings =
+    copy(passiveMode = passiveMode)
+}
+
+object FtpsSettings {
+
   /** Default FTPs port */
   final val DefaultFtpsPort = 2222
 
-  /** Default SFTP port */
-  final val DefaultSftpPort = 22
-
-  /**
-   * FTP settings
-   *
-   * @param host host
-   * @param port port
-   * @param credentials credentials (username and password)
-   * @param binary specifies the file transfer mode, BINARY or ASCII. Default is ASCII (false)
-   * @param passiveMode specifies whether to use passive mode connections. Default is active mode (false)
-   */
-  final case class FtpSettings(
-      host: InetAddress,
-      port: Int = DefaultFtpPort,
-      credentials: FtpCredentials = AnonFtpCredentials,
-      binary: Boolean = false,
-      passiveMode: Boolean = false
-  ) extends FtpFileSettings
-
-  /**
-   * FTPs settings
-   *
-   * @param host host
-   * @param port port
-   * @param credentials credentials (username and password)
-   * @param binary specifies the file transfer mode, BINARY or ASCII. Default is ASCII (false)
-   * @param passiveMode specifies whether to use passive mode connections. Default is active mode (false)
-   */
-  final case class FtpsSettings(
-      host: InetAddress,
-      port: Int = DefaultFtpsPort,
-      credentials: FtpCredentials = AnonFtpCredentials,
-      binary: Boolean = false,
-      passiveMode: Boolean = false
-  ) extends FtpFileSettings
-
+  /** Java API */
+  def create(host: InetAddress): FtpsSettings =
+    FtpsSettings(host)
 }
 
 /**
@@ -104,7 +135,7 @@ object RemoteFileSettings {
  */
 final case class SftpSettings(
     host: InetAddress,
-    port: Int = RemoteFileSettings.DefaultSftpPort,
+    port: Int = SftpSettings.DefaultSftpPort,
     credentials: FtpCredentials = AnonFtpCredentials,
     strictHostKeyChecking: Boolean = true,
     knownHosts: Option[String] = None,
@@ -127,12 +158,13 @@ final case class SftpSettings(
 }
 
 object SftpSettings {
+
+  /** Default SFTP port */
+  final val DefaultSftpPort = 22
+
+  /** Java API */
   def create(host: InetAddress): SftpSettings =
     SftpSettings(host)
-
-  def createEmptyIdentity(): Option[SftpIdentity] = None
-
-  def createEmptyKnownHosts(): Option[String] = None
 }
 
 /**
