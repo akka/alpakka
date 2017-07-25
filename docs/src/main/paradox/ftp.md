@@ -110,3 +110,7 @@ Java
     sbt
     > ftp/test
     ```
+
+@@@ warning
+When using the `SFTP` API, take into account that JVM relies on `/dev/random` for random number generation by default. This might potentially block the process on some operating systems as `/dev/random` waits for a certain amount of entropy to be generated on the host machine before returning a result. In such case, please consider providing the parameter `-Djava.security.egd = file:/dev/./urandom` into the execution context. Further information can be found [here](https://www.2uo.de/myths-about-urandom/).
+@@@

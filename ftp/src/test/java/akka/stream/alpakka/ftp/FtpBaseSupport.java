@@ -44,7 +44,7 @@ abstract class FtpBaseSupport implements FtpSupport, AkkaSupport {
             usersFile =
                     new File(getClass().getClassLoader().getResource("users.properties").getFile());
             port = AvailablePortFinder.getNextAvailable(BASE_PORT);
-            system = ActorSystem.create("default");
+            system = ActorSystem.create("alpakka-ftp");
             materializer = ActorMaterializer.create(system);
         } finally {
             port = BASE_PORT;
