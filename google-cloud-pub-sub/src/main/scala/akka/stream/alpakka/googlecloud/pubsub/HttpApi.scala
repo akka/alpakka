@@ -101,8 +101,8 @@ private trait HttpApi {
       materializer: Materializer
   ): Future[immutable.Seq[String]] = {
     import materializer.executionContext
-
-    val url: Uri = s"$PubSubGoogleApisHost/v1/projects/$project/topics/$topic:publish?key=$apiKey"
+    
+    val url: Uri = s"$PubSubGoogleApisHost/v1/projects/$project/topics/$topic:publish"
 
     for {
       request <- Marshal((HttpMethods.POST, url, request)).to[HttpRequest]
