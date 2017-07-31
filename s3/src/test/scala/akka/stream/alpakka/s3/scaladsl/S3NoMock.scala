@@ -159,9 +159,9 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     downloaded shouldBe objectValue
   }
 
-  it should "upload and download with speical characters in the key in non us-east-1 zone" in {
+  it should "upload and download with special characters in the key in non us-east-1 zone" in {
     // we want ASCII and other UTF-8 characters!
-    val objectKey = "føldęrü/1234()[]><!? .TXT"
+    val objectKey = "føldęrü/1234()[]><!?: .TXT"
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
     val results = for {

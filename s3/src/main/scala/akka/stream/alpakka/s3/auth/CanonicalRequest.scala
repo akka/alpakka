@@ -49,7 +49,7 @@ private[alpakka] object CanonicalRequest {
     if (path.isEmpty) "/"
     else
       path.toString().flatMap {
-        case ch if "!$&'()*+,;=".contains(ch) => "%" + Integer.toHexString(ch.toInt).toUpperCase
+        case ch if "!$&'()*+,;:=".contains(ch) => "%" + Integer.toHexString(ch.toInt).toUpperCase
         case other => other.toString
       }
 
