@@ -100,7 +100,9 @@ lazy val ftp = project
     name := "akka-stream-alpakka-ftp",
     Dependencies.Ftp,
     parallelExecution in Test := false,
-    fork in Test := true
+    fork in Test := true,
+    // To avoid potential blocking in machines with low entropy (default is `/dev/random`)
+    javaOptions in Test += "-Djava.security.egd=file:/dev/./urandom"
   )
 
 lazy val geode = project
