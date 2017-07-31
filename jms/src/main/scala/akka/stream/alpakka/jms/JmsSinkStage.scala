@@ -3,16 +3,16 @@
  */
 package akka.stream.alpakka.jms
 
-import javax.jms.{MessageProducer, TextMessage}
+import javax.jms.{Message, MessageProducer}
 
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler}
 import akka.stream.{ActorAttributes, Attributes, Inlet, SinkShape}
 
-final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape[JmsTextMessage]] {
+final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape[JmsMessage]] {
 
-  private val in = Inlet[JmsTextMessage]("JmsSink.in")
+  private val in = Inlet[JmsMessage]("JmsSink.in")
 
-  override def shape: SinkShape[JmsTextMessage] = SinkShape.of(in)
+  override def shape: SinkShape[JmsMessage] = SinkShape.of(in)
 
   override protected def initialAttributes: Attributes =
     ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher")
@@ -37,28 +37,64 @@ final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape
         in,
         new InHandler {
           override def onPush(): Unit = {
-            val elem: JmsTextMessage = grab(in)
-            val textMessage: TextMessage = jmsSession.session.createTextMessage(elem.body)
-            elem.properties.foreach {
-              case (key, v) =>
-                v match {
-                  case v: String => textMessage.setStringProperty(key, v)
-                  case v: Int => textMessage.setIntProperty(key, v)
-                  case v: Boolean => textMessage.setBooleanProperty(key, v)
-                  case v: Byte => textMessage.setByteProperty(key, v)
-                  case v: Short => textMessage.setShortProperty(key, v)
-                  case v: Long => textMessage.setLongProperty(key, v)
-                  case v: Double => textMessage.setDoubleProperty(key, v)
-                }
-            }
-            jmsProducer.send(textMessage)
+            val elem: JmsMessage = grab(in)
+            val message: Message = createMessage(jmsSession, elem)
+            populateMessageProperties(message, elem.properties())
+            jmsProducer.send(message)
             pull(in)
           }
         }
       )
 
-      override def postStop(): Unit =
-        Option(jmsSession).foreach(_.closeSession())
+      private def createMessage(jmsSession: JmsSession, element: JmsMessage): Message =
+        element match {
+
+          case textMessage: JmsTextMessage => jmsSession.session.createTextMessage(textMessage.body)
+
+          case byteMessage: JmsByteMessage =>
+            val newMessage = jmsSession.session.createBytesMessage()
+            newMessage.writeBytes(byteMessage.bytes)
+            newMessage
+
+          case mapMessage: JmsMapMessage =>
+            val newMessage = jmsSession.session.createMapMessage()
+            populateMapMessage(newMessage, mapMessage.body)
+            newMessage
+
+          case objectMessage: JmsObjectMessage => jmsSession.session.createObjectMessage(objectMessage.serializable)
+
+        }
+
+      private def populateMapMessage(message: javax.jms.MapMessage, map: Map[String, Any]): Unit =
+        map.foreach {
+          case (key, v) =>
+            v match {
+              case v: String => message.setString(key, v)
+              case v: Int => message.setInt(key, v)
+              case v: Boolean => message.setBoolean(key, v)
+              case v: Byte => message.setByte(key, v)
+              case v: Short => message.setShort(key, v)
+              case v: Long => message.setLong(key, v)
+              case v: Double => message.setDouble(key, v)
+              case v: Array[Byte] => message.setBytes(key, v)
+            }
+        }
+
+      private def populateMessageProperties(message: javax.jms.Message, properties: Map[String, Any]): Unit =
+        properties.foreach {
+          case (key, v) =>
+            v match {
+              case v: String => message.setStringProperty(key, v)
+              case v: Int => message.setIntProperty(key, v)
+              case v: Boolean => message.setBooleanProperty(key, v)
+              case v: Byte => message.setByteProperty(key, v)
+              case v: Short => message.setShortProperty(key, v)
+              case v: Long => message.setLongProperty(key, v)
+              case v: Double => message.setDoubleProperty(key, v)
+            }
+        }
+
+      override def postStop(): Unit = Option(jmsSession).foreach(_.closeSession())
     }
 
 }

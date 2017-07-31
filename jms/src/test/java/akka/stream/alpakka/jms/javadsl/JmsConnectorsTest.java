@@ -7,6 +7,7 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.jms.JmsMessage;
 import akka.stream.alpakka.jms.JmsSinkSettings;
 import akka.stream.alpakka.jms.JmsSourceSettings;
 import akka.stream.alpakka.jms.JmsTextMessage;
@@ -20,6 +21,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import javax.jms.Message;
+import java.io.Serializable;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +32,35 @@ import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 
+
+final class DummyJavaTests implements java.io.Serializable{
+
+
+    private final String value;
+    DummyJavaTests(String value){
+        this.value = value;
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+
+        if (this == o){
+            return true;
+        }
+
+        if(o instanceof DummyJavaTests){
+            return ((DummyJavaTests)o).value.equals(this.value);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return value != null ? value.hashCode() : 0;
+    }
+}
+
 public class JmsConnectorsTest {
 
     //#create-test-message-list
@@ -36,12 +68,12 @@ public class JmsConnectorsTest {
         List<Integer> intsIn = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
         List<JmsTextMessage> msgsIn = new ArrayList<>();
         for(Integer n: intsIn) {
-            Map<String, Object> properties = new HashMap<String, Object>();
+            Map<String, Object> properties = new HashMap<>();
             properties.put("Number", n);
             properties.put("IsOdd", n % 2 == 1);
             properties.put("IsEven", n % 2 == 0);
 
-            msgsIn.add(JmsTextMessage.create(n.toString(), properties));
+            msgsIn.add(JmsMessage.create(n.toString(), properties));
         }
 
         return msgsIn;
@@ -49,7 +81,7 @@ public class JmsConnectorsTest {
     //#create-test-message-list
 
     @Test
-    public void publishAndConsume() throws Exception {
+    public void publishAndConsumeJmsTextMessage() throws Exception {
         withServer(ctx -> {
             //#connection-factory
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
@@ -87,6 +119,154 @@ public class JmsConnectorsTest {
         });
 
     }
+
+
+    @Test
+    public void publishAndConsumeJmsObjectMessage() throws Exception {
+        withServer(ctx -> {
+            //#connection-factory
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+            // This is done here to send arbitrary objects. Otherwise activemq would forbid it.
+            // See therefore http://activemq.apache.org/objectmessage.html
+            connectionFactory.setTrustAllPackages(true);
+            //#connection-factory
+
+            //#create-byte-sink
+            Sink<java.io.Serializable, NotUsed> jmsSink = JmsSink.objectSink(
+                    JmsSinkSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+            //#create-byte-sink
+
+            //#run-byte-sink
+            java.io.Serializable in = new DummyJavaTests("javaTest");
+            Source.single(in).runWith(jmsSink, materializer);
+            //#run-byte-sink
+
+            //#create-text-source
+            Source<java.io.Serializable, NotUsed> jmsSource = JmsSource
+                    .objectSource(JmsSourceSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+                    );
+            //#create-text-source
+
+            //#run-text-source
+            CompletionStage<java.io.Serializable> result = jmsSource
+                    .take(1)
+                    .runWith(Sink.head(), materializer);
+            //#run-text-source
+
+
+            Object resultObject = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+            assertEquals(resultObject, in);
+        });
+    }
+
+
+    @Test
+    public void publishAndConsumeJmsByteMessage() throws Exception {
+        withServer(ctx -> {
+            //#connection-factory
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+            //#connection-factory
+
+            //#create-byte-sink
+            Sink<byte[], NotUsed> jmsSink = JmsSink.bytesSink(
+                    JmsSinkSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+            //#create-byte-sink
+
+            //#run-byte-sink
+            byte[] in = "ThisIsATest".getBytes(Charset.forName("UTF-8"));
+            Source.single(in).runWith(jmsSink, materializer);
+            //#run-byte-sink
+
+            //#create-text-source
+            Source<byte[], NotUsed> jmsSource = JmsSource
+                    .bytesSource(JmsSourceSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+                    );
+            //#create-text-source
+
+            //#run-text-source
+            CompletionStage<byte[]> result = jmsSource
+                    .take(1)
+                    .runWith(Sink.head(), materializer);
+            //#run-text-source
+
+
+            byte[] resultArray = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+            assertEquals("ThisIsATest", new String(resultArray,Charset.forName("UTF-8") ) );
+        });
+
+    }
+
+    @Test
+    public void publishAndConsumeJmsMapMessage() throws Exception {
+        withServer(ctx -> {
+            //#connection-factory
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+            //#connection-factory
+
+            //#create-byte-sink
+            Sink<Map<String, Object>, NotUsed> jmsSink = JmsSink.mapSink(
+                    JmsSinkSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+            //#create-byte-sink
+
+            //#run-byte-sink
+            Map<String, Object> in = new HashMap<>();
+            in.put("string value","value");
+            in.put("int value", 42);
+            in.put("double value", 43.0);
+            in.put("short value", (short)7);
+            in.put("boolean value",true);
+            in.put("long value",7L);
+            in.put("bytearray" , "AStringAsByteArray".getBytes(Charset.forName("UTF-8")));
+            in.put("byte", (byte)1);
+
+
+            Source.single(in).runWith(jmsSink, materializer);
+            //#run-byte-sink
+
+            //#create-text-source
+            Source<Map<String, Object>, NotUsed> jmsSource = JmsSource
+                    .mapSource(JmsSourceSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+                    );
+            //#create-text-source
+
+            //#run-text-source
+            CompletionStage<Map<String, Object>> resultStage = jmsSource
+                    .take(1)
+                    .runWith(Sink.head(), materializer);
+            //#run-text-source
+
+
+            Map<String, Object> resultMap = resultStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+            assertEquals(resultMap.get("string value"), in.get("string value"));
+            assertEquals(resultMap.get("int value"), in.get("int value"));
+            assertEquals(resultMap.get("double value"), in.get("double value"));
+            assertEquals(resultMap.get("short value"), in.get("short value"));
+            assertEquals(resultMap.get("boolean value"), in.get("boolean value"));
+            assertEquals(resultMap.get("long value"), in.get("long value"));
+            assertEquals(resultMap.get("byte"), in.get("byte"));
+
+            byte[] resultByteArray = (byte[]) resultMap.get("bytearray");
+            assertEquals(new String(resultByteArray, Charset.forName("UTF-8")), "AStringAsByteArray");
+        });
+    }
+
 
     @Test
     public void publishAndConsumeJmsTextMessagesWithProperties() throws Exception {
