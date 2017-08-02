@@ -7,7 +7,7 @@ import akka.NotUsed
 import akka.stream.alpakka.jms.{JmsMessage, JmsSinkSettings, JmsSinkStage}
 import akka.stream.scaladsl.Flow
 
-import scala.collection.JavaConverters
+import scala.collection.JavaConversions
 
 object JmsSink {
 
@@ -36,7 +36,7 @@ object JmsSink {
 
     val scalaSink = akka.stream.alpakka.jms.scaladsl.JmsSink.mapSink(jmsSinkSettings)
     val javaToScalaConversion =
-      Flow.fromFunction((javaMap: java.util.Map[String, Any]) => JavaConverters.mapAsScalaMap(javaMap).toMap)
+      Flow.fromFunction((javaMap: java.util.Map[String, Any]) => JavaConversions.mapAsScalaMap(javaMap).toMap)
     javaToScalaConversion.to(scalaSink).asJava
   }
 

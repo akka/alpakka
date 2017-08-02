@@ -9,7 +9,7 @@ import akka.NotUsed
 import akka.stream.alpakka.jms.{JmsSourceSettings, JmsSourceStage}
 import akka.stream.scaladsl.Source
 
-import scala.collection.JavaConverters
+import scala.collection.JavaConversions._
 
 object JmsSource {
 
@@ -31,7 +31,8 @@ object JmsSource {
   def mapSource(jmsSettings: JmsSourceSettings): Source[Map[String, Any], NotUsed] =
     apply(jmsSettings).map { msg =>
       val mapMessage = msg.asInstanceOf[MapMessage]
-      JavaConverters.enumerationAsScalaIterator(mapMessage.getMapNames).foldLeft(Map[String, Any]()) { (result, key) =>
+
+      mapMessage.getMapNames.foldLeft(Map[String, Any]()) { (result, key) =>
         val keyAsString = key.toString
         val value = mapMessage.getObject(keyAsString)
         result.+(keyAsString -> value)

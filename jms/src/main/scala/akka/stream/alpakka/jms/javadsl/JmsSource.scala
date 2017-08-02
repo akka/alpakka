@@ -8,7 +8,7 @@ import javax.jms.Message
 import akka.NotUsed
 import akka.stream.alpakka.jms.{JmsSourceSettings, JmsSourceStage}
 
-import scala.collection.JavaConverters
+import scala.collection.JavaConversions
 
 object JmsSource {
 
@@ -38,7 +38,7 @@ object JmsSource {
   ): akka.stream.javadsl.Source[java.util.Map[String, Any], NotUsed] =
     akka.stream.alpakka.jms.scaladsl.JmsSource
       .mapSource(jmsSourceSettings)
-      .map(scalaMap => JavaConverters.mapAsJavaMap(scalaMap))
+      .map(scalaMap => JavaConversions.mapAsJavaMap(scalaMap))
       .asJava
 
   /**
