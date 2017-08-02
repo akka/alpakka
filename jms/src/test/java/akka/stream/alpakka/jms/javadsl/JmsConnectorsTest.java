@@ -44,7 +44,6 @@ final class DummyJavaTests implements java.io.Serializable{
 
     @Override
     public boolean equals(Object o) {
-
         if (this == o){
             return true;
         }

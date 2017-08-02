@@ -25,22 +25,25 @@ object JmsSource {
     akka.stream.alpakka.jms.scaladsl.JmsSource.textSource(jmsSourceSettings).asJava
 
   /**
-    * Java API: Creates an [[JmsSource]] for byte arrays
-    */
+   * Java API: Creates an [[JmsSource]] for byte arrays
+   */
   def bytesSource(jmsSourceSettings: JmsSourceSettings): akka.stream.javadsl.Source[Array[Byte], NotUsed] =
     akka.stream.alpakka.jms.scaladsl.JmsSource.bytesSource(jmsSourceSettings).asJava
 
   /**
-    * Java API: Creates an [[JmsSource]] for Maps with primitive data types
-    */
-  def mapSource(jmsSourceSettings: JmsSourceSettings): akka.stream.javadsl.Source[java.util.Map[String, Any], NotUsed] =
-    akka.stream.alpakka.jms.scaladsl.JmsSource.mapSource(jmsSourceSettings)
-      .map( scalaMap => JavaConverters.mapAsJavaMap(scalaMap))
+   * Java API: Creates an [[JmsSource]] for Maps with primitive data types
+   */
+  def mapSource(
+      jmsSourceSettings: JmsSourceSettings
+  ): akka.stream.javadsl.Source[java.util.Map[String, Any], NotUsed] =
+    akka.stream.alpakka.jms.scaladsl.JmsSource
+      .mapSource(jmsSourceSettings)
+      .map(scalaMap => JavaConverters.mapAsJavaMap(scalaMap))
       .asJava
 
   /**
-    * Java API: Creates an [[JmsSource]] for serializable objects
-    */
+   * Java API: Creates an [[JmsSource]] for serializable objects
+   */
   def objectSource(jmsSourceSettings: JmsSourceSettings): akka.stream.javadsl.Source[java.io.Serializable, NotUsed] =
     akka.stream.alpakka.jms.scaladsl.JmsSource.objectSource(jmsSourceSettings).asJava
 }

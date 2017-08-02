@@ -16,8 +16,6 @@ sealed trait Destination
 final case class Topic(name: String) extends Destination
 final case class Queue(name: String) extends Destination
 
-
-
 object JmsSourceSettings {
 
   def create(connectionFactory: ConnectionFactory) = JmsSourceSettings(connectionFactory)

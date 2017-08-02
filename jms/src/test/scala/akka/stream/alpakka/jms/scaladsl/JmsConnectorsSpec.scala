@@ -16,8 +16,7 @@ import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-
-final case class DummyObject(payload : String)
+final case class DummyObject(payload: String)
 
 class JmsConnectorsSpec extends JmsSpec {
 
@@ -126,7 +125,7 @@ class JmsConnectorsSpec extends JmsSpec {
       //#connection-factory
 
       //#create-map-sink
-      val jmsSink: Sink[Map[String,Any], NotUsed] = JmsSink.mapSink(
+      val jmsSink: Sink[Map[String, Any], NotUsed] = JmsSink.mapSink(
         JmsSinkSettings(connectionFactory).withQueue("test")
       )
       //#create-map-sink
@@ -134,15 +133,16 @@ class JmsConnectorsSpec extends JmsSpec {
       //#run-map-sink
       val in = List(
         Map[String, Any](
-        "string" -> "value",
-        "int value"     -> 42,
-        "double value"  -> 43.toDouble,
-        "short value"   -> 7.toShort,
-        "boolean value" -> true,
-        "long value"    -> 7.toLong,
-         "bytearray"     -> "AStringAsByteArray".getBytes(Charset.forName("UTF-8")),
-        "byte"          -> 1.toByte
-      ))
+          "string" -> "value",
+          "int value" -> 42,
+          "double value" -> 43.toDouble,
+          "short value" -> 7.toShort,
+          "boolean value" -> true,
+          "long value" -> 7.toLong,
+          "bytearray" -> "AStringAsByteArray".getBytes(Charset.forName("UTF-8")),
+          "byte" -> 1.toByte
+        )
+      )
 
       Source(in).runWith(jmsSink)
       //#run-map-sink
@@ -157,8 +157,8 @@ class JmsConnectorsSpec extends JmsSpec {
       val result = jmsSource.take(1).runWith(Sink.seq)
       //#run-map-source
 
-      result.futureValue.zip(in).foreach{
-        case (out,in ) =>
+      result.futureValue.zip(in).foreach {
+        case (out, in) =>
           out("string") shouldEqual in("string")
           out("int value") shouldEqual in("int value")
           out("double value") shouldEqual in("double value")
