@@ -38,7 +38,7 @@ final case class JmsObjectMessage(serializable: java.io.Serializable, properties
   override def add(name: String, value: Any): JmsObjectMessage = copy(properties = properties + (name -> value))
 }
 
-object JmsMessage {
+object JmsMessageFactory {
 
   /**
    * Java API: create  [[JmsTextMessage]]

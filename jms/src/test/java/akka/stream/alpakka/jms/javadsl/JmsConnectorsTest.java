@@ -7,10 +7,7 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.jms.JmsMessage;
-import akka.stream.alpakka.jms.JmsSinkSettings;
-import akka.stream.alpakka.jms.JmsSourceSettings;
-import akka.stream.alpakka.jms.JmsTextMessage;
+import akka.stream.alpakka.jms.*;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
@@ -21,7 +18,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import javax.jms.Message;
-import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
@@ -72,7 +68,7 @@ public class JmsConnectorsTest {
             properties.put("IsOdd", n % 2 == 1);
             properties.put("IsEven", n % 2 == 0);
 
-            msgsIn.add(JmsMessage.create(n.toString(), properties));
+            msgsIn.add(JmsMessageFactory.create(n.toString(), properties));
         }
 
         return msgsIn;
