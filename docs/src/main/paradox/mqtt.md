@@ -69,7 +69,7 @@ Scala
 Java
 : @@snip (../../../../mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #run-sink }
 
-To connect to the MQTT server in a bidirectional way (source and sink combined) and with the same client ID (using a single instance of the underlaying client) create a flow and connect its inlet and outlet accordingly.
+To connect to the MQTT server in a bidirectional fashion (source and sink combined) and with the same client ID (using a single instance of the underlaying client) create a flow and connect its inlet and outlet accordingly.
 
 Scala
 : @@snip (../../../../mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttFlowSpec.scala) { #run-flow }
