@@ -1,6 +1,6 @@
 # MQTT Connector
 
-The MQTT connector provides Akka Stream source, sink and flow to connect to MQTT servers.
+The MQTT connector provides an Akka Stream source, sink and flow to connect to MQTT servers.
 
 ## Artifacts
 
