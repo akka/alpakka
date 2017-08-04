@@ -1,6 +1,6 @@
 # MQTT Connector
 
-The MQTT connector provides Akka Stream sources to connect to MQTT servers.
+The MQTT connector provides Akka Stream source, sink and flow to connect to MQTT servers.
 
 ## Artifacts
 
@@ -68,6 +68,15 @@ Scala
 
 Java
 : @@snip (../../../../mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #run-sink }
+
+To connect to the MQTT server in a bidirectional way (source and sink combined) and with the same client ID (using single
+a instance of the underlaying client) create a flow and connect its inlet and outlet accordingly.
+
+Scala
+: @@snip (../../../../mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttFlowSpec.scala) { #run-flow }
+
+Java
+: @@snip (../../../../mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttFlowTest.java) { #run-flow }
 
 ### Running the example code
 
