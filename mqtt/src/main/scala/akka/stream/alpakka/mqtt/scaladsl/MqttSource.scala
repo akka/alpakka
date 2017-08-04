@@ -15,7 +15,7 @@ object MqttSource {
    * Scala API: create an [[MqttSource]] with a provided bufferSize.
    */
   def apply(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessage, Future[Done]] =
-    Source.empty.viaMat(
+    Source.maybe.viaMat(
       MqttFlow(settings.connectionSettings, settings.subscriptions, bufferSize, qos = MqttQoS.AtLeastOnce)
     )(Keep.right)
 
