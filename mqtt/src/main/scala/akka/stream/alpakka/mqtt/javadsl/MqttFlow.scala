@@ -6,22 +6,19 @@ package akka.stream.alpakka.mqtt.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.Done
-import akka.stream.alpakka.mqtt.{MqttConnectionSettings, MqttMessage, MqttQoS}
-
-import scala.collection.JavaConverters._
+import akka.stream.alpakka.mqtt.{MqttMessage, MqttQoS, MqttSourceSettings}
 
 object MqttFlow {
 
   /**
    * Java API: create an [[MqttFlow]] for a provided QoS.
    */
-  def create(connectionSettings: MqttConnectionSettings,
-             subscriptions: java.util.HashMap[String, MqttQoS],
+  def create(sourceSettings: MqttSourceSettings,
              bufferSize: Int,
              qos: MqttQoS): akka.stream.javadsl.Flow[MqttMessage, MqttMessage, CompletionStage[Done]] = {
     import scala.compat.java8.FutureConverters._
     akka.stream.alpakka.mqtt.scaladsl.MqttFlow
-      .apply(connectionSettings, subscriptions.asScala.toMap, bufferSize, qos)
+      .apply(sourceSettings, bufferSize, qos)
       .mapMaterializedValue(_.toJava)
       .asJava
   }

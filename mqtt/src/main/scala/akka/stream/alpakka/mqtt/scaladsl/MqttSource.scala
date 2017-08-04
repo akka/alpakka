@@ -16,7 +16,7 @@ object MqttSource {
    */
   def apply(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessage, Future[Done]] =
     Source.maybe.viaMat(
-      MqttFlow(settings.connectionSettings, settings.subscriptions, bufferSize, qos = MqttQoS.AtLeastOnce)
+      MqttFlow(settings, bufferSize, qos = MqttQoS.AtLeastOnce)
     )(Keep.right)
 
 }

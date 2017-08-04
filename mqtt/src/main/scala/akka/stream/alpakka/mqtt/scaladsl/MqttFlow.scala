@@ -9,9 +9,8 @@ import akka.stream.scaladsl.Flow
 import scala.concurrent.Future
 
 object MqttFlow {
-  def apply(connectionSettings: MqttConnectionSettings,
-            subscriptions: Map[String, MqttQoS],
+  def apply(sourceSettings: MqttSourceSettings,
             bufferSize: Int,
             qos: MqttQoS): Flow[MqttMessage, MqttMessage, Future[Done]] =
-    Flow.fromGraph(new MqttFlowStage(connectionSettings, subscriptions, bufferSize, qos))
+    Flow.fromGraph(new MqttFlowStage(sourceSettings, bufferSize, qos))
 }

@@ -15,6 +15,6 @@ object MqttSink {
    * Scala API: create an [[MqttSink]] for a provided QoS.
    */
   def apply(connectionSettings: MqttConnectionSettings, qos: MqttQoS): Sink[MqttMessage, Future[Done]] =
-    MqttFlow(connectionSettings, Map.empty, 0, qos).toMat(Sink.ignore)(Keep.right)
+    MqttFlow(MqttSourceSettings(connectionSettings, Map.empty), 0, qos).toMat(Sink.ignore)(Keep.right)
 
 }

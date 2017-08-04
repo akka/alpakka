@@ -18,10 +18,7 @@ object MqttFlowStage {
   final object NoClientException extends Exception("No MQTT client.")
 }
 
-class MqttFlowStage(settings: MqttConnectionSettings,
-                    subscriptions: Map[String, MqttQoS],
-                    bufferSize: Int,
-                    qos: MqttQoS)
+class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, qos: MqttQoS)
     extends GraphStageWithMaterializedValue[FlowShape[MqttMessage, MqttMessage], Future[Done]] {
   import MqttFlowStage.NoClientException
   import MqttConnectorLogic._
@@ -31,7 +28,7 @@ class MqttFlowStage(settings: MqttConnectionSettings,
   override val shape = FlowShape.of(in, out)
   override protected def initialAttributes: Attributes = Attributes.name("MqttFlow")
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val subscriptionPromise = Promise[Done]
 
     (new GraphStageLogic(shape) with MqttConnectorLogic {
@@ -62,12 +59,12 @@ class MqttFlowStage(settings: MqttConnectionSettings,
         case Failure(ex) => failStage(ex)
       }
 
-      override val connectionSettings: MqttConnectionSettings = settings
+      override val connectionSettings: MqttConnectionSettings = sourceSettings.connectionSettings
 
       setHandler(
         in,
         new InHandler {
-          override def onPush() = {
+          override def onPush(): Unit = {
             val msg = grab(in)
             val pahoMsg = new PahoMqttMessage(msg.payload.toArray)
             pahoMsg.setQos(qos.byteValue)
@@ -90,8 +87,8 @@ class MqttFlowStage(settings: MqttConnectionSettings,
         }
       )
 
-      override def handleConnection(client: IMqttAsyncClient) = {
-        val (topics, qos) = subscriptions.unzip
+      override def handleConnection(client: IMqttAsyncClient): Unit = {
+        val (topics, qos) = sourceSettings.subscriptions.unzip
         mqttClient = Some(client)
         if (topics.nonEmpty) {
           client.subscribe(topics.toArray, qos.map(_.byteValue.toInt).toArray, (), mqttSubscriptionCallback)
@@ -111,12 +108,12 @@ class MqttFlowStage(settings: MqttConnectionSettings,
         backpressure.release()
       }
 
-      override def handleConnectionLost(ex: Throwable) = {
+      override def handleConnectionLost(ex: Throwable): Unit = {
         failStage(ex)
         subscriptionPromise.tryFailure(ex)
       }
 
-      override def postStop() =
+      override def postStop(): Unit =
         mqttClient.foreach {
           case c if c.isConnected => c.disconnect()
           case c => ()
