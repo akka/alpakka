@@ -21,4 +21,7 @@ object KinesisErrors {
       extends RuntimeException(s"Unable to publish records after $attempts attempts")
       with KinesisFlowErrors
 
+  sealed trait KinesisWorkerSourceError extends NoStackTrace
+  case object WorkerUnexpectedShutdown extends KinesisWorkerSourceError
+
 }

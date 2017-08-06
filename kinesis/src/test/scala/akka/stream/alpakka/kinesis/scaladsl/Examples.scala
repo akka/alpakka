@@ -6,6 +6,7 @@ package akka.stream.alpakka.kinesis.scaladsl
 
 import java.nio.ByteBuffer
 import java.util.Date
+import java.util.concurrent.Executors
 
 import akka.actor.ActorSystem
 import akka.stream.alpakka.kinesis.{KinesisFlowSettings, ShardSettings}
@@ -13,8 +14,16 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
 import com.amazonaws.services.kinesis.model.{PutRecordsRequestEntry, ShardIteratorType}
+import akka.stream.alpakka.kinesis.{KinesisWorkerCheckpointSettings, KinesisWorkerSourceSettings, ShardSettings}
+import akka.stream.scaladsl.Sink
+import akka.stream.{ActorMaterializer, Materializer}
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
+import com.amazonaws.services.kinesis.clientlibrary.interfaces.v2.IRecordProcessorFactory
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.{KinesisClientLibConfiguration, Worker}
+import com.amazonaws.services.kinesis.model.ShardIteratorType
 import com.amazonaws.services.kinesis.{AmazonKinesisAsync, AmazonKinesisAsyncClientBuilder}
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -26,7 +35,7 @@ object Examples {
   //#init-system
 
   //#init-client
-  val amazonKinesisAsync: AmazonKinesisAsync = AmazonKinesisAsyncClientBuilder.defaultClient()
+  implicit val amazonKinesisAsync: AmazonKinesisAsync = AmazonKinesisAsyncClientBuilder.defaultClient()
   //#init-client
 
   //#source-settings
@@ -76,8 +85,6 @@ object Examples {
   //#flow-settings
 
   //#flow-sink
-  implicit val _: AmazonKinesisAsync = amazonKinesisAsync
-
   Source.empty[PutRecordsRequestEntry].via(KinesisFlow("myStreamName")).to(Sink.ignore)
   Source.empty[PutRecordsRequestEntry].via(KinesisFlow("myStreamName", flowSettings)).to(Sink.ignore)
   Source.empty[(String, ByteString)].via(KinesisFlow.byParititonAndBytes("myStreamName")).to(Sink.ignore)
@@ -88,5 +95,38 @@ object Examples {
   Source.empty[(String, ByteString)].to(KinesisSink.byParititonAndBytes("myStreamName"))
   Source.empty[(String, ByteBuffer)].to(KinesisSink.byPartitionAndData("myStreamName"))
   //#flow-sink
+
+  //#worker-settings
+  val workerSourceSettings = KinesisWorkerSourceSettings(bufferSize = 1000, checkWorkerPeriodicity = 1 minute)
+  val builder: IRecordProcessorFactory => Worker = { recordProcessorFactory =>
+    new Worker.Builder()
+      .recordProcessorFactory(recordProcessorFactory)
+      .config(
+        new KinesisClientLibConfiguration(
+          "myApp",
+          "myStreamName",
+          DefaultAWSCredentialsProviderChain.getInstance(),
+          s"${
+            import scala.sys.process._
+            "hostname".!!.trim()
+          }:${java.util.UUID.randomUUID()}"
+        )
+      )
+      .build()
+  }
+  //#worker-settings
+
+  //#worker-source
+  implicit val _ = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(1000))
+  KinesisWorker(builder, workerSourceSettings).to(Sink.ignore)
+  //#worker-source
+
+  //#checkpoint
+  val checkpointSettings = KinesisWorkerCheckpointSettings(100, 30 seconds)
+  KinesisWorker(builder, workerSourceSettings)
+    .via(KinesisWorker.checkpointRecordsFlow(checkpointSettings))
+    .to(Sink.ignore)
+  KinesisWorker(builder, workerSourceSettings).to(KinesisWorker.checkpointRecordsSink(checkpointSettings))
+  //#checkpoint
 
 }
