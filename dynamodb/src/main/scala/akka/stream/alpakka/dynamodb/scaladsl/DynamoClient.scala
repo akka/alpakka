@@ -4,17 +4,17 @@
 package akka.stream.alpakka.dynamodb.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.alpakka.dynamodb.AwsOp
 import akka.stream.alpakka.dynamodb.impl.{DynamoClientImpl, DynamoSettings}
 import akka.stream.scaladsl.{Sink, Source}
 
 object DynamoClient {
-  def apply(settings: DynamoSettings)(implicit system: ActorSystem, materializer: ActorMaterializer) =
+  def apply(settings: DynamoSettings)(implicit system: ActorSystem, materializer: Materializer) =
     new DynamoClient(settings)
 }
 
-final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem, materializer: ActorMaterializer) {
+final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem, materializer: Materializer) {
   private val client = new DynamoClientImpl(settings, DynamoImplicits.errorResponseHandler)
 
   val flow = client.flow

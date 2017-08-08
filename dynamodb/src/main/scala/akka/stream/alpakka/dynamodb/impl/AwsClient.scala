@@ -13,7 +13,7 @@ import akka.http.scaladsl.model.{ContentType, HttpEntity, _}
 import akka.stream.alpakka.dynamodb.AwsOp
 import akka.stream.alpakka.dynamodb.impl.AwsClient.{AwsConnect, AwsRequestMetadata}
 import akka.stream.scaladsl.Flow
-import akka.stream.{ActorAttributes, ActorMaterializer, Supervision}
+import akka.stream.{ActorAttributes, Materializer, Supervision}
 import com.amazonaws.auth.{AWS4Signer, DefaultAWSCredentialsProviderChain}
 import com.amazonaws.http.{HttpMethodName, HttpResponseHandler, HttpResponse => AWSHttpResponse}
 import com.amazonaws.{DefaultRequest, HttpMethod => _, _}
@@ -34,7 +34,7 @@ private[alpakka] trait AwsClient[S <: ClientSettings] {
 
   protected implicit def system: ActorSystem
 
-  protected implicit def materializer: ActorMaterializer
+  protected implicit def materializer: Materializer
 
   protected implicit def ec: ExecutionContext
 
