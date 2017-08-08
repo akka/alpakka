@@ -4,7 +4,7 @@
 package akka.stream.alpakka.dynamodb.javadsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.alpakka.dynamodb.AwsOp
 import akka.stream.alpakka.dynamodb.impl.{DynamoClientImpl, DynamoSettings}
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits
@@ -14,11 +14,11 @@ import com.amazonaws.services.dynamodbv2.model._
 import scala.concurrent.Future
 
 object DynamoClient {
-  def create(settings: DynamoSettings, system: ActorSystem, materializer: ActorMaterializer) =
+  def create(settings: DynamoSettings, system: ActorSystem, materializer: Materializer) =
     new DynamoClient(settings)(system, materializer)
 }
 
-final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem, materializer: ActorMaterializer) {
+final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem, materializer: Materializer) {
 
   private val client = new DynamoClientImpl(settings, DynamoImplicits.errorResponseHandler)
   private implicit val ec = system.dispatcher
