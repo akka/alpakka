@@ -48,8 +48,8 @@ object S3Client {
   def create(system: ActorSystem, mat: Materializer): S3Client =
     new S3Client(S3Settings(ConfigFactory.load()), system, mat)
 
-  def create(credentials: AWSCredentialsProvider, region: String)
-            (implicit system: ActorSystem, mat: Materializer): S3Client = {
+  def create(credentials: AWSCredentialsProvider, region: String)(implicit system: ActorSystem,
+                                                                  mat: Materializer): S3Client = {
 
     val settings = S3Settings(ConfigFactory.load()).copy(
       credentialsProvider = credentials,

@@ -45,8 +45,8 @@ object S3Client {
   def apply()(implicit system: ActorSystem, mat: Materializer): S3Client =
     new S3Client(S3Settings(system.settings.config))
 
-  def apply(credentials: AWSCredentialsProvider, region: String)
-           (implicit system: ActorSystem, mat: Materializer): S3Client = {
+  def apply(credentials: AWSCredentialsProvider, region: String)(implicit system: ActorSystem,
+                                                                 mat: Materializer): S3Client = {
 
     val settings = S3Settings(system.settings.config).copy(
       credentialsProvider = credentials,
