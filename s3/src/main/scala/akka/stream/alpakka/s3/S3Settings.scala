@@ -3,31 +3,43 @@
  */
 package akka.stream.alpakka.s3
 
+import java.nio.file.{Path, Paths}
 import akka.actor.ActorSystem
-import akka.stream.alpakka.s3.auth.AWSCredentials
-import com.typesafe.config.{Config, ConfigFactory}
+import akka.http.scaladsl.model.Uri
+import com.amazonaws.auth._
+import com.typesafe.config.Config
 
 final case class Proxy(host: String, port: Int, scheme: String)
 
 final case class S3Settings(bufferType: BufferType,
-                            diskBufferPath: String,
                             proxy: Option[Proxy],
-                            awsCredentials: AWSCredentials,
+                            credentialsProvider: AWSCredentialsProvider,
                             s3Region: String,
                             pathStyleAccess: Boolean) {
 
   override def toString: String =
-    s"S3Settings($bufferType,$diskBufferPath,$proxy,$awsCredentials,$s3Region,$pathStyleAccess)"
+    s"""S3Settings(
+       |$bufferType,
+       |$proxy,
+       |${credentialsProvider.getClass.getSimpleName},
+       |$s3Region,
+       |$pathStyleAccess)""".stripMargin
 }
 
-sealed trait BufferType
+sealed trait BufferType {
+  def path: Option[Path]
+}
 
 case object MemoryBufferType extends BufferType {
   def getInstance: BufferType = MemoryBufferType
+  override def path: Option[Path] = None
 }
 
-case object DiskBufferType extends BufferType {
-  def getInstance: BufferType = DiskBufferType
+case class DiskBufferType(filePath: Path) extends BufferType {
+  override val path: Option[Path] = Some(filePath).filterNot(_.toString.isEmpty)
+}
+case object DiskBufferType {
+  def create(path: Path): DiskBufferType = DiskBufferType(path)
 }
 
 object S3Settings {
@@ -40,33 +52,77 @@ object S3Settings {
   /**
    * Scala API: Creates [[S3Settings]] from a [[Config]] object.
    */
-  def apply(config: Config): S3Settings = new S3Settings(
-    bufferType = config.getString("akka.stream.alpakka.s3.buffer") match {
-      case "memory" => MemoryBufferType
-      case "disk" => DiskBufferType
-      case _ => throw new IllegalArgumentException("Buffer type must be 'memory' or 'disk'")
-    },
-    diskBufferPath = config.getString("akka.stream.alpakka.s3.disk-buffer-path"),
-    proxy = {
-      if (config.getString("akka.stream.alpakka.s3.proxy.host") != "") {
-        val scheme = if (config.getBoolean("akka.stream.alpakka.s3.proxy.secure")) "https" else "http"
-        Some(
-          Proxy(config.getString("akka.stream.alpakka.s3.proxy.host"),
-                config.getInt("akka.stream.alpakka.s3.proxy.port"),
-                scheme)
-        )
-      } else None
-    },
-    awsCredentials = AWSCredentials(config.getString("akka.stream.alpakka.s3.aws.access-key-id"),
-                                    config.getString("akka.stream.alpakka.s3.aws.secret-access-key")),
-    s3Region = config.getString("akka.stream.alpakka.s3.aws.default-region"),
-    pathStyleAccess = config.getBoolean("akka.stream.alpakka.s3.path-style-access")
-  )
+  def apply(config: Config): S3Settings = {
+    val bufferType = config.getString("akka.stream.alpakka.s3.buffer") match {
+      case "memory" =>
+        MemoryBufferType
+
+      case "disk" =>
+        val diskBufferPath = config.getString("akka.stream.alpakka.s3.disk-buffer-path")
+        DiskBufferType(Paths.get(diskBufferPath))
+
+      case other =>
+        throw new IllegalArgumentException(s"Buffer type must be 'memory' or 'disk'. Got: [$other]")
+    }
+
+    val maybeProxy = for {
+      host ← Option(config.getString("akka.stream.alpakka.s3.proxy.host")) if host.nonEmpty
+    } yield {
+      Proxy(
+        host,
+        config.getInt("akka.stream.alpakka.s3.proxy.port"),
+        Uri.httpScheme(config.getBoolean("akka.stream.alpakka.s3.proxy.secure"))
+      )
+    }
+
+    val s3region = config.getString("akka.stream.alpakka.s3.aws.default-region")
+    val pathStyleAccess = config.getBoolean("akka.stream.alpakka.s3.path-style-access")
+
+    val credentialsProvider = {
+      val credProviderPath = "akka.stream.alpakka.s3.aws.credentials.provider"
+      def defaultProvider = new AWSStaticCredentialsProvider(new AnonymousAWSCredentials())
+
+      if (config.hasPath(credProviderPath)) {
+        config.getString(credProviderPath) match {
+          case "default" ⇒
+            DefaultAWSCredentialsProviderChain.getInstance()
+
+          case "const" ⇒
+            val aki = config.getString("akka.stream.alpakka.s3.aws.credentials.access-key-id")
+            val sak = config.getString("akka.stream.alpakka.s3.aws.credentials.secret-access-key")
+            val tokenPath = "akka.stream.alpakka.s3.aws.credentials.token"
+            val creds = if (config.hasPath(tokenPath)) {
+              new BasicSessionCredentials(aki, sak, config.getString(tokenPath))
+            } else {
+              new BasicAWSCredentials(aki, sak)
+            }
+            new AWSStaticCredentialsProvider(creds)
+
+          case "anon" ⇒
+            defaultProvider
+
+          case _ ⇒
+            // use anon. or should I throw? TODO remove this comment when clarified
+            defaultProvider
+        }
+      } else {
+        defaultProvider
+      }
+    }
+
+    new S3Settings(
+      bufferType = bufferType,
+      proxy = maybeProxy,
+      credentialsProvider = credentialsProvider,
+      s3Region = s3region,
+      pathStyleAccess = pathStyleAccess
+    )
+  }
 
   /**
    * Java API: Creates [[S3Settings]] from the [[Config]] attached to an [[ActorSystem]].
    */
-  def create(system: ActorSystem) = apply()(system)
+  def create(system: ActorSystem): S3Settings = apply()(system)
 
   /**
    * Java API: Creates [[S3Settings]] from a [[Config]].
