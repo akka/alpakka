@@ -1,7 +1,6 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-
 package akka.stream.alpakka.mongodb
 
 import akka.actor.ActorSystem
@@ -18,7 +17,7 @@ import scala.concurrent._
 import scala.concurrent.duration._
 
 class MongoSourceSpec
-  extends WordSpec
+    extends WordSpec
     with ScalaFutures
     with BeforeAndAfterEach
     with BeforeAndAfterAll
@@ -26,9 +25,8 @@ class MongoSourceSpec
 
   implicit val system = ActorSystem()
 
-  override protected def beforeAll(): Unit = {
+  override protected def beforeAll(): Unit =
     Await.result(db.drop().toFuture(), 5.seconds)
-  }
 
   implicit val mat = ActorMaterializer()
 
@@ -39,20 +37,19 @@ class MongoSourceSpec
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 50.millis)
 
-  override def afterEach(): Unit = {
+  override def afterEach(): Unit =
     Await.result(numbersColl.deleteMany(Document()).toFuture(), 5.seconds)
-  }
 
-  override def afterAll(): Unit = {
+  override def afterAll(): Unit =
     Await.result(system.terminate(), 5.seconds)
-  }
 
   private def seed() = {
     val numbers = 1 until 10
-    Await.result(
-      numbersColl.insertMany {
-        numbers.map { number => Document(s"{_id:$number}") }
-      }.toFuture, 5.seconds)
+    Await.result(numbersColl.insertMany {
+      numbers.map { number =>
+        Document(s"{_id:$number}")
+      }
+    }.toFuture, 5.seconds)
     numbers
   }
 

@@ -1,7 +1,6 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-
 package akka.stream.alpakka.mongodb.scaladsl
 
 import akka.NotUsed
@@ -11,8 +10,7 @@ import org.mongodb.scala.{Document, Observable}
 
 object MongoSource {
 
-  def apply(query: Observable[Document]): Source[Document, NotUsed] = {
+  def apply(query: Observable[Document]): Source[Document, NotUsed] =
     Source.fromPublisher(ObservableToPublisher(query))
-  }
 
 }
