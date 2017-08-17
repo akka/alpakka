@@ -27,9 +27,8 @@ private[mongodb] final case class ObservableToPublisher[T](observable: mongoDB.O
               subscription.request(n)
             }
 
-          override def cancel() {
+          override def cancel(): Unit =
             if (!cancelled.getAndSet(true)) subscription.unsubscribe()
-          }
         })
 
       def onNext(result: T): Unit = subscriber.onNext(result)
