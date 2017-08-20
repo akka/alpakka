@@ -50,7 +50,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = DescribeTableResult
     override val handler = describeTableU
     override val marshaller = describeTableM
-    def toOp[DescribeTable] = this
+    def toOp: DescribeTable = this
   }
 
   implicit class Query(val request: QueryRequest) extends AwsOp {
@@ -114,6 +114,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = DescribeStreamResult
     override val handler = describeStreamU
     override val marshaller = describeStreamM
+    def toOp: DescribeStream = this
   }
 
   implicit class GetShardIterator(val request: GetShardIteratorRequest) extends AwsOp {
@@ -121,7 +122,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = GetShardIteratorResult
     override val handler = getShardIteratorU
     override val marshaller = getShardIteratorM
-    def toOp[GetShardIterator] = this
+    def toOp: GetShardIterator = this
   }
 
   implicit class GetRecords(val request: GetRecordsRequest) extends AwsOp {

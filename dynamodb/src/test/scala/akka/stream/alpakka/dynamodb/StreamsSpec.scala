@@ -10,13 +10,10 @@ import akka.stream.alpakka.dynamodb.scaladsl._
 import akka.testkit.TestKit
 import com.amazonaws.services.dynamodbv2.model._
 import org.scalatest._
-import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits.{GetRecords, GetShardIterator}
-import akka.stream.scaladsl.Source
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
 
 class StreamsSpec
     extends TestKit(ActorSystem("ItemSpec"))
@@ -34,7 +31,7 @@ class StreamsSpec
   implicit override val patienceConfig =
     PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
   val settings = DynamoSettings(system)
-  val client = DynamoClient(settings)
+  implicit val client = DynamoClient(settings)
 
   override def beforeAll() = {
     System.setProperty("aws.accessKeyId", "someKeyId")
@@ -49,68 +46,16 @@ class StreamsSpec
 
   "DynamoDB Client" should {
 
-    "2) get the ARN of the stream" in {
+    "get the stream of changes to a table" in {
       Given("a table with streams enabled")
-      When("we describe the stream")
-      val describeTableResult = client
-        .single(describeTableRequest)
-        .futureValue
-
-      val arn = describeTableResult.getTable.getLatestStreamArn
-      Then("the ARN should be defined")
-      Option(arn).isDefined shouldBe true
-
       When("we put and delete some data")
       client.single(test4PutItemRequest).futureValue
       client.single(deleteItemRequest).futureValue
 
-      Then("we can get the shards")
-      val describeStreamResult = client.single(describeStreamRequest(arn)).futureValue
-      val shards = describeStreamResult.getStreamDescription.getShards.asScala
+      And("create a stream for that table")
 
-      val recordsSource =
-        Source.fromIterator(() => shards.toIterator).flatMapConcat { shard => // can we process shards in parallel?
-          val parent = shard.getParentShardId
-          println(s"parent $parent")
-          Source
-            .single(getShardIteratorRequest(streamArn = arn, shardId = shard.getShardId).toOp)
-            .via(client.flow)
-            .flatMapConcat { //results need to be in the same order
-              result =>
-                Source.unfoldAsync(Option(result.getShardIterator)) {
-                  case None => Future.successful(None)
-                  case Some(nextShardIterator) =>
-                    client.single(getRecordsRequest(nextShardIterator)).map { result =>
-                      Some((Option(result.getNextShardIterator), result.getRecords))
-                    }
-                }
-
-            }
-            .flatMapConcat(records => Source.fromIterator(() => records.asScala.toIterator))
-        }
-
-      recordsSource.runForeach(records => println(s"received $records"))
+      Streams.records(StreamsSpecOps.tableName).runForeach(records => println(s"received $records"))
     }
-//
-//    "3) update data" in {
-//      client.single(listTablesRequest).map(_.getTableNames.asScala.count(_ == tableName) shouldBe 1)
-//    }
-
-//    "4) get the shards and read stream records" in {
-//      client
-//        .single(test4PutItemRequest)
-//        .flatMap(_ => client.single(getItemRequest))
-//        .map(_.getItem.get("data").getS shouldEqual "test4data")
-//    }
-//
-//    "5) put an item and read it back in a batch" in {
-//      client.single(batchWriteItemRequest).map(_.getUnprocessedItems.size() shouldEqual 0)
-//    }
-//
-//    "6) delete an item" in {
-//      client.single(deleteItemRequest).flatMap(_ => client.single(getItemRequest)).map(_.getItem() shouldEqual null)
-//    }
-
   }
 
 }
@@ -143,11 +88,4 @@ object StreamsSpecOps extends TestOps {
 
   def describeStreamRequest(streamArn: String) = new DescribeStreamRequest().withStreamArn(streamArn)
 
-  def getShardIteratorRequest(streamArn: String, shardId: String) =
-    new GetShardIteratorRequest()
-      .withStreamArn(streamArn)
-      .withShardId(shardId)
-      .withShardIteratorType(ShardIteratorType.TRIM_HORIZON)
-
-  def getRecordsRequest(shardIterator: String) = new GetRecordsRequest().withShardIterator(shardIterator)
 }
