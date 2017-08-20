@@ -21,7 +21,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = CreateTableResult
     override val handler = createTableU
     override val marshaller = createTableM
-    def toOp[CreateTable] = this
+    def toOp: CreateTable = this
   }
 
   implicit class DeleteItem(val request: DeleteItemRequest) extends AwsOp {
@@ -50,7 +50,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = DescribeTableResult
     override val handler = describeTableU
     override val marshaller = describeTableM
-    def toOp[DescribeTable] = this
+    def toOp: DescribeTable = this
   }
 
   implicit class Query(val request: QueryRequest) extends AwsOp {
