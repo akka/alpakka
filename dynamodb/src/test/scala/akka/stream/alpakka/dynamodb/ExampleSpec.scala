@@ -63,7 +63,7 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
         .single[AwsOp](new CreateTableRequest().withTableName("testTable"))
         .via(client.flowOrig)
         .map(_.asInstanceOf[CreateTable#B]) // <-- this is not very intuitive
-        .map[AwsOp]( // <-- this is required to trigger the implicit conversion, which takes some time to find out as well
+        .map[AwsOp]( // <-- this is required to trigger the following implicit conversion, which takes some time to find out as well
           result => new DescribeTableRequest().withTableName(result.getTableDescription.getTableName)
         )
         .via(client.flowOrig)
@@ -102,7 +102,7 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
 
     import DynamoImplicits._
     client
-      .source(new CreateTableRequest().withTableName("testTable")) // creating a source from a single req is common ; utility function
+      .source(new CreateTableRequest().withTableName("testTable")) // creating a source from a single req is common enough to warrant a utility function
       .map(result => new DescribeTableRequest().withTableName(result.getTableDescription.getTableName).toOp)
       .via(client.flow)
       .map(result => result.getTable.getItemCount)
