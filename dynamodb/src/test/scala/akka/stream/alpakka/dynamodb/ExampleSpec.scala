@@ -7,6 +7,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.dynamodb.impl.DynamoSettings
 import akka.stream.alpakka.dynamodb.scaladsl._
+import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import com.amazonaws.services.dynamodbv2.model._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
@@ -48,6 +49,63 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
       system.terminate()
 
     }
+
+    "allow multiple requests - current api" in {
+      implicit val system = ActorSystem()
+      implicit val materializer = ActorMaterializer()
+      implicit val ec = system.dispatcher
+
+      val settings = DynamoSettings(system)
+      val client = DynamoClient(settings)
+
+      import DynamoImplicits._
+      Source
+        .single[AwsOp](new CreateTableRequest().withTableName("testTable"))
+        .via(client.flowOrig)
+        .map(_.asInstanceOf[CreateTable#B]) // <-- this is not very intuitive
+        .map[AwsOp]( // <-- this is required to trigger the implicit conversion, which takes some time to find out as well
+          result => new DescribeTableRequest().withTableName(result.getTableDescription.getTableName)
+        )
+        .via(client.flowOrig)
+        .map(_.asInstanceOf[DescribeTable#B])
+        .map(result => result.getTable.getItemCount)
+    }
+  }
+
+  "allow multiple requests - proposal" in {
+    implicit val system = ActorSystem()
+    implicit val materializer = ActorMaterializer()
+    implicit val ec = system.dispatcher
+
+    val settings = DynamoSettings(system)
+    val client = DynamoClient(settings)
+
+    import DynamoImplicits._
+    Source
+      .single(new CreateTableRequest().withTableName("testTable").toOp) // we keep the concrete subtype of AwsOp here
+      .via(client.flow)
+      .map(
+        result => // that's why code completion 'understands' the type of 'result' here. which makes a big difference in usability
+          new DescribeTableRequest().withTableName(result.getTableDescription.getTableName).toOp
+      )
+      .via(client.flow)
+      .map(result => result.getTable.getItemCount)
+  }
+
+  "allow multiple requests - proposal - single source" in {
+    implicit val system = ActorSystem()
+    implicit val materializer = ActorMaterializer()
+    implicit val ec = system.dispatcher
+
+    val settings = DynamoSettings(system)
+    val client = DynamoClient(settings)
+
+    import DynamoImplicits._
+    client
+      .source(new CreateTableRequest().withTableName("testTable")) // creating a source from a single req is common ; utility function
+      .map(result => new DescribeTableRequest().withTableName(result.getTableDescription.getTableName).toOp)
+      .via(client.flow)
+      .map(result => result.getTable.getItemCount)
 
   }
 

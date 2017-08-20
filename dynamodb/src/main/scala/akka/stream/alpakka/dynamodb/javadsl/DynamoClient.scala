@@ -25,10 +25,10 @@ final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem,
 
   import DynamoImplicits._
 
-  private val flow = client.flow.asJava
+  private val flow = client.flowOrig.asJava
 
   private def single(op: AwsOp): Future[op.B] =
-    Source.single(op).via(client.flow).runWith(Sink.head).map(_.asInstanceOf[op.B])
+    Source.single(op).via(client.flowOrig).runWith(Sink.head).map(_.asInstanceOf[op.B])
 
   def batchGetItem(request: BatchGetItemRequest) = single(BatchGetItem(request))
 

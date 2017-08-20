@@ -20,6 +20,7 @@ import com.amazonaws.{DefaultRequest, HttpMethod => _, _}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
+import scala.language.implicitConversions
 
 private[alpakka] object AwsClient {
 
@@ -68,7 +69,7 @@ private[alpakka] trait AwsClient[S <: ClientSettings] {
 
   private val decider: Supervision.Decider = { case _ => Supervision.Stop }
 
-  def flow: Flow[AwsOp, AmazonWebServiceResult[ResponseMetadata], NotUsed] =
+  def flowOrig: Flow[AwsOp, AmazonWebServiceResult[ResponseMetadata], NotUsed] =
     Flow[AwsOp]
       .map(toAwsRequest)
       .via(connection)
@@ -77,6 +78,17 @@ private[alpakka] trait AwsClient[S <: ClientSettings] {
         case (Failure(ex), i) => Future.failed(ex)
       }
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
+
+  def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] =
+    Flow[Op]
+      .map(toAwsRequest)
+      .via(connection)
+      .mapAsync(settings.parallelism) {
+        case (Success(response), i) => toAwsResult(response, i)
+        case (Failure(ex), i) => Future.failed(ex)
+      }
+      .withAttributes(ActorAttributes.supervisionStrategy(decider))
+      .map(_.asInstanceOf[Op#B])
 
   private def toAwsRequest(s: AwsOp): (HttpRequest, AwsRequestMetadata) = {
     val original = s.marshaller.marshall(s.request)
