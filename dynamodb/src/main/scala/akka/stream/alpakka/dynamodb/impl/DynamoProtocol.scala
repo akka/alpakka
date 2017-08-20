@@ -58,6 +58,9 @@ private[alpakka] trait DynamoProtocol {
   protected val scanM = new ScanRequestProtocolMarshaller(protocol)
   protected val updateItemM = new UpdateItemRequestProtocolMarshaller(protocol)
   protected val updateTableM = new UpdateTableRequestProtocolMarshaller(protocol)
+  protected val describeStreamM = new DescribeStreamRequestProtocolMarshaller(protocol)
+  protected val getShardIteratorM = new GetShardIteratorRequestProtocolMarshaller(protocol)
+  protected val getRecordsM = new GetRecordsRequestProtocolMarshaller(protocol)
 
   protected val batchGetItemU = protocol.createResponseHandler(meta, new BatchGetItemResultJsonUnmarshaller)
   protected val batchWriteItemU = protocol.createResponseHandler(meta, new BatchWriteItemResultJsonUnmarshaller)
@@ -73,5 +76,7 @@ private[alpakka] trait DynamoProtocol {
   protected val scanU = protocol.createResponseHandler(meta, new ScanResultJsonUnmarshaller)
   protected val updateItemU = protocol.createResponseHandler(meta, new UpdateItemResultJsonUnmarshaller)
   protected val updateTableU = protocol.createResponseHandler(meta, new UpdateTableResultJsonUnmarshaller)
-
+  protected val describeStreamU = protocol.createResponseHandler(meta, new DescribeStreamResultJsonUnmarshaller)
+  protected val getShardIteratorU = protocol.createResponseHandler(meta, new GetShardIteratorResultJsonUnmarshaller)
+  protected val getRecordsU = protocol.createResponseHandler(meta, new GetRecordsResultJsonUnmarshaller)
 }

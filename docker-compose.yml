@@ -19,7 +19,7 @@ services:
     volumes:
       - ./mqtt/src/test/travis:/mqtt/config/conf.d
   dynamodb:
-    image: deangiberson/aws-dynamodb-local
+    image: joostdevries/docker-dynamodb
     ports:
       - "8001:8000"
   geode:

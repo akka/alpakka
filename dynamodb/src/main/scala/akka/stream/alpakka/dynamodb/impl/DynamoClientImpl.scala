@@ -31,6 +31,6 @@ class DynamoClientImpl(
     else
       Http().cachedHostConnectionPool[AwsRequestMetadata](settings.host, settings.port)(materializer)
 
-  def single(op: AwsOp) = Source.single(op).via(flow).map(_.asInstanceOf[op.B]).runWith(Sink.head)
+  def single(op: AwsOp) = Source.single(op).via(flowOrig).map(_.asInstanceOf[op.B]).runWith(Sink.head)
 
 }
