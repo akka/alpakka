@@ -21,6 +21,7 @@
 * [JMS Connectors](jms.md)
 * [MongoDB Connector](mongodb.md)
 * [MQTT Connector](mqtt.md)
+* [Neo4j Connector](neo4j.md)
 * [Server-sent Events (SSE)](sse.md)
 * [Slick (JDBC) Connector](slick.md)
 * [Spring Web](spring-web.md)

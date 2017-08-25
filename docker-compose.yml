@@ -12,6 +12,13 @@ services:
     image: cassandra:3.0.15
     ports:
       - "9042:9042"
+  neo4j:
+    image: neo4j:3.2.2
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - "NEO4J_AUTH=neo4j/test"
   dynamodb:
     image: deangiberson/aws-dynamodb-local
     ports:

@@ -175,6 +175,21 @@ object Dependencies {
     )
   )
 
+  val Neo4j = {
+    val slf4jVerson = "1.7.25"
+    val logbackVersin = "1.2.3"
+    Seq(
+      libraryDependencies ++= Seq(
+        "com.chuusai" %% "shapeless" % "2.3.2",
+        "org.neo4j.driver" % "neo4j-java-driver" % "1.2.1", // Apachev2,
+        "org.slf4j" % "log4j-over-slf4j" % slf4jVerson % Test, // MIT like: http://www.slf4j.org/license.html
+        "org.slf4j" % "slf4j-api" % slf4jVerson % Test, // MIT like: http://www.slf4j.org/license.html
+        "ch.qos.logback" % "logback-classic" % logbackVersin % Test, // Eclipse Public License 1.0: http://logback.qos.ch/license.html
+        "ch.qos.logback" % "logback-core" % logbackVersin % Test // Eclipse Public License 1.0: http://logback.qos.ch/license.html
+      )
+    )
+  }
+
   val S3 = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,

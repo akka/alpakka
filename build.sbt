@@ -16,6 +16,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   kinesis,
   mongodb,
   mqtt,
+  neo4j,
   s3,
   springWeb,
   simpleCodecs,
@@ -109,6 +110,12 @@ lazy val kinesis = alpakkaProject("kinesis",
 lazy val mongodb = alpakkaProject("mongodb", Dependencies.MongoDb)
 
 lazy val mqtt = alpakkaProject("mqtt", Dependencies.Mqtt)
+lazy val neo4j = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-neo4j",
+    Dependencies.Neo4j
+  )
 
 lazy val s3 = alpakkaProject("s3", Dependencies.S3)
 
