@@ -20,19 +20,11 @@ object DynamoClient {
 final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem, materializer: Materializer) {
   private val client = new DynamoClientImpl(settings, DynamoImplicits.errorResponseHandler)
 
-  val flowOrig = client.flowOrig
-
-  def singleOrig(op: AwsOp): Future[op.B] =
-    Source.single(op).via(client.flowOrig).map(_.asInstanceOf[op.B]).runWith(Sink.head)
-
   def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] = client.flow[Op]
 
   def source(op: AwsOp): Source[op.B, NotUsed] =
-    Source.single(op).via(client.flowOrig).map(_.asInstanceOf[op.B])
+    Source.single(op).via(client.flow).map(_.asInstanceOf[op.B])
 
   def single(op: AwsOp): Future[op.B] =
     Source.single(op).via(client.flow).map(_.asInstanceOf[op.B]).runWith(Sink.head[op.B])
-
-  def singleAlt[Op <: AwsOp](op: Op): Future[Op#B] = Source.single(op).via(client.flow).runWith(Sink.head[Op#B])
-
 }

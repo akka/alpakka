@@ -61,12 +61,12 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
       import DynamoImplicits._
       Source
         .single[AwsOp](new CreateTableRequest().withTableName("testTable"))
-        .via(client.flowOrig)
+        .via(client.flow)
         .map(_.asInstanceOf[CreateTable#B]) // <-- this is not very intuitive
         .map[AwsOp]( // <-- this is required to trigger the following implicit conversion, which takes some time to find out as well
           result => new DescribeTableRequest().withTableName(result.getTableDescription.getTableName)
         )
-        .via(client.flowOrig)
+        .via(client.flow)
         .map(_.asInstanceOf[DescribeTable#B])
         .map(result => result.getTable.getItemCount)
     }

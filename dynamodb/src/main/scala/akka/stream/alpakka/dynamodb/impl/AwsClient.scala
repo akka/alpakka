@@ -69,19 +69,9 @@ private[alpakka] trait AwsClient[S <: ClientSettings] {
 
   private val decider: Supervision.Decider = { case _ => Supervision.Stop }
 
-  def flowOrig: Flow[AwsOp, AmazonWebServiceResult[ResponseMetadata], NotUsed] =
-    Flow[AwsOp]
-      .map(toAwsRequest)
-      .via(connection)
-      .mapAsync(settings.parallelism) {
-        case (Success(response), i) => toAwsResult(response, i)
-        case (Failure(ex), i) => Future.failed(ex)
-      }
-      .withAttributes(ActorAttributes.supervisionStrategy(decider))
-
   def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] =
     Flow[Op]
-      .map(toAwsRequest)
+      .map(op => toAwsRequest(op))
       .via(connection)
       .mapAsync(settings.parallelism) {
         case (Success(response), i) => toAwsResult(response, i)
@@ -114,8 +104,10 @@ private[alpakka] trait AwsClient[S <: ClientSettings] {
     httpr -> AwsRequestMetadata(requestId.getAndIncrement(), s)
   }
 
-  private def toAwsResult(response: HttpResponse,
-                          metadata: AwsRequestMetadata): Future[AmazonWebServiceResult[ResponseMetadata]] = {
+  private def toAwsResult(
+      response: HttpResponse,
+      metadata: AwsRequestMetadata
+  ): Future[AmazonWebServiceResult[ResponseMetadata]] = {
     val req = new DefaultRequest(this.service)
     val awsResp = new AWSHttpResponse(req, null) //
     response.entity.dataBytes.runFold(Array.emptyByteArray)(_ ++ _).flatMap { bytes =>
