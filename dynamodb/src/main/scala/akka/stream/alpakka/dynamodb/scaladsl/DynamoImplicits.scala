@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.dynamodb.scaladsl
 
@@ -85,8 +85,8 @@ object DynamoImplicits extends DynamoProtocol {
   implicit class PutItem(val request: PutItemRequest) extends AwsOp {
     override type A = PutItemRequest
     override type B = PutItemResult
-    override val handler: HttpResponseHandler[AmazonWebServiceResponse[PutItemResult]] = putItemU
-    override val marshaller: Marshaller[Request[PutItemRequest], PutItemRequest] = putItemM
+    override val handler = putItemU
+    override val marshaller = putItemM
   }
 
   implicit class BatchWriteItem(val request: BatchWriteItemRequest) extends AwsOp {

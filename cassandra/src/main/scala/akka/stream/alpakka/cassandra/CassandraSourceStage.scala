@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.cassandra
 
@@ -30,22 +30,24 @@ final class CassandraSourceStage(futStmt: Future[Statement], session: Session) e
         futRs.onComplete(futFetchedCallback.invoke)
       }
 
-      setHandler(out,
+      setHandler(
+        out,
         new OutHandler {
-        override def onPull(): Unit = {
-          implicit val ec = materializer.executionContext
+          override def onPull(): Unit = {
+            implicit val ec = materializer.executionContext
 
-          maybeRs match {
-            case Some(rs) if rs.getAvailableWithoutFetching > 0 => push(out, rs.one())
-            case Some(rs) if rs.isExhausted => completeStage()
-            case Some(rs) =>
-              // fetch next page
-              val futRs = rs.fetchMoreResults().asScala()
-              futRs.onComplete(futFetchedCallback.invoke)
-            case None => () // doing nothing, waiting for futRs in preStart() to be completed
+            maybeRs match {
+              case Some(rs) if rs.getAvailableWithoutFetching > 0 => push(out, rs.one())
+              case Some(rs) if rs.isExhausted => completeStage()
+              case Some(rs) =>
+                // fetch next page
+                val futRs = rs.fetchMoreResults().asScala()
+                futRs.onComplete(futFetchedCallback.invoke)
+              case None => () // doing nothing, waiting for futRs in preStart() to be completed
+            }
           }
         }
-      })
+      )
 
       private def tryPushAfterFetch(rsOrFailure: Try[ResultSet]): Unit = rsOrFailure match {
         case Success(rs) =>

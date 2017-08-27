@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.mqtt
 
@@ -47,8 +47,7 @@ final class MqttSourceStage(settings: MqttSourceSettings, bufferSize: Int)
 
       override val connectionSettings = settings.connectionSettings
 
-      setHandler(out,
-        new OutHandler {
+      setHandler(out, new OutHandler {
         override def onPull(): Unit =
           if (queue.nonEmpty) {
             pushMessage(queue.dequeue())
@@ -71,8 +70,10 @@ final class MqttSourceStage(settings: MqttSourceSettings, bufferSize: Int)
         backpressure.release()
       }
 
-      override def handleConnectionLost(ex: Throwable) =
+      override def handleConnectionLost(ex: Throwable) = {
         failStage(ex)
+        subscriptionPromise.tryFailure(ex)
+      }
 
       override def postStop() =
         mqttClient.foreach {

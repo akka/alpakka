@@ -1,10 +1,12 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.awslambda.scaladsl
 
 import java.util.concurrent.{CompletableFuture, Future}
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Keep, Sink}
@@ -53,8 +55,9 @@ class AwsLambdaFlowSpec
 
     "call a single invoke request" in {
 
-      when(awsLambdaClient.invokeAsync(mockitoEq(invokeRequest),
-          mockitoAny[AsyncHandler[InvokeRequest, InvokeResult]]())).thenAnswer(new Answer[AnyRef] {
+      when(
+        awsLambdaClient.invokeAsync(mockitoEq(invokeRequest), mockitoAny[AsyncHandler[InvokeRequest, InvokeResult]]())
+      ).thenAnswer(new Answer[AnyRef] {
         override def answer(invocation: InvocationOnMock): AnyRef = {
           invocation.getArgument[AsyncHandler[InvokeRequest, InvokeResult]](1).onSuccess(invokeRequest, invokeResult)
           CompletableFuture.completedFuture(invokeResult)
@@ -65,16 +68,18 @@ class AwsLambdaFlowSpec
       probe.sendNext(invokeRequest)
       probe.sendComplete()
 
-      future.map(_ shouldBe invokeResult)
+      Await.result(future, 3.seconds) shouldBe Vector(invokeResult)
       verify(awsLambdaClient, times(1)).invokeAsync(mockitoEq(invokeRequest),
-        mockitoAny[AsyncHandler[InvokeRequest, InvokeResult]]())
+                                                    mockitoAny[AsyncHandler[InvokeRequest, InvokeResult]]())
 
     }
 
     "call with exception" in {
 
-      when(awsLambdaClient.invokeAsync(mockitoAny[InvokeRequest](),
-          mockitoAny[AsyncHandler[InvokeRequest, InvokeResult]]())).thenAnswer(new Answer[Future[InvokeResult]] {
+      when(
+        awsLambdaClient.invokeAsync(mockitoAny[InvokeRequest](),
+                                    mockitoAny[AsyncHandler[InvokeRequest, InvokeResult]]())
+      ).thenAnswer(new Answer[Future[InvokeResult]] {
         override def answer(invocation: InvocationOnMock): Future[InvokeResult] = {
           val exception = new RuntimeException("Error in lambda")
           invocation.getArgument[AsyncHandler[InvokeRequest, InvokeResult]](1).onError(exception)
@@ -89,8 +94,7 @@ class AwsLambdaFlowSpec
       probe.sendNext(invokeFailureRequest)
       probe.sendComplete()
 
-      future.failed.map(_ shouldBe a[RuntimeException])
-
+      Await.result(future.failed, 3.seconds) shouldBe a[RuntimeException]
     }
 
   }

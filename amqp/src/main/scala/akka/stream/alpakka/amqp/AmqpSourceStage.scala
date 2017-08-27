@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.amqp
 
@@ -41,6 +41,8 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
 
       override val settings = stage.settings
       override def connectionFactoryFrom(settings: AmqpConnectionSettings) = stage.connectionFactoryFrom(settings)
+      override def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings) =
+        stage.newConnection(factory, settings)
 
       private val queue = mutable.Queue[IncomingMessage]()
 
@@ -110,8 +112,7 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
           }
         }
 
-      setHandler(out,
-        new OutHandler {
+      setHandler(out, new OutHandler {
         override def onPull(): Unit =
           if (queue.nonEmpty) {
             pushAndAckMessage(queue.dequeue())
@@ -128,7 +129,7 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
           false // just this single message
         )
       }
-
+      override def onFailure(ex: Throwable): Unit = {}
     }
 
 }

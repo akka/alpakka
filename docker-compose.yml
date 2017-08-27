@@ -12,10 +12,6 @@ services:
     image: rabbitmq:3
     ports:
       - "5672:5672"
-  sqs:
-    image: s12v/elasticmq:0.12.0
-    ports:
-      - "9324:9324"
   mqtt:
     image: toke/mosquitto
     ports:
@@ -26,3 +22,36 @@ services:
     image: deangiberson/aws-dynamodb-local
     ports:
       - "8001:8000"
+  geode:
+    container_name: geode
+    image: apachegeode/geode:1.2.0
+    hostname: geode
+    mem_limit: 2g
+    expose:
+      - "10334"
+      - "1099"
+      - "7575"
+      - "40404"
+    ports:
+      - "1099:1099"
+      - "10334:10334"
+      - "7575:7575"
+      - "7070:7070"
+      - "40404:40404"
+      - "8081:8080"
+    volumes:
+      - ./geode/scripts/:/scripts/
+    command: /scripts/geode.sh
+  ironauth:
+    image: iron/auth
+    ports:
+      - "8090:8090"
+  ironmq:
+    image: iron/mq
+    links:
+      - "ironauth:ironauth"
+    environment:
+      - "AUTH_HOST=http://ironauth:8090"
+    ports:
+      - "8080:8080"
+

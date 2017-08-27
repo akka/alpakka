@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.sqs.scaladsl
 
-import akka.stream.alpakka.sqs.SqsSourceSettings
+import akka.stream.alpakka.sqs.{All, SqsSourceSettings}
 import org.scalatest.{FlatSpec, Matchers}
 
 class SqsSourceSettingsSpec extends FlatSpec with Matchers {
 
   it should "accept valid parameters" in {
-    SqsSourceSettings(waitTimeSeconds = 1, maxBatchSize = 2, maxBufferSize = 3)
+    SqsSourceSettings(waitTimeSeconds = 1, maxBatchSize = 2, maxBufferSize = 3, attributeNames = Seq(All))
   }
 
   it should "require maxBatchSize <= maxBufferSize" in {

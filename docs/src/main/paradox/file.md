@@ -18,7 +18,7 @@ Maven
     ```xml
     <dependency>
       <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-file_$scala.binaryVersion$</artifactId>
+      <artifactId>akka-stream-alpakka-file_$scalaBinaryVersion$</artifactId>
       <version>$version$</version>
     </dependency>
     ```
@@ -28,7 +28,7 @@ Gradle
 :   @@@vars
     ```gradle
     dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-file_$scala.binaryVersion$", version: "$version$"
+      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-file_$scalaBinaryVersion$", version: "$version$"
     }
     ```
     @@@
@@ -52,6 +52,27 @@ Scala
 
 Java
 : @@snip (../../../../file/src/test/java/akka/stream/alpakka/file/javadsl/FileTailSourceTest.java) { #simple-lines }
+
+
+### Directory
+
+`Directory.ls(path)` lists all files and directories
+directly in a given directory:
+
+Scala
+: @@snip (../../../../file/src/test/scala/akka/stream/alpakka/file/scaladsl/DirectorySpec.scala) { #ls }
+
+Java
+: @@snip (../../../../file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryTest.java) { #ls }
+
+`Directory.walk(path)` traverses all subdirectories and lists
+files and directories depth first:
+
+Scala
+: @@snip (../../../../file/src/test/scala/akka/stream/alpakka/file/scaladsl/DirectorySpec.scala) { #walk }
+
+Java
+: @@snip (../../../../file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryTest.java) { #walk }
 
 
 ### DirectoryChangesSource
