@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.backblazeb2
 
@@ -42,13 +42,19 @@ class B2ClientSpec extends WireMockBase with BeforeAndAfterEach {
     )
 
   val validAccountAuthorizationToken = "validAccountAuthorizationToken"
-  val successfulAuthorizeAccountResponse = AuthorizeAccountResponse(accountId, ApiUrl(s"https://$hostAndPort"),
-    AccountAuthorizationToken(validAccountAuthorizationToken))
+  val successfulAuthorizeAccountResponse = AuthorizeAccountResponse(
+    accountId,
+    ApiUrl(s"https://$hostAndPort"),
+    AccountAuthorizationToken(validAccountAuthorizationToken)
+  )
   val successfulAuthorizeAccountResponseJson = successfulAuthorizeAccountResponse.asJson.noSpaces
 
   val expiredAccountAuthorizationToken = "expiredAccountAuthorizationToken"
-  val expiredAuthorizeAccountResponse = AuthorizeAccountResponse(accountId, ApiUrl(s"https://$hostAndPort"),
-    AccountAuthorizationToken(expiredAccountAuthorizationToken))
+  val expiredAuthorizeAccountResponse = AuthorizeAccountResponse(
+    accountId,
+    ApiUrl(s"https://$hostAndPort"),
+    AccountAuthorizationToken(expiredAccountAuthorizationToken)
+  )
   val expiredAuthorizeAccountResponseJson = expiredAuthorizeAccountResponse.asJson.noSpaces
 
   val expiredTokenResponse =

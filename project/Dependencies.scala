@@ -148,11 +148,11 @@ object Dependencies {
     )
   )
 
-  val circeVersion = "0.7.0"
+  val circeVersion = "0.9.0-M1"
   val BackblazeB2 = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka"     %% "akka-http"     % AkkaHttpVersion,
-      "de.heikoseeberger"     %% "akka-http-circe" % "1.12.0", // ApacheV2
+      "de.heikoseeberger"     %% "akka-http-circe" % "1.19.0-M1", // ApacheV2
       "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0", // ApacheV2
       "ch.qos.logback" % "logback-classic" % "1.1.7", // EPL v1.0 or LGPL 2.1
       "com.github.tomakehurst" % "wiremock"      % "2.5.1" % Test //ApacheV2

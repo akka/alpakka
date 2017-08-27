@@ -10,7 +10,7 @@ import akka.stream.alpakka.backblazeb2.Protocol.{ListFileVersionsResponse, _}
 import akka.util.ByteString
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.auto._
-import de.heikoseeberger.akkahttpcirce.CirceSupport._
+import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport._
 import scala.concurrent.{ExecutionContext, Future}
 
 object SerializationSupport {
@@ -70,25 +70,25 @@ object SerializationSupport {
 
   implicit val authorizeAccountResponseDecoder = Decoder[AuthorizeAccountResponse]
   implicit val authorizeAccountResponseEncoder = Encoder[AuthorizeAccountResponse]
-  implicit val authorizeAccountResponseUnmarshaller = circeUnmarshaller[AuthorizeAccountResponse]
+  implicit val authorizeAccountResponseUnmarshaller = unmarshaller[AuthorizeAccountResponse]
 
   implicit val getUploadUrlResponseDecoder = Decoder[GetUploadUrlResponse]
   implicit val getUploadUrlResponseEncoder = Encoder[GetUploadUrlResponse]
-  implicit val getUploadUrlResponseUnmarshaller = circeUnmarshaller[GetUploadUrlResponse]
+  implicit val getUploadUrlResponseUnmarshaller = unmarshaller[GetUploadUrlResponse]
 
   implicit val uploadFileResponseDecoder = Decoder[UploadFileResponse]
   implicit val uploadFileResponseEncoder = Encoder[UploadFileResponse]
-  implicit val getUploadFileResponseUnmarshaller = circeUnmarshaller[UploadFileResponse]
+  implicit val getUploadFileResponseUnmarshaller = unmarshaller[UploadFileResponse]
 
   implicit val listFileVersionsResponseDecoder = Decoder[ListFileVersionsResponse]
-  implicit val listFileVersionsResponseUnmarshaller = circeUnmarshaller[ListFileVersionsResponse]
+  implicit val listFileVersionsResponseUnmarshaller = unmarshaller[ListFileVersionsResponse]
 
   implicit val fileVersionInfoDecoder = Decoder[FileVersionInfo]
-  implicit val fileVersionInfoUnmarshaller = circeUnmarshaller[FileVersionInfo]
+  implicit val fileVersionInfoUnmarshaller = unmarshaller[FileVersionInfo]
 
   implicit val b2ErrorResponseDecoder = Decoder[B2ErrorResponse]
   implicit val b2ErrorResponseEncoder = Encoder[B2ErrorResponse]
-  implicit val b2ErrorResponseUnmarshaller = circeUnmarshaller[B2ErrorResponse]
+  implicit val b2ErrorResponseUnmarshaller = unmarshaller[B2ErrorResponse]
 
   implicit val downloadFileByIdResponseUnmarshaller = new Unmarshaller[HttpResponse, DownloadFileResponse] {
     private def rawHeader(response: HttpResponse, headerName: String): String = {

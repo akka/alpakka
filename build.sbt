@@ -1,3 +1,5 @@
+crossScalaVersions := Seq("2.12.3") // TODO: remove; only added as there is no 2.11 support for akka-http-circe 1.19.0-M1
+
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.backblazeb2
 
@@ -29,10 +29,12 @@ class B2StreamIntegrationSpec extends AsyncFlatSpec with B2IntegrationTest {
 
   it should "upload then download then delete" in {
     val upload = streams.uploadFiles(bucketId)
-    val uploadedFiles = Source(datas).map {
-      case (fn, data) =>
-        UploadFileRequest(FileName(fn), ByteString(data))
-    }.via(upload)
+    val uploadedFiles = Source(datas)
+      .map {
+        case (fn, data) =>
+          UploadFileRequest(FileName(fn), ByteString(data))
+      }
+      .via(upload)
       .map { x =>
         x.fileId -> x.fileName
       }
