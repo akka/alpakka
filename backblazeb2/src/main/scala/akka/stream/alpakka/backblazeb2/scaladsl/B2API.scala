@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.backblazeb2.scaladsl
 
@@ -79,10 +79,10 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
   ): B2Response[UploadFileResponse] = {
     val uri = Uri(uploadCredentials.uploadUrl.value)
     val headers =
-      RawHeader("Authorization", uploadCredentials.authorizationToken.value) ::
-      RawHeader("X-Bz-File-Name", B2Encoder.encode(fileName.value)) ::
-      RawHeader("X-Bz-Content-Sha1", B2Encoder.sha1String(data)) ::
-      Nil
+    RawHeader("Authorization", uploadCredentials.authorizationToken.value) ::
+    RawHeader("X-Bz-File-Name", B2Encoder.encode(fileName.value)) ::
+    RawHeader("X-Bz-Content-Sha1", B2Encoder.sha1String(data)) ::
+    Nil
 
     val entity = HttpEntity(data).withContentType(contentType)
 
@@ -169,12 +169,12 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
       accountAuthorization: AccountAuthorizationToken
   ): B2Response[ListFileVersionsResponse] = {
     val query =
-      List(
-        "bucketId" -> bucketId.value,
-        "maxFileCount" -> maxFileCount.toString
-      ) ++
-      startFileId.map { "startFileId" -> _.value }.toList ++
-      startFileName.map { "startFileName" -> _.value }.toList
+    List(
+      "bucketId" -> bucketId.value,
+      "maxFileCount" -> maxFileCount.toString
+    ) ++
+    startFileId.map { "startFileId" -> _.value }.toList ++
+    startFileName.map { "startFileName" -> _.value }.toList
 
     val uri = Uri(s"$apiUrl/b2api/v1/b2_list_file_versions").withQuery(Query(query: _*))
 
@@ -195,10 +195,11 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
       accountAuthorization: AccountAuthorizationToken
   ): B2Response[FileVersionInfo] = {
     val uri = Uri(s"$apiUrl/b2api/v1/b2_delete_file_version").withQuery(
-        Query(
-          "fileId" -> fileVersion.fileId.value,
-          "fileName" -> fileVersion.fileName.value
-        ))
+      Query(
+        "fileId" -> fileVersion.fileId.value,
+        "fileName" -> fileVersion.fileName.value
+      )
+    )
 
     val request = HttpRequest(
       uri = uri,
@@ -226,7 +227,7 @@ class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: Act
       case HttpResponse(status, _, entity, _) =>
         Unmarshal(entity).to[B2ErrorResponse].flatMap { result =>
           require(status.intValue == result.status,
-            s"Expected statuses to match but got $status from HTTP response but ${result.status} in JSON")
+                  s"Expected statuses to match but got $status from HTTP response but ${result.status} in JSON")
           Future.successful(B2Error(status, result.code, result.message).asLeft)
         }
     }

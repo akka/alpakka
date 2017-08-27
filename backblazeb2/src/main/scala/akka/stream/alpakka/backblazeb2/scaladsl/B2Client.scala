@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.backblazeb2.scaladsl
 
@@ -20,7 +20,8 @@ class B2Client(
     accountCredentials: B2AccountCredentials,
     bucketId: BucketId,
     eagerAuthorization: Boolean,
-    hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: ActorSystem, materializer: ActorMaterializer) {
+    hostAndPort: String = B2API.DefaultHostAndPort
+)(implicit system: ActorSystem, materializer: ActorMaterializer) {
   implicit val executionContext = materializer.executionContext
   private val api = new B2API(hostAndPort)
 
@@ -123,8 +124,9 @@ class B2Client(
 
   def deleteFileVersion(fileVersionInfo: FileVersionInfo): B2Response[FileVersionInfo] =
     withAuthorization { authorizeAccountResponse =>
-      api.deleteFileVersion(fileVersionInfo, authorizeAccountResponse.apiUrl,
-        authorizeAccountResponse.authorizationToken)
+      api.deleteFileVersion(fileVersionInfo,
+                            authorizeAccountResponse.apiUrl,
+                            authorizeAccountResponse.authorizationToken)
     }
 
   def listFileVersions(fileName: FileName): B2Response[ListFileVersionsResponse] =
@@ -160,10 +162,11 @@ class B2Client(
     listFileVersions(fileName) flatMap {
       case Left(x) =>
         Future.successful(
-            DeleteAllFileVersionsResponse(
-              failures = x :: Nil,
-              successes = Nil
-            ))
+          DeleteAllFileVersionsResponse(
+            failures = x :: Nil,
+            successes = Nil
+          )
+        )
 
       case Right(x) =>
         deleteFileVersions(x.files)
