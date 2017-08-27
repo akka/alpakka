@@ -81,15 +81,12 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
     val client = DynamoClient(settings)
 
     import DynamoImplicits._
+    //##flow
     Source
-      .single(new CreateTableRequest().withTableName("testTable").toOp) // we keep the concrete subtype of AwsOp here
+      .single(new CreateTableRequest().withTableName("testTable").toOp)
       .via(client.flow)
-      .map(
-        result => // that's why code completion 'understands' the type of 'result' here. which makes a big difference in usability
-          new DescribeTableRequest().withTableName(result.getTableDescription.getTableName).toOp
-      )
-      .via(client.flow)
-      .map(result => result.getTable.getItemCount)
+      .map(_.getTableDescription.getTableArn)
+    //##flow
   }
 
   "allow multiple requests - proposal - single source" in {
