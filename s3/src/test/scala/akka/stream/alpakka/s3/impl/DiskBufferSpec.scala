@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.s3.impl
 
@@ -9,11 +9,12 @@ import java.nio.file.Files
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.stream.scaladsl.{Sink, Source}
-import akka.testkit.TestKit
+import akka.testkit.{EventFilter, TestKit}
 import akka.util.ByteString
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
+
 import scala.concurrent.duration._
 
 class DiskBufferSpec(_system: ActorSystem)
@@ -45,11 +46,15 @@ class DiskBufferSpec(_system: ActorSystem)
   }
 
   it should "fail if more than maxSize bytes are fed into it" in {
-    whenReady(
-      Source(Vector(ByteString(1, 2, 3, 4, 5), ByteString(6, 7, 8, 9, 10, 11, 12),
-          ByteString(13, 14))).via(new DiskBuffer(1, 10, None)).runWith(Sink.seq).failed
-    ) { e =>
-      e shouldBe a[BufferOverflowException]
+    EventFilter[BufferOverflowException](occurrences = 1) intercept {
+      whenReady(
+        Source(Vector(ByteString(1, 2, 3, 4, 5), ByteString(6, 7, 8, 9, 10, 11, 12), ByteString(13, 14)))
+          .via(new DiskBuffer(1, 10, None))
+          .runWith(Sink.seq)
+          .failed
+      ) { e =>
+        e shouldBe a[BufferOverflowException]
+      }
     }
   }
 

@@ -1,10 +1,10 @@
 language: scala
 
-sudo: required
+sudo: false
 
 scala:
-  - "2.11.8"
-  - "2.12.1"
+  - "2.11.11"
+  - "2.12.2"
 
 jdk:
   - oraclejdk8
@@ -16,7 +16,16 @@ before_install:
   - docker-compose up -d
 
 script:
-  - sbt -J-XX:ReservedCodeCacheSize=128m ++$TRAVIS_SCALA_VERSION ";test;docs/paradox"
+  - sbt -J-XX:ReservedCodeCacheSize=128m ++$TRAVIS_SCALA_VERSION ";test:compile;docs/paradox"
+  # make 'git branch' work again
+  - git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH"
+  # check unformatted code
+  - git diff --exit-code --color || { echo "[error] Unformatted code found. Please run 'test:compile' and commit the reformatted code."; false; } && sbt -J-XX:ReservedCodeCacheSize=128m ++$TRAVIS_SCALA_VERSION ";test"
+  # check policies, if on master also upload
+  - if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate; else sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies; fi
+
+after_failure:
+  - docker-compose logs mqtt
 
 before_cache:
   - find $HOME/.ivy2 -name "ivydata-*.properties" -print -delete
@@ -34,9 +43,15 @@ deploy:
   on:
     tags: true
     repo: akka/alpakka
+    condition: $AKKA_SERIES = 2.4
 
 env:
+  matrix:
+    - AKKA_SERIES=2.4
+    - AKKA_SERIES=2.5
   global:
+    # encrypt with: travis encrypt WHITESOURCE_KEY=...
+    - secure: "JcoxWiNmC0EEdl2KhEx4O8YNy/P2Mvk5fjqC700ClHPiYEsyr+3baNQGmj3AQcpjIgxvHso/8zeFsGJWKnYD3E0vn+J/6urld8vLZprQX/FPKFZgIpIKBgNogQa5V8o2mQSco72t8n1kkFLf6TNZR0T+1cmYz0himcn71rhgwqCtVDrW7zfHgXpbL67FKDUIvfVikdVMBVvcxiZHFIkHUC576LKz24wQYfbnCROGQV7uXFhYNjH0s1HXh6VzUWfEx/PuXEiXnsXSkG8jw0C6ELguLHChJqhsLVC5CaT+DHAs2YeZB04ncX17OwAYNy2RwCgSPCMSnCprBWR2QFqT9C2YZmPrlR9hHgUisHmuydLpRN7aN9BCLpLJk5jGZTwYLyabgzpSbs0SAgqSFgMp+WaWX+WhKMcrhNZvKAuz3n/lgOO6s1pZ0gCTsLtjOIfDLgjY7LxzWykDftwbyVg5OfGI9jv1eYHp3T9GWQ44KTckcQwyzfE5433MUHYk+f0eMjcxWq46rAAuc8BEpEO42+O9iHb+p2kvLUswjpVxy0+SOnxAgJYtrCm4kF8tRCFcBvC/Nim6SzOhyl2dKYMS9BVpBTe4hOMuS5xjfh1wly4TsToByg77C0o2AbW0PhhgujapRgDKcv8Qu6RC599UBthj9tTkGdctW8CCm2YZbTg="
     # encrypt with: travis encrypt BINTRAY_USER=...
     - secure: "DLc1v2XMWrxtbPzVfoArkSQiwzT+O7/rwT7APqoA68K5A1pwxDw5BD3sOLpd6rKbPBulmwDAAQ1am3uE6lbmymCTMe8bvA3iHWy0Jg8baK4nC46EKFLabQz4Uaoq/bs92YGW1QH12rbBPyTA7uvPpvhmb8uyUbJqjT3uyROqHhHfhll89dsPVaK0NCY9DN2K356M87z7cp1SvtfAiF8qaNjNmlOfWjIEUSO1SiiqQBjT/GJvhrrW32J4htf5CqEEYBSoN+fqTCwwdo3GpOFFq+Zh5TSoyvKyi5xo+LVq0hW2SAYTHMMB5WhLd1cvQ0bvK6FpUhyfMcON/8ad3R7paNVxLpIGEu8hsUYGsENjdXaEK4g1TurDeVekWJRYyGMCmy2cCg5yHC+Pb56qOgpM7gmZACCitLap1jXUCWI27q+7cvxuxaBb6EPiDuWGNQXHH+OkbD/s4RJO3kQfv1Si64RON8+bZ+fqOWLK+BuakYi3YMukFgPngQozX3aMZOVcEBKJZtquwewCKsNV2VGItJxrp3MDol0HhuNvdUvIf5UydZZCyJTo1DBsK49yDUj7iKOEJk5Qc5oYfEhSEKcGRZs8Yl9n/kIJUh8ZYTT+35rwD27dHgsEkPkCEGpbMP/r0JewkWH7q9FfajPIYOlEpoP6tCsdP4mBOyF1uZH7omM="
     # encrypt with: travis encrypt BINTRAY_PASS=...

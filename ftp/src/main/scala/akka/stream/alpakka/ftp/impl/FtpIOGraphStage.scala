@@ -1,27 +1,24 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.ftp
 package impl
 
-import akka.stream.stage.{GraphStageWithMaterializedValue, OutHandler}
-import akka.stream.{Attributes, IOResult, Outlet, SourceShape}
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
+import akka.stream.stage.{GraphStageWithMaterializedValue, InHandler, OutHandler}
+import akka.stream.{Attributes, IOResult, Inlet, Outlet, Shape, SinkShape, SourceShape}
 import akka.util.ByteString
 import akka.util.ByteString.ByteString1C
 import scala.concurrent.{Future, Promise}
+import java.io.{InputStream, OutputStream}
 import scala.util.control.NonFatal
-import java.io.InputStream
-import java.nio.file.Path
 
-private[ftp] trait FtpIOGraphStage[FtpClient, S <: RemoteFileSettings]
-    extends GraphStageWithMaterializedValue[SourceShape[ByteString], Future[IOResult]] {
+private[ftp] trait FtpIOGraphStage[FtpClient, S <: RemoteFileSettings, Sh <: Shape]
+    extends GraphStageWithMaterializedValue[Sh, Future[IOResult]] {
 
   def name: String
 
-  def path: Path
-
-  def chunkSize: Int
+  def path: String
 
   def connectionSettings: S
 
@@ -32,7 +29,16 @@ private[ftp] trait FtpIOGraphStage[FtpClient, S <: RemoteFileSettings]
   override def initialAttributes: Attributes =
     super.initialAttributes and Attributes.name(name) and IODispatcher
 
-  val shape = SourceShape(Outlet[ByteString](s"$name.out"))
+  override def shape: Sh
+}
+
+private[ftp] trait FtpIOSourceStage[FtpClient, S <: RemoteFileSettings]
+    extends FtpIOGraphStage[FtpClient, S, SourceShape[ByteString]] {
+
+  def chunkSize: Int
+
+  val shape: SourceShape[ByteString] = SourceShape(Outlet[ByteString](s"$name.out"))
+  val out: Outlet[ByteString] = shape.outlets.head.asInstanceOf[Outlet[ByteString]]
 
   def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
 
@@ -43,31 +49,33 @@ private[ftp] trait FtpIOGraphStage[FtpClient, S <: RemoteFileSettings]
       private[this] var isOpt: Option[InputStream] = None
       private[this] var readBytesTotal: Long = 0L
 
-      setHandler(out,
+      setHandler(
+        out,
         new OutHandler {
-        def onPull(): Unit =
-          readChunk() match {
-            case Some(bs) =>
-              push(out, bs)
-            case None =>
-              try {
-                isOpt.foreach(_.close())
-                disconnect()
-              } finally {
-                matSuccess()
-                complete(out)
-              }
-          }
+          def onPull(): Unit =
+            readChunk() match {
+              case Some(bs) =>
+                push(out, bs)
+              case None =>
+                try {
+                  isOpt.foreach(_.close())
+                  disconnect()
+                } finally {
+                  matSuccess()
+                  complete(out)
+                }
+            }
 
-        override def onDownstreamFinish(): Unit =
-          try {
-            isOpt.foreach(_.close())
-            disconnect()
-          } finally {
-            matSuccess()
-            super.onDownstreamFinish()
-          }
-      }) // end of handler
+          override def onDownstreamFinish(): Unit =
+            try {
+              isOpt.foreach(_.close())
+              disconnect()
+            } finally {
+              matSuccess()
+              super.onDownstreamFinish()
+            }
+        }
+      ) // end of handler
 
       override def postStop(): Unit =
         try {
@@ -76,13 +84,8 @@ private[ftp] trait FtpIOGraphStage[FtpClient, S <: RemoteFileSettings]
           super.postStop()
         }
 
-      protected[this] def doPreStart(): Unit = {
-        val tryIs = ftpLike.retrieveFileInputStream(path.toAbsolutePath.toString, handler.get)
-        if (tryIs.isSuccess)
-          isOpt = tryIs.toOption
-        else
-          tryIs.failed.foreach { case NonFatal(t) => throw t }
-      }
+      protected[this] def doPreStart(): Unit =
+        isOpt = Some(ftpLike.retrieveFileInputStream(path, handler.get).get)
 
       protected[this] def matSuccess(): Boolean =
         matValuePromise.trySuccess(IOResult.createSuccessful(readBytesTotal))
@@ -107,6 +110,89 @@ private[ftp] trait FtpIOGraphStage[FtpClient, S <: RemoteFileSettings]
             ByteString1C(arr).take(readBytes)
         }
       }
+
+    } // end of stage logic
+
+    (logic, matValuePromise.future)
+  }
+
+}
+
+private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
+    extends FtpIOGraphStage[FtpClient, S, SinkShape[ByteString]] {
+
+  def append: Boolean
+
+  val shape: SinkShape[ByteString] = SinkShape(Inlet[ByteString](s"$name.in"))
+  val in: Inlet[ByteString] = shape.inlets.head.asInstanceOf[Inlet[ByteString]]
+
+  def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+
+    val matValuePromise = Promise[IOResult]()
+
+    val logic = new FtpGraphStageLogic[ByteString, FtpClient, S](shape, ftpLike, connectionSettings, ftpClient) {
+
+      private[this] var osOpt: Option[OutputStream] = None
+      private[this] var writtenBytesTotal: Long = 0L
+
+      setHandler(
+        in,
+        new InHandler {
+          override def onPush(): Unit = {
+            try {
+              write(grab(in))
+            } catch {
+              case NonFatal(e) ⇒
+                matFailure(e)
+                try osOpt.foreach(_.close())
+                catch {
+                  case NonFatal(_) ⇒
+                }
+                osOpt = None
+                throw e
+            }
+            pull(in)
+          }
+          override def onUpstreamFinish(): Unit =
+            try {
+              osOpt.foreach(_.close())
+              disconnect()
+            } finally {
+              matSuccess()
+              super.onUpstreamFinish()
+            }
+
+          override def onUpstreamFailure(exception: Throwable): Unit = {
+            matFailure(exception)
+            failStage(exception)
+          }
+        }
+      ) // end of handler
+
+      override def postStop(): Unit =
+        try {
+          osOpt.foreach(_.close())
+        } finally {
+          super.postStop()
+        }
+
+      protected[this] def doPreStart(): Unit = {
+        osOpt = Some(ftpLike.storeFileOutputStream(path, handler.get, append).get)
+        pull(in)
+      }
+
+      protected[this] def matSuccess(): Boolean =
+        matValuePromise.trySuccess(IOResult.createSuccessful(writtenBytesTotal))
+
+      protected[this] def matFailure(t: Throwable): Boolean =
+        matValuePromise.trySuccess(IOResult.createFailed(writtenBytesTotal, t))
+
+      /** BLOCKING I/O WRITE */
+      private[this] def write(bytes: ByteString) =
+        osOpt.foreach { os =>
+          os.write(bytes.toArray)
+          writtenBytesTotal += bytes.size
+        }
 
     } // end of stage logic
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.mqtt.scaladsl
 
@@ -26,7 +26,7 @@ class MqttSourceSpec
     with ScalaFutures {
 
   implicit val defaultPatience =
-    PatienceConfig(timeout = 5.seconds, interval = 100.millis)
+    PatienceConfig(timeout = 10.seconds, interval = 100.millis)
 
   implicit val mat = ActorMaterializer()
 
@@ -99,7 +99,7 @@ class MqttSourceSpec
     "fail connection when not providing the requested credentials" in {
       val settings =
         MqttSourceSettings(sourceSettings.withAuth("username1", "bad_password"),
-          Map(secureTopic -> MqttQoS.AtLeastOnce))
+                           Map(secureTopic -> MqttQoS.AtLeastOnce))
       val first = MqttSource(settings, 8).runWith(Sink.head)
       whenReady(first.failed) {
         case e: MqttException => e.getMessage should be("Not authorized to connect")
@@ -125,9 +125,11 @@ class MqttSourceSpec
       val settings = MqttSourceSettings(sourceSettings, Map(topic1 -> MqttQoS.AtLeastOnce))
       val (subscriptionFuture, probe) = MqttSource(settings, bufferSize).toMat(TestSink.probe)(Keep.both).run()
       whenReady(subscriptionFuture) { _ =>
-        Source(1 to bufferSize + overflow).map { i =>
-          MqttMessage(topic1, ByteString(s"ohi_$i"))
-        }.runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
+        Source(1 to bufferSize + overflow)
+          .map { i =>
+            MqttMessage(topic1, ByteString(s"ohi_$i"))
+          }
+          .runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
 
         (1 to bufferSize + overflow) foreach { i =>
           probe.requestNext shouldBe MqttMessage(topic1, ByteString(s"ohi_$i"))
@@ -144,9 +146,11 @@ class MqttSourceSpec
       whenReady(subscriptionFuture) { _ =>
         probe.request((bufferSize + overflow).toLong)
 
-        Source(1 to bufferSize + overflow).map { i =>
-          MqttMessage(topic1, ByteString(s"ohi_$i"))
-        }.runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
+        Source(1 to bufferSize + overflow)
+          .map { i =>
+            MqttMessage(topic1, ByteString(s"ohi_$i"))
+          }
+          .runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
 
         (1 to bufferSize + overflow) foreach { i =>
           probe.expectNext() shouldBe MqttMessage(topic1, ByteString(s"ohi_$i"))
@@ -182,11 +186,12 @@ class MqttSourceSpec
 
       whenReady(binding) { _ =>
         val settings = MqttSourceSettings(
-            sourceSettings
-              .withClientId("source-spec/testator")
-              .withBroker("tcp://localhost:1337")
-              .withWill(Will(MqttMessage(willTopic, ByteString("ohi")), MqttQoS.AtLeastOnce, retained = true)),
-            Map(willTopic -> MqttQoS.AtLeastOnce))
+          sourceSettings
+            .withClientId("source-spec/testator")
+            .withBroker("tcp://localhost:1337")
+            .withWill(Will(MqttMessage(willTopic, ByteString("ohi")), MqttQoS.AtLeastOnce, retained = true)),
+          Map(willTopic -> MqttQoS.AtLeastOnce)
+        )
         val source = MqttSource(settings, 8)
 
         val sub = source.toMat(Sink.head)(Keep.left).run()
@@ -198,7 +203,7 @@ class MqttSourceSpec
       {
         val settings =
           MqttSourceSettings(sourceSettings.withClientId("source-spec/executor"),
-            Map(willTopic -> MqttQoS.AtLeastOnce))
+                             Map(willTopic -> MqttQoS.AtLeastOnce))
         val source = MqttSource(settings, 8)
 
         val (sub, elem) = source.toMat(Sink.head)(Keep.both).run()

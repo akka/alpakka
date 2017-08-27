@@ -1,8 +1,9 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.amqp
 
+import com.rabbitmq.client.ExceptionHandler
 import scala.collection.JavaConverters._
 
 /**
@@ -46,7 +47,7 @@ object NamedQueueSourceSettings {
   /**
    * Java API
    */
-  def create(connectionSettings: AmqpConnectionSettings, queue: String) =
+  def create(connectionSettings: AmqpConnectionSettings, queue: String): NamedQueueSourceSettings =
     NamedQueueSourceSettings(connectionSettings, queue)
 }
 
@@ -67,8 +68,31 @@ object TemporaryQueueSourceSettings {
   /**
    * Java API
    */
-  def create(connectionSettings: AmqpConnectionSettings, exchange: String) =
+  def create(connectionSettings: AmqpConnectionSettings, exchange: String): TemporaryQueueSourceSettings =
     TemporaryQueueSourceSettings(connectionSettings, exchange)
+}
+
+final case class AmqpReplyToSinkSettings(
+    connectionSettings: AmqpConnectionSettings,
+    failIfReplyToMissing: Boolean = true
+) extends AmqpConnectorSettings {
+  override final val declarations = Nil
+}
+
+object AmqpReplyToSinkSettings {
+
+  /**
+   * Java API
+   */
+  def create(connectionSettings: AmqpConnectionSettings): AmqpReplyToSinkSettings =
+    AmqpReplyToSinkSettings(connectionSettings)
+
+  /**
+   * Java API
+   */
+  def create(connectionSettings: AmqpConnectionSettings, failIfReplyToMissing: Boolean): AmqpReplyToSinkSettings =
+    AmqpReplyToSinkSettings(connectionSettings, failIfReplyToMissing)
+
 }
 
 final case class AmqpSinkSettings(
@@ -90,8 +114,13 @@ object AmqpSinkSettings {
   /**
    * Java API
    */
-  def create(connectionSettings: AmqpConnectionSettings) =
+  def create(connectionSettings: AmqpConnectionSettings): AmqpSinkSettings =
     AmqpSinkSettings(connectionSettings)
+
+  /**
+   * Java API
+   */
+  def create(): AmqpSinkSettings = AmqpSinkSettings.create(DefaultAmqpConnection)
 }
 
 /**
@@ -107,7 +136,7 @@ case object DefaultAmqpConnection extends AmqpConnectionSettings {
   /**
    * Java API
    */
-  def getInstance() = this
+  def getInstance(): DefaultAmqpConnection.type = this
 }
 
 final case class AmqpConnectionUri(uri: String) extends AmqpConnectionSettings
@@ -117,23 +146,78 @@ object AmqpConnectionUri {
   /**
    * Java API:
    */
-  def create(uri: String) = AmqpConnectionUri(uri)
+  def create(uri: String): AmqpConnectionUri = AmqpConnectionUri(uri)
 }
 
 final case class AmqpConnectionDetails(
-    host: String,
-    port: Int,
+    hostAndPortList: Seq[(String, Int)],
     credentials: Option[AmqpCredentials] = None,
     virtualHost: Option[String] = None,
-    sslProtocol: Option[String] = None
-) extends AmqpConnectionSettings {}
+    sslProtocol: Option[String] = None,
+    requestedHeartbeat: Option[Int] = None,
+    connectionTimeout: Option[Int] = None,
+    handshakeTimeout: Option[Int] = None,
+    shutdownTimeout: Option[Int] = None,
+    networkRecoveryInterval: Option[Int] = None,
+    automaticRecoveryEnabled: Option[Boolean] = None,
+    topologyRecoveryEnabled: Option[Boolean] = None,
+    exceptionHandler: Option[ExceptionHandler] = None
+) extends AmqpConnectionSettings {
 
-object AmqpConnectionDetails {
+  def withHostsAndPorts(hostAndPort: (String, Int), hostAndPorts: (String, Int)*): AmqpConnectionDetails =
+    copy(hostAndPortList = (hostAndPort +: hostAndPorts).toList)
+
+  def withCredentials(amqpCredentials: AmqpCredentials): AmqpConnectionDetails =
+    copy(credentials = Option(amqpCredentials))
+
+  def withVirtualHost(virtualHost: String): AmqpConnectionDetails =
+    copy(virtualHost = Option(virtualHost))
+
+  def withSslProtocol(sslProtocol: String): AmqpConnectionDetails =
+    copy(sslProtocol = Option(sslProtocol))
+
+  def withRequestedHeartbeat(requestedHeartbeat: Int): AmqpConnectionDetails =
+    copy(requestedHeartbeat = Option(requestedHeartbeat))
+
+  def withConnectionTimeout(connectionTimeout: Int): AmqpConnectionDetails =
+    copy(connectionTimeout = Option(connectionTimeout))
+
+  def withHandshakeTimeout(handshakeTimeout: Int): AmqpConnectionDetails =
+    copy(handshakeTimeout = Option(handshakeTimeout))
+
+  def withShutdownTimeout(shutdownTimeout: Int): AmqpConnectionDetails =
+    copy(shutdownTimeout = Option(shutdownTimeout))
+
+  def withNetworkRecoveryInterval(networkRecoveryInterval: Int): AmqpConnectionDetails =
+    copy(networkRecoveryInterval = Option(networkRecoveryInterval))
+
+  def withAutomaticRecoveryEnabled(automaticRecoveryEnabled: Boolean): AmqpConnectionDetails =
+    copy(automaticRecoveryEnabled = Option(automaticRecoveryEnabled))
+
+  def withTopologyRecoveryEnabled(topologyRecoveryEnabled: Boolean): AmqpConnectionDetails =
+    copy(topologyRecoveryEnabled = Option(topologyRecoveryEnabled))
+
+  def withExceptionHandler(exceptionHandler: ExceptionHandler): AmqpConnectionDetails =
+    copy(exceptionHandler = Option(exceptionHandler))
 
   /**
    * Java API:
    */
-  def create(host: String, port: Int) =
+  @annotation.varargs
+  def withHostsAndPorts(hostAndPort: akka.japi.Pair[String, Int],
+                        hostAndPorts: akka.japi.Pair[String, Int]*): AmqpConnectionDetails =
+    copy(hostAndPortList = (hostAndPort +: hostAndPorts).map(_.toScala).toList)
+}
+
+object AmqpConnectionDetails {
+
+  def apply(host: String, port: Int): AmqpConnectionDetails =
+    AmqpConnectionDetails(List((host, port)))
+
+  /**
+   * Java API:
+   */
+  def create(host: String, port: Int): AmqpConnectionDetails =
     AmqpConnectionDetails(host, port)
 }
 
@@ -146,7 +230,7 @@ object AmqpCredentials {
   /**
    * Java API
    */
-  def create(username: String, password: String) =
+  def create(username: String, password: String): AmqpCredentials =
     AmqpCredentials(username, password)
 }
 
@@ -178,7 +262,7 @@ object QueueDeclaration {
   /**
    * Java API
    */
-  def create(name: String) = QueueDeclaration(name)
+  def create(name: String): QueueDeclaration = QueueDeclaration(name)
 }
 
 final case class BindingDeclaration(
@@ -202,7 +286,7 @@ object BindingDeclaration {
   /**
    * Java API
    */
-  def create(queue: String, exchange: String) = BindingDeclaration(queue, exchange)
+  def create(queue: String, exchange: String): BindingDeclaration = BindingDeclaration(queue, exchange)
 }
 
 final case class ExchangeDeclaration(
@@ -232,5 +316,5 @@ object ExchangeDeclaration {
   /**
    * Java API
    */
-  def create(name: String, exchangeType: String) = ExchangeDeclaration(name, exchangeType)
+  def create(name: String, exchangeType: String): ExchangeDeclaration = ExchangeDeclaration(name, exchangeType)
 }

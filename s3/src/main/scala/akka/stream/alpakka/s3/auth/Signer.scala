@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.s3.auth
 
@@ -17,7 +17,8 @@ private[alpakka] object Signer {
   private val dateFormatter = DateTimeFormatter.ofPattern("YYYYMMdd'T'HHmmssX")
 
   def signedRequest(request: HttpRequest, key: SigningKey, date: ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC))(
-      implicit mat: Materializer): Future[HttpRequest] = {
+      implicit mat: Materializer
+  ): Future[HttpRequest] = {
     import mat.executionContext
     val hashedBody = request.entity.dataBytes.runWith(digest()).map {
       case hash => encodeHex(hash.toArray)
@@ -26,7 +27,7 @@ private[alpakka] object Signer {
     hashedBody.map {
       case hb =>
         val headersToAdd = Vector(RawHeader("x-amz-date", date.format(dateFormatter)),
-            RawHeader("x-amz-content-sha256", hb)) ++ sessionHeader(key.credentials)
+                                  RawHeader("x-amz-content-sha256", hb)) ++ sessionHeader(key.credentials)
         val reqWithHeaders = request.withHeaders(request.headers ++ headersToAdd)
         val cr = CanonicalRequest.from(reqWithHeaders)
         val authHeader = authorizationHeader("AWS4-HMAC-SHA256", key, date, cr)

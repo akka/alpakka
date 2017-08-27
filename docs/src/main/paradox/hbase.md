@@ -1,11 +1,11 @@
-#HBbase connector
+# HBase connector
 
 A flow and a composite sink to write element in [HBase](http://hbase.apache.org).
 
 HBase is a column family NoSQL Database backed by HDFS.
 
  
-#Usage
+# Usage
 
 Build a converter and a tableSetting.
 
@@ -25,7 +25,7 @@ scala
 java
 :   @@snip (../../../../hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-settings }
 
-###Flow usage 
+### Flow usage 
 
 scala
 : @@snip (../../../../hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #flow }
@@ -34,7 +34,7 @@ java
 : @@snip (../../../../hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #flow }
 
 
-###Sink usage
+### Sink usage
 
 scala
 : @@snip (../../../../hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #sink }
@@ -42,7 +42,7 @@ scala
 java
 : @@snip (../../../../hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #sink }
 
-##Hbase basic command:
+## HBase basic command:
 
 ```
 $HBASE_HOME/bin/start-hbase.sh

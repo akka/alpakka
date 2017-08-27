@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.jms.javadsl;
 
@@ -9,6 +9,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.jms.JmsSinkSettings;
 import akka.stream.alpakka.jms.JmsSourceSettings;
+import akka.stream.alpakka.jms.JmsTextMessage;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
@@ -18,9 +19,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import javax.jms.Message;
+import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -31,6 +31,23 @@ import static org.junit.Assert.assertEquals;
 
 public class JmsConnectorsTest {
 
+    //#create-test-message-list
+    private List<JmsTextMessage> createTestMessageList() {
+        List<Integer> intsIn = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        List<JmsTextMessage> msgsIn = new ArrayList<>();
+        for(Integer n: intsIn) {
+            Map<String, Object> properties = new HashMap<String, Object>();
+            properties.put("Number", n);
+            properties.put("IsOdd", n % 2 == 1);
+            properties.put("IsEven", n % 2 == 0);
+
+            msgsIn.add(JmsTextMessage.create(n.toString(), properties));
+        }
+
+        return msgsIn;
+    }
+    //#create-test-message-list
+
     @Test
     public void publishAndConsume() throws Exception {
         withServer(ctx -> {
@@ -38,37 +55,130 @@ public class JmsConnectorsTest {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
             //#connection-factory
 
-            //#create-sink
-            Sink<String, NotUsed> jmsSink = JmsSink.create(
+            //#create-text-sink
+            Sink<String, NotUsed> jmsSink = JmsSink.textSink(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
-            //#create-sink
+            //#create-text-sink
 
-            //#run-sink
+            //#run-text-sink
             List<String> in = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
             Source.from(in).runWith(jmsSink, materializer);
-            //#run-sink
+            //#run-text-sink
 
-            //#create-source
+            //#create-text-source
             Source<String, NotUsed> jmsSource = JmsSource
                     .textSource(JmsSourceSettings
                             .create(connectionFactory)
                             .withQueue("test")
                             .withBufferSize(10)
                     );
-            //#create-source
+            //#create-text-source
 
-            //#run-source
+            //#run-text-source
             CompletionStage<List<String>> result = jmsSource
                     .take(in.size())
                     .runWith(Sink.seq(), materializer);
-            //#run-source
+            //#run-text-source
 
             assertEquals(in, result.toCompletableFuture().get(3, TimeUnit.SECONDS));
         });
 
+    }
+
+    @Test
+    public void publishAndConsumeJmsTextMessagesWithProperties() throws Exception {
+        withServer(ctx -> {
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+            //#create-jms-sink
+            Sink<JmsTextMessage, NotUsed> jmsSink = JmsSink.create(
+                    JmsSinkSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+            //#create-jms-sink
+
+            //#create-messages-with-properties
+            List<JmsTextMessage> msgsIn = createTestMessageList();
+            //#create-messages-with-properties
+
+            //#run-jms-sink
+            Source.from(msgsIn).runWith(jmsSink, materializer);
+            //#run-jms-sink
+
+            //#create-jms-source
+            Source<Message, NotUsed> jmsSource = JmsSource.create(JmsSourceSettings
+                    .create(connectionFactory)
+                    .withQueue("test")
+                    .withBufferSize(10)
+            );
+            //#create-jms-source
+
+            //#run-jms-source
+            CompletionStage<List<Message>> result = jmsSource
+                    .take(msgsIn.size())
+                    .runWith(Sink.seq(), materializer);
+            //#run-jms-source
+
+            List<Message> outMessages = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+            int msgIdx = 0;
+            for(Message outMsg: outMessages) {
+                assertEquals(outMsg.getIntProperty("Number"), msgsIn.get(msgIdx).properties().get("Number").get());
+                assertEquals(outMsg.getBooleanProperty("IsOdd"), msgsIn.get(msgIdx).properties().get("IsOdd").get());
+                assertEquals(outMsg.getBooleanProperty("IsEven"), (msgsIn.get(msgIdx).properties().get("IsEven").get()));
+                msgIdx++;
+            }
+        });
+    }
+
+    @Test
+    public void publishJmsTextMessagesWithPropertiesAndConsumeThemWithASelector() throws Exception {
+        withServer(ctx -> {
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+            Sink<JmsTextMessage, NotUsed> jmsSink = JmsSink.create(
+                    JmsSinkSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+
+            List<JmsTextMessage> msgsIn = createTestMessageList();
+
+            Source.from(msgsIn).runWith(jmsSink, materializer);
+
+            //#create-jms-source-with-selector
+            Source<Message, NotUsed> jmsSource = JmsSource.create(JmsSourceSettings
+                    .create(connectionFactory)
+                    .withQueue("test")
+                    .withBufferSize(10)
+                    .withSelector("IsOdd = TRUE")
+            );
+            //#create-jms-source-with-selector
+
+            //#assert-only-odd-messages-received
+            List<JmsTextMessage> oddMsgsIn = msgsIn.stream()
+                    .filter(msg -> Integer.valueOf(msg.body()) % 2 == 1)
+                    .collect(Collectors.toList());
+            assertEquals(5, oddMsgsIn.size());
+
+            CompletionStage<List<Message>> result = jmsSource
+                    .take(oddMsgsIn.size())
+                    .runWith(Sink.seq(), materializer);
+
+            List<Message> outMessages = result.toCompletableFuture().get(4, TimeUnit.SECONDS);
+            int msgIdx = 0;
+            for(Message outMsg: outMessages) {
+                assertEquals(outMsg.getIntProperty("Number"), oddMsgsIn.get(msgIdx).properties().get("Number").get());
+                assertEquals(outMsg.getBooleanProperty("IsOdd"), oddMsgsIn.get(msgIdx).properties().get("IsOdd").get());
+                assertEquals(outMsg.getBooleanProperty("IsEven"), (oddMsgsIn.get(msgIdx).properties().get("IsEven").get()));
+                assertEquals(1, outMsg.getIntProperty("Number") % 2);
+                msgIdx++;
+            }
+            //#assert-only-odd-messages-received
+        });
     }
 
     @Test
@@ -80,13 +190,13 @@ public class JmsConnectorsTest {
             List<String> inNumbers = IntStream.range(0, 10).boxed().map(String::valueOf).collect(Collectors.toList());
 
             //#create-topic-sink
-            Sink<String, NotUsed> jmsTopicSink = JmsSink.create(
+            Sink<String, NotUsed> jmsTopicSink = JmsSink.textSink(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withTopic("topic")
             );
             //#create-topic-sink
-            Sink<String, NotUsed> jmsTopicSink2 = JmsSink.create(
+            Sink<String, NotUsed> jmsTopicSink2 = JmsSink.textSink(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withTopic("topic")

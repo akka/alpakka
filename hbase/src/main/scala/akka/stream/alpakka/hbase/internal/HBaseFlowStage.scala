@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.hbase.internal
 
@@ -29,14 +29,12 @@ private[hbase] class HBaseFlowStage[A](settings: HTableSettings[A]) extends Grap
 
       lazy val table: Table = getOrCreateTable(settings.tableName, settings.columnFamilies).get
 
-      setHandler(out,
-        new OutHandler {
+      setHandler(out, new OutHandler {
         override def onPull() =
           pull(in)
       })
 
-      setHandler(in,
-        new InHandler {
+      setHandler(in, new InHandler {
         override def onPush() = {
           val msg = grab(in)
 

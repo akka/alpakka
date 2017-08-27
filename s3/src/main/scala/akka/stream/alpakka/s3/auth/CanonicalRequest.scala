@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.s3.auth
 
@@ -23,7 +23,7 @@ private[alpakka] object CanonicalRequest {
     val hashedBody = req.headers.find(_.name == "x-amz-content-sha256").map(_.value).getOrElse("")
     CanonicalRequest(
       req.method.value,
-      preprocessPath(req.uri.path),
+      pathEncode(req.uri.path),
       canonicalQueryString(req.uri.query()),
       canonicalHeaderString(req.headers),
       signedHeadersString(req.headers),
@@ -36,15 +36,6 @@ private[alpakka] object CanonicalRequest {
 
   private def uriEncode(str: String) = URLEncoder.encode(str, "utf-8")
 
-  /**
-   * URL encodes the given string.  This allows us to pass special characters
-   * that would otherwise be rejected when building a URI instance.  Because we
-   * need to retain the URI's path structure we subsequently need to replace
-   * percent encoded path delimiters back to their decoded counterparts.
-   */
-  private def preprocessPath(path: Path): String =
-    uriEncode(path.toString).replace(":", "%3A").replace("%2F", "/")
-
   def canonicalHeaderString(headers: Seq[HttpHeader]): String = {
     val grouped = headers.groupBy(_.lowercaseName())
     val combined = grouped.mapValues(_.map(_.value.replaceAll("\\s+", " ").trim).mkString(","))
@@ -53,5 +44,13 @@ private[alpakka] object CanonicalRequest {
 
   def signedHeadersString(headers: Seq[HttpHeader]): String =
     headers.map(_.lowercaseName()).distinct.sorted.mkString(";")
+
+  private def pathEncode(path: Path): String =
+    if (path.isEmpty) "/"
+    else
+      path.toString().flatMap {
+        case ch if "!$&'()*+,;:=".contains(ch) => "%" + Integer.toHexString(ch.toInt).toUpperCase
+        case other => other.toString
+      }
 
 }

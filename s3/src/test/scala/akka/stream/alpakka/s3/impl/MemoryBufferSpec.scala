@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.s3.impl
 
@@ -40,8 +40,10 @@ class MemoryBufferSpec(_system: ActorSystem)
 
   it should "fail if more than maxSize bytes are fed into it" in {
     whenReady(
-      Source(Vector(ByteString(1, 2, 3, 4, 5), ByteString(6, 7, 8, 9, 10, 11, 12),
-          ByteString(13, 14))).via(new MemoryBuffer(10)).runWith(Sink.seq).failed
+      Source(Vector(ByteString(1, 2, 3, 4, 5), ByteString(6, 7, 8, 9, 10, 11, 12), ByteString(13, 14)))
+        .via(new MemoryBuffer(10))
+        .runWith(Sink.seq)
+        .failed
     ) { e =>
       e shouldBe a[IllegalStateException]
     }

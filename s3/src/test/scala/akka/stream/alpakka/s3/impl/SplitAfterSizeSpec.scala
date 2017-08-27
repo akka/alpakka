@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.s3.impl
 
@@ -48,10 +48,11 @@ class SplitAfterSizeSpec(_system: ActorSystem)
       )
       .runWith(Sink.seq)
       .futureValue should be(
-        Seq(
-          Seq(ByteString(1, 2, 3, 4, 5), ByteString(6, 7, 8, 9, 10, 11, 12)),
-          Seq(ByteString(13, 14))
-        ))
+      Seq(
+        Seq(ByteString(1, 2, 3, 4, 5), ByteString(6, 7, 8, 9, 10, 11, 12)),
+        Seq(ByteString(13, 14))
+      )
+    )
   }
 
 }

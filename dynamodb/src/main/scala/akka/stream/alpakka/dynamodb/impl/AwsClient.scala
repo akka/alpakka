@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.dynamodb.impl
 
@@ -13,7 +13,7 @@ import akka.http.scaladsl.model.{ContentType, HttpEntity, _}
 import akka.stream.alpakka.dynamodb.AwsOp
 import akka.stream.alpakka.dynamodb.impl.AwsClient.{AwsConnect, AwsRequestMetadata}
 import akka.stream.scaladsl.Flow
-import akka.stream.{ActorAttributes, ActorMaterializer, Supervision}
+import akka.stream.{ActorAttributes, Materializer, Supervision}
 import com.amazonaws.auth.{AWS4Signer, DefaultAWSCredentialsProviderChain}
 import com.amazonaws.http.{HttpMethodName, HttpResponseHandler, HttpResponse => AWSHttpResponse}
 import com.amazonaws.{DefaultRequest, HttpMethod => _, _}
@@ -34,7 +34,7 @@ private[alpakka] trait AwsClient[S <: ClientSettings] {
 
   protected implicit def system: ActorSystem
 
-  protected implicit def materializer: ActorMaterializer
+  protected implicit def materializer: Materializer
 
   protected implicit def ec: ExecutionContext
 
@@ -88,13 +88,16 @@ private[alpakka] trait AwsClient[S <: ClientSettings] {
     val amzHeaders = original.getHeaders
     val body = read(original.getContent)
 
-    val httpr = HttpRequest(uri = signableUrl, method = original.getHttpMethod,
+    val httpr = HttpRequest(
+      uri = signableUrl,
+      method = original.getHttpMethod,
       headers = List(
         headers.RawHeader("x-amz-date", amzHeaders.get("X-Amz-Date")),
         headers.RawHeader("authorization", amzHeaders.get("Authorization")),
         headers.RawHeader("x-amz-target", amzHeaders.get("X-Amz-Target"))
       ),
-      entity = HttpEntity(defaultContentType, body))
+      entity = HttpEntity(defaultContentType, body)
+    )
 
     httpr -> AwsRequestMetadata(requestId.getAndIncrement(), s)
   }

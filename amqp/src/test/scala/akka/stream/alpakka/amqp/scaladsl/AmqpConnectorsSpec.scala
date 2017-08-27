@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.alpakka.amqp.scaladsl
 
 import akka.Done
 import akka.stream._
 import akka.stream.alpakka.amqp._
-import akka.stream.scaladsl.{GraphDSL, Merge, Sink, Source}
+import akka.stream.scaladsl.{GraphDSL, Keep, Merge, Sink, Source}
+import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{TestPublisher, TestSubscriber}
 import akka.util.ByteString
 
@@ -23,6 +24,12 @@ class AmqpConnectorsSpec extends AmqpSpec {
   "The AMQP Connectors" should {
 
     "publish and consume elements through a simple queue again in the same JVM" in {
+
+      // use a list of host/port pairs where one is normally invalid, but
+      // it should still work as expected,
+      val connectionSettings =
+        AmqpConnectionDetails(List(("invalid", 5673))).withHostsAndPorts(("localhost", 5672))
+
       //#queue-declaration
       val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
@@ -30,20 +37,20 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       //#create-sink
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(DefaultAmqpConnection).withRoutingKey(queueName).withDeclarations(queueDeclaration)
+        AmqpSinkSettings(connectionSettings).withRoutingKey(queueName).withDeclarations(queueDeclaration)
       )
       //#create-sink
 
       //#create-source
       val amqpSource = AmqpSource(
-        NamedQueueSourceSettings(DefaultAmqpConnection, queueName).withDeclarations(queueDeclaration),
+        NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration),
         bufferSize = 10
       )
       //#create-source
 
       //#run-sink
       val input = Vector("one", "two", "three", "four", "five")
-      Source(input).map(s => ByteString(s)).runWith(amqpSink)
+      Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
       //#run-sink
 
       //#run-source
@@ -51,6 +58,112 @@ class AmqpConnectorsSpec extends AmqpSpec {
       //#run-source
 
       result.futureValue shouldEqual input
+    }
+
+    "publish via RPC and then consume through a simple queue again in the same JVM" in {
+
+      val queueName = "amqp-conn-it-spec-rpc-queue-" + System.currentTimeMillis()
+      val queueDeclaration = QueueDeclaration(queueName)
+
+      //#create-rpc-flow
+      val amqpRpcFlow = AmqpRpcFlow.simple(
+        AmqpSinkSettings(DefaultAmqpConnection).withRoutingKey(queueName).withDeclarations(queueDeclaration)
+      )
+      //#create-rpc-flow
+
+      val amqpSource = AmqpSource(
+        NamedQueueSourceSettings(DefaultAmqpConnection, queueName),
+        bufferSize = 1
+      )
+
+      val input = Vector("one", "two", "three", "four", "five")
+      //#run-rpc-flow
+      val (rpcQueueF, probe) =
+        Source(input).map(s => ByteString(s)).viaMat(amqpRpcFlow)(Keep.right).toMat(TestSink.probe)(Keep.both).run
+      //#run-rpc-flow
+      rpcQueueF.futureValue
+
+      val amqpSink = AmqpSink.replyTo(
+        AmqpReplyToSinkSettings(DefaultAmqpConnection)
+      )
+
+      amqpSource
+        .map(b => OutgoingMessage(b.bytes.concat(ByteString("a")), false, false, Some(b.properties)))
+        .runWith(amqpSink)
+
+      probe.request(5).expectNextUnorderedN(input.map(s => ByteString(s.concat("a")))).expectComplete()
+    }
+
+    "publish via RPC which expects 2 responses per message and then consume through a simple queue again in the same JVM" in {
+      val queueName = "amqp-conn-it-spec-rpc-queue-" + System.currentTimeMillis()
+      val queueDeclaration = QueueDeclaration(queueName)
+
+      val amqpRpcFlow = AmqpRpcFlow.simple(
+        AmqpSinkSettings(DefaultAmqpConnection).withRoutingKey(queueName).withDeclarations(queueDeclaration),
+        2
+      )
+
+      val amqpSource = AmqpSource(
+        NamedQueueSourceSettings(DefaultAmqpConnection, queueName),
+        bufferSize = 1
+      )
+
+      val input = Vector("one", "two", "three", "four", "five")
+      val (rpcQueueF, probe) =
+        Source(input).map(s => ByteString(s)).viaMat(amqpRpcFlow)(Keep.right).toMat(TestSink.probe)(Keep.both).run
+      rpcQueueF.futureValue
+
+      val amqpSink = AmqpSink.replyTo(
+        AmqpReplyToSinkSettings(DefaultAmqpConnection)
+      )
+
+      amqpSource
+        .mapConcat { b =>
+          List(
+            OutgoingMessage(b.bytes.concat(ByteString("a")), false, false, Some(b.properties)),
+            OutgoingMessage(b.bytes.concat(ByteString("aa")), false, false, Some(b.properties))
+          )
+        }
+        .runWith(amqpSink)
+
+      probe
+        .request(10)
+        .expectNextUnorderedN(input.flatMap(s => List(ByteString(s.concat("a")), ByteString(s.concat("aa")))))
+        .expectComplete()
+    }
+
+    "correctly close a AmqpRpcFlow when stream is closed without passing any elements" in {
+
+      Source
+        .empty[ByteString]
+        .via(AmqpRpcFlow.simple(AmqpSinkSettings(DefaultAmqpConnection)))
+        .runWith(TestSink.probe)
+        .ensureSubscription()
+        .expectComplete()
+
+    }
+
+    "handle missing reply-to header correctly" in {
+
+      val outgoingMessage = OutgoingMessage(ByteString.empty, false, false, None)
+
+      Source
+        .single(outgoingMessage)
+        .watchTermination()(Keep.right)
+        .to(AmqpSink.replyTo(AmqpReplyToSinkSettings(DefaultAmqpConnection)))
+        .run()
+        .futureValue shouldBe akka.Done
+
+      val caught = intercept[RuntimeException] {
+        Source
+          .single(outgoingMessage)
+          .toMat(AmqpSink.replyTo(AmqpReplyToSinkSettings(DefaultAmqpConnection, true)))(Keep.right)
+          .run()
+          .futureValue
+      }
+
+      caught.getCause.getMessage should equal("Reply-to header was not set")
+
     }
 
     "publish from one source and consume elements with multiple sinks" in {
@@ -69,10 +182,11 @@ class AmqpConnectorsSpec extends AmqpSpec {
         val merge = b.add(Merge[IncomingMessage](count))
         for (n <- 0 until count) {
           val source = b.add(
-              AmqpSource(
-                NamedQueueSourceSettings(DefaultAmqpConnection, queueName).withDeclarations(queueDeclaration),
-                bufferSize = 1
-              ))
+            AmqpSource(
+              NamedQueueSourceSettings(DefaultAmqpConnection, queueName).withDeclarations(queueDeclaration),
+              bufferSize = 1
+            )
+          )
           source.out ~> merge.in(n)
         }
 
@@ -131,6 +245,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       subscriber.cancel()
       publisher.sendComplete()
+      succeed
     }
 
     "not ack messages unless they get consumed" in {
@@ -188,6 +303,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       subscriber2.expectNext().bytes.utf8String shouldEqual "five"
 
       subscriber2.cancel()
+      succeed
     }
 
     "pub-sub from one source with multiple sinks" in {
@@ -232,7 +348,8 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       import system.dispatcher
       system.scheduler.scheduleOnce(5.seconds)(
-          completion.tryFailure(new Error("Did not get at least one element from every fanout branch")))
+        completion.tryFailure(new Error("Did not get at least one element from every fanout branch"))
+      )
 
       Source.repeat("stuff").map(s => ByteString(s)).runWith(amqpSink)
 
