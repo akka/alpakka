@@ -92,7 +92,6 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
   def ls(basePath: String, connectionSettings: S, branchSelector: FtpFile => Boolean): Source[FtpFile, NotUsed] =
     Source.fromGraph(createBrowserGraph(basePath, connectionSettings, branchSelector))
 
-
   /**
    * Scala API: creates a [[Source]] of [[ByteString]] from some file path.
    *
