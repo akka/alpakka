@@ -98,7 +98,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
   def request(s3Location: S3Location, rangeOption: Option[ByteRange] = None): Future[HttpResponse] = {
     val downloadRequest = getDownloadRequest(s3Location)
     signAndGet(rangeOption match {
-      case Some(range) => downloadRequest.withHeaders(headers.Range(range))
+      case Some(range) => downloadRequest.addHeader(headers.Range(range))
       case _ => downloadRequest
     })
   }
