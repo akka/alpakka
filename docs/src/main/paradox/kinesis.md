@@ -70,9 +70,9 @@ The constructed `Source` will return [Record](http://docs.aws.amazon.com/kinesis
 
 objects by calling [GetRecords](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetRecords.html) at the specified interval and according to the downstream demand.
 
-### Using the Flow
+### Using the Put Flow/Sink
 
-The `KinesisFlow` publishes messages into a Kinesis stream using it's partition key and message body. It uses dynamic size batches, can perform several requests in parallel and retries failed records. These features are necessary to achieve the best possible write throughput to the stream. The Flow outputs the result of publishing each record.
+The `KinesisFlow` (or `KinesisSink`) publishes messages into a Kinesis stream using it's partition key and message body. It uses dynamic size batches, can perform several requests in parallel and retries failed records. These features are necessary to achieve the best possible write throughput to the stream. The Flow outputs the result of publishing each record.
 
 @@@ warning
 Batching has a drawback: message order cannot be guaranteed, as some records within a single batch may fail to be published. That also means that the Flow output may not match the same input order.
@@ -92,11 +92,11 @@ Java
 Note that throughput settings `maxRecordsPerSecond` and `maxBytesPerSecond` are vital to minimize server errors (like `ProvisionedThroughputExceededException`) and retries, and thus achieve a higher publication rate.
 @@@
 
-The Flow can now be created.
+The Flow/Sink can now be created.
 
 Scala
-: @@snip (../../../../kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #flow }
+: @@snip (../../../../kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #flow-sink }
 
 Java
-: @@snip (../../../../kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #flow }
+: @@snip (../../../../kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #flow-sink }
 

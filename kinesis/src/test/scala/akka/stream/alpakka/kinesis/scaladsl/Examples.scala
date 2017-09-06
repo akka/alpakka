@@ -75,13 +75,18 @@ object Examples {
   val fourShardFlowSettings = KinesisFlowSettings.byNumberOfShards(4)
   //#flow-settings
 
-  //#flow
+  //#flow-sink
   implicit val _: AmazonKinesisAsync = amazonKinesisAsync
 
   Source.empty[PutRecordsRequestEntry].via(KinesisFlow("myStreamName")).to(Sink.ignore)
   Source.empty[PutRecordsRequestEntry].via(KinesisFlow("myStreamName", flowSettings)).to(Sink.ignore)
   Source.empty[(String, ByteString)].via(KinesisFlow.byParititonAndBytes("myStreamName")).to(Sink.ignore)
   Source.empty[(String, ByteBuffer)].via(KinesisFlow.byPartitionAndData("myStreamName")).to(Sink.ignore)
-  //#flow
+
+  Source.empty[PutRecordsRequestEntry].to(KinesisSink("myStreamName"))
+  Source.empty[PutRecordsRequestEntry].to(KinesisSink("myStreamName", flowSettings))
+  Source.empty[(String, ByteString)].to(KinesisSink.byParititonAndBytes("myStreamName"))
+  Source.empty[(String, ByteBuffer)].to(KinesisSink.byPartitionAndData("myStreamName"))
+  //#flow-sink
 
 }

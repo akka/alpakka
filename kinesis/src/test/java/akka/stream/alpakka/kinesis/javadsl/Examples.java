@@ -9,8 +9,9 @@ import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.kinesis.KinesisFlowSettings;
 import akka.stream.alpakka.kinesis.ShardSettings;
-import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
 import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
@@ -53,9 +54,12 @@ public class Examples {
     final KinesisFlowSettings fourShardFlowSettings = KinesisFlowSettings.byNumberOfShards(4);
     //#flow-settings
 
-    //#flow
+    //#flow-sink
     final Flow<PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed> flow = KinesisFlow.apply("streamName", flowSettings, amazonKinesisAsync);
     final Flow<PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed> defaultSettingsFlow = KinesisFlow.apply("streamName", amazonKinesisAsync);
-    //#flow
+
+    final Sink<PutRecordsRequestEntry, NotUsed> sink = KinesisSink.apply("streamName", flowSettings, amazonKinesisAsync);
+    final Sink<PutRecordsRequestEntry, NotUsed> defaultSettingsSink = KinesisSink.apply("streamName", amazonKinesisAsync);
+    //#flow-sink
 
 }
