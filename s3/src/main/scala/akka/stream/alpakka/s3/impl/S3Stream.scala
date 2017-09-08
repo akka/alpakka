@@ -100,7 +100,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
   private def requestHeaders(downloadRequest: HttpRequest, rangeOption: Option[ByteRange]): HttpRequest =
     rangeOption match {
-      case Some(range) => downloadRequest.withHeaders(downloadRequest.headers :+ headers.Range(range))
+      case Some(range) => downloadRequest.addHeader(headers.Range(range))
       case _ => downloadRequest
     }
 
