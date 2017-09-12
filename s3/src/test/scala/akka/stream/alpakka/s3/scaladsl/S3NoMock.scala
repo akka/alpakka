@@ -55,6 +55,7 @@ case class S3ConnectionProperties(
     metaHeaders: Map[String, String]
 )
 
+@Ignore
 class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with ScalaFutures {
 
   implicit val actorSystem = ActorSystem()
