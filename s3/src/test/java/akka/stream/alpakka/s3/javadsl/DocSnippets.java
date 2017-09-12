@@ -37,7 +37,7 @@ public class DocSnippets extends S3WireMockBase {
     // Documentation snippet only
     public void connectBluemix() {
         final Materializer mat = ActorMaterializer.create(system());
-        // #scala-bluemix-example
+        // #java-bluemix-example
         final String host = "s3.eu-geo.objectstorage.softlayer.net";
         final int port = 443;
 
@@ -47,6 +47,6 @@ public class DocSnippets extends S3WireMockBase {
         // Set pathStyleAccess to true and specify proxy, leave region blank
         final S3Settings settings = new S3Settings(MemoryBufferType.getInstance(), "", Some.apply(proxy), credentials, "", true);
         final S3Client s3Client = new S3Client(settings,system(), mat);
-        // #scala-bluemix-example
+        // #java-bluemix-example
     }
 }
