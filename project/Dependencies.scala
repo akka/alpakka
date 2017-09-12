@@ -149,6 +149,16 @@ object Dependencies {
     )
   )
 
+  val Slick = Seq(
+    libraryDependencies ++= Seq(
+      "com.typesafe.slick" %% "slick"           % "3.2.1", // BSD 2-clause "Simplified" License
+      "com.typesafe.slick" %% "slick-hikaricp"  % "3.2.1", // BSD 2-clause "Simplified" License
+      "com.typesafe.akka"  %% "akka-slf4j"      % AkkaVersion % Test,
+      "com.h2database"      % "h2"              % "1.4.196"   % Test, // Eclipse Public License 1.0
+      "ch.qos.logback"      % "logback-classic" % "1.2.3"     % Test  // Eclipse Public License 1.0
+    )
+  )
+
   val Sns = Seq(
     libraryDependencies ++= Seq(
       "com.amazonaws" % "aws-java-sdk-sns" % "1.11.95", // ApacheV2
