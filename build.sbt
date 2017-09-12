@@ -19,6 +19,7 @@ lazy val alpakka = project
     mqtt,
     s3,
     simpleCodecs,
+    slick,
     sns,
     sqs,
     sse,
@@ -182,6 +183,13 @@ lazy val simpleCodecs = project
     // This should not impact the total test time as we don't expect to hit this
     // timeout, and indeed it doesn't appear to.
     testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4")
+  )
+
+lazy val slick = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-slick",
+    Dependencies.Slick
   )
 
 lazy val sns = project
