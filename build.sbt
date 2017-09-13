@@ -12,6 +12,7 @@ lazy val alpakka = project
              geode,
              googleCloudPubSub,
              hbase,
+             ibmeventstore,
              ironmq,
              jms,
              kinesis,
@@ -132,6 +133,16 @@ lazy val hbase = project
     name := "akka-stream-alpakka-hbase",
     Dependencies.HBase,
     fork in Test := true
+
+  )
+
+lazy val ibmeventstore = project
+  .in(file("ibm-eventstore"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-ibm-eventstore",
+    Dependencies.IbmEventStore,
+    scalaVersion := "2.11.8"
   )
 
 lazy val ironmq = project
@@ -140,6 +151,7 @@ lazy val ironmq = project
     name := "akka-stream-alpakka-ironmq",
     Dependencies.IronMq
   )
+
 
 lazy val jms = project
   .enablePlugins(AutomateHeaderPlugin)
