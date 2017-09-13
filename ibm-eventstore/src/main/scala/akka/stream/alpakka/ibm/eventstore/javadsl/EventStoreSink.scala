@@ -9,8 +9,6 @@ import akka.Done
 import akka.stream.alpakka.ibm.eventstore.EventStoreConfiguration
 import akka.stream.alpakka.ibm.eventstore.scaladsl.{EventStoreSink => ScalaEventStoreSink}
 import akka.stream.javadsl
-import com.ibm.event.common.ConfigurationReader
-import com.ibm.event.oltp.EventContext
 import org.apache.spark.sql.Row
 
 import scala.compat.java8.FutureConverters._
@@ -23,10 +21,7 @@ object EventStoreSink {
       ec: ExecutionContext
   ): javadsl.Sink[Row, CompletionStage[Done]] = {
 
-    ConfigurationReader.setConnectionEndpoints(s"${configuration.host}:${configuration.port}")
-    val context = EventContext.getEventContext(configuration.databaseName)
-    context.getTable(configuration.tableName)
-
-    ScalaEventStoreSink.apply(configuration)(ec).mapMaterializedValue(_.toJava).asJava
+    ScalaEventStoreSink.apply(configuration)(ec).
+      mapMaterializedValue(_.toJava).asJava
   }
 }
