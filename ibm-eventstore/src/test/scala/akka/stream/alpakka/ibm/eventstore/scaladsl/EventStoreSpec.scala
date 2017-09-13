@@ -88,10 +88,10 @@ class EventStoreSpec
         Row(3L, 3, "Hello", true, true)
       )
 
-    val future = Source(rows).runWith(EventStoreSink(configuration))
+    val insertionResultFuture = Source(rows).runWith(EventStoreSink(configuration))
     //#insert-rows
 
-    future.futureValue mustBe Done
+    insertionResultFuture.futureValue mustBe Done
 
   }
 }

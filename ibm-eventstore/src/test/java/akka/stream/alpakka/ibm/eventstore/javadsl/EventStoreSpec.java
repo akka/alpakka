@@ -93,7 +93,7 @@ public class EventStoreSpec {
     }
 
     @Test
-    public void testInserting() throws Exception {
+    public void testInsertingRecordsIntoTable() throws Exception {
 
         //#insert-rows
         List<Row> rows = new ArrayList<>();
