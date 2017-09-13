@@ -20,7 +20,7 @@ object EventStoreSink {
       configuration: EventStoreConfiguration
   )(implicit ec: ExecutionContext): Sink[Row, Future[Done]] = {
 
-    ConfigurationReader.setConnectionEndpoints(s"${configuration.host}:${configuration.port}")
+    ConfigurationReader.setConnectionEndpoints(configuration.endpoint)
     val context = EventContext.getEventContext(configuration.databaseName)
     val schema = context.getTable(configuration.tableName)
 
