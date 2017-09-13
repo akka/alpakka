@@ -4,28 +4,28 @@
 package akka.stream.alpakka.ibm.eventstore.scaladsl
 
 import akka.Done
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import akka.stream.alpakka.ibm.eventstore.EventStoreConfiguration
+import akka.stream.scaladsl._
+import akka.testkit.TestKit
 import com.ibm.event.catalog.TableSchema
 import com.ibm.event.common.ConfigurationReader
 import com.ibm.event.oltp.EventContext
+import com.typesafe.config.ConfigFactory
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
-
-import scala.concurrent.duration._
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl._
-import akka.testkit.TestKit
-import com.typesafe.config.ConfigFactory
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
+import scala.concurrent.duration._
+
 /**
- * This integration test needs the IBM EventStore to be running
- *
- * This unit test is run using a local H2 database using
- * `/tmp/alpakka-slick-h2-test` for temporary storage.
+ * This unit test is run using a local installation of EventStore
+ * The installer for EventStore can be obtained from:
+ * https://www.ibm.com/us-en/marketplace/project-eventstore
  */
+@Ignore
 class EventStoreSpec
     extends WordSpec
     with ScalaFutures

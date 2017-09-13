@@ -9,8 +9,8 @@ import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.ibm.eventstore.EventStoreConfiguration;
-import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
 import com.ibm.event.catalog.TableSchema;
 import com.ibm.event.common.ConfigurationReader;
@@ -22,6 +22,7 @@ import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import scala.collection.JavaConversions;
 import scala.collection.Seq;
@@ -32,14 +33,13 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
-
 
 /**
  * This unit test is run using a local installation of EventStore
  * The installer for EventStore can be obtained from:
  * https://www.ibm.com/us-en/marketplace/project-eventstore
  */
+@Ignore
 public class EventStoreSpec {
     static ActorSystem system;
     static Materializer materializer;

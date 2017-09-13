@@ -7,7 +7,7 @@ import java.util.concurrent.CompletionStage
 
 import akka.Done
 import akka.stream.alpakka.ibm.eventstore.EventStoreConfiguration
-import akka.stream.alpakka.ibm.eventstore.scaladsl.{EventStoreSink ⇒ ScalaEventStoreSink}
+import akka.stream.alpakka.ibm.eventstore.scaladsl.{EventStoreSink => ScalaEventStoreSink}
 import akka.stream.javadsl
 import com.ibm.event.common.ConfigurationReader
 import com.ibm.event.oltp.EventContext
