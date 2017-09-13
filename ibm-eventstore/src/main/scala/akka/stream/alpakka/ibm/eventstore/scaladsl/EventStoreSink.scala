@@ -4,18 +4,16 @@
 package akka.stream.alpakka.ibm.eventstore.scaladsl
 
 import akka.Done
-import akka.actor.ActorSystem
-import akka.stream._
+import akka.stream.alpakka.ibm.eventstore.EventStoreConfiguration
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
-import akka.stream.alpakka.ibm.eventstore.EventStoreConfiguration
-
-import scala.concurrent.{ExecutionContext, Future}
 import com.ibm.event.common.ConfigurationReader
 import com.ibm.event.oltp.EventContext
 import org.apache.spark.sql.Row
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 object EventStoreSink {
   def apply(
