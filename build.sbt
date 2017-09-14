@@ -12,7 +12,7 @@ lazy val alpakka = project
              geode,
              googleCloudPubSub,
              hbase,
-             ibmeventstore,
+             ibmEventStore,
              ironmq,
              jms,
              kinesis,
@@ -135,13 +135,13 @@ lazy val hbase = project
 
   )
 
-lazy val ibmeventstore = project
+lazy val ibmEventStore = project
   .in(file("ibm-eventstore"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-ibm-eventstore",
     Dependencies.IbmEventStore,
-    scalaVersion := "2.11.8"
+    scalaVersion := "2.11.11"
   )
 
 lazy val ironmq = project
@@ -209,7 +209,7 @@ lazy val sqs = project
   .settings(
     name := "akka-stream-alpakka-sqs",
     Dependencies.Sqs,
-    // For mockito https://github.com/akka/alpakka/issues/390
+    // For mockito https://githunnb.com/akka/alpakka/issues/390
     parallelExecution in Test := false
   )
 

@@ -4,26 +4,26 @@
 package akka.stream.alpakka.ibm.eventstore.javadsl;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.ibm.eventstore.EventStoreConfiguration;
+import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
 import com.ibm.event.catalog.TableSchema;
 import com.ibm.event.common.ConfigurationReader;
 import com.ibm.event.oltp.EventContext;
+import com.ibm.event.oltp.InsertResult;
 import com.typesafe.config.ConfigFactory;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import scala.collection.JavaConversions;
 import scala.collection.Seq;
 
@@ -33,19 +33,22 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.Assert.assertEquals;
+
 
 /**
- * This unit test is run using a local installation of EventStore
+ * This unit test can only be run using a local installation of EventStore
  * The installer for EventStore can be obtained from:
  * https://www.ibm.com/us-en/marketplace/project-eventstore
  */
 @Ignore
 public class EventStoreSpec {
-    static ActorSystem system;
-    static Materializer materializer;
+    private static ActorSystem system;
+    private static Materializer materializer;
+    private static EventContext eventContext;
 
     // #configuration
-    private static EventStoreConfiguration configuration = EventStoreConfiguration.apply(ConfigFactory.load());
+    private static EventStoreConfiguration configuration = EventStoreConfiguration.create(ConfigFactory.load());
     // #configuration
 
     private static Pair<ActorSystem, Materializer> setupMaterializer() {
@@ -77,9 +80,7 @@ public class EventStoreSpec {
         ConfigurationReader.setConnectionEndpoints(configuration.endpoint());
         // #configure-endpoint
         EventContext.dropDatabase(configuration.databaseName());
-        EventContext context = EventContext.createDatabase("TESTDB");
-        TableSchema reviewSchema = getTableSchema();
-        context.createTable(reviewSchema);
+        eventContext = EventContext.createDatabase(configuration.databaseName());
     }
 
     @AfterClass
@@ -90,6 +91,16 @@ public class EventStoreSpec {
         EventContext.cleanUp();
         // #cleanup
         JavaTestKit.shutdownActorSystem(system);
+    }
+
+    @Before
+    public void createTable() {
+        eventContext.createTable(getTableSchema());
+    }
+
+    @After
+    public void dropTable() {
+        eventContext.dropTable(configuration.tableName());
     }
 
     @Test
@@ -106,6 +117,23 @@ public class EventStoreSpec {
         //#insert-rows
 
         insertionResultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testInsertingRecordsIntoTableUsingFlow() throws Exception {
+
+        //#insert-rows-using-flow
+        List<Row> rows = new ArrayList<>();
+        rows.add(RowFactory.create(1, 1, "Hello", true, false));
+        rows.add(RowFactory.create(2, 1, "Hello", true, false));
+        rows.add(RowFactory.create(3, 1, "Hello", true, false));
+
+        Flow<Row, InsertResult, NotUsed> flow = EventStoreFlow.create(configuration, materializer.executionContext());
+        final CompletionStage<List<InsertResult>> insertionResult = Source.from(rows).via(flow).runWith(Sink.seq(), materializer);
+        //#insert-rows-using-flow
+
+        final List<InsertResult> result = insertionResult.toCompletableFuture().get(5, TimeUnit.SECONDS);
+        assertEquals(result.size(), 3);
     }
 
 }

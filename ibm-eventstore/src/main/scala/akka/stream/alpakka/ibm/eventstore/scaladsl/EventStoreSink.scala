@@ -4,12 +4,14 @@
 package akka.stream.alpakka.ibm.eventstore.scaladsl
 
 import akka.Done
+import akka.NotUsed
 import akka.stream.alpakka.ibm.eventstore.EventStoreConfiguration
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import com.ibm.event.common.ConfigurationReader
 import com.ibm.event.oltp.EventContext
+import com.ibm.event.oltp.InsertResult
 import org.apache.spark.sql.Row
 
 import scala.concurrent.ExecutionContext
@@ -29,5 +31,21 @@ object EventStoreSink {
         context.insertAsync(schema, row)
       }
       .toMat(Sink.ignore)(Keep.right)
+  }
+}
+
+object EventStoreFlow {
+  def apply(
+      configuration: EventStoreConfiguration
+  )(implicit ec: ExecutionContext): Flow[Row, InsertResult, NotUsed] = {
+
+    ConfigurationReader.setConnectionEndpoints(configuration.endpoint)
+    val context = EventContext.getEventContext(configuration.databaseName)
+    val schema = context.getTable(configuration.tableName)
+
+    Flow[Row]
+      .mapAsyncUnordered(configuration.parallelism) { row ⇒
+        context.insertAsync(schema, row)
+      }
   }
 }
