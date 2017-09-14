@@ -1,6 +1,10 @@
 # IBM EventStore
 
-The IBM EventStore connector provides an Akka Stream sink for insertion of records into a table.
+IBM EventStore is a in-memory database built ontop of Apache Spark and Apache Parquet Data Format, the Alpakka IBM EventStore connector provides an Akka Stream flow and sink for insertion of records into a table.
+ 
+## External references 
+  
+[IBM EventStore Documentation](https://www.ibm.com/support/knowledgecenter/SSGNPV/eventstore/desktop/welcome.html)
 
 ## Artifacts
 
@@ -38,7 +42,7 @@ Gradle
 The EventStore connector can be configured within your `application.conf` file.
 
 Configuration
-: @@snip (../../../../ibm-eventstore/src/main/resources/reference.conf)
+: @@snip (../../../../ibm-eventstore/src/test/resources/reference.conf)
 
 ### Create EventStore Configuration
 
@@ -58,7 +62,7 @@ Scala
 Java
 : @@snip (../../../../ibm-eventstore/src/test/java/akka/stream/alpakka/ibm/eventstore/javadsl/EventStoreSpec.java) { #configure-endpoint }
 
-### Insert rows in table
+### Insert rows into a table
 
 Scala
 
@@ -66,6 +70,15 @@ Scala
 
 Java
 : @@snip (../../../../ibm-eventstore/src/test/java/akka/stream/alpakka/ibm/eventstore/javadsl/EventStoreSpec.java) { #insert-rows }
+
+### Insert rows into a table using a flow
+
+Scala
+
+: @@snip (../../../../ibm-eventstore/src/test/scala/akka/stream/alpakka/ibm/eventstore/scaladsl/EventStoreSpec.scala) { #insert-rows-using-flow }
+
+Java
+: @@snip (../../../../ibm-eventstore/src/test/java/akka/stream/alpakka/ibm/eventstore/javadsl/EventStoreSpec.java) { #insert-rows-using-flow }
 
 ### Shutdown EventStore client
 
@@ -75,7 +88,3 @@ Scala
 
 Java
 : @@snip (../../../../ibm-eventstore/src/test/java/akka/stream/alpakka/ibm/eventstore/javadsl/EventStoreSpec.java) { #cleanup }
-
-## External references 
- 
-[IBM EventStore Documentation](https://www.ibm.com/support/knowledgecenter/SSGNPV/eventstore/desktop/welcome.html)

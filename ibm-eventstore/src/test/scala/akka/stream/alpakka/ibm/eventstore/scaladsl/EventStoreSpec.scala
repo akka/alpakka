@@ -12,16 +12,20 @@ import akka.testkit.TestKit
 import com.ibm.event.catalog.TableSchema
 import com.ibm.event.common.ConfigurationReader
 import com.ibm.event.oltp.EventContext
+import com.ibm.event.oltp.InsertResult
 import com.typesafe.config.ConfigFactory
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 /**
- * This unit test is run using a local installation of EventStore
+ * This unit test can only be run using a local installation of EventStore
  * The installer for EventStore can be obtained from:
  * https://www.ibm.com/us-en/marketplace/project-eventstore
  */
@@ -37,22 +41,10 @@ class EventStoreSpec
   implicit val mat = ActorMaterializer()
   implicit val ec = mat.executionContext
 
-  implicit val defaultPatience = PatienceConfig(timeout = 3.seconds, interval = 50.millis)
+  private var eventContext: Option[EventContext] = None
 
-  // #configuration
-  val configuration = EventStoreConfiguration(ConfigFactory.load())
-  // #configuration
-
-  // #configure-endpoint
-  ConfigurationReader.setConnectionEndpoints(configuration.endpoint)
-  // #configure-endpoint
-
-  override def beforeAll(): Unit = {
-
-    EventContext.dropDatabase(configuration.databaseName)
-    val context = EventContext.createDatabase("TESTDB")
-
-    val reviewSchema = TableSchema(
+  private def tableSchema: TableSchema =
+    TableSchema(
       configuration.tableName,
       StructType(
         Array(
@@ -66,9 +58,25 @@ class EventStoreSpec
       shardingColumns = Seq("id"),
       pkColumns = Seq("id")
     )
-    context.createTable(reviewSchema)
 
+  implicit val defaultPatience = PatienceConfig(timeout = 3.seconds, interval = 50.millis)
+
+  // #configuration
+  val configuration = EventStoreConfiguration(ConfigFactory.load())
+  // #configuration
+
+  // #configure-endpoint
+  ConfigurationReader.setConnectionEndpoints(configuration.endpoint)
+  // #configure-endpoint
+
+  override def beforeAll(): Unit = {
+
+    EventContext.dropDatabase(configuration.databaseName)
+    eventContext = Some(EventContext.createDatabase(configuration.databaseName))
   }
+
+  override def beforeEach(): Unit = eventContext.foreach(_.createTable(tableSchema))
+  override def afterEach(): Unit = eventContext.foreach(_.dropTable(configuration.tableName))
 
   override def afterAll(): Unit = {
     EventContext.dropDatabase(configuration.databaseName)
@@ -93,5 +101,24 @@ class EventStoreSpec
 
     insertionResultFuture.futureValue mustBe Done
 
+  }
+
+  "insert 3 rows into EventStore and check result" in {
+
+    //#insert-rows-using-flow
+    val rows =
+      List(
+        Row(1L, 1, "Hello", true, false),
+        Row(2L, 2, "Hello", false, null),
+        Row(3L, 3, "Hello", true, true)
+      )
+
+    val insertionResultFuture: Future[immutable.Seq[InsertResult]] =
+      Source(rows).via(EventStoreFlow(configuration)).runWith(Sink.seq)
+    //#insert-rows-using-flow
+    val result = Await.result(insertionResultFuture, 3.seconds)
+
+    result.size mustBe 3
+    result.map(_.successful) mustBe Seq(true, true, true)
   }
 }

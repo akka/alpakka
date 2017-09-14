@@ -16,6 +16,7 @@ final case class EventStoreConfiguration(host: String,
 }
 
 object EventStoreConfiguration {
+  def create(config: Config): EventStoreConfiguration = apply(config)
   def apply(config: Config): EventStoreConfiguration =
     EventStoreConfiguration(
       host = config.getString("akka.stream.alpakka.ibm.eventstore.host"),
