@@ -74,16 +74,16 @@ object Dependencies {
 
   val Geode = {
     val geodeVersion = "1.2.0"
-    val slf4jVerson = "1.7.25"
-    val logbackVersin = "1.2.3"
+    val slf4jVersion = "1.7.25"
+    val logbackVersion = "1.2.3"
     Seq(
       libraryDependencies ++= Seq("com.chuusai" %% "shapeless" % "2.3.2") ++
         Seq("geode-core","geode-cq")
         .map("org.apache.geode" % _ % geodeVersion exclude("org.slf4j", "slf4j-log4j12")) ++
-        Seq("org.slf4j" % "log4j-over-slf4j" % slf4jVerson % Test, // MIT like: http://www.slf4j.org/license.html
-          "org.slf4j" % "slf4j-api" % slf4jVerson % Test, // MIT like: http://www.slf4j.org/license.html
-          "ch.qos.logback" % "logback-classic" % logbackVersin % Test, // Eclipse Public License 1.0: http://logback.qos.ch/license.html
-          "ch.qos.logback" % "logback-core" % logbackVersin % Test // Eclipse Public License 1.0: http://logback.qos.ch/license.html
+        Seq("org.slf4j" % "log4j-over-slf4j" % slf4jVersion % Test, // MIT like: http://www.slf4j.org/license.html
+          "org.slf4j" % "slf4j-api" % slf4jVersion   % Test, // MIT like: http://www.slf4j.org/license.html
+          "ch.qos.logback" % "logback-classic" % logbackVersion % Test, // Eclipse Public License 1.0: http://logback.qos.ch/license.html
+          "ch.qos.logback" % "logback-core" % logbackVersion % Test // Eclipse Public License 1.0: http://logback.qos.ch/license.html
         )
 
     )
@@ -94,7 +94,7 @@ object Dependencies {
       "com.typesafe.akka"     %% "akka-http"     % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
       "org.mockito"   % "mockito-core"     % "2.3.7"    % Test, // MIT
-      "com.github.tomakehurst" % "wiremock"      % "2.5.1" % Test //ApacheV2
+      "com.github.tomakehurst" % "wiremock"      % "2.5.1" % Test // ApacheV2
     )
   )
 
@@ -118,7 +118,7 @@ object Dependencies {
   val IronMq = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka"   %% "akka-http"                        % AkkaHttpVersion,
-      "de.heikoseeberger"   %% "akka-http-circe"                  % "1.11.0"  // ApacheV2
+      "de.heikoseeberger"   %% "akka-http-circe"                  % "1.11.0" // ApacheV2
     )
   )
 
@@ -126,7 +126,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "javax.jms" % "jms" % "1.1" % Provided, // CDDL + GPLv2
       "org.apache.activemq" % "activemq-broker" % "5.14.1" % Test, // ApacheV2
-      "org.apache.activemq" % "activemq-client" % "5.14.1" % Test // ApacheV2
+      "org.apache.activemq" % "activemq-client" % "5.14.1" % Test  // ApacheV2
     ),
     // Having JBoss as a first resolver is a workaround for https://github.com/coursier/coursier/issues/200
     externalResolvers := ("jboss" at "https://repository.jboss.org/nexus/content/groups/public") +: externalResolvers.value
@@ -144,13 +144,13 @@ object Dependencies {
       "com.typesafe.akka"     %% "akka-http-xml" % AkkaHttpVersion,
       // in-memory filesystem for file related tests
       "com.google.jimfs"       % "jimfs"         % "1.1"   % Test, // ApacheV2
-      "com.github.tomakehurst" % "wiremock"      % "2.5.1" % Test //ApacheV2
+      "com.github.tomakehurst" % "wiremock"      % "2.5.1" % Test  // ApacheV2
     )
   )
 
   val Sns = Seq(
     libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-sns" % "1.11.95",        // ApacheV2
+      "com.amazonaws" % "aws-java-sdk-sns" % "1.11.95",         // ApacheV2
       "org.mockito"   % "mockito-core"     % "2.7.11"    % Test // MIT
     )
   )
@@ -186,7 +186,7 @@ object Dependencies {
 
   val Kinesis = Seq(
     libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-kinesis" % "1.11.95",        // ApacheV2
+      "com.amazonaws" % "aws-java-sdk-kinesis" % "1.11.95",     // ApacheV2
       "org.mockito"   % "mockito-core"     % "2.7.11"    % Test // MIT
     )
   )
