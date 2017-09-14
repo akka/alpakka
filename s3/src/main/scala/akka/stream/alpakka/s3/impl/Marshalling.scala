@@ -16,7 +16,7 @@ private[alpakka] object Marshalling {
   import ScalaXmlSupport._
 
   implicit val multipartUploadUnmarshaller: FromEntityUnmarshaller[MultipartUpload] = {
-    nodeSeqUnmarshaller(ContentTypes.`application/octet-stream`) map {
+    nodeSeqUnmarshaller(MediaTypes.`application/xml`, ContentTypes.`application/octet-stream`) map {
       case NodeSeq.Empty => throw Unmarshaller.NoContentException
       case x =>
         MultipartUpload(S3Location((x \ "Bucket").text, (x \ "Key").text), (x \ "UploadId").text)
