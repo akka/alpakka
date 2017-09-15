@@ -1,9 +1,9 @@
 # IBM EventStore
 
-IBM EventStore is a in-memory database built ontop of Apache Spark and Apache Parquet Data Format, the Alpakka IBM EventStore connector provides an Akka Stream flow and sink for insertion of records into a table.
+IBM EventStore is an in-memory database built on top of Apache Spark and Apache Parquet Data Format, the Alpakka IBM EventStore connector provides an Akka Stream flow and sink for insertion of records into a table.
  
 ## External references 
-  
+
 [IBM EventStore Documentation](https://www.ibm.com/support/knowledgecenter/SSGNPV/eventstore/desktop/welcome.html)
 
 ## Artifacts
@@ -37,21 +37,13 @@ Gradle
 
 ## Usage
 
-### Configuration 
+To use the EventStore Sink and Flow you first need to configure the EventStore client and when done, terminate the connection.
+ 
+`ConfigurationReader.setConnectionEndpoints` - Is used to connect to the EventStore cluster
 
-The EventStore connector can be configured within your `application.conf` file.
+`EventContext.cleanUp` - Is used to terminate a connection, this has to be called to successfully shutdown the application.
 
-Configuration
-: @@snip (../../../../ibm-eventstore/src/test/resources/reference.conf)
-
-### Create EventStore Configuration
-
-Scala
-
-: @@snip (../../../../ibm-eventstore/src/test/scala/akka/stream/alpakka/ibm/eventstore/scaladsl/EventStoreSpec.scala) { #configuration }
-
-Java
-: @@snip (../../../../ibm-eventstore/src/test/java/akka/stream/alpakka/ibm/eventstore/javadsl/EventStoreSpec.java) { #configuration }
+These functions are provided by the EventStore client library as a transient dependencies.
 
 ### Set EventStore connection endpoints
 
@@ -80,7 +72,7 @@ Scala
 Java
 : @@snip (../../../../ibm-eventstore/src/test/java/akka/stream/alpakka/ibm/eventstore/javadsl/EventStoreSpec.java) { #insert-rows-using-flow }
 
-### Shutdown EventStore client
+### Shutdown and clean up of the EventStore client
 
 Scala
 
