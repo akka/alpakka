@@ -4,13 +4,12 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.s3.scaladsl.S3WireMockBase._
 import akka.testkit.TestKit
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
-import com.typesafe.config.ConfigFactory
-import S3WireMockBase._
 import com.github.tomakehurst.wiremock.matching.EqualToPattern
 
 abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockServer) extends TestKit(_system) {
