@@ -12,11 +12,11 @@ import akka.http.scaladsl.model.headers.ByteRange
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
+import akka.stream.alpakka.s3.auth.{AWSCredentials ⇒ OldAWSCredentials}
 import akka.stream.alpakka.s3.impl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import com.amazonaws.auth._
-import akka.stream.alpakka.s3.auth.{AWSSessionCredentials, BasicCredentials, AWSCredentials ⇒ OldAWSCredentials}
 
 final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 

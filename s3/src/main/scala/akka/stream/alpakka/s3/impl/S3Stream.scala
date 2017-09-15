@@ -3,9 +3,10 @@
  */
 package akka.stream.alpakka.s3.impl
 
-import java.nio.file.Paths
 import java.time.LocalDate
-
+import scala.collection.immutable.Seq
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -18,10 +19,6 @@ import akka.stream.alpakka.s3.scaladsl.ListBucketResultContents
 import akka.stream.alpakka.s3.{DiskBufferType, MemoryBufferType, S3Exception, S3Settings}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
-
-import scala.collection.immutable.Seq
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 final case class S3Location(bucket: String, key: String)
 
@@ -55,8 +52,8 @@ object S3Stream {
 
 private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
 
-  import Marshalling._
   import HttpRequests._
+  import Marshalling._
 
   implicit val conf = settings
   val MinChunkSize = 5242880 //in bytes

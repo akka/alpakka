@@ -3,21 +3,18 @@
  */
 package akka.stream.alpakka.s3.scaladsl
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.s3.{MemoryBufferType, Proxy}
-import akka.stream.alpakka.s3.S3Settings
-import akka.stream.alpakka.s3.auth.AWSCredentials
 import akka.stream.alpakka.s3.impl.MetaHeaders
+import akka.stream.alpakka.s3.{Proxy, S3Settings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Ignore, Matchers}
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 /*
  * This is an integration test and ignored by default
