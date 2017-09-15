@@ -16,7 +16,7 @@ import scala.collection.immutable
 case class S3Headers(headers: Seq[HttpHeader])
 
 case class MetaHeaders(metaHeaders: Map[String, String]) {
-  def headers =
+  def headers: immutable.Seq[HttpHeader] =
     metaHeaders.map { header =>
       RawHeader(s"x-amz-meta-${header._1}", header._2)
     }(collection.breakOut): immutable.Seq[HttpHeader]
