@@ -210,7 +210,7 @@ lazy val sqs = project
   .settings(
     name := "akka-stream-alpakka-sqs",
     Dependencies.Sqs,
-    // For mockito https://githunnb.com/akka/alpakka/issues/390
+    // For mockito https://github.com/akka/alpakka/issues/390
     parallelExecution in Test := false
   )
 
