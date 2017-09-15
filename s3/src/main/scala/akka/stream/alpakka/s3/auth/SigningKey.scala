@@ -7,7 +7,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
-import com.amazonaws.auth.{AWSCredentials, AWSCredentialsProvider}
+import com.amazonaws.auth.{AWSCredentials ⇒ AmzAWSCredentials, AWSCredentialsProvider}
 
 private[alpakka] final case class CredentialScope(date: LocalDate, awsRegion: String, awsService: String) {
   lazy val formattedDate: String = date.format(DateTimeFormatter.BASIC_ISO_DATE)
@@ -19,7 +19,7 @@ private[alpakka] final case class SigningKey(credProvider: AWSCredentialsProvide
                                              scope: CredentialScope,
                                              algorithm: String = "HmacSHA256") {
 
-  private val credentials: AWSCredentials = credProvider.getCredentials
+  private val credentials: AmzAWSCredentials = credProvider.getCredentials
 
   val rawKey = new SecretKeySpec(s"AWS4${credentials.getAWSSecretKey}".getBytes, algorithm)
 

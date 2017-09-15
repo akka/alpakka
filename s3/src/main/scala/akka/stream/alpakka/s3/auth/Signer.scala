@@ -10,6 +10,7 @@ import scala.concurrent.Future
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
 import akka.stream.Materializer
+import com.amazonaws.auth
 import com.amazonaws.auth._
 
 private[alpakka] object Signer {
@@ -37,7 +38,7 @@ private[alpakka] object Signer {
         None
       case _: AnonymousAWSCredentials ⇒
         None
-      case sessCreds: AWSSessionCredentials =>
+      case sessCreds: auth.AWSSessionCredentials =>
         Some(RawHeader("X-Amz-Security-Token", sessCreds.getSessionToken))
     }
 

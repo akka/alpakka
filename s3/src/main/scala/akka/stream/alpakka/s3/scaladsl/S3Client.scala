@@ -15,7 +15,8 @@ import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.impl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
-import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.auth._
+import akka.stream.alpakka.s3.auth.{AWSSessionCredentials, BasicCredentials, AWSCredentials ⇒ OldAWSCredentials}
 
 final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
@@ -40,15 +41,23 @@ final case class ListBucketResultContents(
 )
 
 object S3Client {
-  val MinChunkSize = 5242880
+  val MinChunkSize: Int = 5242880
 
   def apply()(implicit system: ActorSystem, mat: Materializer): S3Client =
     new S3Client(S3Settings(system.settings.config))
 
+  @deprecated("use apply(AWSCredentialsProvider, String) factory", "0.11")
+  def apply(credentials: OldAWSCredentials, region: String)(implicit system: ActorSystem,
+                                                            mat: Materializer): S3Client =
+    apply(
+      new AWSStaticCredentialsProvider(credentials.toAmazonCredentials()),
+      region
+    )
+
   def apply(credentials: AWSCredentialsProvider, region: String)(implicit system: ActorSystem,
                                                                  mat: Materializer): S3Client = {
 
-    val settings = S3Settings(system.settings.config).copy(
+    val settings: S3Settings = S3Settings(system.settings.config).copy(
       credentialsProvider = credentials,
       s3Region = region
     )

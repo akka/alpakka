@@ -4,6 +4,7 @@
 package akka.stream.alpakka.s3
 
 import java.nio.file.{Path, Paths}
+import scala.util.Try
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import com.amazonaws.auth._
@@ -66,7 +67,7 @@ object S3Settings {
     }
 
     val maybeProxy = for {
-      host ← Option(config.getString("akka.stream.alpakka.s3.proxy.host")) if host.nonEmpty
+      host ← Try(config.getString("akka.stream.alpakka.s3.proxy.host")).toOption if host.nonEmpty
     } yield {
       Proxy(
         host,
@@ -80,14 +81,13 @@ object S3Settings {
 
     val credentialsProvider = {
       val credProviderPath = "akka.stream.alpakka.s3.aws.credentials.provider"
-      def defaultProvider = new AWSStaticCredentialsProvider(new AnonymousAWSCredentials())
 
       if (config.hasPath(credProviderPath)) {
         config.getString(credProviderPath) match {
           case "default" ⇒
             DefaultAWSCredentialsProviderChain.getInstance()
 
-          case "const" ⇒
+          case "static" ⇒
             val aki = config.getString("akka.stream.alpakka.s3.aws.credentials.access-key-id")
             val sak = config.getString("akka.stream.alpakka.s3.aws.credentials.secret-access-key")
             val tokenPath = "akka.stream.alpakka.s3.aws.credentials.token"
@@ -99,14 +99,27 @@ object S3Settings {
             new AWSStaticCredentialsProvider(creds)
 
           case "anon" ⇒
-            defaultProvider
+            new AWSStaticCredentialsProvider(new AnonymousAWSCredentials())
 
           case _ ⇒
-            // use anon. or should I throw? TODO remove this comment when clarified
-            defaultProvider
+            DefaultAWSCredentialsProviderChain.getInstance()
         }
       } else {
-        defaultProvider
+        val deprecatedAccessKeyPath: String = "akka.stream.alpakka.s3.aws.access-key-id"
+        val deprecatedSecretKeyPath: String = "akka.stream.alpakka.s3.aws.secret-access-key"
+        val hasOldCredentials: Boolean = {
+          config.hasPath(deprecatedAccessKeyPath) && config.hasPath(deprecatedSecretKeyPath)
+        }
+        if (hasOldCredentials) {
+          new AWSStaticCredentialsProvider(
+            new BasicAWSCredentials(
+              config.getString(deprecatedAccessKeyPath),
+              config.getString(deprecatedSecretKeyPath)
+            )
+          )
+        } else {
+          DefaultAWSCredentialsProviderChain.getInstance()
+        }
       }
     }
 
