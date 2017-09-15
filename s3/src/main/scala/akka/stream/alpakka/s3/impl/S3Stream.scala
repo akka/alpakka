@@ -95,13 +95,14 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       .mapConcat(identity)
   }
 
-  def request(s3Location: S3Location, rangeOption: Option[ByteRange] = None): Future[HttpResponse] = {
-    val downloadRequest = getDownloadRequest(s3Location)
-    signAndGet(rangeOption match {
-      case Some(range) => downloadRequest.withHeaders(headers.Range(range))
+  def request(s3Location: S3Location, rangeOption: Option[ByteRange] = None): Future[HttpResponse] =
+    signAndGet(requestHeaders(getDownloadRequest(s3Location), rangeOption))
+
+  private def requestHeaders(downloadRequest: HttpRequest, rangeOption: Option[ByteRange]): HttpRequest =
+    rangeOption match {
+      case Some(range) => downloadRequest.addHeader(headers.Range(range))
       case _ => downloadRequest
-    })
-  }
+    }
 
   /**
    * Uploads a stream of ByteStrings to a specified location as a multipart upload.
