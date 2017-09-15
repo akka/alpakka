@@ -22,7 +22,6 @@ object EventStoreSink {
       configuration: EventStoreConfiguration
   )(implicit ec: ExecutionContext): Sink[Row, Future[Done]] = {
 
-    ConfigurationReader.setConnectionEndpoints(configuration.endpoint)
     val context = EventContext.getEventContext(configuration.databaseName)
     val schema = context.getTable(configuration.tableName)
 
@@ -39,7 +38,6 @@ object EventStoreFlow {
       configuration: EventStoreConfiguration
   )(implicit ec: ExecutionContext): Flow[Row, InsertResult, NotUsed] = {
 
-    ConfigurationReader.setConnectionEndpoints(configuration.endpoint)
     val context = EventContext.getEventContext(configuration.databaseName)
     val schema = context.getTable(configuration.tableName)
 
