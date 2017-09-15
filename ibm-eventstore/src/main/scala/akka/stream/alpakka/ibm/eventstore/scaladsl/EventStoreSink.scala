@@ -5,11 +5,9 @@ package akka.stream.alpakka.ibm.eventstore.scaladsl
 
 import akka.Done
 import akka.NotUsed
-import akka.stream.alpakka.ibm.eventstore.EventStoreConfiguration
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
-import com.ibm.event.common.ConfigurationReader
 import com.ibm.event.oltp.EventContext
 import com.ibm.event.oltp.InsertResult
 import org.apache.spark.sql.Row
@@ -18,15 +16,18 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 object EventStoreSink {
+
   def apply(
-      configuration: EventStoreConfiguration
+      databaseName: String,
+      tableName: String,
+      parallelism: Int = 1
   )(implicit ec: ExecutionContext): Sink[Row, Future[Done]] = {
 
-    val context = EventContext.getEventContext(configuration.databaseName)
-    val schema = context.getTable(configuration.tableName)
+    val context = EventContext.getEventContext(databaseName)
+    val schema = context.getTable(tableName)
 
     Flow[Row]
-      .mapAsyncUnordered(configuration.parallelism) { row ⇒
+      .mapAsyncUnordered(parallelism) { row ⇒
         context.insertAsync(schema, row)
       }
       .toMat(Sink.ignore)(Keep.right)
@@ -35,14 +36,16 @@ object EventStoreSink {
 
 object EventStoreFlow {
   def apply(
-      configuration: EventStoreConfiguration
+      databaseName: String,
+      tableName: String,
+      parallelism: Int = 1
   )(implicit ec: ExecutionContext): Flow[Row, InsertResult, NotUsed] = {
 
-    val context = EventContext.getEventContext(configuration.databaseName)
-    val schema = context.getTable(configuration.tableName)
+    val context = EventContext.getEventContext(databaseName)
+    val schema = context.getTable(tableName)
 
     Flow[Row]
-      .mapAsyncUnordered(configuration.parallelism) { row ⇒
+      .mapAsyncUnordered(parallelism) { row ⇒
         context.insertAsync(schema, row)
       }
   }

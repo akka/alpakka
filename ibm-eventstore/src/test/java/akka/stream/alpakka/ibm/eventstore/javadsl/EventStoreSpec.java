@@ -9,7 +9,6 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.ibm.eventstore.EventStoreConfiguration;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -18,7 +17,6 @@ import com.ibm.event.catalog.TableSchema;
 import com.ibm.event.common.ConfigurationReader;
 import com.ibm.event.oltp.EventContext;
 import com.ibm.event.oltp.InsertResult;
-import com.typesafe.config.ConfigFactory;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.types.DataTypes;
@@ -33,23 +31,35 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.*;
 
 
 /**
  * This unit test can only be run using a local installation of EventStore
  * The installer for EventStore can be obtained from:
  * https://www.ibm.com/us-en/marketplace/project-eventstore
+ *
+ * Change the host and port below in the function 'setEndpoint' to the EventStore
+ * Change the host and port below in the function 'failureEndpoint' to a unresponsive host/port.
+ *
  */
 @Ignore
 public class EventStoreSpec {
     private static ActorSystem system;
     private static Materializer materializer;
     private static EventContext eventContext;
+    private static String databaseName = "TESTDB";
+    private static String tableName = "TESTTABLE";
+    private static void setEndpoint() {
+        // #configure-endpoint
+        ConfigurationReader.setConnectionEndpoints("192.168.2.20:5555");
+        // #configure-endpoint
 
-    // #configuration
-    private static EventStoreConfiguration configuration = EventStoreConfiguration.create(ConfigFactory.load());
-    // #configuration
+    }
+    private static void setFailureEndpoint() {
+        ConfigurationReader.setConnectionEndpoints("192.168.2.21:5555");
+    }
 
     private static Pair<ActorSystem, Materializer> setupMaterializer() {
         final ActorSystem system = ActorSystem.create();
@@ -67,7 +77,7 @@ public class EventStoreSpec {
         fields.add(DataTypes.createStructField("someBoolean", DataTypes.BooleanType, false));
         fields.add(DataTypes.createStructField("someOtherBoolean", DataTypes.BooleanType, true));
 
-        return new TableSchema(configuration.tableName(), DataTypes.createStructType(fields), pkList, pkList, scala.Option.apply(null));
+        return new TableSchema(tableName, DataTypes.createStructType(fields), pkList, pkList, scala.Option.apply(null));
     }
 
     @BeforeClass
@@ -75,18 +85,16 @@ public class EventStoreSpec {
         final Pair<ActorSystem, Materializer> sysmat = setupMaterializer();
         system = sysmat.first();
         materializer = sysmat.second();
+        setEndpoint();
 
-        // #configure-endpoint
-        ConfigurationReader.setConnectionEndpoints(configuration.endpoint());
-        // #configure-endpoint
-        EventContext.dropDatabase(configuration.databaseName());
-        eventContext = EventContext.createDatabase(configuration.databaseName());
+        EventContext.dropDatabase(databaseName);
+        eventContext = EventContext.createDatabase(databaseName);
     }
 
     @AfterClass
     public static void teardown() {
-        ConfigurationReader.setConnectionEndpoints(configuration.endpoint());
-        EventContext.dropDatabase(configuration.databaseName());
+        setEndpoint();
+        EventContext.dropDatabase(databaseName);
         // #cleanup
         EventContext.cleanUp();
         // #cleanup
@@ -100,7 +108,7 @@ public class EventStoreSpec {
 
     @After
     public void dropTable() {
-        eventContext.dropTable(configuration.tableName());
+        eventContext.dropTable(tableName);
     }
 
     @Test
@@ -112,11 +120,34 @@ public class EventStoreSpec {
         rows.add(RowFactory.create(2, 1, "Hello", true, false));
         rows.add(RowFactory.create(3, 1, "Hello", true, false));
 
-        Sink<Row, CompletionStage<Done>> sink = EventStoreSink.create(configuration, materializer.executionContext());
+        Sink<Row, CompletionStage<Done>> sink = EventStoreSink.create(databaseName,tableName,materializer.executionContext());
         final CompletionStage<Done> insertionResultFuture = Source.from(rows).runWith(sink, materializer);
         //#insert-rows
 
         insertionResultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testFailingtoInsertRecords() throws Exception {
+
+        setFailureEndpoint();
+
+        List<Row> rows = new ArrayList<>();
+        rows.add(RowFactory.create(1, 1, "Hello", true, false));
+        rows.add(RowFactory.create(2, 1, "Hello", true, false));
+        rows.add(RowFactory.create(3, 1, "Hello", true, false));
+
+        try {
+            Sink<Row, CompletionStage<Done>> sink = EventStoreSink.create(databaseName, tableName, materializer.executionContext());
+
+            final CompletionStage<Done> insertionResultFuture = Source.from(rows).runWith(sink, materializer);
+            insertionResultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS);
+        }catch(RuntimeException runtimeException) {
+            // Make sure to reset the connection endpoint before exiting
+            setEndpoint();
+            throw runtimeException;
+        }
+
     }
 
     @Test
@@ -128,12 +159,33 @@ public class EventStoreSpec {
         rows.add(RowFactory.create(2, 1, "Hello", true, false));
         rows.add(RowFactory.create(3, 1, "Hello", true, false));
 
-        Flow<Row, InsertResult, NotUsed> flow = EventStoreFlow.create(configuration, materializer.executionContext());
+        Flow<Row, InsertResult, NotUsed> flow = EventStoreFlow.create(databaseName,tableName, materializer.executionContext());
         final CompletionStage<List<InsertResult>> insertionResult = Source.from(rows).via(flow).runWith(Sink.seq(), materializer);
         //#insert-rows-using-flow
 
         final List<InsertResult> result = insertionResult.toCompletableFuture().get(5, TimeUnit.SECONDS);
         assertEquals(result.size(), 3);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testFailingtoInsertRecordsUsingFlow() throws Exception {
+
+        setFailureEndpoint();
+
+        List<Row> rows = new ArrayList<>();
+        rows.add(RowFactory.create(1, 1, "Hello", true, false));
+        rows.add(RowFactory.create(2, 1, "Hello", true, false));
+        rows.add(RowFactory.create(3, 1, "Hello", true, false));
+
+        try {
+            Flow<Row, InsertResult, NotUsed> flow = EventStoreFlow.create(databaseName,tableName, materializer.executionContext());
+            final CompletionStage<List<InsertResult>> insertionResult = Source.from(rows).via(flow).runWith(Sink.seq(), materializer);
+            insertionResult.toCompletableFuture().get(5, TimeUnit.SECONDS);
+        }catch(RuntimeException runtimeException) {
+            // Make sure to reset the connection endpoint before exiting
+            setEndpoint();
+            throw runtimeException;
+        }
     }
 
 }
