@@ -24,6 +24,7 @@ lazy val alpakka = project
     sns,
     sqs,
     sse,
+    eip,	
     xml
   )
   .settings(
@@ -64,9 +65,10 @@ lazy val azureStorageQueue = project
   .in(file("azure-storage-queue"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
-    name := "akka-stream-alpakka-azure-storage-queue",
+    name := "akka-stream-azure-storage-queue",
     Dependencies.AzureStorageQueue
   )
+
 
 lazy val cassandra = project
   .enablePlugins(AutomateHeaderPlugin)
@@ -87,13 +89,6 @@ lazy val dynamodb = project
   .settings(
     name := "akka-stream-alpakka-dynamodb",
     Dependencies.DynamoDB
-  )
-
-lazy val elasticsearch = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-elasticsearch",
-    Dependencies.Elasticsearch
   )
 
 lazy val files = project // The name file is taken by `sbt.file`!
@@ -193,13 +188,6 @@ lazy val simpleCodecs = project
     testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4")
   )
 
-lazy val slick = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-slick",
-    Dependencies.Slick
-  )
-
 lazy val sns = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
@@ -261,7 +249,6 @@ lazy val docs = project
     inConfig(Compile)(defaultParadoxSettings),
     ParadoxPlugin.paradoxSettings(Local),
     inConfig(Local)(defaultParadoxSettings),
-    paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     paradoxProperties in Local ++= Map(
       // point API doc links to locally generated API docs
       "scaladoc.akka.stream.alpakka.base_url" -> rebase(
