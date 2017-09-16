@@ -108,7 +108,7 @@ private[alpakka] trait AwsClient[S <: ClientSettings] {
         headers.RawHeader("x-amz-date", amzHeaders.get("X-Amz-Date")),
         headers.RawHeader("authorization", amzHeaders.get("Authorization")),
         headers.RawHeader("x-amz-target", amzHeaders.get("X-Amz-Target"))
-      ), // ++ tokenHeader,
+      ) ++ tokenHeader,
       entity = HttpEntity(defaultContentType, body)
     )
 
