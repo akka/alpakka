@@ -29,6 +29,9 @@ trait BaseFtpSpec extends PlainFtpSupportImpl with BaseSpec {
     Ftp.ls(basePath, settings)
   //#traversing
 
+  protected def listFilesWithFilter(basePath: String, branchSelector: FtpFile => Boolean): Source[FtpFile, NotUsed] =
+    Ftp.ls(basePath, settings, branchSelector)
+
   //#retrieving
   protected def retrieveFromPath(path: String): Source[ByteString, Future[IOResult]] =
     Ftp.fromPath(path, settings)

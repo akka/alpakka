@@ -16,6 +16,8 @@ import akka.util.ByteString
 import net.schmizz.sshj.SSHClient
 import org.apache.commons.net.ftp.FTPClient
 import java.util.concurrent.CompletionStage
+import java.util.function._
+import scala.compat.java8.FunctionConverters._
 
 sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
 
@@ -98,7 +100,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    *
    * @param basePath Base path from which traverse the remote file server
    * @param connectionSettings connection settings
-   * @param branchSelector a function for pruning the tree. Takes a remote folder and return true
+   * @param branchSelector a predicate for pruning the tree. Takes a remote folder and return true
    *                       if you want to enter that remote folder.
    *                       Default behaviour is full recursiv which is equivalent with calling this function
    *                       with [[ls(basePath,connectionSettings,f->true)]].
@@ -108,8 +110,8 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    *
    * @return A [[Source]] of [[FtpFile]]s
    */
-  def ls(basePath: String, connectionSettings: S, branchSelector: FtpFile => Boolean): Source[FtpFile, NotUsed] =
-    Source.fromGraph(createBrowserGraph(basePath, connectionSettings, branchSelector))
+  def ls(basePath: String, connectionSettings: S, branchSelector: Predicate[FtpFile]): Source[FtpFile, NotUsed] =
+    Source.fromGraph(createBrowserGraph(basePath, connectionSettings, asScalaFromPredicate(branchSelector)))
 
   /**
    * Java API: creates a [[Source]] of [[ByteString]] from some file path.
