@@ -1,27 +1,29 @@
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
-  .aggregate(amqp,
-             awslambda,
-             azureStorageQueue,
-             cassandra,
-             csv,
-             dynamodb,
-             files,
-             ftp,
-             geode,
-             googleCloudPubSub,
-             hbase,
-             ironmq,
-             jms,
-             kinesis,
-             mqtt,
-             s3,
-             simpleCodecs,
-             sns,
-             sqs,
-             sse,
-             xml)
+  .aggregate(
+    amqp,
+    awslambda,
+    azureStorageQueue,
+    cassandra,
+    csv,
+    dynamodb,
+    files,
+    ftp,
+    geode,
+    googleCloudPubSub,
+    hbase,
+    ironmq,
+    jms,
+    kinesis,
+    mqtt,
+    s3,
+    simpleCodecs,
+    sns,
+    sqs,
+    sse,
+    xml
+  )
   .settings(
     onLoadMessage :=
       """
@@ -63,7 +65,6 @@ lazy val azureStorageQueue = project
     name := "akka-stream-azure-storage-queue",
     Dependencies.AzureStorageQueue
   )
-
 
 lazy val cassandra = project
   .enablePlugins(AutomateHeaderPlugin)
