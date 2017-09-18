@@ -24,9 +24,11 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 /**
- * This unit test can only be run using a local installation of EventStore
+ * This integration test can only be run using a local installation of EventStore
  * The installer for EventStore can be obtained from:
  * https://www.ibm.com/us-en/marketplace/project-eventstore
+ *
+ * Note: Run each integration test (Java and Scala) one at the time
  *
  * Before running the test:
  * Change the host and port below in the function 'setEndpoint' to the EventStore
@@ -49,11 +51,12 @@ class EventStoreSpec
 
   private def setEndpoint() =
     // #configure-endpoint
-    ConfigurationReader.setConnectionEndpoints("192.168.2.20:5555")
+    ConfigurationReader.setConnectionEndpoints("127.0.0.1:5555")
+
   // #configure-endpoint
 
   private def setFailureEndpoint() =
-    ConfigurationReader.setConnectionEndpoints("192.168.2.21:5555")
+    ConfigurationReader.setConnectionEndpoints("192.168.1.1:5555")
 
   private def tableSchema: TableSchema =
     TableSchema(
@@ -81,6 +84,7 @@ class EventStoreSpec
 
   override def beforeEach(): Unit =
     eventContext.foreach(_.createTable(tableSchema))
+
   override def afterEach(): Unit = eventContext.foreach(_.dropTable(tableName))
 
   override def afterAll(): Unit = {
@@ -108,9 +112,6 @@ class EventStoreSpec
 
     result.size mustBe 3
     result.map(_.successful) mustBe Seq(true, true, true)
-
-    EventContext.cleanUp()
-    setEndpoint()
 
   }
 

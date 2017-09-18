@@ -36,10 +36,13 @@ import static org.junit.Assert.*;
 
 
 /**
- * This unit test can only be run using a local installation of EventStore
+ * This integration test can only be run using a local installation of EventStore
  * The installer for EventStore can be obtained from:
  * https://www.ibm.com/us-en/marketplace/project-eventstore
  *
+ * Note: Run each integration test (Java and Scala) one at the time
+ *
+ * Before running the test:
  * Change the host and port below in the function 'setEndpoint' to the EventStore
  * Change the host and port below in the function 'failureEndpoint' to a unresponsive host/port.
  *
@@ -53,12 +56,12 @@ public class EventStoreSpec {
     private static String tableName = "TESTTABLE";
     private static void setEndpoint() {
         // #configure-endpoint
-        ConfigurationReader.setConnectionEndpoints("192.168.2.20:5555");
+        ConfigurationReader.setConnectionEndpoints("127.0.0.1:5555");
         // #configure-endpoint
 
     }
     private static void setFailureEndpoint() {
-        ConfigurationReader.setConnectionEndpoints("192.168.2.21:5555");
+        ConfigurationReader.setConnectionEndpoints("192.168.1.1:5555");
     }
 
     private static Pair<ActorSystem, Materializer> setupMaterializer() {
