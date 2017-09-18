@@ -3,28 +3,28 @@
  */
 package akka.stream.alpakka.ibm.eventstore.scaladsl
 
-import akka.Done
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl._
-import akka.testkit.TestKit
-import com.ibm.event.catalog.TableSchema
-import com.ibm.event.common.ConfigurationReader
-import com.ibm.event.oltp.EventContext
-import com.ibm.event.oltp.InsertResult
-import com.typesafe.config.ConfigFactory
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.types._
-import org.scalatest._
-import org.scalatest.concurrent.ScalaFutures
-
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
+import akka.Done
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl._
+import akka.testkit.TestKit
+
+import com.ibm.event.catalog.TableSchema
+import com.ibm.event.common.ConfigurationReader
+import com.ibm.event.oltp.EventContext
+import com.ibm.event.oltp.InsertResult
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.types._
+import org.scalatest._
+import org.scalatest.concurrent.ScalaFutures
+
 /**
- * This integration test can only be run using a local installation of EventStore
+ * This integration test can be run using a local installation of EventStore
  * The installer for EventStore can be obtained from:
  * https://www.ibm.com/us-en/marketplace/project-eventstore
  *
@@ -34,7 +34,7 @@ import scala.concurrent.duration._
  * Change the host and port below in the function 'setEndpoint' to the EventStore
  * Change the host and port below in the function 'failureEndpoint' to a unresponsive host/port.
  */
-@Ignore
+//@Ignore
 class EventStoreSpec
     extends WordSpec
     with ScalaFutures
@@ -51,7 +51,7 @@ class EventStoreSpec
 
   private def setEndpoint() =
     // #configure-endpoint
-    ConfigurationReader.setConnectionEndpoints("127.0.0.1:5555")
+    ConfigurationReader.setConnectionEndpoints("192.168.2.20:5555")
 
   // #configure-endpoint
 
