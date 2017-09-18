@@ -115,6 +115,14 @@ object Dependencies {
     )
   }
 
+  val IbmEventStore = Seq(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka"   %% "akka-slf4j"       % AkkaVersion   % Test,
+      "ch.qos.logback"      % "logback-classic"   % "1.2.3"       % Test  // Eclipse Public License 1.0
+    )
+  )
+
+
   val IronMq = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
