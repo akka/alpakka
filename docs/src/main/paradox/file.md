@@ -27,10 +27,10 @@ lines and emits those.
 In this sample we simply tail the lines of a file and print them to standard out:
 
 Scala
-: @@snip (../../../../file/src/test/scala/akka/stream/alpakka/file/scaladsl/FileTailSourceSpec.scala) { #simple-lines }
+: @@snip ($alpakka$/file/src/test/scala/akka/stream/alpakka/file/scaladsl/FileTailSourceSpec.scala) { #simple-lines }
 
 Java
-: @@snip (../../../../file/src/test/java/akka/stream/alpakka/file/javadsl/FileTailSourceTest.java) { #simple-lines }
+: @@snip ($alpakka$/file/src/test/java/akka/stream/alpakka/file/javadsl/FileTailSourceTest.java) { #simple-lines }
 
 
 ### Directory
@@ -39,19 +39,19 @@ Java
 directly in a given directory:
 
 Scala
-: @@snip (../../../../file/src/test/scala/akka/stream/alpakka/file/scaladsl/DirectorySpec.scala) { #ls }
+: @@snip ($alpakka$/file/src/test/scala/akka/stream/alpakka/file/scaladsl/DirectorySpec.scala) { #ls }
 
 Java
-: @@snip (../../../../file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryTest.java) { #ls }
+: @@snip ($alpakka$/file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryTest.java) { #ls }
 
 `Directory.walk(path)` traverses all subdirectories and lists
 files and directories depth first:
 
 Scala
-: @@snip (../../../../file/src/test/scala/akka/stream/alpakka/file/scaladsl/DirectorySpec.scala) { #walk }
+: @@snip ($alpakka$/file/src/test/scala/akka/stream/alpakka/file/scaladsl/DirectorySpec.scala) { #walk }
 
 Java
-: @@snip (../../../../file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryTest.java) { #walk }
+: @@snip ($alpakka$/file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryTest.java) { #walk }
 
 
 ### DirectoryChangesSource
@@ -63,10 +63,10 @@ describing what kind of change it was.
 In this sample we simply print each change to the directory to standard output:
 
 Scala
-: @@snip (../../../../file/src/test/scala/akka/stream/alpakka/file/scaladsl/DirectoryChangesSourceSpec.scala) { #minimal-sample }
+: @@snip ($alpakka$/file/src/test/scala/akka/stream/alpakka/file/scaladsl/DirectoryChangesSourceSpec.scala) { #minimal-sample }
 
 Java
-: @@snip (../../../../file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryChangesSourceTest.java) { #minimal-sample }
+: @@snip ($alpakka$/file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryChangesSourceTest.java) { #minimal-sample }
 
 
 ### Running the example code
