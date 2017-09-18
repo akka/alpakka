@@ -27,17 +27,9 @@ object EventStoreSink {
       databaseName: String,
       tableName: String,
       parallelism: Int = 1
-  ): Sink[Row, Future[Done]] = {
-
-    val context = EventContext.getEventContext(databaseName)
-    val schema = context.getTable(tableName)
-
-    Flow[Row]
-      .mapAsync(parallelism) { row ⇒
-        context.insertAsync(schema, row)
-      }
+  ): Sink[Row, Future[Done]] =
+    EventStoreFlow(databaseName, tableName, parallelism)
       .toMat(Sink.ignore)(Keep.right)
-  }
 }
 
 object EventStoreFlow {
