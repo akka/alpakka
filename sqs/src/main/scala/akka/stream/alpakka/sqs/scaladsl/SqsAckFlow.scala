@@ -26,6 +26,6 @@ object SqsAckFlow {
  * @param message message body.
  */
 final case class AckResult(
-    metadata: AmazonWebServiceResult[ResponseMetadata],
+    metadata: Option[AmazonWebServiceResult[ResponseMetadata]],
     message: String
 )

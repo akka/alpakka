@@ -41,18 +41,14 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] exte
               case head +: tail =>
                 buffer = tail
                 push(out, head)
-              case _ => finalize()
+              case _ => complete(out)
             }
-            def finalize() = try { disconnect() } finally { complete(out) }
           } // end of onPull
 
-          override def onDownstreamFinish(): Unit =
-            try {
-              disconnect()
-            } finally {
-              matSuccess()
-              super.onDownstreamFinish()
-            }
+          override def onDownstreamFinish(): Unit = {
+            matSuccess()
+            super.onDownstreamFinish()
+          }
         }
       ) // end of handler
 

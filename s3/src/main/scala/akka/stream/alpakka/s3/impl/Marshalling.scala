@@ -3,9 +3,12 @@
  */
 package akka.stream.alpakka.s3.impl
 
+import java.time.Instant
+
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, MediaTypes}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
+import akka.stream.alpakka.s3.scaladsl.ListBucketResultContents
 
 import scala.xml.NodeSeq
 
@@ -13,7 +16,7 @@ private[alpakka] object Marshalling {
   import ScalaXmlSupport._
 
   implicit val multipartUploadUnmarshaller: FromEntityUnmarshaller[MultipartUpload] = {
-    nodeSeqUnmarshaller(ContentTypes.`application/octet-stream`) map {
+    nodeSeqUnmarshaller(MediaTypes.`application/xml`, ContentTypes.`application/octet-stream`) map {
       case NodeSeq.Empty => throw Unmarshaller.NoContentException
       case x =>
         MultipartUpload(S3Location((x \ "Bucket").text, (x \ "Key").text), (x \ "UploadId").text)
@@ -35,7 +38,6 @@ private[alpakka] object Marshalling {
 
   val isTruncated = "IsTruncated"
   val continuationToken = "NextContinuationToken"
-  val key = "Key"
 
   implicit val listBucketResultUnmarshaller: FromEntityUnmarshaller[ListBucketResult] = {
     nodeSeqUnmarshaller(MediaTypes.`application/xml` withCharset HttpCharsets.`UTF-8`).map {
@@ -43,8 +45,17 @@ private[alpakka] object Marshalling {
       case x =>
         ListBucketResult(
           (x \ isTruncated).text == "true",
-          if ((x \ continuationToken).isEmpty) None else Some((x \ continuationToken).text),
-          (x \\ key).toSeq.map(_.text)
+          Some(x \ continuationToken).filter(_.nonEmpty).map(_.text),
+          (x \\ "Contents").map { c =>
+            ListBucketResultContents(
+              (x \ "Name").text,
+              (c \ "Key").text,
+              (c \ "ETag").text.drop(1).dropRight(1),
+              (c \ "Size").text.toLong,
+              Instant.parse((c \ "LastModified").text),
+              (c \ "StorageClass").text
+            )
+          }
         )
     }
   }

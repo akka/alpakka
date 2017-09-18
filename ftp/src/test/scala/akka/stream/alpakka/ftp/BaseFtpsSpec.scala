@@ -4,7 +4,6 @@
 package akka.stream.alpakka.ftp
 
 import akka.NotUsed
-import akka.stream.alpakka.ftp.RemoteFileSettings.FtpsSettings
 import akka.stream.alpakka.ftp.FtpCredentials.AnonFtpCredentials
 import akka.stream.alpakka.ftp.scaladsl.Ftps
 import akka.stream.IOResult

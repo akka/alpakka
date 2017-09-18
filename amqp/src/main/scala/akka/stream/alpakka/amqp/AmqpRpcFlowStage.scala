@@ -185,6 +185,13 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
           }
         }
       )
+      override def postStop(): Unit = {
+        promise.tryFailure(new RuntimeException("stage stopped unexpectedly"))
+        super.postStop()
+      }
+
+      override def onFailure(ex: Throwable): Unit =
+        promise.tryFailure(ex)
     }, promise.future)
   }
 

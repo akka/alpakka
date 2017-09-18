@@ -10,7 +10,6 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import org.junit.Test;
-
 import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
 
@@ -45,7 +44,9 @@ public class KeyFileSftpSourceTest extends SftpSupportImpl implements CommonFtpS
             .withPort(getPort())
             .withCredentials(new FtpCredentials.NonAnonFtpCredentials("different user and password", "will fail password auth"))
             .withStrictHostKeyChecking(false) // strictHostKeyChecking
-            .withSftpIdentity(SftpIdentity.createFileSftpIdentity("ftp/src/test/resources/client.pem")
+            .withSftpIdentity(SftpIdentity.createFileSftpIdentity(
+                    getClientPrivateKeyFile().getPath(),
+                    CLIENT_PRIVATE_KEY_PASSPHRASE)
      );
     //#create-settings
     return settings;

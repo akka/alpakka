@@ -3,25 +3,16 @@
  */
 package akka.stream.alpakka.s3.auth
 
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-
-import org.scalatest.FlatSpecLike
-import org.scalatest.Matchers
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.Millis
-import org.scalatest.time.Seconds
-import org.scalatest.time.Span
-
+import java.time.{LocalDate, LocalDateTime, ZoneOffset}
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpMethods
-import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.headers.Host
-import akka.http.scaladsl.model.headers.RawHeader
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
+import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
+import akka.http.scaladsl.model.headers.{Host, RawHeader}
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
+import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import org.scalatest.{FlatSpecLike, Matchers}
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{Millis, Seconds, Span}
 
 class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLike with Matchers with ScalaFutures {
   def this() = this(ActorSystem("SignerSpec"))
@@ -31,7 +22,9 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
 
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
 
-  val credentials = AWSCredentials("AKIDEXAMPLE", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY")
+  val credentials = new AWSStaticCredentialsProvider(
+    new BasicAWSCredentials("AKIDEXAMPLE", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY")
+  )
   val scope = CredentialScope(LocalDate.of(2015, 8, 30), "us-east-1", "iam")
   val signingKey = SigningKey(credentials, scope)
 
@@ -62,22 +55,21 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
 
     val srFuture =
       Signer.signedRequest(req, signingKey, LocalDateTime.of(2015, 8, 30, 12, 36, 0).atZone(ZoneOffset.UTC))
-    whenReady(srFuture) {
-      case signedRequest =>
-        signedRequest should equal(
-          HttpRequest(HttpMethods.GET)
-            .withUri("https://iam.amazonaws.com/?Action=ListUsers&Version=2010-05-08")
-            .withHeaders(
-              Host("iam.amazonaws.com"),
-              RawHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8"),
-              RawHeader("x-amz-date", "20150830T123600Z"),
-              RawHeader("x-amz-content-sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
-              RawHeader(
-                "Authorization",
-                "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/iam/aws4_request, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=dd479fa8a80364edf2119ec24bebde66712ee9c9cb2b0d92eb3ab9ccdc0c3947"
-              )
+    whenReady(srFuture) { signedRequest =>
+      signedRequest should equal(
+        HttpRequest(HttpMethods.GET)
+          .withUri("https://iam.amazonaws.com/?Action=ListUsers&Version=2010-05-08")
+          .withHeaders(
+            Host("iam.amazonaws.com"),
+            RawHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8"),
+            RawHeader("x-amz-date", "20150830T123600Z"),
+            RawHeader("x-amz-content-sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
+            RawHeader(
+              "Authorization",
+              "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/iam/aws4_request, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=dd479fa8a80364edf2119ec24bebde66712ee9c9cb2b0d92eb3ab9ccdc0c3947"
             )
-        )
+          )
+      )
     }
   }
 

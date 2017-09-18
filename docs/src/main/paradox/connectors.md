@@ -5,6 +5,7 @@
 * [AMQP Connector](amqp.md)
 * [Apache Geode Connector](geode.md)
 * [AWS DynamoDB Connector](dynamodb.md)
+* [AWS Kinesis Connector](kinesis.md)
 * [AWS Lambda Connector](awslambda.md)
 * [AWS S3 Connector](s3.md)
 * [AWS SNS Connector](sns.md)
@@ -23,6 +24,8 @@
 
 @@@
 
-TODO: Implement more connectors. [Contributions](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md) are very welcome.
+@@ toc { depth=1 }
+
+[Contributions](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md) are very welcome.
 [Creating an issue](https://github.com/akka/alpakka/issues) for discussion is a good first step for such contributions.
 

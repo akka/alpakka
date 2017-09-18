@@ -3,28 +3,27 @@
  */
 package akka.stream.alpakka.s3.impl
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpEntity, MediaTypes}
-import akka.stream.alpakka.s3.{BufferType, MemoryBufferType, Proxy, S3Settings}
 import akka.stream.alpakka.s3.acl.CannedAcl
-import akka.stream.alpakka.s3.auth.AWSCredentials
+import akka.stream.alpakka.s3.{BufferType, MemoryBufferType, Proxy, S3Settings}
 import akka.stream.scaladsl.Source
-import com.typesafe.config.ConfigFactory
+import com.amazonaws.auth.{AWSCredentialsProvider, AWSStaticCredentialsProvider, AnonymousAWSCredentials}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, Matchers}
 
 class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
   // test fixtures
-  def getSettings(bufferType: BufferType = MemoryBufferType,
-                  diskBufferPath: String = "",
-                  proxy: Option[Proxy] = None,
-                  awsCredentials: AWSCredentials = AWSCredentials("", ""),
-                  s3Region: String = "us-east-1",
-                  pathStyleAccess: Boolean = false) =
-    new S3Settings(bufferType, diskBufferPath, proxy, awsCredentials, s3Region, pathStyleAccess)
+  def getSettings(
+      bufferType: BufferType = MemoryBufferType,
+      proxy: Option[Proxy] = None,
+      awsCredentials: AWSCredentialsProvider = new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()),
+      s3Region: String = "us-east-1",
+      pathStyleAccess: Boolean = false
+  ) =
+    new S3Settings(bufferType, proxy, awsCredentials, s3Region, pathStyleAccess)
 
   val location = S3Location("bucket", "image-1024@2x")
   val contentType = MediaTypes.`image/jpeg`
@@ -109,6 +108,43 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     val req = HttpRequests.getDownloadRequest(location)
 
     req.uri.scheme shouldEqual "http"
+  }
+
+  it should "support download requests with keys starting with /" in {
+    // the official client supports this and this translates
+    // into an object at path /[empty string]/...
+    // added this test because of a tricky uri building issue
+    // in case of pathStyleAccess = false
+    implicit val settings = getSettings()
+
+    val location = S3Location("bucket", "/test/foo.txt")
+
+    val req = HttpRequests.getDownloadRequest(location)
+
+    req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
+    req.uri.path.toString shouldEqual "//test/foo.txt"
+  }
+
+  it should "support download requests with keys containing spaces" in {
+    implicit val settings = getSettings()
+
+    val location = S3Location("bucket", "test folder/test file.txt")
+
+    val req = HttpRequests.getDownloadRequest(location)
+
+    req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
+    req.uri.path.toString shouldEqual "/test%20folder/test%20file.txt"
+  }
+
+  it should "support download requests with keys containing spaces with path-style access in other regions" in {
+    implicit val settings = getSettings(s3Region = "eu-west-1", pathStyleAccess = true)
+
+    val location = S3Location("bucket", "test folder/test file.txt")
+
+    val req = HttpRequests.getDownloadRequest(location)
+
+    req.uri.authority.host.toString shouldEqual "s3-eu-west-1.amazonaws.com"
+    req.uri.path.toString shouldEqual "/bucket/test%20folder/test%20file.txt"
   }
 
   it should "support multipart init upload requests via HTTP when such scheme configured for `proxy`" in {

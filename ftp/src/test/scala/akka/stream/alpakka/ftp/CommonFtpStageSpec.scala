@@ -3,12 +3,9 @@
  */
 package akka.stream.alpakka.ftp
 
-import java.io.File
-import java.net.InetAddress
-import java.nio.file.{Files, Paths}
-
 import akka.stream.IOResult
 import akka.stream.alpakka.ftp.FtpCredentials.NonAnonFtpCredentials
+import akka.stream.alpakka.ftp.SftpSupportImpl.{CLIENT_PRIVATE_KEY_PASSPHRASE => ClientPrivateKeyPassphrase}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
@@ -16,6 +13,9 @@ import org.scalatest.time.{Millis, Seconds, Span}
 import scala.concurrent.duration._
 import scala.util.Random
 import java.nio.file.attribute.PosixFilePermission
+import java.nio.file.{Files, Paths}
+import java.net.InetAddress
+import org.scalatest.concurrent.Eventually
 
 final class FtpStageSpec extends BaseFtpSpec with CommonFtpStageSpec
 final class SftpStageSpec extends BaseSftpSpec with CommonFtpStageSpec
@@ -31,7 +31,12 @@ final class RawKeySftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
     NonAnonFtpCredentials("different user and password", "will fail password auth"),
     strictHostKeyChecking = false,
     knownHosts = None,
-    Some(RawKeySftpIdentity("id", Files.readAllBytes(Paths.get("ftp/src/test/resources/client.pem"))))
+    Some(
+      RawKeySftpIdentity(
+        Files.readAllBytes(Paths.get(getClientPrivateKeyFile.getPath)),
+        privateKeyFilePassphrase = Some(ClientPrivateKeyPassphrase)
+      )
+    )
   )
 }
 
@@ -42,7 +47,9 @@ final class KeyFileSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
     NonAnonFtpCredentials("different user and password", "will fail password auth"),
     strictHostKeyChecking = false,
     knownHosts = None,
-    Some(KeyFileSftpIdentity("ftp/src/test/resources/client.pem"))
+    Some(
+      KeyFileSftpIdentity(getClientPrivateKeyFile.getPath, Some(ClientPrivateKeyPassphrase))
+    )
   )
 }
 
@@ -52,18 +59,19 @@ final class StrictHostCheckingSftpSourceSpec extends BaseSftpSpec with CommonFtp
     getPort,
     NonAnonFtpCredentials("different user and password", "will fail password auth"),
     strictHostKeyChecking = true,
-    knownHosts = Some(new File("ftp/src/test/resources/known_hosts").getAbsolutePath),
-    Some(KeyFileSftpIdentity("ftp/src/test/resources/client.pem", None, None)),
-    options = Map("HostKeyAlgorithms" -> "+ssh-dss")
+    knownHosts = Some(getKnownHostsFile.getPath),
+    Some(
+      KeyFileSftpIdentity(getClientPrivateKeyFile.getPath, Some(ClientPrivateKeyPassphrase))
+    )
   )
 }
 
-trait CommonFtpStageSpec extends BaseSpec {
+trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
   implicit val system = getSystem
   implicit val mat = getMaterializer
   implicit val defaultPatience =
-    PatienceConfig(timeout = Span(10, Seconds), interval = Span(300, Millis))
+    PatienceConfig(timeout = Span(30, Seconds), interval = Span(600, Millis))
 
   "FtpBrowserSource" should {
     "list all files from root" in {
@@ -145,13 +153,13 @@ trait CommonFtpStageSpec extends BaseSpec {
   "FtpBrowserSource & FtpIOSource" should {
     "work together retrieving a list of files" in {
       val basePath = ""
-      val numOfFiles = 20
-      generateFiles(numOfFiles, 10, basePath)
+      val numOfFiles = 10
+      generateFiles(numOfFiles, numOfFiles, basePath)
       val probe = listFiles(basePath)
         .mapAsyncUnordered(1)(file => retrieveFromPath(file.path).to(Sink.ignore).run())
         .toMat(TestSink.probe)(Keep.right)
         .run()
-      val result = probe.request(21).expectNextN(20)
+      val result = probe.request(numOfFiles + 1).expectNextN(numOfFiles)
       probe.expectComplete()
 
       val expectedNumOfBytes = getLoremIpsum.getBytes().length * numOfFiles
@@ -173,8 +181,6 @@ trait CommonFtpStageSpec extends BaseSpec {
 
           val storedContents = getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName)
           storedContents shouldBe getLoremIpsum.getBytes
-
-          cleanFiles()
         }
       }
     }
@@ -231,13 +237,31 @@ trait CommonFtpStageSpec extends BaseSpec {
     }
 
     "fail and report the exception in the result status if upstream fails" in {
-      val fileName = "sample_io"
+      val fileName = "sample_io_upstream"
       val brokenSource = Source(10.to(0, -1)).map(x ⇒ ByteString(10 / x))
 
       val result = brokenSource.runWith(storeToPath(s"/$fileName", append = false)).futureValue
 
       result.status.failed.get shouldBe a[ArithmeticException]
     }
-  }
 
+    "fail and report the exception in the result status if connection fails" in {
+      def waitForUploadToStart(fileName: String) =
+        eventually {
+          noException should be thrownBy getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName)
+          getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName).length shouldBe >(0)
+        }
+
+      val fileName = "sample_io_connection"
+      val infiniteSource = Source.repeat(ByteString(0x00))
+
+      val future = infiniteSource.runWith(storeToPath(s"/$fileName", append = false))
+      waitForUploadToStart(fileName)
+      stopServer()
+      val result = future.futureValue
+      startServer()
+
+      result.status.failed.get shouldBe a[Exception]
+    }
+  }
 }

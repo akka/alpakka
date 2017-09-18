@@ -11,10 +11,11 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Source}
 import akka.stream.{Materializer, SourceShape}
-import de.heikoseeberger.akkasse.scaladsl.model.MediaTypes.`text/event-stream`
-import de.heikoseeberger.akkasse.scaladsl.model.ServerSentEvent
-import de.heikoseeberger.akkasse.scaladsl.model.headers.`Last-Event-ID`
-import de.heikoseeberger.akkasse.scaladsl.unmarshalling.EventStreamUnmarshalling
+import akka.http.scaladsl.model.sse.ServerSentEvent
+import akka.http.scaladsl.model.sse.ServerSentEvent.heartbeat
+import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
+import akka.http.scaladsl.model.headers.`Last-Event-ID`
+import akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
@@ -65,9 +66,9 @@ object EventSource {
 
   type EventSource = Source[ServerSentEvent, NotUsed]
 
-  private val noEvents = Future.successful(Source.empty[ServerSentEvent])
+  private val noEvents = Source.empty[ServerSentEvent]
 
-  private val singleDelimiter = Source.single(ServerSentEvent.heartbeat)
+  private val singleDelimiter = Source.single(heartbeat)
 
   /**
    * @param uri URI with absolute path, e.g. "http://myserver/events
@@ -92,9 +93,9 @@ object EventSource {
           val r = Get(uri).addHeader(Accept(`text/event-stream`))
           lastEventId.foldLeft(r)((r, i) => r.addHeader(`Last-Event-ID`(i)))
         }
-        send(request).flatMap(Unmarshal(_).to[EventSource]).fallbackTo(noEvents)
+        send(request).flatMap(Unmarshal(_).to[EventSource]).fallbackTo(Future.successful(noEvents))
       }
-      def recover(eventSource: EventSource) = eventSource.recoverWithRetries(1, { case _ => Source.empty })
+      def recover(eventSource: EventSource) = eventSource.recoverWithRetries(1, { case _ => noEvents })
       def delimit(eventSource: EventSource) = eventSource.concat(singleDelimiter)
       Flow[Option[String]]
         .mapAsync(1)(getEventSource)
@@ -103,6 +104,7 @@ object EventSource {
 
     val lastEventId =
       Flow[ServerSentEvent]
+        .prepend(Source.single(heartbeat)) // to make sliding and collect-matching work
         .sliding(2)
         .collect { case Seq(last, event) if event == ServerSentEvent.heartbeat => last }
         .scan(initialLastEventId)((prev, current) => current.id.orElse(prev))
@@ -113,7 +115,7 @@ object EventSource {
       val trigger = builder.add(Source.single(initialLastEventId))
       val merge = builder.add(Merge[Option[String]](2))
       val bcast = builder.add(Broadcast[ServerSentEvent](2))
-      val events = builder.add(Flow[ServerSentEvent].filter(_ != ServerSentEvent.heartbeat))
+      val events = builder.add(Flow[ServerSentEvent].filter(_ != heartbeat))
       val delay = builder.add(Flow[Option[String]].delay(retryDelay))
       // format: OFF
       trigger ~> merge ~>   continuousEvents   ~> bcast ~> events

@@ -1,31 +1,34 @@
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
-  .aggregate(amqp,
-             awslambda,
-             azureStorageQueue,
-             cassandra,
-             csv,
-             dynamodb,
-             elasticsearch,
-             files,
-             ftp,
-             geode,
-             googleCloudPubSub,
-             hbase,
-             ironmq,
-             jms,
-             mqtt,
-             s3,
-             simpleCodecs,
-             sns,
-             sqs,
-             sse,
-             xml)
+  .aggregate(
+    amqp,
+    awslambda,
+    azureStorageQueue,
+    cassandra,
+    csv,
+    dynamodb,
+    elasticsearch,
+    files,
+    ftp,
+    geode,
+    googleCloudPubSub,
+    hbase,
+    ironmq,
+    jms,
+    kinesis,
+    mqtt,
+    s3,
+    simpleCodecs,
+    sns,
+    sqs,
+    sse,
+    xml
+  )
   .settings(
     onLoadMessage :=
       """
-        |*** Welcome to the sbt build definition for Alpakka! ***
+        |** Welcome to the sbt build definition for Alpakka! **
         |
         |Useful sbt tasks:
         |
@@ -51,7 +54,9 @@ lazy val awslambda = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-awslambda",
-    Dependencies.AwsLambda
+    Dependencies.AwsLambda,
+    // For mockito https://github.com/akka/alpakka/issues/390
+    parallelExecution in Test := false
   )
 
 lazy val azureStorageQueue = project
@@ -61,7 +66,6 @@ lazy val azureStorageQueue = project
     name := "akka-stream-azure-storage-queue",
     Dependencies.AzureStorageQueue
   )
-
 
 lazy val cassandra = project
   .enablePlugins(AutomateHeaderPlugin)
@@ -104,7 +108,10 @@ lazy val ftp = project
   .settings(
     name := "akka-stream-alpakka-ftp",
     Dependencies.Ftp,
-    parallelExecution in Test := false
+    parallelExecution in Test := false,
+    fork in Test := true,
+    // To avoid potential blocking in machines with low entropy (default is `/dev/random`)
+    javaOptions in Test += "-Djava.security.egd=file:/dev/./urandom"
   )
 
 lazy val geode = project
@@ -123,7 +130,9 @@ lazy val googleCloudPubSub = project
     name := "akka-stream-alpakka-google-cloud-pub-sub",
     Dependencies.GooglePubSub,
     fork in Test := true,
-    envVars in Test := Map("PUBSUB_EMULATOR_HOST" -> "localhost:8538")
+    envVars in Test := Map("PUBSUB_EMULATOR_HOST" -> "localhost:8538"),
+    // For mockito https://github.com/akka/alpakka/issues/390
+    parallelExecution in Test := false
   )
 
 lazy val hbase = project
@@ -149,6 +158,15 @@ lazy val jms = project
     parallelExecution in Test := false
   )
 
+lazy val kinesis = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-kinesis",
+    Dependencies.Kinesis,
+    // For mockito https://github.com/akka/alpakka/issues/390
+    parallelExecution in Test := false
+  )
+
 lazy val mqtt = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
@@ -167,14 +185,20 @@ lazy val simpleCodecs = project
   .in(file("simple-codecs"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
-    name := "akka-stream-alpakka-simple-codecs"
+    name := "akka-stream-alpakka-simple-codecs",
+    // By default scalatest futures time out in 150 ms, dilate that to 600ms.
+    // This should not impact the total test time as we don't expect to hit this
+    // timeout, and indeed it doesn't appear to.
+    testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4")
   )
 
 lazy val sns = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-sns",
-    Dependencies.Sns
+    Dependencies.Sns,
+    // For mockito https://github.com/akka/alpakka/issues/390
+    parallelExecution in Test := false
   )
 
 lazy val sqs = project
@@ -182,7 +206,9 @@ lazy val sqs = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-sqs",
-    Dependencies.Sqs
+    Dependencies.Sqs,
+    // For mockito https://github.com/akka/alpakka/issues/390
+    parallelExecution in Test := false
   )
 
 lazy val sse = project
@@ -211,6 +237,7 @@ val defaultParadoxSettings: Seq[Setting[_]] = Seq(
     "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.AkkaVersion}/%s",
     "extref.akka-http-docs.base_url" -> s"http://doc.akka.io/docs/akka-http/${Dependencies.AkkaHttpVersion}/%s",
     "extref.java-api.base_url" -> "https://docs.oracle.com/javase/8/docs/api/index.html?%s.html",
+    "extref.javaee-api.base_url" -> "https://docs.oracle.com/javaee/7/api/index.html?%s.html",
     "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
     "scaladoc.akka.base_url" -> s"http://doc.akka.io/api/akka/${Dependencies.AkkaVersion}",
     "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}"
