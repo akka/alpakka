@@ -62,7 +62,7 @@ lazy val azureStorageQueue = project
   .in(file("azure-storage-queue"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
-    name := "akka-stream-azure-storage-queue",
+    name := "akka-stream-alpakka-azure-storage-queue",
     Dependencies.AzureStorageQueue
   )
 
