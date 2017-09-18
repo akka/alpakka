@@ -15,9 +15,9 @@ The SSE connector provides a continuous source of server-sent events recovering 
 Simply define an `EventSource` by giving a URI, a function for sending HTTP requests and an optional initial value for Last-Evend-ID header:  
 
 Scala
-: @@snip (../../../../sse/src/test/scala/akka/stream/alpakka/sse/scaladsl/EventSourceSpec.scala) { #event-source }
+: @@snip ($alpakka$/sse/src/test/scala/akka/stream/alpakka/sse/scaladsl/EventSourceSpec.scala) { #event-source }
 
 Then happily consume `ServerSentEvent`s:
 
 Scala
-: @@snip (../../../../sse/src/test/scala/akka/stream/alpakka/sse/scaladsl/EventSourceSpec.scala) { #consume-events }
+: @@snip ($alpakka$/sse/src/test/scala/akka/stream/alpakka/sse/scaladsl/EventSourceSpec.scala) { #consume-events }
