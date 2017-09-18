@@ -34,7 +34,7 @@ import org.scalatest.concurrent.ScalaFutures
  * Change the host and port below in the function 'setEndpoint' to the EventStore
  * Change the host and port below in the function 'failureEndpoint' to a unresponsive host/port.
  */
-//@Ignore
+@Ignore
 class EventStoreSpec
     extends WordSpec
     with ScalaFutures
@@ -51,8 +51,7 @@ class EventStoreSpec
 
   private def setEndpoint() =
     // #configure-endpoint
-    ConfigurationReader.setConnectionEndpoints("192.168.2.20:5555")
-
+    ConfigurationReader.setConnectionEndpoints("127.0.0.1:5555")
   // #configure-endpoint
 
   private def setFailureEndpoint() =

@@ -48,7 +48,7 @@ import static org.junit.Assert.assertEquals;
  * Change the host and port below in the function 'failureEndpoint' to a unresponsive host/port.
  *
  */
-//@Ignore
+@Ignore
 public class EventStoreSpec {
     private static ActorSystem system;
     private static Materializer materializer;
@@ -57,7 +57,7 @@ public class EventStoreSpec {
     private static String tableName = "TESTTABLE";
     private static void setEndpoint() {
         // #configure-endpoint
-        ConfigurationReader.setConnectionEndpoints("192.168.2.20:5555");
+        ConfigurationReader.setConnectionEndpoints("127.0.0.1:5555");
         // #configure-endpoint
 
     }
