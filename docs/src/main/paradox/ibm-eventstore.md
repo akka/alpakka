@@ -43,7 +43,7 @@ To use the EventStore sink and flow you first need to configure the EventStore c
 
 `EventContext.cleanUp` - Is used to terminate a connection, this has to be called to successfully shutdown the application.
 
-These functions are provided by the EventStore client library as a transient dependencies.
+These functions are provided by the EventStore client.
 
 ## Local development
 
