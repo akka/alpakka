@@ -45,6 +45,10 @@ To use the EventStore sink and flow you first need to configure the EventStore c
 
 These functions are provided by the EventStore client library as a transient dependencies.
 
+## Local development
+
+If the EventStore is installed locally, it can be connected to (after being started) on 127.0.0.1, port 5555.
+
 ### Set EventStore connection endpoints
 
 Scala

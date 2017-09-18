@@ -18,12 +18,12 @@ import scala.concurrent.Future
 object EventStoreSink {
 
   /**
-    * Creates a sink for insertion of records into EventStore.
-    * @param databaseName Name of the database, database has to exist before the call to this function.
-    * @param tableName    Name of the table, database has to exist before the call to this function.
-    * @param ec           Execution context (implicit)
-    * @return             CompletionStage[Done]
-    */
+   * Creates a sink for insertion of records into EventStore.
+   * @param databaseName Name of the database, database has to exist before the call to this function.
+   * @param tableName    Name of the table, database has to exist before the call to this function.
+   * @param ec           Execution context (implicit)
+   * @return             CompletionStage[Done]
+   */
   def apply(
       databaseName: String,
       tableName: String,
@@ -44,14 +44,14 @@ object EventStoreSink {
 object EventStoreFlow {
 
   /**
-    * Creates a flow for insertion of records into EventStore and inspection of the result.
-    * @param databaseName Name of the database, database has to exist before the call to this function
-    * @param tableName    Name of the table, database has to exist before the call to this function
-    * @param ec           Execution context.
-    * @param parallelism  Number of concurrent insert operations performed (default set to 1).
-    * @return             Returns the InsertResult from EventStore, it can be used to determine if the operation
-    *                     succeeded or failed.
-    */
+   * Creates a flow for insertion of records into EventStore and inspection of the result.
+   * @param databaseName Name of the database, database has to exist before the call to this function
+   * @param tableName    Name of the table, database has to exist before the call to this function
+   * @param ec           Execution context.
+   * @param parallelism  Number of concurrent insert operations performed (default set to 1).
+   * @return             Returns the InsertResult from EventStore, it can be used to determine if the operation
+   *                     succeeded or failed.
+   */
   def apply(
       databaseName: String,
       tableName: String,
