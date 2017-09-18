@@ -37,7 +37,7 @@ Gradle
 
 ## Usage
 
-To use the EventStore Sink and Flow you first need to configure the EventStore client and when done, terminate the connection.
+To use the EventStore sink and flow you first need to configure the EventStore client. When done inserting records into EventStore, you need to terminate the EventStore client using cleanUp. 
  
 `ConfigurationReader.setConnectionEndpoints` - Is used to connect to the EventStore cluster
 
