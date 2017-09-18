@@ -4,7 +4,7 @@
 package akka.stream.alpakka.elasticsearch.scaladsl
 
 import akka.Done
-import akka.stream.alpakka.elasticsearch.{ElasticsearchFlowStage, ElasticsearchSinkSettings, IncomingMessage}
+import akka.stream.alpakka.elasticsearch.{ElasticsearchFlowStage, IncomingMessage}
 import akka.stream.scaladsl.{Keep, Sink}
 import org.elasticsearch.client.RestClient
 import spray.json.{JsObject, JsonWriter}

@@ -6,7 +6,7 @@ package akka.stream.alpakka.elasticsearch.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.{Done, NotUsed}
-import akka.stream.alpakka.elasticsearch.{ElasticsearchFlowStage, ElasticsearchSinkSettings, IncomingMessage}
+import akka.stream.alpakka.elasticsearch.{ElasticsearchFlowStage, IncomingMessage}
 import akka.stream.javadsl._
 import org.elasticsearch.client.RestClient
 

@@ -26,7 +26,7 @@ object ElasticsearchSource {
         typeName,
         query,
         client,
-        settings,
+        settings.asScala,
         new JacksonReader[java.util.Map[String, Object]](classOf[java.util.Map[String, Object]])
       )
     )
@@ -41,7 +41,14 @@ object ElasticsearchSource {
                client: RestClient,
                clazz: Class[T]): Source[OutgoingMessage[T], NotUsed] =
     Source.fromGraph(
-      new ElasticsearchSourceStage(indexName, typeName, query, client, settings, new JacksonReader[T](clazz))
+      new ElasticsearchSourceStage(
+        indexName,
+        typeName,
+        query,
+        client,
+        settings.asScala,
+        new JacksonReader[T](clazz)
+      )
     )
 
   private class JacksonReader[T](clazz: Class[T]) extends MessageReader[T] {

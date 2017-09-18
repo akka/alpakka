@@ -4,14 +4,9 @@
 package akka.stream.alpakka.elasticsearch.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.elasticsearch.{
-  ElasticsearchFlowStage,
-  ElasticsearchSinkSettings,
-  IncomingMessage,
-  MessageWriter
-}
+import akka.stream.alpakka.elasticsearch.{ElasticsearchFlowStage, IncomingMessage, MessageWriter}
 import akka.stream.scaladsl.Flow
-import org.elasticsearch.client.{Response, RestClient}
+import org.elasticsearch.client.RestClient
 import spray.json._
 
 object ElasticsearchFlow {
@@ -21,14 +16,17 @@ object ElasticsearchFlow {
    */
   def apply(indexName: String, typeName: String, settings: ElasticsearchSinkSettings)(
       implicit client: RestClient
-  ): Flow[IncomingMessage[JsObject], Response, NotUsed] =
+  ): Flow[IncomingMessage[JsObject], Seq[IncomingMessage[JsObject]], NotUsed] =
     Flow
       .fromGraph(
-        new ElasticsearchFlowStage(indexName,
-                                   typeName,
-                                   client,
-                                   settings,
-                                   new SprayJsonWriter[JsObject]()(DefaultJsonProtocol.RootJsObjectFormat))
+        new ElasticsearchFlowStage[JsObject, Seq[IncomingMessage[JsObject]]](
+          indexName,
+          typeName,
+          client,
+          settings,
+          identity,
+          new SprayJsonWriter[JsObject]()(DefaultJsonProtocol.RootJsObjectFormat)
+        )
       )
       .mapAsync(1)(identity)
 
@@ -38,10 +36,15 @@ object ElasticsearchFlow {
   def typed[T](indexName: String, typeName: String, settings: ElasticsearchSinkSettings)(
       implicit client: RestClient,
       writer: JsonWriter[T]
-  ): Flow[IncomingMessage[T], Response, NotUsed] =
+  ): Flow[IncomingMessage[T], Seq[IncomingMessage[T]], NotUsed] =
     Flow
       .fromGraph(
-        new ElasticsearchFlowStage[T](indexName, typeName, client, settings, new SprayJsonWriter[T]()(writer))
+        new ElasticsearchFlowStage[T, Seq[IncomingMessage[T]]](indexName,
+                                                               typeName,
+                                                               client,
+                                                               settings,
+                                                               identity,
+                                                               new SprayJsonWriter[T]()(writer))
       )
       .mapAsync(1)(identity)
 

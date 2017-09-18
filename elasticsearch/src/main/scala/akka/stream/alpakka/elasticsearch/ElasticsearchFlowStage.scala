@@ -4,7 +4,7 @@
 package akka.stream.alpakka.elasticsearch
 
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
-import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
+import akka.stream.stage._
 import org.apache.http.entity.StringEntity
 import org.elasticsearch.client.{Response, ResponseListener, RestClient}
 
@@ -13,13 +13,12 @@ import scala.collection.JavaConverters._
 import spray.json._
 
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import ElasticsearchFlowStage._
+import akka.NotUsed
+import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSinkSettings
 import org.apache.http.message.BasicHeader
 import org.apache.http.util.EntityUtils
-
-//#sink-settings
-final case class ElasticsearchSinkSettings(bufferSize: Int = 10)
-//#sink-settings
 
 final case class IncomingMessage[T](id: Option[String], source: T)
 
@@ -27,25 +26,28 @@ trait MessageWriter[T] {
   def convert(message: T): String
 }
 
-class ElasticsearchFlowStage[T](
+class ElasticsearchFlowStage[T, R](
     indexName: String,
     typeName: String,
     client: RestClient,
     settings: ElasticsearchSinkSettings,
+    pusher: Seq[IncomingMessage[T]] => R,
     writer: MessageWriter[T]
-) extends GraphStage[FlowShape[IncomingMessage[T], Future[Response]]] {
+) extends GraphStage[FlowShape[IncomingMessage[T], Future[R]]] {
 
   private val in = Inlet[IncomingMessage[T]]("messages")
-  private val out = Outlet[Future[Response]]("result")
+  private val out = Outlet[Future[R]]("failed")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with ResponseListener with InHandler with OutHandler {
+    new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
       private var state: State = Idle
       private val queue = new mutable.Queue[IncomingMessage[T]]()
-      private val failureHandler = getAsyncCallback[Throwable](handleFailure)
-      private val responseHandler = getAsyncCallback[Response](handleResponse)
+      private val failureHandler = getAsyncCallback[(Seq[IncomingMessage[T]], Throwable)](handleFailure)
+      private val responseHandler = getAsyncCallback[(Seq[IncomingMessage[T]], Response)](handleResponse)
+      private var failedMessages: Seq[IncomingMessage[T]] = Nil
+      private var retryCount: Int = 0
 
       override def preStart(): Unit =
         pull(in)
@@ -55,49 +57,58 @@ class ElasticsearchFlowStage[T](
           pull(in)
         }
 
-      private def handleFailure(exception: Throwable): Unit =
-        failStage(exception)
+      override def onTimer(timerKey: Any): Unit = {
+        sendBulkUpdateRequest(failedMessages)
+        failedMessages = Nil
+      }
+
+      private def handleFailure(args: (Seq[IncomingMessage[T]], Throwable)): Unit = {
+        val (messages, exception) = args
+        if (retryCount >= settings.maxRetry) {
+          failStage(exception)
+        } else {
+          retryCount = retryCount + 1
+          failedMessages = messages
+          scheduleOnce(NotUsed, settings.retryInterval.millis)
+        }
+      }
 
       private def handleSuccess(): Unit =
         completeStage()
 
-      private def handleResponse(response: Response): Unit = {
+      private def handleResponse(args: (Seq[IncomingMessage[T]], Response)): Unit = {
+        retryCount = 0
+        val (messages, response) = args
         val responseJson = EntityUtils.toString(response.getEntity).parseJson
 
-        // If some commands in bulk request failed, this stage fails.
+        // If some commands in bulk request failed, pass failed messages to follows.
         val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
-        val errors = items.elements.flatMap { item =>
-          val result = item.asJsObject.fields("index").asJsObject.fields("result").asInstanceOf[JsString].value
-          if (result == "created" || result == "updated") {
-            None
-          } else {
-            Some(result)
-          }
+        val failedMessages = items.elements.zip(messages).flatMap {
+          case (item, message) =>
+            val result = item.asJsObject.fields("index").asJsObject.fields("result").asInstanceOf[JsString].value
+            if (result == "created" || result == "updated") {
+              None
+            } else {
+              Some(message)
+            }
         }
 
-        if (errors.nonEmpty) {
-          failStage(new IllegalStateException(errors.mkString("\n")))
-        }
-
-        val messages = (1 to settings.bufferSize).flatMap { _ =>
+        // Fetch next messages from queue and send them
+        val nextMessages = (1 to settings.bufferSize).flatMap { _ =>
           queue.dequeueFirst(_ => true)
         }
 
-        if (messages.isEmpty) {
+        if (nextMessages.isEmpty) {
           state match {
             case Finished => handleSuccess()
             case _ => state = Idle
           }
         } else {
-          sendBulkUpdateRequest(messages)
+          sendBulkUpdateRequest(nextMessages)
         }
 
-        push(out, Future.successful(response))
+        push(out, Future.successful(pusher(failedMessages)))
       }
-
-      override def onFailure(exception: Exception): Unit = failureHandler.invoke(exception)
-
-      override def onSuccess(response: Response): Unit = responseHandler.invoke(response)
 
       private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T]]): Unit = {
         val json = messages
@@ -121,7 +132,12 @@ class ElasticsearchFlowStage[T](
           "/_bulk",
           Map[String, String]().asJava,
           new StringEntity(json),
-          this,
+          new ResponseListener() {
+            override def onFailure(exception: Exception): Unit =
+              failureHandler.invoke((messages, exception))
+            override def onSuccess(response: Response): Unit =
+              responseHandler.invoke((messages, response))
+          },
           new BasicHeader("Content-Type", "application/x-ndjson")
         )
       }
@@ -149,7 +165,7 @@ class ElasticsearchFlowStage[T](
       }
 
       override def onUpstreamFailure(exception: Throwable): Unit =
-        handleFailure(exception)
+        failStage(exception)
 
       override def onUpstreamFinish(): Unit =
         state match {

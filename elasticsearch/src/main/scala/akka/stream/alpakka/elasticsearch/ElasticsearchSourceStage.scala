@@ -11,13 +11,10 @@ import org.apache.http.entity.StringEntity
 import org.elasticsearch.client.{Response, ResponseListener, RestClient}
 import spray.json._
 import DefaultJsonProtocol._
+import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSourceSettings
 import org.apache.http.message.BasicHeader
 
 import scala.collection.JavaConverters._
-
-//#source-settings
-final case class ElasticsearchSourceSettings(bufferSize: Int = 10)
-//#source-settings
 
 final case class OutgoingMessage[T](id: String, source: T)
 
