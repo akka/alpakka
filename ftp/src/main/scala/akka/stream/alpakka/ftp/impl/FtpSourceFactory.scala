@@ -4,7 +4,7 @@
 package akka.stream.alpakka.ftp.impl
 
 import akka.stream.alpakka.ftp.FtpCredentials.{AnonFtpCredentials, NonAnonFtpCredentials}
-import akka.stream.alpakka.ftp.{FtpFileSettings, FtpSettings, FtpsSettings, RemoteFileSettings, SftpSettings}
+import akka.stream.alpakka.ftp.{FtpFile, FtpFileSettings, FtpSettings, FtpsSettings, RemoteFileSettings, SftpSettings}
 import net.schmizz.sshj.SSHClient
 import org.apache.commons.net.ftp.FTPClient
 import java.net.InetAddress
@@ -25,7 +25,8 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
 
   protected[this] def createBrowserGraph(
       _basePath: String,
-      _connectionSettings: S
+      _connectionSettings: S,
+      _branchSelector: FtpFile => Boolean
   )(implicit _ftpLike: FtpLike[FtpClient, S]): FtpBrowserGraphStage[FtpClient, S] =
     new FtpBrowserGraphStage[FtpClient, S] {
       lazy val name: String = ftpBrowserSourceName
@@ -33,6 +34,7 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
       val connectionSettings: S = _connectionSettings
       val ftpClient: () => FtpClient = self.ftpClient
       val ftpLike: FtpLike[FtpClient, S] = _ftpLike
+      override val branchSelector: (FtpFile) => Boolean = _branchSelector
     }
 
   protected[this] def createIOSource(
