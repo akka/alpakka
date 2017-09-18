@@ -47,7 +47,7 @@ These functions are provided by the EventStore client.
 
 ## Local development
 
-If the EventStore is installed locally, it can be connected to (after being started) on 127.0.0.1, port 5555.
+If the EventStore is installed locally, it can be connected to (after being started) on port 5555 on the docker host.
 
 ### Set EventStore connection endpoints
 
