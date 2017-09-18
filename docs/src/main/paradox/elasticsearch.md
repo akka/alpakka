@@ -90,13 +90,15 @@ Java
 
 ### Configuration
 
-We can specify the buffer size for the source and the sink.
+We can specify the buffer size for the source.
 
 Scala (source)
-: @@snip (../../../../elasticsearch/src/main/scala/akka/stream/alpakka/elasticsearch/ElasticsearchSourceStage.scala) { #source-settings }
+: @@snip (../../../../elasticsearch/src/main/scala/akka/stream/alpakka/elasticsearch/scaladsl/ElasticsearchSourceSettings.scala) { #source-settings }
+
+Also, we can specify the buffer size, the max retry count and the retry interval for the sink.
 
 Scala (sink)
-: @@snip (../../../../elasticsearch/src/main/scala/akka/stream/alpakka/elasticsearch/ElasticsearchFlowStage.scala) { #sink-settings }
+: @@snip (../../../../elasticsearch/src/main/scala/akka/stream/alpakka/elasticsearch/scaladsl/ElasticsearchSinkSettings.scala) { #sink-settings }
 
 `ElasticsearchSource` retrieves messages from Elasticsearch by scroll scan. This buffer size is used as the scroll size.
 `ElasticsearchSink` puts messages by one bulk request per messages of this buffer size.
