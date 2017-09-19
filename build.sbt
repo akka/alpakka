@@ -253,6 +253,7 @@ lazy val docs = project
     inConfig(Compile)(defaultParadoxSettings),
     ParadoxPlugin.paradoxSettings(Local),
     inConfig(Local)(defaultParadoxSettings),
+    paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     paradoxProperties in Local ++= Map(
       // point API doc links to locally generated API docs
       "scaladoc.akka.stream.alpakka.base_url" -> rebase(
