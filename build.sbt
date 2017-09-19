@@ -8,6 +8,7 @@ lazy val alpakka = project
     cassandra,
     csv,
     dynamodb,
+    elasticsearch,
     files,
     ftp,
     geode,
@@ -86,6 +87,13 @@ lazy val dynamodb = project
   .settings(
     name := "akka-stream-alpakka-dynamodb",
     Dependencies.DynamoDB
+  )
+
+lazy val elasticsearch = project
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-elasticsearch",
+    Dependencies.Elasticsearch
   )
 
 lazy val files = project // The name file is taken by `sbt.file`!
