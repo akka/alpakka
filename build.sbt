@@ -93,6 +93,7 @@ lazy val elasticsearch = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-elasticsearch",
+    parallelExecution in ThisBuild := false,
     Dependencies.Elasticsearch
   )
 

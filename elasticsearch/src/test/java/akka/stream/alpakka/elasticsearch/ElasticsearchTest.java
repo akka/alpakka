@@ -40,7 +40,10 @@ public class ElasticsearchTest {
   @BeforeClass
   public static void setup() throws IOException {
     runner = new ElasticsearchClusterRunner();
-    runner.build(ElasticsearchClusterRunner.newConfigs().baseHttpPort(9210).baseTransportPort(9310).numOfNode(1));
+    runner.build(ElasticsearchClusterRunner.newConfigs()
+        .baseHttpPort(9210)
+        .baseTransportPort(9310)
+        .numOfNode(1));
     runner.ensureYellow();
 
     //#init-client
