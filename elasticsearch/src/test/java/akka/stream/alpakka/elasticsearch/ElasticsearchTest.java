@@ -41,13 +41,13 @@ public class ElasticsearchTest {
   public static void setup() throws IOException {
     runner = new ElasticsearchClusterRunner();
     runner.build(ElasticsearchClusterRunner.newConfigs()
-        .baseHttpPort(9210)
-        .baseTransportPort(9310)
+        .baseHttpPort(9200)
+        .baseTransportPort(9300)
         .numOfNode(1));
     runner.ensureYellow();
 
     //#init-client
-    client = RestClient.builder(new HttpHost("localhost", 9211)).build();
+    client = RestClient.builder(new HttpHost("localhost", 9201)).build();
     //#init-client
 
     //#init-mat

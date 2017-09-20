@@ -235,6 +235,4 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
-
-
 }
