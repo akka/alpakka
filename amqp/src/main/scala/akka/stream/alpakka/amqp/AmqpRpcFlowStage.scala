@@ -47,6 +47,7 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
       private val queue = mutable.Queue[IncomingMessage]()
       private var queueName: String = _
       private var outstandingMessages = 0
+      private val autoAck = settings.autoAck
 
       override def connectionFactoryFrom(settings: AmqpConnectionSettings) = stage.connectionFactoryFrom(settings)
       override def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings): Connection =
@@ -79,7 +80,10 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
               properties: BasicProperties,
               body: Array[Byte]
           ): Unit =
-            consumerCallback.invoke(IncomingMessage(ByteString(body), envelope, properties))
+            consumerCallback.invoke(
+              if (autoAck) AckedIncomingMessage(ByteString(body), envelope, properties)
+              else UnackedIncomingMessage(ByteString(body), envelope, properties)
+            )
 
           override def handleCancel(consumerTag: String): Unit =
             // non consumer initiated cancel, for example happens when the queue has been deleted.
@@ -121,12 +125,13 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
 
       def pushAndAckMessage(message: IncomingMessage): Unit = {
         push(out, message)
-        // ack it as soon as we have passed it downstream
-        // TODO ack less often and do batch acks with multiple = true would probably be more performant
-        channel.basicAck(
-          message.envelope.getDeliveryTag,
-          false // just this single message
-        )
+
+        if (autoAck) {
+          channel.basicAck(
+            message.envelope.getDeliveryTag,
+            false // just this single message
+          )
+        }
         outstandingMessages -= 1
 
         if (outstandingMessages == 0 && isClosed(in)) {

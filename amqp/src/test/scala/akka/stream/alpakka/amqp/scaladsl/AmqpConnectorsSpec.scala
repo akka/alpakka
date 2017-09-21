@@ -10,6 +10,7 @@ import akka.stream.scaladsl.{GraphDSL, Keep, Merge, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{TestPublisher, TestSubscriber}
 import akka.util.ByteString
+import org.scalatest.exceptions.TestFailedException
 
 import scala.concurrent.Promise
 import scala.concurrent.duration._
@@ -54,10 +55,12 @@ class AmqpConnectorsSpec extends AmqpSpec {
       //#run-sink
 
       //#run-source
-      val result = amqpSource.map(_.bytes.utf8String).take(input.size).runWith(Sink.seq)
+      val result = amqpSource.take(input.size).runWith(Sink.seq)
       //#run-source
 
-      result.futureValue shouldEqual input
+      val resultfutureValue = result.futureValue
+      all (resultfutureValue) shouldBe an[AckedIncomingMessage]
+      resultfutureValue.map(_.bytes.utf8String) shouldEqual input
     }
 
     "publish via RPC and then consume through a simple queue again in the same JVM" in {
@@ -354,6 +357,190 @@ class AmqpConnectorsSpec extends AmqpSpec {
       Source.repeat("stuff").map(s => ByteString(s)).runWith(amqpSink)
 
       completion.future.futureValue shouldBe Done
+    }
+
+    "publish and consume elements through a simple queue again in the same JVM without autoAck" in {
+
+      // use a list of host/port pairs where one is normally invalid, but
+      // it should still work as expected,
+      val connectionSettings =
+      AmqpConnectionDetails(List(("invalid", 5673))).withHostsAndPorts(("localhost", 5672))
+
+      //#queue-declaration
+      val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
+      val queueDeclaration = QueueDeclaration(queueName)
+      //#queue-declaration
+
+      //#create-sink
+      val amqpSink = AmqpSink.simple(
+        AmqpSinkSettings(connectionSettings).withRoutingKey(queueName).withDeclarations(queueDeclaration)
+      )
+      //#create-sink
+
+      //#create-source
+      val amqpSource = AmqpSource(
+        NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration).withAutoAck(false),
+        bufferSize = 10
+      )
+      //#create-source
+
+      //#run-sink
+      val input = Vector("one", "two", "three", "four", "five")
+      Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
+      //#run-sink
+
+      //#run-source
+      val result = amqpSource.map(message => {
+        message.asInstanceOf[UnackedIncomingMessage].ack()
+        message
+      }).take(input.size).runWith(Sink.seq)
+      //#run-source
+
+      val resultfutureValue = result.futureValue
+      all (resultfutureValue) shouldBe an[UnackedIncomingMessage]
+      resultfutureValue.map(_.bytes.utf8String) shouldEqual input
+    }
+
+    "republish message without autoAck if nack is sent" in {
+
+      // use a list of host/port pairs where one is normally invalid, but
+      // it should still work as expected,
+      val connectionSettings =
+      AmqpConnectionDetails(List(("invalid", 5673))).withHostsAndPorts(("localhost", 5672))
+
+      //#queue-declaration
+      val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
+      val queueDeclaration = QueueDeclaration(queueName)
+      //#queue-declaration
+
+      //#create-sink
+      val amqpSink = AmqpSink.simple(
+        AmqpSinkSettings(connectionSettings).withRoutingKey(queueName).withDeclarations(queueDeclaration)
+      )
+      //#create-sink
+
+      //#create-source
+      val amqpSource = AmqpSource(
+        NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration).withAutoAck(false),
+        bufferSize = 10
+      )
+      //#create-source
+
+      //#run-sink
+      val input = Vector("one", "two", "three", "four", "five")
+      Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
+      //#run-sink
+
+      //#run-source
+      val result = amqpSource.map(message => {
+        message.asInstanceOf[UnackedIncomingMessage].nack()
+        message
+      }).take(input.size).runWith(Sink.seq)
+      //#run-source
+
+      val resultfutureValue = result.futureValue
+      all (resultfutureValue) shouldBe an[UnackedIncomingMessage]
+
+      //#run-source
+      val result2 = amqpSource.map(message => {
+        message.asInstanceOf[UnackedIncomingMessage].ack()
+        message
+      }).take(input.size).runWith(Sink.seq)
+      //#run-source
+
+      val result2futureValue = result2.futureValue
+      all (result2futureValue) shouldBe an[UnackedIncomingMessage]
+      result2futureValue.map(_.bytes.utf8String) shouldEqual input
+    }
+
+    "not republish message without autoAck(false) if nack is sent" in {
+
+      // use a list of host/port pairs where one is normally invalid, but
+      // it should still work as expected,
+      val connectionSettings =
+      AmqpConnectionDetails(List(("invalid", 5673))).withHostsAndPorts(("localhost", 5672))
+
+      //#queue-declaration
+      val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
+      val queueDeclaration = QueueDeclaration(queueName)
+      //#queue-declaration
+
+      //#create-sink
+      val amqpSink = AmqpSink.simple(
+        AmqpSinkSettings(connectionSettings).withRoutingKey(queueName).withDeclarations(queueDeclaration)
+      )
+      //#create-sink
+
+      //#create-source
+      val amqpSource = AmqpSource(
+        NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration).withAutoAck(false),
+        bufferSize = 10
+      )
+      //#create-source
+
+      //#run-sink
+      val input = Vector("one", "two", "three", "four", "five")
+      Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
+      //#run-sink
+
+      //#run-source
+      val result = amqpSource.map(message => {
+        message.asInstanceOf[UnackedIncomingMessage].nack(false)
+        message
+      }).take(input.size).runWith(Sink.seq)
+      //#run-source
+
+      val resultfutureValue = result.futureValue
+      all (resultfutureValue) shouldBe an[UnackedIncomingMessage]
+
+      //#run-source
+      val result2 = amqpSource.map(message => {
+        message.asInstanceOf[UnackedIncomingMessage].ack()
+        message
+      }).take(input.size).runWith(Sink.seq)
+      //#run-source
+
+      result2.isReadyWithin(200 milliseconds) shouldEqual false
+    }
+
+    "publish via RPC and then consume through a simple queue again in the same JVM without autoAck" in {
+
+      val queueName = "amqp-conn-it-spec-rpc-queue-" + System.currentTimeMillis()
+      val queueDeclaration = QueueDeclaration(queueName)
+
+      //#create-rpc-flow
+      val amqpRpcFlow = AmqpRpcFlow(
+        AmqpSinkSettings(DefaultAmqpConnection).withRoutingKey(queueName).withDeclarations(queueDeclaration).withAutoAck(false),
+        bufferSize = 10
+      )
+      //#create-rpc-flow
+
+      val amqpSource = AmqpSource(
+        NamedQueueSourceSettings(DefaultAmqpConnection, queueName),
+        bufferSize = 1
+      )
+
+      val input = Vector("one", "two", "three", "four", "five")
+      //#run-rpc-flow
+      val (rpcQueueF, probe) =
+        Source(input).map(s => ByteString(s))
+          .map(bytes => OutgoingMessage(bytes, false, false, None))
+          .viaMat(amqpRpcFlow)(Keep.right).toMat(TestSink.probe)(Keep.both).run
+      //#run-rpc-flow
+      rpcQueueF.futureValue
+
+      val amqpSink = AmqpSink.replyTo(
+        AmqpReplyToSinkSettings(DefaultAmqpConnection)
+      )
+
+      amqpSource
+        .map(b => OutgoingMessage(b.bytes, false, false, Some(b.properties)))
+        .runWith(amqpSink)
+
+      val probeResult = probe.toStrict(200 milliseconds)
+
+      all (probeResult) shouldBe an[UnackedIncomingMessage]
+      probeResult.map(_.bytes.utf8String) shouldEqual input
     }
   }
 }

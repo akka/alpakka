@@ -66,7 +66,7 @@ private[amqp] trait AmqpConnector {
 private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
 
   private var connection: Connection = _
-  protected var channel: Channel = _
+  protected implicit var channel: Channel = _
 
   def settings: AmqpConnectorSettings
   def connectionFactoryFrom(settings: AmqpConnectionSettings): ConnectionFactory

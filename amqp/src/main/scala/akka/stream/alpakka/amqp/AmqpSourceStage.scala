@@ -11,7 +11,16 @@ import com.rabbitmq.client._
 
 import scala.collection.mutable
 
-final case class IncomingMessage(bytes: ByteString, envelope: Envelope, properties: BasicProperties)
+trait IncomingMessage {
+  def bytes: ByteString
+  def envelope: Envelope
+  def properties: BasicProperties
+}
+final case class AckedIncomingMessage(bytes: ByteString, envelope: Envelope, properties: BasicProperties) extends IncomingMessage
+final case class UnackedIncomingMessage(bytes: ByteString, envelope: Envelope, properties: BasicProperties)(implicit channel: Channel) extends IncomingMessage {
+  def ack() = channel.basicAck(envelope.getDeliveryTag, false)
+  def nack(requeue: Boolean = true) = channel.basicNack(envelope.getDeliveryTag, false, requeue)
+}
 
 object AmqpSourceStage {
 
@@ -30,6 +39,7 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
     extends GraphStage[SourceShape[IncomingMessage]]
     with AmqpConnector { stage =>
 
+  private val autoAck = settings.autoAck
   val out = Outlet[IncomingMessage]("AmqpSource.out")
 
   override val shape: SourceShape[IncomingMessage] = SourceShape.of(out)
@@ -61,7 +71,10 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
                                       envelope: Envelope,
                                       properties: BasicProperties,
                                       body: Array[Byte]): Unit =
-            consumerCallback.invoke(IncomingMessage(ByteString(body), envelope, properties))
+            consumerCallback.invoke(
+              if (autoAck) AckedIncomingMessage(ByteString(body), envelope, properties)
+              else UnackedIncomingMessage(ByteString(body), envelope, properties)
+            )
 
           override def handleCancel(consumerTag: String): Unit =
             // non consumer initiated cancel, for example happens when the queue has been deleted.
@@ -98,7 +111,6 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
           case settings: NamedQueueSourceSettings => setupNamedQueue(settings)
           case settings: TemporaryQueueSourceSettings => setupTemporaryQueue(settings)
         }
-
       }
 
       def handleDelivery(message: IncomingMessage): Unit =
@@ -122,12 +134,13 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
 
       def pushAndAckMessage(message: IncomingMessage): Unit = {
         push(out, message)
-        // ack it as soon as we have passed it downstream
-        // TODO ack less often and do batch acks with multiple = true would probably be more performant
-        channel.basicAck(
-          message.envelope.getDeliveryTag,
-          false // just this single message
-        )
+
+        if (autoAck) {
+          channel.basicAck(
+            message.envelope.getDeliveryTag,
+            false // just this single message
+          )
+        }
       }
       override def onFailure(ex: Throwable): Unit = {}
     }

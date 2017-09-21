@@ -14,7 +14,9 @@ sealed trait AmqpConnectorSettings {
   def declarations: Seq[Declaration]
 }
 
-sealed trait AmqpSourceSettings extends AmqpConnectorSettings
+sealed trait AmqpSourceSettings extends AmqpConnectorSettings {
+  def autoAck: Boolean
+}
 
 final case class NamedQueueSourceSettings(
     connectionSettings: AmqpConnectionSettings,
@@ -23,7 +25,8 @@ final case class NamedQueueSourceSettings(
     noLocal: Boolean = false,
     exclusive: Boolean = false,
     consumerTag: String = "default",
-    arguments: Map[String, AnyRef] = Map.empty
+    arguments: Map[String, AnyRef] = Map.empty,
+    autoAck: Boolean = true
 ) extends AmqpSourceSettings {
   @annotation.varargs
   def withDeclarations(declarations: Declaration*) = copy(declarations = declarations.toList)
@@ -40,6 +43,8 @@ final case class NamedQueueSourceSettings(
   @annotation.varargs
   def withArguments(argument: akka.japi.Pair[String, AnyRef], arguments: akka.japi.Pair[String, AnyRef]*) =
     copy(arguments = (argument +: arguments).map(_.toScala).toMap)
+
+  def withAutoAck(autoAck: Boolean) = copy(autoAck = autoAck)
 }
 
 object NamedQueueSourceSettings {
@@ -55,12 +60,15 @@ final case class TemporaryQueueSourceSettings(
     connectionSettings: AmqpConnectionSettings,
     exchange: String,
     declarations: Seq[Declaration] = Seq.empty,
-    routingKey: Option[String] = None
+    routingKey: Option[String] = None,
+    autoAck: Boolean = true
 ) extends AmqpSourceSettings {
   def withRoutingKey(routingKey: String) = copy(routingKey = Some(routingKey))
 
   @annotation.varargs
   def withDeclarations(declarations: Declaration*) = copy(declarations = declarations.toList)
+
+  def withAutoAck(autoAck: Boolean) = copy(autoAck = autoAck)
 }
 
 object TemporaryQueueSourceSettings {
@@ -99,7 +107,8 @@ final case class AmqpSinkSettings(
     connectionSettings: AmqpConnectionSettings,
     exchange: Option[String] = None,
     routingKey: Option[String] = None,
-    declarations: Seq[Declaration] = Seq.empty
+    declarations: Seq[Declaration] = Seq.empty,
+    autoAck: Boolean = true
 ) extends AmqpConnectorSettings {
   def withExchange(exchange: String) = copy(exchange = Some(exchange))
 
@@ -107,6 +116,8 @@ final case class AmqpSinkSettings(
 
   @annotation.varargs
   def withDeclarations(declarations: Declaration*) = copy(declarations = declarations.toList)
+
+  def withAutoAck(autoAck: Boolean) = copy(autoAck = autoAck)
 }
 
 object AmqpSinkSettings {
