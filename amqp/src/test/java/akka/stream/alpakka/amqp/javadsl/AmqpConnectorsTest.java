@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -30,6 +31,7 @@ import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.JavaTestKit;
 import akka.util.ByteString;
 import scala.Some;
+import scala.collection.JavaConverters;
 import scala.concurrent.duration.Duration;
 
 /**
@@ -93,7 +95,6 @@ public class AmqpConnectorsTest {
 
     assertEquals(input, result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
-
 
   @Test
   public void publishAndConsumeRpc() throws Exception {
@@ -199,6 +200,100 @@ public class AmqpConnectorsTest {
      Source.repeat("stuff").map(ByteString::fromString).runWith(amqpSink, materializer);
 
      assertEquals(Done.getInstance(), completion.get(10, TimeUnit.SECONDS));
+  }
+
+  @Test
+  public void publishAndConsumeWithoutAutoAck() throws Exception {
+    //#queue-declaration
+    final String queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis();
+    final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
+    //#queue-declaration
+
+    @SuppressWarnings("unchecked")
+    AmqpConnectionDetails amqpConnectionDetails = AmqpConnectionDetails.create("invalid", 5673)
+            .withHostsAndPorts(Pair.create("localhost", 5672), Pair.create("localhost", 5674));
+
+    //#create-sink
+    final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
+            AmqpSinkSettings.create(amqpConnectionDetails)
+                    .withRoutingKey(queueName)
+                    .withDeclarations(queueDeclaration)
+    );
+    //#create-sink
+
+    //#create-source
+    final Integer bufferSize = 10;
+    final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.create(
+            NamedQueueSourceSettings.create(
+                    DefaultAmqpConnection.getInstance(),
+                    queueName
+            ).withDeclarations(queueDeclaration).withAutoAck(false),
+            bufferSize
+    );
+    //#create-source
+
+    //#run-sink
+    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
+    Source.from(input).map(ByteString::fromString).runWith(amqpSink, materializer);
+    //#run-sink
+
+    //#run-source
+    final CompletionStage<List<IncomingMessage>> result =
+            amqpSource.map(message -> {
+                    ((UnackedIncomingMessage)message).ack();
+                    return message;
+            }).take(input.size()).runWith(Sink.seq(), materializer);
+    //#run-source
+
+    assertEquals(input, result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.bytes().utf8String()).collect(Collectors.toList()));
+  }
+
+  @Test
+  public void publishAndConsumeRpcWithoutAutoAck() throws Exception {
+
+    final String queueName = "amqp-conn-it-spec-rpc-queue-" + System.currentTimeMillis();
+    final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
+
+    //#create-rpc-flow
+    final Flow<OutgoingMessage,IncomingMessage, CompletionStage<String>> ampqRpcFlow = AmqpRpcFlow.create(
+            AmqpSinkSettings.create().withRoutingKey(queueName).withDeclarations(queueDeclaration), 10);
+    //#create-rpc-flow
+
+    final Integer bufferSize = 10;
+    final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.create(
+            NamedQueueSourceSettings.create(
+                    DefaultAmqpConnection.getInstance(),
+                    queueName
+            ).withDeclarations(queueDeclaration).withAutoAck(false),
+            bufferSize
+    );
+
+    //#run-rpc-flow
+    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
+    TestSubscriber.Probe<IncomingMessage> probe =
+            Source.from(input)
+                    .map(ByteString::fromString)
+                    .map(bytes -> new OutgoingMessage(bytes, false, false, scala.Option.apply(null)))
+                    .via(ampqRpcFlow)
+                    .runWith(TestSink.probe(system), materializer);
+    //#run-rpc-flow
+
+    Sink<OutgoingMessage, CompletionStage<Done>> amqpSink = AmqpSink.createReplyTo(
+            AmqpReplyToSinkSettings.create(DefaultAmqpConnection.getInstance())
+    );
+
+    amqpSource.map(b ->
+            new OutgoingMessage(b.bytes(), false, false, Some.apply(b.properties()))
+    ).runWith(amqpSink, materializer);
+
+    List<IncomingMessage> probeResult = JavaConverters.seqAsJavaList(probe.toStrict(Duration.create(5, TimeUnit.SECONDS)));
+
+    probeResult.stream().allMatch(s -> s instanceof UnackedIncomingMessage);
+    assertEquals(probeResult.stream().map(s -> s.bytes().utf8String()).collect(Collectors.toList()), input);
+
+    final CompletionStage<List<String>> result =
+            amqpSource.map(m -> m.bytes().utf8String()).take(input.size()).runWith(Sink.seq(), materializer);
+
   }
 
 }
