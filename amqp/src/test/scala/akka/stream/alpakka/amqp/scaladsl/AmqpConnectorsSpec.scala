@@ -366,35 +366,29 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val connectionSettings =
       AmqpConnectionDetails(List(("invalid", 5673))).withHostsAndPorts(("localhost", 5672))
 
-      //#queue-declaration
       val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
-      //#queue-declaration
 
-      //#create-sink
       val amqpSink = AmqpSink.simple(
         AmqpSinkSettings(connectionSettings).withRoutingKey(queueName).withDeclarations(queueDeclaration)
       )
-      //#create-sink
 
-      //#create-source
+      //#create-source-withoutautoack
       val amqpSource = AmqpSource(
         NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration).withAutoAck(false),
         bufferSize = 10
       )
-      //#create-source
+      //#create-source-withoutautoack
 
-      //#run-sink
       val input = Vector("one", "two", "three", "four", "five")
       Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
-      //#run-sink
 
-      //#run-source
+      //#run-source-withoutautoack
       val result = amqpSource.map(message => {
         message.asInstanceOf[UnackedIncomingMessage].ack()
         message
       }).take(input.size).runWith(Sink.seq)
-      //#run-source
+      //#run-source-withoutautoack
 
       val resultfutureValue = result.futureValue
       all (resultfutureValue) shouldBe an[UnackedIncomingMessage]
@@ -408,45 +402,35 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val connectionSettings =
       AmqpConnectionDetails(List(("invalid", 5673))).withHostsAndPorts(("localhost", 5672))
 
-      //#queue-declaration
       val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
-      //#queue-declaration
 
-      //#create-sink
       val amqpSink = AmqpSink.simple(
         AmqpSinkSettings(connectionSettings).withRoutingKey(queueName).withDeclarations(queueDeclaration)
       )
-      //#create-sink
 
-      //#create-source
       val amqpSource = AmqpSource(
         NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration).withAutoAck(false),
         bufferSize = 10
       )
-      //#create-source
 
-      //#run-sink
       val input = Vector("one", "two", "three", "four", "five")
       Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
-      //#run-sink
 
-      //#run-source
+      //#run-source-withoutautoack-and-nack
       val result = amqpSource.map(message => {
         message.asInstanceOf[UnackedIncomingMessage].nack()
         message
       }).take(input.size).runWith(Sink.seq)
-      //#run-source
+      //#run-source-withoutautoack-and-nack
 
       val resultfutureValue = result.futureValue
       all (resultfutureValue) shouldBe an[UnackedIncomingMessage]
 
-      //#run-source
       val result2 = amqpSource.map(message => {
         message.asInstanceOf[UnackedIncomingMessage].ack()
         message
       }).take(input.size).runWith(Sink.seq)
-      //#run-source
 
       val result2futureValue = result2.futureValue
       all (result2futureValue) shouldBe an[UnackedIncomingMessage]
@@ -460,45 +444,33 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val connectionSettings =
       AmqpConnectionDetails(List(("invalid", 5673))).withHostsAndPorts(("localhost", 5672))
 
-      //#queue-declaration
       val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
-      //#queue-declaration
 
-      //#create-sink
       val amqpSink = AmqpSink.simple(
         AmqpSinkSettings(connectionSettings).withRoutingKey(queueName).withDeclarations(queueDeclaration)
       )
-      //#create-sink
 
-      //#create-source
       val amqpSource = AmqpSource(
         NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration).withAutoAck(false),
         bufferSize = 10
       )
-      //#create-source
 
-      //#run-sink
       val input = Vector("one", "two", "three", "four", "five")
       Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
-      //#run-sink
 
-      //#run-source
       val result = amqpSource.map(message => {
         message.asInstanceOf[UnackedIncomingMessage].nack(false)
         message
       }).take(input.size).runWith(Sink.seq)
-      //#run-source
 
       val resultfutureValue = result.futureValue
       all (resultfutureValue) shouldBe an[UnackedIncomingMessage]
 
-      //#run-source
       val result2 = amqpSource.map(message => {
         message.asInstanceOf[UnackedIncomingMessage].ack()
         message
       }).take(input.size).runWith(Sink.seq)
-      //#run-source
 
       result2.isReadyWithin(200 milliseconds) shouldEqual false
     }
@@ -508,12 +480,10 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueName = "amqp-conn-it-spec-rpc-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
 
-      //#create-rpc-flow
       val amqpRpcFlow = AmqpRpcFlow(
         AmqpSinkSettings(DefaultAmqpConnection).withRoutingKey(queueName).withDeclarations(queueDeclaration).withAutoAck(false),
         bufferSize = 10
       )
-      //#create-rpc-flow
 
       val amqpSource = AmqpSource(
         NamedQueueSourceSettings(DefaultAmqpConnection, queueName),
@@ -521,12 +491,10 @@ class AmqpConnectorsSpec extends AmqpSpec {
       )
 
       val input = Vector("one", "two", "three", "four", "five")
-      //#run-rpc-flow
       val (rpcQueueF, probe) =
         Source(input).map(s => ByteString(s))
           .map(bytes => OutgoingMessage(bytes, false, false, None))
           .viaMat(amqpRpcFlow)(Keep.right).toMat(TestSink.probe)(Keep.both).run
-      //#run-rpc-flow
       rpcQueueF.futureValue
 
       val amqpSink = AmqpSink.replyTo(

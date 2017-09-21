@@ -132,6 +132,35 @@ Scala
 Java
 : @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { #run-rpc-flow }
 
+
+### Acknowledging messages downstream
+
+Create a sink with auto-ack set to false.
+
+Scala
+: @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { //#create-source-withoutautoack }
+
+Java
+: @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { //#create-source-withoutautoack }
+
+By default, the @scaladoc[IncomingMessage](akka.stream.alpakka.amqp.IncomingMessage) returned by Amqp consumer is of type @scaladoc[AckedIncomingMessage](akka.stream.alpakka.amqp.AckedIncomingMessage). However, when setting auto-ack to false the returned message is of type @scaladoc[UnackedIncomingMessage](akka.stream.alpakka.amqp.UnackedIncomingMessage) which exposes the methods ack and nack.
+
+Use ack to acknowledge the message back to RabbitMQ
+
+Scala
+: @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { //#run-source-withoutautoack }
+
+Java
+: @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { //#run-source-withoutautoack }
+
+Use nack to reject a message. nack takes an option boolean parameter indicating whether the item should be requeued or not.
+
+Scala
+: @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { //#run-source-withoutautoack-and-nack }
+
+Java
+: @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { //#run-source-withoutautoack-and-nack }
+
 ### Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
