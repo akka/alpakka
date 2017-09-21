@@ -93,8 +93,9 @@ lazy val elasticsearch = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-elasticsearch",
-    parallelExecution in ThisBuild := false,
-    Dependencies.Elasticsearch
+    Dependencies.Elasticsearch,
+    // For elasticsearch-cluster-runner https://github.com/akka/alpakka/issues/479
+    parallelExecution in Test := false
   )
 
 lazy val files = project // The name file is taken by `sbt.file`!
