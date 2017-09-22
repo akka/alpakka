@@ -16,8 +16,11 @@ trait IncomingMessage {
   def envelope: Envelope
   def properties: BasicProperties
 }
-final case class AckedIncomingMessage(bytes: ByteString, envelope: Envelope, properties: BasicProperties) extends IncomingMessage
-final case class UnackedIncomingMessage(bytes: ByteString, envelope: Envelope, properties: BasicProperties)(implicit channel: Channel) extends IncomingMessage {
+final case class AckedIncomingMessage(bytes: ByteString, envelope: Envelope, properties: BasicProperties)
+    extends IncomingMessage
+final case class UnackedIncomingMessage(bytes: ByteString, envelope: Envelope, properties: BasicProperties)(
+    implicit channel: Channel
+) extends IncomingMessage {
   def ack() = channel.basicAck(envelope.getDeliveryTag, false)
   def nack(requeue: Boolean = true) = channel.basicNack(envelope.getDeliveryTag, false, requeue)
 }
