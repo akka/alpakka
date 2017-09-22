@@ -10,7 +10,6 @@ import akka.stream.scaladsl.{GraphDSL, Keep, Merge, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{TestPublisher, TestSubscriber}
 import akka.util.ByteString
-import org.scalatest.exceptions.TestFailedException
 
 import scala.concurrent.Promise
 import scala.concurrent.duration._
@@ -487,7 +486,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
         .take(input.size)
         .runWith(Sink.seq)
 
-      result2.isReadyWithin(200 milliseconds) shouldEqual false
+      result2.isReadyWithin(1.second) shouldEqual false
     }
 
     "publish via RPC and then consume through a simple queue again in the same JVM without autoAck" in {
@@ -526,7 +525,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
         .map(b => OutgoingMessage(b.bytes, false, false, Some(b.properties)))
         .runWith(amqpSink)
 
-      val probeResult = probe.toStrict(200 milliseconds)
+      val probeResult = probe.toStrict(1.second)
 
       all(probeResult) shouldBe an[UnackedIncomingMessage]
       probeResult.map(_.bytes.utf8String) shouldEqual input
