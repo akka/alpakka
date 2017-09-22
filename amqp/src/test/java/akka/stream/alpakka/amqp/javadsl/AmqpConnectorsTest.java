@@ -276,7 +276,7 @@ public class AmqpConnectorsTest {
             new OutgoingMessage(b.bytes(), false, false, Some.apply(b.properties()))
     ).runWith(amqpSink, materializer);
 
-    List<IncomingMessage> probeResult = JavaConverters.seqAsJavaList(probe.toStrict(Duration.create(5, TimeUnit.SECONDS)));
+    List<IncomingMessage> probeResult = JavaConverters.seqAsJavaListConverter(probe.toStrict(Duration.create(5, TimeUnit.SECONDS))).asJava();
 
     probeResult.stream().allMatch(s -> s instanceof UnackedIncomingMessage);
     assertEquals(probeResult.stream().map(s -> s.bytes().utf8String()).collect(Collectors.toList()), input);
