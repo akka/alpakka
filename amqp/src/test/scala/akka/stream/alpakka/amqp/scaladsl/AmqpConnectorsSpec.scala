@@ -57,9 +57,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val result = amqpSource.take(input.size).runWith(Sink.seq)
       //#run-source
 
-      val resultfutureValue = result.futureValue
-      all(resultfutureValue) shouldBe an[AckedIncomingMessage]
-      resultfutureValue.map(_.bytes.utf8String) shouldEqual input
+      result.futureValue.map(_.bytes.utf8String) shouldEqual input
     }
 
     "publish via RPC and then consume through a simple queue again in the same JVM" in {
@@ -154,7 +152,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
         .watchTermination()(Keep.right)
         .to(AmqpSink.replyTo(AmqpReplyToSinkSettings(DefaultAmqpConnection)))
         .run()
-        .futureValue shouldBe akka.Done
+        .futureValue shouldBe Done
 
       val caught = intercept[RuntimeException] {
         Source
@@ -373,8 +371,8 @@ class AmqpConnectorsSpec extends AmqpSpec {
       )
 
       //#create-source-withoutautoack
-      val amqpSource = AmqpSource(
-        NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration).withAutoAck(false),
+      val amqpSource = AmqpSource.committableSource(
+        NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration),
         bufferSize = 10
       )
       //#create-source-withoutautoack
@@ -385,16 +383,14 @@ class AmqpConnectorsSpec extends AmqpSpec {
       //#run-source-withoutautoack
       val result = amqpSource
         .map(message => {
-          message.asInstanceOf[UnackedIncomingMessage].ack()
+          message.ack()
           message
         })
         .take(input.size)
         .runWith(Sink.seq)
       //#run-source-withoutautoack
 
-      val resultfutureValue = result.futureValue
-      all(resultfutureValue) shouldBe an[UnackedIncomingMessage]
-      resultfutureValue.map(_.bytes.utf8String) shouldEqual input
+      result.futureValue.map(_.message.bytes.utf8String) shouldEqual input
     }
 
     "republish message without autoAck if nack is sent" in {
@@ -411,8 +407,8 @@ class AmqpConnectorsSpec extends AmqpSpec {
         AmqpSinkSettings(connectionSettings).withRoutingKey(queueName).withDeclarations(queueDeclaration)
       )
 
-      val amqpSource = AmqpSource(
-        NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration).withAutoAck(false),
+      val amqpSource = AmqpSource.committableSource(
+        NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration),
         bufferSize = 10
       )
 
@@ -420,29 +416,24 @@ class AmqpConnectorsSpec extends AmqpSpec {
       Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
 
       //#run-source-withoutautoack-and-nack
-      val result = amqpSource
+      amqpSource
         .map(message => {
-          message.asInstanceOf[UnackedIncomingMessage].nack()
+          message.nack()
           message
         })
         .take(input.size)
         .runWith(Sink.seq)
       //#run-source-withoutautoack-and-nack
 
-      val resultfutureValue = result.futureValue
-      all(resultfutureValue) shouldBe an[UnackedIncomingMessage]
-
-      val result2 = amqpSource
+      val result = amqpSource
         .map(message => {
-          message.asInstanceOf[UnackedIncomingMessage].ack()
+          message.ack()
           message
         })
         .take(input.size)
         .runWith(Sink.seq)
 
-      val result2futureValue = result2.futureValue
-      all(result2futureValue) shouldBe an[UnackedIncomingMessage]
-      result2futureValue.map(_.bytes.utf8String) shouldEqual input
+      result.futureValue.map(_.message.bytes.utf8String) shouldEqual input
     }
 
     "not republish message without autoAck(false) if nack is sent" in {
@@ -459,34 +450,31 @@ class AmqpConnectorsSpec extends AmqpSpec {
         AmqpSinkSettings(connectionSettings).withRoutingKey(queueName).withDeclarations(queueDeclaration)
       )
 
-      val amqpSource = AmqpSource(
-        NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration).withAutoAck(false),
+      val amqpSource = AmqpSource.committableSource(
+        NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration),
         bufferSize = 10
       )
 
       val input = Vector("one", "two", "three", "four", "five")
       Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
 
+      amqpSource
+        .map(message => {
+          message.nack(requeue = false)
+          message
+        })
+        .take(input.size)
+        .runWith(Sink.seq)
+
       val result = amqpSource
         .map(message => {
-          message.asInstanceOf[UnackedIncomingMessage].nack(false)
+          message.ack()
           message
         })
         .take(input.size)
         .runWith(Sink.seq)
 
-      val resultfutureValue = result.futureValue
-      all(resultfutureValue) shouldBe an[UnackedIncomingMessage]
-
-      val result2 = amqpSource
-        .map(message => {
-          message.asInstanceOf[UnackedIncomingMessage].ack()
-          message
-        })
-        .take(input.size)
-        .runWith(Sink.seq)
-
-      result2.isReadyWithin(1.second) shouldEqual false
+      result.isReadyWithin(1.second) shouldEqual false
     }
 
     "publish via RPC and then consume through a simple queue again in the same JVM without autoAck" in {
@@ -494,11 +482,10 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueName = "amqp-conn-it-spec-rpc-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
 
-      val amqpRpcFlow = AmqpRpcFlow(
+      val amqpRpcFlow = AmqpRpcFlow.committableFlow(
         AmqpSinkSettings(DefaultAmqpConnection)
           .withRoutingKey(queueName)
-          .withDeclarations(queueDeclaration)
-          .withAutoAck(false),
+          .withDeclarations(queueDeclaration),
         bufferSize = 10
       )
 
@@ -513,6 +500,10 @@ class AmqpConnectorsSpec extends AmqpSpec {
           .map(s => ByteString(s))
           .map(bytes => OutgoingMessage(bytes, false, false, None))
           .viaMat(amqpRpcFlow)(Keep.right)
+          .map(message => {
+            message.ack()
+            message
+          })
           .toMat(TestSink.probe)(Keep.both)
           .run
       rpcQueueF.futureValue
@@ -525,10 +516,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
         .map(b => OutgoingMessage(b.bytes, false, false, Some(b.properties)))
         .runWith(amqpSink)
 
-      val probeResult = probe.toStrict(1.second)
-
-      all(probeResult) shouldBe an[UnackedIncomingMessage]
-      probeResult.map(_.bytes.utf8String) shouldEqual input
+      probe.toStrict(1.second).map(_.message.bytes.utf8String) shouldEqual input
     }
   }
 }

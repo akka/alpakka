@@ -219,11 +219,11 @@ public class AmqpConnectorsTest {
 
     //#create-source-withoutautoack
     final Integer bufferSize = 10;
-    final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.create(
+    final Source<CommittableIncomingMessage, NotUsed> amqpSource = AmqpSource.committableSource(
             NamedQueueSourceSettings.create(
                     DefaultAmqpConnection.getInstance(),
                     queueName
-            ).withDeclarations(queueDeclaration).withAutoAck(false),
+            ).withDeclarations(queueDeclaration),
             bufferSize
     );
     //#create-source-withoutautoack
@@ -233,9 +233,9 @@ public class AmqpConnectorsTest {
 
     //#run-source-withoutautoack
     final CompletionStage<List<IncomingMessage>> result =
-            amqpSource.map(message -> {
-                    ((UnackedIncomingMessage)message).ack();
-                    return message;
+            amqpSource.map(cm -> {
+                    cm.ack(false);
+                    return cm.message();
             }).take(input.size()).runWith(Sink.seq(), materializer);
     //#run-source-withoutautoack
 
@@ -252,11 +252,11 @@ public class AmqpConnectorsTest {
             AmqpSinkSettings.create().withRoutingKey(queueName).withDeclarations(queueDeclaration), 10);
 
     final Integer bufferSize = 10;
-    final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.create(
+    final Source<CommittableIncomingMessage, NotUsed> amqpSource = AmqpSource.committableSource(
             NamedQueueSourceSettings.create(
                     DefaultAmqpConnection.getInstance(),
                     queueName
-            ).withDeclarations(queueDeclaration).withAutoAck(false),
+            ).withDeclarations(queueDeclaration),
             bufferSize
     );
 
@@ -273,16 +273,15 @@ public class AmqpConnectorsTest {
     );
 
     amqpSource.map(b ->
-            new OutgoingMessage(b.bytes(), false, false, Some.apply(b.properties()))
+            new OutgoingMessage(b.message().bytes(), false, false, Some.apply(b.message().properties()))
     ).runWith(amqpSink, materializer);
 
     List<IncomingMessage> probeResult = JavaConverters.seqAsJavaListConverter(probe.toStrict(Duration.create(5, TimeUnit.SECONDS))).asJava();
 
-    probeResult.stream().allMatch(s -> s instanceof UnackedIncomingMessage);
     assertEquals(probeResult.stream().map(s -> s.bytes().utf8String()).collect(Collectors.toList()), input);
 
     final CompletionStage<List<String>> result =
-            amqpSource.map(m -> m.bytes().utf8String()).take(input.size()).runWith(Sink.seq(), materializer);
+            amqpSource.map(cm -> cm.message().bytes().utf8String()).take(input.size()).runWith(Sink.seq(), materializer);
 
   }
 
@@ -304,11 +303,11 @@ public class AmqpConnectorsTest {
 
         //#create-source-withoutautoack
         final Integer bufferSize = 10;
-        final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.create(
+        final Source<CommittableIncomingMessage, NotUsed> amqpSource = AmqpSource.committableSource(
                 NamedQueueSourceSettings.create(
                         DefaultAmqpConnection.getInstance(),
                         queueName
-                ).withDeclarations(queueDeclaration).withAutoAck(false),
+                ).withDeclarations(queueDeclaration),
                 bufferSize
         );
         //#create-source-withoutautoack
@@ -318,18 +317,18 @@ public class AmqpConnectorsTest {
 
         //#run-source-withoutautoack-and-nack
         final CompletionStage<List<IncomingMessage>> result =
-                amqpSource.map(message -> {
-                    ((UnackedIncomingMessage)message).nack(true);
-                    return message;
+                amqpSource.map(cm -> {
+                    cm.nack(false, true);
+                    return cm.message();
                 }).take(input.size()).runWith(Sink.seq(), materializer);
         //#run-source-withoutautoack-and-nack
 
         result.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
         final CompletionStage<List<IncomingMessage>> result2 =
-                amqpSource.map(message -> {
-                    ((UnackedIncomingMessage)message).ack();
-                    return message;
+                amqpSource.map(cm -> {
+                    cm.ack(false);
+                    return cm.message();
                 }).take(input.size()).runWith(Sink.seq(), materializer);
 
         assertEquals(input, result2.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.bytes().utf8String()).collect(Collectors.toList()));

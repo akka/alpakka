@@ -3,6 +3,8 @@
  */
 package akka.stream.alpakka.amqp
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.stream._
 import akka.stream.stage._
 import akka.util.ByteString
@@ -11,18 +13,17 @@ import com.rabbitmq.client._
 
 import scala.collection.mutable
 
-trait IncomingMessage {
-  def bytes: ByteString
-  def envelope: Envelope
-  def properties: BasicProperties
-}
-final case class AckedIncomingMessage(bytes: ByteString, envelope: Envelope, properties: BasicProperties)
-    extends IncomingMessage
-final case class UnackedIncomingMessage(bytes: ByteString, envelope: Envelope, properties: BasicProperties)(
-    implicit channel: Channel
-) extends IncomingMessage {
-  def ack() = channel.basicAck(envelope.getDeliveryTag, false)
-  def nack(requeue: Boolean = true) = channel.basicNack(envelope.getDeliveryTag, false, requeue)
+final case class IncomingMessage(bytes: ByteString, envelope: Envelope, properties: BasicProperties)
+final case class CommittableIncomingMessage(message: IncomingMessage,
+                                            callback: AsyncCallback[Unit] = _ => Unit)(implicit channel: Channel) {
+  def ack(multiple: Boolean = false) = {
+    channel.basicAck(message.envelope.getDeliveryTag, multiple)
+    callback.invoke(Unit)
+  }
+  def nack(multiple: Boolean = false, requeue: Boolean = true) = {
+    channel.basicNack(message.envelope.getDeliveryTag, multiple, requeue)
+    callback.invoke(Unit)
+  }
 }
 
 object AmqpSourceStage {
@@ -39,13 +40,12 @@ object AmqpSourceStage {
  * @param bufferSize The max number of elements to prefetch and buffer at any given time.
  */
 final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
-    extends GraphStage[SourceShape[IncomingMessage]]
+    extends GraphStage[SourceShape[CommittableIncomingMessage]]
     with AmqpConnector { stage =>
 
-  private val autoAck = settings.autoAck
-  val out = Outlet[IncomingMessage]("AmqpSource.out")
+  val out = Outlet[CommittableIncomingMessage]("AmqpSource.out")
 
-  override val shape: SourceShape[IncomingMessage] = SourceShape.of(out)
+  override val shape: SourceShape[CommittableIncomingMessage] = SourceShape.of(out)
 
   override protected def initialAttributes: Attributes = AmqpSourceStage.defaultAttributes
 
@@ -57,7 +57,8 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
       override def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings) =
         stage.newConnection(factory, settings)
 
-      private val queue = mutable.Queue[IncomingMessage]()
+      private val queue = mutable.Queue[CommittableIncomingMessage]()
+      private val unackedMessages = new AtomicInteger()
 
       override def whenConnected(): Unit = {
         import scala.collection.JavaConverters._
@@ -66,7 +67,12 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
         val consumerCallback = getAsyncCallback(handleDelivery)
         val shutdownCallback = getAsyncCallback[Option[ShutdownSignalException]] {
           case Some(ex) => failStage(ex)
-          case None => completeStage()
+          case None => if (unackedMessages.get() == 0) completeStage()
+        }
+
+        val commitCallback = getAsyncCallback[Unit] { (_) =>
+          unackedMessages.decrementAndGet()
+          if (unackedMessages.get() == 0) completeStage()
         }
 
         val amqpSourceConsumer = new DefaultConsumer(channel) {
@@ -75,8 +81,10 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
                                       properties: BasicProperties,
                                       body: Array[Byte]): Unit =
             consumerCallback.invoke(
-              if (autoAck) AckedIncomingMessage(ByteString(body), envelope, properties)
-              else UnackedIncomingMessage(ByteString(body), envelope, properties)
+              CommittableIncomingMessage(
+                IncomingMessage(ByteString(body), envelope, properties),
+                commitCallback
+              )
             )
 
           override def handleCancel(consumerTag: String): Unit =
@@ -116,9 +124,9 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
         }
       }
 
-      def handleDelivery(message: IncomingMessage): Unit =
+      def handleDelivery(message: CommittableIncomingMessage): Unit =
         if (isAvailable(out)) {
-          pushAndAckMessage(message)
+          pushMessage(message)
         } else {
           if (queue.size + 1 > bufferSize) {
             failStage(new RuntimeException(s"Reached maximum buffer size $bufferSize"))
@@ -130,21 +138,13 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
       setHandler(out, new OutHandler {
         override def onPull(): Unit =
           if (queue.nonEmpty) {
-            pushAndAckMessage(queue.dequeue())
+            pushMessage(queue.dequeue())
           }
 
       })
 
-      def pushAndAckMessage(message: IncomingMessage): Unit = {
-        push(out, message)
+      def pushMessage(message: CommittableIncomingMessage): Unit = push(out, message)
 
-        if (autoAck) {
-          channel.basicAck(
-            message.envelope.getDeliveryTag,
-            false // just this single message
-          )
-        }
-      }
       override def onFailure(ex: Throwable): Unit = {}
     }
 

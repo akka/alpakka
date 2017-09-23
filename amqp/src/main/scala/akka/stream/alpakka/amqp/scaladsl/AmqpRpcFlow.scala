@@ -3,8 +3,8 @@
  */
 package akka.stream.alpakka.amqp.scaladsl
 
-import akka.stream.alpakka.amqp.{AmqpRpcFlowStage, AmqpSinkSettings, IncomingMessage, OutgoingMessage}
-import akka.stream.scaladsl.{Flow, Keep, Sink}
+import akka.stream.alpakka.amqp._
+import akka.stream.scaladsl.{Flow, Keep}
 import akka.util.ByteString
 
 import scala.concurrent.Future
@@ -24,7 +24,7 @@ object AmqpRpcFlow {
   def simple(settings: AmqpSinkSettings, repliesPerMessage: Int = 1): Flow[ByteString, ByteString, Future[String]] =
     Flow[ByteString]
       .map(bytes => OutgoingMessage(bytes, false, false, None))
-      .viaMat(apply(settings, 1, repliesPerMessage))(Keep.right)
+      .viaMat(atMostOnceFlow(settings, 1, repliesPerMessage))(Keep.right)
       .map(_.bytes)
 
   /**
@@ -40,6 +40,36 @@ object AmqpRpcFlow {
   def apply(settings: AmqpSinkSettings,
             bufferSize: Int,
             repliesPerMessage: Int = 1): Flow[OutgoingMessage, IncomingMessage, Future[String]] =
+    atMostOnceFlow(settings, bufferSize, repliesPerMessage)
+
+  /**
+   * Scala API:
+   * Convenience for "at-most once delivery" semantics. Each message is acked to Kafka
+   * before it is emitted downstream.
+   */
+  def atMostOnceFlow(settings: AmqpSinkSettings,
+                     bufferSize: Int,
+                     repliesPerMessage: Int = 1): Flow[OutgoingMessage, IncomingMessage, Future[String]] =
+    committableFlow(settings, bufferSize, repliesPerMessage)
+      .map(cm => {
+        cm.ack()
+        cm.message
+      })
+
+  /**
+   * Scala API:
+   * The `committableFlow` makes it possible to commit (ack/nack) messages to RabbitMQ.
+   * This is useful when "at-least once delivery" is desired, as each message will likely be
+   * delivered one time but in failure cases could be duplicated.
+   *
+   * If you commit the offset before processing the message you get "at-most once delivery" semantics,
+   * and for that there is a [[#atMostOnceFlow]].
+   *
+   * Compared to auto-commit, this gives exact control over when a message is considered consumed.
+   */
+  def committableFlow(settings: AmqpSinkSettings,
+                      bufferSize: Int,
+                      repliesPerMessage: Int = 1): Flow[OutgoingMessage, CommittableIncomingMessage, Future[String]] =
     Flow.fromGraph(new AmqpRpcFlowStage(settings, bufferSize, repliesPerMessage))
 
 }

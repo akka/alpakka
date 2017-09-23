@@ -59,4 +59,38 @@ object AmqpRpcFlow {
       .mapMaterializedValue(f => f.toJava)
       .asJava
 
+  /**
+   * Java API:
+   * Convenience for "at-most once delivery" semantics. Each message is acked to Kafka
+   * before it is emitted downstream.
+   */
+  def atMostOnceFlow(settings: AmqpSinkSettings,
+                     bufferSize: Int,
+                     repliesPerMessage: Int = 1): Flow[OutgoingMessage, IncomingMessage, CompletionStage[String]] =
+    akka.stream.alpakka.amqp.scaladsl.AmqpRpcFlow
+      .atMostOnceFlow(settings, bufferSize, repliesPerMessage)
+      .mapMaterializedValue(f => f.toJava)
+      .asJava
+
+  /**
+   * Java API:
+   * The `committableFlow` makes it possible to commit (ack/nack) messages to RabbitMQ.
+   * This is useful when "at-least once delivery" is desired, as each message will likely be
+   * delivered one time but in failure cases could be duplicated.
+   *
+   * If you commit the offset before processing the message you get "at-most once delivery" semantics,
+   * and for that there is a [[#atMostOnceFlow]].
+   *
+   * Compared to auto-commit, this gives exact control over when a message is considered consumed.
+   */
+  def committableFlow(
+      settings: AmqpSinkSettings,
+      bufferSize: Int,
+      repliesPerMessage: Int = 1
+  ): Flow[OutgoingMessage, CommittableIncomingMessage, CompletionStage[String]] =
+    akka.stream.alpakka.amqp.scaladsl.AmqpRpcFlow
+      .committableFlow(settings, bufferSize, repliesPerMessage)
+      .mapMaterializedValue(f => f.toJava)
+      .asJava
+
 }

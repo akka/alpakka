@@ -135,7 +135,7 @@ Java
 
 ### Acknowledging messages downstream
 
-Create a sink with auto-ack set to false.
+Create a committable sink which returns 
 
 Scala
 : @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { //#create-source-withoutautoack }
@@ -143,9 +143,9 @@ Scala
 Java
 : @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { //#create-source-withoutautoack }
 
-By default, the @scaladoc[IncomingMessage](akka.stream.alpakka.amqp.IncomingMessage) returned by Amqp consumer is of type @scaladoc[AckedIncomingMessage](akka.stream.alpakka.amqp.AckedIncomingMessage). However, when setting auto-ack to false the returned message is of type @scaladoc[UnackedIncomingMessage](akka.stream.alpakka.amqp.UnackedIncomingMessage) which exposes the methods ack and nack.
+Committable sources return @scaladoc[CommittableIncomingMessage](akka.stream.alpakka.amqp.CommittableIncomingMessage) which wraps the @scaladoc[IncomingMessage](akka.stream.alpakka.amqp.IncomingMessage) and exposes the methods ack and nack.
 
-Use ack to acknowledge the message back to RabbitMQ
+Use ack to acknowledge the message back to RabbitMQ. Ack takes an optional boolean parameter `multiple` indicating whether you are acknowledging the individual message or all the messages up to it.
 
 Scala
 : @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { //#run-source-withoutautoack }
@@ -153,7 +153,7 @@ Scala
 Java
 : @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { //#run-source-withoutautoack }
 
-Use nack to reject a message. nack takes an option boolean parameter indicating whether the item should be requeued or not.
+Use nack to reject a message. Apart from the `multiple` argument, nack takes another optional boolean parameter indicating whether the item should be requeued or not.
 
 Scala
 : @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { //#run-source-withoutautoack-and-nack }
