@@ -21,7 +21,7 @@ object AmqpSource {
    */
   def atMostOnceSource(settings: AmqpSourceSettings, bufferSize: Int): Source[IncomingMessage, NotUsed] =
     committableSource(settings, bufferSize)
-      .map(cm => {
+      .map((cm: CommittableIncomingMessage) => {
         cm.ack()
         cm.message
       })
