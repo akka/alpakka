@@ -15,7 +15,7 @@ import scala.collection.mutable
 
 final case class IncomingMessage(bytes: ByteString, envelope: Envelope, properties: BasicProperties)
 final case class CommittableIncomingMessage(message: IncomingMessage,
-                                            callback: AsyncCallback[Unit] = _ => Unit)(implicit channel: Channel) {
+                                            callback: AsyncCallback[Unit] = (_: Unit) => Unit)(implicit channel: Channel) {
   def ack(multiple: Boolean = false) = {
     channel.basicAck(message.envelope.getDeliveryTag, multiple)
     callback.invoke(Unit)
