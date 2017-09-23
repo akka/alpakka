@@ -24,7 +24,6 @@ object AmqpSource {
       .atMostOnceSource(settings, bufferSize)
       .asJava
 
-
   /**
    * Java API:
    * The `committableSource` makes it possible to commit (ack/nack) messages to RabbitMQ.
