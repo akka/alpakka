@@ -24,7 +24,6 @@ lazy val alpakka = project
     sns,
     sqs,
     sse,
-    eip,
     xml
   )
   .settings(
@@ -232,12 +231,6 @@ lazy val xml = project
   .settings(
     name := "akka-stream-alpakka-xml",
     Dependencies.Xml
-  )
-
-lazy val eip = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-eip"
   )
 
 val Local = config("local")

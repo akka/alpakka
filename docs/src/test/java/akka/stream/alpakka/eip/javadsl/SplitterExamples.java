@@ -33,6 +33,7 @@ public class SplitterExamples {
         CompletionStage<List<Integer>> ret =
                 source.map(s -> Arrays.asList(s.split("-")))
                         .mapConcat(f -> f)
+                        //Sub-streams logic
                         .map(s -> Integer.valueOf(s))
                         .runWith(Sink.seq(), materializer);
 
@@ -56,6 +57,7 @@ public class SplitterExamples {
                         .splitWhen(a -> true)
                         //now split each collection
                         .mapConcat(f -> f)
+                        //Sub-streams logic
                         .map(s -> Integer.valueOf(s))
                         //aggregate each sub-stream
                         .reduce((a, b) -> a + b)

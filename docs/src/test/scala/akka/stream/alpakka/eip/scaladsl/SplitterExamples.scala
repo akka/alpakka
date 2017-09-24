@@ -25,6 +25,7 @@ class SplitterExamples extends WordSpec with BeforeAndAfterAll with Matchers wit
       val ret = source
         .map(s => s.split("-").toList)
         .mapConcat(identity)
+        //Sub-streams logic
         .map(s => s.toInt)
         .runWith(Sink.seq)
 
@@ -46,6 +47,7 @@ class SplitterExamples extends WordSpec with BeforeAndAfterAll with Matchers wit
         .splitWhen(a => true)
         //now split each collection
         .mapConcat(identity)
+        //Sub-streams logic
         .map(s => s.toInt)
         //aggregate each sub-stream
         .reduce((a, b) => a + b)
