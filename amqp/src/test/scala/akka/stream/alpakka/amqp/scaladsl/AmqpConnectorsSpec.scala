@@ -474,7 +474,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
         .take(input.size)
         .runWith(Sink.seq)
 
-      result.isReadyWithin(1.second) shouldEqual false
+      result.isReadyWithin(3.second) shouldEqual false
     }
 
     "publish via RPC and then consume through a simple queue again in the same JVM without autoAck" in {
@@ -516,7 +516,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
         .map(b => OutgoingMessage(b.bytes, false, false, Some(b.properties)))
         .runWith(amqpSink)
 
-      probe.toStrict(1.second).map(_.message.bytes.utf8String) shouldEqual input
+      probe.toStrict(3.second).map(_.message.bytes.utf8String) shouldEqual input
     }
   }
 }
