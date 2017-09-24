@@ -11,7 +11,7 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{TestPublisher, TestSubscriber}
 import akka.util.ByteString
 
-import scala.concurrent.Promise
+import scala.concurrent.{Await, Promise}
 import scala.concurrent.duration._
 
 /**
@@ -416,7 +416,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
 
       //#run-source-withoutautoack-and-nack
-      amqpSource
+      val result1 = amqpSource
         .map(message => {
           message.nack()
           message
@@ -425,7 +425,9 @@ class AmqpConnectorsSpec extends AmqpSpec {
         .runWith(Sink.seq)
       //#run-source-withoutautoack-and-nack
 
-      val result = amqpSource
+      Await.ready(result1, 3.seconds)
+
+      val result2 = amqpSource
         .map(message => {
           message.ack()
           message
@@ -433,7 +435,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
         .take(input.size)
         .runWith(Sink.seq)
 
-      result.futureValue.map(_.message.bytes.utf8String) shouldEqual input
+      result2.futureValue.map(_.message.bytes.utf8String) shouldEqual input
     }
 
     "not republish message without autoAck(false) if nack is sent" in {
@@ -458,7 +460,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val input = Vector("one", "two", "three", "four", "five")
       Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
 
-      amqpSource
+      val result1 = amqpSource
         .map(message => {
           message.nack(requeue = false)
           message
@@ -466,7 +468,9 @@ class AmqpConnectorsSpec extends AmqpSpec {
         .take(input.size)
         .runWith(Sink.seq)
 
-      val result = amqpSource
+      Await.ready(result1, 3.seconds)
+
+      val result2 = amqpSource
         .map(message => {
           message.ack()
           message
@@ -474,7 +478,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
         .take(input.size)
         .runWith(Sink.seq)
 
-      result.isReadyWithin(3.second) shouldEqual false
+      result2.isReadyWithin(1.second) shouldEqual false
     }
 
     "publish via RPC and then consume through a simple queue again in the same JVM without autoAck" in {
