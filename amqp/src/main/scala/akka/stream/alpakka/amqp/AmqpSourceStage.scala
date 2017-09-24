@@ -14,8 +14,12 @@ import com.rabbitmq.client._
 import scala.collection.mutable
 
 final case class IncomingMessage(bytes: ByteString, envelope: Envelope, properties: BasicProperties)
-final case class CommittableIncomingMessage(message: IncomingMessage,
-                                            callback: AsyncCallback[Unit] = (_: Unit) => Unit)(implicit channel: Channel) {
+final case class CommittableIncomingMessage(
+    message: IncomingMessage,
+    callback: AsyncCallback[Unit] = new AsyncCallback[Unit] {
+      override def invoke(t: Unit): Unit = Unit
+    }
+)(implicit channel: Channel) {
   def ack(multiple: Boolean = false): Unit = {
     channel.basicAck(message.envelope.getDeliveryTag, multiple)
     callback.invoke(None)
