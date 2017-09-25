@@ -5,14 +5,16 @@ package akka.stream.alpakka.amqp
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.Done
 import akka.stream._
+import akka.stream.alpakka.amqp.scaladsl.CommittableIncomingMessage
 import akka.stream.stage._
 import akka.util.ByteString
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client._
 
 import scala.collection.mutable
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContextExecutor, Future, Promise}
 
 object AmqpRpcFlowStage {
 
@@ -42,6 +44,8 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[String]) = {
     val promise = Promise[String]()
     (new GraphStageLogic(shape) with AmqpConnectorLogic {
+
+      implicit def ec: ExecutionContextExecutor = materializer.executionContext
 
       override val settings = stage.settings
       private val exchange = settings.exchange.getOrElse("")
@@ -77,9 +81,7 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
 
         val commitCallback = getAsyncCallback[Unit] { (_) =>
           unackedMessages.decrementAndGet()
-          if (outstandingMessages == 0 && unackedMessages.get() == 0 && isClosed(in)) {
-            completeStage()
-          }
+          if (unackedMessages.get() == 0) completeStage()
         }
 
         val amqpSourceConsumer = new DefaultConsumer(channel) {
@@ -90,10 +92,25 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
               body: Array[Byte]
           ): Unit =
             consumerCallback.invoke(
-              CommittableIncomingMessage(
-                IncomingMessage(ByteString(body), envelope, properties),
-                commitCallback
-              )
+              new CommittableIncomingMessage {
+                override val message = IncomingMessage(ByteString(body), envelope, properties)
+
+                override def ack(multiple: Boolean) = {
+                  Future {
+                    channel.basicAck(message.envelope.getDeliveryTag, multiple)
+                    commitCallback.invoke(None)
+                    Done
+                  }
+                }
+
+                override def nack(multiple: Boolean, requeue: Boolean) = {
+                  Future {
+                    channel.basicNack(message.envelope.getDeliveryTag, multiple, requeue)
+                    commitCallback.invoke(None)
+                    Done
+                  }
+                }
+              }
             )
 
           override def handleCancel(consumerTag: String): Unit =

@@ -61,7 +61,7 @@ object AmqpRpcFlow {
 
   /**
    * Java API:
-   * Convenience for "at-most once delivery" semantics. Each message is acked to Kafka
+   * Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ
    * before it is emitted downstream.
    */
   def atMostOnceFlow(settings: AmqpSinkSettings,
@@ -91,6 +91,7 @@ object AmqpRpcFlow {
     akka.stream.alpakka.amqp.scaladsl.AmqpRpcFlow
       .committableFlow(settings, bufferSize, repliesPerMessage)
       .mapMaterializedValue(f => f.toJava)
+      .map(cm => cm.asJava)
       .asJava
 
 }

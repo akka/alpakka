@@ -4,10 +4,12 @@
 package akka.stream.alpakka.amqp.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.amqp.{AmqpSourceSettings, AmqpSourceStage, CommittableIncomingMessage, IncomingMessage}
+import akka.dispatch.ExecutionContexts
+import akka.stream.alpakka.amqp.{AmqpSourceSettings, AmqpSourceStage, IncomingMessage}
 import akka.stream.scaladsl.Source
 
 object AmqpSource {
+  private implicit val executionContext = ExecutionContexts.sameThreadExecutionContext
 
   /**
    * Scala API: Creates an [[AmqpSource]] with given settings and buffer size.
@@ -16,15 +18,12 @@ object AmqpSource {
     atMostOnceSource(settings, bufferSize)
 
   /**
-   * Scala API: Convenience for "at-most once delivery" semantics. Each message is acked to Kafka
+   * Scala API: Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ
    * before it is emitted downstream.
    */
   def atMostOnceSource(settings: AmqpSourceSettings, bufferSize: Int): Source[IncomingMessage, NotUsed] =
     committableSource(settings, bufferSize)
-      .map(cm => {
-        cm.ack()
-        cm.message
-      })
+      .mapAsync(1)(cm => cm.ack().map(_ => cm.message))
 
   /**
    * Scala API:

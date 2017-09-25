@@ -4,6 +4,7 @@
 package akka.stream.alpakka.amqp.scaladsl
 
 import akka.Done
+import akka.dispatch.ExecutionContexts
 import akka.stream._
 import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.{GraphDSL, Keep, Merge, Sink, Source}
@@ -20,6 +21,7 @@ import scala.concurrent.duration._
 class AmqpConnectorsSpec extends AmqpSpec {
 
   override implicit val patienceConfig = PatienceConfig(10.seconds)
+  private implicit val executionContext = ExecutionContexts.sameThreadExecutionContext
 
   "The AMQP Connectors" should {
 
@@ -284,20 +286,23 @@ class AmqpConnectorsSpec extends AmqpSpec {
       publisher.expectRequest()
       publisher.sendNext(ByteString("five"))
 
+      publisher.sendComplete()
+
       // this should lead to all five being fetched into the buffer
       // but we just consume one before we cancel
       subscriber.request(1)
       subscriber.expectNext().bytes.utf8String shouldEqual "one"
-
       subscriber.cancel()
-      publisher.sendComplete()
+
 
       val subscriber2 = TestSubscriber.probe[IncomingMessage]()
       amqpSource.addAttributes(Attributes.inputBuffer(1, 1)).runWith(Sink.fromSubscriber(subscriber2))
 
       subscriber2.ensureSubscription()
       subscriber2.request(4)
-      subscriber2.expectNext().bytes.utf8String shouldEqual "two"
+      // MapAsync execute the provided function as it pull the elements regardless of whether they are passed
+      // downstream or not. Thus the second element is acked even though it didn't get pushed down by `subscriber`.
+      // subscriber2.expectNext().bytes.utf8String shouldEqual "two"
       subscriber2.expectNext().bytes.utf8String shouldEqual "three"
       subscriber2.expectNext().bytes.utf8String shouldEqual "four"
       subscriber2.expectNext().bytes.utf8String shouldEqual "five"
@@ -346,7 +351,6 @@ class AmqpConnectorsSpec extends AmqpSpec {
           seen + branch
       })
 
-      import system.dispatcher
       system.scheduler.scheduleOnce(5.seconds)(
         completion.tryFailure(new Error("Did not get at least one element from every fanout branch"))
       )
@@ -382,10 +386,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       //#run-source-withoutautoack
       val result = amqpSource
-        .map(message => {
-          message.ack()
-          message
-        })
+        .mapAsync(1)(cm => cm.ack().map(_ => cm))
         .take(input.size)
         .runWith(Sink.seq)
       //#run-source-withoutautoack
@@ -417,10 +418,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       //#run-source-withoutautoack-and-nack
       val result1 = amqpSource
-        .map(message => {
-          message.nack()
-          message
-        })
+        .mapAsync(1)(cm => cm.nack().map(_ => cm))
         .take(input.size)
         .runWith(Sink.seq)
       //#run-source-withoutautoack-and-nack
@@ -428,10 +426,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       Await.ready(result1, 3.seconds)
 
       val result2 = amqpSource
-        .map(message => {
-          message.ack()
-          message
-        })
+        .mapAsync(1)(cm => cm.ack().map(_ => cm))
         .take(input.size)
         .runWith(Sink.seq)
 
@@ -461,20 +456,14 @@ class AmqpConnectorsSpec extends AmqpSpec {
       Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
 
       val result1 = amqpSource
-        .map(message => {
-          message.nack(requeue = false)
-          message
-        })
+        .mapAsync(1)(cm => cm.nack(requeue = false).map(_ => cm))
         .take(input.size)
         .runWith(Sink.seq)
 
       Await.ready(result1, 3.seconds)
 
       val result2 = amqpSource
-        .map(message => {
-          message.ack()
-          message
-        })
+        .mapAsync(1)(cm => cm.ack().map(_ => cm))
         .take(input.size)
         .runWith(Sink.seq)
 
@@ -504,10 +493,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
           .map(s => ByteString(s))
           .map(bytes => OutgoingMessage(bytes, false, false, None))
           .viaMat(amqpRpcFlow)(Keep.right)
-          .map(message => {
-            message.ack()
-            message
-          })
+          .mapAsync(1)(cm => cm.ack().map(_ => cm))
           .toMat(TestSink.probe)(Keep.both)
           .run
       rpcQueueF.futureValue

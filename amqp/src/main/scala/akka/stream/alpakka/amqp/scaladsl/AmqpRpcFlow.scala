@@ -3,6 +3,7 @@
  */
 package akka.stream.alpakka.amqp.scaladsl
 
+import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.{Flow, Keep}
 import akka.util.ByteString
@@ -10,6 +11,7 @@ import akka.util.ByteString
 import scala.concurrent.Future
 
 object AmqpRpcFlow {
+  private implicit val executionContext = ExecutionContexts.sameThreadExecutionContext
 
   /**
    * Scala API:
@@ -44,17 +46,14 @@ object AmqpRpcFlow {
 
   /**
    * Scala API:
-   * Convenience for "at-most once delivery" semantics. Each message is acked to Kafka
+   * Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ
    * before it is emitted downstream.
    */
   def atMostOnceFlow(settings: AmqpSinkSettings,
                      bufferSize: Int,
                      repliesPerMessage: Int = 1): Flow[OutgoingMessage, IncomingMessage, Future[String]] =
     committableFlow(settings, bufferSize, repliesPerMessage)
-      .map(cm => {
-        cm.ack()
-        cm.message
-      })
+      .mapAsync(1)(cm => cm.ack().map(_ => cm.message))
 
   /**
    * Scala API:

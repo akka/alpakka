@@ -13,6 +13,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import akka.dispatch.ExecutionContexts;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -233,10 +234,9 @@ public class AmqpConnectorsTest {
 
     //#run-source-withoutautoack
     final CompletionStage<List<IncomingMessage>> result =
-            amqpSource.map(cm -> {
-                    cm.ack(false);
-                    return cm.message();
-            }).take(input.size()).runWith(Sink.seq(), materializer);
+            amqpSource
+                    .mapAsync(1, cm -> cm.ack(false).thenApply(unused -> cm.message()))
+                    .take(input.size()).runWith(Sink.seq(), materializer);
     //#run-source-withoutautoack
 
     assertEquals(input, result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.bytes().utf8String()).collect(Collectors.toList()));
@@ -317,19 +317,17 @@ public class AmqpConnectorsTest {
 
         //#run-source-withoutautoack-and-nack
         final CompletionStage<List<IncomingMessage>> result =
-                amqpSource.map(cm -> {
-                    cm.nack(false, true);
-                    return cm.message();
-                }).take(input.size()).runWith(Sink.seq(), materializer);
+                amqpSource
+                        .mapAsync(1, cm -> cm.nack(false, true).thenApply(unused -> cm.message()))
+                        .take(input.size()).runWith(Sink.seq(), materializer);
         //#run-source-withoutautoack-and-nack
 
         result.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
         final CompletionStage<List<IncomingMessage>> result2 =
-                amqpSource.map(cm -> {
-                    cm.ack(false);
-                    return cm.message();
-                }).take(input.size()).runWith(Sink.seq(), materializer);
+                amqpSource
+                        .mapAsync(1, cm -> cm.ack(false).thenApply(unused -> cm.message()))
+                        .take(input.size()).runWith(Sink.seq(), materializer);
 
         assertEquals(input, result2.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.bytes().utf8String()).collect(Collectors.toList()));
     }
