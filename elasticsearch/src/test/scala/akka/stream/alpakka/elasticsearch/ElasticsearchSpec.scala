@@ -39,7 +39,13 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   //#define-class
 
   override def beforeAll() = {
-    runner.build(ElasticsearchClusterRunner.newConfigs().baseHttpPort(9200).baseTransportPort(9300).numOfNode(1))
+    runner.build(
+      ElasticsearchClusterRunner
+        .newConfigs()
+        .baseHttpPort(9200)
+        .baseTransportPort(9300)
+        .numOfNode(1)
+    )
     runner.ensureYellow()
 
     register("source", "Akka in Action")
