@@ -37,7 +37,7 @@ object AmqpSource {
    * Compared to auto-commit, this gives exact control over when a message is considered consumed.
    */
   def committableSource(settings: AmqpSourceSettings, bufferSize: Int): Source[CommittableIncomingMessage, NotUsed] =
-    try akka.stream.alpakka.amqp.scaladsl.AmqpSource
+    akka.stream.alpakka.amqp.scaladsl.AmqpSource
       .committableSource(settings, bufferSize)
       .map(cm => cm.asJava)
       .asJava

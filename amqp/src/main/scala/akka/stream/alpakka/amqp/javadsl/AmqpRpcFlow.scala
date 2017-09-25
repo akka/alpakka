@@ -39,7 +39,7 @@ object AmqpRpcFlow {
   def create(settings: AmqpSinkSettings,
              bufferSize: Int,
              repliesPerMessage: Int): Flow[OutgoingMessage, IncomingMessage, CompletionStage[String]] =
-  atMostOnceFlow(settings, bufferSize, repliesPerMessage)
+    atMostOnceFlow(settings, bufferSize, repliesPerMessage)
 
   /**
    * Java API:
@@ -59,10 +59,10 @@ object AmqpRpcFlow {
       .asJava
 
   /**
-    * Java API:
-    * Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ
-    * before it is emitted downstream.
-    */
+   * Java API:
+   * Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ
+   * before it is emitted downstream.
+   */
   def atMostOnceFlow(settings: AmqpSinkSettings,
                      bufferSize: Int): Flow[OutgoingMessage, IncomingMessage, CompletionStage[String]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpRpcFlow

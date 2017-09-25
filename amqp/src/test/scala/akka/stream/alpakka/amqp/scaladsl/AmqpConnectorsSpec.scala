@@ -203,7 +203,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
     "not fail on a fast producer and a slow consumer" in {
       val queueName = "amqp-conn-it-spec-simple-queue-2-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
-      val amqpSource = AmqpSource(
+      val amqpSource = AmqpSource.atMostOnceSource(
         NamedQueueSourceSettings(DefaultAmqpConnection, queueName).withDeclarations(queueDeclaration),
         bufferSize = 2
       )
@@ -294,7 +294,6 @@ class AmqpConnectorsSpec extends AmqpSpec {
       subscriber.expectNext().bytes.utf8String shouldEqual "one"
       subscriber.cancel()
 
-
       val subscriber2 = TestSubscriber.probe[IncomingMessage]()
       amqpSource.addAttributes(Attributes.inputBuffer(1, 1)).runWith(Sink.fromSubscriber(subscriber2))
 
@@ -333,13 +332,15 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val mergedSources = (0 until fanoutSize).foldLeft(Source.empty[(Int, String)]) {
         case (source, fanoutBranch) =>
           source.merge(
-            AmqpSource.atMostOnceSource(
-              TemporaryQueueSourceSettings(
-                DefaultAmqpConnection,
-                exchangeName
-              ).withDeclarations(exchangeDeclaration),
-              bufferSize = 1
-            ).map(msg => (fanoutBranch, msg.bytes.utf8String))
+            AmqpSource
+              .atMostOnceSource(
+                TemporaryQueueSourceSettings(
+                  DefaultAmqpConnection,
+                  exchangeName
+                ).withDeclarations(exchangeDeclaration),
+                bufferSize = 1
+              )
+              .map(msg => (fanoutBranch, msg.bytes.utf8String))
           )
       }
       //#create-exchange-source
@@ -482,7 +483,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
         bufferSize = 10
       )
 
-      val amqpSource = AmqpSource(
+      val amqpSource = AmqpSource.atMostOnceSource(
         NamedQueueSourceSettings(DefaultAmqpConnection, queueName),
         bufferSize = 1
       )

@@ -95,21 +95,19 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
               new CommittableIncomingMessage {
                 override val message = IncomingMessage(ByteString(body), envelope, properties)
 
-                override def ack(multiple: Boolean) = {
+                override def ack(multiple: Boolean) =
                   Future {
                     channel.basicAck(message.envelope.getDeliveryTag, multiple)
                     commitCallback.invoke(None)
                     Done
                   }
-                }
 
-                override def nack(multiple: Boolean, requeue: Boolean) = {
+                override def nack(multiple: Boolean, requeue: Boolean) =
                   Future {
                     channel.basicNack(message.envelope.getDeliveryTag, multiple, requeue)
                     commitCallback.invoke(None)
                     Done
                   }
-                }
               }
             )
 
