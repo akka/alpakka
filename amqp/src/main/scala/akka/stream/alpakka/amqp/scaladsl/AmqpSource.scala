@@ -14,6 +14,7 @@ object AmqpSource {
   /**
    * Scala API: Creates an [[AmqpSource]] with given settings and buffer size.
    */
+  @deprecated("use atMostOnceSource instead", "0.13")
   def apply(settings: AmqpSourceSettings, bufferSize: Int): Source[IncomingMessage, NotUsed] =
     atMostOnceSource(settings, bufferSize)
 

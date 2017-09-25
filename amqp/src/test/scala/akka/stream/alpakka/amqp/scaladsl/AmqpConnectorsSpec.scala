@@ -44,7 +44,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       //#create-sink
 
       //#create-source
-      val amqpSource = AmqpSource(
+      val amqpSource = AmqpSource.atMostOnceSource(
         NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration),
         bufferSize = 10
       )
@@ -73,7 +73,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       )
       //#create-rpc-flow
 
-      val amqpSource = AmqpSource(
+      val amqpSource = AmqpSource.atMostOnceSource(
         NamedQueueSourceSettings(DefaultAmqpConnection, queueName),
         bufferSize = 1
       )
@@ -105,7 +105,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
         2
       )
 
-      val amqpSource = AmqpSource(
+      val amqpSource = AmqpSource.atMostOnceSource(
         NamedQueueSourceSettings(DefaultAmqpConnection, queueName),
         bufferSize = 1
       )
@@ -184,7 +184,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
         val merge = b.add(Merge[IncomingMessage](count))
         for (n <- 0 until count) {
           val source = b.add(
-            AmqpSource(
+            AmqpSource.atMostOnceSource(
               NamedQueueSourceSettings(DefaultAmqpConnection, queueName).withDeclarations(queueDeclaration),
               bufferSize = 1
             )
@@ -253,7 +253,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
     "not ack messages unless they get consumed" in {
       val queueName = "amqp-conn-it-spec-simple-queue-2-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
-      val amqpSource = AmqpSource(
+      val amqpSource = AmqpSource.atMostOnceSource(
         NamedQueueSourceSettings(DefaultAmqpConnection, queueName).withDeclarations(queueDeclaration),
         bufferSize = 10
       )
@@ -333,7 +333,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val mergedSources = (0 until fanoutSize).foldLeft(Source.empty[(Int, String)]) {
         case (source, fanoutBranch) =>
           source.merge(
-            AmqpSource(
+            AmqpSource.atMostOnceSource(
               TemporaryQueueSourceSettings(
                 DefaultAmqpConnection,
                 exchangeName

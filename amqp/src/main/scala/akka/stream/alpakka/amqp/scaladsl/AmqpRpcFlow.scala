@@ -39,6 +39,7 @@ object AmqpRpcFlow {
    * @param repliesPerMessage The number of responses that should be expected for each message placed on the queue. This
    *                            can be overridden per message by including `expectedReplies` in the the header of the [[OutgoingMessage]]
    */
+  @deprecated("use atMostOnceFlow instead", "0.13")
   def apply(settings: AmqpSinkSettings,
             bufferSize: Int,
             repliesPerMessage: Int = 1): Flow[OutgoingMessage, IncomingMessage, Future[String]] =

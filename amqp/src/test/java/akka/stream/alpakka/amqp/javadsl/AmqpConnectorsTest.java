@@ -13,7 +13,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import akka.dispatch.ExecutionContexts;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -75,7 +74,7 @@ public class AmqpConnectorsTest {
 
     //#create-source
     final Integer bufferSize = 10;
-    final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.create(
+    final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.atMostOnceSource(
       NamedQueueSourceSettings.create(
         DefaultAmqpConnection.getInstance(),
         queueName
@@ -109,7 +108,7 @@ public class AmqpConnectorsTest {
     //#create-rpc-flow
 
     final Integer bufferSize = 10;
-    final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.create(
+    final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.atMostOnceSource(
         NamedQueueSourceSettings.create(
             DefaultAmqpConnection.getInstance(),
             queueName
@@ -171,7 +170,7 @@ public class AmqpConnectorsTest {
     for (Integer i = 0; i < fanoutSize; i++) {
       final Integer fanoutBranch = i;
       mergedSources = mergedSources.merge(
-        AmqpSource.create(
+        AmqpSource.atMostOnceSource(
           TemporaryQueueSourceSettings.create(
             DefaultAmqpConnection.getInstance(),
             exchangeName
@@ -248,7 +247,7 @@ public class AmqpConnectorsTest {
     final String queueName = "amqp-conn-it-spec-rpc-queue-" + System.currentTimeMillis();
     final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
 
-    final Flow<OutgoingMessage,IncomingMessage, CompletionStage<String>> ampqRpcFlow = AmqpRpcFlow.create(
+    final Flow<OutgoingMessage,IncomingMessage, CompletionStage<String>> ampqRpcFlow = AmqpRpcFlow.atMostOnceFlow(
             AmqpSinkSettings.create().withRoutingKey(queueName).withDeclarations(queueDeclaration), 10);
 
     final Integer bufferSize = 10;

@@ -20,9 +20,10 @@ object AmqpRpcFlow {
    *
    * This stage materializes to a CompletionStage<String>, which is the name of the private exclusive queue used for RPC communication.
    */
+  @deprecated("use atMostOnceFlow instead", "0.13")
   def create(settings: AmqpSinkSettings,
              bufferSize: Int): Flow[OutgoingMessage, IncomingMessage, CompletionStage[String]] =
-    akka.stream.alpakka.amqp.scaladsl.AmqpRpcFlow(settings, bufferSize).mapMaterializedValue(f => f.toJava).asJava
+    atMostOnceFlow(settings, bufferSize, 1)
 
   /**
    * Java API:
@@ -34,13 +35,11 @@ object AmqpRpcFlow {
    * @param repliesPerMessage The number of responses that should be expected for each message placed on the queue. This
    *                            can be overridden per message by including `expectedReplies` in the the header of the [[OutgoingMessage]]
    */
+  @deprecated("use atMostOnceFlow instead", "0.13")
   def create(settings: AmqpSinkSettings,
              bufferSize: Int,
              repliesPerMessage: Int): Flow[OutgoingMessage, IncomingMessage, CompletionStage[String]] =
-    akka.stream.alpakka.amqp.scaladsl
-      .AmqpRpcFlow(settings, bufferSize, repliesPerMessage)
-      .mapMaterializedValue(f => f.toJava)
-      .asJava
+  atMostOnceFlow(settings, bufferSize, repliesPerMessage)
 
   /**
    * Java API:
@@ -60,13 +59,25 @@ object AmqpRpcFlow {
       .asJava
 
   /**
+    * Java API:
+    * Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ
+    * before it is emitted downstream.
+    */
+  def atMostOnceFlow(settings: AmqpSinkSettings,
+                     bufferSize: Int): Flow[OutgoingMessage, IncomingMessage, CompletionStage[String]] =
+    akka.stream.alpakka.amqp.scaladsl.AmqpRpcFlow
+      .atMostOnceFlow(settings, bufferSize)
+      .mapMaterializedValue(f => f.toJava)
+      .asJava
+
+  /**
    * Java API:
    * Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ
    * before it is emitted downstream.
    */
   def atMostOnceFlow(settings: AmqpSinkSettings,
                      bufferSize: Int,
-                     repliesPerMessage: Int = 1): Flow[OutgoingMessage, IncomingMessage, CompletionStage[String]] =
+                     repliesPerMessage: Int): Flow[OutgoingMessage, IncomingMessage, CompletionStage[String]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpRpcFlow
       .atMostOnceFlow(settings, bufferSize, repliesPerMessage)
       .mapMaterializedValue(f => f.toJava)
