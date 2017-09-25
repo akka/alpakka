@@ -298,7 +298,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       amqpSource.addAttributes(Attributes.inputBuffer(1, 1)).runWith(Sink.fromSubscriber(subscriber2))
 
       subscriber2.ensureSubscription()
-      subscriber2.request(4)
+      subscriber2.request(3)
       // MapAsync execute the provided function as it pull the elements regardless of whether they are passed
       // downstream or not. Thus the second element is acked even though it didn't get pushed down by `subscriber`.
       // subscriber2.expectNext().bytes.utf8String shouldEqual "two"

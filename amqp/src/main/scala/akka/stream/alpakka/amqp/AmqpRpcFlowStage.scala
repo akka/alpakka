@@ -14,7 +14,8 @@ import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client._
 
 import scala.collection.mutable
-import scala.concurrent.{ExecutionContextExecutor, Future, Promise}
+import scala.concurrent.{Future, Promise}
+import scala.util.Try
 
 object AmqpRpcFlowStage {
 
@@ -44,8 +45,6 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[String]) = {
     val promise = Promise[String]()
     (new GraphStageLogic(shape) with AmqpConnectorLogic {
-
-      implicit def ec: ExecutionContextExecutor = materializer.executionContext
 
       override val settings = stage.settings
       private val exchange = settings.exchange.getOrElse("")
@@ -79,9 +78,19 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
         channel.basicQos(bufferSize, true)
         val consumerCallback = getAsyncCallback(handleDelivery)
 
-        val commitCallback = getAsyncCallback[Unit] { (_) =>
-          unackedMessages.decrementAndGet()
-          if (unackedMessages.get() == 0) completeStage()
+        val commitCallback = getAsyncCallback[CommitCallback] {
+          case AckArguments(deliveryTag, multiple, promise) => {
+            channel.basicAck(deliveryTag, multiple)
+            unackedMessages.decrementAndGet()
+            if (unackedMessages.get() == 0) completeStage()
+            promise.complete(Try(Done))
+          }
+          case NackArguments(deliveryTag, multiple, requeue, promise) => {
+            channel.basicNack(deliveryTag, multiple, requeue)
+            unackedMessages.decrementAndGet()
+            if (unackedMessages.get() == 0) completeStage()
+            promise.complete(Try(Done))
+          }
         }
 
         val amqpSourceConsumer = new DefaultConsumer(channel) {
@@ -95,19 +104,17 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
               new CommittableIncomingMessage {
                 override val message = IncomingMessage(ByteString(body), envelope, properties)
 
-                override def ack(multiple: Boolean) =
-                  Future {
-                    channel.basicAck(message.envelope.getDeliveryTag, multiple)
-                    commitCallback.invoke(None)
-                    Done
-                  }
+                override def ack(multiple: Boolean) = {
+                  val promise = Promise[Done]()
+                  commitCallback.invoke(AckArguments(message.envelope.getDeliveryTag, multiple, promise))
+                  promise.future
+                }
 
-                override def nack(multiple: Boolean, requeue: Boolean) =
-                  Future {
-                    channel.basicNack(message.envelope.getDeliveryTag, multiple, requeue)
-                    commitCallback.invoke(None)
-                    Done
-                  }
+                override def nack(multiple: Boolean, requeue: Boolean) = {
+                  val promise = Promise[Done]()
+                  commitCallback.invoke(NackArguments(message.envelope.getDeliveryTag, multiple, requeue, promise))
+                  promise.future
+                }
               }
             )
 
