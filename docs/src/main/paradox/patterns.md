@@ -8,7 +8,7 @@ Many [Enterprise Integration Patterns](http://www.eaipatterns.com/toc.html) can 
 
 You can achieve a [Splitter](http://www.enterpriseintegrationpatterns.com/patterns/messaging/Sequencer.html) as described in  [EIP](http://www.enterpriseintegrationpatterns.com) using out of the box Akka Streams dsl.
 
-![Splitter](http://www.enterpriseintegrationpatterns.com/img/Sequencer.gif)
+![Splitter](img/Sequencer.gif)
 
 ## Simple Splitter
 
