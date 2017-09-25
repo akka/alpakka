@@ -44,207 +44,88 @@ lazy val alpakka = project
       """.stripMargin
   )
 
-lazy val amqp = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-amqp",
-    Dependencies.Amqp
-  )
+lazy val amqp = alpakkaProject("amqp", Dependencies.Amqp)
 
-lazy val awslambda = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-awslambda",
-    Dependencies.AwsLambda,
-    // For mockito https://github.com/akka/alpakka/issues/390
-    parallelExecution in Test := false
-  )
+lazy val awslambda = alpakkaProject("awslambda", Dependencies.AwsLambda,
+  // For mockito https://github.com/akka/alpakka/issues/390
+  parallelExecution in Test := false
+)
 
-lazy val azureStorageQueue = project
-  .in(file("azure-storage-queue"))
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-azure-storage-queue",
-    Dependencies.AzureStorageQueue
-  )
+lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", Dependencies.AzureStorageQueue)
 
-lazy val cassandra = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-cassandra",
-    Dependencies.Cassandra
-  )
+lazy val cassandra = alpakkaProject("cassandra", Dependencies.Cassandra)
 
-lazy val csv = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-csv",
-    Dependencies.Csv,
-    // By default scalatest futures time out in 150 ms, dilate that to 600ms.
-    // This should not impact the total test time as we don't expect to hit this
-    // timeout.
-    testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4")
-  )
+lazy val csv = alpakkaProject("csv", Dependencies.Csv)
 
-lazy val dynamodb = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-dynamodb",
-    Dependencies.DynamoDB
-  )
+lazy val dynamodb = alpakkaProject("dynamodb", Dependencies.DynamoDB)
 
-lazy val elasticsearch = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-elasticsearch",
-    Dependencies.Elasticsearch,
-    // For elasticsearch-cluster-runner https://github.com/akka/alpakka/issues/479
-    parallelExecution in Test := false
-  )
+lazy val elasticsearch = alpakkaProject("elasticsearch", Dependencies.Elasticsearch,
+  // For elasticsearch-cluster-runner https://github.com/akka/alpakka/issues/479
+  parallelExecution in Test := false
+)
 
-lazy val files = project // The name file is taken by `sbt.file`!
-  .in(file("file"))
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-file",
-    Dependencies.File
-  )
+// The name file is taken by `sbt.file`!
+lazy val files = alpakkaProject("files", Dependencies.File,
+  name := "akka-stream-alpakka-file"
+)
 
-lazy val ftp = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-ftp",
-    Dependencies.Ftp,
-    parallelExecution in Test := false,
-    fork in Test := true,
-    // To avoid potential blocking in machines with low entropy (default is `/dev/random`)
-    javaOptions in Test += "-Djava.security.egd=file:/dev/./urandom"
-  )
+lazy val ftp = alpakkaProject("ftp", Dependencies.Ftp,
+  parallelExecution in Test := false,
+  fork in Test := true,
+  // To avoid potential blocking in machines with low entropy (default is `/dev/random`)
+  javaOptions in Test += "-Djava.security.egd=file:/dev/./urandom"
+)
 
-lazy val geode = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-geode",
-    Dependencies.Geode,
-    fork in Test := true,
-    parallelExecution in Test := false
-  )
+lazy val geode = alpakkaProject("geode", Dependencies.Geode,
+  fork in Test := true,
+  parallelExecution in Test := false
+)
 
-lazy val googleCloudPubSub = project
-  .in(file("google-cloud-pub-sub"))
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-google-cloud-pub-sub",
-    Dependencies.GooglePubSub,
-    fork in Test := true,
-    envVars in Test := Map("PUBSUB_EMULATOR_HOST" -> "localhost:8538"),
-    // For mockito https://github.com/akka/alpakka/issues/390
-    parallelExecution in Test := false
-  )
+lazy val googleCloudPubSub = alpakkaProject("google-cloud-pub-sub", Dependencies.GooglePubSub,
+  fork in Test := true,
+  envVars in Test := Map("PUBSUB_EMULATOR_HOST" -> "localhost:8538"),
+  // For mockito https://github.com/akka/alpakka/issues/390
+  parallelExecution in Test := false
+)
 
-lazy val hbase = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-hbase",
-    Dependencies.HBase,
-    fork in Test := true
-  )
+lazy val hbase = alpakkaProject("hbase", Dependencies.HBase,
+  fork in Test := true
+)
 
-lazy val ironmq = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-ironmq",
-    Dependencies.IronMq
-  )
+lazy val ironmq = alpakkaProject("ironmq", Dependencies.IronMq)
 
-lazy val jms = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-jms",
-    Dependencies.Jms,
-    parallelExecution in Test := false
-  )
+lazy val jms = alpakkaProject("jms", Dependencies.Jms,
+  parallelExecution in Test := false
+)
 
-lazy val kinesis = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-kinesis",
-    Dependencies.Kinesis,
-    // For mockito https://github.com/akka/alpakka/issues/390
-    parallelExecution in Test := false
-  )
+lazy val kinesis = alpakkaProject("kinesis", Dependencies.Kinesis,
+  // For mockito https://github.com/akka/alpakka/issues/390
+  parallelExecution in Test := false
+)
 
-lazy val mongodb = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-mongodb",
-    Dependencies.MongoDb
-  )
+lazy val mongodb = alpakkaProject("mongodb", Dependencies.MongoDb)
 
-lazy val mqtt = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-mqtt",
-    Dependencies.Mqtt
-  )
+lazy val mqtt = alpakkaProject("mqtt", Dependencies.Mqtt)
 
-lazy val s3 = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-s3",
-    Dependencies.S3
-  )
+lazy val s3 = alpakkaProject("s3", Dependencies.S3)
 
-lazy val simpleCodecs = project
-  .in(file("simple-codecs"))
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-simple-codecs",
-    // By default scalatest futures time out in 150 ms, dilate that to 600ms.
-    // This should not impact the total test time as we don't expect to hit this
-    // timeout, and indeed it doesn't appear to.
-    testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4")
-  )
+lazy val simpleCodecs = alpakkaProject("simple-codecs")
 
-lazy val slick = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-slick",
-    Dependencies.Slick
-  )
+lazy val slick = alpakkaProject("slick", Dependencies.Slick)
 
-lazy val sns = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-sns",
-    Dependencies.Sns,
-    // For mockito https://github.com/akka/alpakka/issues/390
-    parallelExecution in Test := false
-  )
+lazy val sns = alpakkaProject("sns", Dependencies.Sns,
+  // For mockito https://github.com/akka/alpakka/issues/390
+  parallelExecution in Test := false
+)
 
-lazy val sqs = project
-  .in(file("sqs"))
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-sqs",
-    Dependencies.Sqs,
-    // For mockito https://github.com/akka/alpakka/issues/390
-    parallelExecution in Test := false
-  )
+lazy val sqs = alpakkaProject("sqs", Dependencies.Sqs,
+  // For mockito https://github.com/akka/alpakka/issues/390
+  parallelExecution in Test := false
+)
 
-lazy val sse = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-sse",
-    Dependencies.Sse
-  )
+lazy val sse = alpakkaProject("sse", Dependencies.Sse)
 
-lazy val xml = project
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "akka-stream-alpakka-xml",
-    Dependencies.Xml
-  )
+lazy val xml = alpakkaProject("xml", Dependencies.Xml)
 
 val Local = config("local")
 val defaultParadoxSettings: Seq[Setting[_]] = Seq(
@@ -283,3 +164,15 @@ lazy val docs = project
       )((sbtunidoc.Plugin.UnidocKeys.unidoc in alpakka in Compile).value.head).get
     )
   )
+
+def alpakkaProject(projectId: String, additionalSettings: sbt.Def.SettingsDefinition*): Project =
+  Project(id = projectId, base = file(projectId))
+    .enablePlugins(AutomateHeaderPlugin)
+    .settings(
+      name := s"akka-stream-alpakka-$projectId",
+      // By default scalatest futures time out in 150 ms, dilate that to 600ms.
+      // This should not impact the total test time as we don't expect to hit this
+      // timeout.
+      testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4")
+    )
+    .settings(additionalSettings: _*)
