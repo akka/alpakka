@@ -79,7 +79,11 @@ lazy val csv = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "akka-stream-alpakka-csv",
-    Dependencies.Csv
+    Dependencies.Csv,
+    // By default scalatest futures time out in 150 ms, dilate that to 600ms.
+    // This should not impact the total test time as we don't expect to hit this
+    // timeout.
+    testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4")
   )
 
 lazy val dynamodb = project
