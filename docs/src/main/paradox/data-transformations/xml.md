@@ -4,32 +4,11 @@ XML parsing module offers Flows for parsing and processing parsed XML documents.
 
 ## Artifacts
 
-sbt
-:   @@@vars
-    ```scala
-    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-xml" % "$version$"
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```xml
-    <dependency>
-      <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-xml_$scalaBinaryVersion$</artifactId>
-      <version>$version$</version>
-    </dependency>
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```gradle
-    dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-xml_$scalaBinaryVersion$", version: "$version$"
-    }
-    ```
-    @@@
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-xml_$scalaBinaryVersion$
+  version=$version$
+}
 
 ## XML parsing
 

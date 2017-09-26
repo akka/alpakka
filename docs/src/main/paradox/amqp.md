@@ -4,32 +4,11 @@ The AMQP connector provides Akka Stream sources and sinks to connect to AMQP ser
 
 ## Artifacts
 
-sbt
-:   @@@vars
-    ```scala
-    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-amqp" % "$version$"
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```xml
-    <dependency>
-      <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-amqp_$scalaBinaryVersion$</artifactId>
-      <version>$version$</version>
-    </dependency>
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```gradle
-    dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-amqp_$scalaBinaryVersion$", version: "$version$"
-    }
-    ```
-    @@@
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-amqp_$scalaBinaryVersion$
+  version=$version$
+}
 
 ## Usage
 
