@@ -72,7 +72,7 @@ public class AmqpConnectorsTest {
 
     //#create-source
     final Integer bufferSize = 10;
-    final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.create(
+    final Source<IncomingMessage<ByteString>, NotUsed> amqpSource = AmqpSource.create(
       NamedQueueSourceSettings.create(
         DefaultAmqpConnection.getInstance(),
         queueName
@@ -107,7 +107,7 @@ public class AmqpConnectorsTest {
     //#create-rpc-flow
 
     final Integer bufferSize = 10;
-    final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.create(
+    final Source<IncomingMessage<ByteString>, NotUsed> amqpSource = AmqpSource.create(
         NamedQueueSourceSettings.create(
             DefaultAmqpConnection.getInstance(),
             queueName
@@ -124,12 +124,12 @@ public class AmqpConnectorsTest {
             .runWith(TestSink.probe(system), materializer);
     //#run-rpc-flow
 
-    Sink<OutgoingMessage, CompletionStage<Done>> amqpSink = AmqpSink.createReplyTo(
+    Sink<OutgoingMessage<ByteString>, CompletionStage<Done>> amqpSink = AmqpSink.createReplyTo(
         AmqpReplyToSinkSettings.create(DefaultAmqpConnection.getInstance())
     );
 
     amqpSource.map(b ->
-        new OutgoingMessage(b.bytes().concat(ByteString.fromString("a")), false, false, Some.apply(b.properties()))
+        new OutgoingMessage<>(b.bytes().concat(ByteString.fromString("a")), false, false, Some.apply(b.properties()))
       ).runWith(amqpSink, materializer);
 
     probe.request(5)

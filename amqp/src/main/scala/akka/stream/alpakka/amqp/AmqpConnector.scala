@@ -43,12 +43,13 @@ private[amqp] trait AmqpConnector {
         automaticRecoveryEnabled.foreach(factory.setAutomaticRecoveryEnabled)
         topologyRecoveryEnabled.foreach(factory.setTopologyRecoveryEnabled)
         exceptionHandler.foreach(factory.setExceptionHandler)
-      case DefaultAmqpConnection => // leave it be as is
+      case _ => // leave it be as is
     }
     factory
   }
 
   def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings): Connection = settings match {
+    case CachedAmqpConnection(conn) => conn
     case a: AmqpConnectionDetails => {
       import scala.collection.JavaConverters._
       if (a.hostAndPortList.nonEmpty)
@@ -58,6 +59,12 @@ private[amqp] trait AmqpConnector {
     }
     case _ => factory.newConnection()
   }
+
+  def closeConnection(settings: AmqpConnectionSettings, connection: Connection): Unit =
+    settings match {
+      case CachedAmqpConnection(c) if (c.eq(connection)) =>
+      case _ => connection.close()
+    }
 }
 
 /**
@@ -71,6 +78,7 @@ private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
   def settings: AmqpConnectorSettings
   def connectionFactoryFrom(settings: AmqpConnectionSettings): ConnectionFactory
   def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings): Connection
+  def closeConnection(settings: AmqpConnectionSettings, connection: Connection): Unit
   def whenConnected(): Unit
   def onFailure(ex: Throwable): Unit
 
@@ -132,7 +140,7 @@ private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
   override def postStop(): Unit = {
     if ((channel ne null) && channel.isOpen) channel.close()
     channel = null
-    if ((connection ne null) && connection.isOpen) connection.close()
+    if ((connection ne null) && connection.isOpen) closeConnection(settings.connectionSettings, connection)
     connection = null
   }
 }

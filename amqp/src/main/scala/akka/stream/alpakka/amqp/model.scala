@@ -3,7 +3,8 @@
  */
 package akka.stream.alpakka.amqp
 
-import com.rabbitmq.client.ExceptionHandler
+import com.rabbitmq.client.{Connection, ExceptionHandler}
+
 import scala.collection.JavaConverters._
 
 /**
@@ -127,6 +128,8 @@ object AmqpSinkSettings {
  * Only for internal implementations
  */
 sealed trait AmqpConnectionSettings
+
+case class CachedAmqpConnection(conn: Connection) extends AmqpConnectionSettings
 
 /**
  * Connects to a local AMQP broker at the default port with no password.

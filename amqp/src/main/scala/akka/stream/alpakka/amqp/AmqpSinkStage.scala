@@ -12,10 +12,7 @@ import com.rabbitmq.client._
 
 import scala.concurrent.{Future, Promise}
 
-final case class OutgoingMessage(bytes: ByteString,
-                                 immediate: Boolean,
-                                 mandatory: Boolean,
-                                 props: Option[BasicProperties])
+final case class OutgoingMessage[A](bytes: A, immediate: Boolean, mandatory: Boolean, props: Option[BasicProperties])
 
 object AmqpSinkStage {
 
@@ -28,13 +25,13 @@ object AmqpSinkStage {
  * Each materialized sink will create one connection to the broker.
  */
 final class AmqpSinkStage(settings: AmqpSinkSettings)
-    extends GraphStageWithMaterializedValue[SinkShape[OutgoingMessage], Future[Done]]
+    extends GraphStageWithMaterializedValue[SinkShape[OutgoingMessage[ByteString]], Future[Done]]
     with AmqpConnector { stage =>
   import AmqpSinkStage._
 
-  val in = Inlet[OutgoingMessage]("AmqpSink.in")
+  val in = Inlet[OutgoingMessage[ByteString]]("AmqpSink.in")
 
-  override def shape: SinkShape[OutgoingMessage] = SinkShape.of(in)
+  override def shape: SinkShape[OutgoingMessage[ByteString]] = SinkShape.of(in)
 
   override protected def initialAttributes: Attributes = defaultAttributes
 
@@ -48,6 +45,11 @@ final class AmqpSinkStage(settings: AmqpSinkSettings)
       override def connectionFactoryFrom(settings: AmqpConnectionSettings) = stage.connectionFactoryFrom(settings)
       override def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings) =
         stage.newConnection(factory, settings)
+
+      override def closeConnection(
+          settings: AmqpConnectionSettings,
+          connection: Connection
+      ): Unit = stage.closeConnection(settings, connection)
 
       override def whenConnected(): Unit = {
         val shutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
@@ -119,13 +121,13 @@ object AmqpReplyToSinkStage {
  * the queue named in the replyTo options of the message instead of from settings declared at construction.
  */
 final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings)
-    extends GraphStageWithMaterializedValue[SinkShape[OutgoingMessage], Future[Done]]
+    extends GraphStageWithMaterializedValue[SinkShape[OutgoingMessage[ByteString]], Future[Done]]
     with AmqpConnector { stage =>
   import AmqpReplyToSinkStage._
 
-  val in = Inlet[OutgoingMessage]("AmqpReplyToSink.in")
+  val in = Inlet[OutgoingMessage[ByteString]]("AmqpReplyToSink.in")
 
-  override def shape: SinkShape[OutgoingMessage] = SinkShape.of(in)
+  override def shape: SinkShape[OutgoingMessage[ByteString]] = SinkShape.of(in)
 
   override protected def initialAttributes: Attributes = defaultAttributes
 
@@ -137,6 +139,11 @@ final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings)
       override def connectionFactoryFrom(settings: AmqpConnectionSettings) = stage.connectionFactoryFrom(settings)
       override def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings): Connection =
         stage.newConnection(factory, settings)
+
+      override def closeConnection(
+          settings: AmqpConnectionSettings,
+          connection: Connection
+      ): Unit = stage.closeConnection(settings, connection)
 
       override def whenConnected(): Unit = {
         val shutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>

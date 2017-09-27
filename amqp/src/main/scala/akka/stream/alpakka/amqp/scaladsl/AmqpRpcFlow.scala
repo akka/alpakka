@@ -23,7 +23,7 @@ object AmqpRpcFlow {
    */
   def simple(settings: AmqpSinkSettings, repliesPerMessage: Int = 1): Flow[ByteString, ByteString, Future[String]] =
     Flow[ByteString]
-      .map(bytes => OutgoingMessage(bytes, false, false, None))
+      .map(bytes => OutgoingMessage[ByteString](bytes, false, false, None))
       .viaMat(apply(settings, 1, repliesPerMessage))(Keep.right)
       .map(_.bytes)
 
@@ -37,9 +37,11 @@ object AmqpRpcFlow {
    * @param repliesPerMessage The number of responses that should be expected for each message placed on the queue. This
    *                            can be overridden per message by including `expectedReplies` in the the header of the [[OutgoingMessage]]
    */
-  def apply(settings: AmqpSinkSettings,
-            bufferSize: Int,
-            repliesPerMessage: Int = 1): Flow[OutgoingMessage, IncomingMessage, Future[String]] =
+  def apply(
+      settings: AmqpSinkSettings,
+      bufferSize: Int,
+      repliesPerMessage: Int = 1
+  ): Flow[OutgoingMessage[ByteString], IncomingMessage[ByteString], Future[String]] =
     Flow.fromGraph(new AmqpRpcFlowStage(settings, bufferSize, repliesPerMessage))
 
 }
