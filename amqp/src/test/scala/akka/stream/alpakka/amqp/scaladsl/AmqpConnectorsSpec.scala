@@ -250,64 +250,6 @@ class AmqpConnectorsSpec extends AmqpSpec {
       succeed
     }
 
-    "not ack messages unless they get consumed" in {
-      val queueName = "amqp-conn-it-spec-simple-queue-2-" + System.currentTimeMillis()
-      val queueDeclaration = QueueDeclaration(queueName)
-      val amqpSource = AmqpSource.atMostOnceSource(
-        NamedQueueSourceSettings(DefaultAmqpConnection, queueName).withDeclarations(queueDeclaration),
-        bufferSize = 10
-      )
-
-      val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(DefaultAmqpConnection).withRoutingKey(queueName).withDeclarations(queueDeclaration)
-      )
-
-      val publisher = TestPublisher.probe[ByteString]()
-      val subscriber = TestSubscriber.probe[IncomingMessage]()
-      amqpSink.addAttributes(Attributes.inputBuffer(1, 1)).runWith(Source.fromPublisher(publisher))
-      amqpSource.addAttributes(Attributes.inputBuffer(1, 1)).runWith(Sink.fromSubscriber(subscriber))
-
-      // note that this essentially is testing rabbitmq just as much as it tests our sink and source
-      publisher.ensureSubscription()
-      subscriber.ensureSubscription()
-
-      publisher.expectRequest() shouldEqual 1
-      publisher.sendNext(ByteString("one"))
-
-      publisher.expectRequest()
-      publisher.sendNext(ByteString("two"))
-
-      publisher.expectRequest()
-      publisher.sendNext(ByteString("three"))
-
-      publisher.expectRequest()
-      publisher.sendNext(ByteString("four"))
-
-      publisher.expectRequest()
-      publisher.sendNext(ByteString("five"))
-
-      publisher.sendComplete()
-
-      // this should lead to all five being fetched into the buffer
-      // but we just consume one before we cancel
-      subscriber.request(1)
-      subscriber.expectNext().bytes.utf8String shouldEqual "one"
-      subscriber.cancel()
-
-      val subscriber2 = TestSubscriber.probe[IncomingMessage]()
-      amqpSource.addAttributes(Attributes.inputBuffer(1, 1)).runWith(Sink.fromSubscriber(subscriber2))
-
-      subscriber2.ensureSubscription()
-      subscriber2.request(4)
-      subscriber2.expectNext().bytes.utf8String shouldEqual "two"
-      subscriber2.expectNext().bytes.utf8String shouldEqual "three"
-      subscriber2.expectNext().bytes.utf8String shouldEqual "four"
-      subscriber2.expectNext().bytes.utf8String shouldEqual "five"
-
-      subscriber2.cancel()
-      succeed
-    }
-
     "pub-sub from one source with multiple sinks" in {
       // with pubsub we arrange one exchange which the sink writes to
       // and then one queue for each source which subscribes to the
