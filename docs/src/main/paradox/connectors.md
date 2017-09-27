@@ -19,6 +19,7 @@
 * [HBase Connectors](hbase.md)
 * [IronMq Connectors](ironmq.md)
 * [JMS Connectors](jms.md)
+* [MongoDB Connector](mongodb.md)
 * [MQTT Connector](mqtt.md)
 * [Server-sent Events (SSE)](sse.md)
 * [Slick (JDBC) Connector](slick.md)
