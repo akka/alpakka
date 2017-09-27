@@ -82,7 +82,7 @@ object Dependencies {
   )
 
   val Geode = {
-    val geodeVersion = "1.2.0"
+    val geodeVersion = "1.2.1"
     val slf4jVersion = "1.7.25"
     val logbackVersion = "1.2.3"
     Seq(
