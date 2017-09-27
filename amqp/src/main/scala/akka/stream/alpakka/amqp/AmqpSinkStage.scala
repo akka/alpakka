@@ -15,7 +15,8 @@ import scala.concurrent.{Future, Promise}
 final case class OutgoingMessage(bytes: ByteString,
                                  immediate: Boolean,
                                  mandatory: Boolean,
-                                 props: Option[BasicProperties])
+                                 props: Option[BasicProperties],
+                                 routingKey: Option[String] = None)
 
 object AmqpSinkStage {
 
@@ -81,7 +82,7 @@ final class AmqpSinkStage(settings: AmqpSinkSettings)
             val elem = grab(in)
             channel.basicPublish(
               exchange,
-              routingKey,
+              elem.routingKey.getOrElse(routingKey),
               elem.mandatory,
               elem.immediate,
               elem.props.orNull,
@@ -181,7 +182,7 @@ final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings)
 
             if (replyTo.isDefined) {
               channel.basicPublish(
-                "",
+                elem.routingKey.getOrElse(""),
                 replyTo.get,
                 elem.mandatory,
                 elem.immediate,

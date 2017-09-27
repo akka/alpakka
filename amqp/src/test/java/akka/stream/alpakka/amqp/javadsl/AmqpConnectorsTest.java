@@ -30,6 +30,7 @@ import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.JavaTestKit;
 import akka.util.ByteString;
+import scala.Option;
 import scala.Some;
 import scala.collection.JavaConverters;
 import scala.concurrent.duration.Duration;
@@ -130,7 +131,7 @@ public class AmqpConnectorsTest {
     );
 
     amqpSource.map(b ->
-        new OutgoingMessage(b.bytes().concat(ByteString.fromString("a")), false, false, Some.apply(b.properties()))
+        new OutgoingMessage(b.bytes().concat(ByteString.fromString("a")), false, false, Some.apply(b.properties()), Option.apply(null))
       ).runWith(amqpSink, materializer);
 
     probe.request(5)
@@ -263,7 +264,7 @@ public class AmqpConnectorsTest {
     TestSubscriber.Probe<IncomingMessage> probe =
             Source.from(input)
                     .map(ByteString::fromString)
-                    .map(bytes -> new OutgoingMessage(bytes, false, false, scala.Option.apply(null)))
+                    .map(bytes -> new OutgoingMessage(bytes, false, false, Option.apply(null), Option.apply(null)))
                     .via(ampqRpcFlow)
                     .runWith(TestSink.probe(system), materializer);
 
@@ -272,7 +273,7 @@ public class AmqpConnectorsTest {
     );
 
     amqpSource.map(b ->
-            new OutgoingMessage(b.message().bytes(), false, false, Some.apply(b.message().properties()))
+            new OutgoingMessage(b.message().bytes(), false, false, Some.apply(b.message().properties()), Option.apply(null))
     ).runWith(amqpSink, materializer);
 
     List<IncomingMessage> probeResult = JavaConverters.seqAsJavaListConverter(probe.toStrict(Duration.create(5, TimeUnit.SECONDS))).asJava();
@@ -329,5 +330,46 @@ public class AmqpConnectorsTest {
                         .take(input.size()).runWith(Sink.seq(), materializer);
 
         assertEquals(input, result2.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.bytes().utf8String()).collect(Collectors.toList()));
+    }
+
+    @Test
+    public void setRoutingKeyPerMessageAndConsumeThemInTheSameJVM() throws Exception {
+        final String exchangeName = "amqp.topic." + System.currentTimeMillis();
+        final ExchangeDeclaration exchangeDeclaration = ExchangeDeclaration.create(exchangeName, "topic");
+        final String queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis();
+        final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
+        final BindingDeclaration bindingDeclaration = BindingDeclaration.create(queueName, exchangeName).withRoutingKey("key.*");
+
+        @SuppressWarnings("unchecked")
+        AmqpConnectionDetails amqpConnectionDetails = AmqpConnectionDetails.create("invalid", 5673)
+                .withHostsAndPorts(Pair.create("localhost", 5672), Pair.create("localhost", 5674));
+
+        final Sink<OutgoingMessage, CompletionStage<Done>> amqpSink = AmqpSink.create(
+                AmqpSinkSettings.create(amqpConnectionDetails)
+                        .withExchange(exchangeName)
+                        .withDeclarations(exchangeDeclaration, queueDeclaration, bindingDeclaration)
+        );
+
+        final Integer bufferSize = 10;
+        final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.atMostOnceSource(
+                NamedQueueSourceSettings.create(
+                        DefaultAmqpConnection.getInstance(),
+                        queueName
+                ).withDeclarations(exchangeDeclaration, queueDeclaration, bindingDeclaration),
+                bufferSize
+        );
+
+        final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
+        final List<String> routingKeys = input.stream().map(s -> "key." + s).collect(Collectors.toList());
+        Source.from(input)
+                .map(s -> new OutgoingMessage(ByteString.fromString(s), false, false, Option.apply(null), Some.apply("key." + s)))
+                .runWith(amqpSink, materializer);
+
+        final List<IncomingMessage> result =
+                amqpSource
+                        .take(input.size()).runWith(Sink.seq(), materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+        assertEquals(routingKeys, result.stream().map(m -> m.envelope().getRoutingKey()).collect(Collectors.toList()));
+        assertEquals(input, result.stream().map(m -> m.bytes().utf8String()).collect(Collectors.toList()));
     }
 }
