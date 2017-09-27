@@ -4,7 +4,7 @@
 package akka.stream.alpakka.amqp
 
 import akka.Done
-import akka.stream.stage.{GraphStage, GraphStageLogic, GraphStageWithMaterializedValue, InHandler}
+import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler}
 import akka.stream.{ActorAttributes, Attributes, Inlet, SinkShape}
 import akka.util.ByteString
 import com.rabbitmq.client.AMQP.BasicProperties
