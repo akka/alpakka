@@ -140,6 +140,12 @@ object Dependencies {
     resolvers += ("jboss" at "https://repository.jboss.org/nexus/content/groups/public")
   )
 
+  val MongoDb = Seq(
+    libraryDependencies ++= Seq(
+      "org.mongodb.scala" %% "mongo-scala-driver" % "2.1.0" // ApacheV2
+    )
+  )
+
   val Mqtt = Seq(
     libraryDependencies ++= Seq(
       "org.eclipse.paho" % "org.eclipse.paho.client.mqttv3" % "1.1.0" // Eclipse Public License 1.0
