@@ -19,6 +19,7 @@ lazy val alpakka = project
     kinesis,
     mqtt,
     s3,
+    bmcs,
     simpleCodecs,
     slick,
     sns,
@@ -190,6 +191,14 @@ lazy val s3 = project
     name := "akka-stream-alpakka-s3",
     Dependencies.S3
   )
+
+lazy val bmcs = project.dependsOn(s3)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-bmcs",
+    Dependencies.Bmcs
+  )
+
 
 lazy val simpleCodecs = project
   .in(file("simple-codecs"))

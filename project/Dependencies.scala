@@ -163,6 +163,13 @@ object Dependencies {
     )
   )
 
+  val Bmcs = Seq(
+    libraryDependencies ++= Seq(
+      "org.bouncycastle" % "bcpkix-jdk15on" % "1.52",
+      "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.10"
+    )
+  )
+
   val Slick = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.slick" %% "slick"           % "3.2.1", // BSD 2-clause "Simplified" License
