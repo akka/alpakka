@@ -246,9 +246,7 @@ class BmcsStream(settings: BmcsSettings, credentials: BmcsCredentials)(implicit 
   private def initiateUpload(bucket: String, objectName: String): Source[(MultipartUpload, Int), NotUsed] =
     Source
       .single("start upload")
-      .mapAsync(1) {
-        case _ => initiateMultipartUpload(bucket, objectName)
-      }
+      .mapAsync(1)(_ => initiateMultipartUpload(bucket, objectName))
       .mapConcat(r => Stream.continually(r))
       .zip(Source.fromIterator(() => Iterator.from(1)))
 
