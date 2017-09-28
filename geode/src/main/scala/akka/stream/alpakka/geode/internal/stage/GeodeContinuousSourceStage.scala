@@ -32,7 +32,7 @@ class GeodeContinuousSourceStage[V](cache: ClientCache, name: Symbol, sql: Strin
       }
 
       val onElement: AsyncCallback[V] = getAsyncCallback[V] { element =>
-        if (isAvailable(out)) {
+        if (isAvailable(out) && incomingQueueIsEmpty) {
           pushElement(out, element)
         } else
           enqueue(element)

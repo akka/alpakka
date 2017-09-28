@@ -78,6 +78,8 @@ abstract class GeodeCQueryGraphLogic[V](val shape: SourceShape[V],
     onElement.invoke(v)
   }
 
+  protected def incomingQueueIsEmpty = incomingQueue.isEmpty
+
   protected def enqueue(v: V): Unit =
     incomingQueue.enqueue(v)
 
