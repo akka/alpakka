@@ -20,7 +20,9 @@ class BmcsSignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpe
 
   implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
 
-  implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
+  implicit val materializer: ActorMaterializer = ActorMaterializer(
+    ActorMaterializerSettings(system).withDebugLogging(true)
+  )
 
   val region = "us-phoenix-1"
   val userOcid = "ocid1.user.oc1..aaaaaaaaalwxriuznfhohggk7ejii6lpwo7mebuldxh455hiesnowaoaksyq"
@@ -101,7 +103,7 @@ class BmcsSignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpe
         Host("objectstorage.us-phoenix-1.oraclecloud.com")
       )
     val caught = intercept[UnsupportedOperationException] {
-      val signed = BmcsSigner.signedRequest(req, credentials)
+      BmcsSigner.signedRequest(req, credentials)
     }
     assert(caught.getMessage === "Does not support this httpMethod: CONNECT")
   }

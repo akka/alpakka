@@ -14,12 +14,14 @@ import scala.collection.immutable.Seq
 
 object HttpRequests {
 
-  def listObjectsRequest(bucket: String, start: Option[String] = None, prefix: Option[String] = None)(implicit conf: BmcsSettings): HttpRequest = {
+  def listObjectsRequest(bucket: String, start: Option[String] = None, prefix: Option[String] = None)(
+      implicit conf: BmcsSettings
+  ): HttpRequest = {
     val query = Query(
       Seq(
         "start" -> start,
         "prefix" -> prefix
-      ).collect{ case (k, Some(v)) => k -> v }.toMap
+      ).collect { case (k, Some(v)) => k -> v }.toMap
     )
     HttpRequest(HttpMethods.GET)
       .withHeaders(Host(requestHost))
@@ -31,26 +33,30 @@ object HttpRequests {
       .withHeaders(Host(requestHost))
       .withUri(requestUri(bucket, Some(s"o/$objectName")))
 
-  def completeMultipartUploadRequest(bucket: String, objectName: String, uploadId: String)(implicit conf: BmcsSettings): HttpRequest = {
-    val query = Query(Seq(
-      "uploadId" -> uploadId,
-    ).toMap)
+  def completeMultipartUploadRequest(bucket: String, objectName: String, uploadId: String)(
+      implicit conf: BmcsSettings
+  ): HttpRequest =
     HttpRequest(HttpMethods.POST)
       .withHeaders(Host(requestHost))
-      .withUri(requestUri(bucket, Some(s"u/$objectName")).withQuery(query))
-  }
+      .withUri(requestUri(bucket, Some(s"u/$objectName")).withQuery(Query("uploadId" -> uploadId)))
 
-  def initiateMultipartUploadRequest(bucket: String)(implicit conf: BmcsSettings): HttpRequest = {
+  def initiateMultipartUploadRequest(bucket: String)(implicit conf: BmcsSettings): HttpRequest =
     HttpRequest(HttpMethods.POST)
       .withHeaders(Host(requestHost))
       .withUri(requestUri(bucket, Some("u")))
-  }
 
-  def uploadPartRequest(bucket:String, objectName: String, partNumber: Int, uploadId: String, payload: Source[ByteString, _], payloadSize: Int)(implicit conf: BmcsSettings): HttpRequest = {
-    val query = Query(Seq(
-      "uploadId" -> uploadId,
-      "uploadPartNum" -> partNumber.toString
-    ).toMap)
+  def uploadPartRequest(bucket: String,
+                        objectName: String,
+                        partNumber: Int,
+                        uploadId: String,
+                        payload: Source[ByteString, _],
+                        payloadSize: Int)(implicit conf: BmcsSettings): HttpRequest = {
+    val query = Query(
+      Seq(
+        "uploadId" -> uploadId,
+        "uploadPartNum" -> partNumber.toString
+      ).toMap
+    )
 
     val request = HttpRequest(HttpMethods.PUT)
       .withHeaders(Host(requestHost))
@@ -58,7 +64,6 @@ object HttpRequests {
       .withEntity(HttpEntity(ContentTypes.`application/octet-stream`, payloadSize, payload))
     request
   }
-
 
   private[this] def requestUri(bucket: String, key: Option[String] = None)(implicit conf: BmcsSettings): Uri = {
     val basePath = Uri.Path / "n" / conf.namespace / "b" / bucket

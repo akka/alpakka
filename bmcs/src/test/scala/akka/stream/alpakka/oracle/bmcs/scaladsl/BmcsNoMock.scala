@@ -20,7 +20,6 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.concurrent.duration._
 import akka.stream.alpakka.oracle.bmcs.auth._
-import akka.stream.alpakka.oracle.bmcs.impl.ListObjects
 
 /*
  * This is an integration test and ignored by default
