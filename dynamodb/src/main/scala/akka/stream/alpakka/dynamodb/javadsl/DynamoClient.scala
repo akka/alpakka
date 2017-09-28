@@ -3,11 +3,13 @@
  */
 package akka.stream.alpakka.dynamodb.javadsl
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.alpakka.dynamodb.AwsOp
 import akka.stream.alpakka.dynamodb.impl.{DynamoClientImpl, DynamoSettings}
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits
+import akka.stream.javadsl.Flow
 import akka.stream.scaladsl.{Sink, Source}
 import com.amazonaws.services.dynamodbv2.model._
 
@@ -25,7 +27,7 @@ final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem,
 
   import DynamoImplicits._
 
-  private val flow = client.flow.asJava
+  def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] = client.flow.asJava
 
   private def single(op: AwsOp): Future[op.B] =
     Source.single(op).via(client.flow).runWith(Sink.head).map(_.asInstanceOf[op.B])

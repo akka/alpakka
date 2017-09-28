@@ -8,9 +8,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.MediaType.NotCompressible
 import akka.http.scaladsl.model.{ContentType, MediaType}
 import akka.stream.Materializer
-import akka.stream.alpakka.dynamodb.AwsOp
 import akka.stream.alpakka.dynamodb.impl.AwsClient.{AwsConnect, AwsRequestMetadata}
-import akka.stream.scaladsl.{Sink, Source}
 import com.amazonaws.AmazonServiceException
 import com.amazonaws.http.HttpResponseHandler
 
@@ -30,7 +28,5 @@ class DynamoClientImpl(
       Http().cachedHostConnectionPoolHttps[AwsRequestMetadata](settings.host)(materializer)
     else
       Http().cachedHostConnectionPool[AwsRequestMetadata](settings.host, settings.port)(materializer)
-
-  def single(op: AwsOp) = Source.single(op).via(flow).map(_.asInstanceOf[op.B]).runWith(Sink.head)
 
 }
