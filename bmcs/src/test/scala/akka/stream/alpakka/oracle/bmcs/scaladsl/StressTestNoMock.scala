@@ -9,7 +9,7 @@ import java.util.UUID
 
 import akka.NotUsed
 import akka.stream.scaladsl.{Sink, Source}
-import org.junit.Ignore
+import org.scalatest.Ignore
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
