@@ -16,5 +16,4 @@ package dynamodb {
     val handler: HttpResponseHandler[AmazonWebServiceResponse[B]]
     val marshaller: Marshaller[Request[A], A]
   }
-
 }
