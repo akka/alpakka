@@ -25,7 +25,7 @@ class BmcsSignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpe
   val region = "us-phoenix-1"
   val userOcid = "ocid1.user.oc1..aaaaaaaaalwxriuznfhohggk7ejii6lpwo7mebuldxh455hiesnowaoaksyq"
   val tenancyOcid = "ocid1.tenancy.oc1..aaaaaaaa6gtmn46bketftho3sqcgrlvdfsenqemqy3urkbthlpkos54a6wsa"
-  val keyPath = "/ssd/scala_github/alpakka/alpakka/bmcs/src/test/resources/oci_api_key.pem"
+  val keyPath = "./bmcs/src/test/resources/oci_api_key.pem"
   val passphrase = "adityag"
   val keyFingerprint = "b4:97:75:d0:2a:40:1f:5e:66:a3:f4:03:9a:ff:a8:8a"
 
