@@ -18,6 +18,7 @@ The code in this documentation is compiled against
 
 * [Connectors](connectors.md)
 * [External connectors](external-connectors.md) (hosted separately)
+* [External stream components](external-components.md) (hosted separately)
 * [Integration Patterns](patterns.md)
 * [Data Transformations](data-transformations/index.md)
 
