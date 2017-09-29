@@ -76,8 +76,7 @@ object BmcsSigner {
     val contentLength = RawHeader("content-length", request.entity.contentLengthOption.get.toString)
     val requestTarget =
       RawHeader("(request-target)", s"${request.method.value.toLowerCase} ${extractPath(request.uri)}")
-    val pseudoHeaders: Seq[HttpHeader] = Seq(contentType, contentLength, requestTarget)
-    pseudoHeaders
+    Seq(contentType, contentLength, requestTarget)
   }
 
   private[this] def signatureParts(headers: Seq[HttpHeader], uri: Uri, method: HttpMethod): SignatureParts = {
