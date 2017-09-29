@@ -77,37 +77,43 @@ class ElasticsearchFlowStage[T, R](
         completeStage()
 
       private def handleResponse(args: (Seq[IncomingMessage[T]], Response)): Unit = {
-        retryCount = 0
         val (messages, response) = args
         val responseJson = EntityUtils.toString(response.getEntity).parseJson
 
         // If some commands in bulk request failed, pass failed messages to follows.
         val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
-        val failedMessages = items.elements.zip(messages).flatMap {
+        val failed = items.elements.zip(messages).flatMap {
           case (item, message) =>
-            val result = item.asJsObject.fields("index").asJsObject.fields("result").asInstanceOf[JsString].value
-            if (result == "created" || result == "updated") {
-              None
-            } else {
-              Some(message)
+            item.asJsObject.fields("index").asJsObject.fields.get("error").map { _ =>
+              message
             }
         }
 
-        // Fetch next messages from queue and send them
-        val nextMessages = (1 to settings.bufferSize).flatMap { _ =>
-          queue.dequeueFirst(_ => true)
-        }
+        if (failed.nonEmpty && settings.retryPartialFailure) {
+          // Retry partial failed messages
+          retryCount = retryCount + 1
+          failedMessages = failed
+          scheduleOnce(NotUsed, settings.retryInterval.millis)
 
-        if (nextMessages.isEmpty) {
-          state match {
-            case Finished => handleSuccess()
-            case _ => state = Idle
-          }
         } else {
-          sendBulkUpdateRequest(nextMessages)
-        }
+          retryCount = 0
 
-        push(out, Future.successful(pusher(failedMessages)))
+          // Fetch next messages from queue and send them
+          val nextMessages = (1 to settings.bufferSize).flatMap { _ =>
+            queue.dequeueFirst(_ => true)
+          }
+
+          if (nextMessages.isEmpty) {
+            state match {
+              case Finished => handleSuccess()
+              case _ => state = Idle
+            }
+          } else {
+            sendBulkUpdateRequest(nextMessages)
+          }
+
+          push(out, Future.successful(pusher(failed)))
+        }
       }
 
       private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T]]): Unit = {
