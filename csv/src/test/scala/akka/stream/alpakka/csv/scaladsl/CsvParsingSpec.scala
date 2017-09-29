@@ -200,5 +200,17 @@ class CsvParsingSpec
         )
       )
     }
+
+    "compose well with other parts of the akka-streams ecosystem" in {
+      val fut = Source
+        .repeat(ByteString("a,b\n"))
+        .via(akka.stream.scaladsl.Framing.delimiter(ByteString("\n"), maximumFrameLength = 4096))
+        .via(CsvParsing.lineScanner())
+        .map(_.map(_.utf8String))
+        .take(1)
+        .runWith(Sink.seq)
+      val res = fut.futureValue
+      res(0) shouldBe List("a", "b")
+    }
   }
 }
