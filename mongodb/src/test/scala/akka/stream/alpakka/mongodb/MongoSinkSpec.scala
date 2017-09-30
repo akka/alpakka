@@ -9,10 +9,11 @@ import akka.stream.ActorMaterializer
 import akka.stream.alpakka.mongodb.scaladsl.MongoSink
 import akka.stream.alpakka.mongodb.scaladsl.MongoSink.DocumentUpdate
 import akka.stream.scaladsl.Source
-import org.mongodb.scala.MongoClient
+import org.mongodb.scala.{MongoClient, MongoCollection}
 import org.mongodb.scala.model.Filters
 import org.mongodb.scala.model.Updates._
 import org.mongodb.scala.bson.collection.immutable.Document
+import org.mongodb.scala.bson.conversions.Bson
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
@@ -129,10 +130,35 @@ class MongoSinkSpec
     }
   }
 
-  private class ParadoxSnippet() {
+  private class ParadoxSnippet1() {
+    //#insertOne
     val source: Source[Document, NotUsed] = ???
-    //#create-sink
     source.runWith(MongoSink.insertOne(parallelism = 2, collection = numbersColl))
-    //#create-sink
+    //#insertOne
+  }
+
+  private class ParadoxSnippet2() {
+    //#insertMany
+    val source: Source[Seq[Document], NotUsed] = ???
+    source.runWith(MongoSink.insertMany(parallelism = 2, collection = numbersColl))
+    //#insertMany
+  }
+
+  private class ParadoxSnippet3() {
+    //#updateOne
+    import org.mongodb.scala.model.{Filters, Updates}
+
+    val source: Source[DocumentUpdate, NotUsed] = Source
+      .single(DocumentUpdate(filter = Filters.eq("id", 1), update = Updates.set("updateValue", 0)))
+
+    source.runWith(MongoSink.updateOne(2, numbersColl))
+    //#updateOne
+  }
+
+  private class ParadoxSnippet4() {
+    //#deleteOne
+    val source: Source[Bson, NotUsed] = Source.single(Filters.eq("id", 1))
+    source.runWith(MongoSink.deleteOne(2, numbersColl))
+    //#deleteOne
   }
 }

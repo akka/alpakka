@@ -71,7 +71,7 @@ class MongoSourceSpec
       //#create-source
 
       //#run-source
-      val rows = source.runWith(Sink.seq)
+      val rows: Future[Seq[Document]] = source.runWith(Sink.seq)
       //#run-source
 
       rows.futureValue.map(_.getInteger("_id")) must contain theSameElementsAs data
