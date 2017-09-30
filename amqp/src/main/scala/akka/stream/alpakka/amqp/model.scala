@@ -4,7 +4,9 @@
 
 package akka.stream.alpakka.amqp
 
-import com.rabbitmq.client.ExceptionHandler
+import java.util.concurrent.atomic.AtomicInteger
+
+import com.rabbitmq.client.{Address, Connection, ConnectionFactory, ExceptionHandler}
 
 /**
  * Internal API
@@ -126,7 +128,65 @@ object AmqpSinkSettings {
 /**
  * Only for internal implementations
  */
-sealed trait AmqpConnectionSettings
+sealed trait AmqpConnectionSettings {
+  def getConnection: Connection
+}
+
+final case class ReusableAmqpConnectionSettings(settings: AmqpConnectionSettings) extends AmqpConnectionSettings {
+  private var cachedConnection: Option[Connection] = None
+
+  override def getConnection = cachedConnection match {
+    case Some(connection) => connection
+    case None => {
+      val connection = settings.getConnection
+      cachedConnection = Some(connection)
+      connection
+    }
+  }
+
+  def releaseConnection = cachedConnection match {
+    case Some(connection) => {
+      if (connection.isOpen) connection.close()
+      cachedConnection = None
+    }
+    case None => Unit
+  }
+}
+
+final case class ReusableAmqpConnectionSettingsWithAutomaticRelease(settings: AmqpConnectionSettings)
+    extends AmqpConnectionSettings {
+  private val clients = new AtomicInteger(0)
+  private var cachedConnection: Option[Connection] = None
+
+  override def getConnection = cachedConnection match {
+    case Some(connection) => {
+      clients.incrementAndGet()
+      connection
+    }
+    case None => {
+      val connection = settings.getConnection
+      cachedConnection = Some(connection)
+      connection
+    }
+  }
+
+  def releaseConnection = cachedConnection match {
+    case Some(connection) => {
+      if (clients.decrementAndGet() == 0) {
+        if (connection.isOpen) connection.close()
+        cachedConnection = None
+      }
+    }
+    case None => Unit
+  }
+}
+
+/**
+ * Connects to a local AMQP broker at the default port with no password.
+ */
+case class LocalAmqpConnection() extends AmqpConnectionSettings {
+  override def getConnection = new ConnectionFactory().newConnection
+}
 
 /**
  * Connects to a local AMQP broker at the default port with no password.
@@ -137,14 +197,22 @@ case object DefaultAmqpConnection extends AmqpConnectionSettings {
    * Java API
    */
   def getInstance(): DefaultAmqpConnection.type = this
+
+  override def getConnection = new ConnectionFactory().newConnection
 }
 
-final case class AmqpConnectionUri(uri: String) extends AmqpConnectionSettings
+final case class AmqpConnectionUri(uri: String) extends AmqpConnectionSettings {
+  override def getConnection = {
+    val factory = new ConnectionFactory
+    factory.setUri(uri)
+    factory.newConnection
+  }
+}
 
 object AmqpConnectionUri {
 
   /**
-   * Java API:
+   * Java API
    */
   def create(uri: String): AmqpConnectionUri = AmqpConnectionUri(uri)
 }
@@ -201,12 +269,35 @@ final case class AmqpConnectionDetails(
     copy(exceptionHandler = Option(exceptionHandler))
 
   /**
-   * Java API:
+   * Java API
    */
   @annotation.varargs
   def withHostsAndPorts(hostAndPort: akka.japi.Pair[String, Int],
                         hostAndPorts: akka.japi.Pair[String, Int]*): AmqpConnectionDetails =
     copy(hostAndPortList = (hostAndPort +: hostAndPorts).map(_.toScala).toList)
+
+  override def getConnection: Connection = {
+    import scala.collection.JavaConverters._
+    val factory = new ConnectionFactory
+    credentials.foreach { credentials =>
+      val factory = new ConnectionFactory
+      factory.setUsername(credentials.username)
+      factory.setPassword(credentials.password)
+    }
+    virtualHost.foreach(factory.setVirtualHost)
+    sslProtocol.foreach(factory.useSslProtocol)
+    requestedHeartbeat.foreach(factory.setRequestedHeartbeat)
+    connectionTimeout.foreach(factory.setConnectionTimeout)
+    handshakeTimeout.foreach(factory.setHandshakeTimeout)
+    shutdownTimeout.foreach(factory.setShutdownTimeout)
+    networkRecoveryInterval.foreach(factory.setNetworkRecoveryInterval)
+    automaticRecoveryEnabled.foreach(factory.setAutomaticRecoveryEnabled)
+    topologyRecoveryEnabled.foreach(factory.setTopologyRecoveryEnabled)
+    exceptionHandler.foreach(factory.setExceptionHandler)
+
+    factory.newConnection(hostAndPortList.map(hp => new Address(hp._1, hp._2)).asJava)
+  }
+
 }
 
 object AmqpConnectionDetails {
@@ -215,7 +306,7 @@ object AmqpConnectionDetails {
     AmqpConnectionDetails(List((host, port)))
 
   /**
-   * Java API:
+   * Java API
    */
   def create(host: String, port: Int): AmqpConnectionDetails =
     AmqpConnectionDetails(host, port)
