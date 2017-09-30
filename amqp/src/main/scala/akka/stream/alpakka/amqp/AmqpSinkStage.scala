@@ -28,8 +28,7 @@ object AmqpSinkStage {
  * Each materialized sink will create one connection to the broker.
  */
 final class AmqpSinkStage(settings: AmqpSinkSettings)
-    extends GraphStageWithMaterializedValue[SinkShape[OutgoingMessage], Future[Done]]
-    with AmqpConnector { stage =>
+    extends GraphStageWithMaterializedValue[SinkShape[OutgoingMessage], Future[Done]] { stage =>
   import AmqpSinkStage._
 
   val in = Inlet[OutgoingMessage]("AmqpSink.in")
@@ -44,10 +43,6 @@ final class AmqpSinkStage(settings: AmqpSinkSettings)
       override val settings = stage.settings
       private val exchange = settings.exchange.getOrElse("")
       private val routingKey = settings.routingKey.getOrElse("")
-
-      override def connectionFactoryFrom(settings: AmqpConnectionSettings) = stage.connectionFactoryFrom(settings)
-      override def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings) =
-        stage.newConnection(factory, settings)
 
       override def whenConnected(): Unit = {
         val shutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
@@ -119,8 +114,7 @@ object AmqpReplyToSinkStage {
  * the queue named in the replyTo options of the message instead of from settings declared at construction.
  */
 final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings)
-    extends GraphStageWithMaterializedValue[SinkShape[OutgoingMessage], Future[Done]]
-    with AmqpConnector { stage =>
+    extends GraphStageWithMaterializedValue[SinkShape[OutgoingMessage], Future[Done]] { stage =>
   import AmqpReplyToSinkStage._
 
   val in = Inlet[OutgoingMessage]("AmqpReplyToSink.in")
@@ -133,10 +127,6 @@ final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings)
     val promise = Promise[Done]()
     (new GraphStageLogic(shape) with AmqpConnectorLogic {
       override val settings = stage.settings
-
-      override def connectionFactoryFrom(settings: AmqpConnectionSettings) = stage.connectionFactoryFrom(settings)
-      override def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings): Connection =
-        stage.newConnection(factory, settings)
 
       override def whenConnected(): Unit = {
         val shutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
