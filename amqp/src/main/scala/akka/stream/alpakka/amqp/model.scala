@@ -118,7 +118,7 @@ object AmqpSinkSettings {
   /**
    * Java API
    */
-  def create(): AmqpSinkSettings = AmqpSinkSettings.create(LocalAmqpConnection())
+  def create(): AmqpSinkSettings = AmqpSinkSettings.create(AmqpConnectionLocal())
 }
 
 sealed trait Declaration
