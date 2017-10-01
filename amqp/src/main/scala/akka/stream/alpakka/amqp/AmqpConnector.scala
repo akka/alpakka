@@ -80,7 +80,7 @@ private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
     settings.connectionSettings match {
       case ReusableAmqpConnectionSettings(_) => Unit
       case connectionSettings: ReusableAmqpConnectionSettingsWithAutomaticRelease =>
-        connectionSettings.releaseConnection
+        connectionSettings.releaseConnection()
       case _ => {
         if ((connection ne null) && connection.isOpen) connection.close()
       }
