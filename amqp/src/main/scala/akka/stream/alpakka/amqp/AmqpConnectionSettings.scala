@@ -81,16 +81,16 @@ final case class ReusableAmqpConnectionSettingsWithAutomaticRelease(settings: Am
 /**
  * Connects to a local AMQP broker at the default port with no password.
  */
-case class LocalAmqpConnection() extends AmqpConnectionSettings {
+case class AmqpConnectionLocal() extends AmqpConnectionSettings {
   override def getConnection = new ConnectionFactory().newConnection
 }
 
-object LocalAmqpConnection {
+object AmqpConnectionLocal {
 
   /**
    * Java API
    */
-  def create(): LocalAmqpConnection = LocalAmqpConnection()
+  def create(): AmqpConnectionLocal = AmqpConnectionLocal()
 }
 
 /**

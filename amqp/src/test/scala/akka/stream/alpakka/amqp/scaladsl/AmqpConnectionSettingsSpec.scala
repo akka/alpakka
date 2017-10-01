@@ -16,7 +16,7 @@ class AmqpConnectionSettingsSpec extends AmqpSpec {
     }
 
     "create a new connection per invocation of LocalAmqpConnection" in {
-      val connectionSettings = LocalAmqpConnection()
+      val connectionSettings = AmqpConnectionLocal()
       val connection1 = connectionSettings.getConnection
       val connection2 = connectionSettings.getConnection
       connection1 should not equal (connection2)
@@ -34,7 +34,9 @@ class AmqpConnectionSettingsSpec extends AmqpSpec {
     }
 
     "create a new connection per invocation of AmqpConnectionDetails" in {
+      //#connection-settings-declaration
       val connectionSettings = AmqpConnectionDetails(List(("localhost", 5672)))
+      //#connection-settings-declaration
       val connection1 = connectionSettings.getConnection
       val connection2 = connectionSettings.getConnection
       connection1 should not equal (connection2)
@@ -45,7 +47,7 @@ class AmqpConnectionSettingsSpec extends AmqpSpec {
 
   "The AMQP Reusable Connectors Settings" should {
     "reuse the same connection from LocalAmqpConnection" in {
-      val connectionSettings = ReusableAmqpConnectionSettings(LocalAmqpConnection())
+      val connectionSettings = ReusableAmqpConnectionSettings(AmqpConnectionLocal())
       val connection1 = connectionSettings.getConnection
       val connection2 = connectionSettings.getConnection
       connection1 should equal(connection2)
@@ -65,7 +67,9 @@ class AmqpConnectionSettingsSpec extends AmqpSpec {
     }
 
     "reuse the same connection from AmqpConnectionDetails" in {
+      //#reusable-connection-settings-declaration
       val connectionSettings = ReusableAmqpConnectionSettings(AmqpConnectionDetails(List(("localhost", 5672))))
+      //#reusable-connection-settings-declaration
       val connection1 = connectionSettings.getConnection
       val connection2 = connectionSettings.getConnection
       connection1 should equal(connection2)
@@ -77,7 +81,7 @@ class AmqpConnectionSettingsSpec extends AmqpSpec {
 
   "The AMQP Reusable Connectors Settings with automatic release" should {
     "reuse the same connection from LocalAmqpConnection and release it when the last client disconnects" in {
-      val connectionSettings = ReusableAmqpConnectionSettingsWithAutomaticRelease(LocalAmqpConnection())
+      val connectionSettings = ReusableAmqpConnectionSettingsWithAutomaticRelease(AmqpConnectionLocal())
       val connection1 = connectionSettings.getConnection
       val connection2 = connectionSettings.getConnection
       connection1 should equal(connection2)
@@ -104,8 +108,10 @@ class AmqpConnectionSettingsSpec extends AmqpSpec {
     }
 
     "reuse the same connection from AmqpConnectionDetails and release it when the last client disconnects" in {
+      //#reusable-connection-settings-with-automatic-release-declaration
       val connectionSettings =
         ReusableAmqpConnectionSettingsWithAutomaticRelease(AmqpConnectionDetails(List(("localhost", 5672))))
+      //#reusable-connection-settings-with-automatic-release-declaration
       val connection1 = connectionSettings.getConnection
       val connection2 = connectionSettings.getConnection
       connection1 should equal(connection2)
@@ -118,7 +124,7 @@ class AmqpConnectionSettingsSpec extends AmqpSpec {
     }
 
     "reuse the same connection from LocalAmqpConnection and release it if forced" in {
-      val connectionSettings = ReusableAmqpConnectionSettingsWithAutomaticRelease(LocalAmqpConnection())
+      val connectionSettings = ReusableAmqpConnectionSettingsWithAutomaticRelease(AmqpConnectionLocal())
       val connection1 = connectionSettings.getConnection
       val connection2 = connectionSettings.getConnection
       connection1 should equal(connection2)

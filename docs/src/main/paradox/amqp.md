@@ -33,6 +33,37 @@ Gradle
 
 ## Usage
 
+### Connecting to AMQP server
+
+All of the configuration classes as well as connector factories are under the @scaladoc[akka.stream.alpakka.amqp](akka.stream.alpakka.amqp.package) package.
+
+We currently support:
+* @scaladoc[AmqpConnectionLocal](akka.stream.alpakka.amqp.AmqpConnectionLocal) which connects to the default localhost
+* @scaladoc[AmqpConnectionUri](akka.stream.alpakka.amqp.AmqpConnectionUri) which connects to the given AMQP URI
+* @scaladoc[AmqpConnectionDetails](akka.stream.alpakka.amqp.AmqpConnectionDetails) which supports more fine-grained configuration
+
+Scala
+: @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectionSettingsSpec.scala) { #connection-settings-declaration }
+
+Java
+: @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectionSettingsTest.java) { #connection-settings-declaration }
+
+Any connection settings can be transformed into a @scaladoc[ReusableConnectionSettings](akka.stream.alpakka.amqp.ReusableConnectionSettings). Reusable connection settings will use the same connection for all clients. Please note that the connection created by a reusable connection settings is not closed automatically when a stream completes. You need to call the `releaseConnection` method whenever you are done with the connceection.
+
+Scala
+: @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectionSettingsSpec.scala) { #reusable-connection-settings-declaration }
+
+Java
+: @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectionSettingsTest.java) { #reusable-connection-settings-declaration }
+
+You can also use a @scaladoc[ReusableAmqpConnectionSettingsWithAutomaticRelease](akka.stream.alpakka.amqp.ReusableAmqpConnectionSettingsWithAutomaticRelease). Reusable connection settings with automatic release will automatically release the connection whenever the last client finish and re-open a new one if it's used again so you don't need to worry about closing the connection.
+
+Scala
+: @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectionSettingsSpec.scala) { #reusable-connection-settings-with-automatic-release-declaration }
+
+Java
+: @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectionSettingsTest.java) { #reusable-connection-settings-with-automatic-release-declaration }
+
 ### Sending messages to AMQP server
 
 First define a queue name and the declaration of the queue that the messages will be sent to.
@@ -43,7 +74,7 @@ Scala
 Java
 : @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { #queue-declaration }
 
-Here we used @scaladoc[QueueDeclaration](akka.stream.alpakka.amqp.QueueDeclaration) configuration class to create a queue declaration. All of the configuration classes as well as connector factories are under the @scaladoc[akka.stream.alpakka.amqp](akka.stream.alpakka.amqp.package) package.
+Here we used @scaladoc[QueueDeclaration](akka.stream.alpakka.amqp.QueueDeclaration) configuration class to create a queue declaration.
 
 Create a sink, that accepts and forwards @scaladoc[ByteString](akka.util.ByteString)s to the AMQP server.
 
@@ -138,28 +169,28 @@ Java
 Create a committable sink which returns 
 
 Scala
-: @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { //#create-source-withoutautoack }
+: @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { #create-source-withoutautoack }
 
 Java
-: @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { //#create-source-withoutautoack }
+: @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { #create-source-withoutautoack }
 
 Committable sources return @scaladoc[CommittableIncomingMessage](akka.stream.alpakka.amqp.CommittableIncomingMessage) which wraps the @scaladoc[IncomingMessage](akka.stream.alpakka.amqp.IncomingMessage) and exposes the methods ack and nack.
 
 Use ack to acknowledge the message back to RabbitMQ. Ack takes an optional boolean parameter `multiple` indicating whether you are acknowledging the individual message or all the messages up to it.
 
 Scala
-: @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { //#run-source-withoutautoack }
+: @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { #run-source-withoutautoack }
 
 Java
-: @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { //#run-source-withoutautoack }
+: @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { #run-source-withoutautoack }
 
 Use nack to reject a message. Apart from the `multiple` argument, nack takes another optional boolean parameter indicating whether the item should be requeued or not.
 
 Scala
-: @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { //#run-source-withoutautoack-and-nack }
+: @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { #run-source-withoutautoack-and-nack }
 
 Java
-: @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { //#run-source-withoutautoack-and-nack }
+: @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { #run-source-withoutautoack-and-nack }
 
 ### Running the example code
 

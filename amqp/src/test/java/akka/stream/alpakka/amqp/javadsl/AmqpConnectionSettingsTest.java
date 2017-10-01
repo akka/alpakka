@@ -5,14 +5,9 @@ package akka.stream.alpakka.amqp.javadsl;
 
 import static org.junit.Assert.*;
 
-import akka.japi.Pair;
 import akka.stream.alpakka.amqp.*;
 import com.rabbitmq.client.Connection;
 import org.junit.Test;
-import scala.Tuple2;
-import scala.collection.immutable.List;
-
-import java.util.Arrays;
 
 
 public class AmqpConnectionSettingsTest {
@@ -28,7 +23,7 @@ public class AmqpConnectionSettingsTest {
 
   @Test
   public void LocalAmqpConnectionCreatesNewConnection() throws Exception {
-    LocalAmqpConnection connectionSettings = new LocalAmqpConnection();
+    AmqpConnectionLocal connectionSettings = new AmqpConnectionLocal();
     Connection connection1 = connectionSettings.getConnection();
     Connection connection2 = connectionSettings.getConnection();
     assertNotEquals(connection1, connection2);
@@ -48,7 +43,9 @@ public class AmqpConnectionSettingsTest {
 
   @Test
   public void AmqpConnectionDetailsCreatesNewConnection() throws Exception {
-  AmqpConnectionDetails connectionSettings = AmqpConnectionDetails.create("localhost", 5672);
+    //#connection-settings-declaration
+    AmqpConnectionDetails connectionSettings = AmqpConnectionDetails.create("localhost", 5672);
+    //#connection-settings-declaration
     Connection connection1 = connectionSettings.getConnection();
     Connection connection2 = connectionSettings.getConnection();
     assertNotEquals(connection1, connection2);
@@ -58,7 +55,7 @@ public class AmqpConnectionSettingsTest {
 
   @Test
   public void ReusableLocalAmqpConnectionReusesConnection() throws Exception {
-    ReusableAmqpConnectionSettings connectionSettings = new ReusableAmqpConnectionSettings(new LocalAmqpConnection());
+    ReusableAmqpConnectionSettings connectionSettings = new ReusableAmqpConnectionSettings(new AmqpConnectionLocal());
     Connection connection1 = connectionSettings.getConnection();
     Connection connection2 = connectionSettings.getConnection();
     assertEquals(connection1, connection2);
@@ -80,7 +77,9 @@ public class AmqpConnectionSettingsTest {
 
   @Test
   public void ReusableAmqpConnectionDetailsReusesConnection() throws Exception {
+    //#reusable-connection-settings-declaration
     ReusableAmqpConnectionSettings connectionSettings = new ReusableAmqpConnectionSettings(AmqpConnectionDetails.create("localhost", 5672));
+    //#reusable-connection-settings-declaration
     Connection connection1 = connectionSettings.getConnection();
     Connection connection2 = connectionSettings.getConnection();
     assertEquals(connection1, connection2);
@@ -91,7 +90,7 @@ public class AmqpConnectionSettingsTest {
 
   @Test
   public void ReusableWithAutomaticReleaseLocalAmqpConnectionReusesConnection() throws Exception {
-    ReusableAmqpConnectionSettingsWithAutomaticRelease connectionSettings = new ReusableAmqpConnectionSettingsWithAutomaticRelease(new LocalAmqpConnection());
+    ReusableAmqpConnectionSettingsWithAutomaticRelease connectionSettings = new ReusableAmqpConnectionSettingsWithAutomaticRelease(new AmqpConnectionLocal());
     Connection connection1 = connectionSettings.getConnection();
     Connection connection2 = connectionSettings.getConnection();
     assertEquals(connection1, connection2);
@@ -119,7 +118,9 @@ public class AmqpConnectionSettingsTest {
 
   @Test
   public void ReusableWithAutomaticReleaseAmqpConnectionDetailsReusesConnection() throws Exception {
+    //#reusable-connection-settings-with-automatic-release-declaration
     ReusableAmqpConnectionSettingsWithAutomaticRelease connectionSettings = new ReusableAmqpConnectionSettingsWithAutomaticRelease(AmqpConnectionDetails.create("localhost", 5672));
+    //#reusable-connection-settings-with-automatic-release-declaration
     Connection connection1 = connectionSettings.getConnection();
     Connection connection2 = connectionSettings.getConnection();
     assertEquals(connection1, connection2);
@@ -133,7 +134,7 @@ public class AmqpConnectionSettingsTest {
 
   @Test
   public void ReusableWithAutomaticReleaseLocalAmqpConnectionReusesConnectionAndReleaseItIfForced() throws Exception {
-    ReusableAmqpConnectionSettingsWithAutomaticRelease connectionSettings = new ReusableAmqpConnectionSettingsWithAutomaticRelease(new LocalAmqpConnection());
+    ReusableAmqpConnectionSettingsWithAutomaticRelease connectionSettings = new ReusableAmqpConnectionSettingsWithAutomaticRelease(new AmqpConnectionLocal());
     Connection connection1 = connectionSettings.getConnection();
     Connection connection2 = connectionSettings.getConnection();
     assertEquals(connection1, connection2);
