@@ -11,6 +11,7 @@ import akka.stream.javadsl.Sink;
 import akka.testkit.JavaTestKit;
 import org.apache.http.HttpHost;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.message.BasicHeader;
 import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner;
 import org.elasticsearch.client.RestClient;
 import org.junit.AfterClass;
@@ -83,7 +84,8 @@ public class ElasticsearchTest {
     client.performRequest("POST",
     indexName + "/book",
     new HashMap<>(),
-    new StringEntity(String.format("{\"title\": \"%s\"}", title)));
+    new StringEntity(String.format("{\"title\": \"%s\"}", title)),
+    new BasicHeader("Content-Type", "application/json"));
   }
 
 
