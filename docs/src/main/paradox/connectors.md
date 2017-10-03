@@ -17,6 +17,7 @@
 * [FTP Connector](ftp.md)
 * [Google Cloud Pub/Sub Connector](google-cloud-pub-sub.md)
 * [HBase Connectors](hbase.md)
+* [IBM EventStore Connector](ibm-eventstore.md)
 * [IronMq Connectors](ironmq.md)
 * [JMS Connectors](jms.md)
 * [MongoDB Connector](mongodb.md)
