@@ -86,7 +86,7 @@ class BmcsStream(settings: BmcsSettings, credentials: BmcsCredentials)(implicit 
 
   /**
    *
-   * Returns a source of ByteString of the object in bmcs.
+   * Returns a source emitting the bytes of the requested object
    *
    * @param bucket     the bucket
    * @param objectName the object to download
@@ -117,8 +117,13 @@ class BmcsStream(settings: BmcsSettings, credentials: BmcsCredentials)(implicit 
   }
 
   /**
-   * Uploads a stream of ByteStrings to a specified location as a multipart upload.
-   */
+    * Uploads a stream of ByteStrings to a specified location as a multipart upload.
+    * @param bucket the bucket
+    * @param objectName object name
+    * @param chunkSize size of chunk. (doesn't attempt for exact size, this is a lower limit)
+    * @param chunkingParallelism Number of parts that are uploaded to the bucket in parallel.
+    * @return
+    */
   def multipartUpload(bucket: String,
                       objectName: String,
                       chunkSize: Int = MinChunkSize,

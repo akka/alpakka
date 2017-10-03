@@ -39,7 +39,7 @@ object BmcsSigner {
     *
     * For POST / GET requests the entity body will be materialized twice.
     * Object storage PUT requests are special and do not need the body hash.
-    * See required headers section of. 
+    * See required headers section of.
     * https://docs.us-phoenix-1.oraclecloud.com/Content/API/Concepts/signingrequests.htm
     *
     *
