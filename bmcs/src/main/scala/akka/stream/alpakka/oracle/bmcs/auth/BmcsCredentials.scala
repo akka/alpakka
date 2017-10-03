@@ -61,7 +61,7 @@ object BmcsCredentials {
           pemEncryptedPair.decryptKeyPair(decProv).getPrivateKeyInfo
         case privateKeyInfo: PrivateKeyInfo => privateKeyInfo
         case pemKeyPair: PEMKeyPair => pemKeyPair.getPrivateKeyInfo
-        case pubicKey: SubjectPublicKeyInfo =>
+        case publicKey: SubjectPublicKeyInfo =>
           throw new IllegalArgumentException("Public key provided instead of private key")
         case _ => throw new IllegalArgumentException("Private key must be in PEM format, was: " + obj.getClass)
       }
