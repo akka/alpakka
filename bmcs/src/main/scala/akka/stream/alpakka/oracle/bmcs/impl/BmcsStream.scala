@@ -3,8 +3,6 @@
  */
 package akka.stream.alpakka.oracle.bmcs.impl
 
-import java.nio.file.Paths
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -86,7 +84,11 @@ class BmcsStream(settings: BmcsSettings, credentials: BmcsCredentials)(implicit 
 
   /**
    *
-   * Returns a source emitting the bytes of the requested object
+   * Returns a source emitting the bytes of the requested object.
+   *
+   * The request out to BMCS is made when the source is materialized.
+   * Each materialization will make a new request to storage cloud.
+   * Fails with BMCSException.
    *
    * @param bucket     the bucket
    * @param objectName the object to download
