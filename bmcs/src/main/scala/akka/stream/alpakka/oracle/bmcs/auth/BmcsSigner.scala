@@ -34,22 +34,22 @@ object BmcsSigner {
   ).toMap
 
   /**
-    * Calculates the hash of the request entity body (except for PUT requests) and
-    * signs the hash. And adds the authorization header.
-    *
-    * For POST / GET requests the entity body will be materialized twice.
-    * Object storage PUT requests are special and do not need the body hash.
-    * See required headers section of.
-    * https://docs.us-phoenix-1.oraclecloud.com/Content/API/Concepts/signingrequests.htm
-    *
-    *
-    * @param request The request to add authorization signature to.
-    * @param credentials credentials
-    * @param algorithm algorithm used for signature.
-    * @param date date to use for the [Date] header
-    * @param mat materializer to use
-    * @return
-    */
+   * Calculates the hash of the request entity body (except for PUT requests) and
+   * signs the hash. And adds the authorization header.
+   *
+   * For POST / GET requests the entity body will be materialized twice.
+   * Object storage PUT requests are special and do not need the body hash.
+   * See required headers section of.
+   * https://docs.us-phoenix-1.oraclecloud.com/Content/API/Concepts/signingrequests.htm
+   *
+   *
+   * @param request The request to add authorization signature to.
+   * @param credentials credentials
+   * @param algorithm algorithm used for signature.
+   * @param date date to use for the [Date] header
+   * @param mat materializer to use
+   * @return
+   */
   def signedRequest(request: HttpRequest,
                     credentials: BmcsCredentials,
                     algorithm: SignatureAlgorithm = algorithm,

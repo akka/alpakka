@@ -5,7 +5,7 @@ package akka.stream.alpakka.oracle.bmcs.scaladsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpResponse}
+import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.stream.Materializer
 import akka.stream.alpakka.oracle.bmcs.BmcsSettings

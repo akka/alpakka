@@ -10,10 +10,7 @@ import com.typesafe.config.Config
 
 final case class Proxy(host: String, port: Int, scheme: String)
 
-final case class BmcsSettings(bufferType: BufferType,
-                              proxy: Option[Proxy],
-                              region: String,
-                              namespace: String) {
+final case class BmcsSettings(bufferType: BufferType, proxy: Option[Proxy], region: String, namespace: String) {
 
   override def toString: String =
     s"BmcsSettings($bufferType,$proxy,$region)"
@@ -40,8 +37,8 @@ object DiskBufferType {
 object BmcsSettings {
 
   /**
-    * Scala API: Creates [[BmcsSettings]] from the [[com.typesafe.config.Config]] attached to an [[akka.actor.ActorSystem]].
-    */
+   * Scala API: Creates [[BmcsSettings]] from the [[com.typesafe.config.Config]] attached to an [[akka.actor.ActorSystem]].
+   */
   def apply()(implicit system: ActorSystem): BmcsSettings = apply(system.settings.config)
 
   def apply(config: Config): BmcsSettings = {
@@ -59,8 +56,8 @@ object BmcsSettings {
         val scheme = if (config.getBoolean("akka.stream.alpakka.bmcs.proxy.secure")) "https" else "http"
         Some(
           Proxy(config.getString("akka.stream.alpakka.bmcs.proxy.host"),
-            config.getInt("akka.stream.alpakka.bmcs.proxy.port"),
-            scheme)
+                config.getInt("akka.stream.alpakka.bmcs.proxy.port"),
+                scheme)
         )
       } else None
     }
@@ -72,13 +69,13 @@ object BmcsSettings {
   }
 
   /**
-    * Java API: Creates [[BmcsSettings]] from the [[Config]] attached to an [[ActorSystem]].
-    */
+   * Java API: Creates [[BmcsSettings]] from the [[Config]] attached to an [[ActorSystem]].
+   */
   def create(system: ActorSystem): BmcsSettings = apply()(system)
 
   /**
-    * Java API: Creates [[BmcsSettings]] from a [[Config]].
-    */
+   * Java API: Creates [[BmcsSettings]] from a [[Config]].
+   */
   def create(config: Config) = apply(config)
 
 }
