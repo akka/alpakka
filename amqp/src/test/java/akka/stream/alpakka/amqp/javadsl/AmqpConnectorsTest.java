@@ -8,6 +8,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -30,8 +31,6 @@ import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.JavaTestKit;
 import akka.util.ByteString;
-import scala.Option;
-import scala.Some;
 import scala.collection.JavaConverters;
 import scala.concurrent.duration.Duration;
 
@@ -131,7 +130,7 @@ public class AmqpConnectorsTest {
     );
 
     amqpSource.map(b ->
-        new OutgoingMessage(b.bytes().concat(ByteString.fromString("a")), false, false, Some.apply(b.properties()), Option.apply(null))
+        new OutgoingMessage(b.bytes().concat(ByteString.fromString("a")), false, false, Optional.of(b.properties()), Optional.empty())
       ).runWith(amqpSink, materializer);
 
     probe.request(5)
@@ -264,7 +263,7 @@ public class AmqpConnectorsTest {
     TestSubscriber.Probe<IncomingMessage> probe =
             Source.from(input)
                     .map(ByteString::fromString)
-                    .map(bytes -> new OutgoingMessage(bytes, false, false, Option.apply(null), Option.apply(null)))
+                    .map(bytes -> new OutgoingMessage(bytes, false, false, Optional.empty(), Optional.empty()))
                     .via(ampqRpcFlow)
                     .runWith(TestSink.probe(system), materializer);
 
@@ -273,7 +272,7 @@ public class AmqpConnectorsTest {
     );
 
     amqpSource.map(b ->
-            new OutgoingMessage(b.message().bytes(), false, false, Some.apply(b.message().properties()), Option.apply(null))
+            new OutgoingMessage(b.message().bytes(), false, false, Optional.of(b.message().properties()), Optional.empty())
     ).runWith(amqpSink, materializer);
 
     List<IncomingMessage> probeResult = JavaConverters.seqAsJavaListConverter(probe.toStrict(Duration.create(5, TimeUnit.SECONDS))).asJava();
@@ -362,7 +361,7 @@ public class AmqpConnectorsTest {
         final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
         final List<String> routingKeys = input.stream().map(s -> "key." + s).collect(Collectors.toList());
         Source.from(input)
-                .map(s -> new OutgoingMessage(ByteString.fromString(s), false, false, Option.apply(null), Some.apply("key." + s)))
+                .map(s -> new OutgoingMessage(ByteString.fromString(s), false, false, Optional.empty(), Optional.of("key." + s)))
                 .runWith(amqpSink, materializer);
 
         final List<IncomingMessage> result =
