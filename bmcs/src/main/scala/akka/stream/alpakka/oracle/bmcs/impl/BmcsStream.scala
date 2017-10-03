@@ -291,12 +291,8 @@ class BmcsStream(settings: BmcsSettings, credentials: BmcsCredentials)(implicit 
 
   private def getChunkBuffer(chunkSize: Int) = settings.bufferType match {
     case MemoryBufferType => new MemoryBuffer(chunkSize * 2)
-    case DiskBufferType =>
-      new DiskBuffer(1, chunkSize * 2, getDiskBufferPath) //set max materializations to 2 if we need sha of content body in future.
+    case d @ DiskBufferType(_) =>
+      new DiskBuffer(1, chunkSize * 2, d.path) //set max materializations to 2 if we need sha of content body in future.
   }
 
-  private val getDiskBufferPath = settings.diskBufferPath match {
-    case "" => None
-    case s => Some(Paths.get(s))
-  }
 }

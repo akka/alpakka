@@ -3,54 +3,64 @@
  */
 package akka.stream.alpakka.oracle.bmcs
 
+import java.nio.file.{Path, Paths}
+
 import akka.actor.ActorSystem
-import akka.stream.alpakka.oracle.bmcs.auth.BmcsCredentials
 import com.typesafe.config.Config
 
 final case class Proxy(host: String, port: Int, scheme: String)
 
 final case class BmcsSettings(bufferType: BufferType,
-                              diskBufferPath: String,
                               proxy: Option[Proxy],
                               region: String,
                               namespace: String) {
 
   override def toString: String =
-    s"BmcsSettings($bufferType$diskBufferPath,$proxy,$region)"
+    s"BmcsSettings($bufferType,$proxy,$region)"
 }
 
-sealed trait BufferType
+sealed trait BufferType {
+  def path: Option[Path]
+}
 
 case object MemoryBufferType extends BufferType {
   def getInstance: BufferType = MemoryBufferType
+
+  override def path: Option[Path] = None
 }
 
-case object DiskBufferType extends BufferType {
-  def getInstance: BufferType = DiskBufferType
+case class DiskBufferType(filePath: Path) extends BufferType {
+  override val path: Option[Path] = Some(filePath).filterNot(_.toString.isEmpty)
+}
+
+object DiskBufferType {
+  def create(filePath: Path): DiskBufferType = DiskBufferType(filePath)
 }
 
 object BmcsSettings {
 
   /**
-   * Scala API: Creates [[BmcsSettings]] from the [[com.typesafe.config.Config]] attached to an [[akka.actor.ActorSystem]].
-   */
+    * Scala API: Creates [[BmcsSettings]] from the [[com.typesafe.config.Config]] attached to an [[akka.actor.ActorSystem]].
+    */
   def apply()(implicit system: ActorSystem): BmcsSettings = apply(system.settings.config)
 
   def apply(config: Config): BmcsSettings = {
 
     val bufferType = config.getString("akka.stream.alpakka.bmcs.buffer") match {
       case "memory" => MemoryBufferType
-      case "disk" => DiskBufferType
+      case "disk" =>
+        val diskBufferPath = config.getString("akka.stream.alpakka.bmcs.disk-buffer-path")
+        DiskBufferType(Paths.get(diskBufferPath))
       case _ => throw new IllegalArgumentException("Buffer type must be 'memory' or 'disk'")
     }
-    val diskBufferPath = config.getString("akka.stream.alpakka.bmcs.disk-buffer-path")
+//    val diskBufferPath = config.getString("akka.stream.alpakka.bmcs.disk-buffer-path")
     val proxy = {
       if (config.getString("akka.stream.alpakka.bmcs.proxy.host") != "") {
         val scheme = if (config.getBoolean("akka.stream.alpakka.bmcs.proxy.secure")) "https" else "http"
         Some(
           Proxy(config.getString("akka.stream.alpakka.bmcs.proxy.host"),
-                config.getInt("akka.stream.alpakka.bmcs.proxy.port"),
-                scheme)
+            config.getInt("akka.stream.alpakka.bmcs.proxy.port"),
+            scheme)
         )
       } else None
     }
@@ -58,17 +68,17 @@ object BmcsSettings {
 
     val namespace = config.getString("akka.stream.alpakka.bmcs.default-namespace")
 
-    BmcsSettings(bufferType, diskBufferPath, proxy, region, namespace)
+    BmcsSettings(bufferType, proxy, region, namespace)
   }
 
   /**
-   * Java API: Creates [[BmcsSettings]] from the [[Config]] attached to an [[ActorSystem]].
-   */
+    * Java API: Creates [[BmcsSettings]] from the [[Config]] attached to an [[ActorSystem]].
+    */
   def create(system: ActorSystem): BmcsSettings = apply()(system)
 
   /**
-   * Java API: Creates [[BmcsSettings]] from a [[Config]].
-   */
+    * Java API: Creates [[BmcsSettings]] from a [[Config]].
+    */
   def create(config: Config) = apply(config)
 
 }
