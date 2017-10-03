@@ -31,7 +31,7 @@ class BmcsSignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpe
   val passphrase = "adityag"
   val keyFingerprint = "b4:97:75:d0:2a:40:1f:5e:66:a3:f4:03:9a:ff:a8:8a"
 
-  val credentials: BmcsCredentials = BmcsCredentials(userOcid, tenancyOcid, keyPath, Some(passphrase), keyFingerprint)
+  val credentials: BmcsCredentials = BasicCredentials(userOcid, tenancyOcid, keyPath, Some(passphrase), keyFingerprint)
 
   "BmcsSigner" should "sign a GET request correctly " in {
     val req = HttpRequest(HttpMethods.GET)

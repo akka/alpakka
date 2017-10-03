@@ -16,7 +16,7 @@ class BmcsCredentialsSpec extends FlatSpecLike with Matchers with ScalaFutures {
     val keyFile: String =
       "./bmcs/src/test/resources/oci_api_key.pem"
 
-    val credentials: BmcsCredentials = BmcsCredentials("", "", keyPath = keyFile, Some("adityag"), "")
+    val credentials: BmcsCredentials = BasicCredentials("", "", keyPath = keyFile, Some("adityag"), "")
     //TODO: find better way to ensure key was read.
     credentials.rsaPrivateKey.hashCode should equal(543210)
   }

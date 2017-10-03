@@ -11,9 +11,9 @@ import akka.stream.Materializer
 import akka.stream.alpakka.oracle.bmcs.BmcsSettings
 import akka.stream.alpakka.oracle.bmcs.auth.BmcsCredentials
 import akka.stream.alpakka.oracle.bmcs.impl._
-import akka.stream.alpakka.s3.scaladsl.S3Client.MinChunkSize
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Future
 
@@ -42,6 +42,18 @@ object MultipartUploadResult {
     new MultipartUploadResult(r.bucket, r.objectName, r.etag)
 }
 
+object BmcsClient {
+  val MinChunkSize: Int = 5242880
+
+  def apply(cred: BmcsCredentials)(implicit system: ActorSystem, mat: Materializer): BmcsClient =
+    new BmcsClient(BmcsSettings(ConfigFactory.load()), cred)
+
+  def apply(cred: BmcsCredentials, settings: BmcsSettings)(implicit system: ActorSystem,
+                                                           mat: Materializer): BmcsClient =
+    new BmcsClient(settings, cred)
+
+}
+
 final class BmcsClient(val settings: BmcsSettings, val cred: BmcsCredentials)(implicit system: ActorSystem,
                                                                               mat: Materializer) {
 
@@ -59,6 +71,7 @@ final class BmcsClient(val settings: BmcsSettings, val cred: BmcsCredentials)(im
   /**
    * Will return a source of object metadata for a given bucket with optional prefix.
    * This will automatically page through all keys with the given parameters.
+   *
    * @param prefix Prefix of the keys you want to list under passed bucket
    * @return Source of object metadata
    */
@@ -67,7 +80,7 @@ final class BmcsClient(val settings: BmcsSettings, val cred: BmcsCredentials)(im
 
   def multipartUpload(bucket: String,
                       objectName: String,
-                      chunkSize: Int = MinChunkSize,
+                      chunkSize: Int = BmcsClient.MinChunkSize,
                       chunkingParallelism: Int = 4): Sink[ByteString, Future[MultipartUploadResult]] =
     impl
       .multipartUpload(bucket, objectName, chunkSize, chunkingParallelism)

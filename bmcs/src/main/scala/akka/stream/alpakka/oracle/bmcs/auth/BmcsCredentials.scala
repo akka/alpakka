@@ -9,11 +9,12 @@ import java.security.interfaces.RSAPrivateKey
 
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
-import org.bouncycastle.openssl.{PEMEncryptedKeyPair, PEMKeyPair, PEMParser}
 import org.bouncycastle.openssl.jcajce.{JcaPEMKeyConverter, JcePEMDecryptorProviderBuilder}
+import org.bouncycastle.openssl.{PEMEncryptedKeyPair, PEMKeyPair, PEMParser}
 
 sealed trait BmcsCredentials {
   def rsaPrivateKey: RSAPrivateKey
+
   def keyId: String
 }
 
@@ -25,7 +26,7 @@ final case class BasicCredentials(userOcid: String,
   val keyId: String = s"$tenancyOcid/$userOcid/$keyFingerprint"
 }
 
-object BmcsCredentials {
+object BasicCredentials {
 
   private val converter = new JcaPEMKeyConverter
 
@@ -51,6 +52,8 @@ object BmcsCredentials {
       val keyStream = new FileInputStream(keyPath)
       val keyReader = new PEMParser(new InputStreamReader(keyStream, StandardCharsets.UTF_8))
       val obj = keyReader.readObject
+      keyReader.close()
+      keyStream.close()
       val keyInfo: PrivateKeyInfo = obj match {
         case pemEncryptedPair: PEMEncryptedKeyPair =>
           val password = passphrase match {
@@ -66,5 +69,16 @@ object BmcsCredentials {
         case _ => throw new IllegalArgumentException("Private key must be in PEM format, was: " + obj.getClass)
       }
       converter.getPrivateKey(keyInfo).asInstanceOf[RSAPrivateKey]
+    }
+
+  def create(userOcid: String,
+             tenancyOcid: String,
+             keyPath: String,
+             passphrase: String,
+             keyFingerprint: String): BmcsCredentials =
+    if (passphrase.isEmpty) {
+      BasicCredentials(userOcid, tenancyOcid, keyPath, None, keyFingerprint)
+    } else {
+      BasicCredentials(userOcid, tenancyOcid, keyPath, Some(passphrase), keyFingerprint)
     }
 }

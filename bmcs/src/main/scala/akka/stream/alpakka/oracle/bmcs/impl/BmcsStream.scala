@@ -10,7 +10,7 @@ import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.http.scaladsl.model.{RequestEntity, _}
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
-import akka.stream.alpakka.oracle.bmcs.{BmcsException, BmcsSettings, DiskBufferType, MemoryBufferType}
+import akka.stream.alpakka.oracle.bmcs._
 import akka.stream.Materializer
 import akka.stream.alpakka.oracle.bmcs.auth.{BmcsCredentials, BmcsSigner}
 import akka.stream.alpakka.oracle.bmcs.scaladsl.ListObjectsResultContents

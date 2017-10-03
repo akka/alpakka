@@ -45,8 +45,13 @@ object MultipartUploadResult {
 }
 
 object BmcsClient {
+  val MinChunkSize: Int = 5242880
+
   def create(credentials: BmcsCredentials, system: ActorSystem, mat: Materializer): BmcsClient =
-    new BmcsClient(BmcsSettings(ConfigFactory.load()), credentials, system, mat)
+    BmcsClient.create(BmcsSettings(ConfigFactory.load()), credentials, system, mat)
+
+  def create(settings: BmcsSettings, cred: BmcsCredentials, system: ActorSystem, mat: Materializer): BmcsClient =
+    new BmcsClient(settings, cred, system, mat)
 }
 
 final class BmcsClient(val settings: BmcsSettings, val cred: BmcsCredentials, system: ActorSystem, mat: Materializer) {
@@ -85,7 +90,7 @@ final class BmcsClient(val settings: BmcsSettings, val cred: BmcsCredentials, sy
 
   def multipartUpload(bucket: String,
                       objectName: String,
-                      chunkSize: Int,
+                      chunkSize: Int = BmcsClient.MinChunkSize,
                       chunkingParallelism: Int = 4): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     impl
       .multipartUpload(bucket, objectName, chunkSize, chunkingParallelism)

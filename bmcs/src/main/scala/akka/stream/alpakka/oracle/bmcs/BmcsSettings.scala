@@ -36,6 +36,11 @@ object DiskBufferType {
 
 object BmcsSettings {
 
+  def apply(region: String, namespace: String, bufferType: BufferType = MemoryBufferType)(
+      implicit config: Config
+  ): BmcsSettings =
+    apply(config).copy(region = region, namespace = namespace, bufferType = bufferType)
+
   /**
    * Scala API: Creates [[BmcsSettings]] from the [[com.typesafe.config.Config]] attached to an [[akka.actor.ActorSystem]].
    */
@@ -77,5 +82,18 @@ object BmcsSettings {
    * Java API: Creates [[BmcsSettings]] from a [[Config]].
    */
   def create(config: Config) = apply(config)
+
+  /**
+   * Java API: Creates [[BmcsSettings]] from a [[Config]] and overrides region namespace and bufferType.
+   */
+  def create(region: String, namespace: String, bufferType: BufferType, config: Config) =
+    apply(region, namespace, bufferType)(config)
+
+  /**
+   * Java API: Creates [[BmcsSettings]] with no proxy. Should be used as default in java.
+   *
+   */
+  def create(region: String, namespace: String, bufferType: BufferType) =
+    BmcsSettings(region = region, namespace = namespace, bufferType = bufferType, proxy = None)
 
 }
