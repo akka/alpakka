@@ -46,7 +46,6 @@ object BasicCredentials {
             keyFingerprint: String): BmcsCredentials =
     BasicCredentials(userOcid, tenancyOcid, privateKey, keyFingerprint)
 
-  //TODO: use scala ARM to close the stream when done.
   def fromPemFile(keyPath: String, passphrase: Option[String]): RSAPrivateKey =
     try {
       val keyStream = new FileInputStream(keyPath)
