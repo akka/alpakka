@@ -4,33 +4,12 @@ The google cloud pub/sub connector provides a way to connect to google clouds ma
 
 ## Artifacts
 
-sbt
-:   @@@vars
-    ```scala
-    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-google-cloud-pub-sub" % "$version$"
-    ```
-    @@@
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-google-cloud-pub-sub_$scalaBinaryVersion$
+  version=$version$
+}
 
-Maven
-:   @@@vars
-    ```xml
-    <dependency>
-      <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-google-cloud-pub-sub_$scalaBinaryVersion$</artifactId>
-      <version>$version$</version>
-    </dependency>
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```gradle
-    dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-google-cloud-pub-sub_$scalaBinaryVersion$", version: "$version$"
-    }
-    ```
-    @@@
-                                                                                                                          
 ## Usage
 
 Prepare your credentials for access to google cloud pub/sub.

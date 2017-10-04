@@ -6,32 +6,11 @@ For more information about Elasticsearch please visit the [official documentatio
 
 ## Artifacts
 
-sbt
-:   @@@vars
-    ```scala
-    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-elasticsearch" % "$version$"
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```xml
-    <dependency>
-      <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-elasticsearch_$scala.binaryVersion$</artifactId>
-      <version>$version$</version>
-    </dependency>
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```gradle
-    dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-elasticsearch_$scala.binaryVersion$", version: "$version$"
-    }
-    ```
-    @@@
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-elasticsearch_$scalaBinaryVersion$
+  version=$version$
+}
 
 ## Usage
 
@@ -55,9 +34,9 @@ This is all preparation that we are going to need.
 
 ### JsObject message
 
-Now we can stream messages which contains spray-json's `JsObject` (in Scala) or `java.util.Map<String, Object>` (in Java) 
+Now we can stream messages which contains spray-json's `JsObject` (in Scala) or `java.util.Map<String, Object>` (in Java)
 from or to Elasticsearch where we have access to by providing the `RestClient` to the
-@scaladoc[ElasticsearchSource](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSource$) or the 
+@scaladoc[ElasticsearchSource](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSource$) or the
 @scaladoc[ElasticsearchSink](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSink$).
 
 Scala
@@ -69,7 +48,7 @@ Java
 
 ### Typed messages
 
-Also, it's possible to stream messages which contains any classes. In Scala, spray-json is used for JSON conversion, 
+Also, it's possible to stream messages which contains any classes. In Scala, spray-json is used for JSON conversion,
 so defining the mapped class and `JsonFormat` for it is necessary. In Java, Jackson is used, so just define the mapped class.
 
 Scala
