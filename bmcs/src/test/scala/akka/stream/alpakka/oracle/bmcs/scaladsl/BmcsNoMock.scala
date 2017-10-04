@@ -42,8 +42,8 @@ class BmcsNoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with 
   val userOcid = "ocid1.user.oc1..aaaaaaaaalwxriuznfhohggk7ejii6lpwo7mebuldxh455hiesnowaoaksyq"
   val keyFingerprint = "cb:17:e0:45:d0:24:d3:ff:be:ee:1b:0e:f8:2c:58:27"
   val tenancyOcid = "ocid1.tenancy.oc1..aaaaaaaa6gtmn46bketftho3sqcgrlvdfsenqemqy3urkbthlpkos54a6wsa"
-  val keyPath = "SOME_KEY_PATH"
-  val passphrase: Option[String] = Some("aditya")
+  val keyPath = "./bmcs/src/test/resources/oci_api_key.pem"
+  val passphrase: Option[String] = Some("adityag")
   val cred = BasicCredentials(userOcid, tenancyOcid, keyPath, passphrase, keyFingerprint)
   val bucket = "CEGBU_Prime"
 
