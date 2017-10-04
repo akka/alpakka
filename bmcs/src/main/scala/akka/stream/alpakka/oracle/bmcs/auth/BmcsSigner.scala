@@ -113,16 +113,14 @@ object BmcsSigner {
 
     // Header name and value are separated with ": " and each (name, value)
     // pair is separated with "\n"
-    // Use the order from requiredHeaders, which must match the order
-    // when creating the authorization header
     val headerNamesAndValues = headersToSign.map(h => (h.lowercaseName, h.value))
-    //for testing i need to put headers in specific order for now.
     val stringToSign = headerNamesAndValues
       .map {
         case (key, value) => s"$key: $value"
       }
       .mkString("\n")
 
+    //the order of headers in header parameter in auth header needs to match the order of headers in string to sign. .
     SignatureParts(stringToSign, headerOrder = headerNamesAndValues.map(_._1).mkString(" "))
   }
 

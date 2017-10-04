@@ -13,7 +13,7 @@ final case class Proxy(host: String, port: Int, scheme: String)
 final case class BmcsSettings(bufferType: BufferType, proxy: Option[Proxy], region: String, namespace: String) {
 
   override def toString: String =
-    s"BmcsSettings($bufferType,$proxy,$region)"
+    s"BmcsSettings($bufferType,$proxy,$region,$namespace)"
 }
 
 sealed trait BufferType {
