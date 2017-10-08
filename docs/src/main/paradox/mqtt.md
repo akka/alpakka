@@ -40,8 +40,8 @@ Java
 
 This source has a materialized value (@scaladoc[Future](scala.concurrent.Future) in Scala API and @extref[CompletionStage](java-api:java/util/concurrent/CompletionStage) in Java API) which is completed when the subscription to the MQTT broker has been completed.
 
-MQTT automatically acknowledges messages back to the server once they are passed downstream. The atLeastOnce source allow users to acknowledge the messages anywhere downstream.
-Please note that for manual acks to work CleanSession` should be set to false and MqttQoS should be AtLeastOnce.
+MQTT automatically acknowledges messages back to the server once they are passed downstream. The `atLeastOnce` source allow users to acknowledge the messages anywhere downstream.
+Please note that for manual acks to work `CleanSession` should be set to false and `MqttQoS` should be `AtLeastOnce`.
 
 Scala
 : @@snip (../../../../mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttSourceSpec.scala) { #create-source-with-manualacks }
@@ -49,7 +49,7 @@ Scala
 Java
 : @@snip (../../../../mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #create-source-with-manualacks }
 
-The atLeastOnce source returns CommittableMessage so you can acknowledge them by calling `messageArrivedComplete`.
+The `atLeastOnce` source returns @scaladoc[MqttCommittableMessage](akka.stream.alpakka.mqtt.scaladsl.MqttCommittableMessage) so you can acknowledge them by calling `messageArrivedComplete`.
 
 Scala
 : @@snip (../../../../mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttSourceSpec.scala) { #run-source-with-manualacks }
