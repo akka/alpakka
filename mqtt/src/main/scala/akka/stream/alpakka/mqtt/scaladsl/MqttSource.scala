@@ -15,6 +15,7 @@ object MqttSource {
   /**
    * Scala API: create an [[MqttSource]] with a provided bufferSize.
    */
+  @deprecated("use atMostOnce instead", "0.14")
   def apply(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessage, Future[Done]] =
     Source.maybe.viaMat(
       MqttFlow(settings, bufferSize, qos = MqttQoS.AtLeastOnce)

@@ -14,6 +14,7 @@ object MqttSource {
   /**
    * Java API: create an [[MqttSource]] with a provided bufferSize.
    */
+  @deprecated("use atMostOnce instead", "0.14")
   def create(settings: MqttSourceSettings,
              bufferSize: Int): akka.stream.javadsl.Source[MqttMessage, CompletionStage[Done]] =
     atMostOnce(settings, bufferSize)
