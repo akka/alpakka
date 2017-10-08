@@ -53,6 +53,45 @@ public class MqttSourceTest {
   }
 
   @Test
+  public void publishAndConsumeWithoutAutoAck() throws Exception {
+    final String topic = "source-test/topic1";
+    final MqttConnectionSettings baseConnectionSettings = MqttConnectionSettings.create(
+            "tcp://localhost:1883",
+            "test-java-client",
+            new MemoryPersistence()
+    );
+
+    MqttConnectionSettings sourceSettings = baseConnectionSettings.withClientId("source-spec/source");
+    MqttConnectionSettings sinkSettings = baseConnectionSettings.withClientId("source-spec/sink");
+
+    final Sink<MqttMessage, CompletionStage<Done>> mqttSink = MqttSink.create(sinkSettings, MqttQoS.atLeastOnce());
+    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
+    Source.from(input).map(s -> new MqttMessage(topic, ByteString.fromString(s))).runWith(mqttSink, materializer);
+
+    //#create-source-with-manualacks
+    MqttConnectionSettings connectionSettings = sourceSettings.withCleanSession(false);
+    MqttSourceSettings mqttSourceSettings = MqttSourceSettings.create(connectionSettings)
+            .withSubscriptions(Pair.create(topic, MqttQoS.atLeastOnce()));
+    final Source<MqttCommittableMessage, CompletionStage<Done>> mqttSource = MqttSource.atLeastOnce(mqttSourceSettings, 10);
+    //#create-source-with-manualacks
+
+    final CompletionStage<List<MqttCommittableMessage>> unackedResult = mqttSource
+            .take(input.size())
+            .runWith(Sink.seq(), materializer);
+    assertEquals(input, unackedResult.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.message().payload().utf8String()).collect(Collectors.toList()));
+
+    //#run-source-with-manualacks
+    final CompletionStage<List<MqttMessage>> result =
+            mqttSource
+                    .mapAsync(1, cm -> cm.messageArrivedComplete().thenApply(unused -> cm.message()))
+                    .take(input.size())
+                    .runWith(Sink.seq(), materializer);
+    //#run-source-with-manualacks
+
+    assertEquals(input, result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.payload().utf8String()).collect(Collectors.toList()));
+  }
+
+  @Test
   public void receiveFromMultipleTopics() throws Exception {
     //#create-connection-settings
     final MqttConnectionSettings connectionSettings = MqttConnectionSettings.create(
@@ -105,5 +144,4 @@ public class MqttSourceTest {
         .collect(Collectors.toSet()),
       result.second().toCompletableFuture().get(3, TimeUnit.SECONDS).stream().collect(Collectors.toSet()));
   }
-
 }

@@ -23,4 +23,22 @@ object MqttFlow {
       .mapMaterializedValue(_.toJava)
       .asJava
   }
+
+  def atMostOnce(settings: MqttSourceSettings,
+                 bufferSize: Int,
+                 qos: MqttQoS): akka.stream.javadsl.Flow[MqttMessage, MqttMessage, CompletionStage[Done]] = {
+    import scala.compat.java8.FutureConverters._
+    akka.stream.alpakka.mqtt.scaladsl.MqttFlow.atMostOnce(settings, bufferSize, qos).mapMaterializedValue(_.toJava).asJava
+  }
+
+  def atLeastOnce(settings: MqttSourceSettings,
+                  bufferSize: Int,
+                  qos: MqttQoS): akka.stream.javadsl.Flow[MqttMessage, MqttCommittableMessage, CompletionStage[Done]] = {
+    import scala.compat.java8.FutureConverters._
+    akka.stream.alpakka.mqtt.scaladsl.MqttFlow
+      .atLeastOnce(settings, bufferSize, qos)
+      .map(cm => cm.asJava)
+      .mapMaterializedValue(_.toJava)
+      .asJava
+  }
 }

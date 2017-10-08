@@ -9,6 +9,7 @@ import java.util.concurrent.Semaphore
 import akka.Done
 import akka.stream._
 import akka.stream.stage._
+import akka.stream.alpakka.mqtt.scaladsl.MqttCommittableMessage
 import org.eclipse.paho.client.mqttv3.{IMqttAsyncClient, IMqttToken, MqttMessage => PahoMqttMessage}
 
 import scala.collection.mutable
@@ -19,13 +20,13 @@ object MqttFlowStage {
   final object NoClientException extends Exception("No MQTT client.")
 }
 
-final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, qos: MqttQoS)
-    extends GraphStageWithMaterializedValue[FlowShape[MqttMessage, MqttMessage], Future[Done]] {
+final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, qos: MqttQoS, manualAcks: Boolean = false)
+    extends GraphStageWithMaterializedValue[FlowShape[MqttMessage, MqttCommittableMessage], Future[Done]] {
   import MqttFlowStage.NoClientException
   import MqttConnectorLogic._
 
   private val in = Inlet[MqttMessage](s"MqttFlow.in")
-  private val out = Outlet[MqttMessage](s"MqttFlow.out")
+  private val out = Outlet[MqttCommittableMessage](s"MqttFlow.out")
   override val shape: Shape = FlowShape.of(in, out)
   override protected def initialAttributes: Attributes = Attributes.name("MqttFlow")
 
@@ -33,7 +34,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, q
     val subscriptionPromise = Promise[Done]
 
     (new GraphStageLogic(shape) with MqttConnectorLogic {
-      private val queue = mutable.Queue[MqttMessage]()
+      private val queue = mutable.Queue[MqttCommittableMessage]()
 
       private val mqttSubscriptionCallback: Try[IMqttToken] => Unit = { conn =>
         subscriptionPromise.complete(conn.map { _ =>
@@ -46,7 +47,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, q
 
       private var mqttClient: Option[IMqttAsyncClient] = None
 
-      private val onMessage = getAsyncCallback[MqttMessage] { message =>
+      private val onMessage = getAsyncCallback[MqttCommittableMessage] { message =>
         require(queue.size <= bufferSize)
         if (isAvailable(out)) {
           pushMessage(message)
@@ -89,6 +90,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, q
       )
 
       override def handleConnection(client: IMqttAsyncClient): Unit = {
+        if (manualAcks) client.setManualAcks(true)
         val (topics, qos) = sourceSettings.subscriptions.unzip
         mqttClient = Some(client)
         if (topics.nonEmpty) {
@@ -99,12 +101,17 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, q
         }
       }
 
-      override def onMessage(message: MqttMessage): Unit = {
+      override def onMessage(message: MqttCommittableMessage): Unit = {
         backpressure.acquire()
         onMessage.invoke(message)
       }
 
-      def pushMessage(message: MqttMessage): Unit = {
+      override def commitCallback(args: CommitCallbackArguments): Unit = {
+        mqttClient.get.messageArrivedComplete(args.messageId, args.qos.byteValue.toInt)
+        args.promise.complete(Try(Done))
+      }
+
+      def pushMessage(message: MqttCommittableMessage): Unit = {
         push(out, message)
         backpressure.release()
       }

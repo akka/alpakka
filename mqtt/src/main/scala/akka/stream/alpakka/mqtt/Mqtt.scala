@@ -6,10 +6,13 @@ package akka.stream.alpakka.mqtt
 
 import javax.net.ssl.SSLSocketFactory
 
+import akka.Done
+import akka.stream.alpakka.mqtt.scaladsl.MqttCommittableMessage
 import akka.stream.stage._
 import akka.util.ByteString
 import org.eclipse.paho.client.mqttv3.{MqttMessage => PahoMqttMessage, _}
 
+import scala.concurrent.{Future, Promise}
 import scala.language.implicitConversions
 import scala.util._
 
@@ -110,6 +113,8 @@ final case class MqttMessage(topic: String, payload: ByteString)
 
 final case class Will(message: MqttMessage, qos: MqttQoS, retained: Boolean)
 
+final case class CommitCallbackArguments(messageId: Int, qos: MqttQoS, promise: Promise[Done])
+
 object MqttMessage {
 
   /**
@@ -130,15 +135,17 @@ private[mqtt] trait MqttConnectorLogic { this: GraphStageLogic =>
 
   def handleConnection(client: IMqttAsyncClient): Unit
   def handleConnectionLost(ex: Throwable): Unit
+  def commitCallback(args: CommitCallbackArguments): Unit = ()
 
   val onConnect = getAsyncCallback[IMqttAsyncClient](handleConnection)
   val onConnectionLost = getAsyncCallback[Throwable](handleConnectionLost)
+  val commitAsyncCallback = getAsyncCallback[CommitCallbackArguments](commitCallback)
 
   /**
    * Callback, that is called from the MQTT client thread before invoking
    * message handler callback in the GraphStage context.
    */
-  def onMessage(message: MqttMessage) = ()
+  def onMessage(message: MqttCommittableMessage) = ()
 
   final override def preStart(): Unit = {
     val client = new MqttAsyncClient(
@@ -148,8 +155,20 @@ private[mqtt] trait MqttConnectorLogic { this: GraphStageLogic =>
     )
 
     client.setCallback(new MqttCallback {
-      def messageArrived(topic: String, message: PahoMqttMessage) =
-        onMessage(MqttMessage(topic, ByteString(message.getPayload)))
+      def messageArrived(topic: String, pahoMessage: PahoMqttMessage) =
+        onMessage(new MqttCommittableMessage {
+          override val message = MqttMessage(topic, ByteString(pahoMessage.getPayload))
+          override def messageArrivedComplete(): Future[Done] = {
+            val promise = Promise[Done]()
+            val qos = pahoMessage.getQos match {
+              case 0 => MqttQoS.atMostOnce
+              case 1 => MqttQoS.atLeastOnce
+              case 2 => MqttQoS.exactlyOnce
+            }
+            commitAsyncCallback.invoke(CommitCallbackArguments(pahoMessage.getId, qos, promise))
+            promise.future
+          }
+        })
 
       def deliveryComplete(token: IMqttDeliveryToken) =
         ()
