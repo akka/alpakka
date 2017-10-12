@@ -1,7 +1,7 @@
 # Spring Web
 
-Spring 5.0 introduced compatibility with the [Reactive Streams](https://github.com/reactive-streams/reactive-streams-jvm) 
-interfaces, that Lightbend co-lead with *Akka Streams* along with other library, such as Pivotal.
+Spring 5.0 introduced compatibility with [Reactive Streams](http://reactive-streams.org) 
+, a library interoperability standardization effort co-lead by Lightbend (with Akka Streams) along with Kaazing, Netflix, Pivotal, Red Hat, Twitter and many others
 
 Thanks to adopting reactive streams, multiple libraries can now inter-op since the same interfaces are implemented by 
 all these libraries. Akka Streams by-design, hides the raw reactive-streams types from end-users, since it allows for
@@ -33,7 +33,7 @@ Java
 
 ## Shameless plug: Akka HTTP 
 
-While the integration presented here works, it's not quite the optimal way of using Akka n conjunction with serving HTTP apps.
+While the integration presented here works, it's not quite the optimal way of using Akka in conjunction with serving HTTP apps.
 If you're new to reactive systems and picking technologies, you may want to have a look at [Akka HTTP](https://doc.akka.io/docs/akka-http/current/scala/http/).
 
-If you decided, or are forced to, use Spring MVC this integration should help you achieve the basic streaming scenarios though.
+If, for some reason, you decided use Spring MVC this integration should help you achieve the basic streaming scenarios though.
