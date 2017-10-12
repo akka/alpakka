@@ -1,11 +1,11 @@
 # Spring Web
 
-Spring 5.0 introduced compatibility with [Reactive Streams](http://reactive-streams.org) 
-, a library interoperability standardization effort co-lead by Lightbend (with Akka Streams) along with Kaazing, Netflix, Pivotal, Red Hat, Twitter and many others
+Spring 5.0 introduced compatibility with [Reactive Streams](http://reactive-streams.org), a library interoperability standardization effort co-lead by Lightbend (with Akka Streams) along with Kaazing, Netflix, 
+Pivotal, Red Hat, Twitter and many others.
 
-Thanks to adopting reactive streams, multiple libraries can now inter-op since the same interfaces are implemented by 
+Thanks to adopting Reactive Streams, multiple libraries can now inter-op since the same interfaces are implemented by 
 all these libraries. Akka Streams by-design, hides the raw reactive-streams types from end-users, since it allows for
-detaching these types from RS and allows for a painless migration to `java.util.concurrent.Flow` which was introduced in JDK9.
+detaching these types from RS and allows for a painless migration to [`java.util.concurrent.Flow`](http://download.java.net/java/jdk9/docs/api/java/util/concurrent/Flow.html) which was introduced in Java 9.
 
 This Alpakka module makes it possible to directly return a `Source` in your Spring Web endpoints.
 
@@ -19,17 +19,34 @@ This Alpakka module makes it possible to directly return a `Source` in your Spri
 
 ## Usage
 
-Usage is pretty simple, though likely could be improved if someone well-versed in the Spring ecosystem would look at it some more (using auto-configuration), and all you need to do is to register the `AkkaStreamsRegistrar` with Spring's internal Reactive Streams adapter:
+Using Akka Streams in Spring Web (or Boot for that matter) is very simple, as Alpakka provides autoconfiguration to the
+framework, which means that Spring is made aware of Sources and Sinks etc. 
+
+All you need to do is include the above dependency (`akka-stream-alpakka-spring-web`), start your app as usual:
 
 Java
-: @@snip (../../../../spring-web/src/test/java/akka/stream/alpakka/spring/web/MyAppConfiguration.java) { #configure }
+: @@snip (../../../../spring-web/src/test/java/akka/stream/alpakka/spring/web/DemoApplication.java) { #use }
 
-Which will make Spring aware of Akka Streams types and their relation to their respective Reactive Streams types. From then on you can, for example, simply return a `Source `(regardless if it's `javadsl` or `scaladsl`) in an Spring mvc endpoint:
- 
+
+And you'll be able to return Akka Streams in HTTP endpoints directly:
+
+
 Java
 : @@snip (../../../../spring-web/src/test/java/akka/stream/alpakka/spring/web/SampleController.java) { #use }
 
+Both `javadsl` and `scaladsl` Akka Stream types are supported.
 
+In fact, since Akka supports Java 9 and the `java.util.concurrent.Flow.*` types already, before Spring, you could use it
+to adapt those types in your applications as well.
+
+### The provided configuration
+
+The automatically enabled configuration is as follows:
+
+Java
+: @@snip (../../../../spring-web/src/main/java/akka/stream/alpakka/spring/web/SpringWebAkkaStreamsConfiguration.java) { #configure }
+
+In case you'd like to manually configure it slightly differently.
 
 ## Shameless plug: Akka HTTP 
 
