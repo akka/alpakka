@@ -3,7 +3,7 @@ import sbt._, Keys._
 object Dependencies {
 
   val AkkaVersion = sys.env.get("AKKA_SERIES") match {
-    case Some("2.5") => "2.5.3"
+    case Some("2.5") => "2.5.6"
     case _ => "2.4.19"
   }
   val AkkaHttpVersion = "10.0.9"
@@ -162,6 +162,22 @@ object Dependencies {
       "com.github.tomakehurst" % "wiremock" % "2.5.1" % Test // ApacheV2
     )
   )
+
+  val SpringWeb = {
+    val SpringVersion = "5.0.0.RELEASE"
+    val SpringBootVersion = "1.5.7.RELEASE"
+    Seq(
+      libraryDependencies ++= Seq(
+        "org.springframework" % "spring-core" % SpringVersion,
+        "org.springframework" % "spring-context" % SpringVersion,
+        "org.springframework" % "spring-webflux" % SpringVersion,
+        "org.springframework" % "spring-webmvc" % SpringVersion,
+       
+        // for examples
+        "org.springframework.boot" % "spring-boot-starter-web" % SpringBootVersion % "test"
+      )
+    )
+  }
 
   val Slick = Seq(
     libraryDependencies ++= Seq(

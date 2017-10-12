@@ -19,6 +19,7 @@ lazy val alpakka = project
     kinesis,
     mqtt,
     s3,
+    springWeb,
     simpleCodecs,
     slick,
     sns,
@@ -108,6 +109,8 @@ lazy val mongodb = alpakkaProject("mongodb", Dependencies.MongoDb)
 lazy val mqtt = alpakkaProject("mqtt", Dependencies.Mqtt)
 
 lazy val s3 = alpakkaProject("s3", Dependencies.S3)
+
+lazy val springWeb = alpakkaProject("spring-web", Dependencies.SpringWeb)
 
 lazy val simpleCodecs = alpakkaProject("simple-codecs")
 
