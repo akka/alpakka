@@ -18,12 +18,23 @@ sealed trait Destination
 final case class Topic(name: String) extends Destination
 final case class Queue(name: String) extends Destination
 
-final case class JmsTextMessage(body: String, properties: Map[String, Any] = Map.empty) {
+final case class JmsTextMessage(body: String, _type: Option[String] = None, properties: Map[String, Any] = Map.empty) {
 
   /**
-   * Java API: add  [[JmsTextMessage]]
+   * Java API: defines JMSType [[JmsTextMessage]]
    */
-  def add(name: String, value: Any) = copy(properties = properties + (name -> value))
+  def withType(_type: String) = copy(_type = Some(_type))
+
+  /**
+   * Java API: adds JMSProperty [[JmsTextMessage]]
+   */
+  def withProperty(name: String, value: Any) = copy(properties = properties + (name -> value))
+
+  /**
+   * Java API: add [[JmsTextMessage]]
+   */
+  @deprecated("Unclear method name, use withProperty instead")
+  def add(name: String, value: Any) = withProperty(name, value)
 }
 
 object JmsTextMessage {
@@ -31,12 +42,13 @@ object JmsTextMessage {
   /**
    * Java API: create  [[JmsTextMessage]]
    */
-  def create(body: String) = JmsTextMessage(body, Map.empty)
+  def create(body: String) = JmsTextMessage(body = body, _type = None, properties = Map.empty)
 
   /**
    * Java API: create  [[JmsTextMessage]]
    */
-  def create(body: String, properties: util.Map[String, Any]) = JmsTextMessage(body, properties.toMap)
+  def create(body: String, properties: util.Map[String, Any]) =
+    JmsTextMessage(body = body, _type = None, properties = properties.toMap)
 }
 
 object JmsSourceSettings {

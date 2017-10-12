@@ -39,6 +39,7 @@ final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape
           override def onPush(): Unit = {
             val elem: JmsTextMessage = grab(in)
             val textMessage: TextMessage = jmsSession.session.createTextMessage(elem.body)
+            elem._type.foreach(textMessage.setJMSType)
             elem.properties.foreach {
               case (key, v) =>
                 v match {
