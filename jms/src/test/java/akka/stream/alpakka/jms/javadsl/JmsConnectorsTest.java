@@ -7,14 +7,19 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.jms.JmsCorrelationId;
+import akka.stream.alpakka.jms.JmsReplyTo;
 import akka.stream.alpakka.jms.JmsSinkSettings;
 import akka.stream.alpakka.jms.JmsSourceSettings;
 import akka.stream.alpakka.jms.JmsTextMessage;
+import akka.stream.alpakka.jms.JmsType;
+import akka.stream.alpakka.jms.Queue;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.broker.BrokerService;
+import org.apache.activemq.command.ActiveMQQueue;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -129,6 +134,59 @@ public class JmsConnectorsTest {
                 assertEquals(outMsg.getIntProperty("Number"), msgsIn.get(msgIdx).properties().get("Number").get());
                 assertEquals(outMsg.getBooleanProperty("IsOdd"), msgsIn.get(msgIdx).properties().get("IsOdd").get());
                 assertEquals(outMsg.getBooleanProperty("IsEven"), (msgsIn.get(msgIdx).properties().get("IsEven").get()));
+                msgIdx++;
+            }
+        });
+    }
+
+    @Test
+    public void publishAndConsumeJmsTextMessagesWithHeaders() throws Exception {
+        withServer(ctx -> {
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+            //#create-jms-sink
+            Sink<JmsTextMessage, NotUsed> jmsSink = JmsSink.create(
+                    JmsSinkSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+            //#create-jms-sink
+
+            //#create-messages-with-properties
+            List<JmsTextMessage> msgsIn = createTestMessageList().stream()
+                    .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsType.create("type")))
+                    .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsCorrelationId.create("correlationId")))
+                    .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsReplyTo.queue("test-reply")))
+                    .collect(Collectors.toList());
+            //#create-messages-with-properties
+
+            //#run-jms-sink
+            Source.from(msgsIn).runWith(jmsSink, materializer);
+            //#run-jms-sink
+
+            //#create-jms-source
+            Source<Message, NotUsed> jmsSource = JmsSource.create(JmsSourceSettings
+                    .create(connectionFactory)
+                    .withQueue("test")
+                    .withBufferSize(10)
+            );
+            //#create-jms-source
+
+            //#run-jms-source
+            CompletionStage<List<Message>> result = jmsSource
+                    .take(msgsIn.size())
+                    .runWith(Sink.seq(), materializer);
+            //#run-jms-source
+
+            List<Message> outMessages = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+            int msgIdx = 0;
+            for(Message outMsg: outMessages) {
+                assertEquals(outMsg.getIntProperty("Number"), msgsIn.get(msgIdx).properties().get("Number").get());
+                assertEquals(outMsg.getBooleanProperty("IsOdd"), msgsIn.get(msgIdx).properties().get("IsOdd").get());
+                assertEquals(outMsg.getBooleanProperty("IsEven"), (msgsIn.get(msgIdx).properties().get("IsEven").get()));
+                assertEquals(outMsg.getJMSType(), "type");
+                assertEquals(outMsg.getJMSCorrelationID(), "correlationId");
+                assertEquals(((ActiveMQQueue) outMsg.getJMSReplyTo()).getQueueName(), "test-reply");
                 msgIdx++;
             }
         });
