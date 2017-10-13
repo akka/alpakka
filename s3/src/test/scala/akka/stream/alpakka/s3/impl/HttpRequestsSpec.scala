@@ -66,7 +66,9 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
   it should "throw an error if path-style access is false and the bucket name contains non-LDH characters" in {
     implicit val settings = getSettings(s3Region = "eu-west-1", pathStyleAccess = false)
 
-    assertThrows[IllegalUriException](HttpRequests.getDownloadRequest(S3Location("invalid_bucket_name", "image-1024@2x")))
+    assertThrows[IllegalUriException](
+      HttpRequests.getDownloadRequest(S3Location("invalid_bucket_name", "image-1024@2x"))
+    )
   }
 
   it should "initiate multipart upload with path-style access in region us-east-1" in {
