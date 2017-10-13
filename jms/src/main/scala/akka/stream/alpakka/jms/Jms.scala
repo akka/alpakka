@@ -18,12 +18,46 @@ sealed trait Destination
 final case class Topic(name: String) extends Destination
 final case class Queue(name: String) extends Destination
 
-final case class JmsTextMessage(body: String, _type: Option[String] = None, properties: Map[String, Any] = Map.empty) {
+sealed trait JmsHeader
+final case class JmsCorrelationId(jmsCorrelationId: String) extends JmsHeader
+final case class JmsReplyTo(jmsDestination: Destination) extends JmsHeader
+final case class JmsType(jmsType: String) extends JmsHeader
+
+object JmsCorrelationId {
+
+  /**
+    * Java API: create  [[JmsCorrelationId]]
+    */
+  def create(correlationId: String) = JmsCorrelationId(correlationId)
+}
+
+object JmsReplyTo {
+
+  /**
+    * Java API: create  [[JmsCorrelationId]]
+    */
+  def queue(name: String) = JmsReplyTo(Queue(name))
+
+  /**
+    * Java API: create  [[JmsCorrelationId]]
+    */
+  def topic(name: String) = JmsReplyTo(Topic(name))
+}
+
+object JmsType {
+
+  /**
+    * Java API: create  [[JmsCorrelationId]]
+    */
+  def create(jmsType: String) = JmsType(jmsType)
+}
+
+final case class JmsTextMessage(body: String, headers: Set[JmsHeader] = Set.empty, properties: Map[String, Any] = Map.empty) {
 
   /**
    * Java API: defines JMSType [[JmsTextMessage]]
    */
-  def withType(_type: String) = copy(_type = Some(_type))
+  def withHeader(jmsHeader: JmsHeader) = copy(headers = headers + jmsHeader)
 
   /**
    * Java API: adds JMSProperty [[JmsTextMessage]]
@@ -42,13 +76,22 @@ object JmsTextMessage {
   /**
    * Java API: create  [[JmsTextMessage]]
    */
-  def create(body: String) = JmsTextMessage(body = body, _type = None, properties = Map.empty)
+  def create(body: String) = JmsTextMessage(body = body, headers = Set.empty, properties = Map.empty)
 
   /**
    * Java API: create  [[JmsTextMessage]]
    */
-  def create(body: String, properties: util.Map[String, Any]) =
-    JmsTextMessage(body = body, _type = None, properties = properties.toMap)
+  def create(body: String, headers: util.Set[JmsHeader]) = JmsTextMessage(body = body, headers = headers.toSet, properties = Map.empty)
+
+  /**
+   * Java API: create  [[JmsTextMessage]]
+   */
+  def create(body: String, properties: util.Map[String, Any]) = JmsTextMessage(body = body, headers = Set.empty, properties = properties.toMap)
+
+  /**
+   * Java API: create  [[JmsTextMessage]]
+   */
+  def create(body: String, headers: util.Set[JmsHeader], properties: util.Map[String, Any]) = JmsTextMessage(body = body, headers = headers.toSet, properties = properties.toMap)
 }
 
 object JmsSourceSettings {
