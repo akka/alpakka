@@ -5,7 +5,7 @@ package akka.stream.alpakka.s3.impl
 
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{HttpEntity, MediaTypes}
+import akka.http.scaladsl.model.{HttpEntity, IllegalUriException, MediaTypes}
 import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.{BufferType, MemoryBufferType, Proxy, S3Settings}
 import akka.stream.scaladsl.Source
@@ -63,6 +63,14 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     }
   }
 
+  it should "throw an error if path-style access is false and the bucket name contains non-LDH characters" in {
+    implicit val settings = getSettings(s3Region = "eu-west-1", pathStyleAccess = false)
+
+    assertThrows[IllegalUriException](
+      HttpRequests.getDownloadRequest(S3Location("invalid_bucket_name", "image-1024@2x"))
+    )
+  }
+
   it should "initiate multipart upload with path-style access in region us-east-1" in {
     implicit val settings = getSettings(s3Region = "us-east-1", pathStyleAccess = true)
 
@@ -90,7 +98,6 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     req.uri.authority.host.toString shouldEqual "s3-us-west-2.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/image-1024@2x"
-
   }
 
   it should "support download requests with path-style access in other regions" in {
