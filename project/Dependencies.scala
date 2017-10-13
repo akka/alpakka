@@ -55,7 +55,7 @@ object Dependencies {
   val Elasticsearch = Seq(
     libraryDependencies ++= Seq(
       "org.elasticsearch.client" % "rest" % "5.5.3", // ApacheV2
-      "io.spray" %%  "spray-json" % "1.3.3", // ApacheV2
+      "io.spray" %% "spray-json" % "1.3.3", // ApacheV2
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.1", // ApacheV2
       "org.codelibs" % "elasticsearch-cluster-runner" % "5.6.0.0" % Test // ApacheV2
     )
@@ -182,11 +182,11 @@ object Dependencies {
 
   val Slick = Seq(
     libraryDependencies ++= Seq(
-      "com.typesafe.slick" %% "slick"           % "3.2.1", // BSD 2-clause "Simplified" License
-      "com.typesafe.slick" %% "slick-hikaricp"  % "3.2.1", // BSD 2-clause "Simplified" License
-      "com.typesafe.akka"  %% "akka-slf4j"      % AkkaVersion % Test,
-      "com.h2database"      % "h2"              % "1.4.196"   % Test, // Eclipse Public License 1.0
-      "ch.qos.logback"      % "logback-classic" % "1.2.3"     % Test  // Eclipse Public License 1.0
+      "com.typesafe.slick" %% "slick" % "3.2.1", // BSD 2-clause "Simplified" License
+      "com.typesafe.slick" %% "slick-hikaricp" % "3.2.1", // BSD 2-clause "Simplified" License
+      "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test,
+      "com.h2database" % "h2" % "1.4.196" % Test, // Eclipse Public License 1.0
+      "ch.qos.logback" % "logback-classic" % "1.2.3" % Test // Eclipse Public License 1.0
     )
   )
 
