@@ -26,33 +26,35 @@ final case class JmsType(jmsType: String) extends JmsHeader
 object JmsCorrelationId {
 
   /**
-    * Java API: create  [[JmsCorrelationId]]
-    */
+   * Java API: create  [[JmsCorrelationId]]
+   */
   def create(correlationId: String) = JmsCorrelationId(correlationId)
 }
 
 object JmsReplyTo {
 
   /**
-    * Java API: create  [[JmsCorrelationId]]
-    */
+   * Java API: create  [[JmsCorrelationId]]
+   */
   def queue(name: String) = JmsReplyTo(Queue(name))
 
   /**
-    * Java API: create  [[JmsCorrelationId]]
-    */
+   * Java API: create  [[JmsCorrelationId]]
+   */
   def topic(name: String) = JmsReplyTo(Topic(name))
 }
 
 object JmsType {
 
   /**
-    * Java API: create  [[JmsCorrelationId]]
-    */
+   * Java API: create  [[JmsCorrelationId]]
+   */
   def create(jmsType: String) = JmsType(jmsType)
 }
 
-final case class JmsTextMessage(body: String, headers: Set[JmsHeader] = Set.empty, properties: Map[String, Any] = Map.empty) {
+final case class JmsTextMessage(body: String,
+                                headers: Set[JmsHeader] = Set.empty,
+                                properties: Map[String, Any] = Map.empty) {
 
   /**
    * Java API: defines JMSType [[JmsTextMessage]]
@@ -81,17 +83,20 @@ object JmsTextMessage {
   /**
    * Java API: create  [[JmsTextMessage]]
    */
-  def create(body: String, headers: util.Set[JmsHeader]) = JmsTextMessage(body = body, headers = headers.toSet, properties = Map.empty)
+  def create(body: String, headers: util.Set[JmsHeader]) =
+    JmsTextMessage(body = body, headers = headers.toSet, properties = Map.empty)
 
   /**
    * Java API: create  [[JmsTextMessage]]
    */
-  def create(body: String, properties: util.Map[String, Any]) = JmsTextMessage(body = body, headers = Set.empty, properties = properties.toMap)
+  def create(body: String, properties: util.Map[String, Any]) =
+    JmsTextMessage(body = body, headers = Set.empty, properties = properties.toMap)
 
   /**
    * Java API: create  [[JmsTextMessage]]
    */
-  def create(body: String, headers: util.Set[JmsHeader], properties: util.Map[String, Any]) = JmsTextMessage(body = body, headers = headers.toSet, properties = properties.toMap)
+  def create(body: String, headers: util.Set[JmsHeader], properties: util.Map[String, Any]) =
+    JmsTextMessage(body = body, headers = headers.toSet, properties = properties.toMap)
 }
 
 object JmsSourceSettings {
