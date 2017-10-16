@@ -110,7 +110,9 @@ lazy val mqtt = alpakkaProject("mqtt", Dependencies.Mqtt)
 
 lazy val s3 = alpakkaProject("s3", Dependencies.S3)
 
-lazy val springWeb = alpakkaProject("spring-web", Dependencies.SpringWeb)
+lazy val springWeb = alpakkaProject("spring-web",
+  javacOptions := javacOptions.value.filter(_ != "-Xlint:unchecked"),
+  Dependencies.SpringWeb)
 
 lazy val simpleCodecs = alpakkaProject("simple-codecs")
 
