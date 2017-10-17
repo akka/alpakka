@@ -40,7 +40,7 @@ object Common extends AutoPlugin {
       "-Ywarn-dead-code",
       "-Xfuture"
     ),
-    javacOptions ++= Seq(
+    javacOptions in compile ++= Seq(
       "-Xlint:unchecked"
     ),
     autoAPIMappings := true,
