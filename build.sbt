@@ -47,10 +47,10 @@ lazy val alpakka = project
 
 lazy val amqp = alpakkaProject("amqp", Dependencies.Amqp)
 
-lazy val awslambda = alpakkaProject("awslambda", Dependencies.AwsLambda,
-  // For mockito https://github.com/akka/alpakka/issues/390
-  parallelExecution in Test := false
-)
+lazy val awslambda = alpakkaProject("awslambda",
+                                    Dependencies.AwsLambda,
+                                    // For mockito https://github.com/akka/alpakka/issues/390
+                                    parallelExecution in Test := false)
 
 lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", Dependencies.AzureStorageQueue)
 
@@ -60,7 +60,9 @@ lazy val csv = alpakkaProject("csv", Dependencies.Csv)
 
 lazy val dynamodb = alpakkaProject("dynamodb", Dependencies.DynamoDB)
 
-lazy val elasticsearch = alpakkaProject("elasticsearch", Dependencies.Elasticsearch,
+lazy val elasticsearch = alpakkaProject(
+  "elasticsearch",
+  Dependencies.Elasticsearch,
   // For elasticsearch-cluster-runner https://github.com/akka/alpakka/issues/479
   parallelExecution in Test := false
 )
@@ -68,39 +70,36 @@ lazy val elasticsearch = alpakkaProject("elasticsearch", Dependencies.Elasticsea
 // The name 'file' is taken by `sbt.file`, hence 'files'
 lazy val files = alpakkaProject("file", Dependencies.File)
 
-lazy val ftp = alpakkaProject("ftp", Dependencies.Ftp,
+lazy val ftp = alpakkaProject(
+  "ftp",
+  Dependencies.Ftp,
   parallelExecution in Test := false,
   fork in Test := true,
   // To avoid potential blocking in machines with low entropy (default is `/dev/random`)
   javaOptions in Test += "-Djava.security.egd=file:/dev/./urandom"
 )
 
-lazy val geode = alpakkaProject("geode", Dependencies.Geode,
-  fork in Test := true,
-  parallelExecution in Test := false
-)
+lazy val geode = alpakkaProject("geode", Dependencies.Geode, fork in Test := true, parallelExecution in Test := false)
 
-lazy val googleCloudPubSub = alpakkaProject("google-cloud-pub-sub", Dependencies.GooglePubSub,
+lazy val googleCloudPubSub = alpakkaProject(
+  "google-cloud-pub-sub",
+  Dependencies.GooglePubSub,
   fork in Test := true,
   envVars in Test := Map("PUBSUB_EMULATOR_HOST" -> "localhost:8538"),
   // For mockito https://github.com/akka/alpakka/issues/390
   parallelExecution in Test := false
 )
 
-lazy val hbase = alpakkaProject("hbase", Dependencies.HBase,
-  fork in Test := true
-)
+lazy val hbase = alpakkaProject("hbase", Dependencies.HBase, fork in Test := true)
 
 lazy val ironmq = alpakkaProject("ironmq", Dependencies.IronMq)
 
-lazy val jms = alpakkaProject("jms", Dependencies.Jms,
-  parallelExecution in Test := false
-)
+lazy val jms = alpakkaProject("jms", Dependencies.Jms, parallelExecution in Test := false)
 
-lazy val kinesis = alpakkaProject("kinesis", Dependencies.Kinesis,
-  // For mockito https://github.com/akka/alpakka/issues/390
-  parallelExecution in Test := false
-)
+lazy val kinesis = alpakkaProject("kinesis",
+                                  Dependencies.Kinesis,
+                                  // For mockito https://github.com/akka/alpakka/issues/390
+                                  parallelExecution in Test := false)
 
 lazy val mongodb = alpakkaProject("mongodb", Dependencies.MongoDb)
 
@@ -114,15 +113,15 @@ lazy val simpleCodecs = alpakkaProject("simple-codecs")
 
 lazy val slick = alpakkaProject("slick", Dependencies.Slick)
 
-lazy val sns = alpakkaProject("sns", Dependencies.Sns,
-  // For mockito https://github.com/akka/alpakka/issues/390
-  parallelExecution in Test := false
-)
+lazy val sns = alpakkaProject("sns",
+                              Dependencies.Sns,
+                              // For mockito https://github.com/akka/alpakka/issues/390
+                              parallelExecution in Test := false)
 
-lazy val sqs = alpakkaProject("sqs", Dependencies.Sqs,
-  // For mockito https://github.com/akka/alpakka/issues/390
-  parallelExecution in Test := false
-)
+lazy val sqs = alpakkaProject("sqs",
+                              Dependencies.Sqs,
+                              // For mockito https://github.com/akka/alpakka/issues/390
+                              parallelExecution in Test := false)
 
 lazy val sse = alpakkaProject("sse", Dependencies.Sse)
 
