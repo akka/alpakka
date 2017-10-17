@@ -67,8 +67,8 @@ lazy val elasticsearch = alpakkaProject(
   parallelExecution in Test := false
 )
 
-// The name file is taken by `sbt.file`!
-lazy val files = alpakkaProject("files", Dependencies.File, name := "akka-stream-alpakka-file")
+// The name 'file' is taken by `sbt.file`, hence 'files'
+lazy val files = alpakkaProject("file", Dependencies.File)
 
 lazy val ftp = alpakkaProject(
   "ftp",
