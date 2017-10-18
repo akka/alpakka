@@ -158,10 +158,12 @@ lazy val docs = project
     paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     paradoxProperties in Local ++= Map(
       // point API doc links to locally generated API docs
-      "scaladoc.akka.stream.alpakka.base_url" -> rebase(
-        (baseDirectory in alpakka).value,
-        "../../../../../"
-      )((sbtunidoc.Plugin.UnidocKeys.unidoc in alpakka in Compile).value.head).get
+      "scaladoc.akka.stream.alpakka.base_url" -> sbt.io.Path
+        .rebase(
+          (baseDirectory in alpakka).value,
+          "../../../../../"
+        )((sbtunidoc.BaseUnidocPlugin.autoImport.unidoc in alpakka in Compile).value.head)
+        .get
     )
   )
 
