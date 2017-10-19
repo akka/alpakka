@@ -4,7 +4,8 @@
 package akka.stream.alpakka.ftp
 package impl
 
-import akka.stream.stage.{GraphStage, OutHandler}
+import akka.NotUsed
+import akka.stream.stage.{GraphStage, GraphStageLogic, GraphStageWithMaterializedValue, OutHandler}
 import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 
@@ -29,7 +30,7 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] exte
   override def initialAttributes: Attributes =
     super.initialAttributes and Attributes.name(name) and IODispatcher
 
-  def createLogic(inheritedAttributes: Attributes) = {
+  def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     val logic = new FtpGraphStageLogic[FtpFile, FtpClient, S](shape, ftpLike, connectionSettings, ftpClient) {
 
       private[this] var buffer: Seq[FtpFile] = Seq.empty[FtpFile]
