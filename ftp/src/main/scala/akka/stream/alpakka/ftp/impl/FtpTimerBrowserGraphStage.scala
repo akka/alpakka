@@ -1,11 +1,12 @@
+/*
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.alpakka.ftp.impl
 
-import java.io.InputStream
-import akka.stream.{Attributes, IOResult}
+import akka.stream.Attributes
 import akka.stream.alpakka.ftp.{FtpFile, RemoteFileSettings}
 import akka.stream.stage.{OutHandler, TimerGraphStageLogic}
 
-import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
@@ -15,12 +16,7 @@ trait FtpTimerBrowserGraphStage[FtpClient, S <: RemoteFileSettings] extends FtpB
 
   override def createLogic(inheritedAttributes: Attributes) = {
 
-    var matValuePromise = Promise[IOResult]()
-
     val logic = new TimerGraphStageLogic(shape) {
-
-      private[this] var isOpt: Option[InputStream] = None
-      private[this] var readBytesTotal: Long = 0L
 
       private[this] var buffer: Seq[FtpFile] = Seq.empty[FtpFile]
       private[this] implicit val client: FtpClient = ftpClient()
@@ -36,7 +32,6 @@ trait FtpTimerBrowserGraphStage[FtpClient, S <: RemoteFileSettings] extends FtpB
                 buffer = tail
                 push(out, head)
               case _ =>
-                isOpt.foreach(_.close())
                 schedulePoll()
             }
           }
@@ -53,7 +48,6 @@ trait FtpTimerBrowserGraphStage[FtpClient, S <: RemoteFileSettings] extends FtpB
         try {
           val tryConnect = ftpLike.connect(connectionSettings)
           if (tryConnect.isSuccess) {
-            matValuePromise = Promise[IOResult]()
             handler = tryConnect.toOption
           } else
             tryConnect.failed.foreach { case NonFatal(t) => throw t }
@@ -69,11 +63,9 @@ trait FtpTimerBrowserGraphStage[FtpClient, S <: RemoteFileSettings] extends FtpB
 
       protected[this] def disconnect(): Unit = handler.foreach(ftpLike.disconnect)
 
-      protected[this] def matSuccess(): Boolean =
-        matValuePromise.trySuccess(IOResult.createSuccessful(readBytesTotal))
+      protected[this] def matSuccess(): Boolean = true
 
-      protected[this] def matFailure(t: Throwable): Boolean =
-        matValuePromise.trySuccess(IOResult.createFailed(readBytesTotal, t))
+      protected[this] def matFailure(t: Throwable): Boolean = true
 
       private[this] def startBuffer(bp: String = basePath): Unit = {
         val res = getFilesFromPath(bp)
