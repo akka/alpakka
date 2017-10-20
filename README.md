@@ -1,9 +1,12 @@
-Alpakka: Akka Streams Connectors
-================================
+Alpakka [![scaladex-badge][]][scaladex] [![travis-badge][]][travis] [![gitter-badge][]][gitter]
+=======
 
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/akka/akka?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-Latest version: [ ![Download](https://api.bintray.com/packages/akka/maven/alpakka/images/download.svg) ](https://bintray.com/akka/maven/alpakka/_latestVersion) [![Latest version](https://index.scala-lang.org/akka/alpakka/alpakka/latest.svg)](https://index.scala-lang.org/akka/alpakka/alpakka) [![Build Status](https://travis-ci.org/akka/alpakka.svg?branch=master)](https://travis-ci.org/akka/alpakka)
-
+[scaladex]:       https://index.scala-lang.org/akka/alpakka
+[scaladex-badge]: https://index.scala-lang.org/akka/alpakka/latest.svg
+[travis]:                https://travis-ci.org/akka/alpakka
+[travis-badge]:          https://travis-ci.org/akka/alpakka.svg?branch=master
+[gitter]:                    https://gitter.im/akka/alpakka
+[gitter-badge]:       https://badges.gitter.im/akka/alpakka.svg
 
 This project provides a home to Akka Streams connectors to various technologies, protocols or libraries.
 
