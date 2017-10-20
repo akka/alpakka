@@ -3,15 +3,18 @@
  */
 package akka.stream.alpakka.jms
 
-import scala.collection.JavaConversions._
 import java.util
 import java.time.Duration
+import javax.jms
 import javax.jms.ConnectionFactory
+
+import scala.collection.JavaConverters._
 
 sealed trait JmsSettings {
   def connectionFactory: ConnectionFactory
   def destination: Option[Destination]
   def credentials: Option[Credentials]
+  def acknowledgeMode: AcknowledgeMode
 }
 
 sealed trait Destination
@@ -84,19 +87,39 @@ object JmsTextMessage {
    * Java API: create  [[JmsTextMessage]]
    */
   def create(body: String, headers: util.Set[JmsHeader]) =
-    JmsTextMessage(body = body, headers = headers.toSet, properties = Map.empty)
+    JmsTextMessage(body = body, headers = headers.asScala.toSet, properties = Map.empty)
 
   /**
    * Java API: create  [[JmsTextMessage]]
    */
   def create(body: String, properties: util.Map[String, Any]) =
-    JmsTextMessage(body = body, headers = Set.empty, properties = properties.toMap)
+    JmsTextMessage(body = body, headers = Set.empty, properties = properties.asScala.toMap)
 
   /**
    * Java API: create  [[JmsTextMessage]]
    */
   def create(body: String, headers: util.Set[JmsHeader], properties: util.Map[String, Any]) =
-    JmsTextMessage(body = body, headers = headers.toSet, properties = properties.toMap)
+    JmsTextMessage(body = body, headers = headers.asScala.toSet, properties = properties.asScala.toMap)
+}
+
+sealed trait AcknowledgeMode {
+  val jmsAcknowledgeMode: Int
+}
+
+case object AutoAcknowledge extends AcknowledgeMode {
+  override val jmsAcknowledgeMode: Int = jms.Session.AUTO_ACKNOWLEDGE
+}
+
+case object ClientAcknowledge extends AcknowledgeMode {
+  override val jmsAcknowledgeMode: Int = jms.Session.CLIENT_ACKNOWLEDGE
+}
+
+case object DupsOkAcknowledge extends AcknowledgeMode {
+  override val jmsAcknowledgeMode: Int = jms.Session.DUPS_OK_ACKNOWLEDGE
+}
+
+case object SessionTransacted extends AcknowledgeMode {
+  override val jmsAcknowledgeMode: Int = jms.Session.SESSION_TRANSACTED
 }
 
 object JmsSourceSettings {
@@ -109,13 +132,15 @@ final case class JmsSourceSettings(connectionFactory: ConnectionFactory,
                                    destination: Option[Destination] = None,
                                    credentials: Option[Credentials] = None,
                                    bufferSize: Int = 100,
-                                   selector: Option[String] = None)
+                                   selector: Option[String] = None,
+                                   acknowledgeMode: AcknowledgeMode = AutoAcknowledge)
     extends JmsSettings {
   def withCredential(credentials: Credentials) = copy(credentials = Some(credentials))
   def withBufferSize(size: Int) = copy(bufferSize = size)
   def withQueue(name: String) = copy(destination = Some(Queue(name)))
   def withTopic(name: String) = copy(destination = Some(Topic(name)))
   def withSelector(selector: String) = copy(selector = Some(selector))
+  def withAcknowledgeMode(acknowledgeMode: AcknowledgeMode) = copy(acknowledgeMode = acknowledgeMode)
 }
 
 object JmsSinkSettings {
@@ -127,12 +152,14 @@ object JmsSinkSettings {
 final case class JmsSinkSettings(connectionFactory: ConnectionFactory,
                                  destination: Option[Destination] = None,
                                  credentials: Option[Credentials] = None,
-                                 timeToLive: Option[Duration] = None)
+                                 timeToLive: Option[Duration] = None,
+                                 acknowledgeMode: AcknowledgeMode = AutoAcknowledge)
     extends JmsSettings {
   def withCredential(credentials: Credentials) = copy(credentials = Some(credentials))
   def withQueue(name: String) = copy(destination = Some(Queue(name)))
   def withTopic(name: String) = copy(destination = Some(Topic(name)))
   def withTimeToLive(ttl: Duration) = copy(timeToLive = Some(ttl))
+  def withAcknowledgeMode(acknowledgeMode: AcknowledgeMode) = copy(acknowledgeMode = acknowledgeMode)
 }
 
 final case class Credentials(username: String, password: String)

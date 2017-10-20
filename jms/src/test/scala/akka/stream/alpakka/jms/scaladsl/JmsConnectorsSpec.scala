@@ -8,11 +8,10 @@ import javax.jms.{JMSException, Message, TextMessage}
 import akka.NotUsed
 import akka.stream.ThrottleMode
 import akka.stream.alpakka.jms._
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Sink, Source}
 import org.apache.activemq.ActiveMQConnectionFactory
 
 import scala.concurrent.duration._
-import collection.JavaConverters._
 
 class JmsConnectorsSpec extends JmsSpec {
 
@@ -188,5 +187,85 @@ class JmsConnectorsSpec extends JmsSpec {
       result2.futureValue shouldEqual expectedList.sorted
     }
 
+    "publish and consume JMS text messages through a queue with client ack" in withServer() { ctx =>
+      val url: String = ctx.url
+      val connectionFactory = new ActiveMQConnectionFactory(url)
+
+      val jmsSink: Sink[JmsTextMessage, NotUsed] = JmsSink(
+        JmsSinkSettings(connectionFactory).withQueue("numbers")
+      )
+
+      val msgsIn = (1 to 10).toList.map { n =>
+        JmsTextMessage(n.toString)
+      }
+
+      Source(msgsIn).runWith(jmsSink)
+
+      //#create-jms-source-client-ack
+      val jmsSource: Source[Message, NotUsed] = JmsSource(
+        JmsSourceSettings(connectionFactory)
+          .withQueue("numbers")
+          .withAcknowledgeMode(ClientAcknowledge)
+      )
+      //#create-jms-source-client-ack
+
+      //#run-jms-source-with-ack
+      val result = jmsSource
+        .take(msgsIn.size)
+        .map {
+          case textMessage: TextMessage =>
+            val text = textMessage.getText
+            textMessage.acknowledge()
+            text
+        }
+        .runWith(Sink.seq)
+      //#run-jms-source-with-ack
+
+      result.futureValue shouldEqual msgsIn.map(_.body)
+
+      // all messages were acknowledged before
+      jmsSource
+        .takeWithin(5.seconds)
+        .runWith(Sink.seq)
+        .futureValue shouldBe empty
+    }
+
+    "publish and consume JMS text messages through a queue without acknowledgingg them" in withServer() { ctx =>
+      val url: String = ctx.url
+      val connectionFactory = new ActiveMQConnectionFactory(url)
+
+      val jmsSink: Sink[JmsTextMessage, NotUsed] = JmsSink(
+        JmsSinkSettings(connectionFactory).withQueue("numbers")
+      )
+
+      val msgsIn = (1 to 10).toList.map { n =>
+        JmsTextMessage(n.toString)
+      }
+
+      Source(msgsIn).runWith(jmsSink)
+
+      val jmsSource: Source[Message, NotUsed] = JmsSource(
+        JmsSourceSettings(connectionFactory)
+          .withBufferSize(10)
+          .withQueue("numbers")
+          .withAcknowledgeMode(ClientAcknowledge)
+      )
+
+      val result = jmsSource
+        .take(msgsIn.size)
+        .map {
+          case textMessage: TextMessage =>
+            textMessage.getText
+        }
+        .runWith(Sink.seq)
+
+      result.futureValue shouldEqual msgsIn.map(_.body)
+
+      // messages were not acknowledged, may be delivered again
+      jmsSource
+        .takeWithin(5.seconds)
+        .runWith(Sink.seq)
+        .futureValue should not be empty
+    }
   }
 }
