@@ -36,9 +36,8 @@ object Streams {
       streamDescription: StreamDescription
   )(implicit client: DynamoClient, executionContext: ExecutionContext): Source[Record, NotUsed] =
     Source.fromIterator(() => streamDescription.getShards.iterator().asScala).flatMapConcat { shard => // can we process shards in parallel?
-      val parent = shard.getParentShardId
+      val parent = shard.getParentShardId // should we process the parent first if it's not null?
 
-      println(s"parent $parent") // should we process the parent first if it's not null?
       client
         .source(getShardIteratorRequest(streamArn = streamArn, shardId = shard.getShardId).toOp)
         .flatMapConcat { //results need to be in the same order
