@@ -46,6 +46,8 @@ Scala
 Java
 : @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #flow }
 
+There's initial support for capturing table changes using <a href="http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html">Dynamodb Streams</a>. 
+
 If you create a table with <a href="http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/dynamodbv2/model/StreamSpecification.html#withStreamEnabled-java.lang.Boolean-">Dynamodb Streams enabled</a>
 you can subscribe to changes to the table:
 
