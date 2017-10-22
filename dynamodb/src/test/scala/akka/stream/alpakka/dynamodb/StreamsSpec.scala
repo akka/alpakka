@@ -49,21 +49,27 @@ class StreamsSpec
 
     "get the stream of changes to a table" in {
       Given("a table with streams enabled")
+
+      When("we create a stream of records for that table")
+      val records = Streams
+        .records(StreamsSpecOps.tableName)
+
+      And("run it")
+      val probe = records
+        .map(_.getEventName)
+        .runWith(TestSink.probe)
+
       When("we put and delete some data")
       client.single(test4PutItemRequest).futureValue
       client.single(deleteItemRequest).futureValue
 
-      And("create a stream of records for that table")
-
-      val records = Streams
-        .records(StreamsSpecOps.tableName)
-
       Then("we should receive an INSERT and REMOVE")
-      records
-        .map(_.getEventName)
-        .runWith(TestSink.probe)
+      probe
         .request(2)
         .expectNext("INSERT", "REMOVE")
+        .request(1)
+        .expectNoMsg()
+
     }
   }
 
