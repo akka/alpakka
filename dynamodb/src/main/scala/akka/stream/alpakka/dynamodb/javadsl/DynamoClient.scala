@@ -10,8 +10,9 @@ import akka.stream.alpakka.dynamodb.AwsOp
 import akka.stream.alpakka.dynamodb.impl.{DynamoClientImpl, DynamoSettings, Streams}
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits
 import akka.stream.alpakka.dynamodb.scaladsl.{DynamoClient => ScalaDynamoClient}
-import akka.stream.javadsl.Flow
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.javadsl.{Flow, Source}
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.{Source => ScalaSource}
 import com.amazonaws.services.dynamodbv2.model._
 
 import scala.concurrent.Future
@@ -31,10 +32,10 @@ final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem,
   def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] = client.flow.asJava
 
   def records(describeTableRequest: DescribeTableRequest): Source[Record, NotUsed] =
-    Streams.records(describeTableRequest)(ScalaDynamoClient(client), ec)
+    Streams.records(describeTableRequest)(ScalaDynamoClient(client), ec).asJava
 
   private def single(op: AwsOp): Future[op.B] =
-    Source.single(op).via(client.flow).runWith(Sink.head).map(_.asInstanceOf[op.B])
+    ScalaSource.single(op).via(client.flow).runWith(Sink.head).map(_.asInstanceOf[op.B])
 
   def batchGetItem(request: BatchGetItemRequest) = single(BatchGetItem(request))
 

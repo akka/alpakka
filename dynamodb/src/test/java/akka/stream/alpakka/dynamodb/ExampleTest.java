@@ -81,10 +81,10 @@ public class ExampleTest {
     @Test
     public void streams() throws Exception {
         //##streams
-        client
+        Source<String,NotUsed> recordSource = client
                 .records(new DescribeTableRequest().withTableName("testTable"))
                 .map(result -> (Record) result)
-                .map(Record::getEventName); //will produce a stream of INSERT, MODIFY, REMOVE
+                .map(record -> record.getEventName()); //will produce a stream of INSERT, MODIFY, REMOVE
         //##streams
     }
 }

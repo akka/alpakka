@@ -114,7 +114,6 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
     val settings = DynamoSettings(system)
     val client = DynamoClient(settings)
 
-    import DynamoImplicits._
     //##streams
     client
       .records(new DescribeTableRequest().withTableName("testTable"))
