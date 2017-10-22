@@ -4,32 +4,11 @@ The AWS DynamoDB connector provides a flow for streaming DynamoDB requests. For 
 
 ## Artifacts
 
-sbt
-:   @@@vars
-    ```scala
-    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-dynamodb" % "$version$"
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```xml
-    <dependency>
-      <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-dynamodb_$scalaBinaryVersion$</artifactId>
-      <version>$version$</version>
-    </dependency>
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```gradle
-    dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-dynamodb_$scalaBinaryVersion$", version: "$version$"
-    }
-    ```
-    @@@
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-dynamodb_$scalaBinaryVersion$
+  version=$version$
+}
 
 ## Usage
 
@@ -58,6 +37,14 @@ Scala
 
 Java
 : @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #simple-request }
+
+You can also use a Flow to execute your Dynamodb call:
+
+Scala
+: @@snip (../../../../dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #flow }
+
+Java
+: @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #flow }
 
 ### Running the example code
 

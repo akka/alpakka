@@ -4,7 +4,6 @@
 package akka.stream.alpakka.amqp
 
 import com.rabbitmq.client.ExceptionHandler
-import scala.collection.JavaConverters._
 
 /**
  * Internal API

@@ -14,6 +14,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = BatchGetItemResult
     override val handler = batchGetItemU
     override val marshaller = batchGetItemM
+    def toOp: BatchGetItem = this
   }
 
   implicit class CreateTable(val request: CreateTableRequest) extends AwsOp {
@@ -21,7 +22,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = CreateTableResult
     override val handler = createTableU
     override val marshaller = createTableM
-    def toOp[CreateTable] = this
+    def toOp: CreateTable = this
   }
 
   implicit class DeleteItem(val request: DeleteItemRequest) extends AwsOp {
@@ -29,6 +30,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = DeleteItemResult
     override val handler = deleteItemU
     override val marshaller = deleteItemM
+    def toOp: DeleteItem = this
   }
 
   implicit class DeleteTable(val request: DeleteTableRequest) extends AwsOp {
@@ -36,6 +38,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = DeleteTableResult
     override val handler = deleteTableU
     override val marshaller = deleteTableM
+    def toOp: DeleteTable = this
   }
 
   implicit class DescribeLimits(val request: DescribeLimitsRequest) extends AwsOp {
@@ -43,6 +46,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = DescribeLimitsResult
     override val handler = describeLimitsU
     override val marshaller = describeLimitsM
+    def toOp: DescribeLimits = this
   }
 
   implicit class DescribeTable(val request: DescribeTableRequest) extends AwsOp {
@@ -58,6 +62,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = QueryResult
     override val handler = queryU
     override val marshaller = queryM
+    def toOp: Query = this
   }
 
   implicit class Scan(val request: ScanRequest) extends AwsOp {
@@ -65,6 +70,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = ScanResult
     override val handler = scanU
     override val marshaller = scanM
+    def toOp: Scan = this
   }
 
   implicit class UpdateItem(val request: UpdateItemRequest) extends AwsOp {
@@ -72,6 +78,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = UpdateItemResult
     override val handler = updateItemU
     override val marshaller = updateItemM
+    def toOp: UpdateItem = this
   }
 
   implicit class UpdateTable(val request: UpdateTableRequest) extends AwsOp {
@@ -79,6 +86,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = UpdateTableResult
     override val handler = updateTableU
     override val marshaller = updateTableM
+    def toOp: UpdateTable = this
   }
 
   implicit class PutItem(val request: PutItemRequest) extends AwsOp {
@@ -86,6 +94,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = PutItemResult
     override val handler = putItemU
     override val marshaller = putItemM
+    def toOp: PutItem = this
   }
 
   implicit class BatchWriteItem(val request: BatchWriteItemRequest) extends AwsOp {
@@ -93,6 +102,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = BatchWriteItemResult
     override val handler = batchWriteItemU
     override val marshaller = batchWriteItemM
+    def toOp: BatchWriteItem = this
   }
 
   implicit class GetItem(val request: GetItemRequest) extends AwsOp {
@@ -100,6 +110,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = GetItemResult
     override val handler = getItemU
     override val marshaller = getItemM
+    def toOp: GetItem = this
   }
 
   implicit class ListTables(val request: ListTablesRequest) extends AwsOp {
@@ -107,28 +118,6 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = ListTablesResult
     override val handler = listTablesU
     override val marshaller = listTablesM
-  }
-
-  implicit class DescribeStream(val request: DescribeStreamRequest) extends AwsOp {
-    override type A = DescribeStreamRequest
-    override type B = DescribeStreamResult
-    override val handler = describeStreamU
-    override val marshaller = describeStreamM
-    def toOp: DescribeStream = this
-  }
-
-  implicit class GetShardIterator(val request: GetShardIteratorRequest) extends AwsOp {
-    override type A = GetShardIteratorRequest
-    override type B = GetShardIteratorResult
-    override val handler = getShardIteratorU
-    override val marshaller = getShardIteratorM
-    def toOp: GetShardIterator = this
-  }
-
-  implicit class GetRecords(val request: GetRecordsRequest) extends AwsOp {
-    override type A = GetRecordsRequest
-    override type B = GetRecordsResult
-    override val handler = getRecordsU
-    override val marshaller = getRecordsM
+    def toOp: ListTables = this
   }
 }

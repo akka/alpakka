@@ -65,23 +65,17 @@ private[alpakka] trait AwsClient[S <: ClientSettings] {
     case HttpMethodName.PATCH => HttpMethods.PATCH
   }
 
-  private val signableUrl = Uri("https://" + settings.host + "/")
+  private val url = s"https://${settings.host}/"
+
+  private val signableUrl = Uri(url)
+
+  private val uri = new java.net.URI(url)
 
   private val decider: Supervision.Decider = { case _ => Supervision.Stop }
 
-  def flowOrig: Flow[AwsOp, AmazonWebServiceResult[ResponseMetadata], NotUsed] =
-    Flow[AwsOp]
-      .map(toAwsRequest)
-      .via(connection)
-      .mapAsync(settings.parallelism) {
-        case (Success(response), i) => toAwsResult(response, i)
-        case (Failure(ex), i) => Future.failed(ex)
-      }
-      .withAttributes(ActorAttributes.supervisionStrategy(decider))
-
   def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] =
     Flow[Op]
-      .map(toAwsRequest)
+      .map(op => toAwsRequest(op))
       .via(connection)
       .mapAsync(settings.parallelism) {
         case (Success(response), i) => toAwsResult(response, i)
@@ -92,13 +86,22 @@ private[alpakka] trait AwsClient[S <: ClientSettings] {
 
   private def toAwsRequest(s: AwsOp): (HttpRequest, AwsRequestMetadata) = {
     val original = s.marshaller.marshall(s.request)
-    original.setEndpoint(new java.net.URI("https://" + settings.host + "/"))
+    original.setEndpoint(uri)
     original.getHeaders.remove("Content-Type")
     original.getHeaders.remove("Content-Length")
     signer.sign(original, credentials.getCredentials)
 
     val amzHeaders = original.getHeaders
     val body = read(original.getContent)
+
+    val tokenHeader: List[headers.RawHeader] = {
+      credentials.getCredentials() match {
+        case sessionCredentials: auth.AWSSessionCredentials =>
+          Some(headers.RawHeader("x-amz-security-token", amzHeaders.get("X-Amz-Security-Token")))
+        case other =>
+          None
+      }
+    }.toList
 
     val httpr = HttpRequest(
       uri = signableUrl,
@@ -107,15 +110,17 @@ private[alpakka] trait AwsClient[S <: ClientSettings] {
         headers.RawHeader("x-amz-date", amzHeaders.get("X-Amz-Date")),
         headers.RawHeader("authorization", amzHeaders.get("Authorization")),
         headers.RawHeader("x-amz-target", amzHeaders.get("X-Amz-Target"))
-      ),
+      ) ++ tokenHeader,
       entity = HttpEntity(defaultContentType, body)
     )
 
     httpr -> AwsRequestMetadata(requestId.getAndIncrement(), s)
   }
 
-  private def toAwsResult(response: HttpResponse,
-                          metadata: AwsRequestMetadata): Future[AmazonWebServiceResult[ResponseMetadata]] = {
+  private def toAwsResult(
+      response: HttpResponse,
+      metadata: AwsRequestMetadata
+  ): Future[AmazonWebServiceResult[ResponseMetadata]] = {
     val req = new DefaultRequest(this.service)
     val awsResp = new AWSHttpResponse(req, null) //
     response.entity.dataBytes.runFold(Array.emptyByteArray)(_ ++ _).flatMap { bytes =>

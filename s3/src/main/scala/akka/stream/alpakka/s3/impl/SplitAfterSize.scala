@@ -4,7 +4,6 @@
 package akka.stream.alpakka.s3.impl
 
 import akka.stream.scaladsl.SubFlow
-import akka.stream.scaladsl.Source
 import akka.stream.stage.GraphStage
 import akka.util.ByteString
 import akka.stream.FlowShape
@@ -14,7 +13,6 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.Attributes
 import akka.stream.stage.OutHandler
 import akka.stream.stage.InHandler
-import akka.stream.scaladsl.RunnableGraph
 import akka.stream.scaladsl.Flow
 
 /**

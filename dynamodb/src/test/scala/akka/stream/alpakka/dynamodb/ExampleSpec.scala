@@ -61,12 +61,12 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
       import DynamoImplicits._
       Source
         .single[AwsOp](new CreateTableRequest().withTableName("testTable"))
-        .via(client.flowOrig)
+        .via(client.flow)
         .map(_.asInstanceOf[CreateTable#B]) // <-- this is not very intuitive
-        .map[AwsOp]( // <-- this is required to trigger the implicit conversion, which takes some time to find out as well
+        .map[AwsOp]( // <-- this is required to trigger the following implicit conversion, which takes some time to find out as well
           result => new DescribeTableRequest().withTableName(result.getTableDescription.getTableName)
         )
-        .via(client.flowOrig)
+        .via(client.flow)
         .map(_.asInstanceOf[DescribeTable#B])
         .map(result => result.getTable.getItemCount)
     }
@@ -81,15 +81,12 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
     val client = DynamoClient(settings)
 
     import DynamoImplicits._
+    //##flow
     Source
-      .single(new CreateTableRequest().withTableName("testTable").toOp) // we keep the concrete subtype of AwsOp here
+      .single(new CreateTableRequest().withTableName("testTable").toOp)
       .via(client.flow)
-      .map(
-        result => // that's why code completion 'understands' the type of 'result' here. which makes a big difference in usability
-          new DescribeTableRequest().withTableName(result.getTableDescription.getTableName).toOp
-      )
-      .via(client.flow)
-      .map(result => result.getTable.getItemCount)
+      .map(_.getTableDescription.getTableArn)
+    //##flow
   }
 
   "allow multiple requests - proposal - single source" in {
@@ -102,7 +99,7 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
 
     import DynamoImplicits._
     client
-      .source(new CreateTableRequest().withTableName("testTable")) // creating a source from a single req is common ; utility function
+      .source(new CreateTableRequest().withTableName("testTable")) // creating a source from a single req is common enough to warrant a utility function
       .map(result => new DescribeTableRequest().withTableName(result.getTableDescription.getTableName).toOp)
       .via(client.flow)
       .map(result => result.getTable.getItemCount)

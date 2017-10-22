@@ -3,9 +3,10 @@
  */
 package akka.stream.alpakka.s3.impl
 
-import java.nio.file.Paths
 import java.time.LocalDate
-
+import scala.collection.immutable.Seq
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -18,10 +19,6 @@ import akka.stream.alpakka.s3.scaladsl.ListBucketResultContents
 import akka.stream.alpakka.s3.{DiskBufferType, MemoryBufferType, S3Exception, S3Settings}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
-
-import scala.collection.immutable.Seq
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 final case class S3Location(bucket: String, key: String)
 
@@ -55,12 +52,12 @@ object S3Stream {
 
 private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
 
-  import Marshalling._
   import HttpRequests._
+  import Marshalling._
 
   implicit val conf = settings
   val MinChunkSize = 5242880 //in bytes
-  val signingKey = SigningKey(settings.awsCredentials, CredentialScope(LocalDate.now(), settings.s3Region, "s3"))
+  val signingKey = SigningKey(settings.credentialsProvider, CredentialScope(LocalDate.now(), settings.s3Region, "s3"))
 
   def download(s3Location: S3Location, range: Option[ByteRange] = None): Source[ByteString, NotUsed] = {
     import mat.executionContext
@@ -95,13 +92,14 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       .mapConcat(identity)
   }
 
-  def request(s3Location: S3Location, rangeOption: Option[ByteRange] = None): Future[HttpResponse] = {
-    val downloadRequest = getDownloadRequest(s3Location)
-    signAndGet(rangeOption match {
-      case Some(range) => downloadRequest.withHeaders(headers.Range(range))
+  def request(s3Location: S3Location, rangeOption: Option[ByteRange] = None): Future[HttpResponse] =
+    signAndGet(requestHeaders(getDownloadRequest(s3Location), rangeOption))
+
+  private def requestHeaders(downloadRequest: HttpRequest, rangeOption: Option[ByteRange]): HttpRequest =
+    rangeOption match {
+      case Some(range) => downloadRequest.addHeader(headers.Range(range))
       case _ => downloadRequest
-    })
-  }
+    }
 
   /**
    * Uploads a stream of ByteStrings to a specified location as a multipart upload.
@@ -187,13 +185,10 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
   }
 
   private def getChunkBuffer(chunkSize: Int) = settings.bufferType match {
-    case MemoryBufferType => new MemoryBuffer(chunkSize * 2)
-    case DiskBufferType => new DiskBuffer(2, chunkSize * 2, getDiskBufferPath)
-  }
-
-  private val getDiskBufferPath = settings.diskBufferPath match {
-    case "" => None
-    case s => Some(Paths.get(s))
+    case MemoryBufferType =>
+      new MemoryBuffer(chunkSize * 2)
+    case d @ DiskBufferType(_) =>
+      new DiskBuffer(2, chunkSize * 2, d.path)
   }
 
   private def chunkAndRequest(

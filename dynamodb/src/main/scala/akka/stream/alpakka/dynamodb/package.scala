@@ -17,5 +17,4 @@ package dynamodb {
     val marshaller: Marshaller[Request[A], A]
 //    def toOp[Op <: AwsOp]:Op
   }
-
 }

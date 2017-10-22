@@ -36,9 +36,24 @@ final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape
       setHandler(
         in,
         new InHandler {
+
           override def onPush(): Unit = {
+
+            def createDestination(destination: Destination): _root_.javax.jms.Destination =
+              destination match {
+                case Queue(name) => jmsSession.session.createQueue(name)
+                case Topic(name) => jmsSession.session.createTopic(name)
+              }
+
             val elem: JmsTextMessage = grab(in)
             val textMessage: TextMessage = jmsSession.session.createTextMessage(elem.body)
+
+            elem.headers.foreach {
+              case JmsType(jmsType) => textMessage.setJMSType(jmsType)
+              case JmsReplyTo(destination) => textMessage.setJMSReplyTo(createDestination(destination))
+              case JmsCorrelationId(jmsCorrelationId) => textMessage.setJMSCorrelationID(jmsCorrelationId)
+            }
+
             elem.properties.foreach {
               case (key, v) =>
                 v match {
@@ -51,6 +66,7 @@ final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape
                   case v: Double => textMessage.setDoubleProperty(key, v)
                 }
             }
+
             jmsProducer.send(textMessage)
             pull(in)
           }
