@@ -17,8 +17,9 @@ object Streams {
   /**
    * Produces a Source of Dynamodb Streams records for the table returned by the describeTableRequest.
    */
-  def records(describeTableRequest: DescribeTableRequest)(implicit client: DynamoClient,
-                                                          executionContext: ExecutionContext): Source[Record, NotUsed] =
+  def records(
+      describeTableRequest: DescribeTableRequest
+  )(implicit client: DynamoClient, executionContext: ExecutionContext): Source[Record, NotUsed] =
     client
       .source(describeTableRequest)
       .map(describeTableResult => describeTableResult.getTable.getLatestStreamArn)
@@ -26,18 +27,17 @@ object Streams {
         client
           .source(new DescribeStreamRequest().withStreamArn(arn))
           .flatMapConcat { describeStreamResult =>
-            val shards = describeStreamResult.getStreamDescription.getShards
-
-            shardsToRecords(arn, shards)
+            shardsToRecords(arn, describeStreamResult.getStreamDescription)
           }
       }
 
   def shardsToRecords(
       streamArn: String,
-      shards: JList[Shard]
+      streamDescription: StreamDescription
   )(implicit client: DynamoClient, executionContext: ExecutionContext): Source[Record, NotUsed] =
-    Source.fromIterator(() => shards.iterator().asScala).flatMapConcat { shard => // can we process shards in parallel?
+    Source.fromIterator(() => streamDescription.getShards.iterator().asScala).flatMapConcat { shard => // can we process shards in parallel?
       val parent = shard.getParentShardId
+
       println(s"parent $parent") // should we process the parent first if it's not null?
       client
         .source(getShardIteratorRequest(streamArn = streamArn, shardId = shard.getShardId).toOp)
