@@ -19,7 +19,7 @@ services:
     volumes:
       - ./mqtt/src/test/travis:/mqtt/config/conf.d
   dynamodb:
-    image: joostdevries/docker-dynamodb
+    image: joostdevries/docker-dynamodb # for dynamodb release notes see https://github.com/joost-de-vries/docker-dynamodb
     ports:
       - "8001:8000"
   geode:
