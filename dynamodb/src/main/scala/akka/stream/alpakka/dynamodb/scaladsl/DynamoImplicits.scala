@@ -120,4 +120,28 @@ object DynamoImplicits extends DynamoProtocol {
     override val marshaller = listTablesM
     def toOp: ListTables = this
   }
+
+  implicit class DescribeStream(val request: DescribeStreamRequest) extends AwsOp {
+    override type A = DescribeStreamRequest
+    override type B = DescribeStreamResult
+    override val handler = describeStreamU
+    override val marshaller = describeStreamM
+    def toOp: DescribeStream = this
+  }
+
+  implicit class GetShardIterator(val request: GetShardIteratorRequest) extends AwsOp {
+    override type A = GetShardIteratorRequest
+    override type B = GetShardIteratorResult
+    override val handler = getShardIteratorU
+    override val marshaller = getShardIteratorM
+    def toOp: GetShardIterator = this
+  }
+
+  implicit class GetRecords(val request: GetRecordsRequest) extends AwsOp {
+    override type A = GetRecordsRequest
+    override type B = GetRecordsResult
+    override val handler = getRecordsU
+    override val marshaller = getRecordsM
+    def toOp: GetRecords = this
+  }
 }
