@@ -13,7 +13,9 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.collection.JavaConverters._
 
 object Streams {
-  def records(tableName: String)(implicit client: DynamoClient, executionContext: ExecutionContext) =
+
+  def records(tableName: String)(implicit client: DynamoClient,
+                                 executionContext: ExecutionContext): Source[Record, NotUsed] =
     client
       .source(new DescribeTableRequest().withTableName(tableName))
       .map(describeTableResult => describeTableResult.getTable.getLatestStreamArn)

@@ -7,6 +7,7 @@ import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.alpakka.dynamodb.impl.DynamoSettings
 import akka.stream.alpakka.dynamodb.scaladsl._
+import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestKit
 import com.amazonaws.services.dynamodbv2.model._
 import org.scalatest._
@@ -52,9 +53,17 @@ class StreamsSpec
       client.single(test4PutItemRequest).futureValue
       client.single(deleteItemRequest).futureValue
 
-      And("create a stream for that table")
+      And("create a stream of records for that table")
 
-      Streams.records(StreamsSpecOps.tableName).runForeach(records => println(s"received $records"))
+      val records = Streams
+        .records(StreamsSpecOps.tableName)
+
+      Then("we should receive an INSERT and REMOVE")
+      records
+        .map(_.getEventName)
+        .runWith(TestSink.probe)
+        .request(2)
+        .expectNext("INSERT", "REMOVE")
     }
   }
 
