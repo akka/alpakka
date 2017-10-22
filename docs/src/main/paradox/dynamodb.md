@@ -46,6 +46,16 @@ Scala
 Java
 : @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #flow }
 
+If you create a table with <a href="http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/dynamodbv2/model/StreamSpecification.html#withStreamEnabled-java.lang.Boolean-">Dynamodb Streams enabled</a>
+you can subscribe to changes to the table:
+
+Scala
+: @@snip (../../../../dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #streams }
+
+Java
+: @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #streams }
+
+
 ### Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.

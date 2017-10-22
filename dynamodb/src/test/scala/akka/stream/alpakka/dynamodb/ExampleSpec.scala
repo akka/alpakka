@@ -106,4 +106,20 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
 
   }
 
+  "stream data changes" in {
+    implicit val system = ActorSystem()
+    implicit val materializer = ActorMaterializer()
+    implicit val ec = system.dispatcher
+
+    val settings = DynamoSettings(system)
+    val client = DynamoClient(settings)
+
+    import DynamoImplicits._
+    //##streams
+    client
+      .records(new DescribeTableRequest().withTableName("testTable"))
+      .map(record => record.getEventName) //will produce a stream of INSERT, MODIFY, REMOVE
+    //##streams
+
+  }
 }

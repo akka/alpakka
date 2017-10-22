@@ -11,10 +11,7 @@ import akka.stream.alpakka.dynamodb.impl.DynamoSettings;
 import akka.stream.alpakka.dynamodb.javadsl.DynamoClient;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import com.amazonaws.services.dynamodbv2.model.CreateTableResult;
-import com.amazonaws.services.dynamodbv2.model.ListTablesRequest;
-import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
-import com.amazonaws.services.dynamodbv2.model.ListTablesResult;
+import com.amazonaws.services.dynamodbv2.model.*;
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits.CreateTable;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -79,5 +76,15 @@ public class ExampleTest {
         //#flow
         final Duration duration = Duration.create(5, "seconds");
         tableArnSource.runForeach(System.out::println,materializer);
+    }
+
+    @Test
+    public void streams() throws Exception {
+        //##streams
+        client
+                .records(new DescribeTableRequest().withTableName("testTable"))
+                .map(result -> (Record) result)
+                .map(Record::getEventName); //will produce a stream of INSERT, MODIFY, REMOVE
+        //##streams
     }
 }

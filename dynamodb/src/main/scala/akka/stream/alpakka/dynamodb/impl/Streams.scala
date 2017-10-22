@@ -1,39 +1,42 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.dynamodb
+package akka.stream.alpakka.dynamodb.impl
 
 import akka.NotUsed
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoClient
+import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits._
 import akka.stream.scaladsl.Source
 import com.amazonaws.services.dynamodbv2.model._
-import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits._
-
-import scala.concurrent.{ExecutionContext, Future}
+import java.util.{List => JList}
 import scala.collection.JavaConverters._
+import scala.concurrent.{ExecutionContext, Future}
 
 object Streams {
 
-  def records(tableName: String)(implicit client: DynamoClient,
-                                 executionContext: ExecutionContext): Source[Record, NotUsed] =
+  /**
+   * Produces a Source of Dynamodb Streams records for the table returned by the describeTableRequest.
+   */
+  def records(describeTableRequest: DescribeTableRequest)(implicit client: DynamoClient,
+                                                          executionContext: ExecutionContext): Source[Record, NotUsed] =
     client
-      .source(new DescribeTableRequest().withTableName(tableName))
+      .source(describeTableRequest)
       .map(describeTableResult => describeTableResult.getTable.getLatestStreamArn)
       .flatMapConcat { arn =>
         client
           .source(new DescribeStreamRequest().withStreamArn(arn))
           .flatMapConcat { describeStreamResult =>
-            val shards = describeStreamResult.getStreamDescription.getShards.asScala
+            val shards = describeStreamResult.getStreamDescription.getShards
 
-            shardsToRecords(arn, shards.toList)
+            shardsToRecords(arn, shards)
           }
       }
 
   def shardsToRecords(
       streamArn: String,
-      shards: List[Shard]
+      shards: JList[Shard]
   )(implicit client: DynamoClient, executionContext: ExecutionContext): Source[Record, NotUsed] =
-    Source.fromIterator(() => shards.toIterator).flatMapConcat { shard => // can we process shards in parallel?
+    Source.fromIterator(() => shards.iterator().asScala).flatMapConcat { shard => // can we process shards in parallel?
       val parent = shard.getParentShardId
       println(s"parent $parent") // should we process the parent first if it's not null?
       client
