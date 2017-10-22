@@ -3,6 +3,7 @@
  */
 package akka.stream.alpakka.dynamodb
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.alpakka.dynamodb.impl.DynamoSettings
@@ -17,7 +18,7 @@ import org.scalatest.time.{Millis, Seconds, Span}
 import scala.collection.JavaConverters._
 
 class StreamsSpec
-    extends TestKit(ActorSystem("ItemSpec"))
+    extends TestKit(ActorSystem("StreamsSpec"))
     with WordSpecLike
     with Matchers
     with BeforeAndAfterAll
@@ -32,12 +33,12 @@ class StreamsSpec
   implicit override val patienceConfig =
     PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
   val settings = DynamoSettings(system)
-  implicit val client = DynamoClient(settings)
+  val client = DynamoClient(settings)
 
   override def beforeAll() = {
     System.setProperty("aws.accessKeyId", "someKeyId")
     System.setProperty("aws.secretKey", "someSecretKey")
-    client.single(createTableRequest).futureValue
+    client.single(createTableStreamsEnabledRequest).futureValue
   }
 
   override def afterAll() =
@@ -45,14 +46,14 @@ class StreamsSpec
       .single(deleteTableRequest)
       .futureValue
 
-  "DynamoDB Client" should {
+  "DynamoDB Streams Client" should {
 
     "get the stream of changes to a table" in {
       Given("a table with streams enabled")
 
       When("we create a stream of records for that table")
-      val records = Streams
-        .records(StreamsSpecOps.tableName)
+      val records = client
+        .records(new DescribeTableRequest().withTableName(StreamsSpecOps.tableName))
 
       And("run it")
       val probe = records
@@ -72,14 +73,13 @@ class StreamsSpec
 
     }
   }
-
 }
 
 object StreamsSpecOps extends TestOps {
 
   override val tableName = "StreamsSpecOps"
 
-  val createTableRequest = {
+  val createTableStreamsEnabledRequest = {
     val streamSpecification =
       new StreamSpecification().withStreamEnabled(true).withStreamViewType(StreamViewType.NEW_AND_OLD_IMAGES)
     common.createTableRequest.withStreamSpecification(streamSpecification)
