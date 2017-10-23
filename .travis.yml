@@ -29,6 +29,7 @@ script:
 
 after_failure:
   - docker-compose logs mqtt
+  - docker-compose logs cassandra
 
 before_cache:
   - find $HOME/.ivy2 -name "ivydata-*.properties" -print -delete
