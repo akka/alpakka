@@ -39,7 +39,8 @@ object Dependencies {
 
   val Cassandra = Seq(
     libraryDependencies ++= Seq(
-      "com.datastax.cassandra" % "cassandra-driver-core" % "3.1.0" // ApacheV2
+      "com.datastax.cassandra" % "cassandra-driver-core" % "3.3.0", // ApacheV2
+      "ch.qos.logback" % "logback-classic" % "1.1.7" % Test // Eclipse Public License 1.0
     )
   )
 
