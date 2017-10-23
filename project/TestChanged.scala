@@ -1,6 +1,7 @@
 package akka.stream.alpakka
 
 import scala.collection.immutable
+import scala.sys.process._
 
 import sbt._
 import sbt.Keys._
@@ -34,7 +35,7 @@ object TestChanged extends AutoPlugin {
 
   override lazy val projectSettings = Seq(
     testChanged := Def.taskDyn {
-      val skip = Def.setting { task() }
+      val skip = Def.setting { task(()) }
       if (shouldBuild(name.value, changedDirectories.value)) test in Test
       else skip
     }.value
