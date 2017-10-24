@@ -7,7 +7,7 @@ package akka.stream.alpakka.cassandra.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
-import com.datastax.driver.core.{Cluster, PreparedStatement, SimpleStatement, SocketOptions}
+import com.datastax.driver.core.{Cluster, PreparedStatement, SimpleStatement}
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
@@ -34,10 +34,6 @@ class CassandraSourceSpec
   implicit val session = Cluster.builder
     .addContactPoint("127.0.0.1")
     .withPort(9042)
-    .withSocketOptions(
-      new SocketOptions()
-        .setConnectTimeoutMillis(20 * 1000)
-    )
     .build
     .connect()
   //#init-session
