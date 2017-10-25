@@ -22,7 +22,6 @@ object EventStoreSink {
    * Creates a sink for insertion of records into EventStore.
    * @param databaseName Name of the database, database has to exist before the call to this function.
    * @param tableName    Name of the table, database has to exist before the call to this function.
-   * @return             CompletionStage[Done]
    */
   def apply(
       databaseName: String,
