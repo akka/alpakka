@@ -102,7 +102,7 @@ object JmsTextMessage {
     JmsTextMessage(body = body, headers = headers.asScala.toSet, properties = properties.asScala.toMap)
 }
 
-sealed trait AcknowledgeMode {
+trait AcknowledgeMode {
   val jmsAcknowledgeMode: Int
 }
 
