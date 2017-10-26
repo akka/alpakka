@@ -7,7 +7,7 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.jms.ClientAcknowledge$;
+import akka.stream.alpakka.jms.AcknowledgeMode;
 import akka.stream.alpakka.jms.JmsCorrelationId;
 import akka.stream.alpakka.jms.JmsReplyTo;
 import akka.stream.alpakka.jms.JmsSinkSettings;
@@ -323,7 +323,7 @@ public class JmsConnectorsTest {
             Source<Message, NotUsed> jmsSource = JmsSource.create(JmsSourceSettings
                     .create(connectionFactory)
                     .withQueue("test")
-                    .withAcknowledgeMode(ClientAcknowledge$.MODULE$)
+                    .withAcknowledgeMode(AcknowledgeMode.ClientAcknowledge())
             );
             //#create-jms-source-client-ack
 

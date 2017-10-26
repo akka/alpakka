@@ -205,7 +205,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val jmsSource: Source[Message, NotUsed] = JmsSource(
         JmsSourceSettings(connectionFactory)
           .withQueue("numbers")
-          .withAcknowledgeMode(ClientAcknowledge)
+          .withAcknowledgeMode(AcknowledgeMode.ClientAcknowledge)
       )
       //#create-jms-source-client-ack
 
@@ -248,7 +248,7 @@ class JmsConnectorsSpec extends JmsSpec {
         JmsSourceSettings(connectionFactory)
           .withBufferSize(10)
           .withQueue("numbers")
-          .withAcknowledgeMode(ClientAcknowledge)
+          .withAcknowledgeMode(AcknowledgeMode.ClientAcknowledge)
       )
 
       val result = jmsSource

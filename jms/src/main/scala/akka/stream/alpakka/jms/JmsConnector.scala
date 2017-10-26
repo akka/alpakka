@@ -57,7 +57,7 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
         fail.invoke(exception)
     })
     connection.start()
-    val session = connection.createSession(false, jmsSettings.acknowledgeMode.jmsAcknowledgeMode)
+    val session = connection.createSession(false, jmsSettings.acknowledgeMode.mode)
     val dest = jmsSettings.destination match {
       case Some(Queue(name)) => session.createQueue(name)
       case Some(Topic(name)) => session.createTopic(name)

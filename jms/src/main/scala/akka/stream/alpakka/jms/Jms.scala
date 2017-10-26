@@ -102,24 +102,13 @@ object JmsTextMessage {
     JmsTextMessage(body = body, headers = headers.asScala.toSet, properties = properties.asScala.toMap)
 }
 
-trait AcknowledgeMode {
-  val jmsAcknowledgeMode: Int
-}
+final class AcknowledgeMode(val mode: Int)
 
-case object AutoAcknowledge extends AcknowledgeMode {
-  override val jmsAcknowledgeMode: Int = jms.Session.AUTO_ACKNOWLEDGE
-}
-
-case object ClientAcknowledge extends AcknowledgeMode {
-  override val jmsAcknowledgeMode: Int = jms.Session.CLIENT_ACKNOWLEDGE
-}
-
-case object DupsOkAcknowledge extends AcknowledgeMode {
-  override val jmsAcknowledgeMode: Int = jms.Session.DUPS_OK_ACKNOWLEDGE
-}
-
-case object SessionTransacted extends AcknowledgeMode {
-  override val jmsAcknowledgeMode: Int = jms.Session.SESSION_TRANSACTED
+object AcknowledgeMode {
+  val AutoAcknowledge: AcknowledgeMode = new AcknowledgeMode(jms.Session.AUTO_ACKNOWLEDGE)
+  val ClientAcknowledge: AcknowledgeMode = new AcknowledgeMode(jms.Session.CLIENT_ACKNOWLEDGE)
+  val DupsOkAcknowledge: AcknowledgeMode = new AcknowledgeMode(jms.Session.DUPS_OK_ACKNOWLEDGE)
+  val SessionTransacted: AcknowledgeMode = new AcknowledgeMode(jms.Session.SESSION_TRANSACTED)
 }
 
 object JmsSourceSettings {
@@ -133,7 +122,7 @@ final case class JmsSourceSettings(connectionFactory: ConnectionFactory,
                                    credentials: Option[Credentials] = None,
                                    bufferSize: Int = 100,
                                    selector: Option[String] = None,
-                                   acknowledgeMode: AcknowledgeMode = AutoAcknowledge)
+                                   acknowledgeMode: AcknowledgeMode = AcknowledgeMode.AutoAcknowledge)
     extends JmsSettings {
   def withCredential(credentials: Credentials) = copy(credentials = Some(credentials))
   def withBufferSize(size: Int) = copy(bufferSize = size)
@@ -153,7 +142,7 @@ final case class JmsSinkSettings(connectionFactory: ConnectionFactory,
                                  destination: Option[Destination] = None,
                                  credentials: Option[Credentials] = None,
                                  timeToLive: Option[Duration] = None,
-                                 acknowledgeMode: AcknowledgeMode = AutoAcknowledge)
+                                 acknowledgeMode: AcknowledgeMode = AcknowledgeMode.AutoAcknowledge)
     extends JmsSettings {
   def withCredential(credentials: Credentials) = copy(credentials = Some(credentials))
   def withQueue(name: String) = copy(destination = Some(Queue(name)))
