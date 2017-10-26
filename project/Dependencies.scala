@@ -125,6 +125,16 @@ object Dependencies {
     )
   }
 
+  val IbmEventStore = Seq(
+    libraryDependencies ++= Seq(
+      "org.apache.spark"    %% "spark-sql"        % "2.2.0",
+      "EventStore"          % "ibm-event-desktop" % "1.1.1",
+      "com.typesafe.akka"   %% "akka-slf4j"       % AkkaVersion   % Test,
+      "ch.qos.logback"      % "logback-classic"   % "1.2.3"       % Test  // Eclipse Public License 1.0
+    ),
+    resolvers += "EventStore repo" at "https://raw.github.com/IBMProjectEventStore/EventStore-DeveloperPreview/master/"
+  )
+
   val IronMq = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,

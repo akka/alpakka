@@ -92,6 +92,15 @@ lazy val googleCloudPubSub = alpakkaProject(
 
 lazy val hbase = alpakkaProject("hbase", Dependencies.HBase, fork in Test := true)
 
+lazy val ibmEventStore = project
+  .in(file("ibm-eventstore"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(
+    name := "akka-stream-alpakka-ibm-eventstore",
+    Dependencies.IbmEventStore,
+    scalaVersion := "2.11.11"
+  )
+
 lazy val ironmq = alpakkaProject("ironmq", Dependencies.IronMq)
 
 lazy val jms = alpakkaProject("jms", Dependencies.Jms, parallelExecution in Test := false)
