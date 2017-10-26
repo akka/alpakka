@@ -42,28 +42,31 @@ private[kinesis] final class KinesisFlowStage(
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with StageLogging with InHandler with OutHandler {
 
+      type Token = Int
+      type RetryCount = Int
+
       private val retryBaseInMillis = retryInitialTimeout.toMillis
 
-      private var completionState: Option[Try[Unit]] = None
+      private var completionState: Option[Try[Unit]] = _
 
-      private val pendingRequests: mutable.Queue[(Int, Seq[PutRecordsRequestEntry])] = mutable.Queue.empty
+      private val pendingRequests: mutable.Queue[Job] = mutable.Queue.empty
       private var resultCallback: AsyncCallback[Result] = _
-      private var inFlight = 0
+      private var inFlight: Int = _
 
-      private var retryToken = 0
-      private val waitingRetries: mutable.HashMap[Int, Result] = mutable.HashMap.empty
+      private val waitingRetries: mutable.HashMap[Token, Job] = mutable.HashMap.empty
+      private var retryToken: Token = _
 
       private def tryToExecute() =
         if (pendingRequests.nonEmpty && isAvailable(out)) {
           log.debug("Executing PutRecords call")
           inFlight += 1
-          val (attempt, records) = pendingRequests.dequeue()
+          val job = pendingRequests.dequeue()
           push(
             out,
             putRecords(
               streamName,
-              records,
-              recordsToRetry => resultCallback.invoke(Result(attempt, recordsToRetry))
+              job.records,
+              recordsToRetry => resultCallback.invoke(Result(job.attempt, recordsToRetry))
             )
           )
         }
@@ -78,10 +81,10 @@ private[kinesis] final class KinesisFlowStage(
         case Result(attempt, errors) if attempt > maxRetries =>
           log.debug("PutRecords call finished with partial errors after {} attempts", attempt)
           failStage(ErrorPublishingRecords(attempt, errors.map(_._1)))
-        case x @ Result(attempt, _) =>
+        case Result(attempt, errors) =>
           log.debug("PutRecords call finished with partial errors; scheduling retry")
           inFlight -= 1
-          waitingRetries.put(retryToken, x)
+          waitingRetries.put(retryToken, Job(attempt + 1, errors.map(_._2)))
           scheduleOnce(retryToken, backoffStrategy match {
             case Exponential => scala.math.pow(retryBaseInMillis, attempt).toInt millis
             case Lineal => retryInitialTimeout * attempt
@@ -99,15 +102,18 @@ private[kinesis] final class KinesisFlowStage(
         }
 
       override protected def onTimer(timerKey: Any) =
-        waitingRetries.remove(timerKey.asInstanceOf[Int]) foreach { result =>
+        waitingRetries.remove(timerKey.asInstanceOf[Token]) foreach { job =>
           log.debug("New PutRecords retry attempt available")
-          pendingRequests.enqueue(result.attempt + 1 -> result.recordsToRetry.map(_._2))
+          pendingRequests.enqueue(job)
           tryToExecute()
         }
 
       override def preStart() = {
-        pull(in)
+        completionState = None
+        inFlight = 0
+        retryToken = 0
         resultCallback = getAsyncCallback[Result](handleResult)
+        pull(in)
       }
 
       override def postStop(): Unit = {
@@ -132,7 +138,7 @@ private[kinesis] final class KinesisFlowStage(
 
       override def onPush(): Unit = {
         log.debug("New PutRecords request available")
-        pendingRequests.enqueue(1 -> grab(in))
+        pendingRequests.enqueue(Job(1, grab(in)))
         tryToExecute()
       }
 
@@ -180,5 +186,6 @@ object KinesisFlowStage {
   }
 
   private case class Result(attempt: Int, recordsToRetry: Seq[(PutRecordsResultEntry, PutRecordsRequestEntry)])
+  private case class Job(attempt: Int, records: Seq[PutRecordsRequestEntry])
 
 }
