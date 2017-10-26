@@ -132,7 +132,7 @@ class ElasticsearchFlowStage[T, R](
           "POST",
           "/_bulk",
           Map[String, String]().asJava,
-          new StringEntity(json),
+          new StringEntity(json, "utf-8"),
           new ResponseListener() {
             override def onFailure(exception: Exception): Unit =
               failureHandler.invoke((messages, exception))
