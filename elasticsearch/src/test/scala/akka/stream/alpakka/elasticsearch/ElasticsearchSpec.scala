@@ -7,7 +7,7 @@ package akka.stream.alpakka.elasticsearch
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.elasticsearch.scaladsl._
-import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import org.apache.http.HttpHost
 import org.apache.http.entity.StringEntity
@@ -269,11 +269,11 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       // Assert docs in sink3/book
       val f2 = ElasticsearchSource
         .typed[Book](
-        "sink4",
-        "book",
-        """{"match_all": {}}""",
-        ElasticsearchSourceSettings()
-      )
+          "sink4",
+          "book",
+          """{"match_all": {}}""",
+          ElasticsearchSourceSettings()
+        )
         .map { message =>
           message.source.title
         }
