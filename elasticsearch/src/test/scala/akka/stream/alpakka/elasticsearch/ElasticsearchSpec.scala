@@ -7,7 +7,7 @@ package akka.stream.alpakka.elasticsearch
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.elasticsearch.scaladsl._
-import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import org.apache.http.HttpHost
 import org.apache.http.entity.StringEntity
@@ -234,6 +234,56 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         "Programming in Scala",
         "Scala Puzzlers",
         "Scala for Spark in Production"
+      )
+    }
+  }
+
+  "ElasticsearchFlow" should {
+    "not post invalid encoded JSON" in {
+
+      val books = Seq(
+        "Akka in Action",
+        "Akka \u00DF Concurrency"
+      )
+
+      val f1 = Source(books.zipWithIndex.toVector)
+        .map {
+          case (book: String, index: Int) =>
+            IncomingMessage(Some(index.toString), Book(book))
+        }
+        .via(
+          ElasticsearchFlow.typed[Book](
+            "sink4",
+            "book",
+            ElasticsearchSinkSettings(5)
+          )
+        )
+        .runWith(Sink.seq)
+
+      val result1 = Await.result(f1, Duration.Inf)
+      flush("sink4")
+
+      // Assert no error
+      assert(result1.forall(_.isEmpty))
+
+      // Assert docs in sink3/book
+      val f2 = ElasticsearchSource
+        .typed[Book](
+          "sink4",
+          "book",
+          """{"match_all": {}}""",
+          ElasticsearchSourceSettings()
+        )
+        .map { message =>
+          message.source.title
+        }
+        .runWith(Sink.seq)
+
+      val result2 = Await.result(f2, Duration.Inf)
+
+      result2.sorted shouldEqual Seq(
+        "Akka in Action",
+        "Akka \u00DF Concurrency"
       )
     }
   }
