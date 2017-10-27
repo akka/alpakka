@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.elasticsearch
 
+import java.nio.charset.StandardCharsets
+
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.stage._
 import org.apache.http.entity.StringEntity
@@ -132,7 +134,7 @@ class ElasticsearchFlowStage[T, R](
           "POST",
           "/_bulk",
           Map[String, String]().asJava,
-          new StringEntity(json, "UTF-8"),
+          new StringEntity(json, StandardCharsets.UTF_8),
           new ResponseListener() {
             override def onFailure(exception: Exception): Unit =
               failureHandler.invoke((messages, exception))
