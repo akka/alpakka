@@ -10,8 +10,10 @@ import akka.stream.stage.{GraphStageWithMaterializedValue, InHandler, OutHandler
 import akka.stream.{Attributes, IOResult, Inlet, Outlet, Shape, SinkShape, SourceShape}
 import akka.util.ByteString
 import akka.util.ByteString.ByteString1C
+
 import scala.concurrent.{Future, Promise}
-import java.io.{InputStream, OutputStream}
+import java.io.{IOException, InputStream, OutputStream}
+
 import scala.util.control.NonFatal
 
 private[ftp] trait FtpIOGraphStage[FtpClient, S <: RemoteFileSettings, Sh <: Shape]
@@ -54,33 +56,38 @@ private[ftp] trait FtpIOSourceStage[FtpClient, S <: RemoteFileSettings]
         out,
         new OutHandler {
           def onPull(): Unit =
-            readChunk() match {
-              case Some(bs) =>
-                push(out, bs)
-              case None =>
-                try {
-                  isOpt.foreach(_.close())
-                  disconnect()
-                } finally {
-                  matSuccess()
-                  complete(out)
-                }
-            }
-
-          override def onDownstreamFinish(): Unit =
             try {
-              isOpt.foreach(_.close())
-              disconnect()
-            } finally {
-              matSuccess()
-              super.onDownstreamFinish()
+              readChunk() match {
+                case Some(bs) =>
+                  push(out, bs)
+                case None =>
+                  complete(out)
+              }
+            } catch {
+              case NonFatal(e) =>
+                failed = true
+                matFailure(e)
+                failStage(e)
             }
         }
       ) // end of handler
 
       override def postStop(): Unit =
         try {
-          isOpt.foreach(_.close())
+          isOpt.foreach { os =>
+            try {
+              os.close()
+            } catch {
+              case e: IOException =>
+                matFailure(e)
+                // If we failed, we have to expect the stream might already be dead
+                // so swallow the IOException
+                if (!failed) throw e
+              case NonFatal(e) =>
+                matFailure(e)
+                throw e
+            }
+          }
         } finally {
           super.postStop()
         }
@@ -139,40 +146,41 @@ private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
       setHandler(
         in,
         new InHandler {
-          override def onPush(): Unit = {
+          override def onPush(): Unit =
             try {
               write(grab(in))
+              pull(in)
             } catch {
               case NonFatal(e) ⇒
+                failed = true
                 matFailure(e)
-                try osOpt.foreach(_.close())
-                catch {
-                  case NonFatal(_) ⇒
-                }
-                osOpt = None
-                throw e
-            }
-            pull(in)
-          }
-          override def onUpstreamFinish(): Unit =
-            try {
-              osOpt.foreach(_.close())
-              disconnect()
-            } finally {
-              matSuccess()
-              super.onUpstreamFinish()
+                failStage(e)
             }
 
           override def onUpstreamFailure(exception: Throwable): Unit = {
             matFailure(exception)
-            failStage(exception)
+            failed = true
+            super.onUpstreamFailure(exception)
           }
         }
       ) // end of handler
 
       override def postStop(): Unit =
         try {
-          osOpt.foreach(_.close())
+          osOpt.foreach { os =>
+            try {
+              os.close()
+            } catch {
+              case e: IOException =>
+                matFailure(e)
+                // If we failed, we have to expect the stream might already be dead
+                // so swallow the IOException
+                if (!failed) throw e
+              case NonFatal(e) =>
+                matFailure(e)
+                throw e
+            }
+          }
         } finally {
           super.postStop()
         }

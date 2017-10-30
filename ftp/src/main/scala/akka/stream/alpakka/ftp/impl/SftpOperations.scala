@@ -5,17 +5,19 @@
 package akka.stream.alpakka.ftp
 package impl
 
+import java.io.{File, IOException, InputStream, OutputStream}
+import java.nio.file.attribute.PosixFilePermission
+
 import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.sftp.{OpenMode, RemoteResourceInfo, SFTPClient}
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 import net.schmizz.sshj.userauth.keyprovider.OpenSSHKeyFile
 import net.schmizz.sshj.userauth.password.PasswordUtils
 import net.schmizz.sshj.xfer.FilePermission
+
+import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.util.Try
-import scala.collection.JavaConverters._
-import java.nio.file.attribute.PosixFilePermission
-import java.io.{File, IOException, InputStream, OutputStream}
 
 private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
 
@@ -60,7 +62,9 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
   }
 
   private def getPosixFilePermissions(file: RemoteResourceInfo) = {
-    import FilePermission._, PosixFilePermission._
+    import PosixFilePermission._
+
+    import FilePermission._
     file.getAttributes.getPermissions.asScala.collect {
       case USR_R => OWNER_READ
       case USR_W => OWNER_WRITE
@@ -78,16 +82,40 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
 
   def retrieveFileInputStream(name: String, handler: Handler): Try[InputStream] = Try {
     val remoteFile = handler.open(name, Set(OpenMode.READ).asJava)
-    val is = new remoteFile.RemoteFileInputStream()
-    Option(is).getOrElse(throw new IOException(s"$name: No such file or directory"))
+    val is = new remoteFile.RemoteFileInputStream() {
+
+      override def close(): Unit =
+        try {
+          super.close()
+        } finally {
+          remoteFile.close()
+        }
+    }
+    Option(is).getOrElse {
+      remoteFile.close()
+      throw new IOException(s"$name: No such file or directory")
+    }
   }
 
   def storeFileOutputStream(name: String, handler: Handler, append: Boolean): Try[OutputStream] = Try {
     import OpenMode._
     val openModes = Set(WRITE, CREAT) ++ (if (append) Set(APPEND) else Set())
     val remoteFile = handler.open(name, openModes.asJava)
-    val os = new remoteFile.RemoteFileOutputStream()
-    Option(os).getOrElse(throw new IOException(s"Could not write to $name"))
+    val os = new remoteFile.RemoteFileOutputStream() {
+
+      override def close(): Unit = {
+        try {
+          remoteFile.close()
+        } catch {
+          case e: IOException =>
+        }
+        super.close()
+      }
+    }
+    Option(os).getOrElse {
+      remoteFile.close()
+      throw new IOException(s"Could not write to $name")
+    }
   }
 
   private[this] def setIdentity(identity: SftpIdentity, username: String)(implicit ssh: SSHClient) = {
