@@ -4,13 +4,11 @@
 
 package akka.stream.alpakka.kinesis.javadsl
 
-import java.util.concurrent.Future
-
 import akka.NotUsed
 import akka.stream.alpakka.kinesis.{scaladsl, ShardSettings}
 import akka.stream.javadsl.Source
 import com.amazonaws.services.kinesis.AmazonKinesisAsync
-import com.amazonaws.services.kinesis.model.{DescribeStreamResult, Record}
+import com.amazonaws.services.kinesis.model.Record
 
 import scala.collection.JavaConverters._
 

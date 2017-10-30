@@ -4,15 +4,19 @@
 
 package akka.stream.alpakka.kinesis.scaladsl
 
+import java.nio.ByteBuffer
 import java.util.Date
 
 import akka.actor.ActorSystem
-import akka.stream.alpakka.kinesis.ShardSettings
+import akka.stream.alpakka.kinesis.{KinesisFlowSettings, ShardSettings}
+import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
-import com.amazonaws.services.kinesis.model.ShardIteratorType
+import akka.util.ByteString
+import com.amazonaws.services.kinesis.model.{PutRecordsRequestEntry, ShardIteratorType}
 import com.amazonaws.services.kinesis.{AmazonKinesisAsync, AmazonKinesisAsyncClientBuilder}
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 object Examples {
 
@@ -25,19 +29,19 @@ object Examples {
   val amazonKinesisAsync: AmazonKinesisAsync = AmazonKinesisAsyncClientBuilder.defaultClient()
   //#init-client
 
-  //#settings
+  //#source-settings
   val settings = ShardSettings(streamName = "myStreamName",
                                shardId = "shard-id",
                                shardIteratorType = ShardIteratorType.TRIM_HORIZON,
                                refreshInterval = 1.second,
                                limit = 500)
-  //#settings
+  //#source-settings
 
-  //#single
+  //#source-single
   KinesisSource.basic(settings, amazonKinesisAsync)
-  //#single
+  //#source-single
 
-  //#list
+  //#source-list
   val mergeSettings = List(
     ShardSettings("myStreamName",
                   "shard-id-1",
@@ -53,6 +57,36 @@ object Examples {
                   limit = 500)
   )
   KinesisSource.basicMerge(mergeSettings, amazonKinesisAsync)
-  //#list
+  //#source-list
+
+  //#flow-settings
+  val flowSettings = KinesisFlowSettings(
+    parallelism = 1,
+    maxBatchSize = 500,
+    maxRecordsPerSecond = 1000,
+    maxBytesPerSecond = 1000000,
+    maxRetries = 5,
+    backoffStrategy = KinesisFlowSettings.Exponential,
+    retryInitialTimeout = 100 millis
+  )
+
+  val defaultFlowSettings = KinesisFlowSettings.defaultInstance
+
+  val fourShardFlowSettings = KinesisFlowSettings.byNumberOfShards(4)
+  //#flow-settings
+
+  //#flow-sink
+  implicit val _: AmazonKinesisAsync = amazonKinesisAsync
+
+  Source.empty[PutRecordsRequestEntry].via(KinesisFlow("myStreamName")).to(Sink.ignore)
+  Source.empty[PutRecordsRequestEntry].via(KinesisFlow("myStreamName", flowSettings)).to(Sink.ignore)
+  Source.empty[(String, ByteString)].via(KinesisFlow.byParititonAndBytes("myStreamName")).to(Sink.ignore)
+  Source.empty[(String, ByteBuffer)].via(KinesisFlow.byPartitionAndData("myStreamName")).to(Sink.ignore)
+
+  Source.empty[PutRecordsRequestEntry].to(KinesisSink("myStreamName"))
+  Source.empty[PutRecordsRequestEntry].to(KinesisSink("myStreamName", flowSettings))
+  Source.empty[(String, ByteString)].to(KinesisSink.byParititonAndBytes("myStreamName"))
+  Source.empty[(String, ByteBuffer)].to(KinesisSink.byPartitionAndData("myStreamName"))
+  //#flow-sink
 
 }
