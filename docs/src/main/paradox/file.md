@@ -68,6 +68,36 @@ Scala
 Java
 : @@snip (../../../../file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryChangesSourceTest.java) { #minimal-sample }
 
+### LogRotationSink
+
+The `LogRotationSink` will create and write to multiple files.  
+This sink will takes a function as parameter which returns a
+ `Bytestring => Option[Path]` function. If the generated function returns a path
+ the sink will rotate the file output to this new path and the actual `ByteString` will be
+  written to this new file too.
+ With this approach the user can define a custom stateful file generation implementation.
+
+The java implementation is a bit different. The inner function must return null or Path instead of the Option.
+
+A small snippet for the usage:
+
+Scala
+: @@snip (../../../../file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #LogRotationSink-sample }
+
+In this sample we create a size based rotation function:
+
+Scala
+: @@snip (../../../../file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #LogRotationSink-filesize-sample }
+Java
+: @@snip (../../../../file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #LogRotationSink-filesize-sample }
+
+In this sample we create a time based rotation function:
+
+Scala
+: @@snip (../../../../file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #LogRotationSink-timebased-sample }
+Java
+: @@snip (../../../../file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #LogRotationSink-timebased-sample }
+
 
 ### Running the example code
 
