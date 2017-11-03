@@ -87,11 +87,12 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
 
   def putObject(bucket: String,
                 key: String,
-                data: ByteString,
+                data: Source[ByteString, _],
+                contentLength: Long,
                 contentType: ContentType = ContentTypes.`application/octet-stream`,
                 metaHeaders: MetaHeaders = MetaHeaders(Map()),
                 cannedAcl: CannedAcl = CannedAcl.Private): Future[ListBucketResultContents] =
-    impl.putObject(S3Location(bucket, key), contentType, data, S3Headers(cannedAcl, metaHeaders))
+    impl.putObject(S3Location(bucket, key), contentType, data, contentLength, S3Headers(cannedAcl, metaHeaders))
 
   def download(bucket: String, key: String): Source[ByteString, Future[ListBucketResultContents]] =
     impl.download(S3Location(bucket, key))

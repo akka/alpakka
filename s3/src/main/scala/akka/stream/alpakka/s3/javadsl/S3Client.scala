@@ -98,30 +98,46 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
 
   def putObject(bucket: String,
                 key: String,
-                data: ByteString,
+                data: Source[ByteString, _],
+                contentLength: Long,
                 contentType: ContentType,
                 s3Headers: S3Headers): CompletionStage[ListBucketResultContents] =
     impl
-      .putObject(S3Location(bucket, key), contentType.asInstanceOf[ScalaContentType], data, s3Headers)
+      .putObject(S3Location(bucket, key),
+                 contentType.asInstanceOf[ScalaContentType],
+                 data.asScala,
+                 contentLength,
+                 s3Headers)
       .map(metaDataToJava)(mat.executionContext)
       .toJava
 
   def putObject(bucket: String,
                 key: String,
-                data: ByteString,
+                data: Source[ByteString, _],
+                contentLength: Long,
                 contentType: ContentType,
                 cannedAcl: CannedAcl,
                 metaHeaders: MetaHeaders): CompletionStage[ListBucketResultContents] =
-    putObject(bucket, key, data, contentType, S3Headers(cannedAcl, metaHeaders))
+    putObject(bucket, key, data, contentLength, contentType, S3Headers(cannedAcl, metaHeaders))
 
   def putObject(bucket: String,
                 key: String,
-                data: ByteString,
+                data: Source[ByteString, _],
+                contentLength: Long,
                 contentType: ContentType): CompletionStage[ListBucketResultContents] =
-    putObject(bucket, key, data, contentType, CannedAcl.Private, MetaHeaders(Map()))
+    putObject(bucket, key, data, contentLength, contentType, CannedAcl.Private, MetaHeaders(Map()))
 
-  def putObject(bucket: String, key: String, data: ByteString): CompletionStage[ListBucketResultContents] =
-    putObject(bucket, key, data, ContentTypes.APPLICATION_OCTET_STREAM, CannedAcl.Private, MetaHeaders(Map()))
+  def putObject(bucket: String,
+                key: String,
+                data: Source[ByteString, _],
+                contentLength: Long): CompletionStage[ListBucketResultContents] =
+    putObject(bucket,
+              key,
+              data,
+              contentLength,
+              ContentTypes.APPLICATION_OCTET_STREAM,
+              CannedAcl.Private,
+              MetaHeaders(Map()))
 
   def download(bucket: String, key: String): Source[ByteString, CompletionStage[ListBucketResultContents]] =
     impl

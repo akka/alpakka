@@ -148,21 +148,22 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
   def putObject(s3Location: S3Location,
                 contentType: ContentType,
-                data: ByteString,
+                data: Source[ByteString, _],
+                contentLength: Long,
                 s3Headers: S3Headers): Future[ListBucketResultContents] = {
 
     // TODO can we take in a Source[ByteString, NotUsed] without forcing chunking
     // chunked requests are causing S3 to think this is a multipart upload
 
     implicit val ec = mat.executionContext
-    val req = uploadRequest(s3Location, data, contentType, s3Headers)
+    val req = uploadRequest(s3Location, data, contentLength, contentType, s3Headers)
 
     for {
       signedRequest <- Signer.signedRequest(req, signingKey)
       resp <- Http().singleRequest(signedRequest)
     } yield {
       metadataFromHeaders(s3Location.bucket, s3Location.key, resp.headers).copy(
-        size = data.length
+        size = contentLength
       )
     }
   }

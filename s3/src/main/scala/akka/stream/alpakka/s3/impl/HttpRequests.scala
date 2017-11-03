@@ -41,14 +41,18 @@ private[alpakka] object HttpRequests {
                          method: HttpMethod = HttpMethods.GET)(implicit conf: S3Settings): HttpRequest =
     s3Request(s3Location, method)
 
-  def uploadRequest(s3Location: S3Location, payload: ByteString, contentType: ContentType, s3Headers: S3Headers)(
+  def uploadRequest(s3Location: S3Location,
+                    payload: Source[ByteString, _],
+                    contentLength: Long,
+                    contentType: ContentType,
+                    s3Headers: S3Headers)(
       implicit conf: S3Settings
   ): HttpRequest =
     s3Request(
       s3Location,
       HttpMethods.PUT
     ).withDefaultHeaders(s3Headers.headers: _*)
-      .withEntity(HttpEntity(contentType, payload))
+      .withEntity(HttpEntity(contentType, contentLength, payload))
 
   def initiateMultipartUploadRequest(s3Location: S3Location, contentType: ContentType, s3Headers: S3Headers)(
       implicit conf: S3Settings
