@@ -5,15 +5,16 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import java.time.Instant
+
 import scala.concurrent.Future
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.ByteRange
+import akka.http.scaladsl.model.headers.{ByteRange, Host}
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
-import akka.stream.alpakka.s3.auth.{AWSCredentials ⇒ OldAWSCredentials}
+import akka.stream.alpakka.s3.auth.{AWSCredentials => OldAWSCredentials}
 import akka.stream.alpakka.s3.impl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
@@ -72,11 +73,30 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
 
   private[this] val impl = S3Stream(s3Settings)
 
-  def request(bucket: String, key: String): Future[HttpResponse] = impl.request(S3Location(bucket, key))
+  /**
+   * Use this to extend the library
+   */
+  def request(bucket: String, key: String, method: HttpMethod = HttpMethods.GET): Future[HttpResponse] =
+    impl.request(S3Location(bucket, key), method)
 
-  def download(bucket: String, key: String): Source[ByteString, NotUsed] = impl.download(S3Location(bucket, key))
+  def getObjectMetadata(bucket: String, key: String): Future[Option[ListBucketResultContents]] =
+    impl.getObjectMetadata(bucket, key)
 
-  def download(bucket: String, key: String, range: ByteRange): Source[ByteString, NotUsed] =
+  def deleteObject(bucket: String, key: String): Future[Unit] =
+    impl.deleteObject(S3Location(bucket, key))
+
+  def putObject(bucket: String,
+                key: String,
+                data: ByteString,
+                contentType: ContentType = ContentTypes.`application/octet-stream`,
+                metaHeaders: MetaHeaders = MetaHeaders(Map()),
+                cannedAcl: CannedAcl = CannedAcl.Private): Future[ListBucketResultContents] =
+    impl.putObject(S3Location(bucket, key), contentType, data, S3Headers(cannedAcl, metaHeaders))
+
+  def download(bucket: String, key: String): Source[ByteString, Future[ListBucketResultContents]] =
+    impl.download(S3Location(bucket, key))
+
+  def download(bucket: String, key: String, range: ByteRange): Source[ByteString, Future[ListBucketResultContents]] =
     impl.download(S3Location(bucket, key), Some(range))
 
   /**
@@ -123,5 +143,4 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
         chunkingParallelism
       )
       .mapMaterializedValue(_.map(MultipartUploadResult.apply)(system.dispatcher))
-
 }

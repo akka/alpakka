@@ -72,7 +72,7 @@ public class S3ClientTest extends S3WireMockBase {
         mockDownload();
 
         //#download
-        final Source<ByteString, NotUsed> source = client.download(bucket(), bucketKey());
+        final Source<ByteString, CompletionStage<ListBucketResultContents>> source = client.download(bucket(), bucketKey());
         //#download
 
         final CompletionStage<String> resultCompletionStage =
@@ -89,7 +89,7 @@ public class S3ClientTest extends S3WireMockBase {
         mockRangedDownload();
 
         //#rangedDownload
-        final Source<ByteString, NotUsed> source = client.download(bucket(), bucketKey(),
+        final Source<ByteString, CompletionStage<ListBucketResultContents>> source = client.download(bucket(), bucketKey(),
                 ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()));
         //#rangedDownload
 

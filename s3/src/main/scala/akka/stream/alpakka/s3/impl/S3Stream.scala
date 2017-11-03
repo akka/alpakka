@@ -4,22 +4,27 @@
 
 package akka.stream.alpakka.s3.impl
 
-import java.time.LocalDate
+import java.time.{Instant, LocalDate}
+
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK}
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.ByteRange
+import akka.http.scaladsl.model.headers.{ByteRange, Host}
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.stream.Materializer
+import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.auth.{CredentialScope, Signer, SigningKey}
 import akka.stream.alpakka.s3.scaladsl.ListBucketResultContents
 import akka.stream.alpakka.s3.{DiskBufferType, MemoryBufferType, S3Exception, S3Settings}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
+
+import scala.collection.immutable
 
 final case class S3Location(bucket: String, key: String)
 
@@ -49,10 +54,18 @@ object S3Stream {
 
   def apply(settings: S3Settings)(implicit system: ActorSystem, mat: Materializer): S3Stream =
     new S3Stream(settings)
+
+  private final val CONTENT_LENGTH = "Content-Length"
+  private final val ETAG = "ETag"
+  private final val LAST_MODIFIED = "Last-Modified"
+
+  /** Header describing what class of storage a user wants */
+  private final val STORAGE_CLASS = "x-amz-storage-class"
 }
 
 private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
 
+  import S3Stream._
   import HttpRequests._
   import Marshalling._
 
@@ -61,9 +74,19 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
   // def because tokens can expire
   def signingKey = SigningKey(settings.credentialsProvider, CredentialScope(LocalDate.now(), settings.s3Region, "s3"))
 
-  def download(s3Location: S3Location, range: Option[ByteRange] = None): Source[ByteString, NotUsed] = {
+  def download(s3Location: S3Location,
+               range: Option[ByteRange] = None): Source[ByteString, Future[ListBucketResultContents]] = {
     import mat.executionContext
-    Source.fromFuture(request(s3Location, range).flatMap(entityForSuccess).map(_.dataBytes)).flatMapConcat(identity)
+    val future = request(s3Location, rangeOption = range)
+    Source
+      .fromFuture(future.flatMap(entityForSuccess))
+      .map(_.dataBytes)
+      .flatMapConcat(identity)
+      .mapMaterializedValue { _ =>
+        future.map { resp =>
+          metadataFromHeaders(s3Location.key, s3Location.bucket, resp.headers)
+        }
+      }
   }
 
   def listBucket(bucket: String, prefix: Option[String] = None): Source[ListBucketResultContents, NotUsed] = {
@@ -94,8 +117,60 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       .mapConcat(identity)
   }
 
-  def request(s3Location: S3Location, rangeOption: Option[ByteRange] = None): Future[HttpResponse] =
-    signAndGet(requestHeaders(getDownloadRequest(s3Location), rangeOption))
+  def getObjectMetadata(bucket: String, key: String): Future[Option[ListBucketResultContents]] = {
+    implicit val ec = mat.executionContext
+    request(S3Location(bucket, key), HttpMethods.HEAD).flatMap {
+      case HttpResponse(OK, headers, entity, _) =>
+        entity.discardBytes().future().map { _ =>
+          Some(metadataFromHeaders(bucket, key, headers))
+        }
+      case HttpResponse(NotFound, _, entity, _) =>
+        entity.discardBytes().future().map(_ => None)
+      case HttpResponse(status, _, entity, _) =>
+        entity.discardBytes().future().map { _ =>
+          throw new UnsupportedOperationException(s"Got $status for HEAD $bucket $key")
+        }
+    }
+  }
+
+  def deleteObject(s3Location: S3Location): Future[Unit] = {
+    implicit val ec = mat.executionContext
+    request(s3Location, HttpMethods.DELETE).flatMap {
+      case HttpResponse(NoContent, _, entity, _) =>
+        entity.discardBytes().future().map(_ => ())
+      case HttpResponse(code, _, entity, _) =>
+        entity.discardBytes().future().map { _ =>
+          // TODO get the first part of the body?
+          throw new RuntimeException(s"Got $code for DELETE ${s3Location.bucket} ${s3Location.key}")
+        }
+    }
+  }
+
+  def putObject(s3Location: S3Location,
+                contentType: ContentType,
+                data: ByteString,
+                s3Headers: S3Headers): Future[ListBucketResultContents] = {
+
+    // TODO can we take in a Source[ByteString, NotUsed] without forcing chunking
+    // chunked requests are causing S3 to think this is a multipart upload
+
+    implicit val ec = mat.executionContext
+    val req = uploadRequest(s3Location, data, contentType, s3Headers)
+
+    for {
+      signedRequest <- Signer.signedRequest(req, signingKey)
+      resp <- Http().singleRequest(signedRequest)
+    } yield {
+      metadataFromHeaders(s3Location.bucket, s3Location.key, resp.headers).copy(
+        size = data.length
+      )
+    }
+  }
+
+  def request(s3Location: S3Location,
+              method: HttpMethod = HttpMethods.GET,
+              rangeOption: Option[ByteRange] = None): Future[HttpResponse] =
+    signAndGet(requestHeaders(getDownloadRequest(s3Location, method), rangeOption))
 
   private def requestHeaders(downloadRequest: HttpRequest, rangeOption: Option[ByteRange]): HttpRequest =
     rangeOption match {
@@ -263,4 +338,43 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
           Future.failed(new S3Exception(err))
         }
     }
+
+  private def sizeFromHeaders(headers: Seq[HttpHeader]): Option[Long] =
+    headers.find(_.lowercaseName() == CONTENT_LENGTH.toLowerCase).map(_.value().toLong)
+
+  private def etagFromHeaders(headers: Seq[HttpHeader]): Option[String] =
+    headers.find(_.lowercaseName() == ETAG.toLowerCase).map(_.value())
+
+  private def lastModifiedFromHeaders(headers: Seq[HttpHeader]): Option[Instant] =
+    headers
+      .find(_.lowercaseName() == LAST_MODIFIED.toLowerCase)
+      // FIXME we have problems reading the time format (Thu, 02 Nov 2017 23:47:39 GMT)
+      .flatMap(h => Try(Instant.parse(h.value())).toOption)
+
+  private def storageClassFromHeaders(headers: Seq[HttpHeader]): Option[StorageClass] =
+    headers.find(_.lowercaseName() == STORAGE_CLASS.toLowerCase).flatMap { header =>
+      StorageClass(header.value)
+    }
+
+  private def metadataFromHeaders(bucket: String,
+                                  key: String,
+                                  headers: immutable.Seq[HttpHeader]): ListBucketResultContents = {
+    val etag = etagFromHeaders(headers).getOrElse(
+      throw new UnsupportedOperationException(s"Missing $ETAG for $bucket $key: $headers")
+    )
+    val lastModified = lastModifiedFromHeaders(headers).getOrElse(
+      // TODO implement correctly
+      Instant.now()
+      //throw new UnsupportedOperationException(s"Missing $LAST_MODIFIED for $bucket $key: $headers")
+    )
+    val storageClass = storageClassFromHeaders(headers).getOrElse(
+      // TODO is this correct?
+      StorageClass.Standard
+    )
+    val size = sizeFromHeaders(headers).getOrElse(
+      // TODO why don't we get this?
+      -1L
+    )
+    ListBucketResultContents(bucket, key, etag, size, lastModified, storageClass.storageClass)
+  }
 }

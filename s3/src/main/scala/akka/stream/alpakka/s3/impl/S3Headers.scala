@@ -51,14 +51,22 @@ object S3Headers {
 /**
  * Documentation: http://docs.aws.amazon.com/AmazonS3/latest/dev/storage-class-intro.html
  */
-sealed abstract class StorageClass(storageClass: String) {
+sealed abstract class StorageClass(val storageClass: String) {
   def header: HttpHeader = RawHeader("x-amz-storage-class", storageClass)
 }
 
 object StorageClass {
   case object Standard extends StorageClass("STANDARD")
   case object InfrequentAccess extends StorageClass("STANDARD_IA")
+  case object Glacier extends StorageClass("GLACIER")
   case object ReducedRedundancy extends StorageClass("REDUCED_REDUNDANCY")
+
+  def apply(cls: String): Option[StorageClass] = cls match {
+    case "STANDARD" => Some(Standard)
+    case "STANDARD_IA" => Some(InfrequentAccess)
+    case "GLACIER" => Some(Glacier)
+    case "REDUCED_REDUNDANCY" => Some(ReducedRedundancy)
+  }
 }
 
 /**
