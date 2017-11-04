@@ -92,7 +92,7 @@ class ElasticsearchFlowStage[T, R](
             }
         }
 
-        if (failed.nonEmpty && settings.retryPartialFailure) {
+        if (failed.nonEmpty && settings.retryPartialFailure && retryCount < settings.maxRetry) {
           // Retry partial failed messages
           retryCount = retryCount + 1
           failedMessages = failed
@@ -100,6 +100,7 @@ class ElasticsearchFlowStage[T, R](
 
         } else {
           retryCount = 0
+          push(out, Future.successful(pusher(failed)))
 
           // Fetch next messages from queue and send them
           val nextMessages = (1 to settings.bufferSize).flatMap { _ =>
@@ -114,8 +115,6 @@ class ElasticsearchFlowStage[T, R](
           } else {
             sendBulkUpdateRequest(nextMessages)
           }
-
-          push(out, Future.successful(pusher(failed)))
         }
       }
 
