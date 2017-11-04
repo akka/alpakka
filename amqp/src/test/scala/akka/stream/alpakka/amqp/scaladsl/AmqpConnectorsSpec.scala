@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.amqp.scaladsl
 
 import akka.Done
@@ -448,6 +449,47 @@ class AmqpConnectorsSpec extends AmqpSpec {
         .runWith(amqpSink)
 
       probe.toStrict(3.second).map(_.message.bytes.utf8String) shouldEqual input
+    }
+
+    "set routing key per message and consume them in the same JVM" in {
+      val connectionSettings =
+        AmqpConnectionDetails(List(("invalid", 5673))).withHostsAndPorts(("localhost", 5672))
+
+      def getRoutingKey(s: String) = s"key.${s}"
+
+      val exchangeName = "amqp.topic." + System.currentTimeMillis()
+      val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
+      val exchangeDeclaration = ExchangeDeclaration(exchangeName, "topic")
+      val queueDeclaration = QueueDeclaration(queueName)
+      val bindingDeclaration = BindingDeclaration(queueName, exchangeName).withRoutingKey(getRoutingKey("*"))
+
+      val amqpSink = AmqpSink(
+        AmqpSinkSettings(connectionSettings)
+          .withExchange(exchangeName)
+          .withDeclarations(exchangeDeclaration, queueDeclaration, bindingDeclaration)
+      )
+
+      val amqpSource = AmqpSource.atMostOnceSource(
+        NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(exchangeDeclaration,
+                                                                                 queueDeclaration,
+                                                                                 bindingDeclaration),
+        bufferSize = 10
+      )
+
+      val input = Vector("one", "two", "three", "four", "five")
+      val routingKeys = input.map(s => getRoutingKey(s))
+      Source(input)
+        .map(s => OutgoingMessage(ByteString(s), false, false, None, Some(getRoutingKey(s))))
+        .runWith(amqpSink)
+        .futureValue shouldEqual Done
+
+      val result = amqpSource
+        .take(input.size)
+        .runWith(Sink.seq)
+        .futureValue
+
+      result.map(_.envelope.getRoutingKey) shouldEqual routingKeys
+      result.map(_.bytes.utf8String) shouldEqual input
     }
   }
 }

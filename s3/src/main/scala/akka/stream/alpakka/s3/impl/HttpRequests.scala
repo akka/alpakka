@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.s3.impl
 
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
@@ -87,9 +88,23 @@ private[alpakka] object HttpRequests {
       .withHeaders(Host(requestHost(s3Location.bucket, conf.s3Region)))
       .withUri(uriFn(requestUri(s3Location.bucket, Some(s3Location.key))))
 
+  @throws(classOf[IllegalUriException])
   private[this] def requestHost(bucket: String, region: String)(implicit conf: S3Settings): Uri.Host =
     conf.proxy match {
       case None =>
+        if (!conf.pathStyleAccess) {
+          val bucketRegex = "[^a-z0-9\\-\\.]{1,255}|[\\.]{2,}".r
+          bucketRegex.findFirstIn(bucket) match {
+            case Some(illegalCharacter) =>
+              throw IllegalUriException(
+                "Bucket name contains non-LDH characters",
+                s"""The following character is not allowed: $illegalCharacter
+                   | This may be solved by setting akka.stream.alpakka.s3.path-style-access to true in the configuration.
+                 """.stripMargin
+              )
+            case None => ()
+          }
+        }
         region match {
           case "us-east-1" =>
             if (conf.pathStyleAccess) {

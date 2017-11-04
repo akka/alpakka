@@ -1,7 +1,10 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.elasticsearch
+
+import java.nio.charset.StandardCharsets
 
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.stage._
@@ -137,7 +140,7 @@ class ElasticsearchFlowStage[T, R](
           "POST",
           "/_bulk",
           Map[String, String]().asJava,
-          new StringEntity(json),
+          new StringEntity(json, StandardCharsets.UTF_8),
           new ResponseListener() {
             override def onFailure(exception: Exception): Unit =
               failureHandler.invoke((messages, exception))

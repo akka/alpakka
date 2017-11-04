@@ -3,7 +3,7 @@ import sbt._, Keys._
 object Dependencies {
 
   val AkkaVersion = sys.env.get("AKKA_SERIES") match {
-    case Some("2.5") => "2.5.3"
+    case Some("2.5") => "2.5.6"
     case _ => "2.4.19"
   }
   val AkkaHttpVersion = "10.0.9"
@@ -39,7 +39,8 @@ object Dependencies {
 
   val Cassandra = Seq(
     libraryDependencies ++= Seq(
-      "com.datastax.cassandra" % "cassandra-driver-core" % "3.1.0" // ApacheV2
+      "com.datastax.cassandra" % "cassandra-driver-core" % "3.3.0", // ApacheV2
+      "ch.qos.logback" % "logback-classic" % "1.1.7" % Test // Eclipse Public License 1.0
     )
   )
 
@@ -55,7 +56,7 @@ object Dependencies {
   val Elasticsearch = Seq(
     libraryDependencies ++= Seq(
       "org.elasticsearch.client" % "rest" % "5.5.3", // ApacheV2
-      "io.spray" %%  "spray-json" % "1.3.3", // ApacheV2
+      "io.spray" %% "spray-json" % "1.3.3", // ApacheV2
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.1", // ApacheV2
       "org.codelibs" % "elasticsearch-cluster-runner" % "5.6.0.0" % Test // ApacheV2
     )
@@ -82,7 +83,7 @@ object Dependencies {
   )
 
   val Geode = {
-    val geodeVersion = "1.2.0"
+    val geodeVersion = "1.2.1"
     val slf4jVersion = "1.7.25"
     val logbackVersion = "1.2.3"
     Seq(
@@ -163,13 +164,30 @@ object Dependencies {
     )
   )
 
+  val SpringWeb = {
+    val SpringVersion = "5.0.0.RELEASE"
+    val SpringBootVersion = "1.5.7.RELEASE"
+    Seq(
+      libraryDependencies ++= Seq(
+        "org.springframework" % "spring-core" % SpringVersion,
+        "org.springframework" % "spring-context" % SpringVersion,
+        "org.springframework" % "spring-webflux" % SpringVersion,
+        "org.springframework" % "spring-webmvc" % SpringVersion,
+        "org.springframework.boot" % "spring-boot-autoconfigure" % SpringBootVersion, // TODO should this be provided?
+
+        // for examples
+        "org.springframework.boot" % "spring-boot-starter-web" % SpringBootVersion % "test"
+      )
+    )
+  }
+
   val Slick = Seq(
     libraryDependencies ++= Seq(
-      "com.typesafe.slick" %% "slick"           % "3.2.1", // BSD 2-clause "Simplified" License
-      "com.typesafe.slick" %% "slick-hikaricp"  % "3.2.1", // BSD 2-clause "Simplified" License
-      "com.typesafe.akka"  %% "akka-slf4j"      % AkkaVersion % Test,
-      "com.h2database"      % "h2"              % "1.4.196"   % Test, // Eclipse Public License 1.0
-      "ch.qos.logback"      % "logback-classic" % "1.2.3"     % Test  // Eclipse Public License 1.0
+      "com.typesafe.slick" %% "slick" % "3.2.1", // BSD 2-clause "Simplified" License
+      "com.typesafe.slick" %% "slick-hikaricp" % "3.2.1", // BSD 2-clause "Simplified" License
+      "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test,
+      "com.h2database" % "h2" % "1.4.196" % Test, // Eclipse Public License 1.0
+      "ch.qos.logback" % "logback-classic" % "1.2.3" % Test // Eclipse Public License 1.0
     )
   )
 

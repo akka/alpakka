@@ -6,32 +6,11 @@ For more information about AWS SQS please visit the [official documentation](htt
 
 ## Artifacts
 
-sbt
-:   @@@vars
-    ```scala
-    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-sqs" % "$version$"
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```xml
-    <dependency>
-      <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-sqs_$scalaBinaryVersion$</artifactId>
-      <version>$version$</version>
-    </dependency>
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```gradle
-    dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-sqs_$scalaBinaryVersion$", version: "$version$"
-    }
-    ```
-    @@@
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-sqs_$scalaBinaryVersion$
+  version=$version$
+}
 
 ## Usage
 
@@ -125,8 +104,8 @@ Your flow must decide which action to take and push it with message:
  - `Ignore` - ignore the message and let it reappear in the queue after visibility timeout
  - `ChangeMessageVisibility(visibilityTimeout: Int)` - can be used to postpone a message, or make
  the message immediately visible to other consumers. See [official documentation](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html)
-for more details. 
- 
+for more details.
+
 Scala (ack)
 : @@snip (../../../../sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #ack }
 

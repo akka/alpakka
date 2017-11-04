@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package org.apache.ftpserver.filesystem.jimfs;
 
 import org.apache.ftpserver.filesystem.jimfs.impl.JimfsView;

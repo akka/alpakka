@@ -1,10 +1,11 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.kinesis.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.kinesis.KinesisSourceErrors.NoShardsError
+import akka.stream.alpakka.kinesis.KinesisErrors.NoShardsError
 import akka.stream.alpakka.kinesis.{KinesisSourceStage, ShardSettings}
 import akka.stream.scaladsl.{Merge, Source}
 import com.amazonaws.services.kinesis.AmazonKinesisAsync

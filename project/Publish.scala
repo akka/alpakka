@@ -27,17 +27,18 @@ object Publish extends AutoPlugin {
 }
 
 object PublishUnidoc extends AutoPlugin {
-  import sbtunidoc.Plugin._
-  import sbtunidoc.Plugin.UnidocKeys._
+  import sbtunidoc.BaseUnidocPlugin._
+  import sbtunidoc.BaseUnidocPlugin.autoImport._
+  import sbtunidoc.ScalaUnidocPlugin.autoImport.ScalaUnidoc
 
-  override def requires = plugins.JvmPlugin
+  override def requires = sbtunidoc.ScalaUnidocPlugin
 
   def publishOnly(artifactType: String)(config: PublishConfiguration) = {
-    val newArts = config.artifacts.filterKeys(_.`type` == artifactType)
-    new PublishConfiguration(config.ivyFile, config.resolverName, newArts, config.checksums, config.logging)
+    val newArts = config.artifacts.filter(_._1.`type` == artifactType)
+    config.withArtifacts(newArts)
   }
 
-  override def projectSettings = unidocSettings ++ Seq(
+  override def projectSettings = Seq(
     doc in Compile := (doc in ScalaUnidoc).value,
     target in unidoc in ScalaUnidoc := crossTarget.value / "api",
     publishConfiguration ~= publishOnly(Artifact.DocType),

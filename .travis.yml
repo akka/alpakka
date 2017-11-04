@@ -29,6 +29,7 @@ script:
 
 after_failure:
   - docker-compose logs mqtt
+  - docker-compose logs cassandra
 
 before_cache:
   - find $HOME/.ivy2 -name "ivydata-*.properties" -print -delete
@@ -41,6 +42,7 @@ cache:
 
 deploy:
   provider: script
+  skip_cleanup: true
   script:
     - sbt -J-XX:ReservedCodeCacheSize=128m ++$TRAVIS_SCALA_VERSION publish && curl -I https://ci.lightbend.com/job/techhub-publisher/build?token=$TECH_HUB_TOKEN
   on:
