@@ -9,12 +9,13 @@ import java.nio.file.{OpenOption, Path, StandardOpenOption}
 import akka.Done
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
+import akka.stream.impl.fusing.MapAsync.{Holder, NotYetThere}
 import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.stream.stage._
 import akka.util.ByteString
 
-import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success}
 
 object LogRotatorSink {
   def apply(
@@ -36,7 +37,7 @@ final private[scaladsl] class LogRotatorSink(functionGeneratorFunction: () => By
     val logic = new GraphStageLogic(shape) {
       val pathGeneratorFunction: ByteString => Option[Path] = functionGeneratorFunction()
       var sourceOut: SubSourceOutlet[ByteString] = _
-      var fileSinkCompleted: Option[Future[IOResult]] = Option.empty
+      var fileSinkCompleted: Seq[Future[IOResult]] = Seq.empty
       val decider =
         inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
@@ -60,13 +61,15 @@ final private[scaladsl] class LogRotatorSink(functionGeneratorFunction: () => By
         ret
       }
 
-      def fileSinkFutureCallbackHandler(result: Try[IOResult], future: Future[IOResult]): Unit =
-        result match {
+      def fileSinkFutureCallbackHandler(future: Future[IOResult])(h: Holder[IOResult]): Unit =
+        h.elem match {
           case Success(IOResult(_, Failure(ex))) if decider(ex) == Supervision.Stop =>
             promise.failure(ex)
-          case Success(x) if fileSinkCompleted.isDefined && fileSinkCompleted.get == future =>
+          case Success(x) if fileSinkCompleted.size == 1 && fileSinkCompleted.head == future =>
             promise.trySuccess(Done)
             completeStage()
+          case x: Success[IOResult] =>
+            fileSinkCompleted = fileSinkCompleted.filter(_ != future)
           case Failure(ex) =>
             failThisStage(ex)
           case _ =>
@@ -100,12 +103,13 @@ final private[scaladsl] class LogRotatorSink(functionGeneratorFunction: () => By
         pull(in)
       }
 
+      def futureCB(newFuture: Future[IOResult]) =
+        getAsyncCallback[Holder[IOResult]](fileSinkFutureCallbackHandler(newFuture))
+
       //we recreate the tail of the stream, and emit the data for the next req
       def switchPath(path: Path, data: ByteString): Unit = {
-        if (sourceOut ne null) {
-          fileSinkCompleted = Option.empty
-          sourceOut.complete()
-        }
+        val prevOut = Option(sourceOut)
+
         sourceOut = new SubSourceOutlet[ByteString]("FRotatorSource")
         sourceOut.setHandler(new OutHandler {
           override def onPull(): Unit = {
@@ -113,18 +117,19 @@ final private[scaladsl] class LogRotatorSink(functionGeneratorFunction: () => By
             switchToNormalMode()
           }
         })
-        fileSinkCompleted = Some(
-          Source
-            .fromGraph(sourceOut.source)
-            .runWith(FileIO.toPath(path, fileOpenOptions))(interpreter.subFusingMaterializer)
+        val newFuture = Source
+          .fromGraph(sourceOut.source)
+          .runWith(FileIO.toPath(path, fileOpenOptions))(interpreter.subFusingMaterializer)
+
+        fileSinkCompleted = fileSinkCompleted :+ newFuture
+
+        val holder = new Holder[IOResult](NotYetThere, futureCB(newFuture))
+
+        newFuture.onComplete(holder)(
+          akka.dispatch.ExecutionContexts.sameThreadExecutionContext
         )
-        fileSinkCompleted
-          .foreach(
-            future =>
-              future.onComplete(res => fileSinkFutureCallbackHandler(res, future))(
-                akka.dispatch.ExecutionContexts.sameThreadExecutionContext
-            )
-          )
+
+        prevOut.foreach(_.complete())
       }
 
       //we change path if needed or push the grabbed data
@@ -142,8 +147,12 @@ final private[scaladsl] class LogRotatorSink(functionGeneratorFunction: () => By
               )
             }
 
-            override def onUpstreamFinish(): Unit =
+            override def onUpstreamFinish(): Unit = {
+              implicit val executionContext: ExecutionContext =
+                akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+              promise.completeWith(Future.sequence(fileSinkCompleted).map(_ => Done))
               sourceOut.complete()
+            }
 
             override def onUpstreamFailure(ex: Throwable): Unit =
               failThisStage(ex)
