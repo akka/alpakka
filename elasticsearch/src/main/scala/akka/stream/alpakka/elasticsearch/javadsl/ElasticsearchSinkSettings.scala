@@ -7,24 +7,31 @@ package akka.stream.alpakka.elasticsearch.javadsl
 import akka.stream.alpakka.elasticsearch._
 import scaladsl.{ElasticsearchSinkSettings => ScalaElasticsearchSinkSettings}
 
-final class ElasticsearchSinkSettings(val bufferSize: Int, val retryInterval: Int, val maxRetry: Int) {
+final class ElasticsearchSinkSettings(val bufferSize: Int,
+                                      val retryInterval: Int,
+                                      val maxRetry: Int,
+                                      val retryPartialFailure: Boolean) {
 
-  def this() = this(10, 5000, 100)
+  def this() = this(10, 5000, 100, true)
 
   def withBufferSize(bufferSize: Int): ElasticsearchSinkSettings =
-    new ElasticsearchSinkSettings(bufferSize, this.retryInterval, this.maxRetry)
+    new ElasticsearchSinkSettings(bufferSize, this.retryInterval, this.maxRetry, this.retryPartialFailure)
 
   def withRetryInterval(retryInterval: Int): ElasticsearchSinkSettings =
-    new ElasticsearchSinkSettings(this.bufferSize, retryInterval, this.maxRetry)
+    new ElasticsearchSinkSettings(this.bufferSize, retryInterval, this.maxRetry, this.retryPartialFailure)
 
   def withMaxRetry(maxRetry: Int): ElasticsearchSinkSettings =
-    new ElasticsearchSinkSettings(this.bufferSize, this.retryInterval, maxRetry)
+    new ElasticsearchSinkSettings(this.bufferSize, this.retryInterval, maxRetry, this.retryPartialFailure)
+
+  def withRetryPartialFailure(retryPartialFailure: Boolean): ElasticsearchSinkSettings =
+    new ElasticsearchSinkSettings(this.bufferSize, this.retryInterval, this.maxRetry, retryPartialFailure)
 
   private[javadsl] def asScala: ScalaElasticsearchSinkSettings =
     ScalaElasticsearchSinkSettings(
       bufferSize = this.bufferSize,
       retryInterval = this.retryInterval,
-      maxRetry = this.maxRetry
+      maxRetry = this.maxRetry,
+      retryPartialFailure = this.retryPartialFailure
     )
 
 }
