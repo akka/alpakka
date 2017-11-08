@@ -35,12 +35,9 @@ private[alpakka] object Signer {
 
   private[this] def sessionHeader(creds: AWSCredentialsProvider): Option[HttpHeader] =
     creds.getCredentials match {
-      case _: BasicAWSCredentials =>
-        None
-      case _: AnonymousAWSCredentials ⇒
-        None
       case sessCreds: auth.AWSSessionCredentials =>
         Some(RawHeader("X-Amz-Security-Token", sessCreds.getSessionToken))
+      case _ => None
     }
 
   private[this] def authorizationHeader(algorithm: String,
