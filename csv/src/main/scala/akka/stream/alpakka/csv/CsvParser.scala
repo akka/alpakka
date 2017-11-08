@@ -32,7 +32,7 @@ private[csv] object CsvParser {
 /**
  * INTERNAL API: Use [[akka.stream.alpakka.csv.scaladsl.CsvParsing]] instead.
  */
-private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar: Byte) {
+private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar: Byte, maximumLineLength: Int) {
 
   import CsvParser._
 
@@ -145,6 +145,10 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
     }
 
     while (state != LineEnd && pos < buf.length) {
+      if (pos >= maximumLineLength)
+        throw new MalformedCsvException(
+          s"no line end encountered within $maximumLineLength bytes on line $currentLineNo"
+        )
       val byte = buf(pos)
       state match {
         case LineStart =>
