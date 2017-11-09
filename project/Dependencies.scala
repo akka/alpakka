@@ -7,6 +7,7 @@ object Dependencies {
     case _ => "2.4.19"
   }
   val AkkaHttpVersion = "10.0.9"
+  val AwsSdkVersion = "1.11.226"
 
   val Common = Seq(
     libraryDependencies ++= Seq(
@@ -26,7 +27,7 @@ object Dependencies {
 
   val AwsLambda = Seq(
     libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-lambda" % "1.11.105", // ApacheV2
+      "com.amazonaws" % "aws-java-sdk-lambda" % AwsSdkVersion, // ApacheV2
       "org.mockito" % "mockito-core" % "2.7.17" % Test // MIT
     )
   )
@@ -48,7 +49,7 @@ object Dependencies {
 
   val DynamoDB = Seq(
     libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-dynamodb" % "1.11.106", // ApacheV2
+      "com.amazonaws" % "aws-java-sdk-dynamodb" % AwsSdkVersion, // ApacheV2
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
     )
   )
@@ -157,7 +158,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
-      "com.amazonaws" % "aws-java-sdk-core" % "1.11.174", // ApacheV2
+      "com.amazonaws" % "aws-java-sdk-core" % AwsSdkVersion, // ApacheV2
       // in-memory filesystem for file related tests
       "com.google.jimfs" % "jimfs" % "1.1" % Test, // ApacheV2
       "com.github.tomakehurst" % "wiremock" % "2.5.1" % Test // ApacheV2
@@ -193,14 +194,14 @@ object Dependencies {
 
   val Sns = Seq(
     libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-sns" % "1.11.226", // ApacheV2
+      "com.amazonaws" % "aws-java-sdk-sns" % AwsSdkVersion, // ApacheV2
       "org.mockito" % "mockito-core" % "2.12.0" % Test // MIT
     )
   )
 
   val Sqs = Seq(
     libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-sqs" % "1.11.226", // ApacheV2
+      "com.amazonaws" % "aws-java-sdk-sqs" % AwsSdkVersion, // ApacheV2
       "org.elasticmq" %% "elasticmq-rest-sqs" % "0.13.8" % Test excludeAll (
         // elasticmq-rest-sqs depends on Akka 2.5, exclude it, so we can choose Akka version
         ExclusionRule(organization = "com.typesafe.akka") //
@@ -229,7 +230,7 @@ object Dependencies {
 
   val Kinesis = Seq(
     libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-kinesis" % "1.11.95", // ApacheV2
+      "com.amazonaws" % "aws-java-sdk-kinesis" % AwsSdkVersion, // ApacheV2
       "org.mockito" % "mockito-core" % "2.7.11" % Test // MIT
     )
   )
