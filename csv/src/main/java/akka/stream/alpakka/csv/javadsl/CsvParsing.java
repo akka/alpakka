@@ -32,6 +32,6 @@ public class CsvParsing {
     public static Flow<ByteString, Collection<ByteString>, NotUsed> lineScanner(byte delimiter, byte quoteChar, byte escapeChar, int maximumLineLength) {
         return akka.stream.alpakka.csv.scaladsl.CsvParsing
                 .lineScanner(delimiter, quoteChar, escapeChar, maximumLineLength).asJava()
-                .map(JavaConverters::asJavaCollection);
+                .map(c -> JavaConverters.asJavaCollectionConverter(c).asJavaCollection());
     }
 }
