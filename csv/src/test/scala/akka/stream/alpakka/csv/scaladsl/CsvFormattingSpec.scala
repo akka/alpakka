@@ -1,11 +1,11 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.csv.scaladsl
 
 import java.nio.charset.StandardCharsets
 
-import akka.NotUsed
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
 

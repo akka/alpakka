@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.jms
 
 import javax.jms
@@ -57,7 +58,7 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
         fail.invoke(exception)
     })
     connection.start()
-    val session = connection.createSession(false, jms.Session.CLIENT_ACKNOWLEDGE)
+    val session = connection.createSession(false, jmsSettings.acknowledgeMode.mode)
     val dest = jmsSettings.destination match {
       case Some(Queue(name)) => session.createQueue(name)
       case Some(Topic(name)) => session.createTopic(name)

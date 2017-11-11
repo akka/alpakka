@@ -1,7 +1,10 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.elasticsearch
+
+import java.nio.charset.StandardCharsets
 
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.stage._
@@ -77,37 +80,42 @@ class ElasticsearchFlowStage[T, R](
         completeStage()
 
       private def handleResponse(args: (Seq[IncomingMessage[T]], Response)): Unit = {
-        retryCount = 0
         val (messages, response) = args
         val responseJson = EntityUtils.toString(response.getEntity).parseJson
 
         // If some commands in bulk request failed, pass failed messages to follows.
         val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
-        val failedMessages = items.elements.zip(messages).flatMap {
+        val failed = items.elements.zip(messages).flatMap {
           case (item, message) =>
-            val result = item.asJsObject.fields("index").asJsObject.fields("result").asInstanceOf[JsString].value
-            if (result == "created" || result == "updated") {
-              None
-            } else {
-              Some(message)
+            item.asJsObject.fields("index").asJsObject.fields.get("error").map { _ =>
+              message
             }
         }
 
-        // Fetch next messages from queue and send them
-        val nextMessages = (1 to settings.bufferSize).flatMap { _ =>
-          queue.dequeueFirst(_ => true)
-        }
+        if (failed.nonEmpty && settings.retryPartialFailure && retryCount < settings.maxRetry) {
+          // Retry partial failed messages
+          retryCount = retryCount + 1
+          failedMessages = failed
+          scheduleOnce(NotUsed, settings.retryInterval.millis)
 
-        if (nextMessages.isEmpty) {
-          state match {
-            case Finished => handleSuccess()
-            case _ => state = Idle
-          }
         } else {
-          sendBulkUpdateRequest(nextMessages)
-        }
+          retryCount = 0
+          push(out, Future.successful(pusher(failed)))
 
-        push(out, Future.successful(pusher(failedMessages)))
+          // Fetch next messages from queue and send them
+          val nextMessages = (1 to settings.bufferSize).flatMap { _ =>
+            queue.dequeueFirst(_ => true)
+          }
+
+          if (nextMessages.isEmpty) {
+            state match {
+              case Finished => handleSuccess()
+              case _ => state = Idle
+            }
+          } else {
+            sendBulkUpdateRequest(nextMessages)
+          }
+        }
       }
 
       private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T]]): Unit = {
@@ -131,7 +139,7 @@ class ElasticsearchFlowStage[T, R](
           "POST",
           "/_bulk",
           Map[String, String]().asJava,
-          new StringEntity(json),
+          new StringEntity(json, StandardCharsets.UTF_8),
           new ResponseListener() {
             override def onFailure(exception: Exception): Unit =
               failureHandler.invoke((messages, exception))

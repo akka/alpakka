@@ -123,6 +123,26 @@ Scala
 Java
 : @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-jms-source }
 
+### Receiving @extref[javax.jms.Message](javaee-api:javax.jms.Message)s messages from a JMS provider with Client Acknowledgement
+
+Create a @extref[javax.jms.Message](javaee-api:javax.jms.Message) source:
+
+Scala
+: @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-jms-source-client-ack }
+
+Java
+: @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-jms-source-client-ack }
+
+The `acknowledgeMode` parameter controls the JMS acknowledge mode parameter, see @extref[javax.jms.Connection#createSession](javaee-api:javax.jms.Connection#createSession).
+
+Run the source and take the same amount of messages as we previously sent to it acknowledging them.
+
+Scala
+: @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-jms-source-with-ack }
+
+Java
+: @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-jms-source-with-ack }
+
 ### Receiving @extref[javax.jms.Message](javaee-api:javax.jms.Message)s from a JMS provider with a selector
 
 Create a @extref[javax.jms.Message](javaee-api:javax.jms.Message) source specifying a [JMS selector expression](https://docs.oracle.com/cd/E19798-01/821-1841/bncer/index.html):
@@ -192,7 +212,7 @@ MQ settings for this image are shown here: https://github.com/ibm-messaging/mq-d
 
 #### Create a JmsSource to an IBM MQ Queue
 
-The `MQQueueConnectionFactory` needs a queue manager name and a channel name, the docker command used in the previous section sets up a `QM1` queue manager and a `DEV.APP.SVRCONN` channel. The IBM MQ client makes it possible to 
+The `MQQueueConnectionFactory` needs a queue manager name and a channel name, the docker command used in the previous section sets up a `QM1` queue manager and a `DEV.APP.SVRCONN` channel. The IBM MQ client makes it possible to
 connect to the MQ server over TCP/IP or natively through JNI (when the client and server run on the same machine). In the examples below we have chosen to use TCP/IP, which is done by setting the transport type to `CommonConstants.WMQ_CM_CLIENT`.
 
 Scala

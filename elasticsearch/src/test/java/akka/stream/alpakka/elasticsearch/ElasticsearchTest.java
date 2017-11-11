@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.elasticsearch;
 
 import akka.Done;
@@ -214,9 +215,9 @@ public class ElasticsearchTest {
     List<List<IncomingMessage<Book>>> result1 = f1.toCompletableFuture().get();
     flush("sink3");
 
-    assertEquals(2, result1.size());
-    assertEquals(true, result1.get(0).isEmpty());
-    assertEquals(true, result1.get(1).isEmpty());
+    for(int i = 0; i < result1.size(); i ++){
+      assertEquals(true, result1.get(i).isEmpty());
+    }
 
     // Assert docs in sink3/book
     CompletionStage<List<String>> f2 = ElasticsearchSource.typed(

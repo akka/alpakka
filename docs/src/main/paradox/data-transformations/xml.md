@@ -28,6 +28,24 @@ Scala
 Java
 : @@snip ($alpakka$/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #parser-usage }
 
+## XML writing
+
+XML processing pipeline ends with an @scaladoc[XmlWriting.writer](akka.stream.alpakka.xml.scaladsl.XmlWriting$) flow which writes a stream of XML parser events to @scaladoc[ByteString](akka.util.ByteString)s.
+
+Scala
+: @@snip (../../../../../xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlWritingTest.scala) { #writer }
+
+Java
+: @@snip (../../../../../xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlWritingTest.java) { #writer }
+
+To write an XML document run XML document source with this writer.
+
+Scala
+: @@snip (../../../../../xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlWritingTest.scala) { #writer-usage }
+
+Java
+: @@snip (../../../../../xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlWritingTest.java) { #writer-usage }
+
 ## XML Subslice
 
 Use @scaladoc[XmlParsing.subslice](akka.stream.alpakka.xml.scaladsl.XmlParsing$) to filter out all elements not corresponding to a certain path.

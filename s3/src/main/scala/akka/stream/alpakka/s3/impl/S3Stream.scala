@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.s3.impl
 
 import java.time.LocalDate
@@ -57,7 +58,8 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
   implicit val conf = settings
   val MinChunkSize = 5242880 //in bytes
-  val signingKey = SigningKey(settings.credentialsProvider, CredentialScope(LocalDate.now(), settings.s3Region, "s3"))
+  // def because tokens can expire
+  def signingKey = SigningKey(settings.credentialsProvider, CredentialScope(LocalDate.now(), settings.s3Region, "s3"))
 
   def download(s3Location: S3Location, range: Option[ByteRange] = None): Source[ByteString, NotUsed] = {
     import mat.executionContext
@@ -171,6 +173,9 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     val requestInfo: Source[(MultipartUpload, Int), NotUsed] =
       initiateUpload(s3Location, contentType, s3Headers)
 
+    // use the same key for all sub-requests (chunks)
+    val key: SigningKey = signingKey
+
     SplitAfterSize(chunkSize)(Flow.apply[ByteString])
       .via(getChunkBuffer(chunkSize)) //creates the chunks
       .concatSubstreams
@@ -181,7 +186,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
             uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload.data, chunkedPayload.size)
           (partRequest, (uploadInfo, chunkIndex))
       }
-      .mapAsync(parallelism) { case (req, info) => Signer.signedRequest(req, signingKey).zip(Future.successful(info)) }
+      .mapAsync(parallelism) { case (req, info) => Signer.signedRequest(req, key).zip(Future.successful(info)) }
   }
 
   private def getChunkBuffer(chunkSize: Int) = settings.bufferType match {

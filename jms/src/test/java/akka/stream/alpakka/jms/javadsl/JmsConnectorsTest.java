@@ -1,12 +1,14 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.jms.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.jms.AcknowledgeMode;
 import akka.stream.alpakka.jms.JmsCorrelationId;
 import akka.stream.alpakka.jms.JmsReplyTo;
 import akka.stream.alpakka.jms.JmsSinkSettings;
@@ -20,6 +22,7 @@ import akka.testkit.JavaTestKit;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.command.ActiveMQQueue;
+import org.apache.activemq.command.ActiveMQTextMessage;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -299,6 +302,51 @@ public class JmsConnectorsTest {
         });
     }
 
+    @Test
+    public void publishAndConsumeJmsTextMessagesWithClientAcknowledgement() throws Exception {
+        withServer(ctx -> {
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+            Sink<JmsTextMessage, NotUsed> jmsSink = JmsSink.create(
+                    JmsSinkSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+            List<Integer> intsIn = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+            List<JmsTextMessage> msgsIn = new ArrayList<>();
+            for(Integer n: intsIn) {
+                msgsIn.add(JmsTextMessage.create(n.toString()));
+            }
+
+            Source.from(msgsIn).runWith(jmsSink, materializer);
+
+            //#create-jms-source-client-ack
+            Source<Message, NotUsed> jmsSource = JmsSource.create(JmsSourceSettings
+                    .create(connectionFactory)
+                    .withQueue("test")
+                    .withAcknowledgeMode(AcknowledgeMode.ClientAcknowledge())
+            );
+            //#create-jms-source-client-ack
+
+            //#run-jms-source-with-ack
+            CompletionStage<List<String>> result = jmsSource
+                    .take(msgsIn.size())
+                    .map(message -> {
+                        String text = ((ActiveMQTextMessage)message).getText();
+                        message.acknowledge();
+                        return text;
+                    })
+                    .runWith(Sink.seq(), materializer);
+            //#run-jms-source-with-ack
+
+            List<String> outMessages = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+            int msgIdx = 0;
+            for(String outMsg: outMessages) {
+                assertEquals(outMsg, msgsIn.get(msgIdx).body());
+                msgIdx++;
+            }
+        });
+    }
 
     private static ActorSystem system;
     private static Materializer materializer;
