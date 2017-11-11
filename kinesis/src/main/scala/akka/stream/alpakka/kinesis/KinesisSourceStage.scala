@@ -1,13 +1,14 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.kinesis
 
 import java.util.concurrent.Future
 
 import akka.actor.ActorRef
 import akka.stream.alpakka.kinesis.KinesisSourceStage._
-import akka.stream.alpakka.kinesis.{KinesisSourceErrors => Errors}
+import akka.stream.alpakka.kinesis.{KinesisErrors => Errors}
 import akka.stream.stage.GraphStageLogic.StageActor
 import akka.stream.stage._
 import akka.stream.{Attributes, Outlet, SourceShape}
