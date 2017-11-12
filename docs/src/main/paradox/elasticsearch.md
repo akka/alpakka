@@ -69,18 +69,26 @@ Java
 
 ### Configuration
 
-We can specify the buffer size for the source.
+We can configure the source by `ElasticsearchSourceSettings`.
 
 Scala (source)
 : @@snip (../../../../elasticsearch/src/main/scala/akka/stream/alpakka/elasticsearch/scaladsl/ElasticsearchSourceSettings.scala) { #source-settings }
 
-Also, we can specify the buffer size, the max retry count and the retry interval for the sink.
+| Parameter  | Default | Description                                                                                                              |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| bufferSize | 10      | `ElasticsearchSource` retrieves messages from Elasticsearch by scroll scan. This buffer size is used as the scroll size. | 
+
+Also, we can configure the sink by `ElasticsearchSinkSettings`.
 
 Scala (sink)
 : @@snip (../../../../elasticsearch/src/main/scala/akka/stream/alpakka/elasticsearch/scaladsl/ElasticsearchSinkSettings.scala) { #sink-settings }
 
-`ElasticsearchSource` retrieves messages from Elasticsearch by scroll scan. This buffer size is used as the scroll size.
-`ElasticsearchSink` puts messages by one bulk request per messages of this buffer size.
+| Parameter           | Default | Description                                                                                            |
+| ------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| bufferSize          | 10      | `ElasticsearchSink` puts messages by one bulk request per messages of this buffer size.                |
+| retryInterval       | 5000    | When a request is failed, `ElasticsearchSink` retries that request after this interval (milliseconds). |
+| maxRetry            | 100     | `ElasticsearchSink` give up and fails the stage if it gets this number of consective failures.         | 
+| retryPartialFailure | true    | A bulk request might fails partially for some reason. If this parameter is true, then `ElasticsearchSink` retries to request these failed messages. Otherwise, failed messages are discarded (or pushed to downstream if you use `ElasticsearchFlow` instead of the sink). |
 
 ### Using Elasticsearch as a Flow
 
