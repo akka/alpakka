@@ -40,13 +40,13 @@ Gradle
 
 ## Usage
 
-The JMS message model supports several types of message body (see @extref(javaee-api:javax.jms.Message)) and Alpakka currently supports messages with a body containing a @extref[String](java-api:java.lang.String) object.
+The JMS message model supports several types of message body (see @javadoc[javax.jms.Message](javax.jms.Message)) and Alpakka currently supports messages with a body containing a @javadoc[String](java.lang.String) object.
 
 Use the case class @scaladoc[JmsTextMessage](akka.stream.alpakka.jms.JmsTextMessage$) to wrap the messages you want to send and optionally set their properties (see below for an example).
 
 ### Sending messages to a JMS provider
 
-First define a jms `ConnectionFactory` depending on the implementation you're using. Here we're using Active MQ.
+First define a jms @javadoc[javax.jms.ConnectionFactory](javax.jms.ConnectionFactory) depending on the implementation you're using. Here we're using Active MQ.
 
 Scala
 : @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }
@@ -55,7 +55,7 @@ Java
 : @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #connection-factory }
 
 
-Create a sink, that accepts and forwards @extref[String](java-api:java.lang.String)s to the JMS provider.
+Create a sink, that accepts and forwards @javadoc[String](java.lang.String)s to the JMS provider.
 
 Scala
 : @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-text-sink }
@@ -63,7 +63,7 @@ Scala
 Java
 : @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-text-sink }
 
-@scaladoc[JmsSink](akka.stream.alpakka.jms.JmsSink$) contains factory methods to facilitate the creation of sinks.
+@java[@scaladoc[JmsSink](akka.stream.alpakka.jms.javadsl.JmsSink$)]@scala[@scaladoc[JmsSink](akka.stream.alpakka.jms.scaladsl.JmsSink$)] contains factory methods to facilitate the creation of sinks.
 
 Last step is to @extref[materialize](akka-docs:scala/stream/stream-flows-and-basics) and run the sink(s) we have created.
 
@@ -83,7 +83,7 @@ Scala
 Java
 : @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-test-message-list #create-messages-with-properties }
 
-### Receiving @extref[String](java-api:java.lang.String) messages from a JMS provider
+### Receiving @javadoc[String](java.lang.String) messages from a JMS provider
 
 Create a source:
 
@@ -103,9 +103,9 @@ Scala
 Java
 : @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-text-source }
 
-### Receiving @extref[javax.jms.Message](javaee-api:javax.jms.Message)s from a JMS provider
+### Receiving @javadoc[javax.jms.Message](javax.jms.Message)s from a JMS provider
 
-Create a @extref[javax.jms.Message](javaee-api:javax.jms.Message) source:
+Create a @javadoc[javax.jms.Message](javax.jms.Message) source:
 
 Scala
 : @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-jms-source }
@@ -123,9 +123,9 @@ Scala
 Java
 : @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-jms-source }
 
-### Receiving @extref[javax.jms.Message](javaee-api:javax.jms.Message)s messages from a JMS provider with Client Acknowledgement
+### Receiving @javadoc[javax.jms.Message](javax.jms.Message)s messages from a JMS provider with Client Acknowledgement
 
-Create a @extref[javax.jms.Message](javaee-api:javax.jms.Message) source:
+Create a @javadoc[javax.jms.Message](javax.jms.Message) source:
 
 Scala
 : @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-jms-source-client-ack }
@@ -133,7 +133,7 @@ Scala
 Java
 : @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-jms-source-client-ack }
 
-The `acknowledgeMode` parameter controls the JMS acknowledge mode parameter, see @extref[javax.jms.Connection#createSession](javaee-api:javax.jms.Connection#createSession).
+The `acknowledgeMode` (@scaladoc[AcknowledgeMode](akka.stream.alpakka.jms.AcknowledgeMode$)) parameter controls the JMS acknowledge mode parameter, see @javadoc[javax.jms.Connection.createSession](javax.jms.Connection#createSession-boolean-int-).
 
 Run the source and take the same amount of messages as we previously sent to it acknowledging them.
 
@@ -143,9 +143,9 @@ Scala
 Java
 : @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-jms-source-with-ack }
 
-### Receiving @extref[javax.jms.Message](javaee-api:javax.jms.Message)s from a JMS provider with a selector
+### Receiving @javadoc[javax.jms.Message](javax.jms.Message)s from a JMS provider with a selector
 
-Create a @extref[javax.jms.Message](javaee-api:javax.jms.Message) source specifying a [JMS selector expression](https://docs.oracle.com/cd/E19798-01/821-1841/bncer/index.html):
+Create a @javadoc[javax.jms.Message](javax.jms.Message) source specifying a [JMS selector expression](https://docs.oracle.com/cd/E19798-01/821-1841/bncer/index.html):
 
 Scala
 : @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) {             #create-jms-source-with-selector }
