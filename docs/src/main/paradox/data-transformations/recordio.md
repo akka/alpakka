@@ -45,6 +45,9 @@ We obtain:
 Scala
 : @@snip (../../../../../simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala) { #result }
 
+@scala[@github[Source on Github](simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala)]
+
+
 ### Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.

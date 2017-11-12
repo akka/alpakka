@@ -57,6 +57,10 @@ Scala
 Java
 : @@snip (../../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvParsingTest.java) { #line-scanner }
 
+@scala[@github[Source on Github](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvParsingSpec.scala)]
+@java[@github[Source on Github](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvParsingTest.java)]
+
+
 ## CSV conversion into a map
 
 The column-based nature of CSV files can be used to read it into a map of column names
@@ -87,6 +91,10 @@ Scala
 
 Java
 : @@snip (../../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java) { #column-names }
+
+@scala[@github[Source on Github](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvToMapSpec.scala)]
+@java[@github[Source on Github](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java)]
+
 
 ## CSV formatting
 
@@ -120,3 +128,6 @@ Scala
 
 Java
 : @@snip (../../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFormattingTest.java) { #formatting }
+
+@scala[@github[Source on Github](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFormattingSpec.scala)]
+@java[@github[Source on Github](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFormattingTest.java)]
