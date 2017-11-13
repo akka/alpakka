@@ -81,7 +81,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
     mock.register(
       WireMock
         .post(
-          urlEqualTo(s"/v1/projects/${TestCredentials.projectId}/topics/topic1:publish?key=${TestCredentials.apiKey}")
+          urlEqualTo(s"/v1/projects/${TestCredentials.projectId}/topics/topic1:publish")
         )
         .withRequestBody(WireMock.equalTo(expectedPublishRequest))
         .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
