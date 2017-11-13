@@ -60,6 +60,15 @@ final case class MessageAttributeName(name: String) {
 
 sealed abstract class AttributeName(val name: String)
 case object All extends AttributeName("All")
+
+case object ApproximateFirstReceiveTimestamp extends AttributeName("ApproximateFirstReceiveTimestamp")
+case object ApproximateReceiveCount extends AttributeName("ApproximateReceiveCount")
+case object SenderId extends AttributeName("SenderId")
+case object SentTimestamp extends AttributeName("SentTimestamp")
+case object MessageDeduplicationId extends AttributeName("MessageDeduplicationId")
+case object MessageGroupId extends AttributeName("MessageGroupId")
+case object SequenceNumber extends AttributeName("SequenceNumber")
+
 case object Policy extends AttributeName("Policy")
 case object VisibilityTimeout extends AttributeName("VisibilityTimeout")
 case object MaximumMessageSize extends AttributeName("MaximumMessageSize")

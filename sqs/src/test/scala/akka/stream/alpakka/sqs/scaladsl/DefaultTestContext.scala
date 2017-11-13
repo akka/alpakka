@@ -38,11 +38,13 @@ trait DefaultTestContext extends BeforeAndAfterAll { this: Suite =>
 
   def randomQueueUrl(): String = sqsClient.createQueue(s"queue-${Random.nextInt}").getQueueUrl
 
-  override protected def afterAll(): Unit = {
-    super.afterAll()
-    sqsServer.stopAndWait()
-    Await.ready(system.terminate(), 5.seconds)
-  }
+  override protected def afterAll(): Unit =
+    try {
+      sqsServer.stopAndWait()
+      Await.ready(system.terminate(), 5.seconds)
+    } finally {
+      super.afterAll()
+    }
 
   def createAsyncClient(sqsEndpoint: String, credentialsProvider: AWSCredentialsProvider): AmazonSQSAsync = {
     //#init-client
