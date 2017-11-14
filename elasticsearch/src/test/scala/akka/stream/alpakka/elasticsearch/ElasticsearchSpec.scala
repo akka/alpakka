@@ -362,4 +362,88 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
+  "ElasticsearchStreamableFlow" should {
+    "store documents and pass Responses" in {
+
+      // We're going to pretend we're using an Integer as our Kafka offset value
+      // So we can commit to kafka after we have confirmation that it has been written to elastic
+
+      case class MyElasticWithKafkaInfoMsg(_id:String, json:String, book:Book, kafkaOffset:Int) extends StreamableIncomingMessage {
+        override def id = Option(_id)
+      }
+
+      // Copy source/book to sink3/book through typed stream
+      //#run-flow
+      val f1 = ElasticsearchSource
+        .typed[Book](
+        "source",
+        "book",
+        """{"match_all": {}}""",
+        ElasticsearchSourceSettings(5)
+      )
+        .map { message: OutgoingMessage[Book] =>
+          println("title: " + message.source.title)
+          // Create a fake kafka offset int by hashing the title
+          val kafkaOffset = message.source.title.hashCode
+          MyElasticWithKafkaInfoMsg(message.id, message.source.toJson.toString(), message.source, kafkaOffset)
+        }
+        .via(
+          ElasticsearchStreamableFlow[MyElasticWithKafkaInfoMsg](
+            "sink3",
+            "book",
+            ElasticsearchSinkSettings(5)
+          )
+        )
+        .runWith(Sink.seq)
+      //#run-flow
+
+      val result1 = Await.result(f1, Duration.Inf)
+      flush("sink3")
+
+      println("result1: " + result1)
+
+      val successMessages = result1.flatMap(_.success).toList
+      val failedMessages = result1.flatMap(_.failed)
+
+      val allMessagesFasit = Seq(
+        "Akka Concurrency",
+        "Akka in Action",
+        "Effective Akka",
+        "Learning Scala",
+        "Programming in Scala",
+        "Scala Puzzlers",
+        "Scala for Spark in Production"
+      )
+
+      // Assert no errors
+      assert(failedMessages.isEmpty)
+
+      // Assert all messages inserted
+      val successMessagesTitles = successMessages.map(_.book.title)
+
+      // assert that we got all the correct cargos (Kafka offset values)
+      successMessages.map(_.kafkaOffset).sorted shouldEqual allMessagesFasit.map(_.hashCode).sorted
+
+      successMessagesTitles.sorted shouldEqual allMessagesFasit
+
+      // Assert docs in sink3/book
+      val f2 = ElasticsearchSource
+        .typed[Book](
+        "sink3",
+        "book",
+        """{"match_all": {}}""",
+        ElasticsearchSourceSettings()
+      )
+        .map { message =>
+          message.source.title
+        }
+        .runWith(Sink.seq)
+
+      val result2 = Await.result(f2, Duration.Inf)
+
+      result2.sorted shouldEqual allMessagesFasit
+    }
+  }
+
+
 }

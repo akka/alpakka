@@ -10,6 +10,7 @@ object Dependencies {
 
   val Common = Seq(
     libraryDependencies ++= Seq(
+      "org.scala-lang" % "scala-library" % scalaVersion.value % Compile,
       "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
       "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
       "org.scalatest" %% "scalatest" % "3.0.1" % Test, // ApacheV2

@@ -1,3 +1,5 @@
+scalaVersion in ThisBuild := "2.12.4"
+
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
