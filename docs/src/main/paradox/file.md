@@ -32,6 +32,9 @@ Scala
 Java
 : @@snip ($alpakka$/file/src/test/java/akka/stream/alpakka/file/javadsl/FileTailSourceTest.java) { #simple-lines }
 
+@scala[@github[Source on Github](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/FileTailSourceSpec.scala) { #simple-lines }]
+@java[@github[Source on Github](/file/src/test/java/akka/stream/alpakka/file/javadsl/FileTailSourceTest.java) { #simple-lines }]
+
 
 ### Directory
 
@@ -53,6 +56,9 @@ Scala
 Java
 : @@snip ($alpakka$/file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryTest.java) { #walk }
 
+@scala[@github[Source on Github](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/DirectorySpec.scala)]
+@java[@github[Source on Github](/file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryTest.java)]
+
 
 ### DirectoryChangesSource
 
@@ -67,6 +73,10 @@ Scala
 
 Java
 : @@snip ($alpakka$/file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryChangesSourceTest.java) { #minimal-sample }
+
+@scala[@github[Source on Github](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/DirectoryChangesSourceSpec.scala) { #minimal-sample }]
+@java[@github[Source on Github](/file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryChangesSourceTest.java) { #minimal-sample }]
+
 
 ### LogRotationSink
 
@@ -88,15 +98,24 @@ In this sample we create a size based rotation function:
 
 Scala
 : @@snip (../../../../file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #LogRotationSink-filesize-sample }
+
 Java
 : @@snip (../../../../file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #LogRotationSink-filesize-sample }
+
+@scala[@github[Source on Github](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #LogRotationSink-filesize-sample }]
+@java[@github[Source on Github](/file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #LogRotationSink-filesize-sample }]
+
 
 In this sample we create a time based rotation function:
 
 Scala
 : @@snip (../../../../file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #LogRotationSink-timebased-sample }
+
 Java
 : @@snip (../../../../file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #LogRotationSink-timebased-sample }
+
+@scala[@github[Source on Github](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #LogRotationSink-timebased-sample }]
+@java[@github[Source on Github](/file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #LogRotationSink-timebased-sample }]
 
 
 ### Running the example code
