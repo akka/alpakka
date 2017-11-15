@@ -141,6 +141,11 @@ val defaultParadoxSettings: Seq[Setting[_]] = Seq(
     "extref.java-api.base_url" -> "https://docs.oracle.com/javase/8/docs/api/index.html?%s.html",
     "extref.javaee-api.base_url" -> "https://docs.oracle.com/javaee/7/api/index.html?%s.html",
     "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
+    "javadoc.base_url" -> "https://docs.oracle.com/javase/8/docs/api/",
+    "javadoc.javax.jms.base_url" -> "https://docs.oracle.com/javaee/7/api/",
+    "javadoc.akka.base_url" -> s"http://doc.akka.io/japi/akka/${Dependencies.AkkaVersion}/",
+    "javadoc.akka.http.base_url" -> s">http://doc.akka.io/japi/akka-http/${Dependencies.AkkaHttpVersion}/",
+    "scaladoc.scala.base_url" -> s"http://www.scala-lang.org/api/current/",
     "scaladoc.akka.base_url" -> s"http://doc.akka.io/api/akka/${Dependencies.AkkaVersion}",
     "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}",
     "snip.alpakka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath
