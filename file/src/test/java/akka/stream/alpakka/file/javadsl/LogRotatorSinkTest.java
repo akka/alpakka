@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 
@@ -30,17 +31,17 @@ public class LogRotatorSinkTest {
         final Materializer materializer = ActorMaterializer.create(system);
 
         // #size
-        Creator<Function<ByteString, Path>> sizeBasedPathGenerator = () -> {
+        Creator<Function<ByteString, Optional<Path>>> sizeBasedPathGenerator = () -> {
             long max = 10 * 1024 * 1024;
             final long[] size = new long[]{max};
             return (element) -> {
                 if (size[0] + element.size() > max) {
                     Path path = Files.createTempFile("out-", ".log");
                     size[0] = element.size();
-                    return path;
+                    return Optional.of(path);
                 } else {
                     size[0] += element.size();
-                    return null;
+                    return Optional.empty();
                 }
             };
         };
@@ -53,15 +54,15 @@ public class LogRotatorSinkTest {
         final Path destinationDir = FileSystems.getDefault().getPath("/tmp");
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("'stream-'yyyy-MM-dd_HH'.log'");
 
-        Creator<Function<ByteString, Path>> timeBasedPathCreator = () -> {
+        Creator<Function<ByteString, Optional<Path>>> timeBasedPathCreator = () -> {
             final String[] currentFileName = new String[]{null};
             return (element) -> {
                 String newName = LocalDateTime.now().format(formatter);
                 if (newName.equals(currentFileName[0])) {
-                    return null;
+                    return Optional.empty();
                 } else {
                     currentFileName[0] = newName;
-                    return destinationDir.resolve(newName);
+                    return Optional.of(destinationDir.resolve(newName));
                 }
             };
         };
@@ -74,11 +75,11 @@ public class LogRotatorSinkTest {
         // #sample
         import akka.stream.alpakka.file.javadsl.LogRotatorSink;
 
-        Creator<Function<ByteString, Path>> pathGeneratorCreator = ...;
+        Creator<Function<ByteString, Optional<Path>>> pathGeneratorCreator = ...;
 
         // #sample
         */
-        Creator<Function<ByteString, Path>> pathGeneratorCreator = timeBasedPathCreator;
+        Creator<Function<ByteString, Optional<Path>>> pathGeneratorCreator = timeBasedPathCreator;
         // #sample
         CompletionStage<Done> completion = Source.from(Arrays.asList("test1", "test2", "test3", "test4", "test5", "test6"))
                 .map(ByteString::fromString)
