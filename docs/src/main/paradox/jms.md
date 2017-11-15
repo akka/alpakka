@@ -128,20 +128,20 @@ Java
 Create a @javadoc[javax.jms.Message](javax.jms.Message) source:
 
 Scala
-: @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-jms-source-client-ack }
+: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-jms-source-client-ack }
 
 Java
-: @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-jms-source-client-ack }
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-jms-source-client-ack }
 
 The `acknowledgeMode` (@scaladoc[AcknowledgeMode](akka.stream.alpakka.jms.AcknowledgeMode$)) parameter controls the JMS acknowledge mode parameter, see @javadoc[javax.jms.Connection.createSession](javax.jms.Connection#createSession-boolean-int-).
 
 Run the source and take the same amount of messages as we previously sent to it acknowledging them.
 
 Scala
-: @@snip (../../../../jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-jms-source-with-ack }
+: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-jms-source-with-ack }
 
 Java
-: @@snip (../../../../jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-jms-source-with-ack }
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-jms-source-with-ack }
 
 ### Receiving @javadoc[javax.jms.Message](javax.jms.Message)s from a JMS provider with a selector
 

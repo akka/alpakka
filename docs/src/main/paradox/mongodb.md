@@ -15,12 +15,12 @@ The MongoDB connector provides a way to provide the result of a MongoDB query as
 Sources provided by this connector need a prepared session to communicate with MongoDB server. First, lets initialize a MongoDB connection.
 
 Scala
-: @@snip (../../../../mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSourceSpec.scala) { #init-connection }
+: @@snip ($alpakka$/mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSourceSpec.scala) { #init-connection }
 
 We will also need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
 
 Scala
-: @@snip (../../../../mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSourceSpec.scala) { #init-mat }
+: @@snip ($alpakka$/mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSourceSpec.scala) { #init-mat }
 
 This is all preparation that we are going to need.
 
@@ -29,12 +29,12 @@ This is all preparation that we are going to need.
 Let's create a source from a MongoDB collection observable, which can optionally take a filter.
 
 Scala
-: @@snip (../../../../mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSourceSpec.scala) { #create-source }
+: @@snip ($alpakka$/mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSourceSpec.scala) { #create-source }
 
 And finally we can run it.
 
 Scala
-: @@snip (../../../../mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSourceSpec.scala) { #run-source }
+: @@snip ($alpakka$/mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSourceSpec.scala) { #run-source }
 
 Here we used a basic sink to complete the stream by collecting all of the stream elements to a collection. The power of streams comes from building larger data pipelines which leverage backpressure to ensure efficient flow control. Feel free to edit the example code and build @extref[more advanced stream topologies](akka-docs:scala/stream/stream-introduction).
 
