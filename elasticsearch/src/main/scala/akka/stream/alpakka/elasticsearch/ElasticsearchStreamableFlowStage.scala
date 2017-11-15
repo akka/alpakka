@@ -113,13 +113,13 @@ class ElasticsearchStreamableFlowStage[T <: StreamableIncomingMessage](
 
           if (successMsgs.nonEmpty) {
             // push the messages that DID succeed
-            push(out, Future.successful(StreamableIncomingMessagesResult[T](successMsgs, Seq())))
+            emit(out, Future.successful(StreamableIncomingMessagesResult[T](successMsgs, Seq())))
           }
 
         } else {
           retryCount = 0
           // Push failed
-          push(out, Future.successful(StreamableIncomingMessagesResult[T](successMsgs, failedMsgs)))
+          emit(out, Future.successful(StreamableIncomingMessagesResult[T](successMsgs, failedMsgs)))
 
           // Fetch next messages from queue and send them
           val nextMessages = (1 to settings.bufferSize).flatMap { _ =>
