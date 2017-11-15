@@ -147,7 +147,8 @@ val defaultParadoxSettings: Seq[Setting[_]] = Seq(
     "javadoc.akka.http.base_url" -> s">http://doc.akka.io/japi/akka-http/${Dependencies.AkkaHttpVersion}/",
     "scaladoc.scala.base_url" -> s"http://www.scala-lang.org/api/current/",
     "scaladoc.akka.base_url" -> s"http://doc.akka.io/api/akka/${Dependencies.AkkaVersion}",
-    "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}"
+    "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}",
+    "snip.alpakka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath
   ),
   sourceDirectory := baseDirectory.value / "src" / "main"
 )
