@@ -117,28 +117,28 @@ Java
 Create a committable sink which returns 
 
 Scala
-: @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { #create-source-withoutautoack }
+: @@snip ($alpakka$/amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { #create-source-withoutautoack }
 
 Java
-: @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { #create-source-withoutautoack }
+: @@snip ($alpakka$/amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { #create-source-withoutautoack }
 
 Committable sources return @scaladoc[CommittableIncomingMessage](akka.stream.alpakka.amqp.CommittableIncomingMessage) which wraps the @scaladoc[IncomingMessage](akka.stream.alpakka.amqp.IncomingMessage) and exposes the methods ack and nack.
 
 Use ack to acknowledge the message back to RabbitMQ. Ack takes an optional boolean parameter `multiple` indicating whether you are acknowledging the individual message or all the messages up to it.
 
 Scala
-: @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { #run-source-withoutautoack }
+: @@snip ($alpakka$/amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { #run-source-withoutautoack }
 
 Java
-: @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { #run-source-withoutautoack }
+: @@snip ($alpakka$/amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { #run-source-withoutautoack }
 
 Use nack to reject a message. Apart from the `multiple` argument, nack takes another optional boolean parameter indicating whether the item should be requeued or not.
 
 Scala
-: @@snip (../../../../amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { #run-source-withoutautoack-and-nack }
+: @@snip ($alpakka$/amqp/src/test/scala/akka/stream/alpakka/amqp/scaladsl/AmqpConnectorsSpec.scala) { #run-source-withoutautoack-and-nack }
 
 Java
-: @@snip (../../../../amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { #run-source-withoutautoack-and-nack }
+: @@snip ($alpakka$/amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { #run-source-withoutautoack-and-nack }
 
 ### Running the example code
 

@@ -37,10 +37,10 @@ Java
 XML processing pipeline ends with an @scaladoc[XmlWriting.writer](akka.stream.alpakka.xml.scaladsl.XmlWriting$) flow which writes a stream of XML parser events to @scaladoc[ByteString](akka.util.ByteString)s.
 
 Scala
-: @@snip (../../../../../xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlWritingTest.scala) { #writer }
+: @@snip ($alpakka$/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlWritingTest.scala) { #writer }
 
 Java
-: @@snip (../../../../../xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlWritingTest.java) { #writer }
+: @@snip ($alpakka$/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlWritingTest.java) { #writer }
 
 @scala[@github[Source on Github](/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlWritingTest.scala) { #writer }]
 @java[@github[Source on Github](/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlWritingTest.java) { #writer }]
@@ -49,10 +49,10 @@ Java
 To write an XML document run XML document source with this writer.
 
 Scala
-: @@snip (../../../../../xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlWritingTest.scala) { #writer-usage }
+: @@snip ($alpakka$/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlWritingTest.scala) { #writer-usage }
 
 Java
-: @@snip (../../../../../xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlWritingTest.java) { #writer-usage }
+: @@snip ($alpakka$/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlWritingTest.java) { #writer-usage }
 
 ## XML Subslice
 

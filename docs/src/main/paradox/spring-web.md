@@ -25,14 +25,14 @@ framework, which means that Spring is made aware of Sources and Sinks etc.
 All you need to do is include the above dependency (`akka-stream-alpakka-spring-web`), start your app as usual:
 
 Java
-: @@snip (../../../../spring-web/src/test/java/akka/stream/alpakka/spring/web/DemoApplication.java) { #use }
+: @@snip ($alpakka$/spring-web/src/test/java/akka/stream/alpakka/spring/web/DemoApplication.java) { #use }
 
 
 And you'll be able to return Akka Streams in HTTP endpoints directly:
 
 
 Java
-: @@snip (../../../../spring-web/src/test/java/akka/stream/alpakka/spring/web/SampleController.java) { #use }
+: @@snip ($alpakka$/spring-web/src/test/java/akka/stream/alpakka/spring/web/SampleController.java) { #use }
 
 Both `javadsl` and `scaladsl` Akka Stream types are supported.
 
@@ -44,7 +44,7 @@ to adapt those types in your applications as well.
 The automatically enabled configuration is as follows:
 
 Java
-: @@snip (../../../../spring-web/src/main/java/akka/stream/alpakka/spring/web/SpringWebAkkaStreamsConfiguration.java) { #configure }
+: @@snip ($alpakka$/spring-web/src/main/java/akka/stream/alpakka/spring/web/SpringWebAkkaStreamsConfiguration.java) { #configure }
 
 In case you'd like to manually configure it slightly differently.
 

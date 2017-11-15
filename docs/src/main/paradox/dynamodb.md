@@ -41,10 +41,10 @@ Java
 You can also use a Flow to execute your Dynamodb call:
 
 Scala
-: @@snip (../../../../dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #flow }
+: @@snip ($alpakka$/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #flow }
 
 Java
-: @@snip (../../../../dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #flow }
+: @@snip ($alpakka$/dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #flow }
 
 ### Running the example code
 
