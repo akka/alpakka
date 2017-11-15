@@ -92,15 +92,15 @@ The java implementation is a bit different. The inner function must return null 
 A small snippet for the usage:
 
 Scala
-: @@snip (../../../../file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #LogRotationSink-sample }
+: @@snip ($alpakka$/file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #LogRotationSink-sample }
 
 In this sample we create a size based rotation function:
 
 Scala
-: @@snip (../../../../file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #LogRotationSink-filesize-sample }
+: @@snip ($alpakka$/file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #LogRotationSink-filesize-sample }
 
 Java
-: @@snip (../../../../file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #LogRotationSink-filesize-sample }
+: @@snip ($alpakka$/file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #LogRotationSink-filesize-sample }
 
 @scala[@github[Source on Github](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #LogRotationSink-filesize-sample }]
 @java[@github[Source on Github](/file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #LogRotationSink-filesize-sample }]
@@ -109,10 +109,10 @@ Java
 In this sample we create a time based rotation function:
 
 Scala
-: @@snip (../../../../file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #LogRotationSink-timebased-sample }
+: @@snip ($alpakka$/file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #LogRotationSink-timebased-sample }
 
 Java
-: @@snip (../../../../file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #LogRotationSink-timebased-sample }
+: @@snip ($alpakka$/file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #LogRotationSink-timebased-sample }
 
 @scala[@github[Source on Github](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #LogRotationSink-timebased-sample }]
 @java[@github[Source on Github](/file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #LogRotationSink-timebased-sample }]
