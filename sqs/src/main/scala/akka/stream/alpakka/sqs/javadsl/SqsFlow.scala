@@ -6,7 +6,7 @@ package akka.stream.alpakka.sqs.javadsl
 
 import akka.NotUsed
 import akka.stream.alpakka.sqs.scaladsl.Result
-import akka.stream.alpakka.sqs.{SqsFlowStage, SqsSinkSettings, _}
+import akka.stream.alpakka.sqs._
 import akka.stream.javadsl.Flow
 import com.amazonaws.services.sqs.AmazonSQSAsync
 

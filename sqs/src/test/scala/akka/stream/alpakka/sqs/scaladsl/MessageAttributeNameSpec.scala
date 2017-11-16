@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.sqs.scaladsl
 
-import akka.stream.alpakka.sqs.{MessageAttributeName, SqsSourceSettings}
+import akka.stream.alpakka.sqs.MessageAttributeName
 import org.scalatest.{FlatSpec, Matchers}
 
 class MessageAttributeNameSpec extends FlatSpec with Matchers {

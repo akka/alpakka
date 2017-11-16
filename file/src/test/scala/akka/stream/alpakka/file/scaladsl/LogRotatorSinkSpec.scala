@@ -6,11 +6,12 @@ package akka.stream.alpakka.file.scaladsl
 
 import java.nio.channels.NonWritableChannelException
 import java.nio.file._
-import java.time.ZonedDateTime
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Keep, Source}
+import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Materializer}
 import akka.testkit.TestKit
@@ -19,25 +20,24 @@ import com.google.common.jimfs.{Configuration, Jimfs}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 object LogRotatorSinkSpec {
 
   def main(args: Array[String]): Unit = {
     implicit val system: ActorSystem = ActorSystem()
     implicit val materializer: Materializer = ActorMaterializer()
-    // #LogRotationSink-filesize-sample
-    val fs = FileSystems.getDefault
+    import system.dispatcher
 
+    // #size
     val fileSizeRotationFunction = () => {
       val max = 10 * 1024 * 1024
       var size: Long = max
       (element: ByteString) =>
         {
           if (size + element.size > max) {
-            val path = Files.createTempFile(fs.getPath("/"), "test", ".log")
-            println(path)
+            val path = Files.createTempFile("out-", ".log")
             size = element.size
             Some(path)
           } else {
@@ -46,39 +46,57 @@ object LogRotatorSinkSpec {
           }
         }
     }
-    // #LogRotationSink-filesize-sample
 
-    // #LogRotationSink-timebased-sample
+    val sizeRotatorSink: Sink[ByteString, Future[Done]] =
+      LogRotatorSink(fileSizeRotationFunction)
+    // #size
+
+    val fileSizeCompletion = Source(Seq("test1", "test2", "test3", "test4", "test5", "test6").toList)
+      .map(ByteString(_))
+      .runWith(sizeRotatorSink)
+
+    // #time
+    val destinationDir = FileSystems.getDefault.getPath("/tmp")
+    val formatter = DateTimeFormatter.ofPattern("'stream-'yyyy-MM-dd_HH'.log'")
+
     val timeBasedRotationFunction = () => {
-      val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss.SSS")
-      var lastFilename: Option[String] = None
-      (element: ByteString) =>
+      var currentFilename: Option[String] = None
+      (_: ByteString) =>
         {
-          val newName = ZonedDateTime.now().format(formatter) + ".log"
-          if (lastFilename.isEmpty || lastFilename.get != newName) {
-            lastFilename = Some(newName)
-            Some(fs.getPath(newName))
-          } else {
+          val newName = LocalDateTime.now().format(formatter)
+          if (currentFilename.contains(newName)) {
             None
+          } else {
+            currentFilename = Some(newName)
+            Some(destinationDir.resolve(newName))
           }
         }
     }
-    // #LogRotationSink-timebased-sample
 
-    val pathGeneratorFunction = timeBasedRotationFunction
+    val timeBasedSink: Sink[ByteString, Future[Done]] =
+      LogRotatorSink(timeBasedRotationFunction)
+    // #time
 
-    // #LogRotationSink-sample
+    val timeBaseCompletion = Source(Seq("test1", "test2", "test3", "test4", "test5", "test6").toList)
+      .map(ByteString(_))
+      .runWith(timeBasedSink)
+
+    /*
+    // #sample
+    val pathGeneratorFunction: () => ByteString => Option[Path] = ???
+
+    // #sample
+     */
+    val pathGeneratorFunction: () => ByteString => Option[Path] = timeBasedRotationFunction
+    // #sample
     val completion = Source(Seq("test1", "test2", "test3", "test4", "test5", "test6").toList)
       .map(ByteString(_))
       .runWith(LogRotatorSink(pathGeneratorFunction))
-    // #LogRotationSink-sample
+    // #sample
 
-    val completion2 = Source(Seq("test1", "test2", "test3", "test4", "test5", "test6").toList)
-      .map(ByteString(_))
-      .runWith(LogRotatorSink(fileSizeRotationFunction))
-
-    Await.result(completion, 3.seconds)
-    Await.result(completion2, 3.seconds)
+    Future
+      .sequence(Seq(timeBaseCompletion, fileSizeCompletion, completion))
+      .onComplete(_ => system.terminate())
   }
 
 }
