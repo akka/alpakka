@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.s3.impl
 
 import akka.http.scaladsl.model.HttpHeader
@@ -16,7 +17,7 @@ import scala.collection.immutable
 case class S3Headers(headers: Seq[HttpHeader])
 
 case class MetaHeaders(metaHeaders: Map[String, String]) {
-  def headers =
+  def headers: immutable.Seq[HttpHeader] =
     metaHeaders.map { header =>
       RawHeader(s"x-amz-meta-${header._1}", header._2)
     }(collection.breakOut): immutable.Seq[HttpHeader]

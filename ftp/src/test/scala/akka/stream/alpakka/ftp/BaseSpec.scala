@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.ftp
 
 import akka.NotUsed
@@ -25,6 +26,8 @@ trait BaseSpec
     with FtpSupport {
 
   protected def listFiles(basePath: String): Source[FtpFile, NotUsed]
+
+  protected def listFilesWithFilter(basePath: String, branchSelector: FtpFile => Boolean): Source[FtpFile, NotUsed]
 
   protected def retrieveFromPath(path: String): Source[ByteString, Future[IOResult]]
 

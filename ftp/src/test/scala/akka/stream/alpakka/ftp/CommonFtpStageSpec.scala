@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.ftp
 
 import akka.stream.IOResult
@@ -90,6 +91,26 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
         listFiles(basePath).toMat(TestSink.probe)(Keep.right).run()
       probe.request(40).expectNextN(30)
       probe.expectComplete()
+    }
+
+    "list only first level from base path" in {
+      val basePath = "/foo"
+      generateFiles(30, 10, basePath)
+      val probe =
+        listFilesWithFilter(basePath, f => false).toMat(TestSink.probe)(Keep.right).run()
+      probe.request(40).expectNextN(12)
+      probe.expectComplete()
+
+    }
+
+    "list only go into second page" in {
+      val basePath = "/foo"
+      generateFiles(30, 10, basePath)
+      val probe =
+        listFilesWithFilter(basePath, f => f.name.contains("1")).toMat(TestSink.probe)(Keep.right).run()
+      probe.request(40).expectNextN(21)
+      probe.expectComplete()
+
     }
 
     "list all files in sparse directory tree" in {

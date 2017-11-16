@@ -6,50 +6,29 @@ For more information about AWS SNS please visit the [official documentation](htt
 
 ## Artifacts
 
-sbt
-:   @@@vars
-    ```scala
-    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-sns" % "$version$"
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```xml
-    <dependency>
-      <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-sns_$scalaBinaryVersion$</artifactId>
-      <version>$version$</version>
-    </dependency>
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```gradle
-    dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-sns_$scalaBinaryVersion$", version: "$version$"
-    }
-    ```
-    @@@
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-sns_$scalaBinaryVersion$
+  version=$version$
+}
 
 ## Usage
 
 Sources provided by this connector need a prepared `AmazonSNSAsyncClient` to publish messages to a topic.
 
 Scala
-: @@snip (../../../../sns/src/test/scala/akka/stream/alpakka/sns/scaladsl/Examples.scala) { #init-client }
+: @@snip ($alpakka$/sns/src/test/scala/akka/stream/alpakka/sns/scaladsl/Examples.scala) { #init-client }
 
 Java
-: @@snip (../../../../sns/src/test/java/akka/stream/alpakka/sns/javadsl/Examples.java) { #init-client }
+: @@snip ($alpakka$/sns/src/test/java/akka/stream/alpakka/sns/javadsl/Examples.java) { #init-client }
 
 We will also need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
 
 Scala
-: @@snip (../../../../sns/src/test/scala/akka/stream/alpakka/sns/scaladsl/Examples.scala) { #init-system }
+: @@snip ($alpakka$/sns/src/test/scala/akka/stream/alpakka/sns/scaladsl/Examples.scala) { #init-system }
 
 Java
-: @@snip (../../../../sns/src/test/java/akka/stream/alpakka/sns/javadsl/Examples.java) { #init-system }
+: @@snip ($alpakka$/sns/src/test/java/akka/stream/alpakka/sns/javadsl/Examples.java) { #init-system }
 
 This is all preparation that we are going to need.
 
@@ -61,10 +40,10 @@ Now we can publish a String message to any SNS topic where we have access to by 
 ### Using a Flow
 
 Scala
-: @@snip (../../../../sns/src/test/scala/akka/stream/alpakka/sns/scaladsl/Examples.scala) { #use-flow }
+: @@snip ($alpakka$/sns/src/test/scala/akka/stream/alpakka/sns/scaladsl/Examples.scala) { #use-flow }
 
 Java
-: @@snip (../../../../sns/src/test/java/akka/stream/alpakka/sns/javadsl/Examples.java) { #use-flow }
+: @@snip ($alpakka$/sns/src/test/java/akka/stream/alpakka/sns/javadsl/Examples.java) { #use-flow }
 
 As you can see, this would publish the messages from the source to the specified AWS SNS topic.
 After a message has been successfully published, a
@@ -74,10 +53,10 @@ will be pushed downstream.
 ### Using a Sink
 
 Scala
-: @@snip (../../../../sns/src/test/scala/akka/stream/alpakka/sns/scaladsl/Examples.scala) { #use-sink }
+: @@snip ($alpakka$/sns/src/test/scala/akka/stream/alpakka/sns/scaladsl/Examples.scala) { #use-sink }
 
 Java
-: @@snip (../../../../sns/src/test/java/akka/stream/alpakka/sns/javadsl/Examples.java) { #use-sink }
+: @@snip ($alpakka$/sns/src/test/java/akka/stream/alpakka/sns/javadsl/Examples.java) { #use-sink }
 
 As you can see, this would publish the messages from the source to the specified AWS SNS topic.
 

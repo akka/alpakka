@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.ftp;
 
 import akka.NotUsed;
@@ -30,26 +31,19 @@ public class FtpStageTest extends PlainFtpSupportImpl implements CommonFtpStageT
     CommonFtpStageTest.super.toPath();
   }
 
-  //#traversing
   public Source<FtpFile, NotUsed> getBrowserSource(String basePath) throws Exception {
     return Ftp.ls(basePath, settings());
   }
-  //#traversing
 
-  //#retrieving
   public Source<ByteString, CompletionStage<IOResult>> getIOSource(String path) throws Exception {
     return Ftp.fromPath(path, settings());
   }
-  //#retrieving
 
-  //#storing
   public Sink<ByteString, CompletionStage<IOResult>> getIOSink(String path) throws Exception {
     return Ftp.toPath(path, settings());
   }
-  //#storing
 
   private FtpSettings settings() throws Exception {
-    //#create-settings
     final FtpSettings settings = new FtpSettings(
             InetAddress.getByName("localhost"),
             getPort(),
@@ -57,7 +51,6 @@ public class FtpStageTest extends PlainFtpSupportImpl implements CommonFtpStageT
             false, // binary
             true   // passiveMode
     );
-    //#create-settings
     return settings;
   }
 }

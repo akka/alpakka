@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.ftp
 
 import akka.NotUsed
@@ -28,6 +29,9 @@ trait BaseSftpSpec extends SftpSupportImpl with BaseSpec {
 
   protected def listFiles(basePath: String): Source[FtpFile, NotUsed] =
     Sftp.ls(basePath, settings)
+
+  protected def listFilesWithFilter(basePath: String, branchSelector: FtpFile => Boolean): Source[FtpFile, NotUsed] =
+    Sftp.ls(basePath, settings, branchSelector)
 
   protected def retrieveFromPath(path: String): Source[ByteString, Future[IOResult]] =
     Sftp.fromPath(path, settings)

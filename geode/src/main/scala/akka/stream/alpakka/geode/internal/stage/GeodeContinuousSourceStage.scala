@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.geode.internal.stage
 
 import akka.Done
@@ -32,7 +33,7 @@ class GeodeContinuousSourceStage[V](cache: ClientCache, name: Symbol, sql: Strin
       }
 
       val onElement: AsyncCallback[V] = getAsyncCallback[V] { element =>
-        if (isAvailable(out)) {
+        if (isAvailable(out) && incomingQueueIsEmpty) {
           pushElement(out, element)
         } else
           enqueue(element)

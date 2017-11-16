@@ -1,21 +1,37 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.amqp
 
+import java.util.Optional
+
 import akka.Done
-import akka.stream.stage.{GraphStage, GraphStageLogic, GraphStageWithMaterializedValue, InHandler}
+import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler}
 import akka.stream.{ActorAttributes, Attributes, Inlet, SinkShape}
 import akka.util.ByteString
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client._
 
+import scala.compat.java8.OptionConverters
 import scala.concurrent.{Future, Promise}
 
 final case class OutgoingMessage(bytes: ByteString,
                                  immediate: Boolean,
                                  mandatory: Boolean,
-                                 props: Option[BasicProperties])
+                                 props: Option[BasicProperties] = None,
+                                 routingKey: Option[String] = None) {
+
+  /**
+   * Java API
+   */
+  def this(bytes: ByteString,
+           immediate: Boolean,
+           mandatory: Boolean,
+           props: Optional[BasicProperties],
+           routingKey: Optional[String]) =
+    this(bytes, immediate, mandatory, OptionConverters.toScala(props), OptionConverters.toScala(routingKey))
+}
 
 object AmqpSinkStage {
 
@@ -81,7 +97,7 @@ final class AmqpSinkStage(settings: AmqpSinkSettings)
             val elem = grab(in)
             channel.basicPublish(
               exchange,
-              routingKey,
+              elem.routingKey.getOrElse(routingKey),
               elem.mandatory,
               elem.immediate,
               elem.props.orNull,
@@ -181,7 +197,7 @@ final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings)
 
             if (replyTo.isDefined) {
               channel.basicPublish(
-                "",
+                elem.routingKey.getOrElse(""),
                 replyTo.get,
                 elem.mandatory,
                 elem.immediate,

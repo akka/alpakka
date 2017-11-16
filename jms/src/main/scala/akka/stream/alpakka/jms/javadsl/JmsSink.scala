@@ -1,11 +1,11 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.jms.javadsl
 
 import akka.NotUsed
 import akka.stream.alpakka.jms.{JmsSinkSettings, JmsSinkStage, JmsTextMessage}
-import akka.stream.scaladsl.{Flow, Sink}
 
 object JmsSink {
 

@@ -1,28 +1,30 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.s3.impl
 
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{HttpEntity, MediaTypes}
-import akka.stream.alpakka.s3.{BufferType, MemoryBufferType, Proxy, S3Settings}
+import akka.http.scaladsl.model.{HttpEntity, IllegalUriException, MediaTypes}
 import akka.stream.alpakka.s3.acl.CannedAcl
-import akka.stream.alpakka.s3.auth.AWSCredentials
+import akka.stream.alpakka.s3.{BufferType, MemoryBufferType, Proxy, S3Settings}
 import akka.stream.scaladsl.Source
+import com.amazonaws.auth.{AWSCredentialsProvider, AWSStaticCredentialsProvider, AnonymousAWSCredentials}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, Matchers}
 
 class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
   // test fixtures
-  def getSettings(bufferType: BufferType = MemoryBufferType,
-                  diskBufferPath: String = "",
-                  proxy: Option[Proxy] = None,
-                  awsCredentials: AWSCredentials = AWSCredentials("", ""),
-                  s3Region: String = "us-east-1",
-                  pathStyleAccess: Boolean = false) =
-    new S3Settings(bufferType, diskBufferPath, proxy, awsCredentials, s3Region, pathStyleAccess)
+  def getSettings(
+      bufferType: BufferType = MemoryBufferType,
+      proxy: Option[Proxy] = None,
+      awsCredentials: AWSCredentialsProvider = new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()),
+      s3Region: String = "us-east-1",
+      pathStyleAccess: Boolean = false
+  ) =
+    new S3Settings(bufferType, proxy, awsCredentials, s3Region, pathStyleAccess)
 
   val location = S3Location("bucket", "image-1024@2x")
   val contentType = MediaTypes.`image/jpeg`
@@ -62,6 +64,14 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     }
   }
 
+  it should "throw an error if path-style access is false and the bucket name contains non-LDH characters" in {
+    implicit val settings = getSettings(s3Region = "eu-west-1", pathStyleAccess = false)
+
+    assertThrows[IllegalUriException](
+      HttpRequests.getDownloadRequest(S3Location("invalid_bucket_name", "image-1024@2x"))
+    )
+  }
+
   it should "initiate multipart upload with path-style access in region us-east-1" in {
     implicit val settings = getSettings(s3Region = "us-east-1", pathStyleAccess = true)
 
@@ -89,7 +99,6 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     req.uri.authority.host.toString shouldEqual "s3-us-west-2.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/image-1024@2x"
-
   }
 
   it should "support download requests with path-style access in other regions" in {

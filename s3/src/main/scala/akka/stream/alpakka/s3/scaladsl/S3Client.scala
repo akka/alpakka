@@ -1,10 +1,11 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.s3.scaladsl
 
 import java.time.Instant
-
+import scala.concurrent.Future
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
@@ -12,13 +13,11 @@ import akka.http.scaladsl.model.headers.ByteRange
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
-import akka.stream.alpakka.s3.auth.AWSCredentials
+import akka.stream.alpakka.s3.auth.{AWSCredentials ⇒ OldAWSCredentials}
 import akka.stream.alpakka.s3.impl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.Future
+import com.amazonaws.auth._
 
 final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
@@ -43,15 +42,26 @@ final case class ListBucketResultContents(
 )
 
 object S3Client {
-  val MinChunkSize = 5242880
+  val MinChunkSize: Int = 5242880
 
   def apply()(implicit system: ActorSystem, mat: Materializer): S3Client =
     new S3Client(S3Settings(system.settings.config))
 
-  def apply(credentials: AWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer): S3Client = {
-    val settings = S3Settings
-      .apply(system.settings.config)
-      .copy(awsCredentials = credentials, s3Region = region)
+  @deprecated("use apply(AWSCredentialsProvider, String) factory", "0.11")
+  def apply(credentials: OldAWSCredentials, region: String)(implicit system: ActorSystem,
+                                                            mat: Materializer): S3Client =
+    apply(
+      new AWSStaticCredentialsProvider(credentials.toAmazonCredentials()),
+      region
+    )
+
+  def apply(credentials: AWSCredentialsProvider, region: String)(implicit system: ActorSystem,
+                                                                 mat: Materializer): S3Client = {
+
+    val settings: S3Settings = S3Settings(system.settings.config).copy(
+      credentialsProvider = credentials,
+      s3Region = region
+    )
     new S3Client(settings)
   }
 }

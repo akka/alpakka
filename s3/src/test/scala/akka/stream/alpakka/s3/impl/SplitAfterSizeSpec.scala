@@ -1,22 +1,17 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.s3.impl
 
-import akka.testkit.TestKit
-import akka.stream.ActorMaterializerSettings
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.concurrent.ScalaFutures
-import akka.stream.ActorMaterializer
 import akka.actor.ActorSystem
-import org.scalatest.Matchers
-import org.scalatest.FlatSpecLike
-import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.Flow
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.testkit.TestKit
 import akka.util.ByteString
-import akka.stream.scaladsl.Sink
+import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
-import scala.concurrent.duration._
 
 class SplitAfterSizeSpec(_system: ActorSystem)
     extends TestKit(_system)

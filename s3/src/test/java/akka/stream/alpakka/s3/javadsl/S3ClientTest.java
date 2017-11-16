@@ -1,44 +1,52 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.s3.javadsl;
 
+import java.util.Arrays;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import akka.NotUsed;
 import akka.http.javadsl.model.Uri;
 import akka.http.javadsl.model.headers.ByteRange;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.s3.BufferType;
 import akka.stream.alpakka.s3.MemoryBufferType;
 import akka.stream.alpakka.s3.Proxy;
 import akka.stream.alpakka.s3.S3Settings;
-import akka.stream.alpakka.s3.auth.AWSCredentials;
-import akka.stream.alpakka.s3.auth.BasicCredentials;
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import org.junit.Test;
-
 import scala.Option;
 import scala.Some;
-
-import java.util.Arrays;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class S3ClientTest extends S3WireMockBase {
 
-    final Materializer materializer = ActorMaterializer.create(system());
+    private final Materializer materializer =
+            ActorMaterializer.create(system());
 
     //#client
-    final AWSCredentials credentials = new BasicCredentials("my-AWS-access-key-ID", "my-AWS-password");
-    final Proxy proxy = new Proxy("localhost",port(),"http");
-    final S3Settings settings = new S3Settings(MemoryBufferType.getInstance(),"", Some.apply(proxy),credentials,"us-east-1",false);
-    final S3Client client = new S3Client(settings, system(), materializer);
+    private final AWSCredentialsProvider credentials = new AWSStaticCredentialsProvider(
+            new BasicAWSCredentials("my-AWS-access-key-ID", "my-AWS-password")
+    );
+
+    private final Proxy proxy = new Proxy("localhost",port(),"http");
+    private final S3Settings settings = new S3Settings(
+            MemoryBufferType.getInstance(),
+            Some.apply(proxy),
+            credentials,
+            "us-east-1",
+            false
+    );
+    private final S3Client client = new S3Client(settings, system(), materializer);
     //#client
 
     @Test

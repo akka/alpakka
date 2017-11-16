@@ -1,12 +1,13 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.csv.scaladsl
 
 import java.nio.charset.{Charset, StandardCharsets}
 
 import akka.NotUsed
-import akka.stream.alpakka.csv.{javadsl, CsvFormatter}
+import akka.stream.alpakka.csv.CsvFormatter
 import akka.stream.scaladsl.{Flow, Source}
 import akka.util.ByteString
 

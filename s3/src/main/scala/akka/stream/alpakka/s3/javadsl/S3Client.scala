@@ -1,28 +1,28 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.s3.javadsl
 
 import java.time.Instant
 import java.util.concurrent.CompletionStage
-
+import scala.compat.java8.FutureConverters._
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.impl.model.JavaUri
 import akka.http.javadsl.model.headers.ByteRange
 import akka.http.javadsl.model.{ContentType, HttpResponse, Uri}
-import akka.http.scaladsl.model.{ContentTypes, ContentType => ScalaContentType}
-import akka.http.scaladsl.model.headers.{ByteRange => ScalaByteRange}
+import akka.http.scaladsl.model.headers.{ByteRange ⇒ ScalaByteRange}
+import akka.http.scaladsl.model.{ContentTypes, ContentType ⇒ ScalaContentType}
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
-import akka.stream.alpakka.s3.auth.AWSCredentials
+import akka.stream.alpakka.s3.auth.{AWSCredentials ⇒ OldAWSCredentials}
 import akka.stream.alpakka.s3.impl._
 import akka.stream.javadsl.{Sink, Source}
 import akka.util.ByteString
+import com.amazonaws.auth._
 import com.typesafe.config.ConfigFactory
-
-import scala.compat.java8.FutureConverters._
 
 final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
@@ -50,10 +50,21 @@ object S3Client {
   def create(system: ActorSystem, mat: Materializer): S3Client =
     new S3Client(S3Settings(ConfigFactory.load()), system, mat)
 
-  def create(credentials: AWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer): S3Client = {
-    val settings = S3Settings
-      .apply(ConfigFactory.load())
-      .copy(awsCredentials = credentials, s3Region = region)
+  @deprecated("use apply(AWSCredentialsProvider, String) factory", "0.11")
+  def create(credentials: OldAWSCredentials, region: String)(implicit system: ActorSystem,
+                                                             mat: Materializer): S3Client =
+    create(
+      new AWSStaticCredentialsProvider(credentials.toAmazonCredentials()),
+      region
+    )
+
+  def create(credentials: AWSCredentialsProvider, region: String)(implicit system: ActorSystem,
+                                                                  mat: Materializer): S3Client = {
+
+    val settings = S3Settings(ConfigFactory.load()).copy(
+      credentialsProvider = credentials,
+      s3Region = region
+    )
     new S3Client(settings, system, mat)
   }
 }

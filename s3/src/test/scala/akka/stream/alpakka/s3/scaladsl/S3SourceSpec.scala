@@ -1,23 +1,25 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.NotUsed
 import akka.http.scaladsl.model.headers.ByteRange
-import akka.stream.alpakka.s3.auth.AWSCredentials
 import akka.stream.alpakka.s3.{MemoryBufferType, Proxy, S3Exception, S3Settings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
-
 import scala.concurrent.Future
+import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 
 class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
   //#client
-  val awsCredentials = AWSCredentials(accessKeyId = "my-AWS-access-key-ID", secretAccessKey = "my-AWS-password")
+  val awsCredentials = new AWSStaticCredentialsProvider(
+    new BasicAWSCredentials("my-AWS-access-key-ID", "my-AWS-password")
+  )
   val proxy = Option(Proxy("localhost", port, "http"))
-  val settings = new S3Settings(MemoryBufferType, "", proxy, awsCredentials, "us-east-1", false)
+  val settings = new S3Settings(MemoryBufferType, proxy, awsCredentials, "us-east-1", false)
   val s3Client = new S3Client(settings)(system, materializer)
   //#client
 

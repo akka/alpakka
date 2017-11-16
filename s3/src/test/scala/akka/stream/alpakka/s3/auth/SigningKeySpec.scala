@@ -1,16 +1,19 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.s3.auth
 
 import java.time.LocalDate
-
+import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import org.scalatest.{FlatSpec, Matchers}
 
 class SigningKeySpec extends FlatSpec with Matchers {
   behavior of "A Signing Key"
 
-  val credentials = AWSCredentials("AKIDEXAMPLE", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY")
+  val credentials = new AWSStaticCredentialsProvider(
+    new BasicAWSCredentials("AKIDEXAMPLE", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY")
+  )
 
   val scope = CredentialScope(LocalDate.of(2015, 8, 30), "us-east-1", "iam")
   val signingKey = SigningKey(credentials, scope)

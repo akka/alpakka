@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.mqtt.scaladsl
 
 import akka.actor.ActorSystem
@@ -175,7 +176,7 @@ class MqttSourceSpec
       }
     }
 
-    "support will message" in {
+    "support will message" ignore {
       import system.dispatcher
 
       val (binding, connection) = Tcp().bind("localhost", 1337).toMat(Sink.head)(Keep.both).run()
