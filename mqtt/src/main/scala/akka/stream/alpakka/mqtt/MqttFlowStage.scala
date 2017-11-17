@@ -114,17 +114,17 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, q
         subscriptionPromise.tryFailure(ex)
       }
 
-      override def postStop(): Unit =
+      override def postStop(): Unit = {
         if (!subscriptionPromise.isCompleted)
           subscriptionPromise
             .tryFailure(
               new IllegalStateException("Cannot complete subscription because the stage is about to stop or fail")
             )
-      mqttClient.foreach {
-        case c if c.isConnected => c.disconnect()
-        case c => ()
+        mqttClient.foreach {
+          case c if c.isConnected => c.disconnect()
+          case c => ()
+        }
       }
-
     }, subscriptionPromise.future)
   }
 }
