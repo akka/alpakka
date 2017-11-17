@@ -26,7 +26,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, q
 
   private val in = Inlet[MqttMessage](s"MqttFlow.in")
   private val out = Outlet[MqttMessage](s"MqttFlow.out")
-  override val shape = FlowShape.of(in, out)
+  override val shape: Shape = FlowShape.of(in, out)
   override protected def initialAttributes: Attributes = Attributes.name("MqttFlow")
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
@@ -56,7 +56,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, q
       }
 
       private val onPublished = getAsyncCallback[Try[IMqttToken]] {
-        case Success(token) => pull(in)
+        case Success(_) => pull(in)
         case Failure(ex) => failStage(ex)
       }
 
@@ -122,7 +122,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, q
             )
         mqttClient.foreach {
           case c if c.isConnected => c.disconnect()
-          case c => ()
+          case _ => ()
         }
       }
     }, subscriptionPromise.future)
