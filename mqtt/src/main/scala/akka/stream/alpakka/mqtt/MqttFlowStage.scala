@@ -19,7 +19,7 @@ object MqttFlowStage {
   final object NoClientException extends Exception("No MQTT client.")
 }
 
-class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, qos: MqttQoS)
+final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, qos: MqttQoS)
     extends GraphStageWithMaterializedValue[FlowShape[MqttMessage, MqttMessage], Future[Done]] {
   import MqttFlowStage.NoClientException
   import MqttConnectorLogic._
@@ -115,10 +115,15 @@ class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, qos: Mq
       }
 
       override def postStop(): Unit =
-        mqttClient.foreach {
-          case c if c.isConnected => c.disconnect()
-          case c => ()
-        }
+        if (!subscriptionPromise.isCompleted)
+          subscriptionPromise
+            .tryFailure(
+              new IllegalStateException("Cannot complete subscription because the stage is about to stop or fail")
+            )
+      mqttClient.foreach {
+        case c if c.isConnected => c.disconnect()
+        case c => ()
+      }
 
     }, subscriptionPromise.future)
   }
