@@ -121,4 +121,20 @@ object DynamoImplicits extends DynamoProtocol {
     override val marshaller = listTablesM
     def toOp: ListTables = this
   }
+
+  implicit class DescribeTimeToLive(val request: DescribeTimeToLiveRequest) extends AwsOp {
+    override type A = DescribeTimeToLiveRequest
+    override type B = DescribeTimeToLiveResult
+    override val handler = describeTimeToLiveU
+    override val marshaller = describeTimeToLiveM
+    def toOp: DescribeTimeToLive = this
+  }
+
+  implicit class UpdateTimeToLive(val request: UpdateTimeToLiveRequest) extends AwsOp {
+    override type A = UpdateTimeToLiveRequest
+    override type B = UpdateTimeToLiveResult
+    override val handler = updateTimeToLiveU
+    override val marshaller = updateTimeToLiveM
+    def toOp: UpdateTimeToLive = this
+  }
 }

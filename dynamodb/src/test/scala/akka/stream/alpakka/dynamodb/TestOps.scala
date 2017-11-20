@@ -109,6 +109,13 @@ object TableSpecOps extends TestOps {
       new ProvisionedThroughput().withWriteCapacityUnits(newMaxLimit).withReadCapacityUnits(newMaxLimit)
     )
 
+  val describeTimeToLiveRequest = new DescribeTimeToLiveRequest()
+  val updateTimeToLiveRequest = new UpdateTimeToLiveRequest()
+    .withTableName(tableName)
+    .withTimeToLiveSpecification(
+      new TimeToLiveSpecification().withAttributeName("expires").withEnabled(true)
+    )
+
   val deleteTableRequest = common.deleteTableRequest
 
 }
