@@ -80,7 +80,8 @@ object Dependencies {
       "com.google.jimfs" % "jimfs" % "1.1" % Test, // ApacheV2
       "org.slf4j" % "slf4j-api" % "1.7.21" % Test, // MIT
       "ch.qos.logback" % "logback-classic" % "1.1.7" % Test, // Eclipse Public License 1.0
-      "ch.qos.logback" % "logback-core" % "1.1.7" % Test // Eclipse Public License 1.0
+      "ch.qos.logback" % "logback-core" % "1.1.7" % Test, // Eclipse Public License 1.0
+      "org.littleshoot" % "littleproxy" % "1.1.2" % Test // ApacheV2
     )
   )
 

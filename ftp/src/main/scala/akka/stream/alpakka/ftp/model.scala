@@ -6,6 +6,7 @@ package akka.stream.alpakka.ftp
 
 import akka.stream.alpakka.ftp.FtpCredentials.AnonFtpCredentials
 import java.net.InetAddress
+import java.net.{Proxy => JProxy}
 import java.nio.file.attribute.PosixFilePermission
 
 /**
@@ -132,7 +133,8 @@ object FtpsSettings {
  * @param credentials credentials (username and password)
  * @param strictHostKeyChecking sets whether to use strict host key checking.
  * @param knownHosts known hosts file to be used when connecting
- * @param sftpIdentity private/public key config to use when connecting
+ * @param sftpIdentity private/public key config to use when connecting*
+ * @param proxy if access to ftp server via a proxy is required
  */
 final case class SftpSettings(
     host: InetAddress,
@@ -140,7 +142,8 @@ final case class SftpSettings(
     credentials: FtpCredentials = AnonFtpCredentials,
     strictHostKeyChecking: Boolean = true,
     knownHosts: Option[String] = None,
-    sftpIdentity: Option[SftpIdentity] = None
+    sftpIdentity: Option[SftpIdentity] = None,
+    proxy: Option[JProxy] = None
 ) extends RemoteFileSettings {
   def withPort(port: Int): SftpSettings =
     copy(port = port)
@@ -156,6 +159,9 @@ final case class SftpSettings(
 
   def withSftpIdentity(sftpIdentity: SftpIdentity): SftpSettings =
     copy(sftpIdentity = Some(sftpIdentity))
+
+  def withProxy(proxy: JProxy): SftpSettings =
+    copy(proxy = Some(proxy))
 }
 
 object SftpSettings {

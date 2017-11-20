@@ -14,6 +14,7 @@ import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 import net.schmizz.sshj.userauth.keyprovider.OpenSSHKeyFile
 import net.schmizz.sshj.userauth.password.PasswordUtils
 import net.schmizz.sshj.xfer.FilePermission
+import org.apache.commons.net.DefaultSocketFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
@@ -31,7 +32,13 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
     else
       knownHosts.foreach(path => ssh.loadKnownHosts(new File(path)))
 
-    ssh.connect(host.getHostAddress, port)
+    connectionSettings.proxy match {
+      case Some(p) =>
+        ssh.setSocketFactory(new DefaultSocketFactory(p))
+        ssh.connect(host.getHostAddress, port)
+      case None =>
+        ssh.connect(host.getHostAddress, port)
+    }
 
     if (credentials.password != "" && sftpIdentity.isEmpty)
       ssh.authPassword(credentials.username, credentials.password)
