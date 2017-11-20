@@ -41,11 +41,18 @@ protected[pubsub] trait GooglePubSub {
       materializer: Materializer
   ): Flow[PublishRequest, immutable.Seq[String], NotUsed] = {
     import materializer.executionContext
-    val session = getSession(clientEmail, privateKey)
 
-    Flow[PublishRequest].mapAsyncUnordered(parallelism) { request =>
-      session.getToken().flatMap { accessToken =>
-        httpApi.publish(projectId, topic, accessToken, apiKey, request)
+    if (httpApi.isEmulated) {
+      Flow[PublishRequest].mapAsyncUnordered(parallelism) { request =>
+        httpApi.publish(projectId, topic, maybeAccessToken = None, apiKey, request)
+      }
+    } else {
+      val session = getSession(clientEmail, privateKey)
+
+      Flow[PublishRequest].mapAsyncUnordered(parallelism) { request =>
+        session.getToken().flatMap { accessToken =>
+          httpApi.publish(projectId, topic, Some(accessToken), apiKey, request)
+        }
       }
     }
   }

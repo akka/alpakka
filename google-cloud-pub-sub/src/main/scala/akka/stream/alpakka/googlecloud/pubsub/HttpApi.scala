@@ -35,6 +35,8 @@ private object HttpApi extends HttpApi {
   val PubSubGoogleApisHost: String = PubSubEmulatorHost.getOrElse(DefaultPubSubGoogleApisHost)
   val GoogleApisHost: String = PubSubEmulatorHost.getOrElse(DefaultGoogleApisHost)
 
+  override def isEmulated = PubSubEmulatorHost.nonEmpty
+
   private[pubsub] lazy val PubSubEmulatorHost: Option[String] = sys.props
     .get(PubSubEmulatorHostVarName)
     .orElse(sys.env.get(PubSubEmulatorHostVarName))
@@ -47,6 +49,8 @@ private object HttpApi extends HttpApi {
 private trait HttpApi {
   def PubSubGoogleApisHost: String
   def GoogleApisHost: String
+  def isEmulated: Boolean
+
   private implicit val pubSubMessageFormat = DefaultJsonProtocol.jsonFormat2(PubSubMessage)
   private implicit val pubSubRequestFormat = DefaultJsonProtocol.jsonFormat1(PublishRequest.apply)
   private implicit val gcePubSubResponseFormat = DefaultJsonProtocol.jsonFormat1(PublishResponse)
@@ -97,7 +101,11 @@ private trait HttpApi {
     }
   }
 
-  def publish(project: String, topic: String, accessToken: String, apiKey: String, request: PublishRequest)(
+  def publish(project: String,
+              topic: String,
+              maybeAccessToken: Option[String],
+              apiKey: String,
+              request: PublishRequest)(
       implicit as: ActorSystem,
       materializer: Materializer
   ): Future[immutable.Seq[String]] = {
@@ -107,7 +115,9 @@ private trait HttpApi {
 
     for {
       request <- Marshal((HttpMethods.POST, url, request)).to[HttpRequest]
-      response <- Http().singleRequest(request.addCredentials(OAuth2BearerToken(accessToken)))
+      response <- Http().singleRequest(
+        maybeAccessToken.map(accessToken => request.addCredentials(OAuth2BearerToken(accessToken))).getOrElse(request)
+      )
       publishResponse <- Unmarshal(response.entity).to[PublishResponse]
     } yield publishResponse.messageIds
   }

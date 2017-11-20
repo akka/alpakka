@@ -53,11 +53,12 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
 
     val source = Source(List(request))
 
+    when(mockHttpApi.isEmulated).thenReturn(false)
     when(auth.getToken()).thenReturn(Future.successful("ok"))
     when(
       mockHttpApi.publish(project = TestCredentials.projectId,
                           topic = "topic1",
-                          accessToken = "ok",
+                          maybeAccessToken = Some("ok"),
                           apiKey = TestCredentials.apiKey,
                           request = request)
     ).thenReturn(Future.successful(Seq("id1")))
@@ -65,6 +66,39 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
     val result = source.via(flow).runWith(Sink.seq)
 
     result.futureValue shouldBe Seq(Seq("id1"))
+  }
+
+  ignore should "publish the message without auth when emulated" in {
+    val mockHttpApi = mock[HttpApi]
+    val googlePubSub = new GooglePubSub {
+      val httpApi = mockHttpApi
+
+      def getSession(clientEmail: String, privateKey: PrivateKey) = ???
+    }
+    val flow = googlePubSub.publish(
+      projectId = TestCredentials.projectId,
+      apiKey = TestCredentials.apiKey,
+      clientEmail = TestCredentials.clientEmail,
+      privateKey = TestCredentials.privateKey,
+      topic = "topic2"
+    )
+
+    val request = PublishRequest(Seq(PubSubMessage(messageId = "2", data = base64String("Hello Google!"))))
+
+    val source = Source(List(request))
+
+    // FIXME: not working, returns false
+    when(mockHttpApi.isEmulated).thenReturn(true)
+    when(
+      mockHttpApi.publish(project = TestCredentials.projectId,
+                          topic = "topic2",
+                          maybeAccessToken = None,
+                          apiKey = TestCredentials.apiKey,
+                          request = request)
+    ).thenReturn(Future.successful(Seq("id2")))
+
+    val result = source.via(flow).runWith(Sink.seq)
+    result.futureValue shouldBe Seq(Seq("id2"))
   }
 
   it should "subscribe and pull a message" in new Fixtures {
