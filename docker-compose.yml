@@ -12,6 +12,10 @@ services:
     image: rabbitmq:3
     ports:
       - "5672:5672"
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
   mqtt:
     image: toke/mosquitto
     ports:
