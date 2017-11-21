@@ -17,6 +17,7 @@ lazy val alpakka = project
     ironmq,
     jms,
     kinesis,
+    mongodb,
     mqtt,
     s3,
     springWeb,
