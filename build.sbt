@@ -16,6 +16,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   kinesis,
   mongodb,
   mqtt,
+  orientdb,
   s3,
   springWeb,
   simpleCodecs,
@@ -109,6 +110,9 @@ lazy val kinesis = alpakkaProject("kinesis",
 lazy val mongodb = alpakkaProject("mongodb", Dependencies.MongoDb)
 
 lazy val mqtt = alpakkaProject("mqtt", Dependencies.Mqtt)
+
+lazy val orientdb =
+  alpakkaProject("orientdb", Dependencies.OrientDB, fork in Test := true, parallelExecution in Test := false)
 
 lazy val s3 = alpakkaProject("s3", Dependencies.S3)
 

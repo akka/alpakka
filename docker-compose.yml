@@ -12,6 +12,13 @@ services:
     image: cassandra:3.0.15
     ports:
       - "9042:9042"
+  orientdb:
+    image: orientdb:latest
+    ports:
+      - "2424:2424"
+    environment:
+      - "ORIENTDB_ROOT_PASSWORD=root"
+    command: /orientdb/bin/server.sh -Dmemory.chunk.size=268435456
   dynamodb:
     image: deangiberson/aws-dynamodb-local
     ports:
