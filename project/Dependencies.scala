@@ -60,13 +60,17 @@ object Dependencies {
       "org.elasticsearch.client" % "rest" % "5.5.3", // ApacheV2
       "io.spray" %% "spray-json" % "1.3.3", // ApacheV2
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.1", // ApacheV2
-      "org.codelibs" % "elasticsearch-cluster-runner" % "5.6.0.0" % Test // ApacheV2
+      "org.codelibs" % "elasticsearch-cluster-runner" % "5.6.0.0" % Test, // ApacheV2
+      "org.slf4j" % "slf4j-api" % "1.7.21" % Test, // MIT
+      "ch.qos.logback" % "logback-classic" % "1.1.7" % Test // Eclipse Public License 1.0
     )
   )
 
   val File = Seq(
     libraryDependencies ++= Seq(
-      "com.google.jimfs" % "jimfs" % "1.1" % Test // ApacheV2
+      "com.google.jimfs" % "jimfs" % "1.1" % Test, // ApacheV2
+      "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test,
+      "ch.qos.logback" % "logback-classic" % "1.1.7" % Test // Eclipse Public License 1.0
     )
   )
 
@@ -78,8 +82,7 @@ object Dependencies {
       "org.apache.sshd" % "sshd-core" % "1.6.0" % Test, // ApacheV2
       "net.i2p.crypto" % "eddsa" % "0.2.0" % Test, // CC0 1.0 Universal
       "com.google.jimfs" % "jimfs" % "1.1" % Test, // ApacheV2
-      "org.slf4j" % "slf4j-api" % "1.7.21" % Test, // MIT
-      "ch.qos.logback" % "logback-classic" % "1.1.7" % Test, // Eclipse Public License 1.0
+      "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test,
       "ch.qos.logback" % "logback-core" % "1.1.7" % Test // Eclipse Public License 1.0
     )
   )
@@ -106,7 +109,9 @@ object Dependencies {
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
       "org.mockito" % "mockito-core" % "2.3.7" % Test, // MIT
-      "com.github.tomakehurst" % "wiremock" % "2.5.1" % Test // ApacheV2
+      "com.github.tomakehurst" % "wiremock" % "2.5.1" % Test, // ApacheV2
+      "org.slf4j" % "slf4j-api" % "1.7.21" % Test, // MIT
+      "ch.qos.logback" % "logback-classic" % "1.1.7" % Test // Eclipse Public License 1.0
     )
   )
 
@@ -138,11 +143,21 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "javax.jms" % "jms" % "1.1" % Provided, // CDDL + GPLv2
       "org.apache.activemq" % "activemq-broker" % "5.14.1" % Test, // ApacheV2
-      "org.apache.activemq" % "activemq-client" % "5.14.1" % Test // ApacheV2
+      "org.apache.activemq" % "activemq-client" % "5.14.1" % Test, // ApacheV2
+      "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test,
+      "ch.qos.logback" % "logback-classic" % "1.1.7" % Test // Eclipse Public License 1.0
     ),
     resolvers += ("jboss" at "https://repository.jboss.org/nexus/content/groups/public")
   )
 
+  val Kinesis = Seq(
+    libraryDependencies ++= Seq(
+      "com.amazonaws" % "aws-java-sdk-kinesis" % AwsSdkVersion, // ApacheV2
+      "org.mockito" % "mockito-core" % "2.7.11" % Test, // MIT
+      "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test,
+      "ch.qos.logback" % "logback-classic" % "1.1.7" % Test // Eclipse Public License 1.0
+    )
+  )
   val MongoDb = Seq(
     libraryDependencies ++= Seq(
       "org.mongodb.scala" %% "mongo-scala-driver" % "2.1.0" // ApacheV2
@@ -162,7 +177,9 @@ object Dependencies {
       "com.amazonaws" % "aws-java-sdk-core" % AwsSdkVersion, // ApacheV2
       // in-memory filesystem for file related tests
       "com.google.jimfs" % "jimfs" % "1.1" % Test, // ApacheV2
-      "com.github.tomakehurst" % "wiremock" % "2.5.1" % Test // ApacheV2
+      "com.github.tomakehurst" % "wiremock" % "2.5.1" % Test, // ApacheV2
+      "org.slf4j" % "slf4j-api" % "1.7.21" % Test, // MIT
+      "ch.qos.logback" % "logback-classic" % "1.1.7" % Test // Eclipse Public License 1.0
     )
   )
 
@@ -211,6 +228,7 @@ object Dependencies {
       "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test, // ApacheV2
       // pull up akka-http version to the latest version for elasticmq-rest-sqs
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test, // ApacheV2
+      "ch.qos.logback" % "logback-classic" % "1.2.3" % Test, // Eclipse Public License 1.0
       "org.mockito" % "mockito-core" % "2.12.0" % Test // MIT
     )
   )
@@ -218,7 +236,9 @@ object Dependencies {
   val Sse = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-      "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion % Test
+      "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion % Test,
+      "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test, // ApacheV2
+      "ch.qos.logback" % "logback-classic" % "1.2.3" % Test // Eclipse Public License 1.0
     )
   )
 
@@ -229,10 +249,4 @@ object Dependencies {
     )
   )
 
-  val Kinesis = Seq(
-    libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-kinesis" % AwsSdkVersion, // ApacheV2
-      "org.mockito" % "mockito-core" % "2.7.11" % Test // MIT
-    )
-  )
 }

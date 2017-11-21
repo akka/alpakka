@@ -32,6 +32,8 @@ class MongoSourceSpec
   override protected def beforeAll(): Unit =
     Await.result(db.drop().toFuture(), 5.seconds)
 
+  java.util.logging.Logger.getLogger("org.mongodb.driver").setLevel(java.util.logging.Level.SEVERE)
+
   //#init-connection
   private lazy val client = MongoClient(s"mongodb://localhost:27017")
   private lazy val db = client.getDatabase("alpakka-mongo")

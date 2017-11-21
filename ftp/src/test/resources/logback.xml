@@ -37,7 +37,7 @@
 
     <!-- Log at the error level. Change the main loglevel here. -->
     <!-- Note that custom loggers obey their own levels. -->
-    <root level="error">
+    <root level="off">
         <appender-ref ref="console"/>
     </root>
 

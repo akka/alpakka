@@ -10,7 +10,7 @@
 
     <logger name="akka.stream.alpakka.geode" level="INFO"/>
 
-    <root level="INFO">
+    <root level="off">
         <appender-ref ref="CONSOLE"/>
     </root>
 </configuration>
