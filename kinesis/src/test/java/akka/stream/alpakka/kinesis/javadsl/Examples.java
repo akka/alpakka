@@ -11,16 +11,25 @@ import akka.stream.alpakka.kinesis.KinesisFlowSettings;
 import akka.stream.alpakka.kinesis.ShardSettings;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
+import akka.stream.alpakka.kinesis.KinesisWorkerCheckpointSettings;
+import akka.stream.alpakka.kinesis.KinesisWorkerSourceSettings;
+import akka.stream.alpakka.kinesis.worker.CommittableRecord;
 import akka.stream.javadsl.Source;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
 import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
 import com.amazonaws.services.kinesis.model.PutRecordsResultEntry;
+import com.amazonaws.services.kinesis.clientlibrary.interfaces.v2.IRecordProcessorFactory;
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration;
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.Worker;
 import com.amazonaws.services.kinesis.model.Record;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class Examples {
@@ -61,5 +70,33 @@ public class Examples {
     final Sink<PutRecordsRequestEntry, NotUsed> sink = KinesisSink.apply("streamName", flowSettings, amazonKinesisAsync);
     final Sink<PutRecordsRequestEntry, NotUsed> defaultSettingsSink = KinesisSink.apply("streamName", amazonKinesisAsync);
     //#flow-sink
+
+    //#worker-settings
+    final KinesisWorker.WorkerBuilder workerBuilder = new KinesisWorker.WorkerBuilder() {
+        @Override
+        public Worker build(IRecordProcessorFactory recordProcessorFactory) {
+            return new Worker.Builder()
+                    .recordProcessorFactory(recordProcessorFactory)
+                    .config(new KinesisClientLibConfiguration(
+                            "myApp",
+                            "myStreamName",
+                            DefaultAWSCredentialsProviderChain.getInstance(),
+                            "workerId"
+                    ))
+                    .build();
+        }
+    };
+    final KinesisWorkerSourceSettings workerSettings = KinesisWorkerSourceSettings.create(1000, FiniteDuration.apply(1L, TimeUnit.SECONDS));
+    //#worker-settings
+
+    //#worker-source
+    final Executor workerExecutor = Executors.newFixedThreadPool(100);
+    final Source<CommittableRecord, NotUsed> workerSource = KinesisWorker.create(workerBuilder, workerSettings, workerExecutor );
+    //#worker-source
+
+    //#checkpoint
+    final KinesisWorkerCheckpointSettings checkpointSettings = KinesisWorkerCheckpointSettings.create(1000, FiniteDuration.apply(30L, TimeUnit.SECONDS));
+    final Flow<CommittableRecord, Record, NotUsed> checkpointFlow = KinesisWorker.checkpointRecordsFlow(checkpointSettings);
+    //#checkpoint
 
 }

@@ -1,6 +1,6 @@
 # AWS Kinesis Connector
 
-The AWS Kinesis connector provides an Akka Stream Source for consuming Kinesis Stream records.
+The AWS Kinesis connector provides Akka Stream Sources for consuming and producing Kinesis Stream records.
 
 For more information about Kinesis please visit the [official documentation](https://aws.amazon.com/documentation/kinesis/).
 
@@ -66,9 +66,7 @@ Scala
 Java
 : @@snip ($alpakka$/kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #source-list }
 
-The constructed `Source` will return [Record](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_Record.html)
-
-objects by calling [GetRecords](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetRecords.html) at the specified interval and according to the downstream demand.
+The constructed `Source` will return [Record](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_Record.html) objects by calling [GetRecords](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetRecords.html) at the specified interval and according to the downstream demand.
 
 ### Using the Put Flow/Sink
 
@@ -80,7 +78,7 @@ Batching has a drawback: message order cannot be guaranteed, as some records wit
 More information can be found [here](http://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-sdk.html#kinesis-using-sdk-java-putrecords) and [here](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html).
 @@@
 
-Publishing to a Kinesis stream requires an instance of `KinesisFlowSettings`, although a default instance with sane values and a method that returns settings based on the stream shard number are also available:
+Publishing to a Kinesis stream requires an `AmazonKinesisAsync` and an instance of `KinesisFlowSettings`, although a default instance with sane values and a method that returns settings based on the stream shard number are also available:
 
 Scala
 : @@snip ($alpakka$/kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #flow-settings }
@@ -100,3 +98,40 @@ Scala
 Java
 : @@snip ($alpakka$/kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #flow-sink }
 
+# AWS KCL Worker Source & checkpointer
+
+The KCL Source can read from several shards and rebalance automatically when other Workers are started or stopped. It also handles record sequence checkpoints.
+
+For more information about KCL please visit the [official documentation](http://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-kcl.html).
+
+## Usage
+
+The KCL Worker Source needs to create and manage Worker instances in order to consume records from Kinesis Streams.
+
+In order to use it, you need to provide a Worker builder and the Source settings:
+
+Scala
+: @@snip (../../../../kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #worker-settings }
+
+Java
+: @@snip (../../../../kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #worker-settings }
+
+The Source also needs an `ExecutionContext` to run the Worker's thread and to execute record checkpoints. Then the Source can be created as usual:
+
+Scala
+: @@snip (../../../../kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #worker-source }
+
+Java
+: @@snip (../../../../kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #worker-source }
+
+## Committing records
+
+The KCL Worker Source publishes messages downstream that can be committed in order to mark progression of consumers by shard. This process can be done manually or using the provided checkpointer Flow.
+
+In order to use the Flow you can provide additional settings:
+
+Scala
+: @@snip (../../../../kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #checkpoint }
+
+Java
+: @@snip (../../../../kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #checkpoint }
