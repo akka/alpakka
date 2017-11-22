@@ -234,7 +234,9 @@ object Dependencies {
   val Sns = Seq(
     libraryDependencies ++= Seq(
       "com.amazonaws" % "aws-java-sdk-sns" % AwsSdkVersion, // ApacheV2
-      "org.mockito" % "mockito-core" % "2.12.0" % Test // MIT
+      "org.mockito" % "mockito-core" % "2.12.0" % Test, // MIT
+      "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test,
+      "ch.qos.logback" % "logback-classic" % "1.2.3" % Test // Eclipse Public License 1.0
     )
   )
 
