@@ -64,14 +64,7 @@ final class JmsSourceStage(settings: JmsSourceSettings) extends GraphStage[Sourc
             consumer.setMessageListener(new MessageListener {
               override def onMessage(message: Message): Unit = {
                 backpressure.acquire()
-                try {
-                  message.acknowledge()
-                  handleMessage.invoke(message)
-                } catch {
-                  case e: JMSException =>
-                    backpressure.release()
-                    handleError.invoke(e)
-                }
+                handleMessage.invoke(message)
               }
             })
           case Failure(e) =>
