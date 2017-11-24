@@ -5,7 +5,7 @@
 package akka.stream.alpakka.jms
 
 import javax.jms
-import javax.jms.{ExceptionListener, JMSException}
+import javax.jms.JMSException
 
 import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.ActorMaterializer
@@ -53,7 +53,7 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
       case Some(Credentials(username, password)) => factory.createConnection(username, password)
       case _ => factory.createConnection()
     }
-    connection.setExceptionListener(e => fail.invoke(e))
+    connection.setExceptionListener((e: JMSException) => fail.invoke(e))
     connection.start()
     val session = connection.createSession(false, jmsSettings.acknowledgeMode.mode)
     val dest = jmsSettings.destination match {
