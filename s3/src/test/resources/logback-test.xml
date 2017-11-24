@@ -7,7 +7,9 @@
         </encoder>
     </appender>
 
-    <root level="debug">
+    <logger name="org.eclipse.jetty.servlet" level="warn"/>
+
+    <root level="warn">
         <appender-ref ref="FILE" />
     </root>
 </configuration>
