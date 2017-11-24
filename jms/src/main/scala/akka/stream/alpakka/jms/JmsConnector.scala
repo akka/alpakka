@@ -53,7 +53,7 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
       case Some(Credentials(username, password)) => factory.createConnection(username, password)
       case _ => factory.createConnection()
     }
-    connection.setExceptionListener(fail.invoke(_))
+    connection.setExceptionListener(e => fail.invoke(e))
     connection.start()
     val session = connection.createSession(false, jmsSettings.acknowledgeMode.mode)
     val dest = jmsSettings.destination match {
