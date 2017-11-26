@@ -45,7 +45,8 @@ public class ElasticsearchTest {
     runner.build(ElasticsearchClusterRunner.newConfigs()
         .baseHttpPort(9200)
         .baseTransportPort(9300)
-        .numOfNode(1));
+        .numOfNode(1)
+        .disableESLogger());
     runner.ensureYellow();
 
     //#init-client

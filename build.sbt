@@ -178,10 +178,6 @@ def alpakkaProject(projectId: String, additionalSettings: sbt.Def.SettingsDefini
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
     .settings(
-      name := s"akka-stream-alpakka-$projectId",
-      // By default scalatest futures time out in 150 ms, dilate that to 600ms.
-      // This should not impact the total test time as we don't expect to hit this
-      // timeout.
-      testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4")
+      name := s"akka-stream-alpakka-$projectId"
     )
     .settings(additionalSettings: _*)

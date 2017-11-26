@@ -43,9 +43,12 @@ object Common extends AutoPlugin {
     apiURL := Some(url(s"http://developer.lightbend.com/docs/api/alpakka/${version.value}")),
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
-    // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
     // -a Show stack traces and exception class name for AssertionErrors.
-    testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
+    testOptions in Test += Tests.Argument(TestFrameworks.JUnit, "-a"),
+    // By default scalatest futures time out in 150 ms, dilate that to 600ms.
+    // This should not impact the total test time as we don't expect to hit this
+    // timeout.
+    testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4"),
     scalafmtOnCompile := true,
     headerLicense := Some(HeaderLicense.Custom("Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>"))
   )
