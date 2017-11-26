@@ -23,33 +23,50 @@ import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSinkSettings
 import org.apache.http.message.BasicHeader
 import org.apache.http.util.EntityUtils
 
-final case class IncomingMessage[T](id: Option[String], source: T)
+trait IncomingMessageTrait[T] {
+  def id: Option[String]
+  def source: T
+}
+
+final case class IncomingMessage[T](id: Option[String], source: T) extends IncomingMessageTrait[T]
+
+final case class IncomingMessageWithCargo[T, C](id: Option[String], source: T, cargo: C)
+    extends IncomingMessageTrait[T]
+
+final case class MessageResult[T, X <: IncomingMessageTrait[T]](message: X, success: Boolean)
+
+// Using these special result-case-classes to reduce the generic-complexity when working the flows
+final case class IncomingMessageResult[T](source: T, success: Boolean)
+final case class IncomingMessageWithCargoResult[T, C](source: T, cargo: C, success: Boolean)
 
 trait MessageWriter[T] {
   def convert(message: T): String
 }
 
-class ElasticsearchFlowStage[T, R](
+// This code must return the MessageResult-type, to be able to work
+// with and without cargo.
+// MessageResult is transformed into IncomingMessageResult or IncomingMessageWithCargoResult
+// in the javadsl- and scaladsl-ElasticsearchFlow-implementations
+class ElasticsearchFlowStage[T, X <: IncomingMessageTrait[T]](
     indexName: String,
     typeName: String,
     client: RestClient,
     settings: ElasticsearchSinkSettings,
-    pusher: Seq[IncomingMessage[T]] => R,
     writer: MessageWriter[T]
-) extends GraphStage[FlowShape[IncomingMessage[T], Future[R]]] {
+) extends GraphStage[FlowShape[X, Future[Seq[MessageResult[T, X]]]]] {
 
-  private val in = Inlet[IncomingMessage[T]]("messages")
-  private val out = Outlet[Future[R]]("failed")
+  private val in = Inlet[X]("messages")
+  private val out = Outlet[Future[Seq[MessageResult[T, X]]]]("result")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
       private var state: State = Idle
-      private val queue = new mutable.Queue[IncomingMessage[T]]()
-      private val failureHandler = getAsyncCallback[(Seq[IncomingMessage[T]], Throwable)](handleFailure)
-      private val responseHandler = getAsyncCallback[(Seq[IncomingMessage[T]], Response)](handleResponse)
-      private var failedMessages: Seq[IncomingMessage[T]] = Nil
+      private val queue = new mutable.Queue[X]()
+      private val failureHandler = getAsyncCallback[(Seq[X], Throwable)](handleFailure)
+      private val responseHandler = getAsyncCallback[(Seq[X], Response)](handleResponse)
+      private var failedMessages: Seq[X] = Nil
       private var retryCount: Int = 0
 
       override def preStart(): Unit =
@@ -65,7 +82,7 @@ class ElasticsearchFlowStage[T, R](
         failedMessages = Nil
       }
 
-      private def handleFailure(args: (Seq[IncomingMessage[T]], Throwable)): Unit = {
+      private def handleFailure(args: (Seq[X], Throwable)): Unit = {
         val (messages, exception) = args
         if (retryCount >= settings.maxRetry) {
           failStage(exception)
@@ -79,28 +96,52 @@ class ElasticsearchFlowStage[T, R](
       private def handleSuccess(): Unit =
         completeStage()
 
-      private def handleResponse(args: (Seq[IncomingMessage[T]], Response)): Unit = {
+      private def handleResponse(args: (Seq[X], Response)): Unit = {
         val (messages, response) = args
         val responseJson = EntityUtils.toString(response.getEntity).parseJson
 
         // If some commands in bulk request failed, pass failed messages to follows.
         val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
-        val failed = items.elements.zip(messages).flatMap {
+        val messageResults = items.elements.zip(messages).map {
           case (item, message) =>
-            item.asJsObject.fields("index").asJsObject.fields.get("error").map { _ =>
-              message
+            item.asJsObject.fields("index").asJsObject.fields.get("error") match {
+              case Some(errorMessage) => (message, false)
+              case None => (message, true)
             }
         }
 
-        if (failed.nonEmpty && settings.retryPartialFailure && retryCount < settings.maxRetry) {
+        val successMsgs = messageResults.filter(_._2).map(_._1)
+        val failedMsgs = messageResults.filter(!_._2).map(_._1)
+
+        if (failedMsgs.nonEmpty && settings.retryPartialFailure && retryCount < settings.maxRetry) {
           // Retry partial failed messages
           retryCount = retryCount + 1
-          failedMessages = failed
+          failedMessages = failedMsgs // These are the messages we're going to retry
           scheduleOnce(NotUsed, settings.retryInterval.millis)
+
+          if (successMsgs.nonEmpty) {
+            // push the messages that DID succeed
+            val resultForSucceededMsgs = successMsgs.map { x =>
+              MessageResult[T, X](x, success = true)
+            }
+            emit(out, Future.successful(resultForSucceededMsgs))
+          }
 
         } else {
           retryCount = 0
-          push(out, Future.successful(pusher(failed)))
+
+          // Build result of success-msgs and failed-msgs
+          val result: Seq[MessageResult[T, X]] = Seq(
+            successMsgs.map { x =>
+              MessageResult[T, X](x, success = true)
+            },
+            failedMsgs.map { x =>
+              MessageResult[T, X](x, success = false)
+            }
+          ).flatten
+
+          // Push failed
+          emit(out, Future.successful(result))
 
           // Fetch next messages from queue and send them
           val nextMessages = (1 to settings.bufferSize).flatMap { _ =>
@@ -118,7 +159,7 @@ class ElasticsearchFlowStage[T, R](
         }
       }
 
-      private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T]]): Unit = {
+      private def sendBulkUpdateRequest(messages: Seq[X]): Unit = {
         val json = messages
           .map { message =>
             JsObject(
@@ -182,7 +223,6 @@ class ElasticsearchFlowStage[T, R](
           case Finished => ()
         }
     }
-
 }
 
 object ElasticsearchFlowStage {

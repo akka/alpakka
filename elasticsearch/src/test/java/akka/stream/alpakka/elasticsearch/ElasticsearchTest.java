@@ -10,6 +10,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.elasticsearch.javadsl.*;
 import akka.stream.javadsl.Sink;
 import akka.testkit.JavaTestKit;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHeader;
@@ -107,7 +108,8 @@ public class ElasticsearchTest {
           "sink1",
           "book",
           new ElasticsearchSinkSettings().withBufferSize(5),
-          client),
+          client,
+          new ObjectMapper()),
         materializer);
     //#run-jsobject
 
@@ -154,11 +156,12 @@ public class ElasticsearchTest {
       Book.class)
       .map(m -> new IncomingMessage<>(new Some<String>(m.id()), m.source()))
       .runWith(
-        ElasticsearchSink.typed(
+        ElasticsearchSink.create(
           "sink2",
           "book",
           new ElasticsearchSinkSettings().withBufferSize(5),
-          client),
+          client,
+          new ObjectMapper()),
         materializer);
     //#run-typed
 
@@ -197,7 +200,7 @@ public class ElasticsearchTest {
   public void flow() throws Exception {
     // Copy source/book to sink3/book through JsObject stream
     //#run-flow
-    CompletionStage<List<List<IncomingMessage<Book>>>> f1 = ElasticsearchSource.typed(
+    CompletionStage<List<List<IncomingMessageResult<Book>>>> f1 = ElasticsearchSource.typed(
         "source",
         "book",
         "{\"match_all\": {}}",
@@ -205,19 +208,20 @@ public class ElasticsearchTest {
         client,
         Book.class)
         .map(m -> new IncomingMessage<>(new Some<String>(m.id()), m.source()))
-        .via(ElasticsearchFlow.typed(
+        .via(ElasticsearchFlow.create(
                 "sink3",
                 "book",
                 new ElasticsearchSinkSettings().withBufferSize(5),
-                client))
+                client,
+                new ObjectMapper()))
         .runWith(Sink.seq(), materializer);
     //#run-flow
 
-    List<List<IncomingMessage<Book>>> result1 = f1.toCompletableFuture().get();
+    List<List<IncomingMessageResult<Book>>> result1 = f1.toCompletableFuture().get();
     flush("sink3");
 
     for(int i = 0; i < result1.size(); i ++){
-      assertEquals(true, result1.get(i).isEmpty());
+      assertEquals(true, result1.get(i).get(0).success());
     }
 
     // Assert docs in sink3/book
