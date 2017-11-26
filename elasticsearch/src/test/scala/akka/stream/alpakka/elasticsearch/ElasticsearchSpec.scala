@@ -47,6 +47,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         .baseHttpPort(9200)
         .baseTransportPort(9300)
         .numOfNode(1)
+        .disableESLogger()
     )
     runner.ensureYellow()
 
