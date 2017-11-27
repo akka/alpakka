@@ -16,9 +16,8 @@ object MqttFlow {
    */
   def create(sourceSettings: MqttSourceSettings,
              bufferSize: Int,
-             qos: MqttQoS): akka.stream.javadsl.Flow[MqttMessage, MqttMessage, CompletionStage[Done]] = {
+             qos: MqttQoS): akka.stream.javadsl.Flow[MqttMessage, MqttMessage, CompletionStage[Done]] =
     atMostOnce(sourceSettings, bufferSize, qos)
-  }
 
   def atMostOnce(settings: MqttSourceSettings,
                  bufferSize: Int,
