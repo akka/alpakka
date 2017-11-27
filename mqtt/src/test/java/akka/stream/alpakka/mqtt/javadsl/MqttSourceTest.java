@@ -54,7 +54,7 @@ public class MqttSourceTest {
 
   @Test
   public void publishAndConsumeWithoutAutoAck() throws Exception {
-    final String topic = "source-test/topic1";
+    final String topic = "source-test/java-manualack";
     final MqttConnectionSettings baseConnectionSettings = MqttConnectionSettings.create(
             "tcp://localhost:1883",
             "test-java-client",
