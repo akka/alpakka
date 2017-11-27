@@ -15,18 +15,15 @@ object MqttSource {
   /**
    * Scala API: create an [[MqttSource]] with a provided bufferSize.
    */
-  @deprecated("use atMostOnce instead", "0.14")
+  @deprecated("use atMostOnce instead", "0.15")
   def apply(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessage, Future[Done]] =
-    Source.maybe.viaMat(
-      MqttFlow(settings, bufferSize, qos = MqttQoS.AtLeastOnce)
-    )(Keep.right)
+    atMostOnce(settings, bufferSize)
 
   def atMostOnce(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessage, Future[Done]] =
     Source.maybe
       .viaMat(
-        MqttFlow.atLeastOnce(settings, bufferSize, qos = MqttQoS.AtLeastOnce)
+        MqttFlow.atMostOnce(settings, bufferSize, qos = MqttQoS.AtLeastOnce)
       )(Keep.right)
-      .map(cm => cm.message)
 
   def atLeastOnce(settings: MqttSourceSettings, bufferSize: Int): Source[MqttCommittableMessage, Future[Done]] =
     Source.maybe.viaMat(

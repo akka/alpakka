@@ -17,11 +17,7 @@ object MqttFlow {
   def create(sourceSettings: MqttSourceSettings,
              bufferSize: Int,
              qos: MqttQoS): akka.stream.javadsl.Flow[MqttMessage, MqttMessage, CompletionStage[Done]] = {
-    import scala.compat.java8.FutureConverters._
-    akka.stream.alpakka.mqtt.scaladsl.MqttFlow
-      .apply(sourceSettings, bufferSize, qos)
-      .mapMaterializedValue(_.toJava)
-      .asJava
+    atMostOnce(sourceSettings, bufferSize, qos)
   }
 
   def atMostOnce(settings: MqttSourceSettings,
