@@ -19,7 +19,8 @@ object MqttFlow {
   def atMostOnce(sourceSettings: MqttSourceSettings,
                  bufferSize: Int,
                  qos: MqttQoS): Flow[MqttMessage, MqttMessage, Future[Done]] =
-    Flow.fromGraph(new MqttFlowStage(sourceSettings, bufferSize, qos))
+    Flow
+      .fromGraph(new MqttFlowStage(sourceSettings, bufferSize, qos))
       .map(cm => cm.message)
 
   def atLeastOnce(sourceSettings: MqttSourceSettings,

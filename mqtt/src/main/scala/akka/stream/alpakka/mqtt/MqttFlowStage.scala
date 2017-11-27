@@ -20,7 +20,10 @@ object MqttFlowStage {
   final object NoClientException extends Exception("No MQTT client.")
 }
 
-final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, qos: MqttQoS, manualAcks: Boolean = false)
+final class MqttFlowStage(sourceSettings: MqttSourceSettings,
+                          bufferSize: Int,
+                          qos: MqttQoS,
+                          manualAcks: Boolean = false)
     extends GraphStageWithMaterializedValue[FlowShape[MqttMessage, MqttCommittableMessage], Future[Done]] {
   import MqttFlowStage.NoClientException
   import MqttConnectorLogic._
