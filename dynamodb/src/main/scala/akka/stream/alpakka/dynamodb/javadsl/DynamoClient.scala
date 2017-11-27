@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.dynamodb.javadsl
 
 import akka.NotUsed
@@ -49,6 +50,8 @@ final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem,
 
   def describeTable(request: DescribeTableRequest) = single(DescribeTable(request))
 
+  def describeTimeToLive(request: DescribeTimeToLiveRequest) = single(DescribeTimeToLive(request))
+
   def query(request: QueryRequest) = single(Query(request))
 
   def scan(request: ScanRequest) = single(Scan(request))
@@ -65,4 +68,5 @@ final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem,
 
   def listTables(request: ListTablesRequest) = single(ListTables(request))
 
+  def updateTimeToLive(request: UpdateTimeToLiveRequest) = single(UpdateTimeToLive(request))
 }

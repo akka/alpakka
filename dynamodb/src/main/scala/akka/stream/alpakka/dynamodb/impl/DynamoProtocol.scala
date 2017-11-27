@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.dynamodb.impl
 
 import com.amazonaws.AmazonServiceException
@@ -50,17 +51,19 @@ private[alpakka] trait DynamoProtocol {
   protected val deleteItemM = new DeleteItemRequestProtocolMarshaller(protocol)
   protected val deleteTableM = new DeleteTableRequestProtocolMarshaller(protocol)
   protected val describeLimitsM = new DescribeLimitsRequestProtocolMarshaller(protocol)
+  protected val describeStreamM = new DescribeStreamRequestProtocolMarshaller(protocol)
   protected val describeTableM = new DescribeTableRequestProtocolMarshaller(protocol)
+  protected val describeTimeToLiveM = new DescribeTimeToLiveRequestProtocolMarshaller(protocol)
   protected val getItemM = new GetItemRequestProtocolMarshaller(protocol)
+  protected val getRecordsM = new GetRecordsRequestProtocolMarshaller(protocol)
+  protected val getShardIteratorM = new GetShardIteratorRequestProtocolMarshaller(protocol)
   protected val listTablesM = new ListTablesRequestProtocolMarshaller(protocol)
   protected val putItemM = new PutItemRequestProtocolMarshaller(protocol)
   protected val queryM = new QueryRequestProtocolMarshaller(protocol)
   protected val scanM = new ScanRequestProtocolMarshaller(protocol)
   protected val updateItemM = new UpdateItemRequestProtocolMarshaller(protocol)
   protected val updateTableM = new UpdateTableRequestProtocolMarshaller(protocol)
-  protected val describeStreamM = new DescribeStreamRequestProtocolMarshaller(protocol)
-  protected val getShardIteratorM = new GetShardIteratorRequestProtocolMarshaller(protocol)
-  protected val getRecordsM = new GetRecordsRequestProtocolMarshaller(protocol)
+  protected val updateTimeToLiveM = new UpdateTimeToLiveRequestProtocolMarshaller(protocol)
 
   protected val batchGetItemU = protocol.createResponseHandler(meta, new BatchGetItemResultJsonUnmarshaller)
   protected val batchWriteItemU = protocol.createResponseHandler(meta, new BatchWriteItemResultJsonUnmarshaller)
@@ -68,15 +71,19 @@ private[alpakka] trait DynamoProtocol {
   protected val deleteItemU = protocol.createResponseHandler(meta, new DeleteItemResultJsonUnmarshaller)
   protected val deleteTableU = protocol.createResponseHandler(meta, new DeleteTableResultJsonUnmarshaller)
   protected val describeLimitsU = protocol.createResponseHandler(meta, new DescribeLimitsResultJsonUnmarshaller)
+  protected val describeStreamU = protocol.createResponseHandler(meta, new DescribeStreamResultJsonUnmarshaller)
   protected val describeTableU = protocol.createResponseHandler(meta, new DescribeTableResultJsonUnmarshaller)
+  protected val describeTimeToLiveU =
+    protocol.createResponseHandler(meta, new DescribeTimeToLiveResultJsonUnmarshaller)
   protected val getItemU = protocol.createResponseHandler(meta, new GetItemResultJsonUnmarshaller)
+  protected val getRecordsU = protocol.createResponseHandler(meta, new GetRecordsResultJsonUnmarshaller)
+  protected val getShardIteratorU = protocol.createResponseHandler(meta, new GetShardIteratorResultJsonUnmarshaller)
   protected val listTablesU = protocol.createResponseHandler(meta, new ListTablesResultJsonUnmarshaller)
   protected val putItemU = protocol.createResponseHandler(meta, new PutItemResultJsonUnmarshaller)
   protected val queryU = protocol.createResponseHandler(meta, new QueryResultJsonUnmarshaller)
   protected val scanU = protocol.createResponseHandler(meta, new ScanResultJsonUnmarshaller)
   protected val updateItemU = protocol.createResponseHandler(meta, new UpdateItemResultJsonUnmarshaller)
   protected val updateTableU = protocol.createResponseHandler(meta, new UpdateTableResultJsonUnmarshaller)
-  protected val describeStreamU = protocol.createResponseHandler(meta, new DescribeStreamResultJsonUnmarshaller)
-  protected val getShardIteratorU = protocol.createResponseHandler(meta, new GetShardIteratorResultJsonUnmarshaller)
-  protected val getRecordsU = protocol.createResponseHandler(meta, new GetRecordsResultJsonUnmarshaller)
+  protected val updateTimeToLiveU = protocol.createResponseHandler(meta, new UpdateTimeToLiveResultJsonUnmarshaller)
+
 }

@@ -21,6 +21,8 @@ object Whitesource extends AutoPlugin {
           else "adhoc"
         else majorMinor((version in LocalRootProject).value).map(_ + "-stable").getOrElse("adhoc")
       )
-    }
+    },
+    whitesourceForceCheckAllDependencies := true,
+    whitesourceFailOnError := true,
   )
 }

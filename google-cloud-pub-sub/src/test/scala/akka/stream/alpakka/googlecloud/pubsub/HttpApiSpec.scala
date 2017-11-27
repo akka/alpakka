@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.googlecloud.pubsub
 
 import java.security.KeyFactory
@@ -80,7 +81,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
     mock.register(
       WireMock
         .post(
-          urlEqualTo(s"/v1/projects/${TestCredentials.projectId}/topics/topic1:publish?key=${TestCredentials.apiKey}")
+          urlEqualTo(s"/v1/projects/${TestCredentials.projectId}/topics/topic1:publish")
         )
         .withRequestBody(WireMock.equalTo(expectedPublishRequest))
         .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))

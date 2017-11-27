@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.dynamodb
 
 import com.amazonaws.services.dynamodbv2.model._
@@ -106,6 +107,13 @@ object TableSpecOps extends TestOps {
     .withTableName(tableName)
     .withProvisionedThroughput(
       new ProvisionedThroughput().withWriteCapacityUnits(newMaxLimit).withReadCapacityUnits(newMaxLimit)
+    )
+
+  val describeTimeToLiveRequest = new DescribeTimeToLiveRequest()
+  val updateTimeToLiveRequest = new UpdateTimeToLiveRequest()
+    .withTableName(tableName)
+    .withTimeToLiveSpecification(
+      new TimeToLiveSpecification().withAttributeName("expires").withEnabled(true)
     )
 
   val deleteTableRequest = common.deleteTableRequest

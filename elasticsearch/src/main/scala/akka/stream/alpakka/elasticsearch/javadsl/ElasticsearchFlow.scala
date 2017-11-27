@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.elasticsearch.javadsl
 
 import akka.NotUsed
@@ -25,6 +26,20 @@ object ElasticsearchFlow {
   ): akka.stream.javadsl.Flow[IncomingMessage[JavaMap[String, Object]], JavaList[
     IncomingMessage[JavaMap[String, Object]]
   ], NotUsed] =
+    create(indexName, typeName, settings, client, new ObjectMapper())
+
+  /**
+   * Java API: creates a [[ElasticsearchFlowStage]] that accepts as JsObject
+   */
+  def create(
+      indexName: String,
+      typeName: String,
+      settings: ElasticsearchSinkSettings,
+      client: RestClient,
+      objectMapper: ObjectMapper
+  ): akka.stream.javadsl.Flow[IncomingMessage[JavaMap[String, Object]], JavaList[
+    IncomingMessage[JavaMap[String, Object]]
+  ], NotUsed] =
     Flow
       .fromGraph(
         new ElasticsearchFlowStage[JavaMap[String, Object], JavaList[IncomingMessage[JavaMap[String, Object]]]](
@@ -33,7 +48,7 @@ object ElasticsearchFlow {
           client,
           settings.asScala,
           _.asJava,
-          new JacksonWriter[JavaMap[String, Object]]()
+          new JacksonWriter[JavaMap[String, Object]](objectMapper)
         )
       )
       .mapAsync(1)(identity)
@@ -48,6 +63,18 @@ object ElasticsearchFlow {
       settings: ElasticsearchSinkSettings,
       client: RestClient
   ): akka.stream.javadsl.Flow[IncomingMessage[T], JavaList[IncomingMessage[T]], NotUsed] =
+    typed(indexName, typeName, settings, client, new ObjectMapper())
+
+  /**
+   * Java API: creates a [[ElasticsearchFlowStage]] that accepts specific type
+   */
+  def typed[T](
+      indexName: String,
+      typeName: String,
+      settings: ElasticsearchSinkSettings,
+      client: RestClient,
+      objectMapper: ObjectMapper
+  ): akka.stream.javadsl.Flow[IncomingMessage[T], JavaList[IncomingMessage[T]], NotUsed] =
     Flow
       .fromGraph(
         new ElasticsearchFlowStage[T, JavaList[IncomingMessage[T]]](indexName,
@@ -55,14 +82,12 @@ object ElasticsearchFlow {
                                                                     client,
                                                                     settings.asScala,
                                                                     _.asJava,
-                                                                    new JacksonWriter[T]())
+                                                                    new JacksonWriter[T](objectMapper))
       )
       .mapAsync(1)(identity)
       .asJava
 
-  private class JacksonWriter[T] extends MessageWriter[T] {
-
-    private val mapper = new ObjectMapper()
+  private class JacksonWriter[T](mapper: ObjectMapper) extends MessageWriter[T] {
 
     override def convert(message: T): String =
       mapper.writeValueAsString(message)

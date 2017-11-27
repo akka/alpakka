@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.mongodb
 
 import akka.actor.ActorSystem
@@ -30,6 +31,8 @@ class MongoSourceSpec
 
   override protected def beforeAll(): Unit =
     Await.result(db.drop().toFuture(), 5.seconds)
+
+  java.util.logging.Logger.getLogger("org.mongodb.driver").setLevel(java.util.logging.Level.SEVERE)
 
   //#init-connection
   private lazy val client = MongoClient(s"mongodb://localhost:27017")

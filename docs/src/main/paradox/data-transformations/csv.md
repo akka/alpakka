@@ -43,19 +43,23 @@ Byte Order Marks.
 @@@
 
 Scala
-: @@snip (../../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvParsingSpec.scala) { #flow-type }
+: @@snip ($alpakka$/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvParsingSpec.scala) { #flow-type }
 
 Java
-: @@snip (../../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvParsingTest.java) { #flow-type }
+: @@snip ($alpakka$/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvParsingTest.java) { #flow-type }
 
 
 In this sample we read a single line of CSV formatted data into a list of column elements:
 
 Scala
-: @@snip (../../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvParsingSpec.scala) { #line-scanner }
+: @@snip ($alpakka$/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvParsingSpec.scala) { #line-scanner }
 
 Java
-: @@snip (../../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvParsingTest.java) { #line-scanner }
+: @@snip ($alpakka$/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvParsingTest.java) { #line-scanner }
+
+@scala[@github[Source on Github](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvParsingSpec.scala)]
+@java[@github[Source on Github](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvParsingTest.java)]
+
 
 ## CSV conversion into a map
 
@@ -64,29 +68,33 @@ and their `ByteStrng` values. The column names can be either provided in code or
 of data can be interpreted as the column names.
 
 Scala
-: @@snip (../../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvToMapSpec.scala) { #flow-type }
+: @@snip ($alpakka$/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvToMapSpec.scala) { #flow-type }
 
 Java
-: @@snip (../../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java) { #flow-type }
+: @@snip ($alpakka$/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java) { #flow-type }
 
 
 This example uses the first line in the CSV data as column names:
 
 Scala
-: @@snip (../../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvToMapSpec.scala) { #header-line }
+: @@snip ($alpakka$/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvToMapSpec.scala) { #header-line }
 
 Java
-: @@snip (../../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java) { #header-line }
+: @@snip ($alpakka$/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java) { #header-line }
 
 
 This sample will generate the same output as above, but the column names are specified
 in the code:
 
 Scala
-: @@snip (../../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvToMapSpec.scala) { #column-names }
+: @@snip ($alpakka$/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvToMapSpec.scala) { #column-names }
 
 Java
-: @@snip (../../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java) { #column-names }
+: @@snip ($alpakka$/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java) { #column-names }
+
+@scala[@github[Source on Github](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvToMapSpec.scala)]
+@java[@github[Source on Github](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java)]
+
 
 ## CSV formatting
 
@@ -100,10 +108,10 @@ selected character set from the constants in `ByteOrderMark`
 
 
 Scala
-: @@snip (../../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFormattingSpec.scala) { #flow-type }
+: @@snip ($alpakka$/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFormattingSpec.scala) { #flow-type }
 
 Java
-: @@snip (../../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFormattingTest.java) { #flow-type }
+: @@snip ($alpakka$/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFormattingTest.java) { #flow-type }
 
 This example uses the default configuration:
 
@@ -116,7 +124,10 @@ This example uses the default configuration:
 - No Byte Order Mark
 
 Scala
-: @@snip (../../../../../csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFormattingSpec.scala) { #formatting }
+: @@snip ($alpakka$/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFormattingSpec.scala) { #formatting }
 
 Java
-: @@snip (../../../../../csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFormattingTest.java) { #formatting }
+: @@snip ($alpakka$/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFormattingTest.java) { #formatting }
+
+@scala[@github[Source on Github](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFormattingSpec.scala)]
+@java[@github[Source on Github](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFormattingTest.java)]

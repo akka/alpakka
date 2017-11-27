@@ -12,35 +12,35 @@ Build a converter and a tableSetting.
 Converter will map the domain object to HBase column.
 
 scala
-:   @@snip (../../../../hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-converter }
+:   @@snip ($alpakka$/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-converter }
 
 java
-:   @@snip (../../../../hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-converter }
+:   @@snip ($alpakka$/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-converter }
 
 Table will be created on demand.
 
 scala
-:   @@snip (../../../../hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-settings }
+:   @@snip ($alpakka$/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-settings }
 
 java
-:   @@snip (../../../../hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-settings }
+:   @@snip ($alpakka$/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-settings }
 
 ### Flow usage 
 
 scala
-: @@snip (../../../../hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #flow }
+: @@snip ($alpakka$/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #flow }
 
 java
-: @@snip (../../../../hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #flow }
+: @@snip ($alpakka$/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #flow }
 
 
 ### Sink usage
 
 scala
-: @@snip (../../../../hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #sink }
+: @@snip ($alpakka$/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #sink }
 
 java
-: @@snip (../../../../hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #sink }
+: @@snip ($alpakka$/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #sink }
 
 ## HBase basic command:
 

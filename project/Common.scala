@@ -1,16 +1,12 @@
 import sbt._
 import sbt.Keys._
 import sbt.plugins.JvmPlugin
+import com.lucidchart.sbt.scalafmt.ScalafmtCorePlugin.autoImport._
 import de.heikoseeberger.sbtheader._
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
+import sbtunidoc.BaseUnidocPlugin.autoImport._
 
 object Common extends AutoPlugin {
-
-  val FileHeader =
-    (HeaderPattern.cStyleBlockComment, """|/*
-       | * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
-       | */
-       |""".stripMargin)
 
   override def trigger = allRequirements
 
@@ -47,12 +43,13 @@ object Common extends AutoPlugin {
     apiURL := Some(url(s"http://developer.lightbend.com/docs/api/alpakka/${version.value}")),
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
-    // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
     // -a Show stack traces and exception class name for AssertionErrors.
-    testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
-    headers := headers.value ++ Map(
-      "scala" -> FileHeader,
-      "java" -> FileHeader
-    )
+    testOptions in Test += Tests.Argument(TestFrameworks.JUnit, "-a"),
+    // By default scalatest futures time out in 150 ms, dilate that to 600ms.
+    // This should not impact the total test time as we don't expect to hit this
+    // timeout.
+    testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4"),
+    scalafmtOnCompile := true,
+    headerLicense := Some(HeaderLicense.Custom("Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>"))
   )
 }

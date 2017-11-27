@@ -1,10 +1,11 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.sqs.scaladsl
 
 import akka.Done
-import akka.stream.alpakka.sqs.{ChangeMessageVisibility, Delete, Ignore, SqsSourceSettings}
+import akka.stream.alpakka.sqs.{MessageAction, SqsSourceSettings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import com.amazonaws.handlers.AsyncHandler
@@ -61,7 +62,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val future = SqsSource(queue)(awsSqsClient)
       .take(1)
       .map { m: Message =>
-        (m, Delete())
+        (m, MessageAction.Delete)
       }
       .runWith(SqsAckSink(queue)(awsSqsClient))
     //#ack
@@ -79,7 +80,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val future = SqsSource(queue)(awsSqsClient)
       .take(1)
       .map { m: Message =>
-        (m, Delete())
+        (m, MessageAction.Delete)
       }
       .via(SqsAckFlow(queue)(awsSqsClient))
       .runWith(Sink.ignore)
@@ -115,7 +116,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val future = SqsSource(queue)(awsSqsClient)
       .take(1)
       .map { m: Message =>
-        (m, ChangeMessageVisibility(5))
+        (m, MessageAction.ChangeMessageVisibility(5))
       }
       .runWith(SqsAckSink(queue)(awsSqsClient))
     //#requeue
@@ -136,7 +137,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val result = SqsSource(queue)(awsSqsClient)
       .take(1)
       .map { m: Message =>
-        (m, Ignore())
+        (m, MessageAction.Ignore)
       }
       .via(SqsAckFlow(queue)(awsSqsClient))
       .runWith(TestSink.probe[AckResult])
