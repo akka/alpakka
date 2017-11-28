@@ -3,7 +3,7 @@ import sbt._, Keys._
 object Dependencies {
 
   val AkkaVersion = sys.env.get("AKKA_SERIES") match {
-    case Some("2.5") => "2.5.6"
+    case Some("2.5") => "2.5.7"
     case _ => "2.4.19"
   }
 
@@ -17,7 +17,7 @@ object Dependencies {
       "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
       "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test,
       "ch.qos.logback" % "logback-classic" % "1.2.3" % Test, // Eclipse Public License 1.0
-      "org.scalatest" %% "scalatest" % "3.0.1" % Test, // ApacheV2
+      "org.scalatest" %% "scalatest" % "3.0.4" % Test, // ApacheV2
       "com.novocode" % "junit-interface" % "0.11" % Test, // BSD-style
       "junit" % "junit" % "4.12" % Test // Eclipse Public License 1.0
     )
