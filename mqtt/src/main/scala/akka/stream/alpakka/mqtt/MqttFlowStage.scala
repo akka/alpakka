@@ -5,6 +5,7 @@
 package akka.stream.alpakka.mqtt
 
 import java.util.concurrent.Semaphore
+import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
 import akka.stream._
@@ -38,6 +39,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
 
     (new GraphStageLogic(shape) with MqttConnectorLogic {
       private val queue = mutable.Queue[MqttCommittableMessage]()
+      private val unackedMessages = new AtomicInteger()
 
       private val mqttSubscriptionCallback: Try[IMqttToken] => Unit = { conn =>
         subscriptionPromise.complete(conn.map { _ =>
@@ -79,6 +81,9 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
               case None => failStage(NoClientException)
             }
           }
+
+          override def onUpstreamFinish(): Unit =
+            if (queue.isEmpty && unackedMessages.get() == 0) super.onUpstreamFinish()
         }
       )
 
@@ -88,6 +93,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
           override def onPull(): Unit =
             if (queue.nonEmpty) {
               pushMessage(queue.dequeue())
+              if (unackedMessages.get() == 0 && isClosed(in)) completeStage()
             }
         }
       )
@@ -111,12 +117,14 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
 
       override def commitCallback(args: CommitCallbackArguments): Unit = {
         mqttClient.get.messageArrivedComplete(args.messageId, args.qos.byteValue.toInt)
+        if (unackedMessages.decrementAndGet() == 0 && isClosed(in)) completeStage()
         args.promise.complete(Try(Done))
       }
 
       def pushMessage(message: MqttCommittableMessage): Unit = {
         push(out, message)
         backpressure.release()
+        if (manualAcks) unackedMessages.incrementAndGet()
       }
 
       override def handleConnectionLost(ex: Throwable): Unit = {
