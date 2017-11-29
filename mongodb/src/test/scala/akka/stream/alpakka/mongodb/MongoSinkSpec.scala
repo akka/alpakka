@@ -30,6 +30,7 @@ class MongoSinkSpec
 
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
+  import system.dispatcher
 
   override protected def beforeAll(): Unit =
     Await.result(db.drop().toFuture(), 5.seconds)

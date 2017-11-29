@@ -26,7 +26,9 @@ Scala
 
 This is all preparation that we are going to need.
 
-### Source Usage
+### Source and Flow Usage
+
+Each of these sink factory methods have a corresponding factory in @scaladoc[insertOne](akka.stream.alpakka.mongodb.scaladsl.MongoFlow) which will emit the written document or result of the operation downstream.
 
 Let's create a source from a MongoDB collection observable, which can optionally take a filter.
 
