@@ -1,13 +1,14 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.mongodb
 
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.mongodb.scaladsl.MongoSink
-import akka.stream.alpakka.mongodb.scaladsl.MongoSink.DocumentUpdate
+import akka.stream.alpakka.mongodb.scaladsl.DocumentUpdate
 import akka.stream.scaladsl.Source
 import org.mongodb.scala.{MongoClient, MongoCollection}
 import org.mongodb.scala.model.Filters
