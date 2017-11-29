@@ -2,6 +2,8 @@
 
 The MongoDB connector allows you to read and save documents. You can query as a stream of documents from @scaladoc[MongoSource](akka.stream.alpakka.mongodb.scaladsl.MongoSource$) or update documents in a collection with @scaladoc[MongoSink](akka.stream.alpakka.mongodb.scaladsl.MongoSink$).
 
+This connector is based off the [mongo-scala-driver](https://github.com/mongodb/mongo-scala-driver) and does not have a java interface.
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
@@ -57,7 +59,7 @@ Scala
 
 #### Update
 
-We can update documents with a Source of @scaladoc[DocumentUpdate](akka.stream.alpakka.mongodb.scaladsl.MongoSink$#DocumentUpdate) which is a filter and a update definition.
+We can update documents with a Source of @scaladoc[DocumentUpdate](akka.stream.alpakka.mongodb.scaladsl.DocumentUpdate) which is a filter and a update definition.
 Use either @scaladoc[updateOne](akka.stream.alpakka.mongodb.scaladsl.MongoSink$#updateOne) or @scaladoc[updateMany](akka.stream.alpakka.mongodb.scaladsl.MongoSink$#updateMany) if the filter should target one or many documents.
 
 Scala
