@@ -51,26 +51,30 @@ class MqttSourceSpec
     "consume unacknowledged messages from previous sessions using manualAck" in {
       import system.dispatcher
 
+      val topic = "source-spec/manualacks"
       val input = Vector("one", "two", "three", "four", "five")
-      val mqttSink = MqttSink(sinkSettings, MqttQoS.AtLeastOnce)
-      Source(input).map(item => MqttMessage(topic1, ByteString(item))).runWith(mqttSink)
 
       //#create-source-with-manualacks
       val connectionSettings = sourceSettings.withCleanSession(false)
-      val mqttSourceSettings = MqttSourceSettings(connectionSettings, Map(topic1 -> MqttQoS.AtLeastOnce))
+      val mqttSourceSettings = MqttSourceSettings(connectionSettings, Map(topic -> MqttQoS.AtLeastOnce))
       val mqttSource = MqttSource.atLeastOnce(mqttSourceSettings, 8)
       //#create-source-with-manualacks
 
-      val unackedResult = mqttSource.take(input.size).runWith(Sink.seq)
-      unackedResult.futureValue.map(message => message.message.payload.utf8String) should equal(input)
+      val (subscriptionFuture, unackedResult) = mqttSource.take(input.size).toMat(Sink.seq)(Keep.both).run()
+      whenReady(subscriptionFuture) { _ =>
+        val mqttSink = MqttSink(sinkSettings, MqttQoS.AtLeastOnce)
+        Source(input).map(item => MqttMessage(topic, ByteString(item))).runWith(mqttSink)
 
-      //#run-source-with-manualacks
-      val result = mqttSource
-        .mapAsync(1)(cm => cm.messageArrivedComplete().map(_ => cm.message))
-        .take(input.size)
-        .runWith(Sink.seq)
-      //#run-source-with-manualacks
-      result.futureValue.map(message => message.payload.utf8String) should equal(input)
+        unackedResult.futureValue.map(message => message.message.payload.utf8String) should equal(input)
+
+        //#run-source-with-manualacks
+        val result = mqttSource
+          .mapAsync(1)(cm => cm.messageArrivedComplete().map(_ => cm.message))
+          .take(input.size)
+          .runWith(Sink.seq)
+        //#run-source-with-manualacks
+        result.futureValue.map(message => message.payload.utf8String) should equal(input)
+      }
     }
 
     "receive a message from a topic" in {
