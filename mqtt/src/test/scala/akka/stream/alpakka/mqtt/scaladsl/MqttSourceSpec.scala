@@ -78,8 +78,10 @@ class MqttSourceSpec
     "receive a message from a topic" in {
       val settings = MqttSourceSettings(sourceSettings, Map(topic1 -> MqttQoS.AtLeastOnce))
       val probe = MqttSource.atMostOnce(settings, 8).runWith(TestSink.probe)
+
       val msg = MqttMessage(topic1, ByteString("ohi"))
       Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
+
       probe.requestNext shouldBe msg
     }
 
@@ -102,20 +104,21 @@ class MqttSourceSpec
         .runWith(Sink.seq)
       //#run-source
 
-      val expected = (0 until messageCount).flatMap { i =>
-        Seq(s"${topic1}_$i", s"${topic2}_$i")
-      }
+      val expected = (0 until messageCount)
+        .flatMap(i => Seq(s"${topic1}_$i", s"${topic2}_$i"))
 
-      val messages = (0 until messageCount).flatMap { i =>
-        Seq(
-          MqttMessage(topic1, ByteString(i.toString)),
-          MqttMessage(topic2, ByteString(i.toString))
+      val messages = (0 until messageCount).flatMap(
+        i =>
+          Seq(
+            MqttMessage(topic1, ByteString(i.toString)),
+            MqttMessage(topic2, ByteString(i.toString))
         )
-      }
+      )
 
       //#run-sink
       Source(messages).runWith(MqttSink(connectionSettings.withClientId("source-spec/sink"), MqttQoS.AtLeastOnce))
       //#run-sink
+
       result.futureValue shouldBe expected
     }
 
@@ -123,7 +126,9 @@ class MqttSourceSpec
       val settings =
         MqttSourceSettings(sourceSettings.withAuth("username1", "bad_password"),
                            Map(secureTopic -> MqttQoS.AtLeastOnce))
+
       val first = MqttSource.atMostOnce(settings, 8).runWith(Sink.head)
+
       whenReady(first.failed) {
         case e: MqttException => e.getMessage should be("Not authorized to connect")
         case e => throw e
@@ -131,11 +136,14 @@ class MqttSourceSpec
     }
 
     "receive a message from a topic with right credentials" in {
-      val settings =
-        MqttSourceSettings(sourceSettings.withAuth("username1", "password1"), Map(secureTopic -> MqttQoS.AtLeastOnce))
+      val settings = MqttSourceSettings(sourceSettings
+                                          .withAuth("username1", "password1"),
+                                        Map(secureTopic -> MqttQoS.AtLeastOnce))
       val probe = MqttSource.atMostOnce(settings, 8).runWith(TestSink.probe)
+
       val msg = MqttMessage(secureTopic, ByteString("ohi"))
       Source.single(msg).runWith(MqttSink(sinkSettings.withAuth("username1", "password1"), MqttQoS.AtLeastOnce))
+
       probe.requestNext shouldBe msg
     }
 
@@ -159,20 +167,16 @@ class MqttSourceSpec
       val overflow = 4
 
       val settings = MqttSourceSettings(sourceSettings, Map(topic1 -> MqttQoS.AtLeastOnce))
-      val probe =
-        MqttSource.atMostOnce(settings, bufferSize).runWith(TestSink.probe)
+      val probe = MqttSource.atMostOnce(settings, bufferSize).runWith(TestSink.probe)
 
       probe.request((bufferSize + overflow).toLong)
 
       Source(1 to bufferSize + overflow)
-        .map { i =>
-          MqttMessage(topic1, ByteString(s"ohi_$i"))
-        }
+        .map(i => MqttMessage(topic1, ByteString(s"ohi_$i")))
         .runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
 
-      (1 to bufferSize + overflow) foreach { i =>
-        probe.expectNext() shouldBe MqttMessage(topic1, ByteString(s"ohi_$i"))
-      }
+      (1 to bufferSize + overflow)
+        .foreach(i => probe.expectNext() shouldBe MqttMessage(topic1, ByteString(s"ohi_$i")))
     }
 
     "support multiple materialization" in {
@@ -180,7 +184,6 @@ class MqttSourceSpec
       val source = MqttSource.atMostOnce(settings, 8)
 
       val elem = source.runWith(Sink.head)
-
       Source.single(MqttMessage(topic1, ByteString("ohi"))).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
       elem.futureValue shouldBe MqttMessage(topic1, ByteString("ohi"))
 
@@ -195,7 +198,11 @@ class MqttSourceSpec
       val (binding, connection) = Tcp().bind("localhost", 1337).toMat(Sink.head)(Keep.both).run()
 
       val ks = connection.map(
-        _.handleWith(Tcp().outgoingConnection("localhost", 1883).viaMat(KillSwitches.single)(Keep.right))
+        _.handleWith(
+          Tcp()
+            .outgoingConnection("localhost", 1883)
+            .viaMat(KillSwitches.single)(Keep.right)
+        )
       )
 
       whenReady(binding) { _ =>
