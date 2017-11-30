@@ -133,7 +133,7 @@ class MqttSourceSpec
     "receive a message from a topic with right credentials" in {
       val settings =
         MqttSourceSettings(sourceSettings.withAuth("username1", "password1"), Map(secureTopic -> MqttQoS.AtLeastOnce))
-      val (subscriptionFuture, probe) = MqttSource.atMostOnce(settings, 8).toMat(TestSink.probe)(Keep.both).run()
+      val probe = MqttSource.atMostOnce(settings, 8).runWith(TestSink.probe)
       val msg = MqttMessage(secureTopic, ByteString("ohi"))
       Source.single(msg).runWith(MqttSink(sinkSettings.withAuth("username1", "password1"), MqttQoS.AtLeastOnce))
       probe.requestNext shouldBe msg
@@ -144,18 +144,14 @@ class MqttSourceSpec
       val overflow = 4
 
       val settings = MqttSourceSettings(sourceSettings, Map(topic1 -> MqttQoS.AtLeastOnce))
-      val (subscriptionFuture, probe) =
-        MqttSource.atMostOnce(settings, bufferSize).toMat(TestSink.probe)(Keep.both).run()
+      val probe = MqttSource.atMostOnce(settings, bufferSize).runWith(TestSink.probe)
 
       Source(1 to bufferSize + overflow)
-        .map { i =>
-          MqttMessage(topic1, ByteString(s"ohi_$i"))
-        }
+        .map(i => MqttMessage(topic1, ByteString(s"ohi_$i")))
         .runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
 
-      (1 to bufferSize + overflow) foreach { i =>
-        probe.requestNext shouldBe MqttMessage(topic1, ByteString(s"ohi_$i"))
-      }
+      (1 to bufferSize + overflow)
+        .foreach(i => probe.requestNext shouldBe MqttMessage(topic1, ByteString(s"ohi_$i")))
     }
 
     "work with fast downstream" in {
@@ -202,18 +198,20 @@ class MqttSourceSpec
         _.handleWith(Tcp().outgoingConnection("localhost", 1883).viaMat(KillSwitches.single)(Keep.right))
       )
 
-      val settings = MqttSourceSettings(
-        sourceSettings
-          .withClientId("source-spec/testator")
-          .withBroker("tcp://localhost:1337")
-          .withWill(Will(MqttMessage(willTopic, ByteString("ohi")), MqttQoS.AtLeastOnce, retained = true)),
-        Map(willTopic -> MqttQoS.AtLeastOnce)
-      )
-      val source = MqttSource.atMostOnce(settings, 8)
+      whenReady(binding) { _ =>
+        val settings = MqttSourceSettings(
+          sourceSettings
+            .withClientId("source-spec/testator")
+            .withBroker("tcp://localhost:1337")
+            .withWill(Will(MqttMessage(willTopic, ByteString("ohi")), MqttQoS.AtLeastOnce, retained = true)),
+          Map(willTopic -> MqttQoS.AtLeastOnce)
+        )
+        val source = MqttSource.atMostOnce(settings, 8)
 
-      val sub = source.toMat(Sink.head)(Keep.left).run()
-      whenReady(sub) { _ =>
-        whenReady(ks)(_.shutdown())
+        val sub = source.runWith(Sink.head)
+        whenReady(sub) { _ =>
+          whenReady(ks)(_.shutdown())
+        }
       }
 
       {
