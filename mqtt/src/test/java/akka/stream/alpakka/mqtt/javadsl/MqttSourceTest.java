@@ -75,27 +75,20 @@ public class MqttSourceTest {
     final Source<MqttCommittableMessage, CompletionStage<Done>> mqttSource = MqttSource.atLeastOnce(mqttSourceSettings, 8);
     //#create-source-with-manualacks
 
-    final Pair<CompletionStage<Done>, CompletionStage<List<MqttCommittableMessage>>> unackedResult = mqttSource
-            .take(input.size())
-            .toMat(Sink.seq(), Keep.both())
-            .run(materializer);
-
-      unackedResult.first().thenAccept(unused -> {
-        try {
-          assertEquals(input, unackedResult.second().toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.message().payload().utf8String()).collect(Collectors.toList()));
-
-          //#run-source-with-manualacks
-          final CompletionStage<List<MqttMessage>> result = mqttSource
-            .mapAsync(1, cm -> cm.messageArrivedComplete().thenApply(unused2 -> cm.message()))
+    final CompletionStage<List<MqttCommittableMessage>> unackedResult = mqttSource
             .take(input.size())
             .runWith(Sink.seq(), materializer);
-          //#run-source-with-manualacks
 
-          assertEquals(input, result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.payload().utf8String()).collect(Collectors.toList()));
-        } catch (Exception ex) {
-          throw new RuntimeException(ex.getMessage(), ex);
-        }
-      });
+    assertEquals(input, unackedResult.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.message().payload().utf8String()).collect(Collectors.toList()));
+
+    //#run-source-with-manualacks
+    final CompletionStage<List<MqttMessage>> result = mqttSource
+      .mapAsync(1, cm -> cm.messageArrivedComplete().thenApply(unused2 -> cm.message()))
+      .take(input.size())
+        .runWith(Sink.seq(), materializer);
+    //#run-source-with-manualacks
+
+    assertEquals(input, result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.payload().utf8String()).collect(Collectors.toList()));
   }
 
   @Test
