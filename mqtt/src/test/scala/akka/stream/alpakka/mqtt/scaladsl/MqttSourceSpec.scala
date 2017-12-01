@@ -26,8 +26,7 @@ class MqttSourceSpec
     with BeforeAndAfterAll
     with ScalaFutures {
 
-  implicit val defaultPatience =
-    PatienceConfig(timeout = 10.seconds, interval = 100.millis)
+  implicit val defaultPatience = PatienceConfig(timeout = 10.seconds, interval = 100.millis)
 
   implicit val mat = ActorMaterializer()
 
@@ -88,9 +87,18 @@ class MqttSourceSpec
     "receive messages from multiple topics" in {
       val messageCount = 7
 
+      val messages = (0 until messageCount)
+        .flatMap(
+          i =>
+            Seq(
+              MqttMessage(topic1, ByteString(i.toString)),
+              MqttMessage(topic2, ByteString(i.toString))
+          )
+        )
+
       //#create-source
       val settings = MqttSourceSettings(
-        connectionSettings.withClientId("source-spec/source"),
+        sourceSettings,
         Map(topic1 -> MqttQoS.AtLeastOnce, topic2 -> MqttQoS.AtLeastOnce)
       )
 
@@ -99,27 +107,16 @@ class MqttSourceSpec
 
       //#run-source
       val result = mqttSource
-        .map(m => s"${m.topic}_${m.payload.utf8String}")
-        .take(messageCount * 2)
+        .take(messages.size)
         .runWith(Sink.seq)
       //#run-source
 
-      val expected = (0 until messageCount)
-        .flatMap(i => Seq(s"${topic1}_$i", s"${topic2}_$i"))
-
-      val messages = (0 until messageCount).flatMap(
-        i =>
-          Seq(
-            MqttMessage(topic1, ByteString(i.toString)),
-            MqttMessage(topic2, ByteString(i.toString))
-        )
-      )
-
       //#run-sink
-      Source(messages).runWith(MqttSink(connectionSettings.withClientId("source-spec/sink"), MqttQoS.AtLeastOnce))
+      Source(messages).runWith(MqttSink(connectionSettings, MqttQoS.AtLeastOnce))
       //#run-sink
 
-      result.futureValue shouldBe expected
+      val expected = (0 until messageCount).flatMap(i => Seq(s"${topic1}_$i", s"${topic2}_$i"))
+      result.futureValue.map(m => s"${m.topic}_${m.payload.utf8String}") shouldBe expected
     }
 
     "fail connection when not providing the requested credentials" in {

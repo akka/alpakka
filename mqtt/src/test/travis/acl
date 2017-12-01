@@ -4,6 +4,7 @@ topic source-spec/topic2
 topic source-spec/will
 topic source-spec/manualacks
 topic sink-spec/topic1
+topic sink-spec/topic2
 topic source-test/topic1
 topic source-test/topic2
 topic source-test/manualacks

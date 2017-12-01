@@ -36,6 +36,7 @@ class MqttSinkSpec
   )
 
   val topic = "sink-spec/topic1"
+  val topic2 = "sink-spec/topic2"
   val secureTopic = "sink-spec/secure-topic1"
 
   val sourceSettings = connectionSettings.withClientId(clientId = "sink-spec/source")
@@ -45,7 +46,6 @@ class MqttSinkSpec
 
   "mqtt sink" should {
     "send one message to a topic" in {
-      println("TES2")
       val msg = MqttMessage(topic, ByteString("ohi"))
 
       Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
@@ -56,16 +56,15 @@ class MqttSinkSpec
         .runWith(Sink.head)
 
       message.futureValue shouldBe msg
-      println("TES2FIN")
     }
 
     "send multiple messages to a topic" in {
-      val msg = MqttMessage(topic, ByteString("ohi"))
-      val numOfMessages = 42
+      val msg = MqttMessage(topic2, ByteString("ohi"))
+      val numOfMessages = 5
 
       val messagesFuture =
         MqttSource
-          .atMostOnce(MqttSourceSettings(sourceSettings, Map(topic -> MqttQoS.atLeastOnce)), 8)
+          .atMostOnce(MqttSourceSettings(sourceSettings, Map(topic2 -> MqttQoS.atLeastOnce)), 8)
           .take(numOfMessages)
           .runWith(Sink.seq)
 
