@@ -30,6 +30,11 @@ import com.amazonaws.regions.AwsRegionProvider;
 import org.junit.Test;
 import scala.Option;
 import scala.Some;
+
+import java.util.Arrays;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -58,7 +63,8 @@ public class S3ClientTest extends S3WireMockBase {
             Some.apply(proxy),
             credentials,
             regionProvider("us-east-1"),
-            false
+            false,
+            akka.japi.Option.<String>none().asScala() //FIXME
     );
     private final S3Client client = new S3Client(settings, system(), materializer);
     //#client
