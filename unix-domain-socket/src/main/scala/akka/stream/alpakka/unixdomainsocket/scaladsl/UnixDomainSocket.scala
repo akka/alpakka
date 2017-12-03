@@ -69,7 +69,6 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
    */
   final case class OutgoingConnection(remoteAddress: UnixSocketAddress, localAddress: UnixSocketAddress)
 
-  private val ReceiveBufferSize = 65536 // The Linux /proc/sys/net/core/wmem_max is around 200k, so 64k seems reasonable given 8k is normal for TCP. TODO: Make this configurable.
   private sealed abstract class ReceiveContext(
       val queue: SourceQueueWithComplete[ByteString],
       val buffer: ByteBuffer
@@ -84,7 +83,6 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
       pendingResult: Future[QueueOfferResult]
   ) extends ReceiveContext(queue, buffer)
 
-  private val SendBufferSize = 65536 // See the comment for ReceiveBufferSize. TODO: Make this configurable.
   private sealed abstract class SendContext(
       val buffer: ByteBuffer
   )
@@ -176,13 +174,15 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
   private def acceptKey(
       localAddress: UnixSocketAddress,
       incomingConnectionQueue: SourceQueueWithComplete[IncomingConnection],
-      halfClose: Boolean
+      halfClose: Boolean,
+      receiveBufferSize: Int,
+      sendBufferSize: Int
   )(sel: Selector, key: SelectionKey)(implicit mat: ActorMaterializer, ec: ExecutionContext): Unit = {
 
     val acceptingChannel = key.channel().asInstanceOf[UnixServerSocketChannel]
     val acceptedChannel = acceptingChannel.accept()
     acceptedChannel.configureBlocking(false)
-    val (context, flow) = sendReceiveStructures(sel)
+    val (context, flow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize)
     acceptedChannel.register(sel, SelectionKey.OP_READ, context)
     val connectionFlow =
       if (halfClose)
@@ -213,7 +213,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
     }
   }
 
-  private def sendReceiveStructures(sel: Selector)(
+  private def sendReceiveStructures(sel: Selector, receiveBufferSize: Int, sendBufferSize: Int)(
       implicit mat: ActorMaterializer,
       ec: ExecutionContext
   ): (SendReceiveContext, Flow[ByteString, ByteString, NotUsed]) = {
@@ -227,8 +227,8 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
         .run()
     val sendReceiveContext =
       new SendReceiveContext(
-        SendAvailable(ByteBuffer.allocate(SendBufferSize)),
-        ReceiveAvailable(receiveQueue, ByteBuffer.allocate(ReceiveBufferSize))
+        SendAvailable(ByteBuffer.allocate(sendBufferSize)),
+        ReceiveAvailable(receiveQueue, ByteBuffer.allocate(receiveBufferSize))
       ) // FIXME: No need for the costly allocation of direct buffers yet given https://github.com/jnr/jnr-unixsocket/pull/49
     val sendSink =
       BroadcastHub
@@ -236,12 +236,12 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
         .mapMaterializedValue { sendSource =>
           sendSource
             .expand { bytes =>
-              if (bytes.size <= SendBufferSize) {
+              if (bytes.size <= sendBufferSize) {
                 List(bytes).toIterator
               } else {
                 def splitToBufferSize(bytes: ByteString, acc: List[ByteString]): List[ByteString] =
                   if (bytes.nonEmpty) {
-                    val (left, right) = bytes.splitAt(SendBufferSize)
+                    val (left, right) = bytes.splitAt(sendBufferSize)
                     splitToBufferSize(right, acc :+ left)
                   } else {
                     acc
@@ -328,6 +328,11 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
     }
   }
 
+  private val receiveBufferSize: Int =
+    system.settings.config.getBytes("akka.stream.alpakka.unix-domain-socket.receive-buffer-size").toInt
+  private val sendBufferSize: Int =
+    system.settings.config.getBytes("akka.stream.alpakka.unix-domain-socket.send-buffer-size").toInt
+
   /**
    * Creates a [[UnixDomainSocket.ServerBinding]] instance which represents a prospective Unix Domain Socket
    * server binding on the given `endpoint`.
@@ -383,7 +388,9 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
     channel.configureBlocking(false)
     val address = new UnixSocketAddress(file)
     val registeredKey =
-      channel.register(sel, SelectionKey.OP_ACCEPT, acceptKey(address, incomingConnectionQueue, halfClose) _)
+      channel.register(sel,
+                       SelectionKey.OP_ACCEPT,
+                       acceptKey(address, incomingConnectionQueue, halfClose, receiveBufferSize, sendBufferSize) _)
     try {
       channel.socket().bind(address, backlog)
       serverBinding.success(
@@ -480,7 +487,7 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
         case _ =>
           None
       }
-    val (context, flow) = sendReceiveStructures(sel)
+    val (context, flow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize)
     val registeredKey =
       channel
         .register(sel, SelectionKey.OP_CONNECT, connectKey(remoteAddress, connectionFinished, cancellable, context) _)
