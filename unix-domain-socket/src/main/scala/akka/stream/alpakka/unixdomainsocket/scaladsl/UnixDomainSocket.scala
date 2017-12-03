@@ -309,7 +309,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
 /**
  * Provides Unix Domain Socket functionality to Akka Streams with an interface similar to Akka's Tcp class.
  */
-class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
+final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
 
   import UnixDomainSocket._
 

@@ -25,7 +25,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
   /**
    * Represents a prospective UnixDomainSocket server binding.
    */
-  class ServerBinding private[akka] (delegate: ScalaUnixDomainSocket.ServerBinding) {
+  final class ServerBinding private[akka] (delegate: ScalaUnixDomainSocket.ServerBinding) {
 
     /**
      * The local address of the endpoint bound by the materialization of the `connections` [[Source]].
@@ -44,7 +44,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
   /**
    * Represents an accepted incoming UnixDomainSocket connection.
    */
-  class IncomingConnection private[akka] (delegate: ScalaUnixDomainSocket.IncomingConnection) {
+  final class IncomingConnection private[akka] (delegate: ScalaUnixDomainSocket.IncomingConnection) {
 
     /**
      * The local address this connection is bound to.
@@ -75,7 +75,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
   /**
    * Represents a prospective outgoing UnixDomainSocket connection.
    */
-  class OutgoingConnection private[akka] (delegate: ScalaUnixDomainSocket.OutgoingConnection) {
+  final class OutgoingConnection private[akka] (delegate: ScalaUnixDomainSocket.OutgoingConnection) {
 
     /**
      * The remote address this connection is or will be bound to.
@@ -98,7 +98,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
     new UnixDomainSocket(system)
 }
 
-class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Extension {
+final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Extension {
   import UnixDomainSocket._
   import akka.dispatch.ExecutionContexts.{sameThreadExecutionContext ⇒ ec}
 
