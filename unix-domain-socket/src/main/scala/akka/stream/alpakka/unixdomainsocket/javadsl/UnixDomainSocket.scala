@@ -111,6 +111,8 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Ext
    * [[akka.stream.scaladsl.RunnableGraph]] the server is not immediately available. Only after the materialized future
    * completes is the server ready to accept client connections.
    *
+   * TODO: Support idleTimeout as per Tcp.
+   *
    * @param file      The file to listen on
    * @param backlog   Controls the size of the connection backlog
    * @param halfClose
@@ -154,6 +156,8 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Ext
    * to achieve application level chunks you have to introduce explicit framing in your streams,
    * for example using the [[akka.stream.javadsl.Framing]] stages.
    *
+   * TODO: Support idleTimeout as per Tcp.
+   *
    * @param remoteAddress The remote address to connect to
    * @param localAddress  Optional local address for the connection
    * @param halfClose
@@ -179,6 +183,8 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Ext
   /**
    * Creates an [[UnixDomainSocket.OutgoingConnection]] without specifying options.
    * It represents a prospective UnixDomainSocket client connection to the given endpoint.
+   *
+   * TODO: Support idleTimeout as per Tcp.
    *
    * Note that the ByteString chunk boundaries are not retained across the network,
    * to achieve application level chunks you have to introduce explicit framing in your streams,

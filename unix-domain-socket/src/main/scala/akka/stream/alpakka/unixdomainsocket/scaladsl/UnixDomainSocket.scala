@@ -336,6 +336,8 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
    * [[akka.stream.scaladsl.RunnableGraph]] the server is not immediately available. Only after the materialized future
    * completes is the server ready to accept client connections.
    *
+   * TODO: Support idleTimeout as per Tcp.
+   *
    * @param file      The file to listen on
    * @param backlog   Controls the size of the connection backlog
    * @param halfClose
@@ -413,6 +415,8 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
    * [[akka.stream.scaladsl.RunnableGraph]] the server is not immediately available. Only after the returned future
    * completes is the server ready to accept client connections.
    *
+   * TODO: Support idleTimeout as per Tcp.
+   *
    * @param handler   A Flow that represents the server logic
    * @param file      The file to listen on
    * @param backlog   Controls the size of the connection backlog
@@ -442,6 +446,8 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
    * Note that the ByteString chunk boundaries are not retained across the network,
    * to achieve application level chunks you have to introduce explicit framing in your streams,
    * for example using the [[akka.stream.scaladsl.Framing]] stages.
+   *
+   * TODO: Support idleTimeout as per Tcp.
    *
    * @param remoteAddress The remote address to connect to
    * @param localAddress  Optional local address for the connection
