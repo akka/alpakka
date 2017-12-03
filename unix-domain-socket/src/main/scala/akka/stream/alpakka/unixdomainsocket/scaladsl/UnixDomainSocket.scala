@@ -65,11 +65,11 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
   }
 
   /**
-   * Represents a prospective outgoing TCP connection.
+   * Represents a prospective outgoing Unix Domain Socket connection.
    */
   final case class OutgoingConnection(remoteAddress: UnixSocketAddress, localAddress: UnixSocketAddress)
 
-  private val ReceiveBufferSize = 8192
+  private val ReceiveBufferSize = 65536 // The Linux /proc/sys/net/core/wmem_max is around 200k, so 64k seems reasonable given 8k is normal for TCP. TODO: Make this configurable.
   private sealed abstract class ReceiveContext(
       val queue: SourceQueueWithComplete[ByteString],
       val buffer: ByteBuffer
@@ -84,7 +84,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
       pendingResult: Future[QueueOfferResult]
   ) extends ReceiveContext(queue, buffer)
 
-  private val SendBufferSize = 8192
+  private val SendBufferSize = 65536 // See the comment for ReceiveBufferSize. TODO: Make this configurable.
   private sealed abstract class SendContext(
       val buffer: ByteBuffer
   )
