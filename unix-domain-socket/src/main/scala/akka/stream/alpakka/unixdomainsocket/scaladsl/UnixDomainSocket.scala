@@ -313,7 +313,7 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
 
   import UnixDomainSocket._
 
-  implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
+  private implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
   import system.dispatcher
 
   private val sel = NativeSelectorProvider.getInstance.openSelector
