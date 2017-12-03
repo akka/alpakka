@@ -219,6 +219,12 @@ object Dependencies {
     )
   )
 
+  val UnixDomainSocket = Seq(
+    libraryDependencies ++= Seq(
+      "com.github.jnr" % "jnr-unixsocket" % "0.18" // BSD/ApacheV2/CPL/MIT as per https://github.com/akka/alpakka/issues/620#issuecomment-348727265
+    )
+  )
+
   val Xml = Seq(
     libraryDependencies ++= Seq(
       "com.fasterxml" % "aalto-xml" % "1.0.0", // ApacheV2,
