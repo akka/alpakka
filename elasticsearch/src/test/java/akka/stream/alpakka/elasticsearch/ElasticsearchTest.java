@@ -5,10 +5,12 @@
 package akka.stream.alpakka.elasticsearch;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.elasticsearch.javadsl.*;
 import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
@@ -20,10 +22,14 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.Some;
+import scala.concurrent.Await;
+import scala.concurrent.duration.Duration;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
@@ -37,6 +43,13 @@ public class ElasticsearchTest {
   //#define-class
   public static class Book {
     public String title;
+
+    public Book() {
+    }
+
+    public Book(String title) {
+      this.title = title;
+    }
   }
   //#define-class
 
@@ -102,7 +115,7 @@ public class ElasticsearchTest {
       "{\"match_all\": {}}",
       new ElasticsearchSourceSettings().withBufferSize(5),
       client)
-      .map(m -> new IncomingMessage<>(new Some<String>(m.id()), m.source()))
+      .map(m -> IncomingMessage.create(m.id(), m.source()))
       .runWith(
         ElasticsearchSink.create(
           "sink1",
@@ -154,7 +167,7 @@ public class ElasticsearchTest {
       new ElasticsearchSourceSettings().withBufferSize(5),
       client,
       Book.class)
-      .map(m -> new IncomingMessage<>(new Some<String>(m.id()), m.source()))
+      .map(m -> IncomingMessage.create(m.id(), m.source()))
       .runWith(
         ElasticsearchSink.create(
           "sink2",
@@ -200,14 +213,14 @@ public class ElasticsearchTest {
   public void flow() throws Exception {
     // Copy source/book to sink3/book through JsObject stream
     //#run-flow
-    CompletionStage<List<List<IncomingMessageResult<Book>>>> f1 = ElasticsearchSource.typed(
+    CompletionStage<List<List<IncomingMessageResult<Book, Object>>>> f1 = ElasticsearchSource.typed(
         "source",
         "book",
         "{\"match_all\": {}}",
         new ElasticsearchSourceSettings().withBufferSize(5),
         client,
         Book.class)
-        .map(m -> new IncomingMessage<>(new Some<String>(m.id()), m.source()))
+        .map(m -> IncomingMessage.create(m.id(), m.source()))
         .via(ElasticsearchFlow.create(
                 "sink3",
                 "book",
@@ -217,7 +230,7 @@ public class ElasticsearchTest {
         .runWith(Sink.seq(), materializer);
     //#run-flow
 
-    List<List<IncomingMessageResult<Book>>> result1 = f1.toCompletableFuture().get();
+    List<List<IncomingMessageResult<Book, Object>>> result1 = f1.toCompletableFuture().get();
     flush("sink3");
 
     for(int i = 0; i < result1.size(); i ++){
@@ -251,4 +264,102 @@ public class ElasticsearchTest {
     assertEquals(expect, result2);
   }
 
+  @Test
+  public void testKafkaExample() throws Exception {
+    //#kafka-example
+    // We're going to pretend we got messages from kafka.
+    // After we've written them to Elastic, we want
+    // to commit the offset to Kafka
+
+    List<KafkaMessage> messagesFromKafka = Arrays.asList(
+            new KafkaMessage(new Book("Book 1"), new KafkaOffset(0)),
+            new KafkaMessage(new Book("Book 2"), new KafkaOffset(1)),
+            new KafkaMessage(new Book("Book 3"), new KafkaOffset(2))
+    );
+
+    final KafkaCommitter kafkaCommitter = new KafkaCommitter();
+
+    Source.from(messagesFromKafka) // Assume we get this from Kafka
+            .map(kafkaMessage -> {
+              Book book = kafkaMessage.book;
+              String id = book.title;
+
+              // Transform message so that we can write to elastic
+              return IncomingMessage.create(id, book, kafkaMessage.offset);
+            })
+            .via( // write to elastic
+                    ElasticsearchFlow.<Book, KafkaOffset>createWithCargo(
+                            "sink6",
+                            "book",
+                            new ElasticsearchSinkSettings().withBufferSize(5),
+                            client,
+                            new ObjectMapper())
+            ).map(messageResults -> {
+              messageResults.stream()
+                      .forEach(result -> {
+                        if (!result.success()) throw new RuntimeException("Failed to write message to elastic");
+                        // Commit to kafka
+                        kafkaCommitter.commit(result.cargo());
+                      });
+              return NotUsed.getInstance();
+
+            }).runWith(Sink.seq(), materializer) // Run it
+            .toCompletableFuture().get(); // Wait for it to complete
+
+    //#kafka-example
+    flush("sink6");
+
+    // Make sure all messages was committed to kafka
+    assertEquals (Arrays.asList(0,1,2), kafkaCommitter.committedOffsets);
+
+
+    // Assert that all docs were written to elastic
+    List<String> result2 = ElasticsearchSource.typed(
+            "sink6",
+            "book",
+            "{\"match_all\": {}}",
+             new ElasticsearchSourceSettings(),
+             client,
+             Book.class)
+            .map( m -> m.source().title)
+            .runWith(Sink.seq(), materializer) // Run it
+            .toCompletableFuture().get(); // Wait for it to complete
+
+    assertEquals(
+            messagesFromKafka.stream().map(m -> m.book.title).sorted().collect(Collectors.toList()),
+            result2.stream().sorted().collect(Collectors.toList())
+    );
+
+  }
+
+  static class KafkaCommitter {
+    List<Integer> committedOffsets = new ArrayList<>();
+
+    public KafkaCommitter() {
+    }
+
+    void commit(KafkaOffset offset) {
+      committedOffsets.add(offset.offset);
+    }
+  }
+
+  static class KafkaOffset {
+    final int offset;
+
+    public KafkaOffset(int offset) {
+      this.offset = offset;
+    }
+
+  }
+
+  static class KafkaMessage {
+    final Book book;
+    final KafkaOffset offset;
+
+    public KafkaMessage(Book book, KafkaOffset offset) {
+      this.book = book;
+      this.offset = offset;
+    }
+
+  }
 }

@@ -20,7 +20,7 @@ object ElasticsearchSink {
   def create[T](indexName: String, typeName: String, settings: ElasticsearchSinkSettings)(
       implicit client: RestClient,
       writer: JsonWriter[T]
-  ): Sink[IncomingMessage[T], Future[Done]] =
+  ): Sink[IncomingMessage[T, Any], Future[Done]] =
     ElasticsearchFlow.create[T](indexName, typeName, settings).toMat(Sink.ignore)(Keep.right)
 
 }

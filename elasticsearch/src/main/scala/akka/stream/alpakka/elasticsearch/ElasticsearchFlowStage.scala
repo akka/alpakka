@@ -23,21 +23,29 @@ import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSinkSettings
 import org.apache.http.message.BasicHeader
 import org.apache.http.util.EntityUtils
 
-trait IncomingMessageTrait[T] {
-  def id: Option[String]
-  def source: T
+object IncomingMessage {
+  // Apply method to use when not using cargo
+  def apply[T](id: Option[String], source: T): IncomingMessage[T, Any] =
+    IncomingMessage(id, source, null)
+
+  // Java-api - without cargo
+  def create[T](id: String, source: T): IncomingMessage[T, Any] =
+    IncomingMessage(Option(id), source)
+
+  // Java-api - with cargo
+  def create[T, C](id: String, source: T, cargo: C): IncomingMessage[T, C] =
+    IncomingMessage(Option(id), source, cargo)
 }
 
-final case class IncomingMessage[T](id: Option[String], source: T) extends IncomingMessageTrait[T]
+final case class IncomingMessage[T, C](id: Option[String], source: T, cargo: C)
 
-final case class IncomingMessageWithCargo[T, C](id: Option[String], source: T, cargo: C)
-    extends IncomingMessageTrait[T]
+object IncomingMessageResult {
+  // Apply method to use when not using cargo
+  def apply[T](source: T, success: Boolean): IncomingMessageResult[T, Any] =
+    IncomingMessageResult(source, null, success)
+}
 
-final case class MessageResult[T, X <: IncomingMessageTrait[T]](message: X, success: Boolean)
-
-// Using these special result-case-classes to reduce the generic-complexity when working the flows
-final case class IncomingMessageResult[T](source: T, success: Boolean)
-final case class IncomingMessageWithCargoResult[T, C](source: T, cargo: C, success: Boolean)
+final case class IncomingMessageResult[T, C](source: T, cargo: C, success: Boolean)
 
 trait MessageWriter[T] {
   def convert(message: T): String
@@ -47,26 +55,26 @@ trait MessageWriter[T] {
 // with and without cargo.
 // MessageResult is transformed into IncomingMessageResult or IncomingMessageWithCargoResult
 // in the javadsl- and scaladsl-ElasticsearchFlow-implementations
-class ElasticsearchFlowStage[T, X <: IncomingMessageTrait[T]](
+class ElasticsearchFlowStage[T, C](
     indexName: String,
     typeName: String,
     client: RestClient,
     settings: ElasticsearchSinkSettings,
     writer: MessageWriter[T]
-) extends GraphStage[FlowShape[X, Future[Seq[MessageResult[T, X]]]]] {
+) extends GraphStage[FlowShape[IncomingMessage[T, C], Future[Seq[IncomingMessageResult[T, C]]]]] {
 
-  private val in = Inlet[X]("messages")
-  private val out = Outlet[Future[Seq[MessageResult[T, X]]]]("result")
+  private val in = Inlet[IncomingMessage[T, C]]("messages")
+  private val out = Outlet[Future[Seq[IncomingMessageResult[T, C]]]]("result")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
       private var state: State = Idle
-      private val queue = new mutable.Queue[X]()
-      private val failureHandler = getAsyncCallback[(Seq[X], Throwable)](handleFailure)
-      private val responseHandler = getAsyncCallback[(Seq[X], Response)](handleResponse)
-      private var failedMessages: Seq[X] = Nil
+      private val queue = new mutable.Queue[IncomingMessage[T, C]]()
+      private val failureHandler = getAsyncCallback[(Seq[IncomingMessage[T, C]], Throwable)](handleFailure)
+      private val responseHandler = getAsyncCallback[(Seq[IncomingMessage[T, C]], Response)](handleResponse)
+      private var failedMessages: Seq[IncomingMessage[T, C]] = Nil
       private var retryCount: Int = 0
 
       override def preStart(): Unit =
@@ -82,7 +90,7 @@ class ElasticsearchFlowStage[T, X <: IncomingMessageTrait[T]](
         failedMessages = Nil
       }
 
-      private def handleFailure(args: (Seq[X], Throwable)): Unit = {
+      private def handleFailure(args: (Seq[IncomingMessage[T, C]], Throwable)): Unit = {
         val (messages, exception) = args
         if (retryCount >= settings.maxRetry) {
           failStage(exception)
@@ -96,7 +104,7 @@ class ElasticsearchFlowStage[T, X <: IncomingMessageTrait[T]](
       private def handleSuccess(): Unit =
         completeStage()
 
-      private def handleResponse(args: (Seq[X], Response)): Unit = {
+      private def handleResponse(args: (Seq[IncomingMessage[T, C]], Response)): Unit = {
         val (messages, response) = args
         val responseJson = EntityUtils.toString(response.getEntity).parseJson
 
@@ -122,7 +130,7 @@ class ElasticsearchFlowStage[T, X <: IncomingMessageTrait[T]](
           if (successMsgs.nonEmpty) {
             // push the messages that DID succeed
             val resultForSucceededMsgs = successMsgs.map { x =>
-              MessageResult[T, X](x, success = true)
+              IncomingMessageResult[T, C](x.source, x.cargo, success = true)
             }
             emit(out, Future.successful(resultForSucceededMsgs))
           }
@@ -131,12 +139,12 @@ class ElasticsearchFlowStage[T, X <: IncomingMessageTrait[T]](
           retryCount = 0
 
           // Build result of success-msgs and failed-msgs
-          val result: Seq[MessageResult[T, X]] = Seq(
+          val result: Seq[IncomingMessageResult[T, C]] = Seq(
             successMsgs.map { x =>
-              MessageResult[T, X](x, success = true)
+              IncomingMessageResult[T, C](x.source, x.cargo, success = true)
             },
             failedMsgs.map { x =>
-              MessageResult[T, X](x, success = false)
+              IncomingMessageResult[T, C](x.source, x.cargo, success = false)
             }
           ).flatten
 
@@ -159,7 +167,7 @@ class ElasticsearchFlowStage[T, X <: IncomingMessageTrait[T]](
         }
       }
 
-      private def sendBulkUpdateRequest(messages: Seq[X]): Unit = {
+      private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T, C]]): Unit = {
         val json = messages
           .map { message =>
             JsObject(

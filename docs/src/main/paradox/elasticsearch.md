@@ -95,6 +95,9 @@ When streaming documents from Kafka, you might want to commit to Kafka **AFTER**
 Scala (flow)
 : @@snip ($alpakka$/elasticsearch/src/test/scala/akka/stream/alpakka/elasticsearch/ElasticsearchSpec.scala) { #kafka-example }
 
+Java (flow)
+: @@snip ($alpakka$/elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #kafka-example }
+
 
 
 ### Running the example code

@@ -21,7 +21,7 @@ object ElasticsearchSink {
                 typeName: String,
                 settings: ElasticsearchSinkSettings,
                 client: RestClient,
-                objectMapper: ObjectMapper): akka.stream.javadsl.Sink[IncomingMessage[T], CompletionStage[Done]] =
+                objectMapper: ObjectMapper): akka.stream.javadsl.Sink[IncomingMessage[T, Any], CompletionStage[Done]] =
     ElasticsearchFlow
       .create(indexName, typeName, settings, client, objectMapper)
       .toMat(Sink.ignore, Keep.right[NotUsed, CompletionStage[Done]])

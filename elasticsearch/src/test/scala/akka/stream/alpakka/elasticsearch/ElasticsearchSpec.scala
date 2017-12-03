@@ -120,8 +120,6 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       Await.result(f1, Duration.Inf)
 
-
-
       flush("sink2")
 
       // Assert docs in sink2/book
@@ -179,7 +177,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       flush("sink3")
 
       // Assert no errors
-      assert(result1.forall( !_.exists(_.success == false) ))
+      assert(result1.forall(!_.exists(_.success == false)))
 
       // Assert docs in sink3/book
       val f2 = ElasticsearchSource
@@ -234,7 +232,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       flush("sink4")
 
       // Assert no error
-      assert(result1.forall( !_.exists(_.success == false) ))
+      assert(result1.forall(!_.exists(_.success == false)))
 
       // Assert docs in sink4/book
       val f2 = ElasticsearchSource
@@ -287,7 +285,11 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val end = System.currentTimeMillis()
 
       // Assert retired documents
-      assert(result1.flatten.filter(!_.success).toList == Seq(IncomingMessageResult[JsValue](Map("subject" -> "Akka Concurrency").toJson, false)))
+      assert(
+        result1.flatten.filter(!_.success).toList == Seq(
+          IncomingMessageResult[JsValue](Map("subject" -> "Akka Concurrency").toJson, false)
+        )
+      )
 
       // Assert retried 5 times by looking duration
       assert(end - start > 5 * 100)
@@ -323,8 +325,8 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       // After we've written them to Elastic, we want
       // to commit the offset to Kafka
 
-      case class KafkaOffset(offset:Int)
-      case class KafkaMessage(book: Book, offset:KafkaOffset)
+      case class KafkaOffset(offset: Int)
+      case class KafkaMessage(book: Book, offset: KafkaOffset)
 
       val messagesFromKafka = List(
         KafkaMessage(Book("Book 1"), KafkaOffset(0)),
@@ -334,61 +336,58 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       var committedOffsets = List[KafkaOffset]()
 
-      def commitToKakfa(offset:KafkaOffset): Unit = {
+      def commitToKakfa(offset: KafkaOffset): Unit =
         committedOffsets = committedOffsets :+ offset
-      }
 
-      val f1 = Source(messagesFromKafka) // Asume we get this from Kafka
+      val f1 = Source(messagesFromKafka) // Assume we get this from Kafka
         .map { kafkaMessage: KafkaMessage =>
-
           val book = kafkaMessage.book
           val id = book.title
           println("title: " + book.title)
 
           // Transform message so that we can write to elastic
-          IncomingMessageWithCargo(Some(id), book, kafkaMessage.offset)
+          IncomingMessage(Some(id), book, kafkaMessage.offset)
         }
         .via( // write to elastic
           ElasticsearchFlow.createWithCargo[Book, KafkaOffset](
-            "sink3",
+            "sink6",
             "book",
             ElasticsearchSinkSettings(5)
           )
-        ).map {
-          messageResults =>
-            messageResults.foreach {
-              result =>
-                if ( !result.success ) throw new Exception("Failed to write message to elastic")
-                // Commit to kafka
-                commitToKakfa(result.cargo)
-            }
-      }.runWith(Sink.seq)
+        )
+        .map { messageResults =>
+          messageResults.foreach { result =>
+            if (!result.success) throw new Exception("Failed to write message to elastic")
+            // Commit to kafka
+            commitToKakfa(result.cargo)
+          }
+        }
+        .runWith(Sink.seq)
 
       Await.ready(f1, Duration.Inf)
       //#kafka-example
-      flush("sink3")
+      flush("sink6")
 
       // Make sure all messages was committed to kafka
-      assert ( List(0,1,2) == committedOffsets.map(_.offset))
+      assert(List(0, 1, 2) == committedOffsets.map(_.offset))
 
       // Assert that all docs were written to elastic
       val f2 = ElasticsearchSource
         .typed[Book](
-        "sink3",
-        "book",
-        """{"match_all": {}}""",
-        ElasticsearchSourceSettings()
-      )
+          "sink6",
+          "book",
+          """{"match_all": {}}""",
+          ElasticsearchSourceSettings()
+        )
         .map { message =>
           message.source.title
         }
         .runWith(Sink.seq)
 
-      val result2 = Await.result(f2, Duration.Inf)
+      val result2 = Await.result(f2, Duration.Inf).toList
 
       result2.sorted shouldEqual messagesFromKafka.map(_.book.title).sorted
     }
   }
-
 
 }

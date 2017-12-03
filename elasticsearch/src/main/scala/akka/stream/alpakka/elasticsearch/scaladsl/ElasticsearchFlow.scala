@@ -13,15 +13,15 @@ import spray.json._
 object ElasticsearchFlow {
 
   /**
-   * Scala API: creates a [[ElasticsearchFlowStage]] using IncomingMessage (without cargo)
+   * Scala API: creates a [[ElasticsearchFlowStage]] without cargo
    */
   def create[T](indexName: String, typeName: String, settings: ElasticsearchSinkSettings)(
       implicit client: RestClient,
       writer: JsonWriter[T]
-  ): Flow[IncomingMessage[T], Seq[IncomingMessageResult[T]], NotUsed] =
+  ): Flow[IncomingMessage[T, Any], Seq[IncomingMessageResult[T, Any]], NotUsed] =
     Flow
       .fromGraph(
-        new ElasticsearchFlowStage[T, IncomingMessage[T]](
+        new ElasticsearchFlowStage[T, Any](
           indexName,
           typeName,
           client,
@@ -30,22 +30,17 @@ object ElasticsearchFlow {
         )
       )
       .mapAsync(1)(identity)
-      .map { x =>
-        x.map { e =>
-          IncomingMessageResult(e.message.source, e.success)
-        }
-      }
 
   /**
-   * Scala API: creates a [[ElasticsearchFlowStage]] using IncomingMessageWithCargo
+   * Scala API: creates a [[ElasticsearchFlowStage]] with cargo
    */
   def createWithCargo[T, C](indexName: String, typeName: String, settings: ElasticsearchSinkSettings)(
       implicit client: RestClient,
       writer: JsonWriter[T]
-  ): Flow[IncomingMessageWithCargo[T, C], Seq[IncomingMessageWithCargoResult[T, C]], NotUsed] =
+  ): Flow[IncomingMessage[T, C], Seq[IncomingMessageResult[T, C]], NotUsed] =
     Flow
       .fromGraph(
-        new ElasticsearchFlowStage[T, IncomingMessageWithCargo[T, C]](
+        new ElasticsearchFlowStage[T, C](
           indexName,
           typeName,
           client,
@@ -54,11 +49,6 @@ object ElasticsearchFlow {
         )
       )
       .mapAsync(1)(identity)
-      .map { x =>
-        x.map { e =>
-          IncomingMessageWithCargoResult(e.message.source, e.message.cargo, e.success)
-        }
-      }
 
   private class SprayJsonWriter[T](implicit writer: JsonWriter[T]) extends MessageWriter[T] {
     override def convert(message: T): String = message.toJson.toString()
