@@ -6,7 +6,6 @@ package akka.stream.alpakka.csv
 
 import java.nio.charset.{StandardCharsets, UnsupportedCharsetException}
 
-import akka.stream.alpakka.csv.CsvParser.MalformedCsvException
 import akka.stream.alpakka.csv.scaladsl.ByteOrderMark
 import akka.util.ByteString
 import org.scalatest.{Matchers, OptionValues, WordSpec}
@@ -96,6 +95,8 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
         parser.poll(requireLineEnd = true)
       }
       exception.getMessage should be("wrong escaping at 1:2, only escape or delimiter may be escaped")
+      exception.getLineNo should be(1)
+      exception.getBytePos should be(2)
     }
 
     "fail on escape at line end" in {
