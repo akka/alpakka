@@ -8,6 +8,7 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.csv.MalformedCsvException;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -21,10 +22,16 @@ import org.junit.Test;
 
 // #line-scanner
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class CsvParsingTest {
     private static ActorSystem system;
@@ -41,20 +48,37 @@ public class CsvParsingTest {
     }
 
     @Test
-    public void lineParserShouldParseOneLine() {
+    public void lineParserShouldParseOneLine() throws Exception {
         CompletionStage<Collection<ByteString>> completionStage =
         // #line-scanner
             Source.single(ByteString.fromString("eins,zwei,drei\n"))
                 .via(CsvParsing.lineScanner())
                 .runWith(Sink.head(), materializer);
         // #line-scanner
-        completionStage.thenAccept((list) -> {
-            String[] res = list.stream().map(ByteString::utf8String).toArray(String[]::new);
-            assertThat(res[0], equalTo("eins"));
-            assertThat(res[1], equalTo("zwei"));
-            assertThat(res[2], equalTo("drei"));
-        });
+        Collection<ByteString> list = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+        String[] res = list.stream().map(ByteString::utf8String).toArray(String[]::new);
+        assertThat(res[0], equalTo("eins"));
+        assertThat(res[1], equalTo("zwei"));
+        assertThat(res[2], equalTo("drei"));
+    }
 
+    @Test
+    public void illegalFormatShouldThrow() throws Exception {
+        CompletionStage<List<Collection<ByteString>>> completionStage =
+            Source.single(ByteString.fromString("eins,zwei,drei\na,b,\\c"))
+                    .via(CsvParsing.lineScanner())
+                    .runWith(Sink.seq(), materializer);
+        try {
+            completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+             fail("Should throw MalformedCsvException");
+        }
+        catch (ExecutionException expected) {
+            Throwable cause = expected.getCause();
+            assertThat(cause, is(instanceOf(MalformedCsvException.class)));
+            MalformedCsvException csvException = (MalformedCsvException) cause;
+            assertThat(csvException.getLineNo(), equalTo(2L));
+            assertThat(csvException.getBytePos(), equalTo(4));
+        }
     }
 
     @BeforeClass
