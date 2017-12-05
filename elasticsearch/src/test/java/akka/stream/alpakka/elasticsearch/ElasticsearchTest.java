@@ -213,7 +213,7 @@ public class ElasticsearchTest {
   public void flow() throws Exception {
     // Copy source/book to sink3/book through JsObject stream
     //#run-flow
-    CompletionStage<List<List<IncomingMessageResult<Book, Object>>>> f1 = ElasticsearchSource.typed(
+    CompletionStage<List<List<IncomingMessageResult<Book, NotUsed>>>> f1 = ElasticsearchSource.typed(
         "source",
         "book",
         "{\"match_all\": {}}",
@@ -230,7 +230,7 @@ public class ElasticsearchTest {
         .runWith(Sink.seq(), materializer);
     //#run-flow
 
-    List<List<IncomingMessageResult<Book, Object>>> result1 = f1.toCompletableFuture().get();
+    List<List<IncomingMessageResult<Book, NotUsed>>> result1 = f1.toCompletableFuture().get();
     flush("sink3");
 
     for(int i = 0; i < result1.size(); i ++){

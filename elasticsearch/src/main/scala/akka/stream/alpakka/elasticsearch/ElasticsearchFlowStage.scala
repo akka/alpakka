@@ -25,24 +25,32 @@ import org.apache.http.util.EntityUtils
 
 object IncomingMessage {
   // Apply method to use when not using cargo
-  def apply[T](id: Option[String], source: T): IncomingMessage[T, Any] =
-    IncomingMessage(id, source, null)
+  def apply[T](id: Option[String], source: T): IncomingMessage[T, NotUsed] =
+    IncomingMessage(id, source, NotUsed)
 
   // Java-api - without cargo
-  def create[T](id: String, source: T): IncomingMessage[T, Any] =
+  def create[T](id: String, source: T): IncomingMessage[T, NotUsed] =
     IncomingMessage(Option(id), source)
+
+  // Java-api - without cargo
+  def create[T](source: T): IncomingMessage[T, NotUsed] =
+    IncomingMessage(None, source)
 
   // Java-api - with cargo
   def create[T, C](id: String, source: T, cargo: C): IncomingMessage[T, C] =
     IncomingMessage(Option(id), source, cargo)
+
+  // Java-api - with cargo
+  def create[T, C](source: T, cargo: C): IncomingMessage[T, C] =
+    IncomingMessage(None, source, cargo)
 }
 
 final case class IncomingMessage[T, C](id: Option[String], source: T, cargo: C)
 
 object IncomingMessageResult {
   // Apply method to use when not using cargo
-  def apply[T](source: T, success: Boolean): IncomingMessageResult[T, Any] =
-    IncomingMessageResult(source, null, success)
+  def apply[T](source: T, success: Boolean): IncomingMessageResult[T, NotUsed] =
+    IncomingMessageResult(source, NotUsed, success)
 }
 
 final case class IncomingMessageResult[T, C](source: T, cargo: C, success: Boolean)

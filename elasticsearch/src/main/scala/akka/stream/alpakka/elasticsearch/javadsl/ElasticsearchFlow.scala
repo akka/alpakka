@@ -24,10 +24,10 @@ object ElasticsearchFlow {
       settings: ElasticsearchSinkSettings,
       client: RestClient,
       objectMapper: ObjectMapper
-  ): akka.stream.javadsl.Flow[IncomingMessage[T, Any], JavaList[IncomingMessageResult[T, Any]], NotUsed] =
+  ): akka.stream.javadsl.Flow[IncomingMessage[T, NotUsed], JavaList[IncomingMessageResult[T, NotUsed]], NotUsed] =
     Flow
       .fromGraph(
-        new ElasticsearchFlowStage[T, Any](indexName,
+        new ElasticsearchFlowStage[T, NotUsed](indexName,
                                            typeName,
                                            client,
                                            settings.asScala,

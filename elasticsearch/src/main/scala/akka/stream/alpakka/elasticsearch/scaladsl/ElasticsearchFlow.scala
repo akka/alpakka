@@ -18,10 +18,10 @@ object ElasticsearchFlow {
   def create[T](indexName: String, typeName: String, settings: ElasticsearchSinkSettings)(
       implicit client: RestClient,
       writer: JsonWriter[T]
-  ): Flow[IncomingMessage[T, Any], Seq[IncomingMessageResult[T, Any]], NotUsed] =
+  ): Flow[IncomingMessage[T, NotUsed], Seq[IncomingMessageResult[T, NotUsed]], NotUsed] =
     Flow
       .fromGraph(
-        new ElasticsearchFlowStage[T, Any](
+        new ElasticsearchFlowStage[T, NotUsed](
           indexName,
           typeName,
           client,
