@@ -56,6 +56,18 @@ private[alpakka] object HttpRequests {
       _.withQuery(Query("partNumber" -> partNumber.toString, "uploadId" -> upload.uploadId))
     ).withEntity(HttpEntity(ContentTypes.`application/octet-stream`, payloadSize, payload))
 
+  /**
+   * Create an HTTP request to delete s3Location.
+   * @param s3Location location of the file to delete relative to conf
+   * @param conf s3Settings
+   * @return the created DELETE request.
+   */
+  def deleteRequest(s3Location: S3Location)(implicit conf: S3Settings): HttpRequest =
+    s3Request(
+      s3Location = s3Location,
+      method = HttpMethods.DELETE
+    )
+
   def completeMultipartUploadRequest(upload: MultipartUpload, parts: Seq[(Int, String)])(
       implicit ec: ExecutionContext,
       conf: S3Settings
