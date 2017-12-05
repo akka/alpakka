@@ -21,6 +21,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.jms.DeliveryMode;
 import javax.jms.Message;
 import java.nio.charset.Charset;
 import java.util.*;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 
@@ -332,6 +334,9 @@ public class JmsConnectorsTest {
                     .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsType.create("type")))
                     .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsCorrelationId.create("correlationId")))
                     .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsReplyTo.queue("test-reply")))
+                    .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsTimeToLive.create(99999)))
+                    .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsPriority.create(2)))
+                    .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsDeliveryMode.create(DeliveryMode.NON_PERSISTENT)))
                     .collect(Collectors.toList());
             //#create-messages-with-properties
 
@@ -362,6 +367,10 @@ public class JmsConnectorsTest {
                 assertEquals(outMsg.getJMSType(), "type");
                 assertEquals(outMsg.getJMSCorrelationID(), "correlationId");
                 assertEquals(((ActiveMQQueue) outMsg.getJMSReplyTo()).getQueueName(), "test-reply");
+                
+                assertTrue(outMsg.getJMSExpiration()!= 0);
+                assertEquals(2,outMsg.getJMSPriority());
+                assertEquals(DeliveryMode.NON_PERSISTENT,outMsg.getJMSDeliveryMode());
                 msgIdx++;
             }
         });

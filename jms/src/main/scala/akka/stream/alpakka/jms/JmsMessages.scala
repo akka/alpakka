@@ -7,10 +7,34 @@ package akka.stream.alpakka.jms
 import scala.collection.JavaConverters._
 import java.util
 
-sealed trait JmsHeader
-final case class JmsCorrelationId(jmsCorrelationId: String) extends JmsHeader
-final case class JmsReplyTo(jmsDestination: Destination) extends JmsHeader
-final case class JmsType(jmsType: String) extends JmsHeader
+sealed trait JmsHeader {
+
+  /**
+   * Indicates if this header must be set during the send() operation according to the JMS specification or as attribute of the jms message before.
+   */
+  def usedDuringSend(): Boolean
+}
+
+final case class JmsCorrelationId(jmsCorrelationId: String) extends JmsHeader {
+  override def usedDuringSend(): Boolean = false
+}
+
+final case class JmsReplyTo(jmsDestination: Destination) extends JmsHeader {
+  override def usedDuringSend(): Boolean = false
+}
+final case class JmsType(jmsType: String) extends JmsHeader {
+  override def usedDuringSend(): Boolean = false
+}
+
+final case class JmsTimeToLive(timeInMillis: Long) extends JmsHeader {
+  override def usedDuringSend(): Boolean = true
+}
+final case class JmsPriority(priority: Int) extends JmsHeader {
+  override def usedDuringSend(): Boolean = true
+}
+final case class JmsDeliveryMode(deliveryMode: Int) extends JmsHeader {
+  override def usedDuringSend(): Boolean = true
+}
 
 object JmsCorrelationId {
 
@@ -39,6 +63,30 @@ object JmsType {
    * Java API: create  [[JmsType]]
    */
   def create(jmsType: String) = JmsType(jmsType)
+}
+
+object JmsTimeToLive {
+
+  /**
+   * Java API: create  [[JmsTimeToLive]]
+   */
+  def create(timeInMillis: Long) = JmsTimeToLive(timeInMillis)
+}
+
+object JmsPriority {
+
+  /**
+   * Java API: create  [[JmsPriority]]
+   */
+  def create(priority: Int) = JmsPriority(priority)
+}
+
+object JmsDeliveryMode {
+
+  /**
+   * Java API: create  [[JmsDeliveryMode]]
+   */
+  def create(deliveryMode: Int) = JmsDeliveryMode(deliveryMode)
 }
 
 sealed trait JmsMessage {
