@@ -26,9 +26,7 @@ Scala
 
 This is all preparation that we are going to need.
 
-### Source and Flow Usage
-
-Each of these sink factory methods have a corresponding factory in @scaladoc[insertOne](akka.stream.alpakka.mongodb.scaladsl.MongoFlow) which will emit the written document or result of the operation downstream.
+### Source Usage
 
 Let's create a source from a MongoDB collection observable, which can optionally take a filter.
 
@@ -40,9 +38,11 @@ And finally we can run it.
 Scala
 : @@snip ($alpakka$/mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSourceSpec.scala) { #run-source }
 
-Here we used a basic sink to complete the stream by collecting all of the stream elements to a collection.
+Here we used a basic sink to complete the stream by collecting all of the stream elements to a collection. The power of streams comes from building larger data pipelines which leverage backpressure to ensure efficient flow control. Feel free to edit the example code and build @extref[more advanced stream topologies](akka-docs:scala/stream/stream-introduction).
 
-### Sink Usage
+### Flow and Sink Usage
+
+Each of these sink factory methods have a corresponding factory in @scaladoc[insertOne](akka.stream.alpakka.mongodb.scaladsl.MongoFlow) which will emit the written document or result of the operation downstream.
 
 #### Insert
 
