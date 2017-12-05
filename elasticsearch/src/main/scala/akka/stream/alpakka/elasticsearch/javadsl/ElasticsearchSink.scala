@@ -17,11 +17,13 @@ object ElasticsearchSink {
   /**
    * Java API: creates a sink based on [[ElasticsearchFlowStage]]
    */
-  def create[T](indexName: String,
-                typeName: String,
-                settings: ElasticsearchSinkSettings,
-                client: RestClient,
-                objectMapper: ObjectMapper): akka.stream.javadsl.Sink[IncomingMessage[T, NotUsed], CompletionStage[Done]] =
+  def create[T](
+      indexName: String,
+      typeName: String,
+      settings: ElasticsearchSinkSettings,
+      client: RestClient,
+      objectMapper: ObjectMapper
+  ): akka.stream.javadsl.Sink[IncomingMessage[T, NotUsed], CompletionStage[Done]] =
     ElasticsearchFlow
       .create(indexName, typeName, settings, client, objectMapper)
       .toMat(Sink.ignore, Keep.right[NotUsed, CompletionStage[Done]])

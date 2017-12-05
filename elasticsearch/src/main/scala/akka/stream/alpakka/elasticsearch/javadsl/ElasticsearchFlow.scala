@@ -28,10 +28,10 @@ object ElasticsearchFlow {
     Flow
       .fromGraph(
         new ElasticsearchFlowStage[T, NotUsed](indexName,
-                                           typeName,
-                                           client,
-                                           settings.asScala,
-                                           new JacksonWriter[T](objectMapper))
+                                               typeName,
+                                               client,
+                                               settings.asScala,
+                                               new JacksonWriter[T](objectMapper))
       )
       .mapAsync(1)(identity)
       .map(x => x.asJava)
