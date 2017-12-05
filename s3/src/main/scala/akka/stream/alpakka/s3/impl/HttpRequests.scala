@@ -66,7 +66,7 @@ private[alpakka] object HttpRequests {
     s3Request(
       s3Location = s3Location,
       method = HttpMethods.DELETE
-    )
+    ).withEntity(HttpEntity.empty(ContentTypes.`text/plain(UTF-8)`))
 
   def completeMultipartUploadRequest(upload: MultipartUpload, parts: Seq[(Int, String)])(
       implicit ec: ExecutionContext,
