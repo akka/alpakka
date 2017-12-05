@@ -24,7 +24,7 @@ object MongoFlow {
       implicit executionContext: ExecutionContext
   ): Flow[Document, Document, NotUsed] =
     Flow[Document]
-      .mapAsyncUnordered(parallelism)(doc => collection.insertOne(doc).toFuture().map(_ => doc))
+      .mapAsync(parallelism)(doc => collection.insertOne(doc).toFuture().map(_ => doc))
 
   /**
    * A [[Flow]] that will insert batches documents into a collection.
@@ -34,7 +34,7 @@ object MongoFlow {
   def insertMany(parallelism: Int, collection: MongoCollection[Document])(
       implicit executionContext: ExecutionContext
   ): Flow[Seq[Document], Seq[Document], NotUsed] =
-    Flow[Seq[Document]].mapAsyncUnordered(parallelism)(docs => collection.insertMany(docs).toFuture().map(_ => docs))
+    Flow[Seq[Document]].mapAsync(parallelism)(docs => collection.insertMany(docs).toFuture().map(_ => docs))
 
   /**
    * A [[Flow]] that will update documents as defined by a [[DocumentUpdate]].
@@ -50,12 +50,12 @@ object MongoFlow {
   )(implicit executionContext: ExecutionContext): Flow[DocumentUpdate, (UpdateResult, DocumentUpdate), NotUsed] =
     maybeUpdateOptions match {
       case None =>
-        Flow[DocumentUpdate].mapAsyncUnordered(parallelism)(
+        Flow[DocumentUpdate].mapAsync(parallelism)(
           documentUpdate =>
             collection.updateOne(documentUpdate.filter, documentUpdate.update).toFuture().map(_ -> documentUpdate)
         )
       case Some(options) =>
-        Flow[DocumentUpdate].mapAsyncUnordered(parallelism)(
+        Flow[DocumentUpdate].mapAsync(parallelism)(
           documentUpdate =>
             collection
               .updateOne(documentUpdate.filter, documentUpdate.update, options)
@@ -78,12 +78,12 @@ object MongoFlow {
   )(implicit executionContext: ExecutionContext): Flow[DocumentUpdate, (UpdateResult, DocumentUpdate), NotUsed] =
     maybeUpdateOptions match {
       case None =>
-        Flow[DocumentUpdate].mapAsyncUnordered(parallelism)(
+        Flow[DocumentUpdate].mapAsync(parallelism)(
           documentUpdate =>
             collection.updateMany(documentUpdate.filter, documentUpdate.update).toFuture().map(_ -> documentUpdate)
         )
       case Some(options) =>
-        Flow[DocumentUpdate].mapAsyncUnordered(parallelism)(
+        Flow[DocumentUpdate].mapAsync(parallelism)(
           documentUpdate =>
             collection
               .updateMany(documentUpdate.filter, documentUpdate.update, options)
@@ -101,7 +101,7 @@ object MongoFlow {
   def deleteOne(parallelism: Int, collection: MongoCollection[Document])(
       implicit executionContext: ExecutionContext
   ): Flow[Bson, (DeleteResult, Bson), NotUsed] =
-    Flow[Bson].mapAsyncUnordered(parallelism)(bson => collection.deleteOne(bson).toFuture().map(_ -> bson))
+    Flow[Bson].mapAsync(parallelism)(bson => collection.deleteOne(bson).toFuture().map(_ -> bson))
 
   /**
    * A [[Flow]] that will delete many documents as defined by a [[Bson]] filter query.
@@ -112,5 +112,5 @@ object MongoFlow {
   def deleteMany(parallelism: Int, collection: MongoCollection[Document])(
       implicit executionContext: ExecutionContext
   ): Flow[Bson, (DeleteResult, Bson), NotUsed] =
-    Flow[Bson].mapAsyncUnordered(parallelism)(bson => collection.deleteMany(bson).toFuture().map(_ -> bson))
+    Flow[Bson].mapAsync(parallelism)(bson => collection.deleteMany(bson).toFuture().map(_ -> bson))
 }
