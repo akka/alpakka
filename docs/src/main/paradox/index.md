@@ -6,10 +6,10 @@ part of this project as well as links to components that are maintained by other
 
 The code in this documentation is compiled against
 
-* Alpakka $version$ ([Github](https://github.com/akka/alpakka))
+* Alpakka $version$ ([Github](https://github.com/akka/alpakka), [API docs](https://developer.lightbend.com/docs/api/alpakka/current/akka/stream/alpakka/index.html))
 * Scala $scalaBinaryVersion$
-* Akka Streams $akkaVersion$ (@extref[Docs Scala](akka-docs:scala/stream/index.html), @extref[Docs Java](akka-docs:java/stream/index.html), [Github](https://github.com/akka/akka))
-* Akka Http $akkaHttpVersion$ (@extref[Docs Scala](akka-http-docs:scala.html), @extref[Docs Java](akka-http-docs:java.html), [Github](https://github.com/akka/akka-http))
+* Akka Streams $akkaVersion$ (@extref[API docs Scala](akka-docs:scala/stream/index.html), @extref[API docs Java](akka-docs:java/stream/index.html), [Github](https://github.com/akka/akka))
+* Akka Http $akkaHttpVersion$ (@extref[API docs Scala](akka-http-docs:scala.html), @extref[API docs Java](akka-http-docs:java.html), [Github](https://github.com/akka/akka-http))
 
 
 @@ toc { .main depth=2 }
