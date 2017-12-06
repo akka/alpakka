@@ -102,9 +102,11 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
    * Send a request to S3, using setting, to delete the object at s3Location
    * @param s3Location
    * @return A [[scala.concurrent.Future]] of [[scala.util.Either]] [[akka.Done]] if successful
-    *         or the error message from S3.
+   *         or the error message from S3.
    */
   def deleteObject(s3Location: S3Location): Future[Either[String, Done]] = {
+    import mat.executionContext
+
     signAndGet(deleteRequest(s3Location))
       .flatMap {
         case HttpResponse(StatusCodes.NoContent, _, _, _) =>
@@ -118,8 +120,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
               Left(bytes.utf8String)
             }
       }
-    }
-
+  }
 
   private def requestHeaders(downloadRequest: HttpRequest, rangeOption: Option[ByteRange]): HttpRequest =
     rangeOption match {
