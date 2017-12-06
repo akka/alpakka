@@ -1,6 +1,6 @@
 # Cassandra Connector
 
-The Cassandra connector provides a way to provide the result of a Cassandra query as a stream of rows.
+The Cassandra connector allows you to read and write to Cassandra. You can query a stream of rows from @scaladoc[CassandraSource](akka.stream.alpakka.cassandra.scaladsl.CassandraSource$) or use prepared statements to insert or update with @scaladoc[CassandraSink](akka.stream.alpakka.cassandra.scaladsl.CassandraSink$).
 
 ## Artifacts
 
