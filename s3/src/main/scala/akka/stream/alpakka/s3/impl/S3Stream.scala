@@ -114,8 +114,9 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
         case HttpResponse(_, _, entity, _) =>
           entity
             .getDataBytes()
-            .fold(ByteString.empty)(_ concat _)
-            .runWith(Sink.head, mat)
+            .asScala
+            .fold[ByteString](ByteString.empty)(_ concat _)
+            .runWith(Sink.head)
             .map { bytes =>
               Left(bytes.utf8String)
             }
