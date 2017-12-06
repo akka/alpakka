@@ -136,6 +136,16 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
   def multipartUpload(bucket: String, key: String): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     multipartUpload(bucket, key, ContentTypes.`application/octet-stream`, CannedAcl.Private, MetaHeaders(Map()))
 
-  def deleteObject(bucket: String, key: String): Future[Done] =
-    impl.deleteObject(S3Location(bucket, key))
+  def deleteObject(bucket: String, key: String): Future[Done] = {
+    import mat.executionContext
+
+    impl
+      .deleteObject(S3Location(bucket, key))
+      .flatMap {
+        case Left(error) =>
+          Future.failed(new RuntimeException(error))
+        case Right(Done) =>
+          Future.successful(Done)
+      }
+  }
 }

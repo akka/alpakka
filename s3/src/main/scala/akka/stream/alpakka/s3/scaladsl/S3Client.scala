@@ -131,6 +131,6 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
    * @param key The key pointing to the file to be deleted
    * @return A Future For the Deletion of key in bucket
    */
-  def deleteObject(bucket: String, key: String): Future[Done] =
+  def deleteObject(bucket: String, key: String): Future[Either[String, Done]] =
     impl.deleteObject(S3Location(bucket, key))
 }
