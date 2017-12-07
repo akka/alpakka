@@ -33,6 +33,10 @@ trait BaseSpec
 
   protected def storeToPath(path: String, append: Boolean): Sink[ByteString, Future[IOResult]]
 
+  protected def remove(): Sink[FtpFile, Future[IOResult]]
+
+  protected def move(destinationPath: FtpFile => String): Sink[FtpFile, Future[IOResult]]
+
   protected def startServer(): Unit
 
   protected def stopServer(): Unit

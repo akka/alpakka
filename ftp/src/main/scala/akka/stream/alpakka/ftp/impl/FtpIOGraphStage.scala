@@ -209,3 +209,77 @@ private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
   }
 
 }
+
+private[ftp] trait FtpMoveSink[FtpClient, S <: RemoteFileSettings]
+    extends GraphStageWithMaterializedValue[SinkShape[FtpFile], Future[IOResult]] {
+  val connectionSettings: S
+  val ftpClient: () => FtpClient
+  val ftpLike: FtpLike[FtpClient, S]
+  val destinationPath: FtpFile => String
+  val in: Inlet[FtpFile] = Inlet("FtpMvSink")
+
+  def shape: SinkShape[FtpFile] = SinkShape(in)
+
+  def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+    val matValuePromise = Promise[IOResult]()
+
+    val logic = new FtpGraphStageLogic[FtpFile, FtpClient, S](shape, ftpLike, connectionSettings, ftpClient) {
+      {
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush(): Unit = {
+              val sourcePath = grab(in)
+              ftpLike.move(sourcePath.path, destinationPath(sourcePath), handler.get)
+              pull(in)
+            }
+          }
+        )
+      }
+
+      protected[this] def doPreStart(): Unit = pull(in)
+
+      protected[this] def matSuccess(): Boolean =
+        matValuePromise.trySuccess(IOResult.createSuccessful(1))
+
+      protected[this] def matFailure(t: Throwable): Boolean =
+        matValuePromise.trySuccess(IOResult.createFailed(1, t))
+    } // end of stage logic
+
+    (logic, matValuePromise.future)
+  }
+}
+
+private[ftp] trait FtpRemoveSink[FtpClient, S <: RemoteFileSettings]
+    extends GraphStageWithMaterializedValue[SinkShape[FtpFile], Future[IOResult]] {
+  val connectionSettings: S
+  val ftpClient: () => FtpClient
+  val ftpLike: FtpLike[FtpClient, S]
+  val in: Inlet[FtpFile] = Inlet("FtpRmSink")
+
+  def shape: SinkShape[FtpFile] = SinkShape(in)
+
+  def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+    val matValuePromise = Promise[IOResult]()
+    val logic = new FtpGraphStageLogic[Unit, FtpClient, S](shape, ftpLike, connectionSettings, ftpClient) {
+      {
+        setHandler(in, new InHandler {
+          override def onPush(): Unit = {
+            ftpLike.remove(grab(in).path, handler.get)
+            pull(in)
+          }
+        })
+      }
+
+      protected[this] def doPreStart(): Unit = pull(in)
+
+      protected[this] def matSuccess(): Boolean =
+        matValuePromise.trySuccess(IOResult.createSuccessful(1))
+
+      protected[this] def matFailure(t: Throwable): Boolean =
+        matValuePromise.trySuccess(IOResult.createFailed(1, t))
+    } // end of stage logic
+
+    (logic, matValuePromise.future)
+  }
+}

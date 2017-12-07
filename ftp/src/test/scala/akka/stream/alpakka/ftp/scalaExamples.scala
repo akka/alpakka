@@ -59,4 +59,28 @@ object scalaExamples {
       Ftp.toPath(path, settings, append)
     //#storing
   }
+
+  object removing {
+    //#removing
+    import akka.stream.IOResult
+    import akka.stream.alpakka.ftp.scaladsl.Ftp
+    import akka.stream.scaladsl.Sink
+    import scala.concurrent.Future
+
+    def remove(settings: FtpSettings): Sink[FtpFile, Future[IOResult]] =
+      Ftp.remove(settings)
+    //#removing
+  }
+
+  object move {
+    //#moving
+    import akka.stream.IOResult
+    import akka.stream.alpakka.ftp.scaladsl.Ftp
+    import akka.stream.scaladsl.Sink
+    import scala.concurrent.Future
+
+    def move(destinationPath: FtpFile => String, settings: FtpSettings): Sink[FtpFile, Future[IOResult]] =
+      Ftp.move(destinationPath, settings)
+    //#moving
+  }
 }
