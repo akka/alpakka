@@ -1,7 +1,7 @@
 # Integration Patterns
 
 Many [Enterprise Integration Patterns](http://www.eaipatterns.com/toc.html) can be implemented with Akka Streams 
-(see [Java documentation](http://doc.akka.io/docs/akka/2.4/java/stream/index.html) or [Scala documentation](http://doc.akka.io/docs/akka/2.4/scala/stream/index.html)).
+(see @extref[Akka Streams documentation](akka-docs:stream/index.html)).
 
 
 # Splitter
