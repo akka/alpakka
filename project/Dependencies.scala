@@ -3,8 +3,8 @@ import sbt._, Keys._
 object Dependencies {
 
   val AkkaVersion = sys.env.get("AKKA_SERIES") match {
-    case Some("2.5") => "2.5.7"
-    case _ => "2.4.19"
+    case Some("2.4") => sys.error("Akka 2.4 is not supported anymore")
+    case _ => "2.5.7"
   }
 
   val AwsSdkVersion = "1.11.226"

@@ -4,7 +4,7 @@ sudo: false
 
 scala:
   - "2.11.11"
-  - "2.12.2"
+  - "2.12.4"
 
 jdk:
   - oraclejdk8
@@ -49,11 +49,10 @@ deploy:
   on:
     tags: true
     repo: akka/alpakka
-    condition: $AKKA_SERIES = 2.4
+    condition: $AKKA_SERIES = 2.5
 
 env:
   matrix:
-    - AKKA_SERIES=2.4
     - AKKA_SERIES=2.5
   global:
     # encrypt with: travis encrypt WHITESOURCE_KEY=...
