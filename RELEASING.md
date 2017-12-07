@@ -1,5 +1,6 @@
 ## Releasing
 
+1. Rename the 'alpakka-xx-stable' report in [WhiteSource](https://saas.whitesourcesoftware.com) to reflect the latest version
 1. Check [closed issues without a milestone](https://github.com/akka/alpakka/issues?utf8=%E2%9C%93&q=is%3Aissue%20is%3Aclosed%20no%3Amilestone) and either assign them the 'upcoming' release milestone or 'invalid'
 1. Create a [new release](https://github.com/akka/alpakka/releases/new) with:
     * the next tag version (e.g. `v0.3`)
