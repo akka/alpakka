@@ -31,15 +31,18 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
 
   private val in = Inlet[MqttMessage](s"MqttFlow.in")
   private val out = Outlet[MqttCommittableMessage](s"MqttFlow.out")
-  override val shape: Shape = FlowShape.of(in, out)
+  override val shape: Shape = FlowShape(in, out)
   override protected def initialAttributes: Attributes = Attributes.name("MqttFlow")
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val subscriptionPromise = Promise[Done]
 
     (new GraphStageLogic(shape) with MqttConnectorLogic {
+      private val backpressure = new Semaphore(bufferSize)
       private val queue = mutable.Queue[MqttCommittableMessage]()
       private val unackedMessages = new AtomicInteger()
+
+      private var mqttClient: Option[IMqttAsyncClient] = None
 
       private val mqttSubscriptionCallback: Try[IMqttToken] => Unit = { conn =>
         subscriptionPromise.complete(conn.map { _ =>
@@ -48,14 +51,11 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
         pull(in)
       }
 
-      private val backpressure = new Semaphore(bufferSize)
-
-      private var mqttClient: Option[IMqttAsyncClient] = None
-
       private val onMessage = getAsyncCallback[MqttCommittableMessage] { message =>
-        require(queue.size <= bufferSize)
         if (isAvailable(out)) {
           pushMessage(message)
+        } else if (queue.size + 1 > bufferSize) {
+          failStage(new RuntimeException(s"Reached maximum buffer size $bufferSize"))
         } else {
           queue.enqueue(message)
         }
@@ -71,16 +71,15 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
       setHandler(
         in,
         new InHandler {
-          override def onPush(): Unit = {
-            val msg = grab(in)
-            val pahoMsg = new PahoMqttMessage(msg.payload.toArray)
-            pahoMsg.setQos(qos.byteValue)
+          override def onPush(): Unit =
             mqttClient match {
               case Some(client) =>
+                val msg = grab(in)
+                val pahoMsg = new PahoMqttMessage(msg.payload.toArray)
+                pahoMsg.setQos(qos.byteValue)
                 client.publish(msg.topic, pahoMsg, msg, onPublished.invoke _)
               case None => failStage(NoClientException)
             }
-          }
 
           override def onUpstreamFinish(): Unit =
             if (queue.isEmpty && unackedMessages.get() == 0) super.onUpstreamFinish()

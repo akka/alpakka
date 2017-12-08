@@ -46,6 +46,8 @@ class MqttSourceSpec
   val sourceSettings = connectionSettings.withClientId(clientId = "source-spec/source")
   val sinkSettings = connectionSettings.withClientId(clientId = "source-spec/sink")
 
+  override def afterAll() = TestKit.shutdownActorSystem(system)
+
   "mqtt source" should {
     "consume unacknowledged messages from previous sessions using manualAck" in {
       import system.dispatcher
