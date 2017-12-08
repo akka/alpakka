@@ -4,11 +4,11 @@ object Dependencies {
 
   val AkkaVersion = sys.env.get("AKKA_SERIES") match {
     case Some("2.4") => sys.error("Akka 2.4 is not supported anymore")
-    case _ => "2.5.7"
+    case _ => "2.5.8"
   }
 
   val AwsSdkVersion = "1.11.226"
-  val AkkaHttpVersion = "10.0.10"
+  val AkkaHttpVersion = "10.0.11"
 
   val Common = Seq(
     // These libraries are added to all modules via the `Common` AutoPlugin
