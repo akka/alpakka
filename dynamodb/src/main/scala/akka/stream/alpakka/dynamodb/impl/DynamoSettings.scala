@@ -5,7 +5,6 @@
 package akka.stream.alpakka.dynamodb.impl
 
 import akka.actor.ActorSystem
-import com.typesafe.config.Config
 
 object DynamoSettings {
   def apply(system: ActorSystem): DynamoSettings = {
