@@ -6,34 +6,45 @@ package akka.stream.alpakka.jms
 
 import scala.collection.JavaConverters._
 import java.util
+import java.util.concurrent.TimeUnit
+
+import scala.concurrent.duration.Duration
 
 sealed trait JmsHeader {
 
   /**
    * Indicates if this header must be set during the send() operation according to the JMS specification or as attribute of the jms message before.
    */
-  def usedDuringSend(): Boolean
+  def usedDuringSend: Boolean
 }
 
 final case class JmsCorrelationId(jmsCorrelationId: String) extends JmsHeader {
-  override def usedDuringSend(): Boolean = false
+  override val usedDuringSend = false
 }
 
 final case class JmsReplyTo(jmsDestination: Destination) extends JmsHeader {
-  override def usedDuringSend(): Boolean = false
+  override val usedDuringSend = false
 }
 final case class JmsType(jmsType: String) extends JmsHeader {
-  override def usedDuringSend(): Boolean = false
+  override val usedDuringSend = false
 }
 
 final case class JmsTimeToLive(timeInMillis: Long) extends JmsHeader {
-  override def usedDuringSend(): Boolean = true
+  override val usedDuringSend = true
 }
+
+/**
+ * Priority of a message can be between 0 (lowest) and 9 (highest). The default priority is 4.
+ */
 final case class JmsPriority(priority: Int) extends JmsHeader {
-  override def usedDuringSend(): Boolean = true
+  override val usedDuringSend = true
 }
+
+/**
+ * Delivery mode can be [[javax.jms.DeliveryMode.NON_PERSISTENT]] or [[javax.jms.DeliveryMode.PERSISTENT]]
+ */
 final case class JmsDeliveryMode(deliveryMode: Int) extends JmsHeader {
-  override def usedDuringSend(): Boolean = true
+  override val usedDuringSend = true
 }
 
 object JmsCorrelationId {
@@ -68,9 +79,14 @@ object JmsType {
 object JmsTimeToLive {
 
   /**
+   * Scala API: create [[JmsTimeToLive]]
+   */
+  def apply(timeToLive: Duration): JmsTimeToLive = JmsTimeToLive(timeToLive.toMillis)
+
+  /**
    * Java API: create  [[JmsTimeToLive]]
    */
-  def create(timeInMillis: Long) = JmsTimeToLive(timeInMillis)
+  def create(timeToLive: Long, unit: TimeUnit) = JmsTimeToLive(unit.toMillis(timeToLive))
 }
 
 object JmsPriority {

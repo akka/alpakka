@@ -65,22 +65,25 @@ final class DummyJavaTests implements java.io.Serializable {
 
 public class JmsConnectorsTest {
 
-    //#create-test-message-list
+  
     private List<JmsTextMessage> createTestMessageList() {
         List<Integer> intsIn = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
         List<JmsTextMessage> msgsIn = new ArrayList<>();
         for (Integer n : intsIn) {
-            Map<String, Object> properties = new HashMap<>();
-            properties.put("Number", n);
-            properties.put("IsOdd", n % 2 == 1);
-            properties.put("IsEven", n % 2 == 0);
 
-            msgsIn.add(JmsTextMessage.create(n.toString(), properties));
+            //#create-messages-with-properties
+            JmsTextMessage message = JmsTextMessage.create(n.toString())
+                    .withProperty("Number", n)
+                    .withProperty("IsOdd", n % 2 == 1)
+                    .withProperty("IsEven", n % 2 == 0);
+            //#create-messages-with-properties
+            
+            msgsIn.add(message);
         }
 
         return msgsIn;
     }
-    //#create-test-message-list
+   
 
     @Test
     public void publishAndConsumeJmsTextMessage() throws Exception {
@@ -282,11 +285,9 @@ public class JmsConnectorsTest {
                             .withQueue("test")
             );
             //#create-jms-sink
-
-            //#create-messages-with-properties
+            
             List<JmsTextMessage> msgsIn = createTestMessageList();
-            //#create-messages-with-properties
-
+            
             //#run-jms-sink
             Source.from(msgsIn).runWith(jmsSink, materializer);
             //#run-jms-sink
@@ -329,16 +330,18 @@ public class JmsConnectorsTest {
             );
             //#create-jms-sink
 
-            //#create-messages-with-properties
+
+            //#create-messages-with-headers
             List<JmsTextMessage> msgsIn = createTestMessageList().stream()
-                    .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsType.create("type")))
-                    .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsCorrelationId.create("correlationId")))
-                    .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsReplyTo.queue("test-reply")))
-                    .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsTimeToLive.create(99999)))
-                    .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsPriority.create(2)))
-                    .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsDeliveryMode.create(DeliveryMode.NON_PERSISTENT)))
+                    .map(jmsTextMessage -> jmsTextMessage
+                            .withHeader(JmsType.create("type"))
+                            .withHeader(JmsCorrelationId.create("correlationId"))
+                            .withHeader(JmsReplyTo.queue("test-reply"))
+                            .withHeader(JmsTimeToLive.create(999, TimeUnit.SECONDS))
+                            .withHeader(JmsPriority.create(2))
+                            .withHeader(JmsDeliveryMode.create(DeliveryMode.NON_PERSISTENT)))
                     .collect(Collectors.toList());
-            //#create-messages-with-properties
+            //#create-messages-with-headers
 
             //#run-jms-sink
             Source.from(msgsIn).runWith(jmsSink, materializer);

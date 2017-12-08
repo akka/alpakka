@@ -45,7 +45,7 @@ final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape
             val message: Message = createMessage(jmsSession, elem)
             populateMessageProperties(message, elem.properties)
 
-            val (sendHeaders, headersBeforeSend: Set[JmsHeader]) = elem.headers.partition(_.usedDuringSend())
+            val (sendHeaders, headersBeforeSend: Set[JmsHeader]) = elem.headers.partition(_.usedDuringSend)
             populateMessageHeader(message, headersBeforeSend)
 
             val deliveryModeOption = findHeader(sendHeaders) { case x: JmsDeliveryMode => x.deliveryMode }
