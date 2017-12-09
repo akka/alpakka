@@ -72,14 +72,12 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
         val commitCallback = getAsyncCallback[CommitCallback] {
           case AckArguments(deliveryTag, multiple, promise) => {
             channel.basicAck(deliveryTag, multiple)
-            unackedMessages.decrementAndGet()
-            if (unackedMessages.get() == 0) completeStage()
+            if (unackedMessages.decrementAndGet() == 0 && !channel.isOpen) completeStage()
             promise.complete(Try(Done))
           }
           case NackArguments(deliveryTag, multiple, requeue, promise) => {
             channel.basicNack(deliveryTag, multiple, requeue)
-            unackedMessages.decrementAndGet()
-            if (unackedMessages.get() == 0) completeStage()
+            if (unackedMessages.decrementAndGet() == 0 && !channel.isOpen) completeStage()
             promise.complete(Try(Done))
           }
         }
@@ -147,23 +145,29 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
       def handleDelivery(message: CommittableIncomingMessage): Unit =
         if (isAvailable(out)) {
           pushMessage(message)
+        } else if (queue.size + 1 > bufferSize) {
+          failStage(new RuntimeException(s"Reached maximum buffer size $bufferSize"))
         } else {
-          if (queue.size + 1 > bufferSize) {
-            failStage(new RuntimeException(s"Reached maximum buffer size $bufferSize"))
-          } else {
-            queue.enqueue(message)
-          }
+          queue.enqueue(message)
         }
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit =
-          if (queue.nonEmpty) {
-            pushMessage(queue.dequeue())
-          }
+      setHandler(
+        out,
+        new OutHandler {
+          override def onPull(): Unit =
+            if (queue.nonEmpty) {
+              pushMessage(queue.dequeue())
+            }
 
-      })
+          override def onDownstreamFinish(): Unit =
+            if (unackedMessages.get() == 0) super.onDownstreamFinish()
+        }
+      )
 
-      def pushMessage(message: CommittableIncomingMessage): Unit = push(out, message)
+      def pushMessage(message: CommittableIncomingMessage): Unit = {
+        push(out, message)
+        unackedMessages.incrementAndGet()
+      }
 
       override def onFailure(ex: Throwable): Unit = {}
     }
