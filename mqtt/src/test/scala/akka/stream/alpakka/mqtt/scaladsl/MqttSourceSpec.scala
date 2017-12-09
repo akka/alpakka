@@ -240,7 +240,7 @@ class MqttSourceSpec
       elem2.futureValue shouldBe MqttMessage(topic1, ByteString("ohi"))
     }
 
-    "support will message" in {
+    "support will message" ignore {
       import system.dispatcher
 
       val (binding, connection) = Tcp().bind("localhost", 1337).toMat(Sink.head)(Keep.both).run()
