@@ -94,6 +94,9 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
               pushMessage(queue.dequeue())
               if (unackedMessages.get() == 0 && isClosed(in)) completeStage()
             }
+
+          override def onDownstreamFinish(): Unit =
+            if (unackedMessages.get() == 0) super.onDownstreamFinish()
         }
       )
 
