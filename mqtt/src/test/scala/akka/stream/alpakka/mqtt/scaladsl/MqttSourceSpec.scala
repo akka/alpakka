@@ -261,7 +261,7 @@ class MqttSourceSpec
         sourceSettings
           .withClientId("source-spec/testator")
           .withBroker("tcp://localhost:1337")
-          .withWill(Will(MqttMessage(willTopic, ByteString("ohi")), MqttQoS.AtLeastOnce, retained = true)),
+          .withWill(MqttMessage(willTopic, ByteString("ohi"), Some(MqttQoS.AtLeastOnce), retained = true)),
         Map(topic1 -> MqttQoS.AtLeastOnce)
       )
       val source1 = MqttSource.atMostOnce(settings1, 8)
