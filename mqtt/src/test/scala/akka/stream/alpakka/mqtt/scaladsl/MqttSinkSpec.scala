@@ -8,7 +8,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.mqtt.{MqttSourceSettings, _}
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.eclipse.paho.client.mqttv3.MqttSecurityException
@@ -16,6 +16,7 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest._
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class MqttSinkSpec
@@ -25,6 +26,7 @@ class MqttSinkSpec
     with BeforeAndAfterAll
     with ScalaFutures {
 
+  val timeout = 5 seconds
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
@@ -48,12 +50,14 @@ class MqttSinkSpec
     "send one message to a topic" in {
       val msg = MqttMessage(topic, ByteString("ohi"))
 
-      Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
-
       val mqttSettings = MqttSourceSettings(sourceSettings, Map(topic -> MqttQoS.atLeastOnce))
-      val message = MqttSource
+      val (subscribed, message) = MqttSource
         .atMostOnce(mqttSettings, 8)
-        .runWith(Sink.head)
+        .toMat(Sink.head)(Keep.both)
+        .run()
+
+      Await.ready(subscribed, timeout)
+      Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
 
       message.futureValue shouldBe msg
     }
@@ -62,12 +66,14 @@ class MqttSinkSpec
       val msg = MqttMessage(topic2, ByteString("ohi"))
       val numOfMessages = 5
 
-      val messagesFuture =
+      val (subscribed, messagesFuture) =
         MqttSource
           .atMostOnce(MqttSourceSettings(sourceSettings, Map(topic2 -> MqttQoS.atLeastOnce)), 8)
           .take(numOfMessages)
-          .runWith(Sink.seq)
+          .toMat(Sink.seq)(Keep.both)
+          .run()
 
+      Await.ready(subscribed, timeout)
       Source(1 to numOfMessages).map(_ => msg).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
 
       val messages = messagesFuture.futureValue

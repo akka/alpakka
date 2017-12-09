@@ -73,11 +73,13 @@ public class MqttSourceTest {
     final Source<MqttCommittableMessage, CompletionStage<Done>> mqttSource = MqttSource.atLeastOnce(mqttSourceSettings, 8);
     //#create-source-with-manualacks
 
-    final CompletionStage<List<MqttCommittableMessage>> unackedResult = mqttSource
+    final Pair<CompletionStage<Done>, CompletionStage<List<MqttCommittableMessage>>> unackedResult = mqttSource
       .take(input.size())
-      .runWith(Sink.seq(), materializer);
+      .toMat(Sink.seq(), Keep.both())
+      .run(materializer);
 
-    assertEquals(input, unackedResult.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.message().payload().utf8String()).collect(Collectors.toList()));
+    unackedResult.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
+    assertEquals(input, unackedResult.second().toCompletableFuture().get(5, TimeUnit.SECONDS).stream().map(m -> m.message().payload().utf8String()).collect(Collectors.toList()));
 
     //#run-source-with-manualacks
     final CompletionStage<List<MqttMessage>> result = mqttSource
@@ -117,12 +119,14 @@ public class MqttSourceTest {
     //#create-source
 
     //#run-source
-    final CompletionStage<List<String>> result = mqttSource
+    final Pair<CompletionStage<Done>, CompletionStage<List<String>>> result = mqttSource
       .map(m -> m.topic() + "-" + m.payload().utf8String())
       .take(messageCount * 2)
-      .runWith(Sink.seq(), materializer);
+      .toMat(Sink.seq(), Keep.both())
+      .run(materializer);
     //#run-source
 
+    result.first().toCompletableFuture().get(3, TimeUnit.SECONDS);
 
     List<MqttMessage> messages = IntStream.range(0, messageCount).boxed()
       .flatMap(i -> Arrays.asList(
@@ -142,7 +146,7 @@ public class MqttSourceTest {
       IntStream.range(0, messageCount).boxed()
         .flatMap(i -> Arrays.asList("source-test/topic1-msg" + i, "source-test/topic2-msg" + i).stream())
         .collect(Collectors.toSet()),
-      result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().collect(Collectors.toSet())
+      result.second().toCompletableFuture().get(3, TimeUnit.SECONDS).stream().collect(Collectors.toSet())
     );
   }
 }

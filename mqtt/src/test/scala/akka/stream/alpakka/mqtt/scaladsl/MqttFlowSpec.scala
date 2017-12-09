@@ -13,6 +13,7 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class MqttFlowSpec
@@ -22,6 +23,7 @@ class MqttFlowSpec
     with BeforeAndAfterAll
     with ScalaFutures {
 
+  val timeout = 5 seconds
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
@@ -48,16 +50,15 @@ class MqttFlowSpec
       val source = Source.maybe[MqttMessage]
 
       //#run-flow
-      val ((mqttMessagePromise, subscriptionFuture), result) = source
+      val ((mqttMessagePromise, subscribed), result) = source
         .viaMat(mqttFlow)(Keep.both)
         .toMat(Sink.seq)(Keep.both)
         .run()
       //#run-flow
 
-      whenReady(subscriptionFuture) { _ =>
-        mqttMessagePromise.success(None)
-        noException should be thrownBy result.futureValue
-      }
+      Await.ready(subscribed, timeout)
+      mqttMessagePromise.success(None)
+      noException should be thrownBy result.futureValue
     }
   }
 }
