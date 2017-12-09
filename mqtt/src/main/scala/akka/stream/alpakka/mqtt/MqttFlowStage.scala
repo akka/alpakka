@@ -119,7 +119,8 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
 
       override def commitCallback(args: CommitCallbackArguments): Unit = {
         mqttClient.get.messageArrivedComplete(args.messageId, args.qos.byteValue.toInt)
-        if (unackedMessages.decrementAndGet() == 0 && isClosed(in)) completeStage()
+        if (unackedMessages.decrementAndGet() == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty)))
+          completeStage()
         args.promise.complete(Try(Done))
       }
 
