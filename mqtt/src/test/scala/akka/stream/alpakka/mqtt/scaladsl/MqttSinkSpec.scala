@@ -16,6 +16,7 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest._
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class MqttSinkSpec
@@ -96,6 +97,25 @@ class MqttSinkSpec
         Source.single(msg).runWith(MqttSink(sinkSettings.withAuth("username1", "password1"), MqttQoS.atLeastOnce))
 
       termination.futureValue shouldBe Done
+    }
+
+    "received retained message on new client" in {
+      val msg = MqttMessage(topic, ByteString("ohi"), Some(MqttQoS.atLeastOnce), true)
+
+      val messageSent = Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
+
+      Await.ready(messageSent, 3 seconds)
+
+      val retainedSinkSettings = sourceSettings
+        .withClientId("source-spec/retained")
+
+      val messageFuture =
+        MqttSource(MqttSourceSettings(retainedSinkSettings, Map(topic -> MqttQoS.atLeastOnce)), 8)
+          .runWith(Sink.head)
+
+      val message = messageFuture.futureValue
+      message.topic shouldBe msg.topic
+      message.payload shouldBe msg.payload
     }
   }
 

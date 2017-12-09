@@ -30,8 +30,6 @@ public class MqttSourceTest {
   static ActorSystem system;
   static Materializer materializer;
 
-  static Server server;
-
   public static Pair<ActorSystem, Materializer> setupMaterializer() {
     //#init-mat
     final ActorSystem system = ActorSystem.create();

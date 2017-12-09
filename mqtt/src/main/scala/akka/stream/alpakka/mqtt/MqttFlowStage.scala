@@ -68,7 +68,8 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, q
           override def onPush(): Unit = {
             val msg = grab(in)
             val pahoMsg = new PahoMqttMessage(msg.payload.toArray)
-            pahoMsg.setQos(qos.byteValue)
+            pahoMsg.setQos(msg.qos.getOrElse(qos).byteValue)
+            pahoMsg.setRetained(msg.retained)
             mqttClient match {
               case Some(client) =>
                 client.publish(msg.topic, pahoMsg, msg, onPublished.invoke _)

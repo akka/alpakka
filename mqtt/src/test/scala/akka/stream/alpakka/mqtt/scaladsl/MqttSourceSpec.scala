@@ -176,7 +176,7 @@ class MqttSourceSpec
       }
     }
 
-    "support will message" ignore {
+    "support will message" in {
       import system.dispatcher
 
       val (binding, connection) = Tcp().bind("localhost", 1337).toMat(Sink.head)(Keep.both).run()
@@ -190,7 +190,7 @@ class MqttSourceSpec
           sourceSettings
             .withClientId("source-spec/testator")
             .withBroker("tcp://localhost:1337")
-            .withWill(Will(MqttMessage(willTopic, ByteString("ohi")), MqttQoS.AtLeastOnce, retained = true)),
+            .withWill(MqttMessage(willTopic, ByteString("ohi"), Some(MqttQoS.AtLeastOnce), retained = true)),
           Map(willTopic -> MqttQoS.AtLeastOnce)
         )
         val source = MqttSource(settings, 8)
