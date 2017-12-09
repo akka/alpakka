@@ -7,7 +7,7 @@ package akka.stream.alpakka.mqtt.scaladsl
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.alpakka.mqtt._
-import akka.stream.scaladsl._xs
+import akka.stream.scaladsl._
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.eclipse.paho.client.mqttv3.MqttException
