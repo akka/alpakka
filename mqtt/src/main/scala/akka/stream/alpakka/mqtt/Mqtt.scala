@@ -82,7 +82,7 @@ final case class MqttConnectionSettings(
     auth: Option[(String, String)] = None,
     socketFactory: Option[SSLSocketFactory] = None,
     cleanSession: Boolean = true,
-    will: Option[Will] = None
+    will: Option[MqttMessage] = None
 ) {
   def withBroker(broker: String) =
     copy(broker = broker)
@@ -93,8 +93,12 @@ final case class MqttConnectionSettings(
   def withCleanSession(cleanSession: Boolean) =
     copy(cleanSession = cleanSession)
 
-  def withWill(will: Will) =
+  def withWill(will: MqttMessage) =
     copy(will = Some(will))
+
+  @deprecated("use a normal message instead of a will", "0.16")
+  def withWill(will: Will) =
+    copy(will = Some(MqttMessage(will.message.topic, will.message.payload, Some(will.qos), will.retained)))
 
   def withClientId(clientId: String) =
     copy(clientId = clientId)
@@ -109,8 +113,12 @@ object MqttConnectionSettings {
     MqttConnectionSettings(broker, clientId, persistence)
 }
 
-final case class MqttMessage(topic: String, payload: ByteString)
+final case class MqttMessage(topic: String,
+                             payload: ByteString,
+                             qos: Option[MqttQoS] = None,
+                             retained: Boolean = false)
 
+@deprecated("use a normal message instead of a will", "0.16")
 final case class Will(message: MqttMessage, qos: MqttQoS, retained: Boolean)
 
 final case class CommitCallbackArguments(messageId: Int, qos: MqttQoS, promise: Promise[Done])
@@ -186,7 +194,10 @@ private[mqtt] trait MqttConnectorLogic { this: GraphStageLogic =>
       connectOptions.setSocketFactory(socketFactory)
     }
     connectionSettings.will.foreach { will =>
-      connectOptions.setWill(will.message.topic, will.message.payload.toArray, will.qos.byteValue.toInt, will.retained)
+      connectOptions.setWill(will.topic,
+                             will.payload.toArray,
+                             will.qos.getOrElse(MqttQoS.atLeastOnce).byteValue.toInt,
+                             will.retained)
     }
     connectOptions.setCleanSession(connectionSettings.cleanSession)
     client.connect(connectOptions, (), connectHandler)

@@ -76,7 +76,8 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
               case Some(client) =>
                 val msg = grab(in)
                 val pahoMsg = new PahoMqttMessage(msg.payload.toArray)
-                pahoMsg.setQos(qos.byteValue)
+                pahoMsg.setQos(msg.qos.getOrElse(qos).byteValue)
+                pahoMsg.setRetained(msg.retained)
                 client.publish(msg.topic, pahoMsg, msg, onPublished.invoke _)
               case None => failStage(NoClientException)
             }
