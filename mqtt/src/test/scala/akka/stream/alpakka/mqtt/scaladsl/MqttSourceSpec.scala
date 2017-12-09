@@ -241,7 +241,7 @@ class MqttSourceSpec
       elem2.futureValue shouldBe MqttMessage(topic1, ByteString("ohi"))
     }
 
-    "support will message" in {
+    "support will message" ignore {
       import system.dispatcher
 
       val msg = MqttMessage(topic1, ByteString("ohi"))
