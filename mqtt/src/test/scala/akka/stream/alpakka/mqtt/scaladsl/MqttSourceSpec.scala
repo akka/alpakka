@@ -176,7 +176,7 @@ class MqttSourceSpec
       }
     }
 
-    "support will message" in {
+    "support will message" ignore {
       import system.dispatcher
 
       val (binding, connection) = Tcp().bind("localhost", 1337).toMat(Sink.head)(Keep.both).run()
