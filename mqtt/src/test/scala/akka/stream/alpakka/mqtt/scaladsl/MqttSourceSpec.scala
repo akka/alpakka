@@ -86,7 +86,8 @@ class MqttSourceSpec
       val settings = MqttSourceSettings(sourceSettings, Map(topic1 -> MqttQoS.AtLeastOnce))
       val (subscribed, result) = MqttSource
         .atMostOnce(settings, 8)
-        .toMat(Sink.head)(Keep.both).run()
+        .toMat(Sink.head)(Keep.both)
+        .run()
 
       Await.ready(subscribed, timeout)
       Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
@@ -96,10 +97,11 @@ class MqttSourceSpec
 
     "receive messages from multiple topics" in {
       val messages = (0 until 7)
-        .flatMap(i =>
-          Seq(
-            MqttMessage(topic1, ByteString(s"ohi_$i")),
-            MqttMessage(topic2, ByteString(s"ohi_$i"))
+        .flatMap(
+          i =>
+            Seq(
+              MqttMessage(topic1, ByteString(s"ohi_$i")),
+              MqttMessage(topic2, ByteString(s"ohi_$i"))
           )
         )
 
@@ -146,9 +148,10 @@ class MqttSourceSpec
       val settings = MqttSourceSettings(sourceSettings
                                           .withAuth("username1", "password1"),
                                         Map(secureTopic -> MqttQoS.AtLeastOnce))
-      val (subscribed, result) = MqttSource.atMostOnce(settings, 8)
-        .toMat(Sink.head)(Keep.both).run()
-
+      val (subscribed, result) = MqttSource
+        .atMostOnce(settings, 8)
+        .toMat(Sink.head)(Keep.both)
+        .run()
 
       Await.ready(subscribed, timeout)
       Source.single(msg).runWith(MqttSink(sinkSettings.withAuth("username1", "password1"), MqttQoS.AtLeastOnce))
@@ -163,7 +166,8 @@ class MqttSourceSpec
         .map(i => s"ohi_$i")
 
       val settings = MqttSourceSettings(sourceSettings, Map(topic1 -> MqttQoS.AtLeastOnce))
-      val (subscribed, result) = MqttSource.atMostOnce(settings, bufferSize)
+      val (subscribed, result) = MqttSource
+        .atMostOnce(settings, bufferSize)
         .take(messages.size)
         .toMat(Sink.seq)(Keep.both)
         .run()
@@ -183,7 +187,8 @@ class MqttSourceSpec
         .map(i => s"ohi_$i")
 
       val settings = MqttSourceSettings(sourceSettings, Map(topic1 -> MqttQoS.AtLeastOnce))
-      val (subscribed, result) = MqttSource.atMostOnce(settings, bufferSize)
+      val (subscribed, result) = MqttSource
+        .atMostOnce(settings, bufferSize)
         .take(messages.size)
         .toMat(Sink.seq)(Keep.both)
         .run()
@@ -245,7 +250,7 @@ class MqttSourceSpec
       {
         val settings =
           MqttSourceSettings(sourceSettings.withClientId("source-spec/executor"),
-            Map(willTopic -> MqttQoS.AtLeastOnce))
+                             Map(willTopic -> MqttQoS.AtLeastOnce))
         val source = MqttSource.atMostOnce(settings, 8)
 
         val (subscribed, elem) = source.toMat(Sink.head)(Keep.both).run()
