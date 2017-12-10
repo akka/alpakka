@@ -368,6 +368,40 @@ public class AmqpConnectorsTest {
     }
 
     @Test
+    public void keepConnectionPpenIfDownstreamClosesAndThereArePendingAcks() throws Exception {
+        final String queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis();
+        final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
+
+        @SuppressWarnings("unchecked")
+        AmqpConnectionDetails amqpConnectionDetails = AmqpConnectionDetails.create("invalid", 5673)
+                .withHostsAndPorts(Pair.create("localhost", 5672), Pair.create("localhost", 5674));
+
+        final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
+                AmqpSinkSettings.create(amqpConnectionDetails)
+                        .withRoutingKey(queueName)
+                        .withDeclarations(queueDeclaration)
+        );
+
+        final Integer bufferSize = 10;
+        final Source<CommittableIncomingMessage, NotUsed> amqpSource = AmqpSource.committableSource(
+                NamedQueueSourceSettings.create(
+                        DefaultAmqpConnection.getInstance(),
+                        queueName
+                ).withDeclarations(queueDeclaration),
+                bufferSize
+        );
+
+        final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
+        Source.from(input).map(ByteString::fromString).runWith(amqpSink, materializer);
+
+        final CompletionStage<List<CommittableIncomingMessage>> result =
+                amqpSource
+                        .take(input.size()).runWith(Sink.seq(), materializer);
+
+        result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(cm -> cm.ack(false));
+    }
+
+    @Test
     public void setRoutingKeyPerMessageAndConsumeThemInTheSameJVM() throws Exception {
         final String exchangeName = "amqp.topic." + System.currentTimeMillis();
         final ExchangeDeclaration exchangeDeclaration = ExchangeDeclaration.create(exchangeName, "topic");
