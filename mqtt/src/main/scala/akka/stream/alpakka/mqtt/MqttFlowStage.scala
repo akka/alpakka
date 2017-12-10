@@ -81,8 +81,15 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
               case None => failStage(NoClientException)
             }
 
-          override def onUpstreamFinish(): Unit =
+          override def onUpstreamFinish(): Unit = {
+            setKeepGoing(true)
             if (queue.isEmpty && unackedMessages.get() == 0) super.onUpstreamFinish()
+          }
+
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            setKeepGoing(true)
+            if (queue.isEmpty && unackedMessages.get() == 0) super.onUpstreamFailure(ex)
+          }
         }
       )
 
@@ -95,8 +102,10 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
               if (unackedMessages.get() == 0 && isClosed(in)) completeStage()
             }
 
-          override def onDownstreamFinish(): Unit =
+          override def onDownstreamFinish(): Unit = {
+            setKeepGoing(true)
             if (unackedMessages.get() == 0) super.onDownstreamFinish()
+          }
         }
       )
 
@@ -117,12 +126,15 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
         onMessage.invoke(message)
       }
 
-      override def commitCallback(args: CommitCallbackArguments): Unit = {
-        mqttClient.get.messageArrivedComplete(args.messageId, args.qos.byteValue.toInt)
-        if (unackedMessages.decrementAndGet() == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty)))
-          completeStage()
-        args.promise.complete(Try(Done))
-      }
+      override def commitCallback(args: CommitCallbackArguments): Unit =
+        try {
+          mqttClient.get.messageArrivedComplete(args.messageId, args.qos.byteValue.toInt)
+          if (unackedMessages.decrementAndGet() == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty)))
+            completeStage()
+          args.promise.complete(Try(Done))
+        } catch {
+          case e: Throwable => args.promise.failure(e)
+        }
 
       def pushMessage(message: MqttCommittableMessage): Unit = {
         push(out, message)

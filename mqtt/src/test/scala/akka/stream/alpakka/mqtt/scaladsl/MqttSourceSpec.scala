@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.mqtt.scaladsl
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.alpakka.mqtt._
@@ -78,6 +79,29 @@ class MqttSourceSpec
         .runWith(Sink.seq)
       //#run-source-with-manualacks
       result.futureValue.map(message => message.payload.utf8String) should equal(input)
+    }
+
+    "keep connection open if downstream closes and there are pending acks" in {
+      import system.dispatcher
+
+      val topic = "source-spec/manualacks"
+      val input = Vector("one", "two", "three", "four", "five")
+
+      //#create-source-with-manualacks
+      val connectionSettings = sourceSettings.withCleanSession(false)
+      val mqttSourceSettings = MqttSourceSettings(connectionSettings, Map(topic -> MqttQoS.AtLeastOnce))
+      val mqttSource = MqttSource.atLeastOnce(mqttSourceSettings, 8)
+      //#create-source-with-manualacks
+
+      val (subscribed, unackedResult) = mqttSource.take(input.size).toMat(Sink.seq)(Keep.both).run()
+      val mqttSink = MqttSink(sinkSettings, MqttQoS.AtLeastOnce)
+
+      Await.ready(subscribed, timeout)
+      Source(input).map(item => MqttMessage(topic, ByteString(item))).runWith(mqttSink).futureValue shouldBe Done
+
+      unackedResult.futureValue.map(cm => {
+        noException should be thrownBy cm.messageArrivedComplete().futureValue
+      })
     }
 
     "receive a message from a topic" in {

@@ -92,6 +92,47 @@ public class MqttSourceTest {
   }
 
   @Test
+  public void keepConnectionOpenIfDownstreamClosesAndThereArePendingAcks() throws Exception {
+    final String topic = "source-test/manualacks";
+    final MqttConnectionSettings baseConnectionSettings = MqttConnectionSettings.create(
+            "tcp://localhost:1883",
+            "test-java-client",
+            new MemoryPersistence()
+    );
+
+    MqttConnectionSettings sourceSettings = baseConnectionSettings.withClientId("source-test/source");
+    MqttConnectionSettings sinkSettings = baseConnectionSettings.withClientId("source-test/sink");
+
+    final Sink<MqttMessage, CompletionStage<Done>> mqttSink = MqttSink.create(sinkSettings, MqttQoS.atLeastOnce());
+    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
+    Source.from(input).map(s -> new MqttMessage(topic, ByteString.fromString(s)))
+            .runWith(mqttSink, materializer)
+            .toCompletableFuture()
+            .get(3, TimeUnit.SECONDS);
+
+    MqttConnectionSettings connectionSettings = sourceSettings.withCleanSession(false);
+    MqttSourceSettings mqttSourceSettings = MqttSourceSettings.create(connectionSettings)
+            .withSubscriptions(Pair.create(topic, MqttQoS.atLeastOnce()));
+    final Source<MqttCommittableMessage, CompletionStage<Done>> mqttSource = MqttSource.atLeastOnce(mqttSourceSettings, 8);
+
+    final Pair<CompletionStage<Done>, CompletionStage<List<MqttCommittableMessage>>> unackedResult = mqttSource
+            .take(input.size())
+            .toMat(Sink.seq(), Keep.both())
+            .run(materializer);
+
+    unackedResult.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
+    unackedResult.second().toCompletableFuture().get(5, TimeUnit.SECONDS).stream()
+            .map(m -> {
+              try {
+                m.messageArrivedComplete().toCompletableFuture().get(3, TimeUnit.SECONDS);
+              } catch (Exception e) {
+                assertEquals("Error acking message manually", false, true);
+              }
+              return true;
+            });
+  }
+
+  @Test
   public void receiveFromMultipleTopics() throws Exception {
     final String topic1 = "source-test/topic1";
     final String topic2 = "source-test/topic2";
