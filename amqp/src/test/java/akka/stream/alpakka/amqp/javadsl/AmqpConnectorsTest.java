@@ -363,7 +363,14 @@ public class AmqpConnectorsTest {
                 amqpSource
                         .take(input.size()).runWith(Sink.seq(), materializer);
 
-        result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(cm -> cm.ack(false));
+        result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(cm -> {
+            try {
+                cm.ack(false).toCompletableFuture().get(3, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                assertEquals(e.getMessage(), false, true);
+            }
+            return true;
+        });
     }
 
     @Test
