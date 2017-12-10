@@ -333,7 +333,7 @@ public class AmqpConnectorsTest {
     }
 
     @Test
-    public void keepConnectionPpenIfDownstreamClosesAndThereArePendingAcks() throws Exception {
+    public void keepConnectionOpenIfDownstreamClosesAndThereArePendingAcks() throws Exception {
         final String queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis();
         final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
 
@@ -357,7 +357,8 @@ public class AmqpConnectorsTest {
         );
 
         final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
-        Source.from(input).map(ByteString::fromString).runWith(amqpSink, materializer);
+        Source.from(input).map(ByteString::fromString).runWith(amqpSink, materializer)
+                .toCompletableFuture().get(3, TimeUnit.SECONDS);
 
         final CompletionStage<List<CommittableIncomingMessage>> result =
                 amqpSource
