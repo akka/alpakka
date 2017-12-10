@@ -59,12 +59,10 @@ public class MqttSourceTest {
       new MemoryPersistence()
     );
 
-    MqttConnectionSettings sourceSettings = baseConnectionSettings.withClientId("source-test/source");
-    MqttConnectionSettings sinkSettings = baseConnectionSettings.withClientId("source-test/sink");
+    MqttConnectionSettings sourceSettings = baseConnectionSettings.withClientId("source-test/source-withoutAutoAck");
+    MqttConnectionSettings sinkSettings = baseConnectionSettings.withClientId("source-test/sink-withoutAutoAck");
 
-    final Sink<MqttMessage, CompletionStage<Done>> mqttSink = MqttSink.create(sinkSettings, MqttQoS.atLeastOnce());
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
-    Source.from(input).map(s -> new MqttMessage(topic, ByteString.fromString(s))).runWith(mqttSink, materializer);
 
     //#create-source-with-manualacks
     MqttConnectionSettings connectionSettings = sourceSettings.withCleanSession(false);
@@ -79,6 +77,10 @@ public class MqttSourceTest {
       .run(materializer);
 
     unackedResult.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    final Sink<MqttMessage, CompletionStage<Done>> mqttSink = MqttSink.create(sinkSettings, MqttQoS.atLeastOnce());
+    Source.from(input).map(s -> new MqttMessage(topic, ByteString.fromString(s))).runWith(mqttSink, materializer);
+
     assertEquals(input, unackedResult.second().toCompletableFuture().get(5, TimeUnit.SECONDS).stream().map(m -> m.message().payload().utf8String()).collect(Collectors.toList()));
 
     //#run-source-with-manualacks
@@ -100,15 +102,11 @@ public class MqttSourceTest {
             new MemoryPersistence()
     );
 
-    MqttConnectionSettings sourceSettings = baseConnectionSettings.withClientId("source-test/source");
-    MqttConnectionSettings sinkSettings = baseConnectionSettings.withClientId("source-test/sink");
+    MqttConnectionSettings sourceSettings = baseConnectionSettings.withClientId("source-test/source-pending");
+    MqttConnectionSettings sinkSettings = baseConnectionSettings.withClientId("source-test/sink-pending");
 
     final Sink<MqttMessage, CompletionStage<Done>> mqttSink = MqttSink.create(sinkSettings, MqttQoS.atLeastOnce());
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
-    Source.from(input).map(s -> new MqttMessage(topic, ByteString.fromString(s)))
-            .runWith(mqttSink, materializer)
-            .toCompletableFuture()
-            .get(3, TimeUnit.SECONDS);
 
     MqttConnectionSettings connectionSettings = sourceSettings.withCleanSession(false);
     MqttSourceSettings mqttSourceSettings = MqttSourceSettings.create(connectionSettings)
@@ -121,15 +119,21 @@ public class MqttSourceTest {
             .run(materializer);
 
     unackedResult.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    Source.from(input).map(s -> new MqttMessage(topic, ByteString.fromString(s)))
+          .runWith(mqttSink, materializer)
+          .toCompletableFuture()
+          .get(3, TimeUnit.SECONDS);
+
     unackedResult.second().toCompletableFuture().get(5, TimeUnit.SECONDS).stream()
-        .map(m -> {
-          try {
-            m.messageArrivedComplete().toCompletableFuture().get(3, TimeUnit.SECONDS);
-          } catch (Exception e) {
-            assertEquals("Error acking message manually", false, true);
-          }
-          return true;
-        });
+      .map(m -> {
+        try {
+        m.messageArrivedComplete().toCompletableFuture().get(3, TimeUnit.SECONDS);
+        } catch (Exception e) {
+        assertEquals("Error acking message manually", false, true);
+        }
+        return true;
+      });
   }
 
   @Test

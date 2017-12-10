@@ -82,8 +82,6 @@ class MqttSourceSpec
     }
 
     "keep connection open if downstream closes and there are pending acks" in {
-      import system.dispatcher
-
       val topic = "source-spec/pendingacks"
       val input = Vector("one", "two", "three", "four", "five")
 
