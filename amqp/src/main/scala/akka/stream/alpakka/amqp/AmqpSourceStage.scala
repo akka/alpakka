@@ -71,14 +71,22 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
 
         val commitCallback = getAsyncCallback[CommitCallback] {
           case AckArguments(deliveryTag, multiple, promise) => {
-            channel.basicAck(deliveryTag, multiple)
-            if (unackedMessages.decrementAndGet() == 0 && !channel.isOpen) completeStage()
-            promise.complete(Try(Done))
+            try {
+              channel.basicAck(deliveryTag, multiple)
+              if (unackedMessages.decrementAndGet() == 0 && !channel.isOpen) completeStage()
+              promise.complete(Try(Done))
+            } catch {
+              case e: Throwable => promise.failure(e)
+            }
           }
           case NackArguments(deliveryTag, multiple, requeue, promise) => {
-            channel.basicNack(deliveryTag, multiple, requeue)
-            if (unackedMessages.decrementAndGet() == 0 && !channel.isOpen) completeStage()
-            promise.complete(Try(Done))
+            try {
+              channel.basicNack(deliveryTag, multiple, requeue)
+              if (unackedMessages.decrementAndGet() == 0 && !channel.isOpen) completeStage()
+              promise.complete(Try(Done))
+            } catch {
+              case e: Throwable => promise.failure(e)
+            }
           }
         }
 
@@ -159,8 +167,10 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
               pushMessage(queue.dequeue())
             }
 
-          override def onDownstreamFinish(): Unit =
+          override def onDownstreamFinish(): Unit = {
+            setKeepGoing(true)
             if (unackedMessages.get() == 0) super.onDownstreamFinish()
+          }
         }
       )
 
