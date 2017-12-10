@@ -93,7 +93,7 @@ public class MqttSourceTest {
 
   @Test
   public void keepConnectionOpenIfDownstreamClosesAndThereArePendingAcks() throws Exception {
-    final String topic = "source-test/manualacks";
+    final String topic = "source-test/pendingacks";
     final MqttConnectionSettings baseConnectionSettings = MqttConnectionSettings.create(
             "tcp://localhost:1883",
             "test-java-client",
@@ -122,14 +122,14 @@ public class MqttSourceTest {
 
     unackedResult.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
     unackedResult.second().toCompletableFuture().get(5, TimeUnit.SECONDS).stream()
-            .map(m -> {
-              try {
-                m.messageArrivedComplete().toCompletableFuture().get(3, TimeUnit.SECONDS);
-              } catch (Exception e) {
-                assertEquals("Error acking message manually", false, true);
-              }
-              return true;
-            });
+        .map(m -> {
+          try {
+            m.messageArrivedComplete().toCompletableFuture().get(3, TimeUnit.SECONDS);
+          } catch (Exception e) {
+            assertEquals("Error acking message manually", false, true);
+          }
+          return true;
+        });
   }
 
   @Test
