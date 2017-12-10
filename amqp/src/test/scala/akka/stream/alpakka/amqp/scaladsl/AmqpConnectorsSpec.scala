@@ -375,6 +375,33 @@ class AmqpConnectorsSpec extends AmqpSpec {
       result2.futureValue.map(_.message.bytes.utf8String) shouldEqual input
     }
 
+    "keep connection open if downstream closes and there are pending acks" in {
+      val connectionSettings = AmqpConnectionDetails(List((("localhost", 5672))))
+
+      val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
+      val queueDeclaration = QueueDeclaration(queueName)
+
+      val amqpSink = AmqpSink.simple(
+        AmqpSinkSettings(connectionSettings).withRoutingKey(queueName).withDeclarations(queueDeclaration)
+      )
+
+      val amqpSource = AmqpSource.committableSource(
+        NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration),
+        bufferSize = 10
+      )
+
+      val input = Vector("one", "two", "three", "four", "five")
+      Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
+
+      val result = amqpSource
+        .take(input.size)
+        .runWith(Sink.seq)
+
+      result.futureValue.map(cm => {
+        noException should be thrownBy cm.ack().futureValue
+      })
+    }
+
     "not republish message without autoAck(false) if nack is sent" in {
 
       // use a list of host/port pairs where one is normally invalid, but
