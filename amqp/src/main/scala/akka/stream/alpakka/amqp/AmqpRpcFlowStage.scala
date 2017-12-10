@@ -79,18 +79,26 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
 
         val commitCallback = getAsyncCallback[CommitCallback] {
           case AckArguments(deliveryTag, multiple, promise) => {
-            channel.basicAck(deliveryTag, multiple)
-            if (unackedMessages
-                  .decrementAndGet() == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty && outstandingMessages
-                  .get() == 0))) completeStage()
-            promise.complete(Try(Done))
+            try {
+              channel.basicAck(deliveryTag, multiple)
+              if (unackedMessages
+                    .decrementAndGet() == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty && outstandingMessages
+                    .get() == 0))) completeStage()
+              promise.complete(Try(Done))
+            } catch {
+              case e: Throwable => promise.failure(e)
+            }
           }
           case NackArguments(deliveryTag, multiple, requeue, promise) => {
-            channel.basicNack(deliveryTag, multiple, requeue)
-            if (unackedMessages
-                  .decrementAndGet() == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty && outstandingMessages
-                  .get() == 0))) completeStage()
-            promise.complete(Try(Done))
+            try {
+              channel.basicNack(deliveryTag, multiple, requeue)
+              if (unackedMessages
+                    .decrementAndGet() == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty && outstandingMessages
+                    .get() == 0))) completeStage()
+              promise.complete(Try(Done))
+            } catch {
+              case e: Throwable => promise.failure(e)
+            }
           }
         }
 
@@ -161,8 +169,10 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
               pushMessage(queue.dequeue())
             }
 
-          override def onDownstreamFinish(): Unit =
+          override def onDownstreamFinish(): Unit = {
+            setKeepGoing(true)
             if (unackedMessages.get() == 0) super.onDownstreamFinish()
+          }
         }
       )
 
@@ -179,8 +189,16 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
           // on incoming messages from rabbit. However, if we
           // haven't processed a message yet, we do want to complete
           // so that we don't hang.
-          override def onUpstreamFinish(): Unit =
+          override def onUpstreamFinish(): Unit = {
+            setKeepGoing(true)
             if (queue.isEmpty && outstandingMessages.get() == 0 && unackedMessages.get() == 0) super.onUpstreamFinish()
+          }
+
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            setKeepGoing(true)
+            if (queue.isEmpty && outstandingMessages.get() == 0 && unackedMessages.get() == 0)
+              super.onUpstreamFailure(ex)
+          }
 
           override def onPush(): Unit = {
             val elem = grab(in)
