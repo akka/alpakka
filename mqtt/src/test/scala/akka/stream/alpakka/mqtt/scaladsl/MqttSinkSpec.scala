@@ -7,7 +7,7 @@ package akka.stream.alpakka.mqtt.scaladsl
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.mqtt._
+import akka.stream.alpakka.mqtt.{MqttSourceSettings, _}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
@@ -16,6 +16,7 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest._
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class MqttSinkSpec
@@ -25,6 +26,7 @@ class MqttSinkSpec
     with BeforeAndAfterAll
     with ScalaFutures {
 
+  val timeout = 5 seconds
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
@@ -36,45 +38,47 @@ class MqttSinkSpec
   )
 
   val topic = "sink-spec/topic1"
+  val topic2 = "sink-spec/topic2"
   val secureTopic = "sink-spec/secure-topic1"
 
   val sourceSettings = connectionSettings.withClientId(clientId = "sink-spec/source")
   val sinkSettings = connectionSettings.withClientId(clientId = "sink-spec/sink")
 
+  override def afterAll() = TestKit.shutdownActorSystem(system)
+
   "mqtt sink" should {
     "send one message to a topic" in {
       val msg = MqttMessage(topic, ByteString("ohi"))
 
-      val (subscribed, message) =
-        MqttSource(MqttSourceSettings(sourceSettings, Map(topic -> MqttQoS.atLeastOnce)), 8)
-          .toMat(Sink.head)(Keep.both)
-          .run()
+      val mqttSettings = MqttSourceSettings(sourceSettings, Map(topic -> MqttQoS.atLeastOnce))
+      val (subscribed, message) = MqttSource
+        .atMostOnce(mqttSettings, 8)
+        .toMat(Sink.head)(Keep.both)
+        .run()
 
-      whenReady(subscribed) { _ =>
-        Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
-      }
+      Await.ready(subscribed, timeout)
+      Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
 
       message.futureValue shouldBe msg
     }
 
     "send multiple messages to a topic" in {
-      val msg = MqttMessage(topic, ByteString("ohi"))
-      val numOfMessages = 42
+      val msg = MqttMessage(topic2, ByteString("ohi"))
+      val numOfMessages = 5
 
-      val (subscribed, messages) =
-        MqttSource(MqttSourceSettings(sourceSettings, Map(topic -> MqttQoS.atLeastOnce)), 8)
-          .grouped(numOfMessages)
-          .toMat(Sink.head)(Keep.both)
+      val (subscribed, messagesFuture) =
+        MqttSource
+          .atMostOnce(MqttSourceSettings(sourceSettings, Map(topic2 -> MqttQoS.atLeastOnce)), 8)
+          .take(numOfMessages)
+          .toMat(Sink.seq)(Keep.both)
           .run()
 
-      whenReady(subscribed) { _ =>
-        Source(1 to numOfMessages).map(_ => msg).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
-      }
+      Await.ready(subscribed, timeout)
+      Source(1 to numOfMessages).map(_ => msg).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
 
-      whenReady(messages) { m =>
-        m should have length numOfMessages
-        m foreach { _ shouldBe msg }
-      }
+      val messages = messagesFuture.futureValue
+      messages should have length numOfMessages
+      messages foreach { _ shouldBe msg }
     }
 
     "fail to publish when credentials are not provided" in {
@@ -92,14 +96,11 @@ class MqttSinkSpec
     "publish when credentials are provided" in {
       val msg = MqttMessage(secureTopic, ByteString("ohi"))
 
-      val termination =
-        Source.single(msg).runWith(MqttSink(sinkSettings.withAuth("username1", "password1"), MqttQoS.atLeastOnce))
+      val termination = Source
+        .single(msg)
+        .runWith(MqttSink(sinkSettings.withAuth("username1", "password1"), MqttQoS.atLeastOnce))
 
       termination.futureValue shouldBe Done
     }
   }
-
-  override def afterAll() =
-    TestKit.shutdownActorSystem(system)
-
 }

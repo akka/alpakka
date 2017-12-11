@@ -5,10 +5,12 @@
 package akka.stream.alpakka.mqtt
 
 import java.util.concurrent.Semaphore
+import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
 import akka.stream._
 import akka.stream.stage._
+import akka.stream.alpakka.mqtt.scaladsl.MqttCommittableMessage
 import org.eclipse.paho.client.mqttv3.{IMqttAsyncClient, IMqttToken, MqttMessage => PahoMqttMessage}
 
 import scala.collection.mutable
@@ -19,21 +21,28 @@ object MqttFlowStage {
   final object NoClientException extends Exception("No MQTT client.")
 }
 
-final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, qos: MqttQoS)
-    extends GraphStageWithMaterializedValue[FlowShape[MqttMessage, MqttMessage], Future[Done]] {
+final class MqttFlowStage(sourceSettings: MqttSourceSettings,
+                          bufferSize: Int,
+                          qos: MqttQoS,
+                          manualAcks: Boolean = false)
+    extends GraphStageWithMaterializedValue[FlowShape[MqttMessage, MqttCommittableMessage], Future[Done]] {
   import MqttFlowStage.NoClientException
   import MqttConnectorLogic._
 
   private val in = Inlet[MqttMessage](s"MqttFlow.in")
-  private val out = Outlet[MqttMessage](s"MqttFlow.out")
-  override val shape: Shape = FlowShape.of(in, out)
+  private val out = Outlet[MqttCommittableMessage](s"MqttFlow.out")
+  override val shape: Shape = FlowShape(in, out)
   override protected def initialAttributes: Attributes = Attributes.name("MqttFlow")
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val subscriptionPromise = Promise[Done]
 
     (new GraphStageLogic(shape) with MqttConnectorLogic {
-      private val queue = mutable.Queue[MqttMessage]()
+      private val backpressure = new Semaphore(bufferSize)
+      private val queue = mutable.Queue[MqttCommittableMessage]()
+      private val unackedMessages = new AtomicInteger()
+
+      private var mqttClient: Option[IMqttAsyncClient] = None
 
       private val mqttSubscriptionCallback: Try[IMqttToken] => Unit = { conn =>
         subscriptionPromise.complete(conn.map { _ =>
@@ -42,14 +51,11 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, q
         pull(in)
       }
 
-      private val backpressure = new Semaphore(bufferSize)
-
-      private var mqttClient: Option[IMqttAsyncClient] = None
-
-      private val onMessage = getAsyncCallback[MqttMessage] { message =>
-        require(queue.size <= bufferSize)
+      private val onMessage = getAsyncCallback[MqttCommittableMessage] { message =>
         if (isAvailable(out)) {
           pushMessage(message)
+        } else if (queue.size + 1 > bufferSize) {
+          failStage(new RuntimeException(s"Reached maximum buffer size $bufferSize"))
         } else {
           queue.enqueue(message)
         }
@@ -65,15 +71,24 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, q
       setHandler(
         in,
         new InHandler {
-          override def onPush(): Unit = {
-            val msg = grab(in)
-            val pahoMsg = new PahoMqttMessage(msg.payload.toArray)
-            pahoMsg.setQos(qos.byteValue)
+          override def onPush(): Unit =
             mqttClient match {
               case Some(client) =>
+                val msg = grab(in)
+                val pahoMsg = new PahoMqttMessage(msg.payload.toArray)
+                pahoMsg.setQos(qos.byteValue)
                 client.publish(msg.topic, pahoMsg, msg, onPublished.invoke _)
               case None => failStage(NoClientException)
             }
+
+          override def onUpstreamFinish(): Unit = {
+            setKeepGoing(true)
+            if (queue.isEmpty && unackedMessages.get() == 0) super.onUpstreamFinish()
+          }
+
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            setKeepGoing(true)
+            if (queue.isEmpty && unackedMessages.get() == 0) super.onUpstreamFailure(ex)
           }
         }
       )
@@ -84,11 +99,18 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, q
           override def onPull(): Unit =
             if (queue.nonEmpty) {
               pushMessage(queue.dequeue())
+              if (unackedMessages.get() == 0 && isClosed(in)) completeStage()
             }
+
+          override def onDownstreamFinish(): Unit = {
+            setKeepGoing(true)
+            if (unackedMessages.get() == 0) super.onDownstreamFinish()
+          }
         }
       )
 
       override def handleConnection(client: IMqttAsyncClient): Unit = {
+        if (manualAcks) client.setManualAcks(true)
         val (topics, qos) = sourceSettings.subscriptions.unzip
         mqttClient = Some(client)
         if (topics.nonEmpty) {
@@ -99,14 +121,25 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings, bufferSize: Int, q
         }
       }
 
-      override def onMessage(message: MqttMessage): Unit = {
+      override def onMessage(message: MqttCommittableMessage): Unit = {
         backpressure.acquire()
         onMessage.invoke(message)
       }
 
-      def pushMessage(message: MqttMessage): Unit = {
+      override def commitCallback(args: CommitCallbackArguments): Unit =
+        try {
+          mqttClient.get.messageArrivedComplete(args.messageId, args.qos.byteValue.toInt)
+          if (unackedMessages.decrementAndGet() == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty)))
+            completeStage()
+          args.promise.complete(Try(Done))
+        } catch {
+          case e: Throwable => args.promise.failure(e)
+        }
+
+      def pushMessage(message: MqttCommittableMessage): Unit = {
         push(out, message)
         backpressure.release()
+        if (manualAcks) unackedMessages.incrementAndGet()
       }
 
       override def handleConnectionLost(ex: Throwable): Unit = {
