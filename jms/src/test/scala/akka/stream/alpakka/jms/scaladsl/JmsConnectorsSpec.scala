@@ -5,13 +5,15 @@
 package akka.stream.alpakka.jms.scaladsl
 
 import java.nio.charset.Charset
-import javax.jms.{JMSException, Message, TextMessage}
+import java.util.concurrent.TimeUnit
+import javax.jms.{DeliveryMode, JMSException, Message, TextMessage}
 
 import akka.NotUsed
 import akka.stream.ThrottleMode
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Sink, Source}
 import org.apache.activemq.ActiveMQConnectionFactory
+import org.apache.activemq.command.ActiveMQQueue
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
@@ -210,6 +212,52 @@ class JmsConnectorsSpec extends JmsSpec {
           out.getIntProperty("Number") shouldEqual in.properties("Number")
           out.getBooleanProperty("IsOdd") shouldEqual in.properties("IsOdd")
           out.getBooleanProperty("IsEven") shouldEqual in.properties("IsEven")
+      }
+    }
+
+    "publish and consume JMS text messages with header through a queue" in withServer() { ctx =>
+      val url: String = ctx.url
+      val connectionFactory = new ActiveMQConnectionFactory(url)
+
+      //#create-jms-sink
+      val jmsSink: Sink[JmsTextMessage, NotUsed] = JmsSink(
+        JmsSinkSettings(connectionFactory).withQueue("numbers")
+      )
+      //#create-jms-sink
+
+      //#create-messages-with-headers
+      val msgsIn = (1 to 10).toList.map { n =>
+        JmsTextMessage(n.toString)
+          .withHeader(JmsType("type"))
+          .withHeader(JmsCorrelationId("correlationId"))
+          .withHeader(JmsReplyTo.queue("test-reply"))
+          .withHeader(JmsTimeToLive(FiniteDuration(999, TimeUnit.SECONDS)))
+          .withHeader(JmsPriority(2))
+          .withHeader(JmsDeliveryMode(DeliveryMode.NON_PERSISTENT))
+      }
+      //#create-messages-with-headers
+
+      Source(msgsIn).runWith(jmsSink)
+
+      //#create-jms-source
+      val jmsSource: Source[Message, NotUsed] = JmsSource(
+        JmsSourceSettings(connectionFactory).withBufferSize(10).withQueue("numbers")
+      )
+      //#create-jms-source
+
+      //#run-jms-source
+      val result: Future[Seq[Message]] = jmsSource.take(msgsIn.size).runWith(Sink.seq)
+      //#run-jms-source
+
+      // The sent message and the receiving one should have the same properties
+      result.futureValue.foreach {
+        case outMsg =>
+          outMsg.getJMSType shouldBe "type"
+          outMsg.getJMSCorrelationID shouldBe "correlationId"
+          outMsg.getJMSReplyTo.asInstanceOf[ActiveMQQueue].getQueueName shouldBe "test-reply"
+          outMsg.getJMSExpiration should not be 0
+          outMsg.getJMSPriority shouldBe 2
+          outMsg.getJMSDeliveryMode shouldBe DeliveryMode.NON_PERSISTENT
       }
     }
 

@@ -61,7 +61,7 @@ Use a case class with the subtype of @scaladoc[JmsMessage](akka.stream.alpakka.j
 the creation of sinks according to the message type (see below for an example).
 
 
-### Sending text messages with properties to a JMS provider
+### Sending text messages to a JMS provider
 
 Create a sink, that accepts and forwards @scaladoc[JmsTextMessage](akka.stream.alpakka.jms.JmsTextMessage$)s to the JMS provider:
 
@@ -145,8 +145,16 @@ Scala
 : @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-properties }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-test-message-list #create-messages-with-properties }
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-messages-with-properties }
 
+### Sending messages with header to a JMS provider
+For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set also jms headers. 
+
+Scala
+: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-headers }
+
+Java
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-messages-with-headers }
 
 ## Receiving messages from a JMS provider
 
