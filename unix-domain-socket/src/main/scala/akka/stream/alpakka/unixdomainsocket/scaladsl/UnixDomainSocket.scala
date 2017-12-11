@@ -262,12 +262,12 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
               sent.future.map(_ => bytes)
             }
             .watchTermination() {
-              case (mat, done) =>
+              case (m, done) =>
                 done.onComplete { _ =>
                   sendReceiveContext.send = CloseRequested
                   sel.wakeup()
                 }
-                (mat, done)
+                (m, done)
             }
             .runWith(Sink.ignore)
         }
@@ -318,7 +318,10 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
 
   private val sel = NativeSelectorProvider.getInstance.openSelector
 
-  private val ioThread = new Thread((() => nioEventLoop(sel)): Runnable, "unix-domain-socket-io")
+  private val ioThread = new Thread(new Runnable {
+    override def run(): Unit =
+      nioEventLoop(sel)
+  }, "unix-domain-socket-io")
   ioThread.start()
 
   CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseServiceStop, "stopUnixDomainSocket") { () =>
@@ -479,8 +482,9 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
     val cancellable =
       connectTimeout match {
         case d: FiniteDuration =>
-          Some(system.scheduler.scheduleOnce(d, { () =>
-            channel.close()
+          Some(system.scheduler.scheduleOnce(d, new Runnable {
+            override def run(): Unit =
+              channel.close()
           }))
         case _ =>
           None
