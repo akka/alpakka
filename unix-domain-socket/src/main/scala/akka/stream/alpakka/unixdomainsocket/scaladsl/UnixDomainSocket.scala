@@ -322,10 +322,8 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
   ioThread.start()
 
   CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseServiceStop, "stopUnixDomainSocket") { () =>
-    Future.successful {
-      sel.close() // Not much else that we can do
-      Done
-    }
+    sel.close() // Not much else that we can do
+    Future.successful(Done)
   }
 
   private val receiveBufferSize: Int =
@@ -347,9 +345,9 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
    * @param backlog   Controls the size of the connection backlog
    * @param halfClose
    *                  Controls whether the connection is kept open even after writing has been completed to the accepted
-   *                  TCP connections.
-   *                  If set to true, the connection will implement the TCP half-close mechanism, allowing the client to
-   *                  write to the connection even after the server has finished writing. The TCP socket is only closed
+   *                  socket connections.
+   *                  If set to true, the connection will implement the socket half-close mechanism, allowing the client to
+   *                  write to the connection even after the server has finished writing. The socket is only closed
    *                  after both the client and server finished writing.
    *                  If set to false, the connection will immediately closed once the server closes its write side,
    *                  independently whether the client is still attempting to write. This setting is recommended
@@ -429,9 +427,9 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
    * @param backlog   Controls the size of the connection backlog
    * @param halfClose
    *                  Controls whether the connection is kept open even after writing has been completed to the accepted
-   *                  TCP connections.
-   *                  If set to true, the connection will implement the TCP half-close mechanism, allowing the client to
-   *                  write to the connection even after the server has finished writing. The TCP socket is only closed
+   *                  socket connections.
+   *                  If set to true, the connection will implement the socket half-close mechanism, allowing the client to
+   *                  write to the connection even after the server has finished writing. The socket is only closed
    *                  after both the client and server finished writing.
    *                  If set to false, the connection will immediately closed once the server closes its write side,
    *                  independently whether the client is still attempting to write. This setting is recommended
@@ -460,9 +458,9 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
    * @param localAddress  Optional local address for the connection
    * @param halfClose
    *                  Controls whether the connection is kept open even after writing has been completed to the accepted
-   *                  TCP connections.
-   *                  If set to true, the connection will implement the TCP half-close mechanism, allowing the server to
-   *                  write to the connection even after the client has finished writing. The TCP socket is only closed
+   *                  socket connections.
+   *                  If set to true, the connection will implement the socket half-close mechanism, allowing the server to
+   *                  write to the connection even after the client has finished writing. The socket is only closed
    *                  after both the client and server finished writing. This setting is recommended for clients and
    *                  therefore it is the default setting.
    *                  If set to false, the connection will immediately closed once the client closes its write side,
