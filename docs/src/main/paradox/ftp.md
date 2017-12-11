@@ -102,7 +102,7 @@ Typical use-case for this would be listing file from a ftp location, do some pro
 
 ### Moving files
 
-In order to move a remote file, you need to use the `move` method in the FTP API. The 'move' method takes a function to calculate the path to which the file should be moved based on the consumed @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile).   
+In order to move a remote file, you need to use the `move` method in the FTP API. The `move` method takes a function to calculate the path to which the file should be moved based on the consumed @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile).   
 
 Scala
 : @@snip ($alpakka$/ftp/src/test/scala/akka/stream/alpakka/ftp/scalaExamples.scala) { #moving }
