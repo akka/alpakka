@@ -26,6 +26,7 @@ lazy val alpakka = project
     sns,
     sqs,
     sse,
+    unixdomainsocket,
     xml
   )
   .settings(
@@ -125,6 +126,8 @@ lazy val sqs = alpakkaProject("sqs",
                               parallelExecution in Test := false)
 
 lazy val sse = alpakkaProject("sse", Dependencies.Sse)
+
+lazy val unixdomainsocket = alpakkaProject("unix-domain-socket", Dependencies.UnixDomainSocket)
 
 lazy val xml = alpakkaProject("xml", Dependencies.Xml)
 
