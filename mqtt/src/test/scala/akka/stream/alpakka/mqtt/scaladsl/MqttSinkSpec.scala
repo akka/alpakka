@@ -114,7 +114,8 @@ class MqttSinkSpec
         .withClientId("source-spec/retained")
 
       val messageFuture =
-        MqttSource.atMostOnce(MqttSourceSettings(retainedSinkSettings, Map(topic -> MqttQoS.atLeastOnce)), 8)
+        MqttSource
+          .atMostOnce(MqttSourceSettings(retainedSinkSettings, Map(topic -> MqttQoS.atLeastOnce)), 8)
           .runWith(Sink.head)
 
       val message = messageFuture.futureValue
