@@ -1,0 +1,78 @@
+/*
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
+
+package akka.stream.alpakka.unixdomainsocket.javadsl;
+
+import akka.NotUsed;
+import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Framing;
+import akka.stream.javadsl.FramingTruncation;
+import akka.stream.javadsl.Source;
+import akka.util.ByteString;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import akka.actor.*;
+import akka.stream.*;
+import akka.testkit.*;
+import akka.japi.Pair;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.util.concurrent.CompletionStage;
+
+import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket.IncomingConnection;
+import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket.ServerBinding;
+
+public class UnixDomainSocketTest {
+
+    private static ActorSystem system;
+    private static Materializer materializer;
+
+    private static Pair<ActorSystem, Materializer> setupMaterializer() {
+        final ActorSystem system = ActorSystem.create();
+        final Materializer materializer = ActorMaterializer.create(system);
+        return Pair.create(system, materializer);
+    }
+
+    @BeforeClass
+    public static void setup() throws Exception {
+        final Pair<ActorSystem, Materializer> sysmat = setupMaterializer();
+        system = sysmat.first();
+        materializer = sysmat.second();
+    }
+
+    @AfterClass
+    public static void teardown() {
+        JavaTestKit.shutdownActorSystem(system);
+    }
+
+    @Test
+    public void aUnixDomainSocketShouldReceiveWhatIsSent() throws Exception {
+        File file = Files.createTempFile("aUnixDomainSocketShouldReceiveWhatIsSent1", ".sock").toFile();
+        Assert.assertTrue(file.delete());
+        file.deleteOnExit();
+
+        //#binding
+        final Source<IncomingConnection, CompletionStage<ServerBinding>> connections =
+                UnixDomainSocket.get(system).bind(file);
+        //#binding
+
+        //#outgoingConnection
+        connections.runForeach(connection -> {
+            System.out.println("New connection from: " + connection.remoteAddress());
+
+            final Flow<ByteString, ByteString, NotUsed> echo = Flow.of(ByteString.class)
+                    .via(Framing.delimiter(ByteString.fromString("\n"), 256, FramingTruncation.DISALLOW))
+                    .map(ByteString::utf8String)
+                    .map(s -> s + "!!!\n")
+                    .map(ByteString::fromString);
+
+            connection.handleWith(echo, materializer);
+        }, materializer);
+        //#outgoingConnection
+    }
+}
