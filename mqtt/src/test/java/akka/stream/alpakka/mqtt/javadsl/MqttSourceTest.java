@@ -79,7 +79,7 @@ public class MqttSourceTest {
     unackedResult.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     final Sink<MqttMessage, CompletionStage<Done>> mqttSink = MqttSink.create(sinkSettings, MqttQoS.atLeastOnce());
-    Source.from(input).map(s -> new MqttMessage(topic, ByteString.fromString(s))).runWith(mqttSink, materializer);
+    Source.from(input).map(s -> MqttMessage.create(topic, ByteString.fromString(s))).runWith(mqttSink, materializer);
 
     assertEquals(input, unackedResult.second().toCompletableFuture().get(5, TimeUnit.SECONDS).stream().map(m -> m.message().payload().utf8String()).collect(Collectors.toList()));
 
@@ -120,7 +120,7 @@ public class MqttSourceTest {
 
     unackedResult.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
 
-    Source.from(input).map(s -> new MqttMessage(topic, ByteString.fromString(s)))
+    Source.from(input).map(s -> MqttMessage.create(topic, ByteString.fromString(s)))
           .runWith(mqttSink, materializer)
           .toCompletableFuture()
           .get(3, TimeUnit.SECONDS);

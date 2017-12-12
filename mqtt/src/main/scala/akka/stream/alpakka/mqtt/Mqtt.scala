@@ -130,6 +130,24 @@ object MqttMessage {
    */
   def create(topic: String, payload: ByteString) =
     MqttMessage(topic, payload)
+
+  /**
+   * Java API: create  [[MqttMessage]]
+   */
+  def create(topic: String, payload: ByteString, qos: MqttQoS) =
+    MqttMessage(topic, payload, Some(qos))
+
+  /**
+   * Java API: create  [[MqttMessage]]
+   */
+  def create(topic: String, payload: ByteString, retained: Boolean) =
+    MqttMessage(topic, payload, retained = retained)
+
+  /**
+   * Java API: create  [[MqttMessage]]
+   */
+  def create(topic: String, payload: ByteString, qos: MqttQoS, retained: Boolean) =
+    MqttMessage(topic, payload, Some(qos), retained = retained)
 }
 
 /**
