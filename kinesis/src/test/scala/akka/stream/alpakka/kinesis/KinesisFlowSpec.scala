@@ -76,7 +76,7 @@ class KinesisFlowSpec extends WordSpecLike with Matchers with DefaultTestContext
 
       sourceProbe.sendNext(record)
 
-      sinkProbe.requestNext(settings.retryInitialTimeout + settings.retryInitialTimeout / 2) shouldBe publishedRecord
+      sinkProbe.requestNext(settings.retryInitialTimeout * 2) shouldBe publishedRecord
 
       sourceProbe.sendComplete()
       sinkProbe.expectComplete()

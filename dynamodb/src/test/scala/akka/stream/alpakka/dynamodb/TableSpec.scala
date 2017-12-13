@@ -51,7 +51,16 @@ class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike
         .map(_.getTableDescription.getProvisionedThroughput.getWriteCapacityUnits shouldEqual newMaxLimit)
     }
 
-    "5) delete table" in {
+    // TODO: Enable this test when DynamoDB Local supports TTLs
+    "5) update time to live" ignore {
+      client
+        .single(describeTimeToLiveRequest)
+        .map(_.getTimeToLiveDescription.getAttributeName shouldEqual null)
+        .flatMap(_ => client.single(updateTimeToLiveRequest))
+        .map(_.getTimeToLiveSpecification.getAttributeName shouldEqual "expires")
+    }
+
+    "6) delete table" in {
       client
         .single(deleteTableRequest)
         .flatMap(_ => client.single(listTablesRequest))

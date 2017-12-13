@@ -6,12 +6,13 @@ package akka.stream.alpakka.csv
 
 import java.nio.charset.{StandardCharsets, UnsupportedCharsetException}
 
-import akka.stream.alpakka.csv.CsvParser.MalformedCsvException
 import akka.stream.alpakka.csv.scaladsl.ByteOrderMark
 import akka.util.ByteString
 import org.scalatest.{Matchers, OptionValues, WordSpec}
 
 class CsvParserSpec extends WordSpec with Matchers with OptionValues {
+
+  val maximumLineLength = 10 * 1024
 
   "CSV parser" should {
     "read comma separated values into a list" in {
@@ -32,7 +33,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
 
     "parse empty input to None" in {
       val in = ByteString.empty
-      val parser = new CsvParser(',', '-', '.')
+      val parser = new CsvParser(',', '-', '.', maximumLineLength)
       parser.offer(in)
       parser.poll(requireLineEnd = true) should be('empty)
     }
@@ -88,17 +89,19 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
 
     "fail on escaped quote as quotes are escaped by doubled quote chars" in {
       val in = ByteString("a,\\\",c\n")
-      val parser = new CsvParser(',', '"', '\\')
+      val parser = new CsvParser(',', '"', '\\', maximumLineLength)
       parser.offer(in)
       val exception = the[MalformedCsvException] thrownBy {
         parser.poll(requireLineEnd = true)
       }
       exception.getMessage should be("wrong escaping at 1:2, only escape or delimiter may be escaped")
+      exception.getLineNo should be(1)
+      exception.getBytePos should be(2)
     }
 
     "fail on escape at line end" in {
       val in = ByteString("""a,\""")
-      val parser = new CsvParser(',', '"', '\\')
+      val parser = new CsvParser(',', '"', '\\', maximumLineLength)
       parser.offer(in)
       val exception = the[MalformedCsvException] thrownBy {
         parser.poll(requireLineEnd = true)
@@ -108,7 +111,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
 
     "fail on escape within field at line end" in {
       val in = ByteString("""a,b\""")
-      val parser = new CsvParser(',', '"', '\\')
+      val parser = new CsvParser(',', '"', '\\', maximumLineLength)
       parser.offer(in)
       val exception = the[MalformedCsvException] thrownBy {
         parser.poll(requireLineEnd = true)
@@ -118,7 +121,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
 
     "fail on escape within quoted field at line end" in {
       val in = ByteString("""a,"\""")
-      val parser = new CsvParser(',', '"', '\\')
+      val parser = new CsvParser(',', '"', '\\', maximumLineLength)
       parser.offer(in)
       val exception = the[MalformedCsvException] thrownBy {
         parser.poll(requireLineEnd = true)
@@ -144,7 +147,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
 
     "allow Unicode L SEP 0x2028 as line separator" ignore {
       val in = ByteString("abc\u2028")
-      val parser = new CsvParser(',', '"', '\\')
+      val parser = new CsvParser(',', '"', '\\', maximumLineLength)
       parser.offer(in)
       val res = parser.poll(requireLineEnd = true)
       res.value.map(_.utf8String) should be(List("abc"))
@@ -186,6 +189,18 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
                                                                           quoteChar = '$',
                                                                           escapeChar = '\\')
     }
+
+    "fail on a very 'long' line" in {
+      val in = ByteString("a,b,c\n1,3,5,7,9,1\n")
+      val parser = new CsvParser(',', '"', '\\', 11)
+      parser.offer(in)
+      parser.poll(requireLineEnd = true)
+      val exception = the[MalformedCsvException] thrownBy {
+        parser.poll(requireLineEnd = true)
+      }
+      exception.getMessage should be("no line end encountered within 11 bytes on line 2")
+    }
+
   }
 
   "CSV parsing with Byte Order Mark" should {
@@ -227,7 +242,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
                                                                quoteChar: Byte = '"',
                                                                escapeChar: Byte = '\\',
                                                                requireLineEnd: Boolean = true): Unit = {
-    val parser = new CsvParser(delimiter, quoteChar, escapeChar)
+    val parser = new CsvParser(delimiter, quoteChar, escapeChar, maximumLineLength)
     parser.offer(bsIn)
     expected.foreach { out =>
       parser.poll(requireLineEnd).value.map(_.utf8String) should be(out)

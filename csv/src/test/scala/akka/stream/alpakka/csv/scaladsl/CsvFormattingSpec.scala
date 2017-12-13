@@ -6,7 +6,6 @@ package akka.stream.alpakka.csv.scaladsl
 
 import java.nio.charset.StandardCharsets
 
-import akka.NotUsed
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
 

@@ -15,7 +15,7 @@ import scala.util.control.NonFatal
 /**
  * Internal API: Use [[akka.stream.alpakka.csv.scaladsl.CsvParsing]] instead.
  */
-private[csv] class CsvParsingStage(delimiter: Byte, quoteChar: Byte, escapeChar: Byte)
+private[csv] class CsvParsingStage(delimiter: Byte, quoteChar: Byte, escapeChar: Byte, maximumLineLength: Int)
     extends GraphStage[FlowShape[ByteString, List[ByteString]]] {
 
   private val in = Inlet[ByteString](Logging.simpleName(this) + ".in")
@@ -26,7 +26,7 @@ private[csv] class CsvParsingStage(delimiter: Byte, quoteChar: Byte, escapeChar:
 
   override def createLogic(inheritedAttributes: Attributes) =
     new GraphStageLogic(shape) with InHandler with OutHandler {
-      private[this] val buffer = new CsvParser(delimiter, quoteChar, escapeChar)
+      private[this] val buffer = new CsvParser(delimiter, quoteChar, escapeChar, maximumLineLength)
 
       setHandlers(in, out, this)
 

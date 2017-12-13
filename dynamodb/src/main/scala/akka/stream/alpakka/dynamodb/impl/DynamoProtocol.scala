@@ -52,6 +52,7 @@ private[alpakka] trait DynamoProtocol {
   protected val deleteTableM = new DeleteTableRequestProtocolMarshaller(protocol)
   protected val describeLimitsM = new DescribeLimitsRequestProtocolMarshaller(protocol)
   protected val describeTableM = new DescribeTableRequestProtocolMarshaller(protocol)
+  protected val describeTimeToLiveM = new DescribeTimeToLiveRequestProtocolMarshaller(protocol)
   protected val getItemM = new GetItemRequestProtocolMarshaller(protocol)
   protected val listTablesM = new ListTablesRequestProtocolMarshaller(protocol)
   protected val putItemM = new PutItemRequestProtocolMarshaller(protocol)
@@ -59,6 +60,7 @@ private[alpakka] trait DynamoProtocol {
   protected val scanM = new ScanRequestProtocolMarshaller(protocol)
   protected val updateItemM = new UpdateItemRequestProtocolMarshaller(protocol)
   protected val updateTableM = new UpdateTableRequestProtocolMarshaller(protocol)
+  protected val updateTimeToLiveM = new UpdateTimeToLiveRequestProtocolMarshaller(protocol)
 
   protected val batchGetItemU = protocol.createResponseHandler(meta, new BatchGetItemResultJsonUnmarshaller)
   protected val batchWriteItemU = protocol.createResponseHandler(meta, new BatchWriteItemResultJsonUnmarshaller)
@@ -67,6 +69,8 @@ private[alpakka] trait DynamoProtocol {
   protected val deleteTableU = protocol.createResponseHandler(meta, new DeleteTableResultJsonUnmarshaller)
   protected val describeLimitsU = protocol.createResponseHandler(meta, new DescribeLimitsResultJsonUnmarshaller)
   protected val describeTableU = protocol.createResponseHandler(meta, new DescribeTableResultJsonUnmarshaller)
+  protected val describeTimeToLiveU =
+    protocol.createResponseHandler(meta, new DescribeTimeToLiveResultJsonUnmarshaller)
   protected val getItemU = protocol.createResponseHandler(meta, new GetItemResultJsonUnmarshaller)
   protected val listTablesU = protocol.createResponseHandler(meta, new ListTablesResultJsonUnmarshaller)
   protected val putItemU = protocol.createResponseHandler(meta, new PutItemResultJsonUnmarshaller)
@@ -74,5 +78,6 @@ private[alpakka] trait DynamoProtocol {
   protected val scanU = protocol.createResponseHandler(meta, new ScanResultJsonUnmarshaller)
   protected val updateItemU = protocol.createResponseHandler(meta, new UpdateItemResultJsonUnmarshaller)
   protected val updateTableU = protocol.createResponseHandler(meta, new UpdateTableResultJsonUnmarshaller)
+  protected val updateTimeToLiveU = protocol.createResponseHandler(meta, new UpdateTimeToLiveResultJsonUnmarshaller)
 
 }

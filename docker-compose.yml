@@ -12,6 +12,10 @@ services:
     image: rabbitmq:3
     ports:
       - "5672:5672"
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
   mqtt:
     image: toke/mosquitto
     ports:
@@ -24,7 +28,7 @@ services:
       - "8001:8000"
   geode:
     container_name: geode
-    image: apachegeode/geode:1.2.1
+    image: apachegeode/geode:1.3.0
     hostname: geode
     mem_limit: 2g
     expose:

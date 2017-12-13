@@ -4,7 +4,7 @@ sudo: false
 
 scala:
   - "2.11.11"
-  - "2.12.2"
+  - "2.12.4"
 
 jdk:
   - oraclejdk8
@@ -26,6 +26,7 @@ script:
   - git diff --exit-code --color || { echo "[error] Unformatted code found. Please run 'test:compile' and commit the reformatted code."; false; } && sbt -J-XX:ReservedCodeCacheSize=128m ++$TRAVIS_SCALA_VERSION ";testChanged"
   # check policies, if on master also upload
   - if [[ "$TRAVIS_SECURE_ENV_VARS" == "true" ]]; then if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate; else sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies; fi ; fi
+  - find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
 
 after_failure:
   - docker-compose logs mqtt
@@ -44,15 +45,15 @@ deploy:
   provider: script
   skip_cleanup: true
   script:
+    - sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate
     - sbt -J-XX:ReservedCodeCacheSize=128m ++$TRAVIS_SCALA_VERSION publish && curl -I https://ci.lightbend.com/job/techhub-publisher/build?token=$TECH_HUB_TOKEN
   on:
     tags: true
     repo: akka/alpakka
-    condition: $AKKA_SERIES = 2.4
+    condition: $AKKA_SERIES = 2.5
 
 env:
   matrix:
-    - AKKA_SERIES=2.4
     - AKKA_SERIES=2.5
   global:
     # encrypt with: travis encrypt WHITESOURCE_KEY=...

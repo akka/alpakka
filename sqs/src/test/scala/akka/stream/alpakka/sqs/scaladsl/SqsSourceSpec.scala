@@ -6,14 +6,16 @@ package akka.stream.alpakka.sqs.scaladsl
 
 import java.util.concurrent.Executors
 
-import akka.stream.alpakka.sqs.SqsSourceSettings
+import akka.stream.alpakka.sqs._
 import akka.stream.scaladsl.Sink
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.client.builder.ExecutorFactory
-import com.amazonaws.services.sqs.model.QueueDoesNotExistException
+import com.amazonaws.services.sqs.model.{MessageAttributeValue, QueueDoesNotExistException, SendMessageRequest}
 import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{AsyncWordSpec, Matchers}
+
+import scala.collection.JavaConverters._
 
 class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with DefaultTestContext {
 
@@ -73,19 +75,48 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
       val f = SqsSource(queue, SqsSourceSettings(0, 100, 10)).take(1).runWith(Sink.seq)
 
-      sqsClient.sendMessage(queue, s"alpakka")
+      sqsClient.sendMessage(queue, "alpakka")
 
       f.map(_ should have size 1)
     }
 
-    "should finish immediately if the queue does not exist" taggedAs Integration in {
+    "finish immediately if the queue does not exist" taggedAs Integration in {
 
-      sqsEndpoint
       val queue = s"$sqsEndpoint/queue/not-existing"
 
       val f = SqsSource(queue, sqsSourceSettings).runWith(Sink.seq)
 
       f.failed.map(_ shouldBe a[QueueDoesNotExistException])
+    }
+
+    "ask for all the attributes set in the settings" taggedAs Integration in {
+      val queue = randomQueueUrl()
+      val attributes = List(SentTimestamp, ApproximateReceiveCount, SenderId)
+      val settings = sqsSourceSettings.copy(attributeNames = attributes)
+
+      sqsClient.sendMessage(queue, "alpakka")
+
+      SqsSource(queue, settings)
+        .take(1)
+        .runWith(Sink.head)
+        .map(_.getAttributes.keySet.asScala shouldBe attributes.map(_.name).toSet)
+    }
+
+    "ask for all the message attributes set in the settings" taggedAs Integration in {
+      val queue = randomQueueUrl()
+      val messageAttributes = Map(
+        "attribute-1" -> new MessageAttributeValue().withStringValue("v1").withDataType("String"),
+        "attribute-2" -> new MessageAttributeValue().withStringValue("v2").withDataType("String")
+      )
+      val settings =
+        sqsSourceSettings.copy(messageAttributeNames = messageAttributes.keys.toList.map(MessageAttributeName))
+
+      sqsClient.sendMessage(new SendMessageRequest(queue, "alpakka").withMessageAttributes(messageAttributes.asJava))
+
+      SqsSource(queue, settings)
+        .take(1)
+        .runWith(Sink.head)
+        .map(_.getMessageAttributes.asScala shouldBe messageAttributes)
     }
   }
 }

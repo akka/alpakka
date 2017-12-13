@@ -13,6 +13,8 @@ import akka.stream.alpakka.dynamodb.impl.AwsClient.{AwsConnect, AwsRequestMetada
 import com.amazonaws.AmazonServiceException
 import com.amazonaws.http.HttpResponseHandler
 
+import scala.concurrent.ExecutionContextExecutor
+
 class DynamoClientImpl(
     val settings: DynamoSettings,
     val errorResponseHandler: HttpResponseHandler[AmazonServiceException]
@@ -22,12 +24,12 @@ class DynamoClientImpl(
   override protected val service = "dynamodb"
   override protected val defaultContentType =
     ContentType.Binary(MediaType.customBinary("application", "x-amz-json-1.0", NotCompressible))
-  override protected implicit val ec = system.dispatcher
+  override protected implicit val ec: ExecutionContextExecutor = system.dispatcher
 
   override protected val connection: AwsConnect =
     if (settings.port == 443)
-      Http().cachedHostConnectionPoolHttps[AwsRequestMetadata](settings.host)(materializer)
+      Http().cachedHostConnectionPoolHttps[AwsRequestMetadata](settings.host)
     else
-      Http().cachedHostConnectionPool[AwsRequestMetadata](settings.host, settings.port)(materializer)
+      Http().cachedHostConnectionPool[AwsRequestMetadata](settings.host, settings.port)
 
 }

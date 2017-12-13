@@ -17,6 +17,7 @@ lazy val alpakka = project
     ironmq,
     jms,
     kinesis,
+    mongodb,
     mqtt,
     s3,
     springWeb,
@@ -25,6 +26,7 @@ lazy val alpakka = project
     sns,
     sqs,
     sse,
+    unixdomainsocket,
     xml
   )
   .settings(
@@ -125,6 +127,8 @@ lazy val sqs = alpakkaProject("sqs",
 
 lazy val sse = alpakkaProject("sse", Dependencies.Sse)
 
+lazy val unixdomainsocket = alpakkaProject("unix-domain-socket", Dependencies.UnixDomainSocket)
+
 lazy val xml = alpakkaProject("xml", Dependencies.Xml)
 
 val Local = config("local")
@@ -141,8 +145,14 @@ val defaultParadoxSettings: Seq[Setting[_]] = Seq(
     "extref.java-api.base_url" -> "https://docs.oracle.com/javase/8/docs/api/index.html?%s.html",
     "extref.javaee-api.base_url" -> "https://docs.oracle.com/javaee/7/api/index.html?%s.html",
     "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
+    "javadoc.base_url" -> "https://docs.oracle.com/javase/8/docs/api/",
+    "javadoc.javax.jms.base_url" -> "https://docs.oracle.com/javaee/7/api/",
+    "javadoc.akka.base_url" -> s"http://doc.akka.io/japi/akka/${Dependencies.AkkaVersion}/",
+    "javadoc.akka.http.base_url" -> s">http://doc.akka.io/japi/akka-http/${Dependencies.AkkaHttpVersion}/",
+    "scaladoc.scala.base_url" -> s"http://www.scala-lang.org/api/current/",
     "scaladoc.akka.base_url" -> s"http://doc.akka.io/api/akka/${Dependencies.AkkaVersion}",
-    "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}"
+    "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}",
+    "snip.alpakka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath
   ),
   sourceDirectory := baseDirectory.value / "src" / "main"
 )
@@ -171,10 +181,6 @@ def alpakkaProject(projectId: String, additionalSettings: sbt.Def.SettingsDefini
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
     .settings(
-      name := s"akka-stream-alpakka-$projectId",
-      // By default scalatest futures time out in 150 ms, dilate that to 600ms.
-      // This should not impact the total test time as we don't expect to hit this
-      // timeout.
-      testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4")
+      name := s"akka-stream-alpakka-$projectId"
     )
     .settings(additionalSettings: _*)

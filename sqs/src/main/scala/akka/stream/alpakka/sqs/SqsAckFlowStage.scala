@@ -99,7 +99,7 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
             val (message, action) = grab(in)
             val responsePromise = Promise[AckResult]
             action match {
-              case Delete() =>
+              case MessageAction.Delete =>
                 sqsClient.deleteMessageAsync(
                   new DeleteMessageRequest(queueUrl, message.getReceiptHandle),
                   new AsyncHandler[DeleteMessageRequest, DeleteMessageResult] {
@@ -115,7 +115,7 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
                     }
                   }
                 )
-              case ChangeMessageVisibility(visibilityTimeout) =>
+              case MessageAction.ChangeMessageVisibility(visibilityTimeout) =>
                 sqsClient
                   .changeMessageVisibilityAsync(
                     new ChangeMessageVisibilityRequest(queueUrl, message.getReceiptHandle, visibilityTimeout),
@@ -133,7 +133,7 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
                       }
                     }
                   )
-              case Ignore() =>
+              case MessageAction.Ignore =>
                 responsePromise.success(AckResult(None, message.getBody))
             }
             push(out, responsePromise.future)

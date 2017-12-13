@@ -9,12 +9,25 @@ import java.nio.charset.UnsupportedCharsetException
 import akka.stream.alpakka.csv.scaladsl.ByteOrderMark
 import akka.util.{ByteString, ByteStringBuilder}
 
+class MalformedCsvException private[csv] (val lineNo: Long, val bytePos: Int, msg: String) extends Exception(msg) {
+
+  /**
+   * Java API:
+   * Returns the line number where the parser failed.
+   */
+  def getLineNo = lineNo
+
+  /**
+   * Java API:
+   * Returns the byte within the parsed line where the parser failed.
+   */
+  def getBytePos = bytePos
+}
+
 /**
  * INTERNAL API: Use [[akka.stream.alpakka.csv.scaladsl.CsvParsing]] instead.
  */
 private[csv] object CsvParser {
-
-  class MalformedCsvException(msg: String) extends Exception(msg)
 
   private type State = Int
   private final val LineStart = 0
@@ -32,7 +45,7 @@ private[csv] object CsvParser {
 /**
  * INTERNAL API: Use [[akka.stream.alpakka.csv.scaladsl.CsvParsing]] instead.
  */
-private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar: Byte) {
+private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar: Byte, maximumLineLength: Int) {
 
   import CsvParser._
 
@@ -105,16 +118,22 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
 
     def wrongCharEscaped() =
       throw new MalformedCsvException(
+        currentLineNo,
+        pos,
         s"wrong escaping at $currentLineNo:$pos, only escape or delimiter may be escaped"
       )
 
     def wrongCharEscapedWithinQuotes() =
       throw new MalformedCsvException(
+        currentLineNo,
+        pos,
         s"wrong escaping at $currentLineNo:$pos, only escape or quote may be escaped within quotes"
       )
 
     def noCharEscaped() =
-      throw new MalformedCsvException(s"wrong escaping at $currentLineNo:$pos, no character after escape")
+      throw new MalformedCsvException(currentLineNo,
+                                      pos,
+                                      s"wrong escaping at $currentLineNo:$pos, no character after escape")
 
     @inline def readPastLf() =
       if (pos < buf.length && buf(pos) == LF) {
@@ -145,6 +164,12 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
     }
 
     while (state != LineEnd && pos < buf.length) {
+      if (pos >= maximumLineLength)
+        throw new MalformedCsvException(
+          currentLineNo,
+          pos,
+          s"no line end encountered within $maximumLineLength bytes on line $currentLineNo"
+        )
       val byte = buf(pos)
       state match {
         case LineStart =>
@@ -287,7 +312,9 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
               readPastLf()
               fieldStart = pos
             case c =>
-              throw new MalformedCsvException(s"expected delimiter or end of line at $currentLineNo:$pos")
+              throw new MalformedCsvException(currentLineNo,
+                                              pos,
+                                              s"expected delimiter or end of line at $currentLineNo:$pos")
           }
 
         case WithinQuotedField =>

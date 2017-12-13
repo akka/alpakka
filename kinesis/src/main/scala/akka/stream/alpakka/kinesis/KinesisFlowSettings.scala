@@ -44,8 +44,8 @@ object KinesisFlowSettings {
     KinesisFlowSettings(
       parallelism = shards * (MAX_RECORDS_PER_SHARD_PER_SECOND / MAX_RECORDS_PER_REQUEST),
       maxBatchSize = MAX_RECORDS_PER_REQUEST,
-      maxRecordsPerSecond = shards * MAX_BYTES_PER_SHARD_PER_SECOND,
-      maxBytesPerSecond = shards * MAX_RECORDS_PER_SHARD_PER_SECOND,
+      maxRecordsPerSecond = shards * MAX_RECORDS_PER_SHARD_PER_SECOND,
+      maxBytesPerSecond = shards * MAX_BYTES_PER_SHARD_PER_SECOND,
       maxRetries = 5,
       backoffStrategy = Exponential,
       retryInitialTimeout = 100 millis

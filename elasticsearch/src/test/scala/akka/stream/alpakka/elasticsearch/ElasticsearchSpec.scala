@@ -47,6 +47,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         .baseHttpPort(9200)
         .baseTransportPort(9300)
         .numOfNode(1)
+        .disableESLogger()
     )
     runner.ensureYellow()
 
@@ -69,6 +70,24 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   private def flush(indexName: String): Unit =
     client.performRequest("POST", s"$indexName/_flush")
+
+  private def createStrictMapping(indexName: String): Unit =
+    client.performRequest(
+      "PUT",
+      s"$indexName",
+      Map[String, String]().asJava,
+      new StringEntity(s"""{
+           |  "mappings": {
+           |    "book": {
+           |      "dynamic": "strict",
+           |      "properties": {
+           |        "title": { "type": "string"}
+           |      }
+           |    }
+           |  }
+           |}
+         """.stripMargin)
+    )
 
   private def register(indexName: String, title: String): Unit =
     client.performRequest("POST",
@@ -182,7 +201,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   }
 
   "ElasticsearchFlow" should {
-    "store documents and pass Responses" in {
+    "store documents and pass failed documents to downstream" in {
       // Copy source/book to sink3/book through typed stream
       //#run-flow
       val f1 = ElasticsearchSource
@@ -266,7 +285,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       // Assert no error
       assert(result1.forall(_.isEmpty))
 
-      // Assert docs in sink3/book
+      // Assert docs in sink4/book
       val f2 = ElasticsearchSource
         .typed[Book](
           "sink4",
@@ -284,6 +303,62 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       result2.sorted shouldEqual Seq(
         "Akka in Action",
         "Akka \u00DF Concurrency"
+      )
+    }
+  }
+
+  "ElasticsearchFlow" should {
+    "retry a failed documents and pass retired documents to downstream" in {
+      // Create strict mapping to prevent invalid documents
+      createStrictMapping("sink5")
+
+      val f1 = Source(
+        Seq(
+          Map("title" -> "Akka in Action").toJson,
+          Map("subject" -> "Akka Concurrency").toJson
+        ).zipWithIndex.toVector
+      ).map {
+          case (book: JsObject, index: Int) =>
+            IncomingMessage(Some(index.toString), book)
+        }
+        .via(
+          ElasticsearchFlow(
+            "sink5",
+            "book",
+            ElasticsearchSinkSettings(maxRetry = 5, retryInterval = 100)
+          )
+        )
+        .runWith(Sink.seq)
+
+      val start = System.currentTimeMillis()
+      val result1 = Await.result(f1, Duration.Inf)
+      val end = System.currentTimeMillis()
+
+      // Assert retired documents
+      assert(result1.flatten == Seq(IncomingMessage(Some("1"), Map("subject" -> "Akka Concurrency").toJson)))
+
+      // Assert retried 5 times by looking duration
+      assert(end - start > 5 * 100)
+
+      flush("sink5")
+
+      // Assert docs in sink5/book
+      val f2 = ElasticsearchSource
+        .typed[Book](
+          "sink5",
+          "book",
+          """{"match_all": {}}""",
+          ElasticsearchSourceSettings()
+        )
+        .map { message =>
+          message.source.title
+        }
+        .runWith(Sink.seq)
+
+      val result2 = Await.result(f2, Duration.Inf)
+
+      result2.sorted shouldEqual Seq(
+        "Akka in Action"
       )
     }
   }
