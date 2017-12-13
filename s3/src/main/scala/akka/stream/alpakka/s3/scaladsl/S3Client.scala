@@ -5,7 +5,9 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import java.time.Instant
+
 import scala.concurrent.Future
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
@@ -13,11 +15,12 @@ import akka.http.scaladsl.model.headers.ByteRange
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
-import akka.stream.alpakka.s3.auth.{AWSCredentials ⇒ OldAWSCredentials}
+import akka.stream.alpakka.s3.auth.{AWSCredentials => OldAWSCredentials}
 import akka.stream.alpakka.s3.impl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import com.amazonaws.auth._
+import com.amazonaws.regions.AwsRegionProvider
 
 final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
@@ -55,13 +58,22 @@ object S3Client {
       region
     )
 
-  def apply(credentials: AWSCredentialsProvider, region: String)(implicit system: ActorSystem,
-                                                                 mat: Materializer): S3Client = {
-
-    val settings: S3Settings = S3Settings(system.settings.config).copy(
-      credentialsProvider = credentials,
-      s3Region = region
+  def apply(credentialsProvider: AWSCredentialsProvider, region: String)(implicit system: ActorSystem,
+                                                                         mat: Materializer): S3Client =
+    apply(
+      credentialsProvider,
+      new AwsRegionProvider {
+        def getRegion: String = region
+      }
     )
+
+  def apply(credentialsProvider: AWSCredentialsProvider,
+            regionProvider: AwsRegionProvider)(implicit system: ActorSystem, mat: Materializer): S3Client = {
+    val settings: S3Settings = S3Settings(system.settings.config).copy(
+      credentialsProvider = credentialsProvider,
+      s3RegionProvider = regionProvider
+    )
+
     new S3Client(settings)
   }
 }

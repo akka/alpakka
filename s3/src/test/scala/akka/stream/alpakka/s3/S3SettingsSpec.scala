@@ -6,6 +6,7 @@ package akka.stream.alpakka.s3
 
 import akka.stream.alpakka.s3.scaladsl.{S3ClientIntegrationSpec, S3WireMockBase}
 import com.amazonaws.auth._
+import com.amazonaws.regions.DefaultAwsRegionProviderChain
 import com.typesafe.config.ConfigFactory
 
 class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec {
@@ -91,5 +92,41 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     settings.credentialsProvider.getCredentials shouldBe a[BasicAWSCredentials]
     settings.credentialsProvider.getCredentials.getAWSAccessKeyId shouldBe testAki
     settings.credentialsProvider.getCredentials.getAWSSecretKey shouldBe testSak
+  }
+
+  it should "use default region provider chain by default" in {
+    val settings: S3Settings = mkConfig(
+      "" // no credentials section
+    )
+    settings.s3RegionProvider shouldBe a[DefaultAwsRegionProviderChain]
+  }
+
+  it should "use given region when using static region provider" in {
+    val otherRegion = "testRegion"
+
+    val settings: S3Settings = mkConfig(
+      s"""akka.stream.alpakka.s3.aws.region.provider = static
+         |akka.stream.alpakka.s3.aws.region.default-region = $otherRegion
+         |""".stripMargin
+    )
+    settings.s3RegionProvider.getRegion shouldBe otherRegion
+  }
+
+  it should "use region from old configuration path when using static region provider for BC" in {
+    val otherRegion = "testRegion"
+
+    val settings: S3Settings = mkConfig(
+      s"""akka.stream.alpakka.s3.aws.region.provider = static
+         |akka.stream.alpakka.s3.aws.default-region = $otherRegion
+         |""".stripMargin
+    )
+    settings.s3RegionProvider.getRegion shouldBe otherRegion
+  }
+
+  it should "use default region provider when set in configuration" in {
+    val settings: S3Settings = mkConfig(
+      "akka.stream.alpakka.s3.aws.region.provider = default" // no credentials section
+    )
+    settings.s3RegionProvider shouldBe a[DefaultAwsRegionProviderChain]
   }
 }

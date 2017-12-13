@@ -12,6 +12,7 @@ import akka.stream.alpakka.s3.S3Settings;
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.regions.AwsRegionProvider;
 import scala.Some;
 
 public class DocSnippets extends S3WireMockBase {
@@ -32,6 +33,11 @@ public class DocSnippets extends S3WireMockBase {
                         "mySecretAccessKey"
                 )
         );
+        final AwsRegionProvider regionProvider = new AwsRegionProvider() {
+            public String getRegion() {
+                return "";
+            }
+        };
         final Proxy proxy = new Proxy(host, port, "https");
 
         // Set pathStyleAccess to true and specify proxy, leave region blank
@@ -39,7 +45,7 @@ public class DocSnippets extends S3WireMockBase {
                 MemoryBufferType.getInstance(),
                 Some.apply(proxy),
                 credentials,
-                "",
+                regionProvider,
                 true
         );
         final S3Client s3Client = new S3Client(settings,system(), mat);

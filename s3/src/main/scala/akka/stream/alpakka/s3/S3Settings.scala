@@ -5,10 +5,13 @@
 package akka.stream.alpakka.s3
 
 import java.nio.file.{Path, Paths}
+
 import scala.util.Try
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import com.amazonaws.auth._
+import com.amazonaws.regions.{AwsRegionProvider, DefaultAwsRegionProviderChain}
 import com.typesafe.config.Config
 
 final case class Proxy(host: String, port: Int, scheme: String)
@@ -16,7 +19,7 @@ final case class Proxy(host: String, port: Int, scheme: String)
 final case class S3Settings(bufferType: BufferType,
                             proxy: Option[Proxy],
                             credentialsProvider: AWSCredentialsProvider,
-                            s3Region: String,
+                            s3RegionProvider: AwsRegionProvider,
                             pathStyleAccess: Boolean) {
 
   override def toString: String =
@@ -24,7 +27,7 @@ final case class S3Settings(bufferType: BufferType,
        |$bufferType,
        |$proxy,
        |${credentialsProvider.getClass.getSimpleName},
-       |$s3Region,
+       |${s3RegionProvider.getClass.getSimpleName},
        |$pathStyleAccess)""".stripMargin
 }
 
@@ -77,8 +80,33 @@ object S3Settings {
       )
     }
 
-    val s3region = config.getString("akka.stream.alpakka.s3.aws.default-region")
     val pathStyleAccess = config.getBoolean("akka.stream.alpakka.s3.path-style-access")
+
+    val regionProvider = {
+      val regionProviderPath = "akka.stream.alpakka.s3.aws.region.provider"
+
+      val staticRegionProvider = new AwsRegionProvider {
+        lazy val getRegion: String = {
+          if (config.hasPath("akka.stream.alpakka.s3.aws.region.default-region")) {
+            config.getString("akka.stream.alpakka.s3.aws.region.default-region")
+          } else {
+            config.getString("akka.stream.alpakka.s3.aws.default-region")
+          }
+        }
+      }
+
+      if (config.hasPath(regionProviderPath)) {
+        config.getString(regionProviderPath) match {
+          case "static" =>
+            staticRegionProvider
+
+          case _ =>
+            new DefaultAwsRegionProviderChain()
+        }
+      } else {
+        new DefaultAwsRegionProviderChain()
+      }
+    }
 
     val credentialsProvider = {
       val credProviderPath = "akka.stream.alpakka.s3.aws.credentials.provider"
@@ -128,7 +156,7 @@ object S3Settings {
       bufferType = bufferType,
       proxy = maybeProxy,
       credentialsProvider = credentialsProvider,
-      s3Region = s3region,
+      s3RegionProvider = regionProvider,
       pathStyleAccess = pathStyleAccess
     )
   }

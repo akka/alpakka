@@ -10,16 +10,22 @@ import akka.stream.alpakka.s3.{MemoryBufferType, Proxy, S3Exception, S3Settings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import scala.concurrent.Future
+
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import com.amazonaws.regions.AwsRegionProvider
 
 class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
   //#client
-  val awsCredentials = new AWSStaticCredentialsProvider(
+  val awsCredentialsProvider = new AWSStaticCredentialsProvider(
     new BasicAWSCredentials("my-AWS-access-key-ID", "my-AWS-password")
   )
+  val regionProvider =
+    new AwsRegionProvider {
+      def getRegion: String = "us-east-1"
+    }
   val proxy = Option(Proxy("localhost", port, "http"))
-  val settings = new S3Settings(MemoryBufferType, proxy, awsCredentials, "us-east-1", false)
+  val settings = new S3Settings(MemoryBufferType, proxy, awsCredentialsProvider, regionProvider, false)
   val s3Client = new S3Client(settings)(system, materializer)
   //#client
 
