@@ -17,7 +17,8 @@ final case class S3Settings(bufferType: BufferType,
                             proxy: Option[Proxy],
                             credentialsProvider: AWSCredentialsProvider,
                             s3Region: String,
-                            pathStyleAccess: Boolean) {
+                            pathStyleAccess: Boolean,
+                            baseUrl: Option[String]) {
 
   override def toString: String =
     s"""S3Settings(
@@ -25,7 +26,8 @@ final case class S3Settings(bufferType: BufferType,
        |$proxy,
        |${credentialsProvider.getClass.getSimpleName},
        |$s3Region,
-       |$pathStyleAccess)""".stripMargin
+       |$pathStyleAccess,
+       |$baseUrl)""".stripMargin
 }
 
 sealed trait BufferType {
@@ -129,7 +131,8 @@ object S3Settings {
       proxy = maybeProxy,
       credentialsProvider = credentialsProvider,
       s3Region = s3region,
-      pathStyleAccess = pathStyleAccess
+      pathStyleAccess = pathStyleAccess,
+      baseUrl = None
     )
   }
 
