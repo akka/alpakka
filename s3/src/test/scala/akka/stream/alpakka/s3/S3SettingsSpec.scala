@@ -116,7 +116,8 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     val otherRegion = "testRegion"
 
     val settings: S3Settings = mkConfig(
-      s"""akka.stream.alpakka.s3.aws.region.provider = static
+      s"""
+         |akka.stream.alpakka.s3.aws.region.provider = static
          |akka.stream.alpakka.s3.aws.default-region = $otherRegion
          |""".stripMargin
     )
@@ -128,5 +129,25 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec {
       "akka.stream.alpakka.s3.aws.region.provider = default" // no credentials section
     )
     settings.s3RegionProvider shouldBe a[DefaultAwsRegionProviderChain]
+  }
+
+  it should "be able to instantiate using custom config prefix" in {
+    val myS3ConfigPrefix = "my-s3-config"
+    val otherRegion = "testRegion"
+
+    val settings: S3Settings = S3Settings.apply(
+      ConfigFactory.parseString(
+        s"""
+           |$myS3ConfigPrefix.aws.region.provider = static
+           |$myS3ConfigPrefix.aws.default-region = $otherRegion
+           |$myS3ConfigPrefix.buffer = memory
+           |$myS3ConfigPrefix.path-style-access = true
+        """.stripMargin
+      ),
+      myS3ConfigPrefix
+    )
+
+    settings.pathStyleAccess shouldBe true
+    settings.s3RegionProvider.getRegion shouldBe otherRegion
   }
 }

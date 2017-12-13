@@ -55,15 +55,21 @@ object S3Settings {
   def apply()(implicit system: ActorSystem): S3Settings = apply(system.settings.config)
 
   /**
+   * Scala API: Creates [[S3Settings]] from the [[Config]] attached to an [[ActorSystem]].
+   */
+  def apply(configurationPrefix: String)(implicit system: ActorSystem): S3Settings =
+    apply(system.settings.config, configurationPrefix)
+
+  /**
    * Scala API: Creates [[S3Settings]] from a [[Config]] object.
    */
-  def apply(config: Config): S3Settings = {
-    val bufferType = config.getString("akka.stream.alpakka.s3.buffer") match {
+  def apply(config: Config, configurationPrefix: String = "akka.stream.alpakka.s3"): S3Settings = {
+    val bufferType = config.getString(s"$configurationPrefix.buffer") match {
       case "memory" =>
         MemoryBufferType
 
       case "disk" =>
-        val diskBufferPath = config.getString("akka.stream.alpakka.s3.disk-buffer-path")
+        val diskBufferPath = config.getString(s"$configurationPrefix.disk-buffer-path")
         DiskBufferType(Paths.get(diskBufferPath))
 
       case other =>
@@ -71,26 +77,26 @@ object S3Settings {
     }
 
     val maybeProxy = for {
-      host ← Try(config.getString("akka.stream.alpakka.s3.proxy.host")).toOption if host.nonEmpty
+      host ← Try(config.getString(s"$configurationPrefix.proxy.host")).toOption if host.nonEmpty
     } yield {
       Proxy(
         host,
-        config.getInt("akka.stream.alpakka.s3.proxy.port"),
-        Uri.httpScheme(config.getBoolean("akka.stream.alpakka.s3.proxy.secure"))
+        config.getInt(s"$configurationPrefix.proxy.port"),
+        Uri.httpScheme(config.getBoolean(s"$configurationPrefix.proxy.secure"))
       )
     }
 
-    val pathStyleAccess = config.getBoolean("akka.stream.alpakka.s3.path-style-access")
+    val pathStyleAccess = config.getBoolean(s"$configurationPrefix.path-style-access")
 
     val regionProvider = {
-      val regionProviderPath = "akka.stream.alpakka.s3.aws.region.provider"
+      val regionProviderPath = s"$configurationPrefix.aws.region.provider"
 
       val staticRegionProvider = new AwsRegionProvider {
         lazy val getRegion: String = {
-          if (config.hasPath("akka.stream.alpakka.s3.aws.region.default-region")) {
-            config.getString("akka.stream.alpakka.s3.aws.region.default-region")
+          if (config.hasPath(s"$configurationPrefix.aws.region.default-region")) {
+            config.getString(s"$configurationPrefix.aws.region.default-region")
           } else {
-            config.getString("akka.stream.alpakka.s3.aws.default-region")
+            config.getString(s"$configurationPrefix.aws.default-region")
           }
         }
       }
@@ -109,7 +115,7 @@ object S3Settings {
     }
 
     val credentialsProvider = {
-      val credProviderPath = "akka.stream.alpakka.s3.aws.credentials.provider"
+      val credProviderPath = s"$configurationPrefix.aws.credentials.provider"
 
       if (config.hasPath(credProviderPath)) {
         config.getString(credProviderPath) match {
@@ -117,9 +123,9 @@ object S3Settings {
             DefaultAWSCredentialsProviderChain.getInstance()
 
           case "static" ⇒
-            val aki = config.getString("akka.stream.alpakka.s3.aws.credentials.access-key-id")
-            val sak = config.getString("akka.stream.alpakka.s3.aws.credentials.secret-access-key")
-            val tokenPath = "akka.stream.alpakka.s3.aws.credentials.token"
+            val aki = config.getString(s"$configurationPrefix.aws.credentials.access-key-id")
+            val sak = config.getString(s"$configurationPrefix.aws.credentials.secret-access-key")
+            val tokenPath = s"$configurationPrefix.aws.credentials.token"
             val creds = if (config.hasPath(tokenPath)) {
               new BasicSessionCredentials(aki, sak, config.getString(tokenPath))
             } else {
@@ -134,8 +140,8 @@ object S3Settings {
             DefaultAWSCredentialsProviderChain.getInstance()
         }
       } else {
-        val deprecatedAccessKeyPath: String = "akka.stream.alpakka.s3.aws.access-key-id"
-        val deprecatedSecretKeyPath: String = "akka.stream.alpakka.s3.aws.secret-access-key"
+        val deprecatedAccessKeyPath: String = s"$configurationPrefix.aws.access-key-id"
+        val deprecatedSecretKeyPath: String = s"$configurationPrefix.aws.secret-access-key"
         val hasOldCredentials: Boolean = {
           config.hasPath(deprecatedAccessKeyPath) && config.hasPath(deprecatedSecretKeyPath)
         }
