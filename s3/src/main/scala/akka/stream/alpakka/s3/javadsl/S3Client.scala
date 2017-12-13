@@ -79,6 +79,10 @@ object S3Client {
 
     new S3Client(settings, system, mat)
   }
+
+  def create(s3Settings: S3Settings)(implicit system: ActorSystem, mat: Materializer): S3Client = {
+    new S3Client(s3Settings, system, mat)
+  }
 }
 
 final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materializer) {
