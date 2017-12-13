@@ -64,12 +64,14 @@ object S3Settings {
    * Scala API: Creates [[S3Settings]] from a [[Config]] object.
    */
   def apply(config: Config, configurationPrefix: String = "akka.stream.alpakka.s3"): S3Settings = {
-    val bufferType = config.getString(s"$configurationPrefix.buffer") match {
+    val s3Config = config.getConfig(configurationPrefix)
+
+    val bufferType = s3Config.getString("buffer") match {
       case "memory" =>
         MemoryBufferType
 
       case "disk" =>
-        val diskBufferPath = config.getString(s"$configurationPrefix.disk-buffer-path")
+        val diskBufferPath = s3Config.getString("disk-buffer-path")
         DiskBufferType(Paths.get(diskBufferPath))
 
       case other =>
@@ -77,32 +79,32 @@ object S3Settings {
     }
 
     val maybeProxy = for {
-      host ← Try(config.getString(s"$configurationPrefix.proxy.host")).toOption if host.nonEmpty
+      host ← Try(s3Config.getString("proxy.host")).toOption if host.nonEmpty
     } yield {
       Proxy(
         host,
-        config.getInt(s"$configurationPrefix.proxy.port"),
-        Uri.httpScheme(config.getBoolean(s"$configurationPrefix.proxy.secure"))
+        s3Config.getInt("proxy.port"),
+        Uri.httpScheme(s3Config.getBoolean("proxy.secure"))
       )
     }
 
-    val pathStyleAccess = config.getBoolean(s"$configurationPrefix.path-style-access")
+    val pathStyleAccess = s3Config.getBoolean("path-style-access")
 
     val regionProvider = {
-      val regionProviderPath = s"$configurationPrefix.aws.region.provider"
+      val regionProviderPath = "aws.region.provider"
 
       val staticRegionProvider = new AwsRegionProvider {
         lazy val getRegion: String = {
-          if (config.hasPath(s"$configurationPrefix.aws.region.default-region")) {
-            config.getString(s"$configurationPrefix.aws.region.default-region")
+          if (s3Config.hasPath("aws.region.default-region")) {
+            s3Config.getString("aws.region.default-region")
           } else {
-            config.getString(s"$configurationPrefix.aws.default-region")
+            s3Config.getString("aws.default-region")
           }
         }
       }
 
-      if (config.hasPath(regionProviderPath)) {
-        config.getString(regionProviderPath) match {
+      if (s3Config.hasPath(regionProviderPath)) {
+        s3Config.getString(regionProviderPath) match {
           case "static" =>
             staticRegionProvider
 
@@ -115,19 +117,19 @@ object S3Settings {
     }
 
     val credentialsProvider = {
-      val credProviderPath = s"$configurationPrefix.aws.credentials.provider"
+      val credProviderPath = "aws.credentials.provider"
 
-      if (config.hasPath(credProviderPath)) {
-        config.getString(credProviderPath) match {
+      if (s3Config.hasPath(credProviderPath)) {
+        s3Config.getString(credProviderPath) match {
           case "default" ⇒
             DefaultAWSCredentialsProviderChain.getInstance()
 
           case "static" ⇒
-            val aki = config.getString(s"$configurationPrefix.aws.credentials.access-key-id")
-            val sak = config.getString(s"$configurationPrefix.aws.credentials.secret-access-key")
-            val tokenPath = s"$configurationPrefix.aws.credentials.token"
-            val creds = if (config.hasPath(tokenPath)) {
-              new BasicSessionCredentials(aki, sak, config.getString(tokenPath))
+            val aki = s3Config.getString("aws.credentials.access-key-id")
+            val sak = s3Config.getString("aws.credentials.secret-access-key")
+            val tokenPath = "aws.credentials.token"
+            val creds = if (s3Config.hasPath(tokenPath)) {
+              new BasicSessionCredentials(aki, sak, s3Config.getString(tokenPath))
             } else {
               new BasicAWSCredentials(aki, sak)
             }
@@ -140,16 +142,16 @@ object S3Settings {
             DefaultAWSCredentialsProviderChain.getInstance()
         }
       } else {
-        val deprecatedAccessKeyPath: String = s"$configurationPrefix.aws.access-key-id"
-        val deprecatedSecretKeyPath: String = s"$configurationPrefix.aws.secret-access-key"
+        val deprecatedAccessKeyPath: String = "aws.access-key-id"
+        val deprecatedSecretKeyPath: String = "aws.secret-access-key"
         val hasOldCredentials: Boolean = {
-          config.hasPath(deprecatedAccessKeyPath) && config.hasPath(deprecatedSecretKeyPath)
+          s3Config.hasPath(deprecatedAccessKeyPath) && s3Config.hasPath(deprecatedSecretKeyPath)
         }
         if (hasOldCredentials) {
           new AWSStaticCredentialsProvider(
             new BasicAWSCredentials(
-              config.getString(deprecatedAccessKeyPath),
-              config.getString(deprecatedSecretKeyPath)
+              s3Config.getString(deprecatedAccessKeyPath),
+              s3Config.getString(deprecatedSecretKeyPath)
             )
           )
         } else {
