@@ -15,7 +15,6 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec {
       ConfigFactory.parseString(
         s"""
           |akka.stream.alpakka.s3.buffer = memory
-          |akka.stream.alpakka.s3.aws.default-region = us-east-1
           |akka.stream.alpakka.s3.path-style-access = false
           |$more
         """.stripMargin
@@ -105,20 +104,9 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     val otherRegion = "testRegion"
 
     val settings: S3Settings = mkConfig(
-      s"""akka.stream.alpakka.s3.aws.region.provider = static
-         |akka.stream.alpakka.s3.aws.region.default-region = $otherRegion
-         |""".stripMargin
-    )
-    settings.s3RegionProvider.getRegion shouldBe otherRegion
-  }
-
-  it should "use region from old configuration path when using static region provider for BC" in {
-    val otherRegion = "testRegion"
-
-    val settings: S3Settings = mkConfig(
       s"""
          |akka.stream.alpakka.s3.aws.region.provider = static
-         |akka.stream.alpakka.s3.aws.default-region = $otherRegion
+         |akka.stream.alpakka.s3.aws.region.default-region = $otherRegion
          |""".stripMargin
     )
     settings.s3RegionProvider.getRegion shouldBe otherRegion
@@ -139,7 +127,7 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec {
       ConfigFactory.parseString(
         s"""
            |$myS3ConfigPrefix.aws.region.provider = static
-           |$myS3ConfigPrefix.aws.default-region = $otherRegion
+           |$myS3ConfigPrefix.aws.region.default-region = $otherRegion
            |$myS3ConfigPrefix.buffer = memory
            |$myS3ConfigPrefix.path-style-access = true
         """.stripMargin

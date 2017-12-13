@@ -94,13 +94,7 @@ object S3Settings {
       val regionProviderPath = "aws.region.provider"
 
       val staticRegionProvider = new AwsRegionProvider {
-        lazy val getRegion: String = {
-          if (s3Config.hasPath("aws.region.default-region")) {
-            s3Config.getString("aws.region.default-region")
-          } else {
-            s3Config.getString("aws.default-region")
-          }
-        }
+        lazy val getRegion: String = s3Config.getString("aws.region.default-region")
       }
 
       if (s3Config.hasPath(regionProviderPath)) {
