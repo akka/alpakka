@@ -418,6 +418,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val input = Vector("one", "two", "three", "four", "five")
       Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
 
+
       val amqpSource = AmqpSource.committableSource(
         NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration),
         bufferSize = 10
