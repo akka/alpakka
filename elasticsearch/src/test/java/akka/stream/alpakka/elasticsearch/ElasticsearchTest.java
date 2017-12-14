@@ -288,7 +288,7 @@ public class ElasticsearchTest {
               return IncomingMessage.create(id, book, kafkaMessage.offset);
             })
             .via( // write to elastic
-                    ElasticsearchFlow.<Book, KafkaOffset>createWithCargo(
+                    ElasticsearchFlow.<Book, KafkaOffset>createWithPassThrough(
                             "sink6",
                             "book",
                             new ElasticsearchSinkSettings().withBufferSize(5),
@@ -299,7 +299,7 @@ public class ElasticsearchTest {
                       .forEach(result -> {
                         if (!result.success()) throw new RuntimeException("Failed to write message to elastic");
                         // Commit to kafka
-                        kafkaCommitter.commit(result.cargo());
+                        kafkaCommitter.commit(result.passThrough());
                       });
               return NotUsed.getInstance();
 

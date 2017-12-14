@@ -16,7 +16,7 @@ import java.util.{List => JavaList}
 object ElasticsearchFlow {
 
   /**
-   * Java API: creates a [[ElasticsearchFlowStage]] without cargo
+   * Java API: creates a [[ElasticsearchFlowStage]] without passThrough
    */
   def create[T](
       indexName: String,
@@ -38,9 +38,9 @@ object ElasticsearchFlow {
       .asJava
 
   /**
-   * Java API: creates a [[ElasticsearchFlowStage]] with cargo
+   * Java API: creates a [[ElasticsearchFlowStage]] with passThrough
    */
-  def createWithCargo[T, C](
+  def createWithPassThrough[T, C](
       indexName: String,
       typeName: String,
       settings: ElasticsearchSinkSettings,

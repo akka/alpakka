@@ -13,7 +13,7 @@ import spray.json._
 object ElasticsearchFlow {
 
   /**
-   * Scala API: creates a [[ElasticsearchFlowStage]] without cargo
+   * Scala API: creates a [[ElasticsearchFlowStage]] without passThrough
    */
   def create[T](indexName: String, typeName: String, settings: ElasticsearchSinkSettings)(
       implicit client: RestClient,
@@ -32,9 +32,9 @@ object ElasticsearchFlow {
       .mapAsync(1)(identity)
 
   /**
-   * Scala API: creates a [[ElasticsearchFlowStage]] with cargo
+   * Scala API: creates a [[ElasticsearchFlowStage]] with passThrough
    */
-  def createWithCargo[T, C](indexName: String, typeName: String, settings: ElasticsearchSinkSettings)(
+  def createWithPassThrough[T, C](indexName: String, typeName: String, settings: ElasticsearchSinkSettings)(
       implicit client: RestClient,
       writer: JsonWriter[T]
   ): Flow[IncomingMessage[T, C], Seq[IncomingMessageResult[T, C]], NotUsed] =

@@ -24,45 +24,41 @@ import org.apache.http.message.BasicHeader
 import org.apache.http.util.EntityUtils
 
 object IncomingMessage {
-  // Apply method to use when not using cargo
+  // Apply method to use when not using passThrough
   def apply[T](id: Option[String], source: T): IncomingMessage[T, NotUsed] =
     IncomingMessage(id, source, NotUsed)
 
-  // Java-api - without cargo
+  // Java-api - without passThrough
   def create[T](id: String, source: T): IncomingMessage[T, NotUsed] =
     IncomingMessage(Option(id), source)
 
-  // Java-api - without cargo
+  // Java-api - without passThrough
   def create[T](source: T): IncomingMessage[T, NotUsed] =
     IncomingMessage(None, source)
 
-  // Java-api - with cargo
-  def create[T, C](id: String, source: T, cargo: C): IncomingMessage[T, C] =
-    IncomingMessage(Option(id), source, cargo)
+  // Java-api - with passThrough
+  def create[T, C](id: String, source: T, passThrough: C): IncomingMessage[T, C] =
+    IncomingMessage(Option(id), source, passThrough)
 
-  // Java-api - with cargo
-  def create[T, C](source: T, cargo: C): IncomingMessage[T, C] =
-    IncomingMessage(None, source, cargo)
+  // Java-api - with passThrough
+  def create[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
+    IncomingMessage(None, source, passThrough)
 }
 
-final case class IncomingMessage[T, C](id: Option[String], source: T, cargo: C)
+final case class IncomingMessage[T, C](id: Option[String], source: T, passThrough: C)
 
 object IncomingMessageResult {
-  // Apply method to use when not using cargo
+  // Apply method to use when not using passThrough
   def apply[T](source: T, success: Boolean): IncomingMessageResult[T, NotUsed] =
     IncomingMessageResult(source, NotUsed, success)
 }
 
-final case class IncomingMessageResult[T, C](source: T, cargo: C, success: Boolean)
+final case class IncomingMessageResult[T, C](source: T, passThrough: C, success: Boolean)
 
 trait MessageWriter[T] {
   def convert(message: T): String
 }
 
-// This code must return the MessageResult-type, to be able to work
-// with and without cargo.
-// MessageResult is transformed into IncomingMessageResult or IncomingMessageWithCargoResult
-// in the javadsl- and scaladsl-ElasticsearchFlow-implementations
 class ElasticsearchFlowStage[T, C](
     indexName: String,
     typeName: String,
@@ -138,7 +134,7 @@ class ElasticsearchFlowStage[T, C](
           if (successMsgs.nonEmpty) {
             // push the messages that DID succeed
             val resultForSucceededMsgs = successMsgs.map { x =>
-              IncomingMessageResult[T, C](x.source, x.cargo, success = true)
+              IncomingMessageResult[T, C](x.source, x.passThrough, success = true)
             }
             emit(out, Future.successful(resultForSucceededMsgs))
           }
@@ -149,10 +145,10 @@ class ElasticsearchFlowStage[T, C](
           // Build result of success-msgs and failed-msgs
           val result: Seq[IncomingMessageResult[T, C]] = Seq(
             successMsgs.map { x =>
-              IncomingMessageResult[T, C](x.source, x.cargo, success = true)
+              IncomingMessageResult[T, C](x.source, x.passThrough, success = true)
             },
             failedMsgs.map { x =>
-              IncomingMessageResult[T, C](x.source, x.cargo, success = false)
+              IncomingMessageResult[T, C](x.source, x.passThrough, success = false)
             }
           ).flatten
 

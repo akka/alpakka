@@ -318,7 +318,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   }
 
   "ElasticsearchFlow" should {
-    "kafka-example - store documents and pass Responses with cargo" in {
+    "kafka-example - store documents and pass Responses with passThrough" in {
 
       //#kafka-example
       // We're going to pretend we got messages from kafka.
@@ -349,7 +349,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           IncomingMessage(Some(id), book, kafkaMessage.offset)
         }
         .via( // write to elastic
-          ElasticsearchFlow.createWithCargo[Book, KafkaOffset](
+          ElasticsearchFlow.createWithPassThrough[Book, KafkaOffset](
             "sink6",
             "book",
             ElasticsearchSinkSettings(5)
@@ -359,7 +359,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           messageResults.foreach { result =>
             if (!result.success) throw new Exception("Failed to write message to elastic")
             // Commit to kafka
-            commitToKakfa(result.cargo)
+            commitToKakfa(result.passThrough)
           }
         }
         .runWith(Sink.seq)
