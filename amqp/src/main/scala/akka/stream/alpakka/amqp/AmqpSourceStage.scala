@@ -73,7 +73,7 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
           case AckArguments(deliveryTag, multiple, promise) => {
             try {
               channel.basicAck(deliveryTag, multiple)
-              if (unackedMessages.decrementAndGet() == 0 &&  isClosed(out)) completeStage()
+              if (unackedMessages.decrementAndGet() == 0 && isClosed(out)) completeStage()
               promise.complete(Try(Done))
             } catch {
               case e: Throwable => promise.failure(e)
