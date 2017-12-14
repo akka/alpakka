@@ -5,8 +5,8 @@ Alpakka [![scaladex-badge][]][scaladex] [![travis-badge][]][travis] [![gitter-ba
 [scaladex-badge]: https://index.scala-lang.org/akka/alpakka/latest.svg
 [travis]:                https://travis-ci.org/akka/alpakka
 [travis-badge]:          https://travis-ci.org/akka/alpakka.svg?branch=master
-[gitter]:                    https://gitter.im/akka/alpakka
-[gitter-badge]:       https://badges.gitter.im/akka/alpakka.svg
+[gitter]:                    https://gitter.im/akka/akka
+[gitter-badge]:       https://badges.gitter.im/akka/akka
 
 This project provides a home to Akka Streams connectors to various technologies, protocols or libraries.
 
