@@ -32,7 +32,7 @@ import scala.concurrent.duration._
  * (tests that do listing counts might need some tweaking)
  *
  */
-//@Ignore
+@Ignore
 class AwsS3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matchers with ScalaFutures {
 
   implicit val actorSystem = ActorSystem()
