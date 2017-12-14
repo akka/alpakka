@@ -116,7 +116,7 @@ final class GoogleCloudStorageClient(authConfiguration: GoogleAuthConfiguration)
     eventualDone.flatMap { _ =>
       val eventualUnit = exists(bucket, folderName).flatMap {
         case true => delete(bucket, folderName)
-        case false => Future.unit
+        case false => Future.successful(())
       }
       eventualUnit.map(_ => ())
 
