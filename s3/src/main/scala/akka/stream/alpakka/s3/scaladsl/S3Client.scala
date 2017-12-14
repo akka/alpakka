@@ -182,10 +182,11 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param method the [[HttpMethod]] to use when making the request
+   * @param sse the server side encryption to use
    * @return a [[Future]] containing the raw [[HttpResponse]]
    */
-  def request(bucket: String, key: String, method: HttpMethod = HttpMethods.GET): Future[HttpResponse] =
-    impl.request(S3Location(bucket, key), method)
+  def request(bucket: String, key: String, method: HttpMethod = HttpMethods.GET, sse: Option[ServerSideEncryption] = None): Future[HttpResponse] =
+    impl.request(S3Location(bucket, key), method, sse = sse)
 
   /**
    * Gets the metadata for a S3 Object
@@ -237,15 +238,30 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
     impl.download(S3Location(bucket, key))
 
   /**
+   * Downloads a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param sse the server side encryption used on upload
+   * @return A [[Source]] of [[ByteString]] that materializes into a [[Future]] containing the [[ObjectMetadata]]
+   */
+  def download(bucket: String, key: String, sse: ServerSideEncryption): Source[ByteString, Future[ObjectMetadata]] =
+    impl.download(S3Location(bucket, key), sse = Some(sse))
+
+  /**
    * Downloads a specific byte range of a S3 Object
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param range the [[ByteRange]] you want to download
+   * @param sse [optional] the server side encryption used on upload
    * @return A [[Source]] of [[ByteString]] that materializes into a [[Future]] containing the [[ObjectMetadata]]
    */
-  def download(bucket: String, key: String, range: ByteRange): Source[ByteString, Future[ObjectMetadata]] =
-    impl.download(S3Location(bucket, key), Some(range))
+  def download(bucket: String,
+               key: String,
+               range: ByteRange,
+               sse: Option[ServerSideEncryption] = None): Source[ByteString, Future[ObjectMetadata]] =
+    impl.download(S3Location(bucket, key), Some(range), sse)
 
   /**
    * Will return a source of object metadata for a given bucket with optional prefix.
@@ -276,14 +292,16 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
                       metaHeaders: MetaHeaders = MetaHeaders(Map()),
                       cannedAcl: CannedAcl = CannedAcl.Private,
                       chunkSize: Int = MinChunkSize,
-                      chunkingParallelism: Int = 4): Sink[ByteString, Future[MultipartUploadResult]] =
+                      chunkingParallelism: Int = 4,
+                      sse: Option[ServerSideEncryption] = None): Sink[ByteString, Future[MultipartUploadResult]] =
     impl
       .multipartUpload(
         S3Location(bucket, key),
         contentType,
         S3Headers(cannedAcl, metaHeaders),
         chunkSize,
-        chunkingParallelism
+        chunkingParallelism,
+        sse
       )
       .mapMaterializedValue(_.map(MultipartUploadResult.apply)(system.dispatcher))
 
@@ -304,7 +322,8 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
       contentType: ContentType = ContentTypes.`application/octet-stream`,
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4,
-      s3Headers: Option[S3Headers] = None
+      s3Headers: Option[S3Headers] = None,
+      sse: Option[ServerSideEncryption] = None
   ): Sink[ByteString, Future[MultipartUploadResult]] =
     impl
       .multipartUpload(
@@ -312,7 +331,8 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
         contentType,
         s3Headers.getOrElse(S3Headers.empty),
         chunkSize,
-        chunkingParallelism
+        chunkingParallelism,
+        sse
       )
       .mapMaterializedValue(_.map(MultipartUploadResult.apply)(system.dispatcher))
 }

@@ -5,6 +5,7 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.s3.impl.ServerSideEncryption
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase._
 import akka.testkit.TestKit
 import com.github.tomakehurst.wiremock.WireMockServer
@@ -33,6 +34,20 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
       )
     )
 
+  def mockSSEInvalidRequest(): Unit =
+    mock.register(
+      any(anyUrl()).willReturn(
+        aResponse()
+          .withStatus(400)
+          .withBody(
+            "<Error><Code>InvalidRequest</Code><Message>The object was stored using a form of Server Side Encryption. " +
+            "The correct parameters must be provided to retrieve the object.</Message>" +
+            "<RequestId>XXX</RequestId>" +
+            "<HostId>XXXX</HostId></Error>"
+          )
+      )
+    )
+
   def stopWireMockServer(): Unit = _wireMockServer.stop()
 
   val body = "<response>Some content</response>"
@@ -46,6 +61,10 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
   val listPrefix = "testPrefix"
   val listKey = "testingKey.txt"
 
+  val sseCustomerKey = "key"
+  val sseCustomerMd5Key = "md5"
+  val sseCustomerKeys = ServerSideEncryption.CustomerKeys(sseCustomerKey, Some(sseCustomerMd5Key))
+
   def mockDownload(): Unit =
     mock
       .register(
@@ -53,13 +72,25 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
           aResponse().withStatus(200).withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""").withBody(body)
         )
       )
-
   def mockHead(): Unit =
     mock
       .register(
         head(urlEqualTo(s"/$bucketKey")).willReturn(
           aResponse().withStatus(200).withHeader("ETag", s""""$etag"""")
         )
+      )
+
+  def mockDownloadSSEC(): Unit =
+    mock
+      .register(
+        get(urlEqualTo(s"/$bucketKey"))
+          .withHeader("x-amz-server-side-encryption-customer-algorithm", new EqualToPattern("AES256"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""")
+              .withBody(body)
+          )
       )
 
   def mockRangedDownload(): Unit =

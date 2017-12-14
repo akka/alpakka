@@ -6,6 +6,7 @@ package akka.stream.alpakka.s3.scaladsl
 
 import akka.NotUsed
 import akka.http.scaladsl.model.headers.ByteRange
+import akka.stream.alpakka.s3.impl.ServerSideEncryption
 import akka.stream.alpakka.s3.{MemoryBufferType, Proxy, S3Exception, S3Settings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
@@ -61,6 +62,19 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     result.futureValue shouldBe rangeOfBody
   }
 
+  it should "download a stream of bytes using customer server side encryption" in {
+
+    mockDownloadSSEC()
+
+    //#download
+    val s3Source = s3Client.download(bucket, bucketKey, sseCustomerKeys)
+    //#download
+
+    val result = s3Source.map(_.utf8String).runWith(Sink.head)
+
+    result.futureValue shouldBe body
+  }
+
   it should "fail if request returns 404" in {
 
     mock404s()
@@ -73,6 +87,22 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     whenReady(result.failed) { e =>
       e shouldBe a[S3Exception]
       e.asInstanceOf[S3Exception].code should equal("NoSuchKey")
+    }
+  }
+
+  it should "fail if download using server side encryption returns 'Invalid Request'" in {
+
+    mockSSEInvalidRequest()
+
+    val sse = ServerSideEncryption.CustomerKeys("encoded-key", Some("md5-encoded-key"))
+    val result = s3Client
+      .download(bucket, bucketKey, sse)
+      .map(_.utf8String)
+      .runWith(Sink.head)
+
+    whenReady(result.failed) { e =>
+      e shouldBe a[S3Exception]
+      e.asInstanceOf[S3Exception].code should equal("InvalidRequest")
     }
   }
 

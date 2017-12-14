@@ -6,7 +6,7 @@ package akka.stream.alpakka.s3.impl
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.headers.ByteRange
+import akka.http.scaladsl.model.headers.{ByteRange, RawHeader}
 import akka.stream.alpakka.s3.{MemoryBufferType, S3Settings}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
@@ -23,6 +23,76 @@ class S3StreamSpec(_system: ActorSystem)
 
   def this() = this(ActorSystem("S3StreamSpec"))
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
+
+  "S3Stream" should "have an empty headers when call downloadOrUpdatePart without server side encryption" in {
+    val credentials =
+      new AWSStaticCredentialsProvider(
+        new BasicAWSCredentials(
+          "test-Id",
+          "test-key"
+        )
+      )
+    implicit val settings = new S3Settings(MemoryBufferType, None, credentials, "us-east-1", false)
+
+    val s3Stream = new S3Stream(settings)
+    val result = s3Stream.downloadOrUpdatePartHeaders(None)
+
+    result.headers.size shouldBe 0
+  }
+
+  it should "have empty header when call downloadOrUpdatePart with AE256 server side encryption" in {
+    val credentials =
+      new AWSStaticCredentialsProvider(
+        new BasicAWSCredentials(
+          "test-Id",
+          "test-key"
+        )
+      )
+    implicit val settings = new S3Settings(MemoryBufferType, None, credentials, "us-east-1", false)
+
+    val s3Stream = new S3Stream(settings)
+    val sse = Some(ServerSideEncryption.AES256)
+    val result = s3Stream.downloadOrUpdatePartHeaders(sse)
+
+    result.headers.size shouldBe 0
+  }
+
+  it should "have empty header when call downloadOrUpdatePart with KMS server side encryption" in {
+    val credentials =
+      new AWSStaticCredentialsProvider(
+        new BasicAWSCredentials(
+          "test-Id",
+          "test-key"
+        )
+      )
+    implicit val settings = new S3Settings(MemoryBufferType, None, credentials, "us-east-1", false)
+
+    val s3Stream = new S3Stream(settings)
+    val sse = Some(ServerSideEncryption.KMS("my-key"))
+    val result = s3Stream.downloadOrUpdatePartHeaders(sse)
+
+    result.headers.size shouldBe 0
+  }
+
+  it should "have 3 headers when call downloadOrUpdatePart with Customer key server side encryption" in {
+    val credentials =
+      new AWSStaticCredentialsProvider(
+        new BasicAWSCredentials(
+          "test-Id",
+          "test-key"
+        )
+      )
+    implicit val settings = new S3Settings(MemoryBufferType, None, credentials, "us-east-1", false)
+
+    val s3Stream = new S3Stream(settings)
+    val sse = Some(ServerSideEncryption.CustomerKeys("my-key", Some("md5")))
+    val result = s3Stream.downloadOrUpdatePartHeaders(sse)
+
+    result.headers.size shouldBe 3
+    result.headers should contain(RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256"))
+    result.headers should contain(RawHeader("x-amz-server-side-encryption-customer-key", "my-key"))
+    result.headers should contain(RawHeader("x-amz-server-side-encryption-customer-key-MD5", "md5"))
+  }
 
   "Non-ranged downloads" should "have one (host) header" in {
 

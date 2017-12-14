@@ -24,6 +24,22 @@ class S3HeadersSpec extends FlatSpec with Matchers {
     kms.headers should contain(RawHeader("x-amz-server-side-encryption-context", "base-64-encoded-context"))
   }
 
+  it should "create well formed headers for customer keys encryption" in {
+    val key = "rOJ7HxUze312HtqOL+55ahqbokC+nc614oRlrYdjGhE="
+    val md5Key = "nU0sHdKlctQdn+Up4POVJw=="
+
+    var ssec = ServerSideEncryption.CustomerKeys(key, Some(md5Key))
+    ssec.headers should contain(RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256"))
+    ssec.headers should contain(RawHeader("x-amz-server-side-encryption-customer-key", key))
+    ssec.headers should contain(RawHeader("x-amz-server-side-encryption-customer-key-MD5", md5Key))
+
+    //Non md5
+    ssec = ServerSideEncryption.CustomerKeys(key)
+    ssec.headers should contain(RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256"))
+    ssec.headers should contain(RawHeader("x-amz-server-side-encryption-customer-key", key))
+    ssec.headers should contain(RawHeader("x-amz-server-side-encryption-customer-key-MD5", md5Key))
+  }
+
   "StorageClass" should "create well formed headers for 'infrequent access'" in {
     StorageClass.InfrequentAccess.header shouldEqual RawHeader("x-amz-storage-class", "STANDARD_IA")
   }
