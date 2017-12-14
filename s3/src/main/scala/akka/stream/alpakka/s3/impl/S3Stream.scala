@@ -19,7 +19,7 @@ import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.auth.{CredentialScope, Signer, SigningKey}
-import akka.stream.alpakka.s3.scaladsl.ListBucketResultContents
+import akka.stream.alpakka.s3.scaladsl.{ListBucketResultContents, ObjectMetadata}
 import akka.stream.alpakka.s3.{DiskBufferType, MemoryBufferType, S3Exception, S3Settings}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
@@ -74,8 +74,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
   // def because tokens can expire
   def signingKey = SigningKey(settings.credentialsProvider, CredentialScope(LocalDate.now(), settings.s3Region, "s3"))
 
-  def download(s3Location: S3Location,
-               range: Option[ByteRange] = None): Source[ByteString, Future[ListBucketResultContents]] = {
+  def download(s3Location: S3Location, range: Option[ByteRange] = None): Source[ByteString, Future[ObjectMetadata]] = {
     import mat.executionContext
     val future = request(s3Location, rangeOption = range)
     Source
@@ -84,7 +83,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       .flatMapConcat(identity)
       .mapMaterializedValue { _ =>
         future.map { resp =>
-          metadataFromHeaders(s3Location.key, s3Location.bucket, resp.headers)
+          ObjectMetadata(resp.headers)
         }
       }
   }
@@ -117,12 +116,12 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       .mapConcat(identity)
   }
 
-  def getObjectMetadata(bucket: String, key: String): Future[Option[ListBucketResultContents]] = {
+  def getObjectMetadata(bucket: String, key: String): Future[Option[ObjectMetadata]] = {
     implicit val ec = mat.executionContext
     request(S3Location(bucket, key), HttpMethods.HEAD).flatMap {
       case HttpResponse(OK, headers, entity, _) =>
         entity.discardBytes().future().map { _ =>
-          Some(metadataFromHeaders(bucket, key, headers))
+          Some(ObjectMetadata(headers))
         }
       case HttpResponse(NotFound, _, entity, _) =>
         entity.discardBytes().future().map(_ => None)
@@ -150,7 +149,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
                 contentType: ContentType,
                 data: Source[ByteString, _],
                 contentLength: Long,
-                s3Headers: S3Headers): Future[ListBucketResultContents] = {
+                s3Headers: S3Headers): Future[ObjectMetadata] = {
 
     // TODO can we take in a Source[ByteString, NotUsed] without forcing chunking
     // chunked requests are causing S3 to think this is a multipart upload
@@ -162,9 +161,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       signedRequest <- Signer.signedRequest(req, signingKey)
       resp <- Http().singleRequest(signedRequest)
     } yield {
-      metadataFromHeaders(s3Location.bucket, s3Location.key, resp.headers).copy(
-        size = contentLength
-      )
+      ObjectMetadata(resp.headers)
     }
   }
 
@@ -326,8 +323,10 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
   private def signAndGet(request: HttpRequest): Future[HttpResponse] = {
     import mat.executionContext
-    for (req <- Signer.signedRequest(request, signingKey);
-         res <- Http().singleRequest(req)) yield res
+    for {
+      req <- Signer.signedRequest(request, signingKey)
+      res <- Http().singleRequest(req)
+    } yield res
   }
 
   private def entityForSuccess(resp: HttpResponse)(implicit ctx: ExecutionContext): Future[ResponseEntity] =
@@ -356,26 +355,4 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     headers.find(_.lowercaseName() == STORAGE_CLASS.toLowerCase).flatMap { header =>
       StorageClass(header.value)
     }
-
-  private def metadataFromHeaders(bucket: String,
-                                  key: String,
-                                  headers: immutable.Seq[HttpHeader]): ListBucketResultContents = {
-    val etag = etagFromHeaders(headers).getOrElse(
-      throw new UnsupportedOperationException(s"Missing $ETAG for $bucket $key: $headers")
-    )
-    val lastModified = lastModifiedFromHeaders(headers).getOrElse(
-      // TODO implement correctly
-      Instant.now()
-      //throw new UnsupportedOperationException(s"Missing $LAST_MODIFIED for $bucket $key: $headers")
-    )
-    val storageClass = storageClassFromHeaders(headers).getOrElse(
-      // TODO is this correct?
-      StorageClass.Standard
-    )
-    val size = sizeFromHeaders(headers).getOrElse(
-      // TODO why don't we get this?
-      -1L
-    )
-    ListBucketResultContents(bucket, key, etag, size, lastModified, storageClass.storageClass)
-  }
 }
