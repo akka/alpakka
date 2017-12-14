@@ -350,13 +350,13 @@ class AmqpConnectorsSpec extends AmqpSpec {
         AmqpSinkSettings(connectionSettings).withRoutingKey(queueName).withDeclarations(queueDeclaration)
       )
 
+      val input = Vector("one", "two", "three", "four", "five")
+      Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
+
       val amqpSource = AmqpSource.committableSource(
         NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration),
         bufferSize = 10
       )
-
-      val input = Vector("one", "two", "three", "four", "five")
-      Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
 
       //#run-source-withoutautoack-and-nack
       val result1 = amqpSource
@@ -415,14 +415,14 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val amqpSink = AmqpSink.simple(
         AmqpSinkSettings(connectionSettings).withRoutingKey(queueName).withDeclarations(queueDeclaration)
       )
+      val input = Vector("one", "two", "three", "four", "five")
+      Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
+
 
       val amqpSource = AmqpSource.committableSource(
         NamedQueueSourceSettings(connectionSettings, queueName).withDeclarations(queueDeclaration),
         bufferSize = 10
       )
-
-      val input = Vector("one", "two", "three", "four", "five")
-      Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
 
       val result1 = amqpSource
         .mapAsync(1)(cm => cm.nack(requeue = false).map(_ => cm))
@@ -444,25 +444,20 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueName = "amqp-conn-it-spec-rpc-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
 
+      val input = Vector("one", "two", "three", "four", "five")
+
       val amqpRpcFlow = AmqpRpcFlow.committableFlow(
         AmqpSinkSettings(DefaultAmqpConnection)
           .withRoutingKey(queueName)
           .withDeclarations(queueDeclaration),
         bufferSize = 10
       )
-
-      val amqpSource = AmqpSource.atMostOnceSource(
-        NamedQueueSourceSettings(DefaultAmqpConnection, queueName),
-        bufferSize = 1
-      )
-
-      val input = Vector("one", "two", "three", "four", "five")
       val (rpcQueueF, probe) =
         Source(input)
           .map(s => ByteString(s))
           .map(bytes => OutgoingMessage(bytes, false, false, None))
           .viaMat(amqpRpcFlow)(Keep.right)
-          .mapAsync(1)(cm => cm.ack().map(_ => cm))
+          .mapAsync(1)(cm => cm.ack().map(_ => cm.message))
           .toMat(TestSink.probe)(Keep.both)
           .run
       rpcQueueF.futureValue
@@ -471,11 +466,15 @@ class AmqpConnectorsSpec extends AmqpSpec {
         AmqpReplyToSinkSettings(DefaultAmqpConnection)
       )
 
+      val amqpSource = AmqpSource.atMostOnceSource(
+        NamedQueueSourceSettings(DefaultAmqpConnection, queueName),
+        bufferSize = 1
+      )
       amqpSource
         .map(b => OutgoingMessage(b.bytes, false, false, Some(b.properties)))
         .runWith(amqpSink)
 
-      probe.toStrict(3.second).map(_.message.bytes.utf8String) shouldEqual input
+      probe.toStrict(3.second).map(_.bytes.utf8String) shouldEqual input
     }
 
     "set routing key per message and consume them in the same JVM" in {
