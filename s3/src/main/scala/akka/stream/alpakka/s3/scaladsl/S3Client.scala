@@ -299,9 +299,9 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
         S3Location(bucket, key),
         contentType,
         S3Headers(cannedAcl, metaHeaders),
+        sse,
         chunkSize,
-        chunkingParallelism,
-        sse
+        chunkingParallelism
       )
       .mapMaterializedValue(_.map(MultipartUploadResult.apply)(system.dispatcher))
 
@@ -330,9 +330,9 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
         S3Location(bucket, key),
         contentType,
         s3Headers.getOrElse(S3Headers.empty),
+        sse,
         chunkSize,
-        chunkingParallelism,
-        sse
+        chunkingParallelism
       )
       .mapMaterializedValue(_.map(MultipartUploadResult.apply)(system.dispatcher))
 }

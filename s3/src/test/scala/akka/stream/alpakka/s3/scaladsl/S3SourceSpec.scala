@@ -72,7 +72,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     val result = s3Source.map(_.utf8String).runWith(Sink.head)
 
-    result.futureValue shouldBe body
+    result.futureValue shouldBe bodySSE
   }
 
   it should "fail if request returns 404" in {

@@ -189,9 +189,9 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       s3Location: S3Location,
       contentType: ContentType = ContentTypes.`application/octet-stream`,
       s3Headers: S3Headers,
+      sse: Option[ServerSideEncryption] = None,
       chunkSize: Int = MinChunkSize,
-      chunkingParallelism: Int = 4,
-      sse: Option[ServerSideEncryption] = None
+      chunkingParallelism: Int = 4
   ): Sink[ByteString, Future[CompleteMultipartUploadResult]] =
     chunkAndRequest(s3Location, contentType, s3Headers, chunkSize, sse)(chunkingParallelism)
       .toMat(completionSink(s3Location))(Keep.right)
