@@ -5,10 +5,11 @@
 package akka.stream.alpakka.s3.impl
 
 import java.time.LocalDate
+
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
@@ -96,6 +97,31 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
   def request(s3Location: S3Location, rangeOption: Option[ByteRange] = None): Future[HttpResponse] =
     signAndGet(requestHeaders(getDownloadRequest(s3Location), rangeOption))
+
+  /**
+   * Send a request to S3, using setting, to delete the object at s3Location
+   * @param s3Location
+   * @return A [[scala.concurrent.Future]] of [[scala.util.Either]] [[akka.Done]] if successful
+   *         or the error message from S3.
+   */
+  def deleteObject(s3Location: S3Location): Future[Either[String, Done]] = {
+    import mat.executionContext
+
+    signAndGet(deleteRequest(s3Location))
+      .flatMap {
+        case HttpResponse(StatusCodes.NoContent, _, _, _) =>
+          Future.successful(Right(Done))
+        case HttpResponse(_, _, entity, _) =>
+          entity
+            .getDataBytes()
+            .asScala
+            .fold[ByteString](ByteString.empty)(_ concat _)
+            .runWith(Sink.head)
+            .map { bytes =>
+              Left(bytes.utf8String)
+            }
+      }
+  }
 
   private def requestHeaders(downloadRequest: HttpRequest, rangeOption: Option[ByteRange]): HttpRequest =
     rangeOption match {

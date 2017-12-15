@@ -6,23 +6,26 @@ package akka.stream.alpakka.s3.javadsl
 
 import java.time.Instant
 import java.util.concurrent.CompletionStage
+
 import scala.compat.java8.FutureConverters._
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.http.impl.model.JavaUri
 import akka.http.javadsl.model.headers.ByteRange
 import akka.http.javadsl.model.{ContentType, HttpResponse, Uri}
-import akka.http.scaladsl.model.headers.{ByteRange ⇒ ScalaByteRange}
-import akka.http.scaladsl.model.{ContentTypes, ContentType ⇒ ScalaContentType}
+import akka.http.scaladsl.model.headers.{ByteRange => ScalaByteRange}
+import akka.http.scaladsl.model.{ContentTypes, ContentType => ScalaContentType}
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
-import akka.stream.alpakka.s3.auth.{AWSCredentials ⇒ OldAWSCredentials}
+import akka.stream.alpakka.s3.auth.{AWSCredentials => OldAWSCredentials}
 import akka.stream.alpakka.s3.impl._
 import akka.stream.javadsl.{Sink, Source}
 import akka.util.ByteString
 import com.amazonaws.auth._
 import com.typesafe.config.ConfigFactory
+
+import scala.concurrent.Future
 
 final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
@@ -132,4 +135,17 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
 
   def multipartUpload(bucket: String, key: String): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     multipartUpload(bucket, key, ContentTypes.`application/octet-stream`, CannedAcl.Private, MetaHeaders(Map()))
+
+  def deleteObject(bucket: String, key: String): Future[Done] = {
+    import mat.executionContext
+
+    impl
+      .deleteObject(S3Location(bucket, key))
+      .flatMap {
+        case Left(error) =>
+          Future.failed(new RuntimeException(error))
+        case Right(Done) =>
+          Future.successful(Done)
+      }
+  }
 }

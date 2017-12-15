@@ -5,15 +5,16 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import java.time.Instant
+
 import scala.concurrent.Future
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
-import akka.stream.alpakka.s3.auth.{AWSCredentials ⇒ OldAWSCredentials}
+import akka.stream.alpakka.s3.auth.{AWSCredentials => OldAWSCredentials}
 import akka.stream.alpakka.s3.impl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
@@ -124,4 +125,12 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
       )
       .mapMaterializedValue(_.map(MultipartUploadResult.apply)(system.dispatcher))
 
+  /**
+   * Will return a [[scala.concurrent.Future]] of [[akka.Done]] representing the deletion of key in bucket.
+   * @param bucket The bucket in which key is to be deleted
+   * @param key The key pointing to the file to be deleted
+   * @return A Future For the Deletion of key in bucket
+   */
+  def deleteObject(bucket: String, key: String): Future[Either[String, Done]] =
+    impl.deleteObject(S3Location(bucket, key))
 }
