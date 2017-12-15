@@ -32,24 +32,12 @@ Java
 
 This is all preparation that we are going to need.
 
-### JsObject message
+### Streaming messages
 
-Now we can stream messages which contains spray-json's `JsObject` (in Scala) or `java.util.Map<String, Object>` (in Java)
-from or to Elasticsearch where we have access to by providing the `RestClient` to the
+Now we can stream messages from or to Elasticsearch by providing the `RestClient` to the
 @scaladoc[ElasticsearchSource](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSource$) or the
 @scaladoc[ElasticsearchSink](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSink$).
 
-Scala
-: @@snip ($alpakka$/elasticsearch/src/test/scala/akka/stream/alpakka/elasticsearch/ElasticsearchSpec.scala) { #run-jsobject }
-
-Java
-: @@snip ($alpakka$/elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #run-jsobject }
-
-
-### Typed messages
-
-Also, it's possible to stream messages which contains any classes. In Scala, spray-json is used for JSON conversion,
-so defining the mapped class and `JsonFormat` for it is necessary. In Java, Jackson is used, so just define the mapped class.
 
 Scala
 : @@snip ($alpakka$/elasticsearch/src/test/scala/akka/stream/alpakka/elasticsearch/ElasticsearchSpec.scala) { #define-class }
@@ -58,7 +46,7 @@ Java
 : @@snip ($alpakka$/elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #define-class }
 
 
-Use `ElasticsearchSource.typed` and `ElasticsearchSink.typed` to create source and sink instead.
+Use `ElasticsearchSource.create` and `ElasticsearchSink.create` to create source and sink.
 
 Scala
 : @@snip ($alpakka$/elasticsearch/src/test/scala/akka/stream/alpakka/elasticsearch/ElasticsearchSpec.scala) { #run-typed }
@@ -99,6 +87,18 @@ Scala (flow)
 
 Java (flow)
 : @@snip ($alpakka$/elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #run-flow }
+
+### Passing data through ElasticsearchFlow
+
+When streaming documents from Kafka, you might want to commit to Kafka **AFTER** the document has been written to Elastic.
+
+Scala (flow)
+: @@snip ($alpakka$/elasticsearch/src/test/scala/akka/stream/alpakka/elasticsearch/ElasticsearchSpec.scala) { #kafka-example }
+
+Java (flow)
+: @@snip ($alpakka$/elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #kafka-example }
+
+
 
 ### Running the example code
 
