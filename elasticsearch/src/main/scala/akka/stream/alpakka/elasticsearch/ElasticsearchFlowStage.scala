@@ -23,33 +23,62 @@ import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSinkSettings
 import org.apache.http.message.BasicHeader
 import org.apache.http.util.EntityUtils
 
-final case class IncomingMessage[T](id: Option[String], source: T)
+object IncomingMessage {
+  // Apply method to use when not using passThrough
+  def apply[T](id: Option[String], source: T): IncomingMessage[T, NotUsed] =
+    IncomingMessage(id, source, NotUsed)
+
+  // Java-api - without passThrough
+  def create[T](id: String, source: T): IncomingMessage[T, NotUsed] =
+    IncomingMessage(Option(id), source)
+
+  // Java-api - without passThrough
+  def create[T](source: T): IncomingMessage[T, NotUsed] =
+    IncomingMessage(None, source)
+
+  // Java-api - with passThrough
+  def create[T, C](id: String, source: T, passThrough: C): IncomingMessage[T, C] =
+    IncomingMessage(Option(id), source, passThrough)
+
+  // Java-api - with passThrough
+  def create[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
+    IncomingMessage(None, source, passThrough)
+}
+
+final case class IncomingMessage[T, C](id: Option[String], source: T, passThrough: C)
+
+object IncomingMessageResult {
+  // Apply method to use when not using passThrough
+  def apply[T](source: T, success: Boolean): IncomingMessageResult[T, NotUsed] =
+    IncomingMessageResult(source, NotUsed, success)
+}
+
+final case class IncomingMessageResult[T, C](source: T, passThrough: C, success: Boolean)
 
 trait MessageWriter[T] {
   def convert(message: T): String
 }
 
-class ElasticsearchFlowStage[T, R](
+class ElasticsearchFlowStage[T, C](
     indexName: String,
     typeName: String,
     client: RestClient,
     settings: ElasticsearchSinkSettings,
-    pusher: Seq[IncomingMessage[T]] => R,
     writer: MessageWriter[T]
-) extends GraphStage[FlowShape[IncomingMessage[T], Future[R]]] {
+) extends GraphStage[FlowShape[IncomingMessage[T, C], Future[Seq[IncomingMessageResult[T, C]]]]] {
 
-  private val in = Inlet[IncomingMessage[T]]("messages")
-  private val out = Outlet[Future[R]]("failed")
+  private val in = Inlet[IncomingMessage[T, C]]("messages")
+  private val out = Outlet[Future[Seq[IncomingMessageResult[T, C]]]]("result")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
       private var state: State = Idle
-      private val queue = new mutable.Queue[IncomingMessage[T]]()
-      private val failureHandler = getAsyncCallback[(Seq[IncomingMessage[T]], Throwable)](handleFailure)
-      private val responseHandler = getAsyncCallback[(Seq[IncomingMessage[T]], Response)](handleResponse)
-      private var failedMessages: Seq[IncomingMessage[T]] = Nil
+      private val queue = new mutable.Queue[IncomingMessage[T, C]]()
+      private val failureHandler = getAsyncCallback[(Seq[IncomingMessage[T, C]], Throwable)](handleFailure)
+      private val responseHandler = getAsyncCallback[(Seq[IncomingMessage[T, C]], Response)](handleResponse)
+      private var failedMessages: Seq[IncomingMessage[T, C]] = Nil
       private var retryCount: Int = 0
 
       override def preStart(): Unit =
@@ -65,7 +94,7 @@ class ElasticsearchFlowStage[T, R](
         failedMessages = Nil
       }
 
-      private def handleFailure(args: (Seq[IncomingMessage[T]], Throwable)): Unit = {
+      private def handleFailure(args: (Seq[IncomingMessage[T, C]], Throwable)): Unit = {
         val (messages, exception) = args
         if (retryCount >= settings.maxRetry) {
           failStage(exception)
@@ -79,28 +108,52 @@ class ElasticsearchFlowStage[T, R](
       private def handleSuccess(): Unit =
         completeStage()
 
-      private def handleResponse(args: (Seq[IncomingMessage[T]], Response)): Unit = {
+      private def handleResponse(args: (Seq[IncomingMessage[T, C]], Response)): Unit = {
         val (messages, response) = args
         val responseJson = EntityUtils.toString(response.getEntity).parseJson
 
         // If some commands in bulk request failed, pass failed messages to follows.
         val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
-        val failed = items.elements.zip(messages).flatMap {
+        val messageResults = items.elements.zip(messages).map {
           case (item, message) =>
-            item.asJsObject.fields("index").asJsObject.fields.get("error").map { _ =>
-              message
+            item.asJsObject.fields("index").asJsObject.fields.get("error") match {
+              case Some(errorMessage) => (message, false)
+              case None => (message, true)
             }
         }
 
-        if (failed.nonEmpty && settings.retryPartialFailure && retryCount < settings.maxRetry) {
+        val successMsgs = messageResults.filter(_._2).map(_._1)
+        val failedMsgs = messageResults.filter(!_._2).map(_._1)
+
+        if (failedMsgs.nonEmpty && settings.retryPartialFailure && retryCount < settings.maxRetry) {
           // Retry partial failed messages
           retryCount = retryCount + 1
-          failedMessages = failed
+          failedMessages = failedMsgs // These are the messages we're going to retry
           scheduleOnce(NotUsed, settings.retryInterval.millis)
+
+          if (successMsgs.nonEmpty) {
+            // push the messages that DID succeed
+            val resultForSucceededMsgs = successMsgs.map { x =>
+              IncomingMessageResult[T, C](x.source, x.passThrough, success = true)
+            }
+            emit(out, Future.successful(resultForSucceededMsgs))
+          }
 
         } else {
           retryCount = 0
-          push(out, Future.successful(pusher(failed)))
+
+          // Build result of success-msgs and failed-msgs
+          val result: Seq[IncomingMessageResult[T, C]] = Seq(
+            successMsgs.map { x =>
+              IncomingMessageResult[T, C](x.source, x.passThrough, success = true)
+            },
+            failedMsgs.map { x =>
+              IncomingMessageResult[T, C](x.source, x.passThrough, success = false)
+            }
+          ).flatten
+
+          // Push failed
+          emit(out, Future.successful(result))
 
           // Fetch next messages from queue and send them
           val nextMessages = (1 to settings.bufferSize).flatMap { _ =>
@@ -118,7 +171,7 @@ class ElasticsearchFlowStage[T, R](
         }
       }
 
-      private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T]]): Unit = {
+      private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T, C]]): Unit = {
         val json = messages
           .map { message =>
             JsObject(
@@ -182,7 +235,6 @@ class ElasticsearchFlowStage[T, R](
           case Finished => ()
         }
     }
-
 }
 
 object ElasticsearchFlowStage {
