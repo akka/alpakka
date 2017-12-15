@@ -1,6 +1,6 @@
 # Slick (JDBC) Connector
 
-The Slick connector provides Scala and Java DSLs to create a `Source` to stream the results of a SQL database query and a `Flow`/`Sink` to perform SQL actions (like inserts, updates, and deletes) for each element in a stream. It is built on the [Slick](http://slick.lightbend.com/) library to interact with a long list of [supported relational databases](http://slick.lightbend.com/doc/3.2.1/supported-databases.html).
+The Slick connector provides Scala and Java DSLs to create a `Source` to stream the results of a SQL database query and a `Flow`/`Sink` to perform SQL actions (like inserts, updates, and deletes) for each element in a stream. It is built on the [Slick](http://slick.lightbend.com/) library to interact with a long list of [supported relational databases](http://slick.lightbend.com/doc/$slickVersion$/supported-databases.html).
 
 
 ### Reported issues
@@ -16,7 +16,7 @@ The Slick connector provides Scala and Java DSLs to create a `Source` to stream 
   version=$version$
 }
 
-You will also need to add the JDBC driver(s) for the specific relational database(s) to your project. Most of those database have drivers that are not available from public repositories so unfortunately some manual steps will probably be required. The Slick documentation has [information on where to download the drivers](http://slick.lightbend.com/doc/3.2.1/supported-databases.html).
+You will also need to add the JDBC driver(s) for the specific relational database(s) to your project. Most of those database have drivers that are not available from public repositories so unfortunately some manual steps will probably be required. The Slick documentation has [information on where to download the drivers](http://slick.lightbend.com/doc/$slickVersion$/supported-databases.html).
 
 ## Usage
 
@@ -62,9 +62,9 @@ Configuration
 
 You can specify multiple different database configurations, as long as you use unique names. These can then be loaded by fully qualified configuration name using the `SlickSession.forConfig()` method described above.
 
-The Slick connector supports all the various ways Slick allows you to configure your JDBC database drivers, connection pools, etc., but we strongly recommend using the so-called ["DatabaseConfig"](http://slick.lightbend.com/doc/3.2.1/database.html#databaseconfig) method of configuration, which is the only method explicitly tested to work with the Slick connector.
+The Slick connector supports all the various ways Slick allows you to configure your JDBC database drivers, connection pools, etc., but we strongly recommend using the so-called ["DatabaseConfig"](http://slick.lightbend.com/doc/$slickVersion$/database.html#databaseconfig) method of configuration, which is the only method explicitly tested to work with the Slick connector.
 
-Below are a few configuration examples for other databases. The Slick connector supports all [databases supported by Slick](http://slick.lightbend.com/doc/3.2.1/supported-databases.html) (as of Slick 3.2.x)
+Below are a few configuration examples for other databases. The Slick connector supports all [databases supported by Slick](http://slick.lightbend.com/doc/$slickVersion$/supported-databases.html) (as of Slick 3.2.x)
 
 Postgres
 : @@snip ($alpakka$/slick/src/test/resources/application.conf) { #config-postgres }
@@ -96,9 +96,9 @@ Java
 The Slick connector allows you to perform a SQL query and expose the resulting stream of results as an Akka Streams `Source[T]`. Where `T` is any type that can be constructed using a database row.
 
 #### Plain SQL queries
-Both the Scala and Java DSLs support the use of [plain SQL queries](http://slick.lightbend.com/doc/3.2.1/concepts.html#plain-sql-statements).
+Both the Scala and Java DSLs support the use of [plain SQL queries](http://slick.lightbend.com/doc/$slickVersion$/concepts.html#plain-sql-statements).
 
-The Scala DSL expects you to use the special `sql"..."`, `sqlu"..."`, and `sqlt"..."` [String interpolators provided by Slick](http://slick.lightbend.com/doc/3.2.1/sql.html#string-interpolation) to construct queries.
+The Scala DSL expects you to use the special `sql"..."`, `sqlu"..."`, and `sqlt"..."` [String interpolators provided by Slick](http://slick.lightbend.com/doc/$slickVersion$/sql.html#string-interpolation) to construct queries.
 
 Unfortunately, String interpolation is a Scala language feature that cannot be directly translated to Java. This means that query strings in the Java DSL will need to be manually prepared using plain Java Strings (or a `StringBuilder`).
 
@@ -112,7 +112,7 @@ Java
 
 
 #### Typed Queries
-The Scala DSL also supports the use of [Slick Scala queries](http://slick.lightbend.com/doc/3.2.1/concepts.html#scala-queries), which are more type-safe then their plain SQL equivalent. The code will look very similar to the plain SQL example.
+The Scala DSL also supports the use of [Slick Scala queries](http://slick.lightbend.com/doc/$slickVersion$/concepts.html#scala-queries), which are more type-safe then their plain SQL equivalent. The code will look very similar to the plain SQL example.
 
 Scala
 : @@snip ($alpakka$/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/DocSnippets.scala) { #source-with-typed-query }
@@ -147,4 +147,4 @@ Java
 : @@snip ($alpakka$/slick/src/test/java/akka/stream/alpakka/slick/javadsl/DocSnippetFlowWithPassThrough.java) { #flowWithPassThrough-example }
 
 
- [jdbcbackend-api]: http://slick.lightbend.com/doc/3.2.1/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig(String,Config,Driver,ClassLoader):Database
+ [jdbcbackend-api]: http://slick.lightbend.com/doc/$slickVersion$/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig(String,Config,Driver,ClassLoader):Database
