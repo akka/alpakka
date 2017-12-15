@@ -22,13 +22,12 @@ import scala.util.{Failure, Success}
 
 class HBaseStageSpec extends WordSpec with Matchers {
 
-  implicit def toBytes(string: String): Array[Byte] = Bytes.toBytes(string)
-
-  case class Person(id: Int, name: String)
-
   val hbaseIT = sys.env.get("HBASE_TEST")
 
   //#create-converter
+  implicit def toBytes(string: String): Array[Byte] = Bytes.toBytes(string)
+  case class Person(id: Int, name: String)
+
   val hBaseConverter: Person => Put = { person =>
     val put = new Put(s"id_${person.id}")
     put.addColumn("info", "name", person.name)
