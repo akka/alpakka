@@ -4,27 +4,24 @@
 
 package akka.stream.alpakka.s3.impl
 
-import java.time.{Instant, LocalDate}
+import java.time.LocalDate
 
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
-import akka.NotUsed
+import scala.util.{Failure, Success}
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK}
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{ByteRange, Host}
+import akka.http.scaladsl.model.headers.ByteRange
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.stream.Materializer
-import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.auth.{CredentialScope, Signer, SigningKey}
 import akka.stream.alpakka.s3.scaladsl.{ListBucketResultContents, ObjectMetadata}
 import akka.stream.alpakka.s3.{DiskBufferType, MemoryBufferType, S3Exception, S3Settings}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
-
-import scala.collection.immutable
 
 final case class S3Location(bucket: String, key: String)
 
@@ -54,18 +51,10 @@ object S3Stream {
 
   def apply(settings: S3Settings)(implicit system: ActorSystem, mat: Materializer): S3Stream =
     new S3Stream(settings)
-
-  private final val CONTENT_LENGTH = "Content-Length"
-  private final val ETAG = "ETag"
-  private final val LAST_MODIFIED = "Last-Modified"
-
-  /** Header describing what class of storage a user wants */
-  private final val STORAGE_CLASS = "x-amz-storage-class"
 }
 
 private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
 
-  import S3Stream._
   import HttpRequests._
   import Marshalling._
 
@@ -132,11 +121,11 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     }
   }
 
-  def deleteObject(s3Location: S3Location): Future[Unit] = {
+  def deleteObject(s3Location: S3Location): Future[Done] = {
     implicit val ec = mat.executionContext
     request(s3Location, HttpMethods.DELETE).flatMap {
       case HttpResponse(NoContent, _, entity, _) =>
-        entity.discardBytes().future().map(_ => ())
+        entity.discardBytes().future().map(_ => Done)
       case HttpResponse(code, _, entity, _) =>
         entity.discardBytes().future().map { _ =>
           // TODO get the first part of the body?
@@ -232,8 +221,8 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       s3Location: S3Location,
       contentType: ContentType,
       s3Headers: S3Headers,
-      chunkSize: Int = MinChunkSize,
-      parallelism: Int = 4
+      chunkSize: Int,
+      parallelism: Int
   ): Flow[ByteString, (HttpRequest, (MultipartUpload, Int)), NotUsed] = {
 
     assert(
@@ -273,8 +262,8 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       s3Location: S3Location,
       contentType: ContentType,
       s3Headers: S3Headers,
-      chunkSize: Int = MinChunkSize
-  )(parallelism: Int = 4): Flow[ByteString, UploadPartResponse, NotUsed] = {
+      chunkSize: Int
+  )(parallelism: Int): Flow[ByteString, UploadPartResponse, NotUsed] = {
 
     // Multipart upload requests (except for the completion api) are created here.
     //  The initial upload request gets executed within this function as well.
@@ -337,22 +326,5 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
         Unmarshal(entity).to[String].flatMap { err =>
           Future.failed(new S3Exception(err))
         }
-    }
-
-  private def sizeFromHeaders(headers: Seq[HttpHeader]): Option[Long] =
-    headers.find(_.lowercaseName() == CONTENT_LENGTH.toLowerCase).map(_.value().toLong)
-
-  private def etagFromHeaders(headers: Seq[HttpHeader]): Option[String] =
-    headers.find(_.lowercaseName() == ETAG.toLowerCase).map(_.value())
-
-  private def lastModifiedFromHeaders(headers: Seq[HttpHeader]): Option[Instant] =
-    headers
-      .find(_.lowercaseName() == LAST_MODIFIED.toLowerCase)
-      // FIXME we have problems reading the time format (Thu, 02 Nov 2017 23:47:39 GMT)
-      .flatMap(h => Try(Instant.parse(h.value())).toOption)
-
-  private def storageClassFromHeaders(headers: Seq[HttpHeader]): Option[StorageClass] =
-    headers.find(_.lowercaseName() == STORAGE_CLASS.toLowerCase).flatMap { header =>
-      StorageClass(header.value)
     }
 }

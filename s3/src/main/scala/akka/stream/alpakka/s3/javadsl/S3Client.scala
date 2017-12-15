@@ -9,7 +9,7 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters._
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.http.impl.model.JavaUri
 import akka.http.javadsl.model.headers.ByteRange
@@ -28,7 +28,6 @@ import com.typesafe.config.ConfigFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
-import scala.concurrent.Future
 
 final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
@@ -50,7 +49,7 @@ final case class ListBucketResultContents(
 /**
  * Modelled after com.amazonaws.services.s3.model.ObjectMetadata
  */
-final case class ObjectMetadata private (
+final class ObjectMetadata private[javadsl] (
     private val scalaMetadata: scaladsl.ObjectMetadata
 ) {
 
@@ -171,6 +170,11 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
 
   /**
    * Use this to extend the library
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param method the [[HttpMethod]] to use when making the request
+   * @return a [[CompletionStage]] containing the raw [[HttpResponse]]
    */
   def request(bucket: String, key: String, method: HttpMethod = HttpMethods.GET): CompletionStage[HttpResponse] =
     impl
@@ -178,6 +182,13 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
       .map(_.asInstanceOf[HttpResponse])(system.dispatcher)
       .toJava
 
+  /**
+   * Gets the metadata for a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @return A [[CompletionStage]] containing an [[Optional]] that will be empty in case the object does not exist
+   */
   def getObjectMetadata(bucket: String, key: String): CompletionStage[Optional[ObjectMetadata]] =
     impl
       .getObjectMetadata(bucket, key)
@@ -186,9 +197,26 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
       }(mat.executionContext)
       .toJava
 
-  def deleteObject(bucket: String, key: String): Future[Unit] =
-    impl.deleteObject(S3Location(bucket, key))
+  /**
+   * Deletes a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @return A [[CompletionStage]] of [[Void]]
+   */
+  def deleteObject(bucket: String, key: String): CompletionStage[Done] =
+    impl.deleteObject(S3Location(bucket, key)).map(_ => Done.getInstance())(mat.executionContext).toJava
 
+  /**
+   * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param data a [[Stream]] of [[ByteString]]
+   * @param contentLength the number of bytes that will be uploaded (required!)
+   * @param contentType an optional [[ContentType]]
+   * @return a [[CompletionStage]] containing the [[ObjectMetadata]] of the uploaded S3 Object
+   */
   def putObject(bucket: String,
                 key: String,
                 data: Source[ByteString, _],
@@ -204,6 +232,18 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
       .map(metaDataToJava)(mat.executionContext)
       .toJava
 
+  /**
+   * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param data a [[Stream]] of [[ByteString]]
+   * @param contentLength the number of bytes that will be uploaded (required!)
+   * @param contentType an optional [[ContentType]]
+   * @param cannedAcl the Acl
+   * @param metaHeaders the metadata headers
+   * @return ta [[CompletionStage]] containing the [[ObjectMetadata]] of the uploaded S3 Object
+   */
   def putObject(bucket: String,
                 key: String,
                 data: Source[ByteString, _],
@@ -213,6 +253,16 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
                 metaHeaders: MetaHeaders): CompletionStage[ObjectMetadata] =
     putObject(bucket, key, data, contentLength, contentType, S3Headers(cannedAcl, metaHeaders))
 
+  /**
+   * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param data a [[Stream]] of [[ByteString]]
+   * @param contentLength the number of bytes that will be uploaded (required!)
+   * @param contentType an optional [[ContentType]]
+   * @return a [[CompletionStage]] containing the [[ObjectMetadata]] of the uploaded S3 Object
+   */
   def putObject(bucket: String,
                 key: String,
                 data: Source[ByteString, _],
@@ -220,6 +270,15 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
                 contentType: ContentType): CompletionStage[ObjectMetadata] =
     putObject(bucket, key, data, contentLength, contentType, CannedAcl.Private, MetaHeaders(Map()))
 
+  /**
+   * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param data a [[Stream]] of [[ByteString]]
+   * @param contentLength the number of bytes that will be uploaded (required!)
+   * @return a [[CompletionStage]] containing the [[ObjectMetadata]] of the uploaded S3 Object
+   */
   def putObject(bucket: String,
                 key: String,
                 data: Source[ByteString, _],
@@ -232,12 +291,27 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
               CannedAcl.Private,
               MetaHeaders(Map()))
 
+  /**
+   * Downloads a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @return A [[Source]] of [[ByteString]] that materializes into a [[CompletionStage]] containing the [[ObjectMetadata]]
+   */
   def download(bucket: String, key: String): Source[ByteString, CompletionStage[ObjectMetadata]] =
     impl
       .download(S3Location(bucket, key))
       .mapMaterializedValue(_.map(metaDataToJava)(mat.executionContext).toJava)
       .asJava
 
+  /**
+   * Downloads a specific byte range of a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param range the [[ByteRange]] you want to download
+   * @return A [[Source]] of [[ByteString]] that materializes into a [[CompletionStage]] containing the [[ObjectMetadata]]
+   */
   def download(bucket: String, key: String, range: ByteRange): Source[ByteString, CompletionStage[ObjectMetadata]] = {
     val scalaRange = range.asInstanceOf[ScalaByteRange]
     impl
@@ -261,6 +335,15 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
       }
       .asJava
 
+  /**
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param contentType an optional [[ContentType]]
+   * @param s3Headers any headers you want to add
+   * @return a [[Sink]] that accepts [[ByteString]]'s and materializes to a [[CompletionStage]] of [[MultipartUploadResult]]
+   */
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
@@ -270,6 +353,16 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
       .mapMaterializedValue(_.map(MultipartUploadResult.create)(system.dispatcher).toJava)
       .asJava
 
+  /**
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param contentType an optional [[ContentType]]
+   * @param metaHeaders any meta-headers you want to add
+   * @param cannedAcl a [[CannedAcl]], defauts to [[CannedAcl.Private]]
+   * @return a [[Sink]] that accepts [[ByteString]]'s and materializes to a [[CompletionStage]] of [[MultipartUploadResult]]
+   */
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
@@ -277,17 +370,41 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
                       metaHeaders: MetaHeaders): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     multipartUpload(bucket, key, contentType, S3Headers(cannedAcl, metaHeaders))
 
+  /**
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param contentType an optional [[ContentType]]
+   * @param cannedAcl a [[CannedAcl]], defauts to [[CannedAcl.Private]]
+   * @return a [[Sink]] that accepts [[ByteString]]'s and materializes to a [[CompletionStage]] of [[MultipartUploadResult]]
+   */
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
                       cannedAcl: CannedAcl): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     multipartUpload(bucket, key, contentType, cannedAcl, MetaHeaders(Map()))
 
+  /**
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param contentType an optional [[ContentType]]
+   * @return a [[Sink]] that accepts [[ByteString]]'s and materializes to a [[CompletionStage]] of [[MultipartUploadResult]]
+   */
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     multipartUpload(bucket, key, contentType, CannedAcl.Private, MetaHeaders(Map()))
 
+  /**
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @return a [[Sink]] that accepts [[ByteString]]'s and materializes to a [[CompletionStage]] of [[MultipartUploadResult]]
+   */
   def multipartUpload(bucket: String, key: String): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     multipartUpload(bucket, key, ContentTypes.APPLICATION_OCTET_STREAM, CannedAcl.Private, MetaHeaders(Map()))
 
@@ -300,5 +417,5 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
                              scalaContents.storageClass)
 
   private def metaDataToJava(scalaContents: scaladsl.ObjectMetadata): ObjectMetadata =
-    ObjectMetadata(scalaContents)
+    new ObjectMetadata(scalaContents)
 }

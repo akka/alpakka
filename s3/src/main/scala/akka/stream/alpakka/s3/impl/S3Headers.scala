@@ -62,10 +62,10 @@ object StorageClass {
   case object ReducedRedundancy extends StorageClass("REDUCED_REDUNDANCY")
 
   def apply(cls: String): Option[StorageClass] = cls match {
-    case "STANDARD" => Some(Standard)
-    case "STANDARD_IA" => Some(InfrequentAccess)
-    case "GLACIER" => Some(Glacier)
-    case "REDUCED_REDUNDANCY" => Some(ReducedRedundancy)
+    case Standard.storageClass => Some(Standard)
+    case InfrequentAccess.storageClass => Some(InfrequentAccess)
+    case Glacier.storageClass => Some(Glacier)
+    case ReducedRedundancy.storageClass => Some(ReducedRedundancy)
   }
 }
 

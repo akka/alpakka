@@ -7,7 +7,7 @@ package akka.stream.alpakka.s3.scaladsl
 import java.time.Instant
 
 import scala.concurrent.Future
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Content-Length`, `Last-Modified`, ByteRange, ETag}
@@ -48,8 +48,8 @@ final case class ListBucketResultContents(
  * Modelled after com.amazonaws.services.s3.model.ObjectMetadata
  * @param metadata the raw http headers
  */
-final case class ObjectMetadata(
-    metadata: Seq[HttpHeader]
+final class ObjectMetadata private (
+    val metadata: Seq[HttpHeader]
 ) {
 
   /**
@@ -141,6 +141,9 @@ final case class ObjectMetadata(
   }.get
 
 }
+object ObjectMetadata {
+  def apply(metadata: Seq[HttpHeader]) = new ObjectMetadata(metadata)
+}
 
 object S3Client {
   val MinChunkSize: Int = 5242880
@@ -175,41 +178,98 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
 
   /**
    * Use this to extend the library
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param method the [[HttpMethod]] to use when making the request
+   * @return a [[Future]] containing the raw [[HttpResponse]]
    */
   def request(bucket: String, key: String, method: HttpMethod = HttpMethods.GET): Future[HttpResponse] =
     impl.request(S3Location(bucket, key), method)
 
+  /**
+   * Gets the metadata for a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @return A [[Future]] containing an [[Option]] that will be [[None]] in case the object does not exist
+   */
   def getObjectMetadata(bucket: String, key: String): Future[Option[ObjectMetadata]] =
     impl.getObjectMetadata(bucket, key)
 
-  def deleteObject(bucket: String, key: String): Future[Unit] =
+  /**
+   * Deletes a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @return A [[Future]] of [[Done]]
+   */
+  def deleteObject(bucket: String, key: String): Future[Done] =
     impl.deleteObject(S3Location(bucket, key))
 
+  /**
+   * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param data a [[Stream]] of [[ByteString]]
+   * @param contentLength the number of bytes that will be uploaded (required!)
+   * @param contentType an optional [[ContentType]]
+   * @param s3Headers any headers you want to add
+   * @return a [[Future]] containing the [[ObjectMetadata]] of the uploaded S3 Object
+   */
   def putObject(bucket: String,
                 key: String,
                 data: Source[ByteString, _],
                 contentLength: Long,
                 contentType: ContentType = ContentTypes.`application/octet-stream`,
-                metaHeaders: MetaHeaders = MetaHeaders(Map()),
-                cannedAcl: CannedAcl = CannedAcl.Private): Future[ObjectMetadata] =
-    impl.putObject(S3Location(bucket, key), contentType, data, contentLength, S3Headers(cannedAcl, metaHeaders))
+                s3Headers: S3Headers): Future[ObjectMetadata] =
+    impl.putObject(S3Location(bucket, key), contentType, data, contentLength, s3Headers)
 
+  /**
+   * Downloads a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @return A [[Source]] of [[ByteString]] that materializes into a [[Future]] containing the [[ObjectMetadata]]
+   */
   def download(bucket: String, key: String): Source[ByteString, Future[ObjectMetadata]] =
     impl.download(S3Location(bucket, key))
 
+  /**
+   * Downloads a specific byte range of a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param range the [[ByteRange]] you want to download
+   * @return A [[Source]] of [[ByteString]] that materializes into a [[Future]] containing the [[ObjectMetadata]]
+   */
   def download(bucket: String, key: String, range: ByteRange): Source[ByteString, Future[ObjectMetadata]] =
     impl.download(S3Location(bucket, key), Some(range))
 
   /**
    * Will return a source of object metadata for a given bucket with optional prefix.
    * This will automatically page through all keys with the given parameters.
+   *
    * @param bucket Which bucket that you list object metadata for
    * @param prefix Prefix of the keys you want to list under passed bucket
-   * @return Source of object metadata
+   * @return [[Source]] of [[ListBucketResultContents]]
    */
   def listBucket(bucket: String, prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
     impl.listBucket(bucket, prefix)
 
+  /**
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param contentType an optional [[ContentType]]
+   * @param metaHeaders any meta-headers you want to add
+   * @param cannedAcl a [[CannedAcl]], defauts to [[CannedAcl.Private]]
+   * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
+   * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
+   * @return a [[Sink]] that accepts [[ByteString]]'s and materializes to a [[Future]] of [[MultipartUploadResult]]
+   */
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType = ContentTypes.`application/octet-stream`,
@@ -227,6 +287,17 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
       )
       .mapMaterializedValue(_.map(MultipartUploadResult.apply)(system.dispatcher))
 
+  /**
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param contentType an optional [[ContentType]]
+   * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
+   * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
+   * @param s3Headers any headers you want to add
+   * @return a [[Sink]] that accepts [[ByteString]]'s and materializes to a [[Future]] of [[MultipartUploadResult]]
+   */
   def multipartUploadWithHeaders(
       bucket: String,
       key: String,

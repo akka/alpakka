@@ -7,7 +7,7 @@ package akka.stream.alpakka.s3.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.S3Settings
-import akka.stream.alpakka.s3.impl.MetaHeaders
+import akka.stream.alpakka.s3.impl.{MetaHeaders, S3Headers}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
@@ -83,7 +83,7 @@ class AwsS3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matc
                                     objectKey,
                                     data,
                                     bytes.length,
-                                    metaHeaders = MetaHeaders(metaHeaders))
+                                    s3Headers = S3Headers(MetaHeaders(metaHeaders)))
 
     val uploadResult = Await.ready(result, 90.seconds).futureValue
     uploadResult.eTag should not be empty
@@ -99,7 +99,7 @@ class AwsS3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matc
                                            objectKey,
                                            data,
                                            bytes.length,
-                                           metaHeaders = MetaHeaders(metaHeaders))
+                                           s3Headers = S3Headers(MetaHeaders(metaHeaders)))
       metaBefore <- defaultRegionClient.getObjectMetadata(defaultRegionBucket, objectKey)
       delete <- defaultRegionClient.deleteObject(defaultRegionBucket, objectKey)
       metaAfter <- defaultRegionClient.getObjectMetadata(defaultRegionBucket, objectKey)
