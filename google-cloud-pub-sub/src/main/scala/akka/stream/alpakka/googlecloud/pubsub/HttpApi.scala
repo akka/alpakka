@@ -80,7 +80,7 @@ private trait HttpApi {
 
   def acknowledge(project: String,
                   subscription: String,
-                  accessToken: String,
+                  maybeAccessToken: Option[String],
                   apiKey: String,
                   request: AcknowledgeRequest)(implicit as: ActorSystem, materializer: Materializer): Future[Unit] = {
     import materializer.executionContext
@@ -90,7 +90,7 @@ private trait HttpApi {
 
     for {
       request <- Marshal((HttpMethods.POST, url, request)).to[HttpRequest]
-      response <- Http().singleRequest(request.addCredentials(OAuth2BearerToken(accessToken)))
+      response <- response(request, maybeAccessToken)
     } yield {
       response.discardEntityBytes()
       if (response.status.isSuccess()) {
@@ -100,6 +100,12 @@ private trait HttpApi {
       }
     }
   }
+
+  private[this] def response(request: HttpRequest, maybeAccessToken: Option[String])(implicit as: ActorSystem,
+                                                                                     materializer: Materializer) =
+    Http().singleRequest(
+      maybeAccessToken.map(accessToken => request.addCredentials(OAuth2BearerToken(accessToken))).getOrElse(request)
+    )
 
   def publish(project: String,
               topic: String,
@@ -115,9 +121,7 @@ private trait HttpApi {
 
     for {
       request <- Marshal((HttpMethods.POST, url, request)).to[HttpRequest]
-      response <- Http().singleRequest(
-        maybeAccessToken.map(accessToken => request.addCredentials(OAuth2BearerToken(accessToken))).getOrElse(request)
-      )
+      response <- response(request, maybeAccessToken)
       publishResponse <- Unmarshal(response.entity).to[PublishResponse]
     } yield publishResponse.messageIds
   }

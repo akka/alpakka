@@ -209,7 +209,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
 
     val result = TestHttpApi.acknowledge(TestCredentials.projectId,
                                          "sub1",
-                                         accessToken,
+                                         Some(accessToken),
                                          TestCredentials.apiKey,
                                          acknowledgeRequest)
 

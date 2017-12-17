@@ -70,7 +70,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
   }
 
   it should "publish the message without auth when emulated" in {
-    //val mockHttpApi = mock[HttpApi]
+
     val mockHttpApi = new HttpApi {
       val PubSubGoogleApisHost: String = "..."
       val GoogleApisHost: String = "..."
@@ -135,12 +135,50 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
   it should "auth and acknowledge a message" in new Fixtures {
     when(auth.getToken()).thenReturn(Future.successful("ok"))
     when(
-      mockHttpApi.acknowledge(project = TestCredentials.projectId,
-                              subscription = "sub1",
-                              apiKey = TestCredentials.apiKey,
-                              accessToken = "ok",
-                              request = AcknowledgeRequest(ackIds = Seq("a1")))
+      mockHttpApi.acknowledge(
+        project = TestCredentials.projectId,
+        subscription = "sub1",
+        apiKey = TestCredentials.apiKey,
+        maybeAccessToken = Some("ok"),
+        request = AcknowledgeRequest(ackIds = Seq("a1"))
+      )
     ).thenReturn(Future.successful(()))
+
+    val sink = googlePubSub.acknowledge(
+      projectId = TestCredentials.projectId,
+      apiKey = TestCredentials.apiKey,
+      clientEmail = TestCredentials.clientEmail,
+      privateKey = TestCredentials.privateKey,
+      subscription = "sub1"
+    )
+
+    val source = Source(List(AcknowledgeRequest(List("a1"))))
+
+    val result = source.runWith(sink)
+
+    result.futureValue shouldBe Done
+  }
+
+  it should "acknowledge a message without auth when emulated" in {
+    val mockHttpApi = new HttpApi {
+      val PubSubGoogleApisHost: String = "..."
+      val GoogleApisHost: String = "..."
+
+      override def isEmulated: Boolean = true
+      override def acknowledge(
+          project: String,
+          subscription: String,
+          maybeAccessToken: Option[String],
+          apiKey: String,
+          request: AcknowledgeRequest
+      )(implicit as: ActorSystem, materializer: Materializer): Future[Unit] =
+        Future.successful(())
+    }
+
+    val googlePubSub = new GooglePubSub {
+      val httpApi = mockHttpApi
+      def getSession(clientEmail: String, privateKey: PrivateKey) = ???
+    }
 
     val sink = googlePubSub.acknowledge(
       projectId = TestCredentials.projectId,
