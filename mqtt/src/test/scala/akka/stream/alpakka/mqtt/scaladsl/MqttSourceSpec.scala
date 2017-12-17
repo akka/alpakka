@@ -240,7 +240,7 @@ class MqttSourceSpec
       elem2.futureValue shouldBe MqttMessage(topic1, ByteString("ohi"))
     }
 
-    "support will message" ignore {
+    "support will message" in {
       import system.dispatcher
 
       val (binding, connection) = Tcp().bind("localhost", 1337).toMat(Sink.head)(Keep.both).run()
@@ -252,34 +252,30 @@ class MqttSourceSpec
             .viaMat(KillSwitches.single)(Keep.right)
         )
       )
+      Await.ready(binding, timeout)
 
-      whenReady(binding) { _ =>
-        val settings = MqttSourceSettings(
-          sourceSettings
-            .withClientId("source-spec/testator")
-            .withBroker("tcp://localhost:1337")
-            .withWill(Will(MqttMessage(willTopic, ByteString("ohi")), MqttQoS.AtLeastOnce, retained = true)),
-          Map(willTopic -> MqttQoS.AtLeastOnce)
-        )
-        val source = MqttSource.atMostOnce(settings, 8)
+      val settings1 = MqttSourceSettings(
+        sourceSettings
+          .withClientId("source-spec/testator")
+          .withBroker("tcp://localhost:1337")
+          .withWill(Will(MqttMessage(willTopic, ByteString("ohi")), MqttQoS.AtLeastOnce, retained = true)),
+        Map(willTopic -> MqttQoS.AtLeastOnce)
+      )
+      val source1 = MqttSource.atMostOnce(settings1, 8)
 
-        val sub = source.runWith(Sink.head)
-        whenReady(sub) { _ =>
-          whenReady(ks)(_.shutdown())
-        }
-      }
+      val (subscribed1, _) = source1.toMat(Sink.head)(Keep.both).run()
 
-      {
-        val settings =
-          MqttSourceSettings(sourceSettings.withClientId("source-spec/executor"),
-                             Map(willTopic -> MqttQoS.AtLeastOnce))
-        val source = MqttSource.atMostOnce(settings, 8)
+      Await.ready(subscribed1, timeout)
+      Await.result(ks, timeout).shutdown()
 
-        val (subscribed, elem) = source.toMat(Sink.head)(Keep.both).run()
+      val settings2 =
+        MqttSourceSettings(sourceSettings.withClientId("source-spec/executor"), Map(willTopic -> MqttQoS.AtLeastOnce))
+      val source2 = MqttSource.atMostOnce(settings2, 8)
 
-        Await.ready(subscribed, timeout)
-        elem.futureValue shouldBe MqttMessage(willTopic, ByteString("ohi"))
-      }
+      val (subscribed2, elem) = source2.toMat(Sink.head)(Keep.both).run()
+
+      Await.ready(subscribed2, timeout)
+      elem.futureValue shouldBe MqttMessage(willTopic, ByteString("ohi"))
     }
   }
 }
