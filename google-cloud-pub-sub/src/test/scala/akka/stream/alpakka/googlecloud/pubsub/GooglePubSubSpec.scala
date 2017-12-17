@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.googlecloud.pubsub
 
+import akka.stream.Materializer
 import java.security.PrivateKey
 import java.util.Base64
 
@@ -68,8 +69,24 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
     result.futureValue shouldBe Seq(Seq("id1"))
   }
 
-  ignore should "publish the message without auth when emulated" in {
-    val mockHttpApi = mock[HttpApi]
+  it should "publish the message without auth when emulated" in {
+    //val mockHttpApi = mock[HttpApi]
+    val mockHttpApi = new HttpApi {
+      val PubSubGoogleApisHost: String = "..."
+      val GoogleApisHost: String = "..."
+
+      override def isEmulated: Boolean = true
+
+      override def publish(
+          project: String,
+          topic: String,
+          maybeAccessToken: Option[String],
+          apiKey: String,
+          request: PublishRequest
+      )(implicit as: ActorSystem, materializer: Materializer): Future[Seq[String]] =
+        Future.successful(Seq("id2"))
+    }
+
     val googlePubSub = new GooglePubSub {
       val httpApi = mockHttpApi
 
@@ -86,17 +103,6 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
     val request = PublishRequest(Seq(PubSubMessage(messageId = "2", data = base64String("Hello Google!"))))
 
     val source = Source(List(request))
-
-    // FIXME: not working, returns false
-    when(mockHttpApi.isEmulated).thenReturn(true)
-    when(
-      mockHttpApi.publish(project = TestCredentials.projectId,
-                          topic = "topic2",
-                          maybeAccessToken = None,
-                          apiKey = TestCredentials.apiKey,
-                          request = request)
-    ).thenReturn(Future.successful(Seq("id2")))
-
     val result = source.via(flow).runWith(Sink.seq)
     result.futureValue shouldBe Seq(Seq("id2"))
   }
