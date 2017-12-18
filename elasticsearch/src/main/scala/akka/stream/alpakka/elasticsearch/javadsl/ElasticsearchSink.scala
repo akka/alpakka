@@ -15,53 +15,17 @@ import org.elasticsearch.client.RestClient
 object ElasticsearchSink {
 
   /**
-   * Java API: creates a sink based on [[ElasticsearchFlowStage]] that accepts as JsObject
+   * Java API: creates a sink based on [[ElasticsearchFlowStage]]
    */
-  def create(
-      indexName: String,
-      typeName: String,
-      settings: ElasticsearchSinkSettings,
-      client: RestClient
-  ): akka.stream.javadsl.Sink[IncomingMessage[java.util.Map[String, Object]], CompletionStage[Done]] =
-    ElasticsearchFlow
-      .create(indexName, typeName, settings, client)
-      .toMat(Sink.ignore, Keep.right[NotUsed, CompletionStage[Done]])
-
-  /**
-   * Java API: creates a sink based on [[ElasticsearchFlowStage]] that accepts as JsObject
-   */
-  def create(
+  def create[T](
       indexName: String,
       typeName: String,
       settings: ElasticsearchSinkSettings,
       client: RestClient,
       objectMapper: ObjectMapper
-  ): akka.stream.javadsl.Sink[IncomingMessage[java.util.Map[String, Object]], CompletionStage[Done]] =
+  ): akka.stream.javadsl.Sink[IncomingMessage[T, NotUsed], CompletionStage[Done]] =
     ElasticsearchFlow
       .create(indexName, typeName, settings, client, objectMapper)
-      .toMat(Sink.ignore, Keep.right[NotUsed, CompletionStage[Done]])
-
-  /**
-   * Java API: creates a sink based on [[ElasticsearchFlowStage]] that accepts as specific type
-   */
-  def typed[T](indexName: String,
-               typeName: String,
-               settings: ElasticsearchSinkSettings,
-               client: RestClient): akka.stream.javadsl.Sink[IncomingMessage[T], CompletionStage[Done]] =
-    ElasticsearchFlow
-      .typed(indexName, typeName, settings, client)
-      .toMat(Sink.ignore, Keep.right[NotUsed, CompletionStage[Done]])
-
-  /**
-   * Java API: creates a sink based on [[ElasticsearchFlowStage]] that accepts as specific type
-   */
-  def typed[T](indexName: String,
-               typeName: String,
-               settings: ElasticsearchSinkSettings,
-               client: RestClient,
-               objectMapper: ObjectMapper): akka.stream.javadsl.Sink[IncomingMessage[T], CompletionStage[Done]] =
-    ElasticsearchFlow
-      .typed(indexName, typeName, settings, client, objectMapper)
       .toMat(Sink.ignore, Keep.right[NotUsed, CompletionStage[Done]])
 
 }
