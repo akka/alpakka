@@ -28,7 +28,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockDownload()
 
     //#download
-    val s3Source: Source[ByteString, NotUsed] = s3Client.download(bucket, bucketKey)
+    val s3Source: Source[ByteString, _] = s3Client.download(bucket, bucketKey)
     //#download
 
     val result: Future[String] = s3Source.map(_.utf8String).runWith(Sink.head)
@@ -36,12 +36,23 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     result.futureValue shouldBe body
   }
 
+  "S3Source" should "download a metadata from S3" in {
+
+    mockHead()
+
+    val metadata = s3Client.getObjectMetadata(bucket, bucketKey)
+
+    val Some(result) = metadata.futureValue
+
+    result.eTag shouldBe Some(etag)
+  }
+
   it should "download a range of file's bytes from S3 if bytes range given" in {
 
     mockRangedDownload()
 
     //#rangedDownload
-    val s3Source: Source[ByteString, NotUsed] =
+    val s3Source: Source[ByteString, _] =
       s3Client.download(bucket, bucketKey, ByteRange(bytesRangeStart, bytesRangeEnd))
     //#rangedDownload
 

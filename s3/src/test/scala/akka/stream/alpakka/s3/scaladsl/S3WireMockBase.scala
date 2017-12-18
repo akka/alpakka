@@ -54,6 +54,14 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
         )
       )
 
+  def mockHead(): Unit =
+    mock
+      .register(
+        head(urlEqualTo(s"/$bucketKey")).willReturn(
+          aResponse().withStatus(200).withHeader("ETag", s""""$etag"""")
+        )
+      )
+
   def mockRangedDownload(): Unit =
     mock
       .register(
