@@ -9,6 +9,7 @@ import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.alpakka.mqtt._
 import akka.stream.scaladsl._
+import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.eclipse.paho.client.mqttv3.MqttException
@@ -240,46 +241,47 @@ class MqttSourceSpec
       elem2.futureValue shouldBe MqttMessage(topic1, ByteString("ohi"))
     }
 
-    "support will message" ignore {
+    "support will message" in {
       import system.dispatcher
 
-      val (binding, connection) = Tcp().bind("localhost", 1337).toMat(Sink.head)(Keep.both).run()
+      val msg = MqttMessage(topic1, ByteString("ohi"))
 
-      val ks = connection.map(
+      // Create a proxy to RabbitMQ so it can be shutdown
+      val (proxyBinding, connection) = Tcp().bind("localhost", 1337).toMat(Sink.head)(Keep.both).run()
+      val proxyKs = connection.map(
         _.handleWith(
           Tcp()
             .outgoingConnection("localhost", 1883)
             .viaMat(KillSwitches.single)(Keep.right)
         )
       )
+      Await.ready(proxyBinding, timeout)
 
-      whenReady(binding) { _ =>
-        val settings = MqttSourceSettings(
-          sourceSettings
-            .withClientId("source-spec/testator")
-            .withBroker("tcp://localhost:1337")
-            .withWill(Will(MqttMessage(willTopic, ByteString("ohi")), MqttQoS.AtLeastOnce, retained = true)),
-          Map(willTopic -> MqttQoS.AtLeastOnce)
-        )
-        val source = MqttSource.atMostOnce(settings, 8)
+      val settings1 = MqttSourceSettings(
+        sourceSettings
+          .withClientId("source-spec/testator")
+          .withBroker("tcp://localhost:1337")
+          .withWill(Will(MqttMessage(willTopic, ByteString("ohi")), MqttQoS.AtLeastOnce, retained = true)),
+        Map(topic1 -> MqttQoS.AtLeastOnce)
+      )
+      val source1 = MqttSource.atMostOnce(settings1, 8)
 
-        val sub = source.runWith(Sink.head)
-        whenReady(sub) { _ =>
-          whenReady(ks)(_.shutdown())
-        }
-      }
+      val (subscribed, probe) = source1.toMat(TestSink.probe)(Keep.both).run()
 
-      {
-        val settings =
-          MqttSourceSettings(sourceSettings.withClientId("source-spec/executor"),
-                             Map(willTopic -> MqttQoS.AtLeastOnce))
-        val source = MqttSource.atMostOnce(settings, 8)
+      // Ensure that the connection made it all the way to the server by waiting until it receives a message
+      Await.ready(subscribed, timeout)
+      Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
+      probe.requestNext()
 
-        val (subscribed, elem) = source.toMat(Sink.head)(Keep.both).run()
+      // Kill the proxy, producing an unexpected disconnection of the client
+      Await.result(proxyKs, timeout).shutdown()
 
-        Await.ready(subscribed, timeout)
-        elem.futureValue shouldBe MqttMessage(willTopic, ByteString("ohi"))
-      }
+      val settings2 =
+        MqttSourceSettings(sourceSettings.withClientId("source-spec/executor"), Map(willTopic -> MqttQoS.AtLeastOnce))
+      val source2 = MqttSource.atMostOnce(settings2, 8)
+
+      val elem = source2.runWith(Sink.head)
+      elem.futureValue shouldBe MqttMessage(willTopic, ByteString("ohi"))
     }
   }
 }
