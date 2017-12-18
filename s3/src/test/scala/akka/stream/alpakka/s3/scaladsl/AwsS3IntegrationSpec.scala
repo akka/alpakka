@@ -14,9 +14,10 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Ignore, Matchers}
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import com.amazonaws.regions.AwsRegionProvider
 
 /*
  * This is an integration test and ignored by default
@@ -43,13 +44,19 @@ class AwsS3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matc
     PatienceConfig(timeout = Span(5, Seconds), interval = Span(30, Millis))
 
   val defaultRegion = "us-east-1"
+  val defaultRegionProvider = new AwsRegionProvider {
+    val getRegion: String = defaultRegion
+  }
   val defaultRegionBucket = "my-test-us-east-1"
 
   val otherRegion = "eu-central-1"
+  val otherRegionProvider = new AwsRegionProvider {
+    val getRegion: String = otherRegion
+  }
   val otherRegionBucket = "my.test.frankfurt" // with dots forcing path style access
 
-  val settings = S3Settings(ConfigFactory.load().getConfig("aws")).copy(s3Region = defaultRegion)
-  val otherRegionSettings = settings.copy(pathStyleAccess = true, s3Region = otherRegion)
+  val settings = S3Settings(ConfigFactory.load().getConfig("aws")).copy(s3RegionProvider = defaultRegionProvider)
+  val otherRegionSettings = settings.copy(pathStyleAccess = true, s3RegionProvider = otherRegionProvider)
 
   val defaultRegionClient = new S3Client(settings)
   val otherRegionClient = new S3Client(otherRegionSettings)
