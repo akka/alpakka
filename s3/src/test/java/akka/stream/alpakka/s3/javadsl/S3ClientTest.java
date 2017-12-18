@@ -5,6 +5,8 @@
 package akka.stream.alpakka.s3.javadsl;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import akka.NotUsed;
@@ -72,7 +74,7 @@ public class S3ClientTest extends S3WireMockBase {
         mockDownload();
 
         //#download
-        final Source<ByteString, NotUsed> source = client.download(bucket(), bucketKey());
+        final Source<ByteString, CompletionStage<ObjectMetadata>> source = client.download(bucket(), bucketKey());
         //#download
 
         final CompletionStage<String> resultCompletionStage =
@@ -84,12 +86,26 @@ public class S3ClientTest extends S3WireMockBase {
     }
 
     @Test
+    public void head() throws Exception {
+
+        mockHead();
+
+        final CompletionStage<Optional<ObjectMetadata>> source = client.getObjectMetadata(bucket(), bucketKey());
+
+        Optional<ObjectMetadata> result = source.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        Optional<String> etag = result.get().getETag();
+
+        assertEquals(etag, Optional.of("5b27a21a97fcf8a7004dd1d906e7a5ba"));
+    }
+
+    @Test
     public void rangedDownload() throws Exception {
 
         mockRangedDownload();
 
         //#rangedDownload
-        final Source<ByteString, NotUsed> source = client.download(bucket(), bucketKey(),
+        final Source<ByteString, CompletionStage<ObjectMetadata>> source = client.download(bucket(), bucketKey(),
                 ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()));
         //#rangedDownload
 
