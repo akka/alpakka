@@ -11,6 +11,7 @@ import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.{BufferType, MemoryBufferType, Proxy, S3Settings}
 import akka.stream.scaladsl.Source
 import com.amazonaws.auth.{AWSCredentialsProvider, AWSStaticCredentialsProvider, AnonymousAWSCredentials}
+import com.amazonaws.regions.AwsRegionProvider
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -23,8 +24,13 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
       awsCredentials: AWSCredentialsProvider = new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()),
       s3Region: String = "us-east-1",
       pathStyleAccess: Boolean = false
-  ) =
-    new S3Settings(bufferType, proxy, awsCredentials, s3Region, pathStyleAccess)
+  ) = {
+    val regionProvider = new AwsRegionProvider {
+      def getRegion = s3Region
+    }
+
+    new S3Settings(bufferType, proxy, awsCredentials, regionProvider, pathStyleAccess)
+  }
 
   val location = S3Location("bucket", "image-1024@2x")
   val contentType = MediaTypes.`image/jpeg`

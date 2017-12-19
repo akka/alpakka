@@ -19,6 +19,7 @@ import akka.stream.alpakka.s3.impl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import com.amazonaws.auth._
+import com.amazonaws.regions.AwsRegionProvider
 
 import scala.collection.immutable.Seq
 
@@ -159,13 +160,22 @@ object S3Client {
       region
     )
 
-  def apply(credentials: AWSCredentialsProvider, region: String)(implicit system: ActorSystem,
-                                                                 mat: Materializer): S3Client = {
-
-    val settings: S3Settings = S3Settings(system.settings.config).copy(
-      credentialsProvider = credentials,
-      s3Region = region
+  def apply(credentialsProvider: AWSCredentialsProvider, region: String)(implicit system: ActorSystem,
+                                                                         mat: Materializer): S3Client =
+    apply(
+      credentialsProvider,
+      new AwsRegionProvider {
+        def getRegion: String = region
+      }
     )
+
+  def apply(credentialsProvider: AWSCredentialsProvider,
+            regionProvider: AwsRegionProvider)(implicit system: ActorSystem, mat: Materializer): S3Client = {
+    val settings: S3Settings = S3Settings(system.settings.config).copy(
+      credentialsProvider = credentialsProvider,
+      s3RegionProvider = regionProvider
+    )
+
     new S3Client(settings)
   }
 }

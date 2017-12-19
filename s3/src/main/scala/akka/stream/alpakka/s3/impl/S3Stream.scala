@@ -61,7 +61,10 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
   implicit val conf = settings
   val MinChunkSize = 5242880 //in bytes
   // def because tokens can expire
-  def signingKey = SigningKey(settings.credentialsProvider, CredentialScope(LocalDate.now(), settings.s3Region, "s3"))
+  def signingKey = SigningKey(
+    settings.credentialsProvider,
+    CredentialScope(LocalDate.now(), settings.s3RegionProvider.getRegion, "s3")
+  )
 
   def download(s3Location: S3Location, range: Option[ByteRange] = None): Source[ByteString, Future[ObjectMetadata]] = {
     import mat.executionContext
