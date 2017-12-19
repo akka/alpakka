@@ -112,9 +112,24 @@ public class S3ClientTest extends S3WireMockBase {
 
         Optional<ObjectMetadata> result = source.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
+        Optional<String> s3eTag = result.get().getETag();
+
+        assertEquals(s3eTag, Optional.of(etag()));
+    }
+
+    @Test
+    public void headServerSideEncryption() throws Exception {
+        mockHeadSSEC();
+
+        //#objectMetadata
+        final CompletionStage<Optional<ObjectMetadata>> source = client.getObjectMetadata(bucket(), bucketKey(), sseCustomerKeys());
+        //#objectMetadata
+
+        Optional<ObjectMetadata> result = source.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
         Optional<String> etag = result.get().getETag();
 
-        assertEquals(etag, Optional.of("5b27a21a97fcf8a7004dd1d906e7a5ba"));
+        assertEquals(etag, Optional.of(etagSSE()));
     }
 
     @Test

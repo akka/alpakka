@@ -9,7 +9,7 @@ import akka.stream.alpakka.s3.impl.ServerSideEncryption
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase._
 import akka.testkit.TestKit
 import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.{MappingBuilder, WireMock}
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import com.github.tomakehurst.wiremock.matching.EqualToPattern
@@ -56,6 +56,7 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
   val bucket = "testBucket"
   val uploadId = "VXBsb2FkIElEIGZvciA2aWWpbmcncyBteS1tb3ZpZS5tMnRzIHVwbG9hZA"
   val etag = "5b27a21a97fcf8a7004dd1d906e7a5ba"
+  val etagSSE = "5b27a21a97fcf8a7004dd1d906e7a5cd"
   val url = s"http://testbucket.s3.amazonaws.com/testKey"
   val (bytesRangeStart, bytesRangeEnd) = (2, 10)
   val rangeOfBody = body.getBytes.slice(bytesRangeStart, bytesRangeEnd + 1)
@@ -74,13 +75,6 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
           aResponse().withStatus(200).withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""").withBody(body)
         )
       )
-  def mockHead(): Unit =
-    mock
-      .register(
-        head(urlEqualTo(s"/$bucketKey")).willReturn(
-          aResponse().withStatus(200).withHeader("ETag", s""""$etag"""")
-        )
-      )
 
   def mockDownloadSSEC(): Unit =
     mock
@@ -94,6 +88,26 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
               .withStatus(200)
               .withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""")
               .withBody(bodySSE)
+          )
+      )
+
+  def mockHead(): Unit =
+    mock
+      .register(
+        head(urlEqualTo(s"/$bucketKey")).willReturn(
+          aResponse().withStatus(200).withHeader("ETag", s""""$etag"""")
+        )
+      )
+
+  def mockHeadSSEC(): Unit =
+    mock
+      .register(
+        head(urlEqualTo(s"/$bucketKey"))
+          .withHeader("x-amz-server-side-encryption-customer-algorithm", new EqualToPattern("AES256"))
+          .withHeader("x-amz-server-side-encryption-customer-key", new EqualToPattern(sseCustomerKey))
+          .withHeader("x-amz-server-side-encryption-customer-key-MD5", new EqualToPattern(sseCustomerMd5Key))
+          .willReturn(
+            aResponse().withStatus(200).withHeader("ETag", s""""$etagSSE"""")
           )
       )
 

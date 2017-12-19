@@ -17,7 +17,7 @@ import akka.http.javadsl.model._
 import akka.http.scaladsl.model.headers.{ByteRange => ScalaByteRange}
 import akka.http.scaladsl.model.{ContentType => ScalaContentType, HttpMethod => ScalaHttpMethod}
 import akka.stream.Materializer
-import akka.stream.alpakka.s3.{S3Settings, scaladsl}
+import akka.stream.alpakka.s3.{scaladsl, S3Settings}
 import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.auth.{AWSCredentials => OldAWSCredentials}
 import akka.stream.alpakka.s3.impl._
@@ -174,12 +174,15 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param method the [[HttpMethod]] to use when making the request
-   * @param sse the server side encryption to use
+   * @param s3Headers any headers you want to add
    * @return a [[CompletionStage]] containing the raw [[HttpResponse]]
    */
-  def request(bucket: String, key: String, method: HttpMethod = HttpMethods.GET, sse: Option[ServerSideEncryption] = None): CompletionStage[HttpResponse] =
+  def request(bucket: String,
+              key: String,
+              method: HttpMethod = HttpMethods.GET,
+              s3Headers: S3Headers = S3Headers.empty): CompletionStage[HttpResponse] =
     impl
-      .request(S3Location(bucket, key), method.asInstanceOf[ScalaHttpMethod], sse = sse)
+      .request(S3Location(bucket, key), method.asInstanceOf[ScalaHttpMethod], s3Headers = s3Headers)
       .map(_.asInstanceOf[HttpResponse])(system.dispatcher)
       .toJava
 
@@ -193,6 +196,24 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
   def getObjectMetadata(bucket: String, key: String): CompletionStage[Optional[ObjectMetadata]] =
     impl
       .getObjectMetadata(bucket, key)
+      .map { opt =>
+        Optional.ofNullable(opt.map(metaDataToJava).orNull)
+      }(mat.executionContext)
+      .toJava
+
+  /**
+   * Gets the metadata for a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param sse the server side encryption to use
+   * @return A [[CompletionStage]] containing an [[Optional]] that will be empty in case the object does not exist
+   */
+  def getObjectMetadata(bucket: String,
+                        key: String,
+                        sse: ServerSideEncryption): CompletionStage[Optional[ObjectMetadata]] =
+    impl
+      .getObjectMetadata(bucket, key, Some(sse))
       .map { opt =>
         Optional.ofNullable(opt.map(metaDataToJava).orNull)
       }(mat.executionContext)
@@ -241,6 +262,34 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @param data a [[Stream]] of [[ByteString]]
    * @param contentLength the number of bytes that will be uploaded (required!)
    * @param contentType an optional [[ContentType]]
+   * @param sse the server side encryption to use
+   * @return a [[CompletionStage]] containing the [[ObjectMetadata]] of the uploaded S3 Object
+   */
+  def putObject(bucket: String,
+                key: String,
+                data: Source[ByteString, _],
+                contentLength: Long,
+                contentType: ContentType,
+                s3Headers: S3Headers,
+                sse: ServerSideEncryption): CompletionStage[ObjectMetadata] =
+    impl
+      .putObject(S3Location(bucket, key),
+                 contentType.asInstanceOf[ScalaContentType],
+                 data.asScala,
+                 contentLength,
+                 s3Headers,
+                 Some(sse))
+      .map(metaDataToJava)(mat.executionContext)
+      .toJava
+
+  /**
+   * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param data a [[Stream]] of [[ByteString]]
+   * @param contentLength the number of bytes that will be uploaded (required!)
+   * @param contentType an optional [[ContentType]]
    * @param cannedAcl the Acl
    * @param metaHeaders the metadata headers
    * @return ta [[CompletionStage]] containing the [[ObjectMetadata]] of the uploaded S3 Object
@@ -253,6 +302,29 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
                 cannedAcl: CannedAcl,
                 metaHeaders: MetaHeaders): CompletionStage[ObjectMetadata] =
     putObject(bucket, key, data, contentLength, contentType, S3Headers(cannedAcl, metaHeaders))
+
+  /**
+   * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param data a [[Stream]] of [[ByteString]]
+   * @param contentLength the number of bytes that will be uploaded (required!)
+   * @param contentType an optional [[ContentType]]
+   * @param cannedAcl the Acl
+   * @param metaHeaders the metadata headers
+   * @param sse the server side encryption to use
+   * @return a [[CompletionStage]] containing the [[ObjectMetadata]] of the uploaded S3 Object
+   */
+  def putObject(bucket: String,
+                key: String,
+                data: Source[ByteString, _],
+                contentLength: Long,
+                contentType: ContentType,
+                cannedAcl: CannedAcl,
+                metaHeaders: MetaHeaders,
+                sse: ServerSideEncryption): CompletionStage[ObjectMetadata] =
+    putObject(bucket, key, data, contentLength, contentType, S3Headers(cannedAcl, metaHeaders), sse)
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -278,6 +350,25 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @param key the s3 object key
    * @param data a [[Stream]] of [[ByteString]]
    * @param contentLength the number of bytes that will be uploaded (required!)
+   * @param contentType an optional [[ContentType]]
+   * @param sse the server side encryption to use
+   * @return a [[CompletionStage]] containing the [[ObjectMetadata]] of the uploaded S3 Object
+   */
+  def putObject(bucket: String,
+                key: String,
+                data: Source[ByteString, _],
+                contentLength: Long,
+                contentType: ContentType,
+                sse: ServerSideEncryption): CompletionStage[ObjectMetadata] =
+    putObject(bucket, key, data, contentLength, contentType, CannedAcl.Private, MetaHeaders(Map()), sse)
+
+  /**
+   * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param data a [[Stream]] of [[ByteString]]
+   * @param contentLength the number of bytes that will be uploaded (required!)
    * @return a [[CompletionStage]] containing the [[ObjectMetadata]] of the uploaded S3 Object
    */
   def putObject(bucket: String,
@@ -293,6 +384,30 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
               MetaHeaders(Map()))
 
   /**
+   * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param data a [[Stream]] of [[ByteString]]
+   * @param contentLength the number of bytes that will be uploaded (required!)
+   * @param sse the server side encryption to use
+   * @return a [[CompletionStage]] containing the [[ObjectMetadata]] of the uploaded S3 Object
+   */
+  def putObject(bucket: String,
+                key: String,
+                data: Source[ByteString, _],
+                contentLength: Long,
+                sse: ServerSideEncryption): CompletionStage[ObjectMetadata] =
+    putObject(bucket,
+              key,
+              data,
+              contentLength,
+              ContentTypes.APPLICATION_OCTET_STREAM,
+              CannedAcl.Private,
+              MetaHeaders(Map()),
+              sse)
+
+  /**
    * Downloads a S3 Object
    *
    * @param bucket the s3 bucket name
@@ -306,14 +421,16 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
       .asJava
 
   /**
-    * Downloads a S3 Object
-    *
-    * @param bucket the s3 bucket name
-    * @param key the s3 object key
-    * @param sse the server side encryption to use
-    * @return A [[Source]] of [[ByteString]] that materializes into a [[CompletionStage]] containing the [[ObjectMetadata]]
-    */
-  def download(bucket: String, key: String, sse: ServerSideEncryption): Source[ByteString, CompletionStage[ObjectMetadata]] =
+   * Downloads a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param sse the server side encryption to use
+   * @return A [[Source]] of [[ByteString]] that materializes into a [[CompletionStage]] containing the [[ObjectMetadata]]
+   */
+  def download(bucket: String,
+               key: String,
+               sse: ServerSideEncryption): Source[ByteString, CompletionStage[ObjectMetadata]] =
     impl
       .download(S3Location(bucket, key), None, Some(sse))
       .mapMaterializedValue(_.map(metaDataToJava)(mat.executionContext).toJava)
@@ -336,15 +453,18 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
   }
 
   /**
-    * Downloads a specific byte range of a S3 Object
-    *
-    * @param bucket the s3 bucket name
-    * @param key the s3 object key
-    * @param range the [[ByteRange]] you want to download
-    * @param sse the server side encryption to use
-    * @return A [[Source]] of [[ByteString]] that materializes into a [[CompletionStage]] containing the [[ObjectMetadata]]
-    */
-  def download(bucket: String, key: String, range: ByteRange, sse: ServerSideEncryption): Source[ByteString, CompletionStage[ObjectMetadata]] = {
+   * Downloads a specific byte range of a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param range the [[ByteRange]] you want to download
+   * @param sse the server side encryption to use
+   * @return A [[Source]] of [[ByteString]] that materializes into a [[CompletionStage]] containing the [[ObjectMetadata]]
+   */
+  def download(bucket: String,
+               key: String,
+               range: ByteRange,
+               sse: ServerSideEncryption): Source[ByteString, CompletionStage[ObjectMetadata]] = {
     val scalaRange = range.asInstanceOf[ScalaByteRange]
     impl
       .download(S3Location(bucket, key), Some(scalaRange), Some(sse))
@@ -386,15 +506,15 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
       .asJava
 
   /**
-    * Uploads a S3 Object by making multiple requests
-    *
-    * @param bucket the s3 bucket name
-    * @param key the s3 object key
-    * @param contentType an optional [[ContentType]]
-    * @param s3Headers any headers you want to add
-    * @param sse the server side encryption to use
-    * @return a [[Sink]] that accepts [[ByteString]]'s and materializes to a [[CompletionStage]] of [[MultipartUploadResult]]
-    */
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param contentType an optional [[ContentType]]
+   * @param s3Headers any headers you want to add
+   * @param sse the server side encryption to use
+   * @return a [[Sink]] that accepts [[ByteString]]'s and materializes to a [[CompletionStage]] of [[MultipartUploadResult]]
+   */
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
@@ -423,16 +543,16 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
     multipartUpload(bucket, key, contentType, S3Headers(cannedAcl, metaHeaders))
 
   /**
-    * Uploads a S3 Object by making multiple requests
-    *
-    * @param bucket the s3 bucket name
-    * @param key the s3 object key
-    * @param contentType an optional [[ContentType]]
-    * @param metaHeaders any meta-headers you want to add
-    * @param cannedAcl a [[CannedAcl]], defauts to [[CannedAcl.Private]]
-    * @param sse sse the server side encryption to use
-    * @return a [[Sink]] that accepts [[ByteString]]'s and materializes to a [[CompletionStage]] of [[MultipartUploadResult]]
-    */
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param contentType an optional [[ContentType]]
+   * @param metaHeaders any meta-headers you want to add
+   * @param cannedAcl a [[CannedAcl]], defauts to [[CannedAcl.Private]]
+   * @param sse sse the server side encryption to use
+   * @return a [[Sink]] that accepts [[ByteString]]'s and materializes to a [[CompletionStage]] of [[MultipartUploadResult]]
+   */
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
@@ -457,15 +577,15 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
     multipartUpload(bucket, key, contentType, cannedAcl, MetaHeaders(Map()))
 
   /**
-    * Uploads a S3 Object by making multiple requests
-    *
-    * @param bucket the s3 bucket name
-    * @param key the s3 object key
-    * @param contentType an optional [[ContentType]]
-    * @param cannedAcl a [[CannedAcl]], defauts to [[CannedAcl.Private]]
-    * @param sse the server side encryption to use
-    * @return a [[Sink]] that accepts [[ByteString]]'s and materializes to a [[CompletionStage]] of [[MultipartUploadResult]]
-    */
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param contentType an optional [[ContentType]]
+   * @param cannedAcl a [[CannedAcl]], defauts to [[CannedAcl.Private]]
+   * @param sse the server side encryption to use
+   * @return a [[Sink]] that accepts [[ByteString]]'s and materializes to a [[CompletionStage]] of [[MultipartUploadResult]]
+   */
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
@@ -487,14 +607,14 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
     multipartUpload(bucket, key, contentType, CannedAcl.Private, MetaHeaders(Map()))
 
   /**
-    * Uploads a S3 Object by making multiple requests
-    *
-    * @param bucket the s3 bucket name
-    * @param key the s3 object key
-    * @param contentType an optional [[ContentType]]
-    * @param sse the server side encryption to use
-    * @return a [[Sink]] that accepts [[ByteString]]'s and materializes to a [[CompletionStage]] of [[MultipartUploadResult]]
-    */
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param contentType an optional [[ContentType]]
+   * @param sse the server side encryption to use
+   * @return a [[Sink]] that accepts [[ByteString]]'s and materializes to a [[CompletionStage]] of [[MultipartUploadResult]]
+   */
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
@@ -512,13 +632,13 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
     multipartUpload(bucket, key, ContentTypes.APPLICATION_OCTET_STREAM, CannedAcl.Private, MetaHeaders(Map()))
 
   /**
-    * Uploads a S3 Object by making multiple requests
-    *
-    * @param bucket the s3 bucket name
-    * @param key the s3 object key
-    * @param sse the server side encryption to use
-    * @return a [[Sink]] that accepts [[ByteString]]'s and materializes to a [[CompletionStage]] of [[MultipartUploadResult]]
-    */
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param sse the server side encryption to use
+   * @return a [[Sink]] that accepts [[ByteString]]'s and materializes to a [[CompletionStage]] of [[MultipartUploadResult]]
+   */
   def multipartUpload(bucket: String,
                       key: String,
                       sse: ServerSideEncryption): Sink[ByteString, CompletionStage[MultipartUploadResult]] =

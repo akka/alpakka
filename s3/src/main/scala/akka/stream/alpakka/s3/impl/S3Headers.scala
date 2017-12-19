@@ -75,12 +75,19 @@ object StorageClass {
  */
 sealed abstract class ServerSideEncryption {
   def headers: immutable.Seq[HttpHeader]
+
+  def headers(request: S3Request): immutable.Seq[HttpHeader]
 }
 
 object ServerSideEncryption {
 
   case object AES256 extends ServerSideEncryption {
     override def headers: immutable.Seq[HttpHeader] = RawHeader("x-amz-server-side-encryption", "AES256") :: Nil
+
+    override def headers(request: S3Request): immutable.Seq[HttpHeader] = request match {
+      case PutObject | InitiateMultipartUpload => headers
+      case _ => Nil
+    }
   }
 
   /**
@@ -99,6 +106,11 @@ object ServerSideEncryption {
       val headers = baseHeaders ++ context.map(ctx => RawHeader("x-amz-server-side-encryption-context", ctx)).toSeq
       headers
     }
+
+    override def headers(request: S3Request): immutable.Seq[HttpHeader] = request match {
+      case PutObject | InitiateMultipartUpload => headers
+      case _ => Nil
+    }
   }
 
   /**
@@ -116,5 +128,11 @@ object ServerSideEncryption {
         val md5 = Md5Utils.md5AsBase64(decodedKey)
         md5
       })) :: Nil
+
+    override def headers(request: S3Request): immutable.Seq[HttpHeader] = request match {
+      case GetObject | HeadObject | PutObject | InitiateMultipartUpload | UploadPart =>
+        headers
+      case _ => Nil
+    }
   }
 }

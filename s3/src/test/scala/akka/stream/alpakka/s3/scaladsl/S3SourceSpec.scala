@@ -48,13 +48,26 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     result.eTag shouldBe Some(etag)
   }
 
+  it should "download a metadata from S3 using server side encryption" in {
+
+    mockHeadSSEC()
+
+    //#objectMetadata
+    val metadata = s3Client.getObjectMetadata(bucket, bucketKey, Some(sseCustomerKeys))
+    //#objectMetadata
+
+    val Some(result) = metadata.futureValue
+
+    result.eTag shouldBe Some(etagSSE)
+  }
+
   it should "download a range of file's bytes from S3 if bytes range given" in {
 
     mockRangedDownload()
 
     //#rangedDownload
     val s3Source: Source[ByteString, _] =
-      s3Client.download(bucket, bucketKey, ByteRange(bytesRangeStart, bytesRangeEnd))
+      s3Client.download(bucket, bucketKey, Some(ByteRange(bytesRangeStart, bytesRangeEnd)))
     //#rangedDownload
 
     val result: Future[Array[Byte]] = s3Source.map(_.toArray).runWith(Sink.head)
@@ -67,7 +80,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockDownloadSSEC()
 
     //#download
-    val s3Source = s3Client.download(bucket, bucketKey, sseCustomerKeys)
+    val s3Source = s3Client.download(bucket, bucketKey, sse = Some(sseCustomerKeys))
     //#download
 
     val result = s3Source.map(_.utf8String).runWith(Sink.head)
@@ -96,7 +109,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     val sse = ServerSideEncryption.CustomerKeys("encoded-key", Some("md5-encoded-key"))
     val result = s3Client
-      .download(bucket, bucketKey, sse)
+      .download(bucket, bucketKey, sse = Some(sse))
       .map(_.utf8String)
       .runWith(Sink.head)
 
