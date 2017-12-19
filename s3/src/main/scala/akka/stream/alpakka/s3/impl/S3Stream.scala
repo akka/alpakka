@@ -115,8 +115,8 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       case HttpResponse(NotFound, _, entity, _) =>
         entity.discardBytes().future().map(_ => None)
       case HttpResponse(status, _, entity, _) =>
-        entity.discardBytes().future().map { _ =>
-          throw new UnsupportedOperationException(s"Got $status for HEAD $bucket $key")
+        Unmarshal(entity).to[String].map { err =>
+          throw new S3Exception(err)
         }
     }
   }
@@ -127,9 +127,8 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       case HttpResponse(NoContent, _, entity, _) =>
         entity.discardBytes().future().map(_ => Done)
       case HttpResponse(code, _, entity, _) =>
-        entity.discardBytes().future().map { _ =>
-          // TODO get the first part of the body?
-          throw new RuntimeException(s"Got $code for DELETE ${s3Location.bucket} ${s3Location.key}")
+        Unmarshal(entity).to[String].map { err =>
+          throw new S3Exception(err)
         }
     }
   }
@@ -146,11 +145,18 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     implicit val ec = mat.executionContext
     val req = uploadRequest(s3Location, data, contentLength, contentType, s3Headers)
 
-    for {
+    val resp = for {
       signedRequest <- Signer.signedRequest(req, signingKey)
       resp <- Http().singleRequest(signedRequest)
-    } yield {
-      ObjectMetadata(resp.headers)
+    } yield resp
+
+    resp.flatMap {
+      case HttpResponse(OK, headers, entity, _) =>
+        entity.discardBytes().future().map(_ => ObjectMetadata(headers))
+      case HttpResponse(code, _, entity, _) =>
+        Unmarshal(entity).to[String].map { err =>
+          throw new S3Exception(err)
+        }
     }
   }
 
@@ -191,8 +197,8 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       case HttpResponse(status, _, entity, _) if status.isSuccess() =>
         Unmarshal(entity).to[MultipartUpload]
       case HttpResponse(_, _, entity, _) =>
-        Unmarshal(entity).to[String].flatMap { err =>
-          Future.failed(new Exception("Can't initiate upload: " + err))
+        Unmarshal(entity).to[String].map { err =>
+          throw new S3Exception(err)
         }
     }
   }
@@ -323,8 +329,8 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       case HttpResponse(status, _, entity, _) if status.isSuccess() && !status.isRedirection() =>
         Future.successful(entity)
       case HttpResponse(_, _, entity, _) =>
-        Unmarshal(entity).to[String].flatMap { err =>
-          Future.failed(new S3Exception(err))
+        Unmarshal(entity).to[String].map { err =>
+          throw new S3Exception(err)
         }
     }
 }

@@ -55,7 +55,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
       .single(ByteString("some contents"))
       .runWith(s3Client.multipartUpload("nonexisting_bucket", "nonexisting_file.xml"))
 
-    result.failed.futureValue.getMessage should startWith("Can't initiate upload:")
+    result.failed.futureValue.getMessage shouldBe "No key found"
   }
 
   override protected def afterAll(): Unit = {
