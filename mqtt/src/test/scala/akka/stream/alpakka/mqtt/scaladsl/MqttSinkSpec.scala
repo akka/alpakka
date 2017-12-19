@@ -102,5 +102,25 @@ class MqttSinkSpec
 
       termination.futureValue shouldBe Done
     }
+
+    "received retained message on new client" in {
+      val msg = MqttMessage(topic, ByteString("ohi"), Some(MqttQoS.atLeastOnce), retained = true)
+
+      val messageSent = Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
+
+      Await.ready(messageSent, 3 seconds)
+
+      val retainedSinkSettings = sourceSettings
+        .withClientId("source-spec/retained")
+
+      val messageFuture =
+        MqttSource
+          .atMostOnce(MqttSourceSettings(retainedSinkSettings, Map(topic -> MqttQoS.atLeastOnce)), 8)
+          .runWith(Sink.head)
+
+      val message = messageFuture.futureValue
+      message.topic shouldBe msg.topic
+      message.payload shouldBe msg.payload
+    }
   }
 }
