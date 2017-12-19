@@ -7,12 +7,10 @@ package akka.stream.alpakka.mqtt
 import javax.net.ssl.SSLSocketFactory
 
 import akka.Done
-import akka.stream.alpakka.mqtt.scaladsl.MqttCommittableMessage
-import akka.stream.stage._
 import akka.util.ByteString
-import org.eclipse.paho.client.mqttv3.{MqttMessage => PahoMqttMessage, _}
+import org.eclipse.paho.client.mqttv3.{IMqttActionListener, IMqttToken, MqttClientPersistence}
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Promise
 import scala.language.implicitConversions
 import scala.util._
 
@@ -148,83 +146,6 @@ object MqttMessage {
    */
   def create(topic: String, payload: ByteString, qos: MqttQoS, retained: Boolean) =
     MqttMessage(topic, payload, Some(qos), retained = retained)
-}
-
-/**
- *  Internal API
- */
-private[mqtt] trait MqttConnectorLogic { this: GraphStageLogic =>
-
-  import MqttConnectorLogic._
-
-  def connectionSettings: MqttConnectionSettings
-
-  def handleConnection(client: IMqttAsyncClient): Unit
-  def handleConnectionLost(ex: Throwable): Unit
-  def commitCallback(args: CommitCallbackArguments): Unit = ()
-
-  val onConnect = getAsyncCallback[IMqttAsyncClient](handleConnection)
-  val onConnectionLost = getAsyncCallback[Throwable](handleConnectionLost)
-  val commitAsyncCallback = getAsyncCallback[CommitCallbackArguments](commitCallback)
-
-  /**
-   * Callback, that is called from the MQTT client thread before invoking
-   * message handler callback in the GraphStage context.
-   */
-  def onMessage(message: MqttCommittableMessage) = ()
-
-  final override def preStart(): Unit = {
-    val client = new MqttAsyncClient(
-      connectionSettings.broker,
-      connectionSettings.clientId,
-      connectionSettings.persistence
-    )
-
-    client.setCallback(new MqttCallback {
-      def messageArrived(topic: String, pahoMessage: PahoMqttMessage) =
-        onMessage(new MqttCommittableMessage {
-          override val message = MqttMessage(topic, ByteString(pahoMessage.getPayload))
-          override def messageArrivedComplete(): Future[Done] = {
-            val promise = Promise[Done]()
-            val qos = pahoMessage.getQos match {
-              case 0 => MqttQoS.atMostOnce
-              case 1 => MqttQoS.atLeastOnce
-              case 2 => MqttQoS.exactlyOnce
-            }
-            commitAsyncCallback.invoke(CommitCallbackArguments(pahoMessage.getId, qos, promise))
-            promise.future
-          }
-        })
-
-      def deliveryComplete(token: IMqttDeliveryToken) =
-        ()
-
-      def connectionLost(cause: Throwable) =
-        onConnectionLost.invoke(cause)
-    })
-    val connectOptions = new MqttConnectOptions
-    connectionSettings.auth.foreach {
-      case (user, password) =>
-        connectOptions.setUserName(user)
-        connectOptions.setPassword(password.toCharArray)
-    }
-    connectionSettings.socketFactory.foreach { socketFactory =>
-      connectOptions.setSocketFactory(socketFactory)
-    }
-    connectionSettings.will.foreach { will =>
-      connectOptions.setWill(will.topic,
-                             will.payload.toArray,
-                             will.qos.getOrElse(MqttQoS.atLeastOnce).byteValue.toInt,
-                             will.retained)
-    }
-    connectOptions.setCleanSession(connectionSettings.cleanSession)
-    client.connect(connectOptions, (), connectHandler)
-  }
-
-  private val connectHandler: Try[IMqttToken] => Unit = {
-    case Success(token) => onConnect.invoke(token.getClient)
-    case Failure(ex) => onConnectionLost.invoke(ex)
-  }
 }
 
 /**
