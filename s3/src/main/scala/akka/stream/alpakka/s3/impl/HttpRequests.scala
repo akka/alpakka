@@ -33,7 +33,7 @@ private[alpakka] object HttpRequests {
     )
 
     HttpRequest(HttpMethods.GET)
-      .withHeaders(Host(requestHost(bucket, conf.s3Region)))
+      .withHeaders(Host(requestHost(bucket, conf.s3RegionProvider.getRegion)))
       .withUri(requestUri(bucket, None).withQuery(query))
   }
 
@@ -99,7 +99,7 @@ private[alpakka] object HttpRequests {
                               method: HttpMethod = HttpMethods.GET,
                               uriFn: (Uri => Uri) = identity)(implicit conf: S3Settings): HttpRequest =
     HttpRequest(method)
-      .withHeaders(Host(requestHost(s3Location.bucket, conf.s3Region)))
+      .withHeaders(Host(requestHost(s3Location.bucket, conf.s3RegionProvider.getRegion)))
       .withUri(uriFn(requestUri(s3Location.bucket, Some(s3Location.key))))
 
   @throws(classOf[IllegalUriException])
@@ -145,9 +145,9 @@ private[alpakka] object HttpRequests {
     val path = key.fold(basePath) { someKey =>
       someKey.split("/").foldLeft(basePath)((acc, p) => acc / p)
     }
-    val uri = Uri(path = path, authority = Authority(requestHost(bucket, conf.s3Region)))
+    val uri = Uri(path = path, authority = Authority(requestHost(bucket, conf.s3RegionProvider.getRegion)))
     conf.proxy match {
-      case None => uri.withScheme("https").withHost(requestHost(bucket, conf.s3Region))
+      case None => uri.withScheme("https").withHost(requestHost(bucket, conf.s3RegionProvider.getRegion))
       case Some(proxy) => uri.withPort(proxy.port).withScheme(proxy.scheme).withHost(proxy.host)
     }
   }

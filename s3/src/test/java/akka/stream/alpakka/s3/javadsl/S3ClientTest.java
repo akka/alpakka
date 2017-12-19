@@ -21,9 +21,11 @@ import akka.stream.alpakka.s3.scaladsl.S3WireMockBase;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
+import com.amazonaws.SdkClientException;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.regions.AwsRegionProvider;
 import org.junit.Test;
 import scala.Option;
 import scala.Some;
@@ -40,12 +42,21 @@ public class S3ClientTest extends S3WireMockBase {
             new BasicAWSCredentials("my-AWS-access-key-ID", "my-AWS-password")
     );
 
+    private AwsRegionProvider regionProvider(String region) {
+        return new AwsRegionProvider() {
+            @Override
+            public String getRegion() throws SdkClientException {
+                return region;
+            }
+        };
+    };
+
     private final Proxy proxy = new Proxy("localhost",port(),"http");
     private final S3Settings settings = new S3Settings(
             MemoryBufferType.getInstance(),
             Some.apply(proxy),
             credentials,
-            "us-east-1",
+            regionProvider("us-east-1"),
             false
     );
     private final S3Client client = new S3Client(settings, system(), materializer);
