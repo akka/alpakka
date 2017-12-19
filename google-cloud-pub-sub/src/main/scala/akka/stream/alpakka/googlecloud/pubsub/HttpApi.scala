@@ -90,7 +90,7 @@ private trait HttpApi {
 
     for {
       request <- Marshal((HttpMethods.POST, url, request)).to[HttpRequest]
-      response <- response(request, maybeAccessToken)
+      response <- doRequest(request, maybeAccessToken)
     } yield {
       response.discardEntityBytes()
       if (response.status.isSuccess()) {
@@ -101,8 +101,8 @@ private trait HttpApi {
     }
   }
 
-  private[this] def response(request: HttpRequest, maybeAccessToken: Option[String])(implicit as: ActorSystem,
-                                                                                     materializer: Materializer) =
+  private[this] def doRequest(request: HttpRequest, maybeAccessToken: Option[String])(implicit as: ActorSystem,
+                                                                                      materializer: Materializer) =
     Http().singleRequest(
       maybeAccessToken.map(accessToken => request.addCredentials(OAuth2BearerToken(accessToken))).getOrElse(request)
     )
@@ -121,7 +121,7 @@ private trait HttpApi {
 
     for {
       request <- Marshal((HttpMethods.POST, url, request)).to[HttpRequest]
-      response <- response(request, maybeAccessToken)
+      response <- doRequest(request, maybeAccessToken)
       publishResponse <- Unmarshal(response.entity).to[PublishResponse]
     } yield publishResponse.messageIds
   }
