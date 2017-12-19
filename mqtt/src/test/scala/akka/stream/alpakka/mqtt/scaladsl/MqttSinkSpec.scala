@@ -104,7 +104,7 @@ class MqttSinkSpec
     }
 
     "received retained message on new client" in {
-      val msg = MqttMessage(topic, ByteString("ohi"), Some(MqttQoS.atLeastOnce), true)
+      val msg = MqttMessage(topic, ByteString("ohi"), Some(MqttQoS.atLeastOnce), retained = true)
 
       val messageSent = Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
 

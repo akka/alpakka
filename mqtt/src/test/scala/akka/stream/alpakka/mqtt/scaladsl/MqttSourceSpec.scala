@@ -246,6 +246,10 @@ class MqttSourceSpec
 
       val msg = MqttMessage(topic1, ByteString("ohi"))
 
+      //#will-message
+      val lastWill = MqttMessage(willTopic, ByteString("ohi"), Some(MqttQoS.AtLeastOnce), retained = true)
+      //#will-message
+
       // Create a proxy to RabbitMQ so it can be shutdown
       val (proxyBinding, connection) = Tcp().bind("localhost", 1337).toMat(Sink.head)(Keep.both).run()
       val proxyKs = connection.map(
@@ -261,7 +265,7 @@ class MqttSourceSpec
         sourceSettings
           .withClientId("source-spec/testator")
           .withBroker("tcp://localhost:1337")
-          .withWill(MqttMessage(willTopic, ByteString("ohi"), Some(MqttQoS.AtLeastOnce), retained = true)),
+          .withWill(lastWill),
         Map(topic1 -> MqttQoS.AtLeastOnce)
       )
       val source1 = MqttSource.atMostOnce(settings1, 8)

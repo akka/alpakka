@@ -65,6 +65,13 @@ Scala
 Java
 : @@snip ($alpakka$/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #run-sink }
 
+The QoS and the retained flag can be configured on a per-message basis.
+Scala
+: @@snip ($alpakka$/mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttSourceSpec.scala) { #will-message }
+
+Java
+: @@snip ($alpakka$/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #will-message }
+
 It is also possible to connect to the MQTT server in bidirectional fashion, using a single underlying connection (and client ID). To do that create an MQTT flow that combines the functionalities of an MQTT source and an MQTT sink.
 
 Scala

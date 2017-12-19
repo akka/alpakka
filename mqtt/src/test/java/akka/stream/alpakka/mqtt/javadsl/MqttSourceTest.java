@@ -5,6 +5,8 @@
 package akka.stream.alpakka.mqtt.javadsl;
 
 import akka.stream.alpakka.mqtt.*;
+import akka.stream.testkit.TestSubscriber;
+import akka.stream.testkit.javadsl.TestSink;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -192,6 +194,74 @@ public class MqttSourceTest {
         .flatMap(i -> Arrays.asList("source-test/topic1-msg" + i, "source-test/topic2-msg" + i).stream())
         .collect(Collectors.toSet()),
       result.second().toCompletableFuture().get(3, TimeUnit.SECONDS).stream().collect(Collectors.toSet())
+    );
+  }
+
+  @Test
+  public void supportWillMessage() throws Exception {
+    String topic1 = "source-spec/topic1";
+    String willTopic = "source-spec/will";
+    final MqttConnectionSettings baseConnectionSettings = MqttConnectionSettings.create(
+            "tcp://localhost:1883",
+            "test-java-client",
+            new MemoryPersistence()
+    );
+    MqttConnectionSettings sourceSettings = baseConnectionSettings.withClientId("source-test/source-withoutAutoAck");
+    MqttConnectionSettings sinkSettings = baseConnectionSettings.withClientId("source-test/sink-withoutAutoAck");
+
+    MqttMessage msg = MqttMessage.create(topic1, ByteString.fromString("ohi"));
+
+    //#will-message
+    MqttMessage lastWill = MqttMessage.create(
+            willTopic,
+            ByteString.fromString("ohi"),
+            MqttQoS.atLeastOnce(),
+            true);
+    //#will-message
+
+    // Create a proxy to RabbitMQ so it can be shutdown
+    Pair<CompletionStage<Tcp.ServerBinding>, CompletionStage<Tcp.IncomingConnection>> result1 = Tcp.get(system)
+            .bind("localhost", 1337).toMat(Sink.head(), Keep.both()).run(materializer);
+
+    CompletionStage<UniqueKillSwitch> proxyKs = result1.second().toCompletableFuture().thenApply(conn ->
+      conn.handleWith(
+        Tcp.get(system)
+          .outgoingConnection("localhost", 1883)
+          .viaMat(KillSwitches.single(), Keep.right()),
+        materializer
+      )
+    );
+
+    result1.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    MqttSourceSettings settings1 = MqttSourceSettings.create(
+      sourceSettings
+        .withClientId("source-spec/testator")
+        .withBroker("tcp://localhost:1337")
+        .withWill(lastWill)
+    ).withSubscriptions(Pair.create(topic1, MqttQoS.atLeastOnce()));
+
+    Source<MqttMessage, CompletionStage<Done>> source1 = MqttSource.atMostOnce(settings1, 8);
+
+    Pair<CompletionStage<Done>, TestSubscriber.Probe<MqttMessage>> result2 = source1.toMat(TestSink.probe(system), Keep.both()).run(materializer);
+
+    // Ensure that the connection made it all the way to the server by waiting until it receives a message
+    result2.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
+    Source.single(msg).runWith(MqttSink.create(sinkSettings, MqttQoS.atLeastOnce()), materializer);
+    result2.second().requestNext();
+
+    // Kill the proxy, producing an unexpected disconnection of the client
+    proxyKs.toCompletableFuture().get(5, TimeUnit.SECONDS).shutdown();
+
+    MqttSourceSettings settings2 = MqttSourceSettings
+        .create(sourceSettings.withClientId("source-spec/executor"))
+        .withSubscriptions(Pair.create(willTopic, MqttQoS.atLeastOnce()));
+    Source<MqttMessage, CompletionStage<Done>> source2 = MqttSource.atMostOnce(settings2, 8);
+
+    CompletionStage<MqttMessage> elem = source2.runWith(Sink.head(), materializer);
+    assertEquals(
+      MqttMessage.create(willTopic, ByteString.fromString("ohi")),
+      elem.toCompletableFuture().get(3, TimeUnit.SECONDS)
     );
   }
 }
