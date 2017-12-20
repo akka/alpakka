@@ -20,8 +20,10 @@ object Examples {
 
   //#init-client
   val credentials = new BasicAWSCredentials("x", "x")
-  implicit val lambdaClient: AWSLambdaAsync = AWSLambdaAsyncClientBuilder.standard()
-    .withCredentials(new AWSStaticCredentialsProvider(credentials)).build();
+  implicit val lambdaClient: AWSLambdaAsync = AWSLambdaAsyncClientBuilder
+    .standard()
+    .withCredentials(new AWSStaticCredentialsProvider(credentials))
+    .build();
   //#init-client
 
   //#run
