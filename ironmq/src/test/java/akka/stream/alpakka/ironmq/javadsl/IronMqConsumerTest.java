@@ -23,6 +23,7 @@ public class IronMqConsumerTest extends UnitTest {
 
         Queue from = givenQueue();
         Queue to = givenQueue();
+        givenMessages(from.name(), 100);
 
         IronMqSettings settings = IronMqSettings.create(getActorSystem());
 
