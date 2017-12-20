@@ -7,6 +7,8 @@ package akka.stream.alpakka.ironmq
 import io.circe.{Decoder, Encoder, Json}
 import io.circe.syntax._
 
+import cats.syntax.either._
+
 trait Codec {
 
   implicit val messageIdEncoder: Encoder[Message.Id] = Encoder.instance { id =>
