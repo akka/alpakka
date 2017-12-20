@@ -71,22 +71,16 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
 
         val commitCallback = getAsyncCallback[CommitCallback] {
           case AckArguments(deliveryTag, multiple, promise) => {
-            try {
-              channel.basicAck(deliveryTag, multiple)
-              if (unackedMessages.decrementAndGet() == 0 && isClosed(out)) completeStage()
-              promise.complete(Try(Done))
-            } catch {
-              case e: Throwable => promise.failure(e)
-            }
+            channel.basicAck(deliveryTag, multiple)
+            unackedMessages.decrementAndGet()
+            if (unackedMessages.get() == 0) completeStage()
+            promise.complete(Try(Done))
           }
           case NackArguments(deliveryTag, multiple, requeue, promise) => {
-            try {
-              channel.basicNack(deliveryTag, multiple, requeue)
-              if (unackedMessages.decrementAndGet() == 0 && isClosed(out)) completeStage()
-              promise.complete(Try(Done))
-            } catch {
-              case e: Throwable => promise.failure(e)
-            }
+            channel.basicNack(deliveryTag, multiple, requeue)
+            unackedMessages.decrementAndGet()
+            if (unackedMessages.get() == 0) completeStage()
+            promise.complete(Try(Done))
           }
         }
 
@@ -153,31 +147,23 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
       def handleDelivery(message: CommittableIncomingMessage): Unit =
         if (isAvailable(out)) {
           pushMessage(message)
-        } else if (queue.size + 1 > bufferSize) {
-          failStage(new RuntimeException(s"Reached maximum buffer size $bufferSize"))
         } else {
-          queue.enqueue(message)
-        }
-
-      setHandler(
-        out,
-        new OutHandler {
-          override def onPull(): Unit =
-            if (queue.nonEmpty) {
-              pushMessage(queue.dequeue())
-            }
-
-          override def onDownstreamFinish(): Unit = {
-            setKeepGoing(true)
-            if (unackedMessages.get() == 0) super.onDownstreamFinish()
+          if (queue.size + 1 > bufferSize) {
+            failStage(new RuntimeException(s"Reached maximum buffer size $bufferSize"))
+          } else {
+            queue.enqueue(message)
           }
         }
-      )
 
-      def pushMessage(message: CommittableIncomingMessage): Unit = {
-        push(out, message)
-        unackedMessages.incrementAndGet()
-      }
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit =
+          if (queue.nonEmpty) {
+            pushMessage(queue.dequeue())
+          }
+
+      })
+
+      def pushMessage(message: CommittableIncomingMessage): Unit = push(out, message)
 
       override def onFailure(ex: Throwable): Unit = {}
     }
