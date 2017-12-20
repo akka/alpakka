@@ -16,7 +16,6 @@ import com.amazonaws.services.kinesis.model._
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.scalatest.{Matchers, WordSpecLike}
 
 import scala.concurrent.duration._

@@ -13,7 +13,6 @@ import com.datastax.driver.core.{BoundStatement, PreparedStatement, Session}
 import akka.stream.alpakka.cassandra.scaladsl.{CassandraSink => ScalaCSink}
 
 import scala.compat.java8.FutureConverters._
-import scala.concurrent.ExecutionContext
 
 object CassandraSink {
 

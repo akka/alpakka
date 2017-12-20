@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.sqs.scaladsl
 
-import java.util.concurrent.{CompletableFuture, Future}
+import java.util.concurrent.CompletableFuture
 
 import akka.Done
 import akka.stream.scaladsl.Keep
@@ -15,7 +15,6 @@ import com.amazonaws.services.sqs.model.{SendMessageRequest, SendMessageResult}
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.scalatest.mockito.MockitoSugar.mock
 import org.scalatest.{FlatSpec, Matchers}
 

@@ -233,7 +233,6 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     }
 
     it should s"upload and download with spaces in the key in other region (${settings.name})" in {
-      val objectKey = "test folder/test file.txt"
       val source: Source[ByteString, Any] = Source(ByteString(settings.objectValue) :: Nil)
 
       val results = for {
