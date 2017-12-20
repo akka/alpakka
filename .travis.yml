@@ -29,8 +29,7 @@ script:
   - find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
 
 after_failure:
-  - docker-compose logs mqtt
-  - docker-compose logs cassandra
+  - docker-compose logs
 
 before_cache:
   - find $HOME/.ivy2 -name "ivydata-*.properties" -print -delete

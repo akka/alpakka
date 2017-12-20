@@ -146,7 +146,7 @@ The code in this guide is part of runnable tests of this project. You are welcom
 
 > Test code requires AMQP server running in the background. You can start one quickly using docker:
 >
-> `docker run --rm -p 5672:5672 rabbitmq:3`
+> `docker-compose up amqp`
 
 Scala
 :   ```

@@ -80,9 +80,9 @@ Java
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
 
-> Test code requires Cassandra server running in the background. You can start one quickly using docker:
+> Test code requires Cassandra running in the background. You can start it quickly using docker:
 >
-> `docker run --rm -p 9042:9042 cassandra:3`
+> `docker-compose up cassandra`
 
 Scala
 :   ```
