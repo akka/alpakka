@@ -145,15 +145,18 @@ create region --name=persons --type=PARTITION_REDUNDANT --redundant-copies=2
 
 Integration test are run against localhost geode, but IT_GEODE_HOSTNAME environment variable can change this:
 
-```bash
-export IT_GEODE_HOSTNAME=geode-host-locator
+> Test code requires Geode running in the background. You can start it quickly using docker:
+>
+> `docker-compose up geode`
 
-sbt
-```
+Scala
+:   ```
+    sbt
+    > geode/testOnly *Spec
+    ```
 
-From sbt shell
-
-```sbtshell
-project geode
-test
-```
+Java
+:   ```
+    sbt
+    > geode/testOnly *Test
+    ```

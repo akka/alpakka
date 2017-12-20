@@ -77,9 +77,9 @@ Scala
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
 
-> Test code requires MongoDB server running in the background. You can start one quickly using docker:
+> Test code requires a MongoDB server running in the background. You can start one quickly using docker:
 >
-> `docker run --rm mongo`
+> `docker-compose up mongo`
 
 Scala
 :   ```
