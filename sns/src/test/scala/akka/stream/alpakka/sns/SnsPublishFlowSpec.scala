@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.sns
 
-import java.util.concurrent.{CompletableFuture, Future}
+import java.util.concurrent.CompletableFuture
 
 import akka.stream.alpakka.sns.scaladsl.SnsPublisher
 import akka.stream.scaladsl.{Keep, Sink}
@@ -14,7 +14,6 @@ import com.amazonaws.services.sns.model.{PublishRequest, PublishResult}
 import org.mockito.ArgumentMatchers.{any, eq => meq}
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.scalatest._
 
 import scala.concurrent.Await
@@ -27,13 +26,11 @@ class SnsPublishFlowSpec extends FlatSpec with DefaultTestContext with MustMatch
     val publishResult = new PublishResult().withMessageId("message-id")
 
     when(snsClient.publishAsync(meq(publishRequest), any())).thenAnswer(
-      new Answer[AnyRef] {
-        override def answer(invocation: InvocationOnMock): Future[PublishResult] = {
-          invocation
-            .getArgument[AsyncHandler[PublishRequest, PublishResult]](1)
-            .onSuccess(publishRequest, publishResult)
-          CompletableFuture.completedFuture(publishResult)
-        }
+      (invocation: InvocationOnMock) => {
+        invocation
+          .getArgument[AsyncHandler[PublishRequest, PublishResult]](1)
+          .onSuccess(publishRequest, publishResult)
+        CompletableFuture.completedFuture(publishResult)
       }
     )
 
@@ -48,14 +45,12 @@ class SnsPublishFlowSpec extends FlatSpec with DefaultTestContext with MustMatch
     val publishResult = new PublishResult().withMessageId("message-id")
 
     when(snsClient.publishAsync(any[PublishRequest](), any())).thenAnswer(
-      new Answer[AnyRef] {
-        override def answer(invocation: InvocationOnMock): Future[PublishResult] = {
-          val publishRequest = invocation.getArgument[PublishRequest](0)
-          invocation
-            .getArgument[AsyncHandler[PublishRequest, PublishResult]](1)
-            .onSuccess(publishRequest, publishResult)
-          CompletableFuture.completedFuture(publishResult)
-        }
+      (invocation: InvocationOnMock) => {
+        val publishRequest = invocation.getArgument[PublishRequest](0)
+        invocation
+          .getArgument[AsyncHandler[PublishRequest, PublishResult]](1)
+          .onSuccess(publishRequest, publishResult)
+        CompletableFuture.completedFuture(publishResult)
       }
     )
 
@@ -78,15 +73,13 @@ class SnsPublishFlowSpec extends FlatSpec with DefaultTestContext with MustMatch
     val publishRequest = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message")
 
     when(snsClient.publishAsync(meq(publishRequest), any())).thenAnswer(
-      new Answer[AnyRef] {
-        override def answer(invocation: InvocationOnMock): Object = {
-          invocation
-            .getArgument[AsyncHandler[PublishRequest, PublishResult]](1)
-            .onError(new RuntimeException("publish error"))
-          val result = new CompletableFuture[PublishResult]()
-          result.completeExceptionally(new RuntimeException("publish error"))
-          result
-        }
+      (invocation: InvocationOnMock) => {
+        invocation
+          .getArgument[AsyncHandler[PublishRequest, PublishResult]](1)
+          .onError(new RuntimeException("publish error"))
+        val result = new CompletableFuture[PublishResult]()
+        result.completeExceptionally(new RuntimeException("publish error"))
+        result
       }
     )
 

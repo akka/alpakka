@@ -32,7 +32,6 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
       //#init-client
       implicit val system = ActorSystem()
       implicit val materializer = ActorMaterializer()
-      implicit val ec = system.dispatcher
       //#init-client
 
       //#client-construct
@@ -54,7 +53,6 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
     "allow multiple requests - current api" in {
       implicit val system = ActorSystem()
       implicit val materializer = ActorMaterializer()
-      implicit val ec = system.dispatcher
 
       val settings = DynamoSettings(system)
       val client = DynamoClient(settings)
@@ -76,7 +74,6 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
   "allow multiple requests - proposal" in {
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-    implicit val ec = system.dispatcher
 
     val settings = DynamoSettings(system)
     val client = DynamoClient(settings)
@@ -93,7 +90,6 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
   "allow multiple requests - proposal - single source" in {
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-    implicit val ec = system.dispatcher
 
     val settings = DynamoSettings(system)
     val client = DynamoClient(settings)

@@ -189,7 +189,6 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     }
 
     it should s"upload and download with spaces in the key (${settings.name})" in {
-      val objectKey = "test folder/test file.txt"
       val source: Source[ByteString, Any] = Source(ByteString(settings.objectValue) :: Nil)
 
       val results = for {
@@ -212,7 +211,6 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     }
 
     it should s"upload and download with brackets in the key (${settings.name})" in {
-      val objectKey = "abc/DEF/2017/06/15/1234 (1).TXT"
       val source: Source[ByteString, Any] = Source(ByteString(settings.objectValue) :: Nil)
 
       val results = for {
@@ -258,8 +256,6 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     }
 
     it should s"upload and download with special characters in the key in non other region (${settings.name})" in {
-      // we want ASCII and other UTF-8 characters!
-      val objectKey = "føldęrü/1234()[]><!?: .TXT"
       val source: Source[ByteString, Any] = Source(ByteString(settings.objectValue) :: Nil)
 
       val results = for {

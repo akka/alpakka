@@ -8,7 +8,7 @@ import akka.NotUsed
 import akka.stream.alpakka.awslambda.AwsLambdaFlowStage
 import akka.stream.scaladsl.Flow
 import com.amazonaws.services.lambda.model.{InvokeRequest, InvokeResult}
-import com.amazonaws.services.lambda.{AWSLambdaAsyncClient, AWSLambdaClient}
+import com.amazonaws.services.lambda.{AWSLambdaAsyncClient}
 
 object AwsLambdaFlow {
 

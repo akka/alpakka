@@ -6,8 +6,8 @@ package akka.stream.alpakka.cassandra.javadsl;
 
 import akka.Done;
 import akka.NotUsed;
-import akka.stream.alpakka.cassandra.CassandraSourceStage;
 import akka.stream.javadsl.Source;
+import akka.testkit.javadsl.TestKit;
 import com.datastax.driver.core.*;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -21,9 +21,7 @@ import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
-import akka.testkit.*;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
@@ -37,12 +35,12 @@ import java.util.stream.IntStream;
  */
 public class CassandraSourceTest {
 
-  static ActorSystem system;
-  static Materializer materializer;
+  private static ActorSystem system;
+  private static Materializer materializer;
 
-  static Session session;
+  private static Session session;
 
-  public static Session setupSession() {
+  private static Session setupSession() {
     //#init-session
     final Session session = Cluster.builder()
       .addContactPoint("127.0.0.1").withPort(9042)
@@ -51,7 +49,7 @@ public class CassandraSourceTest {
     return session;
   }
 
-  public static Pair<ActorSystem, Materializer> setupMaterializer() {
+  private static Pair<ActorSystem, Materializer> setupMaterializer() {
     //#init-mat
     final ActorSystem system = ActorSystem.create();
     final Materializer materializer = ActorMaterializer.create(system);
@@ -80,7 +78,7 @@ public class CassandraSourceTest {
     session.execute("DROP TABLE IF EXISTS akka_stream_java_test.test;");
     session.execute("DROP KEYSPACE IF EXISTS akka_stream_java_test;");
 
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 
   @After
@@ -116,16 +114,14 @@ public class CassandraSourceTest {
     //#prepared-statement
 
     //#statement-binder
-    BiFunction<Integer, PreparedStatement,BoundStatement> statementBinder = (myInteger, statement) -> {
-      return statement.bind(myInteger);
-    };
+    BiFunction<Integer, PreparedStatement,BoundStatement> statementBinder = (myInteger, statement) -> statement.bind(myInteger);
     //#statement-binder
 
     Source<Integer, NotUsed> source = Source.from(IntStream.range(1, 10).boxed().collect(Collectors.toList()));
 
 
     //#run-sink
-    final Sink<Integer, CompletionStage<Done>> sink = CassandraSink.create(2, preparedStatement, statementBinder, session, system.dispatcher());
+    final Sink<Integer, CompletionStage<Done>> sink = CassandraSink.create(2, preparedStatement, statementBinder, session);
 
     CompletionStage<Done> result = source.runWith(sink, materializer);
     //#run-sink

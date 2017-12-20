@@ -8,14 +8,15 @@ import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.sqs.SqsSourceSettings;
 import akka.stream.javadsl.Sink;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
+import com.amazonaws.services.sqs.model.Message;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import java.util.List;
+
 import java.util.Random;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executors;
@@ -25,9 +26,9 @@ import static org.junit.Assert.assertEquals;
 
 public class SqsSourceTest extends BaseSqsTest {
 
-    static ActorSystem system;
-    static ActorMaterializer materializer;
-    static SqsSourceSettings sqsSourceSettings;
+    private static ActorSystem system;
+    private static ActorMaterializer materializer;
+    private static SqsSourceSettings sqsSourceSettings;
 
     @BeforeClass
     public static void setup() {
@@ -42,10 +43,10 @@ public class SqsSourceTest extends BaseSqsTest {
 
     @AfterClass
     public static void teardown() {
-        JavaTestKit.shutdownActorSystem(system);
+        TestKit.shutdownActorSystem(system);
     }
 
-    String randomQueueUrl() {
+    private String randomQueueUrl() {
         return sqsClient.createQueue(String.format("queue-%s", new Random().nextInt())).getQueueUrl();
     }
 
@@ -57,7 +58,7 @@ public class SqsSourceTest extends BaseSqsTest {
 
         //#run
         final CompletionStage<String> cs = SqsSource.create(queueUrl, sqsSourceSettings, sqsClient)
-            .map(m -> m.getBody())
+            .map(Message::getBody)
             .runWith(Sink.head(), materializer);
         //#run
 
@@ -85,7 +86,7 @@ public class SqsSourceTest extends BaseSqsTest {
 
         //#run
         final CompletionStage<String> cs = SqsSource.create(queueUrl, sqsSourceSettings, customSqsClient)
-                .map(m -> m.getBody())
+                .map(Message::getBody)
                 .take(1)
                 .runWith(Sink.head(), materializer);
         //#run

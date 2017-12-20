@@ -26,18 +26,16 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   it should "send a message" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
-    when(sqsClient.sendMessageAsync(any[SendMessageRequest](), any())).thenAnswer(
-      new Answer[AnyRef] {
-        override def answer(invocation: InvocationOnMock): Future[SendMessageResult] = {
-          val sendMessageRequest = invocation.getArgument[SendMessageRequest](0)
-          invocation
-            .getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
-            .onSuccess(
-              sendMessageRequest,
-              new SendMessageResult().withMessageId(sendMessageRequest.getMessageBody)
-            )
-          new CompletableFuture()
-        }
+    when(sqsClient.sendMessageAsync(any[SendMessageRequest](), any)).thenAnswer(
+      (invocation: InvocationOnMock) => {
+        val sendMessageRequest = invocation.getArgument[SendMessageRequest](0)
+        invocation
+          .getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
+          .onSuccess(
+            sendMessageRequest,
+            new SendMessageResult().withMessageId(sendMessageRequest.getMessageBody)
+          )
+        new CompletableFuture()
       }
     )
 
@@ -45,19 +43,17 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
     probe.sendNext("notused").sendComplete()
     Await.result(future, 1.second) shouldBe Done
 
-    verify(sqsClient, times(1)).sendMessageAsync(any[SendMessageRequest](), any())
+    verify(sqsClient, times(1)).sendMessageAsync(any[SendMessageRequest](), any)
   }
 
   it should "fail stage on client failure and fail the promise" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
-    when(sqsClient.sendMessageAsync(any[SendMessageRequest](), any())).thenAnswer(
-      new Answer[AnyRef] {
-        override def answer(invocation: InvocationOnMock): Object = {
-          invocation
-            .getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
-            .onError(new RuntimeException("Fake client error"))
-          new CompletableFuture()
-        }
+    when(sqsClient.sendMessageAsync(any[SendMessageRequest](), any)).thenAnswer(
+      (invocation: InvocationOnMock) => {
+        invocation
+          .getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
+          .onError(new RuntimeException("Fake client error"))
+        new CompletableFuture()
       }
     )
 
@@ -68,7 +64,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       Await.result(future, 1.second)
     }
 
-    verify(sqsClient, times(1)).sendMessageAsync(any[SendMessageRequest](), any())
+    verify(sqsClient, times(1)).sendMessageAsync(any[SendMessageRequest](), any)
   }
 
   it should "failure the promise on upstream failure" in {
@@ -84,17 +80,15 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   it should "complete promise after all messages have been sent" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
-    when(sqsClient.sendMessageAsync(any[SendMessageRequest](), any())).thenAnswer(
-      new Answer[AnyRef] {
-        override def answer(invocation: InvocationOnMock): Object = {
-          val sendMessageRequest = invocation.getArgument[SendMessageRequest](0)
-          val callback = invocation.getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
-          callback.onSuccess(
-            sendMessageRequest,
-            new SendMessageResult().withMessageId(sendMessageRequest.getMessageBody)
-          )
-          new CompletableFuture()
-        }
+    when(sqsClient.sendMessageAsync(any[SendMessageRequest](), any)).thenAnswer(
+      (invocation: InvocationOnMock) => {
+        val sendMessageRequest = invocation.getArgument[SendMessageRequest](0)
+        val callback = invocation.getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
+        callback.onSuccess(
+          sendMessageRequest,
+          new SendMessageResult().withMessageId(sendMessageRequest.getMessageBody)
+        )
+        new CompletableFuture()
       }
     )
 
@@ -108,6 +102,6 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       .sendComplete()
     Await.result(future, 1.second) shouldBe Done
 
-    verify(sqsClient, times(5)).sendMessageAsync(any[SendMessageRequest](), any())
+    verify(sqsClient, times(5)).sendMessageAsync(any[SendMessageRequest](), any)
   }
 }

@@ -62,7 +62,7 @@ class KinesisSourceSpec extends WordSpecLike with Matchers with DefaultTestConte
       probe.request(2)
       probe.expectNext().utf8String shouldEqual "1"
       probe.expectNext().utf8String shouldEqual "2"
-      probe.expectNoMsg()
+      probe.expectNoMessage(1.second)
     }
 
     "wait for request before passing downstream" in new KinesisSpecContext with WithGetShardIteratorSuccess
@@ -82,7 +82,7 @@ class KinesisSourceSpec extends WordSpecLike with Matchers with DefaultTestConte
 
       probe.request(1)
       probe.expectNext().utf8String shouldEqual "1"
-      probe.expectNoMsg
+      probe.expectNoMessage(1.second)
       probe.requestNext().utf8String shouldEqual "2"
       probe.requestNext().utf8String shouldEqual "3"
       probe.requestNext().utf8String shouldEqual "4"
@@ -160,46 +160,38 @@ class KinesisSourceSpec extends WordSpecLike with Matchers with DefaultTestConte
   }
 
   trait WithGetShardIteratorSuccess { self: KinesisSpecContext =>
-    when(amazonKinesisAsync.getShardIteratorAsync(any(), any())).thenAnswer(new Answer[AnyRef] {
-      override def answer(invocation: InvocationOnMock): AnyRef = {
-        invocation
-          .getArgument[AsyncHandler[GetShardIteratorRequest, GetShardIteratorResult]](1)
-          .onSuccess(getShardIteratorRequest, getShardIteratorResult)
-        CompletableFuture.completedFuture(getShardIteratorResult)
-      }
+    when(amazonKinesisAsync.getShardIteratorAsync(any(), any())).thenAnswer((invocation: InvocationOnMock) => {
+      invocation
+        .getArgument[AsyncHandler[GetShardIteratorRequest, GetShardIteratorResult]](1)
+        .onSuccess(getShardIteratorRequest, getShardIteratorResult)
+      CompletableFuture.completedFuture(getShardIteratorResult)
     })
   }
 
   trait WithGetShardIteratorFailure { self: KinesisSpecContext =>
-    when(amazonKinesisAsync.getShardIteratorAsync(any(), any())).thenAnswer(new Answer[AnyRef] {
-      override def answer(invocation: InvocationOnMock): AnyRef = {
-        invocation
-          .getArgument[AsyncHandler[GetShardIteratorRequest, GetShardIteratorResult]](1)
-          .onError(new Exception("fail"))
-        CompletableFuture.completedFuture(getShardIteratorResult)
-      }
+    when(amazonKinesisAsync.getShardIteratorAsync(any(), any())).thenAnswer((invocation: InvocationOnMock) => {
+      invocation
+        .getArgument[AsyncHandler[GetShardIteratorRequest, GetShardIteratorResult]](1)
+        .onError(new Exception("fail"))
+      CompletableFuture.completedFuture(getShardIteratorResult)
     })
   }
 
   trait WithGetRecordsSuccess { self: KinesisSpecContext =>
-    when(amazonKinesisAsync.getRecordsAsync(any(), any())).thenAnswer(new Answer[AnyRef] {
-      override def answer(invocation: InvocationOnMock) = {
-        invocation
-          .getArgument[AsyncHandler[GetRecordsRequest, GetRecordsResult]](1)
-          .onSuccess(getRecordsRequest, getRecordsResult)
-        CompletableFuture.completedFuture(getRecordsResult)
-      }
+    when(amazonKinesisAsync.getRecordsAsync(any(), any())).thenAnswer((invocation: InvocationOnMock) => {
+      invocation
+        .getArgument[AsyncHandler[GetRecordsRequest, GetRecordsResult]](1)
+        .onSuccess(getRecordsRequest, getRecordsResult)
+      CompletableFuture.completedFuture(getRecordsResult)
     })
   }
 
   trait WithGetRecordsFailure { self: KinesisSpecContext =>
-    when(amazonKinesisAsync.getRecordsAsync(any(), any())).thenAnswer(new Answer[AnyRef] {
-      override def answer(invocation: InvocationOnMock) = {
-        invocation
-          .getArgument[AsyncHandler[GetRecordsRequest, GetRecordsResult]](1)
-          .onError(new Exception("fail"))
-        CompletableFuture.completedFuture(getRecordsResult)
-      }
+    when(amazonKinesisAsync.getRecordsAsync(any(), any())).thenAnswer((invocation: InvocationOnMock) => {
+      invocation
+        .getArgument[AsyncHandler[GetRecordsRequest, GetRecordsResult]](1)
+        .onError(new Exception("fail"))
+      CompletableFuture.completedFuture(getRecordsResult)
     })
   }
 

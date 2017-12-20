@@ -43,22 +43,20 @@ class KinesisFlowSpec extends WordSpecLike with Matchers with DefaultTestContext
     }
     "publish records with retries" in new DefaultSettings with KinesisFlowProbe {
       when(amazonKinesisAsync.putRecordsAsync(any(), any()))
-        .thenAnswer(new Answer[AnyRef] {
-          override def answer(invocation: InvocationOnMock) = {
-            val request = invocation
-              .getArgument[PutRecordsRequest](0)
-            val result = new PutRecordsResult()
-              .withFailedRecordCount(request.getRecords.size())
-              .withRecords(
-                request.getRecords.asScala
-                  .map(_ => failingRecord)
-                  .asJava
-              )
-            invocation
-              .getArgument[AsyncHandler[PutRecordsRequest, PutRecordsResult]](1)
-              .onSuccess(request, result)
-            CompletableFuture.completedFuture(result)
-          }
+        .thenAnswer((invocation: InvocationOnMock) => {
+          val request = invocation
+            .getArgument[PutRecordsRequest](0)
+          val result = new PutRecordsResult()
+            .withFailedRecordCount(request.getRecords.size())
+            .withRecords(
+              request.getRecords.asScala
+                .map(_ => failingRecord)
+                .asJava
+            )
+          invocation
+            .getArgument[AsyncHandler[PutRecordsRequest, PutRecordsResult]](1)
+            .onSuccess(request, result)
+          CompletableFuture.completedFuture(result)
         })
         .thenAnswer(new Answer[AnyRef] {
           override def answer(invocation: InvocationOnMock) = {
@@ -130,52 +128,46 @@ class KinesisFlowSpec extends WordSpecLike with Matchers with DefaultTestContext
   }
 
   trait WithPutRecordsSuccess { self: KinesisFlowProbe =>
-    when(amazonKinesisAsync.putRecordsAsync(any(), any())).thenAnswer(new Answer[AnyRef] {
-      override def answer(invocation: InvocationOnMock) = {
-        val request = invocation
-          .getArgument[PutRecordsRequest](0)
-        val result = new PutRecordsResult()
-          .withFailedRecordCount(0)
-          .withRecords(request.getRecords.asScala.map(_ => publishedRecord).asJava)
-        invocation
-          .getArgument[AsyncHandler[PutRecordsRequest, PutRecordsResult]](1)
-          .onSuccess(request, result)
-        CompletableFuture.completedFuture(result)
-      }
+    when(amazonKinesisAsync.putRecordsAsync(any(), any())).thenAnswer((invocation: InvocationOnMock) => {
+      val request = invocation
+        .getArgument[PutRecordsRequest](0)
+      val result = new PutRecordsResult()
+        .withFailedRecordCount(0)
+        .withRecords(request.getRecords.asScala.map(_ => publishedRecord).asJava)
+      invocation
+        .getArgument[AsyncHandler[PutRecordsRequest, PutRecordsResult]](1)
+        .onSuccess(request, result)
+      CompletableFuture.completedFuture(result)
     })
   }
 
   trait WithPutRecordsWithPartialErrors { self: KinesisFlowProbe =>
     when(amazonKinesisAsync.putRecordsAsync(any(), any()))
-      .thenAnswer(new Answer[AnyRef] {
-        override def answer(invocation: InvocationOnMock) = {
-          val request = invocation
-            .getArgument[PutRecordsRequest](0)
-          val result = new PutRecordsResult()
-            .withFailedRecordCount(request.getRecords.size())
-            .withRecords(
-              request.getRecords.asScala
-                .map(_ => failingRecord)
-                .asJava
-            )
-          invocation
-            .getArgument[AsyncHandler[PutRecordsRequest, PutRecordsResult]](1)
-            .onSuccess(request, result)
-          CompletableFuture.completedFuture(result)
-        }
+      .thenAnswer((invocation: InvocationOnMock) => {
+        val request = invocation
+          .getArgument[PutRecordsRequest](0)
+        val result = new PutRecordsResult()
+          .withFailedRecordCount(request.getRecords.size())
+          .withRecords(
+            request.getRecords.asScala
+              .map(_ => failingRecord)
+              .asJava
+          )
+        invocation
+          .getArgument[AsyncHandler[PutRecordsRequest, PutRecordsResult]](1)
+          .onSuccess(request, result)
+        CompletableFuture.completedFuture(result)
       })
   }
 
   trait WithPutRecordsFailure { self: KinesisFlowProbe =>
-    when(amazonKinesisAsync.putRecordsAsync(any(), any())).thenAnswer(new Answer[AnyRef] {
-      override def answer(invocation: InvocationOnMock) = {
-        invocation
-          .getArgument[AsyncHandler[PutRecordsRequest, PutRecordsResult]](1)
-          .onError(requestError)
-        val future = new CompletableFuture()
-        future.completeExceptionally(requestError)
-        future
-      }
+    when(amazonKinesisAsync.putRecordsAsync(any(), any())).thenAnswer((invocation: InvocationOnMock) => {
+      invocation
+        .getArgument[AsyncHandler[PutRecordsRequest, PutRecordsResult]](1)
+        .onError(requestError)
+      val future = new CompletableFuture()
+      future.completeExceptionally(requestError)
+      future
     })
   }
 

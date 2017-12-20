@@ -10,7 +10,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.alpakka.mongodb.scaladsl.MongoSink
 import akka.stream.alpakka.mongodb.scaladsl.DocumentUpdate
 import akka.stream.scaladsl.Source
-import org.mongodb.scala.{MongoClient, MongoCollection}
+import org.mongodb.scala.MongoClient
 import org.mongodb.scala.model.Filters
 import org.mongodb.scala.model.Updates._
 import org.mongodb.scala.bson.collection.immutable.Document

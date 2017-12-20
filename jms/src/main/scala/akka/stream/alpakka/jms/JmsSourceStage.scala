@@ -37,10 +37,6 @@ final class JmsSourceStage(settings: JmsSourceSettings) extends GraphStage[Sourc
       private val queue = mutable.Queue[Message]()
       private val backpressure = new Semaphore(bufferSize)
 
-      private val handleError = getAsyncCallback[Throwable](e => {
-        fail(out, e)
-      })
-
       private val handleMessage = getAsyncCallback[Message](msg => {
         require(queue.size <= bufferSize)
         if (isAvailable(out)) {
@@ -61,11 +57,9 @@ final class JmsSourceStage(settings: JmsSourceSettings) extends GraphStage[Sourc
       override private[jms] def onSessionOpened(): Unit =
         jmsSession.createConsumer(settings.selector).onComplete {
           case Success(consumer) =>
-            consumer.setMessageListener(new MessageListener {
-              override def onMessage(message: Message): Unit = {
-                backpressure.acquire()
-                handleMessage.invoke(message)
-              }
+            consumer.setMessageListener((message: Message) => {
+              backpressure.acquire()
+              handleMessage.invoke(message)
             })
           case Failure(e) =>
             fail.invoke(e)

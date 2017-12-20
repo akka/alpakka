@@ -15,7 +15,7 @@ import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Put;
@@ -29,6 +29,7 @@ import scala.concurrent.duration.Duration;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -41,8 +42,8 @@ import java.util.function.Function;
 @Ignore
 public class HBaseStageTest {
 
-    static ActorSystem system;
-    static Materializer materializer;
+    private static ActorSystem system;
+    private static Materializer materializer;
 
     @BeforeClass
     public static void setup() {
@@ -52,7 +53,7 @@ public class HBaseStageTest {
 
     @AfterClass
     public static void teardown() {
-        JavaTestKit.shutdownActorSystem(system);
+        TestKit.shutdownActorSystem(system);
     }
 
     //#create-converter
@@ -89,7 +90,7 @@ public class HBaseStageTest {
     @Test
     public void flow() throws ExecutionException, InterruptedException {
 
-        HTableSettings<Person> tableSettings = HTableSettings.create(HBaseConfiguration.create(), TableName.valueOf("person2"), Arrays.asList("info"), hBaseConverter);
+        HTableSettings<Person> tableSettings = HTableSettings.create(HBaseConfiguration.create(), TableName.valueOf("person2"), Collections.singletonList("info"), hBaseConverter);
 
         //#flow
         Flow<Person, Person, NotUsed> flow = HTableStage.flow(tableSettings);

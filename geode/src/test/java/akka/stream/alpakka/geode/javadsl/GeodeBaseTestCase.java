@@ -11,7 +11,7 @@ import akka.stream.Materializer;
 import akka.stream.alpakka.geode.GeodeSettings;
 import akka.stream.alpakka.geode.RegionSettings;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -39,8 +39,8 @@ public class GeodeBaseTestCase {
     }
 
     //#region
-    protected RegionSettings<Integer, Person> personRegionSettings = new RegionSettings<>("persons", func(Person::getId));
-    protected RegionSettings<Integer, Animal> animalRegionSettings = new RegionSettings<>("animals", func(Animal::getId));
+    protected RegionSettings<Integer, Person> personRegionSettings = new RegionSettings<>("persons", Person::getId);
+    protected RegionSettings<Integer, Animal> animalRegionSettings = new RegionSettings<>("animals", Animal::getId);
     //#region
 
     @BeforeClass
@@ -63,7 +63,7 @@ public class GeodeBaseTestCase {
     protected ReactiveGeode createReactiveGeode() {
         //#connection
         GeodeSettings settings = GeodeSettings.create(geodeDockerHostname, 10334)
-                .withConfiguration(func(c->c.setPoolIdleTimeout(10)));
+                .withConfiguration(c->c.setPoolIdleTimeout(10));
         return new ReactiveGeode(settings);
         //#connection
     }
@@ -77,7 +77,7 @@ public class GeodeBaseTestCase {
 
     @AfterClass
     public static void teardown() {
-        JavaTestKit.shutdownActorSystem(system);
+        TestKit.shutdownActorSystem(system);
     }
 
 }

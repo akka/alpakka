@@ -225,7 +225,7 @@ final case class JmsTextMessage(body: String,
   /**
    * Java API: add property [[JmsTextMessage]]
    */
-  @deprecated("Unclear method name, use withProperty instead")
+  @deprecated("Unclear method name, use withProperty instead", "0.15")
   def add(name: String, value: Any) = withProperty(name, value)
 }
 

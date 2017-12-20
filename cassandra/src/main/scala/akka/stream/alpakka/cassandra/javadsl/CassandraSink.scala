@@ -20,10 +20,9 @@ object CassandraSink {
   def create[T](parallelism: Int,
                 statement: PreparedStatement,
                 statementBinder: BiFunction[T, PreparedStatement, BoundStatement],
-                session: Session,
-                executionContext: ExecutionContext): Sink[T, CompletionStage[Done]] = {
+                session: Session): Sink[T, CompletionStage[Done]] = {
     val sink =
-      ScalaCSink.apply[T](parallelism, statement, (t, p) => statementBinder.apply(t, p))(session, executionContext)
+      ScalaCSink.apply[T](parallelism, statement, (t, p) => statementBinder.apply(t, p))(session)
 
     sink.mapMaterializedValue(_.toJava).asJava
   }

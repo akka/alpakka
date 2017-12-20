@@ -41,7 +41,7 @@ object AzureQueueWithTimeoutsSink {
    */
   def apply(
       cloudQueue: () => CloudQueue
-  )(implicit system: ActorSystem): Sink[(CloudQueueMessage, Int, Int), Future[Done]] =
+  ): Sink[(CloudQueueMessage, Int, Int), Future[Done]] =
     AzureQueueSink.fromFunction(
       tup => AzureQueueSinkFunctions.addMessage(cloudQueue)(tup._1, tup._2, tup._3)
     )
@@ -52,7 +52,7 @@ object AzureQueueDeleteSink {
   /**
    * ScalaAPI: creates a [[akka.stream.scaladsl.Sink]] which deletes messages from an Azure Storage Queue.
    */
-  def apply(cloudQueue: () => CloudQueue)(implicit system: ActorSystem): Sink[CloudQueueMessage, Future[Done]] =
+  def apply(cloudQueue: () => CloudQueue): Sink[CloudQueueMessage, Future[Done]] =
     AzureQueueSink.fromFunction(AzureQueueSinkFunctions.deleteMessage(cloudQueue)(_))
 }
 
@@ -64,7 +64,7 @@ object AzureQueueDeleteOrUpdateSink {
    */
   def apply(
       cloudQueue: () => CloudQueue
-  )(implicit system: ActorSystem): Sink[(CloudQueueMessage, DeleteOrUpdateMessage), Future[Done]] =
+  ): Sink[(CloudQueueMessage, DeleteOrUpdateMessage), Future[Done]] =
     AzureQueueSink.fromFunction(
       input => AzureQueueSinkFunctions.deleteOrUpdateMessage(cloudQueue)(input._1, input._2)
     )
