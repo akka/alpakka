@@ -39,6 +39,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
   val mock = new WireMock("localhost", wiremockServer.port())
 
   private object TestHttpApi extends HttpApi {
+    val isEmulated = false
     val PubSubGoogleApisHost = s"http://localhost:${wiremockServer.port()}"
     val GoogleApisHost = s"http://localhost:${wiremockServer.port()}"
   }
@@ -94,7 +95,48 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
     )
 
     val result =
-      TestHttpApi.publish(TestCredentials.projectId, "topic1", accessToken, TestCredentials.apiKey, publishRequest)
+      TestHttpApi.publish(TestCredentials.projectId,
+                          "topic1",
+                          Some(accessToken),
+                          TestCredentials.apiKey,
+                          publishRequest)
+
+    result.futureValue shouldBe Seq("1")
+  }
+
+  it should "publish without Authorization header to emulator" in {
+
+    object TestEmulatorHttpApi extends HttpApi {
+      override val isEmulated = true
+      val PubSubGoogleApisHost = s"http://localhost:${wiremockServer.port()}"
+      val GoogleApisHost = s"http://localhost:${wiremockServer.port()}"
+    }
+
+    val publishMessage =
+      PubSubMessage(messageId = "1", data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
+    val publishRequest = PublishRequest(Seq(publishMessage))
+
+    val expectedPublishRequest =
+      """{"messages":[{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1"}]}"""
+    val publishResponse = """{"messageIds":["1"]}"""
+
+    mock.register(
+      WireMock
+        .post(
+          urlEqualTo(s"/v1/projects/${TestCredentials.projectId}/topics/topic1:publish")
+        )
+        .withRequestBody(WireMock.equalTo(expectedPublishRequest))
+        .withHeader("Authorization", WireMock.absent())
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(publishResponse)
+            .withHeader("Content-Type", "application/json")
+        )
+    )
+
+    val result =
+      TestEmulatorHttpApi.publish(TestCredentials.projectId, "topic1", None, TestCredentials.apiKey, publishRequest)
 
     result.futureValue shouldBe Seq("1")
   }
@@ -167,7 +209,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
 
     val result = TestHttpApi.acknowledge(TestCredentials.projectId,
                                          "sub1",
-                                         accessToken,
+                                         Some(accessToken),
                                          TestCredentials.apiKey,
                                          acknowledgeRequest)
 
@@ -181,6 +223,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
       .orElse(sys.env.get(httpApi.PubSubEmulatorHostVarName))
 
     emulatorVar.foreach { emulatorHost =>
+      httpApi.isEmulated shouldBe true
       httpApi.PubSubGoogleApisHost shouldEqual s"http://$emulatorHost"
       httpApi.GoogleApisHost shouldEqual s"http://$emulatorHost"
     }
