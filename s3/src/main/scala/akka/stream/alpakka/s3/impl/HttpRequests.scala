@@ -38,8 +38,10 @@ private[alpakka] object HttpRequests {
   }
 
   def getDownloadRequest(s3Location: S3Location,
-                         method: HttpMethod = HttpMethods.GET)(implicit conf: S3Settings): HttpRequest =
+                         method: HttpMethod = HttpMethods.GET,
+                         s3Headers: S3Headers = S3Headers.empty)(implicit conf: S3Settings): HttpRequest =
     s3Request(s3Location, method)
+      .withDefaultHeaders(s3Headers.headers: _*)
 
   def uploadRequest(s3Location: S3Location,
                     payload: Source[ByteString, _],
@@ -61,14 +63,17 @@ private[alpakka] object HttpRequests {
       .withDefaultHeaders(s3Headers.headers: _*)
       .withEntity(HttpEntity.empty(contentType))
 
-  def uploadPartRequest(upload: MultipartUpload, partNumber: Int, payload: Source[ByteString, _], payloadSize: Int)(
-      implicit conf: S3Settings
-  ): HttpRequest =
+  def uploadPartRequest(upload: MultipartUpload,
+                        partNumber: Int,
+                        payload: Source[ByteString, _],
+                        payloadSize: Int,
+                        s3Headers: S3Headers = S3Headers.empty)(implicit conf: S3Settings): HttpRequest =
     s3Request(
       upload.s3Location,
       HttpMethods.PUT,
       _.withQuery(Query("partNumber" -> partNumber.toString, "uploadId" -> upload.uploadId))
-    ).withEntity(HttpEntity(ContentTypes.`application/octet-stream`, payloadSize, payload))
+    ).withDefaultHeaders(s3Headers.headers: _*)
+      .withEntity(HttpEntity(ContentTypes.`application/octet-stream`, payloadSize, payload))
 
   def completeMultipartUploadRequest(upload: MultipartUpload, parts: Seq[(Int, String)])(
       implicit ec: ExecutionContext,
