@@ -83,4 +83,21 @@ object scalaExamples {
       Ftp.move(destinationPath, settings)
     //#moving
   }
+
+  object processAndMove {
+    //#processAndMove
+    import akka.NotUsed
+    import akka.stream.alpakka.ftp.scaladsl.Ftp
+    import akka.stream.scaladsl.FileIO
+    import akka.stream.scaladsl.RunnableGraph
+    import java.nio.file.Files
+
+    def processAndMove(sourcePath: String, destinationPath: FtpFile => String, settings: FtpSettings): RunnableGraph[NotUsed] =
+      Ftp
+        .ls(sourcePath, settings)
+        .flatMapConcat(ftpFile => Ftp.fromPath(ftpFile.path, settings).map((_, ftpFile)))
+        .alsoTo(FileIO.toPath(Files.createTempFile("downloaded", "tmp")).contramap(_._1))
+        .to(Ftp.move(destinationPath, settings).contramap(_._2))
+    //#processAndMove
+  }
 }

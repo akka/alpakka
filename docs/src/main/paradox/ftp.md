@@ -112,8 +112,12 @@ Java
 
 This sink will consume @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @extref[CompletionStage](java-api:java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 
-Typical use-case for this would be listing files from a ftp location, do some processing and move the files when done.
+Typical use-case for this would be listing files from a ftp location, do some processing and move the files when done. An example of this use case can be found
 
+### Example: downloading files from an FTP location and move the original files 
+
+Scala
+: @@snip ($alpakka$/ftp/src/test/scala/akka/stream/alpakka/ftp/scalaExamples.scala) { #processAndMove }
 
 ### Running the example code
 
