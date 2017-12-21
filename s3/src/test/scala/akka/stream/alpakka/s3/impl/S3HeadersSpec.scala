@@ -15,19 +15,19 @@ class S3HeadersSpec extends FlatSpec with Matchers {
   }
 
   it should "create well formed headers for AES-256 encryption by requests" in {
-    var headers = ServerSideEncryption.AES256.headers(HeadObject)
+    var headers = ServerSideEncryption.AES256.headersFor(HeadObject)
     headers.size shouldBe 0
 
-    headers = ServerSideEncryption.AES256.headers(GetObject)
+    headers = ServerSideEncryption.AES256.headersFor(GetObject)
     headers.size shouldBe 0
 
-    headers = ServerSideEncryption.AES256.headers(PutObject)
+    headers = ServerSideEncryption.AES256.headersFor(PutObject)
     headers should contain(RawHeader("x-amz-server-side-encryption", "AES256"))
 
-    headers = ServerSideEncryption.AES256.headers(InitiateMultipartUpload)
+    headers = ServerSideEncryption.AES256.headersFor(InitiateMultipartUpload)
     headers should contain(RawHeader("x-amz-server-side-encryption", "AES256"))
 
-    headers = ServerSideEncryption.AES256.headers(UploadPart)
+    headers = ServerSideEncryption.AES256.headersFor(UploadPart)
     headers.size shouldBe 0
   }
 
@@ -45,27 +45,27 @@ class S3HeadersSpec extends FlatSpec with Matchers {
     val kms =
       ServerSideEncryption.KMS("arn:aws:kms:my-region:my-account-id:key/my-key-id", Some("base-64-encoded-context"))
 
-    var headers = kms.headers(HeadObject)
+    var headers = kms.headersFor(HeadObject)
     headers.size shouldBe 0
 
-    headers = kms.headers(GetObject)
+    headers = kms.headersFor(GetObject)
     headers.size shouldBe 0
 
-    headers = kms.headers(PutObject)
+    headers = kms.headersFor(PutObject)
     headers should contain(RawHeader("x-amz-server-side-encryption", "aws:kms"))
     headers should contain(
       RawHeader("x-amz-server-side-encryption-aws-kms-key-id", "arn:aws:kms:my-region:my-account-id:key/my-key-id")
     )
     headers should contain(RawHeader("x-amz-server-side-encryption-context", "base-64-encoded-context"))
 
-    headers = kms.headers(InitiateMultipartUpload)
+    headers = kms.headersFor(InitiateMultipartUpload)
     headers should contain(RawHeader("x-amz-server-side-encryption", "aws:kms"))
     headers should contain(
       RawHeader("x-amz-server-side-encryption-aws-kms-key-id", "arn:aws:kms:my-region:my-account-id:key/my-key-id")
     )
     headers should contain(RawHeader("x-amz-server-side-encryption-context", "base-64-encoded-context"))
 
-    headers = kms.headers(UploadPart)
+    headers = kms.headersFor(UploadPart)
     headers.size shouldBe 0
   }
 
@@ -91,31 +91,31 @@ class S3HeadersSpec extends FlatSpec with Matchers {
 
     val ssec = ServerSideEncryption.CustomerKeys(key, Some(md5Key))
 
-    var headers = ssec.headers(HeadObject)
+    var headers = ssec.headersFor(HeadObject)
     headers.size shouldBe 3
     headers should contain(RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256"))
     headers should contain(RawHeader("x-amz-server-side-encryption-customer-key", key))
     headers should contain(RawHeader("x-amz-server-side-encryption-customer-key-MD5", md5Key))
 
-    headers = ssec.headers(GetObject)
+    headers = ssec.headersFor(GetObject)
     headers.size shouldBe 3
     headers should contain(RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256"))
     headers should contain(RawHeader("x-amz-server-side-encryption-customer-key", key))
     headers should contain(RawHeader("x-amz-server-side-encryption-customer-key-MD5", md5Key))
 
-    headers = ssec.headers(PutObject)
+    headers = ssec.headersFor(PutObject)
     headers.size shouldBe 3
     headers should contain(RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256"))
     headers should contain(RawHeader("x-amz-server-side-encryption-customer-key", key))
     headers should contain(RawHeader("x-amz-server-side-encryption-customer-key-MD5", md5Key))
 
-    headers = ssec.headers(InitiateMultipartUpload)
+    headers = ssec.headersFor(InitiateMultipartUpload)
     headers.size shouldBe 3
     headers should contain(RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256"))
     headers should contain(RawHeader("x-amz-server-side-encryption-customer-key", key))
     headers should contain(RawHeader("x-amz-server-side-encryption-customer-key-MD5", md5Key))
 
-    headers = ssec.headers(UploadPart)
+    headers = ssec.headersFor(UploadPart)
     headers.size shouldBe 3
     headers should contain(RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256"))
     headers should contain(RawHeader("x-amz-server-side-encryption-customer-key", key))

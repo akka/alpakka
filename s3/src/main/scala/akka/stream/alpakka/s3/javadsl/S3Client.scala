@@ -195,7 +195,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    */
   def getObjectMetadata(bucket: String, key: String): CompletionStage[Optional[ObjectMetadata]] =
     impl
-      .getObjectMetadata(bucket, key)
+      .getObjectMetadata(bucket, key, None)
       .map { opt =>
         Optional.ofNullable(opt.map(metaDataToJava).orNull)
       }(mat.executionContext)
@@ -250,7 +250,8 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
                  contentType.asInstanceOf[ScalaContentType],
                  data.asScala,
                  contentLength,
-                 s3Headers)
+                 s3Headers,
+                 None)
       .map(metaDataToJava)(mat.executionContext)
       .toJava
 
@@ -416,7 +417,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    */
   def download(bucket: String, key: String): Source[ByteString, CompletionStage[ObjectMetadata]] =
     impl
-      .download(S3Location(bucket, key))
+      .download(S3Location(bucket, key), None, None)
       .mapMaterializedValue(_.map(metaDataToJava)(mat.executionContext).toJava)
       .asJava
 
@@ -447,7 +448,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
   def download(bucket: String, key: String, range: ByteRange): Source[ByteString, CompletionStage[ObjectMetadata]] = {
     val scalaRange = range.asInstanceOf[ScalaByteRange]
     impl
-      .download(S3Location(bucket, key), Some(scalaRange))
+      .download(S3Location(bucket, key), Some(scalaRange), None)
       .mapMaterializedValue(_.map(metaDataToJava)(mat.executionContext).toJava)
       .asJava
   }
