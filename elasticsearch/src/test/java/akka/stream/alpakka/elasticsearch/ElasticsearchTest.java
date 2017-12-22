@@ -8,26 +8,30 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+//#sink-settings
+import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSinkSettings;
+//#sink-settings
+//#source-settings
+import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSourceSettings;
+//#source-settings
 import akka.stream.alpakka.elasticsearch.javadsl.*;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.HttpHost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHeader;
 import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner;
+//#init-client
 import org.elasticsearch.client.RestClient;
+import org.apache.http.HttpHost;
+//#init-client
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.Some;
-import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
@@ -64,6 +68,7 @@ public class ElasticsearchTest {
     runner.ensureYellow();
 
     //#init-client
+
     client = RestClient.builder(new HttpHost("localhost", 9201)).build();
     //#init-client
 
@@ -104,26 +109,49 @@ public class ElasticsearchTest {
     new BasicHeader("Content-Type", "application/json"));
   }
 
+  private void documentation() {
+    //#source-settings
+
+    ElasticsearchSourceSettings sourceSettings = new ElasticsearchSourceSettings()
+        .withBufferSize(10);
+    //#source-settings
+    //#sink-settings
+
+    ElasticsearchSinkSettings sinkSettings =
+        new ElasticsearchSinkSettings()
+            .withBufferSize(10)
+            .withRetryInterval(5000)
+            .withMaxRetry(100)
+            .withRetryPartialFailure(true);
+    //#sink-settings
+  }
+
 
   @Test
   public void jsObjectStream() throws Exception {
     // Copy source/book to sink1/book through JsObject stream
     //#run-jsobject
-    CompletionStage<Done> f1 = ElasticsearchSource.create(
-      "source",
-      "book",
-      "{\"match_all\": {}}",
-      new ElasticsearchSourceSettings().withBufferSize(5),
-      client)
-      .map(m -> IncomingMessage.create(m.id(), m.source()))
-      .runWith(
-        ElasticsearchSink.create(
-          "sink1",
-          "book",
-          new ElasticsearchSinkSettings().withBufferSize(5),
-          client,
-          new ObjectMapper()),
-        materializer);
+    ElasticsearchSourceSettings sourceSettings = new ElasticsearchSourceSettings();
+    ElasticsearchSinkSettings sinkSettings = new ElasticsearchSinkSettings();
+
+    Source<OutgoingMessage<Map<String, Object>>, NotUsed> source = ElasticsearchSource.create(
+        "source",
+        "book",
+        "{\"match_all\": {}}",
+        sourceSettings,
+        client
+    );
+    CompletionStage<Done> f1 = source
+        .map(m -> IncomingMessage.create(m.id(), m.source()))
+        .runWith(
+            ElasticsearchSink.create(
+                "sink1",
+                "book",
+                sinkSettings,
+                client,
+                new ObjectMapper()
+            ),
+            materializer);
     //#run-jsobject
 
     f1.toCompletableFuture().get();
@@ -160,22 +188,28 @@ public class ElasticsearchTest {
   public void typedStream() throws Exception {
     // Copy source/book to sink2/book through JsObject stream
     //#run-typed
-    CompletionStage<Done> f1 = ElasticsearchSource.typed(
-      "source",
-      "book",
-      "{\"match_all\": {}}",
-      new ElasticsearchSourceSettings().withBufferSize(5),
-      client,
-      Book.class)
-      .map(m -> IncomingMessage.create(m.id(), m.source()))
-      .runWith(
-        ElasticsearchSink.create(
-          "sink2",
-          "book",
-          new ElasticsearchSinkSettings().withBufferSize(5),
-          client,
-          new ObjectMapper()),
-        materializer);
+    ElasticsearchSourceSettings sourceSettings = new ElasticsearchSourceSettings();
+    ElasticsearchSinkSettings sinkSettings = new ElasticsearchSinkSettings();
+
+    Source<OutgoingMessage<Book>, NotUsed> source = ElasticsearchSource.typed(
+        "source",
+        "book",
+        "{\"match_all\": {}}",
+        sourceSettings,
+        client,
+        Book.class
+    );
+    CompletionStage<Done> f1 = source
+        .map(m -> IncomingMessage.create(m.id(), m.source()))
+        .runWith(
+            ElasticsearchSink.create(
+                "sink2",
+                "book",
+                sinkSettings,
+                client,
+                new ObjectMapper()
+            ),
+            materializer);
     //#run-typed
 
     f1.toCompletableFuture().get();

@@ -9,10 +9,8 @@ import akka.stream.ActorMaterializer
 import akka.stream.alpakka.elasticsearch.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
-import org.apache.http.HttpHost
 import org.apache.http.entity.StringEntity
 import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner
-import org.elasticsearch.client.RestClient
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
 import scala.concurrent.Await
@@ -31,6 +29,9 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   implicit val materializer = ActorMaterializer()
   //#init-mat
   //#init-client
+  import org.elasticsearch.client.RestClient
+  import org.apache.http.HttpHost
+
   implicit val client = RestClient.builder(new HttpHost("localhost", 9201)).build()
   //#init-client
 
@@ -95,15 +96,82 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
                           new StringEntity(s"""{"title": "$title"}"""),
                           new BasicHeader("Content-Type", "application/json"))
 
+  private def documentation: Unit = {
+    //#source-settings
+    import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSourceSettings
+
+    val sourceSettings = ElasticsearchSourceSettings(bufferSize = 10)
+    //#source-settings
+    //#sink-settings
+    import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSinkSettings
+
+    val sinkSettings =
+      ElasticsearchSinkSettings(bufferSize = 10, retryInterval = 5000, maxRetry = 100, retryPartialFailure = true)
+    //#sink-settings
+  }
+
+  "Un-typed Elasticsearch connector" should {
+    "consume and publish Json documents" in {
+      // Copy source/book to sink2/book through typed stream
+      //#run-jsobject
+      val f1 = ElasticsearchSource(
+        indexName = "source",
+        typeName = "book",
+        query = """{"match_all": {}}""",
+        ElasticsearchSourceSettings(5)
+      ).map { message: OutgoingMessage[JsObject] =>
+          val book: Book = jsonReader[Book].read(message.source)
+          IncomingMessage(Some(message.id), book)
+        }
+        .runWith(
+          ElasticsearchSink.create[Book](
+            indexName = "sink2",
+            typeName = "book",
+            ElasticsearchSinkSettings(5)
+          )
+        )
+      //#run-jsobject
+
+      Await.result(f1, Duration.Inf)
+
+      flush("sink2")
+
+      // Assert docs in sink2/book
+      val f2 = ElasticsearchSource
+        .typed[Book](
+          "sink2",
+          "book",
+          """{"match_all": {}}""",
+          ElasticsearchSourceSettings()
+        )
+        .map { message =>
+          message.source.title
+        }
+        .runWith(Sink.seq)
+
+      val result = Await.result(f2, Duration.Inf)
+
+      result.sorted shouldEqual Seq(
+        "Akka Concurrency",
+        "Akka in Action",
+        "Effective Akka",
+        "Learning Scala",
+        "Programming in Scala",
+        "Scala Puzzlers",
+        "Scala for Spark in Production"
+      )
+    }
+  }
+
   "Typed Elasticsearch connector" should {
     "consume and publish documents as specific type" in {
       // Copy source/book to sink2/book through typed stream
       //#run-typed
       val f1 = ElasticsearchSource
         .typed[Book](
-          "source",
-          "book",
-          """{"match_all": {}}""",
+          indexName = "source",
+          typeName = "book",
+          query = """{"match_all": {}}""",
           ElasticsearchSourceSettings(5)
         )
         .map { message: OutgoingMessage[Book] =>
@@ -111,8 +179,8 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .runWith(
           ElasticsearchSink.create[Book](
-            "sink2",
-            "book",
+            indexName = "sink2",
+            typeName = "book",
             ElasticsearchSinkSettings(5)
           )
         )
@@ -155,9 +223,9 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       //#run-flow
       val f1 = ElasticsearchSource
         .typed[Book](
-          "source",
-          "book",
-          """{"match_all": {}}""",
+          indexName = "source",
+          typeName = "book",
+          query = """{"match_all": {}}""",
           ElasticsearchSourceSettings(5)
         )
         .map { message: OutgoingMessage[Book] =>
@@ -165,8 +233,8 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .via(
           ElasticsearchFlow.create[Book](
-            "sink3",
-            "book",
+            indexName = "sink3",
+            typeName = "book",
             ElasticsearchSinkSettings(5)
           )
         )
