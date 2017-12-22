@@ -9,7 +9,6 @@ import akka.stream.alpakka.elasticsearch._
 import akka.stream.scaladsl.Source
 import org.elasticsearch.client.RestClient
 import spray.json._
-import DefaultJsonProtocol._
 
 object ElasticsearchSource {
 

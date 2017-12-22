@@ -102,7 +102,7 @@ class CsvParsingSpec extends CsvSpec {
       sink.request(3)
       sink.expectNext(List("eins", "zwei", "drei"))
       sink.expectNext(List("uno", "dos", "tres"))
-      sink.expectNoMsg(100.millis)
+      sink.expectNoMessage(100.millis)
       source.sendComplete()
       sink.expectNext(List("1", "2", "3"))
       sink.expectComplete()

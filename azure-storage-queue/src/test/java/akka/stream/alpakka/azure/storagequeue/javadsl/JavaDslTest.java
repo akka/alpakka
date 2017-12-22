@@ -11,7 +11,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.azure.storagequeue.*;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import com.microsoft.azure.storage.*;
 import com.microsoft.azure.storage.queue.*;
 import java.util.List;
@@ -32,21 +32,19 @@ public class JavaDslTest extends JUnitSuite {
   private static ActorSystem system;
   private static ActorMaterializer materializer;
   private static final String storageConnectionString = System.getenv("AZURE_CONNECTION_STRING");
-  private static final Supplier<CloudQueue> queueSupplier = new Supplier<CloudQueue>() {
-      public CloudQueue get() {
-        try {
-          if (storageConnectionString == null) {
-            return null;
-          }
-          CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
-          CloudQueueClient queueClient = storageAccount.createCloudQueueClient();
-          return queueClient.getQueueReference("testqueue");       
-        }
-        catch (Exception ex) {
-          throw new RuntimeException("Could not create CloudQueue", ex);
-        }
+  private static final Supplier<CloudQueue> queueSupplier = () -> {
+    try {
+      if (storageConnectionString == null) {
+        return null;
       }
-    };
+      CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
+      CloudQueueClient queueClient = storageAccount.createCloudQueueClient();
+      return queueClient.getQueueReference("testqueue");
+    }
+    catch (Exception ex) {
+      throw new RuntimeException("Could not create CloudQueue", ex);
+    }
+  };
 
   private static final CloudQueue queue = queueSupplier.get();
 
@@ -63,7 +61,7 @@ public class JavaDslTest extends JUnitSuite {
 
   @AfterClass
   public static void teardown() throws StorageException {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     if (queue != null) {
       queue.deleteIfExists();
     }

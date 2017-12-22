@@ -11,7 +11,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.elasticsearch.javadsl.*;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
 import org.apache.http.entity.StringEntity;
@@ -21,13 +21,9 @@ import org.elasticsearch.client.RestClient;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.Some;
-import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
@@ -44,8 +40,7 @@ public class ElasticsearchTest {
   public static class Book {
     public String title;
 
-    public Book() {
-    }
+    public Book() {}
 
     public Book(String title) {
       this.title = title;
@@ -88,7 +83,7 @@ public class ElasticsearchTest {
     runner.close();
     runner.clean();
     client.close();
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 
 
@@ -233,8 +228,8 @@ public class ElasticsearchTest {
     List<List<IncomingMessageResult<Book, NotUsed>>> result1 = f1.toCompletableFuture().get();
     flush("sink3");
 
-    for(int i = 0; i < result1.size(); i ++){
-      assertEquals(true, result1.get(i).get(0).success());
+    for (List<IncomingMessageResult<Book, NotUsed>> aResult1 : result1) {
+      assertEquals(true, aResult1.get(0).success());
     }
 
     // Assert docs in sink3/book
@@ -288,7 +283,7 @@ public class ElasticsearchTest {
               return IncomingMessage.create(id, book, kafkaMessage.offset);
             })
             .via( // write to elastic
-                    ElasticsearchFlow.<Book, KafkaOffset>createWithPassThrough(
+                    ElasticsearchFlow.createWithPassThrough(
                             "sink6",
                             "book",
                             new ElasticsearchSinkSettings().withBufferSize(5),

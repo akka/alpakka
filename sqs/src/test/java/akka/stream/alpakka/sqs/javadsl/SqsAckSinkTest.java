@@ -11,7 +11,7 @@ import akka.stream.alpakka.sqs.MessageAction;
 import akka.stream.alpakka.sqs.scaladsl.AckResult;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import com.amazonaws.handlers.AsyncHandler;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.model.*;
@@ -45,7 +45,7 @@ public class SqsAckSinkTest extends BaseSqsTest {
 
     @AfterClass
     public static void teardown() {
-        JavaTestKit.shutdownActorSystem(system);
+        TestKit.shutdownActorSystem(system);
     }
 
     @Test

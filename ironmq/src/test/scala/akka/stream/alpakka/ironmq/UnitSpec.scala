@@ -4,7 +4,6 @@
 
 package akka.stream.alpakka.ironmq
 
-import org.scalatest.concurrent.PatienceConfiguration.{Interval, Timeout}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{Matchers, WordSpec}
 
