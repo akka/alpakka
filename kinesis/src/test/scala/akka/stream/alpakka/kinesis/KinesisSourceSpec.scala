@@ -16,6 +16,7 @@ import com.amazonaws.services.kinesis.model._
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.scalatest.{Matchers, WordSpecLike}
 
 import scala.concurrent.duration._
@@ -159,39 +160,46 @@ class KinesisSourceSpec extends WordSpecLike with Matchers with DefaultTestConte
   }
 
   trait WithGetShardIteratorSuccess { self: KinesisSpecContext =>
-    when(amazonKinesisAsync.getShardIteratorAsync(any(), any())).thenAnswer((invocation: InvocationOnMock) => {
-      invocation
-        .getArgument[AsyncHandler[GetShardIteratorRequest, GetShardIteratorResult]](1)
-        .onSuccess(getShardIteratorRequest, getShardIteratorResult)
-      CompletableFuture.completedFuture(getShardIteratorResult)
+    when(amazonKinesisAsync.getShardIteratorAsync(any(), any())).thenAnswer(new Answer[AnyRef] {
+      override def answer(invocation: InvocationOnMock): AnyRef = {
+        invocation
+          .getArgument[AsyncHandler[GetShardIteratorRequest, GetShardIteratorResult]](1)
+          .onSuccess(getShardIteratorRequest, getShardIteratorResult)
+        CompletableFuture.completedFuture(getShardIteratorResult)
+      }
     })
   }
 
   trait WithGetShardIteratorFailure { self: KinesisSpecContext =>
-    when(amazonKinesisAsync.getShardIteratorAsync(any(), any())).thenAnswer((invocation: InvocationOnMock) => {
-      invocation
-        .getArgument[AsyncHandler[GetShardIteratorRequest, GetShardIteratorResult]](1)
-        .onError(new Exception("fail"))
-      CompletableFuture.completedFuture(getShardIteratorResult)
+    when(amazonKinesisAsync.getShardIteratorAsync(any(), any())).thenAnswer(new Answer[AnyRef] {
+      override def answer(invocation: InvocationOnMock): AnyRef = {
+        invocation
+          .getArgument[AsyncHandler[GetShardIteratorRequest, GetShardIteratorResult]](1)
+          .onError(new Exception("fail"))
+        CompletableFuture.completedFuture(getShardIteratorResult)
+      }
     })
   }
 
   trait WithGetRecordsSuccess { self: KinesisSpecContext =>
-    when(amazonKinesisAsync.getRecordsAsync(any(), any())).thenAnswer((invocation: InvocationOnMock) => {
-      invocation
-        .getArgument[AsyncHandler[GetRecordsRequest, GetRecordsResult]](1)
-        .onSuccess(getRecordsRequest, getRecordsResult)
-      CompletableFuture.completedFuture(getRecordsResult)
+    when(amazonKinesisAsync.getRecordsAsync(any(), any())).thenAnswer(new Answer[AnyRef] {
+      override def answer(invocation: InvocationOnMock) = {
+        invocation
+          .getArgument[AsyncHandler[GetRecordsRequest, GetRecordsResult]](1)
+          .onSuccess(getRecordsRequest, getRecordsResult)
+        CompletableFuture.completedFuture(getRecordsResult)
+      }
     })
   }
 
   trait WithGetRecordsFailure { self: KinesisSpecContext =>
-    when(amazonKinesisAsync.getRecordsAsync(any(), any())).thenAnswer((invocation: InvocationOnMock) => {
-      invocation
-        .getArgument[AsyncHandler[GetRecordsRequest, GetRecordsResult]](1)
-        .onError(new Exception("fail"))
-      CompletableFuture.completedFuture(getRecordsResult)
+    when(amazonKinesisAsync.getRecordsAsync(any(), any())).thenAnswer(new Answer[AnyRef] {
+      override def answer(invocation: InvocationOnMock) = {
+        invocation
+          .getArgument[AsyncHandler[GetRecordsRequest, GetRecordsResult]](1)
+          .onError(new Exception("fail"))
+        CompletableFuture.completedFuture(getRecordsResult)
+      }
     })
   }
-
 }

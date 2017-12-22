@@ -57,9 +57,11 @@ final class JmsSourceStage(settings: JmsSourceSettings) extends GraphStage[Sourc
       override private[jms] def onSessionOpened(): Unit =
         jmsSession.createConsumer(settings.selector).onComplete {
           case Success(consumer) =>
-            consumer.setMessageListener((message: Message) => {
-              backpressure.acquire()
-              handleMessage.invoke(message)
+            consumer.setMessageListener(new MessageListener {
+              override def onMessage(message: Message): Unit = {
+                backpressure.acquire()
+                handleMessage.invoke(message)
+              }
             })
           case Failure(e) =>
             fail.invoke(e)

@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.sqs.scaladsl
 
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.{CompletableFuture, Future}
 
 import akka.Done
 import akka.stream.scaladsl.Keep
@@ -15,6 +15,7 @@ import com.amazonaws.services.sqs.model.{SendMessageRequest, SendMessageResult}
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.scalatest.mockito.MockitoSugar.mock
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -25,16 +26,18 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   it should "send a message" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
-    when(sqsClient.sendMessageAsync(any[SendMessageRequest](), any)).thenAnswer(
-      (invocation: InvocationOnMock) => {
-        val sendMessageRequest = invocation.getArgument[SendMessageRequest](0)
-        invocation
-          .getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
-          .onSuccess(
-            sendMessageRequest,
-            new SendMessageResult().withMessageId(sendMessageRequest.getMessageBody)
-          )
-        new CompletableFuture()
+    when(sqsClient.sendMessageAsync(any[SendMessageRequest](), any())).thenAnswer(
+      new Answer[AnyRef] {
+        override def answer(invocation: InvocationOnMock): Future[SendMessageResult] = {
+          val sendMessageRequest = invocation.getArgument[SendMessageRequest](0)
+          invocation
+            .getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
+            .onSuccess(
+              sendMessageRequest,
+              new SendMessageResult().withMessageId(sendMessageRequest.getMessageBody)
+            )
+          new CompletableFuture()
+        }
       }
     )
 
@@ -47,12 +50,14 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   it should "fail stage on client failure and fail the promise" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
-    when(sqsClient.sendMessageAsync(any[SendMessageRequest](), any)).thenAnswer(
-      (invocation: InvocationOnMock) => {
-        invocation
-          .getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
-          .onError(new RuntimeException("Fake client error"))
-        new CompletableFuture()
+    when(sqsClient.sendMessageAsync(any[SendMessageRequest](), any())).thenAnswer(
+      new Answer[AnyRef] {
+        override def answer(invocation: InvocationOnMock): Object = {
+          invocation
+            .getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
+            .onError(new RuntimeException("Fake client error"))
+          new CompletableFuture()
+        }
       }
     )
 
@@ -79,15 +84,17 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   it should "complete promise after all messages have been sent" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
-    when(sqsClient.sendMessageAsync(any[SendMessageRequest](), any)).thenAnswer(
-      (invocation: InvocationOnMock) => {
-        val sendMessageRequest = invocation.getArgument[SendMessageRequest](0)
-        val callback = invocation.getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
-        callback.onSuccess(
-          sendMessageRequest,
-          new SendMessageResult().withMessageId(sendMessageRequest.getMessageBody)
-        )
-        new CompletableFuture()
+    when(sqsClient.sendMessageAsync(any[SendMessageRequest](), any())).thenAnswer(
+      new Answer[AnyRef] {
+        override def answer(invocation: InvocationOnMock): Object = {
+          val sendMessageRequest = invocation.getArgument[SendMessageRequest](0)
+          val callback = invocation.getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
+          callback.onSuccess(
+            sendMessageRequest,
+            new SendMessageResult().withMessageId(sendMessageRequest.getMessageBody)
+          )
+          new CompletableFuture()
+        }
       }
     )
 
