@@ -19,6 +19,7 @@ import com.typesafe.config.Config
 import de.heikoseeberger.akkahttpcirce.CirceSupport._
 import io.circe.Json
 import io.circe.syntax._
+import cats.syntax.either._
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}

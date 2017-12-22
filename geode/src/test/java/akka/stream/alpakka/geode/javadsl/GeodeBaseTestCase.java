@@ -39,8 +39,8 @@ public class GeodeBaseTestCase {
     }
 
     //#region
-    protected RegionSettings<Integer, Person> personRegionSettings = new RegionSettings<>("persons", Person::getId);
-    protected RegionSettings<Integer, Animal> animalRegionSettings = new RegionSettings<>("animals", Animal::getId);
+    protected RegionSettings<Integer, Person> personRegionSettings = new RegionSettings<>("persons", func(Person::getId));
+    protected RegionSettings<Integer, Animal> animalRegionSettings = new RegionSettings<>("animals", func(Animal::getId));
     //#region
 
     @BeforeClass
@@ -63,7 +63,7 @@ public class GeodeBaseTestCase {
     protected ReactiveGeode createReactiveGeode() {
         //#connection
         GeodeSettings settings = GeodeSettings.create(geodeDockerHostname, 10334)
-                .withConfiguration(c->c.setPoolIdleTimeout(10));
+                .withConfiguration(func(c->c.setPoolIdleTimeout(10)));
         return new ReactiveGeode(settings);
         //#connection
     }
