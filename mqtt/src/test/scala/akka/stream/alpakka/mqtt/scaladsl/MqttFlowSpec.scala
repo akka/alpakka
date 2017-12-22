@@ -23,7 +23,7 @@ class MqttFlowSpec
     with BeforeAndAfterAll
     with ScalaFutures {
 
-  val timeout = 5 seconds
+  val timeout = 5.seconds
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 

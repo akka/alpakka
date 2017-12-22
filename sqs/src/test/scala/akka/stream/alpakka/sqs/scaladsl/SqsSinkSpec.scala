@@ -45,7 +45,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
     probe.sendNext("notused").sendComplete()
     Await.result(future, 1.second) shouldBe Done
 
-    verify(sqsClient, times(1)).sendMessageAsync(any[SendMessageRequest](), any())
+    verify(sqsClient, times(1)).sendMessageAsync(any[SendMessageRequest](), any)
   }
 
   it should "fail stage on client failure and fail the promise" in {
@@ -68,7 +68,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       Await.result(future, 1.second)
     }
 
-    verify(sqsClient, times(1)).sendMessageAsync(any[SendMessageRequest](), any())
+    verify(sqsClient, times(1)).sendMessageAsync(any[SendMessageRequest](), any)
   }
 
   it should "failure the promise on upstream failure" in {
@@ -108,6 +108,6 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       .sendComplete()
     Await.result(future, 1.second) shouldBe Done
 
-    verify(sqsClient, times(5)).sendMessageAsync(any[SendMessageRequest](), any())
+    verify(sqsClient, times(5)).sendMessageAsync(any[SendMessageRequest](), any)
   }
 }

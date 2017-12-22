@@ -5,7 +5,6 @@
 package akka.stream.alpakka.ironmq.scaladsl
 
 import akka.NotUsed
-import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.ironmq._
 import akka.stream.scaladsl._

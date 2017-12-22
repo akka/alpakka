@@ -12,7 +12,7 @@ import com.amazonaws.regions.AwsRegionProvider
 
 object DoucmentationSnippets {
 
-  def connectBluemix: Unit = {
+  def connectBluemix(): Unit = {
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
 

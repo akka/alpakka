@@ -58,8 +58,7 @@ protected[pubsub] trait GooglePubSub {
   }
 
   def subscribe(projectId: String, apiKey: String, clientEmail: String, privateKey: PrivateKey, subscription: String)(
-      implicit actorSystem: ActorSystem,
-      materializer: Materializer
+      implicit actorSystem: ActorSystem
   ): Source[ReceivedMessage, NotUsed] = {
     val session = getSession(clientEmail, privateKey)
     Source.fromGraph(

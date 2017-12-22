@@ -16,7 +16,7 @@ class CsvToMapSpec extends CsvSpec {
     // format: off
     // #flow-type
     import akka.stream.alpakka.csv.scaladsl.CsvToMap
-    
+
     val flow1: Flow[List[ByteString], Map[String, ByteString], NotUsed]
       = CsvToMap.toMap()
 

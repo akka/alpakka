@@ -101,8 +101,7 @@ private trait HttpApi {
     }
   }
 
-  private[this] def doRequest(request: HttpRequest, maybeAccessToken: Option[String])(implicit as: ActorSystem,
-                                                                                      materializer: Materializer) =
+  private[this] def doRequest(request: HttpRequest, maybeAccessToken: Option[String])(implicit as: ActorSystem) =
     Http().singleRequest(
       maybeAccessToken.map(accessToken => request.addCredentials(OAuth2BearerToken(accessToken))).getOrElse(request)
     )

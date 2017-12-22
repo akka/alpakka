@@ -4,31 +4,38 @@
 
 package akka.stream.alpakka.mqtt.javadsl;
 
-import akka.stream.alpakka.mqtt.*;
+import akka.Done;
+import akka.actor.ActorSystem;
+import akka.japi.Pair;
+import akka.stream.ActorMaterializer;
+import akka.stream.Materializer;
+import akka.stream.alpakka.mqtt.MqttConnectionSettings;
+import akka.stream.alpakka.mqtt.MqttMessage;
+import akka.stream.alpakka.mqtt.MqttQoS;
+import akka.stream.alpakka.mqtt.MqttSourceSettings;
+import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Keep;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+import akka.testkit.javadsl.TestKit;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
-import akka.Done;
-import akka.actor.*;
-import akka.stream.*;
-import akka.stream.javadsl.*;
-import akka.testkit.*;
-import akka.japi.Pair;
-
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
-
-import java.util.*;
-import java.util.concurrent.*;
+import static org.junit.Assert.assertFalse;
 
 public class MqttFlowTest {
 
-  static ActorSystem system;
-  static Materializer materializer;
+  private static ActorSystem system;
+  private static Materializer materializer;
 
-  public static Pair<ActorSystem, Materializer> setupMaterializer() {
+  private static Pair<ActorSystem, Materializer> setupMaterializer() {
     final ActorSystem system = ActorSystem.create();
     final Materializer materializer = ActorMaterializer.create(system);
     return Pair.create(system, materializer);
@@ -43,7 +50,7 @@ public class MqttFlowTest {
 
   @AfterClass
   public static void teardown() {
-        JavaTestKit.shutdownActorSystem(system);
+        TestKit.shutdownActorSystem(system);
     }
 
   @Test
@@ -54,6 +61,7 @@ public class MqttFlowTest {
       new MemoryPersistence()
     );
 
+    @SuppressWarnings("unchecked")
     final MqttSourceSettings settings = MqttSourceSettings
       .create(connectionSettings.withClientId("flow-test/flow"))
       .withSubscriptions(Pair.create("flow-test/topic", MqttQoS.atMostOnce()));

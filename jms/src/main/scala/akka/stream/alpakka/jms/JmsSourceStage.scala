@@ -37,10 +37,6 @@ final class JmsSourceStage(settings: JmsSourceSettings) extends GraphStage[Sourc
       private val queue = mutable.Queue[Message]()
       private val backpressure = new Semaphore(bufferSize)
 
-      private val handleError = getAsyncCallback[Throwable](e => {
-        fail(out, e)
-      })
-
       private val handleMessage = getAsyncCallback[Message](msg => {
         require(queue.size <= bufferSize)
         if (isAvailable(out)) {

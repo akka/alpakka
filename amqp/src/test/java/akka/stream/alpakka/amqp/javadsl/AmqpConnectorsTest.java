@@ -15,6 +15,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,7 +31,6 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
-import akka.testkit.JavaTestKit;
 import akka.util.ByteString;
 import scala.collection.JavaConverters;
 import scala.concurrent.duration.Duration;
@@ -51,7 +51,7 @@ public class AmqpConnectorsTest {
 
   @AfterClass
   public static void teardown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 
   @Test

@@ -59,9 +59,8 @@ final case class MqttSourceSettings(
     subscriptions: Map[String, MqttQoS] = Map.empty
 ) {
   @annotation.varargs
-  def withSubscriptions(subscription: akka.japi.Pair[String, MqttQoS],
-                        subscriptions: akka.japi.Pair[String, MqttQoS]*) =
-    copy(subscriptions = (subscription +: subscriptions).map(_.toScala).toMap)
+  def withSubscriptions(subscriptions: akka.japi.Pair[String, MqttQoS]*) =
+    copy(subscriptions = subscriptions.map(_.toScala).toMap)
 }
 
 object MqttSourceSettings {
