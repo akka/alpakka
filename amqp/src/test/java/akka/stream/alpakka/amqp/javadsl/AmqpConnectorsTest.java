@@ -269,21 +269,19 @@ public class AmqpConnectorsTest {
 
     Sink<OutgoingMessage, CompletionStage<Done>> amqpSink = AmqpSink.createReplyTo(AmqpReplyToSinkSettings.create(DefaultAmqpConnection.getInstance()));
 
-    final Source<CommittableIncomingMessage, NotUsed> amqpSource = AmqpSource.committableSource(
+    final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.atMostOnceSource(
       NamedQueueSourceSettings.create(
               DefaultAmqpConnection.getInstance(),
               queueName
       ).withDeclarations(queueDeclaration),
-            10
+            1
     );
 
     amqpSource.map(b ->
-      new OutgoingMessage(b.message().bytes(), false, false, Optional.of(b.message().properties()), Optional.empty())
+      new OutgoingMessage(b.bytes(), false, false, Optional.of(b.properties()), Optional.empty())
     ).runWith(amqpSink, materializer);
 
-    amqpSource.map(cm -> cm.message().bytes().utf8String()).take(input.size()).runWith(Sink.seq(), materializer);
-
-    List<IncomingMessage> probeResult = JavaConverters.seqAsJavaListConverter(result.second().toStrict(Duration.create(5, TimeUnit.SECONDS))).asJava();
+    List<IncomingMessage> probeResult = JavaConverters.seqAsJavaListConverter(result.second().toStrict(Duration.create(3, TimeUnit.SECONDS))).asJava();
     assertEquals(probeResult.stream().map(s -> s.bytes().utf8String()).collect(Collectors.toList()), input);
   }
 
