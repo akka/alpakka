@@ -89,7 +89,7 @@ Java
 Create a sink, that forwards `String` to the SQS queue. However, the main difference from the previous use case, it batches items and sends as a one request.
 
 Scala
-: @@snip (../../../../sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #group }
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #group }
 
 Java
 : @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #group }
@@ -97,7 +97,7 @@ Java
 #### Batch configuration
 
 Scala
-: @@snip (../../../../sqs/src/main/scala/akka/stream/alpakka/sqs/SqsBatchFlowSettings.scala) { #SqsBatchFlowSettings }
+: @@snip ($alpakka$/sqs/src/main/scala/akka/stream/alpakka/sqs/SqsBatchFlowSettings.scala) { #SqsBatchFlowSettings }
 
 Options:
 
@@ -115,10 +115,10 @@ Be aware that the size of the batch must be less than or equal to 10 because Ama
 If the batch has more than 10 entries, the request will fail.
 
 Scala
-: @@snip (../../../../sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch }
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch }
 
 Java
-: @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #batch }
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #batch }
 
 #### Sink configuration
 
