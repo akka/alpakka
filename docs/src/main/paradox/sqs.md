@@ -88,11 +88,15 @@ Java
 
 Create a sink, that forwards `String` to the SQS queue. However, the main difference from the previous use case, it batches items and sends as a one request.
 
+Note: There is also another option to send batch of messages to SQS which is using `AmazonSQSBufferedAsyncClient`. 
+This client buffers `SendMessageRequest`s under the hood and sends them as a batch instead of sending them one by one. However, beware that `AmazonSQSBufferedAsyncClient`
+does not support FIFO Queues. See [documentation for client-side buffering.](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-client-side-buffering-request-batching.html)
+
 Scala
 : @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #group }
 
 Java
-: @@snip (../../../../sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #group }
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #group }
 
 #### Batch configuration
 
