@@ -1,15 +1,22 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.dynamodb;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.dynamodb.impl.DynamoSettings;
 import akka.stream.alpakka.dynamodb.javadsl.DynamoClient;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+import com.amazonaws.services.dynamodbv2.model.CreateTableResult;
 import com.amazonaws.services.dynamodbv2.model.ListTablesRequest;
+import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.ListTablesResult;
+import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits.CreateTable;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.Await;
@@ -62,4 +69,16 @@ public class ExampleTest {
         ListTablesResult result = Await.result(listTablesResultFuture, duration);
     }
 
+    @Test
+    public void flow() throws Exception {
+        //#flow
+        Source<String, NotUsed> tableArnSource = Source
+                .single(new CreateTable(new CreateTableRequest().withTableName("testTable")))
+                .via(client.flow())
+                .map(result -> (CreateTableResult) result)
+                .map(result -> result.getTableDescription().getTableArn());
+        //#flow
+        final Duration duration = Duration.create(5, "seconds");
+        tableArnSource.runForeach(System.out::println,materializer);
+    }
 }

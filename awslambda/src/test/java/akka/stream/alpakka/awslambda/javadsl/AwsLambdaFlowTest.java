@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.awslambda.javadsl;
 
 import akka.NotUsed;
@@ -9,7 +10,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import com.amazonaws.handlers.AsyncHandler;
 import com.amazonaws.services.lambda.AWSLambdaAsyncClient;
 import com.amazonaws.services.lambda.model.InvokeRequest;
@@ -45,7 +46,7 @@ public class AwsLambdaFlowTest {
 
     @AfterClass
     public static void teardown() {
-        JavaTestKit.shutdownActorSystem(system);
+        TestKit.shutdownActorSystem(system);
     }
 
     @Test

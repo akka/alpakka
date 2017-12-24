@@ -1,10 +1,10 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.ironmq.scaladsl
 
 import akka.NotUsed
-import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.ironmq._
 import akka.stream.scaladsl._

@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.geode.internal.stage
 
 import java.util
@@ -77,6 +78,8 @@ abstract class GeodeCQueryGraphLogic[V](val shape: SourceShape[V],
     semaphore.acquire()
     onElement.invoke(v)
   }
+
+  protected def incomingQueueIsEmpty = incomingQueue.isEmpty
 
   protected def enqueue(v: V): Unit =
     incomingQueue.enqueue(v)

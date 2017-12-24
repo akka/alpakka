@@ -1,31 +1,34 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.dynamodb.javadsl
 
+import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.alpakka.dynamodb.AwsOp
 import akka.stream.alpakka.dynamodb.impl.{DynamoClientImpl, DynamoSettings}
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits
+import akka.stream.javadsl.Flow
 import akka.stream.scaladsl.{Sink, Source}
 import com.amazonaws.services.dynamodbv2.model._
 
 import scala.concurrent.Future
 
 object DynamoClient {
-  def create(settings: DynamoSettings, system: ActorSystem, materializer: ActorMaterializer) =
+  def create(settings: DynamoSettings, system: ActorSystem, materializer: Materializer) =
     new DynamoClient(settings)(system, materializer)
 }
 
-final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem, materializer: ActorMaterializer) {
+final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem, materializer: Materializer) {
 
   private val client = new DynamoClientImpl(settings, DynamoImplicits.errorResponseHandler)
   private implicit val ec = system.dispatcher
 
   import DynamoImplicits._
 
-  private val flow = client.flow.asJava
+  def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] = client.flow.asJava
 
   private def single(op: AwsOp): Future[op.B] =
     Source.single(op).via(client.flow).runWith(Sink.head).map(_.asInstanceOf[op.B])
@@ -41,6 +44,8 @@ final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem,
   def describeLimits(request: DescribeLimitsRequest) = single(DescribeLimits(request))
 
   def describeTable(request: DescribeTableRequest) = single(DescribeTable(request))
+
+  def describeTimeToLive(request: DescribeTimeToLiveRequest) = single(DescribeTimeToLive(request))
 
   def query(request: QueryRequest) = single(Query(request))
 
@@ -58,4 +63,5 @@ final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem,
 
   def listTables(request: ListTablesRequest) = single(ListTables(request))
 
+  def updateTimeToLive(request: UpdateTimeToLiveRequest) = single(UpdateTimeToLive(request))
 }

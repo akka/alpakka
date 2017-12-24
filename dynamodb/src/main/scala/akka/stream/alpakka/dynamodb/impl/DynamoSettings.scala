@@ -1,10 +1,10 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.dynamodb.impl
 
 import akka.actor.ActorSystem
-import com.typesafe.config.Config
 
 object DynamoSettings {
   def apply(system: ActorSystem): DynamoSettings = {

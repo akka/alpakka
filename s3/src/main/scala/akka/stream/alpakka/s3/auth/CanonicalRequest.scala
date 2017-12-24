@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.s3.auth
 
 import java.net.URLEncoder
@@ -49,7 +50,7 @@ private[alpakka] object CanonicalRequest {
     if (path.isEmpty) "/"
     else
       path.toString().flatMap {
-        case ch if "!$&'()*+,;=".contains(ch) => "%" + Integer.toHexString(ch.toInt).toUpperCase
+        case ch if "!$&'()*+,;:=".contains(ch) => "%" + Integer.toHexString(ch.toInt).toUpperCase
         case other => other.toString
       }
 

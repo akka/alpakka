@@ -4,27 +4,21 @@
 
 version: '2'
 services:
-  cassandra:
-    image: cassandra:3
-    ports:
-      - "9042:9042"
-  rabbitmq:
+  amqp:
     image: rabbitmq:3
     ports:
       - "5672:5672"
-  mqtt:
-    image: toke/mosquitto
+  cassandra:
+    image: cassandra:3.0.15
     ports:
-      - "1883:1883"
-    volumes:
-      - ./mqtt/src/test/travis:/mqtt/config/conf.d
+      - "9042:9042"
   dynamodb:
     image: deangiberson/aws-dynamodb-local
     ports:
       - "8001:8000"
   geode:
     container_name: geode
-    image: apachegeode/geode:1.2.0
+    image: apachegeode/geode:1.3.0
     hostname: geode
     mem_limit: 2g
     expose:
@@ -54,4 +48,13 @@ services:
       - "AUTH_HOST=http://ironauth:8090"
     ports:
       - "8080:8080"
-
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+  mqtt:
+    image: toke/mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mqtt/src/test/travis:/mqtt/config/conf.d

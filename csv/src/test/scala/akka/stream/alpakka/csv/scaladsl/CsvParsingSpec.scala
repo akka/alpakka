@@ -1,32 +1,20 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.csv.scaladsl
 
 import java.nio.file.Paths
 
 import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{FileIO, Flow, Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
-import akka.testkit.TestKit
 import akka.util.ByteString
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpecLike}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration.DurationInt
 
-class CsvParsingSpec
-    extends TestKit(ActorSystem(classOf[CsvParsingSpec].getSimpleName))
-    with WordSpecLike
-    with Matchers
-    with BeforeAndAfterAll
-    with BeforeAndAfterEach
-    with ScalaFutures {
-
-  implicit val materializer = ActorMaterializer()
+class CsvParsingSpec extends CsvSpec {
 
   def documentation(): Unit = {
     import CsvParsing._
@@ -114,7 +102,7 @@ class CsvParsingSpec
       sink.request(3)
       sink.expectNext(List("eins", "zwei", "drei"))
       sink.expectNext(List("uno", "dos", "tres"))
-      sink.expectNoMsg(100.millis)
+      sink.expectNoMessage(100.millis)
       source.sendComplete()
       sink.expectNext(List("1", "2", "3"))
       sink.expectComplete()

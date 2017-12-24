@@ -1,27 +1,19 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.s3.auth
 
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-
-import org.scalatest.FlatSpecLike
-import org.scalatest.Matchers
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.Millis
-import org.scalatest.time.Seconds
-import org.scalatest.time.Span
-
+import java.time.{LocalDate, LocalDateTime, ZoneOffset}
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpMethods
-import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.headers.Host
-import akka.http.scaladsl.model.headers.RawHeader
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
+import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
+import akka.http.scaladsl.model.headers.{Host, RawHeader}
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
+import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import org.scalatest.{FlatSpecLike, Matchers}
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{Millis, Seconds, Span}
 
 class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLike with Matchers with ScalaFutures {
   def this() = this(ActorSystem("SignerSpec"))
@@ -31,7 +23,9 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
 
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
 
-  val credentials = AWSCredentials("AKIDEXAMPLE", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY")
+  val credentials = new AWSStaticCredentialsProvider(
+    new BasicAWSCredentials("AKIDEXAMPLE", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY")
+  )
   val scope = CredentialScope(LocalDate.of(2015, 8, 30), "us-east-1", "iam")
   val signingKey = SigningKey(credentials, scope)
 

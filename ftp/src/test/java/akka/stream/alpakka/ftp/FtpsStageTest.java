@@ -1,11 +1,11 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.ftp;
 
 import akka.NotUsed;
 import akka.stream.IOResult;
-import akka.stream.alpakka.ftp.RemoteFileSettings.FtpsSettings;
 import akka.stream.alpakka.ftp.javadsl.Ftps;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;

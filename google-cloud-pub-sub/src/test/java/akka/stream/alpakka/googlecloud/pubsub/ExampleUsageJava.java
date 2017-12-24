@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.googlecloud.pubsub;
 
 import akka.Done;
@@ -75,7 +76,7 @@ public class ExampleUsageJava {
 
 
         //#subscribe
-        Source<ReceivedMessage, NotUsed> subscriptionSource = GooglePubSub.subscribe(projectId, apiKey, clientEmail, privateKey, subscription, system, materializer);
+        Source<ReceivedMessage, NotUsed> subscriptionSource = GooglePubSub.subscribe(projectId, apiKey, clientEmail, privateKey, subscription, system);
 
         Sink<AcknowledgeRequest, CompletionStage<Done>> ackSink = GooglePubSub.acknowledge(projectId, apiKey, clientEmail, privateKey, subscription, 1, system, materializer);
 

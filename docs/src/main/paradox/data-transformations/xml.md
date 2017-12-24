@@ -4,50 +4,55 @@ XML parsing module offers Flows for parsing and processing parsed XML documents.
 
 ## Artifacts
 
-sbt
-:   @@@vars
-    ```scala
-    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-xml" % "$version$"
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```xml
-    <dependency>
-      <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-xml_$scalaBinaryVersion$</artifactId>
-      <version>$version$</version>
-    </dependency>
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```gradle
-    dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-xml_$scalaBinaryVersion$", version: "$version$"
-    }
-    ```
-    @@@
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-xml_$scalaBinaryVersion$
+  version=$version$
+}
 
 ## XML parsing
 
 XML processing pipeline starts with an @scaladoc[XmlParsing.parser](akka.stream.alpakka.xml.scaladsl.XmlParsing$) flow which parses a stream of @scaladoc[ByteString](akka.util.ByteString)s to XML parser events.
 
 Scala
-: @@snip (../../../../../xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlProcessingTest.scala) { #parser }
+: @@snip ($alpakka$/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlProcessingTest.scala) { #parser }
 
 Java
-: @@snip (../../../../../xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #parser }
+: @@snip ($alpakka$/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #parser }
+
+@scala[@github[Source on Github](/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlProcessingTest.scala) { #parser }]
+@java[@github[Source on Github](/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #parser }]
+
 
 To parse an XML document run XML document source with this parser.
 
 Scala
-: @@snip (../../../../../xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlProcessingTest.scala) { #parser-usage }
+: @@snip ($alpakka$/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlProcessingTest.scala) { #parser-usage }
 
 Java
-: @@snip (../../../../../xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #parser-usage }
+: @@snip ($alpakka$/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #parser-usage }
+
+## XML writing
+
+XML processing pipeline ends with an @scaladoc[XmlWriting.writer](akka.stream.alpakka.xml.scaladsl.XmlWriting$) flow which writes a stream of XML parser events to @scaladoc[ByteString](akka.util.ByteString)s.
+
+Scala
+: @@snip ($alpakka$/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlWritingTest.scala) { #writer }
+
+Java
+: @@snip ($alpakka$/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlWritingTest.java) { #writer }
+
+@scala[@github[Source on Github](/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlWritingTest.scala) { #writer }]
+@java[@github[Source on Github](/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlWritingTest.java) { #writer }]
+
+
+To write an XML document run XML document source with this writer.
+
+Scala
+: @@snip ($alpakka$/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlWritingTest.scala) { #writer-usage }
+
+Java
+: @@snip ($alpakka$/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlWritingTest.java) { #writer-usage }
 
 ## XML Subslice
 
@@ -55,15 +60,19 @@ Use @scaladoc[XmlParsing.subslice](akka.stream.alpakka.xml.scaladsl.XmlParsing$)
 
 
 Scala
-: @@snip (../../../../../xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlSubsliceTest.scala) { #subslice }
+: @@snip ($alpakka$/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlSubsliceTest.scala) { #subslice }
 
 Java
-: @@snip (../../../../../xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #subslice }
+: @@snip ($alpakka$/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #subslice }
+
+@scala[@github[Source on Github](/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlSubsliceTest.scala) { #subslice }]
+@java[@github[Source on Github](/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #subslice }]
+
 
 To get a subslice of an XML document run XML document source with this parser.
 
 Scala
-: @@snip (../../../../../xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlSubsliceTest.scala) { #subslice-usage }
+: @@snip ($alpakka$/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlSubsliceTest.scala) { #subslice-usage }
 
 Java
-: @@snip (../../../../../xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #subslice-usage }
+: @@snip ($alpakka$/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #subslice-usage }

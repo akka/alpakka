@@ -1,15 +1,14 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.kinesis.javadsl
 
-import java.util.concurrent.Future
+package akka.stream.alpakka.kinesis.javadsl
 
 import akka.NotUsed
 import akka.stream.alpakka.kinesis.{scaladsl, ShardSettings}
 import akka.stream.javadsl.Source
 import com.amazonaws.services.kinesis.AmazonKinesisAsync
-import com.amazonaws.services.kinesis.model.{DescribeStreamResult, Record}
+import com.amazonaws.services.kinesis.model.Record
 
 import scala.collection.JavaConverters._
 

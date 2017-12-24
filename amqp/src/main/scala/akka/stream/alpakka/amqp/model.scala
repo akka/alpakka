@@ -1,10 +1,10 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.amqp
 
 import com.rabbitmq.client.ExceptionHandler
-import scala.collection.JavaConverters._
 
 /**
  * Internal API

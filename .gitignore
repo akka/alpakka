@@ -15,6 +15,3 @@ target/
 ext-lib-src/
 .ensime
 .ensime_cache/
-moquette_store.mapdb
-moquette_store.mapdb.p
-moquette_store.mapdb.t

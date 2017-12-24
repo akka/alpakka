@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.googlecloud.pubsub.javadsl
 
 import java.security.PrivateKey
@@ -41,14 +42,13 @@ object GooglePubSub {
                 clientEmail: String,
                 privateKey: PrivateKey,
                 subscription: String,
-                actorSystem: ActorSystem,
-                materializer: Materializer): Source[ReceivedMessage, NotUsed] =
+                actorSystem: ActorSystem): Source[ReceivedMessage, NotUsed] =
     GPubSub
       .subscribe(projectId = projectId,
                  apiKey = apiKey,
                  clientEmail = clientEmail,
                  privateKey = privateKey,
-                 subscription = subscription)(actorSystem, materializer)
+                 subscription = subscription)(actorSystem)
       .asJava
 
   def acknowledge(projectId: String,

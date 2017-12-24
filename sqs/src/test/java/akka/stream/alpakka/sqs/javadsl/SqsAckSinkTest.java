@@ -1,19 +1,17 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.sqs.javadsl;
 
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
-import akka.stream.alpakka.sqs.Delete;
-import akka.stream.alpakka.sqs.Ignore;
 import akka.stream.alpakka.sqs.MessageAction;
-import akka.stream.alpakka.sqs.ChangeMessageVisibility;
 import akka.stream.alpakka.sqs.scaladsl.AckResult;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import com.amazonaws.handlers.AsyncHandler;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.model.*;
@@ -47,7 +45,7 @@ public class SqsAckSinkTest extends BaseSqsTest {
 
     @AfterClass
     public static void teardown() {
-        JavaTestKit.shutdownActorSystem(system);
+        TestKit.shutdownActorSystem(system);
     }
 
     @Test
@@ -67,7 +65,7 @@ public class SqsAckSinkTest extends BaseSqsTest {
         //#ack
         Tuple2<Message, MessageAction> pair = new Tuple2<>(
                 new Message().withBody("test"),
-                new Delete()
+                MessageAction.delete()
         );
         CompletionStage<Done> done = Source
                 .single(pair)
@@ -95,7 +93,7 @@ public class SqsAckSinkTest extends BaseSqsTest {
         //#flow-ack
         Tuple2<Message, MessageAction> pair = new Tuple2<>(
                 new Message().withBody("test-ack-flow"),
-                new Delete()
+                MessageAction.delete()
         );
         CompletionStage<Done> done = Source
                 .single(pair)
@@ -124,7 +122,7 @@ public class SqsAckSinkTest extends BaseSqsTest {
         //#requeue
         Tuple2<Message, MessageAction> pair = new Tuple2<>(
                 new Message().withBody("test"),
-                new ChangeMessageVisibility(12)
+                MessageAction.changeMessageVisibility(12)
         );
         CompletionStage<Done> done = Source
                 .single(pair)
@@ -147,7 +145,7 @@ public class SqsAckSinkTest extends BaseSqsTest {
         //#ignore
         Tuple2<Message, MessageAction> pair = new Tuple2<>(
                 new Message().withBody("test"),
-                new Ignore()
+                MessageAction.ignore()
         );
         CompletionStage<AckResult> stage = Source
                 .single(pair)

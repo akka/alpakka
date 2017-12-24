@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.azure.storagequeue.javadsl
 
 import com.microsoft.azure.storage.queue.{CloudQueue, CloudQueueMessage}
@@ -12,7 +13,6 @@ import akka.stream.alpakka.azure.storagequeue.{
 }
 import akka.stream.javadsl.Sink
 import akka.Done
-import scala.concurrent.Future
 import java.util.concurrent.CompletionStage
 import java.util.function.Supplier
 

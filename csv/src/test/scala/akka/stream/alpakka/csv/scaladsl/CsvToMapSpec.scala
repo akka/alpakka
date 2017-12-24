@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.csv.scaladsl
 
 import java.nio.charset.StandardCharsets
@@ -15,7 +16,7 @@ class CsvToMapSpec extends CsvSpec {
     // format: off
     // #flow-type
     import akka.stream.alpakka.csv.scaladsl.CsvToMap
-    
+
     val flow1: Flow[List[ByteString], Map[String, ByteString], NotUsed]
       = CsvToMap.toMap()
 

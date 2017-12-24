@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.xml.javadsl;
 
 import akka.actor.ActorSystem;
@@ -8,7 +9,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.xml.*;
 import akka.stream.javadsl.*;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -100,6 +101,6 @@ public class XmlParsingTest {
 
   @AfterClass
   public static void teardown() throws Exception {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 }

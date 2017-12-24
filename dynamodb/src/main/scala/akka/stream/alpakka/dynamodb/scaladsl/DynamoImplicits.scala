@@ -1,14 +1,12 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.dynamodb.scaladsl
 
 import akka.stream.alpakka.dynamodb.AwsOp
 import akka.stream.alpakka.dynamodb.impl.DynamoProtocol
-import com.amazonaws.http.HttpResponseHandler
 import com.amazonaws.services.dynamodbv2.model._
-import com.amazonaws.transform.Marshaller
-import com.amazonaws.{AmazonWebServiceResponse, Request}
 
 object DynamoImplicits extends DynamoProtocol {
 
@@ -17,6 +15,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = BatchGetItemResult
     override val handler = batchGetItemU
     override val marshaller = batchGetItemM
+    def toOp: BatchGetItem = this
   }
 
   implicit class CreateTable(val request: CreateTableRequest) extends AwsOp {
@@ -24,6 +23,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = CreateTableResult
     override val handler = createTableU
     override val marshaller = createTableM
+    def toOp: CreateTable = this
   }
 
   implicit class DeleteItem(val request: DeleteItemRequest) extends AwsOp {
@@ -31,6 +31,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = DeleteItemResult
     override val handler = deleteItemU
     override val marshaller = deleteItemM
+    def toOp: DeleteItem = this
   }
 
   implicit class DeleteTable(val request: DeleteTableRequest) extends AwsOp {
@@ -38,6 +39,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = DeleteTableResult
     override val handler = deleteTableU
     override val marshaller = deleteTableM
+    def toOp: DeleteTable = this
   }
 
   implicit class DescribeLimits(val request: DescribeLimitsRequest) extends AwsOp {
@@ -45,6 +47,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = DescribeLimitsResult
     override val handler = describeLimitsU
     override val marshaller = describeLimitsM
+    def toOp: DescribeLimits = this
   }
 
   implicit class DescribeTable(val request: DescribeTableRequest) extends AwsOp {
@@ -52,6 +55,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = DescribeTableResult
     override val handler = describeTableU
     override val marshaller = describeTableM
+    def toOp: DescribeTable = this
   }
 
   implicit class Query(val request: QueryRequest) extends AwsOp {
@@ -59,6 +63,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = QueryResult
     override val handler = queryU
     override val marshaller = queryM
+    def toOp: Query = this
   }
 
   implicit class Scan(val request: ScanRequest) extends AwsOp {
@@ -66,6 +71,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = ScanResult
     override val handler = scanU
     override val marshaller = scanM
+    def toOp: Scan = this
   }
 
   implicit class UpdateItem(val request: UpdateItemRequest) extends AwsOp {
@@ -73,6 +79,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = UpdateItemResult
     override val handler = updateItemU
     override val marshaller = updateItemM
+    def toOp: UpdateItem = this
   }
 
   implicit class UpdateTable(val request: UpdateTableRequest) extends AwsOp {
@@ -80,6 +87,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = UpdateTableResult
     override val handler = updateTableU
     override val marshaller = updateTableM
+    def toOp: UpdateTable = this
   }
 
   implicit class PutItem(val request: PutItemRequest) extends AwsOp {
@@ -87,6 +95,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = PutItemResult
     override val handler = putItemU
     override val marshaller = putItemM
+    def toOp: PutItem = this
   }
 
   implicit class BatchWriteItem(val request: BatchWriteItemRequest) extends AwsOp {
@@ -94,6 +103,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = BatchWriteItemResult
     override val handler = batchWriteItemU
     override val marshaller = batchWriteItemM
+    def toOp: BatchWriteItem = this
   }
 
   implicit class GetItem(val request: GetItemRequest) extends AwsOp {
@@ -101,6 +111,7 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = GetItemResult
     override val handler = getItemU
     override val marshaller = getItemM
+    def toOp: GetItem = this
   }
 
   implicit class ListTables(val request: ListTablesRequest) extends AwsOp {
@@ -108,6 +119,22 @@ object DynamoImplicits extends DynamoProtocol {
     override type B = ListTablesResult
     override val handler = listTablesU
     override val marshaller = listTablesM
+    def toOp: ListTables = this
   }
 
+  implicit class DescribeTimeToLive(val request: DescribeTimeToLiveRequest) extends AwsOp {
+    override type A = DescribeTimeToLiveRequest
+    override type B = DescribeTimeToLiveResult
+    override val handler = describeTimeToLiveU
+    override val marshaller = describeTimeToLiveM
+    def toOp: DescribeTimeToLive = this
+  }
+
+  implicit class UpdateTimeToLive(val request: UpdateTimeToLiveRequest) extends AwsOp {
+    override type A = UpdateTimeToLiveRequest
+    override type B = UpdateTimeToLiveResult
+    override val handler = updateTimeToLiveU
+    override val marshaller = updateTimeToLiveM
+    def toOp: UpdateTimeToLive = this
+  }
 }

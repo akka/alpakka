@@ -19,32 +19,11 @@ is parsed into frames:
 
 ## Artifacts
 
-sbt
-:   @@@vars
-    ```scala
-    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-simple-codecs" % "$version$"
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```xml
-    <dependency>
-      <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-simple-codecs_$scalaBinaryVersion$</artifactId>
-      <version>$version$</version>
-    </dependency>
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```gradle
-    dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-simple-codecs_$scalaBinaryVersion$", version: "$version$"
-    }
-    ```
-    @@@
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-simple-codecs_$scalaBinaryVersion$
+  version=$version$
+}
 
 ## Usage
 
@@ -54,17 +33,20 @@ factory method for a `Flow[ByteString, ByteString, _]` which parses out RecordIO
 For instance, given the sample input:
 
 Scala
-: @@snip (../../../../../simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala) { #test-data }
+: @@snip ($alpakka$/simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala) { #test-data }
 
 Running it through the RecordIO framing flow:
 
 Scala
-: @@snip (../../../../../simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala) { #run-via-scanner }
+: @@snip ($alpakka$/simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala) { #run-via-scanner }
 
 We obtain:
 
 Scala
-: @@snip (../../../../../simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala) { #result }
+: @@snip ($alpakka$/simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala) { #result }
+
+@scala[@github[Source on Github](simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala)]
+
 
 ### Running the example code
 
