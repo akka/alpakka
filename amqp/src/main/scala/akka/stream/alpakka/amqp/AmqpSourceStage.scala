@@ -39,8 +39,7 @@ object AmqpSourceStage {
  * @param bufferSize The max number of elements to prefetch and buffer at any given time.
  */
 final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
-    extends GraphStage[SourceShape[CommittableIncomingMessage]]
-    with AmqpConnector { stage =>
+    extends GraphStage[SourceShape[CommittableIncomingMessage]] { stage =>
 
   val out = Outlet[CommittableIncomingMessage]("AmqpSource.out")
 
@@ -52,9 +51,6 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
     new GraphStageLogic(shape) with AmqpConnectorLogic {
 
       override val settings = stage.settings
-      override def connectionFactoryFrom(settings: AmqpConnectionSettings) = stage.connectionFactoryFrom(settings)
-      override def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings) =
-        stage.newConnection(factory, settings)
 
       private val queue = mutable.Queue[CommittableIncomingMessage]()
       private val unackedMessages = new AtomicInteger()
