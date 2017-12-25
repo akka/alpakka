@@ -266,6 +266,10 @@ Scala
 Java
 : @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-jms-source }
 
+**Notes:**
+
+*  The default `AcknowledgeMode` is `AutoAcknowledge` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsSourceSettings` when creating the stream.
+
 ### Receiving @javadoc[javax.jms.Message](javax.jms.Message)s messages from a JMS provider with Client Acknowledgement
 
 Create a @javadoc[javax.jms.Message](javax.jms.Message) source:
@@ -305,7 +309,66 @@ Scala
 Java
 : @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #assert-only-odd-messages-received }
 
-## Using Topic with an JMS provider
+### Receiving and explicitly acknowledging @extref[javax.jms.Message](javaee-api:javax.jms.Message)s from a JMS provider
+
+Create a @extref[javax.jms.Message](javaee-api:javax.jms.Message) source:
+
+Scala
+: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsBufferedAckConnectorsSpec.scala) { #create-jms-source }
+
+Java
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsBufferedAckConnectorsTest.java) { #create-jms-source }
+
+The `sessionCount` parameter controls the number of JMS sessions to run in parallel.
+
+The `bufferSize` parameter controls the maximum number of messages each JMS session will prefetch and awaiting acknowledgement before applying backpressure.
+
+Run the source and specify the amount of messages to take:
+
+Scala
+: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsBufferedAckConnectorsSpec.scala) { #run-jms-source }
+
+Java
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsBufferedAckConnectorsTest.java) { #run-jms-source }
+
+**Notes:**
+
+*  Using multiple sessions increases throughput, especially if a acknowledging message by message is desired.
+*  Messages may arrive out of order if `sessionCount` is larger than 1.
+*  Message-by-message acknowledgement can be achieved by setting `bufferSize` to 0, thus disabling buffering. The outstanding messages before backpressure will be the `sessionCount`.
+*  The default `AcknowledgeMode` is `ClientAcknowledge` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsSourceSettings` when creating the stream. 
+
+### Transactionally receiving @extref[javax.jms.Message](javaee-api:javax.jms.Message)s from a JMS provider
+
+Create a @extref[javax.jms.Message](javaee-api:javax.jms.Message) source:
+
+Scala
+: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsTxConnectorsSpec.scala) { #create-jms-source }
+
+Java
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsTxConnectorsTest.java) { #create-jms-source }
+
+The `sessionCount` parameter controls the number of JMS sessions to run in parallel.
+
+The `bufferSize` parameter controls the maximum number of messages each JMS session will prefetch and awaiting acknowledgement before applying backpressure.
+
+Run the source and specify the amount of messages to take:
+
+Scala
+: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsTxConnectorsSpec.scala) { #run-jms-source }
+
+Java
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsTxConnectorsTest.java) { #run-jms-source }
+
+**Notes:**
+
+*  Higher throughput is achieved by increasing the `sessionCount`.
+*  Messages will arrive out of order if `sessionCount` is larger than 1.
+*  Buffering is not supported in transaction mode. The `bufferSize` is ignored.
+*  The default `AcknowledgeMode` is `SessionTransacted` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsSourceSettings` when creating the stream. 
+ 
+
+### Using Topic with an JMS provider
 
 You can use JMS topic in a very similar way.
 
@@ -327,7 +390,12 @@ Java
 
 Such sink and source can be started the same way as in the previous example.
 
-## Running the example code
+**Notes:**
+
+* Explicit acknowledgement sources and transactional sources work with topics the same way they work with queues.
+* **DO NOT** set the `sessionCount` greater than 1 for topics. Doing so will result in duplicate messages being delivered. Each topic message is delivered to each JMS session and all the messages feed to the same `Source`. JMS 2.0 created shared consumers to solve this problem and multiple sessions without duplication may be supported in the future.
+
+### Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
 
@@ -342,7 +410,12 @@ Java
     sbt
     > jms/testOnly *.JmsConnectorsTest
     ```
+    
+### Stopping a JMS Source
 
+All JMS sources materialize to a `KillSwitch` to allow safely stopping consumption without message loss for transactional and acknowledged messages, and with minimal message loss for the simple JMS source.
+
+To stop consumption safely, call `shutdown()` on the `KillSwitch` that is the materialized value of the source. To abruptly abort consumption (without concerns for message loss), call `abort(Throwable)` on the `KillSwitch`.
 
 ## Using IBM MQ
 

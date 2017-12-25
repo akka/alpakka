@@ -4,7 +4,8 @@
 
 package akka.stream.alpakka.jms
 
-import javax.jms.{Message, MessageProducer}
+import javax.jms
+import javax.jms.{Connection, Message, MessageProducer, Session}
 
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler}
 import akka.stream.{ActorAttributes, Attributes, Inlet, SinkShape}
@@ -18,15 +19,25 @@ final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape
   override protected def initialAttributes: Attributes =
     ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher")
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+  def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with JmsConnector {
 
       private var jmsProducer: MessageProducer = _
+      private var jmsSession: JmsSession = _
 
-      override private[jms] def jmsSettings = settings
+      private[jms] def jmsSettings = settings
+
+      private[jms] def createSession(connection: Connection, createDestination: Session => jms.Destination) = {
+        val session =
+          connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode)
+        new JmsSession(connection, session, createDestination(session))
+      }
 
       override def preStart(): Unit = {
-        jmsSession = openSession()
+
+        jmsSessions = openSessions()
+        // TODO: Remove hack to limit publisher to single session.
+        jmsSession = jmsSessions.head
         jmsProducer = jmsSession.session.createProducer(jmsSession.destination)
         if (settings.timeToLive.nonEmpty) {
           jmsProducer.setTimeToLive(settings.timeToLive.get.toMillis)
@@ -65,7 +76,7 @@ final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape
       )
 
       private def findHeader[T](headersDuringSend: Set[JmsHeader])(f: PartialFunction[JmsHeader, T]): Option[T] =
-        headersDuringSend.collect(f).headOption
+        headersDuringSend.collectFirst(f)
 
       private def createMessage(jmsSession: JmsSession, element: JmsMessage): Message =
         element match {
@@ -129,7 +140,7 @@ final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape
         }
       }
 
-      override def postStop(): Unit = Option(jmsSession).foreach(_.closeSession())
+      override def postStop(): Unit = jmsSessions.foreach(_.closeSession())
     }
 
 }
