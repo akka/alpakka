@@ -92,7 +92,9 @@ object scalaExamples {
     import akka.stream.scaladsl.RunnableGraph
     import java.nio.file.Files
 
-    def processAndMove(sourcePath: String, destinationPath: FtpFile => String, settings: FtpSettings): RunnableGraph[NotUsed] =
+    def processAndMove(sourcePath: String,
+                       destinationPath: FtpFile => String,
+                       settings: FtpSettings): RunnableGraph[NotUsed] =
       Ftp
         .ls(sourcePath, settings)
         .flatMapConcat(ftpFile => Ftp.fromPath(ftpFile.path, settings).map((_, ftpFile)))

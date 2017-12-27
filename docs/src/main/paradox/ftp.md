@@ -98,8 +98,6 @@ Java
 
 This sink will consume @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @extref[CompletionStage](java-api:java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 
-Typical use-case for this would be listing file from a ftp location, do some processing and delete the files when done.
-
 ### Moving files
 
 In order to move a remote file, you need to use the `move` method in the FTP API. The `move` method takes a function to calculate the path to which the file should be moved based on the consumed @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile).   
@@ -112,12 +110,15 @@ Java
 
 This sink will consume @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @extref[CompletionStage](java-api:java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 
-Typical use-case for this would be listing files from a ftp location, do some processing and move the files when done. An example of this use case can be found
+Typical use-case for this would be listing files from a ftp location, do some processing and move the files when done. An example of this use case can be found below.
 
-### Example: downloading files from an FTP location and move the original files 
+### Example: downloading files from an FTP location and move the original files  
 
 Scala
 : @@snip ($alpakka$/ftp/src/test/scala/akka/stream/alpakka/ftp/scalaExamples.scala) { #processAndMove }
+
+Java
+: @@snip ($alpakka$/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpProcessAndMoveExample.java) { #processAndMove }
 
 ### Running the example code
 
