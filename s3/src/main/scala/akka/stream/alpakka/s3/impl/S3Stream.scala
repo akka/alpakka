@@ -152,7 +152,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     // TODO can we take in a Source[ByteString, NotUsed] without forcing chunking
     // chunked requests are causing S3 to think this is a multipart upload
 
-    implicit val ec = mat.executionContext
+    implicit val ec: ExecutionContext = mat.executionContext
 
     val headers = S3Headers(
       s3Headers.headers ++ sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(PutObject) }
