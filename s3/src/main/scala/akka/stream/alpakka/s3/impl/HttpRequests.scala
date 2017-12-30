@@ -124,9 +124,9 @@ private[alpakka] object HttpRequests {
             case None => ()
           }
         }
-        (region, conf.baseUrl) match {
-          case (_, Some(baseUrl)) =>
-            Uri(baseUrl).authority
+        (region, conf.endpointUrl) match {
+          case (_, Some(endpointUrl)) =>
+            Uri(endpointUrl).authority
           case ("us-east-1", _) =>
             if (conf.pathStyleAccess) {
               Authority(Uri.Host("s3.amazonaws.com"))
@@ -154,9 +154,11 @@ private[alpakka] object HttpRequests {
     }
     val uri = Uri(path = path, authority = requestAuthority(bucket, conf.s3RegionProvider.getRegion))
 
-    (conf.proxy, conf.baseUrl) match {
-      case (_, Some(baseUrl)) =>
-        uri.withScheme(Uri(baseUrl).scheme).withHost(requestAuthority(bucket, conf.s3RegionProvider.getRegion).host)
+    (conf.proxy, conf.endpointUrl) match {
+      case (_, Some(endpointUri)) =>
+        uri
+          .withScheme(Uri(endpointUri).scheme)
+          .withHost(requestAuthority(bucket, conf.s3RegionProvider.getRegion).host)
       case (None, _) =>
         uri.withScheme("https").withHost(requestAuthority(bucket, conf.s3RegionProvider.getRegion).host)
       case (Some(proxy), _) => uri.withPort(proxy.port).withScheme(proxy.scheme).withHost(proxy.host)

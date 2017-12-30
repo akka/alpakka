@@ -30,13 +30,13 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
       awsCredentials: AWSCredentialsProvider = new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()),
       s3Region: String = "us-east-1",
       pathStyleAccess: Boolean = false,
-      baseUrl: Option[String] = None
+      endpointUrl: Option[String] = None
   ) = {
     val regionProvider = new AwsRegionProvider {
       def getRegion = s3Region
     }
 
-    new S3Settings(bufferType, proxy, awsCredentials, regionProvider, pathStyleAccess, baseUrl)
+    new S3Settings(bufferType, proxy, awsCredentials, regionProvider, pathStyleAccess, endpointUrl)
   }
 
   val location = S3Location("bucket", "image-1024@2x")
@@ -274,7 +274,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
                                       "continuation-token" -> "randomToken")
   }
 
-  it should "support custom endpoint configured by `baseUrl`" in {
+  it should "support custom endpoint configured by `endpointUrl`" in {
     implicit val system: ActorSystem = ActorSystem("HttpRequestsSpec")
     import system.dispatcher
     implicit val materializer: ActorMaterializer = ActorMaterializer()
@@ -290,7 +290,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     }, address.getHostName, address.getPort)
 
     implicit val setting: S3Settings =
-      getSettings(baseUrl = Some(s"http://${address.getHostName}:${address.getPort}/"))
+      getSettings(endpointUrl = Some(s"http://${address.getHostName}:${address.getPort}/"))
 
     val req =
       HttpRequests.listBucket(location.bucket, Some("random/prefix"), Some("randomToken"))

@@ -21,7 +21,7 @@ final case class S3Settings(bufferType: BufferType,
                             credentialsProvider: AWSCredentialsProvider,
                             s3RegionProvider: AwsRegionProvider,
                             pathStyleAccess: Boolean,
-                            baseUrl: Option[String]) {
+                            endpointUrl: Option[String]) {
 
   override def toString: String =
     s"""S3Settings(
@@ -30,7 +30,7 @@ final case class S3Settings(bufferType: BufferType,
        |${credentialsProvider.getClass.getSimpleName},
        |${s3RegionProvider.getClass.getSimpleName},
        |$pathStyleAccess,
-       |$baseUrl)""".stripMargin
+       |$endpointUrl)""".stripMargin
 }
 
 sealed trait BufferType {
@@ -91,6 +91,12 @@ object S3Settings {
     }
 
     val pathStyleAccess = s3Config.getBoolean("path-style-access")
+
+    val endpointUrl = if (s3Config.hasPath("endpoint-url")) {
+      Option(s3Config.getString("endpoint-url"))
+    } else {
+      None
+    }
 
     val regionProvider = {
       val regionProviderPath = "aws.region.provider"
@@ -162,7 +168,7 @@ object S3Settings {
       credentialsProvider = credentialsProvider,
       s3RegionProvider = regionProvider,
       pathStyleAccess = pathStyleAccess,
-      baseUrl = None
+      endpointUrl = endpointUrl
     )
   }
 

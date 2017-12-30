@@ -31,10 +31,6 @@ import org.junit.Test;
 import scala.Option;
 import scala.Some;
 
-import java.util.Arrays;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
