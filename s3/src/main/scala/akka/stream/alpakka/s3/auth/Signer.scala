@@ -15,7 +15,7 @@ import com.amazonaws.auth
 import com.amazonaws.auth._
 
 private[alpakka] object Signer {
-  private val dateFormatter = DateTimeFormatter.ofPattern("YYYYMMdd'T'HHmmssX")
+  private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssX")
 
   def signedRequest(request: HttpRequest, key: SigningKey, date: ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC))(
       implicit mat: Materializer
