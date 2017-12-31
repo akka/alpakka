@@ -17,6 +17,7 @@ lazy val alpakka = project
     ironmq,
     jms,
     kinesis,
+    mongodb,
     mqtt,
     s3,
     springWeb,
@@ -25,6 +26,7 @@ lazy val alpakka = project
     sns,
     sqs,
     sse,
+    unixdomainsocket,
     xml
   )
   .settings(
@@ -125,6 +127,8 @@ lazy val sqs = alpakkaProject("sqs",
 
 lazy val sse = alpakkaProject("sse", Dependencies.Sse)
 
+lazy val unixdomainsocket = alpakkaProject("unix-domain-socket", Dependencies.UnixDomainSocket)
+
 lazy val xml = alpakkaProject("xml", Dependencies.Xml)
 
 val Local = config("local")
@@ -177,10 +181,6 @@ def alpakkaProject(projectId: String, additionalSettings: sbt.Def.SettingsDefini
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
     .settings(
-      name := s"akka-stream-alpakka-$projectId",
-      // By default scalatest futures time out in 150 ms, dilate that to 600ms.
-      // This should not impact the total test time as we don't expect to hit this
-      // timeout.
-      testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4")
+      name := s"akka-stream-alpakka-$projectId"
     )
     .settings(additionalSettings: _*)

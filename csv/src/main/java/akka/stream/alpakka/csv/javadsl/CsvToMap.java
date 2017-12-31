@@ -17,7 +17,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 
-class CsvToMap {
+public class CsvToMap {
 
     /**
      * A flow translating incoming {@link Collection<ByteString>} to a {@link Map<String, ByteString>} using the streams first

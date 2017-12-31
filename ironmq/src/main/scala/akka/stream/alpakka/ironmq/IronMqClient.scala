@@ -12,7 +12,7 @@ import akka.http.scaladsl.model.headers.{Authorization, GenericHttpCredentials}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.Materializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
 import com.typesafe.config.Config
@@ -258,7 +258,7 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
    */
   def deleteMessages(queueName: Queue.Name, reservations: Reservation*)(implicit ec: ExecutionContext): Future[Unit] = {
 
-    val payload = Json.obj("ids" -> Json.fromValues(reservations.map(_.asJson).toSeq))
+    val payload = Json.obj("ids" -> Json.fromValues(reservations.map(_.asJson)))
 
     makeRequest(Delete(Uri(s"$queuesPath/${queueName.value}/messages"), payload)).map(_ => Unit)
 

@@ -53,3 +53,19 @@ if the producer will implement a batch mechanism in the future.
 
 The producer also provides a Committable aware Flow/Sink as `Flow[(PushMessage, ToCommit), (Message.Id, CommitResult), CommitMat]`.
 It can be used to consume a Flow from an IronMq consumer or any other source that provides a commit mechanism.
+
+> Test code requires IronMQ running in the background. You can start it quickly using docker:
+>
+> `docker-compose up ironauth ironmq`
+
+Scala
+:   ```
+    sbt
+    > ironmq/testOnly *Spec
+    ```
+
+Java
+:   ```
+    sbt
+    > ironmq/testOnly *Test
+    ```

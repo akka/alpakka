@@ -8,17 +8,11 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.jms.AcknowledgeMode;
-import akka.stream.alpakka.jms.JmsCorrelationId;
-import akka.stream.alpakka.jms.JmsReplyTo;
-import akka.stream.alpakka.jms.JmsSinkSettings;
-import akka.stream.alpakka.jms.JmsSourceSettings;
-import akka.stream.alpakka.jms.JmsTextMessage;
-import akka.stream.alpakka.jms.JmsType;
-import akka.stream.alpakka.jms.Queue;
+
+import akka.stream.alpakka.jms.*;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.command.ActiveMQQueue;
@@ -27,7 +21,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.jms.DeliveryMode;
 import javax.jms.Message;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -35,29 +31,62 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
+
+
+final class DummyJavaTests implements java.io.Serializable {
+
+
+    private final String value;
+
+    DummyJavaTests(String value) {
+        this.value = value;
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (o instanceof DummyJavaTests) {
+            return ((DummyJavaTests) o).value.equals(this.value);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return value != null ? value.hashCode() : 0;
+    }
+}
 
 public class JmsConnectorsTest {
 
-    //#create-test-message-list
+  
     private List<JmsTextMessage> createTestMessageList() {
         List<Integer> intsIn = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
         List<JmsTextMessage> msgsIn = new ArrayList<>();
-        for(Integer n: intsIn) {
-            Map<String, Object> properties = new HashMap<String, Object>();
-            properties.put("Number", n);
-            properties.put("IsOdd", n % 2 == 1);
-            properties.put("IsEven", n % 2 == 0);
+        for (Integer n : intsIn) {
 
-            msgsIn.add(JmsTextMessage.create(n.toString(), properties));
+            //#create-messages-with-properties
+            JmsTextMessage message = JmsTextMessage.create(n.toString())
+                    .withProperty("Number", n)
+                    .withProperty("IsOdd", n % 2 == 1)
+                    .withProperty("IsEven", n % 2 == 0);
+            //#create-messages-with-properties
+            
+            msgsIn.add(message);
         }
 
         return msgsIn;
     }
-    //#create-test-message-list
+   
 
     @Test
-    public void publishAndConsume() throws Exception {
+    public void publishAndConsumeJmsTextMessage() throws Exception {
         withServer(ctx -> {
             //#connection-factory
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
@@ -96,6 +125,154 @@ public class JmsConnectorsTest {
 
     }
 
+
+    @Test
+    public void publishAndConsumeJmsObjectMessage() throws Exception {
+        withServer(ctx -> {
+            //#connection-factory
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+            // This is done here to send arbitrary objects. Otherwise activemq would forbid it.
+            // See therefore http://activemq.apache.org/objectmessage.html
+            connectionFactory.setTrustAllPackages(true);
+            //#connection-factory
+
+            //#create-object-sink
+            Sink<java.io.Serializable, NotUsed> jmsSink = JmsSink.objectSink(
+                    JmsSinkSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+            //#create-object-sink
+
+            //#run-object-sink
+            java.io.Serializable in = new DummyJavaTests("javaTest");
+            Source.single(in).runWith(jmsSink, materializer);
+            //#run-object-sink
+
+            //#create-object-source
+            Source<java.io.Serializable, NotUsed> jmsSource = JmsSource
+                    .objectSource(JmsSourceSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+                    );
+            //#create-object-source
+
+            //#run-object-source
+            CompletionStage<java.io.Serializable> result = jmsSource
+                    .take(1)
+                    .runWith(Sink.head(), materializer);
+            //#run-object-source
+
+
+            Object resultObject = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+            assertEquals(resultObject, in);
+        });
+    }
+
+
+    @Test
+    public void publishAndConsumeJmsByteMessage() throws Exception {
+        withServer(ctx -> {
+            //#connection-factory
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+            //#connection-factory
+
+            //#create-bytearray-sink
+            Sink<byte[], NotUsed> jmsSink = JmsSink.bytesSink(
+                    JmsSinkSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+            //#create-bytearray-sink
+
+            //#run-bytearray-sink
+            byte[] in = "ThisIsATest".getBytes(Charset.forName("UTF-8"));
+            Source.single(in).runWith(jmsSink, materializer);
+            //#run-bytearray-sink
+
+            //#create-bytearray-source
+            Source<byte[], NotUsed> jmsSource = JmsSource
+                    .bytesSource(JmsSourceSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+                    );
+            //#create-bytearray-source
+
+            //#run-bytearray-source
+            CompletionStage<byte[]> result = jmsSource
+                    .take(1)
+                    .runWith(Sink.head(), materializer);
+            //#run-bytearray-source
+
+
+            byte[] resultArray = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+            assertEquals("ThisIsATest", new String(resultArray, Charset.forName("UTF-8")));
+        });
+
+    }
+
+    @Test
+    public void publishAndConsumeJmsMapMessage() throws Exception {
+        withServer(ctx -> {
+            //#connection-factory
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+            //#connection-factory
+
+            //#create-map-sink
+            Sink<Map<String, Object>, NotUsed> jmsSink = JmsSink.mapSink(
+                    JmsSinkSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+            //#create-map-sink
+
+            //#run-map-sink
+            Map<String, Object> in = new HashMap<>();
+            in.put("string value", "value");
+            in.put("int value", 42);
+            in.put("double value", 43.0);
+            in.put("short value", (short) 7);
+            in.put("boolean value", true);
+            in.put("long value", 7L);
+            in.put("bytearray", "AStringAsByteArray".getBytes(Charset.forName("UTF-8")));
+            in.put("byte", (byte) 1);
+
+
+            Source.single(in).runWith(jmsSink, materializer);
+            //#run-map-sink
+
+            //#create-map-source
+            Source<Map<String, Object>, NotUsed> jmsSource = JmsSource
+                    .mapSource(JmsSourceSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+                    );
+            //#create-map-source
+
+            //#run-map-source
+            CompletionStage<Map<String, Object>> resultStage = jmsSource
+                    .take(1)
+                    .runWith(Sink.head(), materializer);
+            //#run-map-source
+
+
+            Map<String, Object> resultMap = resultStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+            assertEquals(resultMap.get("string value"), in.get("string value"));
+            assertEquals(resultMap.get("int value"), in.get("int value"));
+            assertEquals(resultMap.get("double value"), in.get("double value"));
+            assertEquals(resultMap.get("short value"), in.get("short value"));
+            assertEquals(resultMap.get("boolean value"), in.get("boolean value"));
+            assertEquals(resultMap.get("long value"), in.get("long value"));
+            assertEquals(resultMap.get("byte"), in.get("byte"));
+
+            byte[] resultByteArray = (byte[]) resultMap.get("bytearray");
+            assertEquals(new String(resultByteArray, Charset.forName("UTF-8")), "AStringAsByteArray");
+        });
+    }
+
+
     @Test
     public void publishAndConsumeJmsTextMessagesWithProperties() throws Exception {
         withServer(ctx -> {
@@ -108,11 +285,9 @@ public class JmsConnectorsTest {
                             .withQueue("test")
             );
             //#create-jms-sink
-
-            //#create-messages-with-properties
+            
             List<JmsTextMessage> msgsIn = createTestMessageList();
-            //#create-messages-with-properties
-
+            
             //#run-jms-sink
             Source.from(msgsIn).runWith(jmsSink, materializer);
             //#run-jms-sink
@@ -133,7 +308,7 @@ public class JmsConnectorsTest {
 
             List<Message> outMessages = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
             int msgIdx = 0;
-            for(Message outMsg: outMessages) {
+            for (Message outMsg : outMessages) {
                 assertEquals(outMsg.getIntProperty("Number"), msgsIn.get(msgIdx).properties().get("Number").get());
                 assertEquals(outMsg.getBooleanProperty("IsOdd"), msgsIn.get(msgIdx).properties().get("IsOdd").get());
                 assertEquals(outMsg.getBooleanProperty("IsEven"), (msgsIn.get(msgIdx).properties().get("IsEven").get()));
@@ -155,13 +330,18 @@ public class JmsConnectorsTest {
             );
             //#create-jms-sink
 
-            //#create-messages-with-properties
+
+            //#create-messages-with-headers
             List<JmsTextMessage> msgsIn = createTestMessageList().stream()
-                    .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsType.create("type")))
-                    .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsCorrelationId.create("correlationId")))
-                    .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsReplyTo.queue("test-reply")))
+                    .map(jmsTextMessage -> jmsTextMessage
+                            .withHeader(JmsType.create("type"))
+                            .withHeader(JmsCorrelationId.create("correlationId"))
+                            .withHeader(JmsReplyTo.queue("test-reply"))
+                            .withHeader(JmsTimeToLive.create(999, TimeUnit.SECONDS))
+                            .withHeader(JmsPriority.create(2))
+                            .withHeader(JmsDeliveryMode.create(DeliveryMode.NON_PERSISTENT)))
                     .collect(Collectors.toList());
-            //#create-messages-with-properties
+            //#create-messages-with-headers
 
             //#run-jms-sink
             Source.from(msgsIn).runWith(jmsSink, materializer);
@@ -183,13 +363,17 @@ public class JmsConnectorsTest {
 
             List<Message> outMessages = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
             int msgIdx = 0;
-            for(Message outMsg: outMessages) {
+            for (Message outMsg : outMessages) {
                 assertEquals(outMsg.getIntProperty("Number"), msgsIn.get(msgIdx).properties().get("Number").get());
                 assertEquals(outMsg.getBooleanProperty("IsOdd"), msgsIn.get(msgIdx).properties().get("IsOdd").get());
                 assertEquals(outMsg.getBooleanProperty("IsEven"), (msgsIn.get(msgIdx).properties().get("IsEven").get()));
                 assertEquals(outMsg.getJMSType(), "type");
                 assertEquals(outMsg.getJMSCorrelationID(), "correlationId");
                 assertEquals(((ActiveMQQueue) outMsg.getJMSReplyTo()).getQueueName(), "test-reply");
+                
+                assertTrue(outMsg.getJMSExpiration()!= 0);
+                assertEquals(2,outMsg.getJMSPriority());
+                assertEquals(DeliveryMode.NON_PERSISTENT,outMsg.getJMSDeliveryMode());
                 msgIdx++;
             }
         });
@@ -231,7 +415,7 @@ public class JmsConnectorsTest {
 
             List<Message> outMessages = result.toCompletableFuture().get(4, TimeUnit.SECONDS);
             int msgIdx = 0;
-            for(Message outMsg: outMessages) {
+            for (Message outMsg : outMessages) {
                 assertEquals(outMsg.getIntProperty("Number"), oddMsgsIn.get(msgIdx).properties().get("Number").get());
                 assertEquals(outMsg.getBooleanProperty("IsOdd"), oddMsgsIn.get(msgIdx).properties().get("IsOdd").get());
                 assertEquals(outMsg.getBooleanProperty("IsEven"), (oddMsgsIn.get(msgIdx).properties().get("IsEven").get()));
@@ -347,7 +531,7 @@ public class JmsConnectorsTest {
             }
         });
     }
-
+    
     private static ActorSystem system;
     private static Materializer materializer;
 
@@ -359,7 +543,7 @@ public class JmsConnectorsTest {
 
     @AfterClass
     public static void teardown() throws Exception {
-        JavaTestKit.shutdownActorSystem(system);
+        TestKit.shutdownActorSystem(system);
     }
 
     private void withServer(ConsumerChecked<Context> test) throws Exception {
@@ -375,7 +559,7 @@ public class JmsConnectorsTest {
         try {
             test.accept(new Context(url, broker));
         } finally {
-            if(broker.isStarted()) {
+            if (broker.isStarted()) {
                 broker.stop();
             }
         }

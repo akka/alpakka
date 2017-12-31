@@ -35,6 +35,8 @@ private object HttpApi extends HttpApi {
   val PubSubGoogleApisHost: String = PubSubEmulatorHost.getOrElse(DefaultPubSubGoogleApisHost)
   val GoogleApisHost: String = PubSubEmulatorHost.getOrElse(DefaultGoogleApisHost)
 
+  override def isEmulated = PubSubEmulatorHost.nonEmpty
+
   private[pubsub] lazy val PubSubEmulatorHost: Option[String] = sys.props
     .get(PubSubEmulatorHostVarName)
     .orElse(sys.env.get(PubSubEmulatorHostVarName))
@@ -47,6 +49,8 @@ private object HttpApi extends HttpApi {
 private trait HttpApi {
   def PubSubGoogleApisHost: String
   def GoogleApisHost: String
+  def isEmulated: Boolean
+
   private implicit val pubSubMessageFormat = DefaultJsonProtocol.jsonFormat2(PubSubMessage)
   private implicit val pubSubRequestFormat = DefaultJsonProtocol.jsonFormat1(PublishRequest.apply)
   private implicit val gcePubSubResponseFormat = DefaultJsonProtocol.jsonFormat1(PublishResponse)
@@ -76,7 +80,7 @@ private trait HttpApi {
 
   def acknowledge(project: String,
                   subscription: String,
-                  accessToken: String,
+                  maybeAccessToken: Option[String],
                   apiKey: String,
                   request: AcknowledgeRequest)(implicit as: ActorSystem, materializer: Materializer): Future[Unit] = {
     import materializer.executionContext
@@ -86,7 +90,7 @@ private trait HttpApi {
 
     for {
       request <- Marshal((HttpMethods.POST, url, request)).to[HttpRequest]
-      response <- Http().singleRequest(request.addCredentials(OAuth2BearerToken(accessToken)))
+      response <- doRequest(request, maybeAccessToken)
     } yield {
       response.discardEntityBytes()
       if (response.status.isSuccess()) {
@@ -97,7 +101,16 @@ private trait HttpApi {
     }
   }
 
-  def publish(project: String, topic: String, accessToken: String, apiKey: String, request: PublishRequest)(
+  private[this] def doRequest(request: HttpRequest, maybeAccessToken: Option[String])(implicit as: ActorSystem) =
+    Http().singleRequest(
+      maybeAccessToken.map(accessToken => request.addCredentials(OAuth2BearerToken(accessToken))).getOrElse(request)
+    )
+
+  def publish(project: String,
+              topic: String,
+              maybeAccessToken: Option[String],
+              apiKey: String,
+              request: PublishRequest)(
       implicit as: ActorSystem,
       materializer: Materializer
   ): Future[immutable.Seq[String]] = {
@@ -107,7 +120,7 @@ private trait HttpApi {
 
     for {
       request <- Marshal((HttpMethods.POST, url, request)).to[HttpRequest]
-      response <- Http().singleRequest(request.addCredentials(OAuth2BearerToken(accessToken)))
+      response <- doRequest(request, maybeAccessToken)
       publishResponse <- Unmarshal(response.entity).to[PublishResponse]
     } yield publishResponse.messageIds
   }

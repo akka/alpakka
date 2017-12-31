@@ -5,6 +5,7 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.s3.impl.ServerSideEncryption
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase._
 import akka.testkit.TestKit
 import com.github.tomakehurst.wiremock.WireMockServer
@@ -33,18 +34,39 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
       )
     )
 
+  def mockSSEInvalidRequest(): Unit =
+    mock.register(
+      any(anyUrl()).willReturn(
+        aResponse()
+          .withStatus(400)
+          .withBody(
+            "<Error><Code>InvalidRequest</Code><Message>The object was stored using a form of Server Side Encryption. " +
+            "The correct parameters must be provided to retrieve the object.</Message>" +
+            "<RequestId>XXX</RequestId>" +
+            "<HostId>XXXX</HostId></Error>"
+          )
+      )
+    )
+
   def stopWireMockServer(): Unit = _wireMockServer.stop()
 
   val body = "<response>Some content</response>"
+  val bodySSE = "<response>Some other content</response>"
   val bucketKey = "testKey"
   val bucket = "testBucket"
   val uploadId = "VXBsb2FkIElEIGZvciA2aWWpbmcncyBteS1tb3ZpZS5tMnRzIHVwbG9hZA"
   val etag = "5b27a21a97fcf8a7004dd1d906e7a5ba"
+  val etagSSE = "5b27a21a97fcf8a7004dd1d906e7a5cd"
   val url = s"http://testbucket.s3.amazonaws.com/testKey"
   val (bytesRangeStart, bytesRangeEnd) = (2, 10)
   val rangeOfBody = body.getBytes.slice(bytesRangeStart, bytesRangeEnd + 1)
+  val rangeOfBodySSE = bodySSE.getBytes.slice(bytesRangeStart, bytesRangeEnd + 1)
   val listPrefix = "testPrefix"
   val listKey = "testingKey.txt"
+
+  val sseCustomerKey = "key"
+  val sseCustomerMd5Key = "md5"
+  val sseCustomerKeys = ServerSideEncryption.CustomerKeys(sseCustomerKey, Some(sseCustomerMd5Key))
 
   def mockDownload(): Unit =
     mock
@@ -52,6 +74,41 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
         get(urlEqualTo(s"/$bucketKey")).willReturn(
           aResponse().withStatus(200).withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""").withBody(body)
         )
+      )
+
+  def mockDownloadSSEC(): Unit =
+    mock
+      .register(
+        get(urlEqualTo(s"/$bucketKey"))
+          .withHeader("x-amz-server-side-encryption-customer-algorithm", new EqualToPattern("AES256"))
+          .withHeader("x-amz-server-side-encryption-customer-key", new EqualToPattern(sseCustomerKey))
+          .withHeader("x-amz-server-side-encryption-customer-key-MD5", new EqualToPattern(sseCustomerMd5Key))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""")
+              .withBody(bodySSE)
+          )
+      )
+
+  def mockHead(): Unit =
+    mock
+      .register(
+        head(urlEqualTo(s"/$bucketKey")).willReturn(
+          aResponse().withStatus(200).withHeader("ETag", s""""$etag"""")
+        )
+      )
+
+  def mockHeadSSEC(): Unit =
+    mock
+      .register(
+        head(urlEqualTo(s"/$bucketKey"))
+          .withHeader("x-amz-server-side-encryption-customer-algorithm", new EqualToPattern("AES256"))
+          .withHeader("x-amz-server-side-encryption-customer-key", new EqualToPattern(sseCustomerKey))
+          .withHeader("x-amz-server-side-encryption-customer-key-MD5", new EqualToPattern(sseCustomerMd5Key))
+          .willReturn(
+            aResponse().withStatus(200).withHeader("ETag", s""""$etagSSE"""")
+          )
       )
 
   def mockRangedDownload(): Unit =
@@ -64,6 +121,22 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
               .withStatus(200)
               .withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""")
               .withBody(rangeOfBody)
+          )
+      )
+
+  def mockRangedDownloadSSE(): Unit =
+    mock
+      .register(
+        get(urlEqualTo(s"/$bucketKey"))
+          .withHeader("Range", new EqualToPattern(s"bytes=$bytesRangeStart-$bytesRangeEnd"))
+          .withHeader("x-amz-server-side-encryption-customer-algorithm", new EqualToPattern("AES256"))
+          .withHeader("x-amz-server-side-encryption-customer-key", new EqualToPattern(sseCustomerKey))
+          .withHeader("x-amz-server-side-encryption-customer-key-MD5", new EqualToPattern(sseCustomerMd5Key))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""")
+              .withBody(rangeOfBodySSE)
           )
       )
 
@@ -111,6 +184,63 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
 
     mock.register(
       put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
+        .withRequestBody(matching(body))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt")
+            .withHeader("x-amz-request-id", "5A37448A37622243")
+            .withHeader("ETag", "\"" + etag + "\"")
+        )
+    )
+
+    mock.register(
+      post(urlEqualTo(s"/$bucketKey?uploadId=$uploadId"))
+        .withRequestBody(containing("CompleteMultipartUpload"))
+        .withRequestBody(containing(etag))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/xml; charset=UTF-8")
+            .withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt")
+            .withHeader("x-amz-request-id", "5A37448A3762224333")
+            .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+                         |<CompleteMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                         |  <Location>$url</Location>
+                         |  <Bucket>$bucket</Bucket>
+                         |  <Key>$bucketKey</Key>
+                         |  <ETag>"$etag"</ETag>
+                         |</CompleteMultipartUploadResult>""".stripMargin)
+        )
+    )
+  }
+
+  def mockUploadSSE(): Unit = {
+    mock
+      .register(
+        post(urlEqualTo(s"/$bucketKey?uploads"))
+          .withHeader("x-amz-server-side-encryption-customer-algorithm", new EqualToPattern("AES256"))
+          .withHeader("x-amz-server-side-encryption-customer-key", new EqualToPattern(sseCustomerKey))
+          .withHeader("x-amz-server-side-encryption-customer-key-MD5", new EqualToPattern(sseCustomerMd5Key))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("x-amz-id-2", "Uuag1LuByRx9e6j5Onimru9pO4ZVKnJ2Qz7/C1NPcfTWAtRPfTaOFg==")
+              .withHeader("x-amz-request-id", "656c76696e6727732072657175657374")
+              .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+                         |<InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                         |  <Bucket>$bucket</Bucket>
+                         |  <Key>$bucketKey</Key>
+                         |  <UploadId>$uploadId</UploadId>
+                         |</InitiateMultipartUploadResult>""".stripMargin)
+          )
+      )
+
+    mock.register(
+      put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
+        .withHeader("x-amz-server-side-encryption-customer-algorithm", new EqualToPattern("AES256"))
+        .withHeader("x-amz-server-side-encryption-customer-key", new EqualToPattern(sseCustomerKey))
+        .withHeader("x-amz-server-side-encryption-customer-key-MD5", new EqualToPattern(sseCustomerMd5Key))
         .withRequestBody(matching(body))
         .willReturn(
           aResponse()

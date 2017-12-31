@@ -7,7 +7,6 @@ package akka.stream.alpakka.azure.storagequeue
 import com.microsoft.azure.storage.queue.{CloudQueue, CloudQueueMessage}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, TimerGraphStageLogic}
 import akka.stream.{Attributes, Outlet, SourceShape}
-import akka.actor.ActorSystem
 import scala.collection.mutable.Queue
 import scala.concurrent.duration._
 import akka.NotUsed

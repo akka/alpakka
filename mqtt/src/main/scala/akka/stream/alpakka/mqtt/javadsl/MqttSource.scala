@@ -14,9 +14,24 @@ object MqttSource {
   /**
    * Java API: create an [[MqttSource]] with a provided bufferSize.
    */
+  @deprecated("use atMostOnce instead", "0.15")
   def create(settings: MqttSourceSettings,
-             bufferSize: Int): akka.stream.javadsl.Source[MqttMessage, CompletionStage[Done]] = {
+             bufferSize: Int): akka.stream.javadsl.Source[MqttMessage, CompletionStage[Done]] =
+    atMostOnce(settings, bufferSize)
+
+  def atMostOnce(settings: MqttSourceSettings,
+                 bufferSize: Int): akka.stream.javadsl.Source[MqttMessage, CompletionStage[Done]] = {
     import scala.compat.java8.FutureConverters._
-    akka.stream.alpakka.mqtt.scaladsl.MqttSource.apply(settings, bufferSize).mapMaterializedValue(_.toJava).asJava
+    akka.stream.alpakka.mqtt.scaladsl.MqttSource.atMostOnce(settings, bufferSize).mapMaterializedValue(_.toJava).asJava
+  }
+
+  def atLeastOnce(settings: MqttSourceSettings,
+                  bufferSize: Int): akka.stream.javadsl.Source[MqttCommittableMessage, CompletionStage[Done]] = {
+    import scala.compat.java8.FutureConverters._
+    akka.stream.alpakka.mqtt.scaladsl.MqttSource
+      .atLeastOnce(settings, bufferSize)
+      .map(cm => cm.asJava)
+      .mapMaterializedValue(_.toJava)
+      .asJava
   }
 }

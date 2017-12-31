@@ -7,6 +7,7 @@ package akka.stream.alpakka.s3.impl
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.alpakka.s3.acl.CannedAcl
+import com.amazonaws.util.{Base64, Md5Utils}
 
 import scala.collection.immutable
 
@@ -51,42 +52,87 @@ object S3Headers {
 /**
  * Documentation: http://docs.aws.amazon.com/AmazonS3/latest/dev/storage-class-intro.html
  */
-sealed abstract class StorageClass(storageClass: String) {
+sealed abstract class StorageClass(val storageClass: String) {
   def header: HttpHeader = RawHeader("x-amz-storage-class", storageClass)
 }
 
 object StorageClass {
   case object Standard extends StorageClass("STANDARD")
   case object InfrequentAccess extends StorageClass("STANDARD_IA")
+  case object Glacier extends StorageClass("GLACIER")
   case object ReducedRedundancy extends StorageClass("REDUCED_REDUNDANCY")
+
+  def apply(cls: String): Option[StorageClass] = cls match {
+    case Standard.storageClass => Some(Standard)
+    case InfrequentAccess.storageClass => Some(InfrequentAccess)
+    case Glacier.storageClass => Some(Glacier)
+    case ReducedRedundancy.storageClass => Some(ReducedRedundancy)
+  }
 }
 
 /**
  * Documentation: http://docs.aws.amazon.com/AmazonS3/latest/dev/serv-side-encryption.html
- * @param algorithm AES-256 or aws:kms
- * @param kmsKeyId optional amazon resource name in the "arn:aws:kms:my-region:my-account-id:key/my-key-id" format.
- * @param context optional base64-encoded UTF-8 string holding JSON with the encryption context key-value pairs
  */
-sealed abstract class ServerSideEncryption(algorithm: String,
-                                           kmsKeyId: Option[String] = None,
-                                           context: Option[String] = None) {
-  def headers: immutable.Seq[HttpHeader] = algorithm match {
-    case "AES256" => RawHeader("x-amz-server-side-encryption", "AES256") :: Nil
-    case "aws:kms" if kmsKeyId.isDefined && context.isEmpty =>
-      RawHeader("x-amz-server-side-encryption", "aws:kms") ::
-      RawHeader("x-amz-server-side-encryption-aws-kms-key-id", kmsKeyId.get) ::
-      Nil
-    case "aws:kms" if kmsKeyId.isDefined && context.isDefined =>
-      RawHeader("x-amz-server-side-encryption", "aws:kms") ::
-      RawHeader("x-amz-server-side-encryption-aws-kms-key-id", kmsKeyId.get) ::
-      RawHeader("x-amz-server-side-encryption-context", context.get) ::
-      Nil
-    case _ => throw new IllegalArgumentException("Unsupported encryption algorithm.")
-  }
+sealed abstract class ServerSideEncryption {
+  def headers: immutable.Seq[HttpHeader]
+
+  def headersFor(request: S3Request): immutable.Seq[HttpHeader]
 }
 
 object ServerSideEncryption {
-  case object AES256 extends ServerSideEncryption("AES256")
-  case class KMS(keyId: String, context: Option[String] = None)
-      extends ServerSideEncryption("aws:kms", Some(keyId), context)
+
+  case object AES256 extends ServerSideEncryption {
+    override def headers: immutable.Seq[HttpHeader] = RawHeader("x-amz-server-side-encryption", "AES256") :: Nil
+
+    override def headersFor(request: S3Request): immutable.Seq[HttpHeader] = request match {
+      case PutObject | InitiateMultipartUpload => headers
+      case _ => Nil
+    }
+  }
+
+  /**
+   * Documentation: http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingKMSEncryption.html
+   *
+   * @param keyId amazon resource name in the "arn:aws:kms:my-region:my-account-id:key/my-key-id" format.
+   * @param context optional base64-encoded UTF-8 string holding JSON with the encryption context key-value pairs
+   */
+  case class KMS(keyId: String, context: Option[String] = None) extends ServerSideEncryption {
+
+    override def headers: immutable.Seq[HttpHeader] = {
+      val baseHeaders = RawHeader("x-amz-server-side-encryption", "aws:kms") ::
+      RawHeader("x-amz-server-side-encryption-aws-kms-key-id", keyId) ::
+      Nil
+
+      val headers = baseHeaders ++ context.map(ctx => RawHeader("x-amz-server-side-encryption-context", ctx)).toSeq
+      headers
+    }
+
+    override def headersFor(request: S3Request): immutable.Seq[HttpHeader] = request match {
+      case PutObject | InitiateMultipartUpload => headers
+      case _ => Nil
+    }
+  }
+
+  /**
+   * Documentation: http://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html
+   * @param key base64-encoded encryption key for Amazon S3 to use to encrypt or decrypt your data.
+   * @param md5 optional base64-encoded 128-bit MD5 digest of the encryption key according to RFC 1321.
+   */
+  case class CustomerKeys(key: String, md5: Option[String] = None) extends ServerSideEncryption {
+
+    override def headers: immutable.Seq[HttpHeader] =
+      RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256") ::
+      RawHeader("x-amz-server-side-encryption-customer-key", key) ::
+      RawHeader("x-amz-server-side-encryption-customer-key-MD5", md5.getOrElse({
+        val decodedKey = Base64.decode(key)
+        val md5 = Md5Utils.md5AsBase64(decodedKey)
+        md5
+      })) :: Nil
+
+    override def headersFor(request: S3Request): immutable.Seq[HttpHeader] = request match {
+      case GetObject | HeadObject | PutObject | InitiateMultipartUpload | UploadPart =>
+        headers
+      case _ => Nil
+    }
+  }
 }

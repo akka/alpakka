@@ -6,12 +6,14 @@ package akka.stream.alpakka.s3.scaladsl
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.impl.MetaHeaders
 import akka.stream.alpakka.s3.{Proxy, S3Settings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
+import com.amazonaws.regions.AwsRegionProvider
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
@@ -65,13 +67,19 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
   def createAWSConnectionProperties = {
 
     val defaultRegion = "us-east-1"
+    val defaultRegionProvider = new AwsRegionProvider {
+      def getRegion = defaultRegion
+    }
     val defaultRegionBucket = "fad437a8-b37a-43c8-9fb8-eb18821b8d99"
 
     val otherRegion = "eu-central-1"
+    val otherRegionProvider = new AwsRegionProvider {
+      def getRegion = otherRegion
+    }
     val otherRegionBucket = "fad437a8-b37a-43c8-9fb8-eb18821b8d95"
 
-    val settings = S3Settings(ConfigFactory.load().getConfig("aws")).copy(s3Region = defaultRegion)
-    val otherRegionSettings = settings.copy(pathStyleAccess = true, s3Region = otherRegion)
+    val settings = S3Settings(ConfigFactory.load().getConfig("aws")).copy(s3RegionProvider = defaultRegionProvider)
+    val otherRegionSettings = settings.copy(pathStyleAccess = true, s3RegionProvider = otherRegionProvider)
 
     val defaultRegionClient = new S3Client(settings)
     val otherRegionClient = new S3Client(otherRegionSettings)
@@ -101,16 +109,19 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
 
     val defaultRegionBucket = "fad437a8-b37a-43c8-9fb8-eb18821b8d99"
     val otherRegionBucket = "fad437a8-b37a-43c8-9fb8-eb18821b8d99"
+    val noRegionProvider = new AwsRegionProvider {
+      def getRegion = ""
+    }
 
     val settings = S3Settings(ConfigFactory.load().getConfig("bluemix")).copy(
       proxy = Some(Proxy(host = "s3.eu-geo.objectstorage.softlayer.net", port = 443, scheme = "https")),
       pathStyleAccess = true,
-      s3Region = ""
+      s3RegionProvider = noRegionProvider
     )
     val otherRegionSettings = settings.copy(
       proxy = Some(Proxy(host = "s3.ams-eu-geo.objectstorage.softlayer.net", port = 443, scheme = "https")),
       pathStyleAccess = true,
-      s3Region = ""
+      s3RegionProvider = noRegionProvider
     )
 
     val defaultRegionClient = new S3Client(settings)
@@ -178,7 +189,6 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     }
 
     it should s"upload and download with spaces in the key (${settings.name})" in {
-      val objectKey = "test folder/test file.txt"
       val source: Source[ByteString, Any] = Source(ByteString(settings.objectValue) :: Nil)
 
       val results = for {
@@ -201,7 +211,6 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     }
 
     it should s"upload and download with brackets in the key (${settings.name})" in {
-      val objectKey = "abc/DEF/2017/06/15/1234 (1).TXT"
       val source: Source[ByteString, Any] = Source(ByteString(settings.objectValue) :: Nil)
 
       val results = for {
@@ -224,7 +233,6 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     }
 
     it should s"upload and download with spaces in the key in other region (${settings.name})" in {
-      val objectKey = "test folder/test file.txt"
       val source: Source[ByteString, Any] = Source(ByteString(settings.objectValue) :: Nil)
 
       val results = for {
@@ -247,8 +255,6 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     }
 
     it should s"upload and download with special characters in the key in non other region (${settings.name})" in {
-      // we want ASCII and other UTF-8 characters!
-      val objectKey = "føldęrü/1234()[]><!?: .TXT"
       val source: Source[ByteString, Any] = Source(ByteString(settings.objectValue) :: Nil)
 
       val results = for {

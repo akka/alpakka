@@ -118,8 +118,6 @@ class CassandraSourceSpec
     }
 
     "sink should write to the table" in {
-      import system.dispatcher
-
       val source = Source(0 to 10).map(i => i: Integer)
 
       //#prepared-statement

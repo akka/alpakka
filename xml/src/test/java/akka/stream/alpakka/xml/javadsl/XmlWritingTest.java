@@ -12,7 +12,7 @@ import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -38,13 +38,13 @@ public class XmlWritingTest {
     // #writer
     final Sink<ParseEvent, CompletionStage<String>> write = Flow.of(ParseEvent.class)
       .via(XmlWriting.writer())
-      .map((ByteString bs) -> bs.utf8String())
+      .map(ByteString::utf8String)
       .toMat(Sink.fold("", (acc, el) -> acc + el), Keep.right());
     // #writer
 
     // #writer-usage
     final String doc = "<?xml version='1.0' encoding='UTF-8'?><doc><elem>elem1</elem><elem>elem2</elem></doc>";
-    final List<ParseEvent> docList= new ArrayList<ParseEvent>();
+    final List<ParseEvent> docList= new ArrayList<>();
     docList.add(StartDocument.getInstance());
     docList.add(StartElement.create("doc", Collections.emptyMap()));
     docList.add(StartElement.create("elem", Collections.emptyMap()));
@@ -60,9 +60,7 @@ public class XmlWritingTest {
     final CompletionStage<String> resultStage = Source.from(docList).runWith(write, materializer);
     // #writer-usage
 
-    resultStage.thenAccept((str) -> {
-      assertEquals(doc,str);
-    }).toCompletableFuture().get(5, TimeUnit.SECONDS);
+    resultStage.thenAccept((str) -> assertEquals(doc,str)).toCompletableFuture().get(5, TimeUnit.SECONDS);
   }
 
   @BeforeClass
@@ -73,6 +71,6 @@ public class XmlWritingTest {
 
   @AfterClass
   public static void teardown() throws Exception {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 }

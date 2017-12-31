@@ -27,7 +27,6 @@ object Publish extends AutoPlugin {
 }
 
 object PublishUnidoc extends AutoPlugin {
-  import sbtunidoc.BaseUnidocPlugin._
   import sbtunidoc.BaseUnidocPlugin.autoImport._
   import sbtunidoc.ScalaUnidocPlugin.autoImport.ScalaUnidoc
 
