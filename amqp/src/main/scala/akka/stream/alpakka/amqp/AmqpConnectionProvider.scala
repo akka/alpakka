@@ -11,8 +11,8 @@ import com.rabbitmq.client.Connection
 import scala.compat.java8.FunctionConverters._
 
 /**
-  * Only for internal implementations
-  */
+ * Only for internal implementations
+ */
 sealed trait AmqpConnectionProvider {
   def settings: AmqpConnectionSettings
   def get: Connection
@@ -20,10 +20,12 @@ sealed trait AmqpConnectionProvider {
 }
 
 final object DefaultAmqpConnectionProvider {
+
   /**
-    * Java API
-    */
-  def create(settings: AmqpConnectionSettings): DefaultAmqpConnectionProvider = DefaultAmqpConnectionProvider(settings: AmqpConnectionSettings)
+   * Java API
+   */
+  def create(settings: AmqpConnectionSettings): DefaultAmqpConnectionProvider =
+    DefaultAmqpConnectionProvider(settings: AmqpConnectionSettings)
 }
 
 final case class DefaultAmqpConnectionProvider(settings: AmqpConnectionSettings) extends AmqpConnectionProvider {
@@ -32,59 +34,72 @@ final case class DefaultAmqpConnectionProvider(settings: AmqpConnectionSettings)
 }
 
 final object ReusableAmqpConnectionProvider {
-  /**
-    * Java API
-    */
-  def create(settings: AmqpConnectionSettings): ReusableAmqpConnectionProvider = ReusableAmqpConnectionProvider(settings: AmqpConnectionSettings)
 
   /**
-    * Java API
-    */
-  def create(settings: AmqpConnectionSettings, automaticRelease: Boolean): ReusableAmqpConnectionProvider = ReusableAmqpConnectionProvider(settings: AmqpConnectionSettings, automaticRelease)
+   * Java API
+   */
+  def create(settings: AmqpConnectionSettings): ReusableAmqpConnectionProvider =
+    ReusableAmqpConnectionProvider(settings: AmqpConnectionSettings)
+
+  /**
+   * Java API
+   */
+  def create(settings: AmqpConnectionSettings, automaticRelease: Boolean): ReusableAmqpConnectionProvider =
+    ReusableAmqpConnectionProvider(settings: AmqpConnectionSettings, automaticRelease)
 }
 
 final case class ReusableAmqpConnectionProvider(settings: AmqpConnectionSettings, automaticRelease: Boolean = true)
-  extends AmqpConnectionProvider {
+    extends AmqpConnectionProvider {
   var clients = 0
   private val cachedConnectionRef = new AtomicReference[Option[Connection]](None)
 
-  override def get = cachedConnectionRef
-    .updateAndGet(asJavaUnaryOperator(cachedConnection =>
-      cachedConnection match {
-        case Some(connection) => {
-          if (connection.isOpen) {
-            clients += 1
-            cachedConnection
-          } else {
-            clients = 1
-            Some(settings.getConnection)
+  override def get =
+    cachedConnectionRef
+      .updateAndGet(
+        asJavaUnaryOperator(
+          cachedConnection =>
+            cachedConnection match {
+              case Some(connection) => {
+                if (connection.isOpen) {
+                  clients += 1
+                  cachedConnection
+                } else {
+                  clients = 1
+                  Some(settings.getConnection)
+                }
+              }
+              case None => {
+                clients = 1
+                Some(settings.getConnection)
+              }
           }
-        }
-        case None => {
-          clients = 1
-          Some(settings.getConnection)
-        }
-      }
-    )).get
+        )
+      )
+      .get
 
-  override def release(connection: Connection) = cachedConnectionRef
-    .updateAndGet(asJavaUnaryOperator(cachedConnection =>
-      cachedConnection match {
-        case Some(conn) =>
-          if (conn != connection) throw new IllegalArgumentException("Can't release a connection that's not owned by this provider")
-          if (!automaticRelease) {
-            clients = 0
-            if (connection.isOpen) connection.close()
-            None
-          } else {
-            clients -= 1
-            if (clients == 0) {
-              if (connection.isOpen) connection.close()
-              None
-            }
-            cachedConnection
+  override def release(connection: Connection) =
+    cachedConnectionRef
+      .updateAndGet(
+        asJavaUnaryOperator(
+          cachedConnection =>
+            cachedConnection match {
+              case Some(conn) =>
+                if (conn != connection)
+                  throw new IllegalArgumentException("Can't release a connection that's not owned by this provider")
+                if (!automaticRelease) {
+                  clients = 0
+                  if (connection.isOpen) connection.close()
+                  None
+                } else {
+                  clients -= 1
+                  if (clients == 0) {
+                    if (connection.isOpen) connection.close()
+                    None
+                  }
+                  cachedConnection
+                }
+              case None => None
           }
-        case None => None
-      }
-    ))
+        )
+      )
 }

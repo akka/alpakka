@@ -1,18 +1,21 @@
+/*
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.amqp
 
 import com.rabbitmq.client.{Address, Connection, ConnectionFactory, ExceptionHandler}
 
-
 /**
-  * Only for internal implementations
-  */
+ * Only for internal implementations
+ */
 sealed trait AmqpConnectionSettings {
   private[amqp] def getConnection: Connection
 }
 
 /**
-  * Connects to a local AMQP broker at the default port with no password.
-  */
+ * Connects to a local AMQP broker at the default port with no password.
+ */
 case class AmqpConnectionLocal() extends AmqpConnectionSettings {
   override def getConnection: Connection = new ConnectionFactory().newConnection
 }
@@ -20,19 +23,19 @@ case class AmqpConnectionLocal() extends AmqpConnectionSettings {
 object AmqpConnectionLocal {
 
   /**
-    * Java API
-    */
+   * Java API
+   */
   def create(): AmqpConnectionLocal = AmqpConnectionLocal()
 }
 
 /**
-  * Connects to a local AMQP broker at the default port with no password.
-  */
+ * Connects to a local AMQP broker at the default port with no password.
+ */
 case object DefaultAmqpConnection extends AmqpConnectionSettings {
 
   /**
-    * Java API
-    */
+   * Java API
+   */
   def getInstance(): DefaultAmqpConnection.type = this
 
   override def getConnection: Connection = new ConnectionFactory().newConnection
@@ -49,25 +52,25 @@ final case class AmqpConnectionUri(uri: String) extends AmqpConnectionSettings {
 object AmqpConnectionUri {
 
   /**
-    * Java API
-    */
+   * Java API
+   */
   def create(uri: String): AmqpConnectionUri = AmqpConnectionUri(uri)
 }
 
 final case class AmqpConnectionDetails(
-                                        hostAndPortList: Seq[(String, Int)],
-                                        credentials: Option[AmqpCredentials] = None,
-                                        virtualHost: Option[String] = None,
-                                        sslProtocol: Option[String] = None,
-                                        requestedHeartbeat: Option[Int] = None,
-                                        connectionTimeout: Option[Int] = None,
-                                        handshakeTimeout: Option[Int] = None,
-                                        shutdownTimeout: Option[Int] = None,
-                                        networkRecoveryInterval: Option[Int] = None,
-                                        automaticRecoveryEnabled: Option[Boolean] = None,
-                                        topologyRecoveryEnabled: Option[Boolean] = None,
-                                        exceptionHandler: Option[ExceptionHandler] = None
-                                      ) extends AmqpConnectionSettings {
+    hostAndPortList: Seq[(String, Int)],
+    credentials: Option[AmqpCredentials] = None,
+    virtualHost: Option[String] = None,
+    sslProtocol: Option[String] = None,
+    requestedHeartbeat: Option[Int] = None,
+    connectionTimeout: Option[Int] = None,
+    handshakeTimeout: Option[Int] = None,
+    shutdownTimeout: Option[Int] = None,
+    networkRecoveryInterval: Option[Int] = None,
+    automaticRecoveryEnabled: Option[Boolean] = None,
+    topologyRecoveryEnabled: Option[Boolean] = None,
+    exceptionHandler: Option[ExceptionHandler] = None
+) extends AmqpConnectionSettings {
 
   def withHostsAndPorts(hostAndPort: (String, Int), hostAndPorts: (String, Int)*): AmqpConnectionDetails =
     copy(hostAndPortList = (hostAndPort +: hostAndPorts).toList)
@@ -106,8 +109,8 @@ final case class AmqpConnectionDetails(
     copy(exceptionHandler = Option(exceptionHandler))
 
   /**
-    * Java API
-    */
+   * Java API
+   */
   @annotation.varargs
   def withHostsAndPorts(hostAndPort: akka.japi.Pair[String, Int],
                         hostAndPorts: akka.japi.Pair[String, Int]*): AmqpConnectionDetails =
@@ -143,8 +146,8 @@ object AmqpConnectionDetails {
     AmqpConnectionDetails(List((host, port)))
 
   /**
-    * Java API
-    */
+   * Java API
+   */
   def create(host: String, port: Int): AmqpConnectionDetails =
     AmqpConnectionDetails(host, port)
 }
@@ -152,8 +155,8 @@ object AmqpConnectionDetails {
 object AmqpCredentials {
 
   /**
-    * Java API
-    */
+   * Java API
+   */
   def create(username: String, password: String): AmqpCredentials =
     AmqpCredentials(username, password)
 }

@@ -15,13 +15,13 @@ sealed trait AmqpConnectorSettings {
 sealed trait AmqpSourceSettings extends AmqpConnectorSettings
 
 final case class NamedQueueSourceSettings(
-                                           connectionProvider: AmqpConnectionProvider,
-                                           queue: String,
-                                           declarations: Seq[Declaration] = Seq.empty,
-                                           noLocal: Boolean = false,
-                                           exclusive: Boolean = false,
-                                           consumerTag: String = "default",
-                                           arguments: Map[String, AnyRef] = Map.empty
+    connectionProvider: AmqpConnectionProvider,
+    queue: String,
+    declarations: Seq[Declaration] = Seq.empty,
+    noLocal: Boolean = false,
+    exclusive: Boolean = false,
+    consumerTag: String = "default",
+    arguments: Map[String, AnyRef] = Map.empty
 ) extends AmqpSourceSettings {
   @annotation.varargs
   def withDeclarations(declarations: Declaration*) = copy(declarations = declarations.toList)
@@ -50,10 +50,10 @@ object NamedQueueSourceSettings {
 }
 
 final case class TemporaryQueueSourceSettings(
-                                               connectionProvider: AmqpConnectionProvider,
-                                               exchange: String,
-                                               declarations: Seq[Declaration] = Seq.empty,
-                                               routingKey: Option[String] = None
+    connectionProvider: AmqpConnectionProvider,
+    exchange: String,
+    declarations: Seq[Declaration] = Seq.empty,
+    routingKey: Option[String] = None
 ) extends AmqpSourceSettings {
   def withRoutingKey(routingKey: String) = copy(routingKey = Some(routingKey))
 
@@ -71,8 +71,8 @@ object TemporaryQueueSourceSettings {
 }
 
 final case class AmqpReplyToSinkSettings(
-                                          connectionProvider: AmqpConnectionProvider,
-                                          failIfReplyToMissing: Boolean = true
+    connectionProvider: AmqpConnectionProvider,
+    failIfReplyToMissing: Boolean = true
 ) extends AmqpConnectorSettings {
   override final val declarations = Nil
 }
@@ -94,10 +94,10 @@ object AmqpReplyToSinkSettings {
 }
 
 final case class AmqpSinkSettings(
-                                   connectionProvider: AmqpConnectionProvider,
-                                   exchange: Option[String] = None,
-                                   routingKey: Option[String] = None,
-                                   declarations: Seq[Declaration] = Seq.empty
+    connectionProvider: AmqpConnectionProvider,
+    exchange: Option[String] = None,
+    routingKey: Option[String] = None,
+    declarations: Seq[Declaration] = Seq.empty
 ) extends AmqpConnectorSettings {
   def withExchange(exchange: String) = copy(exchange = Some(exchange))
 
