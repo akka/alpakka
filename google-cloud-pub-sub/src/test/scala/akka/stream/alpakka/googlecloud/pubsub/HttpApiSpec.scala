@@ -155,7 +155,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
       WireMock
         .post(
           urlEqualTo(
-            s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:pull?key=${TestCredentials.apiKey}"
+            s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:pull"
           )
         )
         .withRequestBody(WireMock.equalTo(pullRequest))
@@ -178,7 +178,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
       WireMock
         .post(
           urlEqualTo(
-            s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:pull?key=${TestCredentials.apiKey}"
+            s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:pull"
           )
         )
         .withRequestBody(WireMock.equalTo(pullRequest))
@@ -197,7 +197,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
       WireMock
         .post(
           urlEqualTo(
-            s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:acknowledge?key=${TestCredentials.apiKey}"
+            s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:acknowledge"
           )
         )
         .withRequestBody(WireMock.equalTo(ackRequest))
