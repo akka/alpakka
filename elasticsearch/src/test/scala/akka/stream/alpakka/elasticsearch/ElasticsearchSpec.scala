@@ -16,8 +16,6 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.collection.JavaConverters._
-import spray.json._
-import DefaultJsonProtocol._
 import org.apache.http.message.BasicHeader
 
 class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
@@ -32,12 +30,15 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   import org.elasticsearch.client.RestClient
   import org.apache.http.HttpHost
 
-  implicit val client = RestClient.builder(new HttpHost("localhost", 9201)).build()
+  implicit val client: RestClient = RestClient.builder(new HttpHost("localhost", 9201)).build()
   //#init-client
 
   //#define-class
+  import spray.json._
+  import DefaultJsonProtocol._
+
   case class Book(title: String)
-  implicit val format = jsonFormat1(Book)
+  implicit val format: JsonFormat[Book] = jsonFormat1(Book)
   //#define-class
 
   override def beforeAll() = {
