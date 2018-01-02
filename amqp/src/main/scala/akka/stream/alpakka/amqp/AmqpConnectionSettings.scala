@@ -16,16 +16,13 @@ sealed trait AmqpConnectionSettings {
 /**
  * Connects to a local AMQP broker at the default port with no password.
  */
-case class AmqpConnectionLocal() extends AmqpConnectionSettings {
+case object AmqpConnectionLocal extends AmqpConnectionSettings {
   override def getConnection: Connection = new ConnectionFactory().newConnection
-}
-
-object AmqpConnectionLocal {
 
   /**
    * Java API
    */
-  def create(): AmqpConnectionLocal = AmqpConnectionLocal()
+  def getInstance(): AmqpConnectionLocal.type = this
 }
 
 /**

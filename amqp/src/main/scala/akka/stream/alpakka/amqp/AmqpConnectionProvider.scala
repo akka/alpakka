@@ -6,13 +6,15 @@ package akka.stream.alpakka.amqp
 
 import java.util.concurrent.atomic.AtomicReference
 
+import akka.annotation.DoNotInherit
 import com.rabbitmq.client.Connection
 
-import scala.compat.java8.FunctionConverters._
+import scala.annotation.tailrec
 
 /**
  * Only for internal implementations
  */
+@DoNotInherit
 sealed trait AmqpConnectionProvider {
   def settings: AmqpConnectionSettings
   def get: Connection
@@ -46,60 +48,47 @@ final object ReusableAmqpConnectionProvider {
    */
   def create(settings: AmqpConnectionSettings, automaticRelease: Boolean): ReusableAmqpConnectionProvider =
     ReusableAmqpConnectionProvider(settings: AmqpConnectionSettings, automaticRelease)
+
+  private sealed trait State
+  private case object Empty extends State
+  private case object Connecting extends State
+  private final case class Connected(connection: Connection, clients: Int) extends State
+  private case object Closing extends State
 }
 
 final case class ReusableAmqpConnectionProvider(settings: AmqpConnectionSettings, automaticRelease: Boolean = true)
     extends AmqpConnectionProvider {
-  var clients = 0
-  private val cachedConnectionRef = new AtomicReference[Option[Connection]](None)
 
-  override def get =
-    cachedConnectionRef
-      .updateAndGet(
-        asJavaUnaryOperator(
-          cachedConnection =>
-            cachedConnection match {
-              case Some(connection) => {
-                if (connection.isOpen) {
-                  clients += 1
-                  cachedConnection
-                } else {
-                  clients = 1
-                  Some(settings.getConnection)
-                }
-              }
-              case None => {
-                clients = 1
-                Some(settings.getConnection)
-              }
-          }
-        )
-      )
-      .get
+  import akka.stream.alpakka.amqp.ReusableAmqpConnectionProvider._
+  private val state = new AtomicReference[State](Empty)
 
-  override def release(connection: Connection) =
-    cachedConnectionRef
-      .updateAndGet(
-        asJavaUnaryOperator(
-          cachedConnection =>
-            cachedConnection match {
-              case Some(conn) =>
-                if (conn != connection)
-                  throw new IllegalArgumentException("Can't release a connection that's not owned by this provider")
-                if (!automaticRelease) {
-                  clients = 0
-                  if (connection.isOpen) connection.close()
-                  None
-                } else {
-                  clients -= 1
-                  if (clients == 0) {
-                    if (connection.isOpen) connection.close()
-                    None
-                  }
-                  cachedConnection
-                }
-              case None => None
-          }
-        )
-      )
+  @tailrec
+  override def get: Connection = state.get match {
+    case Empty =>
+      if (state.compareAndSet(Empty, Connecting)) {
+        val connection = settings.getConnection
+        state.compareAndSet(Connecting, Connected(connection, 0))
+        connection
+      } else get
+    case c @ Connected(connection, clients) =>
+      if (state.compareAndSet(c, Connected(connection, clients + 1))) connection
+      else get
+    case _ => get
+  }
+
+  @tailrec
+  override def release(connection: Connection) = state.get match {
+    case c @ Connected(cachedConnection, clients) =>
+      if (state.compareAndSet(c, Closing)) {
+        if (cachedConnection != connection)
+          throw new IllegalArgumentException("Can't release a connection that's not owned by this provider")
+        else if (clients == 0 || !automaticRelease) {
+          connection.close()
+          state.compareAndSet(Closing, Empty)
+        } else {
+          state.compareAndSet(Closing, Connected(cachedConnection, clients - 1))
+        }
+      } else release(connection)
+    case _ => release(connection)
+  }
 }

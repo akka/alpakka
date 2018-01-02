@@ -25,7 +25,7 @@ public class AmqpConnectionSettingsTest {
 
   @Test
   public void LocalAmqpConnectionCreatesNewConnection() throws Exception {
-    AmqpConnectionLocal connectionSettings = AmqpConnectionLocal.create();
+    AmqpConnectionSettings connectionSettings = AmqpConnectionLocal.getInstance();
     AmqpConnectionProvider connectionProvider = DefaultAmqpConnectionProvider.create(connectionSettings);
     Connection connection1 = connectionProvider.get();
     Connection connection2 = connectionProvider.get();
@@ -60,7 +60,7 @@ public class AmqpConnectionSettingsTest {
 
   @Test
   public void ReusableAMQPConnectionProviderWithAutomaticReleaseAndLocalAmqpConnectionReusesConnection() throws Exception {
-    AmqpConnectionSettings connectionSettings = AmqpConnectionLocal.create();
+    AmqpConnectionSettings connectionSettings = AmqpConnectionLocal.getInstance();
     AmqpConnectionProvider connectionProvider = ReusableAmqpConnectionProvider.create(connectionSettings);
     Connection connection1 = connectionProvider.get();
     Connection connection2 = connectionProvider.get();
@@ -105,7 +105,7 @@ public class AmqpConnectionSettingsTest {
 
   @Test
   public void ReusableAMQPConnectionProviderWithoutAutomaticReleaseAndLocalAmqpConnectionReusesConnection() throws Exception {
-    AmqpConnectionSettings connectionSettings = AmqpConnectionLocal.create();
+    AmqpConnectionSettings connectionSettings = AmqpConnectionLocal.getInstance();
     AmqpConnectionProvider connectionProvider = ReusableAmqpConnectionProvider.create(connectionSettings, false);
     Connection connection1 = connectionProvider.get();
     Connection connection2 = connectionProvider.get();

@@ -18,7 +18,7 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
     }
 
     "create a new connection per invocation of LocalAmqpConnection" in {
-      val connectionSettings = AmqpConnectionLocal()
+      val connectionSettings = AmqpConnectionLocal
       val connectionProvider = DefaultAmqpConnectionProvider.create(connectionSettings)
       val connection1 = connectionProvider.get
       val connection2 = connectionProvider.get
@@ -50,7 +50,7 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
 
   "The AMQP Reusable Connection Provider with automatic release" should {
     "reuse the same connection from LocalAmqpConnection and release it when the last client disconnects" in {
-      val connectionSettings = AmqpConnectionLocal()
+      val connectionSettings = AmqpConnectionLocal
       val connectionProvider = ReusableAmqpConnectionProvider(connectionSettings)
       val connection1 = connectionProvider.get
       val connection2 = connectionProvider.get
@@ -94,7 +94,7 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
 
   "The AMQP Reusable Connection Provider without automatic release" should {
     "reuse the same connection from LocalAmqpConnection" in {
-      val connectionSettings = AmqpConnectionLocal()
+      val connectionSettings = AmqpConnectionLocal
       val connectionProvider = ReusableAmqpConnectionProvider(connectionSettings, automaticRelease = false)
       val connection1 = connectionProvider.get
       val connection2 = connectionProvider.get
