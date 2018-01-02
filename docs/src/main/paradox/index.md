@@ -4,6 +4,9 @@ Welcome to the home of the Alpakka initiative, which harbours various Akka Strea
 and data transformations for integration use cases. Here you can find documentation of the components that are
 part of this project as well as links to components that are maintained by other projects.
 
+If you'd like to know what integrations with Alpakka look like, have a look at our 
+[self-contained examples](examples/index.html) section.
+
 The code in this documentation is compiled against
 
 * Alpakka $version$ ([Github](https://github.com/akka/alpakka), [API docs](https://developer.lightbend.com/docs/api/alpakka/current/akka/stream/alpakka/index.html))
@@ -20,6 +23,7 @@ Release notes are found at [Github releases](https://github.com/akka/alpakka/rel
 * [Connectors](connectors.md)
 * [External connectors](external-connectors.md) (hosted separately)
 * [External stream components](external-components.md) (hosted separately)
+* [Self-contained examples](examples/index.md)
 * [Integration Patterns](patterns.md)
 * [Data Transformations](data-transformations/index.md)
 

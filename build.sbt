@@ -1,34 +1,37 @@
+lazy val modules: Seq[ProjectReference] = Seq(
+  amqp,
+  awslambda,
+  azureStorageQueue,
+  cassandra,
+  csv,
+  dynamodb,
+  elasticsearch,
+  files,
+  ftp,
+  geode,
+  googleCloudPubSub,
+  hbase,
+  ironmq,
+  jms,
+  kinesis,
+  mongodb,
+  mqtt,
+  s3,
+  springWeb,
+  simpleCodecs,
+  slick,
+  sns,
+  sqs,
+  sse,
+  unixdomainsocket,
+  xml
+)
+
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
-  .aggregate(
-    amqp,
-    awslambda,
-    azureStorageQueue,
-    cassandra,
-    csv,
-    dynamodb,
-    elasticsearch,
-    files,
-    ftp,
-    geode,
-    googleCloudPubSub,
-    hbase,
-    ironmq,
-    jms,
-    kinesis,
-    mongodb,
-    mqtt,
-    s3,
-    springWeb,
-    simpleCodecs,
-    slick,
-    sns,
-    sqs,
-    sse,
-    unixdomainsocket,
-    xml
-  )
+  .aggregate(modules: _*)
+  .aggregate(examples)
   .settings(
     onLoadMessage :=
       """
@@ -151,6 +154,7 @@ val defaultParadoxSettings: Seq[Setting[_]] = Seq(
     "javadoc.akka.http.base_url" -> s">http://doc.akka.io/japi/akka-http/${Dependencies.AkkaHttpVersion}/",
     "scaladoc.scala.base_url" -> s"http://www.scala-lang.org/api/current/",
     "scaladoc.akka.base_url" -> s"http://doc.akka.io/api/akka/${Dependencies.AkkaVersion}",
+    "scaladoc.akka.http.base_url" -> s"https://doc.akka.io/api/akka-http/${Dependencies.AkkaHttpVersion}/",
     "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}",
     "snip.alpakka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath
   ),
@@ -170,11 +174,19 @@ lazy val docs = project
       // point API doc links to locally generated API docs
       "scaladoc.akka.stream.alpakka.base_url" -> sbt.io.Path
         .rebase(
-          (baseDirectory in alpakka).value,
+          (baseDirectory in ThisBuild).value,
           "../../../../../"
         )((sbtunidoc.BaseUnidocPlugin.autoImport.unidoc in alpakka in Compile).value.head)
         .get
-    )
+    ),
+    Dependencies.Docs
+  )
+
+lazy val examples = project
+  .enablePlugins(NoPublish, AutomateHeaderPlugin)
+  .disablePlugins(BintrayPlugin)
+  .dependsOn(
+    modules.map(p => classpathDependency(p)): _*
   )
 
 def alpakkaProject(projectId: String, additionalSettings: sbt.Def.SettingsDefinition*): Project =
