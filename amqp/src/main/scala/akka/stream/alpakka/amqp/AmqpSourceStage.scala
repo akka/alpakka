@@ -4,8 +4,6 @@
 
 package akka.stream.alpakka.amqp
 
-import java.util.concurrent.atomic.AtomicInteger
-
 import akka.Done
 import akka.stream._
 import akka.stream.alpakka.amqp.scaladsl.CommittableIncomingMessage
@@ -57,7 +55,7 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
         stage.newConnection(factory, settings)
 
       private val queue = mutable.Queue[CommittableIncomingMessage]()
-      private val unackedMessages = new AtomicInteger()
+      private var unackedMessages = 0
 
       override def whenConnected(): Unit = {
         import scala.collection.JavaConverters._
@@ -66,14 +64,15 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
         val consumerCallback = getAsyncCallback(handleDelivery)
         val shutdownCallback = getAsyncCallback[Option[ShutdownSignalException]] {
           case Some(ex) => failStage(ex)
-          case None => if (unackedMessages.get() == 0) completeStage()
+          case None => if (unackedMessages == 0) completeStage()
         }
 
         val commitCallback = getAsyncCallback[CommitCallback] {
           case AckArguments(deliveryTag, multiple, promise) => {
             try {
               channel.basicAck(deliveryTag, multiple)
-              if (unackedMessages.decrementAndGet() == 0 && isClosed(out)) completeStage()
+              unackedMessages -= 1
+              if (unackedMessages == 0 && isClosed(out)) completeStage()
               promise.complete(Try(Done))
             } catch {
               case e: Throwable => promise.failure(e)
@@ -82,7 +81,8 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
           case NackArguments(deliveryTag, multiple, requeue, promise) => {
             try {
               channel.basicNack(deliveryTag, multiple, requeue)
-              if (unackedMessages.decrementAndGet() == 0 && isClosed(out)) completeStage()
+              unackedMessages -= 1
+              if (unackedMessages == 0 && isClosed(out)) completeStage()
               promise.complete(Try(Done))
             } catch {
               case e: Throwable => promise.failure(e)
@@ -169,14 +169,14 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
 
           override def onDownstreamFinish(): Unit = {
             setKeepGoing(true)
-            if (unackedMessages.get() == 0) super.onDownstreamFinish()
+            if (unackedMessages == 0) super.onDownstreamFinish()
           }
         }
       )
 
       def pushMessage(message: CommittableIncomingMessage): Unit = {
         push(out, message)
-        unackedMessages.incrementAndGet()
+        unackedMessages += 1
       }
 
       override def onFailure(ex: Throwable): Unit = {}

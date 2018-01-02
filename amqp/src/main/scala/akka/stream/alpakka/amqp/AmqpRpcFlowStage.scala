@@ -4,8 +4,6 @@
 
 package akka.stream.alpakka.amqp
 
-import java.util.concurrent.atomic.AtomicInteger
-
 import akka.Done
 import akka.stream._
 import akka.stream.alpakka.amqp.scaladsl.CommittableIncomingMessage
@@ -50,8 +48,8 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
       private val routingKey = settings.routingKey.getOrElse("")
       private val queue = mutable.Queue[CommittableIncomingMessage]()
       private var queueName: String = _
-      private val unackedMessages = new AtomicInteger()
-      private val outstandingMessages = new AtomicInteger()
+      private var unackedMessages = 0
+      private var outstandingMessages = 0
 
       override def connectionFactoryFrom(settings: AmqpConnectionSettings) = stage.connectionFactoryFrom(settings)
       override def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings): Connection =
@@ -81,9 +79,9 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
           case AckArguments(deliveryTag, multiple, promise) => {
             try {
               channel.basicAck(deliveryTag, multiple)
-              if (unackedMessages
-                    .decrementAndGet() == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty && outstandingMessages
-                    .get() == 0))) completeStage()
+              unackedMessages -= 1
+              if (unackedMessages == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty && outstandingMessages == 0)))
+                completeStage()
               promise.complete(Try(Done))
             } catch {
               case e: Throwable => promise.failure(e)
@@ -92,9 +90,9 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
           case NackArguments(deliveryTag, multiple, requeue, promise) => {
             try {
               channel.basicNack(deliveryTag, multiple, requeue)
-              if (unackedMessages
-                    .decrementAndGet() == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty && outstandingMessages
-                    .get() == 0))) completeStage()
+              unackedMessages -= 1
+              if (unackedMessages == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty && outstandingMessages == 0)))
+                completeStage()
               promise.complete(Try(Done))
             } catch {
               case e: Throwable => promise.failure(e)
@@ -171,15 +169,15 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
 
           override def onDownstreamFinish(): Unit = {
             setKeepGoing(true)
-            if (unackedMessages.get() == 0) super.onDownstreamFinish()
+            if (unackedMessages == 0) super.onDownstreamFinish()
           }
         }
       )
 
       def pushMessage(message: CommittableIncomingMessage): Unit = {
         push(out, message)
-        unackedMessages.incrementAndGet()
-        outstandingMessages.decrementAndGet()
+        unackedMessages += 1
+        outstandingMessages -= 1
       }
 
       setHandler(
@@ -191,12 +189,12 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
           // so that we don't hang.
           override def onUpstreamFinish(): Unit = {
             setKeepGoing(true)
-            if (queue.isEmpty && outstandingMessages.get() == 0 && unackedMessages.get() == 0) super.onUpstreamFinish()
+            if (queue.isEmpty && outstandingMessages == 0 && unackedMessages == 0) super.onUpstreamFinish()
           }
 
           override def onUpstreamFailure(ex: Throwable): Unit = {
             setKeepGoing(true)
-            if (queue.isEmpty && outstandingMessages.get() == 0 && unackedMessages.get() == 0)
+            if (queue.isEmpty && outstandingMessages == 0 && unackedMessages == 0)
               super.onUpstreamFailure(ex)
           }
 
@@ -226,7 +224,7 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
               }
             }
 
-            outstandingMessages.addAndGet(expectedResponses)
+            outstandingMessages += expectedResponses
             pull(in)
           }
         }
