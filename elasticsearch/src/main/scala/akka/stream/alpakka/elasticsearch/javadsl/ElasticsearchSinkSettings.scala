@@ -7,6 +7,9 @@ package akka.stream.alpakka.elasticsearch.javadsl
 import akka.stream.alpakka.elasticsearch._
 import scaladsl.{ElasticsearchSinkSettings => ScalaElasticsearchSinkSettings}
 
+/**
+ * Java API to configure Elasticsearch sinks.
+ */
 final class ElasticsearchSinkSettings(val bufferSize: Int,
                                       val retryInterval: Int,
                                       val maxRetry: Int,

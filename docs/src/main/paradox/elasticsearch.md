@@ -27,8 +27,11 @@ Java
 ## Elasticsearch as Source and Sink
 
 Now we can stream messages from or to Elasticsearch by providing the `RestClient` to the
-@scaladoc[ElasticsearchSource](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSource$) or the
-@scaladoc[ElasticsearchSink](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSink$).
+@scala[@scaladoc[ElasticsearchSource](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSource$)]
+@java[@scaladoc[ElasticsearchSource](akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSource$)]
+or the
+@scala[@scaladoc[ElasticsearchSink](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSink$).]
+@java[@scaladoc[ElasticsearchSink](akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSink$).]
 
 
 Scala
@@ -40,6 +43,8 @@ Java
 ### With typed source
 
 Use `ElasticsearchSource.typed` and `ElasticsearchSink.create` to create source and sink.
+@scala[The data is converted to and from JSON by Spray JSON.]
+@java[The data is converted to and from JSON by Jackson's ObjectMapper.]
 
 Scala
 : @@snip ($alpakka$/elasticsearch/src/test/scala/akka/stream/alpakka/elasticsearch/ElasticsearchSpec.scala) { #run-typed }
@@ -92,7 +97,10 @@ Java
 
 ## Elasticsearch as Flow
 
-You can also build flow stages. The API is similar to creating Sinks.
+You can also build flow stages with
+@scala[@scaladoc[ElasticsearchFlow](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchFlow$).]
+@java[@scaladoc[ElasticsearchFlow](akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchFlow$).]
+The API is similar to creating Sinks.
 
 Scala
 : @@snip ($alpakka$/elasticsearch/src/test/scala/akka/stream/alpakka/elasticsearch/ElasticsearchSpec.scala) { #run-flow }

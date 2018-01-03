@@ -4,6 +4,9 @@
 
 package akka.stream.alpakka.elasticsearch.scaladsl
 
+/**
+ * Scala API to configure Elasticsearch sinks.
+ */
 //#sink-settings
 final case class ElasticsearchSinkSettings(bufferSize: Int = 10,
                                            retryInterval: Int = 5000,

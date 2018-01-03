@@ -7,6 +7,9 @@ package akka.stream.alpakka.elasticsearch.javadsl
 import akka.stream.alpakka.elasticsearch._
 import scaladsl.{ElasticsearchSourceSettings => ScalaElasticsearchSourceSettings}
 
+/**
+ * Java API to configure Elastiscsearch sources.
+ */
 final class ElasticsearchSourceSettings(val bufferSize: Int) {
 
   def this() = this(10)
