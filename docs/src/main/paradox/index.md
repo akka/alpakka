@@ -1,4 +1,4 @@
-# Alpakka 
+# Alpakka
 
 Welcome to the home of the Alpakka initiative, which harbours various Akka Streams connectors, integration patterns,
 and data transformations for integration use cases. Here you can find documentation of the components that are
