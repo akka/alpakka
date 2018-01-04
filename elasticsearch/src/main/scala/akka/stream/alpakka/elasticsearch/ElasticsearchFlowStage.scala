@@ -116,18 +116,9 @@ class ElasticsearchFlowStage[T, C](
         val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
         val messageResults = items.elements.zip(messages).map {
           case (item, message) =>
-            if (!settings.docAsUpsert) {
-              // Standard insert expect "index"
-              item.asJsObject.fields("index").asJsObject.fields.get("error") match {
-                case Some(errorMessage) => (message, false)
-                case None => (message, true)
-              }
-            } else {
-              // Upsert expect "update"
-              item.asJsObject.fields("update").asJsObject.fields.get("error") match {
-                case Some(errorMessage) => (message, false)
-                case None => (message, true)
-              }
+            item.asJsObject.fields(getInsertKeyword).asJsObject.fields.get("error") match {
+              case Some(errorMessage) => (message, false)
+              case None => (message, true)
             }
         }
 
@@ -183,10 +174,8 @@ class ElasticsearchFlowStage[T, C](
       private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T, C]]): Unit = {
         val json = messages
           .map { message =>
-            if (!settings.docAsUpsert) {
-              // Standard insert
               JsObject(
-                "index" -> JsObject(
+                getInsertKeyword -> JsObject(
                   Seq(
                     Option("_index" -> JsString(indexName)),
                     Option("_type" -> JsString(typeName)),
@@ -195,24 +184,7 @@ class ElasticsearchFlowStage[T, C](
                     }
                   ).flatten: _*
                 )
-              ).toString + "\n" + writer.convert(message.source)
-            } else {
-              // Upsert
-              JsObject(
-                "update" -> JsObject(
-                  Seq(
-                    message.id.map { id =>
-                      "_id" -> JsString(id)
-                    },
-                    Option("_type" -> JsString(typeName)),
-                    Option("_index" -> JsString(indexName))
-                  ).flatten: _*
-                )
-              ).toString + "\n" + JsObject(
-                "doc" -> writer.convert(message.source).parseJson,
-                "doc_as_upsert" -> JsTrue
-              ).toString
-            }
+              ).toString + "\n" + messageToJsonString(message)
           }
           .mkString("", "\n", "\n")
 
@@ -229,6 +201,21 @@ class ElasticsearchFlowStage[T, C](
           },
           new BasicHeader("Content-Type", "application/x-ndjson")
         )
+      }
+
+      private def messageToJsonString(message: IncomingMessage[T, C]): String = {
+        if (!settings.docAsUpsert) {
+          writer.convert(message.source)
+        } else {
+          JsObject(
+            "doc" -> writer.convert(message.source).parseJson,
+            "doc_as_upsert" -> JsTrue
+          ).toString
+        }
+      }
+
+      private def getInsertKeyword(): String = {
+        if (!settings.docAsUpsert) "index" else "update"
       }
 
       setHandlers(in, out, this)
