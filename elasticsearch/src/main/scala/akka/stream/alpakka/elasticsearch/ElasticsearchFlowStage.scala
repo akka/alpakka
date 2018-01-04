@@ -174,17 +174,17 @@ class ElasticsearchFlowStage[T, C](
       private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T, C]]): Unit = {
         val json = messages
           .map { message =>
-              JsObject(
-                getInsertKeyword -> JsObject(
-                  Seq(
-                    Option("_index" -> JsString(indexName)),
-                    Option("_type" -> JsString(typeName)),
-                    message.id.map { id =>
-                      "_id" -> JsString(id)
-                    }
-                  ).flatten: _*
-                )
-              ).toString + "\n" + messageToJsonString(message)
+            JsObject(
+              getInsertKeyword -> JsObject(
+                Seq(
+                  Option("_index" -> JsString(indexName)),
+                  Option("_type" -> JsString(typeName)),
+                  message.id.map { id =>
+                    "_id" -> JsString(id)
+                  }
+                ).flatten: _*
+              )
+            ).toString + "\n" + messageToJsonString(message)
           }
           .mkString("", "\n", "\n")
 
