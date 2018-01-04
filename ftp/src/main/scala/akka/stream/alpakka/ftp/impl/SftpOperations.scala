@@ -137,4 +137,10 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
         initKey(_.init(new File(id.privateKey), passphrase))
     }
   }
+
+  def move(fromPath: String, destinationPath: String, handler: Handler): Unit =
+    handler.rename(fromPath, destinationPath)
+
+  def remove(path: String, handler: Handler): Unit =
+    handler.rm(path)
 }

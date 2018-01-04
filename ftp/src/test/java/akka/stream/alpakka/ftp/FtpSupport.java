@@ -12,12 +12,6 @@ interface FtpSupport {
 
     void cleanFiles();
 
-    void generateFiles();
-
-    void generateFiles(int numFiles);
-
-    void generateFiles(int numFiles, int pageSize);
-
     void generateFiles(int numFiles, int pageSize, String basePath);
 
     void putFileOnFtp(String path, String fileName);
@@ -25,6 +19,8 @@ interface FtpSupport {
     void putFileOnFtpWithContents(String path, String fileName, byte[] fileContents);
 
     byte[] getFtpFileContents(String path, String fileName);
+
+    boolean fileExists(String path, String fileName);
 
     String getLoremIpsum();
 }

@@ -34,4 +34,10 @@ trait BaseFtpSpec extends PlainFtpSupportImpl with BaseSpec {
 
   protected def storeToPath(path: String, append: Boolean): Sink[ByteString, Future[IOResult]] =
     Ftp.toPath(path, settings, append)
+
+  protected def remove(): Sink[FtpFile, Future[IOResult]] =
+    Ftp.remove(settings)
+
+  protected def move(destinationPath: FtpFile => String): Sink[FtpFile, Future[IOResult]] =
+    Ftp.move(destinationPath, settings)
 }
