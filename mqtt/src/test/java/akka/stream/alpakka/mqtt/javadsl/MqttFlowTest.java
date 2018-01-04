@@ -36,7 +36,7 @@ public class MqttFlowTest {
   private static Materializer materializer;
 
   private static Pair<ActorSystem, Materializer> setupMaterializer() {
-    final ActorSystem system = ActorSystem.create();
+    final ActorSystem system = ActorSystem.create("MqttFlowTest");
     final Materializer materializer = ActorMaterializer.create(system);
     return Pair.create(system, materializer);
   }
