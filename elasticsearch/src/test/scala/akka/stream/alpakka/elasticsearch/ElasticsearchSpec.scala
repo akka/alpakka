@@ -392,35 +392,26 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   "ElasticsearchFlow" should {
     "store documents using insert new items and partially update existing ones" in {
-      // Copy source/book to sink7/book through typed stream
-      //#run-flow
       val books = List(
         ("00001",
-          JsObject(
-            "title" -> JsString("Book 1"),
-            "rating" -> JsNumber(5)
-          )
+          Book("Book 1")
         ),
         ("00002",
-          JsObject(
-            "title" -> JsString("Book 2"),
-            "rating" -> JsNumber(2)
-          )
+          Book("Book 2")
         ),
         ("00003",
-          JsObject(
-            "title" -> JsString("Book 3"),
-            "rating" -> JsNumber(4)
-          )
+          Book("Book 3")
         )
       )
 
+      // Create new documents in sink7/book using the upsert method
+      //#run-flow
       val f1 = Source(books)
-        .map {book: (String, JsObject) =>
+        .map {book: (String, Book) =>
           IncomingMessage(Some(book._1), book._2)
         }
         .via(
-          ElasticsearchFlow.create[JsObject](
+          ElasticsearchFlow.create[Book](
             "sink7",
             "book",
             ElasticsearchSinkSettings(bufferSize = 5, docAsUpsert = true)
@@ -435,6 +426,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       // Assert no errors
       assert(result1.forall(!_.exists(_.success == false)))
 
+      // Create a second dataset with matching indexes to test partial update
       val updatedBooks = List(
         ("00001",
           JsObject(
@@ -453,6 +445,8 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         )
       )
 
+      // Update sink7/book with the second dataset
+      //#run-flow
       val f2 = Source(updatedBooks)
         .map {book: (String, JsObject) =>
           IncomingMessage(Some(book._1), book._2)
@@ -487,6 +481,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       val result3 = Await.result(f3, Duration.Inf)
 
+      // Docs should contain both columns
       result3.sortBy(_.fields("title").compactPrint) shouldEqual Seq(
         JsObject(
           "title" -> JsString("Book 1"),
