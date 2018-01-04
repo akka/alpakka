@@ -188,6 +188,7 @@ lazy val `doc-examples` = project
     modules.map(p => classpathDependency(p)): _*
   )
   .settings(
+    name := s"akka-stream-alpakka-doc-examples",
     Dependencies.`Doc-examples`
   )
 
