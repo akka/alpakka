@@ -17,14 +17,14 @@ to convert the map into a JSON structure.
 - (7) convert the maps to JSON with Spray JSON from Akka HTTP
 
 Scala
-: @@snip ($alpakka$/examples/src/main/scala/csvsamples/FetchHttpEvery30SecondsAndConvertCsvToJsonToKafka.scala) { #sample }
+: @@snip ($alpakka$/doc-examples/src/main/scala/csvsamples/FetchHttpEvery30SecondsAndConvertCsvToJsonToKafka.scala) { #sample }
 
-@github[Full source](/examples/src/main/scala/csvsamples/FetchHttpEvery30SecondsAndConvertCsvToJsonToKafka.scala) { #sample }
+@github[Full source](/doc-examples/src/main/scala/csvsamples/FetchHttpEvery30SecondsAndConvertCsvToJsonToKafka.scala) { #sample }
 
 ### Helper code
 
 Scala
-: @@snip ($alpakka$/examples/src/main/scala/csvsamples/FetchHttpEvery30SecondsAndConvertCsvToJsonToKafka.scala) { #helper }
+: @@snip ($alpakka$/doc-examples/src/main/scala/csvsamples/FetchHttpEvery30SecondsAndConvertCsvToJsonToKafka.scala) { #helper }
 
 
 ### Running the example code
@@ -36,5 +36,5 @@ This example is contained in a stand-alone runnable main, it can be run
 Scala
 :   ```
     sbt
-    > docs/run
+    > doc-examples/run
     ```

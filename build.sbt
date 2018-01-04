@@ -31,7 +31,7 @@ lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
   .aggregate(modules: _*)
-  .aggregate(examples)
+  .aggregate(`doc-examples`)
   .settings(
     onLoadMessage :=
       """
@@ -178,15 +178,17 @@ lazy val docs = project
           "../../../../../"
         )((sbtunidoc.BaseUnidocPlugin.autoImport.unidoc in alpakka in Compile).value.head)
         .get
-    ),
-    Dependencies.Docs
+    )
   )
 
-lazy val examples = project
+lazy val `doc-examples` = project
   .enablePlugins(NoPublish, AutomateHeaderPlugin)
   .disablePlugins(BintrayPlugin)
   .dependsOn(
     modules.map(p => classpathDependency(p)): _*
+  )
+  .settings(
+    Dependencies.`Doc-examples`
   )
 
 def alpakkaProject(projectId: String, additionalSettings: sbt.Def.SettingsDefinition*): Project =

@@ -53,7 +53,7 @@ object Dependencies {
     libraryDependencies ++= Seq()
   )
 
-  val Docs = Seq(
+  val `Doc-examples` = Seq(
     libraryDependencies ++= Seq(
       // https://mina.apache.org/ftpserver-project/downloads.html
       "org.apache.ftpserver" % "ftpserver-core" % "1.1.1", // ApacheV2

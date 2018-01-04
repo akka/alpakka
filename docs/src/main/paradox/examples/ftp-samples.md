@@ -10,9 +10,9 @@
 - collect all filenames with results into a sequence (6)
 
 Scala
-: @@snip ($alpakka$/examples/src/main/scala/ftpsamples/FtpToFile.scala) { #sample }
+: @@snip ($alpakka$/doc-examples/src/main/scala/ftpsamples/FtpToFile.scala) { #sample }
 
-@github[Full source](/examples/src/main/scala/ftpsamples/FtpToFile.scala) { #sample }
+@github[Full source](/doc-examples/src/main/scala/ftpsamples/FtpToFile.scala) { #sample }
 
 
 ### Running the example code
@@ -24,5 +24,5 @@ This example is contained in a stand-alone runnable main, it can be run
 Scala
 :   ```
     sbt
-    > docs/run
+    > doc-examples/run
     ```

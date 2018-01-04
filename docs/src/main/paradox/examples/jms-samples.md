@@ -7,9 +7,9 @@
 - and appends the data to the file `target/out` (2).
 
 Scala
-: @@snip ($alpakka$/examples/src/main/scala/jms/JmsToFile.scala) { #sample }
+: @@snip ($alpakka$/doc-examples/src/main/scala/jms/JmsToFile.scala) { #sample }
 
-@github[Full source](/examples/src/main/scala/jms/JmsToFile.scala) { #sample }
+@github[Full source](/doc-examples/src/main/scala/jms/JmsToFile.scala) { #sample }
 
 
 ### Example: Read text messages from JMS queue and create one file per message
@@ -21,9 +21,9 @@ Scala
 value to create unique file names (4). 
 
 Scala
-: @@snip ($alpakka$/examples/src/main/scala/jms/JmsToOneFilePerMessage.scala) { #sample }
+: @@snip ($alpakka$/doc-examples/src/main/scala/jms/JmsToOneFilePerMessage.scala) { #sample }
 
-@github[Full source](/examples/src/main/scala/jms/JmsToOneFilePerMessage.scala) { #sample }
+@github[Full source](/doc-examples/src/main/scala/jms/JmsToOneFilePerMessage.scala) { #sample }
 
 
 
@@ -36,9 +36,9 @@ Scala
 - prints the `HttpResponse` to standard out (5).
 
 Scala
-: @@snip ($alpakka$/examples/src/main/scala/jms/JmsToHttpGet.scala) { #sample }
+: @@snip ($alpakka$/doc-examples/src/main/scala/jms/JmsToHttpGet.scala) { #sample }
 
-@github[Full source](/examples/src/main/scala/jms/JmsToHttpGet.scala) { #sample }
+@github[Full source](/doc-examples/src/main/scala/jms/JmsToHttpGet.scala) { #sample }
 
 
 
@@ -55,9 +55,9 @@ Scala
 
 
 Scala
-: @@snip ($alpakka$/examples/src/main/scala/jms/JmsToWebSocket.scala) { #sample }
+: @@snip ($alpakka$/doc-examples/src/main/scala/jms/JmsToWebSocket.scala) { #sample }
 
-@github[Full source](/examples/src/main/scala/jms/JmsToWebSocket.scala) { #sample }
+@github[Full source](/doc-examples/src/main/scala/jms/JmsToWebSocket.scala) { #sample }
 
 
 
@@ -70,5 +70,5 @@ This example is contained in a stand-alone runnable main, it can be run
 Scala
 :   ```
     sbt
-    > docs/run
+    > doc-examples/run
     ```
