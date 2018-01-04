@@ -391,7 +391,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   }
 
   "ElasticsearchFlow" should {
-    "store documents using insert new items and partially update existing ones" in {
+    "store new documents using using upsert method and partially update existing ones" in {
       val books = List(
         ("00001",
           Book("Book 1")
