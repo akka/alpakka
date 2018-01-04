@@ -415,9 +415,35 @@ public class ElasticsearchTest {
 
   @Test
   public void update() throws Exception {
-    // Update sink7/book through JsObject stream
+    // Copy source/book to sink7/book through JsObject stream
     //#run-flow
     CompletionStage<List<List<IncomingMessageResult<Book, NotUsed>>>> f1 = ElasticsearchSource.typed(
+            "source",
+            "book",
+            "{\"match_all\": {}}",
+            new ElasticsearchSourceSettings().withBufferSize(5),
+            client,
+            Book.class)
+            .map(m -> IncomingMessage.create(m.id(), m.source()))
+            .via(ElasticsearchFlow.create(
+                    "sink7",
+                    "book",
+                    new ElasticsearchSinkSettings().withBufferSize(5),
+                    client,
+                    new ObjectMapper()))
+            .runWith(Sink.seq(), materializer);
+    //#run-flow
+
+    List<List<IncomingMessageResult<Book, NotUsed>>> result1 = f1.toCompletableFuture().get();
+    flush("sink7");
+
+    for (List<IncomingMessageResult<Book, NotUsed>> aResult1 : result1) {
+      assertEquals(true, aResult1.get(0).success());
+    }
+
+    // Update sink7/book through JsObject stream
+    //#run-flow
+    CompletionStage<List<List<IncomingMessageResult<Book, NotUsed>>>> f2 = ElasticsearchSource.typed(
             "sink7",
             "book",
             "{\"match_all\": {}}",
@@ -434,15 +460,15 @@ public class ElasticsearchTest {
             .runWith(Sink.seq(), materializer);
     //#run-flow
 
-    List<List<IncomingMessageResult<Book, NotUsed>>> result1 = f1.toCompletableFuture().get();
+    List<List<IncomingMessageResult<Book, NotUsed>>> result2 = f2.toCompletableFuture().get();
     flush("sink7");
 
-    for (List<IncomingMessageResult<Book, NotUsed>> aResult1 : result1) {
-      assertEquals(true, aResult1.get(0).success());
+    for (List<IncomingMessageResult<Book, NotUsed>> aResult2 : result2) {
+      assertEquals(true, aResult2.get(0).success());
     }
 
     // Assert docs in sink7/book
-    CompletionStage<List<String>> f2 = ElasticsearchSource.typed(
+    CompletionStage<List<String>> f3 = ElasticsearchSource.typed(
             "sink7",
             "book",
             "{\"match_all\": {}}",
@@ -452,7 +478,7 @@ public class ElasticsearchTest {
             .map(m -> m.source().title)
             .runWith(Sink.seq(), materializer);
 
-    List<String> result2 = new ArrayList<>(f2.toCompletableFuture().get());
+    List<String> result3 = new ArrayList<>(f3.toCompletableFuture().get());
 
     List<String> expect = Arrays.asList(
             "Akka Concurrency (updated)",
@@ -464,7 +490,7 @@ public class ElasticsearchTest {
             "Scala for Spark in Production (updated)"
     );
 
-    Collections.sort(result2);
-    assertEquals(expect, result2);
+    Collections.sort(result3);
+    assertEquals(expect, result3);
   }
 }
