@@ -14,10 +14,12 @@ import scala.util.control.NonFatal
  */
 private[amqp] trait AmqpConnector {
 
-  def connectionFactoryFrom(settings: AmqpConnectionSettings): ConnectionFactory = {
-    val factory = new ConnectionFactory
+  def connectionFactoryFrom(settings: AmqpConnectionSettings): ConnectionFactory =
     settings match {
-      case AmqpConnectionUri(uri) => factory.setUri(uri)
+      case AmqpConnectionUri(uri) =>
+        val factory = new ConnectionFactory
+        factory.setUri(uri)
+        factory
       case AmqpConnectionDetails(_,
                                  maybeCredentials,
                                  maybeVirtualHost,
@@ -30,6 +32,7 @@ private[amqp] trait AmqpConnector {
                                  automaticRecoveryEnabled,
                                  topologyRecoveryEnabled,
                                  exceptionHandler) =>
+        val factory = new ConnectionFactory
         maybeCredentials.foreach { credentials =>
           factory.setUsername(credentials.username)
           factory.setPassword(credentials.password)
@@ -44,10 +47,12 @@ private[amqp] trait AmqpConnector {
         automaticRecoveryEnabled.foreach(factory.setAutomaticRecoveryEnabled)
         topologyRecoveryEnabled.foreach(factory.setTopologyRecoveryEnabled)
         exceptionHandler.foreach(factory.setExceptionHandler)
-      case DefaultAmqpConnection => // leave it be as is
+        factory
+      case DefaultAmqpConnection =>
+        new ConnectionFactory
+      case AmqpConnectionFactory(factory) =>
+        factory
     }
-    factory
-  }
 
   def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings): Connection = settings match {
     case a: AmqpConnectionDetails => {
