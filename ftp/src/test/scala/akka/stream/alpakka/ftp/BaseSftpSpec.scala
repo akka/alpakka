@@ -10,7 +10,6 @@ import akka.stream.alpakka.ftp.scaladsl.Sftp
 import akka.stream.IOResult
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
-
 import scala.concurrent.Future
 import java.net.InetAddress
 
@@ -38,4 +37,10 @@ trait BaseSftpSpec extends SftpSupportImpl with BaseSpec {
 
   protected def storeToPath(path: String, append: Boolean): Sink[ByteString, Future[IOResult]] =
     Sftp.toPath(path, settings, append)
+
+  protected def remove(): Sink[FtpFile, Future[IOResult]] =
+    Sftp.remove(settings)
+
+  protected def move(destinationPath: FtpFile => String): Sink[FtpFile, Future[IOResult]] =
+    Sftp.move(destinationPath, settings)
 }

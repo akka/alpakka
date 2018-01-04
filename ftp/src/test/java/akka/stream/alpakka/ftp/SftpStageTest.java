@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest {
 
@@ -32,6 +33,16 @@ public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest
     CommonFtpStageTest.super.toPath();
   }
 
+  @Test
+  public void remove() throws Exception {
+    CommonFtpStageTest.super.remove();
+  }
+
+  @Test
+  public void move() throws Exception {
+    CommonFtpStageTest.super.move();
+  }
+
   public Source<FtpFile, NotUsed> getBrowserSource(String basePath) throws Exception {
     return Sftp.ls(basePath, settings());
   }
@@ -42,6 +53,14 @@ public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest
 
   public Sink<ByteString, CompletionStage<IOResult>> getIOSink(String path) throws Exception {
     return Sftp.toPath(path, settings());
+  }
+
+  public Sink<FtpFile, CompletionStage<IOResult>> getRemoveSink() throws Exception {
+    return Sftp.remove(settings());
+  }
+
+  public Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(Function<FtpFile, String> destinationPath) throws Exception {
+    return Sftp.move(destinationPath, settings());
   }
 
   private SftpSettings settings() throws Exception {

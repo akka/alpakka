@@ -13,6 +13,7 @@ import akka.util.ByteString;
 import org.junit.Test;
 import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 public class FtpsStageTest extends FtpsSupportImpl implements CommonFtpStageTest {
 
@@ -36,6 +37,16 @@ public class FtpsStageTest extends FtpsSupportImpl implements CommonFtpStageTest
     CommonFtpStageTest.super.toPath();
   }
 
+  @Test
+  public void remove() throws Exception {
+    CommonFtpStageTest.super.remove();
+  }
+
+  @Test
+  public void move() throws Exception {
+    CommonFtpStageTest.super.move();
+  }
+
   public Source<FtpFile, NotUsed> getBrowserSource(String basePath) throws Exception {
     return Ftps.ls(basePath, settings());
   }
@@ -46,6 +57,14 @@ public class FtpsStageTest extends FtpsSupportImpl implements CommonFtpStageTest
 
   public Sink<ByteString, CompletionStage<IOResult>> getIOSink(String path) throws Exception {
     return Ftps.toPath(path, settings());
+  }
+
+  public Sink<FtpFile, CompletionStage<IOResult>> getRemoveSink() throws Exception {
+    return Ftps.remove(settings());
+  }
+
+  public Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(Function<FtpFile, String> destinationPath) throws Exception {
+    return Ftps.move(destinationPath, settings());
   }
 
   private FtpsSettings settings() throws Exception {
