@@ -357,4 +357,114 @@ public class ElasticsearchTest {
     }
 
   }
+
+  @Test
+  public void flowUpsert() throws Exception {
+    // Copy source/book to sink7/book through JsObject stream
+    //#run-flow
+    CompletionStage<List<List<IncomingMessageResult<Book, NotUsed>>>> f1 = ElasticsearchSource.typed(
+            "source",
+            "book",
+            "{\"match_all\": {}}",
+            new ElasticsearchSourceSettings().withBufferSize(5),
+            client,
+            Book.class)
+            .map(m -> IncomingMessage.create(m.id(), m.source()))
+            .via(ElasticsearchFlow.create(
+                    "sink7",
+                    "book",
+                    new ElasticsearchSinkSettings().withBufferSize(5).withDocAsUpsert(true),
+                    client,
+                    new ObjectMapper()))
+            .runWith(Sink.seq(), materializer);
+    //#run-flow
+
+    List<List<IncomingMessageResult<Book, NotUsed>>> result1 = f1.toCompletableFuture().get();
+    flush("sink7");
+
+    for (List<IncomingMessageResult<Book, NotUsed>> aResult1 : result1) {
+      assertEquals(true, aResult1.get(0).success());
+    }
+
+    // Assert docs in sink7/book
+    CompletionStage<List<String>> f2 = ElasticsearchSource.typed(
+            "sink7",
+            "book",
+            "{\"match_all\": {}}",
+            new ElasticsearchSourceSettings().withBufferSize(5),
+            client,
+            Book.class)
+            .map(m -> m.source().title)
+            .runWith(Sink.seq(), materializer);
+
+    List<String> result2 = new ArrayList<>(f2.toCompletableFuture().get());
+
+    List<String> expect = Arrays.asList(
+            "Akka Concurrency",
+            "Akka in Action",
+            "Effective Akka",
+            "Learning Scala",
+            "Programming in Scala",
+            "Scala Puzzlers",
+            "Scala for Spark in Production"
+    );
+
+    Collections.sort(result2);
+    assertEquals(expect, result2);
+  }
+
+  @Test
+  public void update() throws Exception {
+    // Update sink7/book through JsObject stream
+    //#run-flow
+    CompletionStage<List<List<IncomingMessageResult<Book, NotUsed>>>> f1 = ElasticsearchSource.typed(
+            "sink7",
+            "book",
+            "{\"match_all\": {}}",
+            new ElasticsearchSourceSettings().withBufferSize(5),
+            client,
+            Book.class)
+            .map(m -> IncomingMessage.create(m.id(), new Book(m.source().title + " (updated)")))
+            .via(ElasticsearchFlow.create(
+                    "sink7",
+                    "book",
+                    new ElasticsearchSinkSettings().withBufferSize(5).withDocAsUpsert(true),
+                    client,
+                    new ObjectMapper()))
+            .runWith(Sink.seq(), materializer);
+    //#run-flow
+
+    List<List<IncomingMessageResult<Book, NotUsed>>> result1 = f1.toCompletableFuture().get();
+    flush("sink7");
+
+    for (List<IncomingMessageResult<Book, NotUsed>> aResult1 : result1) {
+      assertEquals(true, aResult1.get(0).success());
+    }
+
+    // Assert docs in sink7/book
+    CompletionStage<List<String>> f2 = ElasticsearchSource.typed(
+            "sink7",
+            "book",
+            "{\"match_all\": {}}",
+            new ElasticsearchSourceSettings().withBufferSize(5),
+            client,
+            Book.class)
+            .map(m -> m.source().title)
+            .runWith(Sink.seq(), materializer);
+
+    List<String> result2 = new ArrayList<>(f2.toCompletableFuture().get());
+
+    List<String> expect = Arrays.asList(
+            "Akka Concurrency (updated)",
+            "Akka in Action (updated)",
+            "Effective Akka (updated)",
+            "Learning Scala (updated)",
+            "Programming in Scala (updated)",
+            "Scala Puzzlers (updated)",
+            "Scala for Spark in Production (updated)"
+    );
+
+    Collections.sort(result2);
+    assertEquals(expect, result2);
+  }
 }

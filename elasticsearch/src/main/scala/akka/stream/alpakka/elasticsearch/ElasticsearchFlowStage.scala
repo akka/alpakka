@@ -116,9 +116,18 @@ class ElasticsearchFlowStage[T, C](
         val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
         val messageResults = items.elements.zip(messages).map {
           case (item, message) =>
-            item.asJsObject.fields("index").asJsObject.fields.get("error") match {
-              case Some(errorMessage) => (message, false)
-              case None => (message, true)
+            if (!settings.docAsUpsert) {
+              // Standard insert expect "index"
+              item.asJsObject.fields("index").asJsObject.fields.get("error") match {
+                case Some(errorMessage) => (message, false)
+                case None => (message, true)
+              }
+            } else {
+              // Upsert expect "update"
+              item.asJsObject.fields("update").asJsObject.fields.get("error") match {
+                case Some(errorMessage) => (message, false)
+                case None => (message, true)
+              }
             }
         }
 
@@ -174,17 +183,36 @@ class ElasticsearchFlowStage[T, C](
       private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T, C]]): Unit = {
         val json = messages
           .map { message =>
-            JsObject(
-              "index" -> JsObject(
-                Seq(
-                  Option("_index" -> JsString(indexName)),
-                  Option("_type" -> JsString(typeName)),
-                  message.id.map { id =>
-                    "_id" -> JsString(id)
-                  }
-                ).flatten: _*
-              )
-            ).toString + "\n" + writer.convert(message.source)
+            if (!settings.docAsUpsert) {
+              // Standard insert
+              JsObject(
+                "index" -> JsObject(
+                  Seq(
+                    Option("_index" -> JsString(indexName)),
+                    Option("_type" -> JsString(typeName)),
+                    message.id.map { id =>
+                      "_id" -> JsString(id)
+                    }
+                  ).flatten: _*
+                )
+              ).toString + "\n" + writer.convert(message.source)
+            } else {
+              // Upsert
+              JsObject(
+                "update" -> JsObject(
+                  Seq(
+                    message.id.map { id =>
+                      "_id" -> JsString(id)
+                    },
+                    Option("_type" -> JsString(typeName)),
+                    Option("_index" -> JsString(indexName))
+                  ).flatten: _*
+                )
+              ).toString + "\n" + JsObject(
+                "doc" -> writer.convert(message.source).parseJson,
+                "doc_as_upsert" -> JsTrue
+              ).toString
+            }
           }
           .mkString("", "\n", "\n")
 

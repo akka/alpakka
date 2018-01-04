@@ -390,4 +390,118 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
+  "ElasticsearchFlow" should {
+    "store documents using upsert method and pass failed documents to downstream" in {
+      // Copy source/book to sink7/book through typed stream
+      //#run-flow
+      val f1 = ElasticsearchSource
+        .typed[Book](
+        "source",
+        "book",
+        """{"match_all": {}}""",
+        ElasticsearchSourceSettings(5)
+      )
+        .map { message: OutgoingMessage[Book] =>
+          IncomingMessage(Some(message.id), message.source)
+        }
+        .via(
+          ElasticsearchFlow.create[Book](
+            "sink7",
+            "book",
+            ElasticsearchSinkSettings(bufferSize = 5, docAsUpsert = true)
+          )
+        )
+        .runWith(Sink.seq)
+      //#run-flow
+
+      val result1 = Await.result(f1, Duration.Inf)
+      flush("sink7")
+
+      // Assert no errors
+      assert(result1.forall(!_.exists(_.success == false)))
+
+      // Assert docs in sink7/book
+      val f2 = ElasticsearchSource
+        .typed[Book](
+        "sink7",
+        "book",
+        """{"match_all": {}}""",
+        ElasticsearchSourceSettings()
+      )
+        .map { message =>
+          message.source.title
+        }
+        .runWith(Sink.seq)
+
+      val result2 = Await.result(f2, Duration.Inf)
+
+      result2.sorted shouldEqual Seq(
+        "Akka Concurrency",
+        "Akka in Action",
+        "Effective Akka",
+        "Learning Scala",
+        "Programming in Scala",
+        "Scala Puzzlers",
+        "Scala for Spark in Production"
+      )
+    }
+  }
+
+  "ElasticsearchFlow" should {
+    "update existing documents and pass failed documents to downstream" in {
+      // Update sink7/book through typed stream
+      //#run-flow
+      val f1 = ElasticsearchSource
+        .typed[Book](
+        "sink7",
+        "book",
+        """{"match_all": {}}""",
+        ElasticsearchSourceSettings(5)
+      )
+        .map { message: OutgoingMessage[Book] =>
+          IncomingMessage(Some(message.id), new Book(title = message.source.title + " (updated)" ))
+        }
+        .via(
+          ElasticsearchFlow.create[Book](
+            "sink7",
+            "book",
+            ElasticsearchSinkSettings(bufferSize = 5, docAsUpsert = true)
+          )
+        )
+        .runWith(Sink.seq)
+      //#run-flow
+
+      val result1 = Await.result(f1, Duration.Inf)
+      flush("sink7")
+
+      // Assert no errors
+      assert(result1.forall(!_.exists(_.success == false)))
+
+      // Assert docs in sink7/book
+      val f2 = ElasticsearchSource
+        .typed[Book](
+        "sink7",
+        "book",
+        """{"match_all": {}}""",
+        ElasticsearchSourceSettings()
+      )
+        .map { message =>
+          message.source.title
+        }
+        .runWith(Sink.seq)
+
+      val result2 = Await.result(f2, Duration.Inf)
+
+      result2.sorted shouldEqual Seq(
+        "Akka Concurrency (updated)",
+        "Akka in Action (updated)",
+        "Effective Akka (updated)",
+        "Learning Scala (updated)",
+        "Programming in Scala (updated)",
+        "Scala Puzzlers (updated)",
+        "Scala for Spark in Production (updated)"
+      )
+    }
+  }
+
 }

@@ -77,6 +77,7 @@ Scala (sink)
 | retryInterval       | 5000    | When a request is failed, `ElasticsearchSink` retries that request after this interval (milliseconds). |
 | maxRetry            | 100     | `ElasticsearchSink` give up and fails the stage if it gets this number of consective failures.         | 
 | retryPartialFailure | true    | A bulk request might fails partially for some reason. If this parameter is true, then `ElasticsearchSink` retries to request these failed messages. Otherwise, failed messages are discarded (or pushed to downstream if you use `ElasticsearchFlow` instead of the sink). |
+| docAsUpsert         | false   | If this parameter is true, `ElasticsearchSink` uses the upsert method to index documents. By default, documents are added using the standard index method (which create or replace). |
 
 ### Using Elasticsearch as a Flow
 
