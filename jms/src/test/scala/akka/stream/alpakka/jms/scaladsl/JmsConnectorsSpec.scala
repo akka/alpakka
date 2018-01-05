@@ -8,10 +8,10 @@ import java.nio.charset.Charset
 import java.util.concurrent.TimeUnit
 import javax.jms.{DeliveryMode, JMSException, Message, TextMessage}
 
-import akka.NotUsed
-import akka.stream.ThrottleMode
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{AbruptStageTerminationException, ThrottleMode}
+import akka.{Done, NotUsed}
 import org.apache.activemq.ActiveMQConnectionFactory
 import org.apache.activemq.command.ActiveMQQueue
 
@@ -33,7 +33,7 @@ class JmsConnectorsSpec extends JmsSpec {
       //#connection-factory
 
       //#create-text-sink
-      val jmsSink: Sink[String, NotUsed] = JmsSink.textSink(
+      val jmsSink: Sink[String, Future[Done]] = JmsSink.textSink(
         JmsSinkSettings(connectionFactory).withQueue("test")
       )
       //#create-text-sink
@@ -67,7 +67,7 @@ class JmsConnectorsSpec extends JmsSpec {
       //#connection-factory
 
       //#create-object-sink
-      val jmsSink: Sink[Serializable, NotUsed] = JmsSink.objectSink(
+      val jmsSink: Sink[Serializable, Future[Done]] = JmsSink.objectSink(
         JmsSinkSettings(connectionFactory).withQueue("test")
       )
       //#create-object-sink
@@ -98,7 +98,7 @@ class JmsConnectorsSpec extends JmsSpec {
       //#connection-factory
 
       //#create-bytearray-sink
-      val jmsSink: Sink[Array[Byte], NotUsed] = JmsSink.bytesSink(
+      val jmsSink: Sink[Array[Byte], Future[Done]] = JmsSink.bytesSink(
         JmsSinkSettings(connectionFactory).withQueue("test")
       )
       //#create-bytearray-sink
@@ -128,7 +128,7 @@ class JmsConnectorsSpec extends JmsSpec {
       //#connection-factory
 
       //#create-map-sink
-      val jmsSink: Sink[Map[String, Any], NotUsed] = JmsSink.mapSink(
+      val jmsSink: Sink[Map[String, Any], Future[Done]] = JmsSink.mapSink(
         JmsSinkSettings(connectionFactory).withQueue("test")
       )
       //#create-map-sink
@@ -180,7 +180,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val connectionFactory = new ActiveMQConnectionFactory(url)
 
       //#create-jms-sink
-      val jmsSink: Sink[JmsTextMessage, NotUsed] = JmsSink(
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
         JmsSinkSettings(connectionFactory).withQueue("numbers")
       )
       //#create-jms-sink
@@ -220,7 +220,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val connectionFactory = new ActiveMQConnectionFactory(url)
 
       //#create-jms-sink
-      val jmsSink: Sink[JmsTextMessage, NotUsed] = JmsSink(
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
         JmsSinkSettings(connectionFactory).withQueue("numbers")
       )
       //#create-jms-sink
@@ -266,7 +266,7 @@ class JmsConnectorsSpec extends JmsSpec {
         val url: String = ctx.url
         val connectionFactory = new ActiveMQConnectionFactory(url)
 
-        val jmsSink: Sink[JmsTextMessage, NotUsed] = JmsSink(
+        val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
           JmsSinkSettings(connectionFactory).withQueue("numbers")
         )
 
@@ -327,11 +327,11 @@ class JmsConnectorsSpec extends JmsSpec {
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       //#create-topic-sink
-      val jmsTopicSink: Sink[String, NotUsed] = JmsSink.textSink(
+      val jmsTopicSink: Sink[String, Future[Done]] = JmsSink.textSink(
         JmsSinkSettings(connectionFactory).withTopic("topic")
       )
       //#create-topic-sink
-      val jmsTopicSink2: Sink[String, NotUsed] = JmsSink.textSink(
+      val jmsTopicSink2: Sink[String, Future[Done]] = JmsSink.textSink(
         JmsSinkSettings(connectionFactory).withTopic("topic")
       )
 
@@ -370,7 +370,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val url: String = ctx.url
       val connectionFactory = new ActiveMQConnectionFactory(url)
 
-      val jmsSink: Sink[JmsTextMessage, NotUsed] = JmsSink(
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
         JmsSinkSettings(connectionFactory).withQueue("numbers")
       )
 
@@ -413,7 +413,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val url: String = ctx.url
       val connectionFactory = new ActiveMQConnectionFactory(url)
 
-      val jmsSink: Sink[JmsTextMessage, NotUsed] = JmsSink(
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
         JmsSinkSettings(connectionFactory).withQueue("numbers")
       )
 
@@ -445,6 +445,61 @@ class JmsConnectorsSpec extends JmsSpec {
         .takeWithin(5.seconds)
         .runWith(Sink.seq)
         .futureValue should not be empty
+    }
+
+    "sink successful completion" in withServer() { ctx =>
+      val url: String = ctx.url
+      val connectionFactory = new ActiveMQConnectionFactory(url)
+
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
+        JmsSinkSettings(connectionFactory).withQueue("numbers")
+      )
+
+      val msgsIn = (1 to 10).toList.map { n =>
+        JmsTextMessage(n.toString)
+      }
+
+      val completionFuture: Future[Done] = Source(msgsIn).runWith(jmsSink)
+      completionFuture.futureValue shouldBe Done
+    }
+
+    "sink exceptional completion" in withServer() { ctx =>
+      val url: String = ctx.url
+      val connectionFactory = new ActiveMQConnectionFactory(url)
+
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
+        JmsSinkSettings(connectionFactory).withQueue("numbers")
+      )
+
+      val completionFuture: Future[Done] = Source
+        .failed[JmsTextMessage](new RuntimeException("Simulated error"))
+        .runWith(jmsSink)
+      completionFuture.failed.futureValue shouldBe an[RuntimeException]
+    }
+
+    "sink disconnect exceptional completion" in withServer() { ctx =>
+      import system.dispatcher
+
+      val url: String = ctx.url
+      val connectionFactory = new ActiveMQConnectionFactory(url)
+
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
+        JmsSinkSettings(connectionFactory).withQueue("numbers")
+      )
+
+      val completionFuture: Future[Done] = Source(0 to 10)
+        .mapAsync(1)(
+          n =>
+            Future {
+              Thread.sleep(500)
+              JmsTextMessage(n.toString)
+          }
+        )
+        .runWith(jmsSink)
+
+      ctx.broker.stop()
+
+      completionFuture.failed.futureValue shouldBe an[AbruptStageTerminationException]
     }
   }
 }
