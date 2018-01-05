@@ -8,5 +8,6 @@ package akka.stream.alpakka.elasticsearch.scaladsl
 final case class ElasticsearchSinkSettings(bufferSize: Int = 10,
                                            retryInterval: Int = 5000,
                                            maxRetry: Int = 100,
-                                           retryPartialFailure: Boolean = true)
+                                           retryPartialFailure: Boolean = true,
+                                           docAsUpsert: Boolean = false)
 //#sink-settings
