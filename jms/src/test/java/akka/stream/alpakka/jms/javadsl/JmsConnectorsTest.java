@@ -4,8 +4,10 @@
 
 package akka.stream.alpakka.jms.javadsl;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.stream.AbruptStageTerminationException;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 
@@ -25,7 +27,9 @@ import javax.jms.DeliveryMode;
 import javax.jms.Message;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -33,6 +37,7 @@ import java.util.stream.Stream;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 
 final class DummyJavaTests implements java.io.Serializable {
@@ -93,7 +98,7 @@ public class JmsConnectorsTest {
             //#connection-factory
 
             //#create-text-sink
-            Sink<String, NotUsed> jmsSink = JmsSink.textSink(
+            Sink<String, CompletionStage<Done>> jmsSink = JmsSink.textSink(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -138,7 +143,7 @@ public class JmsConnectorsTest {
             //#connection-factory
 
             //#create-object-sink
-            Sink<java.io.Serializable, NotUsed> jmsSink = JmsSink.objectSink(
+            Sink<java.io.Serializable, CompletionStage<Done>> jmsSink = JmsSink.objectSink(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -179,7 +184,7 @@ public class JmsConnectorsTest {
             //#connection-factory
 
             //#create-bytearray-sink
-            Sink<byte[], NotUsed> jmsSink = JmsSink.bytesSink(
+            Sink<byte[], CompletionStage<Done>> jmsSink = JmsSink.bytesSink(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -220,7 +225,7 @@ public class JmsConnectorsTest {
             //#connection-factory
 
             //#create-map-sink
-            Sink<Map<String, Object>, NotUsed> jmsSink = JmsSink.mapSink(
+            Sink<Map<String, Object>, CompletionStage<Done>> jmsSink = JmsSink.mapSink(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -279,7 +284,7 @@ public class JmsConnectorsTest {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             //#create-jms-sink
-            Sink<JmsTextMessage, NotUsed> jmsSink = JmsSink.create(
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -323,7 +328,7 @@ public class JmsConnectorsTest {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             //#create-jms-sink
-            Sink<JmsTextMessage, NotUsed> jmsSink = JmsSink.create(
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -384,7 +389,7 @@ public class JmsConnectorsTest {
         withServer(ctx -> {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
-            Sink<JmsTextMessage, NotUsed> jmsSink = JmsSink.create(
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -435,13 +440,13 @@ public class JmsConnectorsTest {
             List<String> inNumbers = IntStream.range(0, 10).boxed().map(String::valueOf).collect(Collectors.toList());
 
             //#create-topic-sink
-            Sink<String, NotUsed> jmsTopicSink = JmsSink.textSink(
+            Sink<String, CompletionStage<Done>> jmsTopicSink = JmsSink.textSink(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withTopic("topic")
             );
             //#create-topic-sink
-            Sink<String, NotUsed> jmsTopicSink2 = JmsSink.textSink(
+            Sink<String, CompletionStage<Done>> jmsTopicSink2 = JmsSink.textSink(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withTopic("topic")
@@ -491,7 +496,7 @@ public class JmsConnectorsTest {
         withServer(ctx -> {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
-            Sink<JmsTextMessage, NotUsed> jmsSink = JmsSink.create(
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -528,6 +533,87 @@ public class JmsConnectorsTest {
             for(String outMsg: outMessages) {
                 assertEquals(outMsg, msgsIn.get(msgIdx).body());
                 msgIdx++;
+            }
+        });
+    }
+
+    @Test
+    public void sinkNormalCompletion() throws Exception {
+        withServer(ctx -> {
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
+                    JmsSinkSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+
+            List<JmsTextMessage> msgsIn = createTestMessageList();
+
+            //#run-jms-sink
+            CompletionStage<Done> completionFuture = Source.from(msgsIn).runWith(jmsSink, materializer);
+            Done completed = completionFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
+            assertEquals(completed, Done.getInstance());
+        });
+    }
+
+    @Test
+    public void sinkExceptionalCompletion() throws Exception {
+        withServer(ctx -> {
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
+                    JmsSinkSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+
+            CompletionStage<Done> completionFuture = Source.<JmsTextMessage>failed(new RuntimeException("Simulated error")).runWith(jmsSink, materializer);
+
+            try {
+                completionFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
+                fail("Not completed exceptionally");
+            }
+            catch(ExecutionException e) {
+                Throwable cause = e.getCause();
+                assertTrue(cause instanceof RuntimeException);
+            }
+        });
+    }
+
+    @Test
+    public void sinkExceptionalCompletionOnDisconnect() throws Exception {
+        withServer(ctx -> {
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
+                    JmsSinkSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+
+            List<JmsTextMessage> msgsIn = createTestMessageList();
+
+            //#run-jms-sink
+            CompletionStage<Done> completionFuture = Source.from(msgsIn)
+                    .mapAsync(1, m -> CompletableFuture.supplyAsync(() -> {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                return m;
+            })).runWith(jmsSink, materializer);
+
+            ctx.broker.stop();
+
+            try {
+                completionFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
+                fail("Not completed exceptionally");
+            }
+            catch(ExecutionException e) {
+                Throwable cause = e.getCause();
+                assertTrue(cause instanceof AbruptStageTerminationException);
             }
         });
     }
