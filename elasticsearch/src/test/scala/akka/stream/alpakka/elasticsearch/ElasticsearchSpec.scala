@@ -393,21 +393,15 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   "ElasticsearchFlow" should {
     "store new documents using upsert method and partially update existing ones" in {
       val books = List(
-        ("00001",
-          Book("Book 1")
-        ),
-        ("00002",
-          Book("Book 2")
-        ),
-        ("00003",
-          Book("Book 3")
-        )
+        ("00001", Book("Book 1")),
+        ("00002", Book("Book 2")),
+        ("00003", Book("Book 3"))
       )
 
       // Create new documents in sink7/book using the upsert method
       //#run-flow
       val f1 = Source(books)
-        .map {book: (String, Book) =>
+        .map { book: (String, Book) =>
           IncomingMessage(Some(book._1), book._2)
         }
         .via(
@@ -429,26 +423,23 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       // Create a second dataset with matching indexes to test partial update
       val updatedBooks = List(
         ("00001",
-          JsObject(
-            "rating" -> JsNumber(4)
-          )
-        ),
+         JsObject(
+           "rating" -> JsNumber(4)
+         )),
         ("00002",
-          JsObject(
-            "rating" -> JsNumber(3)
-          )
-        ),
+         JsObject(
+           "rating" -> JsNumber(3)
+         )),
         ("00003",
-          JsObject(
-            "rating" -> JsNumber(3)
-          )
-        )
+         JsObject(
+           "rating" -> JsNumber(3)
+         ))
       )
 
       // Update sink7/book with the second dataset
       //#run-flow
       val f2 = Source(updatedBooks)
-        .map {book: (String, JsObject) =>
+        .map { book: (String, JsObject) =>
           IncomingMessage(Some(book._1), book._2)
         }
         .via(
@@ -473,8 +464,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         "book",
         """{"match_all": {}}""",
         ElasticsearchSourceSettings()
-      )
-        .map { message =>
+      ).map { message =>
           message.source
         }
         .runWith(Sink.seq)

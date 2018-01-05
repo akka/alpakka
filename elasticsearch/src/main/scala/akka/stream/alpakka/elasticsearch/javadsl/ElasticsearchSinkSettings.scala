@@ -16,19 +16,39 @@ final class ElasticsearchSinkSettings(val bufferSize: Int,
   def this() = this(10, 5000, 100, true, false)
 
   def withBufferSize(bufferSize: Int): ElasticsearchSinkSettings =
-    new ElasticsearchSinkSettings(bufferSize, this.retryInterval, this.maxRetry, this.retryPartialFailure, this.docAsUpsert)
+    new ElasticsearchSinkSettings(bufferSize,
+                                  this.retryInterval,
+                                  this.maxRetry,
+                                  this.retryPartialFailure,
+                                  this.docAsUpsert)
 
   def withRetryInterval(retryInterval: Int): ElasticsearchSinkSettings =
-    new ElasticsearchSinkSettings(this.bufferSize, retryInterval, this.maxRetry, this.retryPartialFailure, this.docAsUpsert)
+    new ElasticsearchSinkSettings(this.bufferSize,
+                                  retryInterval,
+                                  this.maxRetry,
+                                  this.retryPartialFailure,
+                                  this.docAsUpsert)
 
   def withMaxRetry(maxRetry: Int): ElasticsearchSinkSettings =
-    new ElasticsearchSinkSettings(this.bufferSize, this.retryInterval, maxRetry, this.retryPartialFailure, this.docAsUpsert)
+    new ElasticsearchSinkSettings(this.bufferSize,
+                                  this.retryInterval,
+                                  maxRetry,
+                                  this.retryPartialFailure,
+                                  this.docAsUpsert)
 
   def withRetryPartialFailure(retryPartialFailure: Boolean): ElasticsearchSinkSettings =
-    new ElasticsearchSinkSettings(this.bufferSize, this.retryInterval, this.maxRetry, retryPartialFailure, this.docAsUpsert)
+    new ElasticsearchSinkSettings(this.bufferSize,
+                                  this.retryInterval,
+                                  this.maxRetry,
+                                  retryPartialFailure,
+                                  this.docAsUpsert)
 
   def withDocAsUpsert(docAsUpsert: Boolean): ElasticsearchSinkSettings =
-    new ElasticsearchSinkSettings(this.bufferSize, this.retryInterval, this.maxRetry, this.retryPartialFailure, docAsUpsert)
+    new ElasticsearchSinkSettings(this.bufferSize,
+                                  this.retryInterval,
+                                  this.maxRetry,
+                                  this.retryPartialFailure,
+                                  docAsUpsert)
 
   private[javadsl] def asScala: ScalaElasticsearchSinkSettings =
     ScalaElasticsearchSinkSettings(

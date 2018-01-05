@@ -80,6 +80,7 @@ class ElasticsearchFlowStage[T, C](
       private val responseHandler = getAsyncCallback[(Seq[IncomingMessage[T, C]], Response)](handleResponse)
       private var failedMessages: Seq[IncomingMessage[T, C]] = Nil
       private var retryCount: Int = 0
+      private val insertKeyword: String = if (!settings.docAsUpsert) "index" else "update"
 
       override def preStart(): Unit =
         pull(in)
@@ -116,7 +117,7 @@ class ElasticsearchFlowStage[T, C](
         val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
         val messageResults = items.elements.zip(messages).map {
           case (item, message) =>
-            item.asJsObject.fields(getInsertKeyword).asJsObject.fields.get("error") match {
+            item.asJsObject.fields(insertKeyword).asJsObject.fields.get("error") match {
               case Some(errorMessage) => (message, false)
               case None => (message, true)
             }
@@ -175,7 +176,7 @@ class ElasticsearchFlowStage[T, C](
         val json = messages
           .map { message =>
             JsObject(
-              getInsertKeyword -> JsObject(
+              insertKeyword -> JsObject(
                 Seq(
                   Option("_index" -> JsString(indexName)),
                   Option("_type" -> JsString(typeName)),
@@ -203,7 +204,7 @@ class ElasticsearchFlowStage[T, C](
         )
       }
 
-      private def messageToJsonString(message: IncomingMessage[T, C]): String = {
+      private def messageToJsonString(message: IncomingMessage[T, C]): String =
         if (!settings.docAsUpsert) {
           writer.convert(message.source)
         } else {
@@ -212,11 +213,6 @@ class ElasticsearchFlowStage[T, C](
             "doc_as_upsert" -> JsTrue
           ).toString
         }
-      }
-
-      private def getInsertKeyword(): String = {
-        if (!settings.docAsUpsert) "index" else "update"
-      }
 
       setHandlers(in, out, this)
 
