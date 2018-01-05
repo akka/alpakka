@@ -4,6 +4,9 @@
 
 package akka.stream.alpakka.elasticsearch.scaladsl
 
+/**
+ * Scala API to configure Elastiscsearch sources.
+ */
 //#source-settings
 final case class ElasticsearchSourceSettings(bufferSize: Int = 10)
 //#source-settings
