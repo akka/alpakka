@@ -15,6 +15,7 @@ import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 public class RawKeySftpSourceTest extends SftpSupportImpl implements CommonFtpStageTest {
 
@@ -38,6 +39,14 @@ public class RawKeySftpSourceTest extends SftpSupportImpl implements CommonFtpSt
 
   public Sink<ByteString, CompletionStage<IOResult>> getIOSink(String path) throws Exception {
     return Sftp.toPath(path, settings());
+  }
+
+  public Sink<FtpFile, CompletionStage<IOResult>> getRemoveSink() throws Exception {
+     return Sftp.remove(settings());
+  }
+
+  public Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(Function<FtpFile, String> destinationPath) throws Exception {
+    return Sftp.move(destinationPath, settings());
   }
 
   private SftpSettings settings() throws Exception {

@@ -205,6 +205,34 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
   ): Sink[ByteString, CompletionStage[IOResult]] =
     toPath(path, connectionSettings, append = false)
 
+  /**
+   * Java API: creates a [[Sink]] of a [[FtpFile]] that moves a file to some file path.
+   *
+   * @param destinationPath a function that returns path to where the [[FtpFile]] is moved.
+   * @param connectionSettings connection settings
+   * @return A [[Sink]] of [[FtpFile]] that materializes to a [[CompletionStage]] of [[IOResult]]
+   */
+  def move(destinationPath: Function[FtpFile, String],
+           connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
+    import scala.compat.java8.FutureConverters._
+    import scala.compat.java8.FunctionConverters._
+    ScalaSink
+      .fromGraph(createMoveSink(destinationPath.asScala, connectionSettings))
+      .mapMaterializedValue(_.toJava)
+      .asJava
+  }
+
+  /**
+   * Java API: creates a [[Sink]] of a [[FtpFile]] that removes a file.
+   *
+   * @param connectionSettings connection settings
+   * @return A [[Sink]] of [[FtpFile]] that materializes to a [[CompletionStage]] of [[IOResult]]
+   */
+  def remove(connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
+    import scala.compat.java8.FutureConverters._
+    ScalaSink.fromGraph(createRemoveSink(connectionSettings)).mapMaterializedValue(_.toJava).asJava
+  }
+
   protected[this] implicit def ftpLike: FtpLike[FtpClient, S]
 }
 

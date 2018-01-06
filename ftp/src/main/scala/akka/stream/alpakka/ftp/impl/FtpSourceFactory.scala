@@ -66,6 +66,26 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
       val append: Boolean = _append
     }
 
+  protected[this] def createMoveSink(
+      _destinationPath: FtpFile => String,
+      _connectionSettings: S
+  )(implicit _ftpLike: FtpLike[FtpClient, S]) =
+    new FtpMoveSink[FtpClient, S] {
+      val connectionSettings: S = _connectionSettings
+      val ftpClient: () => FtpClient = self.ftpClient
+      val ftpLike: FtpLike[FtpClient, S] = _ftpLike
+      val destinationPath: FtpFile => String = _destinationPath
+    }
+
+  protected[this] def createRemoveSink(
+      _connectionSettings: S
+  )(implicit _ftpLike: FtpLike[FtpClient, S]) =
+    new FtpRemoveSink[FtpClient, S] {
+      val connectionSettings: S = _connectionSettings
+      val ftpClient: () => FtpClient = self.ftpClient
+      val ftpLike: FtpLike[FtpClient, S] = _ftpLike
+    }
+
   protected[this] def defaultSettings(
       hostname: String,
       username: Option[String] = None,

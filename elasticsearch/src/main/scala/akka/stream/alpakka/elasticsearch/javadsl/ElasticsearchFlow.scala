@@ -13,10 +13,13 @@ import org.elasticsearch.client.RestClient
 import scala.collection.JavaConverters._
 import java.util.{List => JavaList}
 
+/**
+ * Java API to create Elasticsearch flows.
+ */
 object ElasticsearchFlow {
 
   /**
-   * Java API: creates a [[ElasticsearchFlowStage]] without passThrough
+   * Creates a [[akka.stream.javadsl.Flow]] for type `T` from [[IncomingMessage]] to lists of [[IncomingMessageResult]].
    */
   def create[T](
       indexName: String,
@@ -38,7 +41,8 @@ object ElasticsearchFlow {
       .asJava
 
   /**
-   * Java API: creates a [[ElasticsearchFlowStage]] with passThrough
+   * Creates a [[akka.stream.javadsl.Flow]] for type `T` from [[IncomingMessage]] to lists of [[IncomingMessageResult]]
+   * with `passThrough` of type `C`.
    */
   def createWithPassThrough[T, C](
       indexName: String,

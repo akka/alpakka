@@ -12,10 +12,13 @@ import akka.stream.javadsl._
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.elasticsearch.client.RestClient
 
+/**
+ * Java API to create Elasticsearch sinks.
+ */
 object ElasticsearchSink {
 
   /**
-   * Java API: creates a sink based on [[ElasticsearchFlowStage]]
+   * Creates a [[akka.stream.javadsl.Sink]] to Elasticsearch for [[IncomingMessage]] containing type `T`.
    */
   def create[T](
       indexName: String,

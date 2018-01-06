@@ -10,7 +10,7 @@ This connector provides an implementation of a Unix Domain Socket with interface
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-unixdomainsocket_$scalaBinaryVersion$
+  artifact=akka-stream-alpakka-unix-domain-socket_$scalaBinaryVersion$
   version=$version$
 }
 
