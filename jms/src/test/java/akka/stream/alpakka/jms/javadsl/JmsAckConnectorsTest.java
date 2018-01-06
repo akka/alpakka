@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.jms.javadsl;
 
-import akka.NotUsed;
+import akka.Done;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
@@ -13,7 +13,7 @@ import akka.stream.Materializer;
 import akka.stream.alpakka.jms.*;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.command.ActiveMQQueue;
@@ -41,7 +41,7 @@ public class JmsAckConnectorsTest {
         List<Integer> intsIn = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
         List<JmsTextMessage> msgsIn = new ArrayList<>();
         for(Integer n: intsIn) {
-            Map<String, Object> properties = new HashMap<String, Object>();
+            Map<String, Object> properties = new HashMap<>();
             properties.put("Number", n);
             properties.put("IsOdd", n % 2 == 1);
             properties.put("IsEven", n % 2 == 0);
@@ -62,7 +62,7 @@ public class JmsAckConnectorsTest {
             //#connection-factory
 
             //#create-text-sink
-            Sink<String, NotUsed> jmsSink = JmsSink.textSink(
+            Sink<String, CompletionStage<Done>> jmsSink = JmsSink.textSink(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -104,7 +104,7 @@ public class JmsAckConnectorsTest {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             //#create-jms-sink
-            Sink<JmsTextMessage, NotUsed> jmsSink = JmsSink.create(
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -160,7 +160,7 @@ public class JmsAckConnectorsTest {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             //#create-jms-sink
-            Sink<JmsTextMessage, NotUsed> jmsSink = JmsSink.create(
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -221,7 +221,7 @@ public class JmsAckConnectorsTest {
         withServer(ctx -> {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
-            Sink<JmsTextMessage, NotUsed> jmsSink = JmsSink.create(
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -282,13 +282,13 @@ public class JmsAckConnectorsTest {
             List<String> inNumbers = IntStream.range(0, 10).boxed().map(String::valueOf).collect(Collectors.toList());
 
             //#create-topic-sink
-            Sink<String, NotUsed> jmsTopicSink = JmsSink.textSink(
+            Sink<String, CompletionStage<Done>> jmsTopicSink = JmsSink.textSink(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withTopic("topic")
             );
             //#create-topic-sink
-            Sink<String, NotUsed> jmsTopicSink2 = JmsSink.textSink(
+            Sink<String, CompletionStage<Done>> jmsTopicSink2 = JmsSink.textSink(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withTopic("topic")
@@ -348,14 +348,14 @@ public class JmsAckConnectorsTest {
     private static Materializer materializer;
 
     @BeforeClass
-    public static void setup() throws Exception {
+    public static void setup() {
         system = ActorSystem.create();
         materializer = ActorMaterializer.create(system);
     }
 
     @AfterClass
-    public static void teardown() throws Exception {
-        JavaTestKit.shutdownActorSystem(system);
+    public static void teardown() {
+        TestKit.shutdownActorSystem(system);
     }
 
     private void withServer(ConsumerChecked<Context> test) throws Exception {

@@ -5,13 +5,11 @@
 package akka.stream.alpakka.jms.javadsl;
 
 import akka.Done;
-import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.AbruptStageTerminationException;
 import akka.stream.ActorMaterializer;
 import akka.stream.KillSwitch;
 import akka.stream.Materializer;
-
 import akka.stream.alpakka.jms.*;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;

@@ -7,21 +7,22 @@ package akka.stream.alpakka.jms.scaladsl
 import java.util.concurrent.{ConcurrentHashMap, LinkedBlockingQueue, TimeUnit}
 import javax.jms.{JMSException, TextMessage}
 
+import akka.Done
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.{KillSwitch, KillSwitches, ThrottleMode}
-import akka.{Done, NotUsed}
 import org.apache.activemq.ActiveMQConnectionFactory
 import org.scalatest.Inspectors._
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 class JmsTxConnectorsSpec extends JmsSpec {
 
-  override implicit val patienceConfig = PatienceConfig(1.minute)
+  override implicit val patienceConfig = PatienceConfig(2.minutes)
 
   "The JMS Transactional Connectors" should {
     "publish and consume strings through a queue" in withServer() { ctx =>
@@ -30,7 +31,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
       //#connection-factory
 
       //#create-text-sink
-      val jmsSink: Sink[String, NotUsed] = JmsSink.textSink(
+      val jmsSink: Sink[String, Future[Done]] = JmsSink.textSink(
         JmsSinkSettings(connectionFactory).withQueue("test")
       )
       //#create-text-sink
@@ -61,7 +62,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       //#create-jms-sink
-      val jmsSink: Sink[JmsTextMessage, NotUsed] = JmsSink(
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
         JmsSinkSettings(connectionFactory).withQueue("numbers")
       )
       //#create-jms-sink
@@ -105,7 +106,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
     "ensure re-delivery when rollback JMS text messages through a queue" in withServer() { ctx =>
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
-      val jmsSink: Sink[JmsTextMessage, NotUsed] = JmsSink(
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
         JmsSinkSettings(connectionFactory).withQueue("numbers")
       )
       val msgsIn = 1 to 100 map { n =>
@@ -143,7 +144,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
       ctx =>
         val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
-        val jmsSink: Sink[JmsTextMessage, NotUsed] = JmsSink(
+        val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
           JmsSinkSettings(connectionFactory).withQueue("numbers")
         )
 
@@ -216,11 +217,11 @@ class JmsTxConnectorsSpec extends JmsSpec {
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       //#create-topic-sink
-      val jmsTopicSink: Sink[String, NotUsed] = JmsSink.textSink(
+      val jmsTopicSink: Sink[String, Future[Done]] = JmsSink.textSink(
         JmsSinkSettings(connectionFactory).withTopic("topic")
       )
       //#create-topic-sink
-      val jmsTopicSink2: Sink[String, NotUsed] = JmsSink.textSink(
+      val jmsTopicSink2: Sink[String, Future[Done]] = JmsSink.textSink(
         JmsSinkSettings(connectionFactory).withTopic("topic")
       )
 
@@ -268,7 +269,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
     "ensure no message loss when stopping a stream" in withServer() { ctx =>
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
-      val jmsSink: Sink[JmsTextMessage, NotUsed] = JmsSink(
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
         JmsSinkSettings(connectionFactory).withQueue("numbers")
       )
 
@@ -288,11 +289,12 @@ class JmsTxConnectorsSpec extends JmsSpec {
 
       val (killSwitch, streamDone) = jmsSource
         .throttle(10, 1.second, 2, ThrottleMode.shaping)
-        .map { env =>
-          resultQueue.add(env.message.asInstanceOf[TextMessage].getText)
-          env.commit()
-        }
-        .toMat(Sink.ignore)(Keep.both)
+        .toMat(
+          Sink.foreach { env =>
+            resultQueue.add(env.message.asInstanceOf[TextMessage].getText)
+            env.commit()
+          }
+        )(Keep.both)
         .run()
 
       // Need to wait for the stream to have started and running for sometime.
@@ -312,11 +314,12 @@ class JmsTxConnectorsSpec extends JmsSpec {
       resultQueue.size should be < numsIn.size
 
       val killSwitch2 = jmsSource
-        .map { env =>
-          resultQueue.add(env.message.asInstanceOf[TextMessage].getText)
-          env.commit()
-        }
-        .to(Sink.ignore)
+        .to(
+          Sink.foreach { env =>
+            resultQueue.add(env.message.asInstanceOf[TextMessage].getText)
+            env.commit()
+          }
+        )
         .run()
 
       val resultList = new mutable.ArrayBuffer[String](numsIn.size)
@@ -340,7 +343,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
     "ensure no message loss when aborting a stream" in withServer() { ctx =>
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
-      val jmsSink: Sink[JmsTextMessage, NotUsed] = JmsSink(
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
         JmsSinkSettings(connectionFactory).withQueue("numbers")
       )
 
@@ -360,11 +363,12 @@ class JmsTxConnectorsSpec extends JmsSpec {
 
       val (killSwitch, streamDone) = jmsSource
         .throttle(10, 1.second, 2, ThrottleMode.shaping)
-        .map { env =>
-          resultQueue.add(env.message.asInstanceOf[TextMessage].getText)
-          env.commit()
-        }
-        .toMat(Sink.ignore)(Keep.both)
+        .toMat(
+          Sink.foreach { env =>
+            resultQueue.add(env.message.asInstanceOf[TextMessage].getText)
+            env.commit()
+          }
+        )(Keep.both)
         .run()
 
       // Need to wait for the stream to have started and running for sometime.
@@ -387,11 +391,12 @@ class JmsTxConnectorsSpec extends JmsSpec {
       resultTry shouldBe Failure(ex)
 
       val killSwitch2 = jmsSource
-        .map { env =>
-          resultQueue.add(env.message.asInstanceOf[TextMessage].getText)
-          env.commit()
-        }
-        .to(Sink.ignore)
+        .to(
+          Sink.foreach { env =>
+            resultQueue.add(env.message.asInstanceOf[TextMessage].getText)
+            env.commit()
+          }
+        )
         .run()
 
       val resultList = new mutable.ArrayBuffer[String](numsIn.size)
