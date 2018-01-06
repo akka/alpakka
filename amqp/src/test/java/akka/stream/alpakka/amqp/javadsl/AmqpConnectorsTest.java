@@ -185,18 +185,18 @@ public class AmqpConnectorsTest {
 
     final CompletableFuture<Done> completion = new CompletableFuture<>();
     mergedSources
-        .runWith(Sink.fold(new HashSet<Integer>(), (seen, branchElem) -> {
-          if (seen.size() == fanoutSize) {
-            completion.complete(Done.getInstance());
-          }
-          seen.add(branchElem.first());
-          return seen;
-        }), materializer);
+      .runWith(Sink.fold(new HashSet<Integer>(), (seen, branchElem) -> {
+        if (seen.size() == fanoutSize) {
+          completion.complete(Done.getInstance());
+        }
+        seen.add(branchElem.first());
+        return seen;
+      }), materializer);
 
     system.scheduler().scheduleOnce(
-        Duration.create(5, TimeUnit.SECONDS),
-        () -> completion.completeExceptionally(new Error("Did not get at least one element from every fanout branch")),
-        system.dispatcher());
+      Duration.create(5, TimeUnit.SECONDS),
+      () -> completion.completeExceptionally(new Error("Did not get at least one element from every fanout branch")),
+      system.dispatcher());
 
     Source.repeat("stuff").map(ByteString::fromString).runWith(amqpSink, materializer);
 
@@ -209,19 +209,19 @@ public class AmqpConnectorsTest {
     final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
 
     final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
-        AmqpSinkSettings.create(amqpConnectionDetails)
-            .withRoutingKey(queueName)
-            .withDeclarations(queueDeclaration)
+      AmqpSinkSettings.create(connectionProvider)
+        .withRoutingKey(queueName)
+        .withDeclarations(queueDeclaration)
     );
 
     //#create-source-withoutautoack
     final Integer bufferSize = 10;
     final Source<CommittableIncomingMessage, NotUsed> amqpSource = AmqpSource.committableSource(
-        NamedQueueSourceSettings.create(
-            DefaultAmqpConnection.getInstance(),
-            queueName
-        ).withDeclarations(queueDeclaration),
-        bufferSize
+      NamedQueueSourceSettings.create(
+        connectionProvider,
+        queueName
+      ).withDeclarations(queueDeclaration),
+      bufferSize
     );
     //#create-source-withoutautoack
 
@@ -247,7 +247,7 @@ public class AmqpConnectorsTest {
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
 
     final Flow<OutgoingMessage, CommittableIncomingMessage, CompletionStage<String>> ampqRpcFlow = AmqpRpcFlow.committableFlow(
-        AmqpSinkSettings.create()
+        AmqpSinkSettings.create(connectionProvider)
             .withRoutingKey(queueName)
             .withDeclarations(queueDeclaration)
         , 10, 1);
@@ -262,7 +262,7 @@ public class AmqpConnectorsTest {
 
     result.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
 
-    Sink<OutgoingMessage, CompletionStage<Done>> amqpSink = AmqpSink.createReplyTo(AmqpReplyToSinkSettings.create(DefaultAmqpConnection.getInstance()));
+    Sink<OutgoingMessage, CompletionStage<Done>> amqpSink = AmqpSink.createReplyTo(AmqpReplyToSinkSettings.create(connectionProvider));
 
     final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.atMostOnceSource(
       NamedQueueSourceSettings.create(

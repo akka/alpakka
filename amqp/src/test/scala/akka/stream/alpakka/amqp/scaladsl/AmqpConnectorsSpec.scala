@@ -451,7 +451,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       )
 
       val amqpSource = AmqpSource.atMostOnceSource(
-        NamedQueueSourceSettings(DefaultAmqpConnection, queueName),
+        NamedQueueSourceSettings(connectionProvider, queueName),
         bufferSize = 1
       )
       amqpSource
