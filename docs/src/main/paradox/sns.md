@@ -4,6 +4,11 @@ The AWS SNS connector provides an Akka Stream Flow and Sink for push notificatio
 
 For more information about AWS SNS please visit the [official documentation](https://aws.amazon.com/documentation/sns/).
 
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aaws-sns)
+
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {

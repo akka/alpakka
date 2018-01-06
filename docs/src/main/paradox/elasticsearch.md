@@ -4,6 +4,12 @@ The Elasticsearch connector provides Akka Stream sources and sinks for Elasticse
 
 For more information about Elasticsearch please visit the [Elasticsearch documentation](https://www.elastic.co/guide/index.html).
 
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aelasticsearch)
+
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {

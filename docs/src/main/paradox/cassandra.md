@@ -2,6 +2,12 @@
 
 The Cassandra connector allows you to read and write to Cassandra. You can query a stream of rows from @scaladoc[CassandraSource](akka.stream.alpakka.cassandra.scaladsl.CassandraSource$) or use prepared statements to insert or update with @scaladoc[CassandraSink](akka.stream.alpakka.cassandra.scaladsl.CassandraSink$).
 
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Acassandra)
+
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
