@@ -7,10 +7,14 @@ package akka.stream.alpakka.jms
 import javax.jms
 import javax.jms.{Connection, Message, MessageProducer, Session}
 
-import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler}
-import akka.stream.{ActorAttributes, Attributes, Inlet, SinkShape}
+import akka.Done
+import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler}
+import akka.stream._
 
-final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape[JmsMessage]] {
+import scala.concurrent.{Future, Promise}
+
+final class JmsSinkStage(settings: JmsSinkSettings)
+    extends GraphStageWithMaterializedValue[SinkShape[JmsMessage], Future[Done]] {
 
   private val in = Inlet[JmsMessage]("JmsSink.in")
 
@@ -19,8 +23,9 @@ final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape
   override protected def initialAttributes: Attributes =
     ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher")
 
-  def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with JmsConnector {
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
+    val completionPromise = Promise[Done]()
+    val logic = new GraphStageLogic(shape) with JmsConnector {
 
       private var jmsProducer: MessageProducer = _
       private var jmsSession: JmsSession = _
@@ -48,6 +53,16 @@ final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape
       setHandler(
         in,
         new InHandler {
+
+          override def onUpstreamFinish(): Unit = {
+            super.onUpstreamFinish()
+            completionPromise.trySuccess(Done)
+          }
+
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            super.onUpstreamFailure(ex)
+            completionPromise.tryFailure(ex)
+          }
 
           override def onPush(): Unit = {
 
@@ -140,7 +155,14 @@ final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[SinkShape
         }
       }
 
-      override def postStop(): Unit = jmsSessions.foreach(_.closeSession())
+      override def postStop(): Unit = {
+        if (!completionPromise.isCompleted) completionPromise.tryFailure(new AbruptStageTerminationException(this))
+        jmsSessions.foreach(_.closeSession())
+      }
     }
+
+    (logic, completionPromise.future)
+
+  }
 
 }

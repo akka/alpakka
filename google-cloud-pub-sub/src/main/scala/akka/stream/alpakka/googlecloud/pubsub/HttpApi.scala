@@ -67,7 +67,7 @@ private trait HttpApi {
   ): Future[PullResponse] = {
     import materializer.executionContext
 
-    val uri: Uri = s"$PubSubGoogleApisHost/v1/projects/$project/subscriptions/$subscription:pull?key=$apiKey"
+    val uri: Uri = s"$PubSubGoogleApisHost/v1/projects/$project/subscriptions/$subscription:pull"
 
     val request = HttpApi.PullRequest(returnImmediately = true, maxMessages = 1000)
 
@@ -86,7 +86,7 @@ private trait HttpApi {
     import materializer.executionContext
 
     val url: Uri =
-      s"$PubSubGoogleApisHost/v1/projects/$project/subscriptions/$subscription:acknowledge?key=$apiKey"
+      s"$PubSubGoogleApisHost/v1/projects/$project/subscriptions/$subscription:acknowledge"
 
     for {
       request <- Marshal((HttpMethods.POST, url, request)).to[HttpRequest]

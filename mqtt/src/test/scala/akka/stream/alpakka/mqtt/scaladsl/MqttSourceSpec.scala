@@ -22,7 +22,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class MqttSourceSpec
-    extends TestKit(ActorSystem("MqttSinkSpec"))
+    extends TestKit(ActorSystem("MqttSourceSpec"))
     with WordSpecLike
     with Matchers
     with BeforeAndAfterAll

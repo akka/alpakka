@@ -29,14 +29,13 @@ class XmlWritingTest extends WordSpec with Matchers with BeforeAndAfterAll with 
   "XML Writer" must {
 
     "properly write simple XML" in {
-      // #writer-usage
       val listEl: List[ParseEvent] = List(
         StartDocument,
-        StartElement("doc", Map.empty),
-        StartElement("elem", Map.empty),
+        StartElement("doc"),
+        StartElement("elem"),
         Characters("elem1"),
         EndElement("elem"),
-        StartElement("elem", Map.empty),
+        StartElement("elem"),
         Characters("elem2"),
         EndElement("elem"),
         EndElement("doc"),
@@ -45,7 +44,6 @@ class XmlWritingTest extends WordSpec with Matchers with BeforeAndAfterAll with 
 
       val doc = "<?xml version='1.0' encoding='UTF-8'?><doc><elem>elem1</elem><elem>elem2</elem></doc>"
       val resultFuture: Future[String] = Source.fromIterator[ParseEvent](() => listEl.iterator).runWith(writer)
-      // #writer-usage
 
       resultFuture.futureValue(Timeout(20.seconds)) should ===(doc)
     }
@@ -54,7 +52,7 @@ class XmlWritingTest extends WordSpec with Matchers with BeforeAndAfterAll with 
       val doc = "<?xml version='1.0' encoding='UTF-8'?><doc><!--comment--></doc>"
       val listEl = List(
         StartDocument,
-        StartElement("doc", Map.empty),
+        StartElement("doc"),
         Comment("comment"),
         EndElement("doc"),
         EndDocument
@@ -70,7 +68,7 @@ class XmlWritingTest extends WordSpec with Matchers with BeforeAndAfterAll with 
       val listEl = List(
         StartDocument,
         ProcessingInstruction(Some("target"), Some("content")),
-        StartElement("doc", Map.empty),
+        StartElement("doc"),
         EndElement("doc"),
         EndDocument
       )
@@ -104,7 +102,7 @@ class XmlWritingTest extends WordSpec with Matchers with BeforeAndAfterAll with 
 
       val listEl = List(
         StartDocument,
-        StartElement("doc", Map.empty),
+        StartElement("doc"),
         CData("<not>even</valid>"),
         EndElement("doc"),
         EndDocument
@@ -112,6 +110,80 @@ class XmlWritingTest extends WordSpec with Matchers with BeforeAndAfterAll with 
       val resultFuture: Future[String] = Source.fromIterator[ParseEvent](() => listEl.iterator).runWith(writer)
 
       resultFuture.futureValue(Timeout(3.seconds)) should ===(doc)
+    }
+
+    "properly process with default namespace" in {
+      val doc =
+        """<?xml version='1.0' encoding='UTF-8'?><doc xmlns="test:xml:0.1"><elem>elem1</elem><elem>elem2</elem></doc>"""
+
+      val listEl = List(
+        StartDocument,
+        StartElement("doc", namespace = Some("test:xml:0.1"), namespaceCtx = List(Namespace("test:xml:0.1"))),
+        StartElement("elem", namespace = Some("test:xml:0.1")),
+        Characters("elem1"),
+        EndElement("elem"),
+        StartElement("elem", namespace = Some("test:xml:0.1")),
+        Characters("elem2"),
+        EndElement("elem"),
+        EndElement("doc"),
+        EndDocument
+      )
+      val resultFuture: Future[String] = Source.fromIterator[ParseEvent](() => listEl.iterator).runWith(writer)
+
+      resultFuture.futureValue(Timeout(3.seconds)) should ===(doc)
+    }
+
+    "properly process prefixed namespaces" in {
+      val doc = """<?xml version='1.0' encoding='UTF-8'?><x xmlns:edi="http://ecommerce.example.org/schema"/>"""
+
+      val listEl = List(
+        StartDocument,
+        StartElement("x",
+                     namespace = None,
+                     prefix = None,
+                     namespaceCtx = List(Namespace("http://ecommerce.example.org/schema", prefix = Some("edi")))),
+        EndElement("x"),
+        EndDocument
+      )
+      val resultFuture: Future[String] = Source.fromIterator[ParseEvent](() => listEl.iterator).runWith(writer)
+
+      resultFuture.futureValue(Timeout(3.seconds)) should ===(doc)
+    }
+
+    "properly process multiple namespaces" in {
+      // #writer-usage
+      val listEl = List(
+        StartDocument,
+        StartElement(
+          "book",
+          namespace = Some("urn:loc.gov:books"),
+          prefix = Some("bk"),
+          namespaceCtx = List(Namespace("urn:loc.gov:books", prefix = Some("bk")),
+                              Namespace("urn:ISBN:0-395-36341-6", prefix = Some("isbn")))
+        ),
+        StartElement(
+          "title",
+          namespace = Some("urn:loc.gov:books"),
+          prefix = Some("bk")
+        ),
+        Characters("Cheaper by the Dozen"),
+        EndElement("title"),
+        StartElement(
+          "number",
+          namespace = Some("urn:ISBN:0-395-36341-6"),
+          prefix = Some("isbn")
+        ),
+        Characters("1568491379"),
+        EndElement("number"),
+        EndElement("book"),
+        EndDocument
+      )
+
+      val doc =
+        """<?xml version='1.0' encoding='UTF-8'?><bk:book xmlns:bk="urn:loc.gov:books" xmlns:isbn="urn:ISBN:0-395-36341-6"><bk:title>Cheaper by the Dozen</bk:title><isbn:number>1568491379</isbn:number></bk:book>"""
+      val resultFuture: Future[String] = Source.fromIterator[ParseEvent](() => listEl.iterator).runWith(writer)
+      resultFuture.futureValue(Timeout(3.seconds)) should ===(doc)
+      // #writer-usage
     }
 
   }

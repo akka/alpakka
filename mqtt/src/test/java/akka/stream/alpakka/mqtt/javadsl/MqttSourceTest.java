@@ -46,7 +46,7 @@ public class MqttSourceTest {
 
   private static Pair<ActorSystem, Materializer> setupMaterializer() {
     //#init-mat
-    final ActorSystem system = ActorSystem.create();
+    final ActorSystem system = ActorSystem.create("MqttSourceTest");
     final Materializer materializer = ActorMaterializer.create(system);
     //#init-mat
     return Pair.create(system, materializer);
