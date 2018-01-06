@@ -55,7 +55,7 @@ public class AmqpConnectorsTest {
     TestKit.shutdownActorSystem(system);
   }
 
-  AmqpConnectionProvider connectionProvider = DefaultAmqpConnectionProvider.create(DefaultAmqpConnection.getInstance());
+  private AmqpConnectionProvider connectionProvider = AmqpConnectionLocal.getInstance();
 
   @Test
   public void publishAndConsume() throws Exception {
@@ -67,7 +67,7 @@ public class AmqpConnectorsTest {
     @SuppressWarnings("unchecked")
     AmqpConnectionDetails amqpConnectionDetails = AmqpConnectionDetails.create("invalid", 5673)
         .withHostsAndPorts(Pair.create("localhost", 5672), Pair.create("localhost", 5674));
-    AmqpConnectionProvider connectionProvider = DefaultAmqpConnectionProvider.create(amqpConnectionDetails);
+    AmqpConnectionProvider connectionProvider = amqpConnectionDetails;
 
     //#create-sink
     final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
@@ -109,7 +109,7 @@ public class AmqpConnectorsTest {
 
     //#create-rpc-flow
     final Flow<ByteString,ByteString, CompletionStage<String>> ampqRpcFlow = AmqpRpcFlow.createSimple(
-        AmqpSinkSettings.create().withRoutingKey(queueName).withDeclarations(queueDeclaration), 1);
+        AmqpSinkSettings.create(connectionProvider).withRoutingKey(queueName).withDeclarations(queueDeclaration), 1);
     //#create-rpc-flow
 
     final Integer bufferSize = 10;
@@ -157,7 +157,7 @@ public class AmqpConnectorsTest {
 
     //#create-exchange-sink
     final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
-        AmqpSinkSettings.create()
+      AmqpSinkSettings.create(connectionProvider)
             .withExchange(exchangeName)
             .withDeclarations(exchangeDeclaration)
     );

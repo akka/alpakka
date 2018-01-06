@@ -26,15 +26,14 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
   "The AMQP Connectors" should {
 
-    val connectionProvider = DefaultAmqpConnectionProvider(DefaultAmqpConnection)
+    val connectionProvider = AmqpConnectionLocal
 
     "publish and consume elements through a simple queue again in the same JVM" in {
 
       // use a list of host/port pairs where one is normally invalid, but
       // it should still work as expected,
-      val connectionSettings =
+      val connectionProvider =
         AmqpConnectionDetails(List(("invalid", 5673))).withHostsAndPorts(("localhost", 5672))
-      val connectionProvider = DefaultAmqpConnectionProvider(connectionSettings)
 
       //#queue-declaration
       val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()

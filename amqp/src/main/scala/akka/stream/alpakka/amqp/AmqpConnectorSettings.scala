@@ -114,11 +114,6 @@ object AmqpSinkSettings {
    */
   def create(connectionProvider: AmqpConnectionProvider): AmqpSinkSettings =
     AmqpSinkSettings(connectionProvider)
-
-  /**
-   * Java API
-   */
-  def create(): AmqpSinkSettings = AmqpSinkSettings.create(DefaultAmqpConnectionProvider(AmqpConnectionLocal))
 }
 
 sealed trait Declaration
