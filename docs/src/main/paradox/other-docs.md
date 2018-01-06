@@ -21,6 +21,6 @@ initial announcement of Akka Alpakka, August 2016
 
 @@@note
 
-If you find more relevant resources: Please send a Pull Request to add to this list.
+If you know about more relevant resources: Please send a Pull Request to add these to this list.
 
 @@@
