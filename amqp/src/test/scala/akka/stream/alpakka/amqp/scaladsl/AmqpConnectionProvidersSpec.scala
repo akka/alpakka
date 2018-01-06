@@ -9,7 +9,7 @@ import akka.stream.alpakka.amqp._
 class AmqpConnectionProvidersSpec extends AmqpSpec {
   "The AMQP Default Connection Provider" should {
     "create a new connection per invocation of LocalAmqpConnection" in {
-      val connectionProvider = AmqpConnectionLocal
+      val connectionProvider = AmqpLocalConnectionProvider
       val connection1 = connectionProvider.get
       val connection2 = connectionProvider.get
       connection1 should not equal connection2
@@ -18,7 +18,7 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
     }
 
     "create a new connection per invocation of AmqpConnectionUri" in {
-      val connectionProvider = AmqpConnectionUri("amqp://localhost:5672")
+      val connectionProvider = AmqpUriConnectionProvider("amqp://localhost:5672")
       val connection1 = connectionProvider.get
       val connection2 = connectionProvider.get
       connection1 should not equal connection2
@@ -27,7 +27,7 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
     }
 
     "create a new connection per invocation of AmqpConnectionDetails" in {
-      val connectionProvider = AmqpConnectionDetails(List(("localhost", 5672)))
+      val connectionProvider = AmqpDetailsConnectionProvider(List(("localhost", 5672)))
       val connection1 = connectionProvider.get
       val connection2 = connectionProvider.get
       connection1 should not equal connection2
@@ -38,8 +38,8 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
 
   "The AMQP Reusable Connection Provider with automatic release" should {
     "reuse the same connection from LocalAmqpConnection and release it when the last client disconnects" in {
-      val connectionProvider = AmqpConnectionLocal
-      val reusableConnectionProvider = ReusableAmqpConnectionProvider(connectionProvider)
+      val connectionProvider = AmqpLocalConnectionProvider
+      val reusableConnectionProvider = AmqpCachedConnectionProvider(connectionProvider)
       val connection1 = reusableConnectionProvider.get
       val connection2 = reusableConnectionProvider.get
       connection1 should equal(connection2)
@@ -52,8 +52,8 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
     }
 
     "reuse the same connection from AmqpConnectionUri and release it when the last client disconnects" in {
-      val connectionProvider = AmqpConnectionUri("amqp://localhost:5672")
-      val reusableConnectionProvider = ReusableAmqpConnectionProvider(connectionProvider)
+      val connectionProvider = AmqpUriConnectionProvider("amqp://localhost:5672")
+      val reusableConnectionProvider = AmqpCachedConnectionProvider(connectionProvider)
       val connection1 = reusableConnectionProvider.get
       val connection2 = reusableConnectionProvider.get
       connection1 should equal(connection2)
@@ -66,8 +66,8 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
     }
 
     "reuse the same connection from AmqpConnectionDetails and release it when the last client disconnects" in {
-      val connectionProvider = AmqpConnectionDetails(List(("localhost", 5672)))
-      val reusableConnectionProvider = ReusableAmqpConnectionProvider(connectionProvider)
+      val connectionProvider = AmqpDetailsConnectionProvider(List(("localhost", 5672)))
+      val reusableConnectionProvider = AmqpCachedConnectionProvider(connectionProvider)
       val connection1 = reusableConnectionProvider.get
       val connection2 = reusableConnectionProvider.get
       connection1 should equal(connection2)
@@ -82,8 +82,8 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
 
   "The AMQP Reusable Connection Provider without automatic release" should {
     "reuse the same connection from LocalAmqpConnection" in {
-      val connectionProvider = AmqpConnectionLocal
-      val reusableConnectionProvider = ReusableAmqpConnectionProvider(connectionProvider, automaticRelease = false)
+      val connectionProvider = AmqpLocalConnectionProvider
+      val reusableConnectionProvider = AmqpCachedConnectionProvider(connectionProvider, automaticRelease = false)
       val connection1 = reusableConnectionProvider.get
       val connection2 = reusableConnectionProvider.get
       connection1 should equal(connection2)
@@ -93,8 +93,8 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
     }
 
     "reuse the same connection from AmqpConnectionUri" in {
-      val connectionProvider = AmqpConnectionUri("amqp://localhost:5672")
-      val reusableConnectionProvider = ReusableAmqpConnectionProvider(connectionProvider, automaticRelease = false)
+      val connectionProvider = AmqpUriConnectionProvider("amqp://localhost:5672")
+      val reusableConnectionProvider = AmqpCachedConnectionProvider(connectionProvider, automaticRelease = false)
       val connection1 = reusableConnectionProvider.get
       val connection2 = reusableConnectionProvider.get
       connection1 should equal(connection2)
@@ -104,8 +104,8 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
     }
 
     "reuse the same connection from AmqpConnectionDetails" in {
-      val connectionProvider = AmqpConnectionDetails(List(("localhost", 5672)))
-      val reusableConnectionProvider = ReusableAmqpConnectionProvider(connectionProvider, automaticRelease = false)
+      val connectionProvider = AmqpDetailsConnectionProvider(List(("localhost", 5672)))
+      val reusableConnectionProvider = AmqpCachedConnectionProvider(connectionProvider, automaticRelease = false)
       val connection1 = reusableConnectionProvider.get
       val connection2 = reusableConnectionProvider.get
       connection1 should equal(connection2)

@@ -16,14 +16,11 @@ The AMQP connector provides Akka Stream sources and sinks to connect to AMQP ser
 
 All the AMQP connectors are configured using a @scaladoc[AmqpConnectionProvider](akka.stream.alpakka.amqp.AmqpConnectionProvider) and a list of @scaladoc[Declaration](akka.stream.alpakka.amqp.Declaration)
 
-There are two types of @scaladoc[AmqpConnectionProvider](akka.stream.alpakka.amqp.AmqpConnectionProvider):
-* @scaladoc[DefaultAmqpConnectionProvider](akka.stream.alpakka.amqp.DefaultAmqpConnectionProvider) which create a new connection for each connector and releases it when the stage stops.
-* @scaladoc[ReusableAmqpConnectionProvider](akka.stream.alpakka.amqp.ReusableAmqpConnectionProvider) which reuses the same connections for all stages. By default it closes the connection whenever the last stage using the provider stops. Optionally, it takes `automaticRelease` boolean parameter so the connection is not automatically release and the user have to release it explicitly.
-
-The connection providers can be configured using one of the different connections settings:
-* @scaladoc[AmqpConnectionLocal](akka.stream.alpakka.amqp.AmqpConnectionLocal) which connects to the default localhost
-* @scaladoc[AmqpConnectionUri](akka.stream.alpakka.amqp.AmqpConnectionUri) which connects to the given AMQP URI
-* @scaladoc[AmqpConnectionDetails](akka.stream.alpakka.amqp.AmqpConnectionDetails) which supports more fine-grained configuration
+There are several types of @scaladoc[AmqpConnectionProvider](akka.stream.alpakka.amqp.AmqpConnectionProvider):
+* @scaladoc[AmqpLocalConnectionProvider](akka.stream.alpakka.amqp.AmqpLocalConnectionProvider) which connects to the default localhost. It creates a new connection for each stage.
+* @scaladoc[AmqpUriConnectionProvider](akka.stream.alpakka.amqp.AmqpUriConnectionProvider) which connects to the given AMQP URI. It creates a new connection for each stage.
+* @scaladoc[AmqpDetailsConnectionProvider](akka.stream.alpakka.amqp.AmqpDetailsConnectionProvider) which supports more fine-grained configuration. It creates a new connection for each stage.
+* @scaladoc[AmqpCachedConnectionProvider](akka.stream.alpakka.amqp.AmqpCachedConnectionProvider) which receive any other provider as parameter and caches the connection it provides to be used in all stages. By default it closes the connection whenever the last stage using the provider stops. Optionally, it takes `automaticRelease` boolean parameter so the connection is not automatically release and the user have to release it explicitly.
 
 ### Sending messages to AMQP server
 

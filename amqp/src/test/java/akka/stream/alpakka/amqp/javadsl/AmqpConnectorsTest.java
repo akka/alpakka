@@ -55,7 +55,7 @@ public class AmqpConnectorsTest {
     TestKit.shutdownActorSystem(system);
   }
 
-  private AmqpConnectionProvider connectionProvider = AmqpConnectionLocal.getInstance();
+  private AmqpConnectionProvider connectionProvider = AmqpLocalConnectionProvider.getInstance();
 
   @Test
   public void publishAndConsume() throws Exception {
@@ -65,7 +65,7 @@ public class AmqpConnectorsTest {
     //#queue-declaration
 
     @SuppressWarnings("unchecked")
-    AmqpConnectionDetails amqpConnectionDetails = AmqpConnectionDetails.create("invalid", 5673)
+    AmqpDetailsConnectionProvider amqpConnectionDetails = AmqpDetailsConnectionProvider.create("invalid", 5673)
         .withHostsAndPorts(Pair.create("localhost", 5672), Pair.create("localhost", 5674));
     AmqpConnectionProvider connectionProvider = amqpConnectionDetails;
 
@@ -285,7 +285,7 @@ public class AmqpConnectorsTest {
   public void republishMessageWithoutAutoAckIfNacked() throws Exception {
 
     @SuppressWarnings("unchecked")
-    AmqpConnectionDetails connectionSettings = AmqpConnectionDetails.create("invalid", 5673)
+    AmqpDetailsConnectionProvider connectionSettings = AmqpDetailsConnectionProvider.create("invalid", 5673)
         .withHostsAndPorts(Pair.create("localhost", 5672));
 
     final String queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis();
@@ -368,7 +368,7 @@ public class AmqpConnectorsTest {
     final BindingDeclaration bindingDeclaration = BindingDeclaration.create(queueName, exchangeName).withRoutingKey("key.*");
 
     @SuppressWarnings("unchecked")
-    AmqpConnectionDetails amqpConnectionDetails = AmqpConnectionDetails.create("invalid", 5673)
+    AmqpDetailsConnectionProvider amqpConnectionDetails = AmqpDetailsConnectionProvider.create("invalid", 5673)
         .withHostsAndPorts(Pair.create("localhost", 5672), Pair.create("localhost", 5674));
     final Sink<OutgoingMessage, CompletionStage<Done>> amqpSink = AmqpSink.create(
         AmqpSinkSettings.create(connectionProvider)
