@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.eip.scaladsl
 
 import akka.NotUsed
@@ -30,6 +31,7 @@ class SplitterExamples extends WordSpec with BeforeAndAfterAll with Matchers wit
         .runWith(Sink.seq)
 
       //Verify results
+
       ret.futureValue should be(Vector(1, 2, 3, 2, 3, 3, 4))
       //#Simple-Split
 

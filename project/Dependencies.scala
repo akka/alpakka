@@ -1,4 +1,5 @@
-import sbt._, Keys._
+import sbt._
+import Keys._
 
 object Dependencies {
 
@@ -50,6 +51,24 @@ object Dependencies {
 
   val Csv = Seq(
     libraryDependencies ++= Seq()
+  )
+
+  val `Doc-examples` = Seq(
+    libraryDependencies ++= Seq(
+      // https://mina.apache.org/ftpserver-project/downloads.html
+      "org.apache.ftpserver" % "ftpserver-core" % "1.1.1", // ApacheV2
+      "com.google.jimfs" % "jimfs" % "1.1", // ApacheV2
+      "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
+      "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+      // https://github.com/akka/reactive-kafka/releases
+      "com.typesafe.akka" %% "akka-stream-kafka" % "0.18",
+      // https://github.com/manub/scalatest-embedded-kafka/tags
+      "net.manub" %% "scalatest-embedded-kafka" % "1.0.0", // MIT
+      // https://github.com/javaee/javax.jms
+      "javax.jms" % "jms" % "1.1", // CDDL Version 1.1
+      // http://activemq.apache.org/download.html
+      "org.apache.activemq" % "activemq-all" % "5.14.4" // ApacheV2
+    )
   )
 
   val DynamoDB = Seq(
