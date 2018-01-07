@@ -220,6 +220,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
               new IllegalStateException("Cannot complete subscription because the stage is about to stop or fail")
             )
         try mqttClient.disconnect()
+        catch { case _: Throwable => () } finally try mqttClient.close()
         catch { case _: Throwable => () }
       }
     }, subscriptionPromise.future)
