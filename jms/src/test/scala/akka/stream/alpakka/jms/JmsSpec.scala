@@ -5,7 +5,7 @@
 package akka.stream.alpakka.jms
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import akka.testkit.TestKit
 import org.apache.activemq.broker.BrokerService
 import org.scalatest._
@@ -20,7 +20,16 @@ abstract class JmsSpec
     with ScalaFutures {
 
   implicit val system = ActorSystem(this.getClass.getSimpleName)
-  implicit val materializer = ActorMaterializer()
+  val decider: Supervision.Decider = {
+    case ex =>
+      println("An error occurred in the stream.  Calling Supervision.Stop inside the decider!")
+      ex.printStackTrace(System.err)
+      Supervision.Stop
+  }
+
+  val settings = ActorMaterializerSettings(system).withSupervisionStrategy(decider)
+
+  implicit val materializer = ActorMaterializer(settings)
 
   override protected def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
@@ -42,6 +51,7 @@ abstract class JmsSpec
     broker.start()
     try {
       test(Context(url, broker))
+      Thread.sleep(500)
     } finally {
       if (broker.isStarted) {
         broker.stop()
