@@ -6,7 +6,7 @@ package ftpsamples
 
 // #sample
 import java.net.InetAddress
-import java.nio.file.{Files, Paths}
+import java.nio.file.Paths
 
 import akka.stream.IOResult
 import akka.stream.alpakka.ftp.FtpSettings
@@ -47,7 +47,6 @@ object FtpToFile extends ActorSystemAvailable with App {
       .filter(ftpFile => ftpFile.isFile)                       //: FtpFile (2)
       .mapAsyncUnordered(parallelism = 5) { ftpFile =>         // (3)
         val localPath = targetDir.resolve("." + ftpFile.path)
-        val dir = Files.createDirectories(localPath.getParent)
         val fetchFile: Future[IOResult] = Ftp
           .fromPath(ftpFile.path, ftpSettings)                
           .runWith(FileIO.toPath(localPath))                   // (4)
