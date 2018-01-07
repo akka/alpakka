@@ -28,7 +28,7 @@ object JmsToHttpGet extends JmsSampleBase with App {
 
   // format: off
   // #sample
-  val jmsSource: Source[String, NotUsed] =                                // (1)
+  val jmsSource: Source[String, _] =                                        // (1)
     JmsSource.textSource(
       JmsSourceSettings(connectionFactory).withBufferSize(10).withQueue("test")
     )
