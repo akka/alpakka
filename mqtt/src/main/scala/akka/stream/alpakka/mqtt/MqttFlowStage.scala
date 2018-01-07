@@ -24,7 +24,6 @@ import org.eclipse.paho.client.mqttv3.{
 
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
-import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 final class MqttFlowStage(sourceSettings: MqttSourceSettings,
@@ -221,10 +220,8 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
               new IllegalStateException("Cannot complete subscription because the stage is about to stop or fail")
             )
 
-        Try(mqttClient.disconnect())
-          .recover {
-            case NonFatal(_) => Try(mqttClient.disconnectForcibly())
-          }
+        Try(mqttClient.disconnect().waitForCompletion())
+          .getOrElse(mqttClient.disconnectForcibly())
         mqttClient.close()
       }
     }, subscriptionPromise.future)
