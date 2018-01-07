@@ -43,7 +43,7 @@ object JmsToWebSocket extends JmsSampleBase with App {
   // format: off
   // #sample
 
-  val jmsSource: Source[String, NotUsed] =
+  val jmsSource: Source[String, _] =
     JmsSource.textSource(                                                             // (1)
       JmsSourceSettings(connectionFactory).withBufferSize(10).withQueue("test")
     )
