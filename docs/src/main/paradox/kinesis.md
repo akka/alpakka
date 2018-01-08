@@ -4,6 +4,12 @@ The AWS Kinesis connector provides an Akka Stream Source for consuming Kinesis S
 
 For more information about Kinesis please visit the [official documentation](https://aws.amazon.com/documentation/kinesis/).
 
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Akinesis)
+
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {

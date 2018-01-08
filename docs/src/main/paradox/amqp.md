@@ -2,7 +2,12 @@
 
 The AMQP connector provides Akka Stream sources and sinks to connect to AMQP servers.
 
-## Artifacts
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aamqp)
+
+
+### Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka

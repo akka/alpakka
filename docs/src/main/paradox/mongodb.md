@@ -4,6 +4,12 @@ The MongoDB connector allows you to read and save documents. You can query as a 
 
 This connector is based off the [mongo-scala-driver](https://github.com/mongodb/mongo-scala-driver) and does not have a java interface.
 
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Amongodb)
+
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
