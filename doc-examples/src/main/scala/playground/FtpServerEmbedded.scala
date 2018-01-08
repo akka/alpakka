@@ -5,7 +5,6 @@
 package playground
 
 import java.io.File
-import java.net.URI
 import java.nio.file.FileSystem
 
 import org.apache.ftpserver.{ConnectionConfigFactory, FtpServer, FtpServerFactory}
