@@ -5,8 +5,6 @@
 package jms
 
 // #sample
-import javax.jms
-
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.{WebSocketRequest, WebSocketUpgradeResponse}
