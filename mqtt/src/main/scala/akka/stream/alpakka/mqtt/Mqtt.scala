@@ -4,11 +4,12 @@
 
 package akka.stream.alpakka.mqtt
 
-import javax.net.ssl.SSLSocketFactory
+import java.util.Properties
+import javax.net.ssl.{HostnameVerifier, SSLSocketFactory}
 
 import akka.Done
 import akka.util.ByteString
-import org.eclipse.paho.client.mqttv3.{IMqttActionListener, IMqttToken, MqttClientPersistence}
+import org.eclipse.paho.client.mqttv3.{IMqttActionListener, IMqttToken, MqttClientPersistence, MqttConnectOptions}
 
 import scala.concurrent.Promise
 import scala.concurrent.duration._
@@ -83,7 +84,12 @@ final case class MqttConnectionSettings(
     will: Option[MqttMessage] = None,
     automaticReconnect: Boolean = false,
     keepAliveInterval: FiniteDuration = 60.seconds,
-    connectionTimeout: FiniteDuration = 30.seconds
+    connectionTimeout: FiniteDuration = 30.seconds,
+    maxInFlight: Int = 10,
+    mqttVersion: Int = MqttConnectOptions.MQTT_VERSION_3_1_1,
+    serverUris: Option[Array[String]] = None,
+    sslHostnameVerifier: Option[HostnameVerifier] = None,
+    sslProperties: Option[Properties] = None
 ) {
   def withBroker(broker: String): MqttConnectionSettings =
     copy(broker = broker)
@@ -118,6 +124,21 @@ final case class MqttConnectionSettings(
 
   def withConnectionTimeout(connectionTimeout: Int): MqttConnectionSettings =
     copy(connectionTimeout = connectionTimeout.seconds)
+
+  def withMaxInFlight(maxInFlight: Int): MqttConnectionSettings =
+    copy(maxInFlight = maxInFlight)
+
+  def withMqttVersion(mqttVersion: Int): MqttConnectionSettings =
+    copy(mqttVersion = mqttVersion)
+
+  def withServerUris(serverUris: Array[String]): MqttConnectionSettings =
+    copy(serverUris = Some(serverUris))
+
+  def withSslHostnameVerifier(sslHostnameVerifier: HostnameVerifier): MqttConnectionSettings =
+    copy(sslHostnameVerifier = Some(sslHostnameVerifier))
+
+  def withSslProperties(sslProperties: Properties): MqttConnectionSettings =
+    copy(sslProperties = Some(sslProperties))
 }
 
 object MqttConnectionSettings {

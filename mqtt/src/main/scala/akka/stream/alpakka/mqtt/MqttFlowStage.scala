@@ -157,6 +157,17 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
         options.setAutomaticReconnect(connectionSettings.automaticReconnect)
         options.setKeepAliveInterval(connectionSettings.keepAliveInterval.toSeconds.toInt)
         options.setConnectionTimeout(connectionSettings.connectionTimeout.toSeconds.toInt)
+        options.setMaxInflight(connectionSettings.maxInFlight)
+        options.setMqttVersion(connectionSettings.mqttVersion)
+        connectionSettings.serverUris.foreach { serverUris =>
+          options.setServerURIs(serverUris)
+        }
+        connectionSettings.sslHostnameVerifier.foreach { sslHostnameVerifier =>
+          options.setSSLHostnameVerifier(sslHostnameVerifier)
+        }
+        connectionSettings.sslProperties.foreach { setSslProperties =>
+          options.setSSLProperties(setSslProperties)
+        }
         options
       }
 
