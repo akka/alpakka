@@ -204,7 +204,7 @@ final case class AmqpCachedConnectionProvider(provider: AmqpConnectionProvider, 
         throw new IllegalArgumentException("Can't release a connection that's not owned by this provider")
 
       if (state.compareAndSet(c, Closing)) {
-        if (clients == 0 || !automaticRelease) {
+        if (clients == 1 || !automaticRelease) {
           provider.release(connection)
           state.compareAndSet(Closing, Empty)
         } else {
