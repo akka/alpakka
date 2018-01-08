@@ -11,6 +11,7 @@ import akka.util.ByteString
 import org.eclipse.paho.client.mqttv3.{IMqttActionListener, IMqttToken, MqttClientPersistence}
 
 import scala.concurrent.Promise
+import scala.concurrent.duration._
 import scala.language.implicitConversions
 import scala.util._
 
@@ -79,26 +80,44 @@ final case class MqttConnectionSettings(
     auth: Option[(String, String)] = None,
     socketFactory: Option[SSLSocketFactory] = None,
     cleanSession: Boolean = true,
-    will: Option[MqttMessage] = None
+    will: Option[MqttMessage] = None,
+    automaticReconnect: Boolean = false,
+    keepAliveInterval: FiniteDuration = 60.seconds,
+    connectionTimeout: FiniteDuration = 30.seconds
 ) {
-  def withBroker(broker: String) =
+  def withBroker(broker: String): MqttConnectionSettings =
     copy(broker = broker)
 
-  def withAuth(username: String, password: String) =
+  def withAuth(username: String, password: String): MqttConnectionSettings =
     copy(auth = Some((username, password)))
 
-  def withCleanSession(cleanSession: Boolean) =
+  def withCleanSession(cleanSession: Boolean): MqttConnectionSettings =
     copy(cleanSession = cleanSession)
 
-  def withWill(will: MqttMessage) =
+  def withWill(will: MqttMessage): MqttConnectionSettings =
     copy(will = Some(will))
 
   @deprecated("use a normal message instead of a will", "0.16")
-  def withWill(will: Will) =
+  def withWill(will: Will): MqttConnectionSettings =
     copy(will = Some(MqttMessage(will.message.topic, will.message.payload, Some(will.qos), will.retained)))
 
-  def withClientId(clientId: String) =
+  def withClientId(clientId: String): MqttConnectionSettings =
     copy(clientId = clientId)
+
+  def withAutomaticReconnect(automaticReconnect: Boolean): MqttConnectionSettings =
+    copy(automaticReconnect = automaticReconnect)
+
+  def withKeepAliveInterval(keepAliveInterval: FiniteDuration): MqttConnectionSettings =
+    copy(keepAliveInterval = keepAliveInterval)
+
+  def withKeepAliveInterval(keepAliveInterval: Int): MqttConnectionSettings =
+    withKeepAliveInterval(keepAliveInterval.seconds)
+
+  def withConnectionTimeout(connectionTimeout: FiniteDuration): MqttConnectionSettings =
+    copy(keepAliveInterval = keepAliveInterval)
+
+  def withConnectionTimeout(connectionTimeout: Int): MqttConnectionSettings =
+    copy(connectionTimeout = connectionTimeout.seconds)
 }
 
 object MqttConnectionSettings {

@@ -154,6 +154,9 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
           )
         }
         options.setCleanSession(connectionSettings.cleanSession)
+        options.setAutomaticReconnect(connectionSettings.automaticReconnect)
+        options.setKeepAliveInterval(connectionSettings.keepAliveInterval.toSeconds.toInt)
+        options.setConnectionTimeout(connectionSettings.connectionTimeout.toSeconds.toInt)
         options
       }
 
