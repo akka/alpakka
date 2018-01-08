@@ -54,12 +54,11 @@ private[amqp] trait AmqpConnector {
         factory
     }
 
-  private def asAddresses(hostAndPorts: Seq[(String, Int)]): Seq[Address] = {
+  private def asAddresses(hostAndPorts: Seq[(String, Int)]): Seq[Address] =
     if (hostAndPorts.nonEmpty)
       hostAndPorts.map(hp => new Address(hp._1, hp._2))
     else
       throw new IllegalArgumentException("You need to supply at least one host/port pair.")
-  }
 
   import scala.collection.JavaConverters._
   def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings): Connection = settings match {
