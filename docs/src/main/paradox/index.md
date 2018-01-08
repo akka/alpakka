@@ -7,6 +7,8 @@ part of this project as well as links to components that are maintained by other
 If you'd like to know what integrations with Alpakka look like, have a look at our 
 [self-contained examples](examples/index.html) section.
 
+There are a few blog posts and presentations about Alpakka out there, we've [collected some](other-docs.md).
+
 The code in this documentation is compiled against
 
 * Alpakka $version$ ([Github](https://github.com/akka/alpakka), [API docs](https://developer.lightbend.com/docs/api/alpakka/current/akka/stream/alpakka/index.html))
@@ -24,6 +26,7 @@ Release notes are found at [Github releases](https://github.com/akka/alpakka/rel
 * [External connectors](external-connectors.md) (hosted separately)
 * [External stream components](external-components.md) (hosted separately)
 * [Self-contained examples](examples/index.md)
+* [Other documentation resources](other-docs.md)
 * [Integration Patterns](patterns.md)
 * [Data Transformations](data-transformations/index.md)
 

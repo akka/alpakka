@@ -5,8 +5,6 @@
 package jms
 
 // #sample
-import javax.jms
-
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.{WebSocketRequest, WebSocketUpgradeResponse}
@@ -43,7 +41,7 @@ object JmsToWebSocket extends JmsSampleBase with App {
   // format: off
   // #sample
 
-  val jmsSource: Source[String, NotUsed] =
+  val jmsSource: Source[String, _] =
     JmsSource.textSource(                                                             // (1)
       JmsSourceSettings(connectionFactory).withBufferSize(10).withQueue("test")
     )

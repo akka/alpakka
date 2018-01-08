@@ -6,6 +6,12 @@ IronMq is a simple point-to-point queue, but it is possible to implement a fan-o
 queue and set other queue as subscribers. More information about that could be found on
 [IronMq documentation](https://www.iron.io/ironmq-fan-out-support/)
 
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aironmq)
+
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {

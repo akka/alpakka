@@ -4,7 +4,8 @@
 
 package akka.stream.alpakka.jms
 
-import javax.jms.{Message, MessageProducer}
+import javax.jms
+import javax.jms.{Connection, Message, MessageProducer, Session}
 
 import akka.Done
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler}
@@ -27,11 +28,21 @@ final class JmsSinkStage(settings: JmsSinkSettings)
     val logic = new GraphStageLogic(shape) with JmsConnector {
 
       private var jmsProducer: MessageProducer = _
+      private var jmsSession: JmsSession = _
 
-      override private[jms] def jmsSettings = settings
+      private[jms] def jmsSettings = settings
+
+      private[jms] def createSession(connection: Connection, createDestination: Session => jms.Destination) = {
+        val session =
+          connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode)
+        new JmsSession(connection, session, createDestination(session))
+      }
 
       override def preStart(): Unit = {
-        jmsSession = openSession()
+
+        jmsSessions = openSessions()
+        // TODO: Remove hack to limit publisher to single session.
+        jmsSession = jmsSessions.head
         jmsProducer = jmsSession.session.createProducer(jmsSession.destination)
         if (settings.timeToLive.nonEmpty) {
           jmsProducer.setTimeToLive(settings.timeToLive.get.toMillis)
@@ -80,7 +91,7 @@ final class JmsSinkStage(settings: JmsSinkSettings)
       )
 
       private def findHeader[T](headersDuringSend: Set[JmsHeader])(f: PartialFunction[JmsHeader, T]): Option[T] =
-        headersDuringSend.collect(f).headOption
+        headersDuringSend.collectFirst(f)
 
       private def createMessage(jmsSession: JmsSession, element: JmsMessage): Message =
         element match {
@@ -146,7 +157,7 @@ final class JmsSinkStage(settings: JmsSinkSettings)
 
       override def postStop(): Unit = {
         if (!completionPromise.isCompleted) completionPromise.tryFailure(new AbruptStageTerminationException(this))
-        Option(jmsSession).foreach(_.closeSession())
+        jmsSessions.foreach(_.closeSession())
       }
     }
 
