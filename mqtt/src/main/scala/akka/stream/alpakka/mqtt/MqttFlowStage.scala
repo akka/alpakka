@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.mqtt
 
+import java.util.Properties
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -160,13 +161,15 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
         options.setMaxInflight(connectionSettings.maxInFlight)
         options.setMqttVersion(connectionSettings.mqttVersion)
         connectionSettings.serverUris.foreach { serverUris =>
-          options.setServerURIs(serverUris)
+          options.setServerURIs(serverUris.toArray)
         }
         connectionSettings.sslHostnameVerifier.foreach { sslHostnameVerifier =>
           options.setSSLHostnameVerifier(sslHostnameVerifier)
         }
-        connectionSettings.sslProperties.foreach { setSslProperties =>
-          options.setSSLProperties(setSslProperties)
+        connectionSettings.sslProperties.foreach { sslProperties =>
+          val properties = new Properties()
+          sslProperties foreach { case (key, value) => properties.setProperty(key, value) }
+          options.setSSLProperties(properties)
         }
         options
       }

@@ -4,15 +4,16 @@
 
 package akka.stream.alpakka.mqtt
 
-import java.util.Properties
 import javax.net.ssl.{HostnameVerifier, SSLSocketFactory}
 
 import akka.Done
 import akka.util.ByteString
 import org.eclipse.paho.client.mqttv3.{IMqttActionListener, IMqttToken, MqttClientPersistence, MqttConnectOptions}
 
+import scala.annotation.varargs
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+import scala.collection.immutable.Seq
 import scala.language.implicitConversions
 import scala.util._
 
@@ -87,9 +88,9 @@ final case class MqttConnectionSettings(
     connectionTimeout: FiniteDuration = 30.seconds,
     maxInFlight: Int = 10,
     mqttVersion: Int = MqttConnectOptions.MQTT_VERSION_3_1_1,
-    serverUris: Option[Array[String]] = None,
+    serverUris: Option[Seq[String]] = None,
     sslHostnameVerifier: Option[HostnameVerifier] = None,
-    sslProperties: Option[Properties] = None
+    sslProperties: Option[Map[String, String]] = None
 ) {
   def withBroker(broker: String): MqttConnectionSettings =
     copy(broker = broker)
@@ -122,8 +123,8 @@ final case class MqttConnectionSettings(
   def withConnectionTimeout(connectionTimeout: FiniteDuration): MqttConnectionSettings =
     copy(keepAliveInterval = keepAliveInterval)
 
-  def withConnectionTimeout(connectionTimeout: Int): MqttConnectionSettings =
-    copy(connectionTimeout = connectionTimeout.seconds)
+  def withConnectionTimeout(connectionTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
+    copy(connectionTimeout = FiniteDuration(connectionTimeout, unit))
 
   def withMaxInFlight(maxInFlight: Int): MqttConnectionSettings =
     copy(maxInFlight = maxInFlight)
@@ -131,13 +132,16 @@ final case class MqttConnectionSettings(
   def withMqttVersion(mqttVersion: Int): MqttConnectionSettings =
     copy(mqttVersion = mqttVersion)
 
-  def withServerUris(serverUris: Array[String]): MqttConnectionSettings =
+  def withServerUris(serverUris: Seq[String]): MqttConnectionSettings =
     copy(serverUris = Some(serverUris))
+
+  @varargs def withServerUris(serverUris: String*): MqttConnectionSettings =
+    copy(serverUris = Some(serverUris.to[Seq]))
 
   def withSslHostnameVerifier(sslHostnameVerifier: HostnameVerifier): MqttConnectionSettings =
     copy(sslHostnameVerifier = Some(sslHostnameVerifier))
 
-  def withSslProperties(sslProperties: Properties): MqttConnectionSettings =
+  def withSslProperties(sslProperties: Map[String, String]): MqttConnectionSettings =
     copy(sslProperties = Some(sslProperties))
 }
 
