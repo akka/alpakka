@@ -55,13 +55,18 @@ private[amqp] trait AmqpConnector {
     }
 
   def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings): Connection = settings match {
-    case a: AmqpConnectionDetails => {
+    case a: AmqpConnectionDetails =>
       import scala.collection.JavaConverters._
       if (a.hostAndPortList.nonEmpty)
         factory.newConnection(a.hostAndPortList.map(hp => new Address(hp._1, hp._2)).asJava)
       else
         throw new IllegalArgumentException("You need to supply at least one host/port pair.")
-    }
+    case a: AmqpConnectionFactory =>
+      import scala.collection.JavaConverters._
+      if (a.hostAndPortList.nonEmpty)
+        factory.newConnection(a.hostAndPortList.map(hp => new Address(hp._1, hp._2)).asJava)
+      else
+        throw new IllegalArgumentException("You need to supply at least one host/port pair.")
     case _ => factory.newConnection()
   }
 }
