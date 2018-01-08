@@ -13,7 +13,10 @@ import akka.stream.alpakka.s3.scaladsl.S3WireMockBase;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.AwsRegionProvider;
+import scala.None;
 import scala.Some;
+
+import java.util.Optional;
 
 public class DocSnippets extends S3WireMockBase {
 
@@ -46,7 +49,8 @@ public class DocSnippets extends S3WireMockBase {
                 Some.apply(proxy),
                 credentials,
                 regionProvider,
-                true
+                true,
+                Optional.empty()
         );
         final S3Client s3Client = new S3Client(settings,system(), mat);
         // #java-bluemix-example

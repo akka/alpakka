@@ -58,7 +58,8 @@ public class S3ClientTest extends S3WireMockBase {
             Some.apply(proxy),
             credentials,
             regionProvider("us-east-1"),
-            false
+            false,
+            Optional.empty()
     );
     private final S3Client client = new S3Client(settings, system(), materializer);
     //#client

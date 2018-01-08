@@ -5,9 +5,10 @@
 package akka.stream.alpakka.s3
 
 import java.nio.file.{Path, Paths}
+import java.security.{PrivateKey, PublicKey}
+import javax.crypto.SecretKey
 
 import scala.util.Try
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import com.amazonaws.auth._
@@ -20,7 +21,24 @@ final case class S3Settings(bufferType: BufferType,
                             proxy: Option[Proxy],
                             credentialsProvider: AWSCredentialsProvider,
                             s3RegionProvider: AwsRegionProvider,
-                            pathStyleAccess: Boolean) {
+                            pathStyleAccess: Boolean,
+                            encryptionMaterials: Option[EncryptionMaterials]
+                           ) {
+
+  def this(bufferType: BufferType,
+           proxy: Option[Proxy],
+           credentialsProvider: AWSCredentialsProvider,
+           s3RegionProvider: AwsRegionProvider,
+           pathStyleAccess: Boolean,
+           encryptionMaterials: java.util.Optional[EncryptionMaterials]
+          ) = this(
+      bufferType,
+      proxy,
+      credentialsProvider,
+      s3RegionProvider,
+      pathStyleAccess,
+      if (encryptionMaterials.isPresent) Some(encryptionMaterials.get) else None
+    )
 
   override def toString: String =
     s"""S3Settings(
@@ -46,6 +64,12 @@ case class DiskBufferType(filePath: Path) extends BufferType {
 case object DiskBufferType {
   def create(path: Path): DiskBufferType = DiskBufferType(path)
 }
+
+sealed trait EncryptionMaterials
+
+final case class KeyPair(publicKey: PublicKey, privateKey: PrivateKey) extends EncryptionMaterials
+
+final case class SymmetricKey(secretKey: SecretKey) extends EncryptionMaterials
 
 object S3Settings {
 
@@ -159,7 +183,8 @@ object S3Settings {
       proxy = maybeProxy,
       credentialsProvider = credentialsProvider,
       s3RegionProvider = regionProvider,
-      pathStyleAccess = pathStyleAccess
+      pathStyleAccess = pathStyleAccess,
+      encryptionMaterials = None
     )
   }
 
