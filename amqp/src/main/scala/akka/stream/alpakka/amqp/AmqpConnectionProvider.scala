@@ -188,7 +188,7 @@ final case class AmqpCachedConnectionProvider(provider: AmqpConnectionProvider, 
     case Empty =>
       if (state.compareAndSet(Empty, Connecting)) {
         val connection = provider.get
-        state.compareAndSet(Connecting, Connected(connection, 0))
+        state.compareAndSet(Connecting, Connected(connection, 1))
         connection
       } else get
     case c @ Connected(connection, clients) =>
@@ -200,10 +200,11 @@ final case class AmqpCachedConnectionProvider(provider: AmqpConnectionProvider, 
   @tailrec
   override def release(connection: Connection): Unit = state.get match {
     case c @ Connected(cachedConnection, clients) =>
+      if (cachedConnection != connection)
+        throw new IllegalArgumentException("Can't release a connection that's not owned by this provider")
+
       if (state.compareAndSet(c, Closing)) {
-        if (cachedConnection != connection)
-          throw new IllegalArgumentException("Can't release a connection that's not owned by this provider")
-        else if (clients == 0 || !automaticRelease) {
+        if (clients == 0 || !automaticRelease) {
           provider.release(connection)
           state.compareAndSet(Closing, Empty)
         } else {
