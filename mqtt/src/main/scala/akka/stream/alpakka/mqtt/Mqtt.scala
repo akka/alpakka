@@ -14,8 +14,10 @@ import scala.annotation.varargs
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.collection.immutable.Seq
+import scala.collection.immutable.Map
 import scala.language.implicitConversions
 import scala.util._
+import scala.collection.JavaConverters._
 
 sealed abstract class MqttQoS {
   def byteValue: Byte
@@ -88,9 +90,9 @@ final case class MqttConnectionSettings(
     connectionTimeout: FiniteDuration = 30.seconds,
     maxInFlight: Int = 10,
     mqttVersion: Int = MqttConnectOptions.MQTT_VERSION_3_1_1,
-    serverUris: Option[Seq[String]] = None,
+    serverUris: Seq[String] = Seq.empty,
     sslHostnameVerifier: Option[HostnameVerifier] = None,
-    sslProperties: Option[Map[String, String]] = None
+    sslProperties: Map[String, String] = Map.empty
 ) {
   def withBroker(broker: String): MqttConnectionSettings =
     copy(broker = broker)
@@ -114,14 +116,8 @@ final case class MqttConnectionSettings(
   def withAutomaticReconnect(automaticReconnect: Boolean): MqttConnectionSettings =
     copy(automaticReconnect = automaticReconnect)
 
-  def withKeepAliveInterval(keepAliveInterval: FiniteDuration): MqttConnectionSettings =
-    copy(keepAliveInterval = keepAliveInterval)
-
-  def withKeepAliveInterval(keepAliveInterval: Int): MqttConnectionSettings =
-    withKeepAliveInterval(keepAliveInterval.seconds)
-
-  def withConnectionTimeout(connectionTimeout: FiniteDuration): MqttConnectionSettings =
-    copy(keepAliveInterval = keepAliveInterval)
+  def withKeepAliveInterval(connectionTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
+    copy(connectionTimeout = FiniteDuration(connectionTimeout, unit))
 
   def withConnectionTimeout(connectionTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
     copy(connectionTimeout = FiniteDuration(connectionTimeout, unit))
@@ -132,17 +128,14 @@ final case class MqttConnectionSettings(
   def withMqttVersion(mqttVersion: Int): MqttConnectionSettings =
     copy(mqttVersion = mqttVersion)
 
-  def withServerUris(serverUris: Seq[String]): MqttConnectionSettings =
-    copy(serverUris = Some(serverUris))
-
   @varargs def withServerUris(serverUris: String*): MqttConnectionSettings =
-    copy(serverUris = Some(serverUris.to[Seq]))
+    copy(serverUris = serverUris.to[Seq])
 
   def withSslHostnameVerifier(sslHostnameVerifier: HostnameVerifier): MqttConnectionSettings =
     copy(sslHostnameVerifier = Some(sslHostnameVerifier))
 
-  def withSslProperties(sslProperties: Map[String, String]): MqttConnectionSettings =
-    copy(sslProperties = Some(sslProperties))
+  def withSslProperties(sslProperties: java.util.Map[String, String]): MqttConnectionSettings =
+    copy(sslProperties = sslProperties.asScala.toMap)
 }
 
 object MqttConnectionSettings {

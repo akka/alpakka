@@ -160,15 +160,15 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
         options.setConnectionTimeout(connectionSettings.connectionTimeout.toSeconds.toInt)
         options.setMaxInflight(connectionSettings.maxInFlight)
         options.setMqttVersion(connectionSettings.mqttVersion)
-        connectionSettings.serverUris.foreach { serverUris =>
-          options.setServerURIs(serverUris.toArray)
+        if (connectionSettings.serverUris.nonEmpty) {
+          options.setServerURIs(connectionSettings.serverUris.toArray)
         }
         connectionSettings.sslHostnameVerifier.foreach { sslHostnameVerifier =>
           options.setSSLHostnameVerifier(sslHostnameVerifier)
         }
-        connectionSettings.sslProperties.foreach { sslProperties =>
+        if (connectionSettings.sslProperties.nonEmpty) {
           val properties = new Properties()
-          sslProperties foreach { case (key, value) => properties.setProperty(key, value) }
+          connectionSettings.sslProperties foreach { case (key, value) => properties.setProperty(key, value) }
           options.setSSLProperties(properties)
         }
         options
