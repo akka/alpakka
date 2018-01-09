@@ -4,6 +4,12 @@ The AWS SQS connector provides Akka Stream sources and sinks for AWS SQS queues.
 
 For more information about AWS SQS please visit the [official documentation](https://aws.amazon.com/documentation/sqs/).
 
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aaws-sqs)
+
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {

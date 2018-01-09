@@ -1,6 +1,12 @@
 # Extensible Markup Language - XML
 
-XML parsing module offers Flows for parsing and processing parsed XML documents.
+XML parsing module offers Flows for parsing, processing and writing XML documents.
+
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Axml)
+
 
 ## Artifacts
 

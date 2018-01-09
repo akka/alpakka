@@ -10,7 +10,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -28,7 +28,7 @@ public class SplitterExamples {
     public void simpleSplit() throws ExecutionException, InterruptedException {
         //#Simple-Split
         //Sample Source
-        Source<String, NotUsed> source = Source.from(Arrays.asList(new String[]{"1-2-3", "2-3", "3-4"}));
+        Source<String, NotUsed> source = Source.from(Arrays.asList("1-2-3", "2-3", "3-4"));
 
 
         CompletionStage<List<Integer>> ret =
@@ -49,7 +49,7 @@ public class SplitterExamples {
     public void splitAggregate() throws ExecutionException, InterruptedException {
         //#Aggregate-Split
         //Sample Source
-        Source<String, NotUsed> source = Source.from(Arrays.asList(new String[]{"1-2-3", "2-3", "3-4"}));
+        Source<String, NotUsed> source = Source.from(Arrays.asList("1-2-3", "2-3", "3-4"));
 
 
         CompletionStage<List<Integer>> ret =
@@ -80,7 +80,7 @@ public class SplitterExamples {
 
     @AfterClass
     public static void teardown() throws Exception {
-        JavaTestKit.shutdownActorSystem(system);
+        TestKit.shutdownActorSystem(system);
     }
 
 }

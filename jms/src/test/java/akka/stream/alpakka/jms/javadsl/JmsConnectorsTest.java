@@ -5,12 +5,11 @@
 package akka.stream.alpakka.jms.javadsl;
 
 import akka.Done;
-import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.AbruptStageTerminationException;
 import akka.stream.ActorMaterializer;
+import akka.stream.KillSwitch;
 import akka.stream.Materializer;
-
 import akka.stream.alpakka.jms.*;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -70,7 +69,7 @@ final class DummyJavaTests implements java.io.Serializable {
 
 public class JmsConnectorsTest {
 
-  
+
     private List<JmsTextMessage> createTestMessageList() {
         List<Integer> intsIn = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
         List<JmsTextMessage> msgsIn = new ArrayList<>();
@@ -82,13 +81,13 @@ public class JmsConnectorsTest {
                     .withProperty("IsOdd", n % 2 == 1)
                     .withProperty("IsEven", n % 2 == 0);
             //#create-messages-with-properties
-            
+
             msgsIn.add(message);
         }
 
         return msgsIn;
     }
-   
+
 
     @Test
     public void publishAndConsumeJmsTextMessage() throws Exception {
@@ -111,7 +110,7 @@ public class JmsConnectorsTest {
             //#run-text-sink
 
             //#create-text-source
-            Source<String, NotUsed> jmsSource = JmsSource
+            Source<String, KillSwitch> jmsSource = JmsSource
                     .textSource(JmsSourceSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -156,7 +155,7 @@ public class JmsConnectorsTest {
             //#run-object-sink
 
             //#create-object-source
-            Source<java.io.Serializable, NotUsed> jmsSource = JmsSource
+            Source<java.io.Serializable, KillSwitch> jmsSource = JmsSource
                     .objectSource(JmsSourceSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -197,7 +196,7 @@ public class JmsConnectorsTest {
             //#run-bytearray-sink
 
             //#create-bytearray-source
-            Source<byte[], NotUsed> jmsSource = JmsSource
+            Source<byte[], KillSwitch> jmsSource = JmsSource
                     .bytesSource(JmsSourceSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -248,7 +247,7 @@ public class JmsConnectorsTest {
             //#run-map-sink
 
             //#create-map-source
-            Source<Map<String, Object>, NotUsed> jmsSource = JmsSource
+            Source<Map<String, Object>, KillSwitch> jmsSource = JmsSource
                     .mapSource(JmsSourceSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -290,15 +289,15 @@ public class JmsConnectorsTest {
                             .withQueue("test")
             );
             //#create-jms-sink
-            
+
             List<JmsTextMessage> msgsIn = createTestMessageList();
-            
+
             //#run-jms-sink
             Source.from(msgsIn).runWith(jmsSink, materializer);
             //#run-jms-sink
 
             //#create-jms-source
-            Source<Message, NotUsed> jmsSource = JmsSource.create(JmsSourceSettings
+            Source<Message, KillSwitch> jmsSource = JmsSource.create(JmsSourceSettings
                     .create(connectionFactory)
                     .withQueue("test")
                     .withBufferSize(10)
@@ -353,7 +352,7 @@ public class JmsConnectorsTest {
             //#run-jms-sink
 
             //#create-jms-source
-            Source<Message, NotUsed> jmsSource = JmsSource.create(JmsSourceSettings
+            Source<Message, KillSwitch> jmsSource = JmsSource.create(JmsSourceSettings
                     .create(connectionFactory)
                     .withQueue("test")
                     .withBufferSize(10)
@@ -375,7 +374,7 @@ public class JmsConnectorsTest {
                 assertEquals(outMsg.getJMSType(), "type");
                 assertEquals(outMsg.getJMSCorrelationID(), "correlationId");
                 assertEquals(((ActiveMQQueue) outMsg.getJMSReplyTo()).getQueueName(), "test-reply");
-                
+
                 assertTrue(outMsg.getJMSExpiration()!= 0);
                 assertEquals(2,outMsg.getJMSPriority());
                 assertEquals(DeliveryMode.NON_PERSISTENT,outMsg.getJMSDeliveryMode());
@@ -400,7 +399,7 @@ public class JmsConnectorsTest {
             Source.from(msgsIn).runWith(jmsSink, materializer);
 
             //#create-jms-source-with-selector
-            Source<Message, NotUsed> jmsSource = JmsSource.create(JmsSourceSettings
+            Source<Message, KillSwitch> jmsSource = JmsSource.create(JmsSourceSettings
                     .create(connectionFactory)
                     .withQueue("test")
                     .withBufferSize(10)
@@ -453,14 +452,14 @@ public class JmsConnectorsTest {
             );
 
             //#create-topic-source
-            Source<String, NotUsed> jmsTopicSource = JmsSource
+            Source<String, KillSwitch> jmsTopicSource = JmsSource
                     .textSource(JmsSourceSettings
                             .create(connectionFactory)
                             .withTopic("topic")
                             .withBufferSize(10)
                     );
             //#create-topic-source
-            Source<String, NotUsed> jmsTopicSource2 = JmsSource
+            Source<String, KillSwitch> jmsTopicSource2 = JmsSource
                     .textSource(JmsSourceSettings
                             .create(connectionFactory)
                             .withTopic("topic")
@@ -510,7 +509,7 @@ public class JmsConnectorsTest {
             Source.from(msgsIn).runWith(jmsSink, materializer);
 
             //#create-jms-source-client-ack
-            Source<Message, NotUsed> jmsSource = JmsSource.create(JmsSourceSettings
+            Source<Message, KillSwitch> jmsSource = JmsSource.create(JmsSourceSettings
                     .create(connectionFactory)
                     .withQueue("test")
                     .withAcknowledgeMode(AcknowledgeMode.ClientAcknowledge())
@@ -617,18 +616,18 @@ public class JmsConnectorsTest {
             }
         });
     }
-    
+
     private static ActorSystem system;
     private static Materializer materializer;
 
     @BeforeClass
-    public static void setup() throws Exception {
+    public static void setup() {
         system = ActorSystem.create();
         materializer = ActorMaterializer.create(system);
     }
 
     @AfterClass
-    public static void teardown() throws Exception {
+    public static void teardown() {
         TestKit.shutdownActorSystem(system);
     }
 
@@ -644,6 +643,7 @@ public class JmsConnectorsTest {
         broker.start();
         try {
             test.accept(new Context(url, broker));
+            Thread.sleep(100);
         } finally {
             if (broker.isStarted()) {
                 broker.stop();

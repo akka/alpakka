@@ -2,6 +2,12 @@
 
 The MQTT connector provides an Akka Stream source, sink and flow to connect to MQTT servers.
 
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Amqtt)
+
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {

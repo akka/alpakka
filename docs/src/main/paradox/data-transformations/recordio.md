@@ -17,6 +17,12 @@ is parsed into frames:
 {"type":"HEARTBEAT"}
 ```
 
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Arecordio)
+
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
