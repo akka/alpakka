@@ -157,14 +157,17 @@ object AmqpCredentials {
     AmqpCredentials(username, password)
 }
 
-final case class AmqpConnectionFactoryConnectionProvider(factory: ConnectionFactory, hostAndPortList: Seq[(String, Int)] = Seq()) extends AmqpConnectionProvider {
+final case class AmqpConnectionFactoryConnectionProvider(factory: ConnectionFactory,
+                                                         hostAndPortList: Seq[(String, Int)] = Seq())
+    extends AmqpConnectionProvider {
 
-  def withHostsAndPorts(hostAndPort: (String, Int), hostAndPorts: (String, Int)*): AmqpConnectionFactoryConnectionProvider =
+  def withHostsAndPorts(hostAndPort: (String, Int),
+                        hostAndPorts: (String, Int)*): AmqpConnectionFactoryConnectionProvider =
     copy(hostAndPortList = (hostAndPort +: hostAndPorts).toList)
 
   /**
-    * Java API
-    */
+   * Java API
+   */
   @annotation.varargs
   def withHostsAndPorts(hostAndPort: akka.japi.Pair[String, Int],
                         hostAndPorts: akka.japi.Pair[String, Int]*): AmqpConnectionFactoryConnectionProvider =
