@@ -60,7 +60,7 @@ public class S3ClientTest extends S3WireMockBase {
             credentials,
             regionProvider("us-east-1"),
             false,
-            akka.japi.Option.<String>none().asScala() //FIXME
+            scala.Option.empty()
     );
     private final S3Client client = new S3Client(settings, system(), materializer);
     //#client

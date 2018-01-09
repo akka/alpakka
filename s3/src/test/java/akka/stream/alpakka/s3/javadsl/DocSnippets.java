@@ -48,7 +48,7 @@ public class DocSnippets extends S3WireMockBase {
                 credentials,
                 regionProvider,
                 true,
-                Option.<String>none().asScala() //FIXME
+                scala.Option.empty()
         );
         final S3Client s3Client = new S3Client(settings,system(), mat);
         // #java-bluemix-example
