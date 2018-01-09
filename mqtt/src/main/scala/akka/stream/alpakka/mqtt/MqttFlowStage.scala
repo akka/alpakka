@@ -14,6 +14,7 @@ import akka.stream.stage._
 import akka.stream.alpakka.mqtt.scaladsl.MqttCommittableMessage
 import akka.util.ByteString
 import org.eclipse.paho.client.mqttv3.{
+  IMqttActionListener,
   IMqttAsyncClient,
   IMqttDeliveryToken,
   IMqttToken,
@@ -236,8 +237,21 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
             .tryFailure(
               new IllegalStateException("Cannot complete subscription because the stage is about to stop or fail")
             )
-        try mqttClient.disconnect()
-        catch { case _: Throwable => () }
+
+        mqttClient.disconnect(
+          connectionSettings.disconnectQuiesceTimeout.toMillis,
+          null,
+          new IMqttActionListener {
+            override def onSuccess(asyncActionToken: IMqttToken): Unit = mqttClient.close()
+
+            override def onFailure(asyncActionToken: IMqttToken, exception: Throwable): Unit = {
+              // Use 0 quiesce timeout as we have already quiesced in `disconnect`
+              mqttClient.disconnectForcibly(0, connectionSettings.disconnectTimeout.toMillis)
+              // Only disconnected client can be closed
+              mqttClient.close()
+            }
+          }
+        )
       }
     }, subscriptionPromise.future)
   }
