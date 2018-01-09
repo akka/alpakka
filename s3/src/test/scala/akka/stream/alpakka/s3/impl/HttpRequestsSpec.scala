@@ -4,12 +4,18 @@
 
 package akka.stream.alpakka.s3.impl
 
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{HttpEntity, IllegalUriException, MediaTypes}
+import akka.http.scaladsl.model.{HttpEntity, HttpRequest, IllegalUriException, MediaTypes}
+import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.acl.CannedAcl
+import akka.stream.alpakka.s3.scaladsl.S3Client
 import akka.stream.alpakka.s3.{BufferType, MemoryBufferType, Proxy, S3Settings}
 import akka.stream.scaladsl.Source
+import akka.testkit.{SocketUtil, TestProbe}
+import akka.util.ByteString
 import com.amazonaws.auth.{AWSCredentialsProvider, AWSStaticCredentialsProvider, AnonymousAWSCredentials}
 import com.amazonaws.regions.AwsRegionProvider
 import org.scalatest.concurrent.ScalaFutures
@@ -23,13 +29,14 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
       proxy: Option[Proxy] = None,
       awsCredentials: AWSCredentialsProvider = new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()),
       s3Region: String = "us-east-1",
-      pathStyleAccess: Boolean = false
+      pathStyleAccess: Boolean = false,
+      endpointUrl: Option[String] = None
   ) = {
     val regionProvider = new AwsRegionProvider {
       def getRegion = s3Region
     }
 
-    new S3Settings(bufferType, proxy, awsCredentials, regionProvider, pathStyleAccess)
+    new S3Settings(bufferType, proxy, awsCredentials, regionProvider, pathStyleAccess, endpointUrl)
   }
 
   val location = S3Location("bucket", "image-1024@2x")
@@ -265,5 +272,34 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     req.uri.query() shouldEqual Query("list-type" -> "2",
                                       "prefix" -> "random/prefix",
                                       "continuation-token" -> "randomToken")
+  }
+
+  it should "support custom endpoint configured by `endpointUrl`" in {
+    implicit val system: ActorSystem = ActorSystem("HttpRequestsSpec")
+    import system.dispatcher
+    implicit val materializer: ActorMaterializer = ActorMaterializer()
+
+    val probe = TestProbe()
+    val address = SocketUtil.temporaryServerAddress()
+
+    import akka.http.scaladsl.server.Directives._
+
+    Http().bindAndHandle(extractRequestContext { ctx =>
+      probe.ref ! ctx.request
+      complete("MOCK")
+    }, address.getHostName, address.getPort)
+
+    implicit val setting: S3Settings =
+      getSettings(endpointUrl = Some(s"http://${address.getHostName}:${address.getPort}/"))
+
+    val req =
+      HttpRequests.listBucket(location.bucket, Some("random/prefix"), Some("randomToken"))
+
+    Http().singleRequest(req)
+
+    probe.expectMsgType[HttpRequest]
+
+    materializer.shutdown()
+    system.terminate()
   }
 }
