@@ -4,15 +4,20 @@
 
 package akka.stream.alpakka.mqtt
 
-import javax.net.ssl.SSLSocketFactory
+import javax.net.ssl.{HostnameVerifier, SSLSocketFactory}
 
 import akka.Done
 import akka.util.ByteString
-import org.eclipse.paho.client.mqttv3.{IMqttActionListener, IMqttToken, MqttClientPersistence}
+import org.eclipse.paho.client.mqttv3.{IMqttActionListener, IMqttToken, MqttClientPersistence, MqttConnectOptions}
 
+import scala.annotation.varargs
 import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.collection.immutable.Seq
+import scala.collection.immutable.Map
 import scala.language.implicitConversions
 import scala.util._
+import scala.collection.JavaConverters._
 
 sealed abstract class MqttQoS {
   def byteValue: Byte
@@ -79,26 +84,58 @@ final case class MqttConnectionSettings(
     auth: Option[(String, String)] = None,
     socketFactory: Option[SSLSocketFactory] = None,
     cleanSession: Boolean = true,
-    will: Option[MqttMessage] = None
+    will: Option[MqttMessage] = None,
+    automaticReconnect: Boolean = false,
+    keepAliveInterval: FiniteDuration = 60.seconds,
+    connectionTimeout: FiniteDuration = 30.seconds,
+    maxInFlight: Int = 10,
+    mqttVersion: Int = MqttConnectOptions.MQTT_VERSION_3_1_1,
+    serverUris: Seq[String] = Seq.empty,
+    sslHostnameVerifier: Option[HostnameVerifier] = None,
+    sslProperties: Map[String, String] = Map.empty
 ) {
-  def withBroker(broker: String) =
+  def withBroker(broker: String): MqttConnectionSettings =
     copy(broker = broker)
 
-  def withAuth(username: String, password: String) =
+  def withAuth(username: String, password: String): MqttConnectionSettings =
     copy(auth = Some((username, password)))
 
-  def withCleanSession(cleanSession: Boolean) =
+  def withCleanSession(cleanSession: Boolean): MqttConnectionSettings =
     copy(cleanSession = cleanSession)
 
-  def withWill(will: MqttMessage) =
+  def withWill(will: MqttMessage): MqttConnectionSettings =
     copy(will = Some(will))
 
   @deprecated("use a normal message instead of a will", "0.16")
-  def withWill(will: Will) =
+  def withWill(will: Will): MqttConnectionSettings =
     copy(will = Some(MqttMessage(will.message.topic, will.message.payload, Some(will.qos), will.retained)))
 
-  def withClientId(clientId: String) =
+  def withClientId(clientId: String): MqttConnectionSettings =
     copy(clientId = clientId)
+
+  def withAutomaticReconnect(automaticReconnect: Boolean): MqttConnectionSettings =
+    copy(automaticReconnect = automaticReconnect)
+
+  def withKeepAliveInterval(connectionTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
+    copy(connectionTimeout = FiniteDuration(connectionTimeout, unit))
+
+  def withConnectionTimeout(connectionTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
+    copy(connectionTimeout = FiniteDuration(connectionTimeout, unit))
+
+  def withMaxInFlight(maxInFlight: Int): MqttConnectionSettings =
+    copy(maxInFlight = maxInFlight)
+
+  def withMqttVersion(mqttVersion: Int): MqttConnectionSettings =
+    copy(mqttVersion = mqttVersion)
+
+  @varargs def withServerUris(serverUris: String*): MqttConnectionSettings =
+    copy(serverUris = serverUris.to[Seq])
+
+  def withSslHostnameVerifier(sslHostnameVerifier: HostnameVerifier): MqttConnectionSettings =
+    copy(sslHostnameVerifier = Some(sslHostnameVerifier))
+
+  def withSslProperties(sslProperties: java.util.Map[String, String]): MqttConnectionSettings =
+    copy(sslProperties = sslProperties.asScala.toMap)
 }
 
 object MqttConnectionSettings {
