@@ -191,26 +191,31 @@ final case class AmqpCachedConnectionProvider(provider: AmqpConnectionProvider, 
         state.compareAndSet(Connecting, Connected(connection, 1))
         connection
       } else get
+    case Connecting => get
     case c @ Connected(connection, clients) =>
       if (state.compareAndSet(c, Connected(connection, clients + 1))) connection
       else get
-    case _ => get
+    case Closing => get
+    case _ => throw new RuntimeException("Unknown provider state.")
   }
 
   @tailrec
   override def release(connection: Connection): Unit = state.get match {
+    case Empty => ()
+    case Connecting => release(connection)
     case c @ Connected(cachedConnection, clients) =>
       if (cachedConnection != connection)
         throw new IllegalArgumentException("Can't release a connection that's not owned by this provider")
 
-      if (state.compareAndSet(c, Closing)) {
-        if (clients == 1 || !automaticRelease) {
+      if (clients == 1 || !automaticRelease) {
+        if (state.compareAndSet(c, Closing)) {
           provider.release(connection)
           state.compareAndSet(Closing, Empty)
-        } else {
-          state.compareAndSet(Closing, Connected(cachedConnection, clients - 1))
         }
-      } else release(connection)
-    case _ => release(connection)
+      } else {
+        if (!state.compareAndSet(Closing, Connected(cachedConnection, clients - 1))) release(connection)
+      }
+    case Closing => release(connection)
+    case _ => throw new RuntimeException("Unknown provider state.")
   }
 }
