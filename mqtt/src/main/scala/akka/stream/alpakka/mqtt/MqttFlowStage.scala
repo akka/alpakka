@@ -239,12 +239,15 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
             )
 
         mqttClient.disconnect(
+          connectionSettings.disconnectQuiesceTimeout.toMillis,
           null,
           new IMqttActionListener {
             override def onSuccess(asyncActionToken: IMqttToken): Unit = mqttClient.close()
 
             override def onFailure(asyncActionToken: IMqttToken, exception: Throwable): Unit = {
-              mqttClient.disconnectForcibly()
+              // Use 0 quiesce timeout as we have already quiesced in `disconnect`
+              mqttClient.disconnectForcibly(0, connectionSettings.disconnectTimeout.toMillis)
+              // Only disconnected client can be closed
               mqttClient.close()
             }
           }

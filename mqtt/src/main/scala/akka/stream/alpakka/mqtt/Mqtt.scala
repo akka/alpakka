@@ -88,6 +88,8 @@ final case class MqttConnectionSettings(
     automaticReconnect: Boolean = false,
     keepAliveInterval: FiniteDuration = 60.seconds,
     connectionTimeout: FiniteDuration = 30.seconds,
+    disconnectQuiesceTimeout: FiniteDuration = 30.seconds,
+    disconnectTimeout: FiniteDuration = 10.seconds,
     maxInFlight: Int = 10,
     mqttVersion: Int = MqttConnectOptions.MQTT_VERSION_3_1_1,
     serverUris: Seq[String] = Seq.empty,
@@ -121,6 +123,12 @@ final case class MqttConnectionSettings(
 
   def withConnectionTimeout(connectionTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
     copy(connectionTimeout = FiniteDuration(connectionTimeout, unit))
+
+  def withDisconnectQuiesceTimeout(disconnectQuiesceTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
+    copy(disconnectQuiesceTimeout = FiniteDuration(disconnectQuiesceTimeout, unit))
+
+  def withDisconnectTimeout(disconnectTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
+    copy(disconnectQuiesceTimeout = FiniteDuration(disconnectTimeout, unit))
 
   def withMaxInFlight(maxInFlight: Int): MqttConnectionSettings =
     copy(maxInFlight = maxInFlight)
