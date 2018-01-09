@@ -41,18 +41,24 @@ protected[pubsub] trait GooglePubSub {
       materializer: Materializer
   ): Flow[PublishRequest, immutable.Seq[String], NotUsed] = {
     import materializer.executionContext
-    val session = getSession(clientEmail, privateKey)
 
-    Flow[PublishRequest].mapAsyncUnordered(parallelism) { request =>
-      session.getToken().flatMap { accessToken =>
-        httpApi.publish(projectId, topic, accessToken, apiKey, request)
+    if (httpApi.isEmulated) {
+      Flow[PublishRequest].mapAsyncUnordered(parallelism) { request =>
+        httpApi.publish(projectId, topic, maybeAccessToken = None, apiKey, request)
+      }
+    } else {
+      val session = getSession(clientEmail, privateKey)
+
+      Flow[PublishRequest].mapAsyncUnordered(parallelism) { request =>
+        session.getToken().flatMap { accessToken =>
+          httpApi.publish(projectId, topic, Some(accessToken), apiKey, request)
+        }
       }
     }
   }
 
   def subscribe(projectId: String, apiKey: String, clientEmail: String, privateKey: PrivateKey, subscription: String)(
-      implicit actorSystem: ActorSystem,
-      materializer: Materializer
+      implicit actorSystem: ActorSystem
   ): Source[ReceivedMessage, NotUsed] = {
     val session = getSession(clientEmail, privateKey)
     Source.fromGraph(
@@ -73,18 +79,28 @@ protected[pubsub] trait GooglePubSub {
       parallelism: Int = 1
   )(implicit actorSystem: ActorSystem, materializer: Materializer): Sink[AcknowledgeRequest, Future[Done]] = {
     import materializer.executionContext
-    val session = getSession(clientEmail, privateKey)
 
-    Flow[AcknowledgeRequest]
-      .mapAsyncUnordered(parallelism) { ackReq =>
-        session.getToken().flatMap { accessToken =>
-          httpApi.acknowledge(project = projectId,
-                              subscription = subscription,
-                              accessToken = accessToken,
-                              apiKey = apiKey,
-                              request = ackReq)
-        }
-      }
+    (if (httpApi.isEmulated) {
+       Flow[AcknowledgeRequest].mapAsyncUnordered(parallelism) { ackReq =>
+         httpApi.acknowledge(project = projectId,
+                             subscription = subscription,
+                             maybeAccessToken = None,
+                             apiKey = apiKey,
+                             request = ackReq)
+       }
+     } else {
+       val session = getSession(clientEmail, privateKey)
+       Flow[AcknowledgeRequest]
+         .mapAsyncUnordered(parallelism) { ackReq =>
+           session.getToken().flatMap { accessToken =>
+             httpApi.acknowledge(project = projectId,
+                                 subscription = subscription,
+                                 maybeAccessToken = Some(accessToken),
+                                 apiKey = apiKey,
+                                 request = ackReq)
+           }
+         }
+     })
       .toMat(Sink.ignore)(Keep.right)
   }
 }

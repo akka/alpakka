@@ -4,8 +4,6 @@
 
 package akka.stream.alpakka.amqp
 
-import java.util.concurrent.atomic.AtomicInteger
-
 import akka.Done
 import akka.stream._
 import akka.stream.alpakka.amqp.scaladsl.CommittableIncomingMessage
@@ -31,17 +29,15 @@ object AmqpRpcFlowStage {
  *                            can be overridden per message by including `expectedReplies` in the the header of the [[OutgoingMessage]]
  */
 final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, responsesPerMessage: Int = 1)
-    extends GraphStageWithMaterializedValue[FlowShape[OutgoingMessage, CommittableIncomingMessage], Future[String]]
-    with AmqpConnector { stage =>
-
-  import AmqpRpcFlowStage._
+    extends GraphStageWithMaterializedValue[FlowShape[OutgoingMessage, CommittableIncomingMessage], Future[String]] {
+  stage =>
 
   val in = Inlet[OutgoingMessage]("AmqpRpcFlow.in")
   val out = Outlet[CommittableIncomingMessage]("AmqpRpcFlow.out")
 
   override def shape: FlowShape[OutgoingMessage, CommittableIncomingMessage] = FlowShape.of(in, out)
 
-  override protected def initialAttributes: Attributes = defaultAttributes
+  override protected def initialAttributes: Attributes = AmqpRpcFlowStage.defaultAttributes
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[String]) = {
     val promise = Promise[String]()
@@ -52,12 +48,8 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
       private val routingKey = settings.routingKey.getOrElse("")
       private val queue = mutable.Queue[CommittableIncomingMessage]()
       private var queueName: String = _
-      private val unackedMessages = new AtomicInteger()
+      private var unackedMessages = 0
       private var outstandingMessages = 0
-
-      override def connectionFactoryFrom(settings: AmqpConnectionSettings) = stage.connectionFactoryFrom(settings)
-      override def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings): Connection =
-        stage.newConnection(factory, settings)
 
       override def whenConnected(): Unit = {
         import scala.collection.JavaConverters._
@@ -81,26 +73,34 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
 
         val commitCallback = getAsyncCallback[CommitCallback] {
           case AckArguments(deliveryTag, multiple, promise) => {
-            channel.basicAck(deliveryTag, multiple)
-            unackedMessages.decrementAndGet()
-            if (unackedMessages.get() == 0) completeStage()
-            promise.complete(Try(Done))
+            try {
+              channel.basicAck(deliveryTag, multiple)
+              unackedMessages -= 1
+              if (unackedMessages == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty && outstandingMessages == 0)))
+                completeStage()
+              promise.complete(Try(Done))
+            } catch {
+              case e: Throwable => promise.failure(e)
+            }
           }
           case NackArguments(deliveryTag, multiple, requeue, promise) => {
-            channel.basicNack(deliveryTag, multiple, requeue)
-            unackedMessages.decrementAndGet()
-            if (unackedMessages.get() == 0) completeStage()
-            promise.complete(Try(Done))
+            try {
+              channel.basicNack(deliveryTag, multiple, requeue)
+              unackedMessages -= 1
+              if (unackedMessages == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty && outstandingMessages == 0)))
+                completeStage()
+              promise.complete(Try(Done))
+            } catch {
+              case e: Throwable => promise.failure(e)
+            }
           }
         }
 
         val amqpSourceConsumer = new DefaultConsumer(channel) {
-          override def handleDelivery(
-              consumerTag: String,
-              envelope: Envelope,
-              properties: BasicProperties,
-              body: Array[Byte]
-          ): Unit =
+          override def handleDelivery(consumerTag: String,
+                                      envelope: Envelope,
+                                      properties: BasicProperties,
+                                      body: Array[Byte]): Unit =
             consumerCallback.invoke(
               new CommittableIncomingMessage {
                 override val message = IncomingMessage(ByteString(body), envelope, properties)
@@ -149,23 +149,11 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
       def handleDelivery(message: CommittableIncomingMessage): Unit =
         if (isAvailable(out)) {
           pushMessage(message)
+        } else if (queue.size + 1 > bufferSize) {
+          failStage(new RuntimeException(s"Reached maximum buffer size $bufferSize"))
         } else {
-          if (queue.size + 1 > bufferSize) {
-            failStage(new RuntimeException(s"Reached maximum buffer size $bufferSize"))
-          } else {
-            queue.enqueue(message)
-          }
+          queue.enqueue(message)
         }
-
-      def pushMessage(message: CommittableIncomingMessage): Unit = {
-        push(out, message)
-
-        outstandingMessages -= 1
-
-        if (outstandingMessages == 0 && unackedMessages.get() == 0 && isClosed(in)) {
-          completeStage()
-        }
-      }
 
       setHandler(
         out,
@@ -174,8 +162,19 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
             if (queue.nonEmpty) {
               pushMessage(queue.dequeue())
             }
+
+          override def onDownstreamFinish(): Unit = {
+            setKeepGoing(true)
+            if (unackedMessages == 0) super.onDownstreamFinish()
+          }
         }
       )
+
+      def pushMessage(message: CommittableIncomingMessage): Unit = {
+        push(out, message)
+        unackedMessages += 1
+        outstandingMessages -= 1
+      }
 
       setHandler(
         in,
@@ -184,8 +183,16 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
           // on incoming messages from rabbit. However, if we
           // haven't processed a message yet, we do want to complete
           // so that we don't hang.
-          override def onUpstreamFinish(): Unit =
-            if (queue.isEmpty && outstandingMessages == 0 && unackedMessages.get() == 0) super.onUpstreamFinish()
+          override def onUpstreamFinish(): Unit = {
+            setKeepGoing(true)
+            if (queue.isEmpty && outstandingMessages == 0 && unackedMessages == 0) super.onUpstreamFinish()
+          }
+
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            setKeepGoing(true)
+            if (queue.isEmpty && outstandingMessages == 0 && unackedMessages == 0)
+              super.onUpstreamFailure(ex)
+          }
 
           override def onPush(): Unit = {
             val elem = grab(in)
@@ -213,7 +220,6 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
               }
             }
 
-            unackedMessages.addAndGet(expectedResponses)
             outstandingMessages += expectedResponses
             pull(in)
           }

@@ -9,15 +9,21 @@ import akka.stream.alpakka.s3.impl.{S3Headers, ServerSideEncryption}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import scala.concurrent.Future
+
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import com.amazonaws.regions.AwsRegionProvider
 
 class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
-  val awsCredentials = new AWSStaticCredentialsProvider(
+  val awsCredentialsProvider = new AWSStaticCredentialsProvider(
     new BasicAWSCredentials("my-AWS-access-key-ID", "my-AWS-password")
   )
+  val regionProvider =
+    new AwsRegionProvider {
+      def getRegion: String = "us-east-1"
+    }
   val proxy = Option(Proxy("localhost", port, "http"))
-  val settings = new S3Settings(MemoryBufferType, proxy, awsCredentials, "us-east-1", false)
+  val settings = new S3Settings(MemoryBufferType, proxy, awsCredentialsProvider, regionProvider, false)
   val s3Client = new S3Client(settings)(system, materializer)
 
   "S3Sink" should "upload a stream of bytes to S3" in {
@@ -55,7 +61,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
       .single(ByteString("some contents"))
       .runWith(s3Client.multipartUpload("nonexisting_bucket", "nonexisting_file.xml"))
 
-    result.failed.futureValue.getMessage should startWith("Can't initiate upload:")
+    result.failed.futureValue.getMessage shouldBe "No key found"
   }
 
   override protected def afterAll(): Unit = {

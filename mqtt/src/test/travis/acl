@@ -2,9 +2,14 @@
 topic source-spec/topic1
 topic source-spec/topic2
 topic source-spec/will
+topic source-spec/manualacks
+topic source-spec/pendingacks
 topic sink-spec/topic1
+topic sink-spec/topic2
 topic source-test/topic1
 topic source-test/topic2
+topic source-test/manualacks
+topic source-test/pendingacks
 
 user username1
 topic source-spec/secure-topic1

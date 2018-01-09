@@ -11,10 +11,13 @@ import org.elasticsearch.client.RestClient
 import com.fasterxml.jackson.databind.ObjectMapper
 import scala.collection.JavaConverters._
 
+/**
+ * Java API to create Elasticsearch sources.
+ */
 object ElasticsearchSource {
 
   /**
-   * Java API: creates a [[ElasticsearchSourceStage]] that consumes as java.util.Map
+   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s of [[java.util.Map]].
    */
   def create(indexName: String,
              typeName: String,
@@ -33,7 +36,7 @@ object ElasticsearchSource {
     )
 
   /**
-   * Java API: creates a [[ElasticsearchSourceStage]] that consumes as specific type
+   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s of type `T`.
    */
   def typed[T](indexName: String,
                typeName: String,

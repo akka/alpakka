@@ -13,7 +13,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.PosixFilePermissions;
 
 abstract class FtpBaseSupport implements FtpSupport, AkkaSupport {
 
@@ -68,18 +67,6 @@ abstract class FtpBaseSupport implements FtpSupport, AkkaSupport {
         }
     }
 
-    public void generateFiles() {
-        generateFiles(DEFAULT_NUM_FILES);
-    }
-
-    public void generateFiles(int numFiles) {
-        generateFiles(numFiles, -1);
-    }
-
-    public void generateFiles(int numFiles, int pageSize) {
-        generateFiles(numFiles, pageSize, "");
-    }
-
     public void generateFiles(int numFiles, int pageSize, String basePath) {
         String base = "";
         if (!basePath.isEmpty()) {
@@ -120,6 +107,16 @@ abstract class FtpBaseSupport implements FtpSupport, AkkaSupport {
             Path baseDir = getFileSystem().getPath(path);
             Path filePath = baseDir.resolve(fileName);
             return Files.readAllBytes(filePath);
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    public boolean fileExists(String path, String fileName) {
+        try {
+            Path baseDir = getFileSystem().getPath(path);
+            Path filePath = baseDir.resolve(fileName);
+            return Files.exists(filePath);
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }

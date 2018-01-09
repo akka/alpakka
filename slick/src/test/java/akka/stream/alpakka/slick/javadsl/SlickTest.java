@@ -4,34 +4,30 @@
 
 package akka.stream.alpakka.slick.javadsl;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 import akka.Done;
 import akka.NotUsed;
-
 import akka.actor.ActorSystem;
-import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.*;
-
+import akka.testkit.javadsl.TestKit;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * This unit test is run using a local H2 database using
@@ -48,9 +44,7 @@ public class SlickTest {
   private static final Set<User> users = IntStream.range(0, 40).boxed().map((i) -> new User(i, "Name"+i)).collect(Collectors.toSet());
   private static final Source<User, NotUsed> usersSource = Source.from(users);
 
-  private static final Function<User, String> insertUser = (user) -> {
-    return "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES (" + user.id + ", '" + user.name + "')";
-  };
+  private static final Function<User, String> insertUser = (user) -> "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES (" + user.id + ", '" + user.name + "')";
 
   private static final String selectAllUsers = "SELECT ID, NAME FROM ALPAKKA_SLICK_JAVADSL_TEST_USERS";
 
@@ -75,15 +69,15 @@ public class SlickTest {
     executeStatement("DROP TABLE ALPAKKA_SLICK_JAVADSL_TEST_USERS", session, materializer);
 
     //#close-session
-    system.registerOnTermination( () -> session.close() );
+    system.registerOnTermination(session::close);
     //#close-session
 
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 
   @Test
   public void testSinkWithoutParallelismAndReadBackWithSource() throws Exception {
-    final Sink<User, CompletionStage<Done>> slickSink = Slick.<User>sink(session, insertUser);
+    final Sink<User, CompletionStage<Done>> slickSink = Slick.sink(session, insertUser);
     final CompletionStage<Done> insertionResultFuture = usersSource.runWith(slickSink, materializer);
 
     insertionResultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -95,14 +89,14 @@ public class SlickTest {
     );
 
     final CompletionStage<List<User>> foundUsersFuture = slickSource.runWith(Sink.seq(), materializer);
-    final Set<User> foundUsers = foundUsersFuture.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().collect(Collectors.toSet());
+    final Set<User> foundUsers = new HashSet<>(foundUsersFuture.toCompletableFuture().get(3, TimeUnit.SECONDS));
 
     assertEquals(foundUsers, users);
   }
 
   @Test
   public void testSinkWithParallelismOf4AndReadBackWithSource() throws Exception {
-    final Sink<User, CompletionStage<Done>> slickSink = Slick.<User>sink(session, 4, insertUser);
+    final Sink<User, CompletionStage<Done>> slickSink = Slick.sink(session, 4, insertUser);
     final CompletionStage<Done> insertionResultFuture = usersSource.runWith(slickSink, materializer);
 
     insertionResultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -114,14 +108,14 @@ public class SlickTest {
     );
 
     final CompletionStage<List<User>> foundUsersFuture = slickSource.runWith(Sink.seq(), materializer);
-    final Set<User> foundUsers = foundUsersFuture.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().collect(Collectors.toSet());
+    final Set<User> foundUsers = new HashSet<>(foundUsersFuture.toCompletableFuture().get(3, TimeUnit.SECONDS));
 
     assertEquals(foundUsers, users);
   }
 
   @Test
   public void testFlowWithoutParallelismAndReadBackWithSource() throws Exception {
-    final Flow<User, Integer, NotUsed> slickFlow = Slick.<User>flow(session, insertUser);
+    final Flow<User, Integer, NotUsed> slickFlow = Slick.flow(session, insertUser);
     final CompletionStage<List<Integer>> insertionResultFuture = usersSource.via(slickFlow).runWith(Sink.seq(), materializer);
     final List<Integer> insertionResult = insertionResultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
@@ -134,14 +128,14 @@ public class SlickTest {
     );
 
     final CompletionStage<List<User>> foundUsersFuture = slickSource.runWith(Sink.seq(), materializer);
-    final Set<User> foundUsers = foundUsersFuture.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().collect(Collectors.toSet());
+    final Set<User> foundUsers = new HashSet<>(foundUsersFuture.toCompletableFuture().get(3, TimeUnit.SECONDS));
 
     assertEquals(foundUsers, users);
   }
 
   @Test
   public void testFlowWithParallelismOf4AndReadBackWithSource() throws Exception {
-    final Flow<User, Integer, NotUsed> slickFlow = Slick.<User>flow(session, 4, insertUser);
+    final Flow<User, Integer, NotUsed> slickFlow = Slick.flow(session, 4, insertUser);
     final CompletionStage<List<Integer>> insertionResultFuture = usersSource.via(slickFlow).runWith(Sink.seq(), materializer);
     final List<Integer> insertionResult = insertionResultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
@@ -154,7 +148,7 @@ public class SlickTest {
     );
 
     final CompletionStage<List<User>> foundUsersFuture = slickSource.runWith(Sink.seq(), materializer);
-    final Set<User> foundUsers = foundUsersFuture.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().collect(Collectors.toSet());
+    final Set<User> foundUsers = new HashSet<>(foundUsersFuture.toCompletableFuture().get(3, TimeUnit.SECONDS));
 
     assertEquals(foundUsers, users);
   }

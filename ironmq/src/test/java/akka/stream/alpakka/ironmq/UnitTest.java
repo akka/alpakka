@@ -7,7 +7,7 @@ package akka.stream.alpakka.ironmq;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.After;
@@ -25,12 +25,11 @@ public abstract class UnitTest {
 
     private ActorSystem system;
     private ActorMaterializer materializer;
-    private Config config;
     private IronMqClient ironMqClient;
 
     @Before
     public void setup() throws Exception {
-        config = initConfig();
+        Config config = initConfig();
         system = ActorSystem.create("TestActorSystem", config);
         materializer = ActorMaterializer.create(system);
         ironMqClient = new IronMqClient(IronMqSettings.create(config.getConfig("akka.stream.alpakka.ironmq")), system, materializer);
@@ -40,7 +39,7 @@ public abstract class UnitTest {
     @After
     public void teardown() throws Exception {
         materializer.shutdown();
-        JavaTestKit.shutdownActorSystem(system);
+        TestKit.shutdownActorSystem(system);
     }
 
     protected Config initConfig() {

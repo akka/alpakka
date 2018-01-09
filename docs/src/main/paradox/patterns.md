@@ -1,7 +1,7 @@
 # Integration Patterns
 
 Many [Enterprise Integration Patterns](http://www.eaipatterns.com/toc.html) can be implemented with Akka Streams 
-(see [Java documentation](http://doc.akka.io/docs/akka/2.4/java/stream/index.html) or [Scala documentation](http://doc.akka.io/docs/akka/2.4/scala/stream/index.html)).
+(see @extref[Akka Streams documentation](akka-docs:stream/index.html)).
 
 
 # Splitter
@@ -15,10 +15,10 @@ You can achieve a [Splitter](http://www.enterpriseintegrationpatterns.com/patter
 Let's say that we have a stream containing strings. Each string contains a few numbers separated by "-". We want to create out of this a stream that only contains the numbers. 
 
 Scala
-: @@snip (../../test/scala/akka/stream/alpakka/eip/scaladsl/SplitterExamples.scala) { #Simple-Split }
+: @@snip ($alpakka$/doc-examples/src/test/scala/akka/stream/alpakka/eip/scaladsl/SplitterExamples.scala) { #Simple-Split }
 
 Java
-: @@snip (../../test/java/akka/stream/alpakka/eip/javadsl/SplitterExamples.java) { #Simple-Split }
+: @@snip ($alpakka$/doc-examples/src/test/java/akka/stream/alpakka/eip/javadsl/SplitterExamples.java) { #Simple-Split }
 
 ## Spliter + Aggregator
 
@@ -28,14 +28,9 @@ Let's say that now we want to create a new stream containing the sums of the num
 
 
 Scala
-: @@snip (../../test/scala/akka/stream/alpakka/eip/scaladsl/SplitterExamples.scala) { #Aggregate-Split }
+: @@snip ($alpakka$/doc-examples/src/test/scala/akka/stream/alpakka/eip/scaladsl/SplitterExamples.scala) { #Aggregate-Split }
 
 Java
-: @@snip (../../test/java/akka/stream/alpakka/eip/javadsl/SplitterExamples.java) { #Aggregate-Split }
+: @@snip ($alpakka$/doc-examples/src/test/java/akka/stream/alpakka/eip/javadsl/SplitterExamples.java) { #Aggregate-Split }
 
 While in real life this solution if overkill for such a simple problem (you can just do everything in a map), more complex scenarios, involving in particular I/O, will benefit from the fact that you can paralelize sub-streams and get back-pressure for "free".
-
-
- 
-TODO: Create documentation pages for typical integration patterns and some might deserve a higher level component that is implemented in Alpakka. [Contributions](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md) are very welcome.
-[Creating an issue](https://github.com/akka/alpakka/issues) for discussion is a good first step for such contributions.

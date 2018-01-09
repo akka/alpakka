@@ -12,6 +12,16 @@ The AMQP connector provides Akka Stream sources and sinks to connect to AMQP ser
 
 ## Usage
 
+### Connecting to AMQP server
+
+All the AMQP connectors are configured using a @scaladoc[AmqpConnectionProvider](akka.stream.alpakka.amqp.AmqpConnectionProvider) and a list of @scaladoc[Declaration](akka.stream.alpakka.amqp.Declaration)
+
+There are several types of @scaladoc[AmqpConnectionProvider](akka.stream.alpakka.amqp.AmqpConnectionProvider):
+* @scaladoc[AmqpLocalConnectionProvider](akka.stream.alpakka.amqp.AmqpLocalConnectionProvider) which connects to the default localhost. It creates a new connection for each stage.
+* @scaladoc[AmqpUriConnectionProvider](akka.stream.alpakka.amqp.AmqpUriConnectionProvider) which connects to the given AMQP URI. It creates a new connection for each stage.
+* @scaladoc[AmqpDetailsConnectionProvider](akka.stream.alpakka.amqp.AmqpDetailsConnectionProvider) which supports more fine-grained configuration. It creates a new connection for each stage.
+* @scaladoc[AmqpCachedConnectionProvider](akka.stream.alpakka.amqp.AmqpCachedConnectionProvider) which receive any other provider as parameter and caches the connection it provides to be used in all stages. By default it closes the connection whenever the last stage using the provider stops. Optionally, it takes `automaticRelease` boolean parameter so the connection is not automatically release and the user have to release it explicitly.
+
 ### Sending messages to AMQP server
 
 First define a queue name and the declaration of the queue that the messages will be sent to.
@@ -22,7 +32,7 @@ Scala
 Java
 : @@snip ($alpakka$/amqp/src/test/java/akka/stream/alpakka/amqp/javadsl/AmqpConnectorsTest.java) { #queue-declaration }
 
-Here we used @scaladoc[QueueDeclaration](akka.stream.alpakka.amqp.QueueDeclaration) configuration class to create a queue declaration. All of the configuration classes as well as connector factories are under the @scaladoc[akka.stream.alpakka.amqp](akka.stream.alpakka.amqp.package) package.
+Here we used @scaladoc[QueueDeclaration](akka.stream.alpakka.amqp.QueueDeclaration) configuration class to create a queue declaration.
 
 Create a sink, that accepts and forwards @scaladoc[ByteString](akka.util.ByteString)s to the AMQP server.
 
@@ -146,7 +156,7 @@ The code in this guide is part of runnable tests of this project. You are welcom
 
 > Test code requires AMQP server running in the background. You can start one quickly using docker:
 >
-> `docker run --rm -p 5672:5672 rabbitmq:3`
+> `docker-compose up amqp`
 
 Scala
 :   ```

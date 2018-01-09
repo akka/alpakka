@@ -6,10 +6,11 @@ package akka.stream.alpakka.mqtt
 
 import javax.net.ssl.SSLSocketFactory
 
-import akka.stream.stage._
+import akka.Done
 import akka.util.ByteString
-import org.eclipse.paho.client.mqttv3.{MqttMessage => PahoMqttMessage, _}
+import org.eclipse.paho.client.mqttv3.{IMqttActionListener, IMqttToken, MqttClientPersistence}
 
+import scala.concurrent.Promise
 import scala.language.implicitConversions
 import scala.util._
 
@@ -58,9 +59,8 @@ final case class MqttSourceSettings(
     subscriptions: Map[String, MqttQoS] = Map.empty
 ) {
   @annotation.varargs
-  def withSubscriptions(subscription: akka.japi.Pair[String, MqttQoS],
-                        subscriptions: akka.japi.Pair[String, MqttQoS]*) =
-    copy(subscriptions = (subscription +: subscriptions).map(_.toScala).toMap)
+  def withSubscriptions(subscriptions: akka.japi.Pair[String, MqttQoS]*) =
+    copy(subscriptions = subscriptions.map(_.toScala).toMap)
 }
 
 object MqttSourceSettings {
@@ -79,7 +79,7 @@ final case class MqttConnectionSettings(
     auth: Option[(String, String)] = None,
     socketFactory: Option[SSLSocketFactory] = None,
     cleanSession: Boolean = true,
-    will: Option[Will] = None
+    will: Option[MqttMessage] = None
 ) {
   def withBroker(broker: String) =
     copy(broker = broker)
@@ -90,8 +90,12 @@ final case class MqttConnectionSettings(
   def withCleanSession(cleanSession: Boolean) =
     copy(cleanSession = cleanSession)
 
-  def withWill(will: Will) =
+  def withWill(will: MqttMessage) =
     copy(will = Some(will))
+
+  @deprecated("use a normal message instead of a will", "0.16")
+  def withWill(will: Will) =
+    copy(will = Some(MqttMessage(will.message.topic, will.message.payload, Some(will.qos), will.retained)))
 
   def withClientId(clientId: String) =
     copy(clientId = clientId)
@@ -106,9 +110,15 @@ object MqttConnectionSettings {
     MqttConnectionSettings(broker, clientId, persistence)
 }
 
-final case class MqttMessage(topic: String, payload: ByteString)
+final case class MqttMessage(topic: String,
+                             payload: ByteString,
+                             qos: Option[MqttQoS] = None,
+                             retained: Boolean = false)
 
+@deprecated("use a normal message instead of a will", "0.16")
 final case class Will(message: MqttMessage, qos: MqttQoS, retained: Boolean)
+
+final case class CommitCallbackArguments(messageId: Int, qos: MqttQoS, promise: Promise[Done])
 
 object MqttMessage {
 
@@ -117,66 +127,24 @@ object MqttMessage {
    */
   def create(topic: String, payload: ByteString) =
     MqttMessage(topic, payload)
-}
-
-/**
- *  Internal API
- */
-private[mqtt] trait MqttConnectorLogic { this: GraphStageLogic =>
-
-  import MqttConnectorLogic._
-
-  def connectionSettings: MqttConnectionSettings
-
-  def handleConnection(client: IMqttAsyncClient): Unit
-  def handleConnectionLost(ex: Throwable): Unit
-
-  val onConnect = getAsyncCallback[IMqttAsyncClient](handleConnection)
-  val onConnectionLost = getAsyncCallback[Throwable](handleConnectionLost)
 
   /**
-   * Callback, that is called from the MQTT client thread before invoking
-   * message handler callback in the GraphStage context.
+   * Java API: create  [[MqttMessage]]
    */
-  def onMessage(message: MqttMessage) = ()
+  def create(topic: String, payload: ByteString, qos: MqttQoS) =
+    MqttMessage(topic, payload, Some(qos))
 
-  final override def preStart(): Unit = {
-    val client = new MqttAsyncClient(
-      connectionSettings.broker,
-      connectionSettings.clientId,
-      connectionSettings.persistence
-    )
+  /**
+   * Java API: create  [[MqttMessage]]
+   */
+  def create(topic: String, payload: ByteString, retained: Boolean) =
+    MqttMessage(topic, payload, retained = retained)
 
-    client.setCallback(new MqttCallback {
-      def messageArrived(topic: String, message: PahoMqttMessage) =
-        onMessage(MqttMessage(topic, ByteString(message.getPayload)))
-
-      def deliveryComplete(token: IMqttDeliveryToken) =
-        ()
-
-      def connectionLost(cause: Throwable) =
-        onConnectionLost.invoke(cause)
-    })
-    val connectOptions = new MqttConnectOptions
-    connectionSettings.auth.foreach {
-      case (user, password) =>
-        connectOptions.setUserName(user)
-        connectOptions.setPassword(password.toCharArray)
-    }
-    connectionSettings.socketFactory.foreach { socketFactory =>
-      connectOptions.setSocketFactory(socketFactory)
-    }
-    connectionSettings.will.foreach { will =>
-      connectOptions.setWill(will.message.topic, will.message.payload.toArray, will.qos.byteValue.toInt, will.retained)
-    }
-    connectOptions.setCleanSession(connectionSettings.cleanSession)
-    client.connect(connectOptions, (), connectHandler)
-  }
-
-  private val connectHandler: Try[IMqttToken] => Unit = {
-    case Success(token) => onConnect.invoke(token.getClient)
-    case Failure(ex) => onConnectionLost.invoke(ex)
-  }
+  /**
+   * Java API: create  [[MqttMessage]]
+   */
+  def create(topic: String, payload: ByteString, qos: MqttQoS, retained: Boolean) =
+    MqttMessage(topic, payload, Some(qos), retained = retained)
 }
 
 /**

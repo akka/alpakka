@@ -10,8 +10,11 @@ import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.lambda.AWSLambdaAsync;
 import com.amazonaws.services.lambda.AWSLambdaAsyncClient;
+import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder;
 import com.amazonaws.services.lambda.model.InvokeRequest;
 import com.amazonaws.services.lambda.model.InvokeResult;
 
@@ -28,7 +31,8 @@ public class Examples {
 
     //#init-client
     BasicAWSCredentials credentials = new BasicAWSCredentials("x", "x");
-    AWSLambdaAsyncClient awsLambdaClient = new AWSLambdaAsyncClient(credentials, Executors.newFixedThreadPool(50));
+    AWSLambdaAsync awsLambdaClient = AWSLambdaAsyncClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(credentials)).build();
     //#init-client
 
     //#run

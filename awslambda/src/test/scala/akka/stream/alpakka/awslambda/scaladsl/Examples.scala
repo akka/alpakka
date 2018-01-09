@@ -4,13 +4,11 @@
 
 package akka.stream.alpakka.awslambda.scaladsl
 
-import java.util.concurrent.Executors
-
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
-import com.amazonaws.auth.BasicAWSCredentials
-import com.amazonaws.services.lambda.AWSLambdaAsyncClient
+import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import com.amazonaws.services.lambda.{AWSLambdaAsync, AWSLambdaAsyncClientBuilder}
 import com.amazonaws.services.lambda.model.InvokeRequest
 
 object Examples {
@@ -22,8 +20,10 @@ object Examples {
 
   //#init-client
   val credentials = new BasicAWSCredentials("x", "x")
-  implicit val lambdaClient: AWSLambdaAsyncClient =
-    new AWSLambdaAsyncClient(credentials, Executors.newFixedThreadPool(1))
+  implicit val lambdaClient: AWSLambdaAsync = AWSLambdaAsyncClientBuilder
+    .standard()
+    .withCredentials(new AWSStaticCredentialsProvider(credentials))
+    .build();
   //#init-client
 
   //#run

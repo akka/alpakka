@@ -81,4 +81,10 @@ private[ftp] trait FtpOperations { _: FtpLike[FTPClient, FtpFileSettings] =>
     val os = if (append) handler.appendFileStream(name) else handler.storeFileStream(name)
     if (os != null) os else throw new IOException(s"Could not write to $name")
   }
+
+  def move(fromPath: String, destinationPath: String, handler: Handler): Unit =
+    handler.rename(fromPath, destinationPath)
+
+  def remove(path: String, handler: Handler): Unit =
+    handler.deleteFile(path)
 }

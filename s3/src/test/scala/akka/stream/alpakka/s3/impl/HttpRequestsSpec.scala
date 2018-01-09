@@ -11,6 +11,7 @@ import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.{BufferType, MemoryBufferType, Proxy, S3Settings}
 import akka.stream.scaladsl.Source
 import com.amazonaws.auth.{AWSCredentialsProvider, AWSStaticCredentialsProvider, AnonymousAWSCredentials}
+import com.amazonaws.regions.AwsRegionProvider
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -23,8 +24,13 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
       awsCredentials: AWSCredentialsProvider = new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()),
       s3Region: String = "us-east-1",
       pathStyleAccess: Boolean = false
-  ) =
-    new S3Settings(bufferType, proxy, awsCredentials, s3Region, pathStyleAccess)
+  ) = {
+    val regionProvider = new AwsRegionProvider {
+      def getRegion = s3Region
+    }
+
+    new S3Settings(bufferType, proxy, awsCredentials, regionProvider, pathStyleAccess)
+  }
 
   val location = S3Location("bucket", "image-1024@2x")
   val contentType = MediaTypes.`image/jpeg`
@@ -173,6 +179,18 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     req.uri.scheme shouldEqual "http"
   }
 
+  it should "properly multipart upload part request with customer keys server side encryption" in {
+    implicit val settings = getSettings(s3Region = "region", proxy = Option(Proxy("localhost", 8080, "http")))
+    val myKey = "my-key"
+    val md5Key = "md5-key"
+    val s3Headers = S3Headers(ServerSideEncryption.CustomerKeys(myKey, Some(md5Key)))
+    val req = HttpRequests.uploadPartRequest(multipartUpload, 1, Source.empty, 1, s3Headers)
+
+    req.headers should contain(RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256"))
+    req.headers should contain(RawHeader("x-amz-server-side-encryption-customer-key", myKey))
+    req.headers should contain(RawHeader("x-amz-server-side-encryption-customer-key-MD5", md5Key))
+  }
+
   it should "support multipart upload complete requests via HTTP when such scheme configured for `proxy`" in {
     implicit val settings = getSettings(s3Region = "region", proxy = Option(Proxy("localhost", 8080, "http")))
     implicit val executionContext = scala.concurrent.ExecutionContext.global
@@ -199,6 +217,18 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     req.headers should contain(RawHeader("x-amz-server-side-encryption", "aws:kms"))
     req.headers should contain(RawHeader("x-amz-server-side-encryption-aws-kms-key-id", testArn))
+  }
+
+  it should "initiate multipart upload with customer keys encryption" in {
+    implicit val settings = getSettings(s3Region = "us-east-2")
+    val myKey = "my-key"
+    val md5Key = "md5-key"
+    val s3Headers = S3Headers(ServerSideEncryption.CustomerKeys(myKey, Some(md5Key)))
+    val req = HttpRequests.initiateMultipartUploadRequest(location, contentType, s3Headers)
+
+    req.headers should contain(RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256"))
+    req.headers should contain(RawHeader("x-amz-server-side-encryption-customer-key", myKey))
+    req.headers should contain(RawHeader("x-amz-server-side-encryption-customer-key-MD5", md5Key))
   }
 
   it should "initiate multipart upload with custom s3 storage class" in {

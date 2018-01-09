@@ -66,20 +66,16 @@ public class ExampleSpec {
     public void PullRecord() throws Exception {
 
         when(amazonKinesisAsync.describeStream(anyString())).thenReturn(new DescribeStreamResult().withStreamDescription(new StreamDescription().withShards(new Shard().withShardId("id")).withHasMoreShards(false)));
-        when(amazonKinesisAsync.getShardIteratorAsync(any(), any())).thenAnswer(new Answer() {
-            public Object answer(InvocationOnMock invocation) {
-                AsyncHandler<GetShardIteratorRequest, GetShardIteratorResult> args = (AsyncHandler<GetShardIteratorRequest, GetShardIteratorResult>) invocation.getArguments()[1];
-                args.onSuccess(new GetShardIteratorRequest(), new GetShardIteratorResult());
-                return CompletableFuture.completedFuture(new GetShardIteratorResult());
-            }
+        when(amazonKinesisAsync.getShardIteratorAsync(any(), any())).thenAnswer((Answer) invocation -> {
+            AsyncHandler<GetShardIteratorRequest, GetShardIteratorResult> args = (AsyncHandler<GetShardIteratorRequest, GetShardIteratorResult>) invocation.getArguments()[1];
+            args.onSuccess(new GetShardIteratorRequest(), new GetShardIteratorResult());
+            return CompletableFuture.completedFuture(new GetShardIteratorResult());
         });
 
-        when(amazonKinesisAsync.getRecordsAsync(any(), any())).thenAnswer(new Answer() {
-            public Object answer(InvocationOnMock invocation) {
-                AsyncHandler<GetRecordsRequest, GetRecordsResult> args = (AsyncHandler<GetRecordsRequest, GetRecordsResult>) invocation.getArguments()[1];
-                args.onSuccess(new GetRecordsRequest(), new GetRecordsResult().withRecords(new Record().withSequenceNumber("1")).withNextShardIterator("iter"));
-                return CompletableFuture.completedFuture(new GetRecordsResult());
-            }
+        when(amazonKinesisAsync.getRecordsAsync(any(), any())).thenAnswer((Answer) invocation -> {
+            AsyncHandler<GetRecordsRequest, GetRecordsResult> args = (AsyncHandler<GetRecordsRequest, GetRecordsResult>) invocation.getArguments()[1];
+            args.onSuccess(new GetRecordsRequest(), new GetRecordsResult().withRecords(new Record().withSequenceNumber("1")).withNextShardIterator("iter"));
+            return CompletableFuture.completedFuture(new GetRecordsResult());
         });
 
         final Source<Record, NotUsed> source = KinesisSource.basic(settings, amazonKinesisAsync);

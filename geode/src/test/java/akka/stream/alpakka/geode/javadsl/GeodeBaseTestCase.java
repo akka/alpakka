@@ -11,7 +11,7 @@ import akka.stream.Materializer;
 import akka.stream.alpakka.geode.GeodeSettings;
 import akka.stream.alpakka.geode.RegionSettings;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -77,7 +77,7 @@ public class GeodeBaseTestCase {
 
     @AfterClass
     public static void teardown() {
-        JavaTestKit.shutdownActorSystem(system);
+        TestKit.shutdownActorSystem(system);
     }
 
 }

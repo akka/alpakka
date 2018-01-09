@@ -1,14 +1,15 @@
-import sbt._, Keys._
+import sbt._
+import Keys._
 
 object Dependencies {
 
   val AkkaVersion = sys.env.get("AKKA_SERIES") match {
-    case Some("2.5") => "2.5.7"
-    case _ => "2.4.19"
+    case Some("2.4") => sys.error("Akka 2.4 is not supported anymore")
+    case _ => "2.5.8"
   }
 
   val AwsSdkVersion = "1.11.226"
-  val AkkaHttpVersion = "10.0.10"
+  val AkkaHttpVersion = "10.0.11"
 
   val Common = Seq(
     // These libraries are added to all modules via the `Common` AutoPlugin
@@ -25,7 +26,7 @@ object Dependencies {
 
   val Amqp = Seq(
     libraryDependencies ++= Seq(
-      "com.rabbitmq" % "amqp-client" % "3.6.1" // APLv2
+      "com.rabbitmq" % "amqp-client" % "5.0.0" // APLv2
     )
   )
 
@@ -50,6 +51,24 @@ object Dependencies {
 
   val Csv = Seq(
     libraryDependencies ++= Seq()
+  )
+
+  val `Doc-examples` = Seq(
+    libraryDependencies ++= Seq(
+      // https://mina.apache.org/ftpserver-project/downloads.html
+      "org.apache.ftpserver" % "ftpserver-core" % "1.1.1", // ApacheV2
+      "com.google.jimfs" % "jimfs" % "1.1", // ApacheV2
+      "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
+      "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+      // https://github.com/akka/reactive-kafka/releases
+      "com.typesafe.akka" %% "akka-stream-kafka" % "0.18",
+      // https://github.com/manub/scalatest-embedded-kafka/tags
+      "net.manub" %% "scalatest-embedded-kafka" % "1.0.0", // MIT
+      // https://github.com/javaee/javax.jms
+      "javax.jms" % "jms" % "1.1", // CDDL Version 1.1
+      // http://activemq.apache.org/download.html
+      "org.apache.activemq" % "activemq-all" % "5.14.4" // ApacheV2
+    )
   )
 
   val DynamoDB = Seq(
@@ -216,6 +235,12 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion % Test
+    )
+  )
+
+  val UnixDomainSocket = Seq(
+    libraryDependencies ++= Seq(
+      "com.github.jnr" % "jnr-unixsocket" % "0.18" // BSD/ApacheV2/CPL/MIT as per https://github.com/akka/alpakka/issues/620#issuecomment-348727265
     )
   )
 
