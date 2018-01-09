@@ -121,6 +121,20 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
     settings.s3RegionProvider shouldBe a[DefaultAwsRegionProviderChain]
   }
 
+  it should "properly handle a missing endpoint url" in {
+    val settings: S3Settings = mkConfig("")
+    settings.endpointUrl shouldBe 'empty
+  }
+
+  it should "properly handle a null endpoint url" in {
+    val settings: S3Settings = mkConfig(
+      s"""
+         |akka.stream.alpakka.s3.endpoint-url = null
+        """.stripMargin
+    )
+    settings.endpointUrl shouldBe 'empty
+  }
+
   it should "instantiate with a custom endpoint uri" in {
     val endpointUrl = "http://localhost:9000"
 
