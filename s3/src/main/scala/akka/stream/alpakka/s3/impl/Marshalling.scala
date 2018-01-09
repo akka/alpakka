@@ -4,13 +4,15 @@
 
 package akka.stream.alpakka.s3.impl
 
+import java.net.URLEncoder
 import java.time.Instant
 
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
-import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, MediaTypes}
+import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, MediaTypes, Uri}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
 import akka.stream.alpakka.s3.scaladsl.ListBucketResultContents
 
+import scala.util.Try
 import scala.xml.NodeSeq
 
 private[alpakka] object Marshalling {
@@ -29,7 +31,8 @@ private[alpakka] object Marshalling {
       case NodeSeq.Empty => throw Unmarshaller.NoContentException
       case x =>
         CompleteMultipartUploadResult(
-          (x \ "Location").text,
+          Try(Uri((x \ "Location").text))
+            .getOrElse(Uri((x \ "Location").text.split("/").map(s => URLEncoder.encode(s, "utf-8")).mkString("/"))),
           (x \ "Bucket").text,
           (x \ "Key").text,
           (x \ "ETag").text.drop(1).dropRight(1)

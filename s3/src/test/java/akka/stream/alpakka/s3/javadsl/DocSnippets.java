@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.s3.javadsl;
 
+import akka.japi.Option;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.s3.MemoryBufferType;
@@ -46,7 +47,8 @@ public class DocSnippets extends S3WireMockBase {
                 Some.apply(proxy),
                 credentials,
                 regionProvider,
-                true
+                true,
+                scala.Option.empty()
         );
         final S3Client s3Client = new S3Client(settings,system(), mat);
         // #java-bluemix-example

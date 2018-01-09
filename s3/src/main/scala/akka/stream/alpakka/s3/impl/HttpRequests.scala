@@ -33,7 +33,7 @@ private[alpakka] object HttpRequests {
     )
 
     HttpRequest(HttpMethods.GET)
-      .withHeaders(Host(requestHost(bucket, conf.s3RegionProvider.getRegion)))
+      .withHeaders(Host(requestAuthority(bucket, conf.s3RegionProvider.getRegion)))
       .withUri(requestUri(bucket, None).withQuery(query))
   }
 
@@ -104,11 +104,11 @@ private[alpakka] object HttpRequests {
                               method: HttpMethod = HttpMethods.GET,
                               uriFn: (Uri => Uri) = identity)(implicit conf: S3Settings): HttpRequest =
     HttpRequest(method)
-      .withHeaders(Host(requestHost(s3Location.bucket, conf.s3RegionProvider.getRegion)))
+      .withHeaders(Host(requestAuthority(s3Location.bucket, conf.s3RegionProvider.getRegion)))
       .withUri(uriFn(requestUri(s3Location.bucket, Some(s3Location.key))))
 
   @throws(classOf[IllegalUriException])
-  private[this] def requestHost(bucket: String, region: String)(implicit conf: S3Settings): Uri.Host =
+  private[this] def requestAuthority(bucket: String, region: String)(implicit conf: S3Settings): Authority =
     conf.proxy match {
       case None =>
         if (!conf.pathStyleAccess) {
@@ -124,21 +124,23 @@ private[alpakka] object HttpRequests {
             case None => ()
           }
         }
-        region match {
-          case "us-east-1" =>
+        (region, conf.endpointUrl) match {
+          case (_, Some(endpointUrl)) =>
+            Uri(endpointUrl).authority
+          case ("us-east-1", _) =>
             if (conf.pathStyleAccess) {
-              Uri.Host("s3.amazonaws.com")
+              Authority(Uri.Host("s3.amazonaws.com"))
             } else {
-              Uri.Host(s"$bucket.s3.amazonaws.com")
+              Authority(Uri.Host(s"$bucket.s3.amazonaws.com"))
             }
           case _ =>
             if (conf.pathStyleAccess) {
-              Uri.Host(s"s3-$region.amazonaws.com")
+              Authority(Uri.Host(s"s3-$region.amazonaws.com"))
             } else {
-              Uri.Host(s"$bucket.s3-$region.amazonaws.com")
+              Authority(Uri.Host(s"$bucket.s3-$region.amazonaws.com"))
             }
         }
-      case Some(proxy) => Uri.Host(proxy.host)
+      case Some(proxy) => Authority(Uri.Host(proxy.host))
     }
 
   private[this] def requestUri(bucket: String, key: Option[String])(implicit conf: S3Settings): Uri = {
@@ -150,10 +152,16 @@ private[alpakka] object HttpRequests {
     val path = key.fold(basePath) { someKey =>
       someKey.split("/").foldLeft(basePath)((acc, p) => acc / p)
     }
-    val uri = Uri(path = path, authority = Authority(requestHost(bucket, conf.s3RegionProvider.getRegion)))
-    conf.proxy match {
-      case None => uri.withScheme("https").withHost(requestHost(bucket, conf.s3RegionProvider.getRegion))
-      case Some(proxy) => uri.withPort(proxy.port).withScheme(proxy.scheme).withHost(proxy.host)
+    val uri = Uri(path = path, authority = requestAuthority(bucket, conf.s3RegionProvider.getRegion))
+
+    (conf.proxy, conf.endpointUrl) match {
+      case (_, Some(endpointUri)) =>
+        uri
+          .withScheme(Uri(endpointUri).scheme)
+          .withHost(requestAuthority(bucket, conf.s3RegionProvider.getRegion).host)
+      case (None, _) =>
+        uri.withScheme("https").withHost(requestAuthority(bucket, conf.s3RegionProvider.getRegion).host)
+      case (Some(proxy), _) => uri.withPort(proxy.port).withScheme(proxy.scheme).withHost(proxy.host)
     }
   }
 }
