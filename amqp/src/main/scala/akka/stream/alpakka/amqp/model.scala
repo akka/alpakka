@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.amqp
 
-import com.rabbitmq.client.ExceptionHandler
+import com.rabbitmq.client.{ConnectionFactory, ExceptionHandler}
 
 /**
  * Internal API
@@ -147,6 +147,35 @@ object AmqpConnectionUri {
    * Java API:
    */
   def create(uri: String): AmqpConnectionUri = AmqpConnectionUri(uri)
+}
+
+/**
+ * Uses a native [[com.rabbitmq.client.ConnectionFactory]] to configure an AMQP connection.
+ *
+ * @param underlying   The instance of the ConnectionFactory to build the connection from.
+ * @param hostAndPorts An optional list of host and ports.
+ *                     If empty, it defaults to the host and port in the underlying factory.
+ */
+final case class AmqpConnectionFactory(underlying: ConnectionFactory, private val hostAndPorts: (String, Int)*)
+    extends AmqpConnectionSettings {
+
+  /**
+   * @return A list of hosts and ports for this AMQP connection.
+   *         Uses host and port from the underlying factory if hostAndPorts was left out on construction.
+   */
+  def hostAndPortList: Seq[(String, Int)] =
+    if (hostAndPorts.isEmpty)
+      Seq((underlying.getHost, underlying.getPort))
+    else
+      hostAndPorts.toList
+}
+
+object AmqpConnectionFactory {
+
+  /**
+   * Java API
+   */
+  def create(connectionFactory: ConnectionFactory): AmqpConnectionFactory = AmqpConnectionFactory(connectionFactory)
 }
 
 final case class AmqpConnectionDetails(
