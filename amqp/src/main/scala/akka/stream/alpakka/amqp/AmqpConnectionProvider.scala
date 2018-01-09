@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.amqp
 
+import java.util.ConcurrentModificationException
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.annotation.DoNotInherit
@@ -188,7 +189,10 @@ final case class AmqpCachedConnectionProvider(provider: AmqpConnectionProvider, 
     case Empty =>
       if (state.compareAndSet(Empty, Connecting)) {
         val connection = provider.get
-        state.compareAndSet(Connecting, Connected(connection, 1))
+        if (!state.compareAndSet(Connecting, Connected(connection, 1)))
+          throw new ConcurrentModificationException(
+            "Unexpected concurrent modification while creating the connection."
+          )
         connection
       } else get
     case Connecting => get
@@ -196,12 +200,12 @@ final case class AmqpCachedConnectionProvider(provider: AmqpConnectionProvider, 
       if (state.compareAndSet(c, Connected(connection, clients + 1))) connection
       else get
     case Closing => get
-    case _ => throw new RuntimeException("Unknown provider state.")
+    case unknownState => throw new IllegalStateException(s"Unknown provider state ($unknownState).")
   }
 
   @tailrec
   override def release(connection: Connection): Unit = state.get match {
-    case Empty => ()
+    case Empty => throw new IllegalStateException("There is no connection to release.")
     case Connecting => release(connection)
     case c @ Connected(cachedConnection, clients) =>
       if (cachedConnection != connection)
@@ -210,12 +214,15 @@ final case class AmqpCachedConnectionProvider(provider: AmqpConnectionProvider, 
       if (clients == 1 || !automaticRelease) {
         if (state.compareAndSet(c, Closing)) {
           provider.release(connection)
-          state.compareAndSet(Closing, Empty)
+          if (!state.compareAndSet(Closing, Empty))
+            throw new ConcurrentModificationException(
+              "Unexpected concurrent modification while closing the connection."
+            )
         }
       } else {
-        if (!state.compareAndSet(Closing, Connected(cachedConnection, clients - 1))) release(connection)
+        if (!state.compareAndSet(c, Connected(cachedConnection, clients - 1))) release(connection)
       }
     case Closing => release(connection)
-    case _ => throw new RuntimeException("Unknown provider state.")
+    case unknownState => throw new IllegalStateException(s"Unknown provider state ($unknownState).")
   }
 }
