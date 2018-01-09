@@ -50,6 +50,6 @@ object Common extends AutoPlugin {
     // timeout.
     testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4"),
     scalafmtOnCompile := true,
-    headerLicense := Some(HeaderLicense.Custom("Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>"))
+    headerLicense := Some(HeaderLicense.Custom("Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>"))
   )
 }
