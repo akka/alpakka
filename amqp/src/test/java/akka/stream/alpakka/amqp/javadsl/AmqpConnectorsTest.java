@@ -55,6 +55,8 @@ public class AmqpConnectorsTest {
     TestKit.shutdownActorSystem(system);
   }
 
+  private AmqpConnectionProvider connectionProvider = AmqpLocalConnectionProvider.getInstance();
+
   @Test
   public void publishAndConsume() throws Exception {
     //#queue-declaration
@@ -63,12 +65,12 @@ public class AmqpConnectorsTest {
     //#queue-declaration
 
     @SuppressWarnings("unchecked")
-    AmqpConnectionDetails amqpConnectionDetails = AmqpConnectionDetails.create("invalid", 5673)
+    AmqpDetailsConnectionProvider connectionProvider = AmqpDetailsConnectionProvider.create("invalid", 5673)
         .withHostsAndPorts(Pair.create("localhost", 5672), Pair.create("localhost", 5674));
 
     //#create-sink
     final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
-        AmqpSinkSettings.create(amqpConnectionDetails)
+        AmqpSinkSettings.create(connectionProvider)
             .withRoutingKey(queueName)
             .withDeclarations(queueDeclaration)
     );
@@ -78,7 +80,7 @@ public class AmqpConnectorsTest {
     final Integer bufferSize = 10;
     final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.atMostOnceSource(
         NamedQueueSourceSettings.create(
-            DefaultAmqpConnection.getInstance(),
+            connectionProvider,
             queueName
         ).withDeclarations(queueDeclaration),
         bufferSize
@@ -106,13 +108,13 @@ public class AmqpConnectorsTest {
 
     //#create-rpc-flow
     final Flow<ByteString,ByteString, CompletionStage<String>> ampqRpcFlow = AmqpRpcFlow.createSimple(
-        AmqpSinkSettings.create().withRoutingKey(queueName).withDeclarations(queueDeclaration), 1);
+        AmqpSinkSettings.create(connectionProvider).withRoutingKey(queueName).withDeclarations(queueDeclaration), 1);
     //#create-rpc-flow
 
     final Integer bufferSize = 10;
     final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.atMostOnceSource(
         NamedQueueSourceSettings.create(
-            DefaultAmqpConnection.getInstance(),
+            connectionProvider,
             queueName
         ).withDeclarations(queueDeclaration),
         bufferSize
@@ -128,7 +130,7 @@ public class AmqpConnectorsTest {
     //#run-rpc-flow
 
     Sink<OutgoingMessage, CompletionStage<Done>> amqpSink = AmqpSink.createReplyTo(
-        AmqpReplyToSinkSettings.create(DefaultAmqpConnection.getInstance())
+        AmqpReplyToSinkSettings.create(connectionProvider)
     );
 
     amqpSource.map(b ->
@@ -154,7 +156,7 @@ public class AmqpConnectorsTest {
 
     //#create-exchange-sink
     final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
-        AmqpSinkSettings.create()
+      AmqpSinkSettings.create(connectionProvider)
             .withExchange(exchangeName)
             .withDeclarations(exchangeDeclaration)
     );
@@ -170,7 +172,7 @@ public class AmqpConnectorsTest {
       mergedSources = mergedSources.merge(
           AmqpSource.atMostOnceSource(
               TemporaryQueueSourceSettings.create(
-                  DefaultAmqpConnection.getInstance(),
+                  connectionProvider,
                   exchangeName
               ).withDeclarations(exchangeDeclaration),
               bufferSize
@@ -182,18 +184,18 @@ public class AmqpConnectorsTest {
 
     final CompletableFuture<Done> completion = new CompletableFuture<>();
     mergedSources
-        .runWith(Sink.fold(new HashSet<Integer>(), (seen, branchElem) -> {
-          if (seen.size() == fanoutSize) {
-            completion.complete(Done.getInstance());
-          }
-          seen.add(branchElem.first());
-          return seen;
-        }), materializer);
+      .runWith(Sink.fold(new HashSet<Integer>(), (seen, branchElem) -> {
+        if (seen.size() == fanoutSize) {
+          completion.complete(Done.getInstance());
+        }
+        seen.add(branchElem.first());
+        return seen;
+      }), materializer);
 
     system.scheduler().scheduleOnce(
-        Duration.create(5, TimeUnit.SECONDS),
-        () -> completion.completeExceptionally(new Error("Did not get at least one element from every fanout branch")),
-        system.dispatcher());
+      Duration.create(5, TimeUnit.SECONDS),
+      () -> completion.completeExceptionally(new Error("Did not get at least one element from every fanout branch")),
+      system.dispatcher());
 
     Source.repeat("stuff").map(ByteString::fromString).runWith(amqpSink, materializer);
 
@@ -205,24 +207,20 @@ public class AmqpConnectorsTest {
     final String queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis();
     final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
 
-    @SuppressWarnings("unchecked")
-    AmqpConnectionDetails amqpConnectionDetails = AmqpConnectionDetails.create("invalid", 5673)
-        .withHostsAndPorts(Pair.create("localhost", 5672), Pair.create("localhost", 5674));
-
     final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
-        AmqpSinkSettings.create(amqpConnectionDetails)
-            .withRoutingKey(queueName)
-            .withDeclarations(queueDeclaration)
+      AmqpSinkSettings.create(connectionProvider)
+        .withRoutingKey(queueName)
+        .withDeclarations(queueDeclaration)
     );
 
     //#create-source-withoutautoack
     final Integer bufferSize = 10;
     final Source<CommittableIncomingMessage, NotUsed> amqpSource = AmqpSource.committableSource(
-        NamedQueueSourceSettings.create(
-            DefaultAmqpConnection.getInstance(),
-            queueName
-        ).withDeclarations(queueDeclaration),
-        bufferSize
+      NamedQueueSourceSettings.create(
+        connectionProvider,
+        queueName
+      ).withDeclarations(queueDeclaration),
+      bufferSize
     );
     //#create-source-withoutautoack
 
@@ -248,7 +246,7 @@ public class AmqpConnectorsTest {
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
 
     final Flow<OutgoingMessage, CommittableIncomingMessage, CompletionStage<String>> ampqRpcFlow = AmqpRpcFlow.committableFlow(
-        AmqpSinkSettings.create()
+        AmqpSinkSettings.create(connectionProvider)
             .withRoutingKey(queueName)
             .withDeclarations(queueDeclaration)
         , 10, 1);
@@ -263,11 +261,11 @@ public class AmqpConnectorsTest {
 
     result.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
 
-    Sink<OutgoingMessage, CompletionStage<Done>> amqpSink = AmqpSink.createReplyTo(AmqpReplyToSinkSettings.create(DefaultAmqpConnection.getInstance()));
+    Sink<OutgoingMessage, CompletionStage<Done>> amqpSink = AmqpSink.createReplyTo(AmqpReplyToSinkSettings.create(connectionProvider));
 
     final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.atMostOnceSource(
       NamedQueueSourceSettings.create(
-            DefaultAmqpConnection.getInstance(),
+            connectionProvider,
             queueName
       ).withDeclarations(queueDeclaration),
         1
@@ -284,16 +282,11 @@ public class AmqpConnectorsTest {
 
   @Test
   public void republishMessageWithoutAutoAckIfNacked() throws Exception {
-
-    @SuppressWarnings("unchecked")
-    AmqpConnectionDetails connectionSettings = AmqpConnectionDetails.create("invalid", 5673)
-        .withHostsAndPorts(Pair.create("localhost", 5672));
-
     final String queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis();
     final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
 
     final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
-        AmqpSinkSettings.create(connectionSettings).withRoutingKey(queueName).withDeclarations(queueDeclaration)
+        AmqpSinkSettings.create(connectionProvider).withRoutingKey(queueName).withDeclarations(queueDeclaration)
     );
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
@@ -301,7 +294,7 @@ public class AmqpConnectorsTest {
 
     final Integer bufferSize = 10;
     final Source<CommittableIncomingMessage, NotUsed> amqpSource = AmqpSource.committableSource(
-        NamedQueueSourceSettings.create(connectionSettings, queueName).withDeclarations(queueDeclaration),
+        NamedQueueSourceSettings.create(connectionProvider, queueName).withDeclarations(queueDeclaration),
         bufferSize
     );
 
@@ -327,12 +320,8 @@ public class AmqpConnectorsTest {
     final String queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis();
     final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
 
-    @SuppressWarnings("unchecked")
-    AmqpConnectionDetails amqpConnectionDetails = AmqpConnectionDetails.create("invalid", 5673)
-        .withHostsAndPorts(Pair.create("localhost", 5672), Pair.create("localhost", 5674));
-
     final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
-        AmqpSinkSettings.create(amqpConnectionDetails)
+        AmqpSinkSettings.create(connectionProvider)
             .withRoutingKey(queueName)
             .withDeclarations(queueDeclaration)
     );
@@ -340,7 +329,7 @@ public class AmqpConnectorsTest {
     final Integer bufferSize = 10;
     final Source<CommittableIncomingMessage, NotUsed> amqpSource = AmqpSource.committableSource(
         NamedQueueSourceSettings.create(
-            DefaultAmqpConnection.getInstance(),
+            connectionProvider,
             queueName
         ).withDeclarations(queueDeclaration),
         bufferSize
@@ -372,12 +361,8 @@ public class AmqpConnectorsTest {
     final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
     final BindingDeclaration bindingDeclaration = BindingDeclaration.create(queueName, exchangeName).withRoutingKey("key.*");
 
-    @SuppressWarnings("unchecked")
-    AmqpConnectionDetails amqpConnectionDetails = AmqpConnectionDetails.create("invalid", 5673)
-        .withHostsAndPorts(Pair.create("localhost", 5672), Pair.create("localhost", 5674));
-
     final Sink<OutgoingMessage, CompletionStage<Done>> amqpSink = AmqpSink.create(
-        AmqpSinkSettings.create(amqpConnectionDetails)
+        AmqpSinkSettings.create(connectionProvider)
             .withExchange(exchangeName)
             .withDeclarations(exchangeDeclaration, queueDeclaration, bindingDeclaration)
     );
@@ -385,7 +370,7 @@ public class AmqpConnectorsTest {
     final Integer bufferSize = 10;
     final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.atMostOnceSource(
         NamedQueueSourceSettings.create(
-            DefaultAmqpConnection.getInstance(),
+            connectionProvider,
             queueName
         ).withDeclarations(exchangeDeclaration, queueDeclaration, bindingDeclaration),
         bufferSize
