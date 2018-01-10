@@ -210,7 +210,6 @@ final case class AmqpCachedConnectionProvider(provider: AmqpConnectionProvider, 
       if (state.compareAndSet(c, Connected(connection, clients + 1))) connection
       else get
     case Closing => get
-    case unknownState => throw new IllegalStateException(s"Unknown provider state ($unknownState).")
   }
 
   @tailrec
@@ -233,7 +232,6 @@ final case class AmqpCachedConnectionProvider(provider: AmqpConnectionProvider, 
         if (!state.compareAndSet(c, Connected(cachedConnection, clients - 1))) release(connection)
       }
     case Closing => release(connection)
-    case unknownState => throw new IllegalStateException(s"Unknown provider state ($unknownState).")
   }
 }
 
