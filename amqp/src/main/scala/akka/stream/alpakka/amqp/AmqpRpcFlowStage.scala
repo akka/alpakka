@@ -29,8 +29,8 @@ object AmqpRpcFlowStage {
  *                            can be overridden per message by including `expectedReplies` in the the header of the [[OutgoingMessage]]
  */
 final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, responsesPerMessage: Int = 1)
-    extends GraphStageWithMaterializedValue[FlowShape[OutgoingMessage, CommittableIncomingMessage], Future[String]]
-    with AmqpConnector { stage =>
+    extends GraphStageWithMaterializedValue[FlowShape[OutgoingMessage, CommittableIncomingMessage], Future[String]] {
+  stage =>
 
   val in = Inlet[OutgoingMessage]("AmqpRpcFlow.in")
   val out = Outlet[CommittableIncomingMessage]("AmqpRpcFlow.out")
@@ -50,10 +50,6 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
       private var queueName: String = _
       private var unackedMessages = 0
       private var outstandingMessages = 0
-
-      override def connectionFactoryFrom(settings: AmqpConnectionSettings) = stage.connectionFactoryFrom(settings)
-      override def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings): Connection =
-        stage.newConnection(factory, settings)
 
       override def whenConnected(): Unit = {
         import scala.collection.JavaConverters._

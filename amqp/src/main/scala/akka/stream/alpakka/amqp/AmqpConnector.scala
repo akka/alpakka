@@ -12,83 +12,18 @@ import scala.util.control.NonFatal
 /**
  * Internal API
  */
-private[amqp] trait AmqpConnector {
-
-  def connectionFactoryFrom(settings: AmqpConnectionSettings): ConnectionFactory =
-    settings match {
-      case AmqpConnectionUri(uri) =>
-        val factory = new ConnectionFactory
-        factory.setUri(uri)
-        factory
-      case AmqpConnectionDetails(_,
-                                 maybeCredentials,
-                                 maybeVirtualHost,
-                                 sslProtocol,
-                                 requestedHeartbeat,
-                                 connectionTimeout,
-                                 handshakeTimeout,
-                                 shutdownTimeout,
-                                 networkRecoveryInterval,
-                                 automaticRecoveryEnabled,
-                                 topologyRecoveryEnabled,
-                                 exceptionHandler) =>
-        val factory = new ConnectionFactory
-        maybeCredentials.foreach { credentials =>
-          factory.setUsername(credentials.username)
-          factory.setPassword(credentials.password)
-        }
-        maybeVirtualHost.foreach(factory.setVirtualHost)
-        sslProtocol.foreach(factory.useSslProtocol)
-        requestedHeartbeat.foreach(factory.setRequestedHeartbeat)
-        connectionTimeout.foreach(factory.setConnectionTimeout)
-        handshakeTimeout.foreach(factory.setHandshakeTimeout)
-        shutdownTimeout.foreach(factory.setShutdownTimeout)
-        networkRecoveryInterval.foreach(factory.setNetworkRecoveryInterval)
-        automaticRecoveryEnabled.foreach(factory.setAutomaticRecoveryEnabled)
-        topologyRecoveryEnabled.foreach(factory.setTopologyRecoveryEnabled)
-        exceptionHandler.foreach(factory.setExceptionHandler)
-        factory
-      case DefaultAmqpConnection =>
-        new ConnectionFactory
-      case AmqpConnectionFactory(factory) =>
-        factory
-    }
-
-  private def asAddresses(hostAndPorts: Seq[(String, Int)]): Seq[Address] =
-    if (hostAndPorts.nonEmpty)
-      hostAndPorts.map(hp => new Address(hp._1, hp._2))
-    else
-      throw new IllegalArgumentException("You need to supply at least one host/port pair.")
-
-  import scala.collection.JavaConverters._
-  def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings): Connection = settings match {
-    case a: AmqpConnectionDetails =>
-      factory.newConnection(asAddresses(a.hostAndPortList).asJava)
-    case a: AmqpConnectionFactory =>
-      factory.newConnection(asAddresses(a.hostAndPortList).asJava)
-    case _ => factory.newConnection()
-  }
-}
-
-/**
- * Internal API
- */
 private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
 
   private var connection: Connection = _
   protected var channel: Channel = _
 
   def settings: AmqpConnectorSettings
-  def connectionFactoryFrom(settings: AmqpConnectionSettings): ConnectionFactory
-  def newConnection(factory: ConnectionFactory, settings: AmqpConnectionSettings): Connection
   def whenConnected(): Unit
   def onFailure(ex: Throwable): Unit
 
   final override def preStart(): Unit =
     try {
-      val factory = connectionFactoryFrom(settings.connectionSettings)
-
-      connection = newConnection(factory, settings.connectionSettings)
+      connection = settings.connectionProvider.get
       channel = connection.createChannel()
 
       val connShutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
@@ -142,7 +77,7 @@ private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
   override def postStop(): Unit = {
     if ((channel ne null) && channel.isOpen) channel.close()
     channel = null
-    if ((connection ne null) && connection.isOpen) connection.close()
+    settings.connectionProvider.release(connection)
     connection = null
   }
 }
