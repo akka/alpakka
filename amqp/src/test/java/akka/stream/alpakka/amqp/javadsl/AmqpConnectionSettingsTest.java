@@ -46,6 +46,7 @@ public class AmqpConnectionSettingsTest {
   @Test
   public void AmqpConnectionFactoryCreatesNewConnection() throws Exception {
     ConnectionFactory connectionFactory = new ConnectionFactory();
+    @SuppressWarnings("unchecked")
     AmqpConnectionProvider connectionProvider = AmqpConnectionFactoryConnectionProvider.create(connectionFactory)
             .withHostsAndPorts(Pair.create("localhost", 5672));
     Connection connection1 = connectionProvider.get();
@@ -103,6 +104,7 @@ public class AmqpConnectionSettingsTest {
   @Test
   public void ReusableAMQPConnectionProviderWithAutomaticReleaseAndmqpConnectionFactoryReusesConnection() throws Exception {
     ConnectionFactory connectionFactory = new ConnectionFactory();
+    @SuppressWarnings("unchecked")
     AmqpConnectionProvider connectionProvider = AmqpConnectionFactoryConnectionProvider.create(connectionFactory)
             .withHostsAndPorts(Pair.create("localhost", 5672));
     AmqpConnectionProvider reusableConnectionProvider = AmqpCachedConnectionProvider.create(connectionProvider);
@@ -156,6 +158,7 @@ public class AmqpConnectionSettingsTest {
   @Test
   public void ReusableAMQPConnectionProviderWithoutAutomaticReleaseAndAmqpConnectionFactoryReusesConnection() throws Exception {
     ConnectionFactory connectionFactory = new ConnectionFactory();
+    @SuppressWarnings("unchecked")
     AmqpConnectionProvider connectionProvider = AmqpConnectionFactoryConnectionProvider.create(connectionFactory)
             .withHostsAndPorts(Pair.create("localhost", 5672));
     AmqpConnectionProvider reusableConnectionProvider = AmqpCachedConnectionProvider.create(connectionProvider, false);
