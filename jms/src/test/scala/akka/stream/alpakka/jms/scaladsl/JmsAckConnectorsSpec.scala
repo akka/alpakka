@@ -56,6 +56,12 @@ class JmsAckConnectorsSpec extends JmsSpec {
       //#run-ack-source
 
       result.futureValue should contain theSameElementsAs in
+
+      // all messages were acknowledged before
+      jmsSource
+        .takeWithin(5.seconds)
+        .runWith(Sink.seq)
+        .futureValue shouldBe empty
     }
 
     "publish and consume JMS text messages with properties through a queue" in withServer() { ctx =>
