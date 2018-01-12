@@ -90,3 +90,22 @@ final case class JmsSinkSettings(connectionFactory: ConnectionFactory,
 }
 
 final case class Credentials(username: String, password: String)
+
+object JmsBrowseSettings {
+
+  def create(connectionFactory: ConnectionFactory) = JmsBrowseSettings(connectionFactory)
+
+}
+
+final case class JmsBrowseSettings(connectionFactory: ConnectionFactory,
+                                   destination: Option[Queue] = None,
+                                   credentials: Option[Credentials] = None,
+                                   selector: Option[String] = None,
+                                   acknowledgeMode: Option[AcknowledgeMode] = None)
+    extends JmsSettings {
+  def withCredential(credentials: Credentials): JmsBrowseSettings = copy(credentials = Some(credentials))
+  def withQueue(name: String): JmsBrowseSettings = copy(destination = Some(Queue(name)))
+  def withSelector(selector: String): JmsBrowseSettings = copy(selector = Some(selector))
+  def withAcknowledgeMode(acknowledgeMode: AcknowledgeMode): JmsBrowseSettings =
+    copy(acknowledgeMode = Option(acknowledgeMode))
+}

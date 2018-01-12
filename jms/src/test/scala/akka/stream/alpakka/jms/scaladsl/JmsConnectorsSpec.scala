@@ -638,5 +638,35 @@ class JmsConnectorsSpec extends JmsSpec {
       resultList.size should be < numsIn.size
       resultList.size shouldBe resultList.toSet.size // no duplicates
     }
+
+    "browse" in withServer() { ctx =>
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+      val in = List(1 to 100).map(_.toString())
+
+      withClue("write some messages") {
+        Source(in)
+          .runWith(JmsSink.textSink(JmsSinkSettings(connectionFactory).withQueue("test")))
+          .futureValue
+      }
+
+      withClue("browse the messages") {
+        val result = JmsSource
+          .browse(JmsBrowseSettings(connectionFactory).withQueue("test"))
+          .collect { case msg: TextMessage => msg.getText }
+          .runWith(Sink.seq)
+
+        result.futureValue shouldEqual in
+      }
+
+      withClue("browse the messages again") {
+        // the messages should not have been consumed
+        val result = JmsSource
+          .browse(JmsBrowseSettings(connectionFactory).withQueue("test"))
+          .collect { case msg: TextMessage => msg.getText }
+          .runWith(Sink.seq)
+
+        result.futureValue shouldEqual in
+      }
+    }
   }
 }
