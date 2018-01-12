@@ -17,7 +17,6 @@ import com.amazonaws.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsR
 import com.amazonaws.services.kinesis.{AmazonKinesisAsync, AmazonKinesisAsyncClientBuilder}
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 object Examples {
 
@@ -25,8 +24,8 @@ object Examples {
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: Materializer = ActorMaterializer()
 
-  val amazonKinesisAsync: com.amazonaws.services.kinesis.AmazonKinesisAsync
-    = AmazonKinesisAsyncClientBuilder.defaultClient()
+  implicit val amazonKinesisAsync: com.amazonaws.services.kinesis.AmazonKinesisAsync =
+    AmazonKinesisAsyncClientBuilder.defaultClient()
 
   system.registerOnTermination(amazonKinesisAsync.shutdown())
   //#init-client
@@ -40,8 +39,8 @@ object Examples {
   //#source-settings
 
   //#source-single
-  val source: Source[com.amazonaws.services.kinesis.model.Record, NotUsed]
-    = KinesisSource.basic(settings, amazonKinesisAsync)
+  val source: Source[com.amazonaws.services.kinesis.model.Record, NotUsed] =
+    KinesisSource.basic(settings, amazonKinesisAsync)
   //#source-single
 
   //#source-list
@@ -60,8 +59,7 @@ object Examples {
                   limit = 500)
   )
 
-  val mergedSource: Source[Record, NotUsed]
-    = KinesisSource.basicMerge(mergeSettings, amazonKinesisAsync)
+  val mergedSource: Source[Record, NotUsed] = KinesisSource.basicMerge(mergeSettings, amazonKinesisAsync)
   //#source-list
 
   //#flow-settings
@@ -72,7 +70,7 @@ object Examples {
     maxBytesPerSecond = 1000000,
     maxRetries = 5,
     backoffStrategy = KinesisFlowSettings.Exponential,
-    retryInitialTimeout = 100 millis
+    retryInitialTimeout = 100.millis
   )
 
   val defaultFlowSettings = KinesisFlowSettings.defaultInstance
@@ -81,17 +79,15 @@ object Examples {
   //#flow-settings
 
   //#flow-sink
-  val flow1: Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed]
-    = KinesisFlow("myStreamName")
+  val flow1: Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] = KinesisFlow("myStreamName")
 
-  val flow2: Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed]
-    = KinesisFlow("myStreamName", flowSettings)
+  val flow2: Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] = KinesisFlow("myStreamName", flowSettings)
 
-  val flow3: Flow[(String, ByteString), PutRecordsResultEntry, NotUsed]
-    = KinesisFlow.byParititonAndBytes("myStreamName")
+  val flow3: Flow[(String, ByteString), PutRecordsResultEntry, NotUsed] =
+    KinesisFlow.byParititonAndBytes("myStreamName")
 
-  val flow4: Flow[(String, ByteBuffer), PutRecordsResultEntry, NotUsed]
-    = KinesisFlow.byPartitionAndData("myStreamName")
+  val flow4: Flow[(String, ByteBuffer), PutRecordsResultEntry, NotUsed] =
+    KinesisFlow.byPartitionAndData("myStreamName")
 
   val sink1: Sink[PutRecordsRequestEntry, NotUsed] = KinesisSink("myStreamName")
   val sink2: Sink[PutRecordsRequestEntry, NotUsed] = KinesisSink("myStreamName", flowSettings)
