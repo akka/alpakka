@@ -93,11 +93,10 @@ public class AmqpConnectorsTest {
     //#run-sink
 
     //#run-source
-    final CompletionStage<List<String>> result =
-        amqpSource.map(m -> m.bytes().utf8String()).take(input.size()).runWith(Sink.seq(), materializer);
+    final CompletionStage<List<IncomingMessage>> result = amqpSource.take(input.size()).runWith(Sink.seq(), materializer);
     //#run-source
 
-    assertEquals(input, result.toCompletableFuture().get(3, TimeUnit.SECONDS));
+    assertEquals(input, result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.bytes().utf8String()).collect(Collectors.toList()));
   }
 
   @Test
@@ -113,21 +112,20 @@ public class AmqpConnectorsTest {
 
     final Integer bufferSize = 10;
     final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.atMostOnceSource(
-        NamedQueueSourceSettings.create(
-            connectionProvider,
-            queueName
-        ).withDeclarations(queueDeclaration),
+        NamedQueueSourceSettings.create( connectionProvider, queueName)
+            .withDeclarations(queueDeclaration),
         bufferSize
     );
 
-    //#run-rpc-flow
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
-    TestSubscriber.Probe<ByteString> probe =
-        Source.from(input)
-            .map(ByteString::fromString)
-            .via(ampqRpcFlow)
-            .runWith(TestSink.probe(system), materializer);
     //#run-rpc-flow
+    Pair<CompletionStage<String>, TestSubscriber.Probe<ByteString>> result = Source.from(input)
+        .map(ByteString::fromString)
+        .viaMat(ampqRpcFlow, Keep.right())
+        .toMat(TestSink.probe(system), Keep.both())
+        .run(materializer);
+    //#run-rpc-flow
+    result.first().toCompletableFuture().get(3, TimeUnit.SECONDS);
 
     Sink<OutgoingMessage, CompletionStage<Done>> amqpSink = AmqpSink.createReplyTo(
         AmqpReplyToSinkSettings.create(connectionProvider)
@@ -137,7 +135,7 @@ public class AmqpConnectorsTest {
         new OutgoingMessage(b.bytes().concat(ByteString.fromString("a")), false, false, Optional.of(b.properties()), Optional.empty())
     ).runWith(amqpSink, materializer);
 
-    probe.request(5)
+    result.second().request(5)
         .expectNextUnordered(
             ByteString.fromString("onea"),
             ByteString.fromString("twoa"),
@@ -231,7 +229,8 @@ public class AmqpConnectorsTest {
     final CompletionStage<List<IncomingMessage>> result =
         amqpSource
             .mapAsync(1, cm -> cm.ack(false).thenApply(unused -> cm.message()))
-            .take(input.size()).runWith(Sink.seq(), materializer);
+            .take(input.size())
+            .runWith(Sink.seq(), materializer);
     //#run-source-withoutautoack
 
     assertEquals(input, result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.bytes().utf8String()).collect(Collectors.toList()));
