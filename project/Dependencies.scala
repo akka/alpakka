@@ -177,8 +177,8 @@ object Dependencies {
 
   val Parquet = Seq(
     libraryDependencies ++= Seq(
-      "com.sksamuel.avro4s" %% "avro4s-core" % "1.8.0",
-      "org.apache.parquet" % "parquet-avro" % "1.9.0",
+      "com.sksamuel.avro4s" %% "avro4s-core" % "1.8.0", // MIT
+      "org.apache.parquet" % "parquet-avro" % "1.9.0", // ApacheV2
       "org.apache.hadoop" % "hadoop-client" % "3.0.0" excludeAll(
         ExclusionRule("org.eclipse.jetty", "jetty-webapp"),
         ExclusionRule("org.eclipse.jetty", "jetty-servlet"),
@@ -190,7 +190,7 @@ object Dependencies {
         ExclusionRule("javax.servlet.jsp", "jsp-api"),
         ExclusionRule("org.apache.kerby", "kerb-simplekdc"),
         ExclusionRule("org.apache.curator", "curator-recipes"),
-        ExclusionRule("org.apache.curator", "curator-client"))
+        ExclusionRule("org.apache.curator", "curator-client")) // ApacheV2
     )
   )
 
