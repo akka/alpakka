@@ -175,6 +175,25 @@ object Dependencies {
     )
   )
 
+  val Parquet = Seq(
+    libraryDependencies ++= Seq(
+      "com.sksamuel.avro4s" %% "avro4s-core" % "1.8.0",
+      "org.apache.parquet" % "parquet-avro" % "1.9.0",
+      "org.apache.hadoop" % "hadoop-client" % "3.0.0" excludeAll(
+        ExclusionRule("org.eclipse.jetty", "jetty-webapp"),
+        ExclusionRule("org.eclipse.jetty", "jetty-servlet"),
+        ExclusionRule("org.apache.hadoop", "hadoop-mapreduce-client-jobclient"),
+        ExclusionRule("org.apache.hadoop", "hadoop-mapreduce-client-core"),
+        ExclusionRule("org.apache.hadoop", "hadoop-yarn-api"),
+        ExclusionRule("org.apache.hadoop", "hadoop-yarn-client"),
+        ExclusionRule("org.apache.hadoop", "hadoop-annotations"),
+        ExclusionRule("javax.servlet.jsp", "jsp-api"),
+        ExclusionRule("org.apache.kerby", "kerb-simplekdc"),
+        ExclusionRule("org.apache.curator", "curator-recipes"),
+        ExclusionRule("org.apache.curator", "curator-client"))
+    )
+  )
+
   val S3 = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
