@@ -83,14 +83,15 @@ class ParquetSinkSpec extends WordSpec with Matchers with ScalaFutures with Befo
       val settings = ParquetSettings(baseDir, 10, 10 seconds)
         .withWriteMode(Mode.OVERWRITE)
         .withWriteParallelism(4)
-      val partitionSink = ParquetSink.partitionSink[DataRecord, Int](settings, "parquestPartition")(r => r.id.toInt % 10, i => i.toString)
+      val partitionSink =
+        ParquetSink.partitionSink[DataRecord, Int](settings, "parquestPartition")(r => r.id.toInt % 10,
+                                                                                  i => i.toString)
 
       val completion = Source(0 until 100)
         .map(i => new DataRecord(i.toString, s"PartitionTestData-$i"))
         .runWith(partitionSink)
 
       whenReady(completion) { done =>
-
         val files = traverseDirectory(baseDir)
         val records = files.flatMap(f => readParquetFile[DataRecord](f.toUri.toString)).sortBy(_.id.toInt)
 
@@ -118,16 +119,17 @@ class ParquetSinkSpec extends WordSpec with Matchers with ScalaFutures with Befo
     Iterator.continually(reader.read()).takeWhile(_ != null)
   }
 
-  private def traverseDirectory(baseDir: String): List[file.Path] = {
-    Files.list(Paths.get(URI.create(baseDir))).toScala[List].flatMap(p => {
-      if (Files.isDirectory(p)) {
-        traverseDirectory(p.toUri.toString)
-      }
-      else {
-        List[file.Path](p)
-      }
-    })
-  }
+  private def traverseDirectory(baseDir: String): List[file.Path] =
+    Files
+      .list(Paths.get(URI.create(baseDir)))
+      .toScala[List]
+      .flatMap(p => {
+        if (Files.isDirectory(p)) {
+          traverseDirectory(p.toUri.toString)
+        } else {
+          List[file.Path](p)
+        }
+      })
 }
 
 class DataRecord(val id: String, val data: String) {
