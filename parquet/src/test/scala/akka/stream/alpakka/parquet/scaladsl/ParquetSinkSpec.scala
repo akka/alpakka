@@ -4,7 +4,9 @@
 
 package akka.stream.alpakka.parquet.scaladsl
 
-import java.nio.file.Files
+import java.net.URI
+import java.nio.file
+import java.nio.file.{Files, Paths}
 import java.util.UUID
 
 import akka.actor.ActorSystem
@@ -19,13 +21,13 @@ import org.apache.hadoop.fs.Path
 import org.apache.parquet.avro.AvroParquetReader
 import org.apache.parquet.hadoop.ParquetFileReader
 import org.apache.parquet.hadoop.ParquetFileWriter.Mode
-import org.apache.parquet.hadoop.metadata.CompressionCodecName
 import org.junit.runner.RunWith
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.time.{Milliseconds, Seconds, Span}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
+import scala.compat.java8.StreamConverters._
 import scala.concurrent.duration.DurationLong
 
 @RunWith(classOf[JUnitRunner])
@@ -54,14 +56,14 @@ class ParquetSinkSpec extends WordSpec with Matchers with ScalaFutures with Befo
       val settings = ParquetSettings(baseDir, 10, 10 seconds)
         .withWriteMode(Mode.CREATE)
       val fileName = UUID.randomUUID().toString
-      val plainSink = ParquetSink[TestRecord](settings, fileName)
+      val plainSink = ParquetSink[DataRecord](settings, fileName)
 
       val completion = Source(0 until 10)
-        .map(i => new TestRecord(i.toString, s"TestData-$i"))
+        .map(i => new DataRecord(i.toString, s"TestData-$i"))
         .runWith(plainSink)
 
       whenReady(completion) { done =>
-        val records = readParquetFile[TestRecord](s"$baseDir/$fileName.parquet").toList
+        val records = readParquetFile[DataRecord](s"$baseDir/$fileName.parquet").toList
 
         records.size shouldBe 10
 
@@ -70,6 +72,36 @@ class ParquetSinkSpec extends WordSpec with Matchers with ScalaFutures with Befo
           record.id shouldBe i.toString
           record.data shouldBe s"TestData-$i"
         })
+      }
+
+    }
+
+    "write elements to partitioned sink" in {
+      val tmpDir = Files.createTempDirectory("parquet-spec-").toFile
+      tmpDir.deleteOnExit()
+      val baseDir = s"${tmpDir.toURI}/basedir"
+      val settings = ParquetSettings(baseDir, 10, 10 seconds)
+        .withWriteMode(Mode.OVERWRITE)
+        .withWriteParallelism(4)
+      val partitionSink = ParquetSink.partitionSink[DataRecord, Int](settings, "parquestPartition")(r => r.id.toInt % 10, i => i.toString)
+
+      val completion = Source(0 until 100)
+        .map(i => new DataRecord(i.toString, s"PartitionTestData-$i"))
+        .runWith(partitionSink)
+
+      whenReady(completion) { done =>
+
+        val files = traverseDirectory(baseDir)
+        val records = files.flatMap(f => readParquetFile[DataRecord](f.toUri.toString)).sortBy(_.id.toInt)
+
+        records.size shouldBe 100
+
+        (0 until 100).foreach(i => {
+          val record = records(i)
+          record.id shouldBe i.toString
+          record.data shouldBe s"PartitionTestData-$i"
+        })
+
       }
 
     }
@@ -85,8 +117,19 @@ class ParquetSinkSpec extends WordSpec with Matchers with ScalaFutures with Befo
       .build()
     Iterator.continually(reader.read()).takeWhile(_ != null)
   }
+
+  private def traverseDirectory(baseDir: String): List[file.Path] = {
+    Files.list(Paths.get(URI.create(baseDir))).toScala[List].flatMap(p => {
+      if (Files.isDirectory(p)) {
+        traverseDirectory(p.toUri.toString)
+      }
+      else {
+        List[file.Path](p)
+      }
+    })
+  }
 }
 
-class TestRecord(val id: String, val data: String) {
+class DataRecord(val id: String, val data: String) {
   def this() = this(null, null)
 }
