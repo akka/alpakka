@@ -257,7 +257,7 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
     if (stopping.compareAndSet(false, true))
       Future {
         try {
-          jmsConnection.stop()
+          jmsConnection.foreach(_.stop())
         } catch {
           case NonFatal(e) => log.error(e, "Error stopping JMS connection {}", jmsConnection)
         }
@@ -271,7 +271,7 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
         }
         .onComplete { _ =>
           try {
-            jmsConnection.close()
+            jmsConnection.foreach(_.close())
           } catch {
             case NonFatal(e) => log.error(e, "Error closing JMS connection {}", jmsConnection)
           } finally {
@@ -287,7 +287,7 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
     if (stopping.compareAndSet(false, true)) {
       Future {
         try {
-          jmsConnection.close()
+          jmsConnection.foreach(_.close())
           log.info("JMS connection {} closed", jmsConnection)
           markAborted.invoke(ex)
         } catch {
