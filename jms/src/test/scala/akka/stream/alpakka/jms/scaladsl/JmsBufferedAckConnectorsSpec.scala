@@ -26,34 +26,24 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
 
   "The JMS Ack Connectors" should {
     "publish and consume strings through a queue" in withServer() { ctx =>
-      //#connection-factory
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
-      //#connection-factory
 
-      //#create-text-sink
       val jmsSink: Sink[String, Future[Done]] = JmsSink.textSink(
         JmsSinkSettings(connectionFactory).withQueue("test")
       )
-      //#create-text-sink
 
-      //#run-text-sink
       val in = 0 to 25 map (i => ('a' + i).asInstanceOf[Char].toString)
       Source(in).runWith(jmsSink)
-      //#run-text-sink
 
-      //#create-ack-source
       val jmsSource: Source[AckEnvelope, KillSwitch] = JmsSource.ackSource(
         JmsSourceSettings(connectionFactory).withSessionCount(5).withBufferSize(5).withQueue("test")
       )
-      //#create-ack-source
 
-      //#run-ack-source
       val result = jmsSource
         .take(in.size)
         .map(env => (env, env.message.asInstanceOf[TextMessage].getText))
         .map { case (env, text) => env.acknowledge(); text }
         .runWith(Sink.seq)
-      //#run-ack-source
 
       result.futureValue should contain theSameElementsAs in
     }
@@ -61,20 +51,16 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
     "publish and consume JMS text messages with properties through a queue" in withServer() { ctx =>
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
-      //#create-jms-sink
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
         JmsSinkSettings(connectionFactory).withQueue("numbers")
       )
-      //#create-jms-sink
 
-      //#create-messages-with-properties
       val msgsIn = 1 to 100 map { n =>
         JmsTextMessage(n.toString)
           .withProperty("Number", n)
           .withProperty("IsOdd", n % 2 == 1)
           .withProperty("IsEven", n % 2 == 0)
       }
-      //#create-messages-with-properties
 
       Source(msgsIn).runWith(jmsSink)
 
@@ -88,7 +74,8 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
       val result = jmsSource
         .take(msgsIn.size)
         .map { env =>
-          env.acknowledge(); env.message
+          env.acknowledge()
+          env.message
         }
         .runWith(Sink.seq)
       //#run-jms-source
@@ -119,7 +106,6 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
         }
         Source(msgsIn).runWith(jmsSink)
 
-        //#create-jms-source-with-selector
         val jmsSource = JmsSource.ackSource(
           JmsSourceSettings(connectionFactory)
             .withSessionCount(5)
@@ -127,14 +113,13 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
             .withQueue("numbers")
             .withSelector("IsOdd = TRUE")
         )
-        //#create-jms-source-with-selector
 
-        //#assert-only-odd-messages-received
         val oddMsgsIn = msgsIn.filter(msg => msg.body.toInt % 2 == 1)
         val result = jmsSource
           .take(oddMsgsIn.size)
           .map { env =>
-            env.acknowledge(); env.message
+            env.acknowledge()
+            env.message
           }
           .runWith(Sink.seq)
         // We should have only received the odd numbers in the list
@@ -148,7 +133,6 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
             // Make sure we are only receiving odd numbers
             out.getIntProperty("Number") % 2 shouldEqual 1
         }
-      //#assert-only-odd-messages-received
     }
 
     "applying backpressure when the consumer is slower than the producer" in withServer() { ctx =>
@@ -183,11 +167,9 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
 
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
-      //#create-topic-sink
       val jmsTopicSink: Sink[String, Future[Done]] = JmsSink.textSink(
         JmsSinkSettings(connectionFactory).withTopic("topic")
       )
-      //#create-topic-sink
       val jmsTopicSink2: Sink[String, Future[Done]] = JmsSink.textSink(
         JmsSinkSettings(connectionFactory).withTopic("topic")
       )
@@ -195,17 +177,14 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
       val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
       val inNumbers = (1 to 10).map(_.toString)
 
-      //#create-topic-source
       val jmsTopicSource: Source[AckEnvelope, KillSwitch] = JmsSource.ackSource(
         JmsSourceSettings(connectionFactory).withSessionCount(1).withBufferSize(5).withTopic("topic")
       )
-      //#create-topic-source
       val jmsSource2: Source[AckEnvelope, KillSwitch] = JmsSource.ackSource(
         JmsSourceSettings(connectionFactory).withSessionCount(1).withBufferSize(5).withTopic("topic")
       )
 
       val expectedSize = in.size + inNumbers.size
-      //#run-topic-source
       val result1 = jmsTopicSource
         .take(expectedSize)
         .map(env => (env, env.message.asInstanceOf[TextMessage].getText))
@@ -218,14 +197,11 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
         .map { case (env, text) => env.acknowledge(); text }
         .runWith(Sink.seq)
         .map(_.sorted)
-      //#run-topic-source
 
       //We wait a little to be sure that the source is connected
       Thread.sleep(500)
 
-      //#run-topic-sink
       Source(in).runWith(jmsTopicSink)
-      //#run-topic-sink
       Source(inNumbers).runWith(jmsTopicSink2)
 
       val expectedList: List[String] = in ++ inNumbers
