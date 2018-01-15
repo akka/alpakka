@@ -36,7 +36,6 @@ import static org.junit.Assert.assertEquals;
 
 public class JmsBufferedAckConnectorsTest {
 
-    //#create-test-message-list
     private List<JmsTextMessage> createTestMessageList() {
         List<Integer> intsIn = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
         List<JmsTextMessage> msgsIn = new ArrayList<>();
@@ -51,30 +50,21 @@ public class JmsBufferedAckConnectorsTest {
 
         return msgsIn;
     }
-    //#create-test-message-list
 
     @Test
     public void publishAndConsume() throws Exception {
         withServer(ctx -> {
-            //#connection-factory
-//            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
             ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
-            //#connection-factory
 
-            //#create-text-sink
             Sink<String, CompletionStage<Done>> jmsSink = JmsSink.textSink(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
-            //#create-text-sink
 
-            //#run-text-sink
             List<String> in = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
             Source.from(in).runWith(jmsSink, materializer);
-            //#run-text-sink
 
-            //#create-text-source
             Source<AckEnvelope, KillSwitch> jmsSource = JmsSource
                     .ackSource(JmsSourceSettings
                             .create(connectionFactory)
@@ -82,15 +72,12 @@ public class JmsBufferedAckConnectorsTest {
                             .withBufferSize(5)
                             .withQueue("test")
                     );
-            //#create-text-source
 
-            //#run-text-source
             CompletionStage<List<String>> result = jmsSource
                     .take(in.size())
                     .map(env -> new Pair<>(env, ((TextMessage) env.message()).getText()))
                     .map(pair -> { pair.first().acknowledge(); return pair.second(); })
                     .runWith(Sink.seq(), materializer);
-            //#run-text-source
             List<String> out = new ArrayList<>(result.toCompletableFuture().get(3, TimeUnit.SECONDS));
             Collections.sort(out);
             assertEquals(in, out);
@@ -103,36 +90,34 @@ public class JmsBufferedAckConnectorsTest {
         withServer(ctx -> {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
-            //#create-jms-sink
             Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
-            //#create-jms-sink
 
-            //#create-messages-with-properties
             List<JmsTextMessage> msgsIn = createTestMessageList();
-            //#create-messages-with-properties
 
-            //#run-jms-sink
             Source.from(msgsIn).runWith(jmsSink, materializer);
-            //#run-jms-sink
 
             //#create-jms-source
-            Source<AckEnvelope, KillSwitch> jmsSource = JmsSource.ackSource(JmsSourceSettings
+            Source<AckEnvelope, KillSwitch> jmsSource = JmsSource
+                .ackSource(JmsSourceSettings
                     .create(connectionFactory)
                     .withSessionCount(5)
                     .withBufferSize(5)
                     .withQueue("test")
-            );
+                );
             //#create-jms-source
 
             //#run-jms-source
             CompletionStage<List<Message>> result = jmsSource
-                    .take(msgsIn.size())
-                    .map(env -> { env.acknowledge(); return env.message(); })
-                    .runWith(Sink.seq(), materializer);
+                .take(msgsIn.size())
+                .map(env -> {
+                    env.acknowledge();
+                    return env.message();
+                })
+                .runWith(Sink.seq(), materializer);
             //#run-jms-source
 
             List<Message> outMessages = new ArrayList<>(result.toCompletableFuture().get(3, TimeUnit.SECONDS));
@@ -159,41 +144,31 @@ public class JmsBufferedAckConnectorsTest {
         withServer(ctx -> {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
-            //#create-jms-sink
             Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
-            //#create-jms-sink
 
-            //#create-messages-with-properties
             List<JmsTextMessage> msgsIn = createTestMessageList().stream()
                     .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsType.create("type")))
                     .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsCorrelationId.create("correlationId")))
                     .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsReplyTo.queue("test-reply")))
                     .collect(Collectors.toList());
-            //#create-messages-with-properties
 
-            //#run-jms-sink
             Source.from(msgsIn).runWith(jmsSink, materializer);
-            //#run-jms-sink
 
-            //#create-jms-source
             Source<AckEnvelope, KillSwitch> jmsSource = JmsSource.ackSource(JmsSourceSettings
                     .create(connectionFactory)
                     .withSessionCount(5)
                     .withBufferSize(5)
                     .withQueue("test")
             );
-            //#create-jms-source
 
-            //#run-jms-source
             CompletionStage<List<Message>> result = jmsSource
                     .take(msgsIn.size())
                     .map(env -> { env.acknowledge(); return env.message(); })
                     .runWith(Sink.seq(), materializer);
-            //#run-jms-source
 
             List<Message> outMessages = new ArrayList<>(result.toCompletableFuture().get(3, TimeUnit.SECONDS));
             outMessages.sort((a, b) -> {
@@ -231,7 +206,6 @@ public class JmsBufferedAckConnectorsTest {
 
             Source.from(msgsIn).runWith(jmsSink, materializer);
 
-            //#create-jms-source-with-selector
             Source<AckEnvelope, KillSwitch> jmsSource = JmsSource.ackSource(JmsSourceSettings
                     .create(connectionFactory)
                     .withSessionCount(5)
@@ -239,9 +213,7 @@ public class JmsBufferedAckConnectorsTest {
                     .withQueue("test")
                     .withSelector("IsOdd = TRUE")
             );
-            //#create-jms-source-with-selector
 
-            //#assert-only-odd-messages-received
             List<JmsTextMessage> oddMsgsIn = msgsIn.stream()
                     .filter(msg -> Integer.valueOf(msg.body()) % 2 == 1)
                     .collect(Collectors.toList());
@@ -269,7 +241,6 @@ public class JmsBufferedAckConnectorsTest {
                 assertEquals(1, outMsg.getIntProperty("Number") % 2);
                 msgIdx++;
             }
-            //#assert-only-odd-messages-received
         });
     }
 
@@ -281,20 +252,17 @@ public class JmsBufferedAckConnectorsTest {
             List<String> in = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
             List<String> inNumbers = IntStream.range(0, 10).boxed().map(String::valueOf).collect(Collectors.toList());
 
-            //#create-topic-sink
             Sink<String, CompletionStage<Done>> jmsTopicSink = JmsSink.textSink(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withTopic("topic")
             );
-            //#create-topic-sink
             Sink<String, CompletionStage<Done>> jmsTopicSink2 = JmsSink.textSink(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withTopic("topic")
             );
 
-            //#create-topic-source
             Source<AckEnvelope, KillSwitch> jmsTopicSource = JmsSource
                     .ackSource(JmsSourceSettings
                             .create(connectionFactory)
@@ -302,7 +270,6 @@ public class JmsBufferedAckConnectorsTest {
                             .withBufferSize(5)
                             .withTopic("topic")
                     );
-            //#create-topic-source
             Source<AckEnvelope, KillSwitch> jmsTopicSource2 = JmsSource
                     .ackSource(JmsSourceSettings
                             .create(connectionFactory)
@@ -311,7 +278,6 @@ public class JmsBufferedAckConnectorsTest {
                             .withTopic("topic")
                     );
 
-            //#run-topic-source
             CompletionStage<List<String>> result = jmsTopicSource
                     .take(in.size() + inNumbers.size())
                     .map(env -> {
@@ -320,7 +286,6 @@ public class JmsBufferedAckConnectorsTest {
                     })
                     .runWith(Sink.seq(), materializer)
                     .thenApply(l -> l.stream().sorted().collect(Collectors.toList()));
-            //#run-topic-source
             CompletionStage<List<String>> result2 = jmsTopicSource2
                     .take(in.size() + inNumbers.size())
                     .map(env -> {
@@ -332,9 +297,7 @@ public class JmsBufferedAckConnectorsTest {
 
             Thread.sleep(500);
 
-            //#run-topic-sink
             Source.from(in).runWith(jmsTopicSink, materializer);
-            //#run-topic-sink
             Source.from(inNumbers).runWith(jmsTopicSink2, materializer);
 
 
