@@ -49,7 +49,7 @@ Gradle
 The JMS message model supports several types of message body (see @javadoc[javax.jms.Message](javax.jms.Message)) and Alpakka currently supports messages with a body containing a @javadoc[String](java.lang.String), 
 a @javadoc[Serializable](java.io.Serializable) object, a @javadoc[Map](java.util.Map) or a byte array.
 
-First define a jms  @javadoc[javax.jms.ConnectionFactory](javax.jms.ConnectionFactory) depending on the implementation you're using. Here we're using Active MQ.
+First define a @javadoc[javax.jms.ConnectionFactory](javax.jms.ConnectionFactory) depending on the implementation you're using. Here we're using Active MQ.
 
 Scala
 : @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }
@@ -57,7 +57,7 @@ Scala
 Java
 : @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #connection-factory }
 
-The created @javadoc[javax.jms.ConnectionFactory](javax.jms.ConnectionFactory) is then used for the creation of the different jms sinks or sources (see below).
+The created @javadoc[ConnectionFactory](javax.jms.ConnectionFactory) is then used for the creation of the different jms sinks or sources (see below).
 
 
 ## Sending messages to a JMS provider
@@ -124,6 +124,16 @@ Java
 
 
 ### Sending object messages to a JMS provider
+
+Create and configure ActiveMQ connection factory to support serialization.
+See [ActiveMQ Security](http://activemq.apache.org/objectmessage.html) for more information on this.
+
+Scala
+: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #connection-factory-object }
+
+Java
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #connection-factory-object }
+
 
 Create a sink, that accepts and forwards @scaladoc[JmsObjectMessage](akka.stream.alpakka.jms.JmsObjectMessage$)s to the JMS provider:
 
@@ -211,6 +221,16 @@ Java
 
 
 ### Receiving @javadoc[Serializable](java.io.Serializable) object messages from a JMS provider
+
+Create and configure ActiveMQ connection factory to support serialization.
+See [ActiveMQ Security](http://activemq.apache.org/objectmessage.html) for more information on this.
+
+Scala
+: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #connection-factory-object }
+
+Java
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #connection-factory-object }
+
 
 Create a source:
 
@@ -315,9 +335,9 @@ Scala
 Java
 : @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #assert-only-odd-messages-received }
 
-### Receiving and explicitly acknowledging @extref[javax.jms.Message](javaee-api:javax.jms.Message)s from a JMS provider
+### Receiving and explicitly acknowledging @javadoc[javax.jms.Message](javax.jms.Message)s from a JMS provider
 
-Create a @extref[javax.jms.Message](javaee-api:javax.jms.Message) source:
+Create a @javadoc[javax.jms.Message](javax.jms.Message) source:
 
 Scala
 : @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsBufferedAckConnectorsSpec.scala) { #create-jms-source }
@@ -344,9 +364,9 @@ Java
 *  Message-by-message acknowledgement can be achieved by setting `bufferSize` to 0, thus disabling buffering. The outstanding messages before backpressure will be the `sessionCount`.
 *  The default `AcknowledgeMode` is `ClientAcknowledge` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsSourceSettings` when creating the stream. 
 
-### Transactionally receiving @extref[javax.jms.Message](javaee-api:javax.jms.Message)s from a JMS provider
+### Transactionally receiving @javadoc[javax.jms.Message](javax.jms.Message)s from a JMS provider
 
-Create a @extref[javax.jms.Message](javaee-api:javax.jms.Message) source:
+Create a @javadoc[javax.jms.Message](javax.jms.Message) source:
 
 Scala
 : @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsTxConnectorsSpec.scala) { #create-jms-source }

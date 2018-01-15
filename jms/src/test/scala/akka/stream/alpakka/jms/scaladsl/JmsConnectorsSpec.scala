@@ -22,6 +22,8 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
+import scala.collection.JavaConverters._
+
 final case class DummyObject(payload: String)
 
 class JmsConnectorsSpec extends JmsSpec {
@@ -31,7 +33,7 @@ class JmsConnectorsSpec extends JmsSpec {
   "The JMS Connectors" should {
     "publish and consume strings through a queue" in withServer() { ctx =>
       //#connection-factory
-      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+      val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
       //#connection-factory
 
       //#create-text-sink
@@ -59,13 +61,10 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "publish and consume serializable objects through a queue" in withServer() { ctx =>
-      //#connection-factory
+      //#connection-factory-object
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
-
-      // This is done here to send arbitrary objects. Otherwise activemq would forbid it.
-      // See therefore http://activemq.apache.org/objectmessage.html
-      connectionFactory.setTrustAllPackages(true)
-      //#connection-factory
+      connectionFactory.setTrustedPackages(List(classOf[DummyObject].getPackage.getName).asJava)
+      //#connection-factory-object
 
       //#create-object-sink
       val jmsSink: Sink[Serializable, Future[Done]] = JmsSink.objectSink(
@@ -93,9 +92,7 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "publish and consume bytearray through a queue" in withServer() { ctx =>
-      //#connection-factory
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
-      //#connection-factory
 
       //#create-bytearray-sink
       val jmsSink: Sink[Array[Byte], Future[Done]] = JmsSink.bytesSink(
@@ -122,9 +119,7 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "publish and consume map through a queue" in withServer() { ctx =>
-      //#connection-factory
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
-      //#connection-factory
 
       //#create-map-sink
       val jmsSink: Sink[Map[String, Any], Future[Done]] = JmsSink.mapSink(
@@ -177,11 +172,9 @@ class JmsConnectorsSpec extends JmsSpec {
     "publish and consume JMS text messages with properties through a queue" in withServer() { ctx =>
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
-      //#create-jms-sink
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
         JmsSinkSettings(connectionFactory).withQueue("numbers")
       )
-      //#create-jms-sink
 
       //#create-messages-with-properties
       val msgsIn = (1 to 10).toList.map { n =>
@@ -236,15 +229,11 @@ class JmsConnectorsSpec extends JmsSpec {
 
       Source(msgsIn).runWith(jmsSink)
 
-      //#create-jms-source
       val jmsSource: Source[Message, KillSwitch] = JmsSource(
         JmsSourceSettings(connectionFactory).withBufferSize(10).withQueue("numbers")
       )
-      //#create-jms-source
 
-      //#run-jms-source
       val result: Future[Seq[Message]] = jmsSource.take(msgsIn.size).runWith(Sink.seq)
-      //#run-jms-source
 
       // The sent message and the receiving one should have the same properties
       result.futureValue.foreach { outMsg =>
