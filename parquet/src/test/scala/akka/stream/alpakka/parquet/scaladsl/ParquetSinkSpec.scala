@@ -8,6 +8,7 @@ import java.net.URI
 import java.nio.file
 import java.nio.file.{Files, Paths}
 import java.util.UUID
+import java.util.stream.Collectors
 
 import akka.actor.ActorSystem
 import akka.stream.Supervision.{Decider, Stop}
@@ -27,8 +28,8 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.time.{Milliseconds, Seconds, Span}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
-import scala.compat.java8.StreamConverters._
 import scala.concurrent.duration.DurationLong
+import scala.collection.JavaConverters._
 
 @RunWith(classOf[JUnitRunner])
 class ParquetSinkSpec extends WordSpec with Matchers with ScalaFutures with BeforeAndAfterAll {
@@ -122,7 +123,9 @@ class ParquetSinkSpec extends WordSpec with Matchers with ScalaFutures with Befo
   private def traverseDirectory(baseDir: String): List[file.Path] =
     Files
       .list(Paths.get(URI.create(baseDir)))
-      .toScala[List]
+      .collect(Collectors.toList[file.Path])
+      .asScala
+      .toList
       .flatMap(p => {
         if (Files.isDirectory(p)) {
           traverseDirectory(p.toUri.toString)
