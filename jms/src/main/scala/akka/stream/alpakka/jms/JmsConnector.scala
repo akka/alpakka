@@ -21,7 +21,7 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
 
   implicit private[jms] var ec: ExecutionContext = _
 
-  private[jms] var jmsConnection: Connection = _
+  private[jms] var jmsConnection: Option[Connection] = None
 
   private[jms] var jmsSessions = Seq.empty[JmsSession]
 
@@ -32,7 +32,7 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
   private[jms] def fail = getAsyncCallback[Throwable](e => failStage(e))
 
   private def onConnection = getAsyncCallback[Connection] { c =>
-    jmsConnection = c
+    jmsConnection = Some(c)
   }
 
   private def onSession =
