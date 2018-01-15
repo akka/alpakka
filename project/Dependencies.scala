@@ -177,7 +177,7 @@ object Dependencies {
 
   val Parquet = Seq(
     libraryDependencies ++= Seq(
-      "com.sksamuel.avro4s" %% "avro4s-core" % "1.8.0", // MIT
+      "org.apache.avro" % "avro" % "1.8.2", // ApacheV2
       "org.apache.parquet" % "parquet-avro" % "1.9.0", // ApacheV2
       "org.apache.hadoop" % "hadoop-client" % "3.0.0" excludeAll(
         ExclusionRule("org.eclipse.jetty", "jetty-webapp"),
