@@ -22,16 +22,13 @@ import org.apache.hadoop.fs.Path
 import org.apache.parquet.avro.AvroParquetReader
 import org.apache.parquet.hadoop.ParquetFileReader
 import org.apache.parquet.hadoop.ParquetFileWriter.Mode
-import org.junit.runner.RunWith
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.time.{Milliseconds, Seconds, Span}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
-import scala.concurrent.duration.DurationLong
 import scala.collection.JavaConverters._
+import scala.concurrent.duration.DurationLong
 
-@RunWith(classOf[JUnitRunner])
 class ParquetSinkSpec extends WordSpec with Matchers with ScalaFutures with BeforeAndAfterAll {
 
   override implicit val patienceConfig =

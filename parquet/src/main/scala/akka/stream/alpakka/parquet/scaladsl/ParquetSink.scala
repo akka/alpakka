@@ -40,16 +40,15 @@ class ParquetSink[T](val settings: ParquetSettings)(implicit classTag: ClassTag[
 
   def plainSink(fileName: String)(implicit mat: ActorMaterializer): Sink[T, Future[Done]] = {
     import mat.executionContext
-
-    val file = s"$fileName.parquet"
-    val writer = createWriter(file, schema, settings.writeMode, settings.compressionCodeName)
+    
+    val writer = createWriter(s"$fileName.parquet", schema, settings.writeMode, settings.compressionCodeName)
 
     Flow[T]
       .toMat(Sink.foreach(record => {
         writer.write(record)
       }))(Keep.right)
-      .mapMaterializedValue(fut => {
-        fut.andThen({ case _ => writer.close() })
+      .mapMaterializedValue(done => {
+        done.andThen({ case _ => writer.close() })
       })
   }
 
