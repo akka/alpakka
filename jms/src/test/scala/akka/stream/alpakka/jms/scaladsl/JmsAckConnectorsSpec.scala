@@ -107,6 +107,12 @@ class JmsAckConnectorsSpec extends JmsSpec {
           out.getBooleanProperty("IsOdd") shouldEqual in.properties("IsOdd")
           out.getBooleanProperty("IsEven") shouldEqual in.properties("IsEven")
       }
+
+      // all messages were acknowledged before
+      jmsSource
+        .takeWithin(5.seconds)
+        .runWith(Sink.seq)
+        .futureValue shouldBe empty
     }
 
     "publish JMS text messages with properties through a queue and consume them with a selector" in withServer() {
@@ -155,6 +161,12 @@ class JmsAckConnectorsSpec extends JmsSpec {
             out.getIntProperty("Number") % 2 shouldEqual 1
         }
       //#assert-only-odd-messages-received
+
+      // all messages were acknowledged before
+      jmsSource
+        .takeWithin(5.seconds)
+        .runWith(Sink.seq)
+        .futureValue shouldBe empty
     }
 
     "applying backpressure when the consumer is slower than the producer" in withServer() { ctx =>
@@ -174,6 +186,12 @@ class JmsAckConnectorsSpec extends JmsSpec {
         .runWith(Sink.seq)
 
       result.futureValue should contain theSameElementsAs in
+
+      // all messages were acknowledged before
+      jmsSource
+        .takeWithin(5.seconds)
+        .runWith(Sink.seq)
+        .futureValue shouldBe empty
     }
 
     "disconnection should fail the stage" in withServer() { ctx =>
@@ -244,6 +262,12 @@ class JmsAckConnectorsSpec extends JmsSpec {
       val expectedList: List[String] = in ++ inNumbers
       result1.futureValue should contain theSameElementsAs expectedList
       result2.futureValue should contain theSameElementsAs expectedList
+
+      // all messages were acknowledged before
+      jmsTopicSource
+        .takeWithin(5.seconds)
+        .runWith(Sink.seq)
+        .futureValue shouldBe empty
     }
 
     "ensure no message loss when stopping a stream" in withServer() { ctx =>
