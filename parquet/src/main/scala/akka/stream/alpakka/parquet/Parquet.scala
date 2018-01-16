@@ -12,16 +12,16 @@ import scala.concurrent.duration.FiniteDuration
 object Parquet {
 
   case class ParquetSettings(baseUri: String,
-                             maxRecordsPerWindow: Int,
-                             window: FiniteDuration,
                              writeMode: Mode = Mode.CREATE,
                              compressionCodeName: CompressionCodecName = CompressionCodecName.SNAPPY,
-                             writeParallelism: Int = 1) {
+                             partitionSettings: Option[PartitionSettings] = None) {
     def withWriteMode(mode: Mode) = copy(writeMode = mode)
 
     def withCompressionCodecName(compressionCodec: CompressionCodecName) = copy(compressionCodeName = compressionCodec)
 
-    def withWriteParallelism(parallelism: Int) = copy(writeParallelism = parallelism)
+    def withPartitionSettings(partitionSettings: PartitionSettings) = copy(partitionSettings = Some(partitionSettings))
   }
+
+  case class PartitionSettings(maxRecordsPerWindow: Int, windowSize: FiniteDuration, writeParallelism: Int)
 
 }

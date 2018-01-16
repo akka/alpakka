@@ -58,10 +58,14 @@ class ParquetSink[T](val settings: ParquetSettings)(implicit classTag: ClassTag[
 
     implicit val ec = mat.executionContext
 
+    val windowSettings = settings.partitionSettings.getOrElse(
+      throw new IllegalArgumentException("No partition settings for paritioned sink")
+    )
+
     Flow[T]
-      .groupedWithin(settings.maxRecordsPerWindow, settings.window)
+      .groupedWithin(windowSettings.maxRecordsPerWindow, windowSettings.windowSize)
       .mapConcat(_.groupBy(groupBy).toList)
-      .toMat(Sink.foreachParallel[(K, Seq[T])](settings.writeParallelism)({
+      .toMat(Sink.foreachParallel[(K, Seq[T])](windowSettings.writeParallelism)({
         case (partition, rs) =>
           val partitionPrefix = partitionName(partition)
           val fileName = s"$partitionPrefix/${filePrefix}_${UUID.randomUUID()}.parquet"

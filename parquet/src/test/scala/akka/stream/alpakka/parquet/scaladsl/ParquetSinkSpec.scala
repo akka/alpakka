@@ -12,7 +12,7 @@ import java.util.stream.Collectors
 
 import akka.actor.ActorSystem
 import akka.stream.Supervision.{Decider, Stop}
-import akka.stream.alpakka.parquet.Parquet.ParquetSettings
+import akka.stream.alpakka.parquet.Parquet.{ParquetSettings, PartitionSettings}
 import akka.stream.scaladsl.Source
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
@@ -32,7 +32,7 @@ import scala.concurrent.duration.DurationLong
 class ParquetSinkSpec extends WordSpec with Matchers with ScalaFutures with BeforeAndAfterAll {
 
   override implicit val patienceConfig =
-    PatienceConfig(timeout = Span(10, Seconds), interval = Span(500, Milliseconds))
+    PatienceConfig(timeout = Span(30, Seconds), interval = Span(500, Milliseconds))
 
   val decider: Decider = {
     case t: Throwable =>
@@ -51,7 +51,7 @@ class ParquetSinkSpec extends WordSpec with Matchers with ScalaFutures with Befo
       val tmpDir = Files.createTempDirectory("parquet-spec-").toFile
       tmpDir.deleteOnExit()
       val baseDir = s"${tmpDir.toURI}/basedir"
-      val settings = ParquetSettings(baseDir, 10, 10 seconds)
+      val settings = ParquetSettings(baseDir)
         .withWriteMode(Mode.CREATE)
       val fileName = UUID.randomUUID().toString
       val plainSink = ParquetSink[DataRecord](settings, fileName)
@@ -78,9 +78,9 @@ class ParquetSinkSpec extends WordSpec with Matchers with ScalaFutures with Befo
       val tmpDir = Files.createTempDirectory("parquet-spec-").toFile
       tmpDir.deleteOnExit()
       val baseDir = s"${tmpDir.toURI}/basedir"
-      val settings = ParquetSettings(baseDir, 10, 10 seconds)
+      val settings = ParquetSettings(baseDir)
         .withWriteMode(Mode.OVERWRITE)
-        .withWriteParallelism(4)
+        .withPartitionSettings(PartitionSettings(10, 10 seconds, 4))
       val partitionSink =
         ParquetSink.partitionSink[DataRecord, Int](settings, "parquestPartition")(r => r.id.toInt % 10,
                                                                                   i => i.toString)
