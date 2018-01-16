@@ -12,7 +12,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import org.junit.Test;
 
-public class AmqpConnectionSettingsTest {
+public class AmqpConnectionProvidersTest {
   @Test
   public void LocalAmqpConnectionCreatesNewConnection() throws Exception {
     AmqpConnectionProvider connectionProvider = AmqpLocalConnectionProvider.getInstance();
