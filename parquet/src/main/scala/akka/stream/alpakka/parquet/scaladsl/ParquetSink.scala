@@ -40,7 +40,7 @@ class ParquetSink[T](val settings: ParquetSettings)(implicit classTag: ClassTag[
 
   def plainSink(fileName: String)(implicit mat: ActorMaterializer): Sink[T, Future[Done]] = {
     import mat.executionContext
-    
+
     val writer = createWriter(s"$fileName.parquet", schema, settings.writeMode, settings.compressionCodeName)
 
     Flow[T]
