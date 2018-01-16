@@ -94,7 +94,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val queue = randomQueueUrl()
 
     //#flow
-    val future = Source.single("alpakka").via(SqsFlow(queue)).runWith(Sink.ignore)
+    val future = Source.single(new SendMessageRequest(queue, "alpakka")).via(SqsFlow(queue)).runWith(Sink.ignore)
     //#flow
 
     Await.result(future, 1.second) shouldBe Done

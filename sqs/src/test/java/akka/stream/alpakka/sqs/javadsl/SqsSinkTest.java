@@ -12,6 +12,7 @@ import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
+import com.amazonaws.services.sqs.model.SendMessageRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -72,7 +73,7 @@ public class SqsSinkTest extends BaseSqsTest {
 
         //#flow
         CompletionStage<Done> done = Source
-                .single("alpakka-flow")
+                .single(new SendMessageRequest(queueUrl, "alpakka-flow"))
                 .via(SqsFlow.create(queueUrl, sqsClient))
                 .runWith(Sink.ignore(), materializer);
 
@@ -134,9 +135,9 @@ public class SqsSinkTest extends BaseSqsTest {
     public void sendMessageWithBatchesAsFlow() throws Exception {
         final String queueUrl = randomQueueUrl();
 
-        ArrayList<String> messagesToSend = new ArrayList<>();
+        ArrayList<SendMessageRequest> messagesToSend = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            messagesToSend.add("Message - " + i);
+            messagesToSend.add(new SendMessageRequest(queueUrl, "Message - " + i));
         }
 
         CompletionStage<Done> done = Source
@@ -155,11 +156,11 @@ public class SqsSinkTest extends BaseSqsTest {
     public void sendBatchesAsFlow() throws Exception {
         final String queueUrl = randomQueueUrl();
 
-        ArrayList<String> messagesToSend = new ArrayList<>();
+        ArrayList<SendMessageRequest> messagesToSend = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            messagesToSend.add("Message - " + i);
+            messagesToSend.add(new SendMessageRequest(queueUrl, "Message - " + i));
         }
-        Iterable<String> it = messagesToSend;
+        Iterable<SendMessageRequest> it = messagesToSend;
 
         CompletionStage<Done> done = Source
                 .single(it)
@@ -179,7 +180,7 @@ public class SqsSinkTest extends BaseSqsTest {
 
         //#flow
         CompletionStage<Done> done = Source
-                .single("alpakka-flow")
+                .single(new SendMessageRequest(queueUrl, "alpakka-flow"))
                 .via(SqsFlow.create(queueUrl, sqsClient))
                 .runWith(Sink.ignore(), materializer);
 
