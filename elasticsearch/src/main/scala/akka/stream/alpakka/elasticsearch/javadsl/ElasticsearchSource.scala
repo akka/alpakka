@@ -9,6 +9,8 @@ import akka.stream.alpakka.elasticsearch._
 import akka.stream.javadsl.Source
 import org.elasticsearch.client.RestClient
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ArrayNode
+
 import scala.collection.JavaConverters._
 
 /**
@@ -85,26 +87,20 @@ object ElasticsearchSource {
   private class JacksonReader[T](mapper: ObjectMapper, clazz: Class[T]) extends MessageReader[T] {
 
     override def convert(json: String): ScrollResponse[T] = {
-      val map = mapper.readValue(json, classOf[java.util.Map[String, Object]])
-      val error = map.get("error")
-      if (error != null) {
-        ScrollResponse(Some(error.toString), None)
+
+      val jsonTree = mapper.readTree(json)
+
+      //val map = mapper.readValue(json, classOf[java.util.Map[String, Object]])
+      if (jsonTree.has("error")) {
+        ScrollResponse(Some(jsonTree.get("error").asText()), None)
       } else {
-        val scrollId = map.get("_scroll_id").asInstanceOf[String]
-        val hits = map
-          .get("hits")
-          .asInstanceOf[java.util.Map[String, Object]]
-          .get("hits")
-          .asInstanceOf[java.util.List[java.util.Map[String, Object]]]
-        val messages = hits.asScala.map { element =>
-          val id = element.get("_id").asInstanceOf[String]
-          val source = element.get("_source").asInstanceOf[java.util.Map[String, Object]]
-          if (clazz.isAssignableFrom(classOf[java.util.Map[String, Object]])) {
-            OutgoingMessage[T](id, source.asInstanceOf[T])
-          } else {
-            val obj = mapper.readValue(mapper.writeValueAsString(source), clazz)
-            OutgoingMessage[T](id, obj)
-          }
+        val scrollId = jsonTree.get("_scroll_id").asText()
+        val hits = jsonTree.get("hits").get("hits").asInstanceOf[ArrayNode]
+        val messages = hits.elements().asScala.toList.map {
+          element =>
+            val id = element.get("_id").asText()
+            val source = element.get("_source")
+            OutgoingMessage[T](id, mapper.treeToValue(source, clazz))
         }
         ScrollResponse(None, Some(ScrollResult(scrollId, messages)))
       }
