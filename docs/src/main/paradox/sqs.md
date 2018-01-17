@@ -85,10 +85,18 @@ if you share the client between multiple Sources, Sinks and Flows. For the SQS S
 Create a sink, that forwards `String` to the SQS queue.
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #run }
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #run-string }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #run }
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #run-string }
+
+Create a sink, that forwards `SendMessageRequest` to the SQS queue.
+
+Scala
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #run-send-request }
+
+Java
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #run-send-request }
 
 ### Stream messages to a SQS queue with underlying batching
 
@@ -125,10 +133,21 @@ Be aware that the size of the batch must be less than or equal to 10 because Ama
 If the batch has more than 10 entries, the request will fail.
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch }
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-string }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #batch }
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #batch-string }
+
+Create a sink, that forwards `Seq[SendMessageRequest]` to the SQS queue.
+
+Be aware that the size of the batch must be less than or equal to 10 because Amazon SQS has a limit for batch request.
+If the batch has more than 10 entries, the request will fail.
+
+Scala
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-send-request }
+
+Java
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #batch-send-request }
 
 #### Sink configuration
 

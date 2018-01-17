@@ -24,10 +24,23 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
   it should "publish and pull a message" taggedAs Integration in {
     val queue = randomQueueUrl()
 
-    //#run
+    //#run-string
     val future = Source.single("alpakka").runWith(SqsSink(queue))
     Await.ready(future, 1.second)
-    //#run
+    //#run-string
+
+    val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
+    probe.requestNext().getBody shouldBe "alpakka"
+    probe.cancel()
+  }
+
+  it should "publish and pull a message provided as a SendMessageRequest" taggedAs Integration in {
+    val queue = randomQueueUrl()
+
+    //#run-send-request
+    val future = Source.single(new SendMessageRequest().withMessageBody("alpakka")).runWith(SqsSink.messageSink(queue))
+    Await.ready(future, 1.second)
+    //#run-send-request
 
     val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
     probe.requestNext().getBody shouldBe "alpakka"
@@ -152,12 +165,33 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
   it should "publish batch of messages and pull them" taggedAs Integration in {
     val queue = randomQueueUrl()
 
-    //#batch
+    //#batch-string
     val messages = for (i <- 0 until 10) yield s"Message - $i"
 
     val future = Source.single(messages).runWith(SqsSink.batch(queue))
     Await.ready(future, 1.second)
-    //#batch
+    //#batch-string
+
+    val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
+    var nrOfMessages = 0
+    for (i <- 0 until 10) {
+      probe.requestNext()
+      nrOfMessages += 1
+    }
+
+    assert(nrOfMessages == 10)
+    probe.cancel()
+  }
+
+  it should "publish batch of SendMessageRequests and pull them" taggedAs Integration in {
+    val queue = randomQueueUrl()
+
+    //#batch-send-request
+    val messages = for (i <- 0 until 10) yield new SendMessageRequest().withMessageBody(s"Message - $i")
+
+    val future = Source.single(messages).runWith(SqsSink.batchedMessageSink(queue))
+    Await.ready(future, 1.second)
+    //#batch-send-request
 
     val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
     var nrOfMessages = 0

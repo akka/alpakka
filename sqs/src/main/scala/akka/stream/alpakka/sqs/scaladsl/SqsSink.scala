@@ -22,24 +22,21 @@ object SqsSink {
   ): Sink[String, Future[Done]] =
     Flow
       .fromFunction((msg: String) => new SendMessageRequest(queueUrl, msg))
-      .via(SqsFlow.apply(queueUrl, settings))
-      .toMat(Sink.ignore)(Keep.right)
+      .toMat(messageSink(queueUrl, settings))(Keep.right)
 
   def grouped(queueUrl: String, settings: SqsBatchFlowSettings = SqsBatchFlowSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
   ): Sink[String, Future[Done]] =
     Flow
       .fromFunction((msg: String) => new SendMessageRequest(queueUrl, msg))
-      .via(SqsFlow.grouped(queueUrl, settings))
-      .toMat(Sink.ignore)(Keep.right)
+      .toMat(groupedMessageSink(queueUrl, settings))(Keep.right)
 
   def batch(queueUrl: String, settings: SqsBatchFlowSettings = SqsBatchFlowSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
   ): Sink[Iterable[String], Future[Done]] =
     Flow
       .fromFunction((msgs: Iterable[String]) => msgs.map(msg => new SendMessageRequest(queueUrl, msg)))
-      .via(SqsFlow.batch(queueUrl, settings))
-      .toMat(Sink.ignore)(Keep.right)
+      .toMat(batchedMessageSink(queueUrl, settings))(Keep.right)
 
   def messageSink(queueUrl: String, settings: SqsSinkSettings = SqsSinkSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
