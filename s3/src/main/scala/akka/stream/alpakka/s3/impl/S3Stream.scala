@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.impl
@@ -66,9 +66,12 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     CredentialScope(LocalDate.now(), settings.s3RegionProvider.getRegion, "s3")
   )
 
-  def download(s3Location: S3Location, range: Option[ByteRange] = None): Source[ByteString, Future[ObjectMetadata]] = {
+  def download(s3Location: S3Location,
+               range: Option[ByteRange],
+               sse: Option[ServerSideEncryption]): Source[ByteString, Future[ObjectMetadata]] = {
     import mat.executionContext
-    val future = request(s3Location, rangeOption = range)
+    val s3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(GetObject) })
+    val future = request(s3Location, rangeOption = range, s3Headers = s3Headers)
     Source
       .fromFuture(future.flatMap(entityForSuccess))
       .map(_.dataBytes)
@@ -108,9 +111,12 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       .mapConcat(identity)
   }
 
-  def getObjectMetadata(bucket: String, key: String): Future[Option[ObjectMetadata]] = {
+  def getObjectMetadata(bucket: String,
+                        key: String,
+                        sse: Option[ServerSideEncryption]): Future[Option[ObjectMetadata]] = {
     implicit val ec = mat.executionContext
-    request(S3Location(bucket, key), HttpMethods.HEAD).flatMap {
+    val s3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(HeadObject) })
+    request(S3Location(bucket, key), HttpMethods.HEAD, s3Headers = s3Headers).flatMap {
       case HttpResponse(OK, headers, entity, _) =>
         entity.discardBytes().future().map { _ =>
           Some(ObjectMetadata(headers))
@@ -140,13 +146,18 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
                 contentType: ContentType,
                 data: Source[ByteString, _],
                 contentLength: Long,
-                s3Headers: S3Headers): Future[ObjectMetadata] = {
+                s3Headers: S3Headers,
+                sse: Option[ServerSideEncryption]): Future[ObjectMetadata] = {
 
     // TODO can we take in a Source[ByteString, NotUsed] without forcing chunking
     // chunked requests are causing S3 to think this is a multipart upload
 
-    implicit val ec = mat.executionContext
-    val req = uploadRequest(s3Location, data, contentLength, contentType, s3Headers)
+    implicit val ec: ExecutionContext = mat.executionContext
+
+    val headers = S3Headers(
+      s3Headers.headers ++ sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(PutObject) }
+    )
+    val req = uploadRequest(s3Location, data, contentLength, contentType, headers)
 
     val resp = for {
       signedRequest <- Signer.signedRequest(req, signingKey)
@@ -165,8 +176,9 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
   def request(s3Location: S3Location,
               method: HttpMethod = HttpMethods.GET,
-              rangeOption: Option[ByteRange] = None): Future[HttpResponse] =
-    signAndGet(requestHeaders(getDownloadRequest(s3Location, method), rangeOption))
+              rangeOption: Option[ByteRange] = None,
+              s3Headers: S3Headers = S3Headers.empty): Future[HttpResponse] =
+    signAndGet(requestHeaders(getDownloadRequest(s3Location, method, s3Headers), rangeOption))
 
   private def requestHeaders(downloadRequest: HttpRequest, rangeOption: Option[ByteRange]): HttpRequest =
     rangeOption match {
@@ -177,12 +189,15 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
   /**
    * Uploads a stream of ByteStrings to a specified location as a multipart upload.
    */
-  def multipartUpload(s3Location: S3Location,
-                      contentType: ContentType = ContentTypes.`application/octet-stream`,
-                      s3Headers: S3Headers,
-                      chunkSize: Int = MinChunkSize,
-                      chunkingParallelism: Int = 4): Sink[ByteString, Future[CompleteMultipartUploadResult]] =
-    chunkAndRequest(s3Location, contentType, s3Headers, chunkSize)(chunkingParallelism)
+  def multipartUpload(
+      s3Location: S3Location,
+      contentType: ContentType = ContentTypes.`application/octet-stream`,
+      s3Headers: S3Headers,
+      sse: Option[ServerSideEncryption] = None,
+      chunkSize: Int = MinChunkSize,
+      chunkingParallelism: Int = 4
+  ): Sink[ByteString, Future[CompleteMultipartUploadResult]] =
+    chunkAndRequest(s3Location, contentType, s3Headers, chunkSize, sse)(chunkingParallelism)
       .toMat(completionSink(s3Location))(Keep.right)
 
   private def initiateMultipartUpload(s3Location: S3Location,
@@ -231,7 +246,8 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       contentType: ContentType,
       s3Headers: S3Headers,
       chunkSize: Int,
-      parallelism: Int
+      parallelism: Int,
+      sse: Option[ServerSideEncryption]
   ): Flow[ByteString, (HttpRequest, (MultipartUpload, Int)), NotUsed] = {
 
     assert(
@@ -242,10 +258,17 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     // First step of the multi part upload process is made.
     //  The response is then used to construct the subsequent individual upload part requests
     val requestInfo: Source[(MultipartUpload, Int), NotUsed] =
-      initiateUpload(s3Location, contentType, s3Headers)
+      initiateUpload(s3Location,
+                     contentType,
+                     S3Headers(
+                       s3Headers.headers ++
+                       sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(InitiateMultipartUpload) }
+                     ))
 
     // use the same key for all sub-requests (chunks)
     val key: SigningKey = signingKey
+
+    val headers: S3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(UploadPart) })
 
     SplitAfterSize(chunkSize)(Flow.apply[ByteString])
       .via(getChunkBuffer(chunkSize)) //creates the chunks
@@ -254,7 +277,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
         case (chunkedPayload, (uploadInfo, chunkIndex)) =>
           //each of the payload requests are created
           val partRequest =
-            uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload.data, chunkedPayload.size)
+            uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload.data, chunkedPayload.size, headers)
           (partRequest, (uploadInfo, chunkIndex))
       }
       .mapAsync(parallelism) { case (req, info) => Signer.signedRequest(req, key).zip(Future.successful(info)) }
@@ -271,13 +294,14 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       s3Location: S3Location,
       contentType: ContentType,
       s3Headers: S3Headers,
-      chunkSize: Int
+      chunkSize: Int,
+      sse: Option[ServerSideEncryption]
   )(parallelism: Int): Flow[ByteString, UploadPartResponse, NotUsed] = {
 
     // Multipart upload requests (except for the completion api) are created here.
     //  The initial upload request gets executed within this function as well.
     //  The individual upload part requests are created.
-    val requestFlow = createRequests(s3Location, contentType, s3Headers, chunkSize, parallelism)
+    val requestFlow = createRequests(s3Location, contentType, s3Headers, chunkSize, parallelism, sse)
 
     // The individual upload part requests are processed here
     requestFlow.via(Http().superPool[(MultipartUpload, Int)]()).map {

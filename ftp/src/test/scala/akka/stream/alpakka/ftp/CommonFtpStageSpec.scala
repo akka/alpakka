@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ftp
@@ -283,6 +283,38 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       startServer()
 
       result.status.failed.get shouldBe a[Exception]
+    }
+  }
+
+  "FtpRemoveSink" should {
+    "remove a file" in {
+      val fileName = "sample_io"
+      putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName)
+
+      val source = listFiles("/")
+
+      val result = source.runWith(remove()).futureValue
+
+      result shouldBe IOResult.createSuccessful(1)
+
+      fileExists(FtpBaseSupport.FTP_ROOT_DIR, fileName) shouldBe false
+    }
+  }
+
+  "FtpMoveSink" should {
+    "move a file" in {
+      val fileName = "sample_io"
+      val fileName2 = "sample_io2"
+      putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName)
+
+      val source = listFiles("/")
+
+      val result = source.runWith(move(_ => fileName2)).futureValue
+
+      result shouldBe IOResult.createSuccessful(1)
+
+      fileExists(FtpBaseSupport.FTP_ROOT_DIR, fileName) shouldBe false
+      fileExists(FtpBaseSupport.FTP_ROOT_DIR, fileName2) shouldBe true
     }
   }
 }

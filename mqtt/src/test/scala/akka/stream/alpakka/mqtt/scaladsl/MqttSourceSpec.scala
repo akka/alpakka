@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.mqtt.scaladsl
@@ -22,13 +22,13 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class MqttSourceSpec
-    extends TestKit(ActorSystem("MqttSinkSpec"))
+    extends TestKit(ActorSystem("MqttSourceSpec"))
     with WordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ScalaFutures {
 
-  val timeout = 5 seconds
+  val timeout = 5.seconds
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 

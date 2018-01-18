@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.javadsl;
@@ -17,6 +17,7 @@ import akka.stream.Materializer;
 import akka.stream.alpakka.s3.MemoryBufferType;
 import akka.stream.alpakka.s3.Proxy;
 import akka.stream.alpakka.s3.S3Settings;
+import akka.stream.alpakka.s3.impl.ServerSideEncryption;
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -29,6 +30,7 @@ import com.amazonaws.regions.AwsRegionProvider;
 import org.junit.Test;
 import scala.Option;
 import scala.Some;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -57,7 +59,8 @@ public class S3ClientTest extends S3WireMockBase {
             Some.apply(proxy),
             credentials,
             regionProvider("us-east-1"),
-            false
+            false,
+            scala.Option.empty()
     );
     private final S3Client client = new S3Client(settings, system(), materializer);
     //#client
@@ -69,6 +72,23 @@ public class S3ClientTest extends S3WireMockBase {
 
         //#upload
         final Sink<ByteString, CompletionStage<MultipartUploadResult>> sink = client.multipartUpload(bucket(), bucketKey());
+        //#upload
+
+        final CompletionStage<MultipartUploadResult> resultCompletionStage =
+                Source.single(ByteString.fromString(body())).runWith(sink, materializer);
+
+        MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertEquals(new MultipartUploadResult(Uri.create(url()), bucket(), bucketKey(), etag()), result);
+    }
+
+    @Test
+    public void multipartUploadSSE() throws Exception {
+
+        mockUploadSSE();
+
+        //#upload
+        final Sink<ByteString, CompletionStage<MultipartUploadResult>> sink = client.multipartUpload(bucket(), bucketKey(), sseCustomerKeys());
         //#upload
 
         final CompletionStage<MultipartUploadResult> resultCompletionStage =
@@ -105,9 +125,40 @@ public class S3ClientTest extends S3WireMockBase {
 
         Optional<ObjectMetadata> result = source.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
+        Optional<String> s3eTag = result.get().getETag();
+
+        assertEquals(s3eTag, Optional.of(etag()));
+    }
+
+    @Test
+    public void headServerSideEncryption() throws Exception {
+        mockHeadSSEC();
+
+        //#objectMetadata
+        final CompletionStage<Optional<ObjectMetadata>> source = client.getObjectMetadata(bucket(), bucketKey(), sseCustomerKeys());
+        //#objectMetadata
+
+        Optional<ObjectMetadata> result = source.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
         Optional<String> etag = result.get().getETag();
 
-        assertEquals(etag, Optional.of("5b27a21a97fcf8a7004dd1d906e7a5ba"));
+        assertEquals(etag, Optional.of(etagSSE()));
+    }
+
+    @Test
+    public void downloadServerSideEncryption() throws Exception {
+        mockDownloadSSEC();
+
+        //#download
+        final Source<ByteString, CompletionStage<ObjectMetadata>> source = client.download(bucket(), bucketKey(), sseCustomerKeys());
+        //#download
+
+        final CompletionStage<String> resultCompletionStage =
+                source.map(ByteString::utf8String).runWith(Sink.head(), materializer);
+
+        String result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertEquals(bodySSE(), result);
     }
 
     @Test
@@ -126,6 +177,24 @@ public class S3ClientTest extends S3WireMockBase {
         byte[] result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
         assertTrue(Arrays.equals(rangeOfBody(), result));
+    }
+
+    @Test
+    public void rangedDownloadServerSideEncryption() throws Exception {
+
+        mockRangedDownloadSSE();
+
+        //#rangedDownload
+        final Source<ByteString, CompletionStage<ObjectMetadata>> source = client.download(bucket(), bucketKey(),
+                ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()), sseCustomerKeys());
+        //#rangedDownload
+
+        final CompletionStage<byte[]> resultCompletionStage =
+                source.map(ByteString::toArray).runWith(Sink.head(), materializer);
+
+        byte[] result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertTrue(Arrays.equals(rangeOfBodySSE(), result));
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.elasticsearch
@@ -80,6 +80,7 @@ class ElasticsearchFlowStage[T, C](
       private val responseHandler = getAsyncCallback[(Seq[IncomingMessage[T, C]], Response)](handleResponse)
       private var failedMessages: Seq[IncomingMessage[T, C]] = Nil
       private var retryCount: Int = 0
+      private val insertKeyword: String = if (!settings.docAsUpsert) "index" else "update"
 
       override def preStart(): Unit =
         pull(in)
@@ -116,7 +117,7 @@ class ElasticsearchFlowStage[T, C](
         val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
         val messageResults = items.elements.zip(messages).map {
           case (item, message) =>
-            item.asJsObject.fields("index").asJsObject.fields.get("error") match {
+            item.asJsObject.fields(insertKeyword).asJsObject.fields.get("error") match {
               case Some(errorMessage) => (message, false)
               case None => (message, true)
             }
@@ -175,7 +176,7 @@ class ElasticsearchFlowStage[T, C](
         val json = messages
           .map { message =>
             JsObject(
-              "index" -> JsObject(
+              insertKeyword -> JsObject(
                 Seq(
                   Option("_index" -> JsString(indexName)),
                   Option("_type" -> JsString(typeName)),
@@ -184,7 +185,7 @@ class ElasticsearchFlowStage[T, C](
                   }
                 ).flatten: _*
               )
-            ).toString + "\n" + writer.convert(message.source)
+            ).toString + "\n" + messageToJsonString(message)
           }
           .mkString("", "\n", "\n")
 
@@ -202,6 +203,16 @@ class ElasticsearchFlowStage[T, C](
           new BasicHeader("Content-Type", "application/x-ndjson")
         )
       }
+
+      private def messageToJsonString(message: IncomingMessage[T, C]): String =
+        if (!settings.docAsUpsert) {
+          writer.convert(message.source)
+        } else {
+          JsObject(
+            "doc" -> writer.convert(message.source).parseJson,
+            "doc_as_upsert" -> JsTrue
+          ).toString
+        }
 
       setHandlers(in, out, this)
 

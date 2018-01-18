@@ -1,40 +1,52 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.mqtt.javadsl;
 
-import akka.stream.alpakka.mqtt.*;
+import akka.Done;
+import akka.actor.ActorSystem;
+import akka.japi.Pair;
+import akka.stream.ActorMaterializer;
+import akka.stream.KillSwitches;
+import akka.stream.Materializer;
+import akka.stream.UniqueKillSwitch;
+import akka.stream.alpakka.mqtt.MqttConnectionSettings;
+import akka.stream.alpakka.mqtt.MqttMessage;
+import akka.stream.alpakka.mqtt.MqttQoS;
+import akka.stream.alpakka.mqtt.MqttSourceSettings;
+import akka.stream.javadsl.Keep;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+import akka.stream.javadsl.Tcp;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
+import akka.testkit.javadsl.TestKit;
+import akka.util.ByteString;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
-import akka.Done;
-import akka.actor.*;
-import akka.stream.*;
-import akka.stream.javadsl.*;
-import akka.testkit.*;
-import akka.japi.Pair;
-import akka.util.ByteString;
-
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.stream.*;
+import static org.junit.Assert.assertEquals;
 
 public class MqttSourceTest {
 
-  static ActorSystem system;
-  static Materializer materializer;
+  private static ActorSystem system;
+  private static Materializer materializer;
 
-  public static Pair<ActorSystem, Materializer> setupMaterializer() {
+  private static Pair<ActorSystem, Materializer> setupMaterializer() {
     //#init-mat
-    final ActorSystem system = ActorSystem.create();
+    final ActorSystem system = ActorSystem.create("MqttSourceTest");
     final Materializer materializer = ActorMaterializer.create(system);
     //#init-mat
     return Pair.create(system, materializer);
@@ -49,7 +61,7 @@ public class MqttSourceTest {
 
   @AfterClass
   public static void teardown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 
   @Test
@@ -68,6 +80,7 @@ public class MqttSourceTest {
 
     //#create-source-with-manualacks
     MqttConnectionSettings connectionSettings = sourceSettings.withCleanSession(false);
+    @SuppressWarnings("unchecked")
     MqttSourceSettings mqttSourceSettings = MqttSourceSettings.create(connectionSettings)
       .withSubscriptions(Pair.create(topic, MqttQoS.atLeastOnce()));
     final Source<MqttCommittableMessage, CompletionStage<Done>> mqttSource = MqttSource.atLeastOnce(mqttSourceSettings, 8);
@@ -111,6 +124,7 @@ public class MqttSourceTest {
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
 
     MqttConnectionSettings connectionSettings = sourceSettings.withCleanSession(false);
+    @SuppressWarnings("unchecked")
     MqttSourceSettings mqttSourceSettings = MqttSourceSettings.create(connectionSettings)
             .withSubscriptions(Pair.create(topic, MqttQoS.atLeastOnce()));
     final Source<MqttCommittableMessage, CompletionStage<Done>> mqttSource = MqttSource.atLeastOnce(mqttSourceSettings, 8);
@@ -127,14 +141,13 @@ public class MqttSourceTest {
           .toCompletableFuture()
           .get(3, TimeUnit.SECONDS);
 
-    unackedResult.second().toCompletableFuture().get(5, TimeUnit.SECONDS).stream()
-      .map(m -> {
+    unackedResult.second().toCompletableFuture().get(5, TimeUnit.SECONDS)
+      .forEach(m -> {
         try {
         m.messageArrivedComplete().toCompletableFuture().get(3, TimeUnit.SECONDS);
         } catch (Exception e) {
         assertEquals("Error acking message manually", false, true);
         }
-        return true;
       });
   }
 
@@ -153,6 +166,7 @@ public class MqttSourceTest {
 
     final Integer messageCount = 7;
 
+    @SuppressWarnings("unchecked")
     //#create-source
     final MqttSourceSettings settings = MqttSourceSettings
       .create(connectionSettings.withClientId("source-test/source"))
@@ -176,9 +190,9 @@ public class MqttSourceTest {
     result.first().toCompletableFuture().get(3, TimeUnit.SECONDS);
 
     List<MqttMessage> messages = IntStream.range(0, messageCount).boxed()
-      .flatMap(i -> Arrays.asList(
+      .flatMap(i -> Stream.of(
         MqttMessage.create(topic1, ByteString.fromString("msg" + i.toString())),
-        MqttMessage.create(topic2, ByteString.fromString("msg" + i.toString()))).stream())
+        MqttMessage.create(topic2, ByteString.fromString("msg" + i.toString()))))
       .collect(Collectors.toList());
 
     //#run-sink
@@ -191,9 +205,9 @@ public class MqttSourceTest {
 
     assertEquals(
       IntStream.range(0, messageCount).boxed()
-        .flatMap(i -> Arrays.asList("source-test/topic1-msg" + i, "source-test/topic2-msg" + i).stream())
+        .flatMap(i -> Stream.of("source-test/topic1-msg" + i, "source-test/topic2-msg" + i))
         .collect(Collectors.toSet()),
-      result.second().toCompletableFuture().get(3, TimeUnit.SECONDS).stream().collect(Collectors.toSet())
+        new HashSet<>(result.second().toCompletableFuture().get(3, TimeUnit.SECONDS))
     );
   }
 
@@ -234,6 +248,7 @@ public class MqttSourceTest {
 
     result1.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
 
+    @SuppressWarnings("unchecked")
     MqttSourceSettings settings1 = MqttSourceSettings.create(
       sourceSettings
         .withClientId("source-spec/testator")
@@ -253,6 +268,7 @@ public class MqttSourceTest {
     // Kill the proxy, producing an unexpected disconnection of the client
     proxyKs.toCompletableFuture().get(5, TimeUnit.SECONDS).shutdown();
 
+    @SuppressWarnings("unchecked")
     MqttSourceSettings settings2 = MqttSourceSettings
         .create(sourceSettings.withClientId("source-spec/executor"))
         .withSubscriptions(Pair.create(willTopic, MqttQoS.atLeastOnce()));

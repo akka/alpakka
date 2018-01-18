@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.scaladsl
@@ -23,7 +23,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
       def getRegion: String = "us-east-1"
     }
   val proxy = Option(Proxy("localhost", port, "http"))
-  val settings = new S3Settings(MemoryBufferType, proxy, awsCredentialsProvider, regionProvider, false)
+  val settings = new S3Settings(MemoryBufferType, proxy, awsCredentialsProvider, regionProvider, false, None)
   val s3Client = new S3Client(settings)(system, materializer)
 
   "S3Sink" should "upload a stream of bytes to S3" in {

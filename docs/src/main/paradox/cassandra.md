@@ -2,6 +2,12 @@
 
 The Cassandra connector allows you to read and write to Cassandra. You can query a stream of rows from @scaladoc[CassandraSource](akka.stream.alpakka.cassandra.scaladsl.CassandraSource$) or use prepared statements to insert or update with @scaladoc[CassandraSink](akka.stream.alpakka.cassandra.scaladsl.CassandraSink$).
 
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Acassandra)
+
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
@@ -80,9 +86,9 @@ Java
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
 
-> Test code requires Cassandra server running in the background. You can start one quickly using docker:
+> Test code requires Cassandra running in the background. You can start it quickly using docker:
 >
-> `docker run --rm -p 9042:9042 cassandra:3`
+> `docker-compose up cassandra`
 
 Scala
 :   ```

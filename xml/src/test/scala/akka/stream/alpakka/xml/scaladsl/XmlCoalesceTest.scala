@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.xml.scaladsl
@@ -37,7 +37,7 @@ class XmlCoalesceTest extends WordSpec with Matchers with BeforeAndAfterAll {
       result should ===(
         List(
           StartDocument,
-          StartElement("doc", Map.empty),
+          StartElement("doc", List.empty[Attribute]),
           Characters("0123456789"),
           EndElement("doc"),
           EndDocument
@@ -56,7 +56,7 @@ class XmlCoalesceTest extends WordSpec with Matchers with BeforeAndAfterAll {
       result should ===(
         List(
           StartDocument,
-          StartElement("doc", Map.empty),
+          StartElement("doc", List.empty[Attribute]),
           Characters("0123456789"),
           EndElement("doc"),
           EndDocument
@@ -78,7 +78,7 @@ class XmlCoalesceTest extends WordSpec with Matchers with BeforeAndAfterAll {
       result should ===(
         List(
           StartDocument,
-          StartElement("doc", Map.empty),
+          StartElement("doc", List.empty[Attribute]),
           Characters("0123456789"),
           EndElement("doc"),
           EndDocument

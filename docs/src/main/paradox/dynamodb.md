@@ -2,6 +2,12 @@
 
 The AWS DynamoDB connector provides a flow for streaming DynamoDB requests. For more information about DynamoDB please visit the [official documentation](https://aws.amazon.com/dynamodb/).
 
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Adynamodb)
+
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
@@ -50,9 +56,9 @@ Java
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
 
-> Test code requires DynamoDB server running in the background. You can start one quickly using docker:
+> Test code requires DynamoDB running in the background. You can start one quickly using docker:
 >
-> `docker run --rm -p 8001:8000 deangiberson/aws-dynamodb-local`
+> `docker-compose up dynamodb`
 
 Scala
 :   ```

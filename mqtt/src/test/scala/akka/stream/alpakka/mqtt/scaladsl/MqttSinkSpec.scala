@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.mqtt.scaladsl
@@ -26,7 +26,7 @@ class MqttSinkSpec
     with BeforeAndAfterAll
     with ScalaFutures {
 
-  val timeout = 5 seconds
+  val timeout = 5.seconds
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
@@ -108,7 +108,7 @@ class MqttSinkSpec
 
       val messageSent = Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
 
-      Await.ready(messageSent, 3 seconds)
+      Await.ready(messageSent, 3.seconds)
 
       val retainedSinkSettings = sourceSettings
         .withClientId("source-spec/retained")

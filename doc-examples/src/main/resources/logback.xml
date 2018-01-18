@@ -1,0 +1,38 @@
+<configuration>
+
+    <!-- Sample console appender. You can name it however you want. -->
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <!--
+        Appender-level filters are useful when we want to limit output based on
+        where the log will be sent (i.e. avoid sending debug info over the network).
+        There are lots of different filters, and custom ones can be implemented.
+        -->
+        <!--
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>info</level>
+            </filter>
+        -->
+        <encoder>
+            <!-- Use UTF-8. If not set, the system charset will be used. -->
+            <charset>UTF-8</charset>
+
+            <!-- A nice console log format. Colors output based on loglevel, and aligns messages. -->
+            <pattern>%highlight(%date{HH:mm:ss.SSS} %-5level %-50.50([%logger{50}])) - %msg%n</pattern>
+            <!--
+            This alternate pattern shows thread information, along with the name
+            and the line number that generated the message. File and line info
+            takes a performance penalty. Use with care.
+            -->
+            <!--
+            <pattern>%highlight([%date] [%-5level] [%thread] [%logger]) %gray([%file:%line]) - %msg%n</pattern>
+            -->
+        </encoder>
+    </appender>
+
+    <!-- Log at the INFO level. Change the main loglevel here. -->
+    <!-- Note that custom loggers obey their own levels. -->
+    <root level="error">
+        <appender-ref ref="console"/>
+    </root>
+
+</configuration>

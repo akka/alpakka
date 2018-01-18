@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.scaladsl
@@ -12,7 +12,7 @@ import com.amazonaws.regions.AwsRegionProvider
 
 object DoucmentationSnippets {
 
-  def connectBluemix: Unit = {
+  def connectBluemix(): Unit = {
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
 
@@ -32,7 +32,7 @@ object DoucmentationSnippets {
     val proxy = Some(Proxy(host, port, "https"))
 
     // Set pathStyleAccess to true and specify proxy, leave region blank
-    val settings = new S3Settings(MemoryBufferType, proxy, credentialsProvider, regionProvider, true)
+    val settings = new S3Settings(MemoryBufferType, proxy, credentialsProvider, regionProvider, true, None)
     val s3Client = new S3Client(settings)(system, materializer)
     // #scala-bluemix-example
   }

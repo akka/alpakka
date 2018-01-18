@@ -1,18 +1,19 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.jms.javadsl;
 
-import akka.NotUsed;
+import akka.Done;
 import akka.actor.ActorSystem;
+import akka.stream.AbruptStageTerminationException;
 import akka.stream.ActorMaterializer;
+import akka.stream.KillSwitch;
 import akka.stream.Materializer;
-
 import akka.stream.alpakka.jms.*;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.command.ActiveMQQueue;
@@ -21,11 +22,14 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.jms.ConnectionFactory;
 import javax.jms.DeliveryMode;
 import javax.jms.Message;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -33,6 +37,7 @@ import java.util.stream.Stream;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 
 final class DummyJavaTests implements java.io.Serializable {
@@ -65,59 +70,63 @@ final class DummyJavaTests implements java.io.Serializable {
 
 public class JmsConnectorsTest {
 
-  
+
     private List<JmsTextMessage> createTestMessageList() {
         List<Integer> intsIn = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
         List<JmsTextMessage> msgsIn = new ArrayList<>();
         for (Integer n : intsIn) {
 
             //#create-messages-with-properties
-            JmsTextMessage message = JmsTextMessage.create(n.toString())
+            JmsTextMessage message = JmsTextMessage
+                .create(n.toString())
                     .withProperty("Number", n)
                     .withProperty("IsOdd", n % 2 == 1)
                     .withProperty("IsEven", n % 2 == 0);
             //#create-messages-with-properties
-            
+
             msgsIn.add(message);
         }
 
         return msgsIn;
     }
-   
+
 
     @Test
     public void publishAndConsumeJmsTextMessage() throws Exception {
         withServer(ctx -> {
             //#connection-factory
-            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+            javax.jms.ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
             //#connection-factory
 
             //#create-text-sink
-            Sink<String, NotUsed> jmsSink = JmsSink.textSink(
+            Sink<String, CompletionStage<Done>> jmsSink = JmsSink
+                .textSink(
                     JmsSinkSettings
-                            .create(connectionFactory)
-                            .withQueue("test")
-            );
+                        .create(connectionFactory)
+                        .withQueue("test")
+                );
             //#create-text-sink
 
             //#run-text-sink
             List<String> in = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
-            Source.from(in).runWith(jmsSink, materializer);
+            CompletionStage<Done> finished = Source
+                .from(in)
+                .runWith(jmsSink, materializer);
             //#run-text-sink
 
             //#create-text-source
-            Source<String, NotUsed> jmsSource = JmsSource
-                    .textSource(JmsSourceSettings
-                            .create(connectionFactory)
-                            .withQueue("test")
-                            .withBufferSize(10)
-                    );
+            Source<String, KillSwitch> jmsSource = JmsSource
+                .textSource(JmsSourceSettings
+                    .create(connectionFactory)
+                    .withQueue("test")
+                    .withBufferSize(10)
+                );
             //#create-text-source
 
             //#run-text-source
             CompletionStage<List<String>> result = jmsSource
-                    .take(in.size())
-                    .runWith(Sink.seq(), materializer);
+                .take(in.size())
+                .runWith(Sink.seq(), materializer);
             //#run-text-source
 
             assertEquals(in, result.toCompletableFuture().get(3, TimeUnit.SECONDS));
@@ -129,39 +138,42 @@ public class JmsConnectorsTest {
     @Test
     public void publishAndConsumeJmsObjectMessage() throws Exception {
         withServer(ctx -> {
-            //#connection-factory
+            //#connection-factory-object
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
-
-            // This is done here to send arbitrary objects. Otherwise activemq would forbid it.
-            // See therefore http://activemq.apache.org/objectmessage.html
-            connectionFactory.setTrustAllPackages(true);
-            //#connection-factory
+            connectionFactory.setTrustedPackages(
+                Arrays.asList(
+                    DummyJavaTests.class.getPackage().getName()
+                ));
+            //#connection-factory-object
 
             //#create-object-sink
-            Sink<java.io.Serializable, NotUsed> jmsSink = JmsSink.objectSink(
+            Sink<java.io.Serializable, CompletionStage<Done>> jmsSink = JmsSink
+                .objectSink(
                     JmsSinkSettings
-                            .create(connectionFactory)
-                            .withQueue("test")
-            );
+                        .create(connectionFactory)
+                        .withQueue("test")
+                );
             //#create-object-sink
 
             //#run-object-sink
             java.io.Serializable in = new DummyJavaTests("javaTest");
-            Source.single(in).runWith(jmsSink, materializer);
+            CompletionStage<Done> finished = Source
+                .single(in)
+                .runWith(jmsSink, materializer);
             //#run-object-sink
 
             //#create-object-source
-            Source<java.io.Serializable, NotUsed> jmsSource = JmsSource
-                    .objectSource(JmsSourceSettings
-                            .create(connectionFactory)
-                            .withQueue("test")
-                    );
+            Source<java.io.Serializable, KillSwitch> jmsSource = JmsSource
+                .objectSource(JmsSourceSettings
+                    .create(connectionFactory)
+                    .withQueue("test")
+                );
             //#create-object-source
 
             //#run-object-source
             CompletionStage<java.io.Serializable> result = jmsSource
-                    .take(1)
-                    .runWith(Sink.head(), materializer);
+                .take(1)
+                .runWith(Sink.head(), materializer);
             //#run-object-source
 
 
@@ -174,35 +186,37 @@ public class JmsConnectorsTest {
     @Test
     public void publishAndConsumeJmsByteMessage() throws Exception {
         withServer(ctx -> {
-            //#connection-factory
-            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
-            //#connection-factory
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             //#create-bytearray-sink
-            Sink<byte[], NotUsed> jmsSink = JmsSink.bytesSink(
+            Sink<byte[], CompletionStage<Done>> jmsSink = JmsSink
+                .bytesSink(
                     JmsSinkSettings
-                            .create(connectionFactory)
-                            .withQueue("test")
-            );
+                        .create(connectionFactory)
+                        .withQueue("test")
+                );
             //#create-bytearray-sink
 
             //#run-bytearray-sink
             byte[] in = "ThisIsATest".getBytes(Charset.forName("UTF-8"));
-            Source.single(in).runWith(jmsSink, materializer);
+            CompletionStage<Done> finished = Source
+                    .single(in)
+                    .runWith(jmsSink, materializer);
             //#run-bytearray-sink
 
             //#create-bytearray-source
-            Source<byte[], NotUsed> jmsSource = JmsSource
-                    .bytesSource(JmsSourceSettings
-                            .create(connectionFactory)
-                            .withQueue("test")
-                    );
+            Source<byte[], KillSwitch> jmsSource = JmsSource
+                .bytesSource(
+                    JmsSourceSettings
+                        .create(connectionFactory)
+                        .withQueue("test")
+                );
             //#create-bytearray-source
 
             //#run-bytearray-source
             CompletionStage<byte[]> result = jmsSource
-                    .take(1)
-                    .runWith(Sink.head(), materializer);
+                .take(1)
+                .runWith(Sink.head(), materializer);
             //#run-bytearray-source
 
 
@@ -215,16 +229,15 @@ public class JmsConnectorsTest {
     @Test
     public void publishAndConsumeJmsMapMessage() throws Exception {
         withServer(ctx -> {
-            //#connection-factory
-            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
-            //#connection-factory
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             //#create-map-sink
-            Sink<Map<String, Object>, NotUsed> jmsSink = JmsSink.mapSink(
+            Sink<Map<String, Object>, CompletionStage<Done>> jmsSink = JmsSink
+                .mapSink(
                     JmsSinkSettings
-                            .create(connectionFactory)
-                            .withQueue("test")
-            );
+                        .create(connectionFactory)
+                        .withQueue("test")
+                );
             //#create-map-sink
 
             //#run-map-sink
@@ -238,22 +251,24 @@ public class JmsConnectorsTest {
             in.put("bytearray", "AStringAsByteArray".getBytes(Charset.forName("UTF-8")));
             in.put("byte", (byte) 1);
 
-
-            Source.single(in).runWith(jmsSink, materializer);
+            CompletionStage<Done> finished = Source
+                .single(in)
+                .runWith(jmsSink, materializer);
             //#run-map-sink
 
             //#create-map-source
-            Source<Map<String, Object>, NotUsed> jmsSource = JmsSource
-                    .mapSource(JmsSourceSettings
-                            .create(connectionFactory)
-                            .withQueue("test")
-                    );
+            Source<Map<String, Object>, KillSwitch> jmsSource = JmsSource
+                .mapSource(
+                    JmsSourceSettings
+                        .create(connectionFactory)
+                        .withQueue("test")
+                );
             //#create-map-source
 
             //#run-map-source
             CompletionStage<Map<String, Object>> resultStage = jmsSource
-                    .take(1)
-                    .runWith(Sink.head(), materializer);
+                .take(1)
+                .runWith(Sink.head(), materializer);
             //#run-map-source
 
 
@@ -276,34 +291,39 @@ public class JmsConnectorsTest {
     @Test
     public void publishAndConsumeJmsTextMessagesWithProperties() throws Exception {
         withServer(ctx -> {
-            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             //#create-jms-sink
-            Sink<JmsTextMessage, NotUsed> jmsSink = JmsSink.create(
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink
+                .create(
                     JmsSinkSettings
-                            .create(connectionFactory)
-                            .withQueue("test")
-            );
+                        .create(connectionFactory)
+                        .withQueue("test")
+                );
             //#create-jms-sink
-            
+
             List<JmsTextMessage> msgsIn = createTestMessageList();
-            
+
             //#run-jms-sink
-            Source.from(msgsIn).runWith(jmsSink, materializer);
+            CompletionStage<Done> finished = Source
+                .from(msgsIn)
+                .runWith(jmsSink, materializer);
             //#run-jms-sink
 
             //#create-jms-source
-            Source<Message, NotUsed> jmsSource = JmsSource.create(JmsSourceSettings
-                    .create(connectionFactory)
-                    .withQueue("test")
-                    .withBufferSize(10)
-            );
+            Source<Message, KillSwitch> jmsSource = JmsSource
+                .create(
+                    JmsSourceSettings
+                        .create(connectionFactory)
+                        .withQueue("test")
+                        .withBufferSize(10)
+                );
             //#create-jms-source
 
             //#run-jms-source
             CompletionStage<List<Message>> result = jmsSource
-                    .take(msgsIn.size())
-                    .runWith(Sink.seq(), materializer);
+                .take(msgsIn.size())
+                .runWith(Sink.seq(), materializer);
             //#run-jms-source
 
             List<Message> outMessages = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -320,46 +340,39 @@ public class JmsConnectorsTest {
     @Test
     public void publishAndConsumeJmsTextMessagesWithHeaders() throws Exception {
         withServer(ctx -> {
-            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
-            //#create-jms-sink
-            Sink<JmsTextMessage, NotUsed> jmsSink = JmsSink.create(
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink
+                .create(
                     JmsSinkSettings
-                            .create(connectionFactory)
-                            .withQueue("test")
-            );
-            //#create-jms-sink
+                        .create(connectionFactory)
+                        .withQueue("test")
+                );
 
 
             //#create-messages-with-headers
             List<JmsTextMessage> msgsIn = createTestMessageList().stream()
-                    .map(jmsTextMessage -> jmsTextMessage
-                            .withHeader(JmsType.create("type"))
-                            .withHeader(JmsCorrelationId.create("correlationId"))
-                            .withHeader(JmsReplyTo.queue("test-reply"))
-                            .withHeader(JmsTimeToLive.create(999, TimeUnit.SECONDS))
-                            .withHeader(JmsPriority.create(2))
-                            .withHeader(JmsDeliveryMode.create(DeliveryMode.NON_PERSISTENT)))
-                    .collect(Collectors.toList());
+                .map(jmsTextMessage -> jmsTextMessage
+                    .withHeader(JmsType.create("type"))
+                    .withHeader(JmsCorrelationId.create("correlationId"))
+                    .withHeader(JmsReplyTo.queue("test-reply"))
+                    .withHeader(JmsTimeToLive.create(999, TimeUnit.SECONDS))
+                    .withHeader(JmsPriority.create(2))
+                    .withHeader(JmsDeliveryMode.create(DeliveryMode.NON_PERSISTENT)))
+                .collect(Collectors.toList());
             //#create-messages-with-headers
 
-            //#run-jms-sink
             Source.from(msgsIn).runWith(jmsSink, materializer);
-            //#run-jms-sink
 
-            //#create-jms-source
-            Source<Message, NotUsed> jmsSource = JmsSource.create(JmsSourceSettings
+            Source<Message, KillSwitch> jmsSource = JmsSource.create(JmsSourceSettings
                     .create(connectionFactory)
                     .withQueue("test")
                     .withBufferSize(10)
             );
-            //#create-jms-source
 
-            //#run-jms-source
             CompletionStage<List<Message>> result = jmsSource
                     .take(msgsIn.size())
                     .runWith(Sink.seq(), materializer);
-            //#run-jms-source
 
             List<Message> outMessages = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
             int msgIdx = 0;
@@ -370,7 +383,7 @@ public class JmsConnectorsTest {
                 assertEquals(outMsg.getJMSType(), "type");
                 assertEquals(outMsg.getJMSCorrelationID(), "correlationId");
                 assertEquals(((ActiveMQQueue) outMsg.getJMSReplyTo()).getQueueName(), "test-reply");
-                
+
                 assertTrue(outMsg.getJMSExpiration()!= 0);
                 assertEquals(2,outMsg.getJMSPriority());
                 assertEquals(DeliveryMode.NON_PERSISTENT,outMsg.getJMSDeliveryMode());
@@ -382,9 +395,9 @@ public class JmsConnectorsTest {
     @Test
     public void publishJmsTextMessagesWithPropertiesAndConsumeThemWithASelector() throws Exception {
         withServer(ctx -> {
-            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
-            Sink<JmsTextMessage, NotUsed> jmsSink = JmsSink.create(
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -395,12 +408,14 @@ public class JmsConnectorsTest {
             Source.from(msgsIn).runWith(jmsSink, materializer);
 
             //#create-jms-source-with-selector
-            Source<Message, NotUsed> jmsSource = JmsSource.create(JmsSourceSettings
-                    .create(connectionFactory)
-                    .withQueue("test")
-                    .withBufferSize(10)
-                    .withSelector("IsOdd = TRUE")
-            );
+            Source<Message, KillSwitch> jmsSource = JmsSource
+                .create(
+                    JmsSourceSettings
+                        .create(connectionFactory)
+                        .withQueue("test")
+                        .withBufferSize(10)
+                        .withSelector("IsOdd = TRUE")
+                );
             //#create-jms-source-with-selector
 
             //#assert-only-odd-messages-received
@@ -410,8 +425,8 @@ public class JmsConnectorsTest {
             assertEquals(5, oddMsgsIn.size());
 
             CompletionStage<List<Message>> result = jmsSource
-                    .take(oddMsgsIn.size())
-                    .runWith(Sink.seq(), materializer);
+                .take(oddMsgsIn.size())
+                .runWith(Sink.seq(), materializer);
 
             List<Message> outMessages = result.toCompletableFuture().get(4, TimeUnit.SECONDS);
             int msgIdx = 0;
@@ -429,38 +444,42 @@ public class JmsConnectorsTest {
     @Test
     public void publishAndConsumeTopic() throws Exception {
         withServer(ctx -> {
-            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             List<String> in = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
             List<String> inNumbers = IntStream.range(0, 10).boxed().map(String::valueOf).collect(Collectors.toList());
 
             //#create-topic-sink
-            Sink<String, NotUsed> jmsTopicSink = JmsSink.textSink(
+            Sink<String, CompletionStage<Done>> jmsTopicSink = JmsSink
+                .textSink(
                     JmsSinkSettings
-                            .create(connectionFactory)
-                            .withTopic("topic")
-            );
+                        .create(connectionFactory)
+                        .withTopic("topic")
+                );
             //#create-topic-sink
-            Sink<String, NotUsed> jmsTopicSink2 = JmsSink.textSink(
+            Sink<String, CompletionStage<Done>> jmsTopicSink2 = JmsSink
+                .textSink(
                     JmsSinkSettings
-                            .create(connectionFactory)
-                            .withTopic("topic")
-            );
+                        .create(connectionFactory)
+                        .withTopic("topic")
+                );
 
             //#create-topic-source
-            Source<String, NotUsed> jmsTopicSource = JmsSource
-                    .textSource(JmsSourceSettings
-                            .create(connectionFactory)
-                            .withTopic("topic")
-                            .withBufferSize(10)
-                    );
+            Source<String, KillSwitch> jmsTopicSource = JmsSource
+                .textSource(
+                    JmsSourceSettings
+                        .create(connectionFactory)
+                        .withTopic("topic")
+                        .withBufferSize(10)
+                );
             //#create-topic-source
-            Source<String, NotUsed> jmsTopicSource2 = JmsSource
-                    .textSource(JmsSourceSettings
-                            .create(connectionFactory)
-                            .withTopic("topic")
-                            .withBufferSize(10)
-                    );
+            Source<String, KillSwitch> jmsTopicSource2 = JmsSource
+                .textSource(
+                    JmsSourceSettings
+                        .create(connectionFactory)
+                        .withTopic("topic")
+                        .withBufferSize(10)
+                );
 
             //#run-topic-source
             CompletionStage<List<String>> result = jmsTopicSource
@@ -476,7 +495,9 @@ public class JmsConnectorsTest {
             Thread.sleep(500);
 
             //#run-topic-sink
-            Source.from(in).runWith(jmsTopicSink, materializer);
+            CompletionStage<Done> finished = Source
+                .from(in)
+                .runWith(jmsTopicSink, materializer);
             //#run-topic-sink
             Source.from(inNumbers).runWith(jmsTopicSink2, materializer);
 
@@ -489,9 +510,9 @@ public class JmsConnectorsTest {
     @Test
     public void publishAndConsumeJmsTextMessagesWithClientAcknowledgement() throws Exception {
         withServer(ctx -> {
-            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
-            Sink<JmsTextMessage, NotUsed> jmsSink = JmsSink.create(
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
                     JmsSinkSettings
                             .create(connectionFactory)
                             .withQueue("test")
@@ -505,22 +526,24 @@ public class JmsConnectorsTest {
             Source.from(msgsIn).runWith(jmsSink, materializer);
 
             //#create-jms-source-client-ack
-            Source<Message, NotUsed> jmsSource = JmsSource.create(JmsSourceSettings
-                    .create(connectionFactory)
-                    .withQueue("test")
-                    .withAcknowledgeMode(AcknowledgeMode.ClientAcknowledge())
-            );
+            Source<Message, KillSwitch> jmsSource = JmsSource
+                .create(
+                    JmsSourceSettings
+                        .create(connectionFactory)
+                        .withQueue("test")
+                        .withAcknowledgeMode(AcknowledgeMode.ClientAcknowledge())
+                );
             //#create-jms-source-client-ack
 
             //#run-jms-source-with-ack
             CompletionStage<List<String>> result = jmsSource
-                    .take(msgsIn.size())
-                    .map(message -> {
-                        String text = ((ActiveMQTextMessage)message).getText();
-                        message.acknowledge();
-                        return text;
-                    })
-                    .runWith(Sink.seq(), materializer);
+                .take(msgsIn.size())
+                .map(message -> {
+                    String text = ((ActiveMQTextMessage)message).getText();
+                    message.acknowledge();
+                    return text;
+                })
+                .runWith(Sink.seq(), materializer);
             //#run-jms-source-with-ack
 
             List<String> outMessages = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -531,19 +554,98 @@ public class JmsConnectorsTest {
             }
         });
     }
-    
+
+    @Test
+    public void sinkNormalCompletion() throws Exception {
+        withServer(ctx -> {
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
+                    JmsSinkSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+
+            List<JmsTextMessage> msgsIn = createTestMessageList();
+
+            CompletionStage<Done> completionFuture = Source.from(msgsIn).runWith(jmsSink, materializer);
+            Done completed = completionFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
+            assertEquals(completed, Done.getInstance());
+        });
+    }
+
+    @Test
+    public void sinkExceptionalCompletion() throws Exception {
+        withServer(ctx -> {
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
+                    JmsSinkSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+
+            CompletionStage<Done> completionFuture = Source.<JmsTextMessage>failed(new RuntimeException("Simulated error")).runWith(jmsSink, materializer);
+
+            try {
+                completionFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
+                fail("Not completed exceptionally");
+            }
+            catch(ExecutionException e) {
+                Throwable cause = e.getCause();
+                assertTrue(cause instanceof RuntimeException);
+            }
+        });
+    }
+
+    @Test
+    public void sinkExceptionalCompletionOnDisconnect() throws Exception {
+        withServer(ctx -> {
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
+                    JmsSinkSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+
+            List<JmsTextMessage> msgsIn = createTestMessageList();
+
+            CompletionStage<Done> completionFuture = Source.from(msgsIn)
+                    .mapAsync(1, m -> CompletableFuture.supplyAsync(() -> {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                return m;
+            })).runWith(jmsSink, materializer);
+
+            ctx.broker.stop();
+
+            try {
+                completionFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
+                fail("Not completed exceptionally");
+            }
+            catch(ExecutionException e) {
+                Throwable cause = e.getCause();
+                assertTrue(cause instanceof AbruptStageTerminationException);
+            }
+        });
+    }
+
     private static ActorSystem system;
     private static Materializer materializer;
 
     @BeforeClass
-    public static void setup() throws Exception {
+    public static void setup() {
         system = ActorSystem.create();
         materializer = ActorMaterializer.create(system);
     }
 
     @AfterClass
-    public static void teardown() throws Exception {
-        JavaTestKit.shutdownActorSystem(system);
+    public static void teardown() {
+        TestKit.shutdownActorSystem(system);
     }
 
     private void withServer(ConsumerChecked<Context> test) throws Exception {
@@ -558,6 +660,7 @@ public class JmsConnectorsTest {
         broker.start();
         try {
             test.accept(new Context(url, broker));
+            Thread.sleep(100);
         } finally {
             if (broker.isStarted()) {
                 broker.stop();

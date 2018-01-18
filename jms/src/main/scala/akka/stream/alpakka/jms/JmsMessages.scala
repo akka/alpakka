@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.jms
@@ -130,12 +130,12 @@ final case class JmsByteMessage(bytes: Array[Byte],
   /**
    * Java API: adds a Jms header e.g. JMSType [[JmsTextMessage]]
    */
-  def withHeader(jmsHeader: JmsHeader) = copy(headers = headers + jmsHeader)
+  def withHeader(jmsHeader: JmsHeader): JmsByteMessage = copy(headers = headers + jmsHeader)
 
   /**
    * Java API: adds JMSProperty [[JmsTextMessage]]
    */
-  def withProperty(name: String, value: Any) = copy(properties = properties + (name -> value))
+  def withProperty(name: String, value: Any): JmsByteMessage = copy(properties = properties + (name -> value))
 }
 
 object JmsByteMessage {
@@ -172,12 +172,12 @@ final case class JmsMapMessage(body: Map[String, Any],
   /**
    * Java API: adds a Jms header e.g. JMSType [[JmsMapMessage]]
    */
-  def withHeader(jmsHeader: JmsHeader) = copy(headers = headers + jmsHeader)
+  def withHeader(jmsHeader: JmsHeader): JmsMapMessage = copy(headers = headers + jmsHeader)
 
   /**
    * Java API: adds JMSProperty [[JmsMapMessage]]
    */
-  def withProperty(name: String, value: Any) = copy(properties = properties + (name -> value))
+  def withProperty(name: String, value: Any): JmsMapMessage = copy(properties = properties + (name -> value))
 }
 
 object JmsMapMessage {
@@ -215,18 +215,18 @@ final case class JmsTextMessage(body: String,
   /**
    * Java API: adds a Jms header e.g. JMSType [[JmsTextMessage]]
    */
-  def withHeader(jmsHeader: JmsHeader) = copy(headers = headers + jmsHeader)
+  def withHeader(jmsHeader: JmsHeader): JmsTextMessage = copy(headers = headers + jmsHeader)
 
   /**
    * Java API: adds JMSProperty [[JmsTextMessage]]
    */
-  def withProperty(name: String, value: Any) = copy(properties = properties + (name -> value))
+  def withProperty(name: String, value: Any): JmsTextMessage = copy(properties = properties + (name -> value))
 
   /**
    * Java API: add property [[JmsTextMessage]]
    */
-  @deprecated("Unclear method name, use withProperty instead")
-  def add(name: String, value: Any) = withProperty(name, value)
+  @deprecated("Unclear method name, use withProperty instead", "0.15")
+  def add(name: String, value: Any): JmsTextMessage = withProperty(name, value)
 }
 
 object JmsTextMessage {
@@ -263,12 +263,12 @@ final case class JmsObjectMessage(serializable: java.io.Serializable,
   /**
    * Java API: adds a Jms header e.g. JMSType [[JmsObjectMessage]]
    */
-  def withHeader(jmsHeader: JmsHeader) = copy(headers = headers + jmsHeader)
+  def withHeader(jmsHeader: JmsHeader): JmsObjectMessage = copy(headers = headers + jmsHeader)
 
   /**
    * Java API: adds JMSProperty [[JmsObjectMessage]]
    */
-  def withProperty(name: String, value: Any) = copy(properties = properties + (name -> value))
+  def withProperty(name: String, value: Any): JmsObjectMessage = copy(properties = properties + (name -> value))
 }
 
 object JmsObjectMessage {

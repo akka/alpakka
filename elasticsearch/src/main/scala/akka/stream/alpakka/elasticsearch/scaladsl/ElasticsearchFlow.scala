@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.elasticsearch.scaladsl
@@ -10,12 +10,18 @@ import akka.stream.scaladsl.Flow
 import org.elasticsearch.client.RestClient
 import spray.json._
 
+/**
+ * Scala API to create Elasticsearch flows.
+ */
 object ElasticsearchFlow {
 
   /**
-   * Scala API: creates a [[ElasticsearchFlowStage]] without passThrough
+   * Creates a [[akka.stream.scaladsl.Flow]] for type `T` from [[IncomingMessage]] to sequences
+   * of [[IncomingMessageResult]].
    */
-  def create[T](indexName: String, typeName: String, settings: ElasticsearchSinkSettings)(
+  def create[T](indexName: String,
+                typeName: String,
+                settings: ElasticsearchSinkSettings = ElasticsearchSinkSettings())(
       implicit client: RestClient,
       writer: JsonWriter[T]
   ): Flow[IncomingMessage[T, NotUsed], Seq[IncomingMessageResult[T, NotUsed]], NotUsed] =
@@ -32,9 +38,12 @@ object ElasticsearchFlow {
       .mapAsync(1)(identity)
 
   /**
-   * Scala API: creates a [[ElasticsearchFlowStage]] with passThrough
+   * Creates a [[akka.stream.scaladsl.Flow]] for type `T` from [[IncomingMessage]] to lists of [[IncomingMessageResult]]
+   * with `passThrough` of type `C`.
    */
-  def createWithPassThrough[T, C](indexName: String, typeName: String, settings: ElasticsearchSinkSettings)(
+  def createWithPassThrough[T, C](indexName: String,
+                                  typeName: String,
+                                  settings: ElasticsearchSinkSettings = ElasticsearchSinkSettings())(
       implicit client: RestClient,
       writer: JsonWriter[T]
   ): Flow[IncomingMessage[T, C], Seq[IncomingMessageResult[T, C]], NotUsed] =

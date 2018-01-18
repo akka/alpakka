@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.impl
@@ -39,7 +39,7 @@ class S3StreamSpec(_system: ActorSystem)
     }
     val location = S3Location("test-bucket", "test-key")
 
-    implicit val settings = new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false)
+    implicit val settings = new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None)
 
     val s3stream = new S3Stream(settings)
     val result: HttpRequest = s3stream invokePrivate requestHeaders(getDownloadRequest(location), None)
@@ -64,7 +64,7 @@ class S3StreamSpec(_system: ActorSystem)
     val location = S3Location("test-bucket", "test-key")
     val range = ByteRange(1, 4)
 
-    implicit val settings = new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false)
+    implicit val settings = new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None)
 
     val s3stream = new S3Stream(settings)
     val result: HttpRequest = s3stream invokePrivate requestHeaders(getDownloadRequest(location), Some(range))

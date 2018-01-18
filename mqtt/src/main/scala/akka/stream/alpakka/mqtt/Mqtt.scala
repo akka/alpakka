@@ -1,20 +1,23 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.mqtt
 
-import javax.net.ssl.SSLSocketFactory
+import javax.net.ssl.{HostnameVerifier, SSLSocketFactory}
 
 import akka.Done
-import akka.stream.alpakka.mqtt.scaladsl.MqttCommittableMessage
-import akka.stream.stage._
 import akka.util.ByteString
-import org.eclipse.paho.client.mqttv3.{MqttMessage => PahoMqttMessage, _}
+import org.eclipse.paho.client.mqttv3.{IMqttActionListener, IMqttToken, MqttClientPersistence, MqttConnectOptions}
 
-import scala.concurrent.{Future, Promise}
+import scala.annotation.varargs
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.collection.immutable.Seq
+import scala.collection.immutable.Map
 import scala.language.implicitConversions
 import scala.util._
+import scala.collection.JavaConverters._
 
 sealed abstract class MqttQoS {
   def byteValue: Byte
@@ -61,9 +64,8 @@ final case class MqttSourceSettings(
     subscriptions: Map[String, MqttQoS] = Map.empty
 ) {
   @annotation.varargs
-  def withSubscriptions(subscription: akka.japi.Pair[String, MqttQoS],
-                        subscriptions: akka.japi.Pair[String, MqttQoS]*) =
-    copy(subscriptions = (subscription +: subscriptions).map(_.toScala).toMap)
+  def withSubscriptions(subscriptions: akka.japi.Pair[String, MqttQoS]*) =
+    copy(subscriptions = subscriptions.map(_.toScala).toMap)
 }
 
 object MqttSourceSettings {
@@ -82,26 +84,66 @@ final case class MqttConnectionSettings(
     auth: Option[(String, String)] = None,
     socketFactory: Option[SSLSocketFactory] = None,
     cleanSession: Boolean = true,
-    will: Option[MqttMessage] = None
+    will: Option[MqttMessage] = None,
+    automaticReconnect: Boolean = false,
+    keepAliveInterval: FiniteDuration = 60.seconds,
+    connectionTimeout: FiniteDuration = 30.seconds,
+    disconnectQuiesceTimeout: FiniteDuration = 30.seconds,
+    disconnectTimeout: FiniteDuration = 10.seconds,
+    maxInFlight: Int = 10,
+    mqttVersion: Int = MqttConnectOptions.MQTT_VERSION_3_1_1,
+    serverUris: Seq[String] = Seq.empty,
+    sslHostnameVerifier: Option[HostnameVerifier] = None,
+    sslProperties: Map[String, String] = Map.empty
 ) {
-  def withBroker(broker: String) =
+  def withBroker(broker: String): MqttConnectionSettings =
     copy(broker = broker)
 
-  def withAuth(username: String, password: String) =
+  def withAuth(username: String, password: String): MqttConnectionSettings =
     copy(auth = Some((username, password)))
 
-  def withCleanSession(cleanSession: Boolean) =
+  def withCleanSession(cleanSession: Boolean): MqttConnectionSettings =
     copy(cleanSession = cleanSession)
 
-  def withWill(will: MqttMessage) =
+  def withWill(will: MqttMessage): MqttConnectionSettings =
     copy(will = Some(will))
 
   @deprecated("use a normal message instead of a will", "0.16")
-  def withWill(will: Will) =
+  def withWill(will: Will): MqttConnectionSettings =
     copy(will = Some(MqttMessage(will.message.topic, will.message.payload, Some(will.qos), will.retained)))
 
-  def withClientId(clientId: String) =
+  def withClientId(clientId: String): MqttConnectionSettings =
     copy(clientId = clientId)
+
+  def withAutomaticReconnect(automaticReconnect: Boolean): MqttConnectionSettings =
+    copy(automaticReconnect = automaticReconnect)
+
+  def withKeepAliveInterval(connectionTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
+    copy(connectionTimeout = FiniteDuration(connectionTimeout, unit))
+
+  def withConnectionTimeout(connectionTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
+    copy(connectionTimeout = FiniteDuration(connectionTimeout, unit))
+
+  def withDisconnectQuiesceTimeout(disconnectQuiesceTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
+    copy(disconnectQuiesceTimeout = FiniteDuration(disconnectQuiesceTimeout, unit))
+
+  def withDisconnectTimeout(disconnectTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
+    copy(disconnectQuiesceTimeout = FiniteDuration(disconnectTimeout, unit))
+
+  def withMaxInFlight(maxInFlight: Int): MqttConnectionSettings =
+    copy(maxInFlight = maxInFlight)
+
+  def withMqttVersion(mqttVersion: Int): MqttConnectionSettings =
+    copy(mqttVersion = mqttVersion)
+
+  @varargs def withServerUris(serverUris: String*): MqttConnectionSettings =
+    copy(serverUris = serverUris.to[Seq])
+
+  def withSslHostnameVerifier(sslHostnameVerifier: HostnameVerifier): MqttConnectionSettings =
+    copy(sslHostnameVerifier = Some(sslHostnameVerifier))
+
+  def withSslProperties(sslProperties: java.util.Map[String, String]): MqttConnectionSettings =
+    copy(sslProperties = sslProperties.asScala.toMap)
 }
 
 object MqttConnectionSettings {
@@ -148,83 +190,6 @@ object MqttMessage {
    */
   def create(topic: String, payload: ByteString, qos: MqttQoS, retained: Boolean) =
     MqttMessage(topic, payload, Some(qos), retained = retained)
-}
-
-/**
- *  Internal API
- */
-private[mqtt] trait MqttConnectorLogic { this: GraphStageLogic =>
-
-  import MqttConnectorLogic._
-
-  def connectionSettings: MqttConnectionSettings
-
-  def handleConnection(client: IMqttAsyncClient): Unit
-  def handleConnectionLost(ex: Throwable): Unit
-  def commitCallback(args: CommitCallbackArguments): Unit = ()
-
-  val onConnect = getAsyncCallback[IMqttAsyncClient](handleConnection)
-  val onConnectionLost = getAsyncCallback[Throwable](handleConnectionLost)
-  val commitAsyncCallback = getAsyncCallback[CommitCallbackArguments](commitCallback)
-
-  /**
-   * Callback, that is called from the MQTT client thread before invoking
-   * message handler callback in the GraphStage context.
-   */
-  def onMessage(message: MqttCommittableMessage) = ()
-
-  final override def preStart(): Unit = {
-    val client = new MqttAsyncClient(
-      connectionSettings.broker,
-      connectionSettings.clientId,
-      connectionSettings.persistence
-    )
-
-    client.setCallback(new MqttCallback {
-      def messageArrived(topic: String, pahoMessage: PahoMqttMessage) =
-        onMessage(new MqttCommittableMessage {
-          override val message = MqttMessage(topic, ByteString(pahoMessage.getPayload))
-          override def messageArrivedComplete(): Future[Done] = {
-            val promise = Promise[Done]()
-            val qos = pahoMessage.getQos match {
-              case 0 => MqttQoS.atMostOnce
-              case 1 => MqttQoS.atLeastOnce
-              case 2 => MqttQoS.exactlyOnce
-            }
-            commitAsyncCallback.invoke(CommitCallbackArguments(pahoMessage.getId, qos, promise))
-            promise.future
-          }
-        })
-
-      def deliveryComplete(token: IMqttDeliveryToken) =
-        ()
-
-      def connectionLost(cause: Throwable) =
-        onConnectionLost.invoke(cause)
-    })
-    val connectOptions = new MqttConnectOptions
-    connectionSettings.auth.foreach {
-      case (user, password) =>
-        connectOptions.setUserName(user)
-        connectOptions.setPassword(password.toCharArray)
-    }
-    connectionSettings.socketFactory.foreach { socketFactory =>
-      connectOptions.setSocketFactory(socketFactory)
-    }
-    connectionSettings.will.foreach { will =>
-      connectOptions.setWill(will.topic,
-                             will.payload.toArray,
-                             will.qos.getOrElse(MqttQoS.atLeastOnce).byteValue.toInt,
-                             will.retained)
-    }
-    connectOptions.setCleanSession(connectionSettings.cleanSession)
-    client.connect(connectOptions, (), connectHandler)
-  }
-
-  private val connectHandler: Try[IMqttToken] => Unit = {
-    case Success(token) => onConnect.invoke(token.getClient)
-    case Failure(ex) => onConnectionLost.invoke(ex)
-  }
 }
 
 /**

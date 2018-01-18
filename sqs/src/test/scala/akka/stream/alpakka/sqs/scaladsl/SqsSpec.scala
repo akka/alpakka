@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.sqs.scaladsl
@@ -126,6 +126,48 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       any[ChangeMessageVisibilityRequest],
       any[AsyncHandler[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult]]
     )
+  }
+
+  it should "publish messages by grouping and pull them" taggedAs Integration in {
+    val queue = randomQueueUrl()
+
+    //#group
+    val messages = for (i <- 0 until 20) yield s"Message - $i"
+
+    val future = Source(messages).runWith(SqsSink.grouped(queue))
+    Await.ready(future, 1.second)
+    //#group
+
+    val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
+    var nrOfMessages = 0
+    for (i <- 0 until 20) {
+      probe.requestNext()
+      nrOfMessages += 1
+    }
+
+    assert(nrOfMessages == 20)
+    probe.cancel()
+  }
+
+  it should "publish batch of messages and pull them" taggedAs Integration in {
+    val queue = randomQueueUrl()
+
+    //#batch
+    val messages = for (i <- 0 until 10) yield s"Message - $i"
+
+    val future = Source.single(messages).runWith(SqsSink.batch(queue))
+    Await.ready(future, 1.second)
+    //#batch
+
+    val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
+    var nrOfMessages = 0
+    for (i <- 0 until 10) {
+      probe.requestNext()
+      nrOfMessages += 1
+    }
+
+    assert(nrOfMessages == 10)
+    probe.cancel()
   }
 
   it should "pull and ignore a message" taggedAs Integration in {

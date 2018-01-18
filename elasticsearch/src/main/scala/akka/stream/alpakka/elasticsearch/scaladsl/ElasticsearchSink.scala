@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.elasticsearch.scaladsl
@@ -12,12 +12,17 @@ import spray.json.JsonWriter
 
 import scala.concurrent.Future
 
+/**
+ * Java API to create Elasticsearch sinks.
+ */
 object ElasticsearchSink {
 
   /**
-   * Scala API: creates a sink based on [[ElasticsearchFlowStage]]
+   * Creates a [[akka.stream.scaladsl.Sink]] to Elasticsearch for [[IncomingMessage]] containing type `T`.
    */
-  def create[T](indexName: String, typeName: String, settings: ElasticsearchSinkSettings)(
+  def create[T](indexName: String,
+                typeName: String,
+                settings: ElasticsearchSinkSettings = ElasticsearchSinkSettings())(
       implicit client: RestClient,
       writer: JsonWriter[T]
   ): Sink[IncomingMessage[T, NotUsed], Future[Done]] =

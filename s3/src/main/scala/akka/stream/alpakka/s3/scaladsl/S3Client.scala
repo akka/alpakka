@@ -1,13 +1,11 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.scaladsl
 
 import java.time.Instant
 
-import scala.concurrent.Future
-import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Content-Length`, `Last-Modified`, ByteRange, ETag}
@@ -18,10 +16,12 @@ import akka.stream.alpakka.s3.auth.{AWSCredentials => OldAWSCredentials}
 import akka.stream.alpakka.s3.impl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
+import akka.{Done, NotUsed}
 import com.amazonaws.auth._
 import com.amazonaws.regions.AwsRegionProvider
 
 import scala.collection.immutable.Seq
+import scala.concurrent.Future
 
 final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
@@ -192,20 +192,27 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param method the [[HttpMethod]] to use when making the request
+   * @param s3Headers any headers you want to add
    * @return a [[Future]] containing the raw [[HttpResponse]]
    */
-  def request(bucket: String, key: String, method: HttpMethod = HttpMethods.GET): Future[HttpResponse] =
-    impl.request(S3Location(bucket, key), method)
+  def request(bucket: String,
+              key: String,
+              method: HttpMethod = HttpMethods.GET,
+              s3Headers: S3Headers = S3Headers.empty): Future[HttpResponse] =
+    impl.request(S3Location(bucket, key), method, s3Headers = s3Headers)
 
   /**
    * Gets the metadata for a S3 Object
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
+   * @param sse the server side encryption to use
    * @return A [[Future]] containing an [[Option]] that will be [[None]] in case the object does not exist
    */
-  def getObjectMetadata(bucket: String, key: String): Future[Option[ObjectMetadata]] =
-    impl.getObjectMetadata(bucket, key)
+  def getObjectMetadata(bucket: String,
+                        key: String,
+                        sse: Option[ServerSideEncryption] = None): Future[Option[ObjectMetadata]] =
+    impl.getObjectMetadata(bucket, key, sse)
 
   /**
    * Deletes a S3 Object
@@ -226,6 +233,7 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
    * @param contentLength the number of bytes that will be uploaded (required!)
    * @param contentType an optional [[ContentType]]
    * @param s3Headers any headers you want to add
+   * @param sse the server side encryption to use
    * @return a [[Future]] containing the [[ObjectMetadata]] of the uploaded S3 Object
    */
   def putObject(bucket: String,
@@ -233,29 +241,24 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
                 data: Source[ByteString, _],
                 contentLength: Long,
                 contentType: ContentType = ContentTypes.`application/octet-stream`,
-                s3Headers: S3Headers): Future[ObjectMetadata] =
-    impl.putObject(S3Location(bucket, key), contentType, data, contentLength, s3Headers)
+                s3Headers: S3Headers,
+                sse: Option[ServerSideEncryption] = None): Future[ObjectMetadata] =
+    impl.putObject(S3Location(bucket, key), contentType, data, contentLength, s3Headers, sse)
 
   /**
    * Downloads a S3 Object
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
+   * @param range [optional] the [[ByteRange]] you want to download
+   * @param sse [optional] the server side encryption used on upload
    * @return A [[Source]] of [[ByteString]] that materializes into a [[Future]] containing the [[ObjectMetadata]]
    */
-  def download(bucket: String, key: String): Source[ByteString, Future[ObjectMetadata]] =
-    impl.download(S3Location(bucket, key))
-
-  /**
-   * Downloads a specific byte range of a S3 Object
-   *
-   * @param bucket the s3 bucket name
-   * @param key the s3 object key
-   * @param range the [[ByteRange]] you want to download
-   * @return A [[Source]] of [[ByteString]] that materializes into a [[Future]] containing the [[ObjectMetadata]]
-   */
-  def download(bucket: String, key: String, range: ByteRange): Source[ByteString, Future[ObjectMetadata]] =
-    impl.download(S3Location(bucket, key), Some(range))
+  def download(bucket: String,
+               key: String,
+               range: Option[ByteRange] = None,
+               sse: Option[ServerSideEncryption] = None): Source[ByteString, Future[ObjectMetadata]] =
+    impl.download(S3Location(bucket, key), range, sse)
 
   /**
    * Will return a source of object metadata for a given bucket with optional prefix.
@@ -286,12 +289,14 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
                       metaHeaders: MetaHeaders = MetaHeaders(Map()),
                       cannedAcl: CannedAcl = CannedAcl.Private,
                       chunkSize: Int = MinChunkSize,
-                      chunkingParallelism: Int = 4): Sink[ByteString, Future[MultipartUploadResult]] =
+                      chunkingParallelism: Int = 4,
+                      sse: Option[ServerSideEncryption] = None): Sink[ByteString, Future[MultipartUploadResult]] =
     impl
       .multipartUpload(
         S3Location(bucket, key),
         contentType,
         S3Headers(cannedAcl, metaHeaders),
+        sse,
         chunkSize,
         chunkingParallelism
       )
@@ -314,13 +319,15 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
       contentType: ContentType = ContentTypes.`application/octet-stream`,
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4,
-      s3Headers: Option[S3Headers] = None
+      s3Headers: Option[S3Headers] = None,
+      sse: Option[ServerSideEncryption] = None
   ): Sink[ByteString, Future[MultipartUploadResult]] =
     impl
       .multipartUpload(
         S3Location(bucket, key),
         contentType,
         s3Headers.getOrElse(S3Headers.empty),
+        sse,
         chunkSize,
         chunkingParallelism
       )

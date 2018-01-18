@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.csv.javadsl;
@@ -10,7 +10,7 @@ import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -43,7 +43,7 @@ public class CsvFormattingTest {
 
         Flow<Collection<String>, ByteString, ?> flow2
                 = CsvFormatting.format(delimiter, quoteChar, escapeChar, endOfLine,
-                                       CsvQuotingStyle.REQUIRED, charset, byteOrderMark);
+                CsvQuotingStyle.REQUIRED, charset, byteOrderMark);
         // #flow-type
     }
 
@@ -55,9 +55,7 @@ public class CsvFormattingTest {
                 .via(CsvFormatting.format())
                 .runWith(Sink.head(), materializer);
         // #formatting
-        completionStage.thenAccept((bs) -> {
-            assertThat(bs.utf8String(), equalTo("one,two,three"));
-        });
+        completionStage.thenAccept((bs) -> assertThat(bs.utf8String(), equalTo("one,two,three")));
 
     }
 
@@ -69,6 +67,6 @@ public class CsvFormattingTest {
 
     @AfterClass
     public static void teardown() throws Exception {
-        JavaTestKit.shutdownActorSystem(system);
+        TestKit.shutdownActorSystem(system);
     }
 }

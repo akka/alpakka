@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.mqtt.scaladsl
@@ -23,7 +23,7 @@ class MqttFlowSpec
     with BeforeAndAfterAll
     with ScalaFutures {
 
-  val timeout = 5 seconds
+  val timeout = 5.seconds
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 

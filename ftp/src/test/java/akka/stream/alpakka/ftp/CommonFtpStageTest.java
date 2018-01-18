@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ftp;
@@ -19,7 +19,10 @@ import org.junit.Assert;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 interface CommonFtpStageTest extends FtpSupport, AkkaSupport {
 
@@ -28,6 +31,10 @@ interface CommonFtpStageTest extends FtpSupport, AkkaSupport {
   Source<ByteString, CompletionStage<IOResult>> getIOSource(String path) throws Exception;
 
   Sink<ByteString, CompletionStage<IOResult>> getIOSink(String path) throws Exception;
+
+  Sink<FtpFile, CompletionStage<IOResult>> getRemoveSink() throws Exception;
+
+  Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(Function<FtpFile, String> destinationPath) throws Exception;
 
   default void listFiles() throws Exception {
     final int numFiles = 30;
@@ -89,4 +96,41 @@ interface CommonFtpStageTest extends FtpSupport, AkkaSupport {
     Assert.assertArrayEquals(actualStoredContent, getLoremIpsum().getBytes());
   }
 
+  default void remove() throws Exception {
+    final String fileName = "sample_io";
+    putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName);
+
+    final Materializer materializer = getMaterializer();
+    Source<FtpFile, NotUsed> source = getBrowserSource("/");
+    Sink<FtpFile, CompletionStage<IOResult>> sink = getRemoveSink();
+    CompletionStage<IOResult> resultCompletionStage =
+            source.runWith(sink, materializer);
+
+    IOResult result = resultCompletionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    Boolean fileExists = fileExists(FtpBaseSupport.FTP_ROOT_DIR, fileName);
+
+    assertEquals(IOResult.createSuccessful(1), result);
+    assertFalse(fileExists);
+  }
+
+  default void move() throws Exception {
+    final String fileName = "sample_io";
+    final String fileName2 = "sample_io2";
+    putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName);
+
+    final Materializer materializer = getMaterializer();
+    Source<FtpFile, NotUsed> source = getBrowserSource("/");
+    Sink<FtpFile, CompletionStage<IOResult>> sink = getMoveSink((ftpFile) -> fileName2);
+    CompletionStage<IOResult> resultCompletionStage =
+            source.runWith(sink, materializer);
+
+    IOResult result = resultCompletionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    assertEquals(IOResult.createSuccessful(1), result);
+
+    assertFalse(fileExists(FtpBaseSupport.FTP_ROOT_DIR, fileName));
+
+    assertTrue(fileExists(FtpBaseSupport.FTP_ROOT_DIR, fileName2));
+  }
 }

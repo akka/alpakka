@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.elasticsearch.scaladsl
@@ -9,14 +9,32 @@ import akka.stream.alpakka.elasticsearch._
 import akka.stream.scaladsl.Source
 import org.elasticsearch.client.RestClient
 import spray.json._
-import DefaultJsonProtocol._
 
+/**
+ * Scala API to create Elasticsearch sources.
+ */
 object ElasticsearchSource {
 
   /**
-   * Scala API: creates a [[ElasticsearchSourceStage]] that consumes as JsObject
+   * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s
+   * of Spray's [[spray.json.JsObject]].
+   * Alias of [[create]].
    */
-  def apply(indexName: String, typeName: String, query: String, settings: ElasticsearchSourceSettings)(
+  def apply(indexName: String,
+            typeName: String,
+            query: String,
+            settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings())(
+      implicit client: RestClient
+  ): Source[OutgoingMessage[JsObject], NotUsed] = create(indexName, typeName, query, settings)
+
+  /**
+   * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s
+   * of Spray's [[spray.json.JsObject]].
+   */
+  def create(indexName: String,
+             typeName: String,
+             query: String,
+             settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings())(
       implicit client: RestClient
   ): Source[OutgoingMessage[JsObject], NotUsed] =
     Source.fromGraph(
@@ -31,9 +49,13 @@ object ElasticsearchSource {
     )
 
   /**
-   * Scala API: creates a [[ElasticsearchSourceStage]] that consumes as specific type
+   * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s of type `T`
+   * converted by Spray's [[spray.json.JsonReader]]
    */
-  def typed[T](indexName: String, typeName: String, query: String, settings: ElasticsearchSourceSettings)(
+  def typed[T](indexName: String,
+               typeName: String,
+               query: String,
+               settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings())(
       implicit client: RestClient,
       reader: JsonReader[T]
   ): Source[OutgoingMessage[T], NotUsed] =

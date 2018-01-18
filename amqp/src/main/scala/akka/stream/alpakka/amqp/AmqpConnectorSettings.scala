@@ -1,23 +1,21 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.amqp
-
-import com.rabbitmq.client.ExceptionHandler
 
 /**
  * Internal API
  */
 sealed trait AmqpConnectorSettings {
-  def connectionSettings: AmqpConnectionSettings
+  def connectionProvider: AmqpConnectionProvider
   def declarations: Seq[Declaration]
 }
 
 sealed trait AmqpSourceSettings extends AmqpConnectorSettings
 
 final case class NamedQueueSourceSettings(
-    connectionSettings: AmqpConnectionSettings,
+    connectionProvider: AmqpConnectionProvider,
     queue: String,
     declarations: Seq[Declaration] = Seq.empty,
     noLocal: Boolean = false,
@@ -47,12 +45,12 @@ object NamedQueueSourceSettings {
   /**
    * Java API
    */
-  def create(connectionSettings: AmqpConnectionSettings, queue: String): NamedQueueSourceSettings =
-    NamedQueueSourceSettings(connectionSettings, queue)
+  def create(connectionProvider: AmqpConnectionProvider, queue: String): NamedQueueSourceSettings =
+    NamedQueueSourceSettings(connectionProvider, queue)
 }
 
 final case class TemporaryQueueSourceSettings(
-    connectionSettings: AmqpConnectionSettings,
+    connectionProvider: AmqpConnectionProvider,
     exchange: String,
     declarations: Seq[Declaration] = Seq.empty,
     routingKey: Option[String] = None
@@ -68,12 +66,12 @@ object TemporaryQueueSourceSettings {
   /**
    * Java API
    */
-  def create(connectionSettings: AmqpConnectionSettings, exchange: String): TemporaryQueueSourceSettings =
-    TemporaryQueueSourceSettings(connectionSettings, exchange)
+  def create(connectionProvider: AmqpConnectionProvider, exchange: String): TemporaryQueueSourceSettings =
+    TemporaryQueueSourceSettings(connectionProvider, exchange)
 }
 
 final case class AmqpReplyToSinkSettings(
-    connectionSettings: AmqpConnectionSettings,
+    connectionProvider: AmqpConnectionProvider,
     failIfReplyToMissing: Boolean = true
 ) extends AmqpConnectorSettings {
   override final val declarations = Nil
@@ -84,19 +82,19 @@ object AmqpReplyToSinkSettings {
   /**
    * Java API
    */
-  def create(connectionSettings: AmqpConnectionSettings): AmqpReplyToSinkSettings =
-    AmqpReplyToSinkSettings(connectionSettings)
+  def create(connectionProvider: AmqpConnectionProvider): AmqpReplyToSinkSettings =
+    AmqpReplyToSinkSettings(connectionProvider)
 
   /**
    * Java API
    */
-  def create(connectionSettings: AmqpConnectionSettings, failIfReplyToMissing: Boolean): AmqpReplyToSinkSettings =
-    AmqpReplyToSinkSettings(connectionSettings, failIfReplyToMissing)
+  def create(connectionProvider: AmqpConnectionProvider, failIfReplyToMissing: Boolean): AmqpReplyToSinkSettings =
+    AmqpReplyToSinkSettings(connectionProvider, failIfReplyToMissing)
 
 }
 
 final case class AmqpSinkSettings(
-    connectionSettings: AmqpConnectionSettings,
+    connectionProvider: AmqpConnectionProvider,
     exchange: Option[String] = None,
     routingKey: Option[String] = None,
     declarations: Seq[Declaration] = Seq.empty
@@ -114,124 +112,8 @@ object AmqpSinkSettings {
   /**
    * Java API
    */
-  def create(connectionSettings: AmqpConnectionSettings): AmqpSinkSettings =
-    AmqpSinkSettings(connectionSettings)
-
-  /**
-   * Java API
-   */
-  def create(): AmqpSinkSettings = AmqpSinkSettings.create(DefaultAmqpConnection)
-}
-
-/**
- * Only for internal implementations
- */
-sealed trait AmqpConnectionSettings
-
-/**
- * Connects to a local AMQP broker at the default port with no password.
- */
-case object DefaultAmqpConnection extends AmqpConnectionSettings {
-
-  /**
-   * Java API
-   */
-  def getInstance(): DefaultAmqpConnection.type = this
-}
-
-final case class AmqpConnectionUri(uri: String) extends AmqpConnectionSettings
-
-object AmqpConnectionUri {
-
-  /**
-   * Java API:
-   */
-  def create(uri: String): AmqpConnectionUri = AmqpConnectionUri(uri)
-}
-
-final case class AmqpConnectionDetails(
-    hostAndPortList: Seq[(String, Int)],
-    credentials: Option[AmqpCredentials] = None,
-    virtualHost: Option[String] = None,
-    sslProtocol: Option[String] = None,
-    requestedHeartbeat: Option[Int] = None,
-    connectionTimeout: Option[Int] = None,
-    handshakeTimeout: Option[Int] = None,
-    shutdownTimeout: Option[Int] = None,
-    networkRecoveryInterval: Option[Int] = None,
-    automaticRecoveryEnabled: Option[Boolean] = None,
-    topologyRecoveryEnabled: Option[Boolean] = None,
-    exceptionHandler: Option[ExceptionHandler] = None
-) extends AmqpConnectionSettings {
-
-  def withHostsAndPorts(hostAndPort: (String, Int), hostAndPorts: (String, Int)*): AmqpConnectionDetails =
-    copy(hostAndPortList = (hostAndPort +: hostAndPorts).toList)
-
-  def withCredentials(amqpCredentials: AmqpCredentials): AmqpConnectionDetails =
-    copy(credentials = Option(amqpCredentials))
-
-  def withVirtualHost(virtualHost: String): AmqpConnectionDetails =
-    copy(virtualHost = Option(virtualHost))
-
-  def withSslProtocol(sslProtocol: String): AmqpConnectionDetails =
-    copy(sslProtocol = Option(sslProtocol))
-
-  def withRequestedHeartbeat(requestedHeartbeat: Int): AmqpConnectionDetails =
-    copy(requestedHeartbeat = Option(requestedHeartbeat))
-
-  def withConnectionTimeout(connectionTimeout: Int): AmqpConnectionDetails =
-    copy(connectionTimeout = Option(connectionTimeout))
-
-  def withHandshakeTimeout(handshakeTimeout: Int): AmqpConnectionDetails =
-    copy(handshakeTimeout = Option(handshakeTimeout))
-
-  def withShutdownTimeout(shutdownTimeout: Int): AmqpConnectionDetails =
-    copy(shutdownTimeout = Option(shutdownTimeout))
-
-  def withNetworkRecoveryInterval(networkRecoveryInterval: Int): AmqpConnectionDetails =
-    copy(networkRecoveryInterval = Option(networkRecoveryInterval))
-
-  def withAutomaticRecoveryEnabled(automaticRecoveryEnabled: Boolean): AmqpConnectionDetails =
-    copy(automaticRecoveryEnabled = Option(automaticRecoveryEnabled))
-
-  def withTopologyRecoveryEnabled(topologyRecoveryEnabled: Boolean): AmqpConnectionDetails =
-    copy(topologyRecoveryEnabled = Option(topologyRecoveryEnabled))
-
-  def withExceptionHandler(exceptionHandler: ExceptionHandler): AmqpConnectionDetails =
-    copy(exceptionHandler = Option(exceptionHandler))
-
-  /**
-   * Java API:
-   */
-  @annotation.varargs
-  def withHostsAndPorts(hostAndPort: akka.japi.Pair[String, Int],
-                        hostAndPorts: akka.japi.Pair[String, Int]*): AmqpConnectionDetails =
-    copy(hostAndPortList = (hostAndPort +: hostAndPorts).map(_.toScala).toList)
-}
-
-object AmqpConnectionDetails {
-
-  def apply(host: String, port: Int): AmqpConnectionDetails =
-    AmqpConnectionDetails(List((host, port)))
-
-  /**
-   * Java API:
-   */
-  def create(host: String, port: Int): AmqpConnectionDetails =
-    AmqpConnectionDetails(host, port)
-}
-
-final case class AmqpCredentials(username: String, password: String) {
-  override def toString = s"Credentials($username, ********)"
-}
-
-object AmqpCredentials {
-
-  /**
-   * Java API
-   */
-  def create(username: String, password: String): AmqpCredentials =
-    AmqpCredentials(username, password)
+  def create(connectionProvider: AmqpConnectionProvider): AmqpSinkSettings =
+    AmqpSinkSettings(connectionProvider)
 }
 
 sealed trait Declaration

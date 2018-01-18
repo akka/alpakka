@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.kinesis
@@ -7,7 +7,6 @@ package akka.stream.alpakka.kinesis
 import KinesisFlowSettings._
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 case class KinesisFlowSettings(parallelism: Int,
                                maxBatchSize: Int,
@@ -23,6 +22,27 @@ case class KinesisFlowSettings(parallelism: Int,
   require(maxRecordsPerSecond >= 1)
   require(maxBytesPerSecond >= 1)
   require(maxRetries >= 0)
+
+  def withParallelism(parallelism: Int): KinesisFlowSettings = copy(parallelism = parallelism)
+
+  def withMaxBatchSize(maxBatchSize: Int): KinesisFlowSettings = copy(maxBatchSize = maxBatchSize)
+
+  def withMaxRecordsPerSecond(maxRecordsPerSecond: Int): KinesisFlowSettings =
+    copy(maxRecordsPerSecond = maxRecordsPerSecond)
+
+  def withMaxBytesPerSecond(maxBytesPerSecond: Int): KinesisFlowSettings = copy(maxBytesPerSecond = maxBytesPerSecond)
+
+  def withMaxRetries(maxRetries: Int): KinesisFlowSettings = copy(maxRetries = maxRetries)
+
+  def withBackoffStrategyExponential(): KinesisFlowSettings = copy(backoffStrategy = Exponential)
+
+  def withBackoffStrategyLineal(): KinesisFlowSettings = copy(backoffStrategy = Lineal)
+
+  def withBackoffStrategy(backoffStrategy: RetryBackoffStrategy): KinesisFlowSettings =
+    copy(backoffStrategy = backoffStrategy)
+
+  def withRetryInitialTimeout(timeout: Long, unit: java.util.concurrent.TimeUnit): KinesisFlowSettings =
+    copy(retryInitialTimeout = FiniteDuration(timeout, unit))
 }
 
 object KinesisFlowSettings {
@@ -35,10 +55,12 @@ object KinesisFlowSettings {
   case object Exponential extends RetryBackoffStrategy
   case object Lineal extends RetryBackoffStrategy
 
-  val exponential = Exponential
-  val lineal = Lineal
+  val exponential: RetryBackoffStrategy = Exponential
+  val lineal: RetryBackoffStrategy = Lineal
 
-  val defaultInstance = byNumberOfShards(1)
+  val defaultInstance: KinesisFlowSettings = byNumberOfShards(1)
+
+  def create(): KinesisFlowSettings = defaultInstance
 
   def byNumberOfShards(shards: Int): KinesisFlowSettings =
     KinesisFlowSettings(
@@ -48,6 +70,6 @@ object KinesisFlowSettings {
       maxBytesPerSecond = shards * MAX_BYTES_PER_SHARD_PER_SECOND,
       maxRetries = 5,
       backoffStrategy = Exponential,
-      retryInitialTimeout = 100 millis
+      retryInitialTimeout = 100.millis
     )
 }
