@@ -8,15 +8,16 @@ package jms
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.{WebSocketRequest, WebSocketUpgradeResponse}
+import akka.stream.KillSwitch
 import akka.stream.alpakka.jms.JmsSourceSettings
 import akka.stream.alpakka.jms.scaladsl.JmsSource
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import akka.{Done, NotUsed}
-import playground.{ActiveMqBroker, WebServer}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 // #sample
+import playground.{ActiveMqBroker, WebServer}
 
 object JmsToWebSocket extends JmsSampleBase with App {
 
@@ -41,7 +42,7 @@ object JmsToWebSocket extends JmsSampleBase with App {
   // format: off
   // #sample
 
-  val jmsSource: Source[String, _] =
+  val jmsSource: Source[String, KillSwitch] =
     JmsSource.textSource(                                                             // (1)
       JmsSourceSettings(connectionFactory).withBufferSize(10).withQueue("test")
     )
@@ -49,13 +50,14 @@ object JmsToWebSocket extends JmsSampleBase with App {
   val webSocketFlow: Flow[ws.Message, ws.Message, Future[WebSocketUpgradeResponse]] = // (2)
     Http().webSocketClientFlow(WebSocketRequest("ws://localhost:8080/webSocket/ping"))
 
-  val (wsUpgradeResponse, finished): (Future[WebSocketUpgradeResponse], Future[Done]) =
+  val (runningSource, wsUpgradeResponse): (KillSwitch, Future[WebSocketUpgradeResponse]) =
+                                                     // stream element type
     jmsSource                                        //: String
       .map(ws.TextMessage(_))                        //: ws.TextMessage                  (3)
-      .viaMat(webSocketFlow)(Keep.right)             //: ws.TextMessage                  (4)
+      .viaMat(webSocketFlow)(Keep.both)              //: ws.TextMessage                  (4)
       .mapAsync(1)(wsMessageToString)                //: String                          (5)
       .map("client received: " + _)                  //: String                          (6)
-      .toMat(Sink.foreach(println))(Keep.both)       //                                  (7)
+      .toMat(Sink.foreach(println))(Keep.left)       //                                  (7)
       .run()
   // #sample
   // format: on
@@ -70,7 +72,8 @@ object JmsToWebSocket extends JmsSampleBase with App {
     }
     .onComplete(println)
 
-  finished.foreach(_ => println("stream finished"))
+  wait(5.seconds)
+  runningSource.shutdown()
 
   for {
     _ <- actorSystem.terminate()
