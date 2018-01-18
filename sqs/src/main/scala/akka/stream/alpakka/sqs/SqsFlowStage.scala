@@ -14,9 +14,9 @@ import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 private[sqs] final class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
-    extends GraphStage[FlowShape[String, Future[Result]]] {
+    extends GraphStage[FlowShape[SendMessageRequest, Future[Result]]] {
 
-  private val in = Inlet[String]("messages")
+  private val in = Inlet[SendMessageRequest]("messages")
   private val out = Outlet[Future[Result]]("result")
   override val shape = FlowShape(in, out)
 
@@ -84,11 +84,11 @@ private[sqs] final class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsyn
 
           override def onPush() = {
             inFlight += 1
-            val msg = grab(in)
+            val msg = grab(in).withQueueUrl(queueUrl)
             val responsePromise = Promise[Result]
 
             sqsClient.sendMessageAsync(
-              new SendMessageRequest(queueUrl, msg),
+              msg,
               new AsyncHandler[SendMessageRequest, SendMessageResult] {
 
                 override def onError(exception: Exception): Unit = {
@@ -97,7 +97,7 @@ private[sqs] final class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsyn
                 }
 
                 override def onSuccess(request: SendMessageRequest, result: SendMessageResult): Unit = {
-                  responsePromise.success(Result(result, msg))
+                  responsePromise.success(Result(result, msg.getMessageBody))
                   sendCallback.invoke(result)
                 }
               }

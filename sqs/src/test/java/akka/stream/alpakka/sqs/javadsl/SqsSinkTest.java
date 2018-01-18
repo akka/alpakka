@@ -12,6 +12,7 @@ import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
+import com.amazonaws.services.sqs.model.SendMessageRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,13 +54,31 @@ public class SqsSinkTest extends BaseSqsTest {
 
         final String queueUrl = randomQueueUrl();
 
-        //#run
+        //#run-string
         CompletionStage<Done> done = Source
           .single("alpakka")
           .runWith(SqsSink.create(queueUrl, sqsClient), materializer);
 
         done.toCompletableFuture().get(1, TimeUnit.SECONDS);
-        //#run
+        //#run-string
+        List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
+
+        assertEquals(1, messages.size());
+        assertEquals("alpakka", messages.get(0).getBody());
+    }
+
+    @Test
+    public void sendMessageRequestToQueue() throws Exception {
+
+        final String queueUrl = randomQueueUrl();
+
+        //#run-send-request
+        CompletionStage<Done> done = Source
+                .single(new SendMessageRequest().withMessageBody("alpakka"))
+                .runWith(SqsSink.messageSink(queueUrl, sqsClient), materializer);
+
+        done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        //#run-send-request
         List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
 
         assertEquals(1, messages.size());
@@ -72,7 +91,7 @@ public class SqsSinkTest extends BaseSqsTest {
 
         //#flow
         CompletionStage<Done> done = Source
-                .single("alpakka-flow")
+                .single(new SendMessageRequest(queueUrl, "alpakka-flow"))
                 .via(SqsFlow.create(queueUrl, sqsClient))
                 .runWith(Sink.ignore(), materializer);
 
@@ -111,7 +130,7 @@ public class SqsSinkTest extends BaseSqsTest {
     public void sendBatchesToQueue() throws Exception {
         final String queueUrl = randomQueueUrl();
 
-        //#batch
+        //#batch-string
         ArrayList<String> messagesToSend = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             messagesToSend.add("Message - " + i);
@@ -123,7 +142,30 @@ public class SqsSinkTest extends BaseSqsTest {
                 .runWith(SqsSink.batch(queueUrl,sqsClient), materializer);
 
         done.toCompletableFuture().get(1, TimeUnit.SECONDS);
-        //#batch
+        //#batch-string
+
+        List<Message> messagesFirstBatch = sqsClient.receiveMessage(new ReceiveMessageRequest().withQueueUrl(queueUrl).withMaxNumberOfMessages(10)).getMessages();
+
+        assertEquals(10, messagesFirstBatch.size());
+    }
+
+    @Test
+    public void sendBatchesOfSendMessageRequestsToQueue() throws Exception {
+        final String queueUrl = randomQueueUrl();
+
+        //#batch-send-request
+        ArrayList<SendMessageRequest> messagesToSend = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            messagesToSend.add(new SendMessageRequest().withMessageBody("Message - " + i));
+        }
+        Iterable<SendMessageRequest> it = messagesToSend;
+
+        CompletionStage<Done> done = Source
+                .single(it)
+                .runWith(SqsSink.batchedMessageSink(queueUrl,sqsClient), materializer);
+
+        done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        //#batch-send-request
 
         List<Message> messagesFirstBatch = sqsClient.receiveMessage(new ReceiveMessageRequest().withQueueUrl(queueUrl).withMaxNumberOfMessages(10)).getMessages();
 
@@ -134,9 +176,9 @@ public class SqsSinkTest extends BaseSqsTest {
     public void sendMessageWithBatchesAsFlow() throws Exception {
         final String queueUrl = randomQueueUrl();
 
-        ArrayList<String> messagesToSend = new ArrayList<>();
+        ArrayList<SendMessageRequest> messagesToSend = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            messagesToSend.add("Message - " + i);
+            messagesToSend.add(new SendMessageRequest(queueUrl, "Message - " + i));
         }
 
         CompletionStage<Done> done = Source
@@ -155,11 +197,11 @@ public class SqsSinkTest extends BaseSqsTest {
     public void sendBatchesAsFlow() throws Exception {
         final String queueUrl = randomQueueUrl();
 
-        ArrayList<String> messagesToSend = new ArrayList<>();
+        ArrayList<SendMessageRequest> messagesToSend = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            messagesToSend.add("Message - " + i);
+            messagesToSend.add(new SendMessageRequest(queueUrl, "Message - " + i));
         }
-        Iterable<String> it = messagesToSend;
+        Iterable<SendMessageRequest> it = messagesToSend;
 
         CompletionStage<Done> done = Source
                 .single(it)
@@ -179,7 +221,7 @@ public class SqsSinkTest extends BaseSqsTest {
 
         //#flow
         CompletionStage<Done> done = Source
-                .single("alpakka-flow")
+                .single(new SendMessageRequest(queueUrl, "alpakka-flow"))
                 .via(SqsFlow.create(queueUrl, sqsClient))
                 .runWith(Sink.ignore(), materializer);
 
