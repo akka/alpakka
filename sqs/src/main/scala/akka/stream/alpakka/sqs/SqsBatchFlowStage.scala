@@ -18,11 +18,11 @@ import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 private[sqs] final class SqsBatchFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
-    extends GraphStage[FlowShape[Iterable[String], Future[List[Result]]]] {
-  private val in = Inlet[Iterable[String]]("messageBatch")
+    extends GraphStage[FlowShape[Iterable[SendMessageRequest], Future[List[Result]]]] {
+  private val in = Inlet[Iterable[SendMessageRequest]]("messageBatch")
   private val out = Outlet[Future[List[Result]]]("batchResult")
 
-  override def shape: FlowShape[Iterable[String], Future[List[Result]]] = FlowShape(in, out)
+  override def shape: FlowShape[Iterable[SendMessageRequest], Future[List[Result]]] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
@@ -84,7 +84,7 @@ private[sqs] final class SqsBatchFlowStage(queueUrl: String, sqsClient: AmazonSQ
           }
 
           override def onPush() = {
-            val messages: Array[String] = grab(in).toArray
+            val messages: Array[SendMessageRequest] = grab(in).toArray
             val nrOfMessages = messages.length
 
             inFlight += nrOfMessages
@@ -119,7 +119,7 @@ private[sqs] final class SqsBatchFlowStage(queueUrl: String, sqsClient: AmazonSQ
                     val successfulMessages = result.getSuccessful.iterator()
                     while (successfulMessages.hasNext) {
                       val successfulMessage: SendMessageBatchResultEntry = successfulMessages.next()
-                      val messageBody: String = messages(successfulMessage.getId.toInt)
+                      val messageBody: String = messages(successfulMessage.getId.toInt).getMessageBody
 
                       val sendMessageResult: SendMessageResult = new SendMessageResult()
                         .withMD5OfMessageAttributes(successfulMessage.getMD5OfMessageAttributes)
@@ -138,12 +138,14 @@ private[sqs] final class SqsBatchFlowStage(queueUrl: String, sqsClient: AmazonSQ
             push(out, responsePromise.future)
           }
 
-          private def createMessageBatch(messages: Array[String]): SendMessageBatchRequest = {
+          private def createMessageBatch(messages: Array[SendMessageRequest]): SendMessageBatchRequest = {
             val messageRequestEntries: util.List[SendMessageBatchRequestEntry] =
               new util.ArrayList[SendMessageBatchRequestEntry]()
             var id = 0
             messages.foreach { message =>
-              messageRequestEntries.add(new SendMessageBatchRequestEntry(id.toString, message))
+              val entry = new SendMessageBatchRequestEntry(id.toString, message.getMessageBody)
+              entry.setMessageAttributes(message.getMessageAttributes)
+              messageRequestEntries.add(entry)
               id += 1
             }
 
