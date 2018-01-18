@@ -28,9 +28,17 @@ object IncomingMessage {
   def apply[T](id: Option[String], source: T): IncomingMessage[T, NotUsed] =
     IncomingMessage(id, source, NotUsed)
 
+  // Apply method to use when not using passThrough
+  def apply[T](id: Option[String], source: T, version:Long): IncomingMessage[T, NotUsed] =
+    IncomingMessage(id, source, NotUsed, Option(version))
+
   // Java-api - without passThrough
   def create[T](id: String, source: T): IncomingMessage[T, NotUsed] =
     IncomingMessage(Option(id), source)
+
+  // Java-api - without passThrough
+  def create[T](id: String, source: T, version:Long): IncomingMessage[T, NotUsed] =
+    IncomingMessage(Option(id), source, version)
 
   // Java-api - without passThrough
   def create[T](source: T): IncomingMessage[T, NotUsed] =
@@ -41,11 +49,15 @@ object IncomingMessage {
     IncomingMessage(Option(id), source, passThrough)
 
   // Java-api - with passThrough
+  def create[T, C](id: String, source: T, passThrough: C, version:Long): IncomingMessage[T, C] =
+    IncomingMessage(Option(id), source, passThrough, Option(version))
+
+  // Java-api - with passThrough
   def create[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
     IncomingMessage(None, source, passThrough)
 }
 
-final case class IncomingMessage[T, C](id: Option[String], source: T, passThrough: C)
+final case class IncomingMessage[T, C](id: Option[String], source: T, passThrough: C, version:Option[Long] = None)
 
 object IncomingMessageResult {
   // Apply method to use when not using passThrough
@@ -180,6 +192,9 @@ class ElasticsearchFlowStage[T, C](
                 Seq(
                   Option("_index" -> JsString(indexName)),
                   Option("_type" -> JsString(typeName)),
+                  message.version.map { version =>
+                    "_version" -> JsNumber(version)
+                  },
                   message.id.map { id =>
                     "_id" -> JsString(id)
                   }

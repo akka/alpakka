@@ -9,7 +9,7 @@ import akka.stream.alpakka.elasticsearch._
 import akka.stream.javadsl.Source
 import org.elasticsearch.client.RestClient
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ArrayNode
+import com.fasterxml.jackson.databind.node.{ArrayNode, NumericNode}
 
 import scala.collection.JavaConverters._
 
@@ -100,7 +100,12 @@ object ElasticsearchSource {
           element =>
             val id = element.get("_id").asText()
             val source = element.get("_source")
-            OutgoingMessage[T](id, mapper.treeToValue(source, clazz))
+            val version:Option[Long] = element.get("_version") match {
+              case n:NumericNode => Some(n.asLong())
+              case _ => None
+            }
+
+            OutgoingMessage[T](id, mapper.treeToValue(source, clazz), version)
         }
         ScrollResponse(None, Some(ScrollResult(scrollId, messages)))
       }

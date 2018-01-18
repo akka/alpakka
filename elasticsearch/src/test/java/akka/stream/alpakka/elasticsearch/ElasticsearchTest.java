@@ -162,7 +162,7 @@ public class ElasticsearchTest {
       "sink1",
       "book",
       "{\"match_all\": {}}",
-      new ElasticsearchSourceSettings(5),
+      new ElasticsearchSourceSettings().withBufferSize(5),
       client)
     .map(m -> (String) m.source().get("title"))
     .runWith(Sink.seq(), materializer);
@@ -362,6 +362,58 @@ public class ElasticsearchTest {
             messagesFromKafka.stream().map(m -> m.book.title).sorted().collect(Collectors.toList()),
             result2.stream().sorted().collect(Collectors.toList())
     );
+
+  }
+
+  @Test
+  public void testUsingVersions() throws Exception {
+    // Since the scala-test does a lot more logic testing,
+    // all we need to test here is that we can receive and send version
+
+    String indexName = "test_using_versions";
+
+    // Insert document
+    Book book = new Book("b");
+    Source.single(IncomingMessage.create("1", book, 5))
+            .via(ElasticsearchFlow.create(
+                    indexName,
+                    "book",
+                    new ElasticsearchSinkSettings().withBufferSize(5).withMaxRetry(0),
+                    client,
+                    new ObjectMapper()))
+            .runWith(Sink.seq(), materializer).toCompletableFuture().get();
+
+    flush(indexName);
+
+    // Search document and assert it having version 1
+    ElasticsearchSource.<Book>typed(
+            indexName,
+            "book",
+            "{\"match_all\": {}}",
+            new ElasticsearchSourceSettings().withIncludeDocumentVersion(true),
+            client,
+            Book.class)
+            .map(o -> {
+              assertEquals(5L, o.version().get());
+              return o;
+            })
+            .runWith(Sink.ignore(), materializer)
+            .toCompletableFuture().get();
+
+    flush(indexName);
+
+    // Try to update document with wrong version to assert that we can send it
+    long oldVersion = 1;
+    boolean success = Source.single(IncomingMessage.create("1", book, oldVersion))
+            .via(ElasticsearchFlow.create(
+                    indexName,
+                    "book",
+                    new ElasticsearchSinkSettings().withBufferSize(5).withMaxRetry(0),
+                    client,
+                    new ObjectMapper()))
+            .runWith(Sink.seq(), materializer).toCompletableFuture().get().get(0).get(0).success();
+
+    assertEquals(false, success);
 
   }
 
