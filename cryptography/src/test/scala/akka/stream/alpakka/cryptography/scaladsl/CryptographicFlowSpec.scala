@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.cryptography.scaladsl
@@ -54,9 +54,7 @@ class CryptographicFlowSpec extends WordSpec with Matchers with ScalaFutures wit
             .runWith(Sink.fold(ByteString.empty)(_ concat _))
 
           whenReady(res) { s =>
-            println(s.utf8String == toEncrypt.mkString(""))
             s.utf8String shouldBe toEncrypt.mkString("")
-
 
           }
         }
@@ -71,8 +69,6 @@ class CryptographicFlowSpec extends WordSpec with Matchers with ScalaFutures wit
       keyGenerator.generateKey()
     })
   }
-
-
 
   val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
   keyPairGenerator.initialize(1024)

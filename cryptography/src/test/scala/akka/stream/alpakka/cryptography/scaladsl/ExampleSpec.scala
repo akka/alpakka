@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.cryptography.scaladsl
 
 import java.security.KeyPairGenerator
@@ -36,11 +40,13 @@ class ExampleSpec extends WordSpec with Matchers with ScalaFutures {
       val sourceOfEncryptedData: Source[ByteString, NotUsed] = sourceOfUnencryptedData
         .via(symmetricEncryption(randomKey))
 
-      val sourceOfDecryptedData: Source[ByteString, NotUsed] = sourceOfEncryptedData.via(symmetricDecryption(randomKey))
+      val sourceOfDecryptedData: Source[ByteString, NotUsed] =
+        sourceOfEncryptedData.via(symmetricDecryption(randomKey))
 
-      val resultOfDecryption: Future[ByteString] = sourceOfDecryptedData.runWith(Sink.fold(ByteString.empty)(_ concat _))
+      val resultOfDecryption: Future[ByteString] =
+        sourceOfDecryptedData.runWith(Sink.fold(ByteString.empty)(_ concat _))
 
-      whenReady(resultOfDecryption){r =>
+      whenReady(resultOfDecryption) { r =>
         r.utf8String shouldBe toEncrypt.mkString("")
       }
       //#scala-symmetric
@@ -63,11 +69,13 @@ class ExampleSpec extends WordSpec with Matchers with ScalaFutures {
       val sourceOfEncryptedData: Source[ByteString, NotUsed] = sourceOfUnencryptedData
         .via(asymmetricEncryption(generatedKeyPair.getPublic))
 
-      val sourceOfDecryptedData: Source[ByteString, NotUsed] = sourceOfEncryptedData.via(asymmetricDecryption(generatedKeyPair.getPrivate))
+      val sourceOfDecryptedData: Source[ByteString, NotUsed] =
+        sourceOfEncryptedData.via(asymmetricDecryption(generatedKeyPair.getPrivate))
 
-      val resultOfDecryption: Future[ByteString] = sourceOfDecryptedData.runWith(Sink.fold(ByteString.empty)(_ concat _))
+      val resultOfDecryption: Future[ByteString] =
+        sourceOfDecryptedData.runWith(Sink.fold(ByteString.empty)(_ concat _))
 
-      whenReady(resultOfDecryption){r =>
+      whenReady(resultOfDecryption) { r =>
         r.utf8String shouldBe toEncrypt.mkString("")
       }
       //#scala-asymmetric
