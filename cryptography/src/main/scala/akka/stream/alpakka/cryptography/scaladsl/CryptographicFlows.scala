@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.cryptography.impl
+package akka.stream.alpakka.cryptography.scaladsl
 
 import java.security.{PrivateKey, PublicKey}
 import javax.crypto.{Cipher, SecretKey}
