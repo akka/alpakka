@@ -29,7 +29,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
       def getRegion = s3Region
     }
 
-    new S3Settings(bufferType, proxy, awsCredentials, regionProvider, pathStyleAccess, None)
+    new S3Settings(bufferType, proxy, awsCredentials, regionProvider, pathStyleAccess)
   }
 
   val location = S3Location("bucket", "image-1024@2x")

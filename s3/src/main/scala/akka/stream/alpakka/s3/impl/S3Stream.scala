@@ -4,9 +4,7 @@
 
 package akka.stream.alpakka.s3.impl
 
-import java.security.{PrivateKey, PublicKey}
 import java.time.LocalDate
-import javax.crypto.Cipher
 
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
@@ -21,7 +19,7 @@ import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.auth.{CredentialScope, Signer, SigningKey}
 import akka.stream.alpakka.s3.scaladsl.{ListBucketResultContents, ObjectMetadata}
-import akka.stream.alpakka.s3._
+import akka.stream.alpakka.s3.{DiskBufferType, MemoryBufferType, S3Exception, S3Settings}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
 
@@ -316,47 +314,6 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
       case (Failure(e), (upload, index)) => FailedUploadPart(upload, index, e)
     }
-  }
-
-  private[s3] def encryptionFlow: Flow[ByteString, ByteString, NotUsed] =
-    Flow[ByteString].map { bytes =>
-      settings.encryptionMaterials match {
-        case Some(symmetricKey: SymmetricKey) => symmetricEncryption(symmetricKey)(bytes)
-        case Some(KeyPair(publicKey, _)) => asymmetricEncryption(publicKey)(bytes)
-        case None => bytes
-      }
-    }
-
-  private[s3] def symmetricEncryption(symmetricKey: SymmetricKey)(in: ByteString): ByteString = {
-    val cipher = Cipher.getInstance(symmetricKey.secretKey.getAlgorithm)
-    cipher.init(Cipher.ENCRYPT_MODE, symmetricKey.secretKey)
-    val encrypted = cipher.doFinal(in.toArray)
-
-    ByteString(encrypted)
-  }
-
-  private[s3] def symmetricDecryption(symmetricKey: SymmetricKey)(toDecode: ByteString): ByteString = {
-    val cipher = Cipher.getInstance(symmetricKey.secretKey.getAlgorithm)
-    cipher.init(Cipher.DECRYPT_MODE, symmetricKey.secretKey)
-    val decrypted = cipher.doFinal(toDecode.toArray)
-
-    ByteString(decrypted)
-  }
-
-  private[s3] def asymmetricEncryption(publicKey: PublicKey)(in: ByteString): ByteString = {
-    val cipher = Cipher.getInstance(publicKey.getAlgorithm)
-    cipher.init(Cipher.PUBLIC_KEY, publicKey)
-    val encrypted = cipher.doFinal(in.toArray)
-
-    ByteString(encrypted)
-  }
-
-  private[s3] def asymmetricDecryption(privateKey: PrivateKey)(toDecode: ByteString): ByteString = {
-    val cipher = Cipher.getInstance(privateKey.getAlgorithm)
-    cipher.init(Cipher.DECRYPT_MODE, privateKey)
-    val decrypted = cipher.doFinal(toDecode.toArray)
-
-    ByteString(decrypted)
   }
 
   private def completionSink(s3Location: S3Location): Sink[UploadPartResponse, Future[CompleteMultipartUploadResult]] = {

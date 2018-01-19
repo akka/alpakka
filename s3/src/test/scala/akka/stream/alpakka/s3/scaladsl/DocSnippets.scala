@@ -32,7 +32,7 @@ object DoucmentationSnippets {
     val proxy = Some(Proxy(host, port, "https"))
 
     // Set pathStyleAccess to true and specify proxy, leave region blank
-    val settings = new S3Settings(MemoryBufferType, proxy, credentialsProvider, regionProvider, true, None)
+    val settings = new S3Settings(MemoryBufferType, proxy, credentialsProvider, regionProvider, true)
     val s3Client = new S3Client(settings)(system, materializer)
     // #scala-bluemix-example
   }
