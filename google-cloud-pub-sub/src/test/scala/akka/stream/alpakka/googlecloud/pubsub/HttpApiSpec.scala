@@ -72,8 +72,9 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
   it should "publish" in {
 
     val publishMessage =
-      PubSubMessage(messageId = "1", data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)),
-        attributes = Map("timestamp" -> "7"))
+      PubSubMessage(messageId = "1",
+                    data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)),
+                    attributes = Map("timestamp" -> "7"))
     val publishRequest = PublishRequest(Seq(publishMessage))
 
     val expectedPublishRequest =
