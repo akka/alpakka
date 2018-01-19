@@ -14,16 +14,13 @@ import akka.util.ByteString;
 import akka.util.ByteString$;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collector;
+import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
+import static org.junit.Assert.*;
 
 public class ExampleTest {
 
@@ -31,15 +28,13 @@ public class ExampleTest {
     static ActorMaterializer materializer;
 
     @BeforeClass
-    public static Pair<ActorSystem, ActorMaterializer> setupMaterializer() {
+    public static void setupMaterializer() {
         //#init-client
         final ActorSystem system = ActorSystem.create();
         final ActorMaterializer materializer = ActorMaterializer.create(system);
         //#init-client
         ExampleTest.system = system;
         ExampleTest.materializer = materializer;
-
-        return Pair.create(system, materializer);
     }
 
     @Test
@@ -48,36 +43,17 @@ public class ExampleTest {
         SecretKey randomKey = keyGenerator.generateKey();
 
         List<String> toEncrypt = Arrays.asList("Some", "string", "for", "you");
-        List<ByteString> byteStringsToEncrypt = toEncrypt.stream().map(s -> new ByteString(s)).collect(Collector.of<List>);
+        List<ByteString> byteStringsToEncrypt = toEncrypt.stream().map(s -> ByteString$.MODULE$.apply(s)).collect(Collectors.toList());
+
 
         Source<ByteString, NotUsed> sourceOfUnencryptedData = Source.from(byteStringsToEncrypt);
         Source<ByteString, NotUsed> sourceOfEncryptedData = sourceOfUnencryptedData.via(CryptographicFlows.symmetricEncryption(randomKey));
         Source<ByteString, NotUsed> sourceOfDecryptedData = sourceOfEncryptedData.via(CryptographicFlows.symmetricDecryption(randomKey));
+        Sink<ByteString, CompletionStage<ByteString>> concatSink = Sink.<ByteString, ByteString>fold(ByteString.empty(), (acc, nxt) -> acc);
 
 
-        val resultOfDecryption: Future[ByteString] = sourceOfDecryptedData.runWith(Sink.fold(ByteString.empty)(_ concat _))
+        CompletionStage<ByteString> resultOfDecryption = sourceOfDecryptedData
+                 .runWith(concatSink, materializer).whenComplete((r, error) -> assertEquals(r.utf8String(), "Somestringforyou") );
 
-        whenReady(resultOfDecryption){r =>
-            r.utf8String shouldBe toEncrypt.mkString("")
-        }
-
-        //#simple-request
-        final Future<ListTablesResult> listTablesResultFuture = client.listTables(new ListTablesRequest());
-        //#simple-request
-        final Duration duration = Duration.create(5, "seconds");
-        ListTablesResult result = Await.result(listTablesResultFuture, duration);
-    }
-
-    @Test
-    public void flow() throws Exception {
-        //#flow
-        Source<String, NotUsed> tableArnSource = Source
-                .single(new CreateTable(new CreateTableRequest().withTableName("testTable")))
-                .via(client.flow())
-                .map(result -> (CreateTableResult) result)
-                .map(result -> result.getTableDescription().getTableArn());
-        //#flow
-        final Duration duration = Duration.create(5, "seconds");
-        tableArnSource.runForeach(System.out::println,materializer);
     }
 }
