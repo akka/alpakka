@@ -139,6 +139,18 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     result.futureValue.key shouldBe listKey
   }
 
+  it should "list keys for a given bucket with a prefix using the version 1 api" in {
+    mockListBucket()
+
+    //#list-bucket-v1
+    val keySource: Source[ListBucketResultContents, NotUsed] = s3Client.listBucket(bucket, Some(listPrefix), useApiVersion2 = false)
+    //#list-bucket-v1
+
+    val result = keySource.runWith(Sink.head)
+
+    result.futureValue.key shouldBe listKey
+  }
+
   override protected def afterAll(): Unit = {
     super.afterAll()
     stopWireMockServer()

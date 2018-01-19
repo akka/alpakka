@@ -218,4 +218,21 @@ public class S3ClientTest extends S3WireMockBase {
         assertEquals(result.key(), listKey());
 
     }
+
+    @Test
+    public void listBucketV1() throws Exception {
+
+        mockListBucket();
+
+        //#list-bucket-v1
+        final Source<ListBucketResultContents, NotUsed> keySource = client.listBucketV1(bucket(), Option.apply(listPrefix()));
+        //#list-bucket-v1
+
+        final CompletionStage<ListBucketResultContents> resultCompletionStage = keySource.runWith(Sink.head(), materializer);
+
+        ListBucketResultContents result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertEquals(result.key(), listKey());
+
+    }
 }
