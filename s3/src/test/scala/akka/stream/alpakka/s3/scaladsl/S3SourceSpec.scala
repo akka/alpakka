@@ -143,7 +143,8 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockListBucket()
 
     //#list-bucket-v1
-    val keySource: Source[ListBucketResultContents, NotUsed] = s3Client.listBucket(bucket, Some(listPrefix), useApiVersion2 = false)
+    val keySource: Source[ListBucketResultContents, NotUsed] =
+      s3Client.listBucket(bucket, Some(listPrefix), useApiVersion2 = false)
     //#list-bucket-v1
 
     val result = keySource.runWith(Sink.head)
