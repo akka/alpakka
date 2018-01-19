@@ -21,14 +21,16 @@ private[alpakka] object HttpRequests {
   def listBucket(
       bucket: String,
       prefix: Option[String] = None,
-      continuationToken: Option[String] = None
+      continuationToken: Option[String] = None,
+      useApiVersion2: Boolean = true
   )(implicit conf: S3Settings): HttpRequest = {
 
+    val (listType, continuationTokenName) = if (useApiVersion2) (Some("2"), "continuation-token") else (None, "marker")
     val query = Query(
       Seq(
-        "list-type" -> Some("2"),
+        "list-type" -> listType,
         "prefix" -> prefix,
-        "continuation-token" -> continuationToken
+        continuationTokenName -> continuationToken
       ).collect { case (k, Some(v)) => k -> v }.toMap
     )
 

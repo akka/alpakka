@@ -274,6 +274,24 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
                                       "continuation-token" -> "randomToken")
   }
 
+  it should "properly construct the list bucket request when using api version 1" in {
+    implicit val settings = getSettings(s3Region = "region", pathStyleAccess = true)
+
+    val req =
+      HttpRequests.listBucket(location.bucket, useApiVersion2 = false)
+
+    req.uri.query() shouldEqual Query()
+  }
+
+  it should "properly construct the list bucket request when using api version set to 1 and a continuation token" in {
+    implicit val settings = getSettings(s3Region = "region", pathStyleAccess = true)
+
+    val req =
+      HttpRequests.listBucket(location.bucket, continuationToken = Some("randomToken"), useApiVersion2 = false)
+
+    req.uri.query() shouldEqual Query("marker" -> "randomToken")
+  }
+
   it should "support custom endpoint configured by `endpointUrl`" in {
     implicit val system: ActorSystem = ActorSystem("HttpRequestsSpec")
     import system.dispatcher
