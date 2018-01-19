@@ -27,7 +27,6 @@ class ExampleSpec extends WordSpec with Matchers with ScalaFutures {
 
       //#scala-symmetric
       val keyGenerator = KeyGenerator.getInstance("AES")
-
       val randomKey = keyGenerator.generateKey()
 
       val toEncrypt = List("Some", "string", "for ", "you")
@@ -38,7 +37,6 @@ class ExampleSpec extends WordSpec with Matchers with ScalaFutures {
         .via(symmetricEncryption(randomKey))
 
       val sourceOfDecryptedData: Source[ByteString, NotUsed] = sourceOfEncryptedData.via(symmetricDecryption(randomKey))
-
 
       val resultOfDecryption: Future[ByteString] = sourceOfDecryptedData.runWith(Sink.fold(ByteString.empty)(_ concat _))
 
