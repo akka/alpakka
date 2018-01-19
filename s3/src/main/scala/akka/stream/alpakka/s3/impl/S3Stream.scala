@@ -80,7 +80,9 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     (source, meta)
   }
 
-  def listBucket(bucket: String, prefix: Option[String] = None): Source[ListBucketResultContents, NotUsed] = {
+  def listBucket(bucket: String,
+                 prefix: Option[String] = None,
+                 useApiVersion2: Boolean): Source[ListBucketResultContents, NotUsed] = {
     sealed trait ListBucketState
     case object Starting extends ListBucketState
     case class Running(continuationToken: String) extends ListBucketState
@@ -89,7 +91,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     import system.dispatcher
 
     def listBucketCall(token: Option[String]): Future[Option[(ListBucketState, Seq[ListBucketResultContents])]] =
-      signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, prefix, token))
+      signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, prefix, token, useApiVersion2))
         .map { (res: ListBucketResult) =>
           Some(
             res.continuationToken
