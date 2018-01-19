@@ -11,14 +11,24 @@ Provide are four different flows to encrypt and decrypt @scaladoc[ByteString](ak
 }
 
 ## Usage
-
+The examples need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
 Scala
 : @@snip ($alpakka$/cryptography/src/test/scala/akka/stream/alpakka/cryptography/scaladsl/ExampleSpec.scala) { #init-client }
+
 Java
 : @@snip ($alpakka$/cryptography/src/test/java/akka/stream/alpakka/cryptography/javadsl/ExampleTest.java) { #init-client }
 
-
-
+An example of symmetric encryption and decryption using an AES key.
+Scala
 : @@snip ($alpakka$/cryptography/src/test/scala/akka/stream/alpakka/cryptography/scaladsl/ExampleSpec.scala) { #scala-symmetric }
 
+Java
+: @@snip ($alpakka$/cryptography/src/test/java/akka/stream/alpakka/cryptography/javadsl/ExampleTest.java) { #java-symmetric }
+
+An example of asymmetric encryption and decryption using an RSA key pair.
+Scala
 : @@snip ($alpakka$/cryptography/src/test/scala/akka/stream/alpakka/cryptography/scaladsl/ExampleSpec.scala) { #scala-asymmetric }
+
+Java
+: @@snip ($alpakka$/cryptography/src/test/java/akka/stream/alpakka/cryptography/javadsl/ExampleTest.java) { #java-asymmetric }
+
