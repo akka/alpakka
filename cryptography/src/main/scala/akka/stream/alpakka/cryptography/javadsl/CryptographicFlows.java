@@ -14,7 +14,7 @@ public class CryptographicFlows {
         return CryptographicFlows$.MODULE$.symmetricEncryption(secretKey).asJava();
     }
 
-    public static Flow<ByteString, ByteString, NotUsed> symmetricDencryption(SecretKey secretKey) {
+    public static Flow<ByteString, ByteString, NotUsed> symmetricDecryption(SecretKey secretKey) {
         return CryptographicFlows$.MODULE$.symmetricDecryption(secretKey).asJava();
     }
 

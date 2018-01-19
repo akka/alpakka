@@ -1,16 +1,16 @@
-package akka.stream.alpakka.cryptography.Example
+package akka.stream.alpakka.cryptography.scaladsl
 
 import java.security.KeyPairGenerator
-import javax.crypto.{KeyGenerator}
+import javax.crypto.KeyGenerator
 
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.cryptography.impl.CryptographicFlows._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
-import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{Matchers, WordSpec}
+import CryptographicFlows._
 
 import scala.concurrent.Future
 

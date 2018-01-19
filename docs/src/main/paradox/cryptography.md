@@ -13,8 +13,12 @@ Provide are four different flows to encrypt and decrypt @scaladoc[ByteString](ak
 ## Usage
 
 Scala
-: @@snip ($alpakka$/cryptography/src/test/scala/akka/stream/alpakka/cryptography/ExampleSpec.scala) { #init-client }
+: @@snip ($alpakka$/cryptography/src/test/scala/akka/stream/alpakka/cryptography/scaladsl/ExampleSpec.scala) { #init-client }
+Java
+: @@snip ($alpakka$/cryptography/src/test/java/akka/stream/alpakka/cryptography/javadsl/ExampleTest.java) { #init-client }
 
-: @@snip ($alpakka$/cryptography/src/test/scala/akka/stream/alpakka/cryptography/ExampleSpec.scala) { #scala-symmetric }
 
-: @@snip ($alpakka$/cryptography/src/test/scala/akka/stream/alpakka/cryptography/ExampleSpec.scala) { #scala-asymmetric }
+
+: @@snip ($alpakka$/cryptography/src/test/scala/akka/stream/alpakka/cryptography/scaladsl/ExampleSpec.scala) { #scala-symmetric }
+
+: @@snip ($alpakka$/cryptography/src/test/scala/akka/stream/alpakka/cryptography/scaladsl/ExampleSpec.scala) { #scala-asymmetric }
