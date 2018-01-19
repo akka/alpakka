@@ -63,6 +63,8 @@ lazy val cassandra = alpakkaProject("cassandra", Dependencies.Cassandra)
 
 lazy val csv = alpakkaProject("csv", Dependencies.Csv)
 
+lazy val cryptography = alpakkaProject("cryptography")
+
 lazy val dynamodb = alpakkaProject("dynamodb", Dependencies.DynamoDB)
 
 lazy val elasticsearch = alpakkaProject(
