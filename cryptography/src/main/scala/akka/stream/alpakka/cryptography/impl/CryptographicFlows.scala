@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.cryptography.impl
 
 import java.security.{PrivateKey, PublicKey}
@@ -7,7 +11,7 @@ import akka.util.ByteString
 
 object CryptographicFlows {
 
-  private def symmetricEncryption(secretKey: SecretKey)(in: ByteString): ByteString = {
+  def symmetricEncryption(secretKey: SecretKey)(in: ByteString): ByteString = {
     val cipher = Cipher.getInstance(secretKey.getAlgorithm)
     cipher.init(Cipher.ENCRYPT_MODE, secretKey)
     val encrypted = cipher.doFinal(in.toArray)
@@ -15,7 +19,7 @@ object CryptographicFlows {
     ByteString(encrypted)
   }
 
-  private def symmetricDecryption(secretKey: SecretKey)(toDecode: ByteString): ByteString = {
+  def symmetricDecryption(secretKey: SecretKey)(toDecode: ByteString): ByteString = {
     val cipher = Cipher.getInstance(secretKey.getAlgorithm)
     cipher.init(Cipher.DECRYPT_MODE, secretKey)
     val decrypted = cipher.doFinal(toDecode.toArray)
@@ -23,7 +27,7 @@ object CryptographicFlows {
     ByteString(decrypted)
   }
 
-  private def asymmetricEncryption(publicKey: PublicKey)(in: ByteString): ByteString = {
+  def asymmetricEncryption(publicKey: PublicKey)(in: ByteString): ByteString = {
     val cipher = Cipher.getInstance(publicKey.getAlgorithm)
     cipher.init(Cipher.PUBLIC_KEY, publicKey)
     val encrypted = cipher.doFinal(in.toArray)
@@ -31,7 +35,7 @@ object CryptographicFlows {
     ByteString(encrypted)
   }
 
-  private def asymmetricDecryption(privateKey: PrivateKey)(toDecode: ByteString): ByteString = {
+  def asymmetricDecryption(privateKey: PrivateKey)(toDecode: ByteString): ByteString = {
     val cipher = Cipher.getInstance(privateKey.getAlgorithm)
     cipher.init(Cipher.DECRYPT_MODE, privateKey)
     val decrypted = cipher.doFinal(toDecode.toArray)

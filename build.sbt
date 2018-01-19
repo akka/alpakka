@@ -3,6 +3,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   awslambda,
   azureStorageQueue,
   cassandra,
+  cryptography,
   csv,
   dynamodb,
   elasticsearch,
