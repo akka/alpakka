@@ -2,21 +2,22 @@
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.cryptography.impl.cry
+package akka.stream.alpakka.cryptography.impl
 
-import javax.crypto.{KeyGenerator, SecretKey}
+import javax.crypto.KeyGenerator
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
-import akka.stream.alpakka.cryptography.impl.CryptographicFlows
 import akka.stream.alpakka.cryptography.impl.CryptographicFlows._
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import akka.util.ByteString
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
-class CryptographicFlowSpecs extends WordSpec with Matchers with ScalaFutures {
+import scala.concurrent.Future
+
+class CryptographicFlowSpec extends WordSpec with Matchers with ScalaFutures {
   "Symmetric Encryption flows" should {
     "Be able to encrypt and decrypt bytestrings" in {
 
@@ -33,14 +34,18 @@ class CryptographicFlowSpecs extends WordSpec with Matchers with ScalaFutures {
 
       val key = keyGenerator.generateKey()
 
-      val toEncrypt = "some"
+      val toEncrypt = List("some", "strings", "to", "encrypt")
 
-      val src: Source[ByteString, NotUsed] = Source(List(ByteString(toEncrypt)))
+      val src: Source[ByteString, NotUsed] = Source(toEncrypt.map(ByteString.apply))
 
-      val res = src.map(symmetricEncryption(key)).map(symmetricDecryption(key)).runWith(Sink.head)
+      val res: Future[ByteString] = src
+        .via(symmetricEncryptionFlow(key))
+        .map(symmetricDecryption(key)).runWith(Sink.fold(ByteString.empty)(_ concat _))
 
 
-      whenReady(res){s => s.utf8String shouldBe toEncrypt
+      whenReady(res){s =>
+        s.utf8String shouldBe toEncrypt.mkString("")
+        println(s.utf8String)
 
       }
     }

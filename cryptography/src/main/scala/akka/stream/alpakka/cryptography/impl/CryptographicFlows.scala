@@ -7,17 +7,25 @@ package akka.stream.alpakka.cryptography.impl
 import java.security.{PrivateKey, PublicKey}
 import javax.crypto.{Cipher, SecretKey}
 
+import akka.NotUsed
+import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 
 object CryptographicFlows {
 
-  def symmetricEncryption(secretKey: SecretKey)(in: ByteString): ByteString = {
-    val cipher = Cipher.getInstance(secretKey.getAlgorithm)
-    cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-    val encrypted = cipher.doFinal(in.toArray)
+  def symmetricEncryptionFlow(secretKey: SecretKey): Flow[ByteString, ByteString, NotUsed] =
+    Flow[ByteString].statefulMapConcat { () =>
+      val cipher = Cipher.getInstance(secretKey.getAlgorithm)
+      cipher.init(Cipher.ENCRYPT_MODE, secretKey)
 
-    ByteString(encrypted)
-  }
+      in => {
+        val encrypted = cipher.doFinal(in.toArray)
+
+        List(ByteString(encrypted))
+      }
+    }
+
+
 
   def symmetricDecryption(secretKey: SecretKey)(toDecode: ByteString): ByteString = {
     val cipher = Cipher.getInstance(secretKey.getAlgorithm)
