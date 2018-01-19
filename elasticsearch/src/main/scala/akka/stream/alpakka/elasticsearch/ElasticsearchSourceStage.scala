@@ -17,7 +17,7 @@ import org.apache.http.message.BasicHeader
 
 import scala.collection.JavaConverters._
 
-final case class OutgoingMessage[T](id: String, source: T, version:Option[Long])
+final case class OutgoingMessage[T](id: String, source: T, version: Option[Long])
 
 case class ScrollResponse[T](error: Option[String], result: Option[ScrollResult[T]])
 case class ScrollResult[T](scrollId: String, messages: Seq[OutgoingMessage[T]])
@@ -62,7 +62,7 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
     try {
       if (scrollId == null) {
 
-        val includeDocumentVersionJson:String = if (settings.includeDocumentVersion) {
+        val includeDocumentVersionJson: String = if (settings.includeDocumentVersion) {
           // Tell elastic to return the documents '_version'-property with the search-results
           // http://nocf-www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
           // https://www.elastic.co/guide/en/elasticsearch/guide/current/optimistic-concurrency-control.html

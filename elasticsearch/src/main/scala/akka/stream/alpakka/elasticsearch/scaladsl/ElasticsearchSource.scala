@@ -79,7 +79,7 @@ object ElasticsearchSource {
             val id = doc.fields("_id").asInstanceOf[JsString].value
             val source = doc.fields("_source").asJsObject
             // Maybe we got the _version-property
-            val version:Option[Long] = doc.fields.get("_version").map(_.asInstanceOf[JsNumber].value.toLong)
+            val version: Option[Long] = doc.fields.get("_version").map(_.asInstanceOf[JsNumber].value.toLong)
             OutgoingMessage(id, source.convertTo[T], version)
           }
           ScrollResponse(None, Some(ScrollResult(scrollId, messages)))

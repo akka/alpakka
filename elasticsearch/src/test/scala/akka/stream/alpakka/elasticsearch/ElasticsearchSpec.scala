@@ -347,8 +347,13 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       // Assert retired documents
       assert(
         result1.flatten.filter(!_.success).toList == Seq(
-          IncomingMessageResult[JsValue](Map("subject" -> "Akka Concurrency").toJson, false,
-            Some("""{"type":"strict_dynamic_mapping_exception","reason":"mapping set to strict, dynamic introduction of [subject] within [book] is not allowed"}"""))
+          IncomingMessageResult[JsValue](
+            Map("subject" -> "Akka Concurrency").toJson,
+            false,
+            Some(
+              """{"type":"strict_dynamic_mapping_exception","reason":"mapping set to strict, dynamic introduction of [subject] within [book] is not allowed"}"""
+            )
+          )
         )
       )
 
@@ -550,7 +555,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   "ElasticsearchSource" should {
     "read and write document-version if configured to do so" in {
 
-      case class VersionTestDoc(id: String, name: String, value:Int)
+      case class VersionTestDoc(id: String, name: String, value: Int)
       implicit val formatVersionTestDoc: JsonFormat[VersionTestDoc] = jsonFormat3(VersionTestDoc)
 
       val indexName = "version-test-scala"
@@ -585,22 +590,25 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       // search for the documents and assert them being at version 1,
       // then update while specifying that for which version
 
-      val f3 = ElasticsearchSource.typed[VersionTestDoc](
-        indexName,
-        typeName,
-        """{"match_all": {}}""",
-        ElasticsearchSourceSettings(includeDocumentVersion = true)
-      ).map { message =>
-        val doc = message.source
-        val version = message.version.get
-        assert ( 1 == version) // Assert document got version = 1
+      val f3 = ElasticsearchSource
+        .typed[VersionTestDoc](
+          indexName,
+          typeName,
+          """{"match_all": {}}""",
+          ElasticsearchSourceSettings(includeDocumentVersion = true)
+        )
+        .map { message =>
+          val doc = message.source
+          val version = message.version.get
+          assert(1 == version) // Assert document got version = 1
 
-        // Update it
+          // Update it
 
-        val newDoc = doc.copy(value = doc.value + 1)
+          val newDoc = doc.copy(value = doc.value + 1)
 
-        IncomingMessage(Some(newDoc.id), newDoc, version)
-      }.via(
+          IncomingMessage(Some(newDoc.id), newDoc, version)
+        }
+        .via(
           ElasticsearchFlow.create[VersionTestDoc](
             indexName,
             typeName,
@@ -614,29 +622,33 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       flush(indexName)
       // Search again to assert that all documents are now on version 2
-      val f4 = ElasticsearchSource.typed[VersionTestDoc](
-        indexName,
-        typeName,
-        """{"match_all": {}}""",
-        ElasticsearchSourceSettings(includeDocumentVersion = true)
-      ).map { message =>
-        val doc = message.source
-        val version = message.version.get
-        assert( doc.value == 1)
-        assert ( 2 == version) // Assert document got version = 2
-        doc
-      }.runWith(Sink.ignore)
+      val f4 = ElasticsearchSource
+        .typed[VersionTestDoc](
+          indexName,
+          typeName,
+          """{"match_all": {}}""",
+          ElasticsearchSourceSettings(includeDocumentVersion = true)
+        )
+        .map { message =>
+          val doc = message.source
+          val version = message.version.get
+          assert(doc.value == 1)
+          assert(2 == version) // Assert document got version = 2
+          doc
+        }
+        .runWith(Sink.ignore)
 
       val result4 = Await.result(f4, Duration.Inf)
 
       // Try to write document with old version - it should fail
 
-      val f5 = Source.single(VersionTestDoc("1", "a", 2))
-        .map {
-          doc =>
-            val oldVersion = 1
-            IncomingMessage(Some(doc.id), doc, oldVersion)
-        }.via(
+      val f5 = Source
+        .single(VersionTestDoc("1", "a", 2))
+        .map { doc =>
+          val oldVersion = 1
+          IncomingMessage(Some(doc.id), doc, oldVersion)
+        }
+        .via(
           ElasticsearchFlow.create[VersionTestDoc](
             indexName,
             typeName,
@@ -646,10 +658,9 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         .runWith(Sink.seq)
 
       val result5 = Await.result(f5, Duration.Inf)
-      assert( result5(0)(0).success == false )
+      assert(result5(0)(0).success == false)
 
     }
   }
-
 
 }

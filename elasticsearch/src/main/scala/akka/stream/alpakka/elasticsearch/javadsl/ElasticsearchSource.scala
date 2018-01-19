@@ -96,16 +96,15 @@ object ElasticsearchSource {
       } else {
         val scrollId = jsonTree.get("_scroll_id").asText()
         val hits = jsonTree.get("hits").get("hits").asInstanceOf[ArrayNode]
-        val messages = hits.elements().asScala.toList.map {
-          element =>
-            val id = element.get("_id").asText()
-            val source = element.get("_source")
-            val version:Option[Long] = element.get("_version") match {
-              case n:NumericNode => Some(n.asLong())
-              case _ => None
-            }
+        val messages = hits.elements().asScala.toList.map { element =>
+          val id = element.get("_id").asText()
+          val source = element.get("_source")
+          val version: Option[Long] = element.get("_version") match {
+            case n: NumericNode => Some(n.asLong())
+            case _ => None
+          }
 
-            OutgoingMessage[T](id, mapper.treeToValue(source, clazz), version)
+          OutgoingMessage[T](id, mapper.treeToValue(source, clazz), version)
         }
         ScrollResponse(None, Some(ScrollResult(scrollId, messages)))
       }

@@ -14,10 +14,9 @@ import scaladsl.{ElasticsearchSourceSettings => ScalaElasticsearchSourceSettings
  * http://nocf-www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
  * https://www.elastic.co/guide/en/elasticsearch/guide/current/optimistic-concurrency-control.html
  */
-final class ElasticsearchSourceSettings
-(
-  val bufferSize: Int,
-  val includeDocumentVersion:Boolean
+final class ElasticsearchSourceSettings(
+    val bufferSize: Int,
+    val includeDocumentVersion: Boolean
 ) {
 
   def this() = this(10, false)

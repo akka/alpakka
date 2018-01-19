@@ -29,7 +29,7 @@ object IncomingMessage {
     IncomingMessage(id, source, NotUsed)
 
   // Apply method to use when not using passThrough
-  def apply[T](id: Option[String], source: T, version:Long): IncomingMessage[T, NotUsed] =
+  def apply[T](id: Option[String], source: T, version: Long): IncomingMessage[T, NotUsed] =
     IncomingMessage(id, source, NotUsed, Option(version))
 
   // Java-api - without passThrough
@@ -37,7 +37,7 @@ object IncomingMessage {
     IncomingMessage(Option(id), source)
 
   // Java-api - without passThrough
-  def create[T](id: String, source: T, version:Long): IncomingMessage[T, NotUsed] =
+  def create[T](id: String, source: T, version: Long): IncomingMessage[T, NotUsed] =
     IncomingMessage(Option(id), source, version)
 
   // Java-api - without passThrough
@@ -49,7 +49,7 @@ object IncomingMessage {
     IncomingMessage(Option(id), source, passThrough)
 
   // Java-api - with passThrough
-  def create[T, C](id: String, source: T, passThrough: C, version:Long): IncomingMessage[T, C] =
+  def create[T, C](id: String, source: T, passThrough: C, version: Long): IncomingMessage[T, C] =
     IncomingMessage(Option(id), source, passThrough, Option(version))
 
   // Java-api - with passThrough
@@ -57,15 +57,15 @@ object IncomingMessage {
     IncomingMessage(None, source, passThrough)
 }
 
-final case class IncomingMessage[T, C](id: Option[String], source: T, passThrough: C, version:Option[Long] = None)
+final case class IncomingMessage[T, C](id: Option[String], source: T, passThrough: C, version: Option[Long] = None)
 
 object IncomingMessageResult {
   // Apply method to use when not using passThrough
-  def apply[T](source: T, success: Boolean, errorMsg:Option[String]): IncomingMessageResult[T, NotUsed] =
+  def apply[T](source: T, success: Boolean, errorMsg: Option[String]): IncomingMessageResult[T, NotUsed] =
     IncomingMessageResult(source, NotUsed, success, errorMsg)
 }
 
-final case class IncomingMessageResult[T, C](source: T, passThrough: C, success: Boolean, errorMsg:Option[String])
+final case class IncomingMessageResult[T, C](source: T, passThrough: C, success: Boolean, errorMsg: Option[String])
 
 trait MessageWriter[T] {
   def convert(message: T): String
@@ -125,15 +125,15 @@ class ElasticsearchFlowStage[T, C](
         val (messages, response) = args
         val responseJson = EntityUtils.toString(response.getEntity).parseJson
 
-        case class MessageResultAndIncomingMessage[T2, C2](r:IncomingMessageResult[T2, C2], m:IncomingMessage[T2, C2])
+        case class MessageResultAndIncomingMessage[T2, C2](r: IncomingMessageResult[T2, C2],
+                                                           m: IncomingMessage[T2, C2])
 
         // If some commands in bulk request failed, pass failed messages to follows.
         val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
-        val messageResults:Seq[MessageResultAndIncomingMessage[T, C]] = items.elements.zip(messages).map {
+        val messageResults: Seq[MessageResultAndIncomingMessage[T, C]] = items.elements.zip(messages).map {
           case (item, message) =>
-
             val res = item.asJsObject.fields(insertKeyword).asJsObject
-            val error:Option[String] = res.fields.get("error").map(_.toString())
+            val error: Option[String] = res.fields.get("error").map(_.toString())
             MessageResultAndIncomingMessage(
               IncomingMessageResult(message.source, message.passThrough, error.isEmpty, error),
               message
@@ -147,7 +147,7 @@ class ElasticsearchFlowStage[T, C](
           // NOTE: When we partially return message like this, message will arrive out of order downstream
           // and it can break commit-logic when using Kafka
           retryCount = retryCount + 1
-          failedMessages = failedMsgs.map( _.m) // These are the messages we're going to retry
+          failedMessages = failedMsgs.map(_.m) // These are the messages we're going to retry
           scheduleOnce(NotUsed, settings.retryInterval.millis)
 
           val successMsgs = messageResults.filter(_.r.success)

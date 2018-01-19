@@ -9,11 +9,11 @@ import scaladsl.{ElasticsearchSinkSettings => ScalaElasticsearchSinkSettings}
 
 /**
  * Java API to configure Elasticsearch sinks.
-  *
-  * Note: If using retryPartialFailure == true, you will receive
-  * messages out of order downstream in cases where
-  * elastic returns error one some of the documents in a
-  * bulk request.
+ *
+ * Note: If using retryPartialFailure == true, you will receive
+ * messages out of order downstream in cases where
+ * elastic returns error one some of the documents in a
+ * bulk request.
  */
 final class ElasticsearchSinkSettings(val bufferSize: Int,
                                       val retryInterval: Int,
