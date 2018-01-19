@@ -39,11 +39,11 @@ class CryptographicFlowSpec extends WordSpec with Matchers with ScalaFutures {
       val src: Source[ByteString, NotUsed] = Source(toEncrypt.map(ByteString.apply))
 
       val res: Future[ByteString] = src
-        .via(symmetricEncryptionFlow(key))
-        .map(symmetricDecryption(key)).runWith(Sink.fold(ByteString.empty)(_ concat _))
+        .via(symmetricEncryption(key))
+        .via(symmetricDecryption(key))
+        .runWith(Sink.fold(ByteString.empty)(_ concat _))
 
-
-      whenReady(res){s =>
+      whenReady(res) { s =>
         s.utf8String shouldBe toEncrypt.mkString("")
         println(s.utf8String)
 

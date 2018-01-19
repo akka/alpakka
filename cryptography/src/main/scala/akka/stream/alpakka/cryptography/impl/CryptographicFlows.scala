@@ -13,41 +13,55 @@ import akka.util.ByteString
 
 object CryptographicFlows {
 
-  def symmetricEncryptionFlow(secretKey: SecretKey): Flow[ByteString, ByteString, NotUsed] =
+  def symmetricEncryption(secretKey: SecretKey): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].statefulMapConcat { () =>
       val cipher = Cipher.getInstance(secretKey.getAlgorithm)
       cipher.init(Cipher.ENCRYPT_MODE, secretKey)
 
-      in => {
-        val encrypted = cipher.doFinal(in.toArray)
+      in =>
+        {
+          val encrypted = cipher.doFinal(in.toArray)
 
-        List(ByteString(encrypted))
-      }
+          List(ByteString(encrypted))
+        }
     }
 
+  def symmetricDecryption(secretKey: SecretKey): Flow[ByteString, ByteString, NotUsed] =
+    Flow[ByteString].statefulMapConcat { () =>
+      val cipher = Cipher.getInstance(secretKey.getAlgorithm)
+      cipher.init(Cipher.DECRYPT_MODE, secretKey)
 
+      in =>
+        {
+          val decrypted = cipher.doFinal(in.toArray)
 
-  def symmetricDecryption(secretKey: SecretKey)(toDecode: ByteString): ByteString = {
-    val cipher = Cipher.getInstance(secretKey.getAlgorithm)
-    cipher.init(Cipher.DECRYPT_MODE, secretKey)
-    val decrypted = cipher.doFinal(toDecode.toArray)
+          List(ByteString(decrypted))
+        }
+    }
 
-    ByteString(decrypted)
-  }
+  def asymmetricEncryption(publicKey: PublicKey)(in: ByteString): Flow[ByteString, ByteString, NotUsed] =
+    Flow[ByteString].statefulMapConcat { () =>
+      val cipher = Cipher.getInstance(publicKey.getAlgorithm)
+      cipher.init(Cipher.PUBLIC_KEY, publicKey)
+      in =>
+        {
+          val encrypted = cipher.doFinal(in.toArray)
 
-  def asymmetricEncryption(publicKey: PublicKey)(in: ByteString): ByteString = {
-    val cipher = Cipher.getInstance(publicKey.getAlgorithm)
-    cipher.init(Cipher.PUBLIC_KEY, publicKey)
-    val encrypted = cipher.doFinal(in.toArray)
+          List(ByteString(encrypted))
+        }
 
-    ByteString(encrypted)
-  }
+    }
 
-  def asymmetricDecryption(privateKey: PrivateKey)(toDecode: ByteString): ByteString = {
-    val cipher = Cipher.getInstance(privateKey.getAlgorithm)
-    cipher.init(Cipher.DECRYPT_MODE, privateKey)
-    val decrypted = cipher.doFinal(toDecode.toArray)
+  def asymmetricDecryption(privateKey: PrivateKey)(toDecode: ByteString): Flow[ByteString, ByteString, NotUsed] =
+    Flow[ByteString].statefulMapConcat { () =>
+      val cipher = Cipher.getInstance(privateKey.getAlgorithm)
+      cipher.init(Cipher.DECRYPT_MODE, privateKey)
 
-    ByteString(decrypted)
-  }
+      in =>
+        {
+          val decrypted = cipher.doFinal(toDecode.toArray)
+
+          List(ByteString(decrypted))
+        }
+    }
 }
