@@ -222,7 +222,7 @@ public class S3ClientTest extends S3WireMockBase {
     @Test
     public void listBucketV1() throws Exception {
 
-        mockListBucket();
+        mockListBucketVersion1();
 
         //#list-bucket-v1
         final Source<ListBucketResultContents, NotUsed> keySource = client.listBucketV1(bucket(), Option.apply(listPrefix()));

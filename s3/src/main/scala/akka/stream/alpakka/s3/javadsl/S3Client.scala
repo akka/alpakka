@@ -497,7 +497,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    */
   def listBucket(bucket: String, prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
     impl
-      .listBucket(bucket, prefix, useApiVersion2 = false)
+      .listBucket(bucket, prefix, useApiVersion2 = true)
       .map { scalaContents =>
         listingToJava(scalaContents)
       }
@@ -515,7 +515,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    */
   def listBucketV1(bucket: String, prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
     impl
-      .listBucket(bucket, prefix, useApiVersion2 = true)
+      .listBucket(bucket, prefix, useApiVersion2 = false)
       .map { scalaContents =>
         listingToJava(scalaContents)
       }
