@@ -26,22 +26,22 @@ class CryptographicFlowSpec extends WordSpec with Matchers with ScalaFutures wit
   implicit val actorMaterializer: ActorMaterializer = ActorMaterializer()
 
   "CryptographicFlow" can {
-//    "Symmetric Encryption flows" should {
-//      "Be able to encrypt and decrypt bytestrings" in {
-//        forAll(minSuccessful(1000)) { (key: SecretKey, toEncrypt: List[String]) =>
-//          val src: Source[ByteString, NotUsed] = Source(toEncrypt.map(ByteString.apply))
-//
-//          val res: Future[ByteString] = src
-//            .via(symmetricEncryption(key))
-//            .via(symmetricDecryption(key))
-//            .runWith(Sink.fold(ByteString.empty)(_ concat _))
-//
-//          whenReady(res) { s =>
-//            s.utf8String shouldBe toEncrypt.mkString("")
-//          }
-//        }
-//      }
-//    }
+    "Symmetric Encryption flows" should {
+      "Be able to encrypt and decrypt bytestrings" in {
+        forAll(minSuccessful(1000)) { (key: SecretKey, toEncrypt: List[String]) =>
+          val src: Source[ByteString, NotUsed] = Source(toEncrypt.map(ByteString.apply))
+
+          val res: Future[ByteString] = src
+            .via(symmetricEncryption(key))
+            .via(symmetricDecryption(key))
+            .runWith(Sink.fold(ByteString.empty)(_ concat _))
+
+          whenReady(res) { s =>
+            s.utf8String shouldBe toEncrypt.mkString("")
+          }
+        }
+      }
+    }
 
     "Asymmetric Encryption flows" should {
       "Be able to encrypt and decrypt bytestrings" in {
