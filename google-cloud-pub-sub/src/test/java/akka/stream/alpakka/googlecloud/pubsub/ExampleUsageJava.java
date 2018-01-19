@@ -18,6 +18,7 @@ import java.security.PrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -56,7 +57,7 @@ public class ExampleUsageJava {
 
         //#publish-single
         PubSubMessage publishMessage =
-                new PubSubMessage("1", new String(Base64.getEncoder().encode("Hello Google!".getBytes())));
+                new PubSubMessage("1", new String(Base64.getEncoder().encode("Hello Google!".getBytes())), Collections.emptyMap());
         PublishRequest publishRequest = PublishRequest.of(Lists.newArrayList(publishMessage));
 
         Source<PublishRequest, NotUsed> source = Source.single(publishRequest);
