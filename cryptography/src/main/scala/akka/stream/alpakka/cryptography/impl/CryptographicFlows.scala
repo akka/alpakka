@@ -39,7 +39,7 @@ object CryptographicFlows {
         }
     }
 
-  def asymmetricEncryption(publicKey: PublicKey)(in: ByteString): Flow[ByteString, ByteString, NotUsed] =
+  def asymmetricEncryption(publicKey: PublicKey): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].statefulMapConcat { () =>
       val cipher = Cipher.getInstance(publicKey.getAlgorithm)
       cipher.init(Cipher.PUBLIC_KEY, publicKey)
@@ -52,14 +52,14 @@ object CryptographicFlows {
 
     }
 
-  def asymmetricDecryption(privateKey: PrivateKey)(toDecode: ByteString): Flow[ByteString, ByteString, NotUsed] =
+  def asymmetricDecryption(privateKey: PrivateKey): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].statefulMapConcat { () =>
       val cipher = Cipher.getInstance(privateKey.getAlgorithm)
       cipher.init(Cipher.DECRYPT_MODE, privateKey)
 
       in =>
         {
-          val decrypted = cipher.doFinal(toDecode.toArray)
+          val decrypted = cipher.doFinal(in.toArray)
 
           List(ByteString(decrypted))
         }
