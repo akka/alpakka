@@ -140,7 +140,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
   }
 
   it should "list keys for a given bucket with a prefix using the version 1 api" in {
-    mockListBucket()
+    mockListBucketVersion1()
 
     //#list-bucket-v1
     val keySource: Source[ListBucketResultContents, NotUsed] =
