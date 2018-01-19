@@ -335,7 +335,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           ElasticsearchFlow.create(
             "sink5",
             "book",
-            ElasticsearchSinkSettings(maxRetry = 5, retryInterval = 100)
+            ElasticsearchSinkSettings(maxRetry = 5, retryInterval = 100, retryPartialFailure = true)
           )
         )
         .runWith(Sink.seq)
@@ -347,7 +347,8 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       // Assert retired documents
       assert(
         result1.flatten.filter(!_.success).toList == Seq(
-          IncomingMessageResult[JsValue](Map("subject" -> "Akka Concurrency").toJson, false)
+          IncomingMessageResult[JsValue](Map("subject" -> "Akka Concurrency").toJson, false,
+            Some("""{"type":"strict_dynamic_mapping_exception","reason":"mapping set to strict, dynamic introduction of [subject] within [book] is not allowed"}"""))
         )
       )
 
@@ -639,7 +640,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           ElasticsearchFlow.create[VersionTestDoc](
             indexName,
             typeName,
-            ElasticsearchSinkSettings(bufferSize = 5, maxRetry = 0)
+            ElasticsearchSinkSettings(bufferSize = 5)
           )
         )
         .runWith(Sink.seq)

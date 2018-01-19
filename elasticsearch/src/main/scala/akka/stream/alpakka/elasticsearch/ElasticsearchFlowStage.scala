@@ -61,11 +61,11 @@ final case class IncomingMessage[T, C](id: Option[String], source: T, passThroug
 
 object IncomingMessageResult {
   // Apply method to use when not using passThrough
-  def apply[T](source: T, success: Boolean): IncomingMessageResult[T, NotUsed] =
-    IncomingMessageResult(source, NotUsed, success)
+  def apply[T](source: T, success: Boolean, errorMsg:Option[String]): IncomingMessageResult[T, NotUsed] =
+    IncomingMessageResult(source, NotUsed, success, errorMsg)
 }
 
-final case class IncomingMessageResult[T, C](source: T, passThrough: C, success: Boolean)
+final case class IncomingMessageResult[T, C](source: T, passThrough: C, success: Boolean, errorMsg:Option[String])
 
 trait MessageWriter[T] {
   def convert(message: T): String
@@ -125,48 +125,44 @@ class ElasticsearchFlowStage[T, C](
         val (messages, response) = args
         val responseJson = EntityUtils.toString(response.getEntity).parseJson
 
+        case class MessageResultAndIncomingMessage[T2, C2](r:IncomingMessageResult[T2, C2], m:IncomingMessage[T2, C2])
+
         // If some commands in bulk request failed, pass failed messages to follows.
         val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
-        val messageResults = items.elements.zip(messages).map {
+        val messageResults:Seq[MessageResultAndIncomingMessage[T, C]] = items.elements.zip(messages).map {
           case (item, message) =>
-            item.asJsObject.fields(insertKeyword).asJsObject.fields.get("error") match {
-              case Some(errorMessage) => (message, false)
-              case None => (message, true)
-            }
+
+            val res = item.asJsObject.fields(insertKeyword).asJsObject
+            val error:Option[String] = res.fields.get("error").map(_.toString())
+            MessageResultAndIncomingMessage(
+              IncomingMessageResult(message.source, message.passThrough, error.isEmpty, error),
+              message
+            )
         }
 
-        val successMsgs = messageResults.filter(_._2).map(_._1)
-        val failedMsgs = messageResults.filter(!_._2).map(_._1)
+        val failedMsgs = messageResults.filter(_.r.success == false)
 
         if (failedMsgs.nonEmpty && settings.retryPartialFailure && retryCount < settings.maxRetry) {
           // Retry partial failed messages
+          // NOTE: When we partially return message like this, message will arrive out of order downstream
+          // and it can break commit-logic when using Kafka
           retryCount = retryCount + 1
-          failedMessages = failedMsgs // These are the messages we're going to retry
+          failedMessages = failedMsgs.map( _.m) // These are the messages we're going to retry
           scheduleOnce(NotUsed, settings.retryInterval.millis)
 
+          val successMsgs = messageResults.filter(_.r.success)
           if (successMsgs.nonEmpty) {
             // push the messages that DID succeed
-            val resultForSucceededMsgs = successMsgs.map { x =>
-              IncomingMessageResult[T, C](x.source, x.passThrough, success = true)
-            }
+            val resultForSucceededMsgs = successMsgs.map(_.r)
             emit(out, Future.successful(resultForSucceededMsgs))
           }
 
         } else {
           retryCount = 0
 
-          // Build result of success-msgs and failed-msgs
-          val result: Seq[IncomingMessageResult[T, C]] = Seq(
-            successMsgs.map { x =>
-              IncomingMessageResult[T, C](x.source, x.passThrough, success = true)
-            },
-            failedMsgs.map { x =>
-              IncomingMessageResult[T, C](x.source, x.passThrough, success = false)
-            }
-          ).flatten
-
-          // Push failed
-          emit(out, Future.successful(result))
+          // Push result
+          val listOfResults = messageResults.map(_.r)
+          emit(out, Future.successful(listOfResults))
 
           // Fetch next messages from queue and send them
           val nextMessages = (1 to settings.bufferSize).flatMap { _ =>
