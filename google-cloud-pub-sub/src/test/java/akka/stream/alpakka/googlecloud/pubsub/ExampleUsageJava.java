@@ -57,7 +57,7 @@ public class ExampleUsageJava {
 
         //#publish-single
         PubSubMessage publishMessage =
-                new PubSubMessage("1", new String(Base64.getEncoder().encode("Hello Google!".getBytes())), Collections.emptyMap());
+                new PubSubMessage("1", new String(Base64.getEncoder().encode("Hello Google!".getBytes())), Collections.<String, String>emptyMap());
         PublishRequest publishRequest = PublishRequest.of(Lists.newArrayList(publishMessage));
 
         Source<PublishRequest, NotUsed> source = Source.single(publishRequest);
