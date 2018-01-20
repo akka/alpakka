@@ -218,6 +218,20 @@ object Dependencies {
     )
   )
 
+  val Solr = {
+    val solrjVersion = "7.2.0"
+    val slf4jVersion = "1.7.25"
+    Seq(
+      libraryDependencies ++= Seq(
+        "org.apache.solr" % "solr-solrj" % solrjVersion, // ApacheV2
+        //Test
+        "org.apache.solr" % "solr-test-framework" % solrjVersion % Test, // ApacheV2
+        "org.slf4j" % "slf4j-log4j12" % slf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
+      ),
+      resolvers += ("restlet" at "https://maven.restlet.com")
+    )
+  }
+
   val Sqs = Seq(
     libraryDependencies ++= Seq(
       "com.amazonaws" % "aws-java-sdk-sqs" % AwsSdkVersion, // ApacheV2

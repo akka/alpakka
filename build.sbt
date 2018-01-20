@@ -123,6 +123,8 @@ lazy val sns = alpakkaProject("sns",
                               // For mockito https://github.com/akka/alpakka/issues/390
                               parallelExecution in Test := false)
 
+lazy val solr = alpakkaProject("solr", Dependencies.Solr)
+
 lazy val sqs = alpakkaProject("sqs",
                               Dependencies.Sqs,
                               // For mockito https://github.com/akka/alpakka/issues/390
