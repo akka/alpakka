@@ -121,62 +121,71 @@ class ElasticsearchFlowStage[T, C](
       private def handleSuccess(): Unit =
         completeStage()
 
+      private case class MessageWithResult[T2, C2](m: IncomingMessage[T2, C2], r: IncomingMessageResult[T2, C2])
+
       private def handleResponse(args: (Seq[IncomingMessage[T, C]], Response)): Unit = {
         val (messages, response) = args
         val responseJson = EntityUtils.toString(response.getEntity).parseJson
 
-        case class MessageResultAndIncomingMessage[T2, C2](r: IncomingMessageResult[T2, C2],
-                                                           m: IncomingMessage[T2, C2])
-
         // If some commands in bulk request failed, pass failed messages to follows.
         val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
-        val messageResults: Seq[MessageResultAndIncomingMessage[T, C]] = items.elements.zip(messages).map {
+        val messageResults: Seq[MessageWithResult[T, C]] = items.elements.zip(messages).map {
           case (item, message) =>
             val res = item.asJsObject.fields(insertKeyword).asJsObject
             val error: Option[String] = res.fields.get("error").map(_.toString())
-            MessageResultAndIncomingMessage(
-              IncomingMessageResult(message.source, message.passThrough, error.isEmpty, error),
-              message
+            MessageWithResult(
+              message,
+              IncomingMessageResult(message.source, message.passThrough, error.isEmpty, error)
             )
         }
 
-        val failedMsgs = messageResults.filter(_.r.success == false)
+        val failedMsgs = messageResults.filterNot(_.r.success)
 
         if (failedMsgs.nonEmpty && settings.retryPartialFailure && retryCount < settings.maxRetry) {
-          // Retry partial failed messages
-          // NOTE: When we partially return message like this, message will arrive out of order downstream
-          // and it can break commit-logic when using Kafka
-          retryCount = retryCount + 1
-          failedMessages = failedMsgs.map(_.m) // These are the messages we're going to retry
-          scheduleOnce(NotUsed, settings.retryInterval.millis)
-
-          val successMsgs = messageResults.filter(_.r.success)
-          if (successMsgs.nonEmpty) {
-            // push the messages that DID succeed
-            val resultForSucceededMsgs = successMsgs.map(_.r)
-            emit(out, Future.successful(resultForSucceededMsgs))
-          }
-
+          retryPartialFailedMessages(messageResults, failedMsgs)
         } else {
-          retryCount = 0
+          forwardAllResults(messageResults)
+        }
+      }
 
-          // Push result
-          val listOfResults = messageResults.map(_.r)
-          emit(out, Future.successful(listOfResults))
+      private def retryPartialFailedMessages(
+          messageResults: Seq[MessageWithResult[T, C]],
+          failedMsgs: Seq[MessageWithResult[T, C]]
+      ): Unit = {
+        // Retry partial failed messages
+        // NOTE: When we partially return message like this, message will arrive out of order downstream
+        // and it can break commit-logic when using Kafka
+        retryCount = retryCount + 1
+        failedMessages = failedMsgs.map(_.m) // These are the messages we're going to retry
+        scheduleOnce(NotUsed, settings.retryInterval.millis)
 
-          // Fetch next messages from queue and send them
-          val nextMessages = (1 to settings.bufferSize).flatMap { _ =>
-            queue.dequeueFirst(_ => true)
+        val successMsgs = messageResults.filter(_.r.success)
+        if (successMsgs.nonEmpty) {
+          // push the messages that DID succeed
+          val resultForSucceededMsgs = successMsgs.map(_.r)
+          emit(out, Future.successful(resultForSucceededMsgs))
+        }
+      }
+
+      private def forwardAllResults(messageResults: Seq[MessageWithResult[T, C]]): Unit = {
+        retryCount = 0 // Clear retryCount
+
+        // Push result
+        val listOfResults = messageResults.map(_.r)
+        emit(out, Future.successful(listOfResults))
+
+        // Fetch next messages from queue and send them
+        val nextMessages = (1 to settings.bufferSize).flatMap { _ =>
+          queue.dequeueFirst(_ => true)
+        }
+
+        if (nextMessages.isEmpty) {
+          state match {
+            case Finished => handleSuccess()
+            case _ => state = Idle
           }
-
-          if (nextMessages.isEmpty) {
-            state match {
-              case Finished => handleSuccess()
-              case _ => state = Idle
-            }
-          } else {
-            sendBulkUpdateRequest(nextMessages)
-          }
+        } else {
+          sendBulkUpdateRequest(nextMessages)
         }
       }
 

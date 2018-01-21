@@ -90,7 +90,6 @@ object ElasticsearchSource {
 
       val jsonTree = mapper.readTree(json)
 
-      //val map = mapper.readValue(json, classOf[java.util.Map[String, Object]])
       if (jsonTree.has("error")) {
         ScrollResponse(Some(jsonTree.get("error").asText()), None)
       } else {
