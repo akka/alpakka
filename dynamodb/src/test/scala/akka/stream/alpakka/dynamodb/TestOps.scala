@@ -21,6 +21,12 @@ trait TestOps {
     sortCol -> N(sort)
   )
 
+  def keyEQ(hash: String): Map[String, Condition] = Map(
+    keyCol -> new Condition()
+      .withComparisonOperator(ComparisonOperator.EQ)
+      .withAttributeValueList(S(hash))
+  )
+
   object common {
     val listTablesRequest = new ListTablesRequest()
 
@@ -75,6 +81,11 @@ object ItemSpecOps extends TestOps {
       ).asJava
     ).asJava
   )
+
+  val queryItemsRequest = new QueryRequest()
+    .withTableName(tableName)
+    .withKeyConditions(keyEQ("B").asJava)
+    .withLimit(1)
 
   val deleteItemRequest = new DeleteItemRequest().withTableName(tableName).withKey(keyMap("A", 0).asJava)
 

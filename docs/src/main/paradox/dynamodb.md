@@ -44,13 +44,22 @@ Scala
 Java
 : @@snip ($alpakka$/dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #simple-request }
 
-You can also use a Flow to execute your Dynamodb call:
+You can also use a Flow to execute your DynamoDB call:
 
 Scala
 : @@snip ($alpakka$/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #flow }
 
 Java
 : @@snip ($alpakka$/dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #flow }
+
+Some DynamoDB operations, such as Query and Scan, are paginated by nature.
+You can get a stream of all result pages:
+
+Scala
+: @@snip ($alpakka$/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #paginated }
+
+Java
+: @@snip ($alpakka$/dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #paginated }
 
 ### Running the example code
 

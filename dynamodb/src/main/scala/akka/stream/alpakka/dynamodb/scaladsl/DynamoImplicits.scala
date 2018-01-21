@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.dynamodb.scaladsl
 
-import akka.stream.alpakka.dynamodb.AwsOp
+import akka.stream.alpakka.dynamodb.{AwsOp, AwsPagedOp}
 import akka.stream.alpakka.dynamodb.impl.DynamoProtocol
 import com.amazonaws.services.dynamodbv2.model._
 
@@ -58,19 +58,25 @@ object DynamoImplicits extends DynamoProtocol {
     def toOp: DescribeTable = this
   }
 
-  implicit class Query(val request: QueryRequest) extends AwsOp {
+  implicit class Query(val request: QueryRequest) extends AwsPagedOp {
     override type A = QueryRequest
     override type B = QueryResult
     override val handler = queryU
     override val marshaller = queryM
+    override def next(a: A, b: B) =
+      if (b.getLastEvaluatedKey == null || b.getLastEvaluatedKey.isEmpty) None
+      else Some(Query(a.clone().withExclusiveStartKey(b.getLastEvaluatedKey)))
     def toOp: Query = this
   }
 
-  implicit class Scan(val request: ScanRequest) extends AwsOp {
+  implicit class Scan(val request: ScanRequest) extends AwsPagedOp {
     override type A = ScanRequest
     override type B = ScanResult
     override val handler = scanU
     override val marshaller = scanM
+    override def next(a: A, b: B) =
+      if (b.getLastEvaluatedKey == null || b.getLastEvaluatedKey.isEmpty) None
+      else Some(Scan(a.clone().withExclusiveStartKey(b.getLastEvaluatedKey)))
     def toOp: Scan = this
   }
 
