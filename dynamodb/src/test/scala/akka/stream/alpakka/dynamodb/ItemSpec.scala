@@ -8,6 +8,7 @@ import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.alpakka.dynamodb.impl.DynamoSettings
 import akka.stream.alpakka.dynamodb.scaladsl._
+import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit
 import org.scalatest._
 
@@ -50,15 +51,31 @@ class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike w
         .map(_.getItem.get("data").getS shouldEqual "test4data")
     }
 
-    "5) put an item and read it back in a batch" in {
+    "5) put two items in a batch" in {
       client.single(batchWriteItemRequest).map(_.getUnprocessedItems.size() shouldEqual 0)
     }
 
-    "6) delete an item" in {
+    "6) query two items with page size equal to 1" in {
+      client
+        .source(queryItemsRequest)
+        .filterNot(_.getItems.isEmpty)
+        .map(_.getItems)
+        .runWith(Sink.seq)
+        .map { results =>
+          results.size shouldBe 2
+          val Seq(a, b) = results
+          a.size shouldEqual 1
+          a.get(0).get(sortCol) shouldEqual N(0)
+          b.size shouldEqual 1
+          b.get(0).get(sortCol) shouldEqual N(1)
+        }
+    }
+
+    "7) delete an item" in {
       client.single(deleteItemRequest).flatMap(_ => client.single(getItemRequest)).map(_.getItem() shouldEqual null)
     }
 
-    "7) delete table" in {
+    "8) delete table" in {
       client
         .single(deleteTableRequest)
         .flatMap(_ => client.single(listTablesRequest))

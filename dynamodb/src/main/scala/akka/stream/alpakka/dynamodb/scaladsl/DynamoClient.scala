@@ -7,8 +7,8 @@ package akka.stream.alpakka.dynamodb.scaladsl
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import akka.stream.alpakka.dynamodb.AwsOp
-import akka.stream.alpakka.dynamodb.impl.{DynamoClientImpl, DynamoSettings}
+import akka.stream.alpakka.dynamodb.{AwsOp, AwsPagedOp}
+import akka.stream.alpakka.dynamodb.impl.{DynamoClientImpl, DynamoSettings, Paginator}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 
 import scala.concurrent.Future
@@ -22,6 +22,9 @@ final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem,
   private val client = new DynamoClientImpl(settings, DynamoImplicits.errorResponseHandler)
 
   def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] = client.flow[Op]
+
+  def source(op: AwsPagedOp): Source[op.B, NotUsed] =
+    Paginator.source(flow, op)
 
   def source(op: AwsOp): Source[op.B, NotUsed] =
     Source.single(op).via(client.flow).map(_.asInstanceOf[op.B])
