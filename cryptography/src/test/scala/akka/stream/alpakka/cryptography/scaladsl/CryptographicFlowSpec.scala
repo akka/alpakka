@@ -41,11 +41,27 @@ class CryptographicFlowSpec extends WordSpec with Matchers with ScalaFutures wit
           }
         }
       }
+
+      "Be able to handle bytestring chunking" in {
+        val keyGenerator = KeyGenerator.getInstance("AES")
+        val secretKey = keyGenerator.generateKey()
+
+        val byteString = ByteString("byte by byte")
+
+        val res = Source.single(byteString)
+          .mapConcat(bs => bs.toArray.toList)
+          .map(b => ByteString(b))
+          .via(symmetricEncryption(secretKey))
+          .via(symmetricDecryption(secretKey))
+          .runWith(Sink.fold(ByteString.empty)(_ concat _))
+
+        whenReady(res) { _ shouldBe byteString }
+      }
     }
 
     "Asymmetric Encryption flows" should {
       "Be able to encrypt and decrypt bytestrings" in {
-        forAll(minSuccessful(10)) { (keyPair: KeyPair, toEncrypt: List[String]) =>
+        forAll(minSuccessful(10), sizeRange(10)) { (keyPair: KeyPair, toEncrypt: List[String]) =>
           val src: Source[ByteString, NotUsed] = Source(toEncrypt.map(ByteString.apply))
 
           val res: Future[ByteString] = src
@@ -55,9 +71,24 @@ class CryptographicFlowSpec extends WordSpec with Matchers with ScalaFutures wit
 
           whenReady(res) { s =>
             s.utf8String shouldBe toEncrypt.mkString("")
-
           }
         }
+      }
+
+      "Be able to handle bytestring chunking" in {
+        val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
+        val keyPair = keyPairGenerator.generateKeyPair()
+
+        val byteString = ByteString("byte by byte")
+
+        val res = Source.single(byteString)
+          .mapConcat(bs => bs.toArray.toList)
+          .map(b => ByteString(b))
+          .via(asymmetricEncryption(keyPair.getPublic))
+          .via(asymmetricDecryption(keyPair.getPrivate))
+          .runWith(Sink.fold(ByteString.empty)(_ concat _))
+
+        whenReady(res) { _ shouldBe byteString }
       }
     }
   }
@@ -65,7 +96,6 @@ class CryptographicFlowSpec extends WordSpec with Matchers with ScalaFutures wit
   implicit def arbitrarySecretKey: Arbitrary[SecretKey] = Arbitrary {
     Gen.resultOf((_: Unit) => {
       val keyGenerator = KeyGenerator.getInstance("AES")
-
       keyGenerator.generateKey()
     })
   }
