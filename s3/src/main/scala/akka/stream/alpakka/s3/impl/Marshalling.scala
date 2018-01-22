@@ -47,9 +47,19 @@ private[alpakka] object Marshalling {
     nodeSeqUnmarshaller(MediaTypes.`application/xml` withCharset HttpCharsets.`UTF-8`).map {
       case NodeSeq.Empty => throw Unmarshaller.NoContentException
       case x =>
+        val truncated = (x \ isTruncated).text == "true"
+        val continuation = if (truncated) {
+          // v2 uses continuation token
+          val v2Token = Some(x \ continuationToken).filter(_.nonEmpty).map(_.text)
+
+          // v1 uses the last key value in the response
+          val v1Token = (x \\ "Contents" \ "Key").lastOption.map(_.text)
+
+          if (v2Token.isDefined) v2Token else v1Token
+        } else None
         ListBucketResult(
-          (x \ isTruncated).text == "true",
-          Some(x \ continuationToken).filter(_.nonEmpty).map(_.text),
+          truncated,
+          continuation,
           (x \\ "Contents").map { c =>
             ListBucketResultContents(
               (x \ "Name").text,
