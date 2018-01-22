@@ -41,7 +41,7 @@ private[alpakka] object Marshalling {
   }
 
   val isTruncated = "IsTruncated"
-  val continuationToken = "NextContinuationToken"
+  val apiV2ContinuationToken = "NextContinuationToken"
 
   implicit val listBucketResultUnmarshaller: FromEntityUnmarshaller[ListBucketResult] = {
     nodeSeqUnmarshaller(MediaTypes.`application/xml` withCharset HttpCharsets.`UTF-8`).map {
@@ -49,13 +49,10 @@ private[alpakka] object Marshalling {
       case x =>
         val truncated = (x \ isTruncated).text == "true"
         val continuation = if (truncated) {
-          // v2 uses continuation token
-          val v2Token = Some(x \ continuationToken).filter(_.nonEmpty).map(_.text)
-
-          // v1 uses the last key value in the response
-          val v1Token = (x \\ "Contents" \ "Key").lastOption.map(_.text)
-
-          if (v2Token.isDefined) v2Token else v1Token
+          Some(x \ apiV2ContinuationToken)
+            .filter(_.nonEmpty)
+            .orElse((x \\ "Contents" \ "Key").lastOption)
+            .map(_.text)
         } else None
         ListBucketResult(
           truncated,
