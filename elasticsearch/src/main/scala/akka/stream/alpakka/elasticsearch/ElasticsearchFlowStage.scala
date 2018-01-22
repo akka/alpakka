@@ -57,7 +57,11 @@ object IncomingMessage {
     IncomingMessage(None, source, passThrough)
 }
 
-final case class IncomingMessage[T, C](id: Option[String], source: T, passThrough: C, version: Option[Long] = None)
+final case class IncomingMessage[T, C](id: Option[String], source: T, passThrough: C, version: Option[Long] = None) {
+
+  def withVersion(version: Long): IncomingMessage[T, C] =
+    this.copy(version = Option(version))
+}
 
 object IncomingMessageResult {
   // Apply method to use when not using passThrough
