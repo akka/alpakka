@@ -271,8 +271,8 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
    */
   def listBucket(bucket: String,
                  prefix: Option[String],
-                 useApiVersion2: Boolean = true): Source[ListBucketResultContents, NotUsed] =
-    impl.listBucket(bucket, prefix, useApiVersion2)
+                 apiVersion: ApiVersion = ListBucketVersion2): Source[ListBucketResultContents, NotUsed] =
+    impl.listBucket(bucket, prefix, apiVersion)
 
   /**
    * Uploads a S3 Object by making multiple requests

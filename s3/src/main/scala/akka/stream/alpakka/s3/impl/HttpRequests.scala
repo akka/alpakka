@@ -22,10 +22,14 @@ private[alpakka] object HttpRequests {
       bucket: String,
       prefix: Option[String] = None,
       continuationToken: Option[String] = None,
-      useApiVersion2: Boolean = true
+      apiVersion: ApiVersion = ListBucketVersion2
   )(implicit conf: S3Settings): HttpRequest = {
 
-    val (listType, continuationTokenName) = if (useApiVersion2) (Some("2"), "continuation-token") else (None, "marker")
+    val (listType, continuationTokenName) = apiVersion match {
+      case ListBucketVersion1 => (None, "marker")
+      case ListBucketVersion2 => (Some("2"), "continuation-token")
+    }
+
     val query = Query(
       Seq(
         "list-type" -> listType,

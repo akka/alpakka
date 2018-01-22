@@ -11,11 +11,9 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, IllegalUriException, MediaTypes}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.acl.CannedAcl
-import akka.stream.alpakka.s3.scaladsl.S3Client
 import akka.stream.alpakka.s3.{BufferType, MemoryBufferType, Proxy, S3Settings}
 import akka.stream.scaladsl.Source
 import akka.testkit.{SocketUtil, TestProbe}
-import akka.util.ByteString
 import com.amazonaws.auth.{AWSCredentialsProvider, AWSStaticCredentialsProvider, AnonymousAWSCredentials}
 import com.amazonaws.regions.AwsRegionProvider
 import org.scalatest.concurrent.ScalaFutures
@@ -278,7 +276,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     implicit val settings = getSettings(s3Region = "region", pathStyleAccess = true)
 
     val req =
-      HttpRequests.listBucket(location.bucket, useApiVersion2 = false)
+      HttpRequests.listBucket(location.bucket, apiVersion = ListBucketVersion1)
 
     req.uri.query() shouldEqual Query()
   }
@@ -287,7 +285,9 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     implicit val settings = getSettings(s3Region = "region", pathStyleAccess = true)
 
     val req =
-      HttpRequests.listBucket(location.bucket, continuationToken = Some("randomToken"), useApiVersion2 = false)
+      HttpRequests.listBucket(location.bucket,
+                              continuationToken = Some("randomToken"),
+                              apiVersion = ListBucketVersion1)
 
     req.uri.query() shouldEqual Query("marker" -> "randomToken")
   }
