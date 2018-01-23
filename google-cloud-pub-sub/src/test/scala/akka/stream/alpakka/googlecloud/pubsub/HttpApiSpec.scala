@@ -72,11 +72,13 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
   it should "publish" in {
 
     val publishMessage =
-      PubSubMessage(messageId = "1", data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
+      PubSubMessage(messageId = "1",
+                    data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)),
+                    publishTime = Some("1"))
     val publishRequest = PublishRequest(Seq(publishMessage))
 
     val expectedPublishRequest =
-      """{"messages":[{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1"}]}"""
+      """{"messages":[{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1","publishTime":"1"}]}"""
     val publishResponse = """{"messageIds":["1"]}"""
 
     mock.register(
@@ -113,11 +115,13 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
     }
 
     val publishMessage =
-      PubSubMessage(messageId = "1", data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
+      PubSubMessage(messageId = "1",
+                    data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)),
+                    publishTime = Some("1"))
     val publishRequest = PublishRequest(Seq(publishMessage))
 
     val expectedPublishRequest =
-      """{"messages":[{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1"}]}"""
+      """{"messages":[{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1","publishTime":"1"}]}"""
     val publishResponse = """{"messageIds":["1"]}"""
 
     mock.register(
@@ -144,10 +148,12 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
   it should "Pull with results" in {
 
     val publishMessage =
-      PubSubMessage(messageId = "1", data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
+      PubSubMessage(messageId = "1",
+                    data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)),
+                    publishTime = Some("1"))
 
     val pullResponse =
-      """{"receivedMessages":[{"ackId":"ack1","message":{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1"}}]}"""
+      """{"receivedMessages":[{"ackId":"ack1","message":{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1","publishTime":"1"}}]}"""
 
     val pullRequest = """{"returnImmediately":true,"maxMessages":1000}"""
 
