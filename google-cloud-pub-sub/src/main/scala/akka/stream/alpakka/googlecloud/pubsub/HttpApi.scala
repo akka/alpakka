@@ -51,7 +51,7 @@ private trait HttpApi {
   def GoogleApisHost: String
   def isEmulated: Boolean
 
-  private implicit val pubSubMessageFormat = DefaultJsonProtocol.jsonFormat2(PubSubMessage)
+  private implicit val pubSubMessageFormat = DefaultJsonProtocol.jsonFormat3(PubSubMessage)
   private implicit val pubSubRequestFormat = DefaultJsonProtocol.jsonFormat1(PublishRequest.apply)
   private implicit val gcePubSubResponseFormat = DefaultJsonProtocol.jsonFormat1(PublishResponse)
   private implicit val googleOAuthResponseFormat = DefaultJsonProtocol.jsonFormat3(OAuthResponse)

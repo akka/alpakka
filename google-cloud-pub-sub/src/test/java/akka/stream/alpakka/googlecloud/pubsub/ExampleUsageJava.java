@@ -11,7 +11,6 @@ import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.googlecloud.pubsub.javadsl.GooglePubSub;
 import akka.stream.javadsl.*;
 import com.google.common.collect.Lists;
-
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -20,7 +19,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-
+import scala.Option;
 import scala.concurrent.duration.FiniteDuration;
 
 public class ExampleUsageJava {
@@ -56,7 +55,7 @@ public class ExampleUsageJava {
 
         //#publish-single
         PubSubMessage publishMessage =
-                new PubSubMessage("1", new String(Base64.getEncoder().encode("Hello Google!".getBytes())));
+                new PubSubMessage("1", new String(Base64.getEncoder().encode("Hello Google!".getBytes())), Option.apply("1"));
         PublishRequest publishRequest = PublishRequest.of(Lists.newArrayList(publishMessage));
 
         Source<PublishRequest, NotUsed> source = Source.single(publishRequest);

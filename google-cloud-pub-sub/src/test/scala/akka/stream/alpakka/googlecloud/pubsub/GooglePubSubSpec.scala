@@ -50,7 +50,10 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       topic = "topic1"
     )
 
-    val request = PublishRequest(Seq(PubSubMessage(messageId = "1", data = base64String("Hello Google!"))))
+    val request =
+      PublishRequest(
+        Seq(PubSubMessage(messageId = "1", data = base64String("Hello Google!"), publishTime = Some("1")))
+      )
 
     val source = Source(List(request))
 
@@ -100,7 +103,10 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       topic = "topic2"
     )
 
-    val request = PublishRequest(Seq(PubSubMessage(messageId = "2", data = base64String("Hello Google!"))))
+    val request =
+      PublishRequest(
+        Seq(PubSubMessage(messageId = "2", data = base64String("Hello Google!"), publishTime = Some("1")))
+      )
 
     val source = Source(List(request))
     val result = source.via(flow).runWith(Sink.seq)
@@ -109,7 +115,10 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
 
   it should "subscribe and pull a message" in new Fixtures {
     val message =
-      ReceivedMessage(ackId = "1", message = PubSubMessage(messageId = "1", data = base64String("Hello Google!")))
+      ReceivedMessage(
+        ackId = "1",
+        message = PubSubMessage(messageId = "1", data = base64String("Hello Google!"), publishTime = Some("1"))
+      )
 
     when(auth.getToken()).thenReturn(Future.successful("ok"))
     when(
