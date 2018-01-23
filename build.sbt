@@ -21,6 +21,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   simpleCodecs,
   slick,
   sns,
+  solr,
   sqs,
   sse,
   unixdomainsocket,
