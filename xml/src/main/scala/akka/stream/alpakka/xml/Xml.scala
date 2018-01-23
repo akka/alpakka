@@ -288,8 +288,7 @@ object Xml {
               // ATTRIBUTE is handled in START_ELEMENT implicitly
 
               case x =>
-                if (parser.hasNext) advanceParser()
-                else completeStage()
+                advanceParser()
             }
           } else completeStage()
       }
