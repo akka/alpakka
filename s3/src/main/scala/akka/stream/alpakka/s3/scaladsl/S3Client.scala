@@ -252,12 +252,12 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
    * @param key the s3 object key
    * @param range [optional] the [[ByteRange]] you want to download
    * @param sse [optional] the server side encryption used on upload
-   * @return A [[Source]] of [[ByteString]] that materializes into a [[Future]] containing the [[ObjectMetadata]]
+   * @return A [[Source]] of [[ByteString]], and a [[Future]] containing the [[ObjectMetadata]]
    */
   def download(bucket: String,
                key: String,
                range: Option[ByteRange] = None,
-               sse: Option[ServerSideEncryption] = None): Source[ByteString, Future[ObjectMetadata]] =
+               sse: Option[ServerSideEncryption] = None): (Source[ByteString, NotUsed], Future[ObjectMetadata]) =
     impl.download(S3Location(bucket, key), range, sse)
 
   /**

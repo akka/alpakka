@@ -16,6 +16,7 @@ import akka.http.javadsl.model.headers.ByteRange
 import akka.http.javadsl.model._
 import akka.http.scaladsl.model.headers.{ByteRange => ScalaByteRange}
 import akka.http.scaladsl.model.{ContentType => ScalaContentType, HttpMethod => ScalaHttpMethod}
+import akka.japi.{Pair => JPair}
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.{scaladsl, S3Settings}
 import akka.stream.alpakka.s3.acl.CannedAcl
@@ -29,6 +30,7 @@ import com.typesafe.config.ConfigFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.concurrent.Future
 
 final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
@@ -421,18 +423,22 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
               MetaHeaders(Map()),
               sse)
 
+  private def toJava[M](
+      download: (akka.stream.scaladsl.Source[ByteString, M], Future[scaladsl.ObjectMetadata])
+  ): JPair[Source[ByteString, M], CompletionStage[ObjectMetadata]] = {
+    val (stream, meta) = download
+    JPair(stream.asJava, meta.map(metaDataToJava)(mat.executionContext).toJava)
+  }
+
   /**
    * Downloads a S3 Object
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
-   * @return A [[Source]] of [[ByteString]] that materializes into a [[CompletionStage]] containing the [[ObjectMetadata]]
+   * @return A [[Pair]] with a [[Source]] of [[ByteString]], and a [[CompletionStage]] containing the [[ObjectMetadata]]
    */
-  def download(bucket: String, key: String): Source[ByteString, CompletionStage[ObjectMetadata]] =
-    impl
-      .download(S3Location(bucket, key), None, None)
-      .mapMaterializedValue(_.map(metaDataToJava)(mat.executionContext).toJava)
-      .asJava
+  def download(bucket: String, key: String): JPair[Source[ByteString, NotUsed], CompletionStage[ObjectMetadata]] =
+    toJava(impl.download(S3Location(bucket, key), None, None))
 
   /**
    * Downloads a S3 Object
@@ -440,15 +446,12 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param sse the server side encryption to use
-   * @return A [[Source]] of [[ByteString]] that materializes into a [[CompletionStage]] containing the [[ObjectMetadata]]
+   * @return A [[Pair]] with a [[Source]] of [[ByteString]], and a [[CompletionStage]] containing the [[ObjectMetadata]]
    */
   def download(bucket: String,
                key: String,
-               sse: ServerSideEncryption): Source[ByteString, CompletionStage[ObjectMetadata]] =
-    impl
-      .download(S3Location(bucket, key), None, Some(sse))
-      .mapMaterializedValue(_.map(metaDataToJava)(mat.executionContext).toJava)
-      .asJava
+               sse: ServerSideEncryption): JPair[Source[ByteString, NotUsed], CompletionStage[ObjectMetadata]] =
+    toJava(impl.download(S3Location(bucket, key), None, Some(sse)))
 
   /**
    * Downloads a specific byte range of a S3 Object
@@ -456,14 +459,13 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param range the [[ByteRange]] you want to download
-   * @return A [[Source]] of [[ByteString]] that materializes into a [[CompletionStage]] containing the [[ObjectMetadata]]
+   * @return A [[Pair]] with a [[Source]] of [[ByteString]], and a [[CompletionStage]] containing the [[ObjectMetadata]]
    */
-  def download(bucket: String, key: String, range: ByteRange): Source[ByteString, CompletionStage[ObjectMetadata]] = {
+  def download(bucket: String,
+               key: String,
+               range: ByteRange): JPair[Source[ByteString, NotUsed], CompletionStage[ObjectMetadata]] = {
     val scalaRange = range.asInstanceOf[ScalaByteRange]
-    impl
-      .download(S3Location(bucket, key), Some(scalaRange), None)
-      .mapMaterializedValue(_.map(metaDataToJava)(mat.executionContext).toJava)
-      .asJava
+    toJava(impl.download(S3Location(bucket, key), Some(scalaRange), None))
   }
 
   /**
@@ -473,17 +475,14 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @param key the s3 object key
    * @param range the [[ByteRange]] you want to download
    * @param sse the server side encryption to use
-   * @return A [[Source]] of [[ByteString]] that materializes into a [[CompletionStage]] containing the [[ObjectMetadata]]
+   * @return A [[Pair]] with a [[Source]] of [[ByteString]], and a [[CompletionStage]] containing the [[ObjectMetadata]]
    */
   def download(bucket: String,
                key: String,
                range: ByteRange,
-               sse: ServerSideEncryption): Source[ByteString, CompletionStage[ObjectMetadata]] = {
+               sse: ServerSideEncryption): JPair[Source[ByteString, NotUsed], CompletionStage[ObjectMetadata]] = {
     val scalaRange = range.asInstanceOf[ScalaByteRange]
-    impl
-      .download(S3Location(bucket, key), Some(scalaRange), Some(sse))
-      .mapMaterializedValue(_.map(metaDataToJava)(mat.executionContext).toJava)
-      .asJava
+    toJava(impl.download(S3Location(bucket, key), Some(scalaRange), Some(sse)))
   }
 
   /**
