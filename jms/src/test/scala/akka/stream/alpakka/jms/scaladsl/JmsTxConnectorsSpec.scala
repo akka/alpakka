@@ -46,6 +46,12 @@ class JmsTxConnectorsSpec extends JmsSpec {
         .runWith(Sink.seq)
 
       result.futureValue should contain theSameElementsAs in
+
+      // all messages were acknowledged before
+      jmsSource
+        .takeWithin(5.seconds)
+        .runWith(Sink.seq)
+        .futureValue shouldBe empty
     }
 
     "publish and consume JMS text messages with properties through a queue" in withServer() { ctx =>
@@ -88,6 +94,12 @@ class JmsTxConnectorsSpec extends JmsSpec {
           out.getBooleanProperty("IsOdd") shouldEqual in.properties("IsOdd")
           out.getBooleanProperty("IsEven") shouldEqual in.properties("IsEven")
       }
+
+      // all messages were acknowledged before
+      jmsSource
+        .takeWithin(5.seconds)
+        .runWith(Sink.seq)
+        .futureValue shouldBe empty
     }
 
     "ensure re-delivery when rollback JMS text messages through a queue" in withServer() { ctx =>
@@ -125,6 +137,12 @@ class JmsTxConnectorsSpec extends JmsSpec {
         .runWith(Sink.seq)
 
       result.futureValue should contain theSameElementsAs expectedElements
+
+      // all messages were acknowledged before
+      jmsSource
+        .takeWithin(5.seconds)
+        .runWith(Sink.seq)
+        .futureValue shouldBe empty
     }
 
     "publish JMS text messages with properties through a queue and consume them with a selector" in withServer() {
@@ -166,6 +184,12 @@ class JmsTxConnectorsSpec extends JmsSpec {
             // Make sure we are only receiving odd numbers
             out.getIntProperty("Number") % 2 shouldEqual 1
         }
+
+        // all messages were acknowledged before
+        jmsSource
+          .takeWithin(5.seconds)
+          .runWith(Sink.seq)
+          .futureValue shouldBe empty
     }
 
     "applying backpressure when the consumer is slower than the producer" in withServer() { ctx =>
@@ -185,6 +209,12 @@ class JmsTxConnectorsSpec extends JmsSpec {
         .runWith(Sink.seq)
 
       result.futureValue should contain theSameElementsAs in
+
+      // all messages were acknowledged before
+      jmsSource
+        .takeWithin(5.seconds)
+        .runWith(Sink.seq)
+        .futureValue shouldBe empty
     }
 
     "disconnection should fail the stage" in withServer() { ctx =>
