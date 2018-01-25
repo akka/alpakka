@@ -4,17 +4,17 @@
 
 package akka.stream.alpakka.slick.scaladsl
 
-import scala.concurrent.Future
-import scala.concurrent.duration._
+import akka.Done
 
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.testkit.TestKit
-
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
-
+import slick.dbio.DBIOAction
 import slick.jdbc.GetResult
 
 /**
@@ -159,6 +159,104 @@ class SlickSpec extends WordSpec with ScalaFutures with BeforeAndAfterEach with 
       // we do single inserts without auto-commit but it only returns the result of the last insert
       inserted.toSet mustBe Set(1)
 
+      getAllUsersFromDb.futureValue mustBe users
+    }
+  }
+
+  "Slick.flowWithPassThrough(..)" must {
+    "insert 40 records into a table (no parallelism)" in {
+      val inserted = Source(users)
+        .via(Slick.flowWithPassThrough { user =>
+          insertUser(user).map(insertCount => (user, insertCount))
+        })
+        .runWith(Sink.seq)
+        .futureValue
+
+      inserted must have size (users.size)
+      inserted.map(_._1).toSet mustBe (users)
+      inserted.map(_._2).toSet mustBe Set(1)
+
+      getAllUsersFromDb.futureValue mustBe users
+    }
+
+    "insert 40 records into a table (parallelism = 4)" in {
+      val inserted = Source(users)
+        .via(Slick.flowWithPassThrough(parallelism = 4, user => {
+          insertUser(user).map(insertCount => (user, insertCount))
+        }))
+        .runWith(Sink.seq)
+        .futureValue
+
+      inserted must have size (users.size)
+      inserted.map(_._1).toSet mustBe (users)
+      inserted.map(_._2).toSet mustBe Set(1)
+
+      getAllUsersFromDb.futureValue mustBe users
+    }
+
+    "insert 40 records into a table faster using Flow.grouped (n = 10, parallelism = 4)" in {
+      val inserted = Source(users)
+        .grouped(10)
+        .via(
+          Slick.flowWithPassThrough(
+            parallelism = 4,
+            (group: Seq[User]) => {
+              val groupedDbActions = group.map(user => insertUser(user).map(insertCount => Seq((user, insertCount))))
+              DBIOAction.fold(groupedDbActions, Seq.empty[(User, Int)])(_ ++ _)
+            }
+          )
+        )
+        .runWith(Sink.fold(Seq.empty[(User, Int)])((a, b) => a ++ b))
+        .futureValue
+
+      inserted must have size (users.size)
+      inserted.map(_._1).toSet mustBe (users)
+      inserted.map(_._2).toSet mustBe Set(1)
+
+      getAllUsersFromDb.futureValue mustBe users
+    }
+
+    "kafka-example - store documents and pass Responses with passThrough" in {
+
+      //#kafka-example
+      // We're going to pretend we got messages from kafka.
+      // After we've written them to a db with Slick, we want
+      // to commit the offset to Kafka
+
+      case class KafkaOffset(offset: Int)
+      case class KafkaMessage[A](msg: A, offset: KafkaOffset) {
+        // map the msg and keep the offset
+        def map[B](f: A => B): KafkaMessage[B] = KafkaMessage(f(msg), offset)
+      }
+
+      val messagesFromKafka = users.zipWithIndex.map { case (user, index) => KafkaMessage(user, KafkaOffset(index)) }
+
+      var committedOffsets = List[KafkaOffset]()
+
+      def commitToKakfa(offset: KafkaOffset): Future[Done] = {
+        committedOffsets = committedOffsets :+ offset
+        Future.successful(Done)
+      }
+
+      val f1 = Source(messagesFromKafka) // Assume we get this from Kafka
+        .via( // write to db with Slick
+          Slick.flowWithPassThrough { kafkaMessage =>
+            insertUser(kafkaMessage.msg).map(insertCount => kafkaMessage.map(_ => insertCount))
+          }
+        )
+        .mapAsync(1) { kafkaMessage =>
+          if (kafkaMessage.msg == 0) throw new Exception("Failed to write message to db")
+          // Commit to kafka
+          commitToKakfa(kafkaMessage.offset)
+        }
+        .runWith(Sink.seq)
+
+      Await.ready(f1, Duration.Inf)
+
+      // Make sure all messages was committed to kafka
+      committedOffsets.map(_.offset).sorted mustBe ((0 until (users.size)).toList)
+
+      // Assert that all docs were written to db
       getAllUsersFromDb.futureValue mustBe users
     }
   }

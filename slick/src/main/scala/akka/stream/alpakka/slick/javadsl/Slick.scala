@@ -5,7 +5,7 @@
 package akka.stream.alpakka.slick.javadsl
 
 import java.util.concurrent.CompletionStage
-import java.util.function.{Function => JFunction}
+import java.util.function.{Function => JFunction, BiFunction => JBiFunction}
 
 import scala.compat.java8.FunctionConverters._
 import scala.compat.java8.FutureConverters._
@@ -90,6 +90,57 @@ object Slick {
       .asJava
 
   /**
+    * Java API: creates a Flow that takes a stream of elements of
+    *           type T, transforms each element to a SQL statement
+    *           using the specified function, then executes
+    *           those statements against the specified Slick database
+    *           and allows to combine the statement result and element into a result type R.
+    *
+    * @param session The database session to use.
+    * @param toStatement A function that creeates the SQL statement to
+    *                    execute from the current element. Any DML or
+    *                    DDL statement is acceptable.
+    * @param mapper A function to create a result from the incoming element T
+    *               and the database statement result.
+   */
+  def flowWithPassThrough[T, R](
+      session: SlickSession,
+      toStatement: JFunction[T, String],
+      mapper: JBiFunction[T, java.lang.Integer, R]
+  ): Flow[T, R, NotUsed] =
+    flowWithPassThrough(session, 1, toStatement, mapper)
+
+  /**
+    * Java API: creates a Flow that takes a stream of elements of
+    *           type T, transforms each element to a SQL statement
+    *           using the specified function, then executes
+    *           those statements against the specified Slick database
+    *           and allows to combine the statement result and element into a result type R.
+    *
+    * @param session The database session to use.
+    * @param parallelism How many parallel asynchronous streams should be
+    *                    used to send statements to the database. Use a
+    *                    value of 1 for sequential execution.
+    * @param toStatement A function that creeates the SQL statement to
+    *                    execute from the current element. Any DML or
+    *                    DDL statement is acceptable.
+    * @param mapper A function to create a result from the incoming element T
+    *               and the database statement result.
+   */
+  def flowWithPassThrough[T, R](
+      session: SlickSession,
+      parallelism: Int,
+      toStatement: JFunction[T, String],
+      mapper: JBiFunction[T, java.lang.Integer, R]
+  ): Flow[T, R, NotUsed] =
+    ScalaSlick
+      .flowWithPassThrough[T, R](parallelism, (t: T) => {
+        import concurrent.ExecutionContext.Implicits.global
+        toDBIO(toStatement).apply(t).map(count => mapper.apply(t, count))
+      })(session)
+      .asJava
+
+  /**
    * Java API: creates a Sink that takes a stream of elements of
    *           type T, transforms each element to a SQL statement
    *           using the specified function, and then executes
@@ -163,5 +214,9 @@ object Slick {
 
   private def toDBIO[T](javaDml: JFunction[T, String]): T => DBIO[Int] = { t =>
     SQLActionBuilder(javaDml.asScala(t), SetParameter.SetUnit).asUpdate
+  }
+
+  class JDBIO[T] {
+    def map[B](f: T => B): JDBIO[B] = ???
   }
 }
