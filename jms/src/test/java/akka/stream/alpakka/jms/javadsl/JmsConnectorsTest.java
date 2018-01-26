@@ -5,6 +5,7 @@
 package akka.stream.alpakka.jms.javadsl;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.AbruptStageTerminationException;
 import akka.stream.ActorMaterializer;
@@ -23,7 +24,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import javax.jms.DeliveryMode;
+import javax.jms.JMSException;
 import javax.jms.Message;
+import javax.jms.TextMessage;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -614,6 +617,49 @@ public class JmsConnectorsTest {
                 Throwable cause = e.getCause();
                 assertTrue(cause instanceof AbruptStageTerminationException);
             }
+        });
+    }
+
+    @Test
+    public void browse() throws Exception {
+        withServer(ctx -> {
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+            Sink<String, CompletionStage<Done>> jmsSink = JmsSink.textSink(
+                    JmsSinkSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+
+            List<String> in = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
+
+            Source.from(in).runWith(jmsSink, materializer).toCompletableFuture().get();
+
+            //#create-browse-source
+            Source<Message, NotUsed> browseSource = JmsSource.browse(
+                    JmsBrowseSettings
+                            .create(connectionFactory)
+                            .withQueue("test")
+            );
+            //#create-browse-source
+
+            //#run-browse-source
+            CompletionStage<List<Message>> result = browseSource
+                    .runWith(Sink.seq(), materializer);
+            //#run-browse-source
+
+            List<String> resultText = result.toCompletableFuture().get()
+                    .stream()
+                    .map(message -> {
+                        try {
+                            return ((ActiveMQTextMessage) message).getText();
+                        } catch (JMSException e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .collect(Collectors.toList());
+
+            assertEquals(in, resultText);
         });
     }
 

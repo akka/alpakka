@@ -373,6 +373,34 @@ Java
 *  Buffering is not supported in transaction mode. The `bufferSize` is ignored.
 *  The default `AcknowledgeMode` is `SessionTransacted` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsSourceSettings` when creating the stream. 
  
+### Browsing messages from a JMS provider
+
+The browse source will stream the messages in a queue without consuming them.
+
+Create a source:
+
+Scala
+: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-browse-source }
+
+Java
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-browse-source }
+
+The `messageSelector` parameter can be used to filter the messages. Otherwise it will browse the entire content of the queue.
+
+Unlike the other sources, the browse source will complete after browsing all the messages:
+
+Scala
+: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-browse-source }
+
+Java
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-browse-source }
+
+**Notes:**
+
+*  Messages may be arriving and expiring while the scan is done.
+*  The JMS API does not require the content of an enumeration to be a static snapshot of queue content. Whether these changes are visible or not depends on the JMS provider.
+*  A message must not be returned by a QueueBrowser before its delivery time has been reached.
+
 
 ### Using Topic with an JMS provider
 
