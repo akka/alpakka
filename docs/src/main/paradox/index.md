@@ -5,9 +5,9 @@ and data transformations for integration use cases. Here you can find documentat
 part of this project as well as links to components that are maintained by other projects.
 
 If you'd like to know what integrations with Alpakka look like, have a look at our 
-[self-contained examples](examples/index.html) section.
+@ref[self-contained examples](examples/index.md) section.
 
-There are a few blog posts and presentations about Alpakka out there, we've [collected some](other-docs.md).
+There are a few blog posts and presentations about Alpakka out there, we've @ref[collected some](other-docs.md).
 
 The code in this documentation is compiled against
 
