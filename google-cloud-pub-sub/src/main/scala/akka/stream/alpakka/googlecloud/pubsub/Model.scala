@@ -4,10 +4,15 @@
 
 package akka.stream.alpakka.googlecloud.pubsub
 
+import java.time.Instant
+
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 
-final case class PubSubMessage(data: String, messageId: String, attributes: immutable.Map[String, String] = Map.empty)
+final case class PubSubMessage(data: String,
+                               messageId: String,
+                               attributes: Option[immutable.Map[String, String]] = None,
+                               publishTime: Option[Instant] = None)
 
 final case class PublishRequest(messages: immutable.Seq[PubSubMessage])
 
