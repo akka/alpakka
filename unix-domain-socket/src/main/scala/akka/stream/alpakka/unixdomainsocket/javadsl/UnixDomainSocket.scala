@@ -28,13 +28,13 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
   final class ServerBinding private[akka] (delegate: ScalaUnixDomainSocket.ServerBinding) {
 
     /**
-     * The local address of the endpoint bound by the materialization of the `connections` [[Source]].
+     * The local address of the endpoint bound by the materialization of the `connections` [[akka.stream.javadsl.Source Source]].
      */
     def localAddress: UnixSocketAddress = delegate.localAddress
 
     /**
      * Asynchronously triggers the unbinding of the port that was bound by the materialization of the `connections`
-     * [[Source]].
+     * [[akka.stream.javadsl.Source Source]].
      *
      * The produced [[java.util.concurrent.CompletionStage]] is fulfilled when the unbinding has been completed.
      */

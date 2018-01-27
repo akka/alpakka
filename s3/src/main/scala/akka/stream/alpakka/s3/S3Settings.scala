@@ -52,18 +52,18 @@ case object DiskBufferType {
 object S3Settings {
 
   /**
-   * Scala API: Creates [[S3Settings]] from the [[Config]] attached to an [[ActorSystem]].
+   * Scala API: Creates [[S3Settings]] from the [[com.typesafe.config.Config Config]] attached to an [[akka.actor.ActorSystem]].
    */
   def apply()(implicit system: ActorSystem): S3Settings = apply(system.settings.config)
 
   /**
-   * Scala API: Creates [[S3Settings]] from the [[Config]] attached to an [[ActorSystem]].
+   * Scala API: Creates [[S3Settings]] from the [[com.typesafe.config.Config Config]] attached to an [[akka.actor.ActorSystem]].
    */
   def apply(configurationPrefix: String)(implicit system: ActorSystem): S3Settings =
     apply(system.settings.config, configurationPrefix)
 
   /**
-   * Scala API: Creates [[S3Settings]] from a [[Config]] object.
+   * Scala API: Creates [[S3Settings]] from a [[com.typesafe.config.Config Config]] object.
    */
   def apply(config: Config, configurationPrefix: String = "akka.stream.alpakka.s3"): S3Settings = {
     val s3Config = config.getConfig(configurationPrefix)
@@ -173,12 +173,12 @@ object S3Settings {
   }
 
   /**
-   * Java API: Creates [[S3Settings]] from the [[Config]] attached to an [[ActorSystem]].
+   * Java API: Creates [[S3Settings]] from the [[com.typesafe.config.Config Config]] attached to an [[akka.actor.ActorSystem]].
    */
   def create(system: ActorSystem): S3Settings = apply()(system)
 
   /**
-   * Java API: Creates [[S3Settings]] from a [[Config]].
+   * Java API: Creates [[S3Settings]] from a [[com.typesafe.config.Config Config]].
    */
   def create(config: Config) = apply(config)
 }
