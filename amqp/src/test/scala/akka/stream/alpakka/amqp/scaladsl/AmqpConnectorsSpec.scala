@@ -12,6 +12,7 @@ import akka.stream.scaladsl.{GraphDSL, Keep, Merge, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{TestPublisher, TestSubscriber}
 import akka.util.ByteString
+import com.rabbitmq.client.AuthenticationFailureException
 
 import scala.concurrent.{Await, Promise}
 import scala.concurrent.duration._
@@ -65,6 +66,26 @@ class AmqpConnectorsSpec extends AmqpSpec {
       //#run-source
 
       result.futureValue.map(_.bytes.utf8String) shouldEqual input
+    }
+
+    "connection should fail with wrong crecentials" in {
+      val connectionProvider =
+        AmqpDetailsConnectionProvider(List(("invalid", 5673)))
+          .withHostsAndPorts(("localhost", 5672))
+          .withCredentials(AmqpCredentials("guest", "guest1"))
+
+      val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
+      val queueDeclaration = QueueDeclaration(queueName)
+
+      val amqpSink = AmqpSink.simple(
+        AmqpSinkSettings(connectionProvider)
+          .withRoutingKey(queueName)
+          .withDeclarations(queueDeclaration)
+      )
+
+      val input = Vector("one", "two", "three", "four", "five")
+      val result = Source(input).map(s => ByteString(s)).runWith(amqpSink)
+      result.failed.futureValue shouldBe an[AuthenticationFailureException]
     }
 
     "publish via RPC and then consume through a simple queue again in the same JVM" in {

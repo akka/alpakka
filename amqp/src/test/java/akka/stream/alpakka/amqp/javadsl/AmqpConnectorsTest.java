@@ -19,6 +19,7 @@ import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+import com.rabbitmq.client.AuthenticationFailureException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -97,6 +99,35 @@ public class AmqpConnectorsTest {
     //#run-source
 
     assertEquals(input, result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.bytes().utf8String()).collect(Collectors.toList()));
+  }
+
+  @Test(expected = AuthenticationFailureException.class)
+  public void throwWithWrongCredentials() throws Throwable {
+    final String queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis();
+    final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
+
+    @SuppressWarnings("unchecked")
+    AmqpDetailsConnectionProvider connectionProvider = AmqpDetailsConnectionProvider.create("invalid", 5673)
+            .withHostsAndPorts(Pair.create("localhost", 5672), Pair.create("localhost", 5674))
+            .withCredentials(AmqpCredentials.create("guest", "guest1"));
+
+    final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
+            AmqpSinkSettings.create(connectionProvider)
+                    .withRoutingKey(queueName)
+                    .withDeclarations(queueDeclaration)
+    );
+
+    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
+    final CompletionStage<Done> result = Source.from(input)
+            .map(ByteString::fromString)
+            .runWith(amqpSink, materializer);
+
+    try {
+      result.toCompletableFuture().get();
+    } catch (ExecutionException e) {
+      throw e.getCause();
+    }
+    //assertEquals(input, result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.bytes().utf8String()).collect(Collectors.toList()));
   }
 
   @Test
