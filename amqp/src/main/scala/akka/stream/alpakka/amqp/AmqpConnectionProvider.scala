@@ -112,7 +112,6 @@ final case class AmqpDetailsConnectionProvider(
     import scala.collection.JavaConverters._
     val factory = new ConnectionFactory
     credentials.foreach { credentials =>
-      val factory = new ConnectionFactory
       factory.setUsername(credentials.username)
       factory.setPassword(credentials.password)
     }
