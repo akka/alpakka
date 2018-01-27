@@ -9,6 +9,8 @@ import akka.stream.alpakka.elasticsearch._
 import akka.stream.javadsl.Source
 import org.elasticsearch.client.RestClient
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.{ArrayNode, NumericNode}
+
 import scala.collection.JavaConverters._
 
 /**
@@ -18,12 +20,25 @@ object ElasticsearchSource {
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s of [[java.util.Map]].
+   * Using default objectMapper
    */
   def create(indexName: String,
              typeName: String,
              query: String,
              settings: ElasticsearchSourceSettings,
              client: RestClient): Source[OutgoingMessage[java.util.Map[String, Object]], NotUsed] =
+    create(indexName, typeName, query, settings, client, new ObjectMapper())
+
+  /**
+   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s of [[java.util.Map]].
+   * Using custom objectMapper
+   */
+  def create(indexName: String,
+             typeName: String,
+             query: String,
+             settings: ElasticsearchSourceSettings,
+             client: RestClient,
+             objectMapper: ObjectMapper): Source[OutgoingMessage[java.util.Map[String, Object]], NotUsed] =
     Source.fromGraph(
       new ElasticsearchSourceStage(
         indexName,
@@ -31,12 +46,13 @@ object ElasticsearchSource {
         query,
         client,
         settings.asScala,
-        new JacksonReader[java.util.Map[String, Object]](classOf[java.util.Map[String, Object]])
+        new JacksonReader[java.util.Map[String, Object]](objectMapper, classOf[java.util.Map[String, Object]])
       )
     )
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s of type `T`.
+   * Using default objectMapper
    */
   def typed[T](indexName: String,
                typeName: String,
@@ -44,6 +60,19 @@ object ElasticsearchSource {
                settings: ElasticsearchSourceSettings,
                client: RestClient,
                clazz: Class[T]): Source[OutgoingMessage[T], NotUsed] =
+    typed[T](indexName, typeName, query, settings, client, clazz, new ObjectMapper())
+
+  /**
+   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s of type `T`.
+   * Using custom objectMapper
+   */
+  def typed[T](indexName: String,
+               typeName: String,
+               query: String,
+               settings: ElasticsearchSourceSettings,
+               client: RestClient,
+               clazz: Class[T],
+               objectMapper: ObjectMapper): Source[OutgoingMessage[T], NotUsed] =
     Source.fromGraph(
       new ElasticsearchSourceStage(
         indexName,
@@ -51,35 +80,30 @@ object ElasticsearchSource {
         query,
         client,
         settings.asScala,
-        new JacksonReader[T](clazz)
+        new JacksonReader[T](objectMapper, clazz)
       )
     )
 
-  private class JacksonReader[T](clazz: Class[T]) extends MessageReader[T] {
-
-    private val mapper = new ObjectMapper()
+  private class JacksonReader[T](mapper: ObjectMapper, clazz: Class[T]) extends MessageReader[T] {
 
     override def convert(json: String): ScrollResponse[T] = {
-      val map = mapper.readValue(json, classOf[java.util.Map[String, Object]])
-      val error = map.get("error")
-      if (error != null) {
-        ScrollResponse(Some(error.toString), None)
+
+      val jsonTree = mapper.readTree(json)
+
+      if (jsonTree.has("error")) {
+        ScrollResponse(Some(jsonTree.get("error").asText()), None)
       } else {
-        val scrollId = map.get("_scroll_id").asInstanceOf[String]
-        val hits = map
-          .get("hits")
-          .asInstanceOf[java.util.Map[String, Object]]
-          .get("hits")
-          .asInstanceOf[java.util.List[java.util.Map[String, Object]]]
-        val messages = hits.asScala.map { element =>
-          val id = element.get("_id").asInstanceOf[String]
-          val source = element.get("_source").asInstanceOf[java.util.Map[String, Object]]
-          if (clazz.isAssignableFrom(classOf[java.util.Map[String, Object]])) {
-            OutgoingMessage[T](id, source.asInstanceOf[T])
-          } else {
-            val obj = mapper.readValue(mapper.writeValueAsString(source), clazz)
-            OutgoingMessage[T](id, obj)
+        val scrollId = jsonTree.get("_scroll_id").asText()
+        val hits = jsonTree.get("hits").get("hits").asInstanceOf[ArrayNode]
+        val messages = hits.elements().asScala.toList.map { element =>
+          val id = element.get("_id").asText()
+          val source = element.get("_source")
+          val version: Option[Long] = element.get("_version") match {
+            case n: NumericNode => Some(n.asLong())
+            case _ => None
           }
+
+          OutgoingMessage[T](id, mapper.treeToValue(source, clazz), version)
         }
         ScrollResponse(None, Some(ScrollResult(scrollId, messages)))
       }
