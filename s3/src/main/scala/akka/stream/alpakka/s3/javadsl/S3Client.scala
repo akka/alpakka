@@ -435,7 +435,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
-   * @return A [[Pair]] with a [[Source]] of [[ByteString]], and a [[CompletionStage]] containing the [[ObjectMetadata]]
+   * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source]] of [[ByteString]], and a [[CompletionStage]] containing the [[ObjectMetadata]]
    */
   def download(bucket: String, key: String): JPair[Source[ByteString, NotUsed], CompletionStage[ObjectMetadata]] =
     toJava(impl.download(S3Location(bucket, key), None, None))
@@ -446,7 +446,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param sse the server side encryption to use
-   * @return A [[Pair]] with a [[Source]] of [[ByteString]], and a [[CompletionStage]] containing the [[ObjectMetadata]]
+   * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source]] of [[ByteString]], and a [[CompletionStage]] containing the [[ObjectMetadata]]
    */
   def download(bucket: String,
                key: String,
@@ -459,7 +459,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param range the [[ByteRange]] you want to download
-   * @return A [[Pair]] with a [[Source]] of [[ByteString]], and a [[CompletionStage]] containing the [[ObjectMetadata]]
+   * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source]] of [[ByteString]], and a [[CompletionStage]] containing the [[ObjectMetadata]]
    */
   def download(bucket: String,
                key: String,
@@ -475,7 +475,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @param key the s3 object key
    * @param range the [[ByteRange]] you want to download
    * @param sse the server side encryption to use
-   * @return A [[Pair]] with a [[Source]] of [[ByteString]], and a [[CompletionStage]] containing the [[ObjectMetadata]]
+   * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source]] of [[ByteString]], and a [[CompletionStage]] containing the [[ObjectMetadata]]
    */
   def download(bucket: String,
                key: String,

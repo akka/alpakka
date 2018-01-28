@@ -72,13 +72,12 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     import mat.executionContext
     val s3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(GetObject) })
     val future = request(s3Location, rangeOption = range, s3Headers = s3Headers)
-    (
-      Source
-        .fromFuture(future.flatMap(entityForSuccess))
-        .map(_.dataBytes)
-        .flatMapConcat(identity),
-      future.map(resp ⇒ ObjectMetadata(resp.headers))
-    )
+    val source = Source
+      .fromFuture(future.flatMap(entityForSuccess))
+      .map(_.dataBytes)
+      .flatMapConcat(identity)
+    val meta = future.map(resp ⇒ ObjectMetadata(resp.headers))
+    (source, meta)
   }
 
   def listBucket(bucket: String, prefix: Option[String] = None): Source[ListBucketResultContents, NotUsed] = {
