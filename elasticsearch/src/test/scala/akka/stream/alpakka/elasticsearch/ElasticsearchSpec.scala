@@ -87,7 +87,8 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
            |    }
            |  }
            |}
-         """.stripMargin)
+         """.stripMargin),
+      new BasicHeader("Content-Type", "application/json")
     )
 
   private def register(indexName: String, title: String): Unit =
