@@ -431,7 +431,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
     "sink successful completion" in withServer() { ctx =>
       val url: String = ctx.url
-      val connectionFactory = new ActiveMQConnectionFactory(url)
+      val connectionFactory = new CachedConnectionFactory(url)
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
         JmsSinkSettings(connectionFactory).withQueue("numbers")
@@ -443,11 +443,13 @@ class JmsConnectorsSpec extends JmsSpec {
 
       val completionFuture: Future[Done] = Source(msgsIn).runWith(jmsSink)
       completionFuture.futureValue shouldBe Done
+      // make sure connection was closed
+      connectionFactory.cachedConnection.isClosed shouldBe true
     }
 
     "sink exceptional completion" in withServer() { ctx =>
       val url: String = ctx.url
-      val connectionFactory = new ActiveMQConnectionFactory(url)
+      val connectionFactory = new CachedConnectionFactory(url)
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
         JmsSinkSettings(connectionFactory).withQueue("numbers")
@@ -457,13 +459,15 @@ class JmsConnectorsSpec extends JmsSpec {
         .failed[JmsTextMessage](new RuntimeException("Simulated error"))
         .runWith(jmsSink)
       completionFuture.failed.futureValue shouldBe an[RuntimeException]
+      // make sure connection was closed
+      connectionFactory.cachedConnection.isClosed shouldBe true
     }
 
     "sink disconnect exceptional completion" in withServer() { ctx =>
       import system.dispatcher
 
       val url: String = ctx.url
-      val connectionFactory = new ActiveMQConnectionFactory(url)
+      val connectionFactory = new CachedConnectionFactory(url)
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsSink(
         JmsSinkSettings(connectionFactory).withQueue("numbers")
@@ -482,6 +486,8 @@ class JmsConnectorsSpec extends JmsSpec {
       ctx.broker.stop()
 
       completionFuture.failed.futureValue shouldBe an[AbruptStageTerminationException]
+      // connection was not yet initialized before broker stop
+      connectionFactory.cachedConnection shouldBe null
     }
 
     "ensure no message loss when stopping a stream" in withServer() { ctx =>

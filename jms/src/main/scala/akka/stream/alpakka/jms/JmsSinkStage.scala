@@ -158,6 +158,7 @@ final class JmsSinkStage(settings: JmsSinkSettings)
       override def postStop(): Unit = {
         if (!completionPromise.isCompleted) completionPromise.tryFailure(new AbruptStageTerminationException(this))
         jmsSessions.foreach(_.closeSession())
+        jmsConnection.foreach(_.close)
       }
     }
 
