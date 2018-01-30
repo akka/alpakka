@@ -108,7 +108,7 @@ public class AmqpConnectorsTest {
 
     @SuppressWarnings("unchecked")
     AmqpDetailsConnectionProvider connectionProvider = AmqpDetailsConnectionProvider.create("invalid", 5673)
-            .withHostsAndPorts(Pair.create("localhost", 5672), Pair.create("localhost", 5674))
+            .withHostsAndPorts(Pair.create("localhost", 5672))
             .withCredentials(AmqpCredentials.create("guest", "guest1"));
 
     final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
