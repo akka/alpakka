@@ -183,7 +183,7 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
 
       val download = settings.defaultRegionClient.download(settings.defaultRegionBucket, settings.objectKey)
 
-      val result = download.map(_.decodeString("utf8")).runWith(Sink.head)
+      val result = download._1.map(_.decodeString("utf8")).runWith(Sink.head)
 
       Await.ready(result, 5.seconds).futureValue shouldBe settings.objectValue
     }
@@ -199,6 +199,7 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
         )
         download <- settings.defaultRegionClient
           .download(settings.defaultRegionBucket, settings.objectKey)
+          ._1
           .map(_.decodeString("utf8"))
           .runWith(Sink.head)
       } yield (upload, download)
@@ -221,6 +222,7 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
         )
         download <- settings.defaultRegionClient
           .download(settings.defaultRegionBucket, settings.objectKey)
+          ._1
           .map(_.decodeString("utf8"))
           .runWith(Sink.head)
       } yield (upload, download)
@@ -243,6 +245,7 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
         )
         download <- settings.otherRegionClient
           .download(settings.otherRegionBucket, settings.objectKey)
+          ._1
           .map(_.decodeString("utf8"))
           .runWith(Sink.head)
       } yield (upload, download)
@@ -265,6 +268,7 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
         )
         download <- settings.otherRegionClient
           .download(settings.otherRegionBucket, settings.objectKey)
+          ._1
           .map(_.decodeString("utf8"))
           .runWith(Sink.head)
       } yield (upload, download)

@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import akka.NotUsed;
 import akka.http.javadsl.model.Uri;
 import akka.http.javadsl.model.headers.ByteRange;
+import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.s3.MemoryBufferType;
@@ -105,7 +106,8 @@ public class S3ClientTest extends S3WireMockBase {
         mockDownload();
 
         //#download
-        final Source<ByteString, CompletionStage<ObjectMetadata>> source = client.download(bucket(), bucketKey());
+        final Pair<Source<ByteString, NotUsed>, CompletionStage<ObjectMetadata>> sourceAndMeta = client.download(bucket(), bucketKey());
+        final Source<ByteString, NotUsed> source = sourceAndMeta.first();
         //#download
 
         final CompletionStage<String> resultCompletionStage =
@@ -150,7 +152,8 @@ public class S3ClientTest extends S3WireMockBase {
         mockDownloadSSEC();
 
         //#download
-        final Source<ByteString, CompletionStage<ObjectMetadata>> source = client.download(bucket(), bucketKey(), sseCustomerKeys());
+        final Pair<Source<ByteString, NotUsed>, CompletionStage<ObjectMetadata>> sourceAndMeta = client.download(bucket(), bucketKey(), sseCustomerKeys());
+        final Source<ByteString, NotUsed> source = sourceAndMeta.first();
         //#download
 
         final CompletionStage<String> resultCompletionStage =
@@ -167,8 +170,9 @@ public class S3ClientTest extends S3WireMockBase {
         mockRangedDownload();
 
         //#rangedDownload
-        final Source<ByteString, CompletionStage<ObjectMetadata>> source = client.download(bucket(), bucketKey(),
+        final Pair<Source<ByteString, NotUsed>, CompletionStage<ObjectMetadata>> sourceAndMeta = client.download(bucket(), bucketKey(),
                 ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()));
+        final Source<ByteString, NotUsed> source = sourceAndMeta.first();
         //#rangedDownload
 
         final CompletionStage<byte[]> resultCompletionStage =
@@ -185,8 +189,9 @@ public class S3ClientTest extends S3WireMockBase {
         mockRangedDownloadSSE();
 
         //#rangedDownload
-        final Source<ByteString, CompletionStage<ObjectMetadata>> source = client.download(bucket(), bucketKey(),
+        final Pair<Source<ByteString, NotUsed>, CompletionStage<ObjectMetadata>> sourceAndMeta = client.download(bucket(), bucketKey(),
                 ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()), sseCustomerKeys());
+        final Source<ByteString, NotUsed> source = sourceAndMeta.first();
         //#rangedDownload
 
         final CompletionStage<byte[]> resultCompletionStage =

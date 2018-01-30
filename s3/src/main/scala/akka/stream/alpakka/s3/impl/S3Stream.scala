@@ -68,19 +68,16 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
   def download(s3Location: S3Location,
                range: Option[ByteRange],
-               sse: Option[ServerSideEncryption]): Source[ByteString, Future[ObjectMetadata]] = {
+               sse: Option[ServerSideEncryption]): (Source[ByteString, NotUsed], Future[ObjectMetadata]) = {
     import mat.executionContext
     val s3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(GetObject) })
     val future = request(s3Location, rangeOption = range, s3Headers = s3Headers)
-    Source
+    val source = Source
       .fromFuture(future.flatMap(entityForSuccess))
       .map(_.dataBytes)
       .flatMapConcat(identity)
-      .mapMaterializedValue { _ =>
-        future.map { resp =>
-          ObjectMetadata(resp.headers)
-        }
-      }
+    val meta = future.map(resp ⇒ ObjectMetadata(resp.headers))
+    (source, meta)
   }
 
   def listBucket(bucket: String, prefix: Option[String] = None): Source[ListBucketResultContents, NotUsed] = {

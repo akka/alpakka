@@ -35,7 +35,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockDownload()
 
     //#download
-    val s3Source: Source[ByteString, _] = s3Client.download(bucket, bucketKey)
+    val (s3Source: Source[ByteString, _], _) = s3Client.download(bucket, bucketKey)
     //#download
 
     val result: Future[String] = s3Source.map(_.utf8String).runWith(Sink.head)
@@ -72,7 +72,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockRangedDownload()
 
     //#rangedDownload
-    val s3Source: Source[ByteString, _] =
+    val (s3Source: Source[ByteString, _], _) =
       s3Client.download(bucket, bucketKey, Some(ByteRange(bytesRangeStart, bytesRangeEnd)))
     //#rangedDownload
 
@@ -86,7 +86,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockDownloadSSEC()
 
     //#download
-    val s3Source = s3Client.download(bucket, bucketKey, sse = Some(sseCustomerKeys))
+    val (s3Source, _) = s3Client.download(bucket, bucketKey, sse = Some(sseCustomerKeys))
     //#download
 
     val result = s3Source.map(_.utf8String).runWith(Sink.head)
@@ -100,6 +100,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     val result = s3Client
       .download("nonexisting_bucket", "nonexisting_file.xml")
+      ._1
       .map(_.utf8String)
       .runWith(Sink.head)
 
@@ -116,6 +117,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     val sse = ServerSideEncryption.CustomerKeys("encoded-key", Some("md5-encoded-key"))
     val result = s3Client
       .download(bucket, bucketKey, sse = Some(sse))
+      ._1
       .map(_.utf8String)
       .runWith(Sink.head)
 

@@ -129,11 +129,11 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
 
   it should "download with real credentials" in {
 
-    val download = defaultRegionClient.download(defaultRegionBucket, objectKey)
+    val (source, metaFuture) = defaultRegionClient.download(defaultRegionBucket, objectKey)
 
-    val (metaFuture, bodyFuture) = download
+    val bodyFuture = source
       .map(_.decodeString("utf8"))
-      .toMat(Sink.head)(Keep.both)
+      .toMat(Sink.head)(Keep.right)
       .run()
 
     val result = for {
@@ -161,6 +161,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
       )
       download <- defaultRegionClient
         .download(defaultRegionBucket, objectKey)
+        ._1
         .map(_.decodeString("utf8"))
         .runWith(Sink.head)
     } yield (upload, download)
@@ -184,6 +185,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
       )
       download <- defaultRegionClient
         .download(defaultRegionBucket, objectKey)
+        ._1
         .map(_.decodeString("utf8"))
         .runWith(Sink.head)
     } yield (upload, download)
@@ -207,6 +209,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
       )
       download <- otherRegionClient
         .download(otherRegionBucket, objectKey)
+        ._1
         .map(_.decodeString("utf8"))
         .runWith(Sink.head)
     } yield (upload, download)
@@ -231,6 +234,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
       )
       download <- otherRegionClient
         .download(otherRegionBucket, objectKey)
+        ._1
         .map(_.decodeString("utf8"))
         .runWith(Sink.head)
     } yield (upload, download)
