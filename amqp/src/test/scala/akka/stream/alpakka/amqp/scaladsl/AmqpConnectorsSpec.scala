@@ -68,7 +68,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       result.futureValue.map(_.bytes.utf8String) shouldEqual input
     }
 
-    "connection should fail with wrong crecentials" in {
+    "connection should fail with wrong credentials" in {
       val connectionProvider =
         AmqpDetailsConnectionProvider(List(("invalid", 5673)))
           .withHostsAndPorts(("localhost", 5672))
