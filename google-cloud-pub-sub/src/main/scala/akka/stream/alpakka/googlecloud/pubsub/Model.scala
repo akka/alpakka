@@ -32,3 +32,11 @@ private final case class PullResponse(receivedMessages: Option[immutable.Seq[Rec
 private final case class OAuthResponse(access_token: String, token_type: String, expires_in: Int)
 
 private final case class AccessTokenExpiry(accessToken: String, expiresAt: Long)
+
+case class PubSubConfig(
+    host: String,
+    port: Int,
+    usePlaintext: Boolean,
+    maxMessages: Int,
+    returnImmediately: Boolean
+)
