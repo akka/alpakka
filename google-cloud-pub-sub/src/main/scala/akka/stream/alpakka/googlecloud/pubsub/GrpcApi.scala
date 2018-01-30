@@ -5,10 +5,11 @@
 package akka.stream.alpakka.googlecloud.pubsub
 
 import akka.stream.Materializer
+import com.google.pubsub.v1.PubsubMessage
 
 /** Pub/Sub **/
 import com.google.auth.oauth2.GoogleCredentials
-import com.google.pubsub.v1.{PullRequest, SubscriberGrpc, AcknowledgeRequest => AR}
+import com.google.pubsub.v1.{PullRequest, SubscriberGrpc, PublisherGrpc, AcknowledgeRequest => AR}
 import com.google.pubsub.v1
 
 /** gRPC **/
@@ -46,7 +47,12 @@ private class GrpcApi(project: String, subscription: String, config: PubSubConfi
       .newFutureStub(grpcChannel)
       .withCallCredentials(callCredentials)
 
-  def read[A]: Future[v1.PullResponse] = {
+  private val publisherStub =
+    PublisherGrpc
+      .newFutureStub(grpcChannel)
+      .withCallCredentials(callCredentials)
+
+  def read: Future[v1.PullResponse] = {
     val pullRequest = PullRequest
       .newBuilder()
       .setSubscription(subscriptionFqrn)
@@ -54,6 +60,16 @@ private class GrpcApi(project: String, subscription: String, config: PubSubConfi
       .setReturnImmediately(config.returnImmediately)
 
     subscriberStub.pull(pullRequest.build()).asScalaFuture
+  }
+
+  def publish(msg: PubsubMessage, topic: String): Future[v1.PublishResponse] = {
+    val pr = v1.PublishRequest
+      .newBuilder()
+      .addMessages(msg)
+      .setTopic(topic)
+      .build()
+
+    publisherStub.publish(pr).asScalaFuture
   }
 
   def ackBatch(ackIds: Seq[AckId]): Future[Unit] = {

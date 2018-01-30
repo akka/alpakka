@@ -4,8 +4,6 @@
 
 package akka.stream.alpakka.googlecloud.pubsub.scaladsl
 
-import java.security.PrivateKey
-
 import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream.Materializer
@@ -27,10 +25,6 @@ object GooglePubSubGrpc {
       override private[pubsub] val subscription = subscriptionI
       override private[pubsub] val parallelism = parallelismI
     }
-
-  @akka.annotation.InternalApi
-  private[pubsub] def getSession(clientEmail: String, privateKey: PrivateKey): Session =
-    new Session(clientEmail, privateKey)
 }
 
 protected[pubsub] trait GooglePubSubGrpc {
