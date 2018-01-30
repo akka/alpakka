@@ -4,32 +4,10 @@
 
 package akka.stream.alpakka.googlecloud.pubsub
 
-import java.time.Instant
-
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 
-final case class PubSubMessage(data: String,
-                               messageId: String,
-                               attributes: Option[immutable.Map[String, String]] = None,
-                               publishTime: Option[Instant] = None) {
-
-  def withAttributes(attributes: java.util.Map[String, String]): PubSubMessage =
-    copy(attributes = Some(attributes.asScala.toMap))
-
-  def withPublishTime(publishTime: Instant): PubSubMessage =
-    copy(publishTime = Some(publishTime))
-
-}
-
-object PubSubMessage {
-
-  /**
-   * Java API: create [[PubSubMessage]]
-   */
-  def create(data: String, messageId: String) =
-    PubSubMessage(data, messageId)
-}
+final case class PubSubMessage(data: String, messageId: String)
 
 final case class PublishRequest(messages: immutable.Seq[PubSubMessage])
 
@@ -54,3 +32,11 @@ private final case class PullResponse(receivedMessages: Option[immutable.Seq[Rec
 private final case class OAuthResponse(access_token: String, token_type: String, expires_in: Int)
 
 private final case class AccessTokenExpiry(accessToken: String, expiresAt: Long)
+
+final case class PubSubConfig(
+    host: String = "pubsub.googleapis.com",
+    port: Int = 443,
+    usePlaintext: Boolean = false,
+    returnImmediately: Boolean = true,
+    maxMessages: Int = 1000
+)
