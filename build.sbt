@@ -92,10 +92,8 @@ lazy val googleCloudPubSub = alpakkaProject(
   fork in Test := true,
   envVars in Test := Map("PUBSUB_EMULATOR_HOST" -> "localhost:8538"),
   // For mockito https://github.com/akka/alpakka/issues/390
-  parallelExecution in Test := false,
-  publishTo := Some("Artifactory Realm" at "http://artifactory.prmutv.com/artifactory/permutive-libraries"),
-  credentials += Credentials(Path.userHome / ".sbt" / ".deploy-credentials")
-).disablePlugins(BintrayPlugin)
+  parallelExecution in Test := false
+)
 
 lazy val hbase = alpakkaProject("hbase", Dependencies.HBase, fork in Test := true)
 
