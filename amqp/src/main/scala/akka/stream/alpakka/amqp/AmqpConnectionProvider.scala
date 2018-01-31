@@ -156,13 +156,30 @@ object AmqpCredentials {
     AmqpCredentials(username, password)
 }
 
+/**
+ * Uses a native [[com.rabbitmq.client.ConnectionFactory]] to configure an AMQP connection factory.
+ *
+ * @param factory      The instance of the ConnectionFactory to build the connection from.
+ * @param hostAndPorts An optional list of host and ports.
+ *                     If empty, it defaults to the host and port in the underlying factory.
+ */
 final case class AmqpConnectionFactoryConnectionProvider(factory: ConnectionFactory,
-                                                         hostAndPortList: Seq[(String, Int)] = Seq())
+                                                         private val hostAndPorts: Seq[(String, Int)] = Seq())
     extends AmqpConnectionProvider {
+
+  /**
+   * @return A list of hosts and ports for this AMQP connection factory.
+   *         Uses host and port from the underlying factory if hostAndPorts was left out on construction.
+   */
+  def hostAndPortList: Seq[(String, Int)] =
+    if (hostAndPorts.isEmpty)
+      Seq((factory.getHost, factory.getPort))
+    else
+      hostAndPorts.toList
 
   def withHostsAndPorts(hostAndPort: (String, Int),
                         hostAndPorts: (String, Int)*): AmqpConnectionFactoryConnectionProvider =
-    copy(hostAndPortList = (hostAndPort +: hostAndPorts).toList)
+    copy(hostAndPorts = (hostAndPort +: hostAndPorts).toList)
 
   /**
    * Java API
@@ -170,7 +187,7 @@ final case class AmqpConnectionFactoryConnectionProvider(factory: ConnectionFact
   @annotation.varargs
   def withHostsAndPorts(hostAndPort: akka.japi.Pair[String, Int],
                         hostAndPorts: akka.japi.Pair[String, Int]*): AmqpConnectionFactoryConnectionProvider =
-    copy(hostAndPortList = (hostAndPort +: hostAndPorts).map(_.toScala).toList)
+    copy(hostAndPorts = (hostAndPort +: hostAndPorts).map(_.toScala).toList)
 
   override def get: Connection = {
     import scala.collection.JavaConverters._
