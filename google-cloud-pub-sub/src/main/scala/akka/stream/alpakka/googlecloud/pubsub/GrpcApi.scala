@@ -5,7 +5,6 @@
 package akka.stream.alpakka.googlecloud.pubsub
 
 import akka.stream.Materializer
-import com.google.pubsub.v1.PubsubMessage
 
 /** Pub/Sub **/
 import com.google.auth.oauth2.GoogleCredentials
@@ -62,15 +61,8 @@ private class GrpcApi(project: String, subscription: String, config: PubSubConfi
     subscriberStub.pull(pullRequest.build()).asScalaFuture
   }
 
-  def publish(msg: PubsubMessage, topic: String): Future[v1.PublishResponse] = {
-    val pr = v1.PublishRequest
-      .newBuilder()
-      .addMessages(msg)
-      .setTopic(topic)
-      .build()
-
+  def publish(pr: v1.PublishRequest): Future[v1.PublishResponse] =
     publisherStub.publish(pr).asScalaFuture
-  }
 
   def ackBatch(ackIds: Seq[AckId]): Future[Unit] = {
     val ackRequest = AR

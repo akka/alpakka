@@ -19,7 +19,7 @@ object GooglePubSubGrpc {
       implicit materializer: Materializer
   ): GooglePubSubGrpc =
     new GooglePubSubGrpc {
-      override private[pubsub] def api = new GrpcApi(projectI, subscriptionI, pubSubConfig)
+      override private[pubsub] val api = new GrpcApi(projectI, subscriptionI, pubSubConfig)
 
       override private[pubsub] val project = projectI
       override private[pubsub] val subscription = subscriptionI
@@ -28,11 +28,15 @@ object GooglePubSubGrpc {
 }
 
 protected[pubsub] trait GooglePubSubGrpc {
-  private[pubsub] def api: GrpcApi
+  private[pubsub] val api: GrpcApi
 
   private[pubsub] val project: String
   private[pubsub] val subscription: String
   private[pubsub] val parallelism: Int
+
+  def publish: Flow[v1.PublishRequest, v1.PublishResponse, NotUsed] =
+    Flow[v1.PublishRequest]
+      .mapAsyncUnordered(parallelism)(request => api.publish(request))
 
   def subscribe(implicit actorSystem: ActorSystem): Source[v1.ReceivedMessage, NotUsed] =
     Source.fromGraph(new GooglePubSubSourceGrpc(parallelism, api))
