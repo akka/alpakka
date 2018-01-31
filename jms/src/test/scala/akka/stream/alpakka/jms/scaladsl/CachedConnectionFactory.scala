@@ -9,10 +9,10 @@ import javax.jms.{Connection, ConnectionFactory}
 import org.apache.activemq.{ActiveMQConnection, ActiveMQConnectionFactory}
 
 /**
-  * a silly cached connection factory, not thread safe
-  *
-  * @param url
-  */
+ * a silly cached connection factory, not thread safe
+ *
+ * @param url
+ */
 class CachedConnectionFactory(url: String) extends ConnectionFactory {
   var cachedConnection: ActiveMQConnection = null
 
