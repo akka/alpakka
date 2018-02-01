@@ -88,7 +88,7 @@ class ElasticsearchFlowStage[T, C](
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new TimerGraphStageLogic(shape) with InHandler with OutHandler {
+    new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
       private var state: State = Idle
       private val queue = new mutable.Queue[IncomingMessage[T, C]]()
@@ -114,9 +114,13 @@ class ElasticsearchFlowStage[T, C](
       private def handleFailure(args: (Seq[IncomingMessage[T, C]], Throwable)): Unit = {
         val (messages, exception) = args
         if (retryCount >= settings.maxRetry) {
+          log.warning(s"Received error from elastic. Giving up after $retryCount tries. Error: ${exception.toString}")
           failStage(exception)
         } else {
           retryCount = retryCount + 1
+          log.warning(
+            s"Received error from elastic. (re)tryCount: $retryCount maxTries: ${settings.maxRetry}. Error: ${exception.toString}"
+          )
           failedMessages = messages
           scheduleOnce(NotUsed, settings.retryInterval.millis)
         }
