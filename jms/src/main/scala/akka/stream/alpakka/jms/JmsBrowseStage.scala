@@ -11,6 +11,7 @@ import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import java.util.{Enumeration => JEnumeration}
 
 private[stream] final class JmsBrowseStage(settings: JmsBrowseSettings) extends GraphStage[SourceShape[Message]] {
+  private val queue = settings.destination.getOrElse { throw new IllegalArgumentException("Destination is missing") }
 
   private val out = Outlet[Message]("JmsBrowseStage.out")
   val shape = SourceShape(out)
@@ -28,7 +29,6 @@ private[stream] final class JmsBrowseStage(settings: JmsBrowseSettings) extends 
       var messages: JEnumeration[Message] = _
 
       override def preStart(): Unit = {
-        val queue = settings.destination.getOrElse { throw new IllegalArgumentException("Destination is missing") }
         val ackMode = settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode
         connection = settings.connectionFactory.createConnection()
         connection.start()
