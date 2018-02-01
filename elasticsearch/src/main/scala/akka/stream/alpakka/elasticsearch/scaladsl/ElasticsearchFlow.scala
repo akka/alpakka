@@ -25,6 +25,15 @@ object ElasticsearchFlow {
       implicit client: RestClient,
       writer: JsonWriter[T]
   ): Flow[IncomingMessage[T, NotUsed], Seq[IncomingMessageResult[T, NotUsed]], NotUsed] =
+    create[T](indexName, typeName, settings, new SprayJsonWriter[T]()(writer))
+
+  /**
+   * Creates a [[akka.stream.scaladsl.Flow]] for type `T` from [[IncomingMessage]] to sequences
+   * of [[IncomingMessageResult]].
+   */
+  def create[T](indexName: String, typeName: String, settings: ElasticsearchSinkSettings, writer: MessageWriter[T])(
+      implicit client: RestClient
+  ): Flow[IncomingMessage[T, NotUsed], Seq[IncomingMessageResult[T, NotUsed]], NotUsed] =
     Flow
       .fromGraph(
         new ElasticsearchFlowStage[T, NotUsed](
@@ -32,7 +41,7 @@ object ElasticsearchFlow {
           typeName,
           client,
           settings,
-          new SprayJsonWriter[T]()(writer)
+          writer
         )
       )
       .mapAsync(1)(identity)
@@ -47,6 +56,18 @@ object ElasticsearchFlow {
       implicit client: RestClient,
       writer: JsonWriter[T]
   ): Flow[IncomingMessage[T, C], Seq[IncomingMessageResult[T, C]], NotUsed] =
+    createWithPassThrough[T, C](indexName, typeName, settings, new SprayJsonWriter[T]()(writer))
+
+  /**
+   * Creates a [[akka.stream.scaladsl.Flow]] for type `T` from [[IncomingMessage]] to lists of [[IncomingMessageResult]]
+   * with `passThrough` of type `C`.
+   */
+  def createWithPassThrough[T, C](indexName: String,
+                                  typeName: String,
+                                  settings: ElasticsearchSinkSettings,
+                                  writer: MessageWriter[T])(
+      implicit client: RestClient
+  ): Flow[IncomingMessage[T, C], Seq[IncomingMessageResult[T, C]], NotUsed] =
     Flow
       .fromGraph(
         new ElasticsearchFlowStage[T, C](
@@ -54,7 +75,7 @@ object ElasticsearchFlow {
           typeName,
           client,
           settings,
-          new SprayJsonWriter[T]()(writer)
+          writer
         )
       )
       .mapAsync(1)(identity)
