@@ -6,6 +6,7 @@ package akka.stream.alpakka.jms.javadsl
 
 import javax.jms.Message
 
+import akka.NotUsed
 import akka.stream.KillSwitch
 import akka.stream.alpakka.jms._
 
@@ -67,4 +68,10 @@ object JmsSource {
    */
   def txSource(jmsSettings: JmsSourceSettings): akka.stream.javadsl.Source[TxEnvelope, KillSwitch] =
     akka.stream.javadsl.Source.fromGraph(new JmsTxSourceStage(jmsSettings))
+
+  /**
+   * Java API: Creates a [[JmsSource]] for browsing messages non-destructively
+   */
+  def browse(jmsSettings: JmsBrowseSettings): akka.stream.javadsl.Source[Message, NotUsed] =
+    akka.stream.javadsl.Source.fromGraph(new JmsBrowseStage(jmsSettings))
 }

@@ -8,7 +8,7 @@ import java.nio.charset.Charset
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 import javax.jms.{DeliveryMode, JMSException, Message, TextMessage}
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.{AbruptStageTerminationException, KillSwitch, KillSwitches, ThrottleMode}
@@ -626,6 +626,41 @@ class JmsConnectorsSpec extends JmsSpec {
       resultList.size should be > (numsIn.size / 2)
       resultList.size should be < numsIn.size
       resultList.size shouldBe resultList.toSet.size // no duplicates
+    }
+
+    "browse" in withServer() { ctx =>
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+      val in = List(1 to 100).map(_.toString())
+
+      withClue("write some messages") {
+        Source(in)
+          .runWith(JmsSink.textSink(JmsSinkSettings(connectionFactory).withQueue("test")))
+          .futureValue
+      }
+
+      withClue("browse the messages") {
+        //#create-browse-source
+        val browseSource: Source[Message, NotUsed] = JmsSource.browse(
+          JmsBrowseSettings(connectionFactory).withQueue("test")
+        )
+        //#create-browse-source
+
+        //#run-browse-source
+        val result = browseSource.runWith(Sink.seq)
+        //#run-browse-source
+
+        result.futureValue.collect { case msg: TextMessage => msg.getText } shouldEqual in
+      }
+
+      withClue("browse the messages again") {
+        // the messages should not have been consumed
+        val result = JmsSource
+          .browse(JmsBrowseSettings(connectionFactory).withQueue("test"))
+          .collect { case msg: TextMessage => msg.getText }
+          .runWith(Sink.seq)
+
+        result.futureValue shouldEqual in
+      }
     }
   }
 }
