@@ -175,6 +175,13 @@ object Dependencies {
     )
   )
 
+  val OrientDB = Seq(
+    libraryDependencies ++= Seq(
+      "com.orientechnologies" % "orientdb-graphdb" % "2.2.30", // ApacheV2
+      "com.orientechnologies" % "orientdb-object" % "2.2.30" // ApacheV2
+    )
+  )
+
   val S3 = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
