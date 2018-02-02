@@ -664,4 +664,56 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
+  "Elasticsearch connector" should {
+    "Should use indexName supplied in message if present" in {
+      // Copy source/book to sink2/book through typed stream
+
+      val customIndexName = "custom-index"
+
+      val f1 = ElasticsearchSource
+        .typed[Book](
+          indexName = "source",
+          typeName = "book",
+          query = """{"match_all": {}}"""
+        )
+        .map { message: OutgoingMessage[Book] =>
+          IncomingMessage(Some(message.id), message.source).withIndexName(customIndexName)
+        }
+        .runWith(
+          ElasticsearchSink.create[Book](
+            indexName = "this-is-not-the-index-we-are-using",
+            typeName = "book"
+          )
+        )
+
+      Await.result(f1, Duration.Inf)
+
+      flush(customIndexName)
+
+      // Assert docs in sink2/book
+      val f2 = ElasticsearchSource
+        .typed[Book](
+          customIndexName,
+          "book",
+          """{"match_all": {}}"""
+        )
+        .map { message =>
+          message.source.title
+        }
+        .runWith(Sink.seq)
+
+      val result = Await.result(f2, Duration.Inf)
+
+      result.sorted shouldEqual Seq(
+        "Akka Concurrency",
+        "Akka in Action",
+        "Effective Akka",
+        "Learning Scala",
+        "Programming in Scala",
+        "Scala Puzzlers",
+        "Scala for Spark in Production"
+      )
+    }
+  }
+
 }
