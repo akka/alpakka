@@ -15,12 +15,18 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest._
-import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.prop.PropertyChecks
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.concurrent.Future
 
-class CryptographicFlowSpec extends WordSpec with Matchers with ScalaFutures with PropertyChecks {
+class CryptographicFlowSpec
+    extends WordSpec
+    with Matchers
+    with ScalaFutures
+    with PropertyChecks
+    with IntegrationPatience {
 
   implicit val as: ActorSystem = ActorSystem()
   implicit val actorMaterializer: ActorMaterializer = ActorMaterializer()
@@ -28,7 +34,7 @@ class CryptographicFlowSpec extends WordSpec with Matchers with ScalaFutures wit
   "CryptographicFlow" can {
     "Symmetric Encryption flows" should {
       "Be able to encrypt and decrypt bytestrings" in {
-        forAll(minSuccessful(1000)) { (key: SecretKey, toEncrypt: List[String]) =>
+        forAll(minSuccessful(50), sizeRange(20)) { (key: SecretKey, toEncrypt: List[String]) =>
           val src: Source[ByteString, NotUsed] = Source(toEncrypt.map(ByteString.apply))
 
           val res: Future[ByteString] = src
@@ -48,20 +54,29 @@ class CryptographicFlowSpec extends WordSpec with Matchers with ScalaFutures wit
 
         val byteString = ByteString("byte by byte")
 
-        val res = Source.single(byteString)
+        val res = Source
+          .single(byteString)
           .mapConcat(bs => bs.toArray.toList)
           .map(b => ByteString(b))
           .via(symmetricEncryption(secretKey))
-          .via(symmetricDecryption(secretKey))
           .runWith(Sink.fold(ByteString.empty)(_ concat _))
 
-        whenReady(res) { _ shouldBe byteString }
+        val decrypted: Future[ByteString] = res.flatMap { encrypted =>
+          Source
+            .single(encrypted)
+            .via(symmetricDecryption(secretKey))
+            .runWith(Sink.fold(ByteString.empty)(_ concat _))
+        }
+
+        whenReady(decrypted) {
+          _ shouldBe byteString
+        }
       }
     }
 
     "Asymmetric Encryption flows" should {
       "Be able to encrypt and decrypt bytestrings" in {
-        forAll(minSuccessful(10), sizeRange(10)) { (keyPair: KeyPair, toEncrypt: List[String]) =>
+        forAll(minSuccessful(10), sizeRange(5)) { (keyPair: KeyPair, toEncrypt: List[String]) =>
           val src: Source[ByteString, NotUsed] = Source(toEncrypt.map(ByteString.apply))
 
           val res: Future[ByteString] = src
@@ -74,21 +89,30 @@ class CryptographicFlowSpec extends WordSpec with Matchers with ScalaFutures wit
           }
         }
       }
+    }
 
-      "Be able to handle bytestring chunking" in {
-        val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
-        val keyPair = keyPairGenerator.generateKeyPair()
+    "Be able to handle bytestring chunking" in {
+      val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
+      val keyPair = keyPairGenerator.generateKeyPair()
 
-        val byteString = ByteString("byte by byte")
+      val byteString = ByteString("byte by byte")
 
-        val res = Source.single(byteString)
-          .mapConcat(bs => bs.toArray.toList)
-          .map(b => ByteString(b))
-          .via(asymmetricEncryption(keyPair.getPublic))
+      val res = Source
+        .single(byteString)
+        .mapConcat(bs => bs.toArray.toList)
+        .map(b => ByteString(b))
+        .via(asymmetricEncryption(keyPair.getPublic))
+        .runWith(Sink.fold(ByteString.empty)(_ concat _))
+
+      val decrypted: Future[ByteString] = res.flatMap { encrypted =>
+        Source
+          .single(encrypted)
           .via(asymmetricDecryption(keyPair.getPrivate))
           .runWith(Sink.fold(ByteString.empty)(_ concat _))
+      }
 
-        whenReady(res) { _ shouldBe byteString }
+      whenReady(decrypted) {
+        _ shouldBe byteString
       }
     }
   }
