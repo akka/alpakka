@@ -8,7 +8,6 @@ import java.net.{ConnectException, SocketException}
 
 import akka.NotUsed
 import akka.stream.alpakka.solr.SolrFlowStage.{Finished, Idle, Sending}
-import akka.stream.alpakka.solr.scaladsl.SolrSinkSettings
 import akka.stream.stage.{GraphStage, InHandler, OutHandler, TimerGraphStageLogic}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import org.apache.http.NoHttpResponseException
@@ -18,7 +17,6 @@ import org.apache.solr.common.{SolrException, SolrInputDocument}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.Future
-import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
 object IncomingMessage {
@@ -40,10 +38,10 @@ final case class IncomingMessage[T, C](source: T, passThrough: C)
 
 final case class IncomingMessageResult[T, C](source: T, passThrough: C, status: Int)
 
-class SolrFlowStage[T, C](
+private[solr] final class SolrFlowStage[T, C](
     collection: String,
     client: SolrClient,
-    settings: SolrSinkSettings,
+    settings: SolrUpdateSettings,
     messageBinder: T => SolrInputDocument
 ) extends GraphStage[FlowShape[IncomingMessage[T, C], Future[Seq[IncomingMessageResult[T, C]]]]] {
 
@@ -63,13 +61,13 @@ private object SolrFlowStage {
   case object Finished extends SolrFlowState
 }
 
-final class SolrFlowLogic[T, C](
+private[solr] final class SolrFlowLogic[T, C](
     collection: String,
     client: SolrClient,
     in: Inlet[IncomingMessage[T, C]],
     out: Outlet[Future[Seq[IncomingMessageResult[T, C]]]],
     shape: FlowShape[IncomingMessage[T, C], Future[Seq[IncomingMessageResult[T, C]]]],
-    settings: SolrSinkSettings,
+    settings: SolrUpdateSettings,
     messageBinder: T => SolrInputDocument
 ) extends TimerGraphStageLogic(shape)
     with OutHandler
@@ -129,7 +127,7 @@ final class SolrFlowLogic[T, C](
     } else {
       retryCount = retryCount + 1
       failedMessages = messages
-      scheduleOnce(NotUsed, settings.retryInterval.millis)
+      scheduleOnce(NotUsed, settings.retryInterval)
     }
 
   private def handleResponse(messages: Seq[IncomingMessage[T, C]], status: Int): Unit = {

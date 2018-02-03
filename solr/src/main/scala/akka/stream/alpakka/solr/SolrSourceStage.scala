@@ -11,20 +11,15 @@ import org.apache.solr.client.solrj.io.stream.TupleStream
 
 import scala.util.control.NonFatal
 
-final class SolrSourceStage(
-    collection: String,
-    tupleStream: TupleStream
-) extends GraphStage[SourceShape[Tuple]] {
-
+private[solr] final class SolrSourceStage(tupleStream: TupleStream) extends GraphStage[SourceShape[Tuple]] {
   val out: Outlet[Tuple] = Outlet("SolrSource.out")
   override val shape: SourceShape[Tuple] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes) =
-    new SolrSourceLogic(collection, tupleStream, out, shape)
+    new SolrSourceLogic(tupleStream, out, shape)
 }
 
-final class SolrSourceLogic(
-    collection: String,
+private[solr] final class SolrSourceLogic(
     tupleStream: TupleStream,
     out: Outlet[Tuple],
     shape: SourceShape[Tuple]

@@ -7,7 +7,7 @@ package akka.stream.alpakka.solr.javadsl
 import java.util.concurrent.CompletionStage
 import java.util.function.Function
 
-import akka.stream.alpakka.solr.IncomingMessage
+import akka.stream.alpakka.solr.{IncomingMessage, SolrUpdateSettings}
 import akka.stream.javadsl
 import akka.stream.javadsl.Sink
 import akka.{Done, NotUsed}
@@ -21,7 +21,7 @@ object SolrSink {
    */
   def document(
       collection: String,
-      settings: SolrSinkSettings,
+      settings: SolrUpdateSettings,
       client: SolrClient
   ): javadsl.Sink[IncomingMessage[SolrInputDocument, NotUsed], CompletionStage[Done]] =
     SolrFlow
@@ -34,7 +34,7 @@ object SolrSink {
    */
   def bean[T](
       collection: String,
-      settings: SolrSinkSettings,
+      settings: SolrUpdateSettings,
       client: SolrClient,
       clazz: Class[T]
   ): Sink[IncomingMessage[T, NotUsed], CompletionStage[Done]] =
@@ -47,7 +47,7 @@ object SolrSink {
    */
   def typed[T](
       collection: String,
-      settings: SolrSinkSettings,
+      settings: SolrUpdateSettings,
       binder: Function[T, SolrInputDocument],
       client: SolrClient,
       clazz: Class[T]

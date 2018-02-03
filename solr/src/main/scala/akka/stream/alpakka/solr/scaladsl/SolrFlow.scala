@@ -5,7 +5,7 @@
 package akka.stream.alpakka.solr.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.solr.{IncomingMessage, IncomingMessageResult, SolrFlowStage}
+import akka.stream.alpakka.solr.{IncomingMessage, IncomingMessageResult, SolrFlowStage, SolrUpdateSettings}
 import akka.stream.scaladsl.Flow
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.common.SolrInputDocument
@@ -18,7 +18,7 @@ object SolrFlow {
    */
   def document(
       collection: String,
-      settings: SolrSinkSettings
+      settings: SolrUpdateSettings
   )(implicit client: SolrClient): Flow[IncomingMessage[SolrInputDocument, NotUsed], Seq[
     IncomingMessageResult[SolrInputDocument, NotUsed]
   ], NotUsed] =
@@ -39,7 +39,7 @@ object SolrFlow {
    */
   def bean[T](
       collection: String,
-      settings: SolrSinkSettings
+      settings: SolrUpdateSettings
   )(implicit client: SolrClient): Flow[IncomingMessage[T, NotUsed], Seq[IncomingMessageResult[T, NotUsed]], NotUsed] =
     Flow
       .fromGraph(
@@ -58,7 +58,7 @@ object SolrFlow {
    */
   def typed[T](
       collection: String,
-      settings: SolrSinkSettings,
+      settings: SolrUpdateSettings,
       binder: T => SolrInputDocument
   )(implicit client: SolrClient): Flow[IncomingMessage[T, NotUsed], Seq[IncomingMessageResult[T, NotUsed]], NotUsed] =
     Flow
@@ -78,7 +78,7 @@ object SolrFlow {
    */
   def documentWithPassThrough[C](
       collection: String,
-      settings: SolrSinkSettings
+      settings: SolrUpdateSettings
   )(
       implicit client: SolrClient
   ): Flow[IncomingMessage[SolrInputDocument, C], Seq[IncomingMessageResult[SolrInputDocument, C]], NotUsed] =
@@ -100,7 +100,7 @@ object SolrFlow {
    */
   def beanWithPassThrough[T, C](
       collection: String,
-      settings: SolrSinkSettings
+      settings: SolrUpdateSettings
   )(implicit client: SolrClient): Flow[IncomingMessage[T, C], Seq[IncomingMessageResult[T, C]], NotUsed] =
     Flow
       .fromGraph(
@@ -119,7 +119,7 @@ object SolrFlow {
    */
   def typedWithPassThrough[T, C](
       collection: String,
-      settings: SolrSinkSettings,
+      settings: SolrUpdateSettings,
       binder: T => SolrInputDocument
   )(implicit client: SolrClient): Flow[IncomingMessage[T, C], Seq[IncomingMessageResult[T, C]], NotUsed] =
     Flow

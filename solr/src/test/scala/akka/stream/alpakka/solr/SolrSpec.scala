@@ -8,7 +8,7 @@ import java.io.File
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.solr.scaladsl.{SolrFlow, SolrSink, SolrSinkSettings, SolrSource}
+import akka.stream.alpakka.solr.scaladsl.{SolrFlow, SolrSink, SolrSource}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import org.apache.solr.client.solrj.SolrClient
@@ -24,7 +24,7 @@ import org.junit.Assert.assertTrue
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 
 class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
   private var cluster: MiniSolrCloudCluster = _
@@ -63,10 +63,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
       //#run-document
       val f1 = SolrSource
-        .create(
-          collection = "collection1",
-          tupleStream = stream
-        )
+        .fromTupleStream(ts = stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
           val doc: SolrInputDocument = bookToDoc(book)
@@ -75,7 +72,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .runWith(
           SolrSink.document(
             collection = "collection2",
-            settings = SolrSinkSettings(commitWithin = 5)
+            settings = SolrUpdateSettings(commitWithin = 5)
           )
         )
       //#run-document
@@ -85,7 +82,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val stream2 = getTupleStream("collection2")
 
       val res2 = SolrSource
-        .create("collection2", tupleStream = stream2)
+        .fromTupleStream(ts = stream2)
         .map(tupleToBook)
         .map(_.title)
         .runWith(Sink.seq)
@@ -119,10 +116,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
       //#run-bean
       val res1 = SolrSource
-        .create(
-          collection = "collection1",
-          tupleStream = stream
-        )
+        .fromTupleStream(ts = stream)
         .map { tuple: Tuple =>
           val title = tuple.getString("title")
           IncomingMessage(BookBean(title))
@@ -130,7 +124,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .runWith(
           SolrSink.bean[BookBean](
             collection = "collection3",
-            settings = SolrSinkSettings(commitWithin = 5)
+            settings = SolrUpdateSettings(commitWithin = 5)
           )
         )
       //#run-bean
@@ -140,7 +134,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val stream2 = getTupleStream("collection3")
 
       val res2 = SolrSource
-        .create("collection3", tupleStream = stream2)
+        .fromTupleStream(ts = stream2)
         .map(tupleToBook)
         .map(_.title)
         .runWith(Sink.seq)
@@ -167,10 +161,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
       //#run-typed
       val res1 = SolrSource
-        .create(
-          collection = "collection1",
-          tupleStream = stream
-        )
+        .fromTupleStream(ts = stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
           IncomingMessage(book)
@@ -179,7 +170,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
           SolrSink
             .typed[Book](
               collection = "collection4",
-              settings = SolrSinkSettings(commitWithin = 5),
+              settings = SolrUpdateSettings(commitWithin = 5),
               binder = bookToDoc
             )
         )
@@ -190,7 +181,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val stream2 = getTupleStream("collection4")
 
       val res2 = SolrSource
-        .create("collection4", tupleStream = stream2)
+        .fromTupleStream(ts = stream2)
         .map(tupleToBook)
         .map(_.title)
         .runWith(Sink.seq)
@@ -217,10 +208,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
       //#run-flow
       val res1 = SolrSource
-        .create(
-          collection = "collection1",
-          tupleStream = stream
-        )
+        .fromTupleStream(ts = stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
           IncomingMessage(book)
@@ -229,7 +217,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
           SolrFlow
             .typed[Book](
               collection = "collection5",
-              settings = SolrSinkSettings(commitWithin = 5),
+              settings = SolrUpdateSettings(commitWithin = 5),
               binder = bookToDoc
             )
         )
@@ -244,7 +232,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val stream2 = getTupleStream("collection5")
 
       val res2 = SolrSource
-        .create("collection5", tupleStream = stream2)
+        .fromTupleStream(ts = stream2)
         .map(tupleToBook)
         .map(_.title)
         .runWith(Sink.seq)
@@ -297,7 +285,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .via( // write to Solr
           SolrFlow.typedWithPassThrough[Book, KafkaOffset](
             collection = "collection6",
-            settings = SolrSinkSettings(commitWithin = 5),
+            settings = SolrUpdateSettings(commitWithin = 5),
             binder = bookToDoc
           )
         )
@@ -320,7 +308,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val stream = getTupleStream("collection6")
 
       val res2 = SolrSource
-        .create("collection6", stream)
+        .fromTupleStream(stream)
         .map(tupleToBook)
         .map(_.title)
         .runWith(Sink.seq)
@@ -403,16 +391,13 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
     val stream: TupleStream = null
     //#define-source
     val source = SolrSource
-      .create(
-        collection = "collection1",
-        tupleStream = stream
-      )
+      .fromTupleStream(ts = stream)
     //#define-source
-    //#sink-settings
-    import akka.stream.alpakka.solr.scaladsl.SolrSinkSettings
+    //#solr-update-settings
+    import akka.stream.alpakka.solr.SolrUpdateSettings
 
-    val sinkSettings =
-      SolrSinkSettings(bufferSize = 10, retryInterval = 5000, maxRetry = 100, commitWithin = -1)
-    //#sink-settings
+    val settings =
+      SolrUpdateSettings(bufferSize = 10, retryInterval = 5000.millis, maxRetry = 100, commitWithin = -1)
+    //#solr-update-settings
   }
 }

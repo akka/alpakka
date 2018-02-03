@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.solr.scaladsl
 
-import akka.stream.alpakka.solr.IncomingMessage
+import akka.stream.alpakka.solr.{IncomingMessage, SolrUpdateSettings}
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.{Done, NotUsed}
 import org.apache.solr.client.solrj.SolrClient
@@ -17,7 +17,7 @@ object SolrSink {
   /**
    * Scala API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing [[SolrInputDocument]].
    */
-  def document[T](collection: String, settings: SolrSinkSettings)(
+  def document[T](collection: String, settings: SolrUpdateSettings)(
       implicit client: SolrClient
   ): Sink[IncomingMessage[SolrInputDocument, NotUsed], Future[Done]] =
     SolrFlow
@@ -28,7 +28,7 @@ object SolrSink {
    * Scala API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing type `T`
    * with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
    */
-  def bean[T](collection: String, settings: SolrSinkSettings)(
+  def bean[T](collection: String, settings: SolrUpdateSettings)(
       implicit client: SolrClient
   ): Sink[IncomingMessage[T, NotUsed], Future[Done]] =
     SolrFlow
@@ -40,7 +40,7 @@ object SolrSink {
    */
   def typed[T](
       collection: String,
-      settings: SolrSinkSettings,
+      settings: SolrUpdateSettings,
       binder: T => SolrInputDocument
   )(implicit client: SolrClient): Sink[IncomingMessage[T, NotUsed], Future[Done]] =
     SolrFlow

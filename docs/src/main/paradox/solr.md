@@ -1,4 +1,4 @@
-# Solr Connector
+# Apache Solr Connector
 
 The Solr connector provides Akka Stream sources and sinks for Solr.
 
@@ -109,14 +109,14 @@ Java
 
 ### Configuration
 
-We can configure the sink by `SolrSinkSettings`.
+We can configure the sink by `SolrUpdateSettings`.
 
 
 Scala
-: @@snip ($alpakka$/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #sink-settings }
+: @@snip ($alpakka$/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #solr-update-settings }
 
 Java
-: @@snip ($alpakka$/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #sink-settings }
+: @@snip ($alpakka$/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #solr-update-settings }
 
 
 | Parameter           | Default | Description                                                                                            |

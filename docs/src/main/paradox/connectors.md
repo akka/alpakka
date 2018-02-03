@@ -4,6 +4,7 @@
 
 * [AMQP Connector](amqp.md)
 * [Apache Geode Connector](geode.md)
+* [Apache Solr Connector](solr.md)
 * [AWS DynamoDB Connector](dynamodb.md)
 * [AWS Kinesis Connector](kinesis.md)
 * [AWS Lambda Connector](awslambda.md)

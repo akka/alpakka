@@ -10,7 +10,6 @@ import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.solr.javadsl.SolrFlow;
 import akka.stream.alpakka.solr.javadsl.SolrSink;
-import akka.stream.alpakka.solr.javadsl.SolrSinkSettings;
 import akka.stream.alpakka.solr.javadsl.SolrSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -37,6 +36,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.concurrent.duration.FiniteDuration;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -89,8 +90,8 @@ public class SolrTest {
     TupleStream stream = getTupleStream("collection1");
 
     //#run-document
-    SolrSinkSettings sinkSettings = new SolrSinkSettings().withCommitWithin(5);
-    CompletionStage<Done> f1 = SolrSource.create("collection1", stream)
+    SolrUpdateSettings settings = SolrUpdateSettings.create().withCommitWithin(5);
+    CompletionStage<Done> f1 = SolrSource.fromTupleStream(stream)
       .map(tuple -> {
         Book book = tupleToBook.apply(tuple);
         SolrInputDocument doc = bookToDoc.apply(book);
@@ -98,7 +99,7 @@ public class SolrTest {
       }).runWith(
         SolrSink.document(
           "collection2",
-          sinkSettings,
+          settings,
           client
         ),
         materializer
@@ -109,7 +110,7 @@ public class SolrTest {
 
     TupleStream stream2 = getTupleStream("collection2");
 
-    CompletionStage<List<String>> res2 = SolrSource.create("collection2", stream2)
+    CompletionStage<List<String>> res2 = SolrSource.fromTupleStream(stream2)
       .map(t -> tupleToBook.apply(t).title)
       .runWith(Sink.seq(), materializer);
 
@@ -146,15 +147,15 @@ public class SolrTest {
     //#define-bean
 
     //#run-bean
-    SolrSinkSettings sinkSettings = new SolrSinkSettings().withCommitWithin(5);
-    CompletionStage<Done> f1 = SolrSource.create("collection1", stream)
+    SolrUpdateSettings settings = SolrUpdateSettings.create().withCommitWithin(5);
+    CompletionStage<Done> f1 = SolrSource.fromTupleStream(stream)
       .map(tuple -> {
         String title = tuple.getString("title");
         return IncomingMessage.create(new BookBean(title));
       }).runWith(
         SolrSink.bean(
           "collection3",
-          sinkSettings,
+          settings,
           client,
           BookBean.class
         ),
@@ -166,7 +167,7 @@ public class SolrTest {
 
     TupleStream stream2 = getTupleStream("collection3");
 
-    CompletionStage<List<String>> res2 = SolrSource.create("collection3", stream2)
+    CompletionStage<List<String>> res2 = SolrSource.fromTupleStream(stream2)
       .map(t -> tupleToBook.apply(t).title)
       .runWith(Sink.seq(), materializer);
 
@@ -192,13 +193,13 @@ public class SolrTest {
     TupleStream stream = getTupleStream("collection1");
 
     //#run-typed
-    SolrSinkSettings sinkSettings = new SolrSinkSettings().withCommitWithin(5);
-    CompletionStage<Done> f1 = SolrSource.create("collection1", stream)
+    SolrUpdateSettings settings = SolrUpdateSettings.create().withCommitWithin(5);
+    CompletionStage<Done> f1 = SolrSource.fromTupleStream(stream)
       .map(tuple -> IncomingMessage.create(tupleToBook.apply(tuple)))
       .runWith(
         SolrSink.typed(
           "collection4",
-          sinkSettings,
+          settings,
           bookToDoc,
           client,
           Book.class
@@ -211,7 +212,7 @@ public class SolrTest {
 
     TupleStream stream2 = getTupleStream("collection4");
 
-    CompletionStage<List<String>> res2 = SolrSource.create("collection4", stream2)
+    CompletionStage<List<String>> res2 = SolrSource.fromTupleStream(stream2)
       .map(t -> tupleToBook.apply(t).title)
       .runWith(Sink.seq(), materializer);
 
@@ -237,13 +238,13 @@ public class SolrTest {
     TupleStream stream = getTupleStream("collection1");
 
     //#run-flow
-    SolrSinkSettings sinkSettings = new SolrSinkSettings().withCommitWithin(5);
-    CompletionStage<Done> f1 = SolrSource.create("collection1", stream)
+    SolrUpdateSettings settings = SolrUpdateSettings.create().withCommitWithin(5);
+    CompletionStage<Done> f1 = SolrSource.fromTupleStream(stream)
       .map(tuple -> IncomingMessage.create(tupleToBook.apply(tuple)))
       .via(
            SolrFlow.typed(
              "collection5",
-             sinkSettings,
+             settings,
              bookToDoc,
              client,
              Book.class
@@ -256,7 +257,7 @@ public class SolrTest {
 
     TupleStream stream2 = getTupleStream("collection5");
 
-    CompletionStage<List<String>> res2 = SolrSource.create("collection5", stream2)
+    CompletionStage<List<String>> res2 = SolrSource.fromTupleStream(stream2)
       .map(t -> tupleToBook.apply(t).title)
       .runWith(Sink.seq(), materializer);
 
@@ -292,7 +293,7 @@ public class SolrTest {
 
     final KafkaCommitter kafkaCommitter = new KafkaCommitter();
 
-    SolrSinkSettings sinkSettings = new SolrSinkSettings().withCommitWithin(5);
+    SolrUpdateSettings settings = SolrUpdateSettings.create().withCommitWithin(5);
 
     Source.from(messagesFromKafka) // Assume we get this from Kafka
       .map(kafkaMessage -> {
@@ -303,7 +304,7 @@ public class SolrTest {
       .via(
            SolrFlow.typedWithPassThrough(
              "collection6",
-             sinkSettings,
+             settings,
              bookToDoc,
              client,
              Book.class
@@ -326,7 +327,7 @@ public class SolrTest {
 
     TupleStream stream = getTupleStream("collection6");
 
-    CompletionStage<List<String>> res2 = SolrSource.create("collection6", stream)
+    CompletionStage<List<String>> res2 = SolrSource.fromTupleStream(stream)
       .map(t -> tupleToBook.apply(t).title)
       .runWith(Sink.seq(), materializer);
 
@@ -455,15 +456,15 @@ public class SolrTest {
   private void documentation() {
     TupleStream stream = null;
     //#define-source
-    Source<Tuple, NotUsed> source = SolrSource.create("collection1", stream);
+    Source<Tuple, NotUsed> source = SolrSource.fromTupleStream(stream);
     //#define-source
-    //#sink-settings
-    SolrSinkSettings sinkSettings =
-      new SolrSinkSettings()
+    //#solr-update-settings
+    SolrUpdateSettings settings =
+     SolrUpdateSettings.create()
       .withBufferSize(10)
-      .withRetryInterval(5000)
+      .withRetryInterval(FiniteDuration.create(5000, TimeUnit.MILLISECONDS))
       .withMaxRetry(100)
       .withCommitWithin(-1);
-    //#sink-settings
+    //#solr-update-settings
   }
 }

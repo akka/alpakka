@@ -9,7 +9,7 @@ import java.util.{List => JavaList}
 
 import akka.NotUsed
 import akka.stream.alpakka.solr.scaladsl.{SolrFlow => ScalaSolrFlow}
-import akka.stream.alpakka.solr.{IncomingMessage, IncomingMessageResult}
+import akka.stream.alpakka.solr.{IncomingMessage, IncomingMessageResult, SolrUpdateSettings}
 import akka.stream.javadsl
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.common.SolrInputDocument
@@ -24,12 +24,12 @@ object SolrFlow {
    */
   def document(
       collection: String,
-      settings: SolrSinkSettings,
+      settings: SolrUpdateSettings,
       client: SolrClient
   ): javadsl.Flow[IncomingMessage[SolrInputDocument, NotUsed], JavaList[IncomingMessageResult[SolrInputDocument,
                                                                                               NotUsed]], NotUsed] =
     ScalaSolrFlow
-      .document(collection, settings.asScala)(client)
+      .document(collection, settings)(client)
       .map(_.asJava)
       .asJava
 
@@ -39,12 +39,12 @@ object SolrFlow {
    */
   def bean[T](
       collection: String,
-      settings: SolrSinkSettings,
+      settings: SolrUpdateSettings,
       client: SolrClient,
       clazz: Class[T]
   ): javadsl.Flow[IncomingMessage[T, NotUsed], JavaList[IncomingMessageResult[T, NotUsed]], NotUsed] =
     ScalaSolrFlow
-      .bean[T](collection, settings.asScala)(client)
+      .bean[T](collection, settings)(client)
       .map(_.asJava)
       .asJava
 
@@ -54,13 +54,13 @@ object SolrFlow {
    */
   def typed[T](
       collection: String,
-      settings: SolrSinkSettings,
+      settings: SolrUpdateSettings,
       binder: Function[T, SolrInputDocument],
       client: SolrClient,
       clazz: Class[T]
   ): javadsl.Flow[IncomingMessage[T, NotUsed], JavaList[IncomingMessageResult[T, NotUsed]], NotUsed] =
     ScalaSolrFlow
-      .typed[T](collection, settings.asScala, i => binder.apply(i))(client)
+      .typed[T](collection, settings, i => binder.apply(i))(client)
       .map(_.asJava)
       .asJava
 
@@ -70,11 +70,11 @@ object SolrFlow {
    */
   def documentWithPassThrough[C](
       collection: String,
-      settings: SolrSinkSettings,
+      settings: SolrUpdateSettings,
       client: SolrClient
   ): javadsl.Flow[IncomingMessage[SolrInputDocument, C], JavaList[IncomingMessageResult[SolrInputDocument, C]], NotUsed] =
     ScalaSolrFlow
-      .documentWithPassThrough[C](collection, settings.asScala)(client)
+      .documentWithPassThrough[C](collection, settings)(client)
       .map(_.asJava)
       .asJava
 
@@ -85,12 +85,12 @@ object SolrFlow {
    */
   def beanWithPassThrough[T, C](
       collection: String,
-      settings: SolrSinkSettings,
+      settings: SolrUpdateSettings,
       client: SolrClient,
       clazz: Class[T]
   ): javadsl.Flow[IncomingMessage[T, C], JavaList[IncomingMessageResult[T, C]], NotUsed] =
     ScalaSolrFlow
-      .beanWithPassThrough[T, C](collection, settings.asScala)(client)
+      .beanWithPassThrough[T, C](collection, settings)(client)
       .map(_.asJava)
       .asJava
 
@@ -100,13 +100,13 @@ object SolrFlow {
    */
   def typedWithPassThrough[T, C](
       collection: String,
-      settings: SolrSinkSettings,
+      settings: SolrUpdateSettings,
       binder: Function[T, SolrInputDocument],
       client: SolrClient,
       clazz: Class[T]
   ): javadsl.Flow[IncomingMessage[T, C], JavaList[IncomingMessageResult[T, C]], NotUsed] =
     ScalaSolrFlow
-      .typedWithPassThrough[T, C](collection, settings.asScala, i => binder.apply(i))(client)
+      .typedWithPassThrough[T, C](collection, settings, i => binder.apply(i))(client)
       .map(_.asJava)
       .asJava
 
