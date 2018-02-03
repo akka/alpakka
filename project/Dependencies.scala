@@ -131,6 +131,15 @@ object Dependencies {
     )
   )
 
+  val GoogleFcm = Seq(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+      "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+      "com.pauldijou" %% "jwt-core" % "0.14.1", //ApacheV2
+      "org.mockito" % "mockito-core" % "2.7.22" % Test //ApacheV2
+    )
+  )
+
   val HBase = {
     val hbaseVersion = "1.2.4"
     val hadoopVersion = "2.5.1"
