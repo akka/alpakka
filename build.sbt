@@ -22,6 +22,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   simpleCodecs,
   slick,
   sns,
+  solr,
   sqs,
   sse,
   unixdomainsocket,
@@ -126,6 +127,8 @@ lazy val sns = alpakkaProject("sns",
                               Dependencies.Sns,
                               // For mockito https://github.com/akka/alpakka/issues/390
                               parallelExecution in Test := false)
+
+lazy val solr = alpakkaProject("solr", Dependencies.Solr, parallelExecution in Test := false)
 
 lazy val sqs = alpakkaProject("sqs",
                               Dependencies.Sqs,
