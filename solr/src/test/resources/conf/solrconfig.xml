@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<config>
+    <luceneMatchVersion>6.4.2</luceneMatchVersion>
+    <dataDir>${solr.data.dir:}</dataDir>
+    <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+    <codecFactory class="solr.SchemaCodecFactory"/>
+    <schemaFactory class="ManagedIndexSchemaFactory">
+        <bool name="mutable">true</bool>
+        <str name="managedSchemaResourceName">managed-schema</str>
+    </schemaFactory>
+    <indexConfig>
+        <lockType>${solr.lock.type:native}</lockType>
+        <infoStream>false</infoStream>
+    </indexConfig>
+    <updateHandler class="solr.DirectUpdateHandler2">
+        <updateLog>
+            <str name="dir">${solr.ulog.dir:}</str>
+        </updateLog>
+        <autoCommit>
+            <maxTime>1000</maxTime>
+            <openSearcher>false</openSearcher>
+        </autoCommit>
+        <autoSoftCommit>
+            <maxTime>500</maxTime>
+        </autoSoftCommit>
+    </updateHandler>
+    <query>
+        <maxBooleanClauses>1024</maxBooleanClauses>
+        <filterCache class="solr.FastLRUCache"
+                     size="10"
+                     initialSize="0"
+                     autowarmCount="0"/>
+        <queryResultCache class="solr.LRUCache"
+                          size="10"
+                          initialSize="0"
+                          autowarmCount="0"/>
+        <documentCache class="solr.LRUCache"
+                       size="10"
+                       initialSize="0"
+                       autowarmCount="0"/>
+        <cache name="perSegFilter"
+               class="solr.search.LRUCache"
+               size="10"
+               initialSize="0"
+               autowarmCount="10"
+               regenerator="solr.NoOpRegenerator"/>
+
+        <enableLazyFieldLoading>true</enableLazyFieldLoading>
+        <queryResultWindowSize>20</queryResultWindowSize>
+        <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
+        <useColdSearcher>false</useColdSearcher>
+        <maxWarmingSearchers>2</maxWarmingSearchers>
+    </query>
+
+    <requestDispatcher handleSelect="false">
+        <requestParsers enableRemoteStreaming="true"
+                        multipartUploadLimitInKB="2048000"
+                        formdataUploadLimitInKB="2048"
+                        addHttpRequestToContext="false"/>
+        <httpCaching never304="true"/>
+    </requestDispatcher>
+
+    <requestHandler name="/select" class="solr.SearchHandler">
+        <lst name="defaults">
+            <int name="rows">10</int>
+        </lst>
+    </requestHandler>
+
+    <requestHandler name="/query" class="solr.SearchHandler">
+        <lst name="defaults">
+            <str name="wt">json</str>
+        </lst>
+    </requestHandler>
+
+    <requestHandler name="/get" class="solr.RealTimeGetHandler">
+        <lst name="defaults">
+            <str name="omitHeader">true</str>
+            <str name="wt">json</str>
+        </lst>
+    </requestHandler>
+
+    <requestHandler name="/update" class="solr.UpdateRequestHandler"/>
+
+    <requestHandler name="/analysis/field"
+                    startup="lazy"
+                    class="solr.FieldAnalysisRequestHandler"/>
+
+    <requestHandler name="/analysis/document"
+                    class="solr.DocumentAnalysisRequestHandler"
+                    startup="lazy"/>
+
+    <requestHandler name="/admin/ping" class="solr.PingRequestHandler">
+        <lst name="invariants">
+            <str name="q">solrpingquery</str>
+        </lst>
+        <lst name="defaults">
+            <str name="echoParams">all</str>
+        </lst>
+    </requestHandler>
+
+    <requestHandler name="/debug/dump" class="solr.DumpRequestHandler">
+        <lst name="defaults">
+            <str name="echoParams">explicit</str>
+            <str name="echoHandler">true</str>
+        </lst>
+    </requestHandler>
+
+    <requestHandler name="/replication" class="solr.ReplicationHandler">
+    </requestHandler>
+
+    <queryResponseWriter name="json" class="solr.JSONResponseWriter">
+        <str name="content-type">text/plain; charset=UTF-8</str>
+    </queryResponseWriter>
+</config>
