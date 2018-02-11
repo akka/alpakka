@@ -27,9 +27,10 @@ This is the process for committing code into master.
 
 In case of questions about the contribution process or for discussion of specific issues please visit the [akka/dev gitter chat](https://gitter.im/akka/dev).
 
-## Testing
+## Alpakka specific advice
 
-Some tests (cassandra, rabbitmq, mqtt, dynamodb) require a server to be running. A set of servers can easily be started with `docker-compose up`.
+We've collected a few notes on how we would like Alpakka modules to be designed based on what has evolved so far.
+Please have a look at our [contributor advice](contributor-advice.md).
 
 ## Pull Request Requirements
 
@@ -46,30 +47,6 @@ For a Pull Request to be considered at all it has to meet these requirements:
 
 If these requirements are not met then the code should **not** be merged into master, or even reviewed - regardless of how good or important it is. No exceptions.
 
-## Documentation
-
-Documentation should be written in two forms:
-
-1. API documentation in the form of scaladoc/javadoc comments on the Scala and Java user API.
-2. Guide documentation in [docs](docs/) subproject using [Paradox](https://github.com/lightbend/paradox) documentation tool. This documentation should give a short introduction of how a given connector should be used.
-
-Run `sbt docs/local:paradox` to generate reference docs while developing. Generated documentation can be found in the `./docs/target/paradox/site/local` directory.
-
-## External Dependencies
-
-All the external runtime dependencies for the project, including transitive dependencies, must have an open source license that is equal to, or compatible with, [Apache 2](http://www.apache.org/licenses/LICENSE-2.0).
-
-This must be ensured by manually verifying the license for all the dependencies for the project:
-
-1. Whenever a committer to the project changes a version of a dependency (including Scala) in the build file.
-2. Whenever a committer to the project adds a new dependency.
-3. Whenever a new release is cut (public or private for a customer).
-
-Every external dependency listed in the build file must have a trailing comment with the license name of the dependency.
-
-Which licenses are compatible with Apache 2 are defined in [this doc](http://www.apache.org/legal/3party.html#category-a), where you can see that the licenses that are listed under ``Category A`` automatically compatible with Apache 2, while the ones listed under ``Category B`` needs additional action:
-
-> Each license in this category requires some degree of [reciprocity](http://www.apache.org/legal/3party.html#define-reciprocal); therefore, additional action must be taken in order to minimize the chance that a user of an Apache product will create a derivative work of a reciprocally-licensed portion of an Apache product without being aware of the applicable requirements.
 
 ## Creating Commits And Writing Commit Messages
 
