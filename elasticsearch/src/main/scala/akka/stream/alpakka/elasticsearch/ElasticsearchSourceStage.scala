@@ -6,8 +6,8 @@ package akka.stream.alpakka.elasticsearch
 
 import java.io.ByteArrayOutputStream
 
-import akka.stream.{Attributes, Outlet, SourceShape}
-import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
+import akka.stream.{Attributes, FlowShape, Outlet, SourceShape}
+import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, StageLogging}
 import org.apache.http.entity.StringEntity
 import org.elasticsearch.client.{Response, ResponseListener, RestClient}
 import spray.json._
@@ -16,6 +16,7 @@ import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSourceSettings
 import org.apache.http.message.BasicHeader
 
 import scala.collection.JavaConverters._
+import scala.concurrent.Future
 
 final case class OutgoingMessage[T](id: String, source: T, version: Option[Long])
 
@@ -52,15 +53,23 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
                                          reader: MessageReader[T])
     extends GraphStageLogic(shape)
     with ResponseListener
-    with OutHandler {
+    with OutHandler
+    with StageLogging {
 
   private var scrollId: String = null
   private val responseHandler = getAsyncCallback[Response](handleResponse)
   private val failureHandler = getAsyncCallback[Throwable](handleFailure)
 
+  private var waitingForElasticData = false
+  private var pullIsWaitingForData = false
+  private var dataReady: Option[ScrollResponse[T]] = None
+
   def sendScrollScanRequest(): Unit =
     try {
+      waitingForElasticData = true
+
       if (scrollId == null) {
+        log.debug("Doing initial search")
 
         val includeDocumentVersionJson: String = if (settings.includeDocumentVersion) {
           // Tell elastic to return the documents '_version'-property with the search-results
@@ -80,6 +89,8 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
           new BasicHeader("Content-Type", "application/json")
         )
       } else {
+        log.debug("Fetching next scroll")
+
         client.performRequestAsync(
           "POST",
           s"/_search/scroll",
@@ -96,10 +107,13 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
   override def onFailure(exception: Exception) = failureHandler.invoke(exception)
   override def onSuccess(response: Response) = responseHandler.invoke(response)
 
-  def handleFailure(ex: Throwable): Unit =
+  def handleFailure(ex: Throwable): Unit = {
+    waitingForElasticData = false
     failStage(ex)
+  }
 
   def handleResponse(res: Response): Unit = {
+    waitingForElasticData = false
     val json = {
       val out = new ByteArrayOutputStream()
       try {
@@ -110,19 +124,66 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
       }
     }
 
-    reader.convert(json) match {
+    val scrollResponse = reader.convert(json)
+
+    if (pullIsWaitingForData) {
+      log.debug("Received data from elastic. Downstream has already called pull and is waiting for data")
+      pullIsWaitingForData = false
+      if (handleScrollResponse(scrollResponse)) {
+        // we should go and get more data
+        sendScrollScanRequest()
+      }
+    } else {
+      log.debug("Received data from elastic. Downstream have not yet asked for it")
+      // This is a prefetch of data which we received before downstream has asked for it
+      dataReady = Some(scrollResponse)
+    }
+
+  }
+
+  // Returns true if we should continue to work
+  def handleScrollResponse(scrollResponse: ScrollResponse[T]): Boolean =
+    scrollResponse match {
       case ScrollResponse(Some(error), _) =>
         failStage(new IllegalStateException(error))
+        false
       case ScrollResponse(None, Some(result)) if result.messages.isEmpty =>
         completeStage()
+        false
       case ScrollResponse(_, Some(result)) =>
         scrollId = result.scrollId
+        log.debug("Pushing data downstream")
         emitMultiple(out, result.messages.toIterator)
+        true
     }
-  }
 
   setHandler(out, this)
 
-  override def onPull(): Unit = sendScrollScanRequest()
+  override def onPull(): Unit =
+    dataReady match {
+      case Some(data) =>
+        // We already have data ready
+        log.debug("Downstream is pulling data and we already have data ready")
+        if (handleScrollResponse(data)) {
+          // We should go and get more data
+
+          dataReady = None
+
+          if (!waitingForElasticData) {
+            sendScrollScanRequest()
+          }
+
+        }
+      case None =>
+        if (pullIsWaitingForData) throw new Exception("This should not happen: Downstream is pulling more than once")
+        pullIsWaitingForData = true
+
+        if (!waitingForElasticData) {
+          log.debug("Downstream is pulling data. We must go and get it")
+          sendScrollScanRequest()
+        } else {
+          log.debug("Downstream is pulling data. Already waiting for data")
+        }
+    }
 
 }

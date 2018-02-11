@@ -716,4 +716,30 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
+  "ElasticsearchSource" should {
+    "should prefetch next scroll" in {
+      val f1 = ElasticsearchSource
+        .typed[Book](
+          indexName = "source",
+          typeName = "book",
+          query = """{"match_all": {}}""",
+          settings = ElasticsearchSourceSettings(bufferSize = 5)
+        )
+        .map(_.source.title)
+        .runWith(Sink.seq)
+
+      val result = Await.result(f1, Duration.Inf).toList
+
+      result.sorted shouldEqual Seq(
+        "Akka Concurrency",
+        "Akka in Action",
+        "Effective Akka",
+        "Learning Scala",
+        "Programming in Scala",
+        "Scala Puzzlers",
+        "Scala for Spark in Production"
+      )
+    }
+  }
+
 }
