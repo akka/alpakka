@@ -668,6 +668,8 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     "Should use indexName supplied in message if present" in {
       // Copy source/book to sink2/book through typed stream
 
+
+      //#custom-index-name-example
       val customIndexName = "custom-index"
 
       val f1 = ElasticsearchSource
@@ -677,7 +679,8 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           query = """{"match_all": {}}"""
         )
         .map { message: OutgoingMessage[Book] =>
-          IncomingMessage(Some(message.id), message.source).withIndexName(customIndexName)
+          IncomingMessage(Some(message.id), message.source)
+            .withIndexName(customIndexName) // Setting the index-name to use for this document
         }
         .runWith(
           ElasticsearchSink.create[Book](
@@ -685,6 +688,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
             typeName = "book"
           )
         )
+      //#custom-index-name-example
 
       Await.result(f1, Duration.Inf)
 

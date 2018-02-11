@@ -125,6 +125,15 @@ Scala
 Java
 : @@snip ($alpakka$/elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #kafka-example }
 
+### Specifying custom index-name for every document
+
+When working with index-patterns using wildcards, you might need to specify a custom
+index-name for each document:
+
+Scala
+: @@snip ($alpakka$/elasticsearch/src/test/scala/akka/stream/alpakka/elasticsearch/ElasticsearchSpec.scala) { #custom-index-name-example }
+ 
+
 
 
 ### Running the example code
