@@ -26,7 +26,7 @@ Basically it can store data as key, value. Key and value must be serialized, mor
 ##Connection
 
 First of all you need to connect to the geode cache. In a client application, connection is handle by a
- [ClientCache](https://geode.apache.org/docs/guide/12/basic_config/the_cache/managing_a_client_cache.html). A single
+ [ClientCache](https://geode.apache.org/docs/guide/14/basic_config/the_cache/managing_a_client_cache.html). A single
  ClientCache per application is enough. ClientCache also holds a single PDXSerializer.
 
 scala
@@ -46,7 +46,7 @@ java
 
 ##Region
 
-Define a [region](https://geode.apache.org/docs/guide/12/basic_config/data_regions/chapter_overview.html) setting to
+Define a [region](https://geode.apache.org/docs/guide/14/basic_config/data_regions/chapter_overview.html) setting to
 describe how to access region and the key extraction function.
 
 scala
@@ -66,7 +66,7 @@ Object must be serialized to flow in a geode region.
 
 PDX format is the only one supported.
 
-PDXEncoder support many options, see [gemfire_pdx_serialization.html](http://geode.apache.org/docs/guide/12/developing/data_serialization/gemfire_pdx_serialization.html)
+PDXEncoder support many options, see [gemfire_pdx_serialization.html](http://geode.apache.org/docs/guide/14/developing/data_serialization/gemfire_pdx_serialization.html)
 
 PdxSerializer must be provided to geode when reading or writing to a region.
 
@@ -82,7 +82,7 @@ This project provides a generic solution for scala user based on [shapeless](htt
 Java user will need to write by hand their custom serializer.
 
 
-Runtime reflection is also an option see [auto_serialization.html](http://geode.apache.org/docs/guide/12/developing/data_serialization/auto_serialization.html).
+Runtime reflection is also an option see [auto_serialization.html](http://geode.apache.org/docs/guide/14/developing/data_serialization/auto_serialization.html).
 
 ###Flow usage
 
