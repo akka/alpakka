@@ -29,7 +29,7 @@ In case of questions about the contribution process or for discussion of specifi
 
 ## Alpakka specific advice
 
-We've collected a few notes on how we like Alpakka modules to be designed based on what has evolved so far.
+We've collected a few notes on how we would like Alpakka modules to be designed based on what has evolved so far.
 Please have a look at our [contributor advice](contributor-advice.md).
 
 ## Pull Request Requirements

@@ -2,31 +2,20 @@
 
 ## API design
 
-### Flows
-
-When designing Flows, consider adding an extra field to the in- and out-messages which is passed through. A common
-use case we see, is committing a Kafka offset after passing data to another system.
-
-### Settings
-
-Most technologies will have a couple of configuration settings that will be needed for all Flows. Create case classes 
-collecting these settings instead of passing them in every method.
-
-Create a default instance in the companion object with good defaults which can be updated via `copy` or `withXxxx` methods.
-
-As Java can't use the `copy` methods, add `withXxxx` methods to specify certain fields in the settings instance.
-
-In case you see the need to support reading the settings from `Config`, offer a method taking the `Config` instance so
-that the user can apply a proper namespace.
-Refrain from using `akka.stream` as prefix, prefer `alpakka` as root namespace.
-
 ### Public factory methods
 
 Depending on the technology you integrate with Akka Streams and Alpakka you'll create Sources, Flows and Sinks.
 Regardless on how they are implemented make sure that you create the relevant Sources, Sinks and Flows APIs so they are
 simple and easy to use.
 
+### Flows
+
+When designing Flows, consider adding an extra field to the in- and out-messages which is passed through. A common
+use case we see, is committing a Kafka offset after passing data to another system.
+
 ### Java APIs
+
+Alpakka, same as Akka, aims to keep 100% feature parity between the various language DSLs.
 
 * Provide factory methods for Sources, Flows and Sinks in the `javadsl` package wrapping all the methods in the Scala API
 * The Akka Stream Scala instances have a `.asJava` method to convert to the `akka.stream.javadsl` counterparts
@@ -34,6 +23,19 @@ simple and easy to use.
 `JavaConverters` where needed
 * Use the `akka.japi.Pair` class to return tuples
 * Use `scala.compat.java8.FutureConverters` to translate Futures to `CompletionStage`s
+
+### Settings
+
+Most technologies will have a couple of configuration settings that will be needed for several Sinks, Flows, or Sinks. 
+Create case classes collecting these settings instead of passing them in every method.
+
+Create a default instance in the companion object with good defaults which can be updated via `copy` or `withXxxx` methods.
+
+As Java can't use the `copy` methods, add `withXxxx` methods to specify certain fields in the settings instance.
+
+In case you see the need to support reading the settings from `Config`, offer a method taking the `Config` instance so
+that the user can apply a proper namespace.
+Refrain from using `akka.stream.alpakka` as Config prefix, prefer `alpakka` as root namespace.
 
 
 ## Implementation details
@@ -72,15 +74,17 @@ Use `private`, `private[connector]` and `final` extensively to limit the API sur
 * Open connections in `preStart`
 * Release resources in `postStop`
 * Fail early on configuration errors
-* No Blocking At Any Time 
-* Make sure the code is thread-safe
+* Make sure the code is thread-safe; if in doubt, please ask!
+* No Blocking At Any Time -- in other words, avoid blocking whenever possible and replace it with asynchronous 
+programming (async callbacks, stage actors)
 
 ### Keep the code DRY
 
 Avoid duplication of code between different Sources, Sinks and Flows. Extract the common logic to a common abstract
 base `GraphStageLogic` that is inherited by the `GraphStage`s.
 
-In some cases it may be useful to implement the Sources or the Sinks by means of Flows:
+Sometimes it may be useful to provide a Sink or Source for a connector, even if the main concept is implemented
+as a Flow. This can be easily done by reusing the Flow implementation:
 * Source: `Source.maybe.viaMat(MyFlow)(Keep.right)`
 * Sink: `MyFlow.toMat(Sink.ignore)(Keep.right)`
 
@@ -97,8 +101,9 @@ Please ensure that you limit the amount of resources used by the containers.
 
 ## Documentation
 
-Using [Paradox](https://github.com/lightbend/paradox) syntax, create or complement the documentation in the `docs` module.
-Prepare code snippets to be integrated by Paradox in the tests. Such example should be part of real tests and no in
+Using [Paradox](https://github.com/lightbend/paradox) syntax (which is very close to markdown), create or complement
+the documentation in the `docs` module.
+Prepare code snippets to be integrated by Paradox in the tests. Such example should be part of real tests and not in
 unused methods.
 
 Use ScalaDoc if you see the need to describe the API usage better than the naming does.
