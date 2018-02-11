@@ -25,8 +25,8 @@ class B2Client(
   implicit val executionContext = materializer.executionContext
   private val api = new B2API(hostAndPort)
 
-  private var authorizeAccountPromise: Promise[AuthorizeAccountResponse] = Promise()
-  private var getUploadUrlPromise: Promise[GetUploadUrlResponse] = Promise()
+  @volatile private var authorizeAccountPromise: Promise[AuthorizeAccountResponse] = Promise()
+  @volatile private var getUploadUrlPromise: Promise[GetUploadUrlResponse] = Promise()
 
   if (eagerAuthorization) { // if authorization is eager, let us start with this upon construction
     val _ = obtainAuthorizeAccountResponse()
