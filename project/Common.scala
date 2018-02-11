@@ -34,7 +34,8 @@ object Common extends AutoPlugin {
       "-Xlint",
       "-Yno-adapted-args",
       "-Ywarn-dead-code",
-      "-Xfuture"
+      "-Xfuture",
+      "-target:jvm-1.8"
     ),
     javacOptions in compile ++= Seq(
       "-Xlint:unchecked"
