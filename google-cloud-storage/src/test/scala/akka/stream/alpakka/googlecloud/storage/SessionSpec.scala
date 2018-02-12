@@ -16,11 +16,11 @@ class SessionSpec extends WordSpec {
     "report the path of the missing service account file" in {
       implicit val as: ActorSystem = null
       implicit val mat: Materializer = null
-      val session = new Session(GoogleAuthConfiguration("missingpath"), Seq.empty)
+      val session = new Session(GoogleAuthConfiguration("/missing/path/test.json"), Seq.empty)
       val thrown = intercept[RuntimeException] {
         session.getToken()
       }
-      assert(thrown.getMessage === "Service account file missing: /Users/francisdb/workspace/alpakka/missingpath")
+      assert(thrown.getMessage === "Service account file missing: /missing/path/test.json")
     }
 
   }
