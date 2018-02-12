@@ -47,10 +47,16 @@ final case class ListBucketResult(isTruncated: Boolean,
                                   continuationToken: Option[String],
                                   contents: Seq[ListBucketResultContents])
 
-sealed trait ApiVersion
+sealed trait ApiVersion {
+  def getInstance: ApiVersion
+}
 
-case object ListBucketVersion1 extends ApiVersion
-case object ListBucketVersion2 extends ApiVersion
+case object ListBucketVersion1 extends ApiVersion {
+  override val getInstance: ApiVersion = ListBucketVersion1
+}
+case object ListBucketVersion2 extends ApiVersion {
+  override val getInstance: ApiVersion = ListBucketVersion2
+}
 
 object S3Stream {
 
@@ -85,9 +91,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     (source, meta)
   }
 
-  def listBucket(bucket: String,
-                 prefix: Option[String] = None,
-                 apiVersion: ApiVersion): Source[ListBucketResultContents, NotUsed] = {
+  def listBucket(bucket: String, prefix: Option[String] = None): Source[ListBucketResultContents, NotUsed] = {
     sealed trait ListBucketState
     case object Starting extends ListBucketState
     case class Running(continuationToken: String) extends ListBucketState
@@ -96,7 +100,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     import system.dispatcher
 
     def listBucketCall(token: Option[String]): Future[Option[(ListBucketState, Seq[ListBucketResultContents])]] =
-      signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, prefix, token, apiVersion))
+      signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, prefix, token))
         .map { (res: ListBucketResult) =>
           Some(
             res.continuationToken
