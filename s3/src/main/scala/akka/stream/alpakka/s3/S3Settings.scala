@@ -7,9 +7,9 @@ package akka.stream.alpakka.s3
 import java.nio.file.{Path, Paths}
 
 import scala.util.Try
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
+import akka.stream.alpakka.s3.impl.{ApiVersion, ListBucketVersion1, ListBucketVersion2}
 import com.amazonaws.auth._
 import com.amazonaws.regions.{AwsRegionProvider, DefaultAwsRegionProviderChain}
 import com.typesafe.config.Config
@@ -21,7 +21,8 @@ final case class S3Settings(bufferType: BufferType,
                             credentialsProvider: AWSCredentialsProvider,
                             s3RegionProvider: AwsRegionProvider,
                             pathStyleAccess: Boolean,
-                            endpointUrl: Option[String]) {
+                            endpointUrl: Option[String],
+                            listBucketApiVersion: ApiVersion) {
 
   override def toString: String =
     s"""S3Settings(
@@ -30,7 +31,8 @@ final case class S3Settings(bufferType: BufferType,
        |${credentialsProvider.getClass.getSimpleName},
        |${s3RegionProvider.getClass.getSimpleName},
        |$pathStyleAccess,
-       |$endpointUrl)""".stripMargin
+       |$endpointUrl
+       |$listBucketApiVersion)""".stripMargin
 }
 
 sealed trait BufferType {
@@ -162,13 +164,19 @@ object S3Settings {
       }
     }
 
+    val apiVersion = Try(s3Config.getInt("list-bucket-api-version") match {
+      case 1 => ListBucketVersion1
+      case 2 => ListBucketVersion2
+    }).getOrElse(ListBucketVersion2)
+
     new S3Settings(
       bufferType = bufferType,
       proxy = maybeProxy,
       credentialsProvider = credentialsProvider,
       s3RegionProvider = regionProvider,
       pathStyleAccess = pathStyleAccess,
-      endpointUrl = endpointUrl
+      endpointUrl = endpointUrl,
+      listBucketApiVersion = apiVersion
     )
   }
 
