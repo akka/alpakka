@@ -96,4 +96,64 @@ class CanonicalRequestSpec extends FlatSpec with Matchers {
         |testhash""".stripMargin
     )
   }
+
+  // https://tools.ietf.org/html/rfc3986#section-2.3
+  it should "correctly build a canonicalString for 'not unreserved' RFC 3986 characters in the query" in {
+    val (name, expectedName) = ("abc#", "abc%" + '#'.toHexString.toUpperCase)
+    val (value, expectedValue) = ("def(", "def%" + '('.toHexString.toUpperCase)
+
+    val request =
+      HttpRequest(
+        HttpMethods.GET,
+        Uri(s"https://mytestbucket.s3.amazonaws.com/test")
+          .withQuery(Uri.Query(name.toString -> value.toString))
+      ).withHeaders(
+        RawHeader("x-amz-content-sha256", "testhash"),
+        `Content-Type`(ContentTypes.`application/json`)
+      )
+
+    val canonicalRequest = CanonicalRequest.from(request)
+    canonicalRequest.canonicalString should equal {
+      s"""GET
+        |/test
+        |$expectedName=$expectedValue
+        |content-type:application/json
+        |x-amz-content-sha256:testhash
+        |
+        |content-type;x-amz-content-sha256
+        |testhash""".stripMargin
+    }
+  }
+
+  // https://tools.ietf.org/html/rfc3986#section-2.3
+  it should "correctly build a canonicalString for all RFC 3986 reserved characters except / in the path" in {
+    val reservedCharacters = ":?#[]@!$&'()*+,;="
+    reservedCharacters.foreach { char =>
+      withClue(s"failed for path containing reserved character [$char]:") {
+        val expectedCharEncoding = "%" + char.toHexString.toUpperCase
+
+        val request =
+          HttpRequest(
+            HttpMethods.GET,
+            Uri(s"https://mytestbucket.s3.amazonaws.com")
+              .withPath(Uri.Path.Empty / s"file-$char.txt")
+          ).withHeaders(
+            RawHeader("x-amz-content-sha256", "testhash"),
+            `Content-Type`(ContentTypes.`application/json`)
+          )
+
+        val canonicalRequest = CanonicalRequest.from(request)
+        canonicalRequest.canonicalString should equal {
+          s"""GET
+            |/file-$expectedCharEncoding.txt
+            |
+            |content-type:application/json
+            |x-amz-content-sha256:testhash
+            |
+            |content-type;x-amz-content-sha256
+            |testhash""".stripMargin
+        }
+      }
+    }
+  }
 }
