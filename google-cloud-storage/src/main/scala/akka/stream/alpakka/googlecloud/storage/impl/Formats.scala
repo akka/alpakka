@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.googlecloud.storage
+package akka.stream.alpakka.googlecloud.storage.impl
 
 import akka.stream.alpakka.googlecloud.storage.Model.{BucketInfo, BucketListResult, StorageObject}
 import play.api.libs.json.{JsPath, Json, Reads}

@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.googlecloud.storage
+package akka.stream.alpakka.googlecloud.storage.impl
 
 import java.nio.file.{Files, Paths}
 import java.security.spec.PKCS8EncodedKeySpec
@@ -15,23 +15,23 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import akka.stream.alpakka.googlecloud.storage.Session.{AccessTokenExpiry, GoogleAuthConfiguration, OAuthResponse}
+import akka.stream.alpakka.googlecloud.storage.GoogleAuthConfiguration
+import akka.stream.alpakka.googlecloud.storage.impl.Session.{AccessTokenExpiry, OAuthResponse}
 import play.api.libs.json.Json
 
 import scala.concurrent.Future
 import scala.io.Source
 
-object Session {
+private[storage] object Session {
 
   def apply(authConfiguration: GoogleAuthConfiguration, scopes: Seq[String]) = new Session(authConfiguration, scopes)
 
   final case class AccessTokenExpiry(accessToken: String, expiresAt: Long)
-  final case class GoogleAuthConfiguration(serviceAccountFile: String)
 
   private final case class OAuthResponse(access_token: String, token_type: String, expires_in: Int)
 }
 
-class Session(private val authConfig: GoogleAuthConfiguration, scopes: Seq[String]) {
+private[storage] final class Session(private val authConfig: GoogleAuthConfiguration, scopes: Seq[String]) {
   private val GoogleApisHost = "https://www.googleapis.com"
   private implicit val googleOAuthResponseFormat = Json.format[OAuthResponse]
   private var maybeAccessToken: Option[Future[AccessTokenExpiry]] = None

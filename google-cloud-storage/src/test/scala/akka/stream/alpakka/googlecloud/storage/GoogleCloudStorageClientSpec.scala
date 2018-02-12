@@ -1,50 +1,57 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.googlecloud.storage
 
 import java.util.UUID
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes
-import akka.stream.alpakka.googlecloud.storage.Model.StorageObject
-import akka.stream.alpakka.googlecloud.storage.Session.GoogleAuthConfiguration
+import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import com.typesafe.config.{Config, ConfigFactory}
-import org.specs2.concurrent.ExecutionEnv
-import org.specs2.mutable.{After, Specification}
+import org.scalactic.source
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest._
+import org.scalatest.time.{Millis, Seconds, Span}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 
-class GoogleCloudStorageClientSpec(implicit ee: ExecutionEnv) extends Specification with WithMaterializerGlobal {
+class GoogleCloudStorageClientSpec
+    extends WordSpec
+    with WithMaterializerGlobal
+    with Matchers
+    with ScalaFutures
+    with WithConfiguredClient {
+
+  implicit val defaultPatience =
+    PatienceConfig(timeout = Span(10, Seconds), interval = Span(10, Millis))
 
   "The client" should {
 
-    "be able to list an empty bucket" in new WithConfiguredClient {
-      skipped("the bucket is no longer empty")
-      val objects = Await.result(googleCloudStorageClient
-                                   .listBucket(bucket)
-                                   .runWith(Sink.seq),
-                                 10.seconds)
-      objects should beEmpty
+    "be able to list an empty bucket" ignoreIfConfigMissing {
+      // the bucket is no longer empty
+      val objects = googleCloudStorageClient
+        .listBucket(bucket)
+        .runWith(Sink.seq)
+      objects.futureValue shouldBe empty
     }
 
-    "get an empty list when listing a non existing folder" in new WithConfiguredClient {
-      googleCloudStorageClient
+    "get an empty list when listing a non existing folder" ignoreIfConfigMissing {
+      val objects = googleCloudStorageClient
         .listBucket(bucket, Some("non-existent"))
         .runWith(Sink.seq)
-        .map { objects =>
-          objects should beEmpty
-        }
-        .await(0, 10.seconds)
+
+      objects.futureValue shouldBe empty
     }
 
-    "be able to list an existing folder" in new WithConfiguredClient {
-      (for {
+    "be able to list an existing folder" ignoreIfConfigMissing {
+      val listing = for {
         _ <- googleCloudStorageClient.upload(bucket,
                                              getFullFileName("testa.txt"),
                                              ContentTypes.`text/plain(UTF-8)`,
@@ -55,183 +62,158 @@ class GoogleCloudStorageClientSpec(implicit ee: ExecutionEnv) extends Specificat
                                              ByteString("testb"))
         listing <- googleCloudStorageClient.listBucket(bucket, Some(folderName)).runWith(Sink.seq)
       } yield {
-        listing should have size 2
-      }).await(0, 10.seconds)
+        listing
+      }
+
+      listing.futureValue should have size 2
     }
 
-    "get metadata of an existing file" in new WithConfiguredClient {
+    "get metadata of an existing file" ignoreIfConfigMissing {
       val content = ByteString("metadata file")
-      Await.result(
-        googleCloudStorageClient
+
+      val option = for {
+        _ <- googleCloudStorageClient
           .upload(bucket, getFullFileName("metadata-file"), ContentTypes.`text/plain(UTF-8)`, content)
-          .map { _ =>
-            googleCloudStorageClient.getStorageObject(bucket, getFullFileName("metadata-file")).map { option =>
-              option should beSome[StorageObject]
-              option.map { so =>
-                so.name must be equalTo getFullFileName("metadata-file")
-                so.size must be equalTo content.size.toString
-                so.contentType must beSome(ContentTypes.`text/plain(UTF-8)`.toString())
-              }
-            }
-          },
-        10.seconds
-      )
+        option <- googleCloudStorageClient.getStorageObject(bucket, getFullFileName("metadata-file"))
+      } yield option
+
+      val so = option.futureValue.get
+      so.name shouldBe getFullFileName("metadata-file")
+      so.size shouldBe content.size.toString
+      so.contentType shouldBe Some(ContentTypes.`text/plain(UTF-8)`.toString())
     }
 
-    "get none when asking metadata of non-existing file" in new WithConfiguredClient {
-      googleCloudStorageClient
-        .getStorageObject(bucket, getFullFileName("metadata-file"))
-        .map { option =>
-          option should beNone
-        }
-        .await(0, 10.seconds)
+    "get none when asking metadata of non-existing file" ignoreIfConfigMissing {
+      val option = googleCloudStorageClient.getStorageObject(bucket, getFullFileName("metadata-file"))
+      option.futureValue shouldBe None
     }
 
-    "be able to upload a file" in new WithConfiguredClient {
+    "be able to upload a file" ignoreIfConfigMissing {
       val fileName = getFullFileName("test-file")
-      Await.result(
-        googleCloudStorageClient
-          .upload(bucket,
-                  fileName,
-                  ContentTypes.`text/plain(UTF-8)`,
-                  ByteString(Random.alphanumeric.take(50000).map(c => c.toByte).toArray))
-          .map { so =>
-            so.name must be equalTo fileName
-            so.size must be equalTo "50000"
-          },
-        10.seconds
-      )
-      Await.result(googleCloudStorageClient.listBucket(bucket, Some(folderName)).runWith(Sink.seq), 10.second) should have size 1
+      val res = for {
+        so <- googleCloudStorageClient.upload(bucket,
+                                              fileName,
+                                              ContentTypes.`text/plain(UTF-8)`,
+                                              ByteString(Random.alphanumeric.take(50000).map(c => c.toByte).toArray))
+        listing <- googleCloudStorageClient.listBucket(bucket, Some(folderName)).runWith(Sink.seq)
+      } yield (so, listing)
+
+      val (so, listing) = res.futureValue
+
+      so.name shouldBe fileName
+      so.size shouldBe "50000"
+      listing should have size 1
     }
 
-    "be able to download an existing file" in new WithConfiguredClient {
+    "be able to download an existing file" ignoreIfConfigMissing {
       val fileName = getFullFileName("test-file")
       val content = ByteString(Random.alphanumeric.take(50000).map(c => c.toByte).toArray)
-      Await.result(
-        googleCloudStorageClient
-          .upload(bucket, fileName, ContentTypes.`text/plain(UTF-8)`, content)
-          .map { _ =>
-            googleCloudStorageClient.download(bucket, fileName).runWith(Sink.head).map { bs =>
-              bs must be equalTo content
-            }
-          },
-        10.seconds
-      )
+      val bs = for {
+        _ <- googleCloudStorageClient.upload(bucket, fileName, ContentTypes.`text/plain(UTF-8)`, content)
+        bs <- googleCloudStorageClient.download(bucket, fileName).runWith(Sink.fold(ByteString.empty) { _ ++ _ })
+      } yield bs
+      bs.futureValue shouldBe content
     }
 
-    "get an empty Stream when downloading a non extisting file" in new WithConfiguredClient {
+    "get an empty Stream when downloading a non extisting file" ignoreIfConfigMissing {
       val fileName = getFullFileName("non-existing-file")
-      googleCloudStorageClient
+      val download = googleCloudStorageClient
         .download(bucket, fileName)
         .runWith(Sink.seq)
-        .map { bs =>
-          bs must beEmpty
-        }
-        .await(0, 10.seconds)
+      download.futureValue shouldBe empty
     }
 
-    "get a single empty ByteString when downloading a non extisting file" in new WithConfiguredClient {
+    "get a single empty ByteString when downloading a non extisting file" ignoreIfConfigMissing {
       val fileName = getFullFileName("non-existing-file")
-      (for {
+      val res = for {
         _ <- googleCloudStorageClient.upload(bucket, fileName, ContentTypes.`text/plain(UTF-8)`, ByteString.empty)
         res <- googleCloudStorageClient.download(bucket, fileName).runWith(Sink.seq)
-      } yield {
-        res must be equalTo Seq(ByteString.empty)
-      }).await(0, 10.seconds)
+      } yield res
+      res.futureValue shouldBe Seq(ByteString.empty)
     }
 
-    "check if a file exists" in new WithConfiguredClient {
-      Await.result(
-        googleCloudStorageClient
-          .exists(bucket, getFullFileName("testFileExists"))
-          .map { fileExists =>
-            fileExists should be equalTo false
-          }
-          .flatMap { _ =>
-            googleCloudStorageClient
-              .upload(bucket,
-                      getFullFileName("testFileExists"),
-                      ContentTypes.`text/plain(UTF-8)`,
-                      ByteString("aaaaaabbbbb"))
-              .map { _ =>
-                googleCloudStorageClient.exists(bucket, getFullFileName("testFileExists")).map { fileExists =>
-                  fileExists should be equalTo true
-                }
-              }
-          },
-        10.seconds
-      )
-    }
+    "check if a file exists" ignoreIfConfigMissing {
 
-    "delete an existing file" in new WithConfiguredClient {
-      Await.result(
-        googleCloudStorageClient
+      val res = for {
+        before <- googleCloudStorageClient.exists(bucket, getFullFileName("testFileExists"))
+        _ <- googleCloudStorageClient
           .upload(bucket,
-                  getFullFileName("fileToDelete"),
+                  getFullFileName("testFileExists"),
                   ContentTypes.`text/plain(UTF-8)`,
-                  ByteString("File content"))
-          .map { _ =>
-            googleCloudStorageClient.delete(bucket, getFullFileName("fileToDelete")).map { result =>
-              result must be equalTo true
-            }
-          },
-        10.seconds
-      )
+                  ByteString("aaaaaabbbbb"))
+        after <- googleCloudStorageClient.exists(bucket, getFullFileName("testFileExists"))
+      } yield (before, after)
+      res.futureValue shouldBe ((false, true))
     }
 
-    "delete an unexisting file should not give an error" in new WithConfiguredClient {
-      Await.result(googleCloudStorageClient.delete(bucket, getFullFileName("non-existing-file-to-delete")).map {
-        result =>
-          result must be equalTo false
-      }, 10.seconds)
+    "delete an existing file" ignoreIfConfigMissing {
+      val result = for {
+        _ <- googleCloudStorageClient.upload(bucket,
+                                             getFullFileName("fileToDelete"),
+                                             ContentTypes.`text/plain(UTF-8)`,
+                                             ByteString("File content"))
+        result <- googleCloudStorageClient.delete(bucket, getFullFileName("fileToDelete"))
+      } yield result
+      result.futureValue shouldBe true
     }
 
-    "provide a sink to stream data to gcs" in new WithConfiguredClient {
+    "delete an unexisting file should not give an error" ignoreIfConfigMissing {
+      val result = googleCloudStorageClient.delete(bucket, getFullFileName("non-existing-file-to-delete"))
+      result.futureValue shouldBe false
+    }
+
+    "provide a sink to stream data to gcs" ignoreIfConfigMissing {
       val fileName: String = getFullFileName("big-streaming-file")
       val sink =
         googleCloudStorageClient.createUploadSink(bucket, fileName, ContentTypes.`text/plain(UTF-8)`, 4 * 256 * 1024)
 
-      Await.result(
-        Source
-          .fromIterator(
-            () =>
-              Iterator.fill[ByteString](10) {
-                ByteString(Random.alphanumeric.take(1234567).map(c => c.toByte).toArray)
-            }
-          )
-          .runWith(sink)
-          .map { so =>
-            so.name must be equalTo fileName
-            so.size must be equalTo "12345670"
-          },
-        200.seconds
-      )
+      val res = Source
+        .fromIterator(
+          () =>
+            Iterator.fill[ByteString](10) {
+              ByteString(Random.alphanumeric.take(1234567).map(c => c.toByte).toArray)
+          }
+        )
+        .runWith(sink)
+
+      val so = res.futureValue
+      so.name shouldBe fileName
+      so.size shouldBe "12345670"
     }
   }
 
-  trait WithConfiguredClient extends After {
-    val bucket = "mybucket-test"
-    val folderName = classOf[GoogleCloudStorageClientSpec].getSimpleName + UUID.randomUUID().toString + "/"
+}
 
-    val config: Config = ConfigFactory.load()
-    val googleConfig =
-      (if (config
-             .hasPath("google.serviceAccountFile") && !config.getString("google.serviceAccountFile").trim.isEmpty) {
-         Some(GoogleAuthConfiguration(config.getString("google.serviceAccountFile")))
-       } else {
-         None
-       }).getOrElse {
-        skipped("SKIPPED: Google cloud storage serviceAccount not configured")
-        throw new RuntimeException("Google cloud storage serviceAccount not configured")
+trait WithConfiguredClient extends WordSpec with BeforeAndAfter with Matchers {
+
+  def actorSystem: ActorSystem
+  def materializer: Materializer
+
+  var folderName: String = _
+  var googleCloudStorageClient: GoogleCloudStorageClient = _
+
+  def getFullFileName(file: String) = folderName + file
+
+  val config: Config = ConfigFactory.load()
+  val googleConfig = GoogleAuthConfiguration(config)
+  val bucket = config.getString("alpakka.test.google.bucket")
+
+  implicit class StringExt(wordSpecStringWrapper: String) {
+    def ignoreIfConfigMissing(f: => Any /* Assertion */ )(implicit pos: source.Position): Unit =
+      if (googleConfig.isEmpty) {
+        wordSpecStringWrapper.ignore(f)
+      } else {
+        wordSpecStringWrapper.in(f)
       }
+  }
 
-    val googleCloudStorageClient = GoogleCloudStorageClient(googleConfig)
+  before {
+    folderName = classOf[GoogleCloudStorageClientSpec].getSimpleName + UUID.randomUUID().toString + "/"
+    googleCloudStorageClient = GoogleCloudStorageClient(googleConfig.get)(actorSystem, materializer)
+  }
 
-    def getFullFileName(file: String) = folderName + file
-
-    override def after: Any =
-      Await.result(googleCloudStorageClient.deleteFolder(bucket, folderName).map(_ => ()), 10.second)
-
+  after {
+    Await.result(googleCloudStorageClient.deleteFolder(bucket, folderName), 10.second)
   }
 
 }

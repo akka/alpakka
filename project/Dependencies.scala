@@ -123,19 +123,15 @@ object Dependencies {
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
       "org.mockito" % "mockito-core" % "2.3.7" % Test, // MIT
-      "com.github.tomakehurst" % "wiremock" % "2.5.1" % Test, // ApacheV2
-      "org.specs2" %% "specs2-core" % "4.0.2" % Test // TODO replace with scalatest?
+      "com.github.tomakehurst" % "wiremock" % "2.5.1" % Test // ApacheV2
     )
   )
 
   val GoogleStorage = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-//      "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-      "com.typesafe.play" %% "play-json" % "2.6.8", // ApacheV2 TODO repace with spray-json?
-      "org.mockito" % "mockito-core" % "2.3.7" % Test, // MIT
-      "com.github.tomakehurst" % "wiremock" % "2.5.1" % Test, // ApacheV2
-      "org.specs2" %% "specs2-core" % "4.0.2" % Test // MIT TODO replace with scalatest?
+      "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+      "com.typesafe.play" %% "play-json" % "2.6.8" // ApacheV2 TODO repace with spray-json?
     )
   )
 

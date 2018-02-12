@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.googlecloud.storage
@@ -13,7 +13,6 @@ import akka.http.scaladsl.model.headers.{`Content-Range`, OAuth2BearerToken, Raw
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.storage.Model._
-import akka.stream.alpakka.googlecloud.storage.Session.GoogleAuthConfiguration
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
 import play.api.libs.json.{JsError, Json, Reads}
@@ -23,6 +22,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 import GoogleCloudStorageClient._
+import akka.stream.alpakka.googlecloud.storage.impl.{Chunker, Formats, Session}
 
 object GoogleCloudStorageClient {
   private val baseUri = Uri("https://www.googleapis.com/")

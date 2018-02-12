@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.googlecloud.storage
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import akka.stream.alpakka.googlecloud.storage.Session.GoogleAuthConfiguration
-import org.specs2.mutable.Specification
+import akka.stream.alpakka.googlecloud.storage.impl.Session
+import org.scalatest.WordSpec
 
-class SessionSpec extends Specification {
+class SessionSpec extends WordSpec {
 
   "The session" should {
 
@@ -17,7 +17,10 @@ class SessionSpec extends Specification {
       implicit val as: ActorSystem = null
       implicit val mat: Materializer = null
       val session = new Session(GoogleAuthConfiguration("missingpath"), Seq.empty)
-      session.getToken() must throwA[RuntimeException]("missingpath")
+      val thrown = intercept[RuntimeException] {
+        session.getToken()
+      }
+      assert(thrown.getMessage === "Service account file missing: /Users/francisdb/workspace/alpakka/missingpath")
     }
 
   }

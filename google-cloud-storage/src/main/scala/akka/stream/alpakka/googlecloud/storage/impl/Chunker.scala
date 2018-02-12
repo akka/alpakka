@@ -2,18 +2,18 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.googlecloud.storage
+package akka.stream.alpakka.googlecloud.storage.impl
 
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.util.ByteString
 
-final case class Chunk(bytes: ByteString, totalSize: Option[Long] = None) {
+private[storage] final case class Chunk(bytes: ByteString, totalSize: Option[Long] = None) {
   def size: Int = bytes.size
 }
 
 // Inspired from akka doc : https://doc.akka.io/docs/akka/current/stream/stream-cookbook.html?language=scala#chunking-up-a-stream-of-bytestrings-into-limited-size-bytestrings
-class Chunker(val chunkSize: Int) extends GraphStage[FlowShape[ByteString, Chunk]] {
+private[storage] class Chunker(val chunkSize: Int) extends GraphStage[FlowShape[ByteString, Chunk]] {
 
   val in = Inlet[ByteString]("Chunker.in")
   val out = Outlet[Chunk]("Chunker.out")
