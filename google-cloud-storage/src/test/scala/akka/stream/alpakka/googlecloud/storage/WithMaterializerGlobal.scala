@@ -21,8 +21,8 @@ trait WithMaterializerGlobal extends WordSpec with BeforeAndAfterAll {
 
   override def afterAll(): Unit = {
     //println(" actorSystem stop")
-    http.shutdownAllConnectionPools()
-    materializer.shutdown()
+    Await.result(http.shutdownAllConnectionPools(), 10.seconds)
+    //materializer.shutdown()
     Await.result(actorSystem.terminate(), 10.seconds)
   }
 }

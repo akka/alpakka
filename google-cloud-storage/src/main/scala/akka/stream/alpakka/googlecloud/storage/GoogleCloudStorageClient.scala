@@ -15,14 +15,17 @@ import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.storage.Model._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
-import play.api.libs.json.{JsError, Json, Reads}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 import GoogleCloudStorageClient._
-import akka.stream.alpakka.googlecloud.storage.impl.{Chunker, Formats, Session}
+import akka.stream.alpakka.googlecloud.storage.impl.{Chunker, Session}
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.stream.alpakka.googlecloud.storage.impl.Formats._
+
+import spray.json._
 
 object GoogleCloudStorageClient {
   private val baseUri = Uri("https://www.googleapis.com/")
@@ -33,8 +36,7 @@ object GoogleCloudStorageClient {
 }
 
 final class GoogleCloudStorageClient(authConfiguration: GoogleAuthConfiguration)(implicit system: ActorSystem,
-                                                                                 mat: Materializer)
-    extends Formats {
+                                                                                 mat: Materializer) {
 
   private lazy val gsSesion = Session(authConfiguration, Seq("https://www.googleapis.com/auth/devstorage.read_write"))
   private implicit val ec = mat.executionContext
@@ -46,7 +48,7 @@ final class GoogleCloudStorageClient(authConfiguration: GoogleAuthConfiguration)
     postRequest(basePath / "b",
                 Map("project" -> projectName),
                 ContentTypes.`application/json`,
-                ByteString(Json.toJson(BucketInfo(bucketName, "europe-west1")).toString()))
+                ByteString(BucketInfo(bucketName, "europe-west1").toJson.compactPrint))
       .flatMap(entityForSuccess)
       .flatMap(responseEntityTo[BucketInfo])
 
@@ -137,7 +139,7 @@ final class GoogleCloudStorageClient(authConfiguration: GoogleAuthConfiguration)
 
   private def postRequest(
       fullPath: Path,
-      queryParams: Map[String, String] = Map.empty,
+      queryParams: Map[String, String],
       contentType: ContentType,
       bytes: ByteString
   ): Future[HttpResponse] =
@@ -146,7 +148,7 @@ final class GoogleCloudStorageClient(authConfiguration: GoogleAuthConfiguration)
 
   private def postRequestWithHeaders(
       fullPath: Path,
-      queryParams: Map[String, String] = Map.empty,
+      queryParams: Map[String, String],
       headers: Seq[HttpHeader]
   ): Future[HttpResponse] =
     createAuthenticatedRequest(baseUri.withPath(fullPath).withQuery(Query(queryParams)), HttpMethods.POST, headers)
@@ -161,7 +163,7 @@ final class GoogleCloudStorageClient(authConfiguration: GoogleAuthConfiguration)
       .flatMap(Http().singleRequest(_))
 
   private def createAuthenticatedRequest(uri: Uri,
-                                         method: HttpMethod = HttpMethods.GET,
+                                         method: HttpMethod,
                                          headers: Seq[HttpHeader] = Seq.empty): Future[HttpRequest] =
     gsSesion.getToken().map { accessToken =>
       HttpRequest(method)
@@ -174,7 +176,7 @@ final class GoogleCloudStorageClient(authConfiguration: GoogleAuthConfiguration)
     Path("/b") / bucket
 
   private def getBucketListResult(bucket: String,
-                                  prefix: Option[String] = None,
+                                  prefix: Option[String],
                                   pageToken: Option[String] = None): Future[Option[BucketListResult]] = {
     var queryParams = prefix.map(pref => Map("prefix" -> pref)).getOrElse(Map.empty)
     pageToken.foreach(token => queryParams = queryParams + ("pageToken" -> token))
@@ -209,26 +211,16 @@ final class GoogleCloudStorageClient(authConfiguration: GoogleAuthConfiguration)
 
   private def responseEntityOptionTo[A](
       responseOption: Option[ResponseEntity]
-  )(implicit aRead: Reads[A], ec: ExecutionContext): Future[Option[A]] =
+  )(implicit aRead: JsonReader[A], ec: ExecutionContext): Future[Option[A]] =
     swap(responseOption.map(resp => responseEntityTo(resp)(aRead, ec)))
 
-  private def responseEntityTo[A](response: ResponseEntity)(implicit aRead: Reads[A],
-                                                            ec: ExecutionContext): Future[A] = {
-    val eventualString = Unmarshal(response).to[String]
-    eventualString.map { str =>
-      val value = Json.parse(str).validate[A]
-      value match {
-        case e: JsError =>
-          throw new RuntimeException(s"Could not parse $str: $e")
-        case _ =>
-      }
-      value.get
+  private def responseEntityTo[A](response: ResponseEntity)(implicit aRead: JsonReader[A],
+                                                            ec: ExecutionContext): Future[A] =
+    Unmarshal(response).to[JsValue].map { str =>
+      str.convertTo[A]
     }
-  }
 
-  private def entityForSuccessOption(
-      resp: HttpResponse
-  )(implicit ctx: ExecutionContext): Future[Option[ResponseEntity]] =
+  private def entityForSuccessOption(resp: HttpResponse): Future[Option[ResponseEntity]] =
     resp match {
       case HttpResponse(status, _, entity, _) if status.isSuccess() && !status.isRedirection() =>
         Future.successful(Some(entity))
@@ -241,7 +233,7 @@ final class GoogleCloudStorageClient(authConfiguration: GoogleAuthConfiguration)
         }
     }
 
-  private def entityForSuccess(resp: HttpResponse)(implicit ctx: ExecutionContext): Future[ResponseEntity] =
+  private def entityForSuccess(resp: HttpResponse): Future[ResponseEntity] =
     resp match {
       case HttpResponse(status, _, entity, _) if status.isSuccess() && !status.isRedirection() =>
         Future.successful(entity)
@@ -378,7 +370,7 @@ final class GoogleCloudStorageClient(authConfiguration: GoogleAuthConfiguration)
     Sink.seq[UploadPartResponse].mapMaterializedValue { responseFuture: Future[Seq[UploadPartResponse]] =>
       responseFuture
         .flatMap { responses: Seq[UploadPartResponse] =>
-          val successes = responses.collect { case r: SuccessfulUploadPart => r }
+          //val successes = responses.collect { case r: SuccessfulUploadPart => r }
           val storageObjectResult = responses.collect { case so: SuccessfulUpload => so }
           val failures = responses.collect { case r: FailedUploadPart => r }
           if (responses.isEmpty) {

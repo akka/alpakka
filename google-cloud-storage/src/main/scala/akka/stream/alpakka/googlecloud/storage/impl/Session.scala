@@ -16,11 +16,17 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.storage.GoogleAuthConfiguration
-import akka.stream.alpakka.googlecloud.storage.impl.Session.{AccessTokenExpiry, OAuthResponse}
-import play.api.libs.json.Json
+import akka.stream.alpakka.googlecloud.storage.impl.Session.{
+  AccessTokenExpiry,
+  OAuthResponse,
+  ServiceAccountFile,
+  SessionProtocol
+}
+import spray.json.DefaultJsonProtocol
 
 import scala.concurrent.Future
 import scala.io.Source
+import spray.json._
 
 private[storage] object Session {
 
@@ -29,11 +35,19 @@ private[storage] object Session {
   final case class AccessTokenExpiry(accessToken: String, expiresAt: Long)
 
   private final case class OAuthResponse(access_token: String, token_type: String, expires_in: Int)
+  private final case class ServiceAccountFile(private_key: String, client_email: String)
+
+  private final object SessionProtocol extends DefaultJsonProtocol {
+    implicit val oAuthResponseFormat = jsonFormat3(OAuthResponse)
+    implicit val serviceAccountFileFormat = jsonFormat2(ServiceAccountFile)
+  }
 }
 
 private[storage] final class Session(private val authConfig: GoogleAuthConfiguration, scopes: Seq[String]) {
+
+  import Session.SessionProtocol._
+
   private val GoogleApisHost = "https://www.googleapis.com"
-  private implicit val googleOAuthResponseFormat = Json.format[OAuthResponse]
   private var maybeAccessToken: Option[Future[AccessTokenExpiry]] = None
 
   private def now = Instant.now()
@@ -75,7 +89,7 @@ private[storage] final class Session(private val authConfig: GoogleAuthConfigura
     for {
       response <- Http().singleRequest(HttpRequest(HttpMethods.POST, url, entity = HttpEntity(ct, body)))
       responseString <- Unmarshal(response.entity).to[String]
-      result = Json.parse(responseString).validate[OAuthResponse].get
+      result = responseString.parseJson.convertTo[OAuthResponse]
     } yield {
       AccessTokenExpiry(
         accessToken = result.access_token,
@@ -117,13 +131,12 @@ private[storage] final class Session(private val authConfig: GoogleAuthConfigura
       throw new RuntimeException(s"Service account file missing: ${path.toAbsolutePath}")
     }
     val bufferedSource = Source.fromFile(path.toFile)
-    val contentAsJson = Json.parse(bufferedSource.getLines().mkString)
+    val contentAsJson = bufferedSource.getLines().mkString.parseJson
     bufferedSource.close()
-    contentAsJson
+    contentAsJson.convertTo[ServiceAccountFile]
   }
   private lazy val privateKey: PrivateKey = {
-    val pk = (serviceAccountJson \ "private_key")
-      .as[String]
+    val pk = serviceAccountJson.private_key
       .replace("-----BEGIN RSA PRIVATE KEY-----\n", "")
       .replace("-----END RSA PRIVATE KEY-----", "")
       .replace("-----BEGIN PRIVATE KEY-----\n", "")
@@ -134,6 +147,6 @@ private[storage] final class Session(private val authConfig: GoogleAuthConfigura
     val keySpecPv = new PKCS8EncodedKeySpec(encodedPv)
     kf.generatePrivate(keySpecPv)
   }
-  private lazy val clientEmail: String = (serviceAccountJson \ "client_email").as[String]
+  private lazy val clientEmail = serviceAccountJson.client_email
 
 }

@@ -130,8 +130,7 @@ object Dependencies {
   val GoogleStorage = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-      "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-      "com.typesafe.play" %% "play-json" % "2.6.8" // ApacheV2 TODO repace with spray-json?
+      "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion
     )
   )
 
