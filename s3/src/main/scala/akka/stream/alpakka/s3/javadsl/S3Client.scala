@@ -497,25 +497,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    */
   def listBucket(bucket: String, prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
     impl
-      .listBucket(bucket, prefix, apiVersion = ListBucketVersion2)
-      .map { scalaContents =>
-        listingToJava(scalaContents)
-      }
-      .asJava
-
-  /**
-   * Will return a source of object metadata for a given bucket with optional prefix using version 1 of the List Bucket API.
-   * This will automatically page through all keys with the given parameters.
-   *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html
-   *
-   * @param bucket Which bucket that you list object metadata for
-   * @param prefix Prefix of the keys you want to list under passed bucket
-   * @return Source of object metadata
-   */
-  def listBucketV1(bucket: String, prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
-    impl
-      .listBucket(bucket, prefix, apiVersion = ListBucketVersion1)
+      .listBucket(bucket, prefix)
       .map { scalaContents =>
         listingToJava(scalaContents)
       }
