@@ -17,6 +17,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.s3.MemoryBufferType;
 import akka.stream.alpakka.s3.Proxy;
+import akka.stream.alpakka.s3.impl.ListBucketVersion2;
 import akka.stream.alpakka.s3.S3Settings;
 import akka.stream.alpakka.s3.impl.ServerSideEncryption;
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase;
@@ -61,7 +62,8 @@ public class S3ClientTest extends S3WireMockBase {
             credentials,
             regionProvider("us-east-1"),
             false,
-            scala.Option.empty()
+            scala.Option.empty(),
+            ListBucketVersion2.getInstance()
     );
     private final S3Client client = new S3Client(settings, system(), materializer);
     //#client
@@ -210,23 +212,6 @@ public class S3ClientTest extends S3WireMockBase {
         //#list-bucket
         final Source<ListBucketResultContents, NotUsed> keySource = client.listBucket(bucket(), Option.apply(listPrefix()));
         //#list-bucket
-
-        final CompletionStage<ListBucketResultContents> resultCompletionStage = keySource.runWith(Sink.head(), materializer);
-
-        ListBucketResultContents result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
-
-        assertEquals(result.key(), listKey());
-
-    }
-
-    @Test
-    public void listBucketV1() throws Exception {
-
-        mockListBucketVersion1();
-
-        //#list-bucket-v1
-        final Source<ListBucketResultContents, NotUsed> keySource = client.listBucketV1(bucket(), Option.apply(listPrefix()));
-        //#list-bucket-v1
 
         final CompletionStage<ListBucketResultContents> resultCompletionStage = keySource.runWith(Sink.head(), materializer);
 

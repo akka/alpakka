@@ -6,7 +6,7 @@ package akka.stream.alpakka.s3.scaladsl
 
 import akka.NotUsed
 import akka.http.scaladsl.model.headers.ByteRange
-import akka.stream.alpakka.s3.impl.{ListBucketVersion1, ServerSideEncryption}
+import akka.stream.alpakka.s3.impl.{ListBucketVersion2, ServerSideEncryption}
 import akka.stream.alpakka.s3.{MemoryBufferType, Proxy, S3Exception, S3Settings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
@@ -26,7 +26,8 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
       def getRegion: String = "us-east-1"
     }
   val proxy = Option(Proxy("localhost", port, "http"))
-  val settings = new S3Settings(MemoryBufferType, proxy, awsCredentialsProvider, regionProvider, false, None)
+  val settings =
+    new S3Settings(MemoryBufferType, proxy, awsCredentialsProvider, regionProvider, false, None, ListBucketVersion2)
   val s3Client = new S3Client(settings)(system, materializer)
   //#client
 
@@ -142,10 +143,8 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
   it should "list keys for a given bucket with a prefix using the version 1 api" in {
     mockListBucketVersion1()
 
-    //#list-bucket-v1
     val keySource: Source[ListBucketResultContents, NotUsed] =
-      s3Client.listBucket(bucket, Some(listPrefix), apiVersion = ListBucketVersion1)
-    //#list-bucket-v1
+      s3Client.listBucket(bucket, Some(listPrefix))
 
     val result = keySource.runWith(Sink.head)
 

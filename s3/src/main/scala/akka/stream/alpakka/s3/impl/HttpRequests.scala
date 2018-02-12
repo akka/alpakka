@@ -21,11 +21,10 @@ private[alpakka] object HttpRequests {
   def listBucket(
       bucket: String,
       prefix: Option[String] = None,
-      continuationToken: Option[String] = None,
-      apiVersion: ApiVersion = ListBucketVersion2
+      continuationToken: Option[String] = None
   )(implicit conf: S3Settings): HttpRequest = {
 
-    val (listType, continuationTokenName) = apiVersion match {
+    val (listType, continuationTokenName) = conf.listBucketApiVersion match {
       case ListBucketVersion1 => (None, "marker")
       case ListBucketVersion2 => (Some("2"), "continuation-token")
     }

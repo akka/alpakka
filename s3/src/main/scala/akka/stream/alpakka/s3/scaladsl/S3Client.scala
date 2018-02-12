@@ -266,13 +266,10 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
    *
    * @param bucket Which bucket that you list object metadata for
    * @param prefix Prefix of the keys you want to list under passed bucket
-   * @param useApiVersion2 If true (the default) use the List Buckets API version 2, otherwise use version 1
    * @return [[Source]] of [[ListBucketResultContents]]
    */
-  def listBucket(bucket: String,
-                 prefix: Option[String],
-                 apiVersion: ApiVersion = ListBucketVersion2): Source[ListBucketResultContents, NotUsed] =
-    impl.listBucket(bucket, prefix, apiVersion)
+  def listBucket(bucket: String, prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
+    impl.listBucket(bucket, prefix)
 
   /**
    * Uploads a S3 Object by making multiple requests
