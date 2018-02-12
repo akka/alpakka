@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.dynamodb
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.dynamodb.impl.DynamoSettings
 import akka.stream.alpakka.dynamodb.scaladsl._
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import com.amazonaws.services.dynamodbv2.model._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
@@ -32,7 +33,6 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
       //#init-client
       implicit val system = ActorSystem()
       implicit val materializer = ActorMaterializer()
-      implicit val ec = system.dispatcher
       //#init-client
 
       //#client-construct
@@ -54,7 +54,6 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
     "allow multiple requests - current api" in {
       implicit val system = ActorSystem()
       implicit val materializer = ActorMaterializer()
-      implicit val ec = system.dispatcher
 
       val settings = DynamoSettings(system)
       val client = DynamoClient(settings)
@@ -76,7 +75,6 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
   "allow multiple requests - proposal" in {
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-    implicit val ec = system.dispatcher
 
     val settings = DynamoSettings(system)
     val client = DynamoClient(settings)
@@ -93,7 +91,6 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
   "allow multiple requests - proposal - single source" in {
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-    implicit val ec = system.dispatcher
 
     val settings = DynamoSettings(system)
     val client = DynamoClient(settings)
@@ -105,6 +102,23 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
       .via(client.flow)
       .map(result => result.getTable.getItemCount)
 
+  }
+
+  "provide a paginated requests example" in {
+    implicit val system = ActorSystem()
+    implicit val materializer = ActorMaterializer()
+
+    val settings = DynamoSettings(system)
+    val client = DynamoClient(settings)
+
+    import DynamoImplicits._
+
+    //##paginated
+    val scanPages: Source[ScanResult, NotUsed] =
+      client.source(new ScanRequest().withTableName("testTable"))
+    //##paginated
+
+    system.terminate()
   }
 
 }

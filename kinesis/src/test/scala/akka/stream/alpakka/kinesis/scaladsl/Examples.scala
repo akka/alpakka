@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.kinesis.scaladsl
@@ -7,26 +7,27 @@ package akka.stream.alpakka.kinesis.scaladsl
 import java.nio.ByteBuffer
 import java.util.Date
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.kinesis.{KinesisFlowSettings, ShardSettings}
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
-import com.amazonaws.services.kinesis.model.{PutRecordsRequestEntry, ShardIteratorType}
+import com.amazonaws.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsResultEntry, Record, ShardIteratorType}
 import com.amazonaws.services.kinesis.{AmazonKinesisAsync, AmazonKinesisAsyncClientBuilder}
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 object Examples {
 
-  //#init-system
+  //#init-client
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: Materializer = ActorMaterializer()
-  //#init-system
 
-  //#init-client
-  val amazonKinesisAsync: AmazonKinesisAsync = AmazonKinesisAsyncClientBuilder.defaultClient()
+  implicit val amazonKinesisAsync: com.amazonaws.services.kinesis.AmazonKinesisAsync =
+    AmazonKinesisAsyncClientBuilder.defaultClient()
+
+  system.registerOnTermination(amazonKinesisAsync.shutdown())
   //#init-client
 
   //#source-settings
@@ -38,7 +39,8 @@ object Examples {
   //#source-settings
 
   //#source-single
-  KinesisSource.basic(settings, amazonKinesisAsync)
+  val source: Source[com.amazonaws.services.kinesis.model.Record, NotUsed] =
+    KinesisSource.basic(settings, amazonKinesisAsync)
   //#source-single
 
   //#source-list
@@ -56,7 +58,8 @@ object Examples {
                   refreshInterval = 1.second,
                   limit = 500)
   )
-  KinesisSource.basicMerge(mergeSettings, amazonKinesisAsync)
+
+  val mergedSource: Source[Record, NotUsed] = KinesisSource.basicMerge(mergeSettings, amazonKinesisAsync)
   //#source-list
 
   //#flow-settings
@@ -67,7 +70,7 @@ object Examples {
     maxBytesPerSecond = 1000000,
     maxRetries = 5,
     backoffStrategy = KinesisFlowSettings.Exponential,
-    retryInitialTimeout = 100 millis
+    retryInitialTimeout = 100.millis
   )
 
   val defaultFlowSettings = KinesisFlowSettings.defaultInstance
@@ -76,17 +79,20 @@ object Examples {
   //#flow-settings
 
   //#flow-sink
-  implicit val _: AmazonKinesisAsync = amazonKinesisAsync
+  val flow1: Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] = KinesisFlow("myStreamName")
 
-  Source.empty[PutRecordsRequestEntry].via(KinesisFlow("myStreamName")).to(Sink.ignore)
-  Source.empty[PutRecordsRequestEntry].via(KinesisFlow("myStreamName", flowSettings)).to(Sink.ignore)
-  Source.empty[(String, ByteString)].via(KinesisFlow.byParititonAndBytes("myStreamName")).to(Sink.ignore)
-  Source.empty[(String, ByteBuffer)].via(KinesisFlow.byPartitionAndData("myStreamName")).to(Sink.ignore)
+  val flow2: Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] = KinesisFlow("myStreamName", flowSettings)
 
-  Source.empty[PutRecordsRequestEntry].to(KinesisSink("myStreamName"))
-  Source.empty[PutRecordsRequestEntry].to(KinesisSink("myStreamName", flowSettings))
-  Source.empty[(String, ByteString)].to(KinesisSink.byParititonAndBytes("myStreamName"))
-  Source.empty[(String, ByteBuffer)].to(KinesisSink.byPartitionAndData("myStreamName"))
+  val flow3: Flow[(String, ByteString), PutRecordsResultEntry, NotUsed] =
+    KinesisFlow.byParititonAndBytes("myStreamName")
+
+  val flow4: Flow[(String, ByteBuffer), PutRecordsResultEntry, NotUsed] =
+    KinesisFlow.byPartitionAndData("myStreamName")
+
+  val sink1: Sink[PutRecordsRequestEntry, NotUsed] = KinesisSink("myStreamName")
+  val sink2: Sink[PutRecordsRequestEntry, NotUsed] = KinesisSink("myStreamName", flowSettings)
+  val sink3: Sink[(String, ByteString), NotUsed] = KinesisSink.byParititonAndBytes("myStreamName")
+  val sink4: Sink[(String, ByteBuffer), NotUsed] = KinesisSink.byPartitionAndData("myStreamName")
   //#flow-sink
 
 }

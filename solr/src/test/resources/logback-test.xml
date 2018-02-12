@@ -1,0 +1,18 @@
+<configuration>
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>target/solr.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%d{ISO8601} %-5level [%thread] [%logger{36}]  %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="org.apache.solr" level="warn"/>
+    <logger name="org.apache.zookeeper" level="warn"/>
+    <logger name="org.eclipse.jetty" level="warn"/>
+    <logger name="org.apache.http" level="warn"/>
+
+    <root level="debug">
+        <appender-ref ref="FILE" />
+    </root>
+</configuration>

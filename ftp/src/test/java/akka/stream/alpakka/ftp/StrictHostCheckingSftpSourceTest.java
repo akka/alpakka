@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ftp;
@@ -13,6 +13,7 @@ import akka.util.ByteString;
 import org.junit.Test;
 import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 public class StrictHostCheckingSftpSourceTest extends SftpSupportImpl implements CommonFtpStageTest {
 
@@ -36,6 +37,14 @@ public class StrictHostCheckingSftpSourceTest extends SftpSupportImpl implements
 
   public Sink<ByteString, CompletionStage<IOResult>> getIOSink(String path) throws Exception {
     return Sftp.toPath(path, settings());
+  }
+
+  public Sink<FtpFile, CompletionStage<IOResult>> getRemoveSink() throws Exception {
+    return Sftp.remove(settings());
+  }
+
+  public Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(Function<FtpFile, String> destinationPath) throws Exception {
+    return Sftp.move(destinationPath, settings());
   }
 
   private SftpSettings settings() throws Exception {

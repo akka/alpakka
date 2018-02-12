@@ -1,23 +1,33 @@
 # AWS Kinesis Connector
 
-The AWS Kinesis connector provides an Akka Stream Source for consuming Kinesis Stream records.
+Amazon Kinesis supports collecting, processing, and analyzing video and data streams in real time.
 
-For more information about Kinesis please visit the [official documentation](https://aws.amazon.com/documentation/kinesis/).
+The AWS Kinesis connects to Akka Streams to Kinesis streams.
+
+For more information about Kinesis please visit the [Kinesis documentation](https://aws.amazon.com/documentation/kinesis/).
+
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Akinesis)
+
 
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-kinesis$scalaBinaryVersion$
+  artifact=akka-stream-alpakka-kinesis_$scalaBinaryVersion$
   version=$version$
 }
 
-## Usage
+## Create the Kinesis client
 
 Sources and Flows provided by this connector need a `AmazonKinesisAsync` instance to consume messages from a shard.
 
 @@@ note
-The `AmazonKinesisAsync` instance you supply is thread-safe and can be shared amongst multiple `GraphStages`. As a result, individual `GraphStages` will not automatically shutdown the supplied client when they complete.
+The `AmazonKinesisAsync` instance you supply is thread-safe and can be shared amongst multiple `GraphStages`. 
+As a result, individual `GraphStages` will not automatically shutdown the supplied client when they complete.
+It is recommended to shut the client instance down on Actor system termination.
 @@@
 
 Scala
@@ -26,15 +36,8 @@ Scala
 Java
 : @@snip ($alpakka$/kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #init-client }
 
-We will also need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
 
-Scala
-: @@snip ($alpakka$/kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #init-system }
-
-Java
-: @@snip ($alpakka$/kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #init-system }
-
-### Using the Source
+## Kinesis as Source
 
 The `KinesisSource` creates one `GraphStage` per shard. Reading from a shard requires an instance of `ShardSettings`.
 
@@ -67,12 +70,14 @@ Java
 : @@snip ($alpakka$/kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #source-list }
 
 The constructed `Source` will return [Record](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_Record.html)
-
 objects by calling [GetRecords](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetRecords.html) at the specified interval and according to the downstream demand.
 
-### Using the Put Flow/Sink
+## Kinesis Put via Flow or as Sink
 
-The `KinesisFlow` (or `KinesisSink`) publishes messages into a Kinesis stream using it's partition key and message body. It uses dynamic size batches, can perform several requests in parallel and retries failed records. These features are necessary to achieve the best possible write throughput to the stream. The Flow outputs the result of publishing each record.
+The 
+@scala[@scaladoc[KinesisFlow](akka.stream.alpakka.kinesis.scaladsl.KinesisFlow) (or @scaladoc[KinesisSink](akka.stream.alpakka.kinesis.scaladsl.KinesisSink))] 
+@java[@scaladoc[KinesisFlow](akka.stream.alpakka.kinesis.javadsl.KinesisFlow) (or @scaladoc[KinesisSink](akka.stream.alpakka.kinesis.javadsl.KinesisSink))] 
+publishes messages into a Kinesis stream using it's partition key and message body. It uses dynamic size batches, can perform several requests in parallel and retries failed records. These features are necessary to achieve the best possible write throughput to the stream. The Flow outputs the result of publishing each record.
 
 @@@ warning
 Batching has a drawback: message order cannot be guaranteed, as some records within a single batch may fail to be published. That also means that the Flow output may not match the same input order.

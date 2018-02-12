@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.dynamodb;
@@ -12,10 +12,7 @@ import akka.stream.alpakka.dynamodb.impl.DynamoSettings;
 import akka.stream.alpakka.dynamodb.javadsl.DynamoClient;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import com.amazonaws.services.dynamodbv2.model.CreateTableResult;
-import com.amazonaws.services.dynamodbv2.model.ListTablesRequest;
-import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
-import com.amazonaws.services.dynamodbv2.model.ListTablesResult;
+import com.amazonaws.services.dynamodbv2.model.*;
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits.CreateTable;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -80,5 +77,13 @@ public class ExampleTest {
         //#flow
         final Duration duration = Duration.create(5, "seconds");
         tableArnSource.runForeach(System.out::println,materializer);
+    }
+
+    @Test
+    public void paginated() throws Exception {
+        //#paginated
+        Source<ScanResult, NotUsed> scanPages =
+                client.scanAll(new ScanRequest().withTableName("testTable"));
+        //#paginated
     }
 }

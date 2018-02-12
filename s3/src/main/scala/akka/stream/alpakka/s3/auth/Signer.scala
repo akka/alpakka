@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.auth
@@ -15,7 +15,7 @@ import com.amazonaws.auth
 import com.amazonaws.auth._
 
 private[alpakka] object Signer {
-  private val dateFormatter = DateTimeFormatter.ofPattern("YYYYMMdd'T'HHmmssX")
+  private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssX")
 
   def signedRequest(request: HttpRequest, key: SigningKey, date: ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC))(
       implicit mat: Materializer

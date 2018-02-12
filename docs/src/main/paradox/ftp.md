@@ -5,6 +5,12 @@ The FTP connector provides Akka Stream sources to connect to FTP, FTPs and SFTP 
 * one for browsing or traversing the server recursively and,
 * another for retrieving files as a stream of bytes.
 
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aftp)
+
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
@@ -64,7 +70,7 @@ Java
 @java[@github[Source on Github](/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpRetrievingExample.java) { #retrieving }]
 
 
-This source will emit @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @extref[CompletionStage](java-api:java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
+This source will emit @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 
 For both FTPs and SFTP servers, you will need to use the `FTPs` and `SFTP` API respectively.
 
@@ -82,9 +88,43 @@ Java
 @java[@github[Source on Github](/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpWritingExample.java) { #storing }]
 
 
-This sink will consume @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @extref[CompletionStage](java-api:java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
+This sink will consume @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 
 For both FTPs and SFTP servers, you will need to use the `FTPs` and `SFTP` API respectively.
+
+### Removing files
+
+In order to remove a remote file, you need to use the `remove` method in the FTP API:
+
+Scala
+: @@snip ($alpakka$/ftp/src/test/scala/akka/stream/alpakka/ftp/scalaExamples.scala) { #removing }
+
+Java
+: @@snip ($alpakka$/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpRemovingExample.java) { #removing }
+
+This sink will consume @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
+
+### Moving files
+
+In order to move a remote file, you need to use the `move` method in the FTP API. The `move` method takes a function to calculate the path to which the file should be moved based on the consumed @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile).   
+
+Scala
+: @@snip ($alpakka$/ftp/src/test/scala/akka/stream/alpakka/ftp/scalaExamples.scala) { #moving }
+
+Java
+: @@snip ($alpakka$/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpMovingExample.java) { #moving }
+
+This sink will consume @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
+
+Typical use-case for this would be listing files from a ftp location, do some processing and move the files when done. An example of this use case can be found below.
+
+### Example: downloading files from an FTP location and move the original files  
+
+Scala
+: @@snip ($alpakka$/ftp/src/test/scala/akka/stream/alpakka/ftp/scalaExamples.scala) { #processAndMove }
+
+Java
+: @@snip ($alpakka$/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpProcessAndMoveExample.java) { #processAndMove }
 
 ### Running the example code
 

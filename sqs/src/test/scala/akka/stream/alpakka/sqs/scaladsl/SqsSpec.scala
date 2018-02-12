@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.sqs.scaladsl
@@ -24,10 +24,23 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
   it should "publish and pull a message" taggedAs Integration in {
     val queue = randomQueueUrl()
 
-    //#run
+    //#run-string
     val future = Source.single("alpakka").runWith(SqsSink(queue))
     Await.ready(future, 1.second)
-    //#run
+    //#run-string
+
+    val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
+    probe.requestNext().getBody shouldBe "alpakka"
+    probe.cancel()
+  }
+
+  it should "publish and pull a message provided as a SendMessageRequest" taggedAs Integration in {
+    val queue = randomQueueUrl()
+
+    //#run-send-request
+    val future = Source.single(new SendMessageRequest().withMessageBody("alpakka")).runWith(SqsSink.messageSink(queue))
+    Await.ready(future, 1.second)
+    //#run-send-request
 
     val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
     probe.requestNext().getBody shouldBe "alpakka"
@@ -94,7 +107,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val queue = randomQueueUrl()
 
     //#flow
-    val future = Source.single("alpakka").via(SqsFlow(queue)).runWith(Sink.ignore)
+    val future = Source.single(new SendMessageRequest(queue, "alpakka")).via(SqsFlow(queue)).runWith(Sink.ignore)
     //#flow
 
     Await.result(future, 1.second) shouldBe Done
@@ -126,6 +139,69 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       any[ChangeMessageVisibilityRequest],
       any[AsyncHandler[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult]]
     )
+  }
+
+  it should "publish messages by grouping and pull them" taggedAs Integration in {
+    val queue = randomQueueUrl()
+
+    //#group
+    val messages = for (i <- 0 until 20) yield s"Message - $i"
+
+    val future = Source(messages).runWith(SqsSink.grouped(queue))
+    Await.ready(future, 1.second)
+    //#group
+
+    val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
+    var nrOfMessages = 0
+    for (i <- 0 until 20) {
+      probe.requestNext()
+      nrOfMessages += 1
+    }
+
+    assert(nrOfMessages == 20)
+    probe.cancel()
+  }
+
+  it should "publish batch of messages and pull them" taggedAs Integration in {
+    val queue = randomQueueUrl()
+
+    //#batch-string
+    val messages = for (i <- 0 until 10) yield s"Message - $i"
+
+    val future = Source.single(messages).runWith(SqsSink.batch(queue))
+    Await.ready(future, 1.second)
+    //#batch-string
+
+    val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
+    var nrOfMessages = 0
+    for (i <- 0 until 10) {
+      probe.requestNext()
+      nrOfMessages += 1
+    }
+
+    assert(nrOfMessages == 10)
+    probe.cancel()
+  }
+
+  it should "publish batch of SendMessageRequests and pull them" taggedAs Integration in {
+    val queue = randomQueueUrl()
+
+    //#batch-send-request
+    val messages = for (i <- 0 until 10) yield new SendMessageRequest().withMessageBody(s"Message - $i")
+
+    val future = Source.single(messages).runWith(SqsSink.batchedMessageSink(queue))
+    Await.ready(future, 1.second)
+    //#batch-send-request
+
+    val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
+    var nrOfMessages = 0
+    for (i <- 0 until 10) {
+      probe.requestNext()
+      nrOfMessages += 1
+    }
+
+    assert(nrOfMessages == 10)
+    probe.cancel()
   }
 
   it should "pull and ignore a message" taggedAs Integration in {

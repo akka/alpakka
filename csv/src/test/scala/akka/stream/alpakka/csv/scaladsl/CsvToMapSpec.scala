@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.csv.scaladsl
@@ -16,7 +16,7 @@ class CsvToMapSpec extends CsvSpec {
     // format: off
     // #flow-type
     import akka.stream.alpakka.csv.scaladsl.CsvToMap
-    
+
     val flow1: Flow[List[ByteString], Map[String, ByteString], NotUsed]
       = CsvToMap.toMap()
 

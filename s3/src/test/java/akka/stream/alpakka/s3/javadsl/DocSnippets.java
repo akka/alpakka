@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.javadsl;
 
+import akka.japi.Option;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.s3.MemoryBufferType;
@@ -12,6 +13,7 @@ import akka.stream.alpakka.s3.S3Settings;
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.regions.AwsRegionProvider;
 import scala.Some;
 
 public class DocSnippets extends S3WireMockBase {
@@ -32,6 +34,11 @@ public class DocSnippets extends S3WireMockBase {
                         "mySecretAccessKey"
                 )
         );
+        final AwsRegionProvider regionProvider = new AwsRegionProvider() {
+            public String getRegion() {
+                return "";
+            }
+        };
         final Proxy proxy = new Proxy(host, port, "https");
 
         // Set pathStyleAccess to true and specify proxy, leave region blank
@@ -39,8 +46,9 @@ public class DocSnippets extends S3WireMockBase {
                 MemoryBufferType.getInstance(),
                 Some.apply(proxy),
                 credentials,
-                "",
-                true
+                regionProvider,
+                true,
+                scala.Option.empty()
         );
         final S3Client s3Client = new S3Client(settings,system(), mat);
         // #java-bluemix-example

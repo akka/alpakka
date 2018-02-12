@@ -4,31 +4,28 @@
 
 version: '2'
 services:
+  amqp:
+    image: rabbitmq:3
+    ports:
+      - "5672:5672"
   cassandra:
     image: cassandra:3.0.15
     ports:
       - "9042:9042"
-  rabbitmq:
-    image: rabbitmq:3
+  orientdb:
+    image: orientdb:latest
     ports:
-      - "5672:5672"
-  mongo:
-    image: mongo
-    ports:
-      - "27017:27017"
-  mqtt:
-    image: toke/mosquitto
-    ports:
-      - "1883:1883"
-    volumes:
-      - ./mqtt/src/test/travis:/mqtt/config/conf.d
+      - "2424:2424"
+    environment:
+      - "ORIENTDB_ROOT_PASSWORD=root"
+    command: /orientdb/bin/server.sh -Dmemory.chunk.size=268435456
   dynamodb:
     image: deangiberson/aws-dynamodb-local
     ports:
       - "8001:8000"
   geode:
     container_name: geode
-    image: apachegeode/geode:1.3.0
+    image: apachegeode/geode:1.4.0
     hostname: geode
     mem_limit: 2g
     expose:
@@ -58,4 +55,13 @@ services:
       - "AUTH_HOST=http://ironauth:8090"
     ports:
       - "8080:8080"
-
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+  mqtt:
+    image: toke/mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mqtt/src/test/travis:/mqtt/config/conf.d

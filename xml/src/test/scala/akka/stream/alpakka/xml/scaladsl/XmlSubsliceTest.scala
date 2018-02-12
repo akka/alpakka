@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.xml.scaladsl
@@ -70,7 +70,7 @@ class XmlSubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
       result should ===(
         List(
           Characters("i1"),
-          StartElement("sub", Map.empty),
+          StartElement("sub", Map.empty[String, String]),
           Characters("i2"),
           EndElement("sub"),
           Characters("i3")
@@ -132,7 +132,7 @@ class XmlSubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
       result should ===(
         List(
           Characters("i1"),
-          StartElement("sub", Map.empty),
+          StartElement("sub", Map.empty[String, String]),
           Characters("i2"),
           EndElement("sub"),
           Characters("i3"),

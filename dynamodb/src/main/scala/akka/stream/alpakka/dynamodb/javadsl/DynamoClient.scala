@@ -1,20 +1,20 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.dynamodb.javadsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.Materializer
-import akka.stream.alpakka.dynamodb.AwsOp
-import akka.stream.alpakka.dynamodb.impl.{DynamoClientImpl, DynamoSettings}
+import akka.stream.{javadsl, Materializer}
+import akka.stream.alpakka.dynamodb.{AwsOp, AwsPagedOp}
+import akka.stream.alpakka.dynamodb.impl.{DynamoClientImpl, DynamoSettings, Paginator}
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits
 import akka.stream.javadsl.Flow
 import akka.stream.scaladsl.{Sink, Source}
 import com.amazonaws.services.dynamodbv2.model._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
 object DynamoClient {
   def create(settings: DynamoSettings, system: ActorSystem, materializer: Materializer) =
@@ -24,7 +24,7 @@ object DynamoClient {
 final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem, materializer: Materializer) {
 
   private val client = new DynamoClientImpl(settings, DynamoImplicits.errorResponseHandler)
-  private implicit val ec = system.dispatcher
+  private implicit val ec: ExecutionContextExecutor = system.dispatcher
 
   import DynamoImplicits._
 
@@ -33,35 +33,45 @@ final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem,
   private def single(op: AwsOp): Future[op.B] =
     Source.single(op).via(client.flow).runWith(Sink.head).map(_.asInstanceOf[op.B])
 
-  def batchGetItem(request: BatchGetItemRequest) = single(BatchGetItem(request))
+  private def source(op: AwsPagedOp): javadsl.Source[op.B, NotUsed] =
+    Paginator.source(client.flow, op).asJava
 
-  def createTable(request: CreateTableRequest) = single(CreateTable(request))
+  def batchGetItem(request: BatchGetItemRequest): Future[BatchGetItemResult] = single(BatchGetItem(request))
 
-  def deleteItem(request: DeleteItemRequest) = single(DeleteItem(request))
+  def createTable(request: CreateTableRequest): Future[CreateTableResult] = single(CreateTable(request))
 
-  def deleteTable(request: DeleteTableRequest) = single(DeleteTable(request))
+  def deleteItem(request: DeleteItemRequest): Future[DeleteItemResult] = single(DeleteItem(request))
 
-  def describeLimits(request: DescribeLimitsRequest) = single(DescribeLimits(request))
+  def deleteTable(request: DeleteTableRequest): Future[DeleteTableResult] = single(DeleteTable(request))
 
-  def describeTable(request: DescribeTableRequest) = single(DescribeTable(request))
+  def describeLimits(request: DescribeLimitsRequest): Future[DescribeLimitsResult] = single(DescribeLimits(request))
 
-  def describeTimeToLive(request: DescribeTimeToLiveRequest) = single(DescribeTimeToLive(request))
+  def describeTable(request: DescribeTableRequest): Future[DescribeTableResult] = single(DescribeTable(request))
 
-  def query(request: QueryRequest) = single(Query(request))
+  def describeTimeToLive(request: DescribeTimeToLiveRequest): Future[DescribeTimeToLiveResult] =
+    single(DescribeTimeToLive(request))
 
-  def scan(request: ScanRequest) = single(Scan(request))
+  def query(request: QueryRequest): Future[QueryResult] = single(Query(request))
 
-  def updateItem(request: UpdateItemRequest) = single(UpdateItem(request))
+  def queryAll(request: QueryRequest): javadsl.Source[QueryResult, NotUsed] = source(Query(request))
 
-  def updateTable(request: UpdateTableRequest) = single(UpdateTable(request))
+  def scan(request: ScanRequest): Future[ScanResult] = single(Scan(request))
 
-  def putItem(request: PutItemRequest) = single(PutItem(request))
+  def scanAll(request: ScanRequest): javadsl.Source[ScanResult, NotUsed] = source(Scan(request))
 
-  def batchWriteItem(request: BatchWriteItemRequest) = single(BatchWriteItem(request))
+  def updateItem(request: UpdateItemRequest): Future[UpdateItemResult] = single(UpdateItem(request))
 
-  def getItem(request: GetItemRequest) = single(GetItem(request))
+  def updateTable(request: UpdateTableRequest): Future[UpdateTableResult] = single(UpdateTable(request))
 
-  def listTables(request: ListTablesRequest) = single(ListTables(request))
+  def putItem(request: PutItemRequest): Future[PutItemResult] = single(PutItem(request))
 
-  def updateTimeToLive(request: UpdateTimeToLiveRequest) = single(UpdateTimeToLive(request))
+  def batchWriteItem(request: BatchWriteItemRequest): Future[BatchWriteItemResult] = single(BatchWriteItem(request))
+
+  def getItem(request: GetItemRequest): Future[GetItemResult] = single(GetItem(request))
+
+  def listTables(request: ListTablesRequest): Future[ListTablesResult] = single(ListTables(request))
+
+  def updateTimeToLive(request: UpdateTimeToLiveRequest): Future[UpdateTimeToLiveResult] =
+    single(UpdateTimeToLive(request))
+
 }

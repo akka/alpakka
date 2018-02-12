@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ftp
@@ -10,7 +10,6 @@ import akka.stream.alpakka.ftp.scaladsl.Ftps
 import akka.stream.IOResult
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
-
 import scala.concurrent.Future
 import java.net.InetAddress
 
@@ -38,4 +37,9 @@ trait BaseFtpsSpec extends FtpsSupportImpl with BaseSpec {
   protected def storeToPath(path: String, append: Boolean): Sink[ByteString, Future[IOResult]] =
     Ftps.toPath(path, settings, append)
 
+  protected def remove(): Sink[FtpFile, Future[IOResult]] =
+    Ftps.remove(settings)
+
+  protected def move(destinationPath: FtpFile => String): Sink[FtpFile, Future[IOResult]] =
+    Ftps.move(destinationPath, settings)
 }

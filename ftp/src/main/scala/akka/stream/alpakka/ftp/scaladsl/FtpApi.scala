@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ftp.scaladsl
@@ -144,6 +144,25 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
       append: Boolean = false
   ): Sink[ByteString, Future[IOResult]] =
     Sink.fromGraph(createIOSink(path, connectionSettings, append))
+
+  /**
+   * Scala API: creates a [[Sink]] of a [[FtpFile]] that moves a file to some file path.
+   *
+   * @param destinationPath a function that returns path to where the [[FtpFile]] is moved.
+   * @param connectionSettings connection settings
+   * @return A [[Sink]] of [[FtpFile]] that materializes to a [[Future]] of [[IOResult]]
+   */
+  def move(destinationPath: FtpFile => String, connectionSettings: S): Sink[FtpFile, Future[IOResult]] =
+    Sink.fromGraph(createMoveSink(destinationPath, connectionSettings))
+
+  /**
+   * Scala API: creates a [[Sink]] of a [[FtpFile]] that removes a file.
+   *
+   * @param connectionSettings connection settings
+   * @return A [[Sink]] of [[FtpFile]] that materializes to a [[Future]] of [[IOResult]]
+   */
+  def remove(connectionSettings: S): Sink[FtpFile, Future[IOResult]] =
+    Sink.fromGraph(createRemoveSink(connectionSettings))
 
   protected[this] implicit def ftpLike: FtpLike[FtpClient, S]
 }

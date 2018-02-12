@@ -1,14 +1,17 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3
 
 import java.nio.file.{Path, Paths}
+
 import scala.util.Try
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import com.amazonaws.auth._
+import com.amazonaws.regions.{AwsRegionProvider, DefaultAwsRegionProviderChain}
 import com.typesafe.config.Config
 
 final case class Proxy(host: String, port: Int, scheme: String)
@@ -16,16 +19,18 @@ final case class Proxy(host: String, port: Int, scheme: String)
 final case class S3Settings(bufferType: BufferType,
                             proxy: Option[Proxy],
                             credentialsProvider: AWSCredentialsProvider,
-                            s3Region: String,
-                            pathStyleAccess: Boolean) {
+                            s3RegionProvider: AwsRegionProvider,
+                            pathStyleAccess: Boolean,
+                            endpointUrl: Option[String]) {
 
   override def toString: String =
     s"""S3Settings(
        |$bufferType,
        |$proxy,
        |${credentialsProvider.getClass.getSimpleName},
-       |$s3Region,
-       |$pathStyleAccess)""".stripMargin
+       |${s3RegionProvider.getClass.getSimpleName},
+       |$pathStyleAccess,
+       |$endpointUrl)""".stripMargin
 }
 
 sealed trait BufferType {
@@ -52,15 +57,23 @@ object S3Settings {
   def apply()(implicit system: ActorSystem): S3Settings = apply(system.settings.config)
 
   /**
+   * Scala API: Creates [[S3Settings]] from the [[Config]] attached to an [[ActorSystem]].
+   */
+  def apply(configurationPrefix: String)(implicit system: ActorSystem): S3Settings =
+    apply(system.settings.config, configurationPrefix)
+
+  /**
    * Scala API: Creates [[S3Settings]] from a [[Config]] object.
    */
-  def apply(config: Config): S3Settings = {
-    val bufferType = config.getString("akka.stream.alpakka.s3.buffer") match {
+  def apply(config: Config, configurationPrefix: String = "akka.stream.alpakka.s3"): S3Settings = {
+    val s3Config = config.getConfig(configurationPrefix)
+
+    val bufferType = s3Config.getString("buffer") match {
       case "memory" =>
         MemoryBufferType
 
       case "disk" =>
-        val diskBufferPath = config.getString("akka.stream.alpakka.s3.disk-buffer-path")
+        val diskBufferPath = s3Config.getString("disk-buffer-path")
         DiskBufferType(Paths.get(diskBufferPath))
 
       case other =>
@@ -68,32 +81,57 @@ object S3Settings {
     }
 
     val maybeProxy = for {
-      host ← Try(config.getString("akka.stream.alpakka.s3.proxy.host")).toOption if host.nonEmpty
+      host ← Try(s3Config.getString("proxy.host")).toOption if host.nonEmpty
     } yield {
       Proxy(
         host,
-        config.getInt("akka.stream.alpakka.s3.proxy.port"),
-        Uri.httpScheme(config.getBoolean("akka.stream.alpakka.s3.proxy.secure"))
+        s3Config.getInt("proxy.port"),
+        Uri.httpScheme(s3Config.getBoolean("proxy.secure"))
       )
     }
 
-    val s3region = config.getString("akka.stream.alpakka.s3.aws.default-region")
-    val pathStyleAccess = config.getBoolean("akka.stream.alpakka.s3.path-style-access")
+    val pathStyleAccess = s3Config.getBoolean("path-style-access")
+
+    val endpointUrl = if (s3Config.hasPath("endpoint-url")) {
+      Option(s3Config.getString("endpoint-url"))
+    } else {
+      None
+    }
+
+    val regionProvider = {
+      val regionProviderPath = "aws.region.provider"
+
+      val staticRegionProvider = new AwsRegionProvider {
+        lazy val getRegion: String = s3Config.getString("aws.region.default-region")
+      }
+
+      if (s3Config.hasPath(regionProviderPath)) {
+        s3Config.getString(regionProviderPath) match {
+          case "static" =>
+            staticRegionProvider
+
+          case _ =>
+            new DefaultAwsRegionProviderChain()
+        }
+      } else {
+        new DefaultAwsRegionProviderChain()
+      }
+    }
 
     val credentialsProvider = {
-      val credProviderPath = "akka.stream.alpakka.s3.aws.credentials.provider"
+      val credProviderPath = "aws.credentials.provider"
 
-      if (config.hasPath(credProviderPath)) {
-        config.getString(credProviderPath) match {
+      if (s3Config.hasPath(credProviderPath)) {
+        s3Config.getString(credProviderPath) match {
           case "default" ⇒
             DefaultAWSCredentialsProviderChain.getInstance()
 
           case "static" ⇒
-            val aki = config.getString("akka.stream.alpakka.s3.aws.credentials.access-key-id")
-            val sak = config.getString("akka.stream.alpakka.s3.aws.credentials.secret-access-key")
-            val tokenPath = "akka.stream.alpakka.s3.aws.credentials.token"
-            val creds = if (config.hasPath(tokenPath)) {
-              new BasicSessionCredentials(aki, sak, config.getString(tokenPath))
+            val aki = s3Config.getString("aws.credentials.access-key-id")
+            val sak = s3Config.getString("aws.credentials.secret-access-key")
+            val tokenPath = "aws.credentials.token"
+            val creds = if (s3Config.hasPath(tokenPath)) {
+              new BasicSessionCredentials(aki, sak, s3Config.getString(tokenPath))
             } else {
               new BasicAWSCredentials(aki, sak)
             }
@@ -106,16 +144,16 @@ object S3Settings {
             DefaultAWSCredentialsProviderChain.getInstance()
         }
       } else {
-        val deprecatedAccessKeyPath: String = "akka.stream.alpakka.s3.aws.access-key-id"
-        val deprecatedSecretKeyPath: String = "akka.stream.alpakka.s3.aws.secret-access-key"
+        val deprecatedAccessKeyPath: String = "aws.access-key-id"
+        val deprecatedSecretKeyPath: String = "aws.secret-access-key"
         val hasOldCredentials: Boolean = {
-          config.hasPath(deprecatedAccessKeyPath) && config.hasPath(deprecatedSecretKeyPath)
+          s3Config.hasPath(deprecatedAccessKeyPath) && s3Config.hasPath(deprecatedSecretKeyPath)
         }
         if (hasOldCredentials) {
           new AWSStaticCredentialsProvider(
             new BasicAWSCredentials(
-              config.getString(deprecatedAccessKeyPath),
-              config.getString(deprecatedSecretKeyPath)
+              s3Config.getString(deprecatedAccessKeyPath),
+              s3Config.getString(deprecatedSecretKeyPath)
             )
           )
         } else {
@@ -128,8 +166,9 @@ object S3Settings {
       bufferType = bufferType,
       proxy = maybeProxy,
       credentialsProvider = credentialsProvider,
-      s3Region = s3region,
-      pathStyleAccess = pathStyleAccess
+      s3RegionProvider = regionProvider,
+      pathStyleAccess = pathStyleAccess,
+      endpointUrl = endpointUrl
     )
   }
 

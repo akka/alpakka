@@ -4,6 +4,12 @@ The MongoDB connector allows you to read and save documents. You can query as a 
 
 This connector is based off the [mongo-scala-driver](https://github.com/mongodb/mongo-scala-driver) and does not have a java interface.
 
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Amongodb)
+
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
@@ -77,9 +83,9 @@ Scala
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
 
-> Test code requires MongoDB server running in the background. You can start one quickly using docker:
+> Test code requires a MongoDB server running in the background. You can start one quickly using docker:
 >
-> `docker run --rm mongo`
+> `docker-compose up mongo`
 
 Scala
 :   ```

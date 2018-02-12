@@ -3,7 +3,7 @@ language: scala
 sudo: false
 
 scala:
-  - "2.11.11"
+  - "2.11.12"
   - "2.12.4"
 
 jdk:
@@ -29,8 +29,7 @@ script:
   - find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
 
 after_failure:
-  - docker-compose logs mqtt
-  - docker-compose logs cassandra
+  - docker-compose logs
 
 before_cache:
   - find $HOME/.ivy2 -name "ivydata-*.properties" -print -delete
@@ -44,9 +43,7 @@ cache:
 deploy:
   provider: script
   skip_cleanup: true
-  script:
-    - sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate
-    - sbt -J-XX:ReservedCodeCacheSize=128m ++$TRAVIS_SCALA_VERSION publish && curl -I https://ci.lightbend.com/job/techhub-publisher/build?token=$TECH_HUB_TOKEN
+  script: sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate && sbt -J-XX:ReservedCodeCacheSize=128m ++$TRAVIS_SCALA_VERSION publish && curl -I https://ci.lightbend.com/job/techhub-publisher/build?token=$TECH_HUB_TOKEN
   on:
     tags: true
     repo: akka/alpakka

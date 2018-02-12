@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.awslambda.javadsl
@@ -8,14 +8,14 @@ import akka.NotUsed
 import akka.stream.alpakka.awslambda.AwsLambdaFlowStage
 import akka.stream.javadsl.Flow
 import com.amazonaws.services.lambda.model.{InvokeRequest, InvokeResult}
-import com.amazonaws.services.lambda.{AWSLambdaAsyncClient, AWSLambdaClient}
+import com.amazonaws.services.lambda.AWSLambdaAsync
 
 object AwsLambdaFlow {
 
   /**
-   * Java API: creates a [[AwsLambdaFlowStage]] for a AWS Lambda function invocation using an [[AWSLambdaClient]]
+   * Java API: creates a [[AwsLambdaFlowStage]] for a AWS Lambda function invocation using an [[AWSLambdaAsync]]
    */
-  def create(awsLambdaClient: AWSLambdaAsyncClient, parallelism: Int): Flow[InvokeRequest, InvokeResult, NotUsed] =
+  def create(awsLambdaClient: AWSLambdaAsync, parallelism: Int): Flow[InvokeRequest, InvokeResult, NotUsed] =
     Flow.fromGraph(new AwsLambdaFlowStage(awsLambdaClient)(parallelism))
 
 }

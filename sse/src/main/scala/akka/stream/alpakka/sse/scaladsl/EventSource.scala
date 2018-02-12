@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.sse
@@ -115,7 +115,7 @@ object EventSource {
       import GraphDSL.Implicits._
       val trigger = builder.add(Source.single(initialLastEventId))
       val merge = builder.add(Merge[Option[String]](2))
-      val bcast = builder.add(Broadcast[ServerSentEvent](2))
+      val bcast = builder.add(Broadcast[ServerSentEvent](2, eagerCancel = true))
       val events = builder.add(Flow[ServerSentEvent].filter(_ != heartbeat))
       val delay = builder.add(Flow[Option[String]].delay(retryDelay))
       // format: OFF

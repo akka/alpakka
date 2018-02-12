@@ -4,6 +4,12 @@ The AWS SQS connector provides Akka Stream sources and sinks for AWS SQS queues.
 
 For more information about AWS SQS please visit the [official documentation](https://aws.amazon.com/documentation/sqs/).
 
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aaws-sqs)
+
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
@@ -79,10 +85,69 @@ if you share the client between multiple Sources, Sinks and Flows. For the SQS S
 Create a sink, that forwards `String` to the SQS queue.
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #run }
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #run-string }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #run }
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #run-string }
+
+Create a sink, that forwards `SendMessageRequest` to the SQS queue.
+
+Scala
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #run-send-request }
+
+Java
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #run-send-request }
+
+### Stream messages to a SQS queue with underlying batching
+
+Create a sink, that forwards `String` to the SQS queue. However, the main difference from the previous use case, it batches items and sends as a one request.
+
+Note: There is also another option to send batch of messages to SQS which is using `AmazonSQSBufferedAsyncClient`. 
+This client buffers `SendMessageRequest`s under the hood and sends them as a batch instead of sending them one by one. However, beware that `AmazonSQSBufferedAsyncClient`
+does not support FIFO Queues. See [documentation for client-side buffering.](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-client-side-buffering-request-batching.html)
+
+Scala
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #group }
+
+Java
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #group }
+
+#### Batch configuration
+
+Scala
+: @@snip ($alpakka$/sqs/src/main/scala/akka/stream/alpakka/sqs/SqsBatchFlowSettings.scala) { #SqsBatchFlowSettings }
+
+Options:
+
+ - `maxBatchSize` - the maximum number of messages in batch to send SQS. Default: 10.
+ - `maxBatchWait` - the maximum duration for which the stage waits until `maxBatchSize` messages arrived.
+    Sends what is collects at the end of the time period
+    even though the `maxBatchSize` is not fulfilled. Default: 500 milliseconds
+ - `concurrentRequests` - the number of batches sending to SQS concurrently.
+    
+### Stream batches of messages to a SQS queue
+
+Create a sink, that forwards `Seq[String]` to the SQS queue.
+
+Be aware that the size of the batch must be less than or equal to 10 because Amazon SQS has a limit for batch request.
+If the batch has more than 10 entries, the request will fail.
+
+Scala
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-string }
+
+Java
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #batch-string }
+
+Create a sink, that forwards `Seq[SendMessageRequest]` to the SQS queue.
+
+Be aware that the size of the batch must be less than or equal to 10 because Amazon SQS has a limit for batch request.
+If the batch has more than 10 entries, the request will fail.
+
+Scala
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-send-request }
+
+Java
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #batch-send-request }
 
 #### Sink configuration
 

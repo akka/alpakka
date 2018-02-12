@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.elasticsearch
@@ -17,7 +17,7 @@ import org.apache.http.message.BasicHeader
 
 import scala.collection.JavaConverters._
 
-final case class OutgoingMessage[T](id: String, source: T)
+final case class OutgoingMessage[T](id: String, source: T, version: Option[Long])
 
 case class ScrollResponse[T](error: Option[String], result: Option[ScrollResult[T]])
 case class ScrollResult[T](scrollId: String, messages: Seq[OutgoingMessage[T]])
@@ -61,11 +61,21 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
   def sendScrollScanRequest(): Unit =
     try {
       if (scrollId == null) {
+
+        val includeDocumentVersionJson: String = if (settings.includeDocumentVersion) {
+          // Tell elastic to return the documents '_version'-property with the search-results
+          // http://nocf-www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
+          // https://www.elastic.co/guide/en/elasticsearch/guide/current/optimistic-concurrency-control.html
+          """ "version": true,"""
+        } else {
+          ""
+        }
+
         client.performRequestAsync(
           "POST",
           s"/$indexName/$typeName/_search",
           Map("scroll" -> "5m", "sort" -> "_doc").asJava,
-          new StringEntity(s"""{"size": ${settings.bufferSize}, "query": ${query}}"""),
+          new StringEntity(s"""{"size": ${settings.bufferSize},$includeDocumentVersionJson "query": ${query}}"""),
           this,
           new BasicHeader("Content-Type", "application/json")
         )

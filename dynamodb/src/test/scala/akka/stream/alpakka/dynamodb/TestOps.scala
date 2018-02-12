@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.dynamodb
@@ -19,6 +19,12 @@ trait TestOps {
   def keyMap(hash: String, sort: Int): Map[String, AttributeValue] = Map(
     keyCol -> S(hash),
     sortCol -> N(sort)
+  )
+
+  def keyEQ(hash: String): Map[String, Condition] = Map(
+    keyCol -> new Condition()
+      .withComparisonOperator(ComparisonOperator.EQ)
+      .withAttributeValueList(S(hash))
   )
 
   object common {
@@ -75,6 +81,11 @@ object ItemSpecOps extends TestOps {
       ).asJava
     ).asJava
   )
+
+  val queryItemsRequest = new QueryRequest()
+    .withTableName(tableName)
+    .withKeyConditions(keyEQ("B").asJava)
+    .withLimit(1)
 
   val deleteItemRequest = new DeleteItemRequest().withTableName(tableName).withKey(keyMap("A", 0).asJava)
 

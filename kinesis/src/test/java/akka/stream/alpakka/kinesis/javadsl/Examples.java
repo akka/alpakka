@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.kinesis.javadsl;
@@ -26,20 +26,30 @@ import java.util.concurrent.TimeUnit;
 public class Examples {
 
     //#init-client
-    final AmazonKinesisAsync amazonKinesisAsync = AmazonKinesisAsyncClientBuilder.defaultClient();
-    //#init-client
-
-    //#init-system
     final ActorSystem system = ActorSystem.create();
     final ActorMaterializer materializer = ActorMaterializer.create(system);
-    //#init-system
+
+    final com.amazonaws.services.kinesis.AmazonKinesisAsync amazonKinesisAsync
+            = AmazonKinesisAsyncClientBuilder.defaultClient();
+    //#init-client
+
+    {
+    //#init-client
+
+    system.registerOnTermination(amazonKinesisAsync::shutdown);
+    //#init-client
+    }
 
     //#source-settings
-    final ShardSettings settings = ShardSettings.create("streamName", "shard-id", ShardIteratorType.LATEST, FiniteDuration.apply(1L, TimeUnit.SECONDS), 500);
+    final ShardSettings settings = ShardSettings.create("streamName", "shard-id")
+            .withShardIteratorType(ShardIteratorType.LATEST)
+            .withRefreshInterval(1L, TimeUnit.SECONDS)
+            .withLimit(500);
     //#source-settings
 
     //#source-single
-    final Source<Record, NotUsed> single = KinesisSource.basic(settings, amazonKinesisAsync);
+    final Source<com.amazonaws.services.kinesis.model.Record, NotUsed> source
+            = KinesisSource.basic(settings, amazonKinesisAsync);
     //#source-single
 
     //#source-list
@@ -47,19 +57,32 @@ public class Examples {
     //#source-list
 
     //#flow-settings
-    final KinesisFlowSettings flowSettings = KinesisFlowSettings.apply(1,500,1000,1000000,5, KinesisFlowSettings.exponential(), FiniteDuration.apply(100, TimeUnit.MILLISECONDS));
+    final KinesisFlowSettings flowSettings = KinesisFlowSettings.create()
+            .withParallelism(1)
+            .withMaxBatchSize(500)
+            .withMaxRecordsPerSecond(1_000)
+            .withMaxBytesPerSecond(1_000_000)
+            .withMaxRecordsPerSecond(5)
+            .withBackoffStrategyExponential()
+            .withRetryInitialTimeout(100L, TimeUnit.MILLISECONDS);
 
-    final KinesisFlowSettings defaultFlowSettings = KinesisFlowSettings.defaultInstance();
+    final KinesisFlowSettings defaultFlowSettings = KinesisFlowSettings.create();
 
     final KinesisFlowSettings fourShardFlowSettings = KinesisFlowSettings.byNumberOfShards(4);
     //#flow-settings
 
     //#flow-sink
-    final Flow<PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed> flow = KinesisFlow.apply("streamName", flowSettings, amazonKinesisAsync);
-    final Flow<PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed> defaultSettingsFlow = KinesisFlow.apply("streamName", amazonKinesisAsync);
+    final Flow<PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed> flow
+            = KinesisFlow.apply("streamName", flowSettings, amazonKinesisAsync);
 
-    final Sink<PutRecordsRequestEntry, NotUsed> sink = KinesisSink.apply("streamName", flowSettings, amazonKinesisAsync);
-    final Sink<PutRecordsRequestEntry, NotUsed> defaultSettingsSink = KinesisSink.apply("streamName", amazonKinesisAsync);
+    final Flow<PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed> defaultSettingsFlow
+            = KinesisFlow.apply("streamName", amazonKinesisAsync);
+
+    final Sink<PutRecordsRequestEntry, NotUsed> sink
+            = KinesisSink.apply("streamName", flowSettings, amazonKinesisAsync);
+
+    final Sink<PutRecordsRequestEntry, NotUsed> defaultSettingsSink
+            = KinesisSink.apply("streamName", amazonKinesisAsync);
     //#flow-sink
 
 }

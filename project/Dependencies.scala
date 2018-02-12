@@ -1,10 +1,11 @@
-import sbt._, Keys._
+import sbt._
+import Keys._
 
 object Dependencies {
 
   val AkkaVersion = sys.env.get("AKKA_SERIES") match {
     case Some("2.4") => sys.error("Akka 2.4 is not supported anymore")
-    case _ => "2.5.8"
+    case _ => "2.5.9"
   }
 
   val AwsSdkVersion = "1.11.226"
@@ -25,7 +26,7 @@ object Dependencies {
 
   val Amqp = Seq(
     libraryDependencies ++= Seq(
-      "com.rabbitmq" % "amqp-client" % "3.6.1" // APLv2
+      "com.rabbitmq" % "amqp-client" % "5.1.1" // APLv2
     )
   )
 
@@ -50,6 +51,24 @@ object Dependencies {
 
   val Csv = Seq(
     libraryDependencies ++= Seq()
+  )
+
+  val `Doc-examples` = Seq(
+    libraryDependencies ++= Seq(
+      // https://mina.apache.org/ftpserver-project/downloads.html
+      "org.apache.ftpserver" % "ftpserver-core" % "1.1.1", // ApacheV2
+      "com.google.jimfs" % "jimfs" % "1.1", // ApacheV2
+      "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
+      "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+      // https://github.com/akka/reactive-kafka/releases
+      "com.typesafe.akka" %% "akka-stream-kafka" % "0.18",
+      // https://github.com/manub/scalatest-embedded-kafka/tags
+      "net.manub" %% "scalatest-embedded-kafka" % "1.0.0", // MIT
+      // https://github.com/javaee/javax.jms
+      "javax.jms" % "jms" % "1.1", // CDDL Version 1.1
+      // http://activemq.apache.org/download.html
+      "org.apache.activemq" % "activemq-all" % "5.14.4" // ApacheV2
+    )
   )
 
   val DynamoDB = Seq(
@@ -86,7 +105,7 @@ object Dependencies {
   )
 
   val Geode = {
-    val geodeVersion = "1.3.0"
+    val geodeVersion = "1.4.0"
     val slf4jVersion = "1.7.25"
     Seq(
       libraryDependencies ++=
@@ -168,6 +187,13 @@ object Dependencies {
     )
   )
 
+  val OrientDB = Seq(
+    libraryDependencies ++= Seq(
+      "com.orientechnologies" % "orientdb-graphdb" % "2.2.30", // ApacheV2
+      "com.orientechnologies" % "orientdb-object" % "2.2.30" // ApacheV2
+    )
+  )
+
   val S3 = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
@@ -210,6 +236,20 @@ object Dependencies {
       "org.mockito" % "mockito-core" % "2.12.0" % Test // MIT
     )
   )
+
+  val Solr = {
+    val solrjVersion = "7.2.0"
+    val slf4jVersion = "1.7.25"
+    Seq(
+      libraryDependencies ++= Seq(
+        "org.apache.solr" % "solr-solrj" % solrjVersion, // ApacheV2
+        //Test
+        "org.apache.solr" % "solr-test-framework" % solrjVersion % Test, // ApacheV2
+        "org.slf4j" % "slf4j-log4j12" % slf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
+      ),
+      resolvers += ("restlet" at "https://maven.restlet.com")
+    )
+  }
 
   val Sqs = Seq(
     libraryDependencies ++= Seq(

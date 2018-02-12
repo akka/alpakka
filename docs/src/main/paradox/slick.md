@@ -2,6 +2,12 @@
 
 The Slick connector provides Scala and Java DSLs to create a `Source` to stream the results of a SQL database query and a `Flow`/`Sink` to perform SQL actions (like inserts, updates, and deletes) for each element in a stream. It is built on the [Slick](http://slick.lightbend.com/) library to interact with a long list of [supported relational databases](http://slick.lightbend.com/doc/3.2.1/supported-databases.html).
 
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aslick)
+
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
@@ -70,7 +76,7 @@ Oracle
 SQL Server
 : @@snip ($alpakka$/slick/src/test/resources/application.conf) { #config-sqlserver }
 
-Of course these are just examples. Please visit the [Slick documentation for `DatabaseConfig.fromConfig`](http://slick.lightbend.com/doc/3.2.1/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig(String,Config,Driver,ClassLoader):Database) for the full list of things to configure.
+Of course these are just examples. Please visit the [Slick documentation for `DatabaseConfig.fromConfig`][jdbcbackend-api] for the full list of things to configure.
 
 ### Closing a Database Session
 Slick requires you to eventually close your database session to free up connection pool resources. You would usually do this when terminating the `ActorSystem`, by registering a termination handler like this:
@@ -125,3 +131,5 @@ Scala
 
 Java
 : @@snip ($alpakka$/slick/src/test/java/akka/stream/alpakka/slick/javadsl/DocSnippetFlow.java) { #flow-example }
+
+ [jdbcbackend-api]: http://slick.lightbend.com/doc/3.2.1/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig(String,Config,Driver,ClassLoader):Database

@@ -6,11 +6,17 @@ This connector provides an implementation of a Unix Domain Socket with interface
 
 > Note that Unix Domain Sockets, as the name implies, do not apply to Windows.
 
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aunix-domain-socket)
+
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-unixdomainsocket_$scalaBinaryVersion$
+  artifact=akka-stream-alpakka-unix-domain-socket_$scalaBinaryVersion$
   version=$version$
 }
 
