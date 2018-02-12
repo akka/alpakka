@@ -6,7 +6,7 @@ package akka.stream.alpakka.elasticsearch
 
 import java.io.ByteArrayOutputStream
 
-import akka.stream.{Attributes, FlowShape, Outlet, SourceShape}
+import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, StageLogging}
 import org.apache.http.entity.StringEntity
 import org.elasticsearch.client.{Response, ResponseListener, RestClient}
@@ -16,7 +16,6 @@ import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSourceSettings
 import org.apache.http.message.BasicHeader
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
 
 final case class OutgoingMessage[T](id: String, source: T, version: Option[Long])
 
@@ -29,7 +28,7 @@ trait MessageReader[T] {
 
 final class ElasticsearchSourceStage[T](indexName: String,
                                         typeName: String,
-                                        query: String,
+                                        searchParams: Map[String, String],
                                         client: RestClient,
                                         settings: ElasticsearchSourceSettings,
                                         reader: MessageReader[T])
@@ -39,13 +38,13 @@ final class ElasticsearchSourceStage[T](indexName: String,
   override val shape: SourceShape[OutgoingMessage[T]] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new ElasticsearchSourceLogic[T](indexName, typeName, query, client, settings, out, shape, reader)
+    new ElasticsearchSourceLogic[T](indexName, typeName, searchParams, client, settings, out, shape, reader)
 
 }
 
 sealed class ElasticsearchSourceLogic[T](indexName: String,
                                          typeName: String,
-                                         query: String,
+                                         var searchParams: Map[String, String],
                                          client: RestClient,
                                          settings: ElasticsearchSourceSettings,
                                          out: Outlet[OutgoingMessage[T]],
@@ -71,20 +70,31 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
       if (scrollId == null) {
         log.debug("Doing initial search")
 
-        val includeDocumentVersionJson: String = if (settings.includeDocumentVersion) {
+        // Add extra params to search
+        if (!searchParams.contains("size")) {
+          searchParams = searchParams + ("size" -> settings.bufferSize.toString)
+        }
+        if (!searchParams.contains("version") && settings.includeDocumentVersion) {
           // Tell elastic to return the documents '_version'-property with the search-results
           // http://nocf-www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
           // https://www.elastic.co/guide/en/elasticsearch/guide/current/optimistic-concurrency-control.html
-          """ "version": true,"""
-        } else {
-          ""
+
+          searchParams = searchParams + ("version" -> "true")
         }
+
+        val searchBody = "{" + searchParams
+          .map { e =>
+            val name = e._1
+            val json = e._2
+            "\"" + name + "\":" + json
+          }
+          .mkString(",") + "}"
 
         client.performRequestAsync(
           "POST",
           s"/$indexName/$typeName/_search",
           Map("scroll" -> "5m", "sort" -> "_doc").asJava,
-          new StringEntity(s"""{"size": ${settings.bufferSize},$includeDocumentVersionJson "query": ${query}}"""),
+          new StringEntity(searchBody),
           this,
           new BasicHeader("Content-Type", "application/json")
         )

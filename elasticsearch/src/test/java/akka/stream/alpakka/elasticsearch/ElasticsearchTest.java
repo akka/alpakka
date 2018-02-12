@@ -32,6 +32,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
@@ -414,6 +415,85 @@ public class ElasticsearchTest {
             .runWith(Sink.seq(), materializer).toCompletableFuture().get().get(0).get(0).success();
 
     assertEquals(false, success);
+
+  }
+
+  //#custom-search-params
+  public static class TestDoc {
+    public String id;
+    public String a;
+    public String b;
+    public String c;
+  //#custom-search-params
+    public TestDoc() {
+    }
+
+    public TestDoc(String id, String a, String b, String c) {
+      this.id = id;
+      this.a = a;
+      this.b = b;
+      this.c = c;
+    }
+  //#custom-search-params
+  }
+  //#custom-search-params
+
+  @Test
+  public void testUsingSearchParams() throws Exception {
+
+    String indexName = "test_using_search_params_versions_java";
+    String typeName = "TestDoc";
+
+    List<TestDoc> docs = Arrays.asList(
+            new TestDoc("1", "a1", "b1", "c1"),
+            new TestDoc("2", "a2", "b2", "c2"),
+            new TestDoc("3", "a3", "b3", "c3")
+    );
+
+    // Insert document
+    Source.from(docs)
+            .map( (TestDoc d) -> IncomingMessage.create(d.id, d))
+            .via(ElasticsearchFlow.create(
+                    indexName,
+                    typeName,
+                    new ElasticsearchSinkSettings().withBufferSize(5).withMaxRetry(0),
+                    client,
+                    new ObjectMapper()))
+            .runWith(Sink.seq(), materializer).toCompletableFuture().get();
+
+    flush(indexName);
+
+    //#custom-search-params
+    // Search for docs and ask elastic to only return some fields
+
+    Map<String, String> searchParams = new HashMap<>();
+    searchParams.put("query", "{\"match_all\": {}}");
+    searchParams.put("_source", "[\"id\", \"a\", \"c\"]");
+
+
+    List<TestDoc> result = ElasticsearchSource.<TestDoc>typed(
+            indexName,
+            typeName,
+            searchParams, // <-- Using searchParams
+            new ElasticsearchSourceSettings(),
+            client,
+            TestDoc.class,
+            new ObjectMapper())
+            .map(o -> {
+              return o.source(); // These documents will only have property id, a and c (not b)
+            })
+            .runWith(Sink.seq(), materializer)
+            .toCompletableFuture().get();
+    //#custom-search-params
+    flush(indexName);
+
+    assertEquals(docs.size(), result
+            .stream()
+            .filter( d -> {
+              return d.a != null && d.b == null;
+            }).collect(Collectors.toList())
+            .size());
+
 
   }
 
