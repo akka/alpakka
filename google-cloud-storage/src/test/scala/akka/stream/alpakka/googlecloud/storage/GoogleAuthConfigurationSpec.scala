@@ -4,21 +4,17 @@
 
 package akka.stream.alpakka.googlecloud.storage
 
-import akka.actor.ActorSystem
-import akka.stream.Materializer
-import akka.stream.alpakka.googlecloud.storage.impl.Session
+import java.nio.file.Paths
+
 import org.scalatest.WordSpec
 
-class SessionSpec extends WordSpec {
+class GoogleAuthConfigurationSpec extends WordSpec {
 
   "The session" should {
 
     "report the path of the missing service account file" in {
-      implicit val as: ActorSystem = null
-      implicit val mat: Materializer = null
-      val session = new Session(GoogleAuthConfiguration("/missing/path/test.json"), Seq.empty)
       val thrown = intercept[RuntimeException] {
-        session.getToken()
+        GoogleAuthConfiguration.apply(Paths.get("/missing/path/test.json"))
       }
       assert(thrown.getMessage === "Service account file missing: /missing/path/test.json")
     }

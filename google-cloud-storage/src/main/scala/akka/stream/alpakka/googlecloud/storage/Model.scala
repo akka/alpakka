@@ -18,10 +18,25 @@ object Model {
       etag: String
   )
 
+  // TODO add more from https://github.com/GoogleCloudPlatform/google-cloud-java/blob/master/google-cloud-storage/src/main/java/com/google/cloud/storage/BucketInfo.java
   final case class BucketInfo(
+      /**
+       * The bucket name
+       */
       name: String,
+      /**
+       * The bucket's location. Data for blobs in the bucket resides in physical storage within
+       * this region. A list of supported values is available
+       * <a href="https://cloud.google.com/storage/docs/bucket-locations">here</a>.
+       */
       location: String,
+      /**
+       * The kind of bucket
+       */
       kind: Option[String] = None,
+      /**
+       * THe id of the bucket
+       */
       id: Option[String] = None
   )
 

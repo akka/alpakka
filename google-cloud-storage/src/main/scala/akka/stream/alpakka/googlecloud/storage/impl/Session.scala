@@ -16,18 +16,13 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.storage.GoogleAuthConfiguration
-import akka.stream.alpakka.googlecloud.storage.impl.Session.{
-  AccessTokenExpiry,
-  OAuthResponse,
-  ServiceAccountFile,
-  SessionProtocol
-}
+import akka.stream.alpakka.googlecloud.storage.impl.Session.{AccessTokenExpiry, OAuthResponse}
 import spray.json.DefaultJsonProtocol
 
 import scala.concurrent.Future
-import scala.io.Source
 import spray.json._
 
+@akka.annotation.InternalApi
 private[storage] object Session {
 
   def apply(authConfiguration: GoogleAuthConfiguration, scopes: Seq[String]) = new Session(authConfiguration, scopes)
@@ -35,14 +30,13 @@ private[storage] object Session {
   final case class AccessTokenExpiry(accessToken: String, expiresAt: Long)
 
   private final case class OAuthResponse(access_token: String, token_type: String, expires_in: Int)
-  private final case class ServiceAccountFile(private_key: String, client_email: String)
 
   private final object SessionProtocol extends DefaultJsonProtocol {
     implicit val oAuthResponseFormat = jsonFormat3(OAuthResponse)
-    implicit val serviceAccountFileFormat = jsonFormat2(ServiceAccountFile)
   }
 }
 
+@akka.annotation.InternalApi
 private[storage] final class Session(private val authConfig: GoogleAuthConfiguration, scopes: Seq[String]) {
 
   import Session.SessionProtocol._
@@ -108,7 +102,7 @@ private[storage] final class Session(private val authConfig: GoogleAuthConfigura
     val request =
       base64(s"""
            |{
-           | "iss": "$clientEmail",
+           | "iss": "${authConfig.clientEmail}",
            | "scope": "${scopes.mkString(" ")}",
            | "aud": "https://www.googleapis.com/oauth2/v4/token",
            | "exp": $expiresAt,
@@ -117,36 +111,12 @@ private[storage] final class Session(private val authConfig: GoogleAuthConfigura
       """.stripMargin.getBytes("UTF-8"))
 
     val sign = Signature.getInstance("SHA256withRSA")
-    sign.initSign(privateKey)
+    sign.initSign(authConfig.privateKey)
     sign.update(s"$header.$request".getBytes("UTF-8"))
 
     val signature = base64(sign.sign())
 
     s"$header.$request.$signature"
   }
-
-  private lazy val serviceAccountJson = {
-    val path = Paths.get(authConfig.serviceAccountFile)
-    if (Files.notExists(path)) {
-      throw new RuntimeException(s"Service account file missing: ${path.toAbsolutePath}")
-    }
-    val bufferedSource = Source.fromFile(path.toFile)
-    val contentAsJson = bufferedSource.getLines().mkString.parseJson
-    bufferedSource.close()
-    contentAsJson.convertTo[ServiceAccountFile]
-  }
-  private lazy val privateKey: PrivateKey = {
-    val pk = serviceAccountJson.private_key
-      .replace("-----BEGIN RSA PRIVATE KEY-----\n", "")
-      .replace("-----END RSA PRIVATE KEY-----", "")
-      .replace("-----BEGIN PRIVATE KEY-----\n", "")
-      .replace("-----END PRIVATE KEY-----", "")
-      .replaceAll(raw"\s", "")
-    val kf = KeyFactory.getInstance("RSA")
-    val encodedPv = Base64.getDecoder.decode(pk)
-    val keySpecPv = new PKCS8EncodedKeySpec(encodedPv)
-    kf.generatePrivate(keySpecPv)
-  }
-  private lazy val clientEmail = serviceAccountJson.client_email
 
 }

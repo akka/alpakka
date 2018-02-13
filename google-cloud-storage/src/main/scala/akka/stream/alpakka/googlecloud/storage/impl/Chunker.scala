@@ -8,11 +8,13 @@ import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.util.ByteString
 
+@akka.annotation.InternalApi
 private[storage] final case class Chunk(bytes: ByteString, totalSize: Option[Long] = None) {
   def size: Int = bytes.size
 }
 
 // Inspired from akka doc : https://doc.akka.io/docs/akka/current/stream/stream-cookbook.html?language=scala#chunking-up-a-stream-of-bytestrings-into-limited-size-bytestrings
+@akka.annotation.InternalApi
 private[storage] class Chunker(val chunkSize: Int) extends GraphStage[FlowShape[ByteString, Chunk]] {
 
   val in = Inlet[ByteString]("Chunker.in")

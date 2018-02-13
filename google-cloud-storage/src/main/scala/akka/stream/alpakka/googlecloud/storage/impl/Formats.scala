@@ -7,6 +7,7 @@ package akka.stream.alpakka.googlecloud.storage.impl
 import akka.stream.alpakka.googlecloud.storage.Model.{BucketInfo, BucketListResult, StorageObject}
 import spray.json.{DefaultJsonProtocol, JsValue, RootJsonReader}
 
+@akka.annotation.InternalApi
 object Formats extends DefaultJsonProtocol {
 
   private final case class BucketListResultJson(kind: String,

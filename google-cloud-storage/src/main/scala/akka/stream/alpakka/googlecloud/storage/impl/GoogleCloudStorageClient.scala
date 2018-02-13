@@ -2,30 +2,29 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.googlecloud.storage
+package akka.stream.alpakka.googlecloud.storage.impl
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.Uri.{Path, Query}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Content-Range`, OAuth2BearerToken, RawHeader}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
+import akka.stream.alpakka.googlecloud.storage.GoogleAuthConfiguration
 import akka.stream.alpakka.googlecloud.storage.Model._
+import akka.stream.alpakka.googlecloud.storage.impl.Formats._
+import akka.stream.alpakka.googlecloud.storage.impl.GoogleCloudStorageClient._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
+import spray.json._
 
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
-import GoogleCloudStorageClient._
-import akka.stream.alpakka.googlecloud.storage.impl.{Chunker, Session}
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.stream.alpakka.googlecloud.storage.impl.Formats._
-
-import spray.json._
 
 object GoogleCloudStorageClient {
   private val baseUri = Uri("https://www.googleapis.com/")
@@ -44,15 +43,27 @@ final class GoogleCloudStorageClient(authConfiguration: GoogleAuthConfiguration)
   def getBucket(bucketName: String): Future[Option[BucketInfo]] =
     request(getBucketPath(bucketName)).flatMap(entityForSuccessOption).flatMap(responseEntityOptionTo[BucketInfo])
 
-  def createBucket(bucketName: String, projectName: String): Future[BucketInfo] =
-    postRequest(basePath / "b",
-                Map("project" -> projectName),
-                ContentTypes.`application/json`,
-                ByteString(BucketInfo(bucketName, "europe-west1").toJson.compactPrint))
-      .flatMap(entityForSuccess)
+  def createBucket(bucketName: String, location: String): Future[BucketInfo] =
+    postRequest(
+      basePath / "b",
+      Map("project" -> authConfiguration.projectId),
+      ContentTypes.`application/json`,
+      ByteString(BucketInfo(bucketName, location).toJson.compactPrint)
+    ).flatMap(entityForSuccess)
       .flatMap(responseEntityTo[BucketInfo])
 
-  def listBucket(bucket: String, prefix: Option[String] = None): Source[StorageObject, NotUsed] =
+  def deleteBucket(bucketName: String): Future[Done] =
+    request(getBucketPath(bucketName), HttpMethods.DELETE).flatMap { resp =>
+      if (resp.status == StatusCodes.NoContent) {
+        Future.successful(Done)
+      } else {
+        Unmarshal(resp.entity).to[String].flatMap { err =>
+          Future.failed(new RuntimeException(err))
+        }
+      }
+    }
+
+  def listBucket(bucket: String, prefix: Option[String]): Source[StorageObject, NotUsed] =
     Source
       .fromFuture(
         getBucketListResult(bucket, prefix)
@@ -133,7 +144,7 @@ final class GoogleCloudStorageClient(authConfiguration: GoogleAuthConfiguration)
         entity.discardBytes().future().map(_ => false)
       case HttpResponse(_, _, entity, _) =>
         Unmarshal(entity).to[String].flatMap { err =>
-          Future.failed(new Exception(err))
+          Future.failed(new RuntimeException(err))
         }
     }
 
@@ -276,7 +287,9 @@ final class GoogleCloudStorageClient(authConfiguration: GoogleAuthConfiguration)
         case (Success(HttpResponse(status, _, entity, _)), (upload, index)) =>
           val errorString = Unmarshal(entity).to[String]
           Future.successful(
-            FailedUploadPart(upload, index, new Exception(s"Uploading part failed with status $status: $errorString"))
+            FailedUploadPart(upload,
+                             index,
+                             new RuntimeException(s"Uploading part failed with status $status: $errorString"))
           )
         case (Failure(e), (upload, index)) =>
           Future.successful(FailedUploadPart(upload, index, e))
@@ -352,14 +365,14 @@ final class GoogleCloudStorageClient(authConfiguration: GoogleAuthConfiguration)
               .flatMap(h => Uri(h.value()).query().get("upload_id"))
               .map(MultiPartUpload)
               .map(Future.successful)
-              .getOrElse(Future.failed(new Exception("No upload_id found in Location Header")))
+              .getOrElse(Future.failed(new RuntimeException("No upload_id found in Location Header")))
           case HttpResponse(StatusCodes.NotFound, _, entity, _) =>
             Unmarshal(entity).to[String].flatMap { err =>
               Future.failed(new ObjectNotFoundException(err))
             }
           case HttpResponse(_, _, entity, _) =>
             Unmarshal(entity).to[String].flatMap { err =>
-              Future.failed(new Exception(err))
+              Future.failed(new RuntimeException(err))
             }
         }
       }
