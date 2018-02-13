@@ -32,11 +32,19 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings)(implic
 
       private var maxCurrentConcurrency = maxConcurrency
       private var currentRequests = 0
+      private var closeAfterDrain = false
 
       private def canReceiveNewMessages = {
         val currentFreeRequests = (settings.maxBufferSize - buffer.size) / settings.maxBatchSize
-        currentFreeRequests > currentRequests && maxCurrentConcurrency > currentRequests
+        currentFreeRequests > currentRequests &&
+        maxCurrentConcurrency > currentRequests &&
+        !closeAfterDrain
       }
+
+      private def shouldTerminateStage =
+        closeAfterDrain &&
+        currentRequests == 0 &&
+        buffer.isEmpty
 
       def receiveMessages(): Unit = {
 
@@ -64,20 +72,29 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings)(implic
         failStage(ex)
 
       def handleSuccess(result: ReceiveMessageResult): Unit = {
-
         currentRequests = currentRequests - 1
         maxCurrentConcurrency = if (result.getMessages.isEmpty) 1 else maxConcurrency
 
-        result.getMessages.asScala.reverse.foreach(buffer.offer)
+        val receivedMessages = result.getMessages.asScala.reverse
+        receivedMessages.foreach(buffer.offer)
+
+        if (receivedMessages.isEmpty && settings.closeOnEmptyReceive) {
+          closeAfterDrain = true
+        }
 
         if (!buffer.isEmpty && isAvailable(out)) {
           push(out, buffer.poll())
         }
 
+        receiveMoreOrComplete()
+      }
+
+      private def receiveMoreOrComplete(): Unit =
         if (canReceiveNewMessages) {
           receiveMessages()
+        } else if (shouldTerminateStage) {
+          completeStage()
         }
-      }
 
       setHandler(
         out,
@@ -85,9 +102,7 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings)(implic
           override def onPull(): Unit =
             if (!buffer.isEmpty) {
               push(out, buffer.poll())
-              if (canReceiveNewMessages) {
-                receiveMessages()
-              }
+              receiveMoreOrComplete()
             } else {
               receiveMessages()
             }
