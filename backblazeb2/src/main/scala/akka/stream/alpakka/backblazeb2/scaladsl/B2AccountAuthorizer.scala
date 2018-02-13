@@ -9,9 +9,9 @@ import cats.data.EitherT
 import RetryUtils._
 import scala.concurrent.Promise
 
-private[scaladsl] class B2AccountAuthorizer(api: B2API,
-                                            accountCredentials: B2AccountCredentials,
-                                            eager: Boolean = false)(implicit materializer: ActorMaterializer) {
+class B2AccountAuthorizer(api: B2API, accountCredentials: B2AccountCredentials, eager: Boolean = false)(
+    implicit materializer: ActorMaterializer
+) {
   implicit val executionContext = materializer.executionContext
 
   @volatile private var authorizeAccountPromise: Promise[AuthorizeAccountResponse] = Promise()
@@ -33,7 +33,6 @@ private[scaladsl] class B2AccountAuthorizer(api: B2API,
     }
   }
 
-  // TODO: throttle authorization requests
   private def callAuthorizeAccount(): B2Response[AuthorizeAccountResponse] =
     api.authorizeAccount(accountCredentials)
 
@@ -41,5 +40,5 @@ private[scaladsl] class B2AccountAuthorizer(api: B2API,
    * Return the saved AuthorizeAccountResponse if it exists or obtain a new one if it doesn't
    */
   private def obtainAuthorizeAccountResponse(): B2Response[AuthorizeAccountResponse] =
-    returnOrObtain(authorizeAccountPromise, callAuthorizeAccount)
+    returnOrObtain(authorizeAccountPromise, callAuthorizeAccount _)
 }

@@ -8,9 +8,8 @@ import akka.stream.ActorMaterializer
 import akka.stream.alpakka.backblazeb2.Protocol.{B2AccountCredentials, BucketId}
 
 /**
-  * Factory class for B2 authorizer and client. Authorizers are reused between clients to ensure throttling of
-  * authorization requests.
-  */
+ * Factory class for B2 authorizer and client. Authorizers are reused between clients.
+ */
 class B2(
     accountCredentials: B2AccountCredentials,
     hostAndPort: String = B2API.DefaultHostAndPort

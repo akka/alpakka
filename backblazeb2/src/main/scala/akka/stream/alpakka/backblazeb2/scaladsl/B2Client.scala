@@ -28,7 +28,7 @@ private[scaladsl] class B2Client(
    * Return the saved GetUploadUrlResponse if it exists or obtain a new one if it doesn't
    */
   private def obtainGetUploadUrlResponse(): B2Response[GetUploadUrlResponse] =
-    returnOrObtain(getUploadUrlPromise, callGetUploadUrl)
+    returnOrObtain(getUploadUrlPromise, callGetUploadUrl _)
 
   private def callGetUploadUrl(): B2Response[GetUploadUrlResponse] =
     accountAuthorizer.withAuthorization { authorizeAccountResponse =>

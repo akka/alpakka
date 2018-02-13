@@ -20,7 +20,7 @@ object Common extends AutoPlugin {
     Dependencies.Common ++ Seq(
     organization := "com.lightbend.akka",
     organizationName := "Lightbend Inc.",
-    version := "2018021101", // TODO: remove later, only added as Coursier didn't handle the auto-generated one
+    version := "2018021301", // TODO: remove later, only added as Coursier didn't handle the auto-generated one
     homepage := Some(url("https://github.com/akka/alpakka")),
     scmInfo := Some(ScmInfo(url("https://github.com/akka/alpakka"), "git@github.com:akka/alpakka.git")),
     developers += Developer("contributors", "Contributors", "https://gitter.im/akka/dev", url("https://github.com/akka/alpakka/graphs/contributors")),
