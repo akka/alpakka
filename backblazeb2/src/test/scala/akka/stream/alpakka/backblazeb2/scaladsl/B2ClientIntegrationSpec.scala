@@ -1,12 +1,11 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.backblazeb2
+package akka.stream.alpakka.backblazeb2.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.backblazeb2.Protocol.{DeleteAllFileVersionsResponse, FileVersionInfo}
-import akka.stream.alpakka.backblazeb2.scaladsl.B2Client
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers._
 
@@ -16,7 +15,9 @@ class B2ClientIntegrationSpec extends FlatSpec with B2IntegrationTest {
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
 
-  val client = new B2Client(credentials, bucketId, eagerAuthorization = true)
+  private val b2 = new B2(credentials)
+  private val authorizer = b2.createAuthorizer(eager = true)
+  private val client = b2.createClient(authorizer, bucketId)
 
   it should "handle happy path by id" in {
     val uploadResultF = client.upload(fileName, dataByteString)

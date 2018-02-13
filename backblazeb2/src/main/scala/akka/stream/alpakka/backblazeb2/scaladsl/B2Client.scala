@@ -3,52 +3,26 @@
  */
 package akka.stream.alpakka.backblazeb2.scaladsl
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentType
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.backblazeb2.Protocol._
 import akka.util.ByteString
 import cats.data.EitherT
-import cats.syntax.either._
 import cats.syntax.option._
 import scala.concurrent.{Future, Promise}
+import RetryUtils._
 
 /**
  * Warning - Not thread safe.
  */
-class B2Client(
-    accountCredentials: B2AccountCredentials,
-    bucketId: BucketId,
-    eagerAuthorization: Boolean,
-    hostAndPort: String = B2API.DefaultHostAndPort
-)(implicit system: ActorSystem, materializer: ActorMaterializer) {
+private[scaladsl] class B2Client(
+    api: B2API,
+    accountAuthorizer: B2AccountAuthorizer,
+    bucketId: BucketId
+)(implicit materializer: ActorMaterializer) {
   implicit val executionContext = materializer.executionContext
-  private val api = new B2API(hostAndPort)
 
-  @volatile private var authorizeAccountPromise: Promise[AuthorizeAccountResponse] = Promise()
   @volatile private var getUploadUrlPromise: Promise[GetUploadUrlResponse] = Promise()
-
-  if (eagerAuthorization) { // if authorization is eager, let us start with this upon construction
-    val _ = obtainAuthorizeAccountResponse()
-  }
-
-  /**
-   * Return the saved AuthorizeAccountResponse if it exists or obtain a new one if it doesn't
-   */
-  private def obtainAuthorizeAccountResponse(): B2Response[AuthorizeAccountResponse] =
-    returnOrObtain(authorizeAccountPromise, callAuthorizeAccount)
-
-  private def tryAgainIfExpired[T](x: B2Response[T])(fallbackIfExpired: => B2Response[T]): Future[Either[B2Error, T]] =
-    x flatMap {
-      case Left(error) if error.isExpiredToken =>
-        fallbackIfExpired
-
-      case Left(error) =>
-        Future.successful(error.asLeft)
-
-      case success: Right[B2Error, T] =>
-        Future.successful(success)
-    }
 
   /**
    * Return the saved GetUploadUrlResponse if it exists or obtain a new one if it doesn't
@@ -56,40 +30,9 @@ class B2Client(
   private def obtainGetUploadUrlResponse(): B2Response[GetUploadUrlResponse] =
     returnOrObtain(getUploadUrlPromise, callGetUploadUrl)
 
-  private def callAuthorizeAccount(): B2Response[AuthorizeAccountResponse] =
-    api.authorizeAccount(accountCredentials)
-
-  private def withAuthorization[T](f: AuthorizeAccountResponse => B2Response[T]): B2Response[T] = {
-    import cats.implicits._
-    val result = for {
-      authorizeAccountResponse <- EitherT(obtainAuthorizeAccountResponse())
-      operation <- EitherT(f(authorizeAccountResponse))
-    } yield operation
-
-    tryAgainIfExpired(result.value) {
-      authorizeAccountPromise = Promise()
-      withAuthorization(f)
-    }
-  }
-
   private def callGetUploadUrl(): B2Response[GetUploadUrlResponse] =
-    withAuthorization { authorizeAccountResponse =>
+    accountAuthorizer.withAuthorization { authorizeAccountResponse =>
       api.getUploadUrl(authorizeAccountResponse, bucketId)
-    }
-
-  private def returnOrObtain[T](promise: Promise[T], f: () => B2Response[T]): B2Response[T] =
-    if (promise.isCompleted) {
-      promise.future.map(x => x.asRight[B2Error])
-    } else {
-      val result = f()
-
-      result map { either => // saving if successful
-        either map { x =>
-          promise.success(x)
-        }
-      }
-
-      result
     }
 
   def upload(fileName: FileName,
@@ -108,12 +51,12 @@ class B2Client(
   }
 
   def downloadById(fileId: FileId): B2Response[DownloadFileResponse] =
-    withAuthorization { authorizeAccountResponse =>
+    accountAuthorizer.withAuthorization { authorizeAccountResponse =>
       api.downloadFileById(fileId, authorizeAccountResponse.apiUrl, authorizeAccountResponse.authorizationToken.some)
     }
 
   def downloadByName(fileName: FileName, bucketName: BucketName): B2Response[DownloadFileResponse] =
-    withAuthorization { authorizeAccountResponse =>
+    accountAuthorizer.withAuthorization { authorizeAccountResponse =>
       api.downloadFileByName(
         fileName,
         bucketName,
@@ -123,14 +66,14 @@ class B2Client(
     }
 
   def deleteFileVersion(fileVersionInfo: FileVersionInfo): B2Response[FileVersionInfo] =
-    withAuthorization { authorizeAccountResponse =>
+    accountAuthorizer.withAuthorization { authorizeAccountResponse =>
       api.deleteFileVersion(fileVersionInfo,
                             authorizeAccountResponse.apiUrl,
                             authorizeAccountResponse.authorizationToken)
     }
 
   def listFileVersions(fileName: FileName): B2Response[ListFileVersionsResponse] =
-    withAuthorization { authorizeAccountResponse =>
+    accountAuthorizer.withAuthorization { authorizeAccountResponse =>
       api.listFileVersions(
         bucketId,
         startFileId = None,

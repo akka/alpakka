@@ -5,7 +5,6 @@ package akka.stream.alpakka.backblazeb2
 
 import akka.http.scaladsl.model.{ContentType, StatusCode}
 import akka.util.ByteString
-import cats.syntax.either._
 import scala.concurrent.Future
 
 object Protocol {

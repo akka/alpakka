@@ -1,13 +1,14 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka
+package akka.stream.alpakka.backblazeb2
 
 import akka.stream.alpakka.backblazeb2.Protocol.B2Response
-import scala.concurrent.duration._
-import scala.concurrent.Await
 
-package object backblazeb2 {
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+package object scaladsl {
   val timeout = 10.seconds
 
   def extractFromResponse[T](response: B2Response[T]): T = {

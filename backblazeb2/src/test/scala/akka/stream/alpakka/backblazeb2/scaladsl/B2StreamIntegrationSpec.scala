@@ -1,14 +1,14 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.backblazeb2
+package akka.stream.alpakka.backblazeb2.scaladsl
 
 import java.nio.charset.StandardCharsets
 import java.util.UUID
+
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.backblazeb2.Protocol.{FileName, UploadFileRequest}
-import akka.stream.alpakka.backblazeb2.scaladsl.B2Streams
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import org.scalatest.AsyncFlatSpec

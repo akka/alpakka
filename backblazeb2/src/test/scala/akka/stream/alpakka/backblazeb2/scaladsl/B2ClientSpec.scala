@@ -1,19 +1,18 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.backblazeb2
+package akka.stream.alpakka.backblazeb2.scaladsl
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.StatusCodes
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.backblazeb2.Protocol._
-import akka.stream.alpakka.backblazeb2.scaladsl.B2Client
+import akka.stream.alpakka.backblazeb2.SerializationSupport._
 import akka.util.ByteString
 import com.github.tomakehurst.wiremock.client.WireMock._
-import org.scalatest.Matchers._
-import SerializationSupport._
-import akka.http.scaladsl.model.StatusCodes
 import com.github.tomakehurst.wiremock.stubbing.Scenario
 import io.circe.syntax._
+import org.scalatest.Matchers._
 import org.scalatest.{Assertion, BeforeAndAfterEach}
 
 class B2ClientSpec extends WireMockBase with BeforeAndAfterEach {
@@ -28,7 +27,10 @@ class B2ClientSpec extends WireMockBase with BeforeAndAfterEach {
   val bucketId = BucketId("testBucketId")
   val hostAndPort = s"localhost:${mockServer.httpsPort}"
 
-  def createClient() = new B2Client(credentials, bucketId, eagerAuthorization = false, hostAndPort)
+  val b2 = new B2(credentials, hostAndPort)
+  val authorizer = b2.createAuthorizer()
+
+  def createClient() = b2.createClient(authorizer, bucketId)
 
   val fileName = FileName("testFileName")
   val data = ByteString("testData")

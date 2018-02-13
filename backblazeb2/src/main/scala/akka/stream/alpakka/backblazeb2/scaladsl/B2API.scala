@@ -30,7 +30,8 @@ object B2API {
 /**
  * Handles the interface with the Backblaze B2 API, but doesn't handle any expired tokens or retries
  */
-class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: ActorSystem, materializer: Materializer)
+private[scaladsl] class B2API(hostAndPort: String = B2API.DefaultHostAndPort)(implicit system: ActorSystem,
+                                                                              materializer: Materializer)
     extends LazyLogging {
   implicit val executionContext = materializer.executionContext
   private val version = "b2api/v1"

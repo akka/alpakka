@@ -1,13 +1,14 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.backblazeb2
+package akka.stream.alpakka.backblazeb2.scaladsl
 
+import akka.stream.alpakka.backblazeb2.B2Encoder
+import io.circe.generic.auto._
+import io.circe.parser._
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers._
-import io.circe.parser._
-import io.circe.generic.auto._
-import cats.syntax.either._
+
 import scala.io.Source
 
 /** Tests that B2Encoder works as described in https://www.backblaze.com/b2/docs/string_encoding.html */

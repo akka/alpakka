@@ -1,14 +1,13 @@
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.alpakka.backblazeb2
+package akka.stream.alpakka.backblazeb2.scaladsl
 
-import cats.syntax.option._
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.backblazeb2.Protocol._
-import akka.stream.alpakka.backblazeb2.scaladsl.B2API
+import cats.syntax.option._
 import org.scalatest.AsyncFlatSpec
 import org.scalatest.Matchers._
 

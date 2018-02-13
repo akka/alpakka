@@ -8,7 +8,6 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.backblazeb2.Protocol._
 import akka.stream.scaladsl.Flow
-import cats.syntax.either._
 
 /**
  * Warning - the returned flows are not thread safe.
@@ -27,8 +26,10 @@ class B2Streams(accountCredentials: B2AccountCredentials)(implicit val system: A
                                                           materializer: ActorMaterializer) {
   implicit val executionContext = materializer.executionContext
   private val parallelism = 1
+  private val b2 = new B2(accountCredentials)
+  private val accountAuthorizer = b2.createAuthorizer(eager = true)
 
-  private def createClient(bucketId: BucketId) = new B2Client(accountCredentials, bucketId, eagerAuthorization = true)
+  private def createClient(bucketId: BucketId) = b2.createClient(accountAuthorizer, bucketId)
 
   /**
    * Warning: The returned flow is not thread safe
