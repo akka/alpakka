@@ -15,7 +15,7 @@ import RetryUtils._
 /**
  * Warning - Not thread safe.
  */
-private[scaladsl] class B2Client(
+class B2Client(
     api: B2API,
     accountAuthorizer: B2AccountAuthorizer,
     bucketId: BucketId
