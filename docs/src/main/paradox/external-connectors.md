@@ -9,13 +9,15 @@ Below is a non-complete list of connectors that are maintained by other projects
 
 ## File IO
 
-[Streaming File IO Java documentation](http://doc.akka.io/docs/akka/2.4/java/stream/stream-io.html#Streaming_File_IO)
-
-[Streaming File IO Scala documentation](http://doc.akka.io/docs/akka/2.4/scala/stream/stream-io.html#Streaming_File_IO)
+[Akka Streaming File IO documentation](https://doc.akka.io/docs/akka/current/stream/stream-io.html#Streaming_File_IO)
 
 ## Azure
 
 [Streaming IoT messages using Azure IoT Hub](https://github.com/Azure/toketi-iothubreact)
+
+## AWS Kinesis
+
+[Kinesis streams using Kineis Client Library](https://github.com/aserrallerios/kcl-akka-stream)
 
 ## Camel
 
@@ -49,6 +51,4 @@ Below is a non-complete list of connectors that are maintained by other projects
 
 ## TCP
 
-[Streaming TCP Java documentation](http://doc.akka.io/docs/akka/2.4/java/stream/stream-io.html#Streaming_TCP)
-
-[Streaming TCP Scala documentation](http://doc.akka.io/docs/akka/2.4/scala/stream/stream-io.html#Streaming_TCP)
+[Akka Streaming TCP documentation](https://doc.akka.io/docs/akka/current/stream/stream-io.html#Streaming_TCP)
