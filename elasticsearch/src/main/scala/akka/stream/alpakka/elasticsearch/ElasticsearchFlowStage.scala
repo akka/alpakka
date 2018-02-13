@@ -53,14 +53,25 @@ object IncomingMessage {
     IncomingMessage(Option(id), source, passThrough, Option(version))
 
   // Java-api - with passThrough
+  def create[T, C](id: String, source: T, passThrough: C, version: Long, indexName: String): IncomingMessage[T, C] =
+    IncomingMessage(Option(id), source, passThrough, Option(version), Option(indexName))
+
+  // Java-api - with passThrough
   def create[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
     IncomingMessage(None, source, passThrough)
 }
 
-final case class IncomingMessage[T, C](id: Option[String], source: T, passThrough: C, version: Option[Long] = None) {
+final case class IncomingMessage[T, C](id: Option[String],
+                                       source: T,
+                                       passThrough: C,
+                                       version: Option[Long] = None,
+                                       indexName: Option[String] = None) {
 
   def withVersion(version: Long): IncomingMessage[T, C] =
     this.copy(version = Option(version))
+
+  def withIndexName(indexName: String) =
+    this.copy(indexName = Option(indexName))
 }
 
 object IncomingMessageResult {
@@ -200,10 +211,12 @@ class ElasticsearchFlowStage[T, C](
       private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T, C]]): Unit = {
         val json = messages
           .map { message =>
+            val indexNameToUse: String = message.indexName.getOrElse(indexName)
+
             JsObject(
               insertKeyword -> JsObject(
                 Seq(
-                  Option("_index" -> JsString(indexName)),
+                  Option("_index" -> JsString(indexNameToUse)),
                   Option("_type" -> JsString(typeName)),
                   message.version.map { version =>
                     "_version" -> JsNumber(version)

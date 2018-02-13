@@ -11,6 +11,8 @@ import org.elasticsearch.client.RestClient
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.{ArrayNode, NumericNode}
 
+import java.util.{Map => JMap}
+
 import scala.collection.JavaConverters._
 
 /**
@@ -43,7 +45,34 @@ object ElasticsearchSource {
       new ElasticsearchSourceStage(
         indexName,
         typeName,
-        query,
+        Map("query" -> query),
+        client,
+        settings.asScala,
+        new JacksonReader[java.util.Map[String, Object]](objectMapper, classOf[java.util.Map[String, Object]])
+      )
+    )
+
+  /**
+   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s of [[java.util.Map]].
+   * Using custom objectMapper.
+   *
+   * Example of searchParams-usage:
+   *
+   * Map<String, String> searchParams = new HashMap<>();
+   * searchParams.put("query", "{\"match_all\": {}}");
+   * searchParams.put("_source", "[\"fieldToInclude\", \"anotherFieldToInclude\"]");
+   */
+  def create(indexName: String,
+             typeName: String,
+             searchParams: JMap[String, String],
+             settings: ElasticsearchSourceSettings,
+             client: RestClient,
+             objectMapper: ObjectMapper): Source[OutgoingMessage[java.util.Map[String, Object]], NotUsed] =
+    Source.fromGraph(
+      new ElasticsearchSourceStage(
+        indexName,
+        typeName,
+        searchParams.asScala.toMap,
         client,
         settings.asScala,
         new JacksonReader[java.util.Map[String, Object]](objectMapper, classOf[java.util.Map[String, Object]])
@@ -77,7 +106,35 @@ object ElasticsearchSource {
       new ElasticsearchSourceStage(
         indexName,
         typeName,
-        query,
+        Map("query" -> query),
+        client,
+        settings.asScala,
+        new JacksonReader[T](objectMapper, clazz)
+      )
+    )
+
+  /**
+   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s of type `T`.
+   * Using custom objectMapper
+   *
+   * Example of searchParams-usage:
+   *
+   * Map<String, String> searchParams = new HashMap<>();
+   * searchParams.put("query", "{\"match_all\": {}}");
+   * searchParams.put("_source", "[\"fieldToInclude\", \"anotherFieldToInclude\"]");
+   */
+  def typed[T](indexName: String,
+               typeName: String,
+               searchParams: JMap[String, String],
+               settings: ElasticsearchSourceSettings,
+               client: RestClient,
+               clazz: Class[T],
+               objectMapper: ObjectMapper): Source[OutgoingMessage[T], NotUsed] =
+    Source.fromGraph(
+      new ElasticsearchSourceStage(
+        indexName,
+        typeName,
+        searchParams.asScala.toMap,
         client,
         settings.asScala,
         new JacksonReader[T](objectMapper, clazz)

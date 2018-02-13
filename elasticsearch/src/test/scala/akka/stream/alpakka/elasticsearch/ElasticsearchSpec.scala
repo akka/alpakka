@@ -664,4 +664,147 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
+  "Elasticsearch connector" should {
+    "Should use indexName supplied in message if present" in {
+      // Copy source/book to sink2/book through typed stream
+
+      //#custom-index-name-example
+      val customIndexName = "custom-index"
+
+      val f1 = ElasticsearchSource
+        .typed[Book](
+          indexName = "source",
+          typeName = "book",
+          query = """{"match_all": {}}"""
+        )
+        .map { message: OutgoingMessage[Book] =>
+          IncomingMessage(Some(message.id), message.source)
+            .withIndexName(customIndexName) // Setting the index-name to use for this document
+        }
+        .runWith(
+          ElasticsearchSink.create[Book](
+            indexName = "this-is-not-the-index-we-are-using",
+            typeName = "book"
+          )
+        )
+      //#custom-index-name-example
+
+      Await.result(f1, Duration.Inf)
+
+      flush(customIndexName)
+
+      // Assert docs in sink2/book
+      val f2 = ElasticsearchSource
+        .typed[Book](
+          customIndexName,
+          "book",
+          """{"match_all": {}}"""
+        )
+        .map { message =>
+          message.source.title
+        }
+        .runWith(Sink.seq)
+
+      val result = Await.result(f2, Duration.Inf)
+
+      result.sorted shouldEqual Seq(
+        "Akka Concurrency",
+        "Akka in Action",
+        "Effective Akka",
+        "Learning Scala",
+        "Programming in Scala",
+        "Scala Puzzlers",
+        "Scala for Spark in Production"
+      )
+    }
+  }
+
+  "ElasticsearchSource" should {
+    "should prefetch next scroll" in {
+      val f1 = ElasticsearchSource
+        .typed[Book](
+          indexName = "source",
+          typeName = "book",
+          query = """{"match_all": {}}""",
+          settings = ElasticsearchSourceSettings(bufferSize = 5)
+        )
+        .map(_.source.title)
+        .runWith(Sink.seq)
+
+      val result = Await.result(f1, Duration.Inf).toList
+
+      result.sorted shouldEqual Seq(
+        "Akka Concurrency",
+        "Akka in Action",
+        "Effective Akka",
+        "Learning Scala",
+        "Programming in Scala",
+        "Scala Puzzlers",
+        "Scala for Spark in Production"
+      )
+    }
+  }
+
+  "ElasticsearchSource" should {
+    "be able to use custom searchParams" in {
+
+      //#custom-search-params
+      case class TestDoc(id: String, a: String, b: Option[String], c: String)
+      //#custom-search-params
+
+      implicit val formatVersionTestDoc: JsonFormat[TestDoc] = jsonFormat4(TestDoc)
+
+      val indexName = "custom-search-params-test-scala"
+      val typeName = "TestDoc"
+
+      val docs = List(
+        TestDoc("1", "a1", Some("b1"), "c1"),
+        TestDoc("2", "a2", Some("b2"), "c2"),
+        TestDoc("3", "a3", Some("b3"), "c3")
+      )
+
+      // insert new documents
+      val f1 = Source(docs)
+        .map { doc =>
+          IncomingMessage(Some(doc.id), doc)
+        }
+        .via(
+          ElasticsearchFlow.create[TestDoc](
+            indexName,
+            typeName,
+            ElasticsearchSinkSettings(bufferSize = 5)
+          )
+        )
+        .runWith(Sink.seq)
+
+      val result1 = Await.result(f1, Duration.Inf)
+      flush(indexName)
+
+      // Assert no errors
+      assert(result1.forall(!_.exists(_.success == false)))
+
+      //#custom-search-params
+      // Search for docs and ask elastic to only return some fields
+
+      val f3 = ElasticsearchSource
+        .typed[TestDoc](indexName,
+                        typeName,
+                        searchParams = Map(
+                          "query" -> """ {"match_all": {}} """,
+                          "_source" -> """ ["id", "a", "c"] """
+                        ),
+                        ElasticsearchSourceSettings())
+        .map { message =>
+          message.source
+        }
+        .runWith(Sink.seq)
+
+      //#custom-search-params
+
+      val result3 = Await.result(f3, Duration.Inf)
+      assert(result3.toList.sortBy(_.id) == docs.map(_.copy(b = None)))
+
+    }
+  }
+
 }
