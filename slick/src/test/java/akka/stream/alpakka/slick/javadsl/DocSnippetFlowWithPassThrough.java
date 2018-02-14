@@ -17,6 +17,8 @@ import akka.stream.javadsl.Source;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -55,6 +57,7 @@ public class DocSnippetFlowWithPassThrough {
 
 
   public static void main(String[] args) throws Exception {
+    final ExecutorService executorService = Executors.newSingleThreadExecutor();
     final ActorSystem system = ActorSystem.create();
     final Materializer materializer = ActorMaterializer.create(system);
 
@@ -72,6 +75,7 @@ public class DocSnippetFlowWithPassThrough {
         .via(
           Slick.flowWithPassThrough(
             session,
+            executorService,
             // add an optional second argument to specify the parallism factor (int)
             (kafkaMessage) -> "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES (" + kafkaMessage.msg.id + ", '" + kafkaMessage.msg.name + "')",
             (kafkaMessage, insertCount) -> kafkaMessage.map(user -> new Pair(user, insertCount)) // allows to keep the kafka message offset so it can be committed in a next stage

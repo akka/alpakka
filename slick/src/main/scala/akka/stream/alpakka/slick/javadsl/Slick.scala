@@ -4,22 +4,21 @@
 
 package akka.stream.alpakka.slick.javadsl
 
-import java.util.concurrent.CompletionStage
-import java.util.function.{Function => JFunction, BiFunction => JBiFunction}
+import java.util.concurrent.{CompletionStage, ExecutorService}
+import java.util.function.{BiFunction => JBiFunction, Function => JFunction}
 
 import scala.compat.java8.FunctionConverters._
 import scala.compat.java8.FutureConverters._
-
 import akka.Done
 import akka.NotUsed
 import akka.stream.javadsl._
-
 import slick.dbio.DBIO
 import slick.jdbc.GetResult
 import slick.jdbc.SQLActionBuilder
 import slick.jdbc.SetParameter
-
 import akka.stream.alpakka.slick.scaladsl.{Slick => ScalaSlick}
+
+import scala.concurrent.ExecutionContext
 
 object Slick {
 
@@ -105,10 +104,11 @@ object Slick {
    */
   def flowWithPassThrough[T, R](
       session: SlickSession,
+      executorService: ExecutorService,
       toStatement: JFunction[T, String],
       mapper: JBiFunction[T, java.lang.Integer, R]
   ): Flow[T, R, NotUsed] =
-    flowWithPassThrough(session, 1, toStatement, mapper)
+    flowWithPassThrough(session, executorService, 1, toStatement, mapper)
 
   /**
    * Java API: creates a Flow that takes a stream of elements of
@@ -129,14 +129,16 @@ object Slick {
    */
   def flowWithPassThrough[T, R](
       session: SlickSession,
+      executorService: ExecutorService,
       parallelism: Int,
       toStatement: JFunction[T, String],
       mapper: JBiFunction[T, java.lang.Integer, R]
   ): Flow[T, R, NotUsed] =
     ScalaSlick
       .flowWithPassThrough[T, R](parallelism, (t: T) => {
-        import concurrent.ExecutionContext.Implicits.global
-        toDBIO(toStatement).apply(t).map(count => mapper.apply(t, count))
+        toDBIO(toStatement)
+          .apply(t)
+          .map(count => mapper.apply(t, count))(ExecutionContext.fromExecutorService(executorService))
       })(session)
       .asJava
 
