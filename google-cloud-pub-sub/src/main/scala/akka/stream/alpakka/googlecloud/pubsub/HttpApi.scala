@@ -58,7 +58,7 @@ private trait HttpApi {
     }
     override def write(instant: Instant): JsValue = JsString(instant.toString)
   }
-  private implicit val pubSubMessageFormat = DefaultJsonProtocol.jsonFormat4(PubSubMessage)
+  private implicit val pubSubMessageFormat = DefaultJsonProtocol.jsonFormat4(PubSubMessage.apply)
   private implicit val pubSubRequestFormat = DefaultJsonProtocol.jsonFormat1(PublishRequest.apply)
   private implicit val gcePubSubResponseFormat = DefaultJsonProtocol.jsonFormat1(PublishResponse)
   private implicit val googleOAuthResponseFormat = DefaultJsonProtocol.jsonFormat3(OAuthResponse)

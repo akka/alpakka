@@ -22,6 +22,15 @@ final case class PubSubMessage(data: String,
 
 }
 
+object PubSubMessage {
+
+  /**
+   * Java API: create [[PubSubMessage]]
+   */
+  def create(data: String, messageId: String) =
+    PubSubMessage(data, messageId)
+}
+
 final case class PublishRequest(messages: immutable.Seq[PubSubMessage])
 
 object PublishRequest {
