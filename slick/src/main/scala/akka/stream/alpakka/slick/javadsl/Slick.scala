@@ -90,18 +90,18 @@ object Slick {
       .asJava
 
   /**
-    * Java API: creates a Flow that takes a stream of elements of
-    *           type T, transforms each element to a SQL statement
-    *           using the specified function, then executes
-    *           those statements against the specified Slick database
-    *           and allows to combine the statement result and element into a result type R.
-    *
-    * @param session The database session to use.
-    * @param toStatement A function that creeates the SQL statement to
-    *                    execute from the current element. Any DML or
-    *                    DDL statement is acceptable.
-    * @param mapper A function to create a result from the incoming element T
-    *               and the database statement result.
+   * Java API: creates a Flow that takes a stream of elements of
+   *           type T, transforms each element to a SQL statement
+   *           using the specified function, then executes
+   *           those statements against the specified Slick database
+   *           and allows to combine the statement result and element into a result type R.
+   *
+   * @param session The database session to use.
+   * @param toStatement A function that creeates the SQL statement to
+   *                    execute from the current element. Any DML or
+   *                    DDL statement is acceptable.
+   * @param mapper A function to create a result from the incoming element T
+   *               and the database statement result.
    */
   def flowWithPassThrough[T, R](
       session: SlickSession,
@@ -111,21 +111,21 @@ object Slick {
     flowWithPassThrough(session, 1, toStatement, mapper)
 
   /**
-    * Java API: creates a Flow that takes a stream of elements of
-    *           type T, transforms each element to a SQL statement
-    *           using the specified function, then executes
-    *           those statements against the specified Slick database
-    *           and allows to combine the statement result and element into a result type R.
-    *
-    * @param session The database session to use.
-    * @param parallelism How many parallel asynchronous streams should be
-    *                    used to send statements to the database. Use a
-    *                    value of 1 for sequential execution.
-    * @param toStatement A function that creeates the SQL statement to
-    *                    execute from the current element. Any DML or
-    *                    DDL statement is acceptable.
-    * @param mapper A function to create a result from the incoming element T
-    *               and the database statement result.
+   * Java API: creates a Flow that takes a stream of elements of
+   *           type T, transforms each element to a SQL statement
+   *           using the specified function, then executes
+   *           those statements against the specified Slick database
+   *           and allows to combine the statement result and element into a result type R.
+   *
+   * @param session The database session to use.
+   * @param parallelism How many parallel asynchronous streams should be
+   *                    used to send statements to the database. Use a
+   *                    value of 1 for sequential execution.
+   * @param toStatement A function that creeates the SQL statement to
+   *                    execute from the current element. Any DML or
+   *                    DDL statement is acceptable.
+   * @param mapper A function to create a result from the incoming element T
+   *               and the database statement result.
    */
   def flowWithPassThrough[T, R](
       session: SlickSession,
