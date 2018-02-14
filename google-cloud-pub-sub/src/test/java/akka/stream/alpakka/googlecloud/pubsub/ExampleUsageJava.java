@@ -11,6 +11,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.googlecloud.pubsub.javadsl.GooglePubSub;
 import akka.stream.javadsl.*;
 import com.google.common.collect.Lists;
+import scala.Option;
 
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -56,7 +57,7 @@ public class ExampleUsageJava {
 
         //#publish-single
         PubSubMessage publishMessage =
-                new PubSubMessage("1", new String(Base64.getEncoder().encode("Hello Google!".getBytes())));
+                PubSubMessage.create("1", new String(Base64.getEncoder().encode("Hello Google!".getBytes())));
         PublishRequest publishRequest = PublishRequest.of(Lists.newArrayList(publishMessage));
 
         Source<PublishRequest, NotUsed> source = Source.single(publishRequest);

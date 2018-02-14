@@ -14,7 +14,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import spray.json.DefaultJsonProtocol
+import spray.json.{deserializationError, DefaultJsonProtocol, JsString, JsValue, RootJsonFormat}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import SprayJsonSupport._
 import DefaultJsonProtocol._
@@ -51,7 +51,14 @@ private trait HttpApi {
   def GoogleApisHost: String
   def isEmulated: Boolean
 
-  private implicit val pubSubMessageFormat = DefaultJsonProtocol.jsonFormat2(PubSubMessage)
+  private implicit val instantFormat = new RootJsonFormat[Instant] {
+    override def read(jsValue: JsValue): Instant = jsValue match {
+      case JsString(time) => Instant.parse(time)
+      case _ => deserializationError("Instant required as a string of RFC3339 UTC Zulu format.")
+    }
+    override def write(instant: Instant): JsValue = JsString(instant.toString)
+  }
+  private implicit val pubSubMessageFormat = DefaultJsonProtocol.jsonFormat4(PubSubMessage.apply)
   private implicit val pubSubRequestFormat = DefaultJsonProtocol.jsonFormat1(PublishRequest.apply)
   private implicit val gcePubSubResponseFormat = DefaultJsonProtocol.jsonFormat1(PublishResponse)
   private implicit val googleOAuthResponseFormat = DefaultJsonProtocol.jsonFormat3(OAuthResponse)
