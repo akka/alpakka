@@ -15,7 +15,7 @@ import scala.concurrent.{ExecutionContext, Future}
 object MongoSink {
 
   /**
-   * A [[Sink]] that will insert documents into a collection.
+   * A [[akka.stream.scaladsl.Sink Sink]] that will insert documents into a collection.
    * @param parallelism number of documents to insert in parallel.
    * @param collection mongo db collection to insert to.
    */
@@ -25,7 +25,7 @@ object MongoSink {
     MongoFlow.insertOne(parallelism, collection).toMat(Sink.ignore)(Keep.right)
 
   /**
-   * A [[Sink]] that will insert batches of documents into a collection.
+   * A [[akka.stream.scaladsl.Sink Sink]] that will insert batches of documents into a collection.
    * @param parallelism number of batches of documents to insert in parallel.
    * @param collection mongo db collection to insert to.
    */
@@ -35,7 +35,7 @@ object MongoSink {
     MongoFlow.insertMany(parallelism, collection).toMat(Sink.ignore)(Keep.right)
 
   /**
-   * A [[Sink]] that will update documents as defined by a [[DocumentUpdate]].
+   * A [[akka.stream.scaladsl.Sink Sink]] that will update documents as defined by a [[DocumentUpdate]].
    *
    * @param parallelism the number of documents to update in parallel.
    * @param collection the mongo db collection to update.
@@ -49,7 +49,7 @@ object MongoSink {
     MongoFlow.updateOne(parallelism, collection, maybeUpdateOptions).toMat(Sink.ignore)(Keep.right)
 
   /**
-   * A [[Sink]] that will update many documents as defined by a [[DocumentUpdate]].
+   * A [[akka.stream.scaladsl.Sink Sink]] that will update many documents as defined by a [[DocumentUpdate]].
    *
    * @param parallelism the number of documents to update in parallel.
    * @param collection the mongo db collection to update.
@@ -63,7 +63,7 @@ object MongoSink {
     MongoFlow.updateMany(parallelism, collection, maybeUpdateOptions).toMat(Sink.ignore)(Keep.right)
 
   /**
-   * A [[Sink]] that will delete individual documents as defined by a [[Bson]] filter query.
+   * A [[akka.stream.scaladsl.Sink Sink]] that will delete individual documents as defined by a [[org.mongodb.scala.bson.conversions.Bson Bson]] filter query.
    *
    * @param parallelism the number of documents to delete in parallel.
    * @param collection the mongo db collection to update.
@@ -74,7 +74,7 @@ object MongoSink {
     MongoFlow.deleteOne(parallelism, collection).toMat(Sink.ignore)(Keep.right)
 
   /**
-   * A [[Sink]] that will delete many documents as defined by a [[Bson]] filter query.
+   * A [[akka.stream.scaladsl.Sink Sink]] that will delete many documents as defined by a [[org.mongodb.scala.bson.conversions.Bson Bson]] filter query.
    *
    * @param parallelism the number of documents to delete in parallel.
    * @param collection the mongo db collection to update.
