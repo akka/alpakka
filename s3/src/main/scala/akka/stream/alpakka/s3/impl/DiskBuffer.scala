@@ -4,8 +4,8 @@
 
 package akka.stream.alpakka.s3.impl
 
-import java.io.{File, FileOutputStream, RandomAccessFile}
-import java.nio.channels.FileChannel
+import java.io.{File, FileOutputStream}
+import java.nio.BufferOverflowException
 import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -51,15 +51,19 @@ private[alpakka] final class DiskBuffer(maxMaterializations: Int, maxSize: Int, 
         .getOrElse(Files.createTempFile("s3-buffer-", ".bin"))
         .toFile
       path.deleteOnExit()
-      val writeBuffer = new RandomAccessFile(path, "rw").getChannel.map(FileChannel.MapMode.READ_WRITE, 0, maxSize)
       var length = 0
+      val pathOut = new FileOutputStream(path)
 
       override def onPull(): Unit = if (isClosed(in)) emit() else pull(in)
 
       override def onPush(): Unit = {
         val elem = grab(in)
         length += elem.size
-        writeBuffer.put(elem.asByteBuffer)
+        if (length > maxSize) {
+          throw new BufferOverflowException()
+        }
+
+        pathOut.write(elem.toArray)
         pull(in)
       }
 
@@ -68,22 +72,19 @@ private[alpakka] final class DiskBuffer(maxMaterializations: Int, maxSize: Int, 
         completeStage()
       }
 
-      private def emit(): Unit = {
-        // TODO Should we do http://stackoverflow.com/questions/2972986/how-to-unmap-a-file-from-memory-mapped-using-filechannel-in-java ?
-        writeBuffer.force()
+      override def postStop(): Unit =
+        // close stream even if we didn't emit
+        try { pathOut.close() } catch { case x: Throwable => () }
 
-        val ch = new FileOutputStream(path, true).getChannel
-        try {
-          ch.truncate(length)
-        } finally {
-          ch.close()
-        }
+      private def emit(): Unit = {
+        pathOut.close()
 
         val deleteCounter = new AtomicInteger(maxMaterializations)
         val src = FileIO.fromPath(path.toPath, 65536).mapMaterializedValue { f =>
           if (deleteCounter.decrementAndGet() <= 0)
             f.onComplete { _ =>
               path.delete()
+
             }(ExecutionContexts.sameThreadExecutionContext)
           NotUsed
         }
