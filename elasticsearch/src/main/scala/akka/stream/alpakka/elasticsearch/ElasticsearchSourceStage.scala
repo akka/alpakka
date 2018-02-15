@@ -27,7 +27,7 @@ trait MessageReader[T] {
 }
 
 final class ElasticsearchSourceStage[T](indexName: String,
-                                        typeName: String,
+                                        typeName: Option[String],
                                         searchParams: Map[String, String],
                                         client: RestClient,
                                         settings: ElasticsearchSourceSettings,
@@ -43,7 +43,7 @@ final class ElasticsearchSourceStage[T](indexName: String,
 }
 
 sealed class ElasticsearchSourceLogic[T](indexName: String,
-                                         typeName: String,
+                                         typeName: Option[String],
                                          var searchParams: Map[String, String],
                                          client: RestClient,
                                          settings: ElasticsearchSourceSettings,
@@ -90,9 +90,13 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
           }
           .mkString(",") + "}"
 
+        val endpoint: String = (indexName, typeName) match {
+          case (i, Some(t)) => s"/$i/$t/_search"
+          case (i, None) => s"/$i/_search"
+        }
         client.performRequestAsync(
           "POST",
-          s"/$indexName/$typeName/_search",
+          endpoint,
           Map("scroll" -> "5m", "sort" -> "_doc").asJava,
           new StringEntity(searchBody),
           this,

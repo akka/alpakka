@@ -38,6 +38,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   import DefaultJsonProtocol._
 
   case class Book(title: String)
+
   implicit val format: JsonFormat[Book] = jsonFormat1(Book)
   //#define-class
 
@@ -720,11 +721,11 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   }
 
   "ElasticsearchSource" should {
-    "should prefetch next scroll" in {
+    "should let you search without specifying typeName" in {
       val f1 = ElasticsearchSource
         .typed[Book](
           indexName = "source",
-          typeName = "book",
+          typeName = None,
           query = """{"match_all": {}}""",
           settings = ElasticsearchSourceSettings(bufferSize = 5)
         )
@@ -788,7 +789,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       val f3 = ElasticsearchSource
         .typed[TestDoc](indexName,
-                        typeName,
+                        Some(typeName),
                         searchParams = Map(
                           "query" -> """ {"match_all": {}} """,
                           "_source" -> """ ["id", "a", "c"] """
