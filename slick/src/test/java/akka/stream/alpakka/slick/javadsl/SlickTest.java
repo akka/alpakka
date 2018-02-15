@@ -48,8 +48,6 @@ public class SlickTest {
 
   private static final String selectAllUsers = "SELECT ID, NAME FROM ALPAKKA_SLICK_JAVADSL_TEST_USERS";
 
-  private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-
   @BeforeClass
   public static void setup() {
     //#init-mat
@@ -156,7 +154,7 @@ public class SlickTest {
 
   @Test
   public void testFlowWithPassThroughWithoutParallelismAndReadBackWithSource() throws Exception {
-    final Flow<User, User, NotUsed> slickFlow = Slick.flowWithPassThrough(session, executorService, insertUser, (user, i) -> user);
+    final Flow<User, User, NotUsed> slickFlow = Slick.flowWithPassThrough(session, system.dispatcher(), insertUser, (user, i) -> user);
     final CompletionStage<List<User>> insertionResultFuture = usersSource.via(slickFlow).runWith(Sink.seq(), materializer);
     final List<User> insertedUsers = insertionResultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
@@ -176,7 +174,7 @@ public class SlickTest {
 
   @Test
   public void testFlowWithPassThroughWithParallelismOf4AndReadBackWithSource() throws Exception {
-    final Flow<User, User, NotUsed> slickFlow = Slick.flowWithPassThrough(session, executorService, 4, insertUser, (user, i) -> user);
+    final Flow<User, User, NotUsed> slickFlow = Slick.flowWithPassThrough(session, system.dispatcher(), 4, insertUser, (user, i) -> user);
     final CompletionStage<List<User>> insertionResultFuture = usersSource.via(slickFlow).runWith(Sink.seq(), materializer);
     final List<User> insertedUsers = insertionResultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
@@ -212,7 +210,7 @@ public class SlickTest {
     };
 
     final CompletionStage<Done> resultFuture = Source.from(messagesFromKafka)
-            .via(Slick.flowWithPassThrough(session, executorService, insertUserInKafkaMessage, (kafkaMessage, insertCount) -> kafkaMessage.map(user -> insertCount)))
+            .via(Slick.flowWithPassThrough(session, system.dispatcher(), insertUserInKafkaMessage, (kafkaMessage, insertCount) -> kafkaMessage.map(user -> insertCount)))
             .mapAsync(1, kafkaMessage -> {
               if (kafkaMessage.msg == 0) throw new Exception("Failed to write message to db");
               return commitToKafka.apply(kafkaMessage.offset);
