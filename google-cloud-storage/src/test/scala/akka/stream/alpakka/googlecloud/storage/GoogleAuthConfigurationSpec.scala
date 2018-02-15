@@ -13,10 +13,11 @@ class GoogleAuthConfigurationSpec extends WordSpec {
   "The session" should {
 
     "report the path of the missing service account file" in {
+      val testPath = Paths.get(System.getProperty("java.io.tmpdir")).resolve("idonotexist.json")
       val thrown = intercept[RuntimeException] {
-        GoogleAuthConfiguration.apply(Paths.get("/missing/path/test.json"))
+        GoogleAuthConfiguration.apply(testPath)
       }
-      assert(thrown.getMessage === "Service account file missing: /missing/path/test.json")
+      assert(thrown.getMessage === s"Service account file missing: ${testPath.toAbsolutePath}")
     }
 
   }
