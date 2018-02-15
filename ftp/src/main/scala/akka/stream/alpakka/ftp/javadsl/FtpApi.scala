@@ -28,22 +28,22 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
   type S <: RemoteFileSettings
 
   /**
-   * Java API: creates a [[Source]] of [[FtpFile]]s from the remote user `root` directory.
+   * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s from the remote user `root` directory.
    * By default, `anonymous` credentials will be used.
    *
    * @param host FTP, FTPs or SFTP host
-   * @return A [[Source]] of [[FtpFile]]s
+   * @return A [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s
    */
   def ls(host: String): Source[FtpFile, NotUsed] =
     ls(host, basePath = "")
 
   /**
-   * Java API: creates a [[Source]] of [[FtpFile]]s from a base path.
+   * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s from a base path.
    * By default, `anonymous` credentials will be used.
    *
    * @param host FTP, FTPs or SFTP host
    * @param basePath Base path from which traverse the remote file server
-   * @return A [[Source]] of [[FtpFile]]s
+   * @return A [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s
    */
   def ls(
       host: String,
@@ -52,12 +52,12 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
     ls(basePath, defaultSettings(host))
 
   /**
-   * Java API: creates a [[Source]] of [[FtpFile]]s from the remote user `root` directory.
+   * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s from the remote user `root` directory.
    *
    * @param host FTP, FTPs or SFTP host
    * @param username username
    * @param password password
-   * @return A [[Source]] of [[FtpFile]]s
+   * @return A [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s
    */
   def ls(
       host: String,
@@ -67,13 +67,13 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
     ls("", defaultSettings(host, Some(username), Some(password)))
 
   /**
-   * Java API: creates a [[Source]] of [[FtpFile]]s from a base path.
+   * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s from a base path.
    *
    * @param host FTP, FTPs or SFTP host
    * @param username username
    * @param password password
    * @param basePath Base path from which traverse the remote file server
-   * @return A [[Source]] of [[FtpFile]]s
+   * @return A [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s
    */
   def ls(
       host: String,
@@ -84,11 +84,11 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
     ls(basePath, defaultSettings(host, Some(username), Some(password)))
 
   /**
-   * Java API: creates a [[Source]] of [[FtpFile]]s from a base path.
+   * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s from a base path.
    *
    * @param basePath Base path from which traverse the remote file server
    * @param connectionSettings connection settings
-   * @return A [[Source]] of [[FtpFile]]s
+   * @return A [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s
    */
   def ls(
       basePath: String,
@@ -97,7 +97,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
     ScalaSource.fromGraph(createBrowserGraph(basePath, connectionSettings, f => true)).asJava
 
   /**
-   * Java API: creates a [[Source]] of [[FtpFile]]s from a base path.
+   * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s from a base path.
    *
    * @param basePath Base path from which traverse the remote file server
    * @param connectionSettings connection settings
@@ -109,17 +109,17 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    *                       Calling [[ls(basePath,connectionSettings,f->false)]] will emit only the files and folder in
    *                       non-recursive fashion
    *
-   * @return A [[Source]] of [[FtpFile]]s
+   * @return A [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s
    */
   def ls(basePath: String, connectionSettings: S, branchSelector: Predicate[FtpFile]): Source[FtpFile, NotUsed] =
     Source.fromGraph(createBrowserGraph(basePath, connectionSettings, asScalaFromPredicate(branchSelector)))
 
   /**
-   * Java API: creates a [[Source]] of [[ByteString]] from some file path.
+   * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]] from some file path.
    *
    * @param host FTP, FTPs or SFTP host
    * @param path the file path
-   * @return A [[Source]] of [[ByteString]] that materializes to a [[CompletionStage]] of [[IOResult]]
+   * @return A [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]] that materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[IOResult]]
    */
   def fromPath(
       host: String,
@@ -128,13 +128,13 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
     fromPath(path, defaultSettings(host))
 
   /**
-   * Java API: creates a [[Source]] of [[ByteString]] from some file path.
+   * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]] from some file path.
    *
    * @param host FTP, FTPs or SFTP host
    * @param username username
    * @param password password
    * @param path the file path
-   * @return A [[Source]] of [[ByteString]] that materializes to a [[CompletionStage]] of [[IOResult]]
+   * @return A [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]] that materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[IOResult]]
    */
   def fromPath(
       host: String,
@@ -145,11 +145,11 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
     fromPath(path, defaultSettings(host, Some(username), Some(password)))
 
   /**
-   * Java API: creates a [[Source]] of [[ByteString]] from some file path.
+   * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]] from some file path.
    *
    * @param path the file path
    * @param connectionSettings connection settings
-   * @return A [[Source]] of [[ByteString]] that materializes to a [[CompletionStage]] of [[IOResult]]
+   * @return A [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]] that materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[IOResult]]
    */
   def fromPath(
       path: String,
@@ -158,12 +158,12 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
     fromPath(path, connectionSettings, DefaultChunkSize)
 
   /**
-   * Java API: creates a [[Source]] of [[ByteString]] from some file path.
+   * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]] from some file path.
    *
    * @param path the file path
    * @param connectionSettings connection settings
-   * @param chunkSize the size of transmitted [[ByteString]] chunks
-   * @return A [[Source]] of [[ByteString]] that materializes to a [[CompletionStage]] of [[IOResult]]
+   * @param chunkSize the size of transmitted [[akka.util.ByteString ByteString]] chunks
+   * @return A [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]] that materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[IOResult]]
    */
   def fromPath(
       path: String,
@@ -175,12 +175,12 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
   }
 
   /**
-   * Java API: creates a [[Sink]] of [[ByteString]] to some file path.
+   * Java API: creates a [[akka.stream.javadsl.Sink Sink]] of [[akka.util.ByteString ByteString]] to some file path.
    *
    * @param path the file path
    * @param connectionSettings connection settings
    * @param append append data if a file already exists, overwrite the file if not
-   * @return A [[Sink]] of [[ByteString]] that materializes to a [[CompletionStage]] of [[IOResult]]
+   * @return A [[akka.stream.javadsl.Sink Sink]] of [[akka.util.ByteString ByteString]] that materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[IOResult]]
    */
   def toPath(
       path: String,
@@ -192,12 +192,12 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
   }
 
   /**
-   * Java API: creates a [[Sink]] of [[ByteString]] to some file path.
+   * Java API: creates a [[akka.stream.javadsl.Sink Sink]] of [[akka.util.ByteString ByteString]] to some file path.
    * If a file already exists at the specified target path, it will get overwritten.
    *
    * @param path the file path
    * @param connectionSettings connection settings
-   * @return A [[Sink]] of [[ByteString]] that materializes to a [[CompletionStage]] of [[IOResult]]
+   * @return A [[akka.stream.javadsl.Sink Sink]] of [[akka.util.ByteString ByteString]] that materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[IOResult]]
    */
   def toPath(
       path: String,
@@ -206,11 +206,11 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
     toPath(path, connectionSettings, append = false)
 
   /**
-   * Java API: creates a [[Sink]] of a [[FtpFile]] that moves a file to some file path.
+   * Java API: creates a [[akka.stream.javadsl.Sink Sink]] of a [[FtpFile]] that moves a file to some file path.
    *
    * @param destinationPath a function that returns path to where the [[FtpFile]] is moved.
    * @param connectionSettings connection settings
-   * @return A [[Sink]] of [[FtpFile]] that materializes to a [[CompletionStage]] of [[IOResult]]
+   * @return A [[akka.stream.javadsl.Sink Sink]] of [[FtpFile]] that materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[IOResult]]
    */
   def move(destinationPath: Function[FtpFile, String],
            connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
@@ -223,10 +223,10 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
   }
 
   /**
-   * Java API: creates a [[Sink]] of a [[FtpFile]] that removes a file.
+   * Java API: creates a [[akka.stream.javadsl.Sink Sink]] of a [[FtpFile]] that removes a file.
    *
    * @param connectionSettings connection settings
-   * @return A [[Sink]] of [[FtpFile]] that materializes to a [[CompletionStage]] of [[IOResult]]
+   * @return A [[akka.stream.javadsl.Sink Sink]] of [[FtpFile]] that materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[IOResult]]
    */
   def remove(connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
     import scala.compat.java8.FutureConverters._

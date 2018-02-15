@@ -5,17 +5,20 @@
 package akka.stream.alpakka.sqs.scaladsl
 
 import akka.Done
-import akka.stream.alpakka.sqs.{SqsBatchFlowSettings, SqsFlowStage, SqsSinkSettings}
+import akka.stream.alpakka.sqs.{SqsBatchFlowSettings, SqsSinkSettings}
 import akka.stream.scaladsl.{Flow, Keep, Sink}
 import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model.SendMessageRequest
 
 import scala.concurrent.Future
 
+/**
+ * Scala API to create SQS Sinks.
+ */
 object SqsSink {
 
   /**
-   * Scala API: creates a sink based on [[SqsFlowStage]] for a SQS queue using an [[AmazonSQSAsync]]
+   * Creates a sink for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
    */
   def apply(queueUrl: String, settings: SqsSinkSettings = SqsSinkSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
@@ -24,6 +27,9 @@ object SqsSink {
       .fromFunction((msg: String) => new SendMessageRequest(queueUrl, msg))
       .toMat(messageSink(queueUrl, settings))(Keep.right)
 
+  /**
+   * Creates a grouped sink running in batch mode for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
+   */
   def grouped(queueUrl: String, settings: SqsBatchFlowSettings = SqsBatchFlowSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
   ): Sink[String, Future[Done]] =
@@ -31,6 +37,9 @@ object SqsSink {
       .fromFunction((msg: String) => new SendMessageRequest(queueUrl, msg))
       .toMat(groupedMessageSink(queueUrl, settings))(Keep.right)
 
+  /**
+   * Creates a sink running in batch mode for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
+   */
   def batch(queueUrl: String, settings: SqsBatchFlowSettings = SqsBatchFlowSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
   ): Sink[Iterable[String], Future[Done]] =

@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 package object ironmq {
 
   /**
-   * This is a utility implicit class to allow convert a [[java.time.Duration]] in a [[FiniteDuration]].
+   * This is a utility implicit class to allow convert a [[java.time.Duration]] in a [[scala.concurrent.duration.FiniteDuration FiniteDuration]].
    */
   implicit class RichJavaDuration(d: JDuration) {
     def asScala: FiniteDuration = {

@@ -13,10 +13,13 @@ import com.amazonaws.services.sqs.model.{SendMessageRequest, SendMessageResult}
 
 import scala.concurrent.Future
 
+/**
+ * Scala API to create SQS flows.
+ */
 object SqsFlow {
 
   /**
-   * Scala API: creates a [[SqsFlowStage]] for a SQS queue using an [[AmazonSQSAsync]]
+   * Creates a flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
    */
   def apply(queueUrl: String, settings: SqsSinkSettings = SqsSinkSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync

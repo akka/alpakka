@@ -10,10 +10,13 @@ import akka.stream.scaladsl.Flow
 import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.{AmazonWebServiceResult, ResponseMetadata}
 
+/**
+ * Scala API to create acknowledging SQS flows.
+ */
 object SqsAckFlow {
 
   /**
-   * Scala API: creates a [[SqsAckFlowStage]] for a SQS queue using an [[AmazonSQSAsync]]
+   * Creates flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
    */
   def apply(queueUrl: String, settings: SqsAckSinkSettings = SqsAckSinkSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync

@@ -16,10 +16,13 @@ import com.amazonaws.services.sqs.model.SendMessageRequest
 
 import scala.collection.JavaConverters._
 
+/**
+ * Java API to create SQS flows.
+ */
 object SqsFlow {
 
   /**
-   * Java API: creates a flow based on [[SqsFlowStage]] for a SQS queue using an [[AmazonSQSAsync]]
+   * Creates a flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
    */
   def create(queueUrl: String,
              settings: SqsSinkSettings,
@@ -27,7 +30,7 @@ object SqsFlow {
     scaladsl.SqsFlow.apply(queueUrl, settings)(sqsClient).asJava
 
   /**
-   * Java API: creates a flow based on [[SqsBatchFlowStage]] for a SQS queue using an [[AmazonSQSAsync]]
+   * Creates a flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
    */
   def grouped(queueUrl: String,
               settings: SqsBatchFlowSettings,
@@ -35,7 +38,7 @@ object SqsFlow {
     scaladsl.SqsFlow.grouped(queueUrl, settings)(sqsClient).asJava
 
   /**
-   * Java API: creates a flow based on [[SqsBatchFlowStage]] for a SQS queue using an [[AmazonSQSAsync]]
+   * Creates a flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
    */
   def batch(queueUrl: String,
             settings: SqsBatchFlowSettings,
@@ -43,19 +46,19 @@ object SqsFlow {
     scaladsl.SqsFlow.batch(queueUrl, settings)(sqsClient).asJava
 
   /**
-   * Java API: creates a flow based on [[SqsFlowStage]] for a SQS queue using an [[AmazonSQSAsync]] with default settings.
+   * Creates a flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]] with default settings.
    */
   def create(queueUrl: String, sqsClient: AmazonSQSAsync): Flow[SendMessageRequest, Result, NotUsed] =
     create(queueUrl, SqsSinkSettings.Defaults, sqsClient)
 
   /**
-   * Java API: creates a flow based on [[SqsBatchFlowStage]] for a SQS queue using an [[AmazonSQSAsync]] with default settings
+   * Creates a flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]] with default settings.
    */
   def grouped(queueUrl: String, sqsClient: AmazonSQSAsync): Flow[SendMessageRequest, Result, NotUsed] =
     grouped(queueUrl, SqsBatchFlowSettings.Defaults, sqsClient)
 
   /**
-   * Java API: creates a flow based on [[SqsBatchFlowStage]] for a SQS queue using an [[AmazonSQSAsync]] with default settings
+   * Creates a flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]] with default settings.
    */
   def batch(queueUrl: String,
             sqsClient: AmazonSQSAsync): Flow[JIterable[SendMessageRequest], JIterable[Result], NotUsed] =

@@ -15,13 +15,13 @@ import scala.concurrent.Future
 object SnsPublisher {
 
   /**
-   * Scala API: creates a [[Sink]] to publish messages to a SNS topic using an [[AmazonSNSAsync]]
+   * Scala API: creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages to a SNS topic using an [[com.amazonaws.services.sns.AmazonSNSAsync AmazonSNSAsync]]
    */
   def flow(topicArn: String)(implicit snsClient: AmazonSNSAsync): Flow[String, PublishResult, NotUsed] =
     Flow.fromGraph(new SnsPublishFlowStage(topicArn, snsClient))
 
   /**
-   * Scala API: creates a [[Sink]] to publish messages to a SNS topic using an [[AmazonSNSAsync]]
+   * Scala API: creates a [[akka.stream.scaladsl.Sink Sink]] to publish messages to a SNS topic using an [[com.amazonaws.services.sns.AmazonSNSAsync AmazonSNSAsync]]
    */
   def sink(topicArn: String)(implicit snsClient: AmazonSNSAsync): Sink[String, Future[Done]] =
     flow(topicArn).toMat(Sink.ignore)(Keep.right)
