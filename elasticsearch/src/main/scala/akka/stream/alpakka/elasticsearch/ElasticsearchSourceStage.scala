@@ -20,7 +20,13 @@ import scala.collection.JavaConverters._
 final case class OutgoingMessage[T](id: String, source: T, version: Option[Long])
 
 case class ScrollResponse[T](error: Option[String], result: Option[ScrollResult[T]])
-case class ScrollResult[T](scrollId: String, messages: Seq[OutgoingMessage[T]])
+/* TODO Review
+1. Are aggregated results of type T.
+2. What if the user would like to get the Hits (size >0) and Aggregates.
+3. Is adding aggregate results as a separate item to ScrollResult a good idea? Or should we set the size as 0 for aggregates by default
+and have the `T` represent a single aggregate or bucket (considering the aggregated results doesn't fall into the same pattern as `hits`, this would be a little tricky too.
+ */
+case class ScrollResult[T](scrollId: String, messages: Seq[OutgoingMessage[T]], aggregate: Option[T] = None)
 
 trait MessageReader[T] {
   def convert(json: String): ScrollResponse[T]
@@ -161,6 +167,14 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
       case ScrollResponse(Some(error), _) =>
         failStage(new IllegalStateException(error))
         false
+      /*
+      TODO Review This has to be mapped for push
+      Also, the isDefined and get looks super ugly. This would be changed once we have a clarity over how to return aggregated results
+       */
+      case ScrollResponse(None, Some(result)) if result.messages.isEmpty && result.aggregate.isDefined =>
+        scrollId = result.scrollId
+        emit(out, OutgoingMessage(scrollId, result.aggregate.get, None))
+        true
       case ScrollResponse(None, Some(result)) if result.messages.isEmpty =>
         completeStage()
         false

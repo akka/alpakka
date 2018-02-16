@@ -147,6 +147,8 @@ object ElasticsearchSource {
         case None => {
           val scrollId = jsObj.fields("_scroll_id").asInstanceOf[JsString].value
           val hits = jsObj.fields("hits").asJsObject.fields("hits").asInstanceOf[JsArray]
+          //TODO Review - Two variants here : 1. Global aggregations and 2. Buckets
+          val aggs = Option(jsObj.fields("aggregations").asJsObject)
           val messages = hits.elements.reverse.map { element =>
             val doc = element.asJsObject
             val id = doc.fields("_id").asInstanceOf[JsString].value
@@ -155,7 +157,8 @@ object ElasticsearchSource {
             val version: Option[Long] = doc.fields.get("_version").map(_.asInstanceOf[JsNumber].value.toLong)
             OutgoingMessage(id, source.convertTo[T], version)
           }
-          ScrollResponse(None, Some(ScrollResult(scrollId, messages)))
+          //TODO Review - Need to pass the aggs. Thoughts please
+          ScrollResponse(None, Some(ScrollResult(scrollId, messages, aggs)))
         }
       }
     }
