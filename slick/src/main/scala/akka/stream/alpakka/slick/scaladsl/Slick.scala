@@ -71,6 +71,41 @@ object Slick {
       parallelism: Int,
       toStatement: T => DBIO[Int]
   )(implicit session: SlickSession): Flow[T, Int, NotUsed] =
+    flowWithPassThrough(parallelism, toStatement)
+
+  /**
+   * Scala API: creates a Flow that takes a stream of elements of
+   *            type T, transforms each element to a SQL statement
+   *            using the specified function, then executes
+   *            those statements against the specified Slick database
+   *            and returns the statement result type R.
+   *
+   * @param toStatement A function to produce the SQL statement to
+   *                    execute based on the current element.
+   * @param session The database session to use.
+   */
+  def flowWithPassThrough[T, R](
+      toStatement: T => DBIO[R]
+  )(implicit session: SlickSession): Flow[T, R, NotUsed] = flowWithPassThrough(1, toStatement)
+
+  /**
+   * Scala API: creates a Flow that takes a stream of elements of
+   *            type T, transforms each element to a SQL statement
+   *            using the specified function, then executes
+   *            those statements against the specified Slick database
+   *            and returns the statement result type R.
+   *
+   * @param toStatement A function to produce the SQL statement to
+   *                    execute based on the current element.
+   * @param parallelism How many parallel asynchronous streams should be
+   *                    used to send statements to the database. Use a
+   *                    value of 1 for sequential execution.
+   * @param session The database session to use.
+   */
+  def flowWithPassThrough[T, R](
+      parallelism: Int,
+      toStatement: T => DBIO[R]
+  )(implicit session: SlickSession): Flow[T, R, NotUsed] =
     Flow[T]
       .mapAsync(parallelism) { t =>
         session.db.run(toStatement(t))

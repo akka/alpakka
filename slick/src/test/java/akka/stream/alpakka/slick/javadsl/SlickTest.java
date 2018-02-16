@@ -18,11 +18,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -47,7 +47,6 @@ public class SlickTest {
   private static final Function<User, String> insertUser = (user) -> "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES (" + user.id + ", '" + user.name + "')";
 
   private static final String selectAllUsers = "SELECT ID, NAME FROM ALPAKKA_SLICK_JAVADSL_TEST_USERS";
-
 
   @BeforeClass
   public static void setup() {
@@ -153,6 +152,86 @@ public class SlickTest {
     assertEquals(foundUsers, users);
   }
 
+  @Test
+  public void testFlowWithPassThroughWithoutParallelismAndReadBackWithSource() throws Exception {
+    final Flow<User, User, NotUsed> slickFlow = Slick.flowWithPassThrough(session, system.dispatcher(), insertUser, (user, i) -> user);
+    final CompletionStage<List<User>> insertionResultFuture = usersSource.via(slickFlow).runWith(Sink.seq(), materializer);
+    final List<User> insertedUsers = insertionResultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    assertEquals(SlickTest.users, new HashSet<>(insertedUsers));
+
+    final Source<User, NotUsed> slickSource = Slick.source(
+            session,
+            selectAllUsers,
+            (SlickRow row) -> new User(row.nextInt(), row.nextString())
+    );
+
+    final CompletionStage<List<User>> foundUsersFuture = slickSource.runWith(Sink.seq(), materializer);
+    final Set<User> foundUsers = new HashSet<>(foundUsersFuture.toCompletableFuture().get(3, TimeUnit.SECONDS));
+
+    assertEquals(foundUsers, SlickTest.users);
+  }
+
+  @Test
+  public void testFlowWithPassThroughWithParallelismOf4AndReadBackWithSource() throws Exception {
+    final Flow<User, User, NotUsed> slickFlow = Slick.flowWithPassThrough(session, system.dispatcher(), 4, insertUser, (user, i) -> user);
+    final CompletionStage<List<User>> insertionResultFuture = usersSource.via(slickFlow).runWith(Sink.seq(), materializer);
+    final List<User> insertedUsers = insertionResultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    assertEquals(users, new HashSet<>(insertedUsers));
+
+    final Source<User, NotUsed> slickSource = Slick.source(
+            session,
+            selectAllUsers,
+            (SlickRow row) -> new User(row.nextInt(), row.nextString())
+    );
+
+    final CompletionStage<List<User>> foundUsersFuture = slickSource.runWith(Sink.seq(), materializer);
+    final Set<User> foundUsers = new HashSet<>(foundUsersFuture.toCompletableFuture().get(3, TimeUnit.SECONDS));
+
+    assertEquals(foundUsers, users);
+  }
+
+  @Test
+  public void testFlowWithPassThroughKafkaExample() throws Exception {
+    final List<User> usersList = new ArrayList<>(SlickTest.users);
+
+    final List<KafkaMessage<User>> messagesFromKafka = usersList.stream()
+            .map(user -> new KafkaMessage<>(user, new KafkaOffset(usersList.indexOf(user))))
+            .collect(Collectors.toList());
+
+    final Function<KafkaMessage<User>, String> insertUserInKafkaMessage = insertUser.compose((KafkaMessage<User> kafkaMessage) -> kafkaMessage.msg);
+
+    List<KafkaOffset> committedOffsets = new ArrayList<>();
+
+    final Function<KafkaOffset, CompletableFuture<Done>> commitToKafka = offset -> {
+      committedOffsets.add(offset);
+      return CompletableFuture.completedFuture(Done.getInstance());
+    };
+
+    final CompletionStage<Done> resultFuture = Source.from(messagesFromKafka)
+            .via(Slick.flowWithPassThrough(session, system.dispatcher(), insertUserInKafkaMessage, (kafkaMessage, insertCount) -> kafkaMessage.map(user -> insertCount)))
+            .mapAsync(1, kafkaMessage -> {
+              if (kafkaMessage.msg == 0) throw new Exception("Failed to write message to db");
+              return commitToKafka.apply(kafkaMessage.offset);
+            })
+            .runWith(Sink.ignore(), materializer);
+    resultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    assertEquals(users.size(), committedOffsets.size());
+
+    final Source<User, NotUsed> slickSource = Slick.source(
+            session,
+            selectAllUsers,
+            (SlickRow row) -> new User(row.nextInt(), row.nextString())
+    );
+
+    final CompletionStage<List<User>> foundUsersFuture = slickSource.runWith(Sink.seq(), materializer);
+    final Set<User> foundUsers = new HashSet<>(foundUsersFuture.toCompletableFuture().get(3, TimeUnit.SECONDS));
+
+    assertEquals(foundUsers, users);
+  }
+
   private static void executeStatement(String statement, SlickSession session, Materializer materializer) {
     try {
       Source
@@ -164,4 +243,28 @@ public class SlickTest {
         throw new RuntimeException(e);
       }
   }
+
+  // For kafka example test case
+  static class KafkaOffset {
+    private Integer offset;
+
+    public KafkaOffset(Integer offset) {
+      this.offset = offset;
+    }
+  }
+
+  static class KafkaMessage<A> {
+    final A msg;
+    final KafkaOffset offset;
+
+    public KafkaMessage(A msg, KafkaOffset offset) {
+      this.msg = msg;
+      this.offset = offset;
+    }
+
+    public <B> KafkaMessage<B> map(Function<A, B> f) {
+      return new KafkaMessage(f.apply(msg), offset);
+    }
+  }
+
 }
