@@ -180,6 +180,16 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       expectInOut("one,\"two\r\ntwo\",three\n", List("one", "two\r\ntwo", "three"))
     }
 
+    "detect line ending correctly if input is split between CR & LF" in {
+      val parser = new CsvParser(delimiter = ',', quoteChar = '"', escapeChar = '\\', maximumLineLength)
+      parser.offer(ByteString("A,D\r"))
+      parser.poll(requireLineEnd = true) should be('empty)
+      parser.offer(ByteString("\nB,E\r\n"))
+      parser.poll(requireLineEnd = true).value.map(_.utf8String) should be(List("A", "D"))
+      parser.poll(requireLineEnd = true).value.map(_.utf8String) should be(List("B", "E"))
+      parser.poll(requireLineEnd = true) should be('empty)
+    }
+
     "take double \" as single" in {
       expectInOut("one,\"tw\"\"o\",three\n", List("one", "tw\"o", "three"))
     }

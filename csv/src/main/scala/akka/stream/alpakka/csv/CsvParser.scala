@@ -37,6 +37,7 @@ private[csv] object CsvParser {
   private final val QuoteStarted = 4
   private final val QuoteEnd = 5
   private final val WithinQuotedField = 6
+  private final val AfterCr = 7
 
   private final val LF: Byte = '\n'
   private final val CR: Byte = '\r'
@@ -135,11 +136,6 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
                                       pos,
                                       s"wrong escaping at $currentLineNo:$pos, no character after escape")
 
-    @inline def readPastLf() =
-      if (pos < buf.length && buf(pos) == LF) {
-        pos += 1
-      }
-
     def checkForByteOrderMark(): Unit =
       if (buf.length >= 2) {
         if (buf.startsWith(ByteOrderMark.UTF_8)) {
@@ -190,9 +186,8 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
               fieldStart = pos
             case CR =>
               columns :+= ByteString.empty
-              state = LineEnd
+              state = AfterCr
               pos += 1
-              readPastLf()
               fieldStart = pos
             case b =>
               fieldBuilder.add(b)
@@ -226,9 +221,8 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
               fieldStart = pos
             case CR =>
               columns :+= ByteString.empty
-              state = LineEnd
+              state = AfterCr
               pos += 1
-              readPastLf()
               fieldStart = pos
             case b =>
               fieldBuilder.add(b)
@@ -258,9 +252,8 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
               fieldStart = pos
             case CR =>
               columns :+= fieldBuilder.result(pos)
-              state = LineEnd
+              state = AfterCr
               pos += 1
-              readPastLf()
               fieldStart = pos
             case b =>
               fieldBuilder.add(b)
@@ -307,9 +300,8 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
               fieldStart = pos
             case CR =>
               columns :+= fieldBuilder.result(pos - 1)
-              state = LineEnd
+              state = AfterCr
               pos += 1
-              readPastLf()
               fieldStart = pos
             case c =>
               throw new MalformedCsvException(currentLineNo,
@@ -341,6 +333,15 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
               fieldBuilder.add(b)
               state = WithinQuotedField
               pos += 1
+          }
+
+        case AfterCr =>
+          byte match {
+            case LF =>
+              state = LineEnd
+              pos += 1
+            case _ =>
+              state = LineEnd
           }
       }
     }
