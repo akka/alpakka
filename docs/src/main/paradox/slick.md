@@ -124,12 +124,22 @@ Scala
 Java
 : @@snip ($alpakka$/slick/src/test/java/akka/stream/alpakka/slick/javadsl/DocSnippetSink.java) { #sink-example }
 
-For completeness, the Slick connector also exposes a `Flow` that has the exact same functionality as the `Sink` but it allows you to continue the stream for further processing. The return value of every executed statement, e.g. the element values is an `Int` denoting the number of updated/inserted/deleted rows.
+For completeness, the Slick connector also exposes a `Flow` that has the exact same functionality as the `Sink` but it allows you to continue the stream for further processing. The return value of every executed statement, e.g. the element values is the fixed type `Int` denoting the number of updated/inserted/deleted rows.
 
 Scala
 : @@snip ($alpakka$/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/DocSnippets.scala) { #flow-example }
 
 Java
 : @@snip ($alpakka$/slick/src/test/java/akka/stream/alpakka/slick/javadsl/DocSnippetFlow.java) { #flow-example }
+
+To have a different return type, use the `flowWithPassThrough` function.
+E.g. when consuming Kafka messages, this allows you to maintain the kafka committable offset so the message can be committed in a next stage in the flow.
+
+Scala
+: @@snip ($alpakka$/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/DocSnippets.scala) { #flowWithPassThrough-example }
+
+Java
+: @@snip ($alpakka$/slick/src/test/java/akka/stream/alpakka/slick/javadsl/DocSnippetFlowWithPassThrough.java) { #flowWithPassThrough-example }
+
 
  [jdbcbackend-api]: http://slick.lightbend.com/doc/3.2.1/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig(String,Config,Driver,ClassLoader):Database
