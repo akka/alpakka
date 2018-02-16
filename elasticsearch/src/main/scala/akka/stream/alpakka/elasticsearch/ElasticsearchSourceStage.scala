@@ -21,8 +21,8 @@ final case class OutgoingMessage[T](id: String, source: T, version: Option[Long]
 
 case class ScrollResponse[T](error: Option[String], result: Option[ScrollResult[T]])
 /* TODO Review
-1. Are aggregated results of type T.
-2. What if the user would like to get the Hits (size >0) and Aggregates.
+1. Are aggregated results of type T?
+2. What if the user would like to get the Hits (size >0) and Aggregates?
 3. Is adding aggregate results as a separate item to ScrollResult a good idea? Or should we set the size as 0 for aggregates by default
 and have the `T` represent a single aggregate or bucket (considering the aggregated results doesn't fall into the same pattern as `hits`, this would be a little tricky too.
  */
