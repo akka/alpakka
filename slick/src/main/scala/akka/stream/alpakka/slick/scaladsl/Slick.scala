@@ -71,10 +71,7 @@ object Slick {
       parallelism: Int,
       toStatement: T => DBIO[Int]
   )(implicit session: SlickSession): Flow[T, Int, NotUsed] =
-    Flow[T]
-      .mapAsync(parallelism) { t =>
-        session.db.run(toStatement(t))
-      }
+    flowWithPassThrough(parallelism, toStatement)
 
   /**
    * Scala API: creates a Flow that takes a stream of elements of

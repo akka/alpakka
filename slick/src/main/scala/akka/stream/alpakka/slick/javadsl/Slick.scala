@@ -221,8 +221,4 @@ object Slick {
   private def toDBIO[T](javaDml: JFunction[T, String]): T => DBIO[Int] = { t =>
     SQLActionBuilder(javaDml.asScala(t), SetParameter.SetUnit).asUpdate
   }
-
-  class JDBIO[T] {
-    def map[B](f: T => B): JDBIO[B] = ???
-  }
 }
