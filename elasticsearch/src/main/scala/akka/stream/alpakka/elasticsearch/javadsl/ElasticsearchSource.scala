@@ -44,7 +44,7 @@ object ElasticsearchSource {
     Source.fromGraph(
       new ElasticsearchSourceStage(
         indexName,
-        typeName,
+        Option(typeName),
         Map("query" -> query),
         client,
         settings.asScala,
@@ -71,7 +71,7 @@ object ElasticsearchSource {
     Source.fromGraph(
       new ElasticsearchSourceStage(
         indexName,
-        typeName,
+        Option(typeName),
         searchParams.asScala.toMap,
         client,
         settings.asScala,
@@ -105,7 +105,7 @@ object ElasticsearchSource {
     Source.fromGraph(
       new ElasticsearchSourceStage(
         indexName,
-        typeName,
+        Option(typeName),
         Map("query" -> query),
         client,
         settings.asScala,
@@ -133,7 +133,7 @@ object ElasticsearchSource {
     Source.fromGraph(
       new ElasticsearchSourceStage(
         indexName,
-        typeName,
+        Option(typeName),
         searchParams.asScala.toMap,
         client,
         settings.asScala,

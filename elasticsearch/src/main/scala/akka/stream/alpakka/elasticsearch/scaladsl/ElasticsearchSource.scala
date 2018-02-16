@@ -37,7 +37,7 @@ object ElasticsearchSource {
    *  Map( "query" -> """{"match_all": {}}""", "_source" -> """ ["fieldToInclude", "anotherFieldToInclude"] """ )
    */
   def apply(indexName: String,
-            typeName: String,
+            typeName: Option[String],
             searchParams: Map[String, String],
             settings: ElasticsearchSourceSettings)(
       implicit client: RestClient
@@ -53,6 +53,15 @@ object ElasticsearchSource {
              settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings())(
       implicit client: RestClient
   ): Source[OutgoingMessage[JsObject], NotUsed] =
+    create(indexName, Option(typeName), query, settings)
+
+  /**
+   * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s
+   * of Spray's [[spray.json.JsObject]].
+   */
+  def create(indexName: String, typeName: Option[String], query: String, settings: ElasticsearchSourceSettings)(
+      implicit client: RestClient
+  ): Source[OutgoingMessage[JsObject], NotUsed] =
     create(indexName, typeName, Map("query" -> query), settings)
 
   /**
@@ -64,7 +73,7 @@ object ElasticsearchSource {
    *  Map( "query" -> """{"match_all": {}}""", "_source" -> """ ["fieldToInclude", "anotherFieldToInclude"] """ )
    */
   def create(indexName: String,
-             typeName: String,
+             typeName: Option[String],
              searchParams: Map[String, String],
              settings: ElasticsearchSourceSettings)(
       implicit client: RestClient
@@ -91,6 +100,16 @@ object ElasticsearchSource {
       implicit client: RestClient,
       reader: JsonReader[T]
   ): Source[OutgoingMessage[T], NotUsed] =
+    typed(indexName, Option(typeName), query, settings)
+
+  /**
+   * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s of type `T`
+   * converted by Spray's [[spray.json.JsonReader]]
+   */
+  def typed[T](indexName: String, typeName: Option[String], query: String, settings: ElasticsearchSourceSettings)(
+      implicit client: RestClient,
+      reader: JsonReader[T]
+  ): Source[OutgoingMessage[T], NotUsed] =
     typed(indexName, typeName, Map("query" -> query), settings)
 
   /**
@@ -102,7 +121,7 @@ object ElasticsearchSource {
    *  Map( "query" -> """{"match_all": {}}""", "_source" -> """ ["fieldToInclude", "anotherFieldToInclude"] """ )
    */
   def typed[T](indexName: String,
-               typeName: String,
+               typeName: Option[String],
                searchParams: Map[String, String],
                settings: ElasticsearchSourceSettings)(
       implicit client: RestClient,
