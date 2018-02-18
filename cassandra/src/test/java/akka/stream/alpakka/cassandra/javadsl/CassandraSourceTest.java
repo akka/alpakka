@@ -6,6 +6,7 @@ package akka.stream.alpakka.cassandra.javadsl;
 
 import akka.Done;
 import akka.NotUsed;
+import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import com.datastax.driver.core.*;
@@ -21,6 +22,7 @@ import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
+import scala.concurrent.ExecutionContextExecutor;
 
 import java.util.List;
 import java.util.Set;
@@ -37,6 +39,7 @@ public class CassandraSourceTest {
 
   private static ActorSystem system;
   private static Materializer materializer;
+  private static ExecutionContextExecutor ec;
 
   private static Session session;
 
@@ -57,11 +60,16 @@ public class CassandraSourceTest {
     return Pair.create(system, materializer);
   }
 
+  private static ExecutionContextExecutor setupExecutionContext() {
+    return system.dispatcher();
+  }
+
   @BeforeClass
   public static void setup() {
     final Pair<ActorSystem, Materializer> sysmat = setupMaterializer();
     system = sysmat.first();
     materializer = sysmat.second();
+    ec = setupExecutionContext();
 
     session = setupSession();
 
@@ -104,6 +112,31 @@ public class CassandraSourceTest {
     assertEquals(
       IntStream.range(1, 103).boxed().collect(Collectors.toSet()),
       rows.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(r -> r.getInt("id")).collect(Collectors.toSet()));
+  }
+
+  @Test
+  public void flowInputValues() throws Exception {
+
+    //#prepared-statement-flow
+    final PreparedStatement preparedStatement = session.prepare("insert into akka_stream_java_test.test (id) values (?)");
+    //#prepared-statement-flow
+
+    //#statement-binder-flow
+    BiFunction<Integer, PreparedStatement,BoundStatement> statementBinder = (myInteger, statement) -> statement.bind(myInteger);
+    //#statement-binder-flow
+    Source<Integer, NotUsed> source = Source.from(IntStream.range(1, 10).boxed().collect(Collectors.toList()));
+
+    //#run-flow
+    final Flow<Integer, Integer, NotUsed> flow = CassandraFlow.createWithPassThrough(2, preparedStatement, statementBinder, session, ec);
+
+    CompletionStage<List<Integer>> result = source.via(flow).runWith(Sink.seq(), materializer);
+    //#run-flow
+
+    List<Integer> resultToAssert = result.toCompletableFuture().get();
+    Set<Integer> found = session.execute("select * from akka_stream_java_test.test").all().stream().map(r -> r.getInt("id")).collect(Collectors.toSet());
+
+    assertEquals(resultToAssert, IntStream.range(1, 10).boxed().collect(Collectors.toList()));
+    assertEquals(found, IntStream.range(1, 10).boxed().collect(Collectors.toSet()));
   }
 
   @Test

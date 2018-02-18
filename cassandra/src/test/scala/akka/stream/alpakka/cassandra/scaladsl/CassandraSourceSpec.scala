@@ -30,6 +30,8 @@ class CassandraSourceSpec
   implicit val mat = ActorMaterializer()
   //#init-mat
 
+  implicit val ec = system.dispatcher
+
   //#init-session
   implicit val session = Cluster.builder
     .addContactPoint("127.0.0.1")
@@ -117,7 +119,31 @@ class CassandraSourceSpec
       rows mustBe empty
     }
 
-    "sink should write to the table" in {
+    "write to the table using the flow and emit the elements in order" in {
+      val source = Source(0 to 10).map(i => i: Integer)
+
+      //#prepared-statement-flow
+      val preparedStatement = session.prepare(s"INSERT INTO $keyspaceName.test(id) VALUES (?)")
+      //#prepared-statement-flow
+
+      //#statement-binder-flow
+      val statementBinder = (myInteger: Integer, statement: PreparedStatement) => statement.bind(myInteger)
+      //#statement-binder-flow
+
+      //#run-flow
+      val flow = CassandraFlow.createWithPassThrough[Integer](parallelism = 2, preparedStatement, statementBinder)
+
+      val result = source.via(flow).runWith(Sink.seq)
+      //#run-flow
+
+      val resultToAssert = result.futureValue
+      val found = session.execute(s"select id from $keyspaceName.test").all().asScala.map(_.getInt("id"))
+
+      resultToAssert mustBe (0 to 10).toList
+      found.toSet mustBe (0 to 10).toSet
+    }
+
+    "write to the table using the sink" in {
       val source = Source(0 to 10).map(i => i: Integer)
 
       //#prepared-statement

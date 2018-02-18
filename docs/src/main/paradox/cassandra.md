@@ -1,6 +1,6 @@
 # Cassandra Connector
 
-The Cassandra connector allows you to read and write to Cassandra. You can query a stream of rows from @scaladoc[CassandraSource](akka.stream.alpakka.cassandra.scaladsl.CassandraSource$) or use prepared statements to insert or update with @scaladoc[CassandraSink](akka.stream.alpakka.cassandra.scaladsl.CassandraSink$).
+The Cassandra connector allows you to read and write to Cassandra. You can query a stream of rows from @scaladoc[CassandraSource](akka.stream.alpakka.cassandra.scaladsl.CassandraSource$) or use prepared statements to insert or update with @scaladoc[CassandraFlow](akka.stream.alpakka.cassandra.scaladsl.CassandraFlow$) or @scaladoc[CassandraSink](akka.stream.alpakka.cassandra.scaladsl.CassandraSink$).
 
 
 ### Reported issues
@@ -18,7 +18,7 @@ The Cassandra connector allows you to read and write to Cassandra. You can query
 
 ## Usage
 
-Sources provided by this connector need a prepared session to communicate with Cassandra cluster. First, lets initialize a Cassandra session.
+Sources provided by this connector need a prepared session to communicate with Cassandra cluster. First, let's initialize a Cassandra session.
 
 Scala
 : @@snip ($alpakka$/cassandra/src/test/scala/akka/stream/alpakka/cassandra/scaladsl/CassandraSourceSpec.scala) { #init-session }
@@ -56,6 +56,32 @@ Java
 
 Here we used a basic sink to complete the stream by collecting all of the stream elements to a collection. The power of streams comes from building larger data pipelines which leverage backpressure to ensure efficient flow control. Feel free to edit the example code and build @extref[more advanced stream topologies](akka-docs:scala/stream/stream-introduction).
 
+### Flow with passthrough Usage
+
+Let's create a Cassandra Prepared statement with a query that we want to execute.
+
+Scala
+: @@snip ($alpakka$/cassandra/src/test/scala/akka/stream/alpakka/cassandra/scaladsl/CassandraSourceSpec.scala) { #prepared-statement-flow }
+
+Java
+: @@snip ($alpakka$/cassandra/src/test/java/akka/stream/alpakka/cassandra/javadsl/CassandraSourceTest.java) { #prepared-statement-flow }
+
+Now we need to create a 'statement binder', this is just a function to bind to the prepared statement. It can take in any type / data structure to fit your query values. Here we're just using one Integer, but it can just as easily be a (case) class.
+
+Scala
+: @@snip ($alpakka$/cassandra/src/test/scala/akka/stream/alpakka/cassandra/scaladsl/CassandraSourceSpec.scala) { #statement-binder-flow }
+
+Java
+: @@snip ($alpakka$/cassandra/src/test/java/akka/stream/alpakka/cassandra/javadsl/CassandraSourceTest.java) { #statement-binder-flow }
+
+We run the stream persisting the elements to C* and finally folding them using a ```Sink.fold```.
+
+Scala
+: @@snip ($alpakka$/cassandra/src/test/scala/akka/stream/alpakka/cassandra/scaladsl/CassandraSourceSpec.scala) { #run-flow }
+
+Java
+: @@snip ($alpakka$/cassandra/src/test/java/akka/stream/alpakka/cassandra/javadsl/CassandraSourceTest.java) { #run-flow }
+
 ### Sink Usage
 
 Let's create a Cassandra Prepared statement with a query that we want to execute.
@@ -66,7 +92,7 @@ Scala
 Java
 : @@snip ($alpakka$/cassandra/src/test/java/akka/stream/alpakka/cassandra/javadsl/CassandraSourceTest.java) { #prepared-statement }
 
-Now lets we need to create a 'statement binder', this is just a function to bind to the prepared statement. It can take in any type / data structure to fit your query values. Here we're just using one Integer, but it can just as easily be a (case) class.
+Now we need to create a 'statement binder', this is just a function to bind to the prepared statement. It can take in any type / data structure to fit your query values. Here we're just using one Integer, but it can just as easily be a (case) class.
 
 Scala
 : @@snip ($alpakka$/cassandra/src/test/scala/akka/stream/alpakka/cassandra/scaladsl/CassandraSourceSpec.scala) { #statement-binder }
