@@ -102,8 +102,7 @@ object SqsSink {
   /**
    * Java API: creates a sink running in batch mode for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync AmazonSQSAsync]] with default settings.
    */
-  def groupedMessageSink(queueUrl: String,
-                         sqsClient: AmazonSQSAsync): Sink[SendMessageRequest, CompletionStage[Done]] =
+  def groupedMessageSink(queueUrl: String, sqsClient: AmazonSQSAsync): Sink[SendMessageRequest, CompletionStage[Done]] =
     scaladsl.SqsSink
       .groupedMessageSink(queueUrl, SqsBatchFlowSettings.Defaults)(sqsClient)
       .mapMaterializedValue(_.toJava)

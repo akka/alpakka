@@ -313,7 +313,9 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     }
   }
 
-  private def completionSink(s3Location: S3Location): Sink[UploadPartResponse, Future[CompleteMultipartUploadResult]] = {
+  private def completionSink(
+      s3Location: S3Location
+  ): Sink[UploadPartResponse, Future[CompleteMultipartUploadResult]] = {
     import mat.executionContext
 
     Sink.seq[UploadPartResponse].mapMaterializedValue { responseFuture: Future[Seq[UploadPartResponse]] =>

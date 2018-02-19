@@ -5,12 +5,7 @@
 package akka.stream.alpakka.azure.storagequeue.javadsl
 
 import com.microsoft.azure.storage.queue.{CloudQueue, CloudQueueMessage}
-import akka.stream.alpakka.azure.storagequeue.{
-  AzureQueueSinkFunctions,
-  Delete,
-  DeleteOrUpdateMessage,
-  UpdateVisibility
-}
+import akka.stream.alpakka.azure.storagequeue.{AzureQueueSinkFunctions, Delete, DeleteOrUpdateMessage, UpdateVisibility}
 import akka.stream.javadsl.Sink
 import akka.Done
 import java.util.concurrent.CompletionStage
