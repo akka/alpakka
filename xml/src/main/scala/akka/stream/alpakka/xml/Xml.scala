@@ -64,10 +64,7 @@ object Namespace {
 
 }
 
-final case class Attribute(name: String,
-                           value: String,
-                           prefix: Option[String] = None,
-                           namespace: Option[String] = None)
+final case class Attribute(name: String, value: String, prefix: Option[String] = None, namespace: Option[String] = None)
 object Attribute {
 
   /**
@@ -128,11 +125,7 @@ object StartElement {
              attributesList: java.util.List[Attribute],
              prefix: Optional[String],
              namespace: Optional[String]): StartElement =
-    new StartElement(localName,
-                     attributesList.asScala.toList,
-                     prefix.asScala,
-                     namespace.asScala,
-                     List.empty[Namespace])
+    new StartElement(localName, attributesList.asScala.toList, prefix.asScala, namespace.asScala, List.empty[Namespace])
 
   /**
    * Java API

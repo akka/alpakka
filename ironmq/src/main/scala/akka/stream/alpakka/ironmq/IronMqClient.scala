@@ -119,7 +119,8 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
   /**
    * Produce the given messages to the queue with the given name. Return the ids ot the produced messages.
    */
-  def pushMessages(queueName: Queue.Name, messages: PushMessage*)(implicit ec: ExecutionContext): Future[Message.Ids] = {
+  def pushMessages(queueName: Queue.Name,
+                   messages: PushMessage*)(implicit ec: ExecutionContext): Future[Message.Ids] = {
 
     val payload = Json.obj(
       "messages" -> Json.fromValues(

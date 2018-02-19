@@ -20,9 +20,7 @@ object ElasticsearchSink {
   /**
    * Creates a [[akka.stream.scaladsl.Sink]] to Elasticsearch for [[IncomingMessage]] containing type `T`.
    */
-  def create[T](indexName: String,
-                typeName: String,
-                settings: ElasticsearchSinkSettings = ElasticsearchSinkSettings())(
+  def create[T](indexName: String, typeName: String, settings: ElasticsearchSinkSettings = ElasticsearchSinkSettings())(
       implicit client: RestClient,
       writer: JsonWriter[T]
   ): Sink[IncomingMessage[T, NotUsed], Future[Done]] =
