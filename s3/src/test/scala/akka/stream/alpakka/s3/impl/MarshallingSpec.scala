@@ -16,11 +16,7 @@ import org.scalatest.{FlatSpecLike, Matchers}
 
 import scala.collection.immutable.Seq
 
-class MarshallingSpec(_system: ActorSystem)
-    extends TestKit(_system)
-    with FlatSpecLike
-    with Matchers
-    with ScalaFutures {
+class MarshallingSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLike with Matchers with ScalaFutures {
 
   def this() = this(ActorSystem("MarshallingSpec"))
 
