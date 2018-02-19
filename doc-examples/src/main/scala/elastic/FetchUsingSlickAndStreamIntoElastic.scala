@@ -21,7 +21,6 @@ import spray.json.JsonFormat
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.language.postfixOps
 // #sample
 // format: off
 
@@ -52,34 +51,28 @@ object FetchUsingSlickAndStreamIntoElastic extends ActorSystemAvailable with App
 
   case class Movie(id: Int, title: String, genre: String, gross: Double)                // (3)
 
-  val fetchDataFromTableFlow: Source[Movie, NotUsed] =                                  // (4)
+  implicit val client = RestClient.builder(new HttpHost("localhost", 9201)).build()     // (4)
+  implicit val format: JsonFormat[Movie] = jsonFormat4(Movie)                           // (5)
+
+  val done: Future[Done] =
     Slick
-      .source(TableQuery[Movies].result)                                                // (5)
-      .map {                                                                            // (6)
-      case (id, genre, title, gross) =>
-        Movie(id, genre, title, gross)
-    }
-
-
-  implicit val client = RestClient.builder(new HttpHost("localhost", 9201)).build()     // (7)
-  implicit val format: JsonFormat[Movie] = jsonFormat4(Movie)                           // (8)
-
-  val elasticSearchSink = ElasticsearchSink.create[Movie]("movie", "boxoffice")         // (9)
-
-  val done: Future[Done] = fetchDataFromTableFlow
-    .map(movie => IncomingMessage(Option(movie.id).map(_.toString), movie))             // (10)
-    .runWith(elasticSearchSink)
+      .source(TableQuery[Movies].result)                                                // (6)
+      .map {                                                                            // (7)
+        case (id, genre, title, gross) => Movie(id, genre, title, gross)
+      }
+      .map(movie => IncomingMessage(Option(movie.id).map(_.toString), movie))           // (8)
+      .runWith(ElasticsearchSink.create[Movie]("movie", "boxoffice"))                   // (9)
 
   done.onComplete {
     case _ =>
       session.close()
-      client.close()                                                                    // (11)
+      client.close()                                                                    // (10)
       runner.close()
       runner.clean()
   }
 
   // #sample
   // format: on
-  wait(10 seconds)
+  wait(10.seconds)
   terminateActorSystem()
 }
