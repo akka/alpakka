@@ -15,8 +15,7 @@ object AzureQueueSource {
   /**
    * Java API: creates a [[AzureQueueSource]] for a Azure CloudQueue.
    */
-  def create(cloudQueue: Supplier[CloudQueue],
-             settings: AzureQueueSourceSettings): Source[CloudQueueMessage, NotUsed] =
+  def create(cloudQueue: Supplier[CloudQueue], settings: AzureQueueSourceSettings): Source[CloudQueueMessage, NotUsed] =
     Source.fromGraph(new AzureQueueSourceStage(() => cloudQueue.get(), settings))
 
   def create(cloudQueue: Supplier[CloudQueue]): Source[CloudQueueMessage, NotUsed] =

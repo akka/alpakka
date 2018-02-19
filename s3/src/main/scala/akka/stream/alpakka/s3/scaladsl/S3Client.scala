@@ -155,8 +155,7 @@ object S3Client {
     new S3Client(S3Settings(system.settings.config))
 
   @deprecated("use apply(AWSCredentialsProvider, String) factory", "0.11")
-  def apply(credentials: OldAWSCredentials, region: String)(implicit system: ActorSystem,
-                                                            mat: Materializer): S3Client =
+  def apply(credentials: OldAWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer): S3Client =
     apply(
       new AWSStaticCredentialsProvider(credentials.toAmazonCredentials()),
       region

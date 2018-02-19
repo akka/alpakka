@@ -13,9 +13,9 @@ import scala.reflect.ClassTag
 import scala.util.Success
 
 //#shapeless-pdx-serializer
-private[geode] class ShapelessPdxSerializer[A <: AnyRef](enc: PdxEncoder[A],
-                                                         dec: PdxDecoder[A])(implicit tag: ClassTag[A])
-    extends PdxSerializer
+private[geode] class ShapelessPdxSerializer[A <: AnyRef](enc: PdxEncoder[A], dec: PdxDecoder[A])(
+    implicit tag: ClassTag[A]
+) extends PdxSerializer
     with Declarable {
 
   override def toData(o: scala.Any, out: PdxWriter): Boolean =

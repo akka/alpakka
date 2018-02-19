@@ -19,9 +19,7 @@ object ElasticsearchFlow {
    * Creates a [[akka.stream.scaladsl.Flow]] for type `T` from [[IncomingMessage]] to sequences
    * of [[IncomingMessageResult]].
    */
-  def create[T](indexName: String,
-                typeName: String,
-                settings: ElasticsearchSinkSettings = ElasticsearchSinkSettings())(
+  def create[T](indexName: String, typeName: String, settings: ElasticsearchSinkSettings = ElasticsearchSinkSettings())(
       implicit client: RestClient,
       writer: JsonWriter[T]
   ): Flow[IncomingMessage[T, NotUsed], Seq[IncomingMessageResult[T, NotUsed]], NotUsed] =

@@ -16,7 +16,8 @@ object KinesisSource {
   def basic(shardSettings: ShardSettings, amazonKinesisAsync: AmazonKinesisAsync): Source[Record, NotUsed] =
     Source.fromGraph(new KinesisSourceStage(shardSettings, amazonKinesisAsync))
 
-  def basicMerge(shardSettings: List[ShardSettings], amazonKinesisAsync: AmazonKinesisAsync): Source[Record, NotUsed] = {
+  def basicMerge(shardSettings: List[ShardSettings],
+                 amazonKinesisAsync: AmazonKinesisAsync): Source[Record, NotUsed] = {
     val create: ShardSettings => Source[Record, NotUsed] = basic(_, amazonKinesisAsync)
     shardSettings match {
       case Nil => Source.failed(NoShardsError)

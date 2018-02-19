@@ -155,10 +155,7 @@ object MqttConnectionSettings {
     MqttConnectionSettings(broker, clientId, persistence)
 }
 
-final case class MqttMessage(topic: String,
-                             payload: ByteString,
-                             qos: Option[MqttQoS] = None,
-                             retained: Boolean = false)
+final case class MqttMessage(topic: String, payload: ByteString, qos: Option[MqttQoS] = None, retained: Boolean = false)
 
 @deprecated("use a normal message instead of a will", "0.16")
 final case class Will(message: MqttMessage, qos: MqttQoS, retained: Boolean)

@@ -29,8 +29,7 @@ object IronMqPullStage {
  *
  * Keep in mind that the IronMq time unit is the second, so any value below the second is considered 0.
  */
-class IronMqPullStage(queue: Queue.Name, settings: IronMqSettings)
-    extends GraphStage[SourceShape[CommittableMessage]] {
+class IronMqPullStage(queue: Queue.Name, settings: IronMqSettings) extends GraphStage[SourceShape[CommittableMessage]] {
 
   import IronMqPullStage._
 
