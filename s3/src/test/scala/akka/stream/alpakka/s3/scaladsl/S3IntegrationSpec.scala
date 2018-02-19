@@ -273,7 +273,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
  * (tests that do listing counts might need some tweaking)
  *
  */
-//@Ignore
+@Ignore
 class AWSS3IntegrationSpec extends S3IntegrationSpec
 
 /*
