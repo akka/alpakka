@@ -12,12 +12,7 @@ import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import akka.testkit.SocketUtil
 
-abstract class JmsSpec
-    extends WordSpec
-    with Matchers
-    with BeforeAndAfterAll
-    with BeforeAndAfterEach
-    with ScalaFutures {
+abstract class JmsSpec extends WordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach with ScalaFutures {
 
   implicit val system = ActorSystem(this.getClass.getSimpleName)
   val decider: Supervision.Decider = {
