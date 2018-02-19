@@ -53,14 +53,31 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     )
     runner.ensureYellow()
 
-    register("source", "Akka in Action")
-    register("source", "Programming in Scala")
-    register("source", "Learning Scala")
-    register("source", "Scala for Spark in Production")
-    register("source", "Scala Puzzlers")
-    register("source", "Effective Akka")
-    register("source", "Akka Concurrency")
+    registerBooks()
+    registerMovies()
+
+  }
+
+  def registerBooks() = {
+    registerBook("source", "Akka in Action")
+    registerBook("source", "Programming in Scala")
+    registerBook("source", "Learning Scala")
+    registerBook("source", "Scala for Spark in Production")
+    registerBook("source", "Scala Puzzlers")
+    registerBook("source", "Effective Akka")
+    registerBook("source", "Akka Concurrency")
     flush("source")
+  }
+
+  def registerMovies() = {
+    createStrictMappingForMovie("movie")
+    registerMovie("movie", "Rogue One", "Adventure", 3.032)
+    registerMovie("movie", "Beauty and the Beast", "Musical", 2.795)
+    registerMovie("movie", "Wonder Woman", "Action", 2.744)
+    registerMovie("movie", "Guardians of the Galaxy", "Action", 2.568)
+    registerMovie("movie", "Moana", "Musical", 2.493)
+    registerMovie("movie", "Spider-Man", "Action", 1.784)
+    flush("movie")
   }
 
   override def afterAll() = {
@@ -73,7 +90,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   private def flush(indexName: String): Unit =
     client.performRequest("POST", s"$indexName/_flush")
 
-  private def createStrictMapping(indexName: String): Unit =
+  private def createStrictMappingForBook(indexName: String): Unit =
     client.performRequest(
       "PUT",
       s"$indexName",
@@ -92,12 +109,58 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       new BasicHeader("Content-Type", "application/json")
     )
 
-  private def register(indexName: String, title: String): Unit =
+  private def createStrictMappingForMovie(indexName: String): Unit =
+    client.performRequest(
+      "PUT",
+      s"$indexName",
+      Map[String, String]().asJava,
+      new StringEntity(s"""{
+                          |  "mappings": {
+                          |    "rentals": {
+                          |      "properties": {
+                          |        "title": {
+                          |          "type": "text"
+                          |        },
+                          |        "genre": {
+                          |          "type": "text",
+                          |          "fields": {
+                          |            "keyword":{
+                          |              "type": "keyword"
+                          |            }
+                          |          }
+                          |        },
+                          |        "gross": {
+                          |          "type": "double"
+                          |        }
+                          |      }
+                          |    }
+                          |  }
+                          |}
+         """.stripMargin),
+      new BasicHeader("Content-Type", "application/json")
+    )
+
+  private def registerBook(indexName: String, title: String): Unit =
     client.performRequest("POST",
                           s"$indexName/book",
                           Map[String, String]().asJava,
                           new StringEntity(s"""{"title": "$title"}"""),
                           new BasicHeader("Content-Type", "application/json"))
+
+  private def registerMovie(indexName: String, title: String, genre: String, gross: Double): Unit =
+    client.performRequest(
+      "POST",
+      s"$indexName/rentals",
+      Map[String, String]().asJava,
+      new StringEntity(s"""
+           |{
+           |"title": "$title",
+           |"genre": "$genre",
+           |"gross": "$gross"
+           |}
+           """.stripMargin),
+      new BasicHeader("Content-Type", "application/json")
+    )
 
   private def documentation: Unit = {
     //#source-settings
@@ -321,7 +384,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   "ElasticsearchFlow" should {
     "retry a failed documents and pass retired documents to downstream" in {
       // Create strict mapping to prevent invalid documents
-      createStrictMapping("sink5")
+      createStrictMappingForBook("sink5")
 
       val f1 = Source(
         Seq(
@@ -806,6 +869,85 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       assert(result3.toList.sortBy(_.id) == docs.map(_.copy(b = None)))
 
     }
+  }
+
+  "Un-typed Elasticsearch connector" should {
+    "Aggregate results" in {
+
+      val aggregateQuery =
+        """
+          |{
+          |    "Gross_Sum": {
+          |          "sum": {
+          |            "field": "gross"
+          |          }
+          |      }
+          |}
+        """.stripMargin
+      val f2 = ElasticsearchSource
+        .create(
+          indexName = "movie",
+          typeName = "rentals",
+          searchParams = Map(
+            "size" -> "0",
+            "aggs" -> aggregateQuery
+          ),
+          settings = ElasticsearchSourceSettings()
+        )
+        .map { message =>
+          message.source
+        }
+        .runWith(Sink.seq)
+
+      val result = Await.result(f2, Duration.Inf)
+
+      //FIXME Assert correctly once done
+      result shouldEqual Seq(
+        "XXXX"
+      )
+    }
+
+    //TODO This has to be uncommented and added to the testcases
+/*
+    "Bucketed results" in {
+      val bucketedAggregateQuery =
+        """
+          | "Group_By_Genre": {
+          |      "terms": {
+          |        "field": "genre.keyword"
+          |      },
+          |      "aggs": {
+          |        "Gross_Sum": {
+          |          "sum": {
+          |            "field": "gross"
+          |          }
+          |        }
+          |      }
+          |    }
+        """.stripMargin
+
+      val f2 = ElasticsearchSource
+        .create(
+          indexName = "movie",
+          typeName = "rentals",
+          searchParams = Map(
+            "size" -> "0",
+            "aggs" -> bucketedAggregateQuery
+          ),
+          settings = ElasticsearchSourceSettings()
+        )
+        .map { message =>
+          message.source
+        }
+        .runWith(Sink.seq)
+
+      val result = Await.result(f2, Duration.Inf)
+
+      //FIXME Assert correctly once done
+      result shouldEqual Seq(
+        "XXXX"
+      )
+    }*/
   }
 
 }
