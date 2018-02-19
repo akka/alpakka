@@ -67,7 +67,11 @@ object Dependencies {
       // https://github.com/javaee/javax.jms
       "javax.jms" % "jms" % "1.1", // CDDL Version 1.1
       // http://activemq.apache.org/download.html
-      "org.apache.activemq" % "activemq-all" % "5.14.4" // ApacheV2
+      "org.apache.activemq" % "activemq-all" % "5.14.4", // ApacheV2
+      "com.h2database" % "h2" % "1.4.196", // Eclipse Public License 1.0
+      "org.elasticsearch.client" % "rest" % "5.5.3", // ApacheV2
+      "org.codelibs" % "elasticsearch-cluster-runner" % "5.6.0.0", // ApacheV2
+      "io.netty" % "netty-all" % "4.1.16.Final" // ApacheV2
     )
   )
 
