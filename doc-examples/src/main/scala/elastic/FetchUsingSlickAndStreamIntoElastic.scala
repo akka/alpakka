@@ -6,12 +6,11 @@ package elastic
 
 // format: off
 // #sample
+import akka.Done
 import akka.stream.alpakka.elasticsearch.IncomingMessage
 import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSink
 import akka.stream.alpakka.slick.javadsl.SlickSession
 import akka.stream.alpakka.slick.scaladsl.Slick
-import akka.stream.scaladsl.Source
-import akka.{Done, NotUsed}
 import org.apache.http.HttpHost
 import org.elasticsearch.client.RestClient
 import playground.elastic.ElasticsearchMock
