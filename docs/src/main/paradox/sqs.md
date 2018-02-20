@@ -65,7 +65,7 @@ Options:
     returning (see `WaitTimeSeconds` in AWS docs). Default: 20 seconds  
  - `closeOnEmptyReceive` - the shutdown behavior of the `Source`. Default: false
  
-An `SqsSource` can either provide n infinite stream of messages (the default), or can
+An `SqsSource` can either provide an infinite stream of messages (the default), or can
 drain its source queue until no further messages are available. The latter
 behaviour is enabled by setting the `closeOnEmptyReceive` flag on creation. If set, the
 `Source` will receive messages until it encounters an empty reply from the server. It 
