@@ -7,25 +7,21 @@ package akka.stream.alpakka.jms
 import javax.jms
 import javax.jms.{Connection, Message, MessageProducer, Session}
 
-import akka.Done
-import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler}
 import akka.stream._
+import akka.stream.stage._
 
-import scala.concurrent.{Future, Promise}
-
-final class JmsSinkStage(settings: JmsSinkSettings)
-    extends GraphStageWithMaterializedValue[SinkShape[JmsMessage], Future[Done]] {
+final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[FlowShape[JmsMessage, JmsMessage]] {
 
   private val in = Inlet[JmsMessage]("JmsSink.in")
+  private val out = Outlet[JmsMessage]("JmsSink.out")
 
-  override def shape: SinkShape[JmsMessage] = SinkShape.of(in)
+  override def shape: FlowShape[JmsMessage, JmsMessage] = FlowShape.of(in, out)
 
   override protected def initialAttributes: Attributes =
     ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher")
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
-    val completionPromise = Promise[Done]()
-    val logic = new GraphStageLogic(shape) with JmsConnector {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
+    new GraphStageLogic(shape) with JmsConnector {
 
       private var jmsProducer: MessageProducer = _
       private var jmsSession: JmsSession = _
@@ -39,7 +35,6 @@ final class JmsSinkStage(settings: JmsSinkSettings)
       }
 
       override def preStart(): Unit = {
-
         jmsSessions = openSessions()
         // TODO: Remove hack to limit publisher to single session.
         jmsSession = jmsSessions.head
@@ -47,23 +42,16 @@ final class JmsSinkStage(settings: JmsSinkSettings)
         if (settings.timeToLive.nonEmpty) {
           jmsProducer.setTimeToLive(settings.timeToLive.get.toMillis)
         }
-        pull(in)
       }
+
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit =
+          tryPull(in)
+      })
 
       setHandler(
         in,
         new InHandler {
-
-          override def onUpstreamFinish(): Unit = {
-            super.onUpstreamFinish()
-            completionPromise.trySuccess(Done)
-          }
-
-          override def onUpstreamFailure(ex: Throwable): Unit = {
-            super.onUpstreamFailure(ex)
-            completionPromise.tryFailure(ex)
-          }
-
           override def onPush(): Unit = {
 
             val elem: JmsMessage = grab(in)
@@ -85,7 +73,7 @@ final class JmsSinkStage(settings: JmsSinkSettings)
               timeToLiveInMillisOption.getOrElse(jmsProducer.getTimeToLive)
             )
 
-            pull(in)
+            push(out, elem)
           }
         }
       )
@@ -156,14 +144,10 @@ final class JmsSinkStage(settings: JmsSinkSettings)
       }
 
       override def postStop(): Unit = {
-        if (!completionPromise.isCompleted) completionPromise.tryFailure(new AbruptStageTerminationException(this))
         jmsSessions.foreach(_.closeSession())
         jmsConnection.foreach(_.close)
       }
     }
-
-    (logic, completionPromise.future)
-
   }
 
 }

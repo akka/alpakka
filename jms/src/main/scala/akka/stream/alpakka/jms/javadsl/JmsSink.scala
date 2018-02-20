@@ -6,7 +6,7 @@ package akka.stream.alpakka.jms.javadsl
 
 import java.util.concurrent.CompletionStage
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.stream.alpakka.jms.{JmsMessage, JmsSinkSettings, JmsSinkStage}
 import akka.stream.scaladsl.{Flow, Keep}
 
@@ -18,9 +18,17 @@ object JmsSink {
   /**
    * Java API: Creates an [[JmsSink]] for [[JmsMessage]]s
    */
+  def flow[R <: JmsMessage](
+      jmsSinkSettings: JmsSinkSettings
+  ): akka.stream.javadsl.Flow[R, JmsMessage, NotUsed] =
+    akka.stream.alpakka.jms.scaladsl.JmsSink.flow(jmsSinkSettings).asJava
+
+  /**
+   * Java API: Creates an [[JmsSink]] for [[JmsMessage]]s
+   */
   def create[R <: JmsMessage](jmsSinkSettings: JmsSinkSettings): akka.stream.javadsl.Sink[R, CompletionStage[Done]] =
-    akka.stream.scaladsl.Sink
-      .fromGraph(new JmsSinkStage(jmsSinkSettings))
+    akka.stream.alpakka.jms.scaladsl.JmsSink
+      .apply(jmsSinkSettings)
       .mapMaterializedValue(FutureConverters.toJava)
       .asJava
 

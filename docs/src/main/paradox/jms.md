@@ -172,6 +172,29 @@ Scala
 Java
 : @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-messages-with-headers }
 
+
+### Sending messages as a Flow
+
+The producer can also act as a flow, in order to publish messages in the middle of stream processing.
+For example, you can ensure that a message is persisted to the queue before subsequent processing.
+
+Create a flow:
+
+Scala
+: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-flow-producer }
+
+Java
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-flow-producer }
+
+Run the flow:
+
+Scala
+: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-flow-producer }
+
+Java
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-flow-producer }
+
+
 ## Receiving messages from a JMS provider
 
 @java[@scaladoc[JmsSource](akka.stream.alpakka.jms.javadsl.JmsSource$)]@scala[@scaladoc[JmsSource](akka.stream.alpakka.jms.scaladsl.JmsSource$)] contains factory methods to facilitate

@@ -7,11 +7,11 @@ package akka.stream.alpakka.jms.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.AbruptStageTerminationException;
 import akka.stream.ActorMaterializer;
 import akka.stream.KillSwitch;
 import akka.stream.Materializer;
 import akka.stream.alpakka.jms.*;
+import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
@@ -632,7 +632,7 @@ public class JmsConnectorsTest {
             }
             catch(ExecutionException e) {
                 Throwable cause = e.getCause();
-                assertTrue(cause instanceof AbruptStageTerminationException);
+                assertTrue(cause instanceof JMSException);
             }
         });
     }
@@ -677,6 +677,29 @@ public class JmsConnectorsTest {
                     .collect(Collectors.toList());
 
             assertEquals(in, resultText);
+        });
+    }
+
+    @Test
+    public void producerFlow() throws Exception {
+        withServer(ctx -> {
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+            //#create-flow-producer
+            Flow<JmsTextMessage, JmsMessage, NotUsed> flowSink = JmsSink.flow(
+                    JmsSinkSettings.create(connectionFactory).withQueue("test")
+            );
+            //#create-flow-producer
+
+            //#run-flow-producer
+            List<JmsTextMessage> input = createTestMessageList();
+
+            CompletionStage<List<JmsMessage>> result = Source.from(input)
+                    .via(flowSink)
+                    .runWith(Sink.seq(), materializer);
+            //#run-flow-producer
+
+            assertEquals(input, result.toCompletableFuture().get());
         });
     }
 

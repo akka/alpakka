@@ -8,21 +8,20 @@ import java.nio.charset.Charset
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 import javax.jms.{DeliveryMode, JMSException, Message, TextMessage}
 
-import akka.{Done, NotUsed}
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import akka.stream.{AbruptStageTerminationException, KillSwitch, KillSwitches, ThrottleMode}
+import akka.stream.{KillSwitch, KillSwitches, ThrottleMode}
+import akka.{Done, NotUsed}
 import org.apache.activemq.ActiveMQConnectionFactory
 import org.apache.activemq.command.ActiveMQQueue
 
 import scala.annotation.tailrec
+import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
-
-import scala.collection.JavaConverters._
 
 final case class DummyObject(payload: String)
 
@@ -485,7 +484,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       ctx.broker.stop()
 
-      completionFuture.failed.futureValue shouldBe an[AbruptStageTerminationException]
+      completionFuture.failed.futureValue shouldBe a[JMSException]
       // connection was not yet initialized before broker stop
       connectionFactory.cachedConnection shouldBe null
     }
@@ -667,6 +666,26 @@ class JmsConnectorsSpec extends JmsSpec {
 
         result.futureValue shouldEqual in
       }
+    }
+
+    "producer flow" in withServer() { ctx =>
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      //#create-flow-producer
+      val flowSink: Flow[JmsMessage, JmsMessage, NotUsed] = JmsSink.flow(
+        JmsSinkSettings(connectionFactory).withQueue("test")
+      )
+      //#create-flow-producer
+
+      //#run-flow-producer
+      val input = (1 to 100).map(i => JmsTextMessage(i.toString))
+
+      val result = Source(input)
+        .via(flowSink)
+        .runWith(Sink.seq)
+      //#run-flow-producer
+
+      result.futureValue should ===(input)
     }
   }
 }
