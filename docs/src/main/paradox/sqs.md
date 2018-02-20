@@ -72,6 +72,10 @@ behaviour is enabled by setting the `closeOnEmptyReceive` flag on creation. If s
 then continues to emit any remaining messages in its local buffer. The stage will complete
 once the last message has been send downstream.
 
+Note that for short-polling (`waitTimeSeconds` of 0), SQS may respond with an empty 
+reply even if there are still messages in the queue. This behavior can be prevented by 
+switching to long-polling (by setting `waitTimeSeconds` to a nonzero value).
+
 Be aware that the `SqsSource` runs multiple requests to Amazon SQS in parallel. The maximum number of concurrent
 requests is limited by `parallelism = maxBufferSize / maxBatchSize`. E.g.: By default `maxBatchSize` is set to 10 and
 `maxBufferSize` is set to 100 so at the maximum, `SqsSource` will run 10 concurrent requests to Amazon SQS. `AmazonSQSAsyncClient`
