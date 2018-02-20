@@ -62,7 +62,15 @@ Options:
  - `maxBatchSize` - the maximum number of messages to return (see `MaxNumberOfMessages` in AWS docs). Default: 10
  - `maxBufferSize` - internal buffer size used by the `Source`. Default: 100 messages
  - `waitTimeSeconds` - the duration for which the call waits for a message to arrive in the queue before
-    returning (see `WaitTimeSeconds` in AWS docs). Default: 20 seconds
+    returning (see `WaitTimeSeconds` in AWS docs). Default: 20 seconds  
+ - `closeOnEmptyReceive` - the shutdown behavior of the `Source`. Default: false
+ 
+An `SqsSource` can either provide n infinite stream of messages (the default), or can
+drain its source queue until no further messages are available. The latter
+behaviour is enabled by setting the `closeOnEmptyReceive` flag on creation. If set, the
+`Source` will receive messages until it encounters an empty reply from the server. It 
+then continues to emit any remaining messages in its local buffer. The stage will complete
+once the last message has been send downstream.
 
 Be aware that the `SqsSource` runs multiple requests to Amazon SQS in parallel. The maximum number of concurrent
 requests is limited by `parallelism = maxBufferSize / maxBatchSize`. E.g.: By default `maxBatchSize` is set to 10 and
