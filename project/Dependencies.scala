@@ -100,7 +100,7 @@ object Dependencies {
   val Ftp = Seq(
     libraryDependencies ++= Seq(
       "commons-net" % "commons-net" % "3.6", // ApacheV2
-      "com.hierynomus" % "sshj" % "0.21.1", // ApacheV2
+      "com.hierynomus" % "sshj" % "0.23.0", // ApacheV2
       "org.apache.ftpserver" % "ftpserver-core" % "1.1.1" % Test, // ApacheV2
       "org.apache.sshd" % "sshd-core" % "1.6.0" % Test, // ApacheV2
       "net.i2p.crypto" % "eddsa" % "0.2.0" % Test, // CC0 1.0 Universal
