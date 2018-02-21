@@ -103,7 +103,7 @@ public class JmsConnectorsTest {
             //#create-text-sink
             Sink<String, CompletionStage<Done>> jmsSink = JmsProducer
                 .textSink(
-                    JmsSinkSettings
+                    JmsProducerSettings
                         .create(connectionFactory)
                         .withQueue("test")
                 );
@@ -118,7 +118,7 @@ public class JmsConnectorsTest {
 
             //#create-text-source
             Source<String, KillSwitch> jmsSource = JmsConsumer
-                .textSource(JmsSourceSettings
+                .textSource(JmsConsumerSettings
                     .create(connectionFactory)
                     .withQueue("test")
                     .withBufferSize(10)
@@ -151,7 +151,7 @@ public class JmsConnectorsTest {
             //#create-object-sink
             Sink<java.io.Serializable, CompletionStage<Done>> jmsSink = JmsProducer
                 .objectSink(
-                    JmsSinkSettings
+                    JmsProducerSettings
                         .create(connectionFactory)
                         .withQueue("test")
                 );
@@ -166,7 +166,7 @@ public class JmsConnectorsTest {
 
             //#create-object-source
             Source<java.io.Serializable, KillSwitch> jmsSource = JmsConsumer
-                .objectSource(JmsSourceSettings
+                .objectSource(JmsConsumerSettings
                     .create(connectionFactory)
                     .withQueue("test")
                 );
@@ -193,7 +193,7 @@ public class JmsConnectorsTest {
             //#create-bytearray-sink
             Sink<byte[], CompletionStage<Done>> jmsSink = JmsProducer
                 .bytesSink(
-                    JmsSinkSettings
+                    JmsProducerSettings
                         .create(connectionFactory)
                         .withQueue("test")
                 );
@@ -209,7 +209,7 @@ public class JmsConnectorsTest {
             //#create-bytearray-source
             Source<byte[], KillSwitch> jmsSource = JmsConsumer
                 .bytesSource(
-                    JmsSourceSettings
+                    JmsConsumerSettings
                         .create(connectionFactory)
                         .withQueue("test")
                 );
@@ -236,7 +236,7 @@ public class JmsConnectorsTest {
             //#create-map-sink
             Sink<Map<String, Object>, CompletionStage<Done>> jmsSink = JmsProducer
                 .mapSink(
-                    JmsSinkSettings
+                    JmsProducerSettings
                         .create(connectionFactory)
                         .withQueue("test")
                 );
@@ -261,7 +261,7 @@ public class JmsConnectorsTest {
             //#create-map-source
             Source<Map<String, Object>, KillSwitch> jmsSource = JmsConsumer
                 .mapSource(
-                    JmsSourceSettings
+                    JmsConsumerSettings
                         .create(connectionFactory)
                         .withQueue("test")
                 );
@@ -298,7 +298,7 @@ public class JmsConnectorsTest {
             //#create-jms-sink
             Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer
                 .create(
-                    JmsSinkSettings
+                    JmsProducerSettings
                         .create(connectionFactory)
                         .withQueue("test")
                 );
@@ -315,7 +315,7 @@ public class JmsConnectorsTest {
             //#create-jms-source
             Source<Message, KillSwitch> jmsSource = JmsConsumer
                 .create(
-                    JmsSourceSettings
+                    JmsConsumerSettings
                         .create(connectionFactory)
                         .withQueue("test")
                         .withBufferSize(10)
@@ -346,7 +346,7 @@ public class JmsConnectorsTest {
 
             Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer
                 .create(
-                    JmsSinkSettings
+                    JmsProducerSettings
                         .create(connectionFactory)
                         .withQueue("test")
                 );
@@ -366,7 +366,7 @@ public class JmsConnectorsTest {
 
             Source.from(msgsIn).runWith(jmsSink, materializer);
 
-            Source<Message, KillSwitch> jmsSource = JmsConsumer.create(JmsSourceSettings
+            Source<Message, KillSwitch> jmsSource = JmsConsumer.create(JmsConsumerSettings
                     .create(connectionFactory)
                     .withQueue("test")
                     .withBufferSize(10)
@@ -400,7 +400,7 @@ public class JmsConnectorsTest {
             ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer.create(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -412,7 +412,7 @@ public class JmsConnectorsTest {
             //#create-jms-source-with-selector
             Source<Message, KillSwitch> jmsSource = JmsConsumer
                 .create(
-                    JmsSourceSettings
+                    JmsConsumerSettings
                         .create(connectionFactory)
                         .withQueue("test")
                         .withBufferSize(10)
@@ -454,14 +454,14 @@ public class JmsConnectorsTest {
             //#create-topic-sink
             Sink<String, CompletionStage<Done>> jmsTopicSink = JmsProducer
                 .textSink(
-                    JmsSinkSettings
+                    JmsProducerSettings
                         .create(connectionFactory)
                         .withTopic("topic")
                 );
             //#create-topic-sink
             Sink<String, CompletionStage<Done>> jmsTopicSink2 = JmsProducer
                 .textSink(
-                    JmsSinkSettings
+                    JmsProducerSettings
                         .create(connectionFactory)
                         .withTopic("topic")
                 );
@@ -469,7 +469,7 @@ public class JmsConnectorsTest {
             //#create-topic-source
             Source<String, KillSwitch> jmsTopicSource = JmsConsumer
                 .textSource(
-                    JmsSourceSettings
+                    JmsConsumerSettings
                         .create(connectionFactory)
                         .withTopic("topic")
                         .withBufferSize(10)
@@ -477,7 +477,7 @@ public class JmsConnectorsTest {
             //#create-topic-source
             Source<String, KillSwitch> jmsTopicSource2 = JmsConsumer
                 .textSource(
-                    JmsSourceSettings
+                    JmsConsumerSettings
                         .create(connectionFactory)
                         .withTopic("topic")
                         .withBufferSize(10)
@@ -515,7 +515,7 @@ public class JmsConnectorsTest {
             ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer.create(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -530,7 +530,7 @@ public class JmsConnectorsTest {
             //#create-jms-source-client-ack
             Source<Message, KillSwitch> jmsSource = JmsConsumer
                 .create(
-                    JmsSourceSettings
+                    JmsConsumerSettings
                         .create(connectionFactory)
                         .withQueue("test")
                         .withAcknowledgeMode(AcknowledgeMode.ClientAcknowledge())
@@ -563,7 +563,7 @@ public class JmsConnectorsTest {
             ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer.create(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -582,7 +582,7 @@ public class JmsConnectorsTest {
             ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer.create(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -606,7 +606,7 @@ public class JmsConnectorsTest {
             ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer.create(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -642,7 +642,7 @@ public class JmsConnectorsTest {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             Sink<String, CompletionStage<Done>> jmsSink = JmsProducer.textSink(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -686,7 +686,7 @@ public class JmsConnectorsTest {
 
             //#create-flow-producer
             Flow<JmsTextMessage, JmsMessage, NotUsed> flowSink = JmsProducer.flow(
-                    JmsSinkSettings.create(connectionFactory).withQueue("test")
+                    JmsProducerSettings.create(connectionFactory).withQueue("test")
             );
             //#create-flow-producer
 

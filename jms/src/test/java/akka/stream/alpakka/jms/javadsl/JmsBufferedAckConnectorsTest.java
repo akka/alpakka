@@ -57,7 +57,7 @@ public class JmsBufferedAckConnectorsTest {
             ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             Sink<String, CompletionStage<Done>> jmsSink = JmsProducer.textSink(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -66,7 +66,7 @@ public class JmsBufferedAckConnectorsTest {
             Source.from(in).runWith(jmsSink, materializer);
 
             Source<AckEnvelope, KillSwitch> jmsSource = JmsConsumer
-                    .ackSource(JmsSourceSettings
+                    .ackSource(JmsConsumerSettings
                             .create(connectionFactory)
                             .withSessionCount(5)
                             .withBufferSize(5)
@@ -91,7 +91,7 @@ public class JmsBufferedAckConnectorsTest {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer.create(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -102,7 +102,7 @@ public class JmsBufferedAckConnectorsTest {
 
             //#create-jms-source
             Source<AckEnvelope, KillSwitch> jmsSource = JmsConsumer
-                .ackSource(JmsSourceSettings
+                .ackSource(JmsConsumerSettings
                     .create(connectionFactory)
                     .withSessionCount(5)
                     .withBufferSize(5)
@@ -145,7 +145,7 @@ public class JmsBufferedAckConnectorsTest {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer.create(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -158,7 +158,7 @@ public class JmsBufferedAckConnectorsTest {
 
             Source.from(msgsIn).runWith(jmsSink, materializer);
 
-            Source<AckEnvelope, KillSwitch> jmsSource = JmsConsumer.ackSource(JmsSourceSettings
+            Source<AckEnvelope, KillSwitch> jmsSource = JmsConsumer.ackSource(JmsConsumerSettings
                     .create(connectionFactory)
                     .withSessionCount(5)
                     .withBufferSize(5)
@@ -197,7 +197,7 @@ public class JmsBufferedAckConnectorsTest {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer.create(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -206,7 +206,7 @@ public class JmsBufferedAckConnectorsTest {
 
             Source.from(msgsIn).runWith(jmsSink, materializer);
 
-            Source<AckEnvelope, KillSwitch> jmsSource = JmsConsumer.ackSource(JmsSourceSettings
+            Source<AckEnvelope, KillSwitch> jmsSource = JmsConsumer.ackSource(JmsConsumerSettings
                     .create(connectionFactory)
                     .withSessionCount(5)
                     .withBufferSize(5)
@@ -253,25 +253,25 @@ public class JmsBufferedAckConnectorsTest {
             List<String> inNumbers = IntStream.range(0, 10).boxed().map(String::valueOf).collect(Collectors.toList());
 
             Sink<String, CompletionStage<Done>> jmsTopicSink = JmsProducer.textSink(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withTopic("topic")
             );
             Sink<String, CompletionStage<Done>> jmsTopicSink2 = JmsProducer.textSink(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withTopic("topic")
             );
 
             Source<AckEnvelope, KillSwitch> jmsTopicSource = JmsConsumer
-                    .ackSource(JmsSourceSettings
+                    .ackSource(JmsConsumerSettings
                             .create(connectionFactory)
                             .withSessionCount(1)
                             .withBufferSize(5)
                             .withTopic("topic")
                     );
             Source<AckEnvelope, KillSwitch> jmsTopicSource2 = JmsConsumer
-                    .ackSource(JmsSourceSettings
+                    .ackSource(JmsConsumerSettings
                             .create(connectionFactory)
                             .withSessionCount(1)
                             .withBufferSize(5)

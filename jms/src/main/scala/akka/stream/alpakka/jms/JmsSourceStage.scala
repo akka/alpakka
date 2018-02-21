@@ -19,7 +19,7 @@ import scala.concurrent.Future
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
-final class JmsSourceStage(settings: JmsSourceSettings)
+final class JmsSourceStage(settings: JmsConsumerSettings)
     extends GraphStageWithMaterializedValue[SourceShape[Message], KillSwitch] {
 
   private val out = Outlet[Message]("JmsSource.out")
@@ -64,7 +64,7 @@ final class JmsSourceStage(settings: JmsSourceSettings)
   }
 }
 
-final class JmsAckSourceStage(settings: JmsSourceSettings)
+final class JmsAckSourceStage(settings: JmsConsumerSettings)
     extends GraphStageWithMaterializedValue[SourceShape[AckEnvelope], KillSwitch] {
 
   private val out = Outlet[AckEnvelope]("JmsSource.out")
@@ -144,7 +144,7 @@ final class JmsAckSourceStage(settings: JmsSourceSettings)
   }
 }
 
-final class JmsTxSourceStage(settings: JmsSourceSettings)
+final class JmsTxSourceStage(settings: JmsConsumerSettings)
     extends GraphStageWithMaterializedValue[SourceShape[TxEnvelope], KillSwitch] {
 
   private val out = Outlet[TxEnvelope]("JmsSource.out")
@@ -195,7 +195,7 @@ final class JmsTxSourceStage(settings: JmsSourceSettings)
 
 abstract class SourceStageLogic[T](shape: SourceShape[T],
                                    out: Outlet[T],
-                                   settings: JmsSourceSettings,
+                                   settings: JmsConsumerSettings,
                                    attributes: Attributes)
     extends GraphStageLogic(shape)
     with JmsConnector

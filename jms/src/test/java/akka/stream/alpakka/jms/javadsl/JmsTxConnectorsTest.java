@@ -63,7 +63,7 @@ public class JmsTxConnectorsTest {
 
             //#create-text-sink
             Sink<String, CompletionStage<Done>> jmsSink = JmsProducer.textSink(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -76,7 +76,7 @@ public class JmsTxConnectorsTest {
 
             //#create-text-source
             Source<TxEnvelope, KillSwitch> jmsSource = JmsConsumer
-                    .txSource(JmsSourceSettings
+                    .txSource(JmsConsumerSettings
                             .create(connectionFactory)
                             .withSessionCount(5)
                             .withQueue("test")
@@ -104,7 +104,7 @@ public class JmsTxConnectorsTest {
 
             //#create-jms-sink
             Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer.create(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -119,7 +119,7 @@ public class JmsTxConnectorsTest {
             //#run-jms-sink
 
             //#create-jms-source
-            Source<TxEnvelope, KillSwitch> jmsSource = JmsConsumer.txSource(JmsSourceSettings
+            Source<TxEnvelope, KillSwitch> jmsSource = JmsConsumer.txSource(JmsConsumerSettings
                     .create(connectionFactory)
                     .withSessionCount(5)
                     .withQueue("test")
@@ -159,7 +159,7 @@ public class JmsTxConnectorsTest {
 
             //#create-jms-sink
             Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer.create(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -178,7 +178,7 @@ public class JmsTxConnectorsTest {
             //#run-jms-sink
 
             //#create-jms-source
-            Source<TxEnvelope, KillSwitch> jmsSource = JmsConsumer.txSource(JmsSourceSettings
+            Source<TxEnvelope, KillSwitch> jmsSource = JmsConsumer.txSource(JmsConsumerSettings
                     .create(connectionFactory)
                     .withSessionCount(5)
                     .withQueue("test")
@@ -219,7 +219,7 @@ public class JmsTxConnectorsTest {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer.create(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -229,7 +229,7 @@ public class JmsTxConnectorsTest {
             Source.from(msgsIn).runWith(jmsSink, materializer);
 
             //#create-jms-source-with-selector
-            Source<TxEnvelope, KillSwitch> jmsSource = JmsConsumer.txSource(JmsSourceSettings
+            Source<TxEnvelope, KillSwitch> jmsSource = JmsConsumer.txSource(JmsConsumerSettings
                     .create(connectionFactory)
                     .withSessionCount(5)
                     .withQueue("test")
@@ -279,27 +279,27 @@ public class JmsTxConnectorsTest {
 
             //#create-topic-sink
             Sink<String, CompletionStage<Done>> jmsTopicSink = JmsProducer.textSink(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withTopic("topic")
             );
             //#create-topic-sink
             Sink<String, CompletionStage<Done>> jmsTopicSink2 = JmsProducer.textSink(
-                    JmsSinkSettings
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withTopic("topic")
             );
 
             //#create-topic-source
             Source<TxEnvelope, KillSwitch> jmsTopicSource = JmsConsumer
-                    .txSource(JmsSourceSettings
+                    .txSource(JmsConsumerSettings
                             .create(connectionFactory)
                             .withSessionCount(1)
                             .withTopic("topic")
                     );
             //#create-topic-source
             Source<TxEnvelope, KillSwitch> jmsTopicSource2 = JmsConsumer
-                    .txSource(JmsSourceSettings
+                    .txSource(JmsConsumerSettings
                             .create(connectionFactory)
                             .withSessionCount(1)
                             .withTopic("topic")

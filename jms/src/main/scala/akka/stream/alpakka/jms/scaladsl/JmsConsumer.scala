@@ -18,19 +18,19 @@ object JmsConsumer {
   /**
    * Scala API: Creates an [[JmsConsumer]] for [[javax.jms.Message]] instances
    */
-  def apply(jmsSettings: JmsSourceSettings): Source[Message, KillSwitch] =
+  def apply(jmsSettings: JmsConsumerSettings): Source[Message, KillSwitch] =
     Source.fromGraph(new JmsSourceStage(jmsSettings))
 
   /**
    * Scala API: Creates an [[JmsConsumer]] for texts
    */
-  def textSource(jmsSettings: JmsSourceSettings): Source[String, KillSwitch] =
+  def textSource(jmsSettings: JmsConsumerSettings): Source[String, KillSwitch] =
     apply(jmsSettings).map(msg => msg.asInstanceOf[TextMessage].getText)
 
   /**
    * Scala API: Creates an [[JmsConsumer]] for Maps with primitive datatypes
    */
-  def mapSource(jmsSettings: JmsSourceSettings): Source[Map[String, Any], KillSwitch] =
+  def mapSource(jmsSettings: JmsConsumerSettings): Source[Map[String, Any], KillSwitch] =
     apply(jmsSettings).map { msg =>
       val mapMessage = msg.asInstanceOf[MapMessage]
 
@@ -44,7 +44,7 @@ object JmsConsumer {
   /**
    * Scala API: Creates an [[JmsConsumer]] for byte arrays
    */
-  def bytesSource(jmsSettings: JmsSourceSettings): Source[Array[Byte], KillSwitch] =
+  def bytesSource(jmsSettings: JmsConsumerSettings): Source[Array[Byte], KillSwitch] =
     apply(jmsSettings).map { msg =>
       val byteMessage = msg.asInstanceOf[BytesMessage]
       val byteArray = new Array[Byte](byteMessage.getBodyLength.toInt)
@@ -55,7 +55,7 @@ object JmsConsumer {
   /**
    * Scala API: Creates an [[JmsConsumer]] for serializable objects
    */
-  def objectSource(jmsSettings: JmsSourceSettings): Source[java.io.Serializable, KillSwitch] =
+  def objectSource(jmsSettings: JmsConsumerSettings): Source[java.io.Serializable, KillSwitch] =
     apply(jmsSettings).map(msg => msg.asInstanceOf[ObjectMessage].getObject)
 
   /**
@@ -65,7 +65,7 @@ object JmsConsumer {
    * @param jmsSettings The settings for the ack source.
    * @return Source for JMS messages in an AckEnvelope.
    */
-  def ackSource(jmsSettings: JmsSourceSettings): Source[AckEnvelope, KillSwitch] =
+  def ackSource(jmsSettings: JmsConsumerSettings): Source[AckEnvelope, KillSwitch] =
     Source.fromGraph(new JmsAckSourceStage(jmsSettings))
 
   /**
@@ -75,7 +75,7 @@ object JmsConsumer {
    * @param jmsSettings The settings for the tx source
    * @return Source of the JMS messages in a TxEnvelope
    */
-  def txSource(jmsSettings: JmsSourceSettings): Source[TxEnvelope, KillSwitch] =
+  def txSource(jmsSettings: JmsConsumerSettings): Source[TxEnvelope, KillSwitch] =
     Source.fromGraph(new JmsTxSourceStage(jmsSettings))
 
   /**

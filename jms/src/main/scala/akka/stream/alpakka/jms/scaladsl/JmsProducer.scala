@@ -15,37 +15,37 @@ object JmsProducer {
   /**
    * Scala API: Creates an [[JmsProducer]] for [[JmsMessage]]s
    */
-  def flow(jmsSettings: JmsSinkSettings): Flow[JmsMessage, JmsMessage, NotUsed] =
+  def flow(jmsSettings: JmsProducerSettings): Flow[JmsMessage, JmsMessage, NotUsed] =
     Flow.fromGraph(new JmsProducerStage(jmsSettings))
 
   /**
    * Scala API: Creates an [[JmsProducer]] for [[JmsMessage]]s
    */
-  def apply(jmsSettings: JmsSinkSettings): Sink[JmsMessage, Future[Done]] =
+  def apply(jmsSettings: JmsProducerSettings): Sink[JmsMessage, Future[Done]] =
     flow(jmsSettings).toMat(Sink.ignore)(Keep.right)
 
   /**
    * Scala API: Creates an [[JmsProducer]] for strings
    */
-  def textSink(jmsSettings: JmsSinkSettings): Sink[String, Future[Done]] =
+  def textSink(jmsSettings: JmsProducerSettings): Sink[String, Future[Done]] =
     Flow.fromFunction((s: String) => JmsTextMessage(s)).toMat(apply(jmsSettings))(Keep.right)
 
   /**
    * Scala API: Creates an [[JmsProducer]] for bytes
    */
-  def bytesSink(jmsSettings: JmsSinkSettings): Sink[Array[Byte], Future[Done]] =
+  def bytesSink(jmsSettings: JmsProducerSettings): Sink[Array[Byte], Future[Done]] =
     Flow.fromFunction((s: Array[Byte]) => JmsByteMessage(s)).toMat(apply(jmsSettings))(Keep.right)
 
   /**
    * Scala API: Creates an [[JmsProducer]] for maps with primitive data types
    */
-  def mapSink(jmsSettings: JmsSinkSettings): Sink[Map[String, Any], Future[Done]] =
+  def mapSink(jmsSettings: JmsProducerSettings): Sink[Map[String, Any], Future[Done]] =
     Flow.fromFunction((s: Map[String, Any]) => JmsMapMessage(s)).toMat(apply(jmsSettings))(Keep.right)
 
   /**
    * Scala API: Creates an [[JmsProducer]] for serializable objects
    */
-  def objectSink(jmsSettings: JmsSinkSettings): Sink[java.io.Serializable, Future[Done]] =
+  def objectSink(jmsSettings: JmsProducerSettings): Sink[java.io.Serializable, Future[Done]] =
     Flow.fromFunction((s: java.io.Serializable) => JmsObjectMessage(s)).toMat(apply(jmsSettings))(Keep.right)
 
 }
