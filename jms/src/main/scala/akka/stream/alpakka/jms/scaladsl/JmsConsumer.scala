@@ -13,23 +13,22 @@ import akka.stream.scaladsl.Source
 
 import scala.collection.JavaConversions._
 
-@deprecated("Use JmsConsumer instead", "0.18")
-object JmsSource {
+object JmsConsumer {
 
   /**
-   * Scala API: Creates an [[JmsSource]] for [[javax.jms.Message]] instances
+   * Scala API: Creates an [[JmsConsumer]] for [[javax.jms.Message]] instances
    */
   def apply(jmsSettings: JmsSourceSettings): Source[Message, KillSwitch] =
     Source.fromGraph(new JmsSourceStage(jmsSettings))
 
   /**
-   * Scala API: Creates an [[JmsSource]] for texts
+   * Scala API: Creates an [[JmsConsumer]] for texts
    */
   def textSource(jmsSettings: JmsSourceSettings): Source[String, KillSwitch] =
     apply(jmsSettings).map(msg => msg.asInstanceOf[TextMessage].getText)
 
   /**
-   * Scala API: Creates an [[JmsSource]] for Maps with primitive datatypes
+   * Scala API: Creates an [[JmsConsumer]] for Maps with primitive datatypes
    */
   def mapSource(jmsSettings: JmsSourceSettings): Source[Map[String, Any], KillSwitch] =
     apply(jmsSettings).map { msg =>
@@ -43,7 +42,7 @@ object JmsSource {
     }
 
   /**
-   * Scala API: Creates an [[JmsSource]] for byte arrays
+   * Scala API: Creates an [[JmsConsumer]] for byte arrays
    */
   def bytesSource(jmsSettings: JmsSourceSettings): Source[Array[Byte], KillSwitch] =
     apply(jmsSettings).map { msg =>
@@ -54,14 +53,15 @@ object JmsSource {
     }
 
   /**
-   * Scala API: Creates an [[JmsSource]] for serializable objects
+   * Scala API: Creates an [[JmsConsumer]] for serializable objects
    */
   def objectSource(jmsSettings: JmsSourceSettings): Source[java.io.Serializable, KillSwitch] =
     apply(jmsSettings).map(msg => msg.asInstanceOf[ObjectMessage].getObject)
 
   /**
-   * Scala API: Creates a [[JmsSource]] of envelopes containing messages. It requires explicit acknowledgements
+   * Scala API: Creates a [[JmsConsumer]] of envelopes containing messages. It requires explicit acknowledgements
    * on the envelopes. The acknowledgements must be called on the envelope and not on the message inside.
+   *
    * @param jmsSettings The settings for the ack source.
    * @return Source for JMS messages in an AckEnvelope.
    */
@@ -69,8 +69,9 @@ object JmsSource {
     Source.fromGraph(new JmsAckSourceStage(jmsSettings))
 
   /**
-   * Scala API: Creates a [[JmsSource]] of envelopes containing messages. It requires explicit
+   * Scala API: Creates a [[JmsConsumer]] of envelopes containing messages. It requires explicit
    * commit or rollback on the envelope.
+   *
    * @param jmsSettings The settings for the tx source
    * @return Source of the JMS messages in a TxEnvelope
    */
@@ -78,7 +79,7 @@ object JmsSource {
     Source.fromGraph(new JmsTxSourceStage(jmsSettings))
 
   /**
-   * Scala API: Creates a [[JmsSource]] for browsing messages non-destructively
+   * Scala API: Creates a [[JmsConsumer]] for browsing messages non-destructively
    */
   def browse(jmsSettings: JmsBrowseSettings): Source[Message, NotUsed] =
     Source.fromGraph(new JmsBrowseStage(jmsSettings))

@@ -10,7 +10,7 @@ import javax.jms.{Connection, Message, MessageProducer, Session}
 import akka.stream._
 import akka.stream.stage._
 
-final class JmsSinkStage(settings: JmsSinkSettings) extends GraphStage[FlowShape[JmsMessage, JmsMessage]] {
+final class JmsProducerStage(settings: JmsSinkSettings) extends GraphStage[FlowShape[JmsMessage, JmsMessage]] {
 
   private val in = Inlet[JmsMessage]("JmsSink.in")
   private val out = Outlet[JmsMessage]("JmsSink.out")

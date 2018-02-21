@@ -10,41 +10,40 @@ import akka.stream.scaladsl.{Flow, Keep, Sink}
 
 import scala.concurrent.Future
 
-@deprecated("Use JmsProducer instead", "0.18")
-object JmsSink {
+object JmsProducer {
 
   /**
-   * Scala API: Creates an [[JmsSink]] for [[JmsMessage]]s
+   * Scala API: Creates an [[JmsProducer]] for [[JmsMessage]]s
    */
   def flow(jmsSettings: JmsSinkSettings): Flow[JmsMessage, JmsMessage, NotUsed] =
     Flow.fromGraph(new JmsProducerStage(jmsSettings))
 
   /**
-   * Scala API: Creates an [[JmsSink]] for [[JmsMessage]]s
+   * Scala API: Creates an [[JmsProducer]] for [[JmsMessage]]s
    */
   def apply(jmsSettings: JmsSinkSettings): Sink[JmsMessage, Future[Done]] =
     flow(jmsSettings).toMat(Sink.ignore)(Keep.right)
 
   /**
-   * Scala API: Creates an [[JmsSink]] for strings
+   * Scala API: Creates an [[JmsProducer]] for strings
    */
   def textSink(jmsSettings: JmsSinkSettings): Sink[String, Future[Done]] =
     Flow.fromFunction((s: String) => JmsTextMessage(s)).toMat(apply(jmsSettings))(Keep.right)
 
   /**
-   * Scala API: Creates an [[JmsSink]] for bytes
+   * Scala API: Creates an [[JmsProducer]] for bytes
    */
   def bytesSink(jmsSettings: JmsSinkSettings): Sink[Array[Byte], Future[Done]] =
     Flow.fromFunction((s: Array[Byte]) => JmsByteMessage(s)).toMat(apply(jmsSettings))(Keep.right)
 
   /**
-   * Scala API: Creates an [[JmsSink]] for maps with primitive data types
+   * Scala API: Creates an [[JmsProducer]] for maps with primitive data types
    */
   def mapSink(jmsSettings: JmsSinkSettings): Sink[Map[String, Any], Future[Done]] =
     Flow.fromFunction((s: Map[String, Any]) => JmsMapMessage(s)).toMat(apply(jmsSettings))(Keep.right)
 
   /**
-   * Scala API: Creates an [[JmsSink]] for serializable objects
+   * Scala API: Creates an [[JmsProducer]] for serializable objects
    */
   def objectSink(jmsSettings: JmsSinkSettings): Sink[java.io.Serializable, Future[Done]] =
     Flow.fromFunction((s: java.io.Serializable) => JmsObjectMessage(s)).toMat(apply(jmsSettings))(Keep.right)
