@@ -28,6 +28,7 @@ Java
 
 Here we used @scaladoc[MqttConnectionSettings](akka.stream.alpakka.mqtt.MqttConnectionSettings$) factory to set the address of the server, client ID, which needs to be unique for every client, and client persistence implementation (@extref[MemoryPersistence](paho-api:org/eclipse/paho/client/mqttv3/persist/MemoryPersistence)) which allows to control reliability guarantees.
 
+
 Then let's create a source that is going to connect to the MQTT server upon materialization and receive messages that are sent to the subscribed topics.
 
 Scala
@@ -35,6 +36,7 @@ Scala
 
 Java
 : @@snip ($alpakka$/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #create-source }
+
 
 And finally run the source.
 
@@ -50,18 +52,20 @@ MQTT automatically acknowledges messages back to the server once they are passed
 Please note that for manual acks to work `CleanSession` should be set to false and `MqttQoS` should be `AtLeastOnce`.
 
 Scala
-: @@snip (../../../../mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttSourceSpec.scala) { #create-source-with-manualacks }
+: @@snip ($alpakka$/mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttSourceSpec.scala) { #create-source-with-manualacks }
 
 Java
-: @@snip (../../../../mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #create-source-with-manualacks }
+: @@snip ($alpakka$/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #create-source-with-manualacks }
+
 
 The `atLeastOnce` source returns @scaladoc[MqttCommittableMessage](akka.stream.alpakka.mqtt.scaladsl.MqttCommittableMessage) so you can acknowledge them by calling `messageArrivedComplete`.
 
 Scala
-: @@snip (../../../../mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttSourceSpec.scala) { #run-source-with-manualacks }
+: @@snip ($alpakka$/mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttSourceSpec.scala) { #run-source-with-manualacks }
 
 Java
-: @@snip (../../../../mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #run-source-with-manualacks }
+: @@snip ($alpakka$/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #run-source-with-manualacks }
+
 
 To publish messages to the MQTT server create a sink and run it.
 
@@ -71,12 +75,15 @@ Scala
 Java
 : @@snip ($alpakka$/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #run-sink }
 
+
 The QoS and the retained flag can be configured on a per-message basis.
+
 Scala
 : @@snip ($alpakka$/mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttSourceSpec.scala) { #will-message }
 
 Java
 : @@snip ($alpakka$/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #will-message }
+
 
 It is also possible to connect to the MQTT server in bidirectional fashion, using a single underlying connection (and client ID). To do that create an MQTT flow that combines the functionalities of an MQTT source and an MQTT sink.
 
@@ -85,6 +92,7 @@ Scala
 
 Java
 : @@snip ($alpakka$/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttFlowTest.java) { #create-flow }
+
 
 Run the flow by connecting a source of messages to be published and a sink for received messages.
 
