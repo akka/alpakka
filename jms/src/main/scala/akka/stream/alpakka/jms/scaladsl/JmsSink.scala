@@ -4,9 +4,9 @@
 
 package akka.stream.alpakka.jms.scaladsl
 
-import akka.{Done, NotUsed}
+import akka.Done
 import akka.stream.alpakka.jms._
-import akka.stream.scaladsl.{Flow, Keep, Sink}
+import akka.stream.scaladsl.Sink
 
 import scala.concurrent.Future
 

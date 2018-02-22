@@ -4,13 +4,10 @@
 
 package akka.stream.alpakka.jms.javadsl
 
-import javax.jms.Message
-
 import akka.NotUsed
 import akka.stream.KillSwitch
 import akka.stream.alpakka.jms._
-
-import scala.collection.JavaConversions
+import javax.jms.Message
 
 @deprecated("Use JmsConsumer instead", "0.18")
 object JmsSource {

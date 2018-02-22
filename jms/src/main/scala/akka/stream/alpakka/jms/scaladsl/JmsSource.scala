@@ -4,14 +4,11 @@
 
 package akka.stream.alpakka.jms.scaladsl
 
-import javax.jms._
-
 import akka.NotUsed
 import akka.stream.KillSwitch
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.Source
-
-import scala.collection.JavaConversions._
+import javax.jms._
 
 @deprecated("Use JmsConsumer instead", "0.18")
 object JmsSource {
