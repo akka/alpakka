@@ -240,6 +240,8 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       .zip(Source.fromIterator(() => Iterator.from(1)))
 
   //todo: this seems like a general purpose 'gadget', is there a better place for this kind of beasts?
+  val conditionalAppendFl = Flow[ByteString].orElse(Source.single(ByteString.empty))/*
+
   private def conditionalAppendFl: Flow[ByteString, ByteString, NotUsed.type] =
     Flow
       .fromGraph {
@@ -272,7 +274,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
           FlowShape.of(bcast.in, concat.out)
         }
       }
-      .mapMaterializedValue(_ => NotUsed)
+      .mapMaterializedValue(_ => NotUsed)*/
 
   private def createRequests(
       s3Location: S3Location,
