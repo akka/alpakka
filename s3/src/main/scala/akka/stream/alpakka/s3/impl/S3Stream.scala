@@ -16,11 +16,12 @@ import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
-import akka.stream.Materializer
+import akka.stream.{FlowShape, Materializer}
 import akka.stream.alpakka.s3.auth.{CredentialScope, Signer, SigningKey}
 import akka.stream.alpakka.s3.scaladsl.{ListBucketResultContents, ObjectMetadata}
 import akka.stream.alpakka.s3.{DiskBufferType, MemoryBufferType, S3Exception, S3Settings}
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.scaladsl.{Broadcast, Concat, Flow, GraphDSL, Keep, Sink, Source}
+import GraphDSL.Implicits._
 import akka.util.ByteString
 
 final case class S3Location(bucket: String, key: String)
@@ -267,7 +268,40 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
     val headers: S3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(UploadPart) })
 
-    SplitAfterSize(chunkSize)(Flow.apply[ByteString])
+    import mat.executionContext
+
+    val extraSink = Sink
+      .fold(0){ (acc : Int, inp : ByteString) => acc + 1}
+      .mapMaterializedValue{ f =>
+        f.map{
+          case 0 => Some(ByteString.empty)
+          case _ => None
+        }
+      }
+
+    val conditionalAppendFl = Flow.fromGraph{
+      GraphDSL.create(extraSink){ implicit builder => extra =>
+        val extraSrc =
+          builder
+            .materializedValue
+            .mapAsync(1)(identity)
+            .collect{
+              case Some(b) => b
+            }
+        val bcast = builder.add(Broadcast[ByteString](2))
+        val concat = builder.add(Concat[ByteString]())
+
+        bcast.out(0) ~> extra
+
+        bcast.out(1) ~> concat.in(0)
+        extraSrc ~> concat.in(1)
+
+        FlowShape.of(bcast.in, concat.out)
+      }
+    }.mapMaterializedValue(_ => NotUsed)
+
+
+    SplitAfterSize(chunkSize)(/*Flow.apply[ByteString]*/conditionalAppendFl)
       .via(getChunkBuffer(chunkSize)) //creates the chunks
       .concatSubstreams
       .zipWith(requestInfo) {
@@ -301,16 +335,18 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     val requestFlow = createRequests(s3Location, contentType, s3Headers, chunkSize, parallelism, sse)
 
     // The individual upload part requests are processed here
-    requestFlow.via(Http().superPool[(MultipartUpload, Int)]()).map {
-      case (Success(r), (upload, index)) =>
-        r.entity.dataBytes.runWith(Sink.ignore)
-        val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
-        etag
-          .map((t) => SuccessfulUploadPart(upload, index, t))
-          .getOrElse(FailedUploadPart(upload, index, new RuntimeException("Cannot find etag")))
+    requestFlow
+      .via(Http().superPool[(MultipartUpload, Int)]())
+      .map {
+        case (Success(r), (upload, index)) =>
+          r.entity.dataBytes.runWith(Sink.ignore)
+          val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
+          etag
+            .map((t) => SuccessfulUploadPart(upload, index, t))
+            .getOrElse(FailedUploadPart(upload, index, new RuntimeException(s"Cannot find etag in ${r}")))
 
-      case (Failure(e), (upload, index)) => FailedUploadPart(upload, index, e)
-    }
+        case (Failure(e), (upload, index)) => FailedUploadPart(upload, index, e)
+      }
   }
 
   private def completionSink(
