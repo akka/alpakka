@@ -16,37 +16,31 @@ object JmsSink {
   /**
    * Scala API: Creates an [[JmsSink]] for [[JmsMessage]]s
    */
-  def flow(jmsSettings: JmsProducerSettings): Flow[JmsMessage, JmsMessage, NotUsed] =
-    Flow.fromGraph(new JmsProducerStage(jmsSettings))
-
-  /**
-   * Scala API: Creates an [[JmsSink]] for [[JmsMessage]]s
-   */
   def apply(jmsSettings: JmsProducerSettings): Sink[JmsMessage, Future[Done]] =
-    flow(jmsSettings).toMat(Sink.ignore)(Keep.right)
+    JmsProducer.apply(jmsSettings)
 
   /**
    * Scala API: Creates an [[JmsSink]] for strings
    */
   def textSink(jmsSettings: JmsProducerSettings): Sink[String, Future[Done]] =
-    Flow.fromFunction((s: String) => JmsTextMessage(s)).toMat(apply(jmsSettings))(Keep.right)
+    JmsProducer.textSink(jmsSettings)
 
   /**
    * Scala API: Creates an [[JmsSink]] for bytes
    */
   def bytesSink(jmsSettings: JmsProducerSettings): Sink[Array[Byte], Future[Done]] =
-    Flow.fromFunction((s: Array[Byte]) => JmsByteMessage(s)).toMat(apply(jmsSettings))(Keep.right)
+    JmsProducer.bytesSink(jmsSettings)
 
   /**
    * Scala API: Creates an [[JmsSink]] for maps with primitive data types
    */
   def mapSink(jmsSettings: JmsProducerSettings): Sink[Map[String, Any], Future[Done]] =
-    Flow.fromFunction((s: Map[String, Any]) => JmsMapMessage(s)).toMat(apply(jmsSettings))(Keep.right)
+    JmsProducer.mapSink(jmsSettings)
 
   /**
    * Scala API: Creates an [[JmsSink]] for serializable objects
    */
   def objectSink(jmsSettings: JmsProducerSettings): Sink[java.io.Serializable, Future[Done]] =
-    Flow.fromFunction((s: java.io.Serializable) => JmsObjectMessage(s)).toMat(apply(jmsSettings))(Keep.right)
+    JmsProducer.objectSink(jmsSettings)
 
 }
