@@ -53,8 +53,6 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     result.futureValue shouldBe MultipartUploadResult(url, bucket, bucketKey, etag)
   }
 
-
-
   it should "upload a stream of bytes to S3 with custom headers" in {
 
     //mockUpload()
@@ -79,7 +77,6 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     result.failed.futureValue.getMessage shouldBe "No key found"
   }
-
 
   override protected def afterAll(): Unit = {
     super.afterAll()

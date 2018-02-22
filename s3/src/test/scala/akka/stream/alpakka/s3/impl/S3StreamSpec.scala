@@ -80,7 +80,7 @@ class S3StreamSpec(_system: ActorSystem)
 
   }
 
-  it should "properly handle input streams, even when empty" in  {
+  it should "properly handle input streams, even when empty" in {
     val credentialsProvider =
       new AWSStaticCredentialsProvider(
         new BasicAWSCredentials(
@@ -96,28 +96,30 @@ class S3StreamSpec(_system: ActorSystem)
     val s3stream = new S3Stream(settings)
 
     def nonEmptySrc = Source.repeat(ByteString("hello world"))
-    val conditionallyAppended = s3stream invokePrivate PrivateMethod[Flow[ByteString, ByteString, NotUsed]]('conditionalAppendFl)()
+    val conditionallyAppended = s3stream invokePrivate PrivateMethod[Flow[ByteString, ByteString, NotUsed]](
+      'conditionalAppendFl
+    )()
 
     nonEmptySrc
       .take(1)
       .via(conditionallyAppended)
       .toMat(Sink.seq[ByteString])(Keep.right)
       .run()
-      .futureValue should equal (Seq(ByteString("hello world")))
+      .futureValue should equal(Seq(ByteString("hello world")))
 
     nonEmptySrc
       .take(10)
       .via(conditionallyAppended)
       .toMat(Sink.seq[ByteString])(Keep.right)
       .run()
-      .futureValue should equal (Seq.fill(10)(ByteString("hello world")))
+      .futureValue should equal(Seq.fill(10)(ByteString("hello world")))
 
     nonEmptySrc
       .take(0)
       .via(conditionallyAppended)
       .toMat(Sink.seq[ByteString])(Keep.right)
       .run()
-      .futureValue should equal (Seq(ByteString.empty))
+      .futureValue should equal(Seq(ByteString.empty))
   }
 
 }

@@ -240,35 +240,39 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       .zip(Source.fromIterator(() => Iterator.from(1)))
 
   //todo: this seems like a general purpose 'gadget', is there a better place for this kind of beasts?
-  private def conditionalAppendFl: Flow[ByteString, ByteString, NotUsed.type] = Flow.fromGraph{
-    import mat.executionContext
-    val extraSink = Sink
-      .fold(0){ (acc : Int, inp : ByteString) => acc + 1}
-      .mapMaterializedValue{ f =>
-        f.map{
-          case 0 => Some(ByteString.empty)
-          case _ => None
+  private def conditionalAppendFl: Flow[ByteString, ByteString, NotUsed.type] =
+    Flow
+      .fromGraph {
+        import mat.executionContext
+        val extraSink = Sink
+          .fold(0) { (acc: Int, inp: ByteString) =>
+            acc + 1
+          }
+          .mapMaterializedValue { f =>
+            f.map {
+              case 0 => Some(ByteString.empty)
+              case _ => None
+            }
+          }
+        GraphDSL.create(extraSink) { implicit builder => extra =>
+          val extraSrc =
+            builder.materializedValue
+              .mapAsync(1)(identity)
+              .collect {
+                case Some(b) => b
+              }
+          val bcast = builder.add(Broadcast[ByteString](2))
+          val concat = builder.add(Concat[ByteString]())
+
+          bcast.out(0) ~> extra
+
+          bcast.out(1) ~> concat.in(0)
+          extraSrc ~> concat.in(1)
+
+          FlowShape.of(bcast.in, concat.out)
         }
       }
-    GraphDSL.create(extraSink){ implicit builder => extra =>
-      val extraSrc =
-        builder
-          .materializedValue
-          .mapAsync(1)(identity)
-          .collect{
-            case Some(b) => b
-          }
-      val bcast = builder.add(Broadcast[ByteString](2))
-      val concat = builder.add(Concat[ByteString]())
-
-      bcast.out(0) ~> extra
-
-      bcast.out(1) ~> concat.in(0)
-      extraSrc ~> concat.in(1)
-
-      FlowShape.of(bcast.in, concat.out)
-    }
-  }.mapMaterializedValue(_ => NotUsed)
+      .mapMaterializedValue(_ => NotUsed)
 
   private def createRequests(
       s3Location: S3Location,
