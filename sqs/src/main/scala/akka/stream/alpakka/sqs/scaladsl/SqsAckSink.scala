@@ -5,9 +5,10 @@
 package akka.stream.alpakka.sqs.scaladsl
 
 import akka.Done
-import akka.stream.alpakka.sqs.{MessageActionPair, SqsAckSinkSettings}
+import akka.stream.alpakka.sqs.{MessageActionPair, SqsAckSinkSettings, SqsBatchAckFlowSettings}
 import akka.stream.scaladsl.{Keep, Sink}
 import com.amazonaws.services.sqs.AmazonSQSAsync
+
 import scala.concurrent.Future
 
 /**
@@ -22,4 +23,9 @@ object SqsAckSink {
       implicit sqsClient: AmazonSQSAsync
   ): Sink[MessageActionPair, Future[Done]] =
     SqsAckFlow.apply(queueUrl, settings).toMat(Sink.ignore)(Keep.right)
+
+  def grouped(queueUrl: String, settings: SqsBatchAckFlowSettings = SqsBatchAckFlowSettings.Defaults)(
+      implicit sqsClient: AmazonSQSAsync
+  ): Sink[MessageActionPair, Future[Done]] =
+    SqsAckFlow.grouped(queueUrl, settings).toMat(Sink.ignore)(Keep.right)
 }
