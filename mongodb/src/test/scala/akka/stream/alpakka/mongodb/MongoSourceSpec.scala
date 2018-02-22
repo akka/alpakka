@@ -11,6 +11,9 @@ import akka.stream.alpakka.mongodb.scaladsl.MongoSource
 import akka.stream.scaladsl.{Sink, Source}
 import org.mongodb.scala.MongoClient
 import org.mongodb.scala.bson.collection.immutable.Document
+import org.mongodb.scala.bson.codecs.Macros._
+import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
+import org.bson.codecs.configuration.CodecRegistries.{fromRegistries, fromProviders}
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
@@ -25,6 +28,10 @@ class MongoSourceSpec
     with BeforeAndAfterAll
     with MustMatchers {
 
+  // case class and codec for mongodb macros
+  case class Number(_id: Int)
+  val codecRegistry = fromRegistries(fromProviders(classOf[Number]), DEFAULT_CODEC_REGISTRY )
+
   //#init-mat
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
@@ -37,8 +44,9 @@ class MongoSourceSpec
 
   //#init-connection
   private val client = MongoClient(s"mongodb://localhost:27017")
-  private val db = client.getDatabase("alpakka-mongo")
+  private val db = client.getDatabase("alpakka-mongo").withCodecRegistry(codecRegistry)
   private val numbersColl = db.getCollection("numbers")
+
   //#init-connection
 
   implicit val defaultPatience =
@@ -75,6 +83,21 @@ class MongoSourceSpec
       //#run-source
 
       rows.futureValue.map(_.getInteger("_id")) must contain theSameElementsAs data
+    }
+
+    "support codec registry to read case class objects" in {
+      val data: Seq[Number] = seed().map(Number(_))
+
+      //#create-source
+      val source: Source[Number, NotUsed] =
+        MongoSource[Number](numbersColl.find())
+      //#create-source
+
+      //#run-source
+      val rows: Future[Seq[Number]] = source.runWith(Sink.seq)
+      //#run-source
+
+      rows.futureValue must contain theSameElementsAs data
     }
 
     "support multiple materializations" in {
