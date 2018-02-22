@@ -240,7 +240,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       .zip(Source.fromIterator(() => Iterator.from(1)))
 
   //todo: this seems like a general purpose 'gadget', is there a better place for this kind of beasts?
-  val conditionalAppendFl = Flow[ByteString].orElse(Source.single(ByteString.empty))/*
+  val conditionalAppendFl = Flow[ByteString].orElse(Source.single(ByteString.empty)) /*
 
   private def conditionalAppendFl: Flow[ByteString, ByteString, NotUsed.type] =
     Flow
