@@ -238,6 +238,8 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       .mapConcat(r => Stream.continually(r))
       .zip(Source.fromIterator(() => Iterator.from(1)))
 
+  val atLeastOneByteString = Flow[ByteString].orElse(Source.single(ByteString.empty))
+
   private def createRequests(
       s3Location: S3Location,
       contentType: ContentType,
@@ -267,7 +269,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
     val headers: S3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(UploadPart) })
 
-    SplitAfterSize(chunkSize)(Flow.apply[ByteString])
+    SplitAfterSize(chunkSize)(atLeastOneByteString)
       .via(getChunkBuffer(chunkSize)) //creates the chunks
       .concatSubstreams
       .zipWith(requestInfo) {
@@ -301,16 +303,18 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     val requestFlow = createRequests(s3Location, contentType, s3Headers, chunkSize, parallelism, sse)
 
     // The individual upload part requests are processed here
-    requestFlow.via(Http().superPool[(MultipartUpload, Int)]()).map {
-      case (Success(r), (upload, index)) =>
-        r.entity.dataBytes.runWith(Sink.ignore)
-        val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
-        etag
-          .map((t) => SuccessfulUploadPart(upload, index, t))
-          .getOrElse(FailedUploadPart(upload, index, new RuntimeException("Cannot find etag")))
+    requestFlow
+      .via(Http().superPool[(MultipartUpload, Int)]())
+      .map {
+        case (Success(r), (upload, index)) =>
+          r.entity.dataBytes.runWith(Sink.ignore)
+          val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
+          etag
+            .map((t) => SuccessfulUploadPart(upload, index, t))
+            .getOrElse(FailedUploadPart(upload, index, new RuntimeException(s"Cannot find etag in ${r}")))
 
-      case (Failure(e), (upload, index)) => FailedUploadPart(upload, index, e)
-    }
+        case (Failure(e), (upload, index)) => FailedUploadPart(upload, index, e)
+      }
   }
 
   private def completionSink(

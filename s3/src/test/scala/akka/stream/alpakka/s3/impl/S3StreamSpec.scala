@@ -4,21 +4,27 @@
 
 package akka.stream.alpakka.s3.impl
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.stream.alpakka.s3.{MemoryBufferType, S3Settings}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
+import akka.util.ByteString
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.regions.AwsRegionProvider
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.{FlatSpecLike, Matchers, PrivateMethodTester}
 
 class S3StreamSpec(_system: ActorSystem)
     extends TestKit(_system)
     with FlatSpecLike
     with Matchers
-    with PrivateMethodTester {
+    with PrivateMethodTester
+    with ScalaFutures
+    with IntegrationPatience {
 
   import HttpRequests._
 
@@ -73,4 +79,44 @@ class S3StreamSpec(_system: ActorSystem)
     result.headers.seq.exists(_.lowercaseName() == "range")
 
   }
+
+  it should "properly handle input streams, even when empty" in {
+    val credentialsProvider =
+      new AWSStaticCredentialsProvider(
+        new BasicAWSCredentials(
+          "test-Id",
+          "test-key"
+        )
+      )
+    val regionProvider =
+      new AwsRegionProvider {
+        def getRegion: String = "us-east-1"
+      }
+    implicit val settings = new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None)
+    val s3stream = new S3Stream(settings)
+
+    def nonEmptySrc = Source.repeat(ByteString("hello world"))
+
+    nonEmptySrc
+      .take(1)
+      .via(s3stream.atLeastOneByteString)
+      .toMat(Sink.seq[ByteString])(Keep.right)
+      .run()
+      .futureValue should equal(Seq(ByteString("hello world")))
+
+    nonEmptySrc
+      .take(10)
+      .via(s3stream.atLeastOneByteString)
+      .toMat(Sink.seq[ByteString])(Keep.right)
+      .run()
+      .futureValue should equal(Seq.fill(10)(ByteString("hello world")))
+
+    nonEmptySrc
+      .take(0)
+      .via(s3stream.atLeastOneByteString)
+      .toMat(Sink.seq[ByteString])(Keep.right)
+      .run()
+      .futureValue should equal(Seq(ByteString.empty))
+  }
+
 }
