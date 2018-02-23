@@ -75,7 +75,7 @@ Each of these sink factory methods have a corresponding factory in @scaladoc[ins
 For codec support, the type must be specified in the database or collection declaration.
 
 Scala
-: @@ ($alpakka$/mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSinkSpec.scala) { #init-connection-codec }
+: @@snip ($alpakka$/mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSinkSpec.scala) { #init-connection-codec }
 
 #### Insert
 
