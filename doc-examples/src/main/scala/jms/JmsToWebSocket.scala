@@ -9,8 +9,8 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.{WebSocketRequest, WebSocketUpgradeResponse}
 import akka.stream.KillSwitch
-import akka.stream.alpakka.jms.JmsSourceSettings
-import akka.stream.alpakka.jms.scaladsl.JmsSource
+import akka.stream.alpakka.jms.JmsConsumerSettings
+import akka.stream.alpakka.jms.scaladsl.JmsConsumer
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 
 import scala.collection.immutable.Seq
@@ -43,8 +43,8 @@ object JmsToWebSocket extends JmsSampleBase with App {
   // #sample
 
   val jmsSource: Source[String, KillSwitch] =
-    JmsSource.textSource(                                                             // (1)
-      JmsSourceSettings(connectionFactory).withBufferSize(10).withQueue("test")
+    JmsConsumer.textSource(                                                           // (1)
+      JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("test")
     )
 
   val webSocketFlow: Flow[ws.Message, ws.Message, Future[WebSocketUpgradeResponse]] = // (2)

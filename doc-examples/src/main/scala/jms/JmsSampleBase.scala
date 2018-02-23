@@ -4,12 +4,11 @@
 
 package jms
 
-import javax.jms.ConnectionFactory
-
 import akka.Done
-import akka.stream.alpakka.jms.JmsSinkSettings
-import akka.stream.alpakka.jms.scaladsl.JmsSink
+import akka.stream.alpakka.jms.JmsProducerSettings
+import akka.stream.alpakka.jms.scaladsl.JmsProducer
 import akka.stream.scaladsl.{Sink, Source}
+import javax.jms.ConnectionFactory
 import playground.ActorSystemAvailable
 
 import scala.concurrent.Future
@@ -18,8 +17,8 @@ class JmsSampleBase extends ActorSystemAvailable {
 
   def enqueue(connectionFactory: ConnectionFactory)(msgs: String*): Unit = {
     val jmsSink: Sink[String, Future[Done]] =
-      JmsSink.textSink(
-        JmsSinkSettings(connectionFactory).withQueue("test")
+      JmsProducer.textSink(
+        JmsProducerSettings(connectionFactory).withQueue("test")
       )
     Source(msgs.toList).runWith(jmsSink)
   }
