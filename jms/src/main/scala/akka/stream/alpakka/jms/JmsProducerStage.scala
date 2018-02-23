@@ -10,12 +10,12 @@ import javax.jms.{Connection, Message, MessageProducer, Session}
 import akka.stream._
 import akka.stream.stage._
 
-final class JmsProducerStage(settings: JmsProducerSettings) extends GraphStage[FlowShape[JmsMessage, JmsMessage]] {
+final class JmsProducerStage[A <: JmsMessage](settings: JmsProducerSettings) extends GraphStage[FlowShape[A, A]] {
 
-  private val in = Inlet[JmsMessage]("JmsSink.in")
-  private val out = Outlet[JmsMessage]("JmsSink.out")
+  private val in = Inlet[A]("JmsSink.in")
+  private val out = Outlet[A]("JmsSink.out")
 
-  override def shape: FlowShape[JmsMessage, JmsMessage] = FlowShape.of(in, out)
+  override def shape: FlowShape[A, A] = FlowShape.of(in, out)
 
   override protected def initialAttributes: Attributes =
     ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher")
@@ -54,7 +54,7 @@ final class JmsProducerStage(settings: JmsProducerSettings) extends GraphStage[F
         new InHandler {
           override def onPush(): Unit = {
 
-            val elem: JmsMessage = grab(in)
+            val elem: A = grab(in)
 
             val message: Message = createMessage(jmsSession, elem)
             populateMessageProperties(message, elem.properties)

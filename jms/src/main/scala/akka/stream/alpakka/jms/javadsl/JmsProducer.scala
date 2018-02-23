@@ -20,7 +20,7 @@ object JmsProducer {
    */
   def flow[R <: JmsMessage](
       settings: JmsProducerSettings
-  ): akka.stream.javadsl.Flow[R, JmsMessage, NotUsed] =
+  ): akka.stream.javadsl.Flow[R, R, NotUsed] =
     akka.stream.alpakka.jms.scaladsl.JmsProducer.flow(settings).asJava
 
   /**

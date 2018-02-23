@@ -685,7 +685,7 @@ public class JmsConnectorsTest {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             //#create-flow-producer
-            Flow<JmsTextMessage, JmsMessage, NotUsed> flowSink = JmsProducer.flow(
+            Flow<JmsTextMessage, JmsTextMessage, NotUsed> flowSink = JmsProducer.flow(
                     JmsProducerSettings.create(connectionFactory).withQueue("test")
             );
             //#create-flow-producer
@@ -693,7 +693,7 @@ public class JmsConnectorsTest {
             //#run-flow-producer
             List<JmsTextMessage> input = createTestMessageList();
 
-            CompletionStage<List<JmsMessage>> result = Source.from(input)
+            CompletionStage<List<JmsTextMessage>> result = Source.from(input)
                     .via(flowSink)
                     .runWith(Sink.seq(), materializer);
             //#run-flow-producer

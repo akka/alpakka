@@ -15,7 +15,7 @@ object JmsProducer {
   /**
    * Scala API: Creates an [[JmsProducer]] for [[JmsMessage]]s
    */
-  def flow(settings: JmsProducerSettings): Flow[JmsMessage, JmsMessage, NotUsed] =
+  def flow[T <: JmsMessage](settings: JmsProducerSettings): Flow[T, T, NotUsed] =
     Flow.fromGraph(new JmsProducerStage(settings))
 
   /**
