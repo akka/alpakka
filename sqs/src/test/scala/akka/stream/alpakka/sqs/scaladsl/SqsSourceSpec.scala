@@ -80,6 +80,15 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
       f.map(_ should have size 1)
     }
 
+    "terminate on an empty response if requested" taggedAs Integration in {
+      val queue = randomQueueUrl()
+
+      sqsClient.sendMessage(queue, "alpakka")
+      val f = SqsSource(queue, SqsSourceSettings(0, 100, 10, closeOnEmptyReceive = true)).runWith(Sink.seq)
+
+      f.map(_ should have size 1)
+    }
+
     "finish immediately if the queue does not exist" taggedAs Integration in {
 
       val queue = s"$sqsEndpoint/queue/not-existing"

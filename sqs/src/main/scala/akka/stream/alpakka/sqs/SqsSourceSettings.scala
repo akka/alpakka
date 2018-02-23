@@ -25,6 +25,19 @@ object SqsSourceSettings {
                       attributeNames.asScala,
                       messageAttributeNames.asScala)
 
+  def create(waitTimeSeconds: Int,
+             maxBufferSize: Int,
+             maxBatchSize: Int,
+             attributeNames: util.List[AttributeName],
+             messageAttributeNames: util.List[MessageAttributeName],
+             closeOnEmptyReceive: Boolean): SqsSourceSettings =
+    SqsSourceSettings(waitTimeSeconds,
+                      maxBufferSize,
+                      maxBatchSize,
+                      attributeNames.asScala,
+                      messageAttributeNames.asScala,
+                      closeOnEmptyReceive)
+
 }
 
 //#SqsSourceSettings
@@ -33,7 +46,8 @@ final case class SqsSourceSettings(
     maxBufferSize: Int,
     maxBatchSize: Int,
     attributeNames: Seq[AttributeName] = Seq(),
-    messageAttributeNames: Seq[MessageAttributeName] = Seq()
+    messageAttributeNames: Seq[MessageAttributeName] = Seq(),
+    closeOnEmptyReceive: Boolean = false
 ) {
   require(maxBatchSize <= maxBufferSize, "maxBatchSize must be lower or equal than maxBufferSize")
   // SQS requirements
