@@ -55,7 +55,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
   it should "upload a stream of bytes to S3 with custom headers" in {
 
-    //mockUpload()
+    mockUpload()
 
     //#upload
     val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] =
