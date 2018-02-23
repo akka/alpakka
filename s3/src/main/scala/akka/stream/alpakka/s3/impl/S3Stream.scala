@@ -16,12 +16,11 @@ import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
-import akka.stream.{FlowShape, Materializer}
+import akka.stream.Materializer
 import akka.stream.alpakka.s3.auth.{CredentialScope, Signer, SigningKey}
 import akka.stream.alpakka.s3.scaladsl.{ListBucketResultContents, ObjectMetadata}
 import akka.stream.alpakka.s3.{DiskBufferType, MemoryBufferType, S3Exception, S3Settings}
-import akka.stream.scaladsl.{Broadcast, Concat, Flow, GraphDSL, Keep, Sink, Source}
-import GraphDSL.Implicits._
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
 
 final case class S3Location(bucket: String, key: String)
@@ -239,7 +238,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       .mapConcat(r => Stream.continually(r))
       .zip(Source.fromIterator(() => Iterator.from(1)))
 
-  val conditionalAppendFl = Flow[ByteString].orElse(Source.single(ByteString.empty))
+  val atLeastOneByteString = Flow[ByteString].orElse(Source.single(ByteString.empty))
 
   private def createRequests(
       s3Location: S3Location,
@@ -270,7 +269,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
     val headers: S3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(UploadPart) })
 
-    SplitAfterSize(chunkSize)(conditionalAppendFl)
+    SplitAfterSize(chunkSize)(atLeastOneByteString)
       .via(getChunkBuffer(chunkSize)) //creates the chunks
       .concatSubstreams
       .zipWith(requestInfo) {
