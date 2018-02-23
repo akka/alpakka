@@ -10,7 +10,7 @@ import javax.jms.{Connection, Message, MessageProducer, Session}
 import akka.stream._
 import akka.stream.stage._
 
-final class JmsProducerStage[A <: JmsMessage](settings: JmsProducerSettings) extends GraphStage[FlowShape[A, A]] {
+private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducerSettings) extends GraphStage[FlowShape[A, A]] {
 
   private val in = Inlet[A]("JmsProducer.in")
   private val out = Outlet[A]("JmsProducer.out")
