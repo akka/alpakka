@@ -165,7 +165,8 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
         )
       )
 
-  def mockUpload(): Unit = {
+  def mockUpload(): Unit = mockUpload(body)
+  def mockUpload(expectedBody: String): Unit = {
     mock
       .register(
         post(urlEqualTo(s"/$bucketKey?uploads")).willReturn(
@@ -184,7 +185,7 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
 
     mock.register(
       put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
-        .withRequestBody(matching(body))
+        .withRequestBody(matching(expectedBody))
         .willReturn(
           aResponse()
             .withStatus(200)

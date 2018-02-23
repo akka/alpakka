@@ -26,6 +26,20 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
   val settings = new S3Settings(MemoryBufferType, proxy, awsCredentialsProvider, regionProvider, false, None)
   val s3Client = new S3Client(settings)(system, materializer)
 
+  it should "succeed uploading an empty file" in {
+    mockUpload(expectedBody = "")
+
+    //#upload
+    val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = s3Client.multipartUpload(bucket, bucketKey)
+    //#upload
+
+    val src = Source.empty[ByteString]
+
+    val result: Future[MultipartUploadResult] = src.runWith(s3Sink)
+
+    result.futureValue shouldBe MultipartUploadResult(url, bucket, bucketKey, etag)
+  }
+
   "S3Sink" should "upload a stream of bytes to S3" in {
 
     mockUpload()
