@@ -17,29 +17,29 @@ object JmsConsumer {
   /**
    * Java API: Creates an [[JmsConsumer]] for [[javax.jms.Message]]
    */
-  def create(jmsSourceSettings: JmsConsumerSettings): akka.stream.javadsl.Source[Message, KillSwitch] =
-    akka.stream.javadsl.Source.fromGraph(new JmsSourceStage(jmsSourceSettings))
+  def create(settings: JmsConsumerSettings): akka.stream.javadsl.Source[Message, KillSwitch] =
+    akka.stream.javadsl.Source.fromGraph(new JmsSourceStage(settings))
 
   /**
    * Java API: Creates an [[JmsConsumer]] for texts
    */
-  def textSource(jmsSourceSettings: JmsConsumerSettings): akka.stream.javadsl.Source[String, KillSwitch] =
-    akka.stream.alpakka.jms.scaladsl.JmsConsumer.textSource(jmsSourceSettings).asJava
+  def textSource(settings: JmsConsumerSettings): akka.stream.javadsl.Source[String, KillSwitch] =
+    akka.stream.alpakka.jms.scaladsl.JmsConsumer.textSource(settings).asJava
 
   /**
    * Java API: Creates an [[JmsConsumer]] for byte arrays
    */
-  def bytesSource(jmsSourceSettings: JmsConsumerSettings): akka.stream.javadsl.Source[Array[Byte], KillSwitch] =
-    akka.stream.alpakka.jms.scaladsl.JmsConsumer.bytesSource(jmsSourceSettings).asJava
+  def bytesSource(settings: JmsConsumerSettings): akka.stream.javadsl.Source[Array[Byte], KillSwitch] =
+    akka.stream.alpakka.jms.scaladsl.JmsConsumer.bytesSource(settings).asJava
 
   /**
    * Java API: Creates an [[JmsConsumer]] for Maps with primitive data types
    */
   def mapSource(
-      jmsSourceSettings: JmsConsumerSettings
+      settings: JmsConsumerSettings
   ): akka.stream.javadsl.Source[java.util.Map[String, Any], KillSwitch] =
     akka.stream.alpakka.jms.scaladsl.JmsConsumer
-      .mapSource(jmsSourceSettings)
+      .mapSource(settings)
       .map(scalaMap => JavaConversions.mapAsJavaMap(scalaMap))
       .asJava
 
@@ -47,33 +47,33 @@ object JmsConsumer {
    * Java API: Creates an [[JmsConsumer]] for serializable objects
    */
   def objectSource(
-      jmsSourceSettings: JmsConsumerSettings
+      settings: JmsConsumerSettings
   ): akka.stream.javadsl.Source[java.io.Serializable, KillSwitch] =
-    akka.stream.alpakka.jms.scaladsl.JmsConsumer.objectSource(jmsSourceSettings).asJava
+    akka.stream.alpakka.jms.scaladsl.JmsConsumer.objectSource(settings).asJava
 
   /**
    * Java API: Creates a [[JmsConsumer]] of envelopes containing messages. It requires explicit acknowledgements
    * on the envelopes. The acknowledgements must be called on the envelope and not on the message inside.
    *
-   * @param jmsSettings The settings for the ack source.
+   * @param settings The settings for the ack source.
    * @return Source for JMS messages in an AckEnvelope.
    */
-  def ackSource(jmsSettings: JmsConsumerSettings): akka.stream.javadsl.Source[AckEnvelope, KillSwitch] =
-    akka.stream.javadsl.Source.fromGraph(new JmsAckSourceStage(jmsSettings))
+  def ackSource(settings: JmsConsumerSettings): akka.stream.javadsl.Source[AckEnvelope, KillSwitch] =
+    akka.stream.javadsl.Source.fromGraph(new JmsAckSourceStage(settings))
 
   /**
    * Java API: Creates a [[JmsConsumer]] of envelopes containing messages. It requires explicit
    * commit or rollback on the envelope.
    *
-   * @param jmsSettings The settings for the tx source
+   * @param settings The settings for the tx source
    * @return Source of the JMS messages in a TxEnvelope
    */
-  def txSource(jmsSettings: JmsConsumerSettings): akka.stream.javadsl.Source[TxEnvelope, KillSwitch] =
-    akka.stream.javadsl.Source.fromGraph(new JmsTxSourceStage(jmsSettings))
+  def txSource(settings: JmsConsumerSettings): akka.stream.javadsl.Source[TxEnvelope, KillSwitch] =
+    akka.stream.javadsl.Source.fromGraph(new JmsTxSourceStage(settings))
 
   /**
    * Java API: Creates a [[JmsConsumer]] for browsing messages non-destructively
    */
-  def browse(jmsSettings: JmsBrowseSettings): akka.stream.javadsl.Source[Message, NotUsed] =
-    akka.stream.javadsl.Source.fromGraph(new JmsBrowseStage(jmsSettings))
+  def browse(settings: JmsBrowseSettings): akka.stream.javadsl.Source[Message, NotUsed] =
+    akka.stream.javadsl.Source.fromGraph(new JmsBrowseStage(settings))
 }

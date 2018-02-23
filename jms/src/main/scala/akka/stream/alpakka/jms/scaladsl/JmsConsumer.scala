@@ -18,20 +18,20 @@ object JmsConsumer {
   /**
    * Scala API: Creates an [[JmsConsumer]] for [[javax.jms.Message]] instances
    */
-  def apply(jmsSettings: JmsConsumerSettings): Source[Message, KillSwitch] =
-    Source.fromGraph(new JmsSourceStage(jmsSettings))
+  def apply(settings: JmsConsumerSettings): Source[Message, KillSwitch] =
+    Source.fromGraph(new JmsSourceStage(settings))
 
   /**
    * Scala API: Creates an [[JmsConsumer]] for texts
    */
-  def textSource(jmsSettings: JmsConsumerSettings): Source[String, KillSwitch] =
-    apply(jmsSettings).map(msg => msg.asInstanceOf[TextMessage].getText)
+  def textSource(settings: JmsConsumerSettings): Source[String, KillSwitch] =
+    apply(settings).map(msg => msg.asInstanceOf[TextMessage].getText)
 
   /**
    * Scala API: Creates an [[JmsConsumer]] for Maps with primitive datatypes
    */
-  def mapSource(jmsSettings: JmsConsumerSettings): Source[Map[String, Any], KillSwitch] =
-    apply(jmsSettings).map { msg =>
+  def mapSource(settings: JmsConsumerSettings): Source[Map[String, Any], KillSwitch] =
+    apply(settings).map { msg =>
       val mapMessage = msg.asInstanceOf[MapMessage]
 
       mapMessage.getMapNames.foldLeft(Map[String, Any]()) { (result, key) =>
@@ -44,8 +44,8 @@ object JmsConsumer {
   /**
    * Scala API: Creates an [[JmsConsumer]] for byte arrays
    */
-  def bytesSource(jmsSettings: JmsConsumerSettings): Source[Array[Byte], KillSwitch] =
-    apply(jmsSettings).map { msg =>
+  def bytesSource(settings: JmsConsumerSettings): Source[Array[Byte], KillSwitch] =
+    apply(settings).map { msg =>
       val byteMessage = msg.asInstanceOf[BytesMessage]
       val byteArray = new Array[Byte](byteMessage.getBodyLength.toInt)
       byteMessage.readBytes(byteArray)
@@ -55,32 +55,32 @@ object JmsConsumer {
   /**
    * Scala API: Creates an [[JmsConsumer]] for serializable objects
    */
-  def objectSource(jmsSettings: JmsConsumerSettings): Source[java.io.Serializable, KillSwitch] =
-    apply(jmsSettings).map(msg => msg.asInstanceOf[ObjectMessage].getObject)
+  def objectSource(settings: JmsConsumerSettings): Source[java.io.Serializable, KillSwitch] =
+    apply(settings).map(msg => msg.asInstanceOf[ObjectMessage].getObject)
 
   /**
    * Scala API: Creates a [[JmsConsumer]] of envelopes containing messages. It requires explicit acknowledgements
    * on the envelopes. The acknowledgements must be called on the envelope and not on the message inside.
    *
-   * @param jmsSettings The settings for the ack source.
+   * @param settings The settings for the ack source.
    * @return Source for JMS messages in an AckEnvelope.
    */
-  def ackSource(jmsSettings: JmsConsumerSettings): Source[AckEnvelope, KillSwitch] =
-    Source.fromGraph(new JmsAckSourceStage(jmsSettings))
+  def ackSource(settings: JmsConsumerSettings): Source[AckEnvelope, KillSwitch] =
+    Source.fromGraph(new JmsAckSourceStage(settings))
 
   /**
    * Scala API: Creates a [[JmsConsumer]] of envelopes containing messages. It requires explicit
    * commit or rollback on the envelope.
    *
-   * @param jmsSettings The settings for the tx source
+   * @param settings The settings for the tx source
    * @return Source of the JMS messages in a TxEnvelope
    */
-  def txSource(jmsSettings: JmsConsumerSettings): Source[TxEnvelope, KillSwitch] =
-    Source.fromGraph(new JmsTxSourceStage(jmsSettings))
+  def txSource(settings: JmsConsumerSettings): Source[TxEnvelope, KillSwitch] =
+    Source.fromGraph(new JmsTxSourceStage(settings))
 
   /**
    * Scala API: Creates a [[JmsConsumer]] for browsing messages non-destructively
    */
-  def browse(jmsSettings: JmsBrowseSettings): Source[Message, NotUsed] =
-    Source.fromGraph(new JmsBrowseStage(jmsSettings))
+  def browse(settings: JmsBrowseSettings): Source[Message, NotUsed] =
+    Source.fromGraph(new JmsBrowseStage(settings))
 }
