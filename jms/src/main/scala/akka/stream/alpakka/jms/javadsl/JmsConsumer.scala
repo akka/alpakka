@@ -18,7 +18,7 @@ object JmsConsumer {
    * Java API: Creates an [[JmsConsumer]] for [[javax.jms.Message]]
    */
   def create(settings: JmsConsumerSettings): akka.stream.javadsl.Source[Message, KillSwitch] =
-    akka.stream.javadsl.Source.fromGraph(new JmsSourceStage(settings))
+    akka.stream.javadsl.Source.fromGraph(new JmsConsumerStage(settings))
 
   /**
    * Java API: Creates an [[JmsConsumer]] for texts

@@ -19,7 +19,7 @@ object JmsConsumer {
    * Scala API: Creates an [[JmsConsumer]] for [[javax.jms.Message]] instances
    */
   def apply(settings: JmsConsumerSettings): Source[Message, KillSwitch] =
-    Source.fromGraph(new JmsSourceStage(settings))
+    Source.fromGraph(new JmsConsumerStage(settings))
 
   /**
    * Scala API: Creates an [[JmsConsumer]] for texts

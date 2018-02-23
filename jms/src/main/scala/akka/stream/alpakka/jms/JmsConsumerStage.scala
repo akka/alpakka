@@ -19,7 +19,7 @@ import scala.concurrent.Future
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
-final class JmsSourceStage(settings: JmsConsumerSettings)
+final class JmsConsumerStage(settings: JmsConsumerSettings)
     extends GraphStageWithMaterializedValue[SourceShape[Message], KillSwitch] {
 
   private val out = Outlet[Message]("JmsSource.out")
