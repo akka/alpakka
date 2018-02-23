@@ -46,9 +46,9 @@ class MongoSinkSpec
   private val client = MongoClient(s"mongodb://localhost:27017")
   private val db = client.getDatabase("alpakka-mongo").withCodecRegistry(codecRegistry)
   private val numbersColl = db.getCollection("numbersSink")
-  //# init-connection-codec
+  //#init-connection-codec
   private val numbersObjectColl: MongoCollection[Number] = db.getCollection("numbersSink")
-  //# init-connection-codec
+  //#init-connection-codec
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 50.millis)

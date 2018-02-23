@@ -54,7 +54,7 @@ Scala
 With codec support, adapt the type of the source.
 
 Scala
-: @@snip ($alpakka$/mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSourceSpec.scala) { #create-source-codecs }
+: @@snip ($alpakka$/mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSourceSpec.scala) { #create-source-codec }
 
 And finally we can run it.
 

@@ -9,7 +9,7 @@ import akka.NotUsed
 import org.mongodb.scala.bson.conversions.Bson
 import org.mongodb.scala.model.UpdateOptions
 import org.mongodb.scala.result.{DeleteResult, UpdateResult}
-import org.mongodb.scala.{Document, MongoCollection}
+import org.mongodb.scala.MongoCollection
 
 import scala.concurrent.ExecutionContext
 
