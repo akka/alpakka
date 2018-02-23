@@ -7,10 +7,10 @@ package jms
 // #sample
 import java.nio.file.Paths
 
-import akka.stream.{IOResult, KillSwitch}
-import akka.stream.alpakka.jms.JmsSourceSettings
-import akka.stream.alpakka.jms.scaladsl.JmsSource
+import akka.stream.alpakka.jms.JmsConsumerSettings
+import akka.stream.alpakka.jms.scaladsl.JmsConsumer
 import akka.stream.scaladsl.{FileIO, Keep, Sink, Source}
+import akka.stream.{IOResult, KillSwitch}
 import akka.util.ByteString
 
 import scala.concurrent.Future
@@ -29,8 +29,8 @@ object JmsToFile extends JmsSampleBase with App {
   // #sample
 
   val jmsSource: Source[String, KillSwitch] =        // (1)
-    JmsSource.textSource(
-      JmsSourceSettings(connectionFactory).withBufferSize(10).withQueue("test")
+    JmsConsumer.textSource(
+      JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("test")
     )
 
   val fileSink: Sink[ByteString, Future[IOResult]] = // (2)

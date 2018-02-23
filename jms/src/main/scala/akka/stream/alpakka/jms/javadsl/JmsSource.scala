@@ -4,52 +4,47 @@
 
 package akka.stream.alpakka.jms.javadsl
 
-import javax.jms.Message
-
 import akka.NotUsed
 import akka.stream.KillSwitch
 import akka.stream.alpakka.jms._
+import javax.jms.Message
 
-import scala.collection.JavaConversions
-
+@deprecated("Use JmsConsumer instead", "0.18")
 object JmsSource {
 
   /**
    * Java API: Creates an [[JmsSource]] for [[javax.jms.Message]]
    */
-  def create(jmsSourceSettings: JmsSourceSettings): akka.stream.javadsl.Source[Message, KillSwitch] =
-    akka.stream.javadsl.Source.fromGraph(new JmsSourceStage(jmsSourceSettings))
+  def create(jmsSourceSettings: JmsConsumerSettings): akka.stream.javadsl.Source[Message, KillSwitch] =
+    JmsConsumer.create(jmsSourceSettings)
 
   /**
    * Java API: Creates an [[JmsSource]] for texts
    */
-  def textSource(jmsSourceSettings: JmsSourceSettings): akka.stream.javadsl.Source[String, KillSwitch] =
-    akka.stream.alpakka.jms.scaladsl.JmsSource.textSource(jmsSourceSettings).asJava
+  def textSource(jmsSourceSettings: JmsConsumerSettings): akka.stream.javadsl.Source[String, KillSwitch] =
+    JmsConsumer.textSource(jmsSourceSettings)
 
   /**
    * Java API: Creates an [[JmsSource]] for byte arrays
    */
-  def bytesSource(jmsSourceSettings: JmsSourceSettings): akka.stream.javadsl.Source[Array[Byte], KillSwitch] =
-    akka.stream.alpakka.jms.scaladsl.JmsSource.bytesSource(jmsSourceSettings).asJava
+  def bytesSource(jmsSourceSettings: JmsConsumerSettings): akka.stream.javadsl.Source[Array[Byte], KillSwitch] =
+    JmsConsumer.bytesSource(jmsSourceSettings)
 
   /**
    * Java API: Creates an [[JmsSource]] for Maps with primitive data types
    */
   def mapSource(
-      jmsSourceSettings: JmsSourceSettings
+      jmsSourceSettings: JmsConsumerSettings
   ): akka.stream.javadsl.Source[java.util.Map[String, Any], KillSwitch] =
-    akka.stream.alpakka.jms.scaladsl.JmsSource
-      .mapSource(jmsSourceSettings)
-      .map(scalaMap => JavaConversions.mapAsJavaMap(scalaMap))
-      .asJava
+    JmsConsumer.mapSource(jmsSourceSettings)
 
   /**
    * Java API: Creates an [[JmsSource]] for serializable objects
    */
   def objectSource(
-      jmsSourceSettings: JmsSourceSettings
+      jmsSourceSettings: JmsConsumerSettings
   ): akka.stream.javadsl.Source[java.io.Serializable, KillSwitch] =
-    akka.stream.alpakka.jms.scaladsl.JmsSource.objectSource(jmsSourceSettings).asJava
+    JmsConsumer.objectSource(jmsSourceSettings)
 
   /**
    * Java API: Creates a [[JmsSource]] of envelopes containing messages. It requires explicit acknowledgements
@@ -57,8 +52,8 @@ object JmsSource {
    * @param jmsSettings The settings for the ack source.
    * @return Source for JMS messages in an AckEnvelope.
    */
-  def ackSource(jmsSettings: JmsSourceSettings): akka.stream.javadsl.Source[AckEnvelope, KillSwitch] =
-    akka.stream.javadsl.Source.fromGraph(new JmsAckSourceStage(jmsSettings))
+  def ackSource(jmsSettings: JmsConsumerSettings): akka.stream.javadsl.Source[AckEnvelope, KillSwitch] =
+    JmsConsumer.ackSource(jmsSettings)
 
   /**
    * Java API: Creates a [[JmsSource]] of envelopes containing messages. It requires explicit
@@ -66,12 +61,12 @@ object JmsSource {
    * @param jmsSettings The settings for the tx source
    * @return Source of the JMS messages in a TxEnvelope
    */
-  def txSource(jmsSettings: JmsSourceSettings): akka.stream.javadsl.Source[TxEnvelope, KillSwitch] =
-    akka.stream.javadsl.Source.fromGraph(new JmsTxSourceStage(jmsSettings))
+  def txSource(jmsSettings: JmsConsumerSettings): akka.stream.javadsl.Source[TxEnvelope, KillSwitch] =
+    JmsConsumer.txSource(jmsSettings)
 
   /**
    * Java API: Creates a [[JmsSource]] for browsing messages non-destructively
    */
   def browse(jmsSettings: JmsBrowseSettings): akka.stream.javadsl.Source[Message, NotUsed] =
-    akka.stream.javadsl.Source.fromGraph(new JmsBrowseStage(jmsSettings))
+    JmsConsumer.browse(jmsSettings)
 }

@@ -6,48 +6,41 @@ package akka.stream.alpakka.jms.scaladsl
 
 import akka.Done
 import akka.stream.alpakka.jms._
-import akka.stream.scaladsl.{Flow, Keep, Sink}
+import akka.stream.scaladsl.Sink
 
 import scala.concurrent.Future
 
+@deprecated("Use JmsProducer instead", "0.18")
 object JmsSink {
 
   /**
    * Scala API: Creates an [[JmsSink]] for [[JmsMessage]]s
    */
-  def apply(jmsSettings: JmsSinkSettings): Sink[JmsMessage, Future[Done]] =
-    Sink.fromGraph(new JmsSinkStage(jmsSettings))
+  def apply(jmsSettings: JmsProducerSettings): Sink[JmsMessage, Future[Done]] =
+    JmsProducer.apply(jmsSettings)
 
   /**
    * Scala API: Creates an [[JmsSink]] for strings
    */
-  def textSink(jmsSettings: JmsSinkSettings): Sink[String, Future[Done]] = {
-    val jmsMsgSink = Sink.fromGraph(new JmsSinkStage(jmsSettings))
-    Flow.fromFunction((s: String) => JmsTextMessage(s)).toMat(jmsMsgSink)(Keep.right)
-  }
+  def textSink(jmsSettings: JmsProducerSettings): Sink[String, Future[Done]] =
+    JmsProducer.textSink(jmsSettings)
 
   /**
    * Scala API: Creates an [[JmsSink]] for bytes
    */
-  def bytesSink(jmsSettings: JmsSinkSettings): Sink[Array[Byte], Future[Done]] = {
-    val jmsMsgSink = Sink.fromGraph(new JmsSinkStage(jmsSettings))
-    Flow.fromFunction((s: Array[Byte]) => JmsByteMessage(s)).toMat(jmsMsgSink)(Keep.right)
-  }
+  def bytesSink(jmsSettings: JmsProducerSettings): Sink[Array[Byte], Future[Done]] =
+    JmsProducer.bytesSink(jmsSettings)
 
   /**
    * Scala API: Creates an [[JmsSink]] for maps with primitive data types
    */
-  def mapSink(jmsSettings: JmsSinkSettings): Sink[Map[String, Any], Future[Done]] = {
-    val jmsMsgSink = Sink.fromGraph(new JmsSinkStage(jmsSettings))
-    Flow.fromFunction((s: Map[String, Any]) => JmsMapMessage(s)).toMat(jmsMsgSink)(Keep.right)
-  }
+  def mapSink(jmsSettings: JmsProducerSettings): Sink[Map[String, Any], Future[Done]] =
+    JmsProducer.mapSink(jmsSettings)
 
   /**
    * Scala API: Creates an [[JmsSink]] for serializable objects
    */
-  def objectSink(jmsSettings: JmsSinkSettings): Sink[java.io.Serializable, Future[Done]] = {
-    val jmsMsgSink = Sink.fromGraph(new JmsSinkStage(jmsSettings))
-    Flow.fromFunction((s: java.io.Serializable) => JmsObjectMessage(s)).toMat(jmsMsgSink)(Keep.right)
-  }
+  def objectSink(jmsSettings: JmsProducerSettings): Sink[java.io.Serializable, Future[Done]] =
+    JmsProducer.objectSink(jmsSettings)
 
 }

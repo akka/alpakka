@@ -62,8 +62,8 @@ public class JmsTxConnectorsTest {
             //#connection-factory
 
             //#create-text-sink
-            Sink<String, CompletionStage<Done>> jmsSink = JmsSink.textSink(
-                    JmsSinkSettings
+            Sink<String, CompletionStage<Done>> jmsSink = JmsProducer.textSink(
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -75,8 +75,8 @@ public class JmsTxConnectorsTest {
             //#run-text-sink
 
             //#create-text-source
-            Source<TxEnvelope, KillSwitch> jmsSource = JmsSource
-                    .txSource(JmsSourceSettings
+            Source<TxEnvelope, KillSwitch> jmsSource = JmsConsumer
+                    .txSource(JmsConsumerSettings
                             .create(connectionFactory)
                             .withSessionCount(5)
                             .withQueue("test")
@@ -103,8 +103,8 @@ public class JmsTxConnectorsTest {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             //#create-jms-sink
-            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
-                    JmsSinkSettings
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer.create(
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -119,7 +119,7 @@ public class JmsTxConnectorsTest {
             //#run-jms-sink
 
             //#create-jms-source
-            Source<TxEnvelope, KillSwitch> jmsSource = JmsSource.txSource(JmsSourceSettings
+            Source<TxEnvelope, KillSwitch> jmsSource = JmsConsumer.txSource(JmsConsumerSettings
                     .create(connectionFactory)
                     .withSessionCount(5)
                     .withQueue("test")
@@ -158,8 +158,8 @@ public class JmsTxConnectorsTest {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
             //#create-jms-sink
-            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
-                    JmsSinkSettings
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer.create(
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -178,7 +178,7 @@ public class JmsTxConnectorsTest {
             //#run-jms-sink
 
             //#create-jms-source
-            Source<TxEnvelope, KillSwitch> jmsSource = JmsSource.txSource(JmsSourceSettings
+            Source<TxEnvelope, KillSwitch> jmsSource = JmsConsumer.txSource(JmsConsumerSettings
                     .create(connectionFactory)
                     .withSessionCount(5)
                     .withQueue("test")
@@ -218,8 +218,8 @@ public class JmsTxConnectorsTest {
         withServer(ctx -> {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
-            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
-                    JmsSinkSettings
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer.create(
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -229,7 +229,7 @@ public class JmsTxConnectorsTest {
             Source.from(msgsIn).runWith(jmsSink, materializer);
 
             //#create-jms-source-with-selector
-            Source<TxEnvelope, KillSwitch> jmsSource = JmsSource.txSource(JmsSourceSettings
+            Source<TxEnvelope, KillSwitch> jmsSource = JmsConsumer.txSource(JmsConsumerSettings
                     .create(connectionFactory)
                     .withSessionCount(5)
                     .withQueue("test")
@@ -278,28 +278,28 @@ public class JmsTxConnectorsTest {
             List<String> inNumbers = IntStream.range(0, 10).boxed().map(String::valueOf).collect(Collectors.toList());
 
             //#create-topic-sink
-            Sink<String, CompletionStage<Done>> jmsTopicSink = JmsSink.textSink(
-                    JmsSinkSettings
+            Sink<String, CompletionStage<Done>> jmsTopicSink = JmsProducer.textSink(
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withTopic("topic")
             );
             //#create-topic-sink
-            Sink<String, CompletionStage<Done>> jmsTopicSink2 = JmsSink.textSink(
-                    JmsSinkSettings
+            Sink<String, CompletionStage<Done>> jmsTopicSink2 = JmsProducer.textSink(
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withTopic("topic")
             );
 
             //#create-topic-source
-            Source<TxEnvelope, KillSwitch> jmsTopicSource = JmsSource
-                    .txSource(JmsSourceSettings
+            Source<TxEnvelope, KillSwitch> jmsTopicSource = JmsConsumer
+                    .txSource(JmsConsumerSettings
                             .create(connectionFactory)
                             .withSessionCount(1)
                             .withTopic("topic")
                     );
             //#create-topic-source
-            Source<TxEnvelope, KillSwitch> jmsTopicSource2 = JmsSource
-                    .txSource(JmsSourceSettings
+            Source<TxEnvelope, KillSwitch> jmsTopicSource2 = JmsConsumer
+                    .txSource(JmsConsumerSettings
                             .create(connectionFactory)
                             .withSessionCount(1)
                             .withTopic("topic")
