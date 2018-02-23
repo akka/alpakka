@@ -56,8 +56,8 @@ public class JmsBufferedAckConnectorsTest {
         withServer(ctx -> {
             ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
-            Sink<String, CompletionStage<Done>> jmsSink = JmsSink.textSink(
-                    JmsSinkSettings
+            Sink<String, CompletionStage<Done>> jmsSink = JmsProducer.textSink(
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -65,8 +65,8 @@ public class JmsBufferedAckConnectorsTest {
             List<String> in = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
             Source.from(in).runWith(jmsSink, materializer);
 
-            Source<AckEnvelope, KillSwitch> jmsSource = JmsSource
-                    .ackSource(JmsSourceSettings
+            Source<AckEnvelope, KillSwitch> jmsSource = JmsConsumer
+                    .ackSource(JmsConsumerSettings
                             .create(connectionFactory)
                             .withSessionCount(5)
                             .withBufferSize(5)
@@ -90,8 +90,8 @@ public class JmsBufferedAckConnectorsTest {
         withServer(ctx -> {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
-            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
-                    JmsSinkSettings
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer.create(
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -101,8 +101,8 @@ public class JmsBufferedAckConnectorsTest {
             Source.from(msgsIn).runWith(jmsSink, materializer);
 
             //#create-jms-source
-            Source<AckEnvelope, KillSwitch> jmsSource = JmsSource
-                .ackSource(JmsSourceSettings
+            Source<AckEnvelope, KillSwitch> jmsSource = JmsConsumer
+                .ackSource(JmsConsumerSettings
                     .create(connectionFactory)
                     .withSessionCount(5)
                     .withBufferSize(5)
@@ -144,8 +144,8 @@ public class JmsBufferedAckConnectorsTest {
         withServer(ctx -> {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
-            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
-                    JmsSinkSettings
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer.create(
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -158,7 +158,7 @@ public class JmsBufferedAckConnectorsTest {
 
             Source.from(msgsIn).runWith(jmsSink, materializer);
 
-            Source<AckEnvelope, KillSwitch> jmsSource = JmsSource.ackSource(JmsSourceSettings
+            Source<AckEnvelope, KillSwitch> jmsSource = JmsConsumer.ackSource(JmsConsumerSettings
                     .create(connectionFactory)
                     .withSessionCount(5)
                     .withBufferSize(5)
@@ -196,8 +196,8 @@ public class JmsBufferedAckConnectorsTest {
         withServer(ctx -> {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
-            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsSink.create(
-                    JmsSinkSettings
+            Sink<JmsTextMessage, CompletionStage<Done>> jmsSink = JmsProducer.create(
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withQueue("test")
             );
@@ -206,7 +206,7 @@ public class JmsBufferedAckConnectorsTest {
 
             Source.from(msgsIn).runWith(jmsSink, materializer);
 
-            Source<AckEnvelope, KillSwitch> jmsSource = JmsSource.ackSource(JmsSourceSettings
+            Source<AckEnvelope, KillSwitch> jmsSource = JmsConsumer.ackSource(JmsConsumerSettings
                     .create(connectionFactory)
                     .withSessionCount(5)
                     .withBufferSize(5)
@@ -252,26 +252,26 @@ public class JmsBufferedAckConnectorsTest {
             List<String> in = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
             List<String> inNumbers = IntStream.range(0, 10).boxed().map(String::valueOf).collect(Collectors.toList());
 
-            Sink<String, CompletionStage<Done>> jmsTopicSink = JmsSink.textSink(
-                    JmsSinkSettings
+            Sink<String, CompletionStage<Done>> jmsTopicSink = JmsProducer.textSink(
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withTopic("topic")
             );
-            Sink<String, CompletionStage<Done>> jmsTopicSink2 = JmsSink.textSink(
-                    JmsSinkSettings
+            Sink<String, CompletionStage<Done>> jmsTopicSink2 = JmsProducer.textSink(
+                    JmsProducerSettings
                             .create(connectionFactory)
                             .withTopic("topic")
             );
 
-            Source<AckEnvelope, KillSwitch> jmsTopicSource = JmsSource
-                    .ackSource(JmsSourceSettings
+            Source<AckEnvelope, KillSwitch> jmsTopicSource = JmsConsumer
+                    .ackSource(JmsConsumerSettings
                             .create(connectionFactory)
                             .withSessionCount(1)
                             .withBufferSize(5)
                             .withTopic("topic")
                     );
-            Source<AckEnvelope, KillSwitch> jmsTopicSource2 = JmsSource
-                    .ackSource(JmsSourceSettings
+            Source<AckEnvelope, KillSwitch> jmsTopicSource2 = JmsConsumer
+                    .ackSource(JmsConsumerSettings
                             .create(connectionFactory)
                             .withSessionCount(1)
                             .withBufferSize(5)

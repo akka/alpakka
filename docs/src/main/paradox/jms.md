@@ -63,7 +63,7 @@ The created @javadoc[ConnectionFactory](javax.jms.ConnectionFactory) is then use
 ## Sending messages to a JMS provider
 
 Use a case class with the subtype of @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) to wrap the messages you want to send and optionally set their properties.
-@java[@scaladoc[JmsSink](akka.stream.alpakka.jms.javadsl.JmsSink$)]@scala[@scaladoc[JmsSink](akka.stream.alpakka.jms.scaladsl.JmsSink$)] contains factory methods to facilitate
+@java[@scaladoc[JmsProducer](akka.stream.alpakka.jms.javadsl.JmsProducer$)]@scala[@scaladoc[JmsProducer](akka.stream.alpakka.jms.scaladsl.JmsProducer$)] contains factory methods to facilitate
 the creation of sinks according to the message type (see below for an example).
 
 
@@ -172,9 +172,32 @@ Scala
 Java
 : @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-messages-with-headers }
 
+
+### Sending messages as a Flow
+
+The producer can also act as a flow, in order to publish messages in the middle of stream processing.
+For example, you can ensure that a message is persisted to the queue before subsequent processing.
+
+Create a flow:
+
+Scala
+: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-flow-producer }
+
+Java
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-flow-producer }
+
+Run the flow:
+
+Scala
+: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-flow-producer }
+
+Java
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-flow-producer }
+
+
 ## Receiving messages from a JMS provider
 
-@java[@scaladoc[JmsSource](akka.stream.alpakka.jms.javadsl.JmsSource$)]@scala[@scaladoc[JmsSource](akka.stream.alpakka.jms.scaladsl.JmsSource$)] contains factory methods to facilitate
+@java[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.javadsl.JmsConsumer$)]@scala[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.scaladsl.JmsConsumer$)] contains factory methods to facilitate
 the creation of sinks according to the message type (see below for an example).
 
 
@@ -294,7 +317,7 @@ Java
 
 **Notes:**
 
-*  The default `AcknowledgeMode` is `AutoAcknowledge` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsSourceSettings` when creating the stream.
+*  The default `AcknowledgeMode` is `AutoAcknowledge` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsConsumerSettings` when creating the stream.
 
 ### Receiving @javadoc[javax.jms.Message](javax.jms.Message)s messages from a JMS provider with Client Acknowledgement
 
@@ -362,7 +385,7 @@ Java
 *  Using multiple sessions increases throughput, especially if a acknowledging message by message is desired.
 *  Messages may arrive out of order if `sessionCount` is larger than 1.
 *  Message-by-message acknowledgement can be achieved by setting `bufferSize` to 0, thus disabling buffering. The outstanding messages before backpressure will be the `sessionCount`.
-*  The default `AcknowledgeMode` is `ClientAcknowledge` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsSourceSettings` when creating the stream. 
+*  The default `AcknowledgeMode` is `ClientAcknowledge` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsConsumerSettings` when creating the stream. 
 
 ### Transactionally receiving @javadoc[javax.jms.Message](javax.jms.Message)s from a JMS provider
 
@@ -391,7 +414,7 @@ Java
 *  Higher throughput is achieved by increasing the `sessionCount`.
 *  Messages will arrive out of order if `sessionCount` is larger than 1.
 *  Buffering is not supported in transaction mode. The `bufferSize` is ignored.
-*  The default `AcknowledgeMode` is `SessionTransacted` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsSourceSettings` when creating the stream. 
+*  The default `AcknowledgeMode` is `SessionTransacted` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsConsumerSettings` when creating the stream. 
  
 ### Browsing messages from a JMS provider
 
@@ -474,7 +497,7 @@ To stop consumption safely, call `shutdown()` on the `KillSwitch` that is the ma
 ## Using IBM MQ
 
 You can use IBM MQ like any other JMS Provider by creating a `QueueConnectionFactory` or a `TopicConnectionFactory`
-and creating a `JmsSourceSettings` or `JmsSinkSettings` from it.
+and creating a `JmsConsumerSettings` or `JmsProducerSettings` from it.
 The below snippets have been tested with a default IBM MQ docker image which contains queues and topics for testing.
 The following command starts MQ 9 using docker:
 
@@ -482,7 +505,7 @@ The following command starts MQ 9 using docker:
 
 MQ settings for this image are shown here: https://github.com/ibm-messaging/mq-docker#mq-developer-defaults
 
-### Create a JmsSource to an IBM MQ Queue
+### Create a JmsConsumer to an IBM MQ Queue
 
 The `MQQueueConnectionFactory` needs a queue manager name and a channel name, the docker command used in the previous section sets up a `QM1` queue manager and a `DEV.APP.SVRCONN` channel. The IBM MQ client makes it possible to
 connect to the MQ server over TCP/IP or natively through JNI (when the client and server run on the same machine). In the examples below we have chosen to use TCP/IP, which is done by setting the transport type to `CommonConstants.WMQ_CM_CLIENT`.
@@ -500,8 +523,8 @@ Scala
     // Connect to IBM MQ over TCP/IP
     queueConnectionFactory.setTransportType(CommonConstants.WMQ_CM_CLIENT)
     val TestQueueName = "DEV.QUEUE.1"
-    val jmsSource: Source[String, NotUsed] = JmsSource.textSource(
-      JmsSourceSettings(queueConnectionFactory).withQueue(TestQueueName)
+    val jmsSource: Source[String, NotUsed] = JmsConsumer.textSource(
+      JmsConsumerSettings(queueConnectionFactory).withQueue(TestQueueName)
     )
     ```
 
@@ -518,14 +541,14 @@ Java
     // Connect to IBM MQ over TCP/IP
     queueConnectionFactory.setTransportType(CommonConstants.WMQ_CM_CLIENT);
     String testQueueName = "DEV.QUEUE.1";
-    Source<String, NotUsed> jmsSource = JmsSource.textSource(
-      JmsSourceSettings
+    Source<String, NotUsed> jmsSource = JmsConsumer.textSource(
+      JmsConsumerSettings
         .create(queueConnectionFactory)
         .withQueue(testQueueName)
     );
     ```
 
-### Create a JmsSink to an IBM MQ Topic
+### Create a JmsProducer to an IBM MQ Topic
 The IBM MQ docker container sets up a `dev/` topic, which is used in the example below.
 
 Scala
@@ -541,8 +564,8 @@ Scala
     // Connect to IBM MQ over TCP/IP
     topicConnectionFactory.setTransportType(CommonConstants.WMQ_CM_CLIENT)
     val TestTopicName = "dev/"
-    val jmsTopicSink: Sink[String, NotUsed] = JmsSink(
-      JmsSinkSettings(topicConnectionFactory).withTopic(TestTopicName)
+    val jmsTopicSink: Sink[String, NotUsed] = JmsProducer(
+      JmsProducerSettings(topicConnectionFactory).withTopic(TestTopicName)
     )
     ```
 
@@ -559,8 +582,8 @@ Java
     // Connect to IBM MQ over TCP/IP
     topicConnectionFactory.setTransportType(CommonConstants.WMQ_CM_CLIENT);
     String testTopicName = "dev/";
-    Sink<String, NotUsed> jmsTopicSink = JmsSink.textSink(
-      JmsSinkSettings
+    Sink<String, NotUsed> jmsTopicSink = JmsProducer.textSink(
+      JmsProducerSettings
         .create(topicConnectionFactory)
         .withTopic(testTopicName)
     );
