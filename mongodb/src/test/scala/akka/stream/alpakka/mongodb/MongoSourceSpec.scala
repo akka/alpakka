@@ -10,7 +10,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.alpakka.mongodb.scaladsl.MongoSource
 import akka.stream.scaladsl.{Sink, Source}
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
-import org.mongodb.scala.MongoClient
+import org.mongodb.scala.{MongoClient, MongoCollection}
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.bson.codecs.Macros._
 import org.mongodb.scala.bson.collection.immutable.Document
@@ -28,11 +28,6 @@ class MongoSourceSpec
     with BeforeAndAfterAll
     with MustMatchers {
 
-  // case class and codec for mongodb macros
-  case class Number(_id: Int)
-
-  val codecRegistry = fromRegistries(fromProviders(classOf[Number]), DEFAULT_CODEC_REGISTRY)
-
   //#init-mat
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
@@ -43,11 +38,20 @@ class MongoSourceSpec
 
   java.util.logging.Logger.getLogger("org.mongodb.driver").setLevel(java.util.logging.Level.SEVERE)
 
-  //#init-connection
+  // #macros-codecs
+  case class Number(_id: Int)
+  val codecRegistry = fromRegistries(fromProviders(classOf[Number]), DEFAULT_CODEC_REGISTRY)
+  // #macros-codecs
+
+  // #init-connection
   private val client = MongoClient(s"mongodb://localhost:27017")
-  private val db = client.getDatabase("alpakka-mongo").withCodecRegistry(codecRegistry)
+  private val db = client.getDatabase("alpakka-mongo")
   private val numbersColl = db.getCollection("numbers")
-  //#init-connection
+  // #init-connection
+
+  // #init-connection-codec
+  private val numbersObjectColl = db.getCollection("numbers").withCodecRegistry(codecRegistry)
+  // #init-connection-codec
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 50.millis)
@@ -88,14 +92,14 @@ class MongoSourceSpec
     "support codec registry to read case class objects" in {
       val data: Seq[Number] = seed().map(Number)
 
-      //#create-source
+      //#create-source-codec
       val source: Source[Number, NotUsed] =
-        MongoSource[Number](numbersColl.find())
-      //#create-source
+        MongoSource[Number](numbersObjectColl.find())
+      //#create-source-codec
 
-      //#run-source
+      //#run-source-codec
       val rows: Future[Seq[Number]] = source.runWith(Sink.seq)
-      //#run-source
+      //#run-source-codec
 
       rows.futureValue must contain theSameElementsAs data
     }
