@@ -96,27 +96,24 @@ class S3StreamSpec(_system: ActorSystem)
     val s3stream = new S3Stream(settings)
 
     def nonEmptySrc = Source.repeat(ByteString("hello world"))
-    val conditionallyAppended = s3stream invokePrivate PrivateMethod[Flow[ByteString, ByteString, NotUsed]](
-      'conditionalAppendFl
-    )()
 
     nonEmptySrc
       .take(1)
-      .via(conditionallyAppended)
+      .via(s3stream.atLeastOneByteString)
       .toMat(Sink.seq[ByteString])(Keep.right)
       .run()
       .futureValue should equal(Seq(ByteString("hello world")))
 
     nonEmptySrc
       .take(10)
-      .via(conditionallyAppended)
+      .via(s3stream.atLeastOneByteString)
       .toMat(Sink.seq[ByteString])(Keep.right)
       .run()
       .futureValue should equal(Seq.fill(10)(ByteString("hello world")))
 
     nonEmptySrc
       .take(0)
-      .via(conditionallyAppended)
+      .via(s3stream.atLeastOneByteString)
       .toMat(Sink.seq[ByteString])(Keep.right)
       .run()
       .futureValue should equal(Seq(ByteString.empty))
