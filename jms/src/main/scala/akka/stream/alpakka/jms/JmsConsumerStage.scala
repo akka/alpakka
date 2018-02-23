@@ -22,7 +22,7 @@ import scala.util.{Failure, Success}
 final class JmsConsumerStage(settings: JmsConsumerSettings)
     extends GraphStageWithMaterializedValue[SourceShape[Message], KillSwitch] {
 
-  private val out = Outlet[Message]("JmsSource.out")
+  private val out = Outlet[Message]("JmsConsumer.out")
 
   override def shape: SourceShape[Message] = SourceShape[Message](out)
 

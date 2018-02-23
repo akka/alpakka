@@ -12,8 +12,8 @@ import akka.stream.stage._
 
 final class JmsProducerStage[A <: JmsMessage](settings: JmsProducerSettings) extends GraphStage[FlowShape[A, A]] {
 
-  private val in = Inlet[A]("JmsSink.in")
-  private val out = Outlet[A]("JmsSink.out")
+  private val in = Inlet[A]("JmsProducer.in")
+  private val out = Outlet[A]("JmsProducer.out")
 
   override def shape: FlowShape[A, A] = FlowShape.of(in, out)
 
