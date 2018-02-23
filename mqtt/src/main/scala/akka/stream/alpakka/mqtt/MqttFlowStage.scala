@@ -21,6 +21,7 @@ import org.eclipse.paho.client.mqttv3.{
   MqttAsyncClient,
   MqttCallbackExtended,
   MqttConnectOptions,
+  MqttException,
   MqttMessage => PahoMqttMessage
 }
 
@@ -114,7 +115,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
       )
 
       mqttClient.setCallback(new MqttCallbackExtended {
-        override def messageArrived(topic: String, pahoMessage: PahoMqttMessage) =
+        override def messageArrived(topic: String, pahoMessage: PahoMqttMessage): Unit =
           onMessage(new MqttCommittableMessage {
             override val message = MqttMessage(topic, ByteString(pahoMessage.getPayload))
             override def messageArrivedComplete(): Future[Done] = {
@@ -129,15 +130,16 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
             }
           })
 
-        override def deliveryComplete(token: IMqttDeliveryToken) = ()
+        override def deliveryComplete(token: IMqttDeliveryToken): Unit = ()
 
-        override def connectionLost(cause: Throwable) =
+        override def connectionLost(cause: Throwable): Unit =
           onConnectionLost.invoke(cause)
 
-        override def connectComplete(reconnect: Boolean, serverURI: String) = if (reconnect) pull(in)
+        override def connectComplete(reconnect: Boolean, serverURI: String): Unit =
+          if (reconnect) pull(in)
       })
 
-      val connectOptions = {
+      val connectOptions: MqttConnectOptions = {
         val options = new MqttConnectOptions
         connectionSettings.auth.foreach {
           case (user, password) =>
@@ -226,7 +228,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
           (),
           (token: Try[IMqttToken]) =>
             token match {
-              case Success(token) => onConnect.invoke(token.getClient)
+              case Success(v) => onConnect.invoke(v.getClient)
               case Failure(ex) => onConnectionLost.invoke(ex)
           }
         )
@@ -238,20 +240,30 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
               new IllegalStateException("Cannot complete subscription because the stage is about to stop or fail")
             )
 
-        mqttClient.disconnect(
-          connectionSettings.disconnectQuiesceTimeout.toMillis,
-          null,
-          new IMqttActionListener {
-            override def onSuccess(asyncActionToken: IMqttToken): Unit = mqttClient.close()
+        try {
+          mqttClient.disconnect(
+            connectionSettings.disconnectQuiesceTimeout.toMillis,
+            null,
+            new IMqttActionListener {
+              override def onSuccess(asyncActionToken: IMqttToken): Unit = mqttClient.close()
 
-            override def onFailure(asyncActionToken: IMqttToken, exception: Throwable): Unit = {
-              // Use 0 quiesce timeout as we have already quiesced in `disconnect`
-              mqttClient.disconnectForcibly(0, connectionSettings.disconnectTimeout.toMillis)
-              // Only disconnected client can be closed
-              mqttClient.close()
+              override def onFailure(asyncActionToken: IMqttToken, exception: Throwable): Unit = {
+                // Use 0 quiesce timeout as we have already quiesced in `disconnect`
+                mqttClient.disconnectForcibly(0, connectionSettings.disconnectTimeout.toMillis)
+                // Only disconnected client can be closed
+                mqttClient.close()
+              }
             }
-          }
-        )
+          )
+        } catch {
+          // Not to worry - disconnect is best effort - don't worry if already disconnected
+          case _: MqttException =>
+            try {
+              mqttClient.close()
+            } catch {
+              case _: MqttException =>
+            }
+        }
       }
     }, subscriptionPromise.future)
   }
