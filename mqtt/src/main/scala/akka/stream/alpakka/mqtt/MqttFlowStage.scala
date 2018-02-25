@@ -27,6 +27,7 @@ import org.eclipse.paho.client.mqttv3.{
 
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 final class MqttFlowStage(sourceSettings: MqttSourceSettings,
@@ -46,6 +47,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
 
     (new GraphStageLogic(shape) {
       private val backpressure = new Semaphore(bufferSize)
+      private var pendingMsg = Option.empty[MqttMessage]
       private val queue = mutable.Queue[MqttCommittableMessage]()
       private val unackedMessages = new AtomicInteger()
 
@@ -59,9 +61,9 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
       private def onConnect =
         getAsyncCallback[IMqttAsyncClient]((client: IMqttAsyncClient) => {
           if (manualAcks) client.setManualAcks(true)
-          val (topics, qos) = sourceSettings.subscriptions.unzip
+          val (topics, qoses) = sourceSettings.subscriptions.unzip
           if (topics.nonEmpty) {
-            client.subscribe(topics.toArray, qos.map(_.byteValue.toInt).toArray, (), mqttSubscriptionCallback)
+            client.subscribe(topics.toArray, qoses.map(_.byteValue.toInt).toArray, (), mqttSubscriptionCallback)
           } else {
             subscriptionPromise.complete(Success(Done))
             pull(in)
@@ -90,7 +92,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
       }
 
       private val onPublished = getAsyncCallback[Try[IMqttToken]] {
-        case Success(_) => pull(in)
+        case Success(_) => if (!hasBeenPulled(in)) pull(in)
         case Failure(ex) => failStage(ex)
       }
 
@@ -114,6 +116,13 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
         connectionSettings.persistence
       )
 
+      private def publishMsg(msg: MqttMessage) = {
+        val pahoMsg = new PahoMqttMessage(msg.payload.toArray)
+        pahoMsg.setQos(msg.qos.getOrElse(qos).byteValue)
+        pahoMsg.setRetained(msg.retained)
+        mqttClient.publish(msg.topic, pahoMsg, msg, onPublished.invoke _)
+      }
+
       mqttClient.setCallback(new MqttCallbackExtended {
         override def messageArrived(topic: String, pahoMessage: PahoMqttMessage): Unit =
           onMessage(new MqttCommittableMessage {
@@ -133,10 +142,15 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
         override def deliveryComplete(token: IMqttDeliveryToken): Unit = ()
 
         override def connectionLost(cause: Throwable): Unit =
-          onConnectionLost.invoke(cause)
+          if (!connectOptions.isAutomaticReconnect) onConnectionLost.invoke(cause)
 
-        override def connectComplete(reconnect: Boolean, serverURI: String): Unit =
-          if (reconnect) pull(in)
+        override def connectComplete(reconnect: Boolean, serverURI: String): Unit = {
+          pendingMsg.foreach { msg =>
+            publishMsg(msg)
+            pendingMsg = None
+          }
+          if (reconnect && !hasBeenPulled(in)) pull(in)
+        }
       })
 
       val connectOptions: MqttConnectOptions = {
@@ -182,10 +196,12 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
         new InHandler {
           override def onPush(): Unit = {
             val msg = grab(in)
-            val pahoMsg = new PahoMqttMessage(msg.payload.toArray)
-            pahoMsg.setQos(msg.qos.getOrElse(qos).byteValue)
-            pahoMsg.setRetained(msg.retained)
-            mqttClient.publish(msg.topic, pahoMsg, msg, onPublished.invoke _)
+            try {
+              publishMsg(msg)
+            } catch {
+              case _: MqttException if connectOptions.isAutomaticReconnect => pendingMsg = Some(msg)
+              case NonFatal(e) => throw e
+            }
           }
 
           override def onUpstreamFinish(): Unit = {
