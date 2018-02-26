@@ -95,7 +95,7 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
     mock
       .register(
         head(urlEqualTo(s"/$bucketKey")).willReturn(
-          aResponse().withStatus(200).withHeader("ETag", s""""$etag"""")
+          aResponse().withStatus(200).withHeader("ETag", s""""$etag"""").withHeader("Content-Length", "8")
         )
       )
 
@@ -107,7 +107,7 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
           .withHeader("x-amz-server-side-encryption-customer-key", new EqualToPattern(sseCustomerKey))
           .withHeader("x-amz-server-side-encryption-customer-key-MD5", new EqualToPattern(sseCustomerMd5Key))
           .willReturn(
-            aResponse().withStatus(200).withHeader("ETag", s""""$etagSSE"""")
+            aResponse().withStatus(200).withHeader("ETag", s""""$etagSSE"""").withHeader("Content-Length", "8")
           )
       )
 
