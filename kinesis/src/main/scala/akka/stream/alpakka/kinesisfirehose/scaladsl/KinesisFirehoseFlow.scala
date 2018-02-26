@@ -33,7 +33,7 @@ object KinesisFirehoseFlow {
       )
       .mapAsync(settings.parallelism)(identity)
       .mapConcat(_.getRequestResponses.asScala.to[Iterable])
-      .filter(_.getErrorCode == null) // TODO: Do we want this...?
+      .filter(_.getErrorCode == null)
 
   private def getByteSize(record: Record): Int = record.getData.position
 

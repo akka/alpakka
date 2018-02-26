@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.kinesisfirehose
 
-import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings.{Exponential, Lineal, RetryBackoffStrategy}
+import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings.{Exponential, Linear, RetryBackoffStrategy}
 
 import scala.concurrent.duration._
 
@@ -37,7 +37,7 @@ case class KinesisFirehoseFlowSettings(parallelism: Int,
 
   def withBackoffStrategyExponential(): KinesisFirehoseFlowSettings = copy(backoffStrategy = Exponential)
 
-  def withBackoffStrategyLineal(): KinesisFirehoseFlowSettings = copy(backoffStrategy = Lineal)
+  def withBackoffStrategyLinear(): KinesisFirehoseFlowSettings = copy(backoffStrategy = Linear)
 
   def withBackoffStrategy(backoffStrategy: RetryBackoffStrategy): KinesisFirehoseFlowSettings =
     copy(backoffStrategy = backoffStrategy)
@@ -53,10 +53,10 @@ object KinesisFirehoseFlowSettings {
 
   sealed trait RetryBackoffStrategy
   case object Exponential extends RetryBackoffStrategy
-  case object Lineal extends RetryBackoffStrategy
+  case object Linear extends RetryBackoffStrategy
 
   val exponential: RetryBackoffStrategy = Exponential
-  val lineal: RetryBackoffStrategy = Lineal
+  val linear: RetryBackoffStrategy = Linear
 
   val defaultInstance: KinesisFirehoseFlowSettings = KinesisFirehoseFlowSettings(
     parallelism = MaxRecordsPerSecond / MaxRecordsPerRequest,

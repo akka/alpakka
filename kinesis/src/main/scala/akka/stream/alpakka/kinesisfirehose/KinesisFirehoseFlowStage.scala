@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.kinesisfirehose
 
-import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings.{Exponential, Lineal, RetryBackoffStrategy}
+import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings.{Exponential, Linear, RetryBackoffStrategy}
 import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseErrors.{ErrorPublishingRecords, FailurePublishingRecords}
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
@@ -85,7 +85,7 @@ private[kinesisfirehose] final class KinesisFirehoseFlowStage(
           waitingRetries.put(retryToken, Job(attempt + 1, errors.map(_._2)))
           scheduleOnce(retryToken, backoffStrategy match {
             case Exponential => scala.math.pow(retryBaseInMillis, attempt).toInt millis
-            case Lineal => retryInitialTimeout * attempt
+            case Linear => retryInitialTimeout * attempt
           })
           retryToken += 1
       }
