@@ -5,7 +5,7 @@
 package akka.stream.alpakka.kinesis
 
 import akka.stream.alpakka.kinesis.KinesisErrors.{ErrorPublishingRecords, FailurePublishingRecords}
-import akka.stream.alpakka.kinesis.KinesisFlowSettings.{Exponential, Lineal, RetryBackoffStrategy}
+import akka.stream.alpakka.kinesis.KinesisFlowSettings.{Exponential, Linear, RetryBackoffStrategy}
 import akka.stream.alpakka.kinesis.KinesisFlowStage._
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
@@ -87,7 +87,7 @@ private[kinesis] final class KinesisFlowStage(
           waitingRetries.put(retryToken, Job(attempt + 1, errors.map(_._2)))
           scheduleOnce(retryToken, backoffStrategy match {
             case Exponential => scala.math.pow(retryBaseInMillis, attempt).toInt millis
-            case Lineal => retryInitialTimeout * attempt
+            case Linear => retryInitialTimeout * attempt
           })
           retryToken += 1
       }

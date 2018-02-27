@@ -59,7 +59,7 @@ object KinesisFlow {
       }
       .via(apply(streamName, settings))
 
-  def byParititonAndBytes(
+  def byPartitionAndBytes(
       streamName: String,
       settings: KinesisFlowSettings = KinesisFlowSettings.defaultInstance
   )(
