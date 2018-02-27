@@ -84,14 +84,14 @@ object Examples {
   val flow2: Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] = KinesisFlow("myStreamName", flowSettings)
 
   val flow3: Flow[(String, ByteString), PutRecordsResultEntry, NotUsed] =
-    KinesisFlow.byParititonAndBytes("myStreamName")
+    KinesisFlow.byPartitionAndBytes("myStreamName")
 
   val flow4: Flow[(String, ByteBuffer), PutRecordsResultEntry, NotUsed] =
     KinesisFlow.byPartitionAndData("myStreamName")
 
   val sink1: Sink[PutRecordsRequestEntry, NotUsed] = KinesisSink("myStreamName")
   val sink2: Sink[PutRecordsRequestEntry, NotUsed] = KinesisSink("myStreamName", flowSettings)
-  val sink3: Sink[(String, ByteString), NotUsed] = KinesisSink.byParititonAndBytes("myStreamName")
+  val sink3: Sink[(String, ByteString), NotUsed] = KinesisSink.byPartitionAndBytes("myStreamName")
   val sink4: Sink[(String, ByteBuffer), NotUsed] = KinesisSink.byPartitionAndData("myStreamName")
   //#flow-sink
 
