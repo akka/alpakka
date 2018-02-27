@@ -28,12 +28,12 @@ object KinesisSink {
   ): Sink[(String, ByteBuffer), NotUsed] =
     KinesisFlow.byPartitionAndData(streamName, settings).to(Sink.ignore)
 
-  def byParititonAndBytes(
+  def byPartitionAndBytes(
       streamName: String,
       settings: KinesisFlowSettings = KinesisFlowSettings.defaultInstance
   )(
       implicit kinesisClient: AmazonKinesisAsync
   ): Sink[(String, ByteString), NotUsed] =
-    KinesisFlow.byParititonAndBytes(streamName, settings).to(Sink.ignore)
+    KinesisFlow.byPartitionAndBytes(streamName, settings).to(Sink.ignore)
 
 }

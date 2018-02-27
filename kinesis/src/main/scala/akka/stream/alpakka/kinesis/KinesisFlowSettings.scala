@@ -36,7 +36,7 @@ case class KinesisFlowSettings(parallelism: Int,
 
   def withBackoffStrategyExponential(): KinesisFlowSettings = copy(backoffStrategy = Exponential)
 
-  def withBackoffStrategyLineal(): KinesisFlowSettings = copy(backoffStrategy = Lineal)
+  def withBackoffStrategyLinear(): KinesisFlowSettings = copy(backoffStrategy = Linear)
 
   def withBackoffStrategy(backoffStrategy: RetryBackoffStrategy): KinesisFlowSettings =
     copy(backoffStrategy = backoffStrategy)
@@ -46,17 +46,16 @@ case class KinesisFlowSettings(parallelism: Int,
 }
 
 object KinesisFlowSettings {
-
   private val MAX_RECORDS_PER_REQUEST = 500
   private val MAX_RECORDS_PER_SHARD_PER_SECOND = 1000
   private val MAX_BYTES_PER_SHARD_PER_SECOND = 1000000
 
   sealed trait RetryBackoffStrategy
   case object Exponential extends RetryBackoffStrategy
-  case object Lineal extends RetryBackoffStrategy
+  case object Linear extends RetryBackoffStrategy
 
   val exponential: RetryBackoffStrategy = Exponential
-  val lineal: RetryBackoffStrategy = Lineal
+  val linear: RetryBackoffStrategy = Linear
 
   val defaultInstance: KinesisFlowSettings = byNumberOfShards(1)
 
