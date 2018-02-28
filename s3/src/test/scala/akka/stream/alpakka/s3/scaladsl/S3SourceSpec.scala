@@ -52,6 +52,8 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     val Some(result) = metadata.futureValue
 
     result.eTag shouldBe Some(etag)
+    result.contentLength shouldBe 8
+
   }
 
   it should "download a metadata from S3 using server side encryption" in {
@@ -65,6 +67,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     val Some(result) = metadata.futureValue
 
     result.eTag shouldBe Some(etagSSE)
+    result.contentLength shouldBe 8
   }
 
   it should "download a range of file's bytes from S3 if bytes range given" in {
