@@ -10,7 +10,10 @@ import akka.stream.ActorMaterializer
 import akka.stream.alpakka.mongodb.scaladsl.MongoSink
 import akka.stream.alpakka.mongodb.scaladsl.DocumentUpdate
 import akka.stream.scaladsl.Source
-import org.mongodb.scala.MongoClient
+import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
+import org.mongodb.scala.{MongoClient, MongoCollection}
+import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
+import org.mongodb.scala.bson.codecs.Macros._
 import org.mongodb.scala.model.Filters
 import org.mongodb.scala.model.Updates._
 import org.mongodb.scala.bson.collection.immutable.Document
@@ -28,6 +31,11 @@ class MongoSinkSpec
     with BeforeAndAfterAll
     with MustMatchers {
 
+  // case class and codec for mongodb macros
+  case class Number(_id: Int)
+
+  val codecRegistry = fromRegistries(fromProviders(classOf[Number]), DEFAULT_CODEC_REGISTRY)
+
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
   import system.dispatcher
@@ -36,8 +44,11 @@ class MongoSinkSpec
     Await.result(db.drop().toFuture(), 5.seconds)
 
   private val client = MongoClient(s"mongodb://localhost:27017")
-  private val db = client.getDatabase("alpakka-mongo")
+  private val db = client.getDatabase("alpakka-mongo").withCodecRegistry(codecRegistry)
   private val numbersColl = db.getCollection("numbersSink")
+  //#init-connection-codec
+  private val numbersObjectColl: MongoCollection[Number] = db.getCollection("numbersSink")
+  //#init-connection-codec
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 50.millis)
@@ -65,6 +76,17 @@ class MongoSinkSpec
       found.map(_.getInteger("value")) must contain theSameElementsAs testRange
     }
 
+    "save with insertOne and codec support" in {
+      val testRangeObjects = testRange.map(Number(_))
+      val source = Source(testRangeObjects)
+
+      source.runWith(MongoSink.insertOne[Number](2, numbersObjectColl)).futureValue
+
+      val found = numbersObjectColl.find().toFuture().futureValue
+
+      found must contain theSameElementsAs testRangeObjects
+    }
+
     "save with insertMany" in {
       val source = Source(testRange).map(i => Document(s"""{"value":$i}"""))
 
@@ -73,6 +95,17 @@ class MongoSinkSpec
       val found = numbersColl.find().toFuture().futureValue
 
       found.map(_.getInteger("value")) must contain theSameElementsAs testRange
+    }
+
+    "save with insertMany and codec support" in {
+      val testRangeObjects = testRange.map(Number(_))
+      val source = Source(testRangeObjects)
+
+      source.grouped(2).runWith(MongoSink.insertMany[Number](2, numbersObjectColl)).futureValue
+
+      val found = numbersObjectColl.find().toFuture().futureValue
+
+      found must contain theSameElementsAs testRangeObjects
     }
 
     "update with updateOne" in {
@@ -139,11 +172,25 @@ class MongoSinkSpec
     //#insertOne
   }
 
+  private class ParadoxSnippetCodec1() {
+    //#insertOneCodec
+    val source: Source[Number, NotUsed] = ???
+    source.runWith(MongoSink.insertOne[Number](parallelism = 2, collection = numbersObjectColl))
+    //#insertOneCodec
+  }
+
   private class ParadoxSnippet2() {
     //#insertMany
     val source: Source[Seq[Document], NotUsed] = ???
     source.runWith(MongoSink.insertMany(parallelism = 2, collection = numbersColl))
     //#insertMany
+  }
+
+  private class ParadoxSnippetCodec2() {
+    //#insertManyCodec
+    val source: Source[Seq[Number], NotUsed] = ???
+    source.runWith(MongoSink.insertMany[Number](parallelism = 2, collection = numbersObjectColl))
+    //#insertManyCodec
   }
 
   private class ParadoxSnippet3() {
