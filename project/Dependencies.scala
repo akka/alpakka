@@ -131,6 +131,13 @@ object Dependencies {
     )
   )
 
+  val GoogleStorage = Seq(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+      "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion
+    )
+  )
+
   val HBase = {
     val hbaseVersion = "1.2.4"
     val hadoopVersion = "2.5.1"

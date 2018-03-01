@@ -10,6 +10,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   ftp,
   geode,
   googleCloudPubSub,
+  googleCloudStorage,
   hbase,
   ironmq,
   jms,
@@ -96,6 +97,8 @@ lazy val googleCloudPubSub = alpakkaProject(
   // For mockito https://github.com/akka/alpakka/issues/390
   parallelExecution in Test := false
 )
+
+lazy val googleCloudStorage = alpakkaProject("google-cloud-storage", Dependencies.GoogleStorage)
 
 lazy val hbase = alpakkaProject("hbase", Dependencies.HBase, fork in Test := true)
 
