@@ -52,22 +52,24 @@ lazy val alpakka = project
       """.stripMargin
   )
 
-lazy val amqp = alpakkaProject("amqp", Dependencies.Amqp)
+lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp)
 
 lazy val awslambda = alpakkaProject("awslambda",
+                                    "aws.lambda",
                                     Dependencies.AwsLambda,
                                     // For mockito https://github.com/akka/alpakka/issues/390
                                     parallelExecution in Test := false)
 
-lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", Dependencies.AzureStorageQueue)
+lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", "azure.storagequeue", Dependencies.AzureStorageQueue)
 
-lazy val cassandra = alpakkaProject("cassandra", Dependencies.Cassandra)
+lazy val cassandra = alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
 
-lazy val csv = alpakkaProject("csv", Dependencies.Csv)
+lazy val csv = alpakkaProject("csv", "csv", Dependencies.Csv)
 
-lazy val dynamodb = alpakkaProject("dynamodb", Dependencies.DynamoDB)
+lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB)
 
 lazy val elasticsearch = alpakkaProject(
+  "elasticsearch",
   "elasticsearch",
   Dependencies.Elasticsearch,
   // For elasticsearch-cluster-runner https://github.com/akka/alpakka/issues/479
@@ -75,9 +77,10 @@ lazy val elasticsearch = alpakkaProject(
 )
 
 // The name 'file' is taken by `sbt.file`, hence 'files'
-lazy val files = alpakkaProject("file", Dependencies.File)
+lazy val files = alpakkaProject("file", "file", Dependencies.File)
 
 lazy val ftp = alpakkaProject(
+  "ftp",
   "ftp",
   Dependencies.Ftp,
   parallelExecution in Test := false,
@@ -86,10 +89,12 @@ lazy val ftp = alpakkaProject(
   javaOptions in Test += "-Djava.security.egd=file:/dev/./urandom"
 )
 
-lazy val geode = alpakkaProject("geode", Dependencies.Geode, fork in Test := true, parallelExecution in Test := false)
+lazy val geode =
+  alpakkaProject("geode", "geode", Dependencies.Geode, fork in Test := true, parallelExecution in Test := false)
 
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",
+  "googlecloud.pubsub",
   Dependencies.GooglePubSub,
   fork in Test := true,
   envVars in Test := Map("PUBSUB_EMULATOR_HOST" -> "localhost:8538"),
@@ -97,49 +102,55 @@ lazy val googleCloudPubSub = alpakkaProject(
   parallelExecution in Test := false
 )
 
-lazy val hbase = alpakkaProject("hbase", Dependencies.HBase, fork in Test := true)
+lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, fork in Test := true)
 
-lazy val ironmq = alpakkaProject("ironmq", Dependencies.IronMq)
+lazy val ironmq = alpakkaProject("ironmq", "ironmq", Dependencies.IronMq)
 
-lazy val jms = alpakkaProject("jms", Dependencies.Jms, parallelExecution in Test := false)
+lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms, parallelExecution in Test := false)
 
 lazy val kinesis = alpakkaProject("kinesis",
+                                  "aws.kinesis",
                                   Dependencies.Kinesis,
                                   // For mockito https://github.com/akka/alpakka/issues/390
                                   parallelExecution in Test := false)
 
-lazy val mongodb = alpakkaProject("mongodb", Dependencies.MongoDb)
+lazy val mongodb = alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
 
-lazy val mqtt = alpakkaProject("mqtt", Dependencies.Mqtt)
+lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt)
 
-lazy val orientdb =
-  alpakkaProject("orientdb", Dependencies.OrientDB, fork in Test := true, parallelExecution in Test := false)
+lazy val orientdb = alpakkaProject("orientdb",
+                                   "orientdb",
+                                   Dependencies.OrientDB,
+                                   fork in Test := true,
+                                   parallelExecution in Test := false)
 
-lazy val s3 = alpakkaProject("s3", Dependencies.S3)
+lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3)
 
-lazy val springWeb = alpakkaProject("spring-web", Dependencies.SpringWeb)
+lazy val springWeb = alpakkaProject("spring-web", "spring.web", Dependencies.SpringWeb)
 
-lazy val simpleCodecs = alpakkaProject("simple-codecs")
+lazy val simpleCodecs = alpakkaProject("simple-codecs", "simplecodecs")
 
-lazy val slick = alpakkaProject("slick", Dependencies.Slick)
+lazy val slick = alpakkaProject("slick", "slick", Dependencies.Slick)
 
 lazy val sns = alpakkaProject("sns",
+                              "aws.sns",
                               Dependencies.Sns,
                               // For mockito https://github.com/akka/alpakka/issues/390
                               parallelExecution in Test := false)
 
-lazy val solr = alpakkaProject("solr", Dependencies.Solr, parallelExecution in Test := false)
+lazy val solr = alpakkaProject("solr", "solr", Dependencies.Solr, parallelExecution in Test := false)
 
 lazy val sqs = alpakkaProject("sqs",
+                              "aws.sqs",
                               Dependencies.Sqs,
                               // For mockito https://github.com/akka/alpakka/issues/390
                               parallelExecution in Test := false)
 
-lazy val sse = alpakkaProject("sse", Dependencies.Sse)
+lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse)
 
-lazy val unixdomainsocket = alpakkaProject("unix-domain-socket", Dependencies.UnixDomainSocket)
+lazy val unixdomainsocket = alpakkaProject("unix-domain-socket", "unixdomainsocket", Dependencies.UnixDomainSocket)
 
-lazy val xml = alpakkaProject("xml", Dependencies.Xml)
+lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
 
 val Local = config("local")
 val defaultParadoxSettings: Seq[Setting[_]] = Seq(
@@ -199,10 +210,11 @@ lazy val `doc-examples` = project
     Dependencies.`Doc-examples`
   )
 
-def alpakkaProject(projectId: String, additionalSettings: sbt.Def.SettingsDefinition*): Project =
+def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sbt.Def.SettingsDefinition*): Project =
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
     .settings(
-      name := s"akka-stream-alpakka-$projectId"
+      name := s"akka-stream-alpakka-$projectId",
+      AutomaticModuleName.settings(s"akka.stream.alpakka.$moduleName")
     )
     .settings(additionalSettings: _*)
