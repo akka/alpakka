@@ -254,20 +254,20 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
   })
 
   private def stopSessions(): Unit =
-    if (stopping.compareAndSet(false, true))
-      Future {
-        try {
-          jmsConnection.foreach(_.stop())
-        } catch {
-          case NonFatal(e) => log.error(e, "Error stopping JMS connection {}", jmsConnection)
-        }
-      }.flatMap { _ =>
-          val closeSessionFutures = jmsSessions.map { s =>
-            val f = s.closeSessionAsync()
-            f.onFailure { case e => log.error(e, "Error closing jms session") }
-            f
+    if (stopping.compareAndSet(false, true)) {
+      val closeSessionFutures = jmsSessions.map { s =>
+        val f = s.closeSessionAsync()
+        f.onFailure { case e => log.error(e, "Error closing jms session") }
+        f
+      }
+      Future
+        .sequence(closeSessionFutures)
+        .map { _ =>
+          try {
+            jmsConnection.foreach(_.stop())
+          } catch {
+            case NonFatal(e) => log.error(e, "Error stopping JMS connection {}", jmsConnection)
           }
-          Future.sequence(closeSessionFutures)
         }
         .onComplete { _ =>
           try {
@@ -282,10 +282,16 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
             markStopped.invoke(Done)
           }
         }
+    }
 
   private def abortSessions(ex: Throwable): Unit =
     if (stopping.compareAndSet(false, true)) {
-      Future {
+      val closeSessionFutures = jmsSessions.map { s =>
+        val f = s.closeSessionAsync()
+        f.failed.foreach(e => log.error(e, "Error closing jms session"))
+        f
+      }
+      Future.sequence(closeSessionFutures).map { _ =>
         try {
           jmsConnection.foreach(_.close())
           log.info("JMS connection {} closed", jmsConnection)

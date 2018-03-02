@@ -282,7 +282,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
 
       killSwitch2.shutdown()
 
-      resultList should contain theSameElementsAs numsIn.map(_.toString)
+      resultList.to[SortedSet] should contain theSameElementsAs numsIn.map(_.toString)
     }
 
     "ensure no message loss when aborting a stream" in withServer() { ctx =>
@@ -363,6 +363,86 @@ class JmsAckConnectorsSpec extends JmsSpec {
         s.toInt
       }
       resultList.to[SortedSet] should contain theSameElementsAs numsIn.map(_.toString)
+    }
+
+    "shutdown when waiting to acknowledge messages" in withServer() { ctx =>
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
+        JmsProducerSettings(connectionFactory).withQueue("numbers")
+      )
+
+      val (publishKillSwitch, _) = Source
+        .unfold(1)(n => Some(n + 1 -> n))
+        .throttle(15, 1.second, 2, ThrottleMode.shaping) // Higher than consumption rate.
+        .viaMat(KillSwitches.single)(Keep.right)
+        .alsoTo(Flow[Int].map(n => JmsTextMessage(n.toString).withProperty("Number", n)).to(jmsSink))
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      val jmsSource: Source[AckEnvelope, KillSwitch] = JmsConsumer.ackSource(
+        JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("numbers")
+      )
+
+      val resultQueue = new LinkedBlockingQueue[String]()
+
+      val (killSwitch, streamDone) = jmsSource
+        .throttle(10, 1.second, 2, ThrottleMode.shaping)
+        .toMat(
+          Sink.foreach { env =>
+            resultQueue.add(env.message.asInstanceOf[TextMessage].getText)
+          //message not acknowledged
+          }
+        )(Keep.both)
+        .run()
+
+      // Need to wait for the stream to have started and running for sometime.
+      Thread.sleep(2000)
+
+      killSwitch.shutdown()
+      publishKillSwitch.shutdown()
+
+      streamDone.futureValue shouldBe Done
+    }
+
+    "abort when waiting to acknowledge messages" in withServer() { ctx =>
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
+        JmsProducerSettings(connectionFactory).withQueue("numbers")
+      )
+
+      val (publishKillSwitch, _) = Source
+        .unfold(1)(n => Some(n + 1 -> n))
+        .throttle(15, 1.second, 2, ThrottleMode.shaping) // Higher than consumption rate.
+        .viaMat(KillSwitches.single)(Keep.right)
+        .alsoTo(Flow[Int].map(n => JmsTextMessage(n.toString).withProperty("Number", n)).to(jmsSink))
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      val jmsSource: Source[AckEnvelope, KillSwitch] = JmsConsumer.ackSource(
+        JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("numbers")
+      )
+
+      val resultQueue = new LinkedBlockingQueue[String]()
+
+      val (killSwitch, streamDone) = jmsSource
+        .throttle(10, 1.second, 2, ThrottleMode.shaping)
+        .toMat(
+          Sink.foreach { env =>
+            resultQueue.add(env.message.asInstanceOf[TextMessage].getText)
+          //message not acknowledged
+          }
+        )(Keep.both)
+        .run()
+
+      // Need to wait for the stream to have started and running for sometime.
+      Thread.sleep(2000)
+
+      killSwitch.abort(new Exception("aborted"))
+      publishKillSwitch.shutdown()
+
+      streamDone.failed.futureValue.getMessage shouldBe "aborted"
     }
   }
 }
