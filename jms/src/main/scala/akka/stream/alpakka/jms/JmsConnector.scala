@@ -134,7 +134,13 @@ private[jms] class JmsAckSession(override val connection: jms.Connection,
 
   def ack(message: jms.Message): Unit = ackQueue.put(message.acknowledge _)
 
+  override def closeSession(): Unit = {
+    pendingAck = 0
+    session.close()
+  }
+
   override def abortSession(): Unit = {
+    pendingAck = 0
     ackQueue.put(() => throw new java.lang.IllegalStateException("Shutdown"))
     session.close()
   }
