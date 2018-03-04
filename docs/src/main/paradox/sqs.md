@@ -194,7 +194,7 @@ Java (change visibility timeout)
 Same as the normal `SqsSink`:
 
 Scala
-: @@snip ($alpakka$/sqs/src/main/scala/akka/stream/alpakka/sqs/SqsAckSinkSettings.scala) { #SqsAckSinkSettings }
+: @@snip ($alpakka$/sqs/src/main/scala/akka/stream/alpakka/sqs/SqsAckSettings.scala) { #SqsAckSinkSettings }
 
 Options:
 

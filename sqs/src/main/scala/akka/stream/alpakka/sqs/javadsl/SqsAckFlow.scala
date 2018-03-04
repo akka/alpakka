@@ -29,4 +29,18 @@ object SqsAckFlow {
   def create(queueUrl: String, sqsClient: AmazonSQSAsync): Flow[MessageActionPair, AckResult, NotUsed] =
     create(queueUrl, SqsAckSinkSettings.Defaults, sqsClient)
 
+  /**
+   * Creates an acknowledging flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
+   */
+  def grouped(queueUrl: String,
+              settings: SqsBatchAckFlowSettings,
+              sqsClient: AmazonSQSAsync): Flow[MessageActionPair, AckResult, NotUsed] =
+    scaladsl.SqsAckFlow.grouped(queueUrl, settings)(sqsClient).asJava
+
+  /**
+   * Creates an acknowledging flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
+   */
+  def grouped(queueUrl: String, sqsClient: AmazonSQSAsync): Flow[MessageActionPair, AckResult, NotUsed] =
+    grouped(queueUrl, SqsBatchAckFlowSettings.Defaults, sqsClient)
+
 }

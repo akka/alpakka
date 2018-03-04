@@ -40,17 +40,15 @@ private[sqs] final class SqsBatchAckFlowStage[A](queueUrl: String, sqsClient: Am
 
       private def handleChangeVisibility(request: ChangeMessageVisibilityBatchRequest): Unit = {
         val entries = request.getEntries
-        entries.forEach { entry =>
+        for (entry <- entries.asScala)
           log.debug(s"Set visibility timeout for message {} to {}", entry.getReceiptHandle, entry.getVisibilityTimeout)
-        }
         inFlight -= entries.size()
         checkForCompletion()
       }
       private def handleDelete(request: DeleteMessageBatchRequest): Unit = {
         val entries = request.getEntries
-        entries.forEach { entry =>
+        for (entry <- entries.asScala)
           log.debug(s"Deleted message {}", entry.getReceiptHandle)
-        }
         inFlight -= entries.size()
         checkForCompletion()
       }
@@ -106,17 +104,17 @@ private[sqs] final class SqsBatchAckFlowStage[A](queueUrl: String, sqsClient: Am
                 inFlight += nrOfMessages
 
                 sqsClient.deleteMessageBatchAsync(
-                  queueUrl,
-                  messages.zipWithIndex.map {
+                  new DeleteMessageBatchRequest(queueUrl, messages.zipWithIndex.map {
                     case (message, index) =>
                       deleteMessageEntry(message).withId(index.toString)
-                  }.asJava,
+                  }.asJava),
                   new AsyncHandler[DeleteMessageBatchRequest, DeleteMessageBatchResult]() {
                     override def onError(exception: Exception): Unit = {
                       val batchException = BatchException(messages.size, exception)
                       responsePromise.failure(batchException)
                       failureCallback.invoke(batchException)
                     }
+
                     override def onSuccess(request: DeleteMessageBatchRequest, result: DeleteMessageBatchResult): Unit =
                       if (!result.getFailed.isEmpty) {
                         val nrOfFailedMessages = result.getFailed.size()
@@ -141,11 +139,10 @@ private[sqs] final class SqsBatchAckFlowStage[A](queueUrl: String, sqsClient: Am
 
                 sqsClient
                   .changeMessageVisibilityBatchAsync(
-                    queueUrl,
-                    messages.zipWithIndex.map {
+                    new ChangeMessageVisibilityBatchRequest(queueUrl, messages.zipWithIndex.map {
                       case (message, index) =>
                         changeVisibilityEntry(message).withId(index.toString)
-                    }.asJava,
+                    }.asJava),
                     new AsyncHandler[ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchResult]() {
                       override def onError(exception: Exception): Unit = {
                         val batchException = BatchException(messages.size, exception)
