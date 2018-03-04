@@ -200,6 +200,41 @@ Options:
 
  - `maxInFlight` - maximum number of messages being processed by `AmazonSQSAsync` at the same time. Default: 10
 
+### Message processing with acknowledgement with underlying batching
+
+`SqsAckSink.grouped` a sink that can acknowledge (delete), ignore, or postpone messages, but it batches items and sends them as one request per action.
+
+Scala (ack)
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-ack }
+
+Scala (ignore)
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-ignore }
+
+Scala (change visibility timeout)
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-requeue }
+
+Java (ack)
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #batch-ack }
+
+Java (ignore)
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #batch-ignore }
+
+Java (change visibility timeout)
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #batch-requeue }
+
+#### Batch configuration
+
+Scala
+: @@snip ($alpakka$/sqs/src/main/scala/akka/stream/alpakka/sqs/SqsAckSettings.scala) { #SqsBatchAckFlowSettings }
+
+Options:
+
+ - `maxBatchSize` - the maximum number of messages in batch to send SQS. Default: 10.
+ - `maxBatchWait` - the maximum duration for which the stage waits until `maxBatchSize` messages arrived.
+    Sends what is collects at the end of the time period
+    even though the `maxBatchSize` is not fulfilled. Default: 500 milliseconds
+ - `concurrentRequests` - the number of batches sending to SQS concurrently.
+
 ### Using SQS as a Flow
 
 You can also build flow stages which put or acknowledge messages in SQS, backpressure on queue response and then forward

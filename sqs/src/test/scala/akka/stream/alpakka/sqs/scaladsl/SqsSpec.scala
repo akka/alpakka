@@ -4,16 +4,19 @@
 
 package akka.stream.alpakka.sqs.scaladsl
 
+import java.util.concurrent.CompletableFuture
+
 import akka.Done
-import akka.stream.alpakka.sqs.{MessageAction, SqsBatchAckFlowSettings, SqsSourceSettings}
+import akka.stream.alpakka.sqs.{BatchException, MessageAction, SqsBatchAckFlowSettings, SqsSourceSettings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.sqs.{AbstractAmazonSQSAsync, AmazonSQSAsync}
+import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model._
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito
 import org.mockito.Mockito.{spy, times, verify, when}
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.scalatest.mockito.MockitoSugar.mock
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -234,10 +237,10 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     var future = Source(messages).via(SqsFlow(queue)).runWith(Sink.ignore)
 
-    Await.result(future, 10.second) shouldBe Done
+    Await.result(future, 1.second) shouldBe Done
 
     val awsSqsClient = spy(sqsClient)
-    //#batch-delete
+    //#batch-ack
     future = SqsSource(queue)(awsSqsClient)
       .take(10)
       .map { m: Message =>
@@ -245,9 +248,9 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       }
       .via(SqsAckFlow.grouped(queue, SqsBatchAckFlowSettings.Defaults)(awsSqsClient))
       .runWith(Sink.ignore)
-    //#batch-delete
+    //#batch-ack
 
-    Await.result(future, 10.second) shouldBe Done
+    Await.result(future, 1.second) shouldBe Done
     verify(awsSqsClient, times(1)).deleteMessageBatchAsync(any[DeleteMessageBatchRequest], any)
   }
 
@@ -258,7 +261,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     var future = Source(messages).via(SqsFlow(queue)).runWith(Sink.ignore)
 
-    Await.result(future, 10.second) shouldBe Done
+    Await.result(future, 1.second) shouldBe Done
 
     val awsSqsClient = spy(sqsClient)
     //#batch-requeue
@@ -292,7 +295,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     for (i <- 0 until 10) {
       val result = stream.requestNext()
       result.metadata shouldBe empty
-      // result.message shouldBe s"Message - $i"
+      result.message shouldBe s"Message - $i"
     }
     stream.cancel()
   }
@@ -304,7 +307,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     var future = Source(messages).via(SqsFlow(queue)).runWith(Sink.ignore)
 
-    Await.result(future, 10.second) shouldBe Done
+    Await.result(future, 1.second) shouldBe Done
 
     val awsSqsClient = spy(sqsClient)
     future = SqsSource(queue)(awsSqsClient)
@@ -315,16 +318,59 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       .via(SqsAckFlow.grouped(queue, SqsBatchAckFlowSettings.Defaults.copy(maxBatchSize = 5))(awsSqsClient))
       .runWith(Sink.ignore)
 
-    Await.result(future, 10.second) shouldBe Done
+    Await.result(future, 1.second) shouldBe Done
     verify(awsSqsClient, times(2)).deleteMessageBatchAsync(any[DeleteMessageBatchRequest], any)
   }
 
   it should "fail if any of the messages in the batch request failed" in {
-    pending
+    val messages = for (i <- 0 until 10) yield new Message().withBody(s"Message - $i")
+
+    val mockAwsSqsClient = mock[AmazonSQSAsync]
+    when(mockAwsSqsClient.deleteMessageBatchAsync(any[DeleteMessageBatchRequest], any))
+      .thenAnswer(new Answer[AnyRef] {
+        override def answer(invocation: InvocationOnMock): AnyRef = {
+          val request = invocation.getArgument[DeleteMessageBatchRequest](0)
+          invocation
+            .getArgument[AsyncHandler[DeleteMessageBatchRequest, DeleteMessageBatchResult]](1)
+            .onSuccess(request, new DeleteMessageBatchResult().withFailed(new BatchResultErrorEntry()))
+          new CompletableFuture[DeleteMessageBatchRequest]
+        }
+      })
+
+    val future = Source(messages)
+      .take(10)
+      .map { m: Message =>
+        (m, MessageAction.Delete)
+      }
+      .via(SqsAckFlow.grouped("queue", SqsBatchAckFlowSettings.Defaults)(mockAwsSqsClient))
+      .runWith(Sink.ignore)
+
+    a[BatchException] should be thrownBy Await.result(future, 1.second)
   }
 
   it should "fail if the batch request failed" in {
-    pending
+    val messages = for (i <- 0 until 10) yield new Message().withBody(s"Message - $i")
+
+    val mockAwsSqsClient = mock[AmazonSQSAsync]
+    when(mockAwsSqsClient.deleteMessageBatchAsync(any[DeleteMessageBatchRequest], any))
+      .thenAnswer(new Answer[AnyRef] {
+        override def answer(invocation: InvocationOnMock): AnyRef = {
+          invocation
+            .getArgument[AsyncHandler[DeleteMessageBatchRequest, DeleteMessageBatchResult]](1)
+            .onError(new RuntimeException("error"))
+          new CompletableFuture[DeleteMessageBatchRequest]
+        }
+      })
+
+    val future = Source(messages)
+      .take(10)
+      .map { m: Message =>
+        (m, MessageAction.Delete)
+      }
+      .via(SqsAckFlow.grouped("queue", SqsBatchAckFlowSettings.Defaults)(mockAwsSqsClient))
+      .runWith(Sink.ignore)
+
+    a[BatchException] should be thrownBy Await.result(future, 1.second)
   }
 
   it should "fail if the client invocation failed" in {
@@ -342,7 +388,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       .via(SqsAckFlow.grouped("queue", SqsBatchAckFlowSettings.Defaults)(mockAwsSqsClient))
       .runWith(Sink.ignore)
 
-    a[RuntimeException] should be thrownBy Await.result(future, 10.second)
+    a[RuntimeException] should be thrownBy Await.result(future, 1.second)
   }
 
   it should "delete, delay & ignore all messages in batches of given size" in {
@@ -352,7 +398,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     var future = Source(messages).via(SqsFlow(queue)).runWith(Sink.ignore)
 
-    Await.result(future, 10.second) shouldBe Done
+    Await.result(future, 1.second) shouldBe Done
 
     val awsSqsClient = spy(sqsClient)
     var i = 0
@@ -360,9 +406,9 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       .take(10)
       .map { m: Message =>
         val msg =
-          if (i < 3)
+          if (i % 3 == 0)
             (m, MessageAction.Delete)
-          else if (i < 6)
+          else if (i % 3 == 1)
             (m, MessageAction.ChangeMessageVisibility(5))
           else
             (m, MessageAction.Ignore)
@@ -372,7 +418,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       .via(SqsAckFlow.grouped(queue, SqsBatchAckFlowSettings.Defaults)(awsSqsClient))
       .runWith(Sink.ignore)
 
-    Await.result(future, 10.second) shouldBe Done
+    Await.result(future, 1.second) shouldBe Done
     verify(awsSqsClient, times(1)).deleteMessageBatchAsync(any[DeleteMessageBatchRequest], any)
     verify(awsSqsClient, times(1))
       .changeMessageVisibilityBatchAsync(any[ChangeMessageVisibilityBatchRequest], any)
