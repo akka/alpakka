@@ -103,7 +103,7 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings)
                             action()
                             session.pendingAck -= 1
                           } catch {
-                            case _: java.lang.IllegalStateException =>
+                            case _: StopMessageListenerException =>
                               listenerStopped = true
                           }
                           if (!listenerStopped) ackQueued()
@@ -121,7 +121,7 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings)
                         }
                         ackQueued()
                       } catch {
-                        case _: java.lang.IllegalStateException =>
+                        case _: StopMessageListenerException =>
                           listenerStopped = true
                         case e: JMSException =>
                           handleError.invoke(e)
