@@ -257,7 +257,7 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
     if (stopping.compareAndSet(false, true)) {
       val closeSessionFutures = jmsSessions.map { s =>
         val f = s.closeSessionAsync()
-        f.onFailure { case e => log.error(e, "Error closing jms session") }
+        f.failed.foreach(e => log.error(e, "Error closing jms session"))
         f
       }
       Future
