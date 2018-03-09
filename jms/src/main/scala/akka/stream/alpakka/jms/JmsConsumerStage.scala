@@ -262,13 +262,6 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
       }
       Future
         .sequence(closeSessionFutures)
-        .map { _ =>
-          try {
-            jmsConnection.foreach(_.stop())
-          } catch {
-            case NonFatal(e) => log.error(e, "Error stopping JMS connection {}", jmsConnection)
-          }
-        }
         .onComplete { _ =>
           try {
             jmsConnection.foreach(_.close())
@@ -286,20 +279,22 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
 
   private def abortSessions(ex: Throwable): Unit =
     if (stopping.compareAndSet(false, true)) {
-      val closeSessionFutures = jmsSessions.map { s =>
-        val f = s.closeSessionAsync()
+      val abortSessionFutures = jmsSessions.map { s =>
+        val f = s.abortSessionAsync()
         f.failed.foreach(e => log.error(e, "Error closing jms session"))
         f
       }
-      Future.sequence(closeSessionFutures).map { _ =>
-        try {
-          jmsConnection.foreach(_.close())
-          log.info("JMS connection {} closed", jmsConnection)
-          markAborted.invoke(ex)
-        } catch {
-          case NonFatal(e) => log.error(e, "Error closing JMS connection {}", jmsConnection)
+      Future
+        .sequence(abortSessionFutures)
+        .onComplete { _ =>
+          try {
+            jmsConnection.foreach(_.close())
+            log.info("JMS connection {} closed", jmsConnection)
+            markAborted.invoke(ex)
+          } catch {
+            case NonFatal(e) => log.error(e, "Error closing JMS connection {}", jmsConnection)
+          }
         }
-      }
     }
 
   private[jms] def killSwitch = new KillSwitch {
