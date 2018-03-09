@@ -45,9 +45,14 @@ Below is a non-complete list of connectors that are maintained by other projects
 
 [alpakka]: https://index.scala-lang.org/count.svg?q=keywords:alpakka&subject=alpakka&style=flat-square "Alpakka"
 [alpakka-scaladex]: https://index.scala-lang.org/search?q=keywords:alpakka
+
 ## Kafka
 
 [Akka Streams Kafka](http://doc.akka.io/docs/akka-stream-kafka/current/home.html) a.k.a. Reactive Kafka.
+
+## Pulsar
+
+[Akka Streams - pulsar4s](https://github.com/sksamuel/pulsar4s#akka-streams) 
 
 ## TCP
 
