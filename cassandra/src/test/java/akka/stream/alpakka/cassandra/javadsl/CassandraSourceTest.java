@@ -6,6 +6,7 @@ package akka.stream.alpakka.cassandra.javadsl;
 
 import akka.Done;
 import akka.NotUsed;
+import akka.stream.alpakka.cassandra.CassandraBatchSettings;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
@@ -36,6 +37,18 @@ import java.util.stream.IntStream;
  * All the tests must be run with a local Cassandra running on default port 9042.
  */
 public class CassandraSourceTest {
+
+  //#element-to-insert
+  private class ToInsert {
+    Integer id;
+    Integer cc;
+
+    public ToInsert(Integer id, Integer cc) {
+      this.id = id;
+      this.cc = cc;
+    }
+  }
+  //#element-to-insert
 
   private static ActorSystem system;
   private static Materializer materializer;
@@ -78,6 +91,9 @@ public class CassandraSourceTest {
     );
     session.execute(
       "CREATE TABLE IF NOT EXISTS akka_stream_java_test.test (id int PRIMARY KEY);"
+    );
+    session.execute(
+      "CREATE TABLE IF NOT EXISTS akka_stream_java_test.test_batch (id int, cc int, PRIMARY KEY (id, cc));"
     );
   }
 
@@ -140,6 +156,37 @@ public class CassandraSourceTest {
   }
 
   @Test
+  public void flowBatchInputValues() throws Exception {
+
+    //#prepared-statement-batching-flow
+    final PreparedStatement preparedStatement = session.prepare("insert into akka_stream_java_test.test_batch(id, cc) values (?, ?)");
+    //#prepared-statement-batching-flow
+
+    //#statement-binder-batching-flow
+    BiFunction<ToInsert, PreparedStatement,BoundStatement> statementBinder = (toInsert, statement) -> statement.bind(toInsert.id, toInsert.cc);
+    //#statement-binder-batching-flow
+    Source<ToInsert, NotUsed> source = Source.from(IntStream.range(1, 100).boxed().map(i -> new ToInsert(i %2, i)).collect(Collectors.toList()));
+
+    //#settings-batching-flow
+    CassandraBatchSettings defaultSettings = CassandraBatchSettings.Defaults();
+    //#settings-batching-flow
+
+
+      //#run-batching-flow
+    final Flow<ToInsert, ToInsert, NotUsed> flow = CassandraFlow.createUnloggedBatchWithPassThrough(2, preparedStatement,
+            statementBinder, (ti) -> ti.id, defaultSettings, session, ec);
+
+    CompletionStage<List<ToInsert>> result = source.via(flow).runWith(Sink.seq(), materializer);
+    //#run-batching-flow
+
+    Set<Integer> resultToAssert = result.toCompletableFuture().get().stream().map(ti -> ti.cc).collect(Collectors.toSet());
+    Set<Integer> found = session.execute("select * from akka_stream_java_test.test_batch").all().stream().map(r -> r.getInt("cc")).collect(Collectors.toSet());
+
+    assertEquals(resultToAssert, IntStream.range(1, 100).boxed().collect(Collectors.toSet()));
+    assertEquals(found, IntStream.range(1, 100).boxed().collect(Collectors.toSet()));
+  }
+
+  @Test
   public void sinkInputValues() throws Exception {
 
     //#prepared-statement
@@ -162,7 +209,6 @@ public class CassandraSourceTest {
     result.toCompletableFuture().get();
 
     Set<Integer> found = session.execute("select * from akka_stream_java_test.test").all().stream().map(r -> r.getInt("id")).collect(Collectors.toSet());
-
     assertEquals(found, IntStream.range(1, 10).boxed().collect(Collectors.toSet()));
   }
 }
