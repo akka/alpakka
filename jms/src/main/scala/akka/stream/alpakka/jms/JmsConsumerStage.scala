@@ -103,7 +103,7 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings)
                             action()
                             session.pendingAck -= 1
                           } catch {
-                            case _: java.lang.IllegalStateException =>
+                            case _: StopMessageListenerException =>
                               listenerStopped = true
                           }
                           if (!listenerStopped) ackQueued()
@@ -121,7 +121,7 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings)
                         }
                         ackQueued()
                       } catch {
-                        case _: java.lang.IllegalStateException =>
+                        case _: StopMessageListenerException =>
                           listenerStopped = true
                         case e: JMSException =>
                           handleError.invoke(e)
@@ -254,21 +254,14 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
   })
 
   private def stopSessions(): Unit =
-    if (stopping.compareAndSet(false, true))
-      Future {
-        try {
-          jmsConnection.foreach(_.stop())
-        } catch {
-          case NonFatal(e) => log.error(e, "Error stopping JMS connection {}", jmsConnection)
-        }
-      }.flatMap { _ =>
-          val closeSessionFutures = jmsSessions.map { s =>
-            val f = s.closeSessionAsync()
-            f.onFailure { case e => log.error(e, "Error closing jms session") }
-            f
-          }
-          Future.sequence(closeSessionFutures)
-        }
+    if (stopping.compareAndSet(false, true)) {
+      val closeSessionFutures = jmsSessions.map { s =>
+        val f = s.closeSessionAsync()
+        f.failed.foreach(e => log.error(e, "Error closing jms session"))
+        f
+      }
+      Future
+        .sequence(closeSessionFutures)
         .onComplete { _ =>
           try {
             jmsConnection.foreach(_.close())
@@ -282,18 +275,26 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
             markStopped.invoke(Done)
           }
         }
+    }
 
   private def abortSessions(ex: Throwable): Unit =
     if (stopping.compareAndSet(false, true)) {
-      Future {
-        try {
-          jmsConnection.foreach(_.close())
-          log.info("JMS connection {} closed", jmsConnection)
-          markAborted.invoke(ex)
-        } catch {
-          case NonFatal(e) => log.error(e, "Error closing JMS connection {}", jmsConnection)
-        }
+      val abortSessionFutures = jmsSessions.map { s =>
+        val f = s.abortSessionAsync()
+        f.failed.foreach(e => log.error(e, "Error closing jms session"))
+        f
       }
+      Future
+        .sequence(abortSessionFutures)
+        .onComplete { _ =>
+          try {
+            jmsConnection.foreach(_.close())
+            log.info("JMS connection {} closed", jmsConnection)
+            markAborted.invoke(ex)
+          } catch {
+            case NonFatal(e) => log.error(e, "Error closing JMS connection {}", jmsConnection)
+          }
+        }
     }
 
   private[jms] def killSwitch = new KillSwitch {

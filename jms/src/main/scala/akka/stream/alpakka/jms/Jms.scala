@@ -109,3 +109,5 @@ final case class JmsBrowseSettings(connectionFactory: ConnectionFactory,
   def withAcknowledgeMode(acknowledgeMode: AcknowledgeMode): JmsBrowseSettings =
     copy(acknowledgeMode = Option(acknowledgeMode))
 }
+
+final case class StopMessageListenerException() extends Exception("Stopping MessageListener.")

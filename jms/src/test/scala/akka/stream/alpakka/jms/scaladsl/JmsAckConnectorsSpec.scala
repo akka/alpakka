@@ -282,7 +282,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
 
       killSwitch2.shutdown()
 
-      resultList should contain theSameElementsAs numsIn.map(_.toString)
+      resultList.to[SortedSet] should contain theSameElementsAs numsIn.map(_.toString)
     }
 
     "ensure no message loss when aborting a stream" in withServer() { ctx =>
@@ -363,6 +363,50 @@ class JmsAckConnectorsSpec extends JmsSpec {
         s.toInt
       }
       resultList.to[SortedSet] should contain theSameElementsAs numsIn.map(_.toString)
+    }
+
+    "shutdown when waiting to acknowledge messages" in withServer() { ctx =>
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      val in = 0 to 25 map (i => ('a' + i).asInstanceOf[Char].toString)
+      Source(in).runWith(JmsProducer.textSink(JmsProducerSettings(connectionFactory).withQueue("test")))
+
+      val jmsSource: Source[AckEnvelope, KillSwitch] = JmsConsumer.ackSource(
+        JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("test")
+      )
+
+      val (killSwitch, streamDone) = jmsSource
+        .toMat(Sink.ignore)(Keep.both) //no messages acknowledged
+        .run()
+
+      // Need to wait for the stream to have started and running for sometime.
+      Thread.sleep(2000)
+
+      killSwitch.shutdown()
+
+      streamDone.futureValue shouldBe Done
+    }
+
+    "abort when waiting to acknowledge messages" in withServer() { ctx =>
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      val in = 0 to 25 map (i => ('a' + i).asInstanceOf[Char].toString)
+      Source(in).runWith(JmsProducer.textSink(JmsProducerSettings(connectionFactory).withQueue("test")))
+
+      val jmsSource: Source[AckEnvelope, KillSwitch] = JmsConsumer.ackSource(
+        JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("test")
+      )
+
+      val (killSwitch, streamDone) = jmsSource
+        .toMat(Sink.ignore)(Keep.both) //no messages acknowledged
+        .run()
+
+      // Need to wait for the stream to have started and running for sometime.
+      Thread.sleep(2000)
+
+      killSwitch.abort(new Exception("aborted"))
+
+      streamDone.failed.futureValue.getMessage shouldBe "aborted"
     }
   }
 }
