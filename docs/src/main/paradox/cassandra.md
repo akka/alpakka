@@ -2,6 +2,8 @@
 
 The Cassandra connector allows you to read and write to Cassandra. You can query a stream of rows from @scaladoc[CassandraSource](akka.stream.alpakka.cassandra.scaladsl.CassandraSource$) or use prepared statements to insert or update with @scaladoc[CassandraFlow](akka.stream.alpakka.cassandra.scaladsl.CassandraFlow$) or @scaladoc[CassandraSink](akka.stream.alpakka.cassandra.scaladsl.CassandraSink$).
 
+Unlogged batches are also supported. 
+
 
 ### Reported issues
 
@@ -82,6 +84,58 @@ Scala
 Java
 : @@snip ($alpakka$/cassandra/src/test/java/akka/stream/alpakka/cassandra/javadsl/CassandraSourceTest.java) { #run-flow }
 
+### Flow with passthrough and unlogged batching Usage
+
+Use this when most of the elements in the stream share the same partition key. 
+
+Cassandra unlogged batches that share the same partition key will only
+resolve to one write internally in Cassandra, boosting write performance.
+
+**Be aware that this stage does not preserve the upstream order!**
+
+For this example we will define a class that model the data to be inserted
+
+Scala
+: @@snip ($alpakka$/cassandra/src/test/scala/akka/stream/alpakka/cassandra/scaladsl/CassandraSourceSpec.scala) { #element-to-insert }
+
+Java
+: @@snip ($alpakka$/cassandra/src/test/java/akka/stream/alpakka/cassandra/javadsl/CassandraSourceTest.java) { #element-to-insert }
+
+
+Let's create a Cassandra Prepared statement with a query that we want to execute.
+
+Scala
+: @@snip ($alpakka$/cassandra/src/test/scala/akka/stream/alpakka/cassandra/scaladsl/CassandraSourceSpec.scala) { #prepared-statement-batching-flow }
+
+Java
+: @@snip ($alpakka$/cassandra/src/test/java/akka/stream/alpakka/cassandra/javadsl/CassandraSourceTest.java) { #prepared-statement-batching-flow }
+
+Now we need to create a 'statement binder', this is just a function to bind to the prepared statement. In this example we are using a class.
+
+Scala
+: @@snip ($alpakka$/cassandra/src/test/scala/akka/stream/alpakka/cassandra/scaladsl/CassandraSourceSpec.scala) { #statement-binder-batching-flow }
+
+Java
+: @@snip ($alpakka$/cassandra/src/test/java/akka/stream/alpakka/cassandra/javadsl/CassandraSourceTest.java) { #statement-binder-batching-flow }
+
+You can define the amount of grouped elements, in this case we will use the default ones:
+
+Scala
+: @@snip ($alpakka$/cassandra/src/test/scala/akka/stream/alpakka/cassandra/scaladsl/CassandraSourceSpec.scala) { #settings-batching-flow }
+
+Java
+: @@snip ($alpakka$/cassandra/src/test/java/akka/stream/alpakka/cassandra/javadsl/CassandraSourceTest.java) { #settings-batching-flow }
+
+
+We run the stream persisting the elements to C* and finally folding them using a ```Sink.fold```. The function T => K has to extract the Cassandra partition key from your class.
+
+Scala
+: @@snip ($alpakka$/cassandra/src/test/scala/akka/stream/alpakka/cassandra/scaladsl/CassandraSourceSpec.scala) { #run-batching-flow }
+
+Java
+: @@snip ($alpakka$/cassandra/src/test/java/akka/stream/alpakka/cassandra/javadsl/CassandraSourceTest.java) { #run-batching-flow }
+
+
 ### Sink Usage
 
 Let's create a Cassandra Prepared statement with a query that we want to execute.
@@ -107,6 +161,7 @@ Scala
 
 Java
 : @@snip ($alpakka$/cassandra/src/test/java/akka/stream/alpakka/cassandra/javadsl/CassandraSourceTest.java) { #run-sink }
+
 
 ### Running the example code
 

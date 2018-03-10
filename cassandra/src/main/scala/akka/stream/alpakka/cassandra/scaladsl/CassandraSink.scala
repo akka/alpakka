@@ -5,13 +5,15 @@
 package akka.stream.alpakka.cassandra.scaladsl
 
 import akka.Done
+import akka.stream.alpakka.cassandra.GuavaFutures._
 import akka.stream.scaladsl.{Flow, Keep, Sink}
 import com.datastax.driver.core.{BoundStatement, PreparedStatement, Session}
 
 import scala.concurrent.Future
 
-import akka.stream.alpakka.cassandra.GuavaFutures._
-
+/**
+ * Scala API to create Cassandra Sinks.
+ */
 object CassandraSink {
   def apply[T](
       parallelism: Int,

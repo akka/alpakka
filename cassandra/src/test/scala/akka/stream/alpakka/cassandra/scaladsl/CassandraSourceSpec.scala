@@ -6,14 +6,15 @@ package akka.stream.alpakka.cassandra.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.cassandra.CassandraBatchSettings
 import akka.stream.scaladsl.{Sink, Source}
 import com.datastax.driver.core.{Cluster, PreparedStatement, SimpleStatement}
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
+import scala.collection.JavaConverters._
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.collection.JavaConverters._
 
 /**
  * All the tests must be run with a local Cassandra running on default port 9042.
@@ -24,6 +25,10 @@ class CassandraSourceSpec
     with BeforeAndAfterEach
     with BeforeAndAfterAll
     with MustMatchers {
+
+  //#element-to-insert
+  case class ToInsert(id: Integer, cc: Integer)
+  //#element-to-insert
 
   //#init-mat
   implicit val system = ActorSystem()
@@ -60,6 +65,16 @@ class CassandraSourceSpec
         |CREATE TABLE IF NOT EXISTS $keyspaceName.test (
         |    id int PRIMARY KEY
         |);
+      """.stripMargin
+    )
+
+    session.execute(
+      s"""
+         |CREATE TABLE IF NOT EXISTS $keyspaceName.test_batch (
+         |	id int,
+         |	cc int,
+         |	PRIMARY KEY (id, cc)
+         |);
       """.stripMargin
     )
   }
@@ -141,6 +156,39 @@ class CassandraSourceSpec
 
       resultToAssert mustBe (0 to 10).toList
       found.toSet mustBe (0 to 10).toSet
+    }
+
+    "write to the table using the batching flow emitting the elements in any order" in {
+      val source = Source(0 to 100).map(i => ToInsert(i % 2, i))
+
+      //#prepared-statement-batching-flow
+      val preparedStatement = session.prepare(s"INSERT INTO $keyspaceName.test_batch(id, cc) VALUES (?, ?)")
+      //#prepared-statement-batching-flow
+
+      //#statement-binder-batching-flow
+      val statementBinder =
+        (elemToInsert: ToInsert, statement: PreparedStatement) => statement.bind(elemToInsert.id, elemToInsert.cc)
+      //#statement-binder-batching-flow
+
+      //#settings-batching-flow
+      val settings: CassandraBatchSettings = CassandraBatchSettings.Defaults
+      //#settings-batching-flow
+
+      //#run-batching-flow
+      val flow = CassandraFlow.createUnloggedBatchWithPassThrough[ToInsert, Integer](parallelism = 2,
+                                                                                     preparedStatement,
+                                                                                     statementBinder,
+                                                                                     ti => ti.id,
+                                                                                     settings)
+
+      val result = source.via(flow).runWith(Sink.seq)
+      //#run-batching-flow
+
+      val resultToAssert = result.futureValue
+      val found = session.execute(s"select cc from $keyspaceName.test_batch").all().asScala.map(_.getInt("cc"))
+
+      resultToAssert.map(_.cc) must contain theSameElementsAs (0 to 100).toList
+      found.toSet mustBe (0 to 100).toSet
     }
 
     "write to the table using the sink" in {
