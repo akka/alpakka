@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.sqs
 
+import akka.stream.alpakka.sqs.SqsBatchAckFlowStage._
 import akka.stream.alpakka.sqs.scaladsl.AckResult
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
@@ -100,7 +101,7 @@ private[sqs] final class SqsBatchAckFlowStage[A](queueUrl: String, sqsClient: Am
             val nrOfMessages = messages.size
             val responsePromise = Promise[List[AckResult]]
             action match {
-              case Delete =>
+              case SqsBatchAckFlowStage.Delete =>
                 inFlight += nrOfMessages
 
                 sqsClient.deleteMessageBatchAsync(
@@ -134,7 +135,7 @@ private[sqs] final class SqsBatchAckFlowStage[A](queueUrl: String, sqsClient: Am
 
                   }
                 )
-              case ChangeMessageVisibility =>
+              case SqsBatchAckFlowStage.ChangeMessageVisibility =>
                 inFlight += nrOfMessages
 
                 sqsClient
@@ -168,7 +169,7 @@ private[sqs] final class SqsBatchAckFlowStage[A](queueUrl: String, sqsClient: Am
                         }
                     }
                   )
-              case Ignore =>
+              case SqsBatchAckFlowStage.Ignore =>
                 responsePromise.success(messages.map(msg => AckResult(None, body(msg))))
             }
             push(out, responsePromise.future)
@@ -180,15 +181,9 @@ private[sqs] final class SqsBatchAckFlowStage[A](queueUrl: String, sqsClient: Am
 
 private[sqs] object SqsBatchAckFlowStage {
 
-  implicit val mBody: MessageActionPair => String = _._1.getBody
-  implicit val deleteMessageEntryBuilder: MessageActionPair => DeleteMessageBatchRequestEntry =
-    pair => new DeleteMessageBatchRequestEntry().withReceiptHandle(pair._1.getReceiptHandle)
-  implicit val changeVisibilityEntryBuilder
-    : PartialFunction[MessageActionPair, ChangeMessageVisibilityBatchRequestEntry] = {
-    case (message, MessageAction.ChangeMessageVisibility(visibilityTimeout)) =>
-      new ChangeMessageVisibilityBatchRequestEntry()
-        .withReceiptHandle(message.getReceiptHandle)
-        .withVisibilityTimeout(visibilityTimeout)
-  }
+  private[sqs] sealed trait Call
+  private[sqs] case object Delete extends Call
+  private[sqs] case object Ignore extends Call
+  private[sqs] case object ChangeMessageVisibility extends Call
 
 }

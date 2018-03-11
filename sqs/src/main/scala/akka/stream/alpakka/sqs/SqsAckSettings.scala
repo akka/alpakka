@@ -31,24 +31,26 @@ final case class SqsBatchAckFlowSettings(maxBatchSize: Int, maxBatchWait: Finite
     maxBatchSize > 0 && maxBatchSize <= 10,
     s"Invalid value for maxBatchSize: $maxBatchSize. It should be 0 < maxBatchSize < 10, due to the Amazon SQS requirements."
   )
+  def withMaxBatchSize(maxBatchSize: Int): SqsBatchAckFlowSettings = this.copy(maxBatchSize = maxBatchSize)
+  def withMaxBatchWait(maxBatchWait: FiniteDuration): SqsBatchAckFlowSettings = this.copy(maxBatchWait = maxBatchWait)
+  def withConcurrentRequests(concurrentRequests: Int): SqsBatchAckFlowSettings =
+    this.copy(concurrentRequests = concurrentRequests)
 }
 //#SqsBatchAckFlowSettings
 
-private[sqs] sealed trait Call
-
 sealed abstract class MessageAction
 
-object Delete extends Call {
+object Delete {
   @deprecated("Use `MessageAction.Delete` instead", "0.15")
   def apply(): MessageAction = MessageAction.Delete
 }
 
-object Ignore extends Call {
+object Ignore {
   @deprecated("Use `MessageAction.Ignore` instead", "0.15")
   def apply(): MessageAction = MessageAction.Ignore
 }
 
-object ChangeMessageVisibility extends Call {
+object ChangeMessageVisibility {
   @deprecated("Use `MessageAction.ChangeMessageVisibility` instead", "0.15")
   def apply(visibilityTimeout: Int): MessageAction = MessageAction.ChangeMessageVisibility(visibilityTimeout)
 }
