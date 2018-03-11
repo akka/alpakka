@@ -185,7 +185,8 @@ public class SqsAckSinkTest extends BaseSqsTest {
         }
         CompletionStage<Done> done = Source
                 .fromIterator(() -> messages.iterator())
-                .runWith(SqsAckSink.grouped(queueUrl, awsClient), materializer);
+                .via(SqsAckFlow.grouped(queueUrl, awsClient))
+                .runWith(Sink.ignore(), materializer);
 
         done.toCompletableFuture().get(1, TimeUnit.SECONDS);
         //#batch-ack
@@ -216,7 +217,8 @@ public class SqsAckSinkTest extends BaseSqsTest {
         }
         CompletionStage<Done> done = Source
                 .fromIterator(() -> messages.iterator())
-                .runWith(SqsAckSink.grouped(queueUrl, awsClient), materializer);
+                .via(SqsAckFlow.grouped(queueUrl, awsClient))
+                .runWith(Sink.ignore(), materializer);
 
         done.toCompletableFuture().get(1, TimeUnit.SECONDS);
         //#batch-requeue
