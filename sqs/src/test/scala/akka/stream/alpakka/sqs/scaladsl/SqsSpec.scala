@@ -274,7 +274,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       .runWith(Sink.ignore)
     //#batch-requeue
 
-    Await.result(future, 100.second) shouldBe Done
+    Await.result(future, 1.second) shouldBe Done
     verify(awsSqsClient, times(1))
       .changeMessageVisibilityBatchAsync(any[ChangeMessageVisibilityBatchRequest], any)
   }
