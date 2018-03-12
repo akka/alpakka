@@ -19,14 +19,16 @@ import scala.collection.immutable
  * @param columnNames If given, these names are used as map keys; if not first stream element is used
  * @param charset Character set used to convert header line ByteString to String
  */
-private[csv] class CsvToMapStage(columnNames: Option[immutable.Seq[String]], charset: Charset)
-    extends GraphStage[FlowShape[immutable.Seq[ByteString], Map[String, ByteString]]] {
+private[csv] abstract class CsvToMapStageBase[V](columnNames: Option[immutable.Seq[String]], charset: Charset)
+    extends GraphStage[FlowShape[immutable.Seq[ByteString], Map[String, V]]] {
 
   override protected def initialAttributes: Attributes = Attributes.name("CsvToMap")
 
   private val in = Inlet[immutable.Seq[ByteString]]("CsvToMap.in")
-  private val out = Outlet[Map[String, ByteString]]("CsvToMap.out")
+  private val out = Outlet[Map[String, V]]("CsvToMap.out")
   override val shape = FlowShape.of(in, out)
+
+  protected def transformElements(elements: immutable.Seq[ByteString]): immutable.Seq[V]
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -37,7 +39,7 @@ private[csv] class CsvToMapStage(columnNames: Option[immutable.Seq[String]], cha
       override def onPush(): Unit = {
         val elem = grab(in)
         if (headers.isDefined) {
-          val map = headers.get.zip(elem).toMap
+          val map = headers.get.zip(transformElements(elem)).toMap
           push(out, map)
         } else {
           headers = Some(elem.map(_.decodeString(charset)))
@@ -47,4 +49,17 @@ private[csv] class CsvToMapStage(columnNames: Option[immutable.Seq[String]], cha
 
       override def onPull(): Unit = pull(in)
     }
+}
+
+private[csv] class CsvToMapStage(columnNames: Option[immutable.Seq[String]], charset: Charset)
+    extends CsvToMapStageBase[ByteString](columnNames, charset) {
+
+  override protected def transformElements(elements: immutable.Seq[ByteString]): immutable.Seq[ByteString] = elements
+}
+
+private[csv] class CsvToMapAsStringsStage(columnNames: Option[immutable.Seq[String]], charset: Charset)
+    extends CsvToMapStageBase[String](columnNames, charset) {
+
+  override protected def transformElements(elements: immutable.Seq[ByteString]): immutable.Seq[String] =
+    elements.map(_.decodeString(charset))
 }

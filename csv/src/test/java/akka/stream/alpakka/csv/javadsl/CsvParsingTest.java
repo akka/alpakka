@@ -19,13 +19,19 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 // #line-scanner
+        import akka.stream.alpakka.csv.javadsl.CsvParsing;
 
 // #line-scanner
+// #line-scanner-string
+        import akka.stream.alpakka.csv.javadsl.CsvParsing;
+
+// #line-scanner-string
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -51,15 +57,30 @@ public class CsvParsingTest {
     public void lineParserShouldParseOneLine() throws Exception {
         CompletionStage<Collection<ByteString>> completionStage =
         // #line-scanner
-            Source.single(ByteString.fromString("eins,zwei,drei\n"))
-                .via(CsvParsing.lineScanner())
-                .runWith(Sink.head(), materializer);
+        Source.single(ByteString.fromString("eins,zwei,drei\n"))
+            .via(CsvParsing.lineScanner())
+            .runWith(Sink.head(), materializer);
         // #line-scanner
         Collection<ByteString> list = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
         String[] res = list.stream().map(ByteString::utf8String).toArray(String[]::new);
         assertThat(res[0], equalTo("eins"));
         assertThat(res[1], equalTo("zwei"));
         assertThat(res[2], equalTo("drei"));
+    }
+
+    @Test
+    public void lineParserShouldParseOneLineAsString() throws Exception {
+        CompletionStage<List<String>> completionStage =
+        // #line-scanner-string
+        Source.single(ByteString.fromString("eins,zwei,drei\n"))
+            .via(CsvParsing.lineScanner())
+            .map(line -> line.stream().map(ByteString::utf8String).collect(Collectors.toList()))
+            .runWith(Sink.head(), materializer);
+        // #line-scanner-string
+        List<String> res = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+        assertThat(res.get(0), equalTo("eins"));
+        assertThat(res.get(1), equalTo("zwei"));
+        assertThat(res.get(2), equalTo("drei"));
     }
 
     @Test
