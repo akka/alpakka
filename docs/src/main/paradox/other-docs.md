@@ -1,5 +1,8 @@
 # Other documentation
 
+[From a time-series database to a key operational technology for the enterprise](https://youtu.be/3APiIht6oDY)
+Presentation by Colin Breck, Tesla, February 2018
+
 [Build Real-Time Streaming ETL Pipelines with Akka Streams, Alpakka and Apache Kafka](https://www.lightbend.com/blog/build-real-time-streaming-etl-pipelines-with-akka-streams-alpakka-and-apache-kafka)
 Webinar by Konrad Malawski, Lightbend, October 2017
 
