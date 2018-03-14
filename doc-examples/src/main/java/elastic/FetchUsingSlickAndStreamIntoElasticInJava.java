@@ -88,7 +88,8 @@ public class FetchUsingSlickAndStreamIntoElasticInJava {
                 .source(                                                                 // (6)
                     session,
                     "SELECT * FROM MOVIE",
-                    (SlickRow row) -> new Movie(row.nextInt(), row.nextString(), row.nextString(), row.nextDouble())
+                    (SlickRow row) ->
+                        new Movie(row.nextInt(), row.nextString(), row.nextString(), row.nextDouble())
                 )
                 .map(movie -> IncomingMessage.create(String.valueOf(movie.id), movie))   // (8)
                 .runWith(ElasticsearchSink
