@@ -18,6 +18,8 @@ The MQTT connector provides an Akka Stream source, sink and flow to connect to M
 
 ## Usage
 
+> Note that the following examples do not provide any connection management and are designed to get you going quickly. Consider empty client IDs to auto-generate unique identifiers and the use of [delayed stream restarts](https://doc.akka.io/docs/akka/current/stream/stream-error.html?language=scala#delayed-restarts-with-a-backoff-stage). The underlying Paho library's auto-reconnect feature [does not handle initial connections by design](https://github.com/eclipse/paho.mqtt.golang/issues/77).
+
 First we need to define various settings, that are required when connecting to an MQTT server.
 
 Scala
