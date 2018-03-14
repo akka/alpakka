@@ -6,22 +6,27 @@ package elastic
 
 // format: off
 // #sample
-import akka.Done
-import akka.stream.alpakka.elasticsearch.IncomingMessage
-import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSink
-import akka.stream.alpakka.slick.javadsl.SlickSession
-import akka.stream.alpakka.slick.scaladsl.Slick
-import org.apache.http.HttpHost
-import org.elasticsearch.client.RestClient
-import playground.elastic.ElasticsearchMock
-import playground.{ActorSystemAvailable, ElasticSearchEmbedded}
-import spray.json.DefaultJsonProtocol._
-import spray.json.JsonFormat
+  import akka.Done
 
-import scala.concurrent.Future
-import scala.concurrent.duration._
+  import akka.stream.alpakka.elasticsearch.IncomingMessage
+  import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSink
+  import org.apache.http.HttpHost
+  import org.elasticsearch.client.RestClient
+
+  import akka.stream.alpakka.slick.javadsl.SlickSession
+  import akka.stream.alpakka.slick.scaladsl.Slick
+
+  import spray.json.DefaultJsonProtocol._
+  import spray.json.JsonFormat
+
+  import scala.concurrent.Future
+  import scala.concurrent.duration._
 // #sample
 // format: off
+
+import playground.elastic.ElasticsearchMock
+import playground.{ActorSystemAvailable, ElasticSearchEmbedded}
+
 
 object FetchUsingSlickAndStreamIntoElastic extends ActorSystemAvailable with App {
 
@@ -29,8 +34,8 @@ object FetchUsingSlickAndStreamIntoElastic extends ActorSystemAvailable with App
   // format: off
   // #sample
 
-
   implicit val session = SlickSession.forConfig("slick-h2-mem")                         // (1)
+  actorSystem.registerOnTermination(session.close())
 
   import session.profile.api._
   // #sample
@@ -50,7 +55,8 @@ object FetchUsingSlickAndStreamIntoElastic extends ActorSystemAvailable with App
 
   case class Movie(id: Int, title: String, genre: String, gross: Double)                // (3)
 
-  implicit val client = RestClient.builder(new HttpHost("localhost", 9201)).build()     // (4)
+  implicit val elasticSearchClient: RestClient =
+    RestClient.builder(new HttpHost("localhost", 9201)).build()                         // (4)
   implicit val format: JsonFormat[Movie] = jsonFormat4(Movie)                           // (5)
 
   val done: Future[Done] =
@@ -64,14 +70,15 @@ object FetchUsingSlickAndStreamIntoElastic extends ActorSystemAvailable with App
 
   done.onComplete {
     case _ =>
-      session.close()
-      client.close()                                                                    // (10)
+      elasticSearchClient.close()                                                       // (10)
+  }
+  // #sample
+  // format: on
+  done.onComplete {
+    case _ =>
       runner.close()
       runner.clean()
   }
-
-  // #sample
-  // format: on
   wait(10.seconds)
   terminateActorSystem()
 }
