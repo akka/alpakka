@@ -42,13 +42,18 @@ The full examples for using the `Source`, `Sink`, and `Flow` (listed further dow
 
 All functionality provided by this connector requires the user to first create an instance of `SlickSession`, which is a thin wrapper around Slick's database connection management and database profile API.
 
+If you are using Slick in your project, you can create a `SlickSession` instance by sharing the database configuration:
+
+Scala
+: @@snip ($alpakka$/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/SlickSpec.scala) { #init-db-config-session }
+
+Otherwise, you can configure your database using [typesafe-config](https://github.com/typesafehub/config) by adding a named configuration to your application.conf and then referring to that configuration when starting the session:
+
 Scala
 : @@snip ($alpakka$/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/SlickSpec.scala) { #init-session }
 
 Java
 : @@snip ($alpakka$/slick/src/test/java/akka/stream/alpakka/slick/javadsl/SlickTest.java) { #init-session }
-
-As you can see, this requires you to configure your database using [typesafe-config](https://github.com/typesafehub/config) by adding a named configuration to your application.conf and then referring to that configuration when starting the session.
 
 Here is an example configuration for the H2 database, which is used for the unit tests of the Slick connector itself:
 

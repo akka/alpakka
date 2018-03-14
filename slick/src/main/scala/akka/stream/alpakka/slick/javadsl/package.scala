@@ -43,9 +43,10 @@ object SlickSession {
 
   def forConfig(path: String): SlickSession = forConfig(path, ConfigFactory.load())
   def forConfig(config: Config): SlickSession = forConfig("", config)
-  def forConfig(path: String, config: Config): SlickSession = new SlickSessionImpl(
+  def forConfig(path: String, config: Config): SlickSession = forConfig(
     DatabaseConfig.forConfig[JdbcProfile](path, config)
   )
+  def forConfig(databaseConfig: DatabaseConfig[JdbcProfile]): SlickSession = new SlickSessionImpl(databaseConfig)
 }
 
 /**
