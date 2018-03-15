@@ -10,8 +10,7 @@ import akka.stream.alpakka.sqs._
 import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Partition}
 import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.{AmazonWebServiceResult, ResponseMetadata}
-import SqsBatchAckFlowStage._
-import com.amazonaws.services.sqs.model.{ChangeMessageVisibilityBatchRequestEntry, DeleteMessageBatchRequestEntry}
+import com.amazonaws.services.sqs.model.Message
 
 import scala.concurrent.Future
 
@@ -36,19 +35,24 @@ object SqsAckFlow {
 
       val partitionByAction = builder.add(Partition[MessageActionPair](3, {
         case (_, MessageAction.Delete) => 0
-        case (_, MessageAction.Ignore) => 1
-        case (_, MessageAction.ChangeMessageVisibility(_)) => 2
+        case (_, MessageAction.ChangeMessageVisibility(_)) => 1
+        case (_, MessageAction.Ignore) => 2
       }))
-      def groupingStage(call: Call) =
-        builder.add(Flow[MessageActionPair].groupedWithin(settings.maxBatchSize, settings.maxBatchWait).map(_ -> call))
-      val mergeBatches = builder.add(Merge[(Iterable[MessageActionPair], Call)](3))
-      val sqsStage = builder.add(new SqsBatchAckFlowStage[MessageActionPair](queueUrl, sqsClient))
-      val flattenFutures = builder.add(Flow[Future[List[AckResult]]].mapAsync(settings.concurrentRequests)(identity))
+
+      def groupingStage[A] = Flow[A].groupedWithin(settings.maxBatchSize, settings.maxBatchWait)
+
+      val sqsDeleteStage = new SqsBatchDeleteFlowStage(queueUrl, sqsClient)
+      val sqsChangeVisibilityStage = new SqsBatchChangeMessageVisibilityFlowStage(queueUrl, sqsClient)
+      val flattenFutures = Flow[Future[List[AckResult]]].mapAsync(settings.concurrentRequests)(identity)
+      val ignore = Flow[MessageActionPair].map(x => Future.successful(List(AckResult(None, x._1.getBody))))
+      val getMessage = Flow[MessageActionPair].map(_._1)
+
+      val mergeResults = builder.add(Merge[Future[List[AckResult]]](3))
       val flattenResults = builder.add(Flow[List[AckResult]].mapConcat(identity))
 
-      partitionByAction.out(0) ~> groupingStage(SqsBatchAckFlowStage.Delete) ~> mergeBatches ~> sqsStage ~> flattenFutures ~> flattenResults
-      partitionByAction.out(1) ~> groupingStage(SqsBatchAckFlowStage.Ignore) ~> mergeBatches
-      partitionByAction.out(2) ~> groupingStage(SqsBatchAckFlowStage.ChangeMessageVisibility) ~> mergeBatches
+      partitionByAction.out(0) ~> getMessage ~> groupingStage[Message] ~> sqsDeleteStage ~> mergeResults ~> flattenFutures ~> flattenResults
+      partitionByAction.out(1).as[CVBatch] ~> groupingStage[CVBatch] ~> sqsChangeVisibilityStage ~> mergeResults
+      partitionByAction.out(2) ~> ignore ~> mergeResults
 
       FlowShape(partitionByAction.in, flattenResults.out)
     }
@@ -56,16 +60,7 @@ object SqsAckFlow {
     Flow.fromGraph(graph)
   }
 
-  implicit val mBody: MessageActionPair => String = _._1.getBody
-  implicit val deleteMessageEntryBuilder: MessageActionPair => DeleteMessageBatchRequestEntry =
-    pair => new DeleteMessageBatchRequestEntry().withReceiptHandle(pair._1.getReceiptHandle)
-  implicit val changeVisibilityEntryBuilder
-    : PartialFunction[MessageActionPair, ChangeMessageVisibilityBatchRequestEntry] = {
-    case (message, MessageAction.ChangeMessageVisibility(visibilityTimeout)) =>
-      new ChangeMessageVisibilityBatchRequestEntry()
-        .withReceiptHandle(message.getReceiptHandle)
-        .withVisibilityTimeout(visibilityTimeout)
-  }
+  private type CVBatch = (Message, MessageAction.ChangeMessageVisibility)
 
 }
 
