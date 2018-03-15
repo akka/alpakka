@@ -313,7 +313,8 @@ class JmsTxConnectorsSpec extends JmsSpec {
 
       killSwitch2.shutdown()
 
-      resultList should contain theSameElementsAs numsIn.map(_.toString)
+      // messages might get delivered more than once, use set to ignore duplicates
+      resultList.toSet should contain theSameElementsAs numsIn.map(_.toString)
     }
 
     "ensure no message loss when aborting a stream" in withServer() { ctx =>
@@ -390,7 +391,8 @@ class JmsTxConnectorsSpec extends JmsSpec {
 
       killSwitch2.shutdown()
 
-      resultList should contain theSameElementsAs numsIn.map(_.toString)
+      // messages might get delivered more than once, use set to ignore duplicates
+      resultList.toSet should contain theSameElementsAs numsIn.map(_.toString)
     }
   }
 }
