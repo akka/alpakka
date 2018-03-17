@@ -102,7 +102,7 @@ Java
 
 Create a sink, that forwards `String` to the SQS queue. However, the main difference from the previous use case, it batches items and sends as a one request.
 
-Note: There is also another option to send batch of messages to SQS which is using `AmazonSQSBufferedAsyncClient`. 
+Note: There is also another option to send batch of messages to SQS which is using `AmazonSQSBufferedAsyncClient`.
 This client buffers `SendMessageRequest`s under the hood and sends them as a batch instead of sending them one by one. However, beware that `AmazonSQSBufferedAsyncClient`
 does not support FIFO Queues. See [documentation for client-side buffering.](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-client-side-buffering-request-batching.html)
 
@@ -124,7 +124,7 @@ Options:
     Sends what is collects at the end of the time period
     even though the `maxBatchSize` is not fulfilled. Default: 500 milliseconds
  - `concurrentRequests` - the number of batches sending to SQS concurrently.
-    
+
 ### Stream batches of messages to a SQS queue
 
 Create a sink, that forwards `Seq[String]` to the SQS queue.
@@ -171,22 +171,28 @@ Your flow must decide which action to take and push it with message:
  the message immediately visible to other consumers. See [official documentation](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html)
 for more details.
 
-Scala (ack)
+Acknowledge (delete) messages:
+
+Scala
 : @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #ack }
 
-Scala (ignore)
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #ignore }
-
-Scala (change visibility timeout)
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #requeue }
-
-Java (ack)
+Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #ack }
 
-Java (ignore)
+Ignore messages:
+
+Scala
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #ignore }
+
+Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #ignore }
 
-Java (change visibility timeout)
+Change Visibility Timeout of messages:
+
+Scala
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #requeue }
+
+Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #requeue }
 
 #### SqsAckSink configuration
@@ -202,24 +208,30 @@ Options:
 
 ### Message processing with acknowledgement with underlying batching
 
-`SqsAckSink.grouped` a sink that can acknowledge (delete), ignore, or postpone messages, but it batches items and sends them as one request per action.
+`SqsAckFlow.grouped` is a flow that can acknowledge (delete), ignore, or postpone messages, but it batches items and sends them as one request per action.
 
-Scala (ack)
+Acknowledge (delete) messages:
+
+Scala
 : @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-ack }
 
-Scala (ignore)
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-ignore }
-
-Scala (change visibility timeout)
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-requeue }
-
-Java (ack)
+Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #batch-ack }
 
-Java (ignore)
+Ignore messages:
+
+Scala
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-ignore }
+
+Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #batch-ignore }
 
-Java (change visibility timeout)
+Change Visibility Timeout of messages:
+
+Scala
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-requeue }
+
+Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #batch-requeue }
 
 #### Batch configuration
