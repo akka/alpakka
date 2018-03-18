@@ -24,6 +24,14 @@ public class AmqpConnectionProvidersTest {
   }
 
   @Test
+  public void LocalAmqpConnectionReleaseClosedConnectionDoNotError() throws Exception {
+    AmqpConnectionProvider connectionProvider = AmqpLocalConnectionProvider.getInstance();
+    Connection connection1 = connectionProvider.get();
+    connectionProvider.release(connection1);
+    connectionProvider.release(connection1);
+  }
+
+  @Test
   public void AmqpConnectionUriCreatesNewConnection() throws Exception {
     AmqpConnectionProvider connectionProvider = AmqpUriConnectionProvider.create("amqp://localhost:5672");
     Connection connection1 = connectionProvider.get();
@@ -31,6 +39,14 @@ public class AmqpConnectionProvidersTest {
     assertNotEquals(connection1, connection2);
     connectionProvider.release(connection1);
     connectionProvider.release(connection2);
+  }
+
+  @Test
+  public void AmqpConnectionUriReleaseClosedConnectionDoNotError() throws Exception {
+    AmqpConnectionProvider connectionProvider = AmqpUriConnectionProvider.create("amqp://localhost:5672");
+    Connection connection1 = connectionProvider.get();
+    connectionProvider.release(connection1);
+    connectionProvider.release(connection1);
   }
 
   @Test
@@ -44,6 +60,14 @@ public class AmqpConnectionProvidersTest {
   }
 
   @Test
+  public void AmqpConnectionDetailsReleaseClosedConnectionDoNotError() throws Exception {
+    AmqpConnectionProvider connectionProvider = AmqpDetailsConnectionProvider.create("localhost", 5672);
+    Connection connection1 = connectionProvider.get();
+    connectionProvider.release(connection1);
+    connectionProvider.release(connection1);
+  }
+
+  @Test
   public void AmqpConnectionFactoryCreatesNewConnection() throws Exception {
     ConnectionFactory connectionFactory = new ConnectionFactory();
     @SuppressWarnings("unchecked")
@@ -54,6 +78,17 @@ public class AmqpConnectionProvidersTest {
     assertNotEquals(connection1, connection2);
     connectionProvider.release(connection1);
     connectionProvider.release(connection2);
+  }
+
+  @Test
+  public void AmqpConnectionFactoryReleaseClosedConnectionDoNotError() throws Exception {
+    ConnectionFactory connectionFactory = new ConnectionFactory();
+    @SuppressWarnings("unchecked")
+    AmqpConnectionProvider connectionProvider = AmqpConnectionFactoryConnectionProvider.create(connectionFactory)
+            .withHostsAndPorts(Pair.create("localhost", 5672));
+    Connection connection1 = connectionProvider.get();
+    connectionProvider.release(connection1);
+    connectionProvider.release(connection1);
   }
 
   @Test
