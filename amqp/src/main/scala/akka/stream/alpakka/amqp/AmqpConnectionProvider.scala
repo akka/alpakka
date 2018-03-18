@@ -18,7 +18,7 @@ import scala.annotation.tailrec
 @DoNotInherit
 sealed trait AmqpConnectionProvider {
   def get: Connection
-  def release(connection: Connection): Unit = connection.close()
+  def release(connection: Connection): Unit = if (connection.isOpen) connection.close()
 }
 
 /**
