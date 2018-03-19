@@ -62,8 +62,7 @@ final class AmqpSinkStage(settings: AmqpSinkSettings)
 
       override def whenConnected(): Unit = {
         val shutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
-          promise.failure(ex)
-          failStage(ex)
+          onFailure(ex)
         }
         channel.addShutdownListener(
           new ShutdownListener {
@@ -108,8 +107,10 @@ final class AmqpSinkStage(settings: AmqpSinkSettings)
         super.postStop()
       }
 
-      override def onFailure(ex: Throwable): Unit =
+      override def onFailure(ex: Throwable): Unit = {
         promise.tryFailure(ex)
+        super.onFailure(ex)
+      }
 
     }, promise.future)
   }
@@ -146,8 +147,7 @@ final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings)
 
       override def whenConnected(): Unit = {
         val shutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
-          promise.failure(ex)
-          failStage(ex)
+          onFailure(ex)
         }
         channel.addShutdownListener(
           new ShutdownListener {
@@ -163,8 +163,10 @@ final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings)
         super.postStop()
       }
 
-      override def onFailure(ex: Throwable): Unit =
+      override def onFailure(ex: Throwable): Unit = {
         promise.tryFailure(ex)
+        super.onFailure(ex)
+      }
 
       setHandler(
         in,
@@ -195,9 +197,7 @@ final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings)
                 elem.bytes.toArray
               )
             } else if (settings.failIfReplyToMissing) {
-              val ex = new RuntimeException("Reply-to header was not set")
-              promise.failure(ex)
-              failStage(ex)
+              onFailure(new RuntimeException("Reply-to header was not set"))
             }
 
             tryPull(in)
