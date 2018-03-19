@@ -4,14 +4,20 @@
 
 package akka.stream.alpakka.sqs.scaladsl
 
+import java.util.concurrent.CompletableFuture
+
 import akka.Done
-import akka.stream.alpakka.sqs.{MessageAction, SqsSourceSettings}
+import akka.stream.alpakka.sqs.{BatchException, MessageAction, SqsBatchAckFlowSettings, SqsSourceSettings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import com.amazonaws.handlers.AsyncHandler
+import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model._
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{spy, verify}
+import org.mockito.Mockito.{spy, times, verify, when}
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
+import org.scalatest.mockito.MockitoSugar.mock
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.Await
@@ -222,5 +228,199 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     result.metadata shouldBe empty
     result.message shouldBe "alpakka-4"
+  }
+
+  it should "delete batch of messages" taggedAs Integration in {
+    val queue = randomQueueUrl()
+
+    val messages = for (i <- 0 until 10) yield new SendMessageRequest().withMessageBody(s"Message - $i")
+
+    var future = Source(messages).via(SqsFlow(queue)).runWith(Sink.ignore)
+
+    Await.result(future, 1.second) shouldBe Done
+
+    val awsSqsClient = spy(sqsClient)
+    //#batch-ack
+    future = SqsSource(queue)(awsSqsClient)
+      .take(10)
+      .map { m: Message =>
+        (m, MessageAction.Delete)
+      }
+      .via(SqsAckFlow.grouped(queue, SqsBatchAckFlowSettings.Defaults)(awsSqsClient))
+      .runWith(Sink.ignore)
+    //#batch-ack
+
+    Await.result(future, 1.second) shouldBe Done
+    verify(awsSqsClient, times(1)).deleteMessageBatchAsync(any[DeleteMessageBatchRequest], any)
+  }
+
+  it should "delay batch of messages" taggedAs Integration in {
+    val queue = randomQueueUrl()
+
+    val messages = for (i <- 0 until 10) yield new SendMessageRequest().withMessageBody(s"Message - $i")
+
+    var future = Source(messages).via(SqsFlow(queue)).runWith(Sink.ignore)
+
+    Await.result(future, 1.second) shouldBe Done
+
+    val awsSqsClient = spy(sqsClient)
+    //#batch-requeue
+    future = SqsSource(queue)(awsSqsClient)
+      .take(10)
+      .map { m: Message =>
+        (m, MessageAction.ChangeMessageVisibility(5))
+      }
+      .via(SqsAckFlow.grouped(queue, SqsBatchAckFlowSettings.Defaults)(awsSqsClient))
+      .runWith(Sink.ignore)
+    //#batch-requeue
+
+    Await.result(future, 1.second) shouldBe Done
+    verify(awsSqsClient, times(1))
+      .changeMessageVisibilityBatchAsync(any[ChangeMessageVisibilityBatchRequest], any)
+  }
+
+  it should "ignore batch of messages" in {
+    val messages = for (i <- 0 until 10) yield new Message().withBody(s"Message - $i")
+
+    //#batch-ignore
+    val stream = Source(messages)
+      .take(10)
+      .map { m: Message =>
+        (m, MessageAction.Ignore)
+      }
+      .via(SqsAckFlow.grouped("queue", SqsBatchAckFlowSettings.Defaults))
+      .runWith(TestSink.probe[AckResult])
+    //#batch-ignore
+
+    for (i <- 0 until 10) {
+      val result = stream.requestNext()
+      result.metadata shouldBe empty
+      result.message shouldBe s"Message - $i"
+    }
+    stream.cancel()
+  }
+
+  it should "delete all messages in batches of given size" taggedAs Integration in {
+    val queue = randomQueueUrl()
+
+    val messages = for (i <- 0 until 10) yield new SendMessageRequest().withMessageBody(s"Message - $i")
+
+    var future = Source(messages).via(SqsFlow(queue)).runWith(Sink.ignore)
+
+    Await.result(future, 1.second) shouldBe Done
+
+    val awsSqsClient = spy(sqsClient)
+    future = SqsSource(queue)(awsSqsClient)
+      .take(10)
+      .map { m: Message =>
+        (m, MessageAction.Delete)
+      }
+      .via(SqsAckFlow.grouped(queue, SqsBatchAckFlowSettings.Defaults.copy(maxBatchSize = 5))(awsSqsClient))
+      .runWith(Sink.ignore)
+
+    Await.result(future, 1.second) shouldBe Done
+    verify(awsSqsClient, times(2)).deleteMessageBatchAsync(any[DeleteMessageBatchRequest], any)
+  }
+
+  it should "fail if any of the messages in the batch request failed" in {
+    val messages = for (i <- 0 until 10) yield new Message().withBody(s"Message - $i")
+
+    val mockAwsSqsClient = mock[AmazonSQSAsync]
+    when(mockAwsSqsClient.deleteMessageBatchAsync(any[DeleteMessageBatchRequest], any))
+      .thenAnswer(new Answer[AnyRef] {
+        override def answer(invocation: InvocationOnMock): AnyRef = {
+          val request = invocation.getArgument[DeleteMessageBatchRequest](0)
+          invocation
+            .getArgument[AsyncHandler[DeleteMessageBatchRequest, DeleteMessageBatchResult]](1)
+            .onSuccess(request, new DeleteMessageBatchResult().withFailed(new BatchResultErrorEntry()))
+          new CompletableFuture[DeleteMessageBatchRequest]
+        }
+      })
+
+    val future = Source(messages)
+      .take(10)
+      .map { m: Message =>
+        (m, MessageAction.Delete)
+      }
+      .via(SqsAckFlow.grouped("queue", SqsBatchAckFlowSettings.Defaults)(mockAwsSqsClient))
+      .runWith(Sink.ignore)
+
+    a[BatchException] should be thrownBy Await.result(future, 1.second)
+  }
+
+  it should "fail if the batch request failed" in {
+    val messages = for (i <- 0 until 10) yield new Message().withBody(s"Message - $i")
+
+    val mockAwsSqsClient = mock[AmazonSQSAsync]
+    when(mockAwsSqsClient.deleteMessageBatchAsync(any[DeleteMessageBatchRequest], any))
+      .thenAnswer(new Answer[AnyRef] {
+        override def answer(invocation: InvocationOnMock): AnyRef = {
+          invocation
+            .getArgument[AsyncHandler[DeleteMessageBatchRequest, DeleteMessageBatchResult]](1)
+            .onError(new RuntimeException("error"))
+          new CompletableFuture[DeleteMessageBatchRequest]
+        }
+      })
+
+    val future = Source(messages)
+      .take(10)
+      .map { m: Message =>
+        (m, MessageAction.Delete)
+      }
+      .via(SqsAckFlow.grouped("queue", SqsBatchAckFlowSettings.Defaults)(mockAwsSqsClient))
+      .runWith(Sink.ignore)
+
+    a[BatchException] should be thrownBy Await.result(future, 1.second)
+  }
+
+  it should "fail if the client invocation failed" in {
+    val messages = for (i <- 0 until 10) yield new Message().withBody(s"Message - $i")
+
+    val mockAwsSqsClient = mock[AmazonSQSAsync]
+    when(mockAwsSqsClient.deleteMessageBatchAsync(any[DeleteMessageBatchRequest], any))
+      .thenThrow(new RuntimeException("error"))
+
+    val future = Source(messages)
+      .take(10)
+      .map { m: Message =>
+        (m, MessageAction.Delete)
+      }
+      .via(SqsAckFlow.grouped("queue", SqsBatchAckFlowSettings.Defaults)(mockAwsSqsClient))
+      .runWith(Sink.ignore)
+
+    a[RuntimeException] should be thrownBy Await.result(future, 1.second)
+  }
+
+  it should "delete, delay & ignore all messages in batches of given size" in {
+    val queue = randomQueueUrl()
+
+    val messages = for (i <- 0 until 10) yield new SendMessageRequest().withMessageBody(s"Message - $i")
+
+    var future = Source(messages).via(SqsFlow(queue)).runWith(Sink.ignore)
+
+    Await.result(future, 1.second) shouldBe Done
+
+    val awsSqsClient = spy(sqsClient)
+    var i = 0
+    future = SqsSource(queue)(awsSqsClient)
+      .take(10)
+      .map { m: Message =>
+        val msg =
+          if (i % 3 == 0)
+            (m, MessageAction.Delete)
+          else if (i % 3 == 1)
+            (m, MessageAction.ChangeMessageVisibility(5))
+          else
+            (m, MessageAction.Ignore)
+        i += 1
+        msg
+      }
+      .via(SqsAckFlow.grouped(queue, SqsBatchAckFlowSettings.Defaults)(awsSqsClient))
+      .runWith(Sink.ignore)
+
+    Await.result(future, 1.second) shouldBe Done
+    verify(awsSqsClient, times(1)).deleteMessageBatchAsync(any[DeleteMessageBatchRequest], any)
+    verify(awsSqsClient, times(1))
+      .changeMessageVisibilityBatchAsync(any[ChangeMessageVisibilityBatchRequest], any)
   }
 }

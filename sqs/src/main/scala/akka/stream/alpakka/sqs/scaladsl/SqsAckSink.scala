@@ -8,6 +8,7 @@ import akka.Done
 import akka.stream.alpakka.sqs.{MessageActionPair, SqsAckSinkSettings}
 import akka.stream.scaladsl.{Keep, Sink}
 import com.amazonaws.services.sqs.AmazonSQSAsync
+
 import scala.concurrent.Future
 
 /**
@@ -22,4 +23,5 @@ object SqsAckSink {
       implicit sqsClient: AmazonSQSAsync
   ): Sink[MessageActionPair, Future[Done]] =
     SqsAckFlow.apply(queueUrl, settings).toMat(Sink.ignore)(Keep.right)
+
 }

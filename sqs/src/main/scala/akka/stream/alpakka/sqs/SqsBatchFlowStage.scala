@@ -156,5 +156,3 @@ private[sqs] final class SqsBatchFlowStage(queueUrl: String, sqsClient: AmazonSQ
       )
     }
 }
-
-case class BatchException(batchSize: Int, cause: Exception) extends Exception(cause)

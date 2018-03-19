@@ -9,4 +9,5 @@ import com.amazonaws.services.sqs.model.Message
 package object sqs {
 
   type MessageActionPair = (Message, MessageAction)
+
 }
