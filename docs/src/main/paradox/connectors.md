@@ -17,6 +17,7 @@
 * [File Connectors](file.md)
 * [FTP Connector](ftp.md)
 * [Google Cloud Pub/Sub Connector](google-cloud-pub-sub.md)
+* [Google Firebase Cloud Messaging](google-fcm.md)
 * [HBase Connectors](hbase.md)
 * [IronMq Connectors](ironmq.md)
 * [JMS Connectors](jms.md)
