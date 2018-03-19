@@ -214,12 +214,19 @@ final case class AmqpCachedConnectionProvider(provider: AmqpConnectionProvider, 
   override def get: Connection = state.get match {
     case Empty =>
       if (state.compareAndSet(Empty, Connecting)) {
-        val connection = provider.get
-        if (!state.compareAndSet(Connecting, Connected(connection, 1)))
-          throw new ConcurrentModificationException(
-            "Unexpected concurrent modification while creating the connection."
-          )
-        connection
+        try {
+          val connection = provider.get
+          if (!state.compareAndSet(Connecting, Connected(connection, 1)))
+            throw new ConcurrentModificationException(
+              "Unexpected concurrent modification while creating the connection."
+            )
+          connection
+        } catch {
+          case e: ConcurrentModificationException => throw e
+          case e: Throwable =>
+            state.compareAndSet(Connecting, Empty)
+            throw e
+        }
       } else get
     case Connecting => get
     case c @ Connected(connection, clients) =>
