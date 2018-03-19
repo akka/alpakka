@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.sqs
 
+import scala.concurrent.duration._
+
 object SqsAckSinkSettings {
   val Defaults = SqsAckSinkSettings(maxInFlight = 10)
 }
@@ -13,6 +15,28 @@ final case class SqsAckSinkSettings(maxInFlight: Int) {
   require(maxInFlight > 0)
 }
 //#SqsAckSinkSettings
+
+object SqsBatchAckFlowSettings {
+  val Defaults = SqsBatchAckFlowSettings(
+    maxBatchSize = 10,
+    maxBatchWait = 500.millis,
+    concurrentRequests = 1
+  )
+}
+
+//#SqsBatchAckFlowSettings
+final case class SqsBatchAckFlowSettings(maxBatchSize: Int, maxBatchWait: FiniteDuration, concurrentRequests: Int) {
+  require(concurrentRequests > 0)
+  require(
+    maxBatchSize > 0 && maxBatchSize <= 10,
+    s"Invalid value for maxBatchSize: $maxBatchSize. It should be 0 < maxBatchSize < 10, due to the Amazon SQS requirements."
+  )
+  def withMaxBatchSize(maxBatchSize: Int): SqsBatchAckFlowSettings = this.copy(maxBatchSize = maxBatchSize)
+  def withMaxBatchWait(maxBatchWait: FiniteDuration): SqsBatchAckFlowSettings = this.copy(maxBatchWait = maxBatchWait)
+  def withConcurrentRequests(concurrentRequests: Int): SqsBatchAckFlowSettings =
+    this.copy(concurrentRequests = concurrentRequests)
+}
+//#SqsBatchAckFlowSettings
 
 sealed abstract class MessageAction
 

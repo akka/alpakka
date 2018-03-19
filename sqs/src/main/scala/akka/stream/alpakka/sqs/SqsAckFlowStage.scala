@@ -29,7 +29,7 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
       var completionState: Option[Try[Unit]] = None
 
       private def handleFailure(exception: Exception): Unit = {
-        log.error(exception, "Client failure: {}", exception.getMessage)
+        log.error(exception, "Client failure: {}", exception)
         inFlight -= 1
         failStage(exception)
         if (inFlight == 0 && inIsClosed)
