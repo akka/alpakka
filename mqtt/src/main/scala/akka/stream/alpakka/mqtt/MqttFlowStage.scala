@@ -70,11 +70,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
           }
         })
 
-      private def onConnectionLost =
-        getAsyncCallback[Throwable]((ex: Throwable) => {
-          failStage(ex)
-          subscriptionPromise.tryFailure(ex)
-        })
+      private def onConnectionLost = getAsyncCallback[Throwable](onFailure)
 
       private def onMessage(message: MqttCommittableMessage): Unit = {
         backpressure.acquire()
@@ -85,7 +81,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
         if (isAvailable(out)) {
           pushMessage(message)
         } else if (queue.size + 1 > bufferSize) {
-          failStage(new RuntimeException(s"Reached maximum buffer size $bufferSize"))
+          onFailure(new RuntimeException(s"Reached maximum buffer size $bufferSize"))
         } else {
           queue.enqueue(message)
         }
@@ -93,7 +89,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
 
       private val onPublished = getAsyncCallback[Try[IMqttToken]] {
         case Success(_) => if (!hasBeenPulled(in)) pull(in)
-        case Failure(ex) => failStage(ex)
+        case Failure(ex) => onFailure(ex)
       }
 
       private def commitCallback =
@@ -238,16 +234,25 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
         if (manualAcks) unackedMessages.incrementAndGet()
       }
 
+      private def onFailure(ex: Throwable): Unit = {
+        subscriptionPromise.tryFailure(ex)
+        failStage(ex)
+      }
+
       override def preStart(): Unit =
-        mqttClient.connect(
-          connectOptions,
-          (),
-          (token: Try[IMqttToken]) =>
-            token match {
-              case Success(v) => onConnect.invoke(v.getClient)
-              case Failure(ex) => onConnectionLost.invoke(ex)
-          }
-        )
+        try {
+          mqttClient.connect(
+            connectOptions,
+            (),
+            (token: Try[IMqttToken]) =>
+              token match {
+                case Success(v) => onConnect.invoke(v.getClient)
+                case Failure(ex) => onConnectionLost.invoke(ex)
+            }
+          )
+        } catch {
+          case e: Throwable => onFailure(e)
+        }
 
       override def postStop(): Unit = {
         if (!subscriptionPromise.isCompleted)
