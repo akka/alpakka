@@ -26,6 +26,7 @@
 * [Server-sent Events (SSE)](sse.md)
 * [Slick (JDBC) Connector](slick.md)
 * [Spring Web](spring-web.md)
+* [STOMP Protocol Connector](stomp.md)
 * [Unix Domain Sockets](unix-domain-socket.md)
 
 @@@
