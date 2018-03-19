@@ -241,6 +241,56 @@ class MqttSourceSpec
       elem2.futureValue shouldBe MqttMessage(topic1, ByteString("ohi"))
     }
 
+    "automatically reconnect" in {
+      import system.dispatcher
+
+      val msg = MqttMessage(topic1, ByteString("ohi"))
+
+      // Create a proxy to RabbitMQ so it can be shutdown
+      val (proxyBinding, connection) = Tcp().bind("localhost", 1337).toMat(Sink.head)(Keep.both).run()
+      val proxyKs = connection.map(
+        _.handleWith(
+          Tcp()
+            .outgoingConnection("localhost", 1883)
+            .viaMat(KillSwitches.single)(Keep.right)
+        )
+      )
+      Await.ready(proxyBinding, timeout)
+
+      val settings1 = MqttSourceSettings(
+        sourceSettings
+          .withAutomaticReconnect(true)
+          .withCleanSession(false)
+          .withBroker("tcp://localhost:1337"),
+        Map(topic1 -> MqttQoS.AtLeastOnce)
+      )
+
+      val (subscribed, probe) = MqttSource.atMostOnce(settings1, 8).toMat(TestSink.probe)(Keep.both).run()
+
+      // Ensure that the connection made it all the way to the server by waiting until it receives a message
+      Await.ready(subscribed, timeout)
+      Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
+      probe.requestNext()
+
+      // Kill the proxy, producing an unexpected disconnection of the client
+      Await.result(proxyKs, timeout).shutdown()
+
+      // Restart the proxy
+      val (proxyBinding2, connection2) = Tcp().bind("localhost", 1337).toMat(Sink.head)(Keep.both).run()
+      val proxyKs2 = connection2.map(
+        _.handleWith(
+          Tcp()
+            .outgoingConnection("localhost", 1883)
+            .viaMat(KillSwitches.single)(Keep.right)
+        )
+      )
+      Await.ready(proxyBinding2, timeout)
+
+      Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
+      probe.requestNext() shouldBe MqttMessage(topic1, ByteString("ohi"))
+      Await.result(proxyKs2, timeout).shutdown()
+    }
+
     "support will message" in {
       import system.dispatcher
 
