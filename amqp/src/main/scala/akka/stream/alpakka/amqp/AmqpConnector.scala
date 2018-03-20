@@ -19,7 +19,7 @@ private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
 
   def settings: AmqpConnectorSettings
   def whenConnected(): Unit
-  def onFailure(ex: Throwable): Unit
+  def onFailure(ex: Throwable): Unit = failStage(ex)
 
   final override def preStart(): Unit =
     try {
@@ -68,9 +68,7 @@ private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
 
       whenConnected()
     } catch {
-      case NonFatal(e) =>
-        onFailure(e)
-        throw e
+      case NonFatal(e) => onFailure(e)
     }
 
   /** remember to call if overriding! */

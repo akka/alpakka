@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.amqp.scaladsl
 
+import java.net.ConnectException
+
 import akka.Done
 import akka.dispatch.ExecutionContexts
 import akka.stream._
@@ -66,6 +68,23 @@ class AmqpConnectorsSpec extends AmqpSpec {
       //#run-source
 
       result.futureValue.map(_.bytes.utf8String) shouldEqual input
+    }
+
+    "connection should fail to wrong broker" in {
+      val connectionProvider = AmqpDetailsConnectionProvider(List(("localhost", 5673)))
+
+      val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
+      val queueDeclaration = QueueDeclaration(queueName)
+
+      val amqpSink = AmqpSink.simple(
+        AmqpSinkSettings(connectionProvider)
+          .withRoutingKey(queueName)
+          .withDeclarations(queueDeclaration)
+      )
+
+      val input = Vector("one", "two", "three", "four", "five")
+      val result = Source(input).map(s => ByteString(s)).runWith(amqpSink)
+      result.failed.futureValue shouldBe an[ConnectException]
     }
 
     "connection should fail with wrong credentials" in {

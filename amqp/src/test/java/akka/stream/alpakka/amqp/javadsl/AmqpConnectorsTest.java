@@ -26,6 +26,7 @@ import org.junit.Test;
 import scala.collection.JavaConverters;
 import scala.concurrent.duration.Duration;
 
+import java.net.ConnectException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -99,6 +100,32 @@ public class AmqpConnectorsTest {
     //#run-source
 
     assertEquals(input, result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.bytes().utf8String()).collect(Collectors.toList()));
+  }
+
+  @Test(expected = ConnectException.class)
+  public void throwIfCanNotConnect() throws Throwable {
+    final String queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis();
+    final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
+
+    @SuppressWarnings("unchecked")
+    AmqpDetailsConnectionProvider connectionProvider = AmqpDetailsConnectionProvider.create("localhost", 5673);
+
+    final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
+            AmqpSinkSettings.create(connectionProvider)
+                    .withRoutingKey(queueName)
+                    .withDeclarations(queueDeclaration)
+    );
+
+    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
+    final CompletionStage<Done> result = Source.from(input)
+            .map(ByteString::fromString)
+            .runWith(amqpSink, materializer);
+
+    try {
+      result.toCompletableFuture().get();
+    } catch (ExecutionException e) {
+      throw e.getCause();
+    }
   }
 
   @Test(expected = AuthenticationFailureException.class)
