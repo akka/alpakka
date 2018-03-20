@@ -394,6 +394,7 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
                        acceptKey(address, incomingConnectionQueue, halfClose, receiveBufferSize, sendBufferSize) _)
     try {
       channel.socket().bind(address, backlog)
+      sel.wakeup()
       serverBinding.success(
         ServerBinding(address) { () =>
           registeredKey.cancel()
