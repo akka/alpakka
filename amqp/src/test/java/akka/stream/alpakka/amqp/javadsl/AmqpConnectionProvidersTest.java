@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.amqp.javadsl;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.*;
 
 import akka.japi.Pair;
@@ -11,6 +12,8 @@ import akka.stream.alpakka.amqp.*;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import org.junit.Test;
+
+import java.net.ConnectException;
 
 public class AmqpConnectionProvidersTest {
   @Test
@@ -203,5 +206,23 @@ public class AmqpConnectionProvidersTest {
     reusableConnectionProvider.release(connection1);
     assertFalse(connection1.isOpen());
     assertFalse(connection2.isOpen());
+  }
+
+  @Test
+  public void ReusableAMQPConnectionProviderNeverLeftInInvalidStateUponException() throws Exception {
+    AmqpConnectionProvider connectionProvider = AmqpDetailsConnectionProvider.create("localhost", 5673);
+    AmqpConnectionProvider reusableConnectionProvider = AmqpCachedConnectionProvider.create(connectionProvider, false);
+    try {
+      reusableConnectionProvider.get();
+    } catch (Exception e) {
+      assertThat(e, instanceOf(ConnectException.class));
+    }
+
+    try {
+      reusableConnectionProvider.get();
+    } catch (Exception e) {
+      assertThat(e, instanceOf(ConnectException.class));
+    }
+
   }
 }

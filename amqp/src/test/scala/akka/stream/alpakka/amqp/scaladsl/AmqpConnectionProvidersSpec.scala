@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.amqp.scaladsl
 
+import java.net.ConnectException
+
 import akka.stream.alpakka.amqp._
 import com.rabbitmq.client.ConnectionFactory
 
@@ -179,6 +181,15 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
       reusableConnectionProvider.release(connection1)
       connection1.isOpen should be(false)
       connection2.isOpen should be(false)
+    }
+
+    "not leave the provider in an invalid state if getting the connection fails" in {
+      val connectionProvider = AmqpDetailsConnectionProvider(List(("localhost", 5673)))
+      val reusableConnectionProvider = AmqpCachedConnectionProvider(connectionProvider, automaticRelease = false)
+      try reusableConnectionProvider.get
+      catch { case e: Throwable => e shouldBe an[ConnectException] }
+      try reusableConnectionProvider.get
+      catch { case e: Throwable => e shouldBe an[ConnectException] }
     }
   }
 }
