@@ -62,10 +62,7 @@ final class SinkStage(settings: ConnectorSettings)
               pull(in)
             }
             if (settings.withAck) {
-              connection.send(vertxFrame, (frame: Frame) => {
-                // server receive the message, continue pulling
-                continue.invoke(frame)
-              })
+              connection.send(vertxFrame, continue.invoke(_))
             } else {
               connection.send(vertxFrame)
               pull(in)

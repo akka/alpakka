@@ -47,18 +47,18 @@ final class SourceStage(settings: ConnectorSettings)
         import JavaConverters._
         connection.subscribe(
           settings.destination.get,
-          headers.asJava, { frame =>
-            receiveSubscriptionMessage.invoke(frame)
-          }, { frameSubscribe =>
-            acknowledge(frameSubscribe)
-          }
+          headers.asJava,
+            receiveSubscriptionMessage.invoke(_)
+         , acknowledge(_)
         )
       }
 
       override def receiveHandler(connection: StompClientConnection): Unit =
-        connection.receivedFrameHandler(frame => {
-          if (!settings.destination.contains(frame.getDestination)) {
-            acknowledge(frame)
+        connection.receivedFrameHandler({
+          frame: Frame => {
+            if (!settings.destination.contains(frame.getDestination)) {
+              acknowledge(frame)
+            }
           }
         })
 

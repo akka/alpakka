@@ -6,7 +6,8 @@ package akka.stream.alpakka.stomp.client
 
 import akka.Done
 import akka.stream.stage.GraphStageLogic
-import io.vertx.ext.stomp.{Frame => VertxFrame, StompClientConnection}
+import io.vertx.core.AsyncResult
+import io.vertx.ext.stomp.{StompClientConnection, Frame => VertxFrame}
 
 import scala.concurrent.Promise
 
@@ -55,8 +56,8 @@ private[client] trait ConnectorLogic {
 
     // connecting async
     settings.connectionProvider.getStompClient
-      .connect(
-        ar => {
+      .connect({
+        ar: AsyncResult[StompClientConnection] => {
           if (ar.succeeded()) {
             connectCallback.invoke(ar.result())
           } else {
@@ -64,6 +65,7 @@ private[client] trait ConnectorLogic {
             throw ar.cause()
           }
         }
+      }
       )
   }
 
@@ -87,28 +89,30 @@ private[client] trait ConnectorLogic {
   /**
    * When a message is received by the connection
    */
-  def receiveHandler(connection: StompClientConnection)
+  def receiveHandler(connection: StompClientConnection): Unit
 
   def dropHandler(connection: StompClientConnection): Unit =
-    connection.connectionDroppedHandler(dropped => dropCallback.invoke(dropped))
+    connection.connectionDroppedHandler({
+      dropCallback.invoke(_)
+    })
 
   /**
    * An ERROR frame is received
    */
   def errorHandler(connection: StompClientConnection): Unit =
-    connection.errorHandler(frame => errorCallback.invoke(frame))
+    connection.errorHandler(errorCallback.invoke(_))
 
   /**
    * When connection get closed
    */
   def closeHandler(connection: StompClientConnection): Unit =
-    connection.closeHandler(conn => closeCallback.invoke(conn))
+    connection.closeHandler(closeCallback.invoke(_))
 
   /**
    * Upon TCP-errors
    */
   private def failHandler(connection: StompClientConnection): Unit =
-    connection.exceptionHandler(ex => failCallback.invoke(ex))
+    connection.exceptionHandler(failCallback.invoke(_))
 
   /** remember to call if overriding! */
   override def postStop(): Unit =
