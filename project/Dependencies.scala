@@ -69,7 +69,7 @@ object Dependencies {
       // http://activemq.apache.org/download.html
       "org.apache.activemq" % "activemq-all" % "5.14.4", // ApacheV2
       "com.h2database" % "h2" % "1.4.196", // Eclipse Public License 1.0
-      "org.elasticsearch.client" % "rest" % "5.5.3", // ApacheV2
+      "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.2.2", // ApacheV2
       "org.codelibs" % "elasticsearch-cluster-runner" % "6.2.2.0", // ApacheV2
       "io.netty" % "netty-all" % "4.1.16.Final" // ApacheV2
     )
