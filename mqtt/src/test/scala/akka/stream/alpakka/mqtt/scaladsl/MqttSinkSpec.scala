@@ -11,7 +11,7 @@ import akka.stream.alpakka.mqtt.{MqttSourceSettings, _}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import org.eclipse.paho.client.mqttv3.MqttSecurityException
+import org.eclipse.paho.client.mqttv3.{MqttException, MqttSecurityException}
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest._
@@ -79,6 +79,17 @@ class MqttSinkSpec
       val messages = messagesFuture.futureValue
       messages should have length numOfMessages
       messages foreach { _ shouldBe msg }
+    }
+
+    "connection should fail to wrong broker" in {
+      val wrongConnectionSettings = sinkSettings.withBroker("tcp://localhost:1884")
+      val msg = MqttMessage(secureTopic, ByteString("ohi"))
+
+      val termination = Source
+        .single(msg)
+        .runWith(MqttSink(wrongConnectionSettings, MqttQoS.atLeastOnce))
+
+      termination.failed.futureValue shouldBe an[MqttException]
     }
 
     "fail to publish when credentials are not provided" in {
