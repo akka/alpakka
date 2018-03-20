@@ -59,7 +59,7 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
         channel.basicQos(bufferSize, true)
         val consumerCallback = getAsyncCallback(handleDelivery)
         val shutdownCallback = getAsyncCallback[Option[ShutdownSignalException]] {
-          case Some(ex) => failStage(ex)
+          case Some(ex) => onFailure(ex)
           case None => if (unackedMessages == 0) completeStage()
         }
 
@@ -150,7 +150,7 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
         if (isAvailable(out)) {
           pushMessage(message)
         } else if (queue.size + 1 > bufferSize) {
-          failStage(new RuntimeException(s"Reached maximum buffer size $bufferSize"))
+          onFailure(new RuntimeException(s"Reached maximum buffer size $bufferSize"))
         } else {
           queue.enqueue(message)
         }
@@ -174,8 +174,6 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
         push(out, message)
         unackedMessages += 1
       }
-
-      override def onFailure(ex: Throwable): Unit = {}
     }
 
 }

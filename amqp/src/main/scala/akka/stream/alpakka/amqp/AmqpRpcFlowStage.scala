@@ -55,14 +55,11 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
         import scala.collection.JavaConverters._
         val shutdownCallback = getAsyncCallback[(String, Option[ShutdownSignalException])] {
           case (consumerTag, Some(e)) =>
-            val ex =
+            onFailure(
               new RuntimeException(s"Consumer $queueName with consumerTag $consumerTag shut down unexpectedly", e)
-            promise.tryFailure(ex)
-            failStage(ex)
+            )
           case (consumerTag, None) =>
-            val ex = new RuntimeException(s"Consumer $queueName with consumerTag $consumerTag shut down unexpectedly")
-            promise.tryFailure(ex)
-            failStage(ex)
+            onFailure(new RuntimeException(s"Consumer $queueName with consumerTag $consumerTag shut down unexpectedly"))
         }
 
         pull(in)
@@ -150,7 +147,7 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
         if (isAvailable(out)) {
           pushMessage(message)
         } else if (queue.size + 1 > bufferSize) {
-          failStage(new RuntimeException(s"Reached maximum buffer size $bufferSize"))
+          onFailure(new RuntimeException(s"Reached maximum buffer size $bufferSize"))
         } else {
           queue.enqueue(message)
         }
@@ -230,8 +227,10 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
         super.postStop()
       }
 
-      override def onFailure(ex: Throwable): Unit =
+      override def onFailure(ex: Throwable): Unit = {
         promise.tryFailure(ex)
+        super.onFailure(ex)
+      }
     }, promise.future)
   }
 
