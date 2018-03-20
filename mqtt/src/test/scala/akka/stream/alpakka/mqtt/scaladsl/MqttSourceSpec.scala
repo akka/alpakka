@@ -152,6 +152,18 @@ class MqttSourceSpec
       result.futureValue shouldBe messages
     }
 
+    "connection should fail to wrong broker" in {
+      val wrongConnectionSettings = connectionSettings.withBroker("tcp://localhost:1884")
+
+      val mqttSettings = MqttSourceSettings(wrongConnectionSettings, Map(topic1 -> MqttQoS.atLeastOnce))
+      val (subscribed, _) = MqttSource
+        .atMostOnce(mqttSettings, 8)
+        .toMat(Sink.head)(Keep.both)
+        .run()
+
+      subscribed.failed.futureValue shouldBe an[MqttException]
+    }
+
     "fail connection when not providing the requested credentials" in {
       val settings =
         MqttSourceSettings(sourceSettings.withAuth("username1", "bad_password"),
