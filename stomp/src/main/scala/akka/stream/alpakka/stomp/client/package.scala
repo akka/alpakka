@@ -4,6 +4,4 @@
 
 package akka.stream.alpakka.stomp
 
-import io.vertx.ext.stomp.{Frame, StompClientConnection}
-
 package object client {}

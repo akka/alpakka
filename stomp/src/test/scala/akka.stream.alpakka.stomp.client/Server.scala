@@ -5,15 +5,8 @@
 package akka.stream.alpakka.stomp.client
 
 import akka.Done
-import io.vertx.core.Vertx
-import io.vertx.ext.stomp.{
-  Destination,
-  Frame,
-  StompServer,
-  StompServerConnection,
-  StompServerHandler,
-  StompServerOptions
-}
+import io.vertx.core.{AsyncResult, Vertx}
+import io.vertx.ext.stomp._
 import io.vertx.ext.stomp.impl.Topic
 import io.vertx.ext.stomp.impl.Topic.Subscription
 
@@ -21,6 +14,7 @@ import scala.concurrent.{Await, Future, Promise}
 import scala.concurrent.duration._
 
 private[stomp] object Server {
+  import VertxStompConversions._
 
 //  val vertx: Vertx = Vertx.vertx(new VertxOptions().setBlockedThreadCheckInterval(10))
   val vertx = Vertx.vertx()
@@ -35,34 +29,36 @@ private[stomp] object Server {
     StompServer
       .create(vertx, new StompServerOptions().setPort(port))
       .handler(serverHandler)
-      .listen(
-        ar =>
-          if (ar.succeeded()) {
-            promise success ar.result()
-          } else {
-            promise failure ar.cause()
+      .listen({ ar: AsyncResult[StompServer] =>
+        if (ar.succeeded()) {
+          promise success ar.result()
+        } else {
+          promise failure ar.cause()
         }
-      )
+        ()
+      })
     promise.future
   }
 
   def closeAwaitStompServer(server: StompServer): Future[Done] = {
     val promise = Promise[Done]()
-    server.close(
-      ar =>
-        if (ar.succeeded()) promise.success(Done)
-        else promise.failure(ar.cause())
-    )
+    server.close({ ar: AsyncResult[java.lang.Void] =>
+      if (ar.succeeded()) promise.success(Done)
+      else promise.failure(ar.cause())
+      ()
+    })
     Await.ready(promise.future, patienceWithServer)
   }
 
   def accumulateHandler(accumulator: Frame => Unit): StompServerHandler =
     StompServerHandler
       .create(vertx)
-      .receivedFrameHandler(ar => {
-        // accumulate SEND received by Server
-        if (ar.frame().getCommand() == Frame.Command.SEND) {
-          accumulator(ar.frame())
+      .receivedFrameHandler({ ar: ServerFrame =>
+        {
+          // accumulate SEND received by Server
+          if (ar.frame().getCommand() == Frame.Command.SEND) {
+            accumulator(ar.frame())
+          }
         }
       })
 
@@ -71,8 +67,9 @@ private[stomp] object Server {
       Some(
         StompServerHandler
           .create(vertx)
-          .destinationFactory((v, name) => {
-            new StompServerTopic(v, name)
+          .destinationFactory(new DestinationFactory {
+            override def create(vertx: Vertx, name: String): Destination =
+              new StompServerTopic(vertx, name)
           })
       ),
       port

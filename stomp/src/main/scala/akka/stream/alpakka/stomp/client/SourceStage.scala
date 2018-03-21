@@ -23,6 +23,7 @@ final class SourceStage(settings: ConnectorSettings)
   val out = Outlet[SendingFrame]("StompClientSource.out")
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
+    import VertxStompConversions._
     val thePromise = Promise[Done]()
     val graphStageLogic = new GraphStageLogic(shape) with ConnectorLogic {
 
@@ -45,11 +46,14 @@ final class SourceStage(settings: ConnectorSettings)
         }
 
         import JavaConverters._
+
         connection.subscribe(
           settings.destination.get,
-          headers.asJava,
-          receiveSubscriptionMessage.invoke(_),
-          acknowledge(_)
+          headers.asJava, { frame: Frame =>
+            receiveSubscriptionMessage.invoke(frame)
+          }, { frame: Frame =>
+            acknowledge(frame)
+          }
         )
       }
 

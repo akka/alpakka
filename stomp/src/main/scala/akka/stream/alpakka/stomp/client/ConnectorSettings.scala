@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.stomp.client
 
-import io.vertx.core.Vertx
+import io.vertx.core.{AsyncResult, Vertx}
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.stomp.{StompClient, StompClientConnection, StompClientOptions}
 
@@ -28,6 +28,7 @@ case class ConnectorSettings(
 }
 
 trait ConnectionProvider {
+  import VertxStompConversions._
   def vertx: Vertx = Vertx.vertx()
   val noHeartBeatObject = new JsonObject().put("x", 0).put("y", 0)
 
@@ -35,15 +36,16 @@ trait ConnectionProvider {
 
   def get: Future[StompClientConnection] = {
     val promise = Promise[StompClientConnection]()
-    getStompClient.connect(
-      ar => {
+    getStompClient.connect({ ar: AsyncResult[StompClientConnection] =>
+      {
         if (ar.succeeded()) {
           promise.trySuccess(ar.result())
         } else {
           promise.tryFailure(ar.cause())
         }
+        ()
       }
-    )
+    })
     promise.future
   }
 

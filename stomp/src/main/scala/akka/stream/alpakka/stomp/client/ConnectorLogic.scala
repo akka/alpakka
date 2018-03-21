@@ -6,9 +6,9 @@ package akka.stream.alpakka.stomp.client
 
 import akka.Done
 import akka.stream.stage.GraphStageLogic
-import io.vertx.core.AsyncResult
+import io.vertx.core.{AsyncResult, Handler}
 import io.vertx.ext.stomp.{StompClientConnection, Frame => VertxFrame}
-
+import scala.language.implicitConversions
 import scala.concurrent.Promise
 
 /**
@@ -16,6 +16,8 @@ import scala.concurrent.Promise
  */
 private[client] trait ConnectorLogic {
   this: GraphStageLogic =>
+
+  import VertxStompConversions._
 
   val closeCallback = getAsyncCallback[StompClientConnection](_ => {
     promise.trySuccess(Done)
@@ -55,17 +57,16 @@ private[client] trait ConnectorLogic {
     })
 
     // connecting async
-    settings.connectionProvider.getStompClient
-      .connect({ ar: AsyncResult[StompClientConnection] =>
-        {
-          if (ar.succeeded()) {
-            connectCallback.invoke(ar.result())
-          } else {
-            if (fullFillOnConnection) promise.tryFailure(ar.cause)
-            throw ar.cause()
-          }
+    settings.connectionProvider.getStompClient.connect({ ar: AsyncResult[StompClientConnection] =>
+      {
+        if (ar.succeeded()) {
+          connectCallback.invoke(ar.result())
+        } else {
+          if (fullFillOnConnection) promise.tryFailure(ar.cause)
+          throw ar.cause()
         }
-      })
+      }
+    })
   }
 
   def acknowledge(frame: VertxFrame): Unit =
@@ -91,27 +92,33 @@ private[client] trait ConnectorLogic {
   def receiveHandler(connection: StompClientConnection): Unit
 
   def dropHandler(connection: StompClientConnection): Unit =
-    connection.connectionDroppedHandler({
-      dropCallback.invoke(_)
+    connection.connectionDroppedHandler({ client: StompClientConnection =>
+      dropCallback.invoke(client)
     })
 
   /**
    * An ERROR frame is received
    */
   def errorHandler(connection: StompClientConnection): Unit =
-    connection.errorHandler(errorCallback.invoke(_))
+    connection.errorHandler({ frame: VertxFrame =>
+      errorCallback.invoke(frame)
+    })
 
   /**
    * When connection get closed
    */
   def closeHandler(connection: StompClientConnection): Unit =
-    connection.closeHandler(closeCallback.invoke(_))
+    connection.closeHandler({ client: StompClientConnection =>
+      closeCallback.invoke(client)
+    })
 
   /**
    * Upon TCP-errors
    */
   private def failHandler(connection: StompClientConnection): Unit =
-    connection.exceptionHandler(failCallback.invoke(_))
+    connection.exceptionHandler({ ex: Throwable =>
+      failCallback.invoke(ex)
+    })
 
   /** remember to call if overriding! */
   override def postStop(): Unit =

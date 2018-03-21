@@ -62,7 +62,10 @@ final class SinkStage(settings: ConnectorSettings)
               pull(in)
             }
             if (settings.withAck) {
-              connection.send(vertxFrame, continue.invoke(_))
+              import VertxStompConversions._
+              connection.send(vertxFrame, { frame: Frame =>
+                continue.invoke(frame)
+              })
             } else {
               connection.send(vertxFrame)
               pull(in)
