@@ -110,6 +110,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     val (putResult, deleteResult, metaBefore, metaAfter) = Await.ready(result, 90.seconds).futureValue
     putResult.eTag should not be empty
     metaBefore should not be empty
+    metaBefore.get.contentType shouldBe Some(ContentTypes.`application/octet-stream`.value)
     metaAfter shouldBe empty
   }
 
@@ -145,7 +146,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     val (body, meta) = Await.ready(result, 5.seconds).futureValue
     body shouldBe objectValue
     meta.eTag should not be empty
-    meta.contentType shouldBe ContentTypes.`application/octet-stream`.value
+    meta.contentType shouldBe Some(ContentTypes.`application/octet-stream`.value)
   }
 
   it should "delete with real credentials" in {

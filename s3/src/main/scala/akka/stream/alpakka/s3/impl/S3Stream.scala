@@ -13,9 +13,8 @@ import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK}
-import akka.http.scaladsl.model.headers.`Content-Length`
+import akka.http.scaladsl.model.headers.{ByteRange, CustomHeader, `Content-Length`}
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.ByteRange
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.auth.{CredentialScope, Signer, SigningKey}
@@ -77,7 +76,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       .fromFuture(future.flatMap(entityForSuccess))
       .map(_.dataBytes)
       .flatMapConcat(identity)
-    val meta = future.map(resp ⇒ ObjectMetadata(resp.headers))
+    val meta = future.map(resp ⇒ computeMetaData(resp.headers, resp.entity))
     (source, meta)
   }
 
@@ -117,7 +116,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     request(S3Location(bucket, key), HttpMethods.HEAD, s3Headers = s3Headers).flatMap {
       case HttpResponse(OK, headers, entity, _) =>
         entity.discardBytes().future().map { _ =>
-          Some(ObjectMetadata(headers :+ `Content-Length`(entity.contentLengthOption.getOrElse(0))))
+          Some(computeMetaData(headers, entity))
         }
       case HttpResponse(NotFound, _, entity, _) =>
         entity.discardBytes().future().map(_ => None)
@@ -219,6 +218,24 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
           throw new S3Exception(err)
         }
     }
+  }
+
+  private def computeMetaData(headers:Seq[HttpHeader], entity:ResponseEntity):ObjectMetadata = {
+    ObjectMetadata(headers ++
+      Seq(
+          `Content-Length`(entity.contentLengthOption.getOrElse(0)),
+          CustomContentTypeHeader(entity.contentType)
+      )
+    )
+  }
+
+  //`Content-Type` header is by design not accessible as header. So need to have a custom
+  //header implementation to expose that
+  private case class CustomContentTypeHeader(contentType: ContentType) extends CustomHeader {
+    override def name(): String = "Content-Type"
+    override def value(): String = contentType.value
+    override def renderInRequests(): Boolean = true
+    override def renderInResponses(): Boolean = true
   }
 
   private def completeMultipartUpload(s3Location: S3Location,
