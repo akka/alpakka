@@ -372,13 +372,14 @@ public class ElasticsearchTest {
     // all we need to test here is that we can receive and send version
 
     String indexName = "test_using_versions";
+    String typeName = "book";
 
     // Insert document
     Book book = new Book("b");
-    Source.single(IncomingMessage.create("1", book, 5))
+    Source.single(IncomingMessage.create("1", book))
             .via(ElasticsearchFlow.create(
                     indexName,
-                    "book",
+                    typeName,
                     new ElasticsearchSinkSettings().withBufferSize(5).withMaxRetry(0),
                     client,
                     new ObjectMapper()))
@@ -387,19 +388,29 @@ public class ElasticsearchTest {
     flush(indexName);
 
     // Search document and assert it having version 1
-    ElasticsearchSource.<Book>typed(
-            indexName,
-            "book",
-            "{\"match_all\": {}}",
-            new ElasticsearchSourceSettings().withIncludeDocumentVersion(true),
-            client,
-            Book.class)
-            .map(o -> {
-              assertEquals(5L, o.version().get());
-              return o;
-            })
-            .runWith(Sink.ignore(), materializer)
-            .toCompletableFuture().get();
+    OutgoingMessage<Book> message = ElasticsearchSource.<Book>typed(
+      indexName,
+      typeName,
+      "{\"match_all\": {}}",
+      new ElasticsearchSourceSettings().withIncludeDocumentVersion(true),
+      client,
+      Book.class)
+      .runWith(Sink.head(), materializer)
+      .toCompletableFuture().get();
+
+    assertEquals(1L, message.version().get());
+
+    flush(indexName);
+
+    // Update document to version 2
+    Source.single(IncomingMessage.create("1", book, 1L))
+      .via(ElasticsearchFlow.create(
+        indexName,
+        typeName,
+        new ElasticsearchSinkSettings().withBufferSize(5).withMaxRetry(0),
+        client,
+        new ObjectMapper()))
+      .runWith(Sink.seq(), materializer).toCompletableFuture().get();
 
     flush(indexName);
 
@@ -408,14 +419,13 @@ public class ElasticsearchTest {
     boolean success = Source.single(IncomingMessage.create("1", book, oldVersion))
             .via(ElasticsearchFlow.create(
                     indexName,
-                    "book",
+                    typeName,
                     new ElasticsearchSinkSettings().withBufferSize(5).withMaxRetry(0),
                     client,
                     new ObjectMapper()))
             .runWith(Sink.seq(), materializer).toCompletableFuture().get().get(0).get(0).success();
 
     assertEquals(false, success);
-
   }
 
   //#custom-search-params
