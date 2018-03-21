@@ -48,14 +48,14 @@ final class SourceStage(settings: ConnectorSettings)
         connection.subscribe(
           settings.destination.get,
           headers.asJava,
-            receiveSubscriptionMessage.invoke(_)
-         , acknowledge(_)
+          receiveSubscriptionMessage.invoke(_),
+          acknowledge(_)
         )
       }
 
       override def receiveHandler(connection: StompClientConnection): Unit =
-        connection.receivedFrameHandler({
-          frame: Frame => {
+        connection.receivedFrameHandler({ frame: Frame =>
+          {
             if (!settings.destination.contains(frame.getDestination)) {
               acknowledge(frame)
             }

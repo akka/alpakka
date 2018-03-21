@@ -56,8 +56,8 @@ private[client] trait ConnectorLogic {
 
     // connecting async
     settings.connectionProvider.getStompClient
-      .connect({
-        ar: AsyncResult[StompClientConnection] => {
+      .connect({ ar: AsyncResult[StompClientConnection] =>
+        {
           if (ar.succeeded()) {
             connectCallback.invoke(ar.result())
           } else {
@@ -65,8 +65,7 @@ private[client] trait ConnectorLogic {
             throw ar.cause()
           }
         }
-      }
-      )
+      })
   }
 
   def acknowledge(frame: VertxFrame): Unit =
