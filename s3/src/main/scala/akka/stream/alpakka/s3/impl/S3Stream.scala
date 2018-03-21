@@ -13,7 +13,7 @@ import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK}
-import akka.http.scaladsl.model.headers.{ByteRange, CustomHeader, `Content-Length`}
+import akka.http.scaladsl.model.headers.{`Content-Length`, ByteRange, CustomHeader}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.stream.Materializer
@@ -220,14 +220,14 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     }
   }
 
-  private def computeMetaData(headers:Seq[HttpHeader], entity:ResponseEntity):ObjectMetadata = {
-    ObjectMetadata(headers ++
+  private def computeMetaData(headers: Seq[HttpHeader], entity: ResponseEntity): ObjectMetadata =
+    ObjectMetadata(
+      headers ++
       Seq(
-          `Content-Length`(entity.contentLengthOption.getOrElse(0)),
-          CustomContentTypeHeader(entity.contentType)
+        `Content-Length`(entity.contentLengthOption.getOrElse(0)),
+        CustomContentTypeHeader(entity.contentType)
       )
     )
-  }
 
   //`Content-Type` header is by design not accessible as header. So need to have a custom
   //header implementation to expose that
