@@ -428,6 +428,41 @@ public class ElasticsearchTest {
     assertEquals(false, success);
   }
 
+  @Test
+  public void testUsingVersionType() throws Exception {
+    String indexName = "book-test-version-type";
+    String typeName = "book";
+
+    Book book = new Book("A sample title");
+    String docId = "1";
+    long externalVersion = 5;
+
+    // Insert new document using external version
+    Source.single(IncomingMessage.create("1", book, externalVersion))
+      .via(ElasticsearchFlow.create(
+        indexName,
+        typeName,
+        new ElasticsearchSinkSettings().withBufferSize(5).withMaxRetry(0).withVersionType("external"),
+        client,
+        new ObjectMapper()))
+      .runWith(Sink.seq(), materializer).toCompletableFuture().get();
+
+    flush(indexName);
+
+    // Assert that the document's external version is saved
+    OutgoingMessage<Book> message = ElasticsearchSource.<Book>typed(
+      indexName,
+      typeName,
+      "{\"match_all\": {}}",
+      new ElasticsearchSourceSettings().withIncludeDocumentVersion(true),
+      client,
+      Book.class)
+      .runWith(Sink.seq(), materializer)
+      .toCompletableFuture().get().get(0);
+
+    assertEquals(externalVersion, message.version().get());
+  }
+
   //#custom-search-params
   public static class TestDoc {
     public String id;
