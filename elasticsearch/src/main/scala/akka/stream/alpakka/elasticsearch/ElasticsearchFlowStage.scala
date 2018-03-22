@@ -221,6 +221,9 @@ class ElasticsearchFlowStage[T, C](
                   message.version.map { version =>
                     "_version" -> JsNumber(version)
                   },
+                  settings.versionType.map { versionType =>
+                    "version_type" -> JsString(versionType)
+                  },
                   message.id.map { id =>
                     "_id" -> JsString(id)
                   }
