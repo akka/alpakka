@@ -17,5 +17,6 @@ final case class ElasticsearchSinkSettings(bufferSize: Int = 10,
                                            retryInterval: Int = 5000,
                                            maxRetry: Int = 100,
                                            retryPartialFailure: Boolean = false,
-                                           docAsUpsert: Boolean = false)
+                                           docAsUpsert: Boolean = false,
+                                           versionType: Option[String] = None)
 //#sink-settings
