@@ -32,14 +32,14 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
       private[jms] def createSession(connection: Connection, createDestination: Session => jms.Destination) = {
         val session =
           connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode)
-        new JmsSession(connection, session, createDestination(session))
+        new JmsSession(connection, session, createDestination(session), settings.destination.get)
       }
 
       override def preStart(): Unit = {
         jmsSessions = openSessions()
         // TODO: Remove hack to limit publisher to single session.
         jmsSession = jmsSessions.head
-        jmsProducer = jmsSession.session.createProducer(jmsSession.destination)
+        jmsProducer = jmsSession.session.createProducer(jmsSession.jmsDestination)
         if (settings.timeToLive.nonEmpty) {
           jmsProducer.setTimeToLive(settings.timeToLive.get.toMillis)
         }
@@ -134,7 +134,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
         def createDestination(destination: Destination): _root_.javax.jms.Destination =
           destination match {
             case Queue(name) => jmsSession.session.createQueue(name)
-            case Topic(name) => jmsSession.session.createTopic(name)
+            case Topic(name, _) => jmsSession.session.createTopic(name)
           }
 
         headers.foreach {

@@ -7,14 +7,12 @@ package akka.stream.alpakka.jms.scaladsl
 import java.nio.charset.Charset
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 import javax.jms.{DeliveryMode, JMSException, Message, TextMessage}
-
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.{KillSwitch, KillSwitches, ThrottleMode}
 import akka.{Done, NotUsed}
 import org.apache.activemq.ActiveMQConnectionFactory
 import org.apache.activemq.command.ActiveMQQueue
-
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
@@ -686,6 +684,44 @@ class JmsConnectorsSpec extends JmsSpec {
       //#run-flow-producer
 
       result.futureValue should ===(input)
+    }
+
+    "publish and subscribe with a durable subscription" in withServer() { ctx =>
+      import system.dispatcher
+
+      val producerConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+      val consumerConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+      consumerConnectionFactory.setClientID(getClass.getSimpleName)
+
+      val jmsTopicSink: Sink[String, Future[Done]] = JmsProducer.textSink(
+        JmsProducerSettings(producerConnectionFactory).withTopic("topic")
+      )
+
+      val in = List("a", "b", "c", "d", "e", "f", "f", "g", "h", "i", "j", "k")
+      val size = in.size
+
+      val jmsTopicSource1: Source[String, KillSwitch] = JmsConsumer.textSource(
+        JmsConsumerSettings(consumerConnectionFactory)
+          .withBufferSize(size / 4)
+          .withTopic("topic", "durable-test")
+      )
+
+      val (kill1, run1) = jmsTopicSource1.take(size / 2).toMat(Sink.seq)(Keep.both).run()
+      //We wait a little to be sure that the source is connected
+      Thread.sleep(500)
+
+      val result = for {
+        _ <- Source(in).runWith(jmsTopicSink)
+        result1 <- run1
+        () = {
+          kill1.shutdown()
+          // Wait a little between consumer runs
+          Thread.sleep(500)
+        }
+        result2 <- jmsTopicSource1.take(size / 2).runWith(Sink.seq)
+      } yield result1 ++ result2
+
+      result.futureValue shouldEqual in
     }
   }
 }
