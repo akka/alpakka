@@ -128,7 +128,7 @@ final class ObjectMetadata private (
    * @see ObjectMetadata#setContentType(String)
    */
   lazy val contentType: Option[String] = metadata.collectFirst {
-    case ct: ContentType => ct.value
+    case h if h.lowercaseName() == "content-type" => h.value
   }
 
   /**
