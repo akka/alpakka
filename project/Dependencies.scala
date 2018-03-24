@@ -122,7 +122,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-      "com.google.cloud" % "google-cloud-pubsub" % "0.33.0-beta",
+      "com.google.cloud" % "google-cloud-pubsub" % "0.41.0-beta",
       "org.mockito" % "mockito-core" % "2.3.7" % Test, // MIT
       "com.github.tomakehurst" % "wiremock" % "2.5.1" % Test // ApacheV2
     )

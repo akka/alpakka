@@ -27,14 +27,14 @@ object GooglePubSubGrpc {
     new GooglePubSubGrpcJava(project, subscription, parallelism, pubSubConfig, actorSystem, materializer)
 
   class GooglePubSubGrpcJava(
-      private val project: String,
-      private val subscription: String,
-      private val parallelism: Int,
-      private val pubSubConfig: PubSubConfig,
-      private val actorSystem: ActorSystem,
-      private val materializer: Materializer
+      project: String,
+      subscription: String,
+      parallelism: Int,
+      pubSubConfig: PubSubConfig,
+      actorSystem: ActorSystem,
+      materializer: Materializer
   ) {
-    private val underlying = GPubSubGrpc.apply(project, subscription, parallelism, pubSubConfig)(materializer)
+    private val underlying = GPubSubGrpc.apply(project, subscription, pubSubConfig, parallelism)(materializer)
 
     def publish: Flow[v1.PublishRequest, v1.PublishResponse, NotUsed] = underlying.publish.asJava
     def subscribe: Source[v1.ReceivedMessage, NotUsed] = underlying.subscribe(actorSystem).asJava

@@ -4,9 +4,6 @@
 
 package akka.stream.alpakka.googlecloud.pubsub
 
-import java.util.concurrent.atomic.AtomicInteger
-
-import akka.actor.ActorSystem
 import akka.stream.{Attributes, Materializer, Outlet, SourceShape}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 
@@ -18,24 +15,23 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable
 
 @akka.annotation.InternalApi
-private final class GooglePubSubSourceGrpc(parallelism: Int, grpcApi: GrpcApi)(
-    implicit as: ActorSystem
-) extends GraphStage[SourceShape[v1.ReceivedMessage]] {
+private final class GooglePubSubSourceGrpc(parallelism: Int, grpcApi: GrpcApi)
+    extends GraphStage[SourceShape[v1.ReceivedMessage]] {
 
   val out: Outlet[v1.ReceivedMessage] = Outlet("GooglePubSubSourceGrpc.out")
   override val shape: SourceShape[v1.ReceivedMessage] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) {
+    new GraphStageLogic(shape) with OutHandler {
       private var state: State = Pending
-      private val fetches: AtomicInteger = new AtomicInteger(0)
+      private var fetches: Int = 0
 
       def fetch(implicit mat: Materializer): Unit = {
         import mat.executionContext
-        fetches.incrementAndGet()
+        fetches += 1
 
         grpcApi.read.onComplete { tr =>
-          fetches.decrementAndGet()
+          fetches -= 1
           callback.invoke(tr -> mat)
         }
 
@@ -47,10 +43,10 @@ private final class GooglePubSubSourceGrpc(parallelism: Int, grpcApi: GrpcApi)(
           failStage(tr)
         case (Success(response), mat) =>
           response.getReceivedMessagesList.asScala.toList match {
-            case head :: tail =>
+            case items@head :: tail =>
               state match {
                 case HoldingMessages(oldHead :: oldTail) =>
-                  state = HoldingMessages(oldTail ++ Seq(head) ++ tail)
+                  state = HoldingMessages(oldTail ::: items)
                   push(out, oldHead)
                 case _ =>
                   state = HoldingMessages(tail)
@@ -62,33 +58,33 @@ private final class GooglePubSubSourceGrpc(parallelism: Int, grpcApi: GrpcApi)(
           }
       }
 
-      setHandler(
-        out,
-        new OutHandler {
-          override def onPull(): Unit =
-            state match {
-              case Pending =>
+      override def onPull(): Unit =
+        state match {
+          case Pending =>
+            state = Fetching
+            fetch(materializer)
+
+          case Fetching if fetches < parallelism =>
+            state = Fetching
+            fetch(materializer)
+
+          case Fetching if fetches > parallelism =>
+          // do nothing we will push on request result
+
+          case HoldingMessages(xs) =>
+            xs match {
+              case head :: tail =>
+                state = HoldingMessages(tail)
+                push(out, head)
+              case Nil =>
                 state = Fetching
                 fetch(materializer)
-
-              case Fetching if fetches.get() < parallelism =>
-                state = Fetching
-                fetch(materializer)
-
-              case Fetching if fetches.get() > parallelism =>
-              // do nothing we will push on request result
-
-              case HoldingMessages(xs) =>
-                xs match {
-                  case head :: tail =>
-                    state = HoldingMessages(tail)
-                    push(out, head)
-                  case Nil =>
-                    state = Fetching
-                    fetch(materializer)
-                }
             }
         }
+
+      setHandler(
+        out,
+        this
       )
     }
 }
@@ -98,5 +94,5 @@ private object GooglePubSubSourceGrpc {
   private sealed trait State
   private case object Pending extends State
   private case object Fetching extends State
-  private case class HoldingMessages(xs: immutable.Seq[v1.ReceivedMessage]) extends State
+  private case class HoldingMessages(xs: immutable.List[v1.ReceivedMessage]) extends State
 }

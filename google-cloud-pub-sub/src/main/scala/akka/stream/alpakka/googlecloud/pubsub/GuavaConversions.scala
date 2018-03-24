@@ -8,8 +8,8 @@ import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFut
 
 import scala.concurrent.{Future, Promise}
 
-object GuavaConversions {
-  implicit class ListenableFutureConversion[T](f: ListenableFuture[T]) {
+private[pubsub] object GuavaConversions {
+  implicit class ListenableFutureConversion[T](private val f: ListenableFuture[T]) {
     def asScalaFuture: Future[T] = {
       val p = Promise[T]
       Futures.addCallback(f, new FutureCallback[T] {

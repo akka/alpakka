@@ -33,10 +33,10 @@ private final case class OAuthResponse(access_token: String, token_type: String,
 
 private final case class AccessTokenExpiry(accessToken: String, expiresAt: Long)
 
-case class PubSubConfig(
-    host: String,
-    port: Int,
-    usePlaintext: Boolean,
-    maxMessages: Int,
-    returnImmediately: Boolean
+final case class PubSubConfig(
+    host: String = "pubsub.googleapis.com",
+    port: Int = 443,
+    usePlaintext: Boolean = false,
+    returnImmediately: Boolean = true,
+    maxMessages: Int = 1000
 )

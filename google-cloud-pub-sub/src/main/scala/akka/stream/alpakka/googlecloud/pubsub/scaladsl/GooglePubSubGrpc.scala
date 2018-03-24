@@ -15,25 +15,19 @@ import com.google.pubsub.v1
 import scala.concurrent.Future
 
 object GooglePubSubGrpc {
-  def apply(projectI: String, subscriptionI: String, parallelismI: Int, pubSubConfig: PubSubConfig)(
-      implicit materializer: Materializer
-  ): GooglePubSubGrpc =
-    new GooglePubSubGrpc {
-      override private[pubsub] val api = new GrpcApi(projectI, subscriptionI, pubSubConfig)
-
-      override private[pubsub] val project = projectI
-      override private[pubsub] val subscription = subscriptionI
-      override private[pubsub] val parallelism = parallelismI
-    }
+  def apply(
+      project: String,
+      subscription: String,
+      pubSubConfig: PubSubConfig,
+      parallelism: Int = 1
+  )(implicit materializer: Materializer): GooglePubSubClient =
+    new GooglePubSubGrpc(new GrpcApi(project, subscription, pubSubConfig), parallelism)
 }
 
-protected[pubsub] trait GooglePubSubGrpc {
-  private[pubsub] val api: GrpcApi
-
-  private[pubsub] val project: String
-  private[pubsub] val subscription: String
-  private[pubsub] val parallelism: Int
-
+private[pubsub] class GooglePubSubGrpc(
+    api: GrpcApi,
+    parallelism: Int
+) extends GooglePubSubClient {
   def publish: Flow[v1.PublishRequest, v1.PublishResponse, NotUsed] =
     Flow[v1.PublishRequest]
       .mapAsyncUnordered(parallelism)(request => api.publish(request))
@@ -45,4 +39,10 @@ protected[pubsub] trait GooglePubSubGrpc {
     Flow[AcknowledgeRequest]
       .mapAsyncUnordered(parallelism)(ackReq => api.ackBatch(ackReq.ackIds))
       .toMat(Sink.ignore)(Keep.right)
+}
+
+trait GooglePubSubClient {
+  def publish: Flow[v1.PublishRequest, v1.PublishResponse, NotUsed]
+  def subscribe(implicit actorSystem: ActorSystem): Source[v1.ReceivedMessage, NotUsed]
+  def acknowledge: Sink[AcknowledgeRequest, Future[Done]]
 }
