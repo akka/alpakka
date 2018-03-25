@@ -79,6 +79,67 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     result.failed.futureValue.getMessage shouldBe "No key found"
   }
 
+  it should "copy a file from source bucket to target bucket when expected content length is less then chunk size" in {
+    mockCopy()
+
+    //#multipart-copy
+    val result: Future[MultipartUploadResult] = s3Client.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey)
+    //#multipart-copy
+
+    result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag)
+  }
+
+  it should "copy a file from source bucket to target bucket when expected content length is equal to chunk size" in {
+    mockCopy(S3Client.MinChunkSize)
+
+    val result = s3Client.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey)
+    result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag)
+  }
+
+  it should "copy an empty file from source bucket to target bucket" in {
+    mockCopy(expectedContentLength = 0)
+
+    val result = s3Client.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey)
+    result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag)
+  }
+
+  it should "copy a file from source bucket to target bucket with SSE" in {
+    mockCopySSE()
+
+    val result = s3Client.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey, sse = Some(sseCustomerKeys))
+    result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag)
+  }
+
+  it should "copy a file from source bucket to target bucket with custom header" in {
+    mockCopy()
+
+    val result =
+      s3Client.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey, sse = Some(ServerSideEncryption.AES256))
+    result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag)
+  }
+
+  it should "copy a file from source bucket to target bucket when expected content length is greater then chunk size" in {
+    mockCopyMulti()
+
+    val result = s3Client.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey)
+    result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag)
+  }
+
+  it should "copy a file from source bucket to target bucket with source version id provided" in {
+    mockCopyVersioned()
+
+    //#multipart-copy-versioned
+    val result: Future[MultipartUploadResult] =
+      s3Client.multipartCopy(bucket,
+                             bucketKey,
+                             targetBucket,
+                             targetBucketKey,
+                             Some("3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo"))
+    //#multipart-copy-versioned
+
+    result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag)
+  }
+
   override protected def afterAll(): Unit = {
     super.afterAll()
     stopWireMockServer()

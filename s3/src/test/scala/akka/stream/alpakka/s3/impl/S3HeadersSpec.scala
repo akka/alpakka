@@ -120,6 +120,15 @@ class S3HeadersSpec extends FlatSpec with Matchers {
     headers should contain(RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256"))
     headers should contain(RawHeader("x-amz-server-side-encryption-customer-key", key))
     headers should contain(RawHeader("x-amz-server-side-encryption-customer-key-MD5", md5Key))
+
+    headers = ssec.headersFor(CopyPart)
+    headers.size shouldBe 6
+    headers should contain(RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256"))
+    headers should contain(RawHeader("x-amz-server-side-encryption-customer-key", key))
+    headers should contain(RawHeader("x-amz-server-side-encryption-customer-key-MD5", md5Key))
+    headers should contain(RawHeader("x-amz-copy-source-server-side-encryption-customer-algorithm", "AES256"))
+    headers should contain(RawHeader("x-amz-copy-source-server-side-encryption-customer-key", key))
+    headers should contain(RawHeader("x-amz-copy-source-server-side-encryption-customer-key-MD5", md5Key))
   }
 
   "StorageClass" should "create well formed headers for 'infrequent access'" in {
