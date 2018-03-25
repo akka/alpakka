@@ -70,4 +70,14 @@ private[alpakka] object Marshalling {
         )
     }
   }
+
+  implicit val copyPartResultUnmarshaller: FromEntityUnmarshaller[CopyPartResult] = {
+    nodeSeqUnmarshaller(MediaTypes.`application/xml`, ContentTypes.`application/octet-stream`) map {
+      case NodeSeq.Empty => throw Unmarshaller.NoContentException
+      case x =>
+        val lastModified = Instant.parse((x \ "LastModified").text)
+        val eTag = (x \ "ETag").text
+        CopyPartResult(lastModified, eTag.dropRight(1).drop(1))
+    }
+  }
 }
