@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.s3.impl
 
-import java.time.LocalDate
+import java.time.{Instant, LocalDate}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
@@ -21,7 +21,7 @@ import akka.stream.Materializer
 import akka.stream.alpakka.s3.auth.{CredentialScope, Signer, SigningKey}
 import akka.stream.alpakka.s3.scaladsl.{ListBucketResultContents, ObjectMetadata}
 import akka.stream.alpakka.s3.{DiskBufferType, MemoryBufferType, S3Exception, S3Settings}
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
 import akka.util.ByteString
 
 final case class S3Location(bucket: String, key: String)
@@ -44,9 +44,15 @@ final case class FailedUpload(reasons: Seq[Throwable]) extends Exception(reasons
 
 final case class CompleteMultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
 
+final case class CopyPartResult(lastModified: Instant, eTag: String)
+
 final case class ListBucketResult(isTruncated: Boolean,
                                   continuationToken: Option[String],
                                   contents: Seq[ListBucketResultContents])
+
+final case class CopyPartition(partNumber: Int, sourceLocation: S3Location, range: Option[ByteRange.Slice] = None)
+
+final case class MultipartCopy(multipartUpload: MultipartUpload, copyPartition: CopyPartition)
 
 object S3Stream {
 
@@ -341,6 +347,111 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
         .flatMap(completeMultipartUpload(s3Location, _))
     }
   }
+
+  def multipartCopy(
+      sourceLocation: S3Location,
+      targetLocation: S3Location,
+      contentType: ContentType = ContentTypes.`application/octet-stream`,
+      s3Headers: S3Headers,
+      sse: Option[ServerSideEncryption] = None,
+      chunkSize: Int = MinChunkSize,
+      chunkingParallelism: Int = 4
+  ): RunnableGraph[Future[CompleteMultipartUploadResult]] = {
+    import mat.executionContext
+
+    // Pre step get source meta to get content length (size of the object)
+    val eventualMaybeObjectSize: Future[Option[Long]] =
+      getObjectMetadata(sourceLocation.bucket, sourceLocation.key, sse).map(_.map(_.contentLength))
+    val eventualPartitions =
+      eventualMaybeObjectSize.map(_.map(createPartitions(chunkSize, sourceLocation)).getOrElse(Nil))
+    val partitions = Source.fromFuture(eventualPartitions)
+
+    // Multipart copy upload requests (except for the completion api) are created here.
+    //  The initial copy upload request gets executed within this function as well.
+    //  The individual copy upload part requests are created.
+    val copyRequests = createCopyRequests(targetLocation, contentType, s3Headers, sse, partitions)(chunkingParallelism)
+
+    // The individual copy upload part requests are processed here
+    processeUploadCopyPartRequests(copyRequests)(chunkingParallelism)
+      .toMat(completionSink(targetLocation))(Keep.right)
+  }
+
+  private def createCopyRequests(
+      location: S3Location,
+      contentType: ContentType,
+      s3Headers: S3Headers,
+      sse: Option[ServerSideEncryption],
+      partitions: Source[List[CopyPartition], NotUsed]
+  )(parallelism: Int) = {
+    val requestInfo: Source[(MultipartUpload, Int), NotUsed] =
+      initiateUpload(location,
+                     contentType,
+                     S3Headers(
+                       s3Headers.headers ++
+                       sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(InitiateMultipartUpload) }
+                     ))
+
+    // use the same key for all sub-requests (chunks)
+    val key: SigningKey = signingKey
+
+    val headers: S3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(CopyPart) })
+
+    requestInfo
+      .zipWith(partitions) {
+        case ((upload, _), ls) =>
+          ls.map { cp =>
+            val multipartCopy = MultipartCopy(upload, cp)
+            val request = uploadCopyRequest(multipartCopy, headers)
+            (request, multipartCopy)
+          }
+      }
+      .mapConcat(identity)
+      .mapAsync(parallelism) {
+        case (req, info) => Signer.signedRequest(req, key).zip(Future.successful(info))
+      }
+  }
+
+  private def processeUploadCopyPartRequests(
+      requests: Source[(HttpRequest, MultipartCopy), NotUsed]
+  )(parallelism: Int) = {
+    import mat.executionContext
+
+    requests
+      .via(Http().superPool[MultipartCopy]())
+      .map {
+        case (Success(r), multipartCopy) =>
+          val entity = r.entity
+          val upload = multipartCopy.multipartUpload
+          val index = multipartCopy.copyPartition.partNumber
+          import StatusCodes._
+          r.status match {
+            case OK =>
+              Unmarshal(entity).to[CopyPartResult].map(cp => SuccessfulUploadPart(upload, index, cp.eTag))
+            case statusCode: StatusCode =>
+              Unmarshal(entity).to[String].map { err =>
+                val response = Option(err).getOrElse(s"Failed to upload part into S3, status code was: $statusCode")
+                throw new S3Exception(response)
+              }
+          }
+
+        case (Failure(ex), multipartCopy) =>
+          Future.successful(FailedUploadPart(multipartCopy.multipartUpload, multipartCopy.copyPartition.partNumber, ex))
+      }
+      .mapAsync(parallelism)(identity)
+  }
+
+  private[impl] def createPartitions(chunkSize: Int,
+                                     sourceLocation: S3Location)(objectSize: Long): List[CopyPartition] =
+    if (objectSize <= 0) CopyPartition(1, sourceLocation) :: Nil
+    else {
+      ((0L until objectSize by chunkSize).toList :+ objectSize)
+        .sliding(2)
+        .toList
+        .zipWithIndex
+        .map {
+          case (ls, index) => CopyPartition(index + 1, sourceLocation, Some(ByteRange(ls.head, ls.last)))
+        }
+    }
 
   private def signAndGetAs[T](request: HttpRequest)(implicit um: Unmarshaller[ResponseEntity, T]): Future[T] = {
     import mat.executionContext
