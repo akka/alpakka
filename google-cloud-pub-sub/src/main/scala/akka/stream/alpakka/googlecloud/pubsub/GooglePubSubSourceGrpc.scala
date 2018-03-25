@@ -43,7 +43,7 @@ private final class GooglePubSubSourceGrpc(parallelism: Int, grpcApi: GrpcApi)
           failStage(tr)
         case (Success(response), mat) =>
           response.getReceivedMessagesList.asScala.toList match {
-            case items@head :: tail =>
+            case items @ head :: tail =>
               state match {
                 case HoldingMessages(oldHead :: oldTail) =>
                   state = HoldingMessages(oldTail ::: items)
