@@ -25,11 +25,26 @@ class ExampleUsageGrpc {
   implicit val mat = ActorMaterializer()
   //#init-mat
 
-  //#init-credentials
+  //#init-client
   val projectId = "test-XXXXX"
   val topic = "topic1"
   val subscription = "subscription1"
-  //#init-credentials
+
+  val client =
+    GooglePubSubGrpc(
+      project = projectId,
+      subscription = subscription,
+      PubSubConfig(
+        host = "pubsub.googleapis.com",
+        port = 443,
+        usePlaintext = false,
+        returnImmediately = true,
+        maxMessages = 1000
+      ),
+      parallelism = 2
+    )
+
+  //#init-client
 
   //#publish-single
   val publishMessage: PubsubMessage =
@@ -47,20 +62,6 @@ class ExampleUsageGrpc {
 
   val source: Source[v1.PublishRequest, NotUsed] =
     Source.single(publishRequest)
-
-  val client =
-    GooglePubSubGrpc(
-      projectId,
-      subscription,
-      PubSubConfig(
-        host = "pubsub.googleapis.com",
-        port = 443,
-        usePlaintext = false,
-        returnImmediately = true,
-        maxMessages = 1000
-      ),
-      2
-    )
 
   val publishFlow: Flow[v1.PublishRequest, v1.PublishResponse, NotUsed] =
     client.publish

@@ -17,8 +17,6 @@ import com.google.pubsub.v1.PublishResponse;
 import com.google.pubsub.v1.PubsubMessage;
 import scala.concurrent.duration.FiniteDuration;
 
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -31,19 +29,10 @@ public class ExampleUsageJavaGrpc {
         ActorMaterializer materializer = ActorMaterializer.create(system);
         //#init-mat
 
-        //#init-credentials
+        //#init-client
         String projectId = "test-XXXXX";
         String topic = "topic1";
         String subscription = "subscription1";
-        //#init-credentials
-
-        //#publish-single
-        PubsubMessage publishMessage =
-                PubsubMessage.newBuilder().setMessageId("1").setData(ByteString.copyFromUtf8("Hello world!")).build();
-        com.google.pubsub.v1.PublishRequest publishRequest =
-                com.google.pubsub.v1.PublishRequest.newBuilder().addMessages(publishMessage).build();
-
-        Source<com.google.pubsub.v1.PublishRequest, NotUsed> source = Source.single(publishRequest);
 
         PubSubConfig pubSubConfig = new PubSubConfig(
                 "pubsub.googleapis.com",
@@ -55,6 +44,23 @@ public class ExampleUsageJavaGrpc {
 
         GooglePubSubGrpc.GooglePubSubGrpcJava client =
                 GooglePubSubGrpc.of(projectId, subscription, 1, pubSubConfig, system, materializer);
+        //#init-client
+
+        //#publish-single
+        PubsubMessage publishMessage =
+                PubsubMessage
+                        .newBuilder()
+                        .setMessageId("1")
+                        .setData(ByteString.copyFromUtf8("Hello world!"))
+                        .build();
+
+        com.google.pubsub.v1.PublishRequest publishRequest =
+                com.google.pubsub.v1.PublishRequest
+                        .newBuilder()
+                        .addMessages(publishMessage)
+                        .build();
+
+        Source<com.google.pubsub.v1.PublishRequest, NotUsed> source = Source.single(publishRequest);
 
         Flow<com.google.pubsub.v1.PublishRequest, PublishResponse, NotUsed> publishFlow =
                 client.publish();
@@ -78,13 +84,16 @@ public class ExampleUsageJavaGrpc {
 
         //#subscribe
         Source<com.google.pubsub.v1.ReceivedMessage, NotUsed> subscriptionSource =
-            client.subscribe();
+                client.subscribe();
 
         Sink<AcknowledgeRequest, CompletionStage<Done>> ackSink =
-            client.acknowledge();
+                client.acknowledge();
 
-        // do something fun
-        subscriptionSource.map(receivedMessage -> receivedMessage.getAckId())
+
+        subscriptionSource.map(receivedMessage -> {
+            // do some computation
+            return receivedMessage.getAckId();
+        })
                 .groupedWithin(1000, FiniteDuration.apply(1, "min"))
                 .map(acks -> AcknowledgeRequest.of(acks))
                 .to(ackSink);
