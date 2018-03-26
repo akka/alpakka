@@ -11,7 +11,6 @@ import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters._
 import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
-import akka.http.impl.model.JavaUri
 import akka.http.javadsl.model.headers.ByteRange
 import akka.http.javadsl.model._
 import akka.http.scaladsl.model.headers.{ByteRange => ScalaByteRange}
@@ -144,7 +143,7 @@ final class ObjectMetadata private[javadsl] (
 
 object MultipartUploadResult {
   def create(r: CompleteMultipartUploadResult): MultipartUploadResult =
-    new MultipartUploadResult(JavaUri(r.location), r.bucket, r.key, r.etag)
+    new MultipartUploadResult(Uri.create(r.location), r.bucket, r.key, r.etag)
 }
 
 object S3Client {
