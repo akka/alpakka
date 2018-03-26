@@ -3,9 +3,11 @@
 Use Akka Stream JsonFraming to split a stream of @scaladoc[ByteString](akka.util.ByteString) elements into 
 ByteString snippets of valid JSON objects. 
 
-@scaladoc[ScalaDSL JsonFraming](akka.stream.scaladsl.JsonFraming$)
+See @scaladoc[ScalaDSL JsonFraming](akka.stream.scaladsl.JsonFraming$) or @scaladoc[JavaDSL JsonFraming](akka.stream.javadsl.JsonFraming$)
 
-@scaladoc[JavaDSL JsonFraming](akka.stream.javadsl.JsonFraming$)
+
+@extref[Akka documentation](akka-docs:stream/stream-io.html#using-framing-in-your-protocol)
+
 
 
 `JsonFraming.objectScanner(maximumObjectLength: Int): Flow[ByteString, ByteString, NotUsed]`
