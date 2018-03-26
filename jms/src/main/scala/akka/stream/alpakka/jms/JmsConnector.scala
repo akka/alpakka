@@ -77,7 +77,10 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
       case Some(Queue(name)) =>
         session: Session =>
           session.createQueue(name)
-      case Some(Topic(name, _)) =>
+      case Some(Topic(name)) =>
+        session: Session =>
+          session.createTopic(name)
+      case Some(DurableTopic(name, _)) =>
         session: Session =>
           session.createTopic(name)
       case _ => throw new IllegalArgumentException("Destination is missing")
@@ -118,14 +121,11 @@ private[jms] class JmsSession(val connection: jms.Connection,
   )(implicit ec: ExecutionContext): Future[jms.MessageConsumer] =
     Future {
       (selector, destination) match {
-        case (None, Topic(_, Some(subscriberName))) =>
+        case (None, DurableTopic(_, subscriberName)) =>
           session.createDurableSubscriber(jmsDestination.asInstanceOf[jms.Topic], subscriberName)
 
-        case (Some(expr), Topic(_, Some(subscriberName))) =>
+        case (Some(expr), DurableTopic(_, subscriberName)) =>
           session.createDurableSubscriber(jmsDestination.asInstanceOf[jms.Topic], subscriberName, expr, false)
-
-        case (None, Topic(_, None)) =>
-          session.createConsumer(jmsDestination)
 
         case (Some(expr), _) =>
           session.createConsumer(jmsDestination, expr)

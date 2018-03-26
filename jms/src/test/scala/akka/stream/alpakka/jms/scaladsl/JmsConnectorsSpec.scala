@@ -703,7 +703,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val jmsTopicSource1: Source[String, KillSwitch] = JmsConsumer.textSource(
         JmsConsumerSettings(consumerConnectionFactory)
           .withBufferSize(size / 4)
-          .withTopic("topic", "durable-test")
+          .withDurableTopic("topic", "durable-test")
       )
 
       val (kill1, run1) = jmsTopicSource1.take(size / 2).toMat(Sink.seq)(Keep.both).run()
