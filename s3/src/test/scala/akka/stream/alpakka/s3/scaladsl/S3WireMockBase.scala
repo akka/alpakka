@@ -274,21 +274,6 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
         )
     )
   }
-
-  def mockCopy(): Unit = mockCopy(body)
-  def mockCopy(expectedBody: String): Unit = {
-    mock.register(
-      head(urlEqualTo(s"/$bucketKey"))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("x-amz-id-2", "ef8yU9AS1ed4OpIszj7UDNEHGran")
-            .withHeader("x-amz-request-id", "318BC8BC143432E5")
-            .withHeader("ETag", s"\"$etag\"")
-            .withHeader("Content-Length", s"${expectedBody.length}")
-        )
-    )
-  }
 }
 
 private object S3WireMockBase {
