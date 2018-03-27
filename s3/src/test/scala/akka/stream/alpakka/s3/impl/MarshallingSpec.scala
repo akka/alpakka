@@ -71,4 +71,21 @@ class MarshallingSpec(_system: ActorSystem) extends TestKit(_system) with FlatSp
     )
   }
 
+  it should "parse CopyPartResult" in {
+    val xmlString =
+      """
+        |<CopyPartResult>
+        | <ETag>"5b27a21a97fcf8a7004dd1d906e7a5ba"</ETag>
+        | <LastModified>2009-10-28T22:32:00.000Z</LastModified>
+        |</CopyPartResult>
+      """.stripMargin
+
+    val entity = HttpEntity(MediaTypes.`application/xml` withCharset HttpCharsets.`UTF-8`, xmlString)
+
+    val result = Marshalling.copyPartResultUnmarshaller(entity)
+
+    result.futureValue shouldEqual CopyPartResult(Instant.parse("2009-10-28T22:32:00.000Z"),
+                                                  "5b27a21a97fcf8a7004dd1d906e7a5ba")
+  }
+
 }

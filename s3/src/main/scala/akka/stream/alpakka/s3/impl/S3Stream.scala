@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.s3.impl
 
-import java.time.LocalDate
+import java.time.{Instant, LocalDate}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
@@ -46,6 +46,9 @@ final case class CompleteMultipartUploadResult(location: Uri, bucket: String, ke
 final case class ListBucketResult(isTruncated: Boolean,
                                   continuationToken: Option[String],
                                   contents: Seq[ListBucketResultContents])
+
+final case class CopyPartResult(lastModified: Instant, eTag: String)
+
 final case class CopyPartition(partNumber: Int, sourceLocation: S3Location, range: Option[ByteRange.Slice] = None)
 
 final case class MultipartCopy(multipartUpload: MultipartUpload, copyPartition: CopyPartition)
