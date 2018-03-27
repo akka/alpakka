@@ -147,21 +147,46 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/xml")
-            .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
-                        <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                            <Name>bucket</Name>
-                            <Prefix>$listPrefix</Prefix>
-                            <KeyCount>1</KeyCount>
-                            <MaxKeys>1000</MaxKeys>
-                            <IsTruncated>false</IsTruncated>
-                            <Contents>
-                                <Key>$listKey</Key>
-                                <LastModified>2009-10-12T17:50:30.000Z</LastModified>
-                                <ETag>&quot;fba9dede5f27731c9771645a39863328&quot;</ETag>
-                                <Size>434234</Size>
-                                <StorageClass>STANDARD</StorageClass>
-                            </Contents>
-                        </ListBucketResult>""".stripMargin)
+            .withBody(s"""|<?xml version="1.0" encoding="UTF-8"?>
+                        |<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                        |    <Name>bucket</Name>
+                        |    <Prefix>$listPrefix</Prefix>
+                        |    <KeyCount>1</KeyCount>
+                        |    <MaxKeys>1000</MaxKeys>
+                        |    <IsTruncated>false</IsTruncated>
+                        |    <Contents>
+                        |        <Key>$listKey</Key>
+                        |        <LastModified>2009-10-12T17:50:30.000Z</LastModified>
+                        |        <ETag>&quot;fba9dede5f27731c9771645a39863328&quot;</ETag>
+                        |        <Size>434234</Size>
+                        |        <StorageClass>STANDARD</StorageClass>
+                        |    </Contents>
+                        |</ListBucketResult>""".stripMargin)
+        )
+      )
+
+  def mockListBucketVersion1(): Unit =
+    mock
+      .register(
+        get(urlEqualTo(s"/?prefix=$listPrefix")).willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/xml")
+            .withBody(s"""|<?xml version="1.0" encoding="UTF-8"?>
+                        |<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                        |    <Name>bucket</Name>
+                        |    <Prefix>$listPrefix</Prefix>
+                        |    <Marker/>
+                        |    <MaxKeys>1000</MaxKeys>
+                        |    <IsTruncated>false</IsTruncated>
+                        |    <Contents>
+                        |        <Key>$listKey</Key>
+                        |        <LastModified>2009-10-12T17:50:30.000Z</LastModified>
+                        |        <ETag>&quot;fba9dede5f27731c9771645a39863328&quot;</ETag>
+                        |        <Size>434234</Size>
+                        |        <StorageClass>STANDARD</StorageClass>
+                        |    </Contents>
+                        |</ListBucketResult>""".stripMargin)
         )
       )
 

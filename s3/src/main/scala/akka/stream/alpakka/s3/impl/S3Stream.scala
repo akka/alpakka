@@ -47,6 +47,17 @@ final case class ListBucketResult(isTruncated: Boolean,
                                   continuationToken: Option[String],
                                   contents: Seq[ListBucketResultContents])
 
+sealed trait ApiVersion {
+  def getInstance: ApiVersion
+}
+
+case object ListBucketVersion1 extends ApiVersion {
+  override val getInstance: ApiVersion = ListBucketVersion1
+}
+case object ListBucketVersion2 extends ApiVersion {
+  override val getInstance: ApiVersion = ListBucketVersion2
+}
+
 object S3Stream {
 
   def apply(settings: S3Settings)(implicit system: ActorSystem, mat: Materializer): S3Stream =
