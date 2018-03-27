@@ -46,6 +46,9 @@ final case class CompleteMultipartUploadResult(location: Uri, bucket: String, ke
 final case class ListBucketResult(isTruncated: Boolean,
                                   continuationToken: Option[String],
                                   contents: Seq[ListBucketResultContents])
+final case class CopyPartition(partNumber: Int, sourceLocation: S3Location, range: Option[ByteRange.Slice] = None)
+
+final case class MultipartCopy(multipartUpload: MultipartUpload, copyPartition: CopyPartition)
 
 object S3Stream {
 

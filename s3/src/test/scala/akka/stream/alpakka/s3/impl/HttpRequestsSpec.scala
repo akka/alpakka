@@ -4,18 +4,18 @@
 
 package akka.stream.alpakka.s3.impl
 
+import java.util.UUID
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model.headers.{ByteRange, RawHeader}
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, IllegalUriException, MediaTypes}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.acl.CannedAcl
-import akka.stream.alpakka.s3.scaladsl.S3Client
 import akka.stream.alpakka.s3.{BufferType, MemoryBufferType, Proxy, S3Settings}
 import akka.stream.scaladsl.Source
 import akka.testkit.{SocketUtil, TestProbe}
-import akka.util.ByteString
 import com.amazonaws.auth.{AWSCredentialsProvider, AWSStaticCredentialsProvider, AnonymousAWSCredentials}
 import com.amazonaws.regions.AwsRegionProvider
 import org.scalatest.concurrent.ScalaFutures
@@ -301,5 +301,29 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     materializer.shutdown()
     system.terminate()
+  }
+
+  it should "add two (source, range) headers to multipart upload (copy) request when byte range populated" in {
+    implicit val settings: S3Settings = getSettings()
+
+    val multipartUpload = MultipartUpload(S3Location("target-bucket", "target-key"), UUID.randomUUID().toString)
+    val copyPartition = CopyPartition(1, S3Location("source-bucket", "some/source-key"), Some(ByteRange(0, 5242880L)))
+    val multipartCopy = MultipartCopy(multipartUpload, copyPartition)
+
+    val request = HttpRequests.uploadCopyPartRequest(multipartCopy)
+    request.headers should contain(RawHeader("x-amz-copy-source", "/source-bucket/some/source-key"))
+    request.headers should contain(RawHeader("x-amz-copy-source-range", "bytes=0-5242879"))
+  }
+
+  it should "add only source header to multipart upload (copy) request when byte range missing" in {
+    implicit val settings: S3Settings = getSettings()
+
+    val multipartUpload = MultipartUpload(S3Location("target-bucket", "target-key"), UUID.randomUUID().toString)
+    val copyPartition = CopyPartition(1, S3Location("source-bucket", "some/source-key"))
+    val multipartCopy = MultipartCopy(multipartUpload, copyPartition)
+
+    val request = HttpRequests.uploadCopyPartRequest(multipartCopy)
+    request.headers should contain(RawHeader("x-amz-copy-source", "/source-bucket/some/source-key"))
+    request.headers.map(_.lowercaseName()) should not contain "x-amz-copy-source-range"
   }
 }
