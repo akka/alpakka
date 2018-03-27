@@ -94,7 +94,8 @@ class S3StreamSpec(_system: ActorSystem)
       new AwsRegionProvider {
         def getRegion: String = "us-east-1"
       }
-    implicit val settings = new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None)
+    implicit val settings =
+      new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
     val s3stream = new S3Stream(settings)
 
     def nonEmptySrc = Source.repeat(ByteString("hello world"))
