@@ -143,7 +143,7 @@ final class ObjectMetadata private[javadsl] (
 
 object MultipartUploadResult {
   def create(r: CompleteMultipartUploadResult): MultipartUploadResult =
-    new MultipartUploadResult(Uri.create(r.location), r.bucket, r.key, r.etag)
+    new MultipartUploadResult(Uri.create(r.location.toString()), r.bucket, r.key, r.etag)
 }
 
 object S3Client {
