@@ -44,7 +44,7 @@ final class ElasticsearchSourceStage[T](indexName: String,
 
 sealed class ElasticsearchSourceLogic[T](indexName: String,
                                          typeName: Option[String],
-                                         var searchParams: Map[String, String],
+                                         searchParams: Map[String, String],
                                          client: RestClient,
                                          settings: ElasticsearchSourceSettings,
                                          out: Outlet[OutgoingMessage[T]],
@@ -71,22 +71,28 @@ sealed class ElasticsearchSourceLogic[T](indexName: String,
         log.debug("Doing initial search")
 
         // Add extra params to search
-        if (!searchParams.contains("size")) {
-          searchParams = searchParams + ("size" -> settings.bufferSize.toString)
-        }
-        if (!searchParams.contains("version") && settings.includeDocumentVersion) {
+        val extraParams = Seq(
+          if (!searchParams.contains("size")) {
+            Some(("size" -> settings.bufferSize.toString))
+          } else {
+            None
+          },
           // Tell elastic to return the documents '_version'-property with the search-results
           // http://nocf-www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
           // https://www.elastic.co/guide/en/elasticsearch/guide/current/optimistic-concurrency-control.html
+          if (!searchParams.contains("version") && settings.includeDocumentVersion) {
+            Some(("version" -> "true"))
+          } else {
+            None
+          }
+        )
 
-          searchParams = searchParams + ("version" -> "true")
-        }
+        val completeParams = searchParams ++ extraParams.flatten
 
-        val searchBody = "{" + searchParams
-          .map { e =>
-            val name = e._1
-            val json = e._2
-            "\"" + name + "\":" + json
+        val searchBody = "{" + completeParams
+          .map {
+            case (name, json) =>
+              "\"" + name + "\":" + json
           }
           .mkString(",") + "}"
 

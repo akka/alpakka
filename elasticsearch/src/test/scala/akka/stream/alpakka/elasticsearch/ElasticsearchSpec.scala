@@ -663,6 +663,49 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       assert(result5(0)(0).success == false)
 
     }
+
+    "allow read and write using configured version type" in {
+
+      val indexName = "book-test-version-type"
+      val typeName = "book"
+
+      val book = Book("A sample title")
+      val docId = Some("1")
+      val externalVersion = 5L
+
+      // Insert new document using external version
+      val f1 = Source
+        .single(book)
+        .map { doc =>
+          IncomingMessage(docId, doc, externalVersion)
+        }
+        .via(
+          ElasticsearchFlow.create[Book](
+            indexName,
+            typeName,
+            ElasticsearchSinkSettings(bufferSize = 5, versionType = Some("external"))
+          )
+        )
+        .runWith(Sink.seq)
+
+      val insertResult = Await.result(f1, Duration.Inf).head.head
+      assert(insertResult.success)
+
+      flush(indexName)
+
+      // Assert that the document's external version is saved
+      val f2 = ElasticsearchSource
+        .typed[Book](
+          indexName,
+          typeName,
+          """{"match_all": {}}""",
+          ElasticsearchSourceSettings(includeDocumentVersion = true)
+        )
+        .runWith(Sink.head)
+
+      val message = Await.result(f2, Duration.Inf)
+      assert(message.version.contains(externalVersion))
+    }
   }
 
   "Elasticsearch connector" should {

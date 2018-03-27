@@ -7,6 +7,9 @@
         </encoder>
     </appender>
 
+    <logger name="com.datastax.driver" level="info" />
+    <logger name="io.netty" level="info" />
+
     <root level="debug">
         <appender-ref ref="FILE" />
     </root>
