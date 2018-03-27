@@ -420,7 +420,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
   private[impl] def createPartitions(chunkSize: Int,
                                      sourceLocation: S3Location)(objectSize: Long): List[CopyPartition] =
-    if (objectSize <= 0) CopyPartition(1, sourceLocation) :: Nil
+    if (objectSize <= 0 || objectSize < chunkSize) CopyPartition(1, sourceLocation) :: Nil
     else {
       ((0L until objectSize by chunkSize).toList :+ objectSize)
         .sliding(2)
