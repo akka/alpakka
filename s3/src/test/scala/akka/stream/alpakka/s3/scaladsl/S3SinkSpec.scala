@@ -78,6 +78,13 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     result.failed.futureValue.getMessage shouldBe "No key found"
   }
 
+  it should "copy a file from source bucket to target bucket" in {
+    mockCopy()
+
+    val result = s3Client.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey)
+    println(result.futureValue)
+  }
+
   override protected def afterAll(): Unit = {
     super.afterAll()
     stopWireMockServer()

@@ -54,6 +54,8 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
   val bodySSE = "<response>Some other content</response>"
   val bucketKey = "testKey"
   val bucket = "testBucket"
+  val targetBucket = "testTargetBucket"
+  val targetBucketKey = "testTargetKey"
   val uploadId = "VXBsb2FkIElEIGZvciA2aWWpbmcncyBteS1tb3ZpZS5tMnRzIHVwbG9hZA"
   val etag = "5b27a21a97fcf8a7004dd1d906e7a5ba"
   val etagSSE = "5b27a21a97fcf8a7004dd1d906e7a5cd"
@@ -269,6 +271,21 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
                          |  <Key>$bucketKey</Key>
                          |  <ETag>"$etag"</ETag>
                          |</CompleteMultipartUploadResult>""".stripMargin)
+        )
+    )
+  }
+
+  def mockCopy(): Unit = mockCopy(body)
+  def mockCopy(expectedBody: String): Unit = {
+    mock.register(
+      head(urlEqualTo(s"/$bucketKey"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("x-amz-id-2", "ef8yU9AS1ed4OpIszj7UDNEHGran")
+            .withHeader("x-amz-request-id", "318BC8BC143432E5")
+            .withHeader("ETag", s"\"$etag\"")
+            .withHeader("Content-Length", s"${expectedBody.length}")
         )
     )
   }
