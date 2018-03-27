@@ -132,18 +132,6 @@ object ServerSideEncryption {
     override def headersFor(request: S3Request): immutable.Seq[HttpHeader] = request match {
       case GetObject | HeadObject | PutObject | InitiateMultipartUpload | UploadPart =>
         headers
-      case CopyPart =>
-        val copyHeaders = RawHeader("x-amz-copy-source-server-side-encryption-customer-algorithm", "AES256") ::
-        RawHeader("x-amz-copy-source-server-side-encryption-customer-key", key) ::
-        RawHeader(
-          "x-amz-copy-source-server-side-encryption-customer-key-MD5",
-          md5.getOrElse({
-            val decodedKey = Base64.decode(key)
-            val md5 = Md5Utils.md5AsBase64(decodedKey)
-            md5
-          })
-        ) :: Nil
-        headers ++: copyHeaders
       case _ => Nil
     }
   }

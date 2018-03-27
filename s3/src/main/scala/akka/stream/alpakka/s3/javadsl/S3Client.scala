@@ -658,38 +658,6 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
                       sse: ServerSideEncryption): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     multipartUpload(bucket, key, ContentTypes.APPLICATION_OCTET_STREAM, CannedAcl.Private, MetaHeaders(Map()), sse)
 
-  def multipartCopy(sourceBucket: String,
-                    sourceKey: String,
-                    targetBucket: String,
-                    targetKey: String,
-                    contentType: ContentType,
-                    s3Headers: S3Headers,
-                    sse: ServerSideEncryption): CompletionStage[MultipartUploadResult] =
-    impl
-      .multipartCopy(S3Location(sourceBucket, sourceKey),
-                     S3Location(targetBucket, targetKey),
-                     contentType.asInstanceOf[ScalaContentType],
-                     s3Headers,
-                     Option(sse))
-      .run()(mat)
-      .map(MultipartUploadResult.create)(system.dispatcher)
-      .toJava
-
-  def multipartCopy(sourceBucket: String,
-                    sourceKey: String,
-                    targetBucket: String,
-                    targetKey: String,
-                    contentType: ContentType,
-                    s3Headers: S3Headers): CompletionStage[MultipartUploadResult] =
-    impl
-      .multipartCopy(S3Location(sourceBucket, sourceKey),
-                     S3Location(targetBucket, targetKey),
-                     contentType.asInstanceOf[ScalaContentType],
-                     s3Headers)
-      .run()(mat)
-      .map(MultipartUploadResult.create)(system.dispatcher)
-      .toJava
-
   private def listingToJava(scalaContents: scaladsl.ListBucketResultContents): ListBucketResultContents =
     ListBucketResultContents(scalaContents.bucketName,
                              scalaContents.key,

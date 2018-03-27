@@ -15,5 +15,3 @@ case object PutObject extends S3Request
 case object InitiateMultipartUpload extends S3Request
 
 case object UploadPart extends S3Request
-
-case object CopyPart extends S3Request
