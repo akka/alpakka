@@ -102,7 +102,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
   it should "copy a file from source bucket to target bucket with SSE" in {
     mockCopySSE()
 
-    val result = s3Client.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey)
+    val result = s3Client.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey, sse = Some(sseCustomerKeys))
     result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag)
   }
 
