@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.S3Settings
-import akka.stream.alpakka.s3.impl.{MetaHeaders, S3Headers}
+import akka.stream.alpakka.s3.impl.{ListBucketVersion1, MetaHeaders, S3Headers}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
@@ -52,15 +52,25 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
       .copy(s3RegionProvider = defaultRegionProvider)
   def otherRegionSettings =
     settings.copy(pathStyleAccess = true, s3RegionProvider = otherRegionProvider)
+  def listBucketVersion1Settings =
+    settings.copy(listBucketApiVersion = ListBucketVersion1)
 
   def defaultRegionContentCount = 4
   def otherRegionContentCount = 5
 
   lazy val defaultRegionClient = new S3Client(settings)
   lazy val otherRegionClient = new S3Client(otherRegionSettings)
+  lazy val version1DefaultRegionClient = new S3Client(listBucketVersion1Settings)
 
   it should "list with real credentials" in {
     val result = defaultRegionClient.listBucket(defaultRegionBucket, None).runWith(Sink.seq)
+
+    val listingResult = result.futureValue
+    listingResult.size shouldBe defaultRegionContentCount
+  }
+
+  it should "list with real credentials using the Version 1 API" in {
+    val result = version1DefaultRegionClient.listBucket(defaultRegionBucket, None).runWith(Sink.seq)
 
     val listingResult = result.futureValue
     listingResult.size shouldBe defaultRegionContentCount

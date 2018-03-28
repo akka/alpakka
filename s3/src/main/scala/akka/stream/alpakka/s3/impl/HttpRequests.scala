@@ -24,11 +24,16 @@ private[alpakka] object HttpRequests {
       continuationToken: Option[String] = None
   )(implicit conf: S3Settings): HttpRequest = {
 
+    val (listType, continuationTokenName) = conf.listBucketApiVersion match {
+      case ListBucketVersion1 => (None, "marker")
+      case ListBucketVersion2 => (Some("2"), "continuation-token")
+    }
+
     val query = Query(
       Seq(
-        "list-type" -> Some("2"),
+        "list-type" -> listType,
         "prefix" -> prefix,
-        "continuation-token" -> continuationToken
+        continuationTokenName -> continuationToken
       ).collect { case (k, Some(v)) => k -> v }.toMap
     )
 

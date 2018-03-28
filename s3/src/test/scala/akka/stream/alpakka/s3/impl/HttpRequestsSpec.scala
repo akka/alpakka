@@ -30,13 +30,20 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
       awsCredentials: AWSCredentialsProvider = new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()),
       s3Region: String = "us-east-1",
       pathStyleAccess: Boolean = false,
-      endpointUrl: Option[String] = None
+      endpointUrl: Option[String] = None,
+      listBucketApiVersion: ApiVersion = ListBucketVersion2
   ) = {
     val regionProvider = new AwsRegionProvider {
       def getRegion = s3Region
     }
 
-    new S3Settings(bufferType, proxy, awsCredentials, regionProvider, pathStyleAccess, endpointUrl)
+    new S3Settings(bufferType,
+                   proxy,
+                   awsCredentials,
+                   regionProvider,
+                   pathStyleAccess,
+                   endpointUrl,
+                   listBucketApiVersion)
   }
 
   val location = S3Location("bucket", "image-1024@2x")
@@ -272,6 +279,26 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     req.uri.query() shouldEqual Query("list-type" -> "2",
                                       "prefix" -> "random/prefix",
                                       "continuation-token" -> "randomToken")
+  }
+
+  it should "properly construct the list bucket request when using api version 1" in {
+    implicit val settings =
+      getSettings(s3Region = "region", pathStyleAccess = true, listBucketApiVersion = ListBucketVersion1)
+
+    val req =
+      HttpRequests.listBucket(location.bucket)
+
+    req.uri.query() shouldEqual Query()
+  }
+
+  it should "properly construct the list bucket request when using api version set to 1 and a continuation token" in {
+    implicit val settings =
+      getSettings(s3Region = "region", pathStyleAccess = true, listBucketApiVersion = ListBucketVersion1)
+
+    val req =
+      HttpRequests.listBucket(location.bucket, continuationToken = Some("randomToken"))
+
+    req.uri.query() shouldEqual Query("marker" -> "randomToken")
   }
 
   it should "support custom endpoint configured by `endpointUrl`" in {

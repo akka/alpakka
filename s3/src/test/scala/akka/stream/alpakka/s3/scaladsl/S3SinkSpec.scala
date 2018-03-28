@@ -5,11 +5,11 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.stream.alpakka.s3.{MemoryBufferType, Proxy, S3Settings}
-import akka.stream.alpakka.s3.impl.{S3Headers, ServerSideEncryption}
+import akka.stream.alpakka.s3.impl.{ListBucketVersion2, S3Headers, ServerSideEncryption}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
-import scala.concurrent.Future
 
+import scala.concurrent.Future
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.regions.AwsRegionProvider
 
@@ -23,7 +23,8 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
       def getRegion: String = "us-east-1"
     }
   val proxy = Option(Proxy("localhost", port, "http"))
-  val settings = new S3Settings(MemoryBufferType, proxy, awsCredentialsProvider, regionProvider, false, None)
+  val settings =
+    new S3Settings(MemoryBufferType, proxy, awsCredentialsProvider, regionProvider, false, None, ListBucketVersion2)
   val s3Client = new S3Client(settings)(system, materializer)
 
   it should "succeed uploading an empty file" in {

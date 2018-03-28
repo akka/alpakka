@@ -41,15 +41,22 @@ private[alpakka] object Marshalling {
   }
 
   val isTruncated = "IsTruncated"
-  val continuationToken = "NextContinuationToken"
+  val apiV2ContinuationToken = "NextContinuationToken"
 
   implicit val listBucketResultUnmarshaller: FromEntityUnmarshaller[ListBucketResult] = {
     nodeSeqUnmarshaller(MediaTypes.`application/xml` withCharset HttpCharsets.`UTF-8`).map {
       case NodeSeq.Empty => throw Unmarshaller.NoContentException
       case x =>
+        val truncated = (x \ isTruncated).text == "true"
+        val continuation = if (truncated) {
+          Some(x \ apiV2ContinuationToken)
+            .filter(_.nonEmpty)
+            .orElse((x \\ "Contents" \ "Key").lastOption)
+            .map(_.text)
+        } else None
         ListBucketResult(
-          (x \ isTruncated).text == "true",
-          Some(x \ continuationToken).filter(_.nonEmpty).map(_.text),
+          truncated,
+          continuation,
           (x \\ "Contents").map { c =>
             ListBucketResultContents(
               (x \ "Name").text,
