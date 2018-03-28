@@ -224,8 +224,11 @@ public class S3ClientTest extends S3WireMockBase {
     public void copyUploadWithContentLengthLessThenChunkSize() throws Exception {
         mockCopy();
 
+        //#multipart-copy
         final CompletionStage<MultipartUploadResult> resultCompletionStage = client
                 .multipartCopy(bucket(), bucketKey(), targetBucket(), targetBucketKey());
+        //#multipart-copy
+
         final MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
         assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag()));

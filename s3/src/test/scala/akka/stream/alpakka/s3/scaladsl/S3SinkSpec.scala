@@ -82,7 +82,10 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
   it should "copy a file from source bucket to target bucket when expected content length is less then chunk size" in {
     mockCopy()
 
-    val result = s3Client.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey)
+    //#multipart-copy
+    val result: Future[MultipartUploadResult] = s3Client.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey)
+    //#multipart-copy
+
     result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag)
   }
 
