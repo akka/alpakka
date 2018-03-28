@@ -34,6 +34,7 @@ sealed trait JmsSettings {
 
 sealed trait Destination
 final case class Topic(name: String) extends Destination
+final case class DurableTopic(name: String, subscriberName: String) extends Destination
 final case class Queue(name: String) extends Destination
 
 final class AcknowledgeMode(val mode: Int)
@@ -64,6 +65,8 @@ final case class JmsConsumerSettings(connectionFactory: ConnectionFactory,
   def withBufferSize(size: Int): JmsConsumerSettings = copy(bufferSize = size)
   def withQueue(name: String): JmsConsumerSettings = copy(destination = Some(Queue(name)))
   def withTopic(name: String): JmsConsumerSettings = copy(destination = Some(Topic(name)))
+  def withDurableTopic(name: String, subscriberName: String): JmsConsumerSettings =
+    copy(destination = Some(DurableTopic(name, subscriberName)))
   def withSelector(selector: String): JmsConsumerSettings = copy(selector = Some(selector))
   def withAcknowledgeMode(acknowledgeMode: AcknowledgeMode): JmsConsumerSettings =
     copy(acknowledgeMode = Option(acknowledgeMode))

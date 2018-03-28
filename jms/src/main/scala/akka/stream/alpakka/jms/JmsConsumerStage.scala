@@ -36,7 +36,7 @@ private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings)
       private[jms] def createSession(connection: Connection, createDestination: Session => javax.jms.Destination) = {
         val session =
           connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode)
-        new JmsSession(connection, session, createDestination(session))
+        new JmsSession(connection, session, createDestination(session), settings.destination.get)
       }
 
       private[jms] def pushMessage(msg: Message): Unit = {
@@ -79,7 +79,11 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings)
       private[jms] def createSession(connection: Connection, createDestination: Session => javax.jms.Destination) = {
         val session =
           connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.ClientAcknowledge).mode)
-        new JmsAckSession(connection, session, createDestination(session), settings.bufferSize)
+        new JmsAckSession(connection,
+                          session,
+                          createDestination(session),
+                          settings.destination.get,
+                          settings.bufferSize)
       }
 
       private[jms] def pushMessage(msg: AckEnvelope): Unit = push(out, msg)
@@ -156,7 +160,7 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings)
       private[jms] def createSession(connection: Connection, createDestination: Session => javax.jms.Destination) = {
         val session =
           connection.createSession(true, settings.acknowledgeMode.getOrElse(AcknowledgeMode.SessionTransacted).mode)
-        new JmsTxSession(connection, session, createDestination(session))
+        new JmsTxSession(connection, session, createDestination(session), settings.destination.get)
       }
 
       private[jms] def pushMessage(msg: TxEnvelope): Unit = push(out, msg)

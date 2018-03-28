@@ -7,14 +7,12 @@ package akka.stream.alpakka.jms.scaladsl
 import java.nio.charset.Charset
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 import javax.jms.{DeliveryMode, JMSException, Message, TextMessage}
-
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.{KillSwitch, KillSwitches, ThrottleMode}
 import akka.{Done, NotUsed}
 import org.apache.activemq.ActiveMQConnectionFactory
 import org.apache.activemq.command.ActiveMQQueue
-
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
@@ -686,6 +684,38 @@ class JmsConnectorsSpec extends JmsSpec {
       //#run-flow-producer
 
       result.futureValue should ===(input)
+    }
+
+    "publish and subscribe with a durable subscription" in withServer() { ctx =>
+      val producerConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+      //#create-connection-factory-with-client-id
+      val consumerConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+      consumerConnectionFactory.setClientID(getClass.getSimpleName)
+      //#create-connection-factory-with-client-id
+
+      val jmsTopicSink: Sink[String, Future[Done]] = JmsProducer.textSink(
+        JmsProducerSettings(producerConnectionFactory).withTopic("topic")
+      )
+
+      val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
+
+      //#create-durable-topic-source
+      val jmsTopicSource = JmsConsumer.textSource(
+        JmsConsumerSettings(consumerConnectionFactory)
+          .withDurableTopic("topic", "durable-test")
+      )
+      //#create-durable-topic-source
+
+      //#run-durable-topic-source
+      val result = jmsTopicSource.take(in.size).runWith(Sink.seq)
+      //#run-durable-topic-source
+
+      // We wait a little to be sure that the source is connected
+      Thread.sleep(500)
+
+      Source(in).runWith(jmsTopicSink)
+
+      result.futureValue shouldEqual in
     }
   }
 }
