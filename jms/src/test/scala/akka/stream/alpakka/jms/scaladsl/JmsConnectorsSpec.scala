@@ -687,39 +687,33 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "publish and subscribe with a durable subscription" in withServer() { ctx =>
-      import system.dispatcher
-
       val producerConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+      //#create-connection-factory-with-client-id
       val consumerConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
       consumerConnectionFactory.setClientID(getClass.getSimpleName)
+      //#create-connection-factory-with-client-id
 
       val jmsTopicSink: Sink[String, Future[Done]] = JmsProducer.textSink(
         JmsProducerSettings(producerConnectionFactory).withTopic("topic")
       )
 
-      val in = List("a", "b", "c", "d", "e", "f", "f", "g", "h", "i", "j", "k")
-      val size = in.size
+      val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
 
-      val jmsTopicSource1: Source[String, KillSwitch] = JmsConsumer.textSource(
+      //#create-durable-topic-source
+      val jmsTopicSource = JmsConsumer.textSource(
         JmsConsumerSettings(consumerConnectionFactory)
-          .withBufferSize(size / 4)
           .withDurableTopic("topic", "durable-test")
       )
+      //#create-durable-topic-source
 
-      val (kill1, run1) = jmsTopicSource1.take(size / 2).toMat(Sink.seq)(Keep.both).run()
-      //We wait a little to be sure that the source is connected
+      //#run-durable-topic-source
+      val result = jmsTopicSource.take(in.size).runWith(Sink.seq)
+      //#run-durable-topic-source
+
+      // We wait a little to be sure that the source is connected
       Thread.sleep(500)
 
-      val result = for {
-        _ <- Source(in).runWith(jmsTopicSink)
-        result1 <- run1
-        () = {
-          kill1.shutdown()
-          // Wait a little between consumer runs
-          Thread.sleep(500)
-        }
-        result2 <- jmsTopicSource1.take(size / 2).runWith(Sink.seq)
-      } yield result1 ++ result2
+      Source(in).runWith(jmsTopicSink)
 
       result.futureValue shouldEqual in
     }

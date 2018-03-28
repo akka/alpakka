@@ -472,6 +472,27 @@ Such sink and source can be started the same way as in the previous example.
 * Explicit acknowledgement sources and transactional sources work with topics the same way they work with queues.
 * **DO NOT** set the `sessionCount` greater than 1 for topics. Doing so will result in duplicate messages being delivered. Each topic message is delivered to each JMS session and all the messages feed to the same `Source`. JMS 2.0 created shared consumers to solve this problem and multiple sessions without duplication may be supported in the future.
 
+### Using a durable Topic subscription with a JMS provider
+
+Using a durable topic subscription works mostly like a normal topic source.
+
+You need to specify a client ID for the connection factory you use to create the consumer with, however:
+ 
+Scala
+: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-connection-factory-with-client-id }
+
+Java
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-connection-factory-with-client-id }
+
+In addition, use `withDurableTopic` and specify a name for the durable subscriber:
+
+Scala
+: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-durable-topic-source }
+
+Java
+: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-durable-topic-source }
+
+
 ### Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
