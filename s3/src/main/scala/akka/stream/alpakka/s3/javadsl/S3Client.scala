@@ -143,7 +143,7 @@ final class ObjectMetadata private[javadsl] (
 
 object MultipartUploadResult {
   def create(r: CompleteMultipartUploadResult): MultipartUploadResult =
-    new MultipartUploadResult(Uri.create(r.location.toString()), r.bucket, r.key, r.etag)
+    new MultipartUploadResult(Uri.create(r.location), r.bucket, r.key, r.etag)
 }
 
 object S3Client {
@@ -546,7 +546,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @param key the s3 object key
    * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
    * @param metaHeaders any meta-headers you want to add
-   * @param cannedAcl a [[CannedAcl]], defauts to [[CannedAcl.Private]]
+   * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
    * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
   def multipartUpload(bucket: String,
@@ -563,7 +563,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @param key the s3 object key
    * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
    * @param metaHeaders any meta-headers you want to add
-   * @param cannedAcl a [[CannedAcl]], defauts to [[CannedAcl.Private]]
+   * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
    * @param sse sse the server side encryption to use
    * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
@@ -581,7 +581,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
-   * @param cannedAcl a [[CannedAcl]], defauts to [[CannedAcl.Private]]
+   * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
    * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
   def multipartUpload(bucket: String,
@@ -596,7 +596,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
-   * @param cannedAcl a [[CannedAcl]], defauts to [[CannedAcl.Private]]
+   * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
    * @param sse the server side encryption to use
    * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
@@ -657,6 +657,213 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
                       key: String,
                       sse: ServerSideEncryption): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     multipartUpload(bucket, key, ContentTypes.APPLICATION_OCTET_STREAM, CannedAcl.Private, MetaHeaders(Map()), sse)
+
+  /**
+   * Copy a S3 Object by making multiple requests.
+   *
+   * @param sourceBucket the source s3 bucket name
+   * @param sourceKey the source s3 key
+   * @param targetBucket the target s3 bucket name
+   * @param targetKey the target s3 key
+   * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
+   * @param s3Headers any headers you want to add
+   * @param sse the server side encryption to use
+   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.javadsl.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   */
+  def multipartCopy(sourceBucket: String,
+                    sourceKey: String,
+                    targetBucket: String,
+                    targetKey: String,
+                    contentType: ContentType,
+                    s3Headers: S3Headers,
+                    sse: ServerSideEncryption): CompletionStage[MultipartUploadResult] =
+    impl
+      .multipartCopy(S3Location(sourceBucket, sourceKey),
+                     S3Location(targetBucket, targetKey),
+                     contentType.asInstanceOf[ScalaContentType],
+                     s3Headers,
+                     Option(sse))
+      .run()(mat)
+      .map(MultipartUploadResult.create)(system.dispatcher)
+      .toJava
+
+  /**
+   * Copy a S3 Object by making multiple requests.
+   *
+   * @param sourceBucket the source s3 bucket name
+   * @param sourceKey the source s3 key
+   * @param targetBucket the target s3 bucket name
+   * @param targetKey the target s3 key
+   * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
+   * @param s3Headers any headers you want to add
+   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.javadsl.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   */
+  def multipartCopy(sourceBucket: String,
+                    sourceKey: String,
+                    targetBucket: String,
+                    targetKey: String,
+                    contentType: ContentType,
+                    s3Headers: S3Headers): CompletionStage[MultipartUploadResult] =
+    impl
+      .multipartCopy(S3Location(sourceBucket, sourceKey),
+                     S3Location(targetBucket, targetKey),
+                     contentType.asInstanceOf[ScalaContentType],
+                     s3Headers)
+      .run()(mat)
+      .map(MultipartUploadResult.create)(system.dispatcher)
+      .toJava
+
+  /**
+   * Copy a S3 Object by making multiple requests.
+   *
+   * @param sourceBucket the source s3 bucket name
+   * @param sourceKey the source s3 key
+   * @param targetBucket the target s3 bucket name
+   * @param targetKey the target s3 key
+   * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
+   * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
+   * @param metaHeaders the metadata headers
+   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.javadsl.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   */
+  def multipartCopy(sourceBucket: String,
+                    sourceKey: String,
+                    targetBucket: String,
+                    targetKey: String,
+                    contentType: ContentType,
+                    cannedAcl: CannedAcl,
+                    metaHeaders: MetaHeaders): CompletionStage[MultipartUploadResult] =
+    multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, contentType, S3Headers(cannedAcl, metaHeaders))
+
+  /**
+   * Copy a S3 Object by making multiple requests.
+   *
+   * @param sourceBucket the source s3 bucket name
+   * @param sourceKey the source s3 key
+   * @param targetBucket the target s3 bucket name
+   * @param targetKey the target s3 key
+   * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
+   * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
+   * @param metaHeaders the metadata headers
+   * @param sse the server side encryption to use
+   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.javadsl.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   */
+  def multipartCopy(sourceBucket: String,
+                    sourceKey: String,
+                    targetBucket: String,
+                    targetKey: String,
+                    contentType: ContentType,
+                    cannedAcl: CannedAcl,
+                    metaHeaders: MetaHeaders,
+                    sse: ServerSideEncryption): CompletionStage[MultipartUploadResult] =
+    multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, contentType, S3Headers(cannedAcl, metaHeaders), sse)
+
+  /**
+   * Copy a S3 Object by making multiple requests.
+   *
+   * @param sourceBucket the source s3 bucket name
+   * @param sourceKey the source s3 key
+   * @param targetBucket the target s3 bucket name
+   * @param targetKey the target s3 key
+   * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
+   * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
+   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.javadsl.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   */
+  def multipartCopy(sourceBucket: String,
+                    sourceKey: String,
+                    targetBucket: String,
+                    targetKey: String,
+                    contentType: ContentType,
+                    cannedAcl: CannedAcl): CompletionStage[MultipartUploadResult] =
+    multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, contentType, cannedAcl, MetaHeaders(Map()))
+
+  /**
+   * Copy a S3 Object by making multiple requests.
+   *
+   * @param sourceBucket the source s3 bucket name
+   * @param sourceKey the source s3 key
+   * @param targetBucket the target s3 bucket name
+   * @param targetKey the target s3 key
+   * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
+   * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
+   * @param sse the server side encryption to use
+   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.javadsl.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   */
+  def multipartCopy(sourceBucket: String,
+                    sourceKey: String,
+                    targetBucket: String,
+                    targetKey: String,
+                    contentType: ContentType,
+                    cannedAcl: CannedAcl,
+                    sse: ServerSideEncryption): CompletionStage[MultipartUploadResult] =
+    multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, contentType, cannedAcl, MetaHeaders(Map()), sse)
+
+  /**
+   * Copy a S3 Object by making multiple requests.
+   *
+   * @param sourceBucket the source s3 bucket name
+   * @param sourceKey the source s3 key
+   * @param targetBucket the target s3 bucket name
+   * @param targetKey the target s3 key
+   * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
+   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.javadsl.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   */
+  def multipartCopy(sourceBucket: String,
+                    sourceKey: String,
+                    targetBucket: String,
+                    targetKey: String,
+                    contentType: ContentType): CompletionStage[MultipartUploadResult] =
+    multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, contentType, CannedAcl.Private, MetaHeaders(Map()))
+
+  /**
+   * Copy a S3 Object by making multiple requests.
+   *
+   * @param sourceBucket the source s3 bucket name
+   * @param sourceKey the source s3 key
+   * @param targetBucket the target s3 bucket name
+   * @param targetKey the target s3 key
+   * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
+   * @param sse the server side encryption to use
+   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.javadsl.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   */
+  def multipartCopy(sourceBucket: String,
+                    sourceKey: String,
+                    targetBucket: String,
+                    targetKey: String,
+                    contentType: ContentType,
+                    sse: ServerSideEncryption): CompletionStage[MultipartUploadResult] =
+    multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, contentType, CannedAcl.Private, sse)
+
+  /**
+   * Copy a S3 Object by making multiple requests.
+   *
+   * @param sourceBucket the source s3 bucket name
+   * @param sourceKey the source s3 key
+   * @param targetBucket the target s3 bucket name
+   * @param targetKey the target s3 key
+   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.javadsl.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   */
+  def multipartCopy(sourceBucket: String,
+                    sourceKey: String,
+                    targetBucket: String,
+                    targetKey: String): CompletionStage[MultipartUploadResult] =
+    multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, ContentTypes.APPLICATION_OCTET_STREAM)
+
+  /**
+   * Copy a S3 Object by making multiple requests.
+   *
+   * @param sourceBucket the source s3 bucket name
+   * @param sourceKey the source s3 key
+   * @param targetBucket the target s3 bucket name
+   * @param targetKey the target s3 key
+   * @param sse the server side encryption to use
+   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.javadsl.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   */
+  def multipartCopy(sourceBucket: String,
+                    sourceKey: String,
+                    targetBucket: String,
+                    targetKey: String,
+                    sse: ServerSideEncryption): CompletionStage[MultipartUploadResult] =
+    multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, ContentTypes.APPLICATION_OCTET_STREAM, sse)
 
   private def listingToJava(scalaContents: scaladsl.ListBucketResultContents): ListBucketResultContents =
     ListBucketResultContents(scalaContents.bucketName,
