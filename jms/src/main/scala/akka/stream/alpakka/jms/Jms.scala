@@ -25,11 +25,17 @@ case class TxEnvelope private[jms] (message: Message, private val jmsSession: Jm
   def rollback(): Unit = if (processed.compareAndSet(false, true)) jmsSession.rollback()
 }
 
+object JmsSettings {
+  def createQueueDestination(name: String)(session: jms.Session) = session.createQueue(name)
+  def createTopicDestination(name: String)(session: jms.Session) = session.createTopic(name)
+}
 sealed trait JmsSettings {
   def connectionFactory: ConnectionFactory
   def destination: Option[Destination]
   def credentials: Option[Credentials]
   def acknowledgeMode: Option[AcknowledgeMode]
+  def createQueue: (String) => (jms.Session) => jms.Destination
+  def createTopic: (String) => (jms.Session) => jms.Destination
 }
 
 sealed trait Destination
@@ -51,19 +57,26 @@ object JmsConsumerSettings {
 
 }
 
-final case class JmsConsumerSettings(connectionFactory: ConnectionFactory,
-                                     destination: Option[Destination] = None,
-                                     credentials: Option[Credentials] = None,
-                                     sessionCount: Int = 1,
-                                     bufferSize: Int = 100,
-                                     selector: Option[String] = None,
-                                     acknowledgeMode: Option[AcknowledgeMode] = None)
-    extends JmsSettings {
+final case class JmsConsumerSettings(
+    connectionFactory: ConnectionFactory,
+    destination: Option[Destination] = None,
+    credentials: Option[Credentials] = None,
+    sessionCount: Int = 1,
+    bufferSize: Int = 100,
+    selector: Option[String] = None,
+    acknowledgeMode: Option[AcknowledgeMode] = None,
+    createQueue: (String) => (jms.Session) => jms.Destination = JmsSettings.createQueueDestination,
+    createTopic: (String) => (jms.Session) => jms.Destination = JmsSettings.createTopicDestination
+) extends JmsSettings {
   def withCredential(credentials: Credentials): JmsConsumerSettings = copy(credentials = Some(credentials))
   def withSessionCount(count: Int): JmsConsumerSettings = copy(sessionCount = count)
   def withBufferSize(size: Int): JmsConsumerSettings = copy(bufferSize = size)
   def withQueue(name: String): JmsConsumerSettings = copy(destination = Some(Queue(name)))
+  def withQueueCreator(createQueue: (String) => (jms.Session) => jms.Destination): JmsConsumerSettings =
+    copy(createQueue = createQueue)
   def withTopic(name: String): JmsConsumerSettings = copy(destination = Some(Topic(name)))
+  def withTopicCreator(createTopic: (String) => (jms.Session) => jms.Destination): JmsConsumerSettings =
+    copy(createTopic = createTopic)
   def withSelector(selector: String): JmsConsumerSettings = copy(selector = Some(selector))
   def withAcknowledgeMode(acknowledgeMode: AcknowledgeMode): JmsConsumerSettings =
     copy(acknowledgeMode = Option(acknowledgeMode))
@@ -75,15 +88,22 @@ object JmsProducerSettings {
 
 }
 
-final case class JmsProducerSettings(connectionFactory: ConnectionFactory,
-                                     destination: Option[Destination] = None,
-                                     credentials: Option[Credentials] = None,
-                                     timeToLive: Option[Duration] = None,
-                                     acknowledgeMode: Option[AcknowledgeMode] = None)
-    extends JmsSettings {
+final case class JmsProducerSettings(
+    connectionFactory: ConnectionFactory,
+    destination: Option[Destination] = None,
+    credentials: Option[Credentials] = None,
+    timeToLive: Option[Duration] = None,
+    acknowledgeMode: Option[AcknowledgeMode] = None,
+    createQueue: (String) => (jms.Session) => jms.Destination = JmsSettings.createQueueDestination,
+    createTopic: (String) => (jms.Session) => jms.Destination = JmsSettings.createTopicDestination
+) extends JmsSettings {
   def withCredential(credentials: Credentials): JmsProducerSettings = copy(credentials = Some(credentials))
   def withQueue(name: String): JmsProducerSettings = copy(destination = Some(Queue(name)))
+  def withQueueCreator(createQueue: (String) => (jms.Session) => jms.Destination): JmsProducerSettings =
+    copy(createQueue = createQueue)
   def withTopic(name: String): JmsProducerSettings = copy(destination = Some(Topic(name)))
+  def withTopicCreator(createTopic: (String) => (jms.Session) => jms.Destination): JmsProducerSettings =
+    copy(createTopic = createTopic)
   def withTimeToLive(ttl: Duration): JmsProducerSettings = copy(timeToLive = Some(ttl))
   def withAcknowledgeMode(acknowledgeMode: AcknowledgeMode): JmsProducerSettings =
     copy(acknowledgeMode = Option(acknowledgeMode))
@@ -97,15 +117,22 @@ object JmsBrowseSettings {
 
 }
 
-final case class JmsBrowseSettings(connectionFactory: ConnectionFactory,
-                                   destination: Option[Queue] = None,
-                                   credentials: Option[Credentials] = None,
-                                   selector: Option[String] = None,
-                                   acknowledgeMode: Option[AcknowledgeMode] = None)
-    extends JmsSettings {
+final case class JmsBrowseSettings(
+    connectionFactory: ConnectionFactory,
+    destination: Option[Queue] = None,
+    credentials: Option[Credentials] = None,
+    selector: Option[String] = None,
+    acknowledgeMode: Option[AcknowledgeMode] = None,
+    createQueue: (String) => (jms.Session) => jms.Destination = JmsSettings.createQueueDestination,
+    createTopic: (String) => (jms.Session) => jms.Destination = JmsSettings.createTopicDestination
+) extends JmsSettings {
   def withCredential(credentials: Credentials): JmsBrowseSettings = copy(credentials = Some(credentials))
   def withQueue(name: String): JmsBrowseSettings = copy(destination = Some(Queue(name)))
+  def withQueueCreator(createQueue: (String) => (jms.Session) => jms.Destination): JmsBrowseSettings =
+    copy(createQueue = createQueue)
   def withSelector(selector: String): JmsBrowseSettings = copy(selector = Some(selector))
+  def withTopicCreator(createTopic: (String) => (jms.Session) => jms.Destination): JmsBrowseSettings =
+    copy(createTopic = createTopic)
   def withAcknowledgeMode(acknowledgeMode: AcknowledgeMode): JmsBrowseSettings =
     copy(acknowledgeMode = Option(acknowledgeMode))
 }
