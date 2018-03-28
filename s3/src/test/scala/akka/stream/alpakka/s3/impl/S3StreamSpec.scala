@@ -138,7 +138,7 @@ class S3StreamSpec(_system: ActorSystem)
         def getRegion: String = "us-east-1"
       }
     implicit val settings: S3Settings =
-      new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None)
+      new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
     val s3stream = new S3Stream(settings)
 
     val partitions: List[CopyPartition] = s3stream.createPartitions(chunkSize, sourceLocation)(objectSize)
@@ -169,7 +169,7 @@ class S3StreamSpec(_system: ActorSystem)
         def getRegion: String = "us-east-1"
       }
     implicit val settings: S3Settings =
-      new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None)
+      new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
     val s3stream = new S3Stream(settings)
 
     val partitions: List[CopyPartition] = s3stream.createPartitions(chunkSize, sourceLocation)(objectSize)
@@ -197,7 +197,7 @@ class S3StreamSpec(_system: ActorSystem)
         def getRegion: String = "us-east-1"
       }
     implicit val settings: S3Settings =
-      new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None)
+      new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
     val s3stream = new S3Stream(settings)
 
     val partitions: List[CopyPartition] = s3stream.createPartitions(chunkSize, sourceLocation)(objectSize)
