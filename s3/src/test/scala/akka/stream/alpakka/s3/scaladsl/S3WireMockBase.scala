@@ -387,6 +387,9 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
         .withHeader("x-amz-server-side-encryption-customer-algorithm", new EqualToPattern("AES256"))
         .withHeader("x-amz-server-side-encryption-customer-key", new EqualToPattern(sseCustomerKey))
         .withHeader("x-amz-server-side-encryption-customer-key-MD5", new EqualToPattern(sseCustomerMd5Key))
+        .withHeader("x-amz-copy-source-server-side-encryption-customer-algorithm", new EqualToPattern("AES256"))
+        .withHeader("x-amz-copy-source-server-side-encryption-customer-key", new EqualToPattern(sseCustomerKey))
+        .withHeader("x-amz-copy-source-server-side-encryption-customer-key-MD5", new EqualToPattern(sseCustomerMd5Key))
         .willReturn(
           aResponse()
             .withStatus(200)
