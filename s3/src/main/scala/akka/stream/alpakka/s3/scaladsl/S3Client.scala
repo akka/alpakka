@@ -362,7 +362,7 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
       s3Headers: Option[S3Headers] = None,
       sse: Option[ServerSideEncryption] = None,
       chunkSize: Int = MinChunkSize,
-      chunkingParallelism: Int = 4,
+      chunkingParallelism: Int = 4
   ): Future[MultipartUploadResult] =
     impl
       .multipartCopy(
