@@ -20,9 +20,9 @@ case class TxEnvelope private[jms] (message: Message, private val jmsSession: Jm
 
   val processed = new AtomicBoolean(false)
 
-  def commit(): Unit = if (processed.compareAndSet(false, true)) jmsSession.commit()
+  def commit(): Unit = if (processed.compareAndSet(false, true)) jmsSession.commit(this)
 
-  def rollback(): Unit = if (processed.compareAndSet(false, true)) jmsSession.rollback()
+  def rollback(): Unit = if (processed.compareAndSet(false, true)) jmsSession.rollback(this)
 }
 
 sealed trait JmsSettings {
