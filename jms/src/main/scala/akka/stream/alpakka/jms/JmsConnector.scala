@@ -74,10 +74,12 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
     onConnection.invoke(connection)
 
     val createDestination = jmsSettings.destination match {
-      case Some(Queue(name)) =>
-        jmsSettings.createQueue(name)
-      case Some(Topic(name)) =>
-        jmsSettings.createTopic(name)
+      case Some(Queue(name, createDestination)) =>
+        createDestination(name)
+      case Some(Topic(name, createDestination)) =>
+        createDestination(name)
+//      case Some(UserDefined(name, createDestination)) =>
+//        createDestination(name)
       case _ => throw new IllegalArgumentException("Destination is missing")
     }
 
