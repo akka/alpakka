@@ -261,7 +261,6 @@ class JmsConnectorsSpec extends JmsSpec {
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
         JmsProducerSettings(connectionFactory)
           .withQueue("custom-numbers", createQueue)
-//          .withQueueCreator(createQueue)
       )
 
       //#create-messages-with-properties
@@ -277,7 +276,6 @@ class JmsConnectorsSpec extends JmsSpec {
         JmsConsumerSettings(connectionFactory)
           .withBufferSize(10)
           .withQueue("custom-numbers", createQueu2)
-//          .withDestinationCreator(createQueu2)
       )
       //#create-jms-source
 
@@ -365,13 +363,11 @@ class JmsConnectorsSpec extends JmsSpec {
       val jmsTopicSink: Sink[String, Future[Done]] = JmsProducer.textSink(
         JmsProducerSettings(connectionFactory)
           .withTopic("topic", createTopic)
-//          .withTopicCreator(createTopic)
       )
       //#create-topic-sink
       val jmsTopicSink2: Sink[String, Future[Done]] = JmsProducer.textSink(
         JmsProducerSettings(connectionFactory)
           .withTopic("topic", createTopic)
-//          .withTopicCreator(createTopic)
       )
 
       val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
@@ -382,14 +378,12 @@ class JmsConnectorsSpec extends JmsSpec {
         JmsConsumerSettings(connectionFactory)
           .withBufferSize(10)
           .withTopic("topic", createTopic)
-//          .withTopicCreator(createTopic)
       )
       //#create-topic-source
       val jmsSource2: Source[String, KillSwitch] = JmsConsumer.textSource(
         JmsConsumerSettings(connectionFactory)
           .withBufferSize(10)
           .withTopic("topic", createTopic)
-//          .withTopicCreator(createTopic)
       )
 
       val expectedSize = in.size + inNumbers.size
