@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.unixdomainsocket.scaladsl
 
-import java.io.File
+import java.io.{File, IOException}
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector}
 
@@ -139,7 +139,17 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                 sendReceiveContext.receive match {
                   case ReceiveAvailable(queue, buffer) if keySelectable && key.isReadable =>
                     buffer.clear()
-                    val n = key.channel.asInstanceOf[UnixSocketChannel].read(buffer)
+
+                    val channel = key.channel.asInstanceOf[UnixSocketChannel]
+
+                    val n =
+                      try {
+                        channel.read(buffer)
+                      } catch {
+                        // socket could have been closed in the meantime, so read will throw this
+                        case _: IOException => -1
+                      }
+
                     if (n >= 0) {
                       buffer.flip()
                       val pendingResult = queue.offer(ByteString(buffer))
@@ -162,6 +172,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                         key.channel.close()
                     }
                   case _: ReceiveAvailable =>
+                  case _: PendingReceiveAck =>
                 }
               case _: ((Selector, SelectionKey) => Unit) @unchecked =>
             }
