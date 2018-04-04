@@ -8,6 +8,14 @@ import java.nio.charset.Charset
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 import javax.jms.{DeliveryMode, JMSException, Message, Session, TextMessage}
 
+import akka.stream.alpakka.jms._
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.{KillSwitch, KillSwitches, ThrottleMode}
+import akka.{Done, NotUsed}
+import org.apache.activemq.ActiveMQConnectionFactory
+import org.apache.activemq.ActiveMQSession
+import org.apache.activemq.command.ActiveMQQueue
+
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
@@ -15,13 +23,6 @@ import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
-
-import akka.stream.alpakka.jms._
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import akka.stream.{KillSwitch, KillSwitches, ThrottleMode}
-import akka.{Done, NotUsed}
-import org.apache.activemq.command.ActiveMQQueue
-import org.apache.activemq.{ActiveMQConnectionFactory, ActiveMQQueueSession, ActiveMQSession}
 
 final case class DummyObject(payload: String)
 

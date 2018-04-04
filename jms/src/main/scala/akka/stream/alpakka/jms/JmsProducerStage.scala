@@ -134,11 +134,9 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
         def createDestination(destination: Destination): _root_.javax.jms.Destination =
           destination match {
             case Queue(name, createDestination) =>
-              jmsSession.session.createQueue(name)
-//              createDestination(name)(jmsSession.session)
+              createDestination(name)(jmsSession.session)
             case Topic(name, createDestination) =>
-              jmsSession.session.createTopic(name)
-            //              createDestination(name)(jmsSession.session)
+              createDestination(name)(jmsSession.session)
           }
 
         headers.foreach {

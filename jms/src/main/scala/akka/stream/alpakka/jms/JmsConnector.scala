@@ -78,8 +78,6 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
         createDestination(name)
       case Some(Topic(name, createDestination)) =>
         createDestination(name)
-//      case Some(UserDefined(name, createDestination)) =>
-//        createDestination(name)
       case _ => throw new IllegalArgumentException("Destination is missing")
     }
 
