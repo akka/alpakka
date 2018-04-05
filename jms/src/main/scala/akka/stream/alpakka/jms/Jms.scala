@@ -32,22 +32,17 @@ sealed trait JmsSettings {
   def acknowledgeMode: Option[AcknowledgeMode]
 }
 
-object Destination {
-  def createQueue(name: String)(session: jms.Session) = session.createQueue(name)
-  def createTopic(name: String)(session: jms.Session) = session.createTopic(name)
-}
 sealed trait Destination {
   val name: String
   def create(name: String): (jms.Session) => jms.Destination
 }
 final case class Topic(override val name: String) extends Destination {
-  override def create(name: String): (jms.Session) => jms.Destination = Destination.createTopic(name)
+  override def create(name: String): (jms.Session) => jms.Destination = session => session.createTopic(name)
 }
 final case class Queue(override val name: String) extends Destination {
-  override def create(name: String): (jms.Session) => jms.Destination = Destination.createQueue(name)
+  override def create(name: String): (jms.Session) => jms.Destination = session => session.createQueue(name)
 }
-abstract class CustomDestination(override val name: String)
-    extends Destination
+abstract class CustomDestination(override val name: String) extends Destination
 
 final class AcknowledgeMode(val mode: Int)
 

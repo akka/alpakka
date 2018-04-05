@@ -499,7 +499,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       // all messages were acknowledged before
       jmsSource
-        .takeWithin(5.seconds)
+        .takeWithin(10.seconds)
         .runWith(Sink.seq)
         .futureValue shouldBe empty
     }
