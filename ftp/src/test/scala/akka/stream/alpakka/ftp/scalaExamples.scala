@@ -4,6 +4,9 @@
 
 package akka.stream.alpakka.ftp
 
+import akka.stream.alpakka.ftp.scaladsl.{FtpApi, Sftp}
+import net.schmizz.sshj.DefaultConfig
+
 object scalaExamples {
 
   // settings
@@ -19,6 +22,15 @@ object scalaExamples {
       passiveMode = true
     )
     //#create-settings
+  }
+
+  object sshConfigure {
+    //#configure-custom-ssh-client
+    import net.schmizz.sshj.SSHClient
+
+    val sshClient: SSHClient = new SSHClient(new DefaultConfig)
+    val configuredClient: Sftp = Sftp(sshClient)
+    //#configure-custom-ssh-client
   }
 
   object traversing {
