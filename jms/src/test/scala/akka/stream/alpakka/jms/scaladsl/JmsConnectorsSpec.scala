@@ -260,9 +260,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
         JmsProducerSettings(connectionFactory)
-          .withDestination(new CustomDestination("custom-numbers") {
-            override def create(name: String): Session => jms.Destination = createQueu2(name)
-          })
+          .withDestination(CustomDestination("custom-numbers", createQueu2("custom-numbers")))
       )
 
       //#create-messages-with-properties
@@ -277,9 +275,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val jmsSource: Source[Message, KillSwitch] = JmsConsumer(
         JmsConsumerSettings(connectionFactory)
           .withBufferSize(10)
-          .withDestination(new CustomDestination("custom-numbers") {
-            override def create(name: String): Session => jms.Destination = createQueu2(name)
-          })
+          .withDestination(CustomDestination("custom-numbers", createQueu2("custom-numbers")))
       )
       //#create-jms-source
 
@@ -366,16 +362,12 @@ class JmsConnectorsSpec extends JmsSpec {
       //#create-topic-sink
       val jmsTopicSink: Sink[String, Future[Done]] = JmsProducer.textSink(
         JmsProducerSettings(connectionFactory)
-          .withDestination(new CustomDestination("topic") {
-            override def create(name: String): Session => jms.Destination = createTopic(name)
-          })
+          .withDestination(CustomDestination("topic", createTopic("topic")))
       )
       //#create-topic-sink
       val jmsTopicSink2: Sink[String, Future[Done]] = JmsProducer.textSink(
         JmsProducerSettings(connectionFactory)
-          .withDestination(new CustomDestination("topic") {
-            override def create(name: String): Session => jms.Destination = createTopic(name)
-          })
+          .withDestination(CustomDestination("topic", createTopic("topic")))
       )
 
       val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
@@ -385,17 +377,13 @@ class JmsConnectorsSpec extends JmsSpec {
       val jmsTopicSource: Source[String, KillSwitch] = JmsConsumer.textSource(
         JmsConsumerSettings(connectionFactory)
           .withBufferSize(10)
-          .withDestination(new CustomDestination("topic") {
-            override def create(name: String): Session => jms.Destination = createTopic(name)
-          })
+          .withDestination(CustomDestination("topic", createTopic("topic")))
       )
       //#create-topic-source
       val jmsSource2: Source[String, KillSwitch] = JmsConsumer.textSource(
         JmsConsumerSettings(connectionFactory)
           .withBufferSize(10)
-          .withDestination(new CustomDestination("topic") {
-            override def create(name: String): Session => jms.Destination = createTopic(name)
-          })
+          .withDestination(CustomDestination("topic", createTopic("topic")))
       )
 
       val expectedSize = in.size + inNumbers.size

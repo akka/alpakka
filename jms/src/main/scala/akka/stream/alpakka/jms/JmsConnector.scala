@@ -74,7 +74,7 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
 
     val createDestination = jmsSettings.destination match {
       case Some(destination) =>
-        destination.create(destination.name)
+        destination.create
       case _ => throw new IllegalArgumentException("Destination is missing")
     }
 

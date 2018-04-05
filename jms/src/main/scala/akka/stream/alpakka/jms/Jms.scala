@@ -34,15 +34,15 @@ sealed trait JmsSettings {
 
 sealed trait Destination {
   val name: String
-  def create(name: String): (jms.Session) => jms.Destination
+  val create: (jms.Session) => jms.Destination
 }
 final case class Topic(override val name: String) extends Destination {
-  override def create(name: String): (jms.Session) => jms.Destination = session => session.createTopic(name)
+  override val create: (jms.Session) => jms.Destination = session => session.createTopic(name)
 }
 final case class Queue(override val name: String) extends Destination {
-  override def create(name: String): (jms.Session) => jms.Destination = session => session.createQueue(name)
+  override val create: (jms.Session) => jms.Destination = session => session.createQueue(name)
 }
-abstract class CustomDestination(override val name: String) extends Destination
+final case class CustomDestination(override val name: String, override val create: (jms.Session) => jms.Destination) extends Destination
 
 final class AcknowledgeMode(val mode: Int)
 
