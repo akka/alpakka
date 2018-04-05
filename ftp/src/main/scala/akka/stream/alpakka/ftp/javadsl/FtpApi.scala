@@ -14,7 +14,7 @@ import akka.stream.javadsl.Sink
 import akka.stream.scaladsl.{Source => ScalaSource}
 import akka.stream.scaladsl.{Sink => ScalaSink}
 import akka.util.ByteString
-import net.schmizz.sshj.{Config => SSHConfig, SSHClient}
+import net.schmizz.sshj.SSHClient
 import org.apache.commons.net.ftp.FTPClient
 import java.util.concurrent.CompletionStage
 import java.util.function._
@@ -239,8 +239,8 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
 object Ftp extends FtpApi[FTPClient] with FtpSourceParams
 object Ftps extends FtpApi[FTPClient] with FtpsSourceParams
 object Sftp extends FtpApi[SSHClient] with SftpSourceParams {
-  def sshConfig(customSshConfig: SSHConfig): FtpApi[SSHClient] with SftpSourceParams =
+  def withSshClient(customSshClient: SSHClient): FtpApi[SSHClient] with SftpSourceParams =
     new FtpApi[SSHClient] with SftpSourceParams {
-      override val sshConfig = customSshConfig
+      override val sshClient = customSshClient
     }
 }

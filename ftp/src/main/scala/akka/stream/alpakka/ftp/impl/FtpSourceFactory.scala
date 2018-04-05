@@ -6,7 +6,7 @@ package akka.stream.alpakka.ftp.impl
 
 import akka.stream.alpakka.ftp.FtpCredentials.{AnonFtpCredentials, NonAnonFtpCredentials}
 import akka.stream.alpakka.ftp.{FtpFile, FtpFileSettings, FtpSettings, FtpsSettings, RemoteFileSettings, SftpSettings}
-import net.schmizz.sshj.{Config => SSHConfig, DefaultConfig, SSHClient}
+import net.schmizz.sshj.SSHClient
 import org.apache.commons.net.ftp.FTPClient
 import java.net.InetAddress
 
@@ -117,8 +117,8 @@ private[ftp] trait SftpSource extends FtpSourceFactory[SSHClient] {
   protected final val sFtpBrowserSourceName = "sFtpBrowserSource"
   protected final val sFtpIOSourceName = "sFtpIOSource"
   protected final val sFtpIOSinkName = "sFtpIOSink"
-  def sshConfig: SSHConfig = new DefaultConfig
-  protected val ftpClient: () => SSHClient = () => new SSHClient(sshConfig)
+  def sshClient(): SSHClient = new SSHClient()
+  protected val ftpClient: () => SSHClient = sshClient
   protected val ftpBrowserSourceName: String = sFtpBrowserSourceName
   protected val ftpIOSourceName: String = sFtpIOSourceName
   protected val ftpIOSinkName: String = sFtpIOSinkName
