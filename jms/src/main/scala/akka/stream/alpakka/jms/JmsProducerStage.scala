@@ -132,12 +132,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
 
       private def populateMessageHeader(message: javax.jms.Message, headers: Set[JmsHeader]): Unit = {
         def createDestination(destination: Destination): _root_.javax.jms.Destination =
-          destination match {
-            case Queue(name, createDestination) =>
-              createDestination(name)(jmsSession.session)
-            case Topic(name, createDestination) =>
-              createDestination(name)(jmsSession.session)
-          }
+              destination.create(destination.name)(jmsSession.session)
 
         headers.foreach {
           case JmsType(jmsType) => message.setJMSType(jmsType)

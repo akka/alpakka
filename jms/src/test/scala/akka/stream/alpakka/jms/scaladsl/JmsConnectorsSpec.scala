@@ -6,6 +6,7 @@ package akka.stream.alpakka.jms.scaladsl
 
 import java.nio.charset.Charset
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
+import javax.jms
 import javax.jms.{DeliveryMode, JMSException, Message, Session, TextMessage}
 
 import akka.stream.alpakka.jms._
@@ -15,7 +16,6 @@ import akka.{Done, NotUsed}
 import org.apache.activemq.ActiveMQConnectionFactory
 import org.apache.activemq.ActiveMQSession
 import org.apache.activemq.command.ActiveMQQueue
-
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
@@ -260,7 +260,9 @@ class JmsConnectorsSpec extends JmsSpec {
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
         JmsProducerSettings(connectionFactory)
-          .withQueue("custom-numbers", createQueue)
+          .withDestination(new CustomDestination("custom-numbers") {
+            override def create(name: String): Session => jms.Destination = createQueu2(name)
+          })
       )
 
       //#create-messages-with-properties
@@ -275,7 +277,9 @@ class JmsConnectorsSpec extends JmsSpec {
       val jmsSource: Source[Message, KillSwitch] = JmsConsumer(
         JmsConsumerSettings(connectionFactory)
           .withBufferSize(10)
-          .withQueue("custom-numbers", createQueu2)
+          .withDestination(new CustomDestination("custom-numbers") {
+            override def create(name: String): Session => jms.Destination = createQueu2(name)
+          })
       )
       //#create-jms-source
 
@@ -362,12 +366,16 @@ class JmsConnectorsSpec extends JmsSpec {
       //#create-topic-sink
       val jmsTopicSink: Sink[String, Future[Done]] = JmsProducer.textSink(
         JmsProducerSettings(connectionFactory)
-          .withTopic("topic", createTopic)
+          .withDestination(new CustomDestination("topic") {
+            override def create(name: String): Session => jms.Destination = createTopic(name)
+          })
       )
       //#create-topic-sink
       val jmsTopicSink2: Sink[String, Future[Done]] = JmsProducer.textSink(
         JmsProducerSettings(connectionFactory)
-          .withTopic("topic", createTopic)
+          .withDestination(new CustomDestination("topic") {
+            override def create(name: String): Session => jms.Destination = createTopic(name)
+          })
       )
 
       val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
@@ -377,13 +385,17 @@ class JmsConnectorsSpec extends JmsSpec {
       val jmsTopicSource: Source[String, KillSwitch] = JmsConsumer.textSource(
         JmsConsumerSettings(connectionFactory)
           .withBufferSize(10)
-          .withTopic("topic", createTopic)
+          .withDestination(new CustomDestination("topic") {
+            override def create(name: String): Session => jms.Destination = createTopic(name)
+          })
       )
       //#create-topic-source
       val jmsSource2: Source[String, KillSwitch] = JmsConsumer.textSource(
         JmsConsumerSettings(connectionFactory)
           .withBufferSize(10)
-          .withTopic("topic", createTopic)
+          .withDestination(new CustomDestination("topic") {
+            override def create(name: String): Session => jms.Destination = createTopic(name)
+          })
       )
 
       val expectedSize = in.size + inNumbers.size
