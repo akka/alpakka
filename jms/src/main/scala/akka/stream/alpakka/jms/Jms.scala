@@ -42,7 +42,8 @@ final case class Topic(override val name: String) extends Destination {
 final case class Queue(override val name: String) extends Destination {
   override val create: (jms.Session) => jms.Destination = session => session.createQueue(name)
 }
-final case class CustomDestination(override val name: String, override val create: (jms.Session) => jms.Destination) extends Destination
+final case class CustomDestination(override val name: String, override val create: (jms.Session) => jms.Destination)
+    extends Destination
 
 final class AcknowledgeMode(val mode: Int)
 

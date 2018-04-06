@@ -473,13 +473,13 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#run-jms-source-with-ack
       val result = jmsSource
-        .take(msgsIn.size)
         .map {
           case textMessage: TextMessage =>
             val text = textMessage.getText
             textMessage.acknowledge()
             text
         }
+        .take(msgsIn.size)
         .runWith(Sink.seq)
       //#run-jms-source-with-ack
 
@@ -487,7 +487,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       // all messages were acknowledged before
       jmsSource
-        .takeWithin(10.seconds)
+        .takeWithin(5.seconds)
         .runWith(Sink.seq)
         .futureValue shouldBe empty
     }
