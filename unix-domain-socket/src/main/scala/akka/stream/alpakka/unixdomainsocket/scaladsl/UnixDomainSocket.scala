@@ -148,8 +148,6 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                       key.interestOps(key.interestOps() & ~SelectionKey.OP_READ)
                     } else {
                       queue.complete()
-                      key.cancel()
-                      key.channel.close()
                     }
                   case PendingReceiveAck(receiveQueue, receiveBuffer, pendingResult) if pendingResult.isCompleted =>
                     pendingResult.value.get match {
