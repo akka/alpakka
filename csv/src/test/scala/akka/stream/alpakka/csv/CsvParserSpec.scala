@@ -77,6 +77,9 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
 
     "parse double escape chars into one escape char" in {
       expectInOut("a,\\\\,c\n", List("a", "\\", "c"))
+      expectInOut("a,b\\\\c,d\n", List("a", "b\\c", "d"))
+      expectInOut("a\\\\b,c,d\n", List("a\\b", "c", "d"))
+      expectInOut("\\\\,a,b\n", List("\\", "a", "b"))
     }
 
     "parse quoted escape chars into one escape char" in {
