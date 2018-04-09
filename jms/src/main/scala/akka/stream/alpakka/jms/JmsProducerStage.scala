@@ -131,12 +131,9 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
         }
 
       private def populateMessageHeader(message: javax.jms.Message, headers: Set[JmsHeader]): Unit = {
-        def createDestination(destination: Destination): _root_.javax.jms.Destination =
-          destination.create(jmsSession.session)
-
         headers.foreach {
           case JmsType(jmsType) => message.setJMSType(jmsType)
-          case JmsReplyTo(destination) => message.setJMSReplyTo(createDestination(destination))
+          case JmsReplyTo(destination) => message.setJMSReplyTo(destination.create(jmsSession.session))
           case JmsCorrelationId(jmsCorrelationId) => message.setJMSCorrelationID(jmsCorrelationId)
         }
       }

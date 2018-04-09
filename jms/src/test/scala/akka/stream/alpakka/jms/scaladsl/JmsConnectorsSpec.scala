@@ -263,25 +263,21 @@ class JmsConnectorsSpec extends JmsSpec {
           .withDestination(CustomDestination("custom-numbers", createQueu2("custom-numbers")))
       )
 
-      //#create-messages-with-properties
       val msgsIn: Seq[JmsTextMessage] = (1 to 10).toList.map { n =>
         JmsTextMessage(n.toString)
       }
-      //#create-messages-with-properties
 
       Source(msgsIn).runWith(jmsSink)
 
-      //#create-jms-source
+      //#create-custom-jms-queue-source
       val jmsSource: Source[Message, KillSwitch] = JmsConsumer(
         JmsConsumerSettings(connectionFactory)
           .withBufferSize(10)
           .withDestination(CustomDestination("custom-numbers", createQueu2("custom-numbers")))
       )
-      //#create-jms-source
+      //#create-custom-jms-queue-source
 
-      //#run-jms-source
       val result: Future[Seq[Message]] = jmsSource.take(msgsIn.size).runWith(Sink.seq)
-      //#run-jms-source
 
       // The sent message and the receiving one should have the same properties
       result.futureValue.zip(msgsIn).foreach {
@@ -359,12 +355,12 @@ class JmsConnectorsSpec extends JmsSpec {
 
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
-      //#create-topic-sink
+      //#create-custom-jms-topic-sink
       val jmsTopicSink: Sink[String, Future[Done]] = JmsProducer.textSink(
         JmsProducerSettings(connectionFactory)
           .withDestination(CustomDestination("topic", createTopic("topic")))
       )
-      //#create-topic-sink
+      //#create-custom-jms-topic-sink
       val jmsTopicSink2: Sink[String, Future[Done]] = JmsProducer.textSink(
         JmsProducerSettings(connectionFactory)
           .withDestination(CustomDestination("topic", createTopic("topic")))
@@ -373,13 +369,13 @@ class JmsConnectorsSpec extends JmsSpec {
       val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
       val inNumbers = (1 to 10).map(_.toString)
 
-      //#create-topic-source
+      //#create-custom-jms-topic-source
       val jmsTopicSource: Source[String, KillSwitch] = JmsConsumer.textSource(
         JmsConsumerSettings(connectionFactory)
           .withBufferSize(10)
           .withDestination(CustomDestination("topic", createTopic("topic")))
       )
-      //#create-topic-source
+      //#create-custom-jms-topic-source
       val jmsSource2: Source[String, KillSwitch] = JmsConsumer.textSource(
         JmsConsumerSettings(connectionFactory)
           .withBufferSize(10)
@@ -387,17 +383,17 @@ class JmsConnectorsSpec extends JmsSpec {
       )
 
       val expectedSize = in.size + inNumbers.size
-      //#run-topic-source
+
       val result1 = jmsTopicSource.take(expectedSize).runWith(Sink.seq).map(_.sorted)
       val result2 = jmsSource2.take(expectedSize).runWith(Sink.seq).map(_.sorted)
-      //#run-topic-source
+
 
       //We wait a little to be sure that the source is connected
       Thread.sleep(500)
 
-      //#run-topic-sink
+
       Source(in).runWith(jmsTopicSink)
-      //#run-topic-sink
+
       Source(inNumbers).runWith(jmsTopicSink2)
 
       val expectedList: List[String] = in ++ inNumbers

@@ -109,14 +109,14 @@ object JmsBrowseSettings {
 }
 
 final case class JmsBrowseSettings(connectionFactory: ConnectionFactory,
-                                   destination: Option[Queue] = None,
+                                   destination: Option[Destination] = None,
                                    credentials: Option[Credentials] = None,
                                    selector: Option[String] = None,
                                    acknowledgeMode: Option[AcknowledgeMode] = None)
     extends JmsSettings {
   def withCredential(credentials: Credentials): JmsBrowseSettings = copy(credentials = Some(credentials))
   def withQueue(name: String): JmsBrowseSettings = copy(destination = Some(Queue(name)))
-  def withDestination(destination: Queue): JmsBrowseSettings = copy(destination = Some(destination))
+  def withDestination(destination: Destination): JmsBrowseSettings = copy(destination = Some(destination))
   def withSelector(selector: String): JmsBrowseSettings = copy(selector = Some(selector))
   def withAcknowledgeMode(acknowledgeMode: AcknowledgeMode): JmsBrowseSettings =
     copy(acknowledgeMode = Option(acknowledgeMode))
