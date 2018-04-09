@@ -9,13 +9,11 @@ import com.rabbitmq.client._
 
 import scala.util.control.NonFatal
 
-private[amqp] case class ConnectionWithShutdown(
-  conn: Connection,
-  onShutdown: ShutdownListener) {
+private[amqp] case class ConnectionWithShutdown(conn: Connection, onShutdown: ShutdownListener) {
 
   /**
-    * @return a Channel with the shutdown listener pre-registered
-    */
+   * @return a Channel with the shutdown listener pre-registered
+   */
   def createChannel: Channel = {
     val ch = conn.createChannel()
     ch.addShutdownListener(onShutdown)
@@ -23,8 +21,8 @@ private[amqp] case class ConnectionWithShutdown(
   }
 
   /**
-    * Removes the shutdown listener from the connection
-    */
+   * Removes the shutdown listener from the connection
+   */
   def shutdown(): Unit = conn.removeShutdownListener(onShutdown)
 }
 
