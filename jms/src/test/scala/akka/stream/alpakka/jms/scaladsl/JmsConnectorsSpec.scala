@@ -387,10 +387,8 @@ class JmsConnectorsSpec extends JmsSpec {
       val result1 = jmsTopicSource.take(expectedSize).runWith(Sink.seq).map(_.sorted)
       val result2 = jmsSource2.take(expectedSize).runWith(Sink.seq).map(_.sorted)
 
-
       //We wait a little to be sure that the source is connected
       Thread.sleep(500)
-
 
       Source(in).runWith(jmsTopicSink)
 
