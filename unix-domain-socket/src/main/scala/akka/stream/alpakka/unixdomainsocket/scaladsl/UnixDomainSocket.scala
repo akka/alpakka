@@ -280,7 +280,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
             }
             .runWith(Sink.ignore)
         }
-    (sendReceiveContext, Flow.fromSinkAndSourceCoupled(sendSink, Source.fromFutureSource(receiveSource)))
+    (sendReceiveContext, Flow.fromSinkAndSource(sendSink, Source.fromFutureSource(receiveSource)))
   }
 
   /*
