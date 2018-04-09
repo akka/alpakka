@@ -9,12 +9,31 @@ import com.rabbitmq.client._
 
 import scala.util.control.NonFatal
 
+private[amqp] case class ConnectionWithShutdown(
+  conn: Connection,
+  onShutdown: ShutdownListener) {
+
+  /**
+    * @return a Channel with the shutdown listener pre-registered
+    */
+  def createChannel: Channel = {
+    val ch = conn.createChannel()
+    ch.addShutdownListener(onShutdown)
+    ch
+  }
+
+  /**
+    * Removes the shutdown listener from the connection
+    */
+  def shutdown(): Unit = conn.removeShutdownListener(onShutdown)
+}
+
 /**
  * Internal API
  */
 private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
 
-  private var connection: Connection = _
+  private var connection: ConnectionWithShutdown = _
   protected var channel: Channel = _
 
   def settings: AmqpConnectorSettings
@@ -23,17 +42,20 @@ private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
 
   final override def preStart(): Unit =
     try {
-      connection = settings.connectionProvider.get
-      channel = connection.createChannel()
-
       val connShutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
         if (!ex.isInitiatedByApplication) failStage(ex)
       }
       val shutdownListener = new ShutdownListener {
         override def shutdownCompleted(cause: ShutdownSignalException): Unit = connShutdownCallback.invoke(cause)
       }
-      connection.addShutdownListener(shutdownListener)
-      channel.addShutdownListener(shutdownListener)
+
+      connection = {
+        val c = settings.connectionProvider.get
+        c.addShutdownListener(shutdownListener)
+        ConnectionWithShutdown(c, shutdownListener)
+      }
+
+      channel = connection.createChannel
 
       import scala.collection.JavaConverters._
 
@@ -75,7 +97,9 @@ private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
   override def postStop(): Unit = {
     if ((channel ne null) && channel.isOpen) channel.close()
     channel = null
-    settings.connectionProvider.release(connection)
+
+    connection.shutdown
+    settings.connectionProvider.release(connection.conn)
     connection = null
   }
 }
