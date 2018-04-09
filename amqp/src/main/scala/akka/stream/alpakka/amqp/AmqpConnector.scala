@@ -21,17 +21,15 @@ private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
   def whenConnected(): Unit
   def onFailure(ex: Throwable): Unit = failStage(ex)
 
+  protected val shutdownCallback = getAsyncCallback(onFailure)
+  private val shutdownListener = new ShutdownListener {
+    override def shutdownCompleted(cause: ShutdownSignalException): Unit = shutdownCallback.invoke(cause)
+  }
+
   final override def preStart(): Unit =
     try {
       connection = settings.connectionProvider.get
       channel = connection.createChannel()
-
-      val connShutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
-        if (!ex.isInitiatedByApplication) failStage(ex)
-      }
-      val shutdownListener = new ShutdownListener {
-        override def shutdownCompleted(cause: ShutdownSignalException): Unit = connShutdownCallback.invoke(cause)
-      }
       connection.addShutdownListener(shutdownListener)
       channel.addShutdownListener(shutdownListener)
 
@@ -73,6 +71,8 @@ private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
 
   /** remember to call if overriding! */
   override def postStop(): Unit = {
+    connection.removeShutdownListener(shutdownListener)
+    channel.removeShutdownListener(shutdownListener)
     if ((channel ne null) && channel.isOpen) channel.close()
     channel = null
     settings.connectionProvider.release(connection)

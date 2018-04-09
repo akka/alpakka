@@ -60,18 +60,7 @@ final class AmqpSinkStage(settings: AmqpSinkSettings)
       private val exchange = settings.exchange.getOrElse("")
       private val routingKey = settings.routingKey.getOrElse("")
 
-      override def whenConnected(): Unit = {
-        val shutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
-          onFailure(ex)
-        }
-        channel.addShutdownListener(
-          new ShutdownListener {
-            override def shutdownCompleted(cause: ShutdownSignalException): Unit =
-              shutdownCallback.invoke(cause)
-          }
-        )
-        pull(in)
-      }
+      override def whenConnected(): Unit = pull(in)
 
       setHandler(
         in,
@@ -145,18 +134,7 @@ final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings)
     (new GraphStageLogic(shape) with AmqpConnectorLogic {
       override val settings = stage.settings
 
-      override def whenConnected(): Unit = {
-        val shutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
-          onFailure(ex)
-        }
-        channel.addShutdownListener(
-          new ShutdownListener {
-            override def shutdownCompleted(cause: ShutdownSignalException): Unit =
-              shutdownCallback.invoke(cause)
-          }
-        )
-        pull(in)
-      }
+      override def whenConnected(): Unit = pull(in)
 
       override def postStop(): Unit = {
         promise.tryFailure(new RuntimeException("stage stopped unexpectedly"))
