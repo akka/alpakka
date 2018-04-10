@@ -9,30 +9,18 @@ import com.rabbitmq.client._
 
 import scala.util.control.NonFatal
 
-private[amqp] case class ConnectionWithShutdown(conn: Connection, onShutdown: ShutdownListener) {
-
-  /**
-   * @return a Channel with the shutdown listener pre-registered
-   */
-  def createChannel: Channel = {
-    val ch = conn.createChannel()
-    ch.addShutdownListener(onShutdown)
-    ch
-  }
-
-  /**
-   * Removes the shutdown listener from the connection
-   */
-  def shutdown(): Unit = conn.removeShutdownListener(onShutdown)
-}
-
 /**
  * Internal API
  */
 private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
 
-  private var connection: ConnectionWithShutdown = _
+  private var connection: Connection = _
   protected var channel: Channel = _
+
+  protected lazy val shutdownCallback = getAsyncCallback(onFailure)
+  private lazy val shutdownListener = new ShutdownListener {
+    override def shutdownCompleted(cause: ShutdownSignalException): Unit = shutdownCallback.invoke(cause)
+  }
 
   def settings: AmqpConnectorSettings
   def whenConnected(): Unit
@@ -40,20 +28,11 @@ private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
 
   final override def preStart(): Unit =
     try {
-      val connShutdownCallback = getAsyncCallback[ShutdownSignalException] { ex =>
-        if (!ex.isInitiatedByApplication) failStage(ex)
-      }
-      val shutdownListener = new ShutdownListener {
-        override def shutdownCompleted(cause: ShutdownSignalException): Unit = connShutdownCallback.invoke(cause)
-      }
-
-      connection = {
-        val c = settings.connectionProvider.get
-        c.addShutdownListener(shutdownListener)
-        ConnectionWithShutdown(c, shutdownListener)
-      }
-
+      connection = settings.connectionProvider.get
       channel = connection.createChannel
+
+      connection.addShutdownListener(shutdownListener)
+      channel.addShutdownListener(shutdownListener)
 
       import scala.collection.JavaConverters._
 
@@ -96,8 +75,8 @@ private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
     if ((channel ne null) && channel.isOpen) channel.close()
     channel = null
 
-    connection.shutdown
-    settings.connectionProvider.release(connection.conn)
+    connection.removeShutdownListener(shutdownListener)
+    settings.connectionProvider.release(connection)
     connection = null
   }
 }
