@@ -17,4 +17,12 @@ Below is a non-complete list of stream components that are maintained by other p
 
 [Stream Deduplicate](https://squbs.readthedocs.io/en/latest/deduplicate/)
 
+[Stream Bounded Ordering](https://squbs.readthedocs.io/en/latest/flow-ordering/)
+
+[Stream Retry](https://squbs.readthedocs.io/en/latest/flow-retry/)
+
 [Timeout Flow](https://squbs.readthedocs.io/en/latest/flow-timeout/)
+
+## Metrics
+
+[Stream Materialization Metrics](https://squbs.readthedocs.io/en/latest/materialization-metrics-collector/)
