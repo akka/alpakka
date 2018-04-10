@@ -14,26 +14,25 @@ class TestParsing extends FunSuite with Matchers {
     "BEGIN 2379" should fullyMatch regex (Begin withGroups "2379")
 
     "COMMIT 2213 (at 2018-04-09 05:52:42.626311+00)" should fullyMatch regex (Commit
-      withGroups("2213", "2018-04-09", "05:52:42.626311+00"))
+    withGroups ("2213", "2018-04-09", "05:52:42.626311+00"))
 
     "COMMIT 2380 (at 2018-04-09 17:56:36.730413+00)" should fullyMatch regex (Commit
-      withGroups("2380", "2018-04-09", "17:56:36.730413+00"))
+    withGroups ("2380", "2018-04-09", "17:56:36.730413+00"))
   }
-
 
   test("regular expression for UPDATE, INSERT, DELETE log statements") {
 
     val ex1 = "table public.\"Users\": UPDATE: ..."
 
-    ex1 should fullyMatch regex (ChangeStatement withGroups("public", "\"Users\"", "UPDATE", "..."))
+    ex1 should fullyMatch regex (ChangeStatement withGroups ("public", "\"Users\"", "UPDATE", "..."))
 
     val ex2 = "table public.\"Users\": INSERT: ..."
 
-    ex2 should fullyMatch regex (ChangeStatement withGroups("public", "\"Users\"", "INSERT", "..."))
+    ex2 should fullyMatch regex (ChangeStatement withGroups ("public", "\"Users\"", "INSERT", "..."))
 
     val ex3 = "table public.\"Users\": DELETE: ..."
 
-    ex3 should fullyMatch regex (ChangeStatement withGroups("public", "\"Users\"", "DELETE", "..."))
+    ex3 should fullyMatch regex (ChangeStatement withGroups ("public", "\"Users\"", "DELETE", "..."))
 
   }
 
@@ -106,7 +105,6 @@ class TestParsing extends FunSuite with Matchers {
 
     val ex2 = """"Name"[character varying]:'scala'"""
     ex2 should fullyMatch regex Property.withGroups("\"Name\"", "character varying", "'scala'")
-
 
   }
 }
