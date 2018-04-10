@@ -123,8 +123,20 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
               case sendReceiveContext: SendReceiveContext =>
                 sendReceiveContext.send match {
                   case SendRequested(buffer, sent) if keySelectable && key.isWritable =>
-                    key.channel().asInstanceOf[UnixSocketChannel].write(buffer)
-                    if (buffer.remaining == 0) {
+                    val channel = key.channel().asInstanceOf[UnixSocketChannel]
+
+                    val written =
+                      try {
+                        channel.write(buffer)
+                        true
+                      } catch {
+                        case _: IOException =>
+                          key.cancel()
+                          key.channel.close()
+                          false
+                      }
+
+                    if (written && buffer.remaining == 0) {
                       sendReceiveContext.send = SendAvailable(buffer)
                       key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE)
                       sent.success(Done)
@@ -280,7 +292,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
             }
             .runWith(Sink.ignore)
         }
-    (sendReceiveContext, Flow.fromSinkAndSourceCoupled(sendSink, Source.fromFutureSource(receiveSource)))
+    (sendReceiveContext, Flow.fromSinkAndSource(sendSink, Source.fromFutureSource(receiveSource)))
   }
 
   /*
