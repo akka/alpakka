@@ -35,6 +35,7 @@
 * [MQTT](mqtt.md)
 * [OrientDB](orientdb.md)
 * [Pulsar](external/pulsar.md)
+* [PostgreSQL CDC](postgresql-cdc.md)
 * [Server-sent Events (SSE)](sse.md)
 * [Slick (JDBC)](slick.md)
 * [Spring Web](spring-web.md)
