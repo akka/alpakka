@@ -246,7 +246,7 @@ object Sftp extends FtpApi[SSHClient] with SftpSourceParams {
    * @param customSshClient custom ssh client
    * @return A [[akka.stream.alpakka.ftp.javadsl.FtpApi]] of [[net.schmizz.sshj.SSHClient]] with [[akka.stream.alpakka.ftp.impl.SftpSourceParams]]
    */
-  def withSshClient(customSshClient: SSHClient): FtpApi[SSHClient] with SftpSourceParams =
+  def create(customSshClient: SSHClient): FtpApi[SSHClient] with SftpSourceParams =
     new FtpApi[SSHClient] with SftpSourceParams {
       override val sshClient = customSshClient
     }

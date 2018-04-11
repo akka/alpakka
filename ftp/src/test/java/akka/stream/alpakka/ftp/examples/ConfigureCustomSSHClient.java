@@ -15,7 +15,7 @@ public class ConfigureCustomSSHClient {
 
     public ConfigureCustomSSHClient() {
         SSHClient sshClient = new SSHClient(new DefaultConfig());
-        FtpApi<SSHClient> sftp = Sftp.withSshClient(sshClient);
+        FtpApi<SSHClient> sftp = Sftp.create(sshClient);
 
     }
 }
