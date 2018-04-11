@@ -22,9 +22,11 @@ sealed trait AmqpConnectionProvider {
 }
 
 /**
-  * Wrapper/proxy implementation of a provider, useful for testing with a spy or mock
-  */
-private [amqp] case class DelegatingConnectionProvider(delegate: AmqpConnectionProvider, f: Connection => Connection = identity) extends AmqpConnectionProvider {
+ * Wrapper/proxy implementation of a provider, useful for testing with a spy or mock
+ */
+private[amqp] case class DelegatingConnectionProvider(delegate: AmqpConnectionProvider,
+                                                      f: Connection => Connection = identity)
+    extends AmqpConnectionProvider {
   override def get: Connection = f(delegate.get)
   override def release(connection: Connection): Unit = delegate.release(connection)
 }

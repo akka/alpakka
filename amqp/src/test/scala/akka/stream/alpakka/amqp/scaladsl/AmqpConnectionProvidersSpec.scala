@@ -173,7 +173,7 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
           proxy
         }
       )
-      
+
       val reusableConnectionProvider =
         AmqpCachedConnectionProvider(provider = connectionProvider, automaticRelease = true)
 
@@ -188,7 +188,8 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
 
       val input = Vector("one", "two", "three", "four")
 
-      Future.traverse(input)(in => Source.single(ByteString(in)).runWith(amqpSink))
+      Future
+        .traverse(input)(in => Source.single(ByteString(in)).runWith(amqpSink))
         .flatMap(_ => spyConnectionPromise.future)
         .futureValue
 

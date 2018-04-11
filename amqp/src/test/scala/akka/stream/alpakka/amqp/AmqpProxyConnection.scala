@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.amqp
 
 import java.net.InetAddress
@@ -44,9 +48,12 @@ class AmqpProxyConnection(delegate: Connection) extends Connection {
 
   override def addBlockedListener(blockedListener: BlockedListener): Unit = delegate.addBlockedListener(blockedListener)
 
-  override def addBlockedListener(blockedCallback: BlockedCallback, unblockedCallback: UnblockedCallback): BlockedListener = delegate.addBlockedListener(blockedCallback, unblockedCallback)
+  override def addBlockedListener(blockedCallback: BlockedCallback,
+                                  unblockedCallback: UnblockedCallback): BlockedListener =
+    delegate.addBlockedListener(blockedCallback, unblockedCallback)
 
-  override def removeBlockedListener(blockedListener: BlockedListener): Boolean = delegate.removeBlockedListener(blockedListener)
+  override def removeBlockedListener(blockedListener: BlockedListener): Boolean =
+    delegate.removeBlockedListener(blockedListener)
 
   override def clearBlockedListeners(): Unit = delegate.clearBlockedListeners()
 
@@ -56,9 +63,11 @@ class AmqpProxyConnection(delegate: Connection) extends Connection {
 
   override def setId(s: String): Unit = delegate.setId(s)
 
-  override def addShutdownListener(shutdownListener: ShutdownListener): Unit = delegate.addShutdownListener(shutdownListener)
+  override def addShutdownListener(shutdownListener: ShutdownListener): Unit =
+    delegate.addShutdownListener(shutdownListener)
 
-  override def removeShutdownListener(shutdownListener: ShutdownListener): Unit = delegate.removeShutdownListener(shutdownListener)
+  override def removeShutdownListener(shutdownListener: ShutdownListener): Unit =
+    delegate.removeShutdownListener(shutdownListener)
 
   override def getCloseReason: ShutdownSignalException = delegate.getCloseReason()
 
