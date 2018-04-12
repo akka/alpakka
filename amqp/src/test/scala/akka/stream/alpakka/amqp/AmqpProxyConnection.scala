@@ -9,6 +9,16 @@ import java.util
 
 import com.rabbitmq.client._
 
+/**
+ * Pure proxy of a [[Connection]] allowing for easy extension
+ * and customization of behaviors for individual methods only.
+ *
+ * Potentially useful as a spy implementation, this should be
+ * as thread-safe as the supplied delegate
+ *
+ * @param delegate the Connection to proxy methods to if
+ *                 otherwise undefined
+ */
 class AmqpProxyConnection(delegate: Connection) extends Connection {
   override def getAddress: InetAddress = delegate.getAddress()
 
