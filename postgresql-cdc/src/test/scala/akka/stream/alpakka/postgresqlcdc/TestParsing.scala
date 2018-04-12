@@ -101,10 +101,10 @@ class TestParsing extends FunSuite with Matchers {
 
     val ex1 = """"Id"[integer]:1"""
 
-    ex1 should fullyMatch regex Property.withGroups("\"Id\"", "integer", "1")
+    ex1 should fullyMatch regex KeyValuePair.withGroups("\"Id\"", "integer", "1")
 
     val ex2 = """"Name"[character varying]:'scala'"""
-    ex2 should fullyMatch regex Property.withGroups("\"Name\"", "character varying", "'scala'")
+    ex2 should fullyMatch regex KeyValuePair.withGroups("\"Name\"", "character varying", "'scala'")
 
   }
 }

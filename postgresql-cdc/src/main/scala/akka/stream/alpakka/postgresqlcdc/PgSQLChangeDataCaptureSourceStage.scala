@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.postgresqlcdc
 
-import java.sql.{Connection, DriverManager, PreparedStatement}
+import java.sql.{DriverManager, PreparedStatement}
 
 import akka.NotUsed
 import akka.stream.stage._
@@ -16,46 +16,32 @@ import scala.concurrent.duration.{FiniteDuration, _}
 import scala.util.control.NonFatal
 import scala.util.matching.Regex
 
-
 /** Settings for PostgreSQL CDC
-  *
-  * @param connectionString PostgreSQL JDBC connection string
-  * @param slotName         Name of the "logical decoding" slot
-  * @param maxItems         Specifies how many rows are fetched in one batch
-  * @param duration         Duration between polls
-  */
+ *
+ * @param connectionString PostgreSQL JDBC connection string
+ * @param slotName         Name of the "logical decoding" slot
+ * @param maxItems         Specifies how many rows are fetched in one batch
+ * @param duration         Duration between polls
+ */
 final case class PostgreSQLChangeDataCaptureSettings(connectionString: String,
-  slotName: String,
-  maxItems: Int = 128,
-  duration: FiniteDuration = 2000 milliseconds)
-
+                                                     slotName: String,
+                                                     maxItems: Int = 128,
+                                                     duration: FiniteDuration = 2000 milliseconds)
 
 sealed trait Change {
   val schemaName: String
   val tableName: String
 }
 
-case class Field(columnName: String,
-  columnType: String,
-  value: String)
+case class Field(columnName: String, columnType: String, value: String)
 
-case class RowInserted(schemaName: String,
-  tableName: String,
-  fields: Set[Field]
-) extends Change
+case class RowInserted(schemaName: String, tableName: String, fields: Set[Field]) extends Change
 
-case class RowUpdated(schemaName: String,
-  tableName: String,
-  fields: Set[Field]
-) extends Change
+case class RowUpdated(schemaName: String, tableName: String, fields: Set[Field]) extends Change
 
-case class RowDeleted(schemaName: String,
-  tableName: String,
-  fields: Set[Field]
-) extends Change
+case class RowDeleted(schemaName: String, tableName: String, fields: Set[Field]) extends Change
 
-case class ChangeSet(transactionId: Long,
-  changes: Set[Change]) // TODO: add timestamp
+case class ChangeSet(transactionId: Long, changes: Set[Change]) // TODO: add timestamp
 
 private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
 
@@ -66,7 +52,6 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
     slotChanges.groupBy(_.transactionId).map {
 
       case (transactionId: Long, slotChanges: Set[SlotChange]) =>
-
         val changes: Set[Change] = slotChanges.collect {
 
           case SlotChange(_, _, ChangeStatement(schemaName, tableName, "UPDATE", properties)) =>
@@ -84,23 +69,25 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
     }
   }.filter(_.changes.nonEmpty).toSet
 
-  def parseKeyValuePairs(keyValuePairs: String): Set[Field] = {
-    KeyValuePair.findAllMatchIn(keyValuePairs).collect {
-      case regexMatch if regexMatch.groupCount == 3 =>
-        // note that there is group 0 that denotes the entire match - and it is not included in the groupCount
-        val columnName: String = regexMatch.group(1)
-        val columnType: String = regexMatch.group(2)
-        val value: String = regexMatch.group(3) match {
-          case SingleQuotedString2(content) => content
-          case other => other
-        }
-        Field(columnName, columnType, value)
-    }.toSet
-  }
+  def parseKeyValuePairs(keyValuePairs: String): Set[Field] =
+    KeyValuePair
+      .findAllMatchIn(keyValuePairs)
+      .collect {
+        case regexMatch if regexMatch.groupCount == 3 =>
+          // note that there is group 0 that denotes the entire match - and it is not included in the groupCount
+          val columnName: String = regexMatch.group(1)
+          val columnType: String = regexMatch.group(2)
+          val value: String = regexMatch.group(3) match {
+            case SingleQuotedString2(content) => content
+            case other => other
+          }
+          Field(columnName, columnType, value)
+      }
+      .toSet
 
   /** Represents a row in the table we get from PostgreSQL when we query
-    * SELECT * FROM pg_logical_slot_get_changes(..)
-    */
+   * SELECT * FROM pg_logical_slot_get_changes(..)
+   */
   case class SlotChange(transactionId: Long, location: String, data: String)
 
   object Grammar {
@@ -112,10 +99,10 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
     // Though it's complicated to parse it's not complicated enough to justify the cost of an additional dependency (could
     // have used FastParse or Scala Parser Combinators), hence we use standard library regular expressions.
 
-
     val Begin: Regex = "BEGIN (\\d+)".r
 
-    val Commit: Regex = "COMMIT (\\d+) \\(at (\\d{4}-\\d{2}-\\d{2}) (\\d{2}:\\d{2}:\\d{2}\\.\\d+\\+\\d{2})\\)".r // matches
+    val Commit
+      : Regex = "COMMIT (\\d+) \\(at (\\d{4}-\\d{2}-\\d{2}) (\\d{2}:\\d{2}:\\d{2}\\.\\d+\\+\\d{2})\\)".r // matches
     // a commit message like COMMIT 2380 (at 2018-04-09 17:56:36.730413+00)
 
     val DoubleQuotedString: String = "\"(?:\\\\\"|\"{2}|[^\"])+\"" // matches "Scala", "'Scala'"
@@ -152,7 +139,8 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
 
 }
 
-private[postgresqlcdc] class PgSQLChangeDataCaptureSourceStage(settings: PostgreSQLChangeDataCaptureSettings) extends GraphStage[SourceShape[ChangeSet]] {
+private[postgresqlcdc] class PgSQLChangeDataCaptureSourceStage(settings: PostgreSQLChangeDataCaptureSettings)
+    extends GraphStage[SourceShape[ChangeSet]] {
 
   private val out: Outlet[ChangeSet] = Outlet[ChangeSet]("PostgreSQLCDC.out")
 
@@ -167,22 +155,28 @@ private[postgresqlcdc] class PgSQLChangeDataCaptureSourceStage(settings: Postgre
 
       checkSlotExists()
 
-      private val getSlotChangesStmt: PreparedStatement = conn.prepareStatement("SELECT * FROM " +
-        "pg_logical_slot_get_changes(?, NULL, ?, 'include-timestamp', 'on')")
+      private val getSlotChangesStmt: PreparedStatement = conn.prepareStatement(
+        "SELECT * FROM " +
+        "pg_logical_slot_get_changes(?, NULL, ?, 'include-timestamp', 'on')"
+      )
       getSlotChangesStmt.setString(1, settings.slotName)
       getSlotChangesStmt.setInt(2, settings.maxItems)
 
       private def checkSlotExists(): Unit = {
-        val getReplicationSlots = conn.prepareStatement("SELECT * FROM pg_replication_slots WHERE " +
-          "slot_name = ?")
+        val getReplicationSlots = conn.prepareStatement(
+          "SELECT * FROM pg_replication_slots WHERE " +
+          "slot_name = ?"
+        )
         getReplicationSlots.setString(1, settings.slotName)
         val rs = getReplicationSlots.executeQuery()
         if (rs.next()) {
           val database = rs.getString("database")
-          val plugin  = rs.getString("plugin")
+          val plugin = rs.getString("plugin")
           plugin match {
-            case "test_decoding" => log.info("found replication slot with name {} for database {}", settings.slotName, database)
-            case _ => log.warning("please use the test_decoding plugin for replication slot with name {}", settings.slotName)
+            case "test_decoding" =>
+              log.info("found replication slot with name {} for database {}", settings.slotName, database)
+            case _ =>
+              log.warning("please use the test_decoding plugin for replication slot with name {}", settings.slotName)
           }
         } else {
           log.warning("replication slot with name {} does not exist", settings.slotName)
@@ -203,9 +197,8 @@ private[postgresqlcdc] class PgSQLChangeDataCaptureSourceStage(settings: Postgre
 
       private val buffer = mutable.Queue[ChangeSet]()
 
-      override def onTimer(timerKey: Any): Unit = {
+      override def onTimer(timerKey: Any): Unit =
         retrieveChanges()
-      }
 
       private def retrieveChanges(): Unit = {
         val result: Set[ChangeSet] = transformSlotChanges(getSlotChanges())
@@ -234,17 +227,14 @@ private[postgresqlcdc] class PgSQLChangeDataCaptureSourceStage(settings: Postgre
 
       setHandler(out, new OutHandler {
 
-        override def onPull(): Unit = {
+        override def onPull(): Unit =
           if (buffer.nonEmpty)
             push(out, buffer.dequeue())
           else
             retrieveChanges()
-        }
       })
     }
 
   override def shape: SourceShape[ChangeSet] = SourceShape(out)
 
-
 }
-
