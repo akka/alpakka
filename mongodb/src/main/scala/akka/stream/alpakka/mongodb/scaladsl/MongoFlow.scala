@@ -10,6 +10,7 @@ import org.mongodb.scala.bson.conversions.Bson
 import org.mongodb.scala.model.UpdateOptions
 import org.mongodb.scala.result.{DeleteResult, UpdateResult}
 import org.mongodb.scala.MongoCollection
+import org.mongodb.scala.model.InsertManyOptions
 
 import scala.concurrent.ExecutionContext
 
@@ -35,6 +36,17 @@ object MongoFlow {
       implicit executionContext: ExecutionContext
   ): Flow[Seq[T], Seq[T], NotUsed] =
     Flow[Seq[T]].mapAsync(parallelism)(docs => collection.insertMany(docs).toFuture().map(_ => docs))
+
+  /**
+   * A [[akka.stream.scaladsl.Flow Flow]] that will insert batches documents into a collection.
+   * @param parallelism number of batches of documents to insert in parallel.
+   * @param collection mongo db collection to insert to.
+   * @param options options to apply to the operation
+   */
+  def insertMany[T](parallelism: Int, collection: MongoCollection[T], options: InsertManyOptions)(
+      implicit executionContext: ExecutionContext
+  ): Flow[Seq[T], Seq[T], NotUsed] =
+    Flow[Seq[T]].mapAsync(parallelism)(docs => collection.insertMany(docs, options).toFuture().map(_ => docs))
 
   /**
    * A [[akka.stream.scaladsl.Flow Flow]] that will update documents as defined by a [[DocumentUpdate]].

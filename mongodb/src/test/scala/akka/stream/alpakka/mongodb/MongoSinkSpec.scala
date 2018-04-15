@@ -18,6 +18,8 @@ import org.mongodb.scala.model.Filters
 import org.mongodb.scala.model.Updates._
 import org.mongodb.scala.bson.collection.immutable.Document
 import org.mongodb.scala.bson.conversions.Bson
+import org.mongodb.scala.model.InsertManyOptions
+
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
@@ -102,6 +104,30 @@ class MongoSinkSpec
       val source = Source(testRangeObjects)
 
       source.grouped(2).runWith(MongoSink.insertMany[Number](2, numbersObjectColl)).futureValue
+
+      val found = numbersObjectColl.find().toFuture().futureValue
+
+      found must contain theSameElementsAs testRangeObjects
+    }
+
+    "save with insertMany with options" in {
+      val source = Source(testRange).map(i => Document(s"""{"value":$i}"""))
+
+      source.grouped(2).runWith(MongoSink.insertMany(2, numbersColl, InsertManyOptions().ordered(false))).futureValue
+
+      val found = numbersColl.find().toFuture().futureValue
+
+      found.map(_.getInteger("value")) must contain theSameElementsAs testRange
+    }
+
+    "save with insertMany with options and codec support" in {
+      val testRangeObjects = testRange.map(Number(_))
+      val source = Source(testRangeObjects)
+
+      source
+        .grouped(2)
+        .runWith(MongoSink.insertMany[Number](2, numbersObjectColl, InsertManyOptions().ordered(false)))
+        .futureValue
 
       val found = numbersObjectColl.find().toFuture().futureValue
 
