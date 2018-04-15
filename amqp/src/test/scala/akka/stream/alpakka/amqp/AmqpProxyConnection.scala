@@ -19,7 +19,7 @@ import com.rabbitmq.client._
  * @param delegate the Connection to proxy methods to if
  *                 otherwise undefined
  */
-class AmqpProxyConnection(delegate: Connection) extends Connection {
+class AmqpProxyConnection(protected val delegate: Connection) extends Connection {
   override def getAddress: InetAddress = delegate.getAddress()
 
   override def getPort: Int = delegate.getPort()
