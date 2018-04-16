@@ -7,7 +7,6 @@ package akka.stream.alpakka.amqp.scaladsl
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.Done
 import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
 import akka.stream.ActorMaterializer
@@ -87,7 +86,9 @@ class AmqpGraphStageLogicConnectionShutdownSpec
 
     Future
       .traverse(input)(in => Source.single(ByteString(in)).runWith(amqpSink))
-      .recover { case NonFatal(e) => Done }
+      .recover {
+        case NonFatal(e) => system.terminate().flatMap(_ => Future.failed(e))
+      }
       .flatMap(_ => system.terminate())
       .futureValue
 
