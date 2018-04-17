@@ -98,6 +98,8 @@ The option `usePlaintext` is useful when used in conjunction with [PubSub emulat
 
 The parallelism parameter allows more than a single in-flight request. See [GitHub PR #759](https://github.com/akka/alpakka/pull/759) for more details.
 
+The `retryOnFailure` and `maxConsecutiveErrors` are used to re-establish connection to PubSub if the connection is terminated by PubSub. Note retrying to connect is implemented using exponential back0off.
+
 ### Publishing 
 
 We first construct a message and then a request using Google's builders. We declare a singleton source which will go via our publishing flow. All messages sent to the flow are published to PubSub.

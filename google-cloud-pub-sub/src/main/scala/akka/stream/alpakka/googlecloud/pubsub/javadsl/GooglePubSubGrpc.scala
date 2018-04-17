@@ -22,19 +22,35 @@ object GooglePubSubGrpc {
          subscription: String,
          parallelism: Int,
          pubSubConfig: PubSubConfig,
+         retryOnFailure: Boolean,
+         maxConsecutiveFailures: Int,
          actorSystem: ActorSystem,
          materializer: Materializer): GooglePubSubGrpcJava =
-    new GooglePubSubGrpcJava(project, subscription, parallelism, pubSubConfig, actorSystem, materializer)
+    new GooglePubSubGrpcJava(
+      project,
+      subscription,
+      parallelism,
+      pubSubConfig,
+      retryOnFailure,
+      maxConsecutiveFailures,
+      actorSystem,
+      materializer
+    )
 
   class GooglePubSubGrpcJava(
       project: String,
       subscription: String,
       parallelism: Int,
       pubSubConfig: PubSubConfig,
+      retryOnFailure: Boolean,
+      maxConsecutiveFailures: Int,
       actorSystem: ActorSystem,
       materializer: Materializer
   ) {
-    private val underlying = GPubSubGrpc.apply(project, subscription, pubSubConfig, parallelism)(materializer)
+    private val underlying =
+      GPubSubGrpc.apply(project, subscription, pubSubConfig, retryOnFailure, maxConsecutiveFailures, parallelism)(
+        materializer
+      )
 
     def publish: Flow[v1.PublishRequest, v1.PublishResponse, NotUsed] = underlying.publish.asJava
     def subscribe: Source[v1.ReceivedMessage, NotUsed] = underlying.subscribe(actorSystem).asJava

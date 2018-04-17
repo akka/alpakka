@@ -19,26 +19,48 @@ object GooglePubSubGrpc {
       project: String,
       subscription: String,
       pubSubConfig: PubSubConfig,
+      retryOnFailure: Boolean = false,
+      maxConsecutiveFailures: Int = 1,
       parallelism: Int = 1
   )(implicit materializer: Materializer): GooglePubSubClient =
-    new GooglePubSubGrpc(new GrpcApi(project, subscription, pubSubConfig), parallelism)
+    new GooglePubSubGrpc(project, subscription, pubSubConfig, retryOnFailure, maxConsecutiveFailures, parallelism)
 }
 
 private[pubsub] class GooglePubSubGrpc(
-    api: GrpcApi,
+    project: String,
+    subscription: String,
+    pubSubConfig: PubSubConfig,
+    retryOnFailure: Boolean,
+    maxConsecutiveFailures: Int,
     parallelism: Int
-) extends GooglePubSubClient {
+)(implicit materializer: Materializer)
+    extends GooglePubSubClient {
+
   def publish: Flow[v1.PublishRequest, v1.PublishResponse, NotUsed] =
     Flow[v1.PublishRequest]
-      .mapAsyncUnordered(parallelism)(request => api.publish(request))
+      .mapAsyncUnordered(parallelism)(request => apiFactory.get.publish(request))
 
   def subscribe(implicit actorSystem: ActorSystem): Source[v1.ReceivedMessage, NotUsed] =
-    Source.fromGraph(new GooglePubSubSourceGrpc(parallelism, api))
+    Source.fromGraph(new GooglePubSubSourceGrpc(parallelism, retryOnFailure, maxConsecutiveFailures, apiFactory))
 
   def acknowledge: Sink[AcknowledgeRequest, Future[Done]] =
     Flow[AcknowledgeRequest]
-      .mapAsyncUnordered(parallelism)(ackReq => api.ackBatch(ackReq.ackIds))
+      .mapAsyncUnordered(parallelism)(ackReq => apiFactory.get.ackBatch(ackReq.ackIds))
       .toMat(Sink.ignore)(Keep.right)
+
+  private val apiFactory: GrpcApiFactory = new GrpcApiFactory {
+    private var api = create()
+
+    override def get: GrpcApi =
+      if (api.isHealthy) {
+        api
+      } else {
+        api = create()
+        api
+      }
+
+    private def create(): GrpcApi = new GrpcApi(project, subscription, pubSubConfig)
+  }
 }
 
 trait GooglePubSubClient {

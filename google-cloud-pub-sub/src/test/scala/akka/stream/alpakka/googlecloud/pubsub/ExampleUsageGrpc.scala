@@ -41,7 +41,9 @@ class ExampleUsageGrpc {
         returnImmediately = true,
         maxMessages = 1000
       ),
-      parallelism = 2
+      parallelism = 2,
+      retryOnFailure = true,
+      maxConsecutiveFailures = 5
     )
 
   //#init-client

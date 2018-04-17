@@ -33,6 +33,8 @@ public class ExampleUsageJavaGrpc {
         String projectId = "test-XXXXX";
         String topic = "topic1";
         String subscription = "subscription1";
+        Boolean retryOnFailure = true;
+        int maxConsecutiveFailures = 5;
 
         PubSubConfig pubSubConfig = new PubSubConfig(
                 "pubsub.googleapis.com",
@@ -43,7 +45,7 @@ public class ExampleUsageJavaGrpc {
         );
 
         GooglePubSubGrpc.GooglePubSubGrpcJava client =
-                GooglePubSubGrpc.of(projectId, subscription, 1, pubSubConfig, system, materializer);
+                GooglePubSubGrpc.of(projectId, subscription, 1, pubSubConfig, retryOnFailure, maxConsecutiveFailures, system, materializer);
         //#init-client
 
         //#publish-single

@@ -20,7 +20,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.Future
 
 @akka.annotation.InternalApi
-private class GrpcApi(project: String, subscription: String, config: PubSubConfig)(
+private[pubsub] class GrpcApi(project: String, subscription: String, config: PubSubConfig)(
     implicit materializer: Materializer
 ) {
   import materializer.executionContext
@@ -72,4 +72,11 @@ private class GrpcApi(project: String, subscription: String, config: PubSubConfi
 
     subscriberStub.acknowledge(ackRequest.build()).asScalaFuture.map(_ => ())
   }
+
+  def isHealthy: Boolean = grpcChannel.isShutdown
+}
+
+@akka.annotation.InternalApi
+private[pubsub] trait GrpcApiFactory {
+  def get: GrpcApi
 }
