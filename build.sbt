@@ -122,6 +122,8 @@ lazy val kinesis = alpakkaProject("kinesis",
                                   // For mockito https://github.com/akka/alpakka/issues/390
                                   parallelExecution in Test := false)
 
+lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false)
+
 lazy val mongodb = alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
 
 lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt)
