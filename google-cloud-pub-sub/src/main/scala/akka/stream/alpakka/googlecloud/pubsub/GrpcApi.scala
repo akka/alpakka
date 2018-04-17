@@ -73,7 +73,7 @@ private[pubsub] class GrpcApi(project: String, subscription: String, config: Pub
     subscriberStub.acknowledge(ackRequest.build()).asScalaFuture.map(_ => ())
   }
 
-  def isHealthy: Boolean = grpcChannel.isShutdown
+  def isHealthy: Boolean = !grpcChannel.isShutdown
 }
 
 @akka.annotation.InternalApi
