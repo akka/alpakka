@@ -91,3 +91,7 @@ services:
     command: tserver
     links:
       - kudu-master
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: changeme123

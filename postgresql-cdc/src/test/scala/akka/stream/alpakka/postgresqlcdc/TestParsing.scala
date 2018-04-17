@@ -97,7 +97,7 @@ class TestParsing extends FunSuite with Matchers {
 
   }
 
-  test("regular expression for property") {
+  test("regular expression for key value pairs") {
 
     val ex1 = """"Id"[integer]:1"""
 

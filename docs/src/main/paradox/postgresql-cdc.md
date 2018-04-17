@@ -1,7 +1,9 @@
 # Lightweight "Change Data Capture" for PostgreSQL
 
 This provides an Akka Stream Source that can stream changes from a PostgreSQL database. Here, by
-"change", we mean database events such as: RowDeleted, RowInserted, RowUpdated.
+"change", we mean database events such as: RowDeleted(..), RowInserted(..), RowUpdated(..). This provides
+the tooling for implementing the [Strangler Application](https://www.martinfowler.com/bliki/StranglerApplication.html) /
+[Event Interception](https://www.martinfowler.com/bliki/EventInterception.html) techniques that Martin Fowler popularized.
 
 ## How It Works
 
@@ -34,14 +36,24 @@ Note that the PostgreSQL JDBC driver is not included in the JAR.
 
 ## Events Emitted
 
-This Akka Streams Source emits elements of the type **ChangeSet** (transactionId: Long, changes: Set[Change])
-where a **Change** can be one of the following:
+This Akka Streams Source emits elements of the type **ChangeSet**. A change set is a set of changes that share a
+transaction id. A 'change' can be one of the following:
 
-* **RowInserted** (schemaName, tableName, fields: Set[Field])
+* **RowInserted**
+    * schemaName: String
+    * tableName: String
+    * fields: Set[Field]
 
-* **RowUpdated** (schemaName, tableName, fields: Set[Field])
+* **RowUpdated**
+    * schemaName: String
+    * tableName: String
+    * fields: Set[Field]
+        * note: new version of the fields only
 
-* **RowDeleted** (schemaName, tableName, fields: Set[Field])
+* **RowDeleted**
+    * schemaName: String
+    * tableName: String
+    * fields: Set[Field]
 
 A **Field** is defined as Field(columnName: String, columnType: String, value: String).
 
@@ -57,12 +69,27 @@ associated with your RDS instance. See [AWS News Blog](https://aws.amazon.com/bl
 
 To enable a "logical decoding" slot run the following query:
 
-```
+```sql
 SELECT * FROM pg_create_logical_replication_slot('slot_name', 'test_decoding');
 ```
 
 Note that any slot name is fine but this Akka Stream Source is only compatible (as of now)
 with the 'test_decoding' plugin (which is the only logical decoding plugin that ships with PostgreSQL).
+
+### Stream and Log Changes
+
+``` scala
+val connectionString =
+  "jdbc:postgresql://localhost/test?user=fred&password=secret&ssl=true"
+val slotName = "slot_name"
+val settings = PostgreSQLChangeDataCaptureSettings(connectionString, slotName)
+
+PostgreSQLCapturer(settings)
+  .map { c: ChangeSet => log.info(c) }
+  .to(Sink.ignore)
+
+
+```
 
 ### Stream Changes, Map to Domain Events
 
@@ -70,22 +97,22 @@ You want to map these database change events (i.e. RowDeleted) to real domain ev
 
 ```scala
 
-  // Define your domain event
-  case class UserDeregistered(id: String)
+// Define your domain event
+case class UserDeregistered(id: String)
 
-  val connectionString = "jdbc:postgresql://localhost/test?user=fred&password=secret&ssl=true"
-  val slotName = "slot_name"
-  val settings = PostgreSQLChangeDataCaptureSettings(connectionString, slotName)
+val connectionString =
+  "jdbc:postgresql://localhost/test?user=fred&password=secret&ssl=true"
+val slotName = "slot_name"
+val settings = PostgreSQLChangeDataCaptureSettings(connectionString, slotName)
 
-  PostgreSQLCapturer(settings)
-    .map { c: ChangeSet =>
-      c.changes.collect {
-        case RowDeleted("public", "users", fields) => {
-          val userId = fields.find(_.columnName == "user_id").map(_.value).getOrElse("unknown")
-          UserDeregistered(userId)
-        }
-      }
-    } // continue to a sink
+PostgreSQLCapturer(settings)
+  .flatMap(_.changes)
+  .collect { // collect is map and filter
+    case RowDeleted(transactionId, "public", "users", fields) =>
+      val userId = fields.find(_.columnName == "user_id").map(_.value).getOrElse("unknown")
+      UserDeregistered(userId)
+    }
+  } // continue to a sink
 
 ```
 
