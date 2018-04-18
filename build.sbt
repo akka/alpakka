@@ -14,6 +14,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   hbase,
   ironmq,
   jms,
+  json,
   kinesis,
   mongodb,
   mqtt,
@@ -115,6 +116,8 @@ lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, fork in Te
 lazy val ironmq = alpakkaProject("ironmq", "ironmq", Dependencies.IronMq)
 
 lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms, parallelExecution in Test := false)
+
+lazy val json = alpakkaProject("json", "json", Dependencies.Json)
 
 lazy val kinesis = alpakkaProject("kinesis",
                                   "aws.kinesis",
