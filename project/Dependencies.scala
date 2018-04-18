@@ -172,6 +172,13 @@ object Dependencies {
     resolvers += ("jboss" at "https://repository.jboss.org/nexus/content/groups/public")
   )
 
+  val JsonStreaming = Seq(
+    libraryDependencies ++= Seq(
+      "com.github.jsurfer" % "jsurfer" % "1.4.2", // MIT,
+      "com.github.jsurfer" % "jsurfer-jackson" % "1.4.2" // MIT
+    )
+  )
+
   val Kinesis = Seq(
     libraryDependencies ++= Seq(
       "com.amazonaws" % "aws-java-sdk-kinesis" % AwsSdkVersion, // ApacheV2
