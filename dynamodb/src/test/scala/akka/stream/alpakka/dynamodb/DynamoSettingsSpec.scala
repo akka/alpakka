@@ -32,7 +32,7 @@ class DynamoSettingsSpec extends WordSpecLike with Matchers {
           |  port: 443
           |  parallelism = 32
           |  credentials {
-          |    access-key-id: "dummy-access-key"
+          |    access-key-id = "dummy-access-key"
           |  }
           |}
         """.stripMargin)
@@ -51,8 +51,8 @@ class DynamoSettingsSpec extends WordSpecLike with Matchers {
           |  port: 443
           |  parallelism = 32
           |  credentials {
-          |    access-key-id: "dummy-access-key"
-          |    secret-key-id: "dummy-secret-key"
+          |    access-key-id = "dummy-access-key"
+          |    secret-key-id = "dummy-secret-key"
           |  }
           |}""".stripMargin
       // #static-creds

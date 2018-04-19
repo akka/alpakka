@@ -11,14 +11,15 @@ import com.typesafe.config.Config
 import scala.util.Try
 
 object DynamoSettings {
+
   /**
-    * Scala API: Creates [[DynamoSettings]] from the [[com.typesafe.config.Config Config]] attached to an [[akka.actor.ActorSystem]].
-    */
+   * Scala API: Creates [[DynamoSettings]] from the [[com.typesafe.config.Config Config]] attached to an [[akka.actor.ActorSystem]].
+   */
   def apply(system: ActorSystem): DynamoSettings = apply(system.settings.config)
 
   /**
-    * Scala API: Creates [[DynamoSettings]] from a [[com.typesafe.config.Config Config]]
-    */
+   * Scala API: Creates [[DynamoSettings]] from a [[com.typesafe.config.Config Config]]
+   */
   def apply(baseConfig: Config): DynamoSettings = {
     val config = baseConfig.getConfig("akka.stream.alpakka.dynamodb")
     val awsCredentialsProvider = Try(config.getConfig("credentials"))
@@ -39,13 +40,13 @@ object DynamoSettings {
   }
 
   /**
-    * Java API: Creates [[DynamoSettings]] from the [[com.typesafe.config.Config Config]] attached to an [[akka.actor.ActorSystem]].
-    */
+   * Java API: Creates [[DynamoSettings]] from the [[com.typesafe.config.Config Config]] attached to an [[akka.actor.ActorSystem]].
+   */
   def create(system: ActorSystem): DynamoSettings = apply(system)
 
   /**
-    * Java API: Creates [[DynamoSettings]] from a [[com.typesafe.config.Config Config]]
-    */
+   * Java API: Creates [[DynamoSettings]] from a [[com.typesafe.config.Config Config]]
+   */
   def create(config: Config): DynamoSettings = apply(config)
 }
 

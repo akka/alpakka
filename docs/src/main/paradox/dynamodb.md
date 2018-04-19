@@ -23,11 +23,13 @@ provided by the [DynamoDB Java SDK](http://docs.aws.amazon.com/sdk-for-java/v1/d
 
 If you wish to use static credentials they can be defined in the config
 
+Define Static Credentials in Config
 : @@snip ($alpakka$/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/DynamoSettingsSpec.scala) { #static-creds }
 
-Alternatively any type of `AWSCredentialsProvider` can be provided programmatically via the default 
-@scaladoc[DynamoSettings](akka.stream.alpakka.dynamodb.impl.DynamoSettings) constructor
+Alternatively any type of `AWSCredentialsProvider` can be provided programmatically via the default @scaladoc[DynamoSettings](akka.stream.alpakka.dynamodb.impl.DynamoSettings) 
+constructor
 
+Supply Credentials Provider to Constructor
 : @@snip ($alpakka$/dynamodb/src/main/scala/akka/stream/alpakka/dynamodb/impl/DynamoSettings.scala) { #init-settings } 
 
 Before you can construct the client, you need an @scaladoc[ActorSystem](akka.actor.ActorSystem), 
