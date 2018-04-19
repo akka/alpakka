@@ -47,7 +47,7 @@ private[alpakka] trait AwsClient[S <: ClientSettings] {
   protected val errorResponseHandler: HttpResponseHandler[AmazonServiceException]
 
   private val requestId = new AtomicInteger()
-  private val credentials = new DefaultAWSCredentialsProviderChain()
+  private val credentials = settings.credentialsProvider
 
   private lazy val signer = {
     val s = new AWS4Signer()

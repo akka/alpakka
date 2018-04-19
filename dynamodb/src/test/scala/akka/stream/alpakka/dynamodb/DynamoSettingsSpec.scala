@@ -42,7 +42,9 @@ class DynamoSettingsSpec extends WordSpecLike with Matchers {
     }
 
     "read static aws credentials from a config that defines an akka.stream.alpakka.dynamodb.credentials" in {
-      val config = ConfigFactory.parseString("""
+      val configWithStaticCredentials =
+        // #static-creds
+        """
           | akka.stream.alpakka.dynamodb {
           |  region = "eu-west-1"
           |  host = "localhost"
@@ -52,8 +54,10 @@ class DynamoSettingsSpec extends WordSpecLike with Matchers {
           |    access-key-id: "dummy-access-key"
           |    secret-key-id: "dummy-secret-key"
           |  }
-          |}
-        """.stripMargin)
+          |}""".stripMargin
+      // #static-creds
+
+      val config = ConfigFactory.parseString(configWithStaticCredentials)
 
       val settings = DynamoSettings(config)
       val credentials = settings.credentialsProvider.getCredentials
