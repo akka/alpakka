@@ -21,11 +21,14 @@ object DynamoSettings {
    * been resolved, i.e. already read from `akka.stream.alpakka.dynamodb`
    */
   def apply(resolvedConfig: Config): DynamoSettings = {
-    val awsCredentialsProvider = if (resolvedConfig.hasPath("credentials")) {
-      val accessKey = resolvedConfig.getString("credentials.access-key-id")
-      val secretKey = resolvedConfig.getString("credentials.secret-key-id")
-      new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey))
-    } else new DefaultAWSCredentialsProviderChain()
+    val awsCredentialsProvider = {
+      if (resolvedConfig.hasPath("credentials.access-key-id") &&
+          resolvedConfig.hasPath("credentials.secret-key-id")) {
+        val accessKey = resolvedConfig.getString("credentials.access-key-id")
+        val secretKey = resolvedConfig.getString("credentials.secret-key-id")
+        new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey))
+      } else new DefaultAWSCredentialsProviderChain()
+    }
 
     DynamoSettings(
       region = resolvedConfig.getString("region"),
