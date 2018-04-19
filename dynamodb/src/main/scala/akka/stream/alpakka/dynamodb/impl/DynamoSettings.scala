@@ -8,33 +8,30 @@ import akka.actor.ActorSystem
 import com.amazonaws.auth._
 import com.typesafe.config.Config
 
-import scala.util.Try
-
 object DynamoSettings {
 
   /**
    * Scala API: Creates [[DynamoSettings]] from the [[com.typesafe.config.Config Config]] attached to an [[akka.actor.ActorSystem]].
    */
-  def apply(system: ActorSystem): DynamoSettings = apply(system.settings.config)
+  def apply(system: ActorSystem): DynamoSettings =
+    apply(system.settings.config.getConfig("akka.stream.alpakka.dynamodb"))
 
   /**
-   * Scala API: Creates [[DynamoSettings]] from a [[com.typesafe.config.Config Config]]
+   * Scala API: Creates [[DynamoSettings]] from a [[com.typesafe.config.Config Config]]. This config is expected to have
+   * been resolved, i.e. already read from `akka.stream.alpakka.dynamodb`
    */
-  def apply(baseConfig: Config): DynamoSettings = {
-    val config = baseConfig.getConfig("akka.stream.alpakka.dynamodb")
-    val awsCredentialsProvider = Try(config.getConfig("credentials"))
-      .map { credentialsConfig =>
-        val accessKey = credentialsConfig.getString("access-key-id")
-        val secretKey = credentialsConfig.getString("secret-key-id")
-        new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey))
-      }
-      .getOrElse(new DefaultAWSCredentialsProviderChain())
+  def apply(resolvedConfig: Config): DynamoSettings = {
+    val awsCredentialsProvider = if (resolvedConfig.hasPath("credentials")) {
+      val accessKey = resolvedConfig.getString("credentials.access-key-id")
+      val secretKey = resolvedConfig.getString("credentials.secret-key-id")
+      new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey))
+    } else new DefaultAWSCredentialsProviderChain()
 
     DynamoSettings(
-      region = config.getString("region"),
-      host = config.getString("host"),
-      port = config.getInt("port"),
-      parallelism = config.getInt("parallelism"),
+      region = resolvedConfig.getString("region"),
+      host = resolvedConfig.getString("host"),
+      port = resolvedConfig.getInt("port"),
+      parallelism = resolvedConfig.getInt("parallelism"),
       credentialsProvider = awsCredentialsProvider
     )
   }
@@ -45,9 +42,10 @@ object DynamoSettings {
   def create(system: ActorSystem): DynamoSettings = apply(system)
 
   /**
-   * Java API: Creates [[DynamoSettings]] from a [[com.typesafe.config.Config Config]]
+   * Java API: Creates [[DynamoSettings]] from a [[com.typesafe.config.Config Config]]. This config is expected to have
+   * been resolved, i.e. already read from `akka.stream.alpakka.dynamodb`
    */
-  def create(config: Config): DynamoSettings = apply(config)
+  def create(resolvedConfig: Config): DynamoSettings = apply(resolvedConfig)
 }
 
 // #init-settings

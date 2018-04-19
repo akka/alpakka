@@ -26,14 +26,12 @@ class DynamoSettingsSpec extends WordSpecLike with Matchers {
 
     "use the DefaultAWSCredentialsProviderChain if the config defines an incomplete akka.stream.alpakka.dynamodb.credentials" in {
       val config = ConfigFactory.parseString("""
-          | akka.stream.alpakka.dynamodb {
-          |  region = "eu-west-1"
-          |  host = "localhost"
-          |  port: 443
-          |  parallelism = 32
-          |  credentials {
-          |    access-key-id = "dummy-access-key"
-          |  }
+          |region = "eu-west-1"
+          |host = "localhost"
+          |port: 443
+          |parallelism = 32
+          |credentials {
+          |  access-key-id = "dummy-access-key"
           |}
         """.stripMargin)
 
@@ -57,7 +55,7 @@ class DynamoSettingsSpec extends WordSpecLike with Matchers {
           |}""".stripMargin
       // #static-creds
 
-      val config = ConfigFactory.parseString(configWithStaticCredentials)
+      val config = ConfigFactory.parseString(configWithStaticCredentials).getConfig("akka.stream.alpakka.dynamodb")
 
       val settings = DynamoSettings(config)
       val credentials = settings.credentialsProvider.getCredentials
