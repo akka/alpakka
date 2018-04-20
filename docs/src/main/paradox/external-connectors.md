@@ -19,6 +19,8 @@ Below is a non-complete list of connectors that are maintained by other projects
 
 [Kinesis streams using Kineis Client Library](https://github.com/aserrallerios/kcl-akka-stream)
 
+[kcl-akka-stream](https://github.com/StreetContxt/kcl-akka-stream) KinesisSource with at-least-once processing guarantees and resharding support.
+
 ## Camel
 
 [Camel Scala DSL for Akka Streams](https://github.com/krasserm/streamz/blob/master/streamz-camel-akka/README.md#scala-dsl)
@@ -52,7 +54,7 @@ Below is a non-complete list of connectors that are maintained by other projects
 
 ## Pulsar
 
-[Akka Streams - pulsar4s](https://github.com/sksamuel/pulsar4s#akka-streams) 
+[Akka Streams - pulsar4s](https://github.com/sksamuel/pulsar4s#akka-streams)
 
 ## TCP
 
