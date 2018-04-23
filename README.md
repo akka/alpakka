@@ -17,7 +17,7 @@ Documentation
 
 The **Alpakka reference documentation** is available at [Lightbend Tech Hub](http://developer.lightbend.com/docs/alpakka/current/).
 
-The **Alpakka Kafka connector documentation is available at [akka.io](https://doc.akka.io/docs/akka-stream-kafka/current/).
+The **Alpakka Kafka connector documentation** is available at [akka.io](https://doc.akka.io/docs/akka-stream-kafka/current/).
 
 To get a grip of the latest Alpakka releases check out [Alpakka releases](https://github.com/akka/alpakka/releases) and [Alpakka Kafka connector releases](https://github.com/akka/reactive-kafka/releases).
 
