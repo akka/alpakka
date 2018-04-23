@@ -8,16 +8,19 @@ Alpakka [![scaladex-badge][]][scaladex] [![travis-badge][]][travis] [![gitter-ba
 [gitter]:                    https://gitter.im/akka/akka
 [gitter-badge]:       https://badges.gitter.im/akka/akka.svg
 
-Systems don't come alone. In the world of microservices, cloud deployment and services, and our history of existing solutions we need to integrate. [Reactive Streams](http://www.reactive-streams.org/) give us a technology-independent tool to let these systems communicate without overwhelming each other.
-Alpakka's connectors let you stream data in and out of other technologies using [Akka's](https://doc.akka.io/docs/akka/current/stream/index.html) implementation of the Reactive Streams specification. 
+Systems don't come alone. In the world of microservices, cloud deployment and services, and our history of existing solutions we need to integrate. Reactive Streams give us a technology-independent tool to let these systems communicate without overwhelming each other.
+
+Alpakka's connectors let you stream data in and out of other technologies using Akka Streams. 
+
+[Akka Streams](https://doc.akka.io/docs/akka/current/stream/index.html) is a [Reactive Streams](http://www.reactive-streams.org/) and JDK 9+ [java.util.concurrent.Flow](https://docs.oracle.com/javase/10/docs/api/java/util/concurrent/Flow.html)-compliant implementation and therefore [fully inter-operable](https://doc.akka.io/docs/akka/current/general/stream/stream-design.html#interoperation-with-other-reactive-streams-implementations) with other implementations. 
 
 
 Documentation
 -------------
 
-The **Alpakka reference documentation** is available at [Lightbend Tech Hub](http://developer.lightbend.com/docs/alpakka/current/).
+- [Alpakka reference](http://developer.lightbend.com/docs/alpakka/current/) documentation 
 
-The **Alpakka Kafka connector documentation** is available at [akka.io](https://doc.akka.io/docs/akka-stream-kafka/current/).
+- [Alpakka Kafka connector](https://doc.akka.io/docs/akka-stream-kafka/current/) documentation
 
 To get a grip of the latest Alpakka releases check out [Alpakka releases](https://github.com/akka/alpakka/releases) and [Alpakka Kafka connector releases](https://github.com/akka/reactive-kafka/releases).
 
@@ -27,7 +30,7 @@ Community
 
 You can join these groups and chats to discuss and ask Akka and Alpakka related questions:
 
-- Forums: [discuss.lightbend.com](https://discuss.lightbend.com/c/akka)
+- Forums: [discuss.lightbend.com](https://discuss.lightbend.com/c/akka/streams-and-alpakka)
 - Chat room about *using* Akka and Alpakka: [![gitter: akka/akka](https://img.shields.io/badge/gitter%3A-akka%2Fakka-blue.svg?style=flat-square)](https://gitter.im/akka/akka)
 - Issue tracker: [![github: akka/alpakka](https://img.shields.io/badge/github%3A-issues-blue.svg?style=flat-square)](https://github.com/akka/alpakka/issues)
 
@@ -37,15 +40,13 @@ In addition to that, you may enjoy following:
 - [@akkateam](https://twitter.com/akkateam) on Twitter
 - Questions tagged [#alpakka on StackOverflow](http://stackoverflow.com/questions/tagged/alpakka)
 
-The Alpakka project is supported by [Lightbend](https://www.lightbend.com/) and their Alpakka team.
+[Lightbend](https://www.lightbend.com/) is committed to Alpakka and has an Alpakka team working on it.
 
 
 Contributing
 ------------
 
-Contributions are *very* welcome! 
-
-The Alpakka community and Lightbend's Alpakka team are happy to have you here.
+Contributions are *very* welcome! Alpakka loves new maintainers as well as old maintainers.
 
 There are more technologies to integrate with than a single person possibly could keep track of. That is why Alpakka is so dependent on its community to develop and to keep after all these connectors. Please step up and share the successful Akka Stream integrations you implement with the Alpakka community.
 
