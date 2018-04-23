@@ -1,36 +1,111 @@
 language: scala
-
 sudo: false
-
-scala:
-  - "2.11.12"
-  - "2.12.5"
-
-jdk:
-  - oraclejdk8
+jdk: oraclejdk8
 
 services:
   - docker
 
 before_install:
-  - docker-compose up -d
-
-script:
-  - sbt -J-XX:ReservedCodeCacheSize=128m ++$TRAVIS_SCALA_VERSION ";test:compile;docs/paradox"
-  # make 'git branch' work again
-  - git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH"
   # make comparing to origin/master work
-  - git remote set-branches --add origin master
-  - git fetch
-  - sbt scalafmtCheck || { echo "[error] Unformatted code found. Please run 'test:compile' and commit the reformatted code."; false; }
-  - sbt scalafmtSbtCheck || { echo "[error] Unformatted sbt code found. Please run 'scalafmtSbt' and commit the reformatted code."; false; }
-  - if [[ "$TRAVIS_BRANCH" != "master" || "$TRAVIS_EVENT_TYPE" != "push" ]]; then sbt -J-XX:ReservedCodeCacheSize=128m ++$TRAVIS_SCALA_VERSION ";testChanged" ; fi
-  # check policies, if on master also upload
-  - if [[ "$TRAVIS_SECURE_ENV_VARS" == "true" ]]; then if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate; else sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies; fi ; fi
-  - find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
+  - git remote set-branches --add origin master && git fetch
+
+# default script for jobs, that do not have any specified
+script:
+  - ${PRE_CMD:=return 0} # do nothing if not set
+  - sbt -J-XX:ReservedCodeCacheSize=128m -J-Xmx800M -J-Xms800M -J-server "$CMD"
+
+jobs:
+  include:
+    - stage: check
+      script: sbt scalafmtCheck || { echo "[error] Unformatted code found. Please run 'test:compile' and commit the reformatted code."; false; }
+      env: SCALAFMT_CHECK
+    - script: sbt scalafmtSbtCheck || { echo "[error] Unformatted sbt code found. Please run 'scalafmtSbt' and commit the reformatted code."; false; }
+      env: SCALAFMT_SBT_CHECK
+
+    - stage: test
+      env: CMD=docs/paradox
+    - env:
+      - PRE_CMD="docker-compose up -d amqp"
+      - CMD=+amqp/testChanged
+    - env: CMD=+awslambda/testChanged
+    - env: CMD=+azure-storage-queue/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d cassandra"
+      - CMD=+cassandra/testChanged
+    - env: CMD=+csv/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d dynamodb"
+      - CMD=+dynamodb/testChanged
+    - env: CMD=+elasticsearch/testChanged
+    - env: CMD=+file/testChanged
+    - env: CMD=+ftp/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d geode"
+      - CMD=+geode/testChanged
+    - env: CMD=+google-cloud-pub-sub/testChanged
+    - env: CMD=+google-fcm/testChanged
+    - env: CMD=+hbase/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d ironauth ironmq"
+      - CMD=+ironmq/testChanged
+    - env: CMD=+jms/testChanged
+    - env: CMD=+kinesis/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d mongo"
+      - CMD=+mongodb/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d mqtt"
+      - CMD=+mqtt/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d orientdb"
+      - CMD=+orientdb/testChanged
+    - env: CMD=+s3/testChanged
+    - env: CMD=+spring-web/testChanged
+    - env: CMD=+simple-codecs/testChanged
+    - env: CMD=+slick/testChanged
+    - env: CMD=+sns/testChanged
+    - env: CMD=+solr/testChanged
+    - env: CMD=+sqs/testChanged
+    - env: CMD=+sse/testChanged
+    - env: CMD=+unix-domain-socket/testChanged
+    - env: CMD=+xml/testChanged
+
+    - stage: whitesource-master
+      script: sbt whitesourceCheckPolicies whitesourceUpdate
+
+    - stage: whitesource-pr
+      script: sbt whitesourceCheckPolicies
+
+    - stage: release
+      script: sbt whitesourceCheckPolicies whitesourceUpdate
+    - script: sbt -J-XX:ReservedCodeCacheSize=128m +publish
+    - script: curl -I https://ci.lightbend.com/job/techhub-publisher/build?token=$TECH_HUB_TOKEN
+
+stages:
+  # runs on master commits and PRs
+  - name: check
+    if: NOT tag =~ ^v
+
+  # runs on master commits and PRs
+  - name: test
+    if: NOT tag =~ ^v
+
+  # runs on main repo master commits
+  - name: whitesource-master
+    if: repo = akka/alpakka AND branch = master AND type = push
+
+  # runs on main repo PRs
+  - name: whitesource-pr
+    if: repo = akka/alpakka AND type = pull_request
+
+  # runs on main repo version-tagged commits
+  - name: release
+    if: repo = akka/alpakka AND tag =~ ^v
+
 
 after_failure:
   - docker-compose logs
+  - find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
 
 before_cache:
   - find $HOME/.ivy2 -name "ivydata-*.properties" -print -delete
@@ -41,21 +116,10 @@ cache:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
 
-deploy:
-  provider: script
-  skip_cleanup: true
-  script: sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate && sbt -J-XX:ReservedCodeCacheSize=128m ++$TRAVIS_SCALA_VERSION publish && curl -I https://ci.lightbend.com/job/techhub-publisher/build?token=$TECH_HUB_TOKEN
-  on:
-    tags: true
-    repo: akka/alpakka
-    condition: $AKKA_SERIES = 2.5
-
 env:
-  matrix:
-    - AKKA_SERIES=2.5
   global:
-    # encrypt with: travis encrypt WHITESOURCE_KEY=...
-    - secure: "JcoxWiNmC0EEdl2KhEx4O8YNy/P2Mvk5fjqC700ClHPiYEsyr+3baNQGmj3AQcpjIgxvHso/8zeFsGJWKnYD3E0vn+J/6urld8vLZprQX/FPKFZgIpIKBgNogQa5V8o2mQSco72t8n1kkFLf6TNZR0T+1cmYz0himcn71rhgwqCtVDrW7zfHgXpbL67FKDUIvfVikdVMBVvcxiZHFIkHUC576LKz24wQYfbnCROGQV7uXFhYNjH0s1HXh6VzUWfEx/PuXEiXnsXSkG8jw0C6ELguLHChJqhsLVC5CaT+DHAs2YeZB04ncX17OwAYNy2RwCgSPCMSnCprBWR2QFqT9C2YZmPrlR9hHgUisHmuydLpRN7aN9BCLpLJk5jGZTwYLyabgzpSbs0SAgqSFgMp+WaWX+WhKMcrhNZvKAuz3n/lgOO6s1pZ0gCTsLtjOIfDLgjY7LxzWykDftwbyVg5OfGI9jv1eYHp3T9GWQ44KTckcQwyzfE5433MUHYk+f0eMjcxWq46rAAuc8BEpEO42+O9iHb+p2kvLUswjpVxy0+SOnxAgJYtrCm4kF8tRCFcBvC/Nim6SzOhyl2dKYMS9BVpBTe4hOMuS5xjfh1wly4TsToByg77C0o2AbW0PhhgujapRgDKcv8Qu6RC599UBthj9tTkGdctW8CCm2YZbTg="
+    # encrypt with: travis encrypt WHITESOURCE_PASSWORD=...
+    - secure: "VpRSxeqP6gXCxnYCsjylMt1xxXxI/hlj6msibKuHpstDnfPkbDMS8RnRJ/39tyjx/szELZSzAllV0VpM27JpTXlKfIT/78ZUGcljqzfnmv3uh/dWh9k2ERQX1Hr3TGFFyljIbEKHcHjvgHBJtlIRGIuvoBv0tJ98pcqS6dCeplaaJa1Ya7Q53u17GOJakhvTjrT3ASz8gF1kV4GN9XhQCUjRfQSINiT+QC+ONoHy6ztZPIDgfUskBfKgZU5P1saDLcBjzBkXDWIwbKubfJGBl3DSs2fHaWNJE5CRZNJ64Wi8Hs006zvyomIaCfbVAWtxOiLCdXxlys/YQs43RRB0pBqyvTpxH4lEwnLR5uGDH+nuBQw9efCWqsM3CDsRSH7iobjBlunKgDCfjua5/dWJ3Wm2j8WOi6C6/y/YrGwU/DrncukRtcyKj92Mu3LHk5HEMiOiIA41P2NTqalvjvoqi1zMQ5On2g55e2YMcHmQ8dCsRAgegCYB3a6GyGq7T8zkuMMljpmpQJwayrJPQKi001d3ajZZwMLcv4YW9ndVYCZD9ducZ448Uo5BCpJFDPPG+xcXrvZowCUA9JtpnyXrTcTLvFITG2egXyLOQfZ0/FX9XneMtX8qX8ysHaBX9tWiYsplo/WfbpBHy935Ag8WnGH0cYvOXuqAKKUXRVq9ANI="
     # encrypt with: travis encrypt BINTRAY_USER=...
     - secure: "DLc1v2XMWrxtbPzVfoArkSQiwzT+O7/rwT7APqoA68K5A1pwxDw5BD3sOLpd6rKbPBulmwDAAQ1am3uE6lbmymCTMe8bvA3iHWy0Jg8baK4nC46EKFLabQz4Uaoq/bs92YGW1QH12rbBPyTA7uvPpvhmb8uyUbJqjT3uyROqHhHfhll89dsPVaK0NCY9DN2K356M87z7cp1SvtfAiF8qaNjNmlOfWjIEUSO1SiiqQBjT/GJvhrrW32J4htf5CqEEYBSoN+fqTCwwdo3GpOFFq+Zh5TSoyvKyi5xo+LVq0hW2SAYTHMMB5WhLd1cvQ0bvK6FpUhyfMcON/8ad3R7paNVxLpIGEu8hsUYGsENjdXaEK4g1TurDeVekWJRYyGMCmy2cCg5yHC+Pb56qOgpM7gmZACCitLap1jXUCWI27q+7cvxuxaBb6EPiDuWGNQXHH+OkbD/s4RJO3kQfv1Si64RON8+bZ+fqOWLK+BuakYi3YMukFgPngQozX3aMZOVcEBKJZtquwewCKsNV2VGItJxrp3MDol0HhuNvdUvIf5UydZZCyJTo1DBsK49yDUj7iKOEJk5Qc5oYfEhSEKcGRZs8Yl9n/kIJUh8ZYTT+35rwD27dHgsEkPkCEGpbMP/r0JewkWH7q9FfajPIYOlEpoP6tCsdP4mBOyF1uZH7omM="
     # encrypt with: travis encrypt BINTRAY_PASS=...
