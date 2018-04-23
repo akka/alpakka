@@ -28,6 +28,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   solr,
   sqs,
   sse,
+  text,
   unixdomainsocket,
   xml
 )
@@ -161,6 +162,8 @@ lazy val sqs = alpakkaProject("sqs",
                               parallelExecution in Test := false)
 
 lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse)
+
+lazy val text = alpakkaProject("text", "text")
 
 lazy val unixdomainsocket = alpakkaProject("unix-domain-socket", "unixdomainsocket", Dependencies.UnixDomainSocket)
 
