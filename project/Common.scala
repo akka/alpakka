@@ -1,7 +1,7 @@
 import sbt._
 import sbt.Keys._
 import sbt.plugins.JvmPlugin
-import com.lucidchart.sbt.scalafmt.ScalafmtCorePlugin.autoImport._
+import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
 import de.heikoseeberger.sbtheader._
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import sbtunidoc.BaseUnidocPlugin.autoImport._
