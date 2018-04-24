@@ -12,7 +12,7 @@ Systems don't come alone. In the world of microservices, cloud deployment and se
 
 Alpakka's connectors let you stream data in and out of other technologies using Akka Streams. 
 
-[Akka Streams](https://doc.akka.io/docs/akka/current/stream/index.html) is a [Reactive Streams](http://www.reactive-streams.org/) and JDK 9+ [java.util.concurrent.Flow](https://docs.oracle.com/javase/10/docs/api/java/util/concurrent/Flow.html)-compliant implementation and therefore [fully inter-operable](https://doc.akka.io/docs/akka/current/general/stream/stream-design.html#interoperation-with-other-reactive-streams-implementations) with other implementations. 
+[Akka Streams](https://doc.akka.io/docs/akka/current/stream/index.html) is a [Reactive Streams](http://www.reactive-streams.org/) and JDK 9+ [java.util.concurrent.Flow](https://docs.oracle.com/javase/10/docs/api/java/util/concurrent/Flow.html)-compliant implementation and therefore [fully interoperable](https://doc.akka.io/docs/akka/current/general/stream/stream-design.html#interoperation-with-other-reactive-streams-implementations) with other implementations.
 
 
 Documentation
@@ -20,7 +20,7 @@ Documentation
 
 - [Alpakka reference](http://developer.lightbend.com/docs/alpakka/current/) documentation 
 
-- [Alpakka Kafka connector](https://doc.akka.io/docs/akka-stream-kafka/current/) documentation
+- [Alpakka Kafka connector reference](https://doc.akka.io/docs/akka-stream-kafka/current/) documentation
 
 To get a grip of the latest Alpakka releases check out [Alpakka releases](https://github.com/akka/alpakka/releases) and [Alpakka Kafka connector releases](https://github.com/akka/reactive-kafka/releases).
 
