@@ -76,10 +76,14 @@ jobs:
     - stage: whitesource-pr
       script: sbt whitesourceCheckPolicies
 
-    - stage: release
+    - stage: whitesource-release
       script: sbt whitesourceCheckPolicies whitesourceUpdate
-    - script: sbt -J-XX:ReservedCodeCacheSize=128m +publish
-    - script: curl -I https://ci.lightbend.com/job/techhub-publisher/build?token=$TECH_HUB_TOKEN
+
+    - stage: publish
+      script: sbt -J-XX:ReservedCodeCacheSize=128m +publish
+
+    - stage: techhub-ping
+      script: curl -I https://ci.lightbend.com/job/techhub-publisher/build?token=$TECH_HUB_TOKEN
 
 stages:
   # runs on master commits and PRs
@@ -99,7 +103,15 @@ stages:
     if: repo = akka/alpakka AND type = pull_request
 
   # runs on main repo version-tagged commits
-  - name: release
+  - name: whitesource-release
+    if: repo = akka/alpakka AND tag =~ ^v
+
+  # runs on main repo version-tagged commits
+  - name: publish
+    if: repo = akka/alpakka AND tag =~ ^v
+
+  # runs on main repo version-tagged commits
+  - name: techhub-ping
     if: repo = akka/alpakka AND tag =~ ^v
 
 
