@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.ftp
 
-import akka.stream.alpakka.ftp.scaladsl.{FtpApi, Sftp}
+import akka.stream.alpakka.ftp.scaladsl.{FtpApi, Sftp, SftpApi}
 import net.schmizz.sshj.DefaultConfig
 
 object scalaExamples {
@@ -29,7 +29,7 @@ object scalaExamples {
     import net.schmizz.sshj.SSHClient
 
     val sshClient: SSHClient = new SSHClient(new DefaultConfig)
-    val configuredClient: Sftp = Sftp(sshClient)
+    val configuredClient: SftpApi = Sftp(sshClient)
     //#configure-custom-ssh-client
   }
 
