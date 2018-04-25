@@ -353,4 +353,16 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     request.headers should contain(RawHeader("x-amz-copy-source", "/source-bucket/some/source-key"))
     request.headers.map(_.lowercaseName()) should not contain "x-amz-copy-source-range"
   }
+
+  it should "add versionId parameter to source header if provided" in {
+    implicit val settings: S3Settings = getSettings()
+
+    val multipartUpload = MultipartUpload(S3Location("target-bucket", "target-key"), UUID.randomUUID().toString)
+    val copyPartition = CopyPartition(1, S3Location("source-bucket", "some/source-key"), Some(ByteRange(0, 5242880L)))
+    val multipartCopy = MultipartCopy(multipartUpload, copyPartition)
+
+    val request = HttpRequests.uploadCopyPartRequest(multipartCopy, Some("abcdwxyz"))
+    request.headers should contain(RawHeader("x-amz-copy-source", "/source-bucket/some/source-key?versionId=abcdwxyz"))
+    request.headers should contain(RawHeader("x-amz-copy-source-range", "bytes=0-5242879"))
+  }
 }

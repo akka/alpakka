@@ -106,12 +106,17 @@ private[alpakka] object HttpRequests {
   }
 
   def uploadCopyPartRequest(multipartCopy: MultipartCopy,
+                            sourceVersionId: Option[String] = None,
                             s3Headers: S3Headers = S3Headers.empty)(implicit conf: S3Settings): HttpRequest = {
     val upload = multipartCopy.multipartUpload
     val copyPartition = multipartCopy.copyPartition
     val range = copyPartition.range
     val source = copyPartition.sourceLocation
-    val sourceHeader = RawHeader("x-amz-copy-source", s"/${source.bucket}/${source.key}")
+    val sourceHeaderValuePrefix = s"/${source.bucket}/${source.key}"
+    val sourceHeaderValue = sourceVersionId
+      .map(versionId => s"$sourceHeaderValuePrefix?versionId=$versionId")
+      .getOrElse(sourceHeaderValuePrefix)
+    val sourceHeader = RawHeader("x-amz-copy-source", sourceHeaderValue)
     val copyHeaders = range
       .map(br => Seq(sourceHeader, RawHeader("x-amz-copy-source-range", s"bytes=${br.first}-${br.last - 1}")))
       .getOrElse(Seq(sourceHeader))

@@ -369,6 +369,79 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
     )
   }
 
+  def mockCopyVersioned(): Unit = mockCopyVersioned(body.length)
+  def mockCopyVersioned(expectedContentLength: Int): Unit = {
+    mock.register(
+      head(urlEqualTo(s"/$bucketKey"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("x-amz-id-2", "ef8yU9AS1ed4OpIszj7UDNEHGran")
+            .withHeader("x-amz-request-id", "318BC8BC143432E5")
+            .withHeader("ETag", "\"" + etag + "\"")
+            .withHeader("Content-Length", s"$expectedContentLength")
+        )
+    )
+
+    mock
+      .register(
+        post(urlEqualTo(s"/$targetBucketKey?uploads")).willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("x-amz-id-2", "Uuag1LuByRx9e6j5Onimru9pO4ZVKnJ2Qz7/C1NPcfTWAtRPfTaOFg==")
+            .withHeader("x-amz-request-id", "656c76696e6727732072657175657374")
+            .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+                         |<InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                         |  <Bucket>$targetBucket</Bucket>
+                         |  <Key>$targetBucketKey</Key>
+                         |  <UploadId>$uploadId</UploadId>
+                         |</InitiateMultipartUploadResult>""".stripMargin)
+        )
+      )
+
+    mock.register(
+      put(urlEqualTo(s"/$targetBucketKey?partNumber=1&uploadId=$uploadId"))
+        .withHeader("x-amz-copy-source",
+                    new EqualToPattern(
+                      s"/$bucket/$bucketKey?versionId=3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo"
+                    ))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt")
+            .withHeader("x-amz-request-id", "5A37448A37622243")
+            .withHeader("x-amz-copy-source-version-id",
+                        "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo")
+            .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+                         |<CopyPartResult>
+                         |  <ETag>"$etag"</ETag>
+                         |  <LastModified>2009-10-28T22:32:00.000Z</LastModified>
+                         |</CopyPartResult>
+               """.stripMargin)
+        )
+    )
+
+    mock.register(
+      post(urlEqualTo(s"/$targetBucketKey?uploadId=$uploadId"))
+        .withRequestBody(containing("CompleteMultipartUpload"))
+        .withRequestBody(containing(etag))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/xml; charset=UTF-8")
+            .withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt")
+            .withHeader("x-amz-request-id", "5A37448A3762224333")
+            .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+                         |<CompleteMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                         |  <Location>$targetUrl</Location>
+                         |  <Bucket>$targetBucket</Bucket>
+                         |  <Key>$targetBucketKey</Key>
+                         |  <ETag>"$etag"</ETag>
+                         |</CompleteMultipartUploadResult>""".stripMargin)
+        )
+    )
+  }
+
   def mockCopySSE(): Unit = {
     val expectedContentLength = bodySSE.length
     mock.register(

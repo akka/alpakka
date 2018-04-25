@@ -346,6 +346,7 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
    * @param sourceKey    source s3 key
    * @param targetBucket target s3 bucket name
    * @param targetKey    target s3 key
+   * @param sourceVersionId optional version id of source object, if the versioning is enabled in source bucket
    * @param contentType  an optional [[akka.http.scaladsl.model.ContentType ContentType]]
    * @param s3Headers any headers you want to add
    * @param sse an optional server side encryption key
@@ -358,6 +359,7 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
       sourceKey: String,
       targetBucket: String,
       targetKey: String,
+      sourceVersionId: Option[String] = None,
       contentType: ContentType = ContentTypes.`application/octet-stream`,
       s3Headers: Option[S3Headers] = None,
       sse: Option[ServerSideEncryption] = None,
@@ -368,6 +370,7 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
       .multipartCopy(
         S3Location(sourceBucket, sourceKey),
         S3Location(targetBucket, targetKey),
+        sourceVersionId,
         contentType,
         s3Headers.getOrElse(S3Headers.empty),
         sse,

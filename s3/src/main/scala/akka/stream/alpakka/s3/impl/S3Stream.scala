@@ -240,6 +240,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
   def multipartCopy(
       sourceLocation: S3Location,
       targetLocation: S3Location,
+      sourceVersionId: Option[String] = None,
       contentType: ContentType = ContentTypes.`application/octet-stream`,
       s3Headers: S3Headers,
       sse: Option[ServerSideEncryption] = None,
@@ -258,7 +259,8 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     // Multipart copy upload requests (except for the completion api) are created here.
     //  The initial copy upload request gets executed within this function as well.
     //  The individual copy upload part requests are created.
-    val copyRequests = createCopyRequests(targetLocation, contentType, s3Headers, sse, partitions)(chunkingParallelism)
+    val copyRequests =
+      createCopyRequests(targetLocation, sourceVersionId, contentType, s3Headers, sse, partitions)(chunkingParallelism)
 
     // The individual copy upload part requests are processed here
     processUploadCopyPartRequests(copyRequests)(chunkingParallelism)
@@ -444,6 +446,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
   private def createCopyRequests(
       location: S3Location,
+      sourceVersionId: Option[String],
       contentType: ContentType,
       s3Headers: S3Headers,
       sse: Option[ServerSideEncryption],
@@ -467,7 +470,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
         case ((upload, _), ls) =>
           ls.map { cp =>
             val multipartCopy = MultipartCopy(upload, cp)
-            val request = uploadCopyPartRequest(multipartCopy, headers)
+            val request = uploadCopyPartRequest(multipartCopy, sourceVersionId, headers)
             (request, multipartCopy)
           }
       }
