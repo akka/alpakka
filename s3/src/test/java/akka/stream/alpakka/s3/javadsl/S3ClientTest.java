@@ -20,8 +20,9 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.s3.MemoryBufferType;
 import akka.stream.alpakka.s3.Proxy;
-import akka.stream.alpakka.s3.impl.ListBucketVersion2;
 import akka.stream.alpakka.s3.S3Settings;
+import akka.stream.alpakka.s3.impl.ListBucketVersion2;
+import akka.stream.alpakka.s3.impl.S3Headers;
 import akka.stream.alpakka.s3.impl.ServerSideEncryption;
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase;
 import akka.stream.javadsl.Sink;
@@ -272,10 +273,11 @@ public class S3ClientTest extends S3WireMockBase {
         mockCopy();
 
         final CompletionStage<MultipartUploadResult> resultCompletionStage = client
-                .multipartCopy(bucket(), bucketKey(), targetBucket(), targetBucketKey(), ServerSideEncryption.AES256$.MODULE$);
+                .multipartCopy(bucket(), bucketKey(), targetBucket(), targetBucketKey(), S3Headers.empty(),
+                        ServerSideEncryption.AES256$.MODULE$);
+
         final MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
         assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag()));
     }
-
 }
