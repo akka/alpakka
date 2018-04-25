@@ -11,7 +11,6 @@ import javax.jms._
 import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.ActorMaterializer
 import akka.stream.stage.GraphStageLogic
-
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -74,12 +73,8 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
     onConnection.invoke(connection)
 
     val createDestination = jmsSettings.destination match {
-      case Some(Queue(name)) =>
-        session: Session =>
-          session.createQueue(name)
-      case Some(Topic(name)) =>
-        session: Session =>
-          session.createTopic(name)
+      case Some(destination) =>
+        destination.create
       case _ => throw new IllegalArgumentException("Destination is missing")
     }
 

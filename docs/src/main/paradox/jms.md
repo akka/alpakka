@@ -523,9 +523,19 @@ Scala
     // Connect to IBM MQ over TCP/IP
     queueConnectionFactory.setTransportType(CommonConstants.WMQ_CM_CLIENT)
     val TestQueueName = "DEV.QUEUE.1"
+    // Option1: create Source using default factory with just name
     val jmsSource: Source[String, NotUsed] = JmsConsumer.textSource(
       JmsConsumerSettings(queueConnectionFactory).withQueue(TestQueueName)
     )
+    // Option2: create Source using custom factory
+    private def createMqQueue(destinationName: String): Session => MQQueue = { session =>
+       ...
+    }    
+    val jmsSource: Source[String, NotUsed] = JmsConsumer.textSource(
+      JmsConsumerSettings(queueConnectionFactory)
+        .withDestination(CustomDestination(TestQueueName, createMqQueue(TestQueueName)))
+    )
+     
     ```
 
 Java
@@ -541,11 +551,24 @@ Java
     // Connect to IBM MQ over TCP/IP
     queueConnectionFactory.setTransportType(CommonConstants.WMQ_CM_CLIENT);
     String testQueueName = "DEV.QUEUE.1";
+    // Option1: create Source using default factory with just name
     Source<String, NotUsed> jmsSource = JmsConsumer.textSource(
       JmsConsumerSettings
         .create(queueConnectionFactory)
         .withQueue(testQueueName)
     );
+    // Option2: create Source using custom factory 
+    private Function1<Session, Destination> createMqQueue(String destinationName) {
+        return (session) -> {
+            ...
+        };
+    }    
+    Source<String, NotUsed> jmsSource = JmsConsumer.textSource(
+      JmsConsumerSettings
+        .create(queueConnectionFactory)
+        .withDestination(new CustomDestination(testQueueName,createMqQueue(testQueueName)))
+    );
+    
     ```
 
 ### Create a JmsProducer to an IBM MQ Topic
@@ -564,9 +587,18 @@ Scala
     // Connect to IBM MQ over TCP/IP
     topicConnectionFactory.setTransportType(CommonConstants.WMQ_CM_CLIENT)
     val TestTopicName = "dev/"
+    // Option1: create Sink using default factory with just name
     val jmsTopicSink: Sink[String, NotUsed] = JmsProducer(
       JmsProducerSettings(topicConnectionFactory).withTopic(TestTopicName)
     )
+    // Option2: create Sink using custom factory
+    private def createMqTopic(destinationName: String): Session => MQTopic = { session =>
+        ...
+    }    
+    val jmsTopicSink: Sink[String, NotUsed] = JmsProducer(
+      JmsProducerSettings(topicConnectionFactory)
+        .withDestination(CustomDestination(TestTopicName, createMqTopic(TestTopicName)))
+    )    
     ```
 
 Java
@@ -582,9 +614,21 @@ Java
     // Connect to IBM MQ over TCP/IP
     topicConnectionFactory.setTransportType(CommonConstants.WMQ_CM_CLIENT);
     String testTopicName = "dev/";
+     // Option1: create Source using default factory with just name
     Sink<String, NotUsed> jmsTopicSink = JmsProducer.textSink(
       JmsProducerSettings
         .create(topicConnectionFactory)
         .withTopic(testTopicName)
     );
+    // Option2: create Source using custom factory 
+    private Function1<Session, Destination> createMqTopic(String destinationName) {
+        return (session) -> {
+            ...
+        };
+    }    
+    Sink<String, NotUsed> jmsTopicSink = JmsProducer.textSink(
+      JmsProducerSettings
+        .create(queueConnectionFactory)
+        .withDestination(new CustomDestination(testTopicName, createMqTopic(testTopicName)))
+    );    
     ```

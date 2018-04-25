@@ -174,6 +174,14 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
               state = QuoteStarted
               pos += 1
               fieldStart = pos
+            case `escapeChar` =>
+              if (pos + 1 < buf.length) {
+                if (buf(pos + 1) == escapeChar || buf(pos + 1) == delimiter) {
+                  fieldBuilder.init(buf(pos + 1))
+                  state = WithinField
+                  pos += 2
+                } else wrongCharEscaped()
+              } else noCharEscaped()
             case `delimiter` =>
               columns :+= ByteString.empty
               state = AfterDelimiter
@@ -235,7 +243,7 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
             case `escapeChar` =>
               if (pos + 1 < buf.length) {
                 if (buf(pos + 1) == escapeChar || buf(pos + 1) == delimiter) {
-                  fieldBuilder.add(buf(pos + 1))
+                  fieldBuilder.init(buf(pos + 1))
                   state = WithinField
                   pos += 2
                 } else wrongCharEscaped()

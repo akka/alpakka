@@ -109,16 +109,16 @@ object Dependencies {
   )
 
   val Geode = {
-    val geodeVersion = "1.4.0"
+    val geodeVersion = "1.5.0"
     val slf4jVersion = "1.7.25"
     Seq(
       libraryDependencies ++=
-      Seq("geode-core", "geode-cq")
-        .map("org.apache.geode" % _ % geodeVersion exclude ("org.slf4j", "slf4j-log4j12")) ++
-      Seq(
-        "com.chuusai" %% "shapeless" % "2.3.2",
-        "org.slf4j" % "log4j-over-slf4j" % slf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
-      )
+        Seq("geode-core", "geode-cq")
+          .map("org.apache.geode" % _ % geodeVersion exclude ("org.slf4j", "slf4j-log4j12")) ++
+        Seq(
+          "com.chuusai" %% "shapeless" % "2.3.3",
+          "org.slf4j" % "log4j-over-slf4j" % slf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
+        )
     )
   }
 

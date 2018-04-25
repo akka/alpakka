@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.unixdomainsocket.scaladsl
 
-import java.io.File
+import java.io.{File, IOException}
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector}
 
@@ -123,8 +123,20 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
               case sendReceiveContext: SendReceiveContext =>
                 sendReceiveContext.send match {
                   case SendRequested(buffer, sent) if keySelectable && key.isWritable =>
-                    key.channel().asInstanceOf[UnixSocketChannel].write(buffer)
-                    if (buffer.remaining == 0) {
+                    val channel = key.channel().asInstanceOf[UnixSocketChannel]
+
+                    val written =
+                      try {
+                        channel.write(buffer)
+                        true
+                      } catch {
+                        case _: IOException =>
+                          key.cancel()
+                          key.channel.close()
+                          false
+                      }
+
+                    if (written && buffer.remaining == 0) {
                       sendReceiveContext.send = SendAvailable(buffer)
                       key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE)
                       sent.success(Done)
@@ -139,7 +151,17 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                 sendReceiveContext.receive match {
                   case ReceiveAvailable(queue, buffer) if keySelectable && key.isReadable =>
                     buffer.clear()
-                    val n = key.channel.asInstanceOf[UnixSocketChannel].read(buffer)
+
+                    val channel = key.channel.asInstanceOf[UnixSocketChannel]
+
+                    val n =
+                      try {
+                        channel.read(buffer)
+                      } catch {
+                        // socket could have been closed in the meantime, so read will throw this
+                        case _: IOException => -1
+                      }
+
                     if (n >= 0) {
                       buffer.flip()
                       val pendingResult = queue.offer(ByteString(buffer))
@@ -148,8 +170,6 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                       key.interestOps(key.interestOps() & ~SelectionKey.OP_READ)
                     } else {
                       queue.complete()
-                      key.cancel()
-                      key.channel.close()
                     }
                   case PendingReceiveAck(receiveQueue, receiveBuffer, pendingResult) if pendingResult.isCompleted =>
                     pendingResult.value.get match {
@@ -162,6 +182,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                         key.channel.close()
                     }
                   case _: ReceiveAvailable =>
+                  case _: PendingReceiveAck =>
                 }
               case _: ((Selector, SelectionKey) => Unit) @unchecked =>
             }
@@ -271,7 +292,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
             }
             .runWith(Sink.ignore)
         }
-    (sendReceiveContext, Flow.fromSinkAndSourceCoupled(sendSink, Source.fromFutureSource(receiveSource)))
+    (sendReceiveContext, Flow.fromSinkAndSource(sendSink, Source.fromFutureSource(receiveSource)))
   }
 
   /*

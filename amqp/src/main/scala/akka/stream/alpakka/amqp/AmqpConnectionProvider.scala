@@ -61,7 +61,8 @@ final case class AmqpDetailsConnectionProvider(
     networkRecoveryInterval: Option[Int] = None,
     automaticRecoveryEnabled: Option[Boolean] = None,
     topologyRecoveryEnabled: Option[Boolean] = None,
-    exceptionHandler: Option[ExceptionHandler] = None
+    exceptionHandler: Option[ExceptionHandler] = None,
+    connectionName: Option[String] = None
 ) extends AmqpConnectionProvider {
 
   def withHostsAndPorts(hostAndPort: (String, Int), hostAndPorts: (String, Int)*): AmqpDetailsConnectionProvider =
@@ -100,6 +101,9 @@ final case class AmqpDetailsConnectionProvider(
   def withExceptionHandler(exceptionHandler: ExceptionHandler): AmqpDetailsConnectionProvider =
     copy(exceptionHandler = Option(exceptionHandler))
 
+  def withConnectionName(name: String): AmqpDetailsConnectionProvider =
+    copy(connectionName = Option(name))
+
   /**
    * Java API
    */
@@ -126,7 +130,7 @@ final case class AmqpDetailsConnectionProvider(
     topologyRecoveryEnabled.foreach(factory.setTopologyRecoveryEnabled)
     exceptionHandler.foreach(factory.setExceptionHandler)
 
-    factory.newConnection(hostAndPortList.map(hp => new Address(hp._1, hp._2)).asJava)
+    factory.newConnection(hostAndPortList.map(hp => new Address(hp._1, hp._2)).asJava, connectionName.orNull)
   }
 
 }

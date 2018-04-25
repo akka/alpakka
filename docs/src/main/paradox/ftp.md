@@ -38,6 +38,14 @@ For non-anonymous connection, please provide an instance of @scaladoc[NonAnonFtp
 
 For connection using a private key, please provide an instance of @scaladoc[SftpIdentity](akka.stream.alpakka.ftp.SftpIdentity) to @scaladoc[SftpSettings](akka.stream.alpakka.ftp.RemoteFileSettings$$SftpSettings).
 
+In order to use a custom SSH client for SFTP please provide an instance of @scaladoc[SSHClient](net.schmizz.sshj.SSHClient).
+
+Scala
+: @@snip ($alpakka$/ftp/src/test/scala/akka/stream/alpakka/ftp/scalaExamples.scala) { #configure-custom-ssh-client }
+
+Java
+: @@snip ($alpakka$/ftp/src/test/java/akka/stream/alpakka/ftp/examples/ConfigureCustomSSHClient.java) { #configure-custom-ssh-client }
+
 ### Traversing a remote FTP folder recursively
 
 In order to traverse a remote folder recursively, you need to use the `ls` method in the FTP API:
