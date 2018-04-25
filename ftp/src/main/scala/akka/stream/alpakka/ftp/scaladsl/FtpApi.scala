@@ -167,6 +167,20 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
   protected[this] implicit def ftpLike: FtpLike[FtpClient, S]
 }
 
+class SftpApi extends FtpApi[SSHClient] with SftpSourceParams
 object Ftp extends FtpApi[FTPClient] with FtpSourceParams
 object Ftps extends FtpApi[FTPClient] with FtpsSourceParams
-object Sftp extends FtpApi[SSHClient] with SftpSourceParams
+
+object Sftp extends SftpApi {
+
+  /**
+   * Scala API: creates a [[akka.stream.alpakka.ftp.scaladsl.SftpApi]]
+   *
+   * @param customSshClient custom ssh client
+   * @return A [[akka.stream.alpakka.ftp.scaladsl.SftpApi]]
+   */
+  def apply(customSshClient: SSHClient): SftpApi =
+    new SftpApi {
+      override val sshClient = customSshClient
+    }
+}
