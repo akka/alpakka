@@ -1,8 +1,8 @@
-# File Connectors
+# Files
 
 The File connectors provide additional connectors for filesystems complementing
 the sources and sinks for files already included in core Akka Streams
-(which can be found in @java[@javadoc[akka.stream.javadsl.FileIO](akka.stream.javadsl.FileIO$)]@scala[@scaladoc[akka.stream.scaladsl.FileIO](akka.stream.scaladsl.FileIO$))]).
+(which can be found in @java[@javadoc[akka.stream.javadsl.FileIO](akka.stream.javadsl.FileIO$)]@scala[@scaladoc[akka.stream.scaladsl.FileIO](akka.stream.scaladsl.FileIO$)]).
 
 
 ### Reported issues
@@ -17,6 +17,13 @@ the sources and sinks for files already included in core Akka Streams
   artifact=akka-stream-alpakka-file_$scalaBinaryVersion$
   version=$version$
 }
+
+## Writing to and reading from files
+
+Use the `FileIO` class to create streams reading from or writing to files. It is part part of Akka streams. 
+
+[Akka Streaming File IO documentation](https://doc.akka.io/docs/akka/current/stream/stream-io.html#streaming-file-io)
+
 
 ## Tailing a file into a stream
 
