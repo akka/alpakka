@@ -3,6 +3,8 @@ import Keys._
 
 object Dependencies {
 
+  val ScalaVersions = Seq("2.12.5", "2.11.12")
+
   val AkkaVersion = sys.env.get("AKKA_SERIES") match {
     case Some("2.4") => sys.error("Akka 2.4 is not supported anymore")
     case _ => "2.5.11"
