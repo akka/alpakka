@@ -1,5 +1,5 @@
 # Kafka
 
-The **Alpakka Kafka connector** (formerly known as **Akka Streams Kafka** and even **Reactive Kafka**) is maintained in a separate repository.
+The **Akka Streams Kafka** library (originally known as **Reactive Kafka**) is maintained in a separate repository, but kept after by Lightbend's Alpakka team.
 
-Please read more about it in the [Alpakka Kafka connector documentation](https://doc.akka.io/docs/akka-stream-kafka/current/).
+Please read more about it in the [Akka Streams Kafka documentation](https://doc.akka.io/docs/akka-stream-kafka/current/).
