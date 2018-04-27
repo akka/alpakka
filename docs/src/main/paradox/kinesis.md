@@ -4,6 +4,25 @@ The AWS Kinesis connector provides flows for streaming data to and from Kinesis 
 
 For more information about Kinesis please visit the [Kinesis documentation](https://aws.amazon.com/documentation/kinesis/).
 
+@@@ note { title="Alternative connector 1" }
+
+Another Kinesis connector which is based on the Kinesis Client Library is available.
+
+The KCL Source can read from several shards and rebalance automatically when other Workers are started or stopped. It also handles record sequence checkpoints.
+
+Please read more about it at [GitHub aserrallerios/kcl-akka-stream](https://github.com/aserrallerios/kcl-akka-stream).
+@@@
+
+
+@@@ note { title="Alternative connector 2" }
+
+Another Kinesis connector which is based on the Kinesis Client Library is available.
+
+This library combines the convenience of Akka Streams with KCL checkpoint management, failover, load-balancing, and re-sharding capabilities.
+
+Please read more about it at [GitHub StreetContxt/kcl-akka-stream](https://github.com/StreetContxt/kcl-akka-stream).
+@@@
+
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Akinesis)

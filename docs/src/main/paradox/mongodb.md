@@ -4,6 +4,17 @@ The MongoDB connector allows you to read and save documents. You can query as a 
 
 This connector is based off the [mongo-scala-driver](https://github.com/mongodb/mongo-scala-driver) and does not have a java interface. It supports driver macros and codec allowing to read or write scala case class objects.
 
+@@@ note { title="Alternative connector" }
+
+Another MongoDB connector is available.
+
+ReactiveMongo is a Scala driver that provides fully non-blocking and asynchronous I/O operations.
+
+Please read more about it in the [ReactiveMongo documentation](http://reactivemongo.org).
+
+@@@
+
+
 
 ### Reported issues
 
