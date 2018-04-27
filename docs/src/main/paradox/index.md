@@ -23,7 +23,6 @@ Release notes are found at [Github releases](https://github.com/akka/alpakka/rel
 @@@ index
 
 * [Connectors](connectors.md)
-* [External connectors](external-connectors.md) (hosted separately)
 * [External stream components](external-components.md) (hosted separately)
 * [Self-contained examples](examples/index.md)
 * [Other documentation resources](other-docs.md)

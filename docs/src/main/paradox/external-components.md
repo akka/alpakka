@@ -1,7 +1,5 @@
 # External Components
 
-[![alpakka]][alpakka-scaladex] Feel free to tag your project with *alpakka* keyword in Scaladex for easier discoverability.
-
 Below is a non-complete list of stream components that are maintained by other projects.
 
 [Contributions](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md) are very welcome.
