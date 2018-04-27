@@ -67,7 +67,8 @@ public class AvroParquetSinkTest {
     conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true);
     ParquetWriter<GenericRecord> writer =
         AvroParquetWriter.<GenericRecord>builder(new Path(file))
-            .withConf(conf).withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
+            .withConf(conf)
+            .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
             .withSchema(schema)
             .build();
 

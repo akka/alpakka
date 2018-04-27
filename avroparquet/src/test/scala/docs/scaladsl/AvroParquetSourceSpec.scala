@@ -28,7 +28,6 @@ import org.apache.parquet.hadoop.ParquetReader
 import org.apache.parquet.avro.AvroReadSupport
 //#init-reader
 
-
 class AvroParquetSourceSpec extends Specification with AbstractAvroParquet with AfterAll with BeforeAll {
 
   "AvroParquetSource" should {
