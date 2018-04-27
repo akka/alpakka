@@ -11,6 +11,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   ftp,
   geode,
   googleCloudPubSub,
+  googleCloudPubSubGrpc,
   googleFcm,
   hbase,
   hdfs,
@@ -117,6 +118,18 @@ lazy val googleCloudPubSub = alpakkaProject(
   // For mockito https://github.com/akka/alpakka/issues/390
   parallelExecution in Test := false
 )
+
+lazy val googleCloudPubSubGrpc = alpakkaProject(
+  "google-cloud-pub-sub-grpc",
+  "google.cloud.pubsub.grpc",
+  Dependencies.GooglePubSubGrpc,
+  akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
+  akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
+  akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
+  javaAgents += Dependencies.GooglePubSubGrpcAlpnAgent % "test",
+  // for the ExampleApp in the tests
+  connectInput in run := true
+).enablePlugins(AkkaGrpcPlugin, JavaAgent)
 
 lazy val googleFcm = alpakkaProject(
   "google-fcm",
