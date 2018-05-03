@@ -8,7 +8,7 @@ import java.util.UUID
 import java.util.concurrent.{CompletableFuture, Future}
 
 import akka.Done
-import akka.stream.alpakka.sqs.{BatchException, SqsBatchFlowSettings}
+import akka.stream.alpakka.sqs._
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.TestSource
 import com.amazonaws.handlers.AsyncHandler
@@ -26,7 +26,47 @@ import scala.concurrent.duration._
 
 class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
 
-  it should "send a message" in {
+  "SqsBatchFlowSettings" should "construct settings" in {
+    //#SqsBatchFlowSettings
+    val batchSettings =
+      SqsBatchFlowSettings.Defaults
+        .withMaxBatchSize(10)
+        .withMaxBatchWait(500.millis)
+        .withConcurrentRequests(1)
+    //#SqsBatchFlowSettings
+    batchSettings.maxBatchSize should be(10)
+  }
+
+  "SqsSinkSettings" should "construct settings" in {
+    //#SqsSinkSettings
+    val sinkSettings =
+      SqsSinkSettings.Defaults
+        .withMaxInFlight(10)
+    //#SqsSinkSettings
+    sinkSettings.maxInFlight should be(10)
+  }
+
+  "SqsAckSinkSettings" should "construct settings" in {
+    //#SqsAckSinkSettings
+    val sinkSettings =
+      SqsAckSinkSettings.Defaults
+        .withMaxInFlight(10)
+    //#SqsAckSinkSettings
+    sinkSettings.maxInFlight should be(10)
+  }
+
+  "SqsBatchAckFlowSettings" should "construct settings" in {
+    //#SqsBatchAckFlowSettings
+    val batchSettings =
+      SqsBatchAckFlowSettings.Defaults
+        .withMaxBatchSize(10)
+        .withMaxBatchWait(500.millis)
+        .withConcurrentRequests(1)
+    //#SqsBatchAckFlowSettings
+    batchSettings.maxBatchSize should be(10)
+  }
+
+  "Sqs Sink" should "send a message" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
     when(
       sqsClient.sendMessageAsync(any[SendMessageRequest](), any[AsyncHandler[SendMessageRequest, SendMessageResult]]())
