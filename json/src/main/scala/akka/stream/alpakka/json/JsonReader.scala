@@ -21,6 +21,10 @@ object JsonReader {
    * A Flow that consumes incoming json in chunks and produces a stream of parsable json values
    * according to the JsonPath given.
    *
+   * JsonPath examples:
+   * - Stream all elements of the nested array `rows`: `$.rows[*]`
+   * - Stream the value of `name` of each element in the array: `$.rows[*].name`
+   *
    * Supported JsonPath syntax: https://github.com/jsurfer/JsonSurfer#what-is-jsonpath
    */
   def select(path: JsonPath): Flow[ByteString, ByteString, NotUsed] = Flow.fromGraph(new JsonStreamParser(path))
