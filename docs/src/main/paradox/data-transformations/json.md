@@ -53,7 +53,7 @@ database, which might look more like this:
 }
 ```
 
-The JSON parsing module offers a flow, which allows to stream specific parts of that JSON structure.
+The JSON reading module offers a flow, which allows to stream specific parts of that JSON structure.
 In this particular example, only the "rows" array is interesting for the application, more specifically
 even: Only the "doc" inside each element of the array.
 
