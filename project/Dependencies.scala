@@ -172,7 +172,7 @@ object Dependencies {
     resolvers += ("jboss" at "https://repository.jboss.org/nexus/content/groups/public")
   )
 
-  val Json = Seq(
+  val JsonStreaming = Seq(
     libraryDependencies ++= Seq(
       "com.github.jsurfer" % "jsurfer" % "1.4.2", // MIT,
       "com.github.jsurfer" % "jsurfer-jackson" % "1.4.2" // MIT
