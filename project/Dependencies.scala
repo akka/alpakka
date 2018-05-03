@@ -10,7 +10,7 @@ object Dependencies {
     case _ => "2.5.11"
   }
 
-  val AwsSdkVersion = "1.11.226"
+  val AwsSdkVersion = "1.11.295"
   val AkkaHttpVersion = "10.0.13"
 
   val Common = Seq(
@@ -257,13 +257,13 @@ object Dependencies {
   val Sqs = Seq(
     libraryDependencies ++= Seq(
       "com.amazonaws" % "aws-java-sdk-sqs" % AwsSdkVersion, // ApacheV2
-      "org.elasticmq" %% "elasticmq-rest-sqs" % "0.13.8" % Test excludeAll (
+      "org.elasticmq" %% "elasticmq-rest-sqs" % "0.13.9" % Test excludeAll (
         // elasticmq-rest-sqs depends on Akka 2.5, exclude it, so we can choose Akka version
         ExclusionRule(organization = "com.typesafe.akka") //
       ), // ApacheV2
       // pull up akka-http version to the latest version for elasticmq-rest-sqs
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test, // ApacheV2
-      "org.mockito" % "mockito-core" % "2.12.0" % Test // MIT
+      "org.mockito" % "mockito-core" % "2.18.3" % Test // MIT
     )
   )
 
