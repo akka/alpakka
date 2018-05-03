@@ -4,50 +4,27 @@
 
 package akka.stream.alpakka.json
 
+import akka.annotation.InternalApi
+
 import scala.collection.immutable.Queue
-import akka.NotUsed
-import akka.stream.scaladsl.Flow
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream._
 import akka.util.ByteString
-import org.jsfr.json.compiler.JsonPathCompiler
 import org.jsfr.json.exception.JsonSurfingException
 import org.jsfr.json.path.JsonPath
 import org.jsfr.json.{JsonPathListener, JsonSurferJackson, ParsingContext}
 
-object JsonReader {
-
-  /**
-   * A Flow that consumes incoming json in chunks and produces a stream of parsable json values
-   * according to the JsonPath given.
-   *
-   * JsonPath examples:
-   * - Stream all elements of the nested array `rows`: `$.rows[*]`
-   * - Stream the value of `name` of each element in the array: `$.rows[*].name`
-   *
-   * Supported JsonPath syntax: https://github.com/jsurfer/JsonSurfer#what-is-jsonpath
-   */
-  def select(path: JsonPath): Flow[ByteString, ByteString, NotUsed] = Flow.fromGraph(new JsonStreamParser(path))
-
-  /**
-   * A Flow that consumes incoming json in chunks and produces a stream of parsable json values
-   * according to the JsonPath given. The passed String will need to be parsed first.
-   *
-   * @see [[#select]]
-   */
-  def select(path: String): Flow[ByteString, ByteString, NotUsed] = select(JsonPathCompiler.compile(path))
-}
-
 /**
  * Internal API
  */
-private[akka] final class JsonStreamParser(path: JsonPath) extends GraphStage[FlowShape[ByteString, ByteString]] {
+@InternalApi
+private[akka] final class JsonStreamReader(path: JsonPath) extends GraphStage[FlowShape[ByteString, ByteString]] {
 
   private val in = Inlet[ByteString]("Json.in")
   private val out = Outlet[ByteString]("Json.out")
   override val shape = FlowShape(in, out)
 
-  override def initialAttributes: Attributes = Attributes.name(s"jsonStream($path)")
+  override def initialAttributes: Attributes = Attributes.name(s"jsonReader($path)")
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
