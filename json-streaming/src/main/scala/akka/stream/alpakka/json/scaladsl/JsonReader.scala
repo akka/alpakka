@@ -19,7 +19,7 @@ object JsonReader {
    *
    * JsonPath examples:
    * - Stream all elements of the nested array `rows`: `$.rows[*]`
-   * - Stream the value of `name` of each element in the array: `$.rows[*].name`
+   * - Stream the value of `doc` of each element in the array: `$.rows[*].doc`
    *
    * Supported JsonPath syntax: https://github.com/jsurfer/JsonSurfer#what-is-jsonpath
    */

@@ -54,8 +54,8 @@ database, which might look more like this:
 ```
 
 The JSON reading module offers a flow, which allows to stream specific parts of that JSON structure.
-In this particular example, only the "rows" array is interesting for the application, more specifically
-even: Only the "doc" inside each element of the array.
+In this particular example, only the `rows` array is interesting for the application, more specifically
+even: Only the `doc` inside each element of the array.
 
 ### Artifacts
 
@@ -67,9 +67,12 @@ even: Only the "doc" inside each element of the array.
 ### Example
 
 To define which parts of the structure you want to stream the module supports
-[JsonPath notation](https://github.com/jsurfer/JsonSurfer#what-is-jsonpath).
+[JsonPath notation](https://github.com/jsurfer/JsonSurfer#what-is-jsonpath). For example:
 
-To extract the information needed, run a stream through the `JsonParsing` flow.
+- Stream all elements of the nested array `rows`: `$.rows[*]`
+- Stream the value of `doc` of each element in the array: `$.rows[*].doc`
+
+To extract the information needed, run a stream through the `JsonReader.select` flow.
 
 Scala
 : @@snip ($alpakka$/json/src/test/scala/akka/stream/alpakka/json/JsonParsingTest.scala) { #usage }
