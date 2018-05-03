@@ -8,6 +8,7 @@ import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.alpakka.json.scaladsl.JsonReader
 import akka.util.ByteString
 import org.jsfr.json.compiler.JsonPathCompiler
 import org.jsfr.json.exception.JsonSurfingException
