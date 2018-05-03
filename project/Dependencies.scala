@@ -178,6 +178,14 @@ object Dependencies {
       "org.mockito" % "mockito-core" % "2.7.11" % Test // MIT
     )
   )
+
+  val Kudu = Seq(
+    libraryDependencies ++= Seq(
+      "org.apache.kudu" % "kudu-client-tools" % "1.7.0", // ApacheV2
+      "org.apache.kudu" % "kudu-client" % "1.7.0" % Test // ApacheV2
+    )
+  )
+
   val MongoDb = Seq(
     libraryDependencies ++= Seq(
       "org.mongodb.scala" %% "mongo-scala-driver" % "2.2.1" // ApacheV2
