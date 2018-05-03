@@ -23,7 +23,7 @@ import java.util.concurrent.TimeoutException;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertThat;
 
-public class JsonParsingUsageTest {
+public class JsonReaderUsageTest {
   private static ActorSystem system;
   private static Materializer materializer;
 
@@ -44,7 +44,7 @@ public class JsonParsingUsageTest {
     // #usage
     final CompletionStage<List<ByteString>> resultStage = Source
       .single(doc)
-      .via(JsonParsing.flow("$.rows[*].doc"))
+      .via(JsonReader.select("$.rows[*].doc"))
       .runWith(Sink.seq(), materializer);
     // #usage
 

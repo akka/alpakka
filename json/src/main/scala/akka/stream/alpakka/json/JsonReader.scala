@@ -15,29 +15,29 @@ import org.jsfr.json.exception.JsonSurfingException
 import org.jsfr.json.path.JsonPath
 import org.jsfr.json.{JsonPathListener, JsonSurferJackson, ParsingContext}
 
-object JsonParsing {
+object JsonReader {
 
   /**
-   * A Flow that consumes incoming json in chunks and produces a stream of parseable json values
+   * A Flow that consumes incoming json in chunks and produces a stream of parsable json values
    * according to the JsonPath given.
    *
    * Supported JsonPath syntax: https://github.com/jsurfer/JsonSurfer#what-is-jsonpath
    */
-  def flow(path: JsonPath): Flow[ByteString, ByteString, NotUsed] = Flow.fromGraph(new JsonStreamParser(path))
+  def select(path: JsonPath): Flow[ByteString, ByteString, NotUsed] = Flow.fromGraph(new JsonStreamParser(path))
 
   /**
-   * A Flow that consumes incoming json in chunks and produces a stream of parseable json values
+   * A Flow that consumes incoming json in chunks and produces a stream of parsable json values
    * according to the JsonPath given. The passed String will need to be parsed first.
    *
-   * Supported JsonPath syntax: https://github.com/jsurfer/JsonSurfer#what-is-jsonpath
+   * @see [[#select]]
    */
-  def flow(path: String): Flow[ByteString, ByteString, NotUsed] = flow(JsonPathCompiler.compile(path))
+  def select(path: String): Flow[ByteString, ByteString, NotUsed] = select(JsonPathCompiler.compile(path))
 }
 
 /**
  * Internal API
  */
-private final class JsonStreamParser(path: JsonPath) extends GraphStage[FlowShape[ByteString, ByteString]] {
+private[akka] final class JsonStreamParser(path: JsonPath) extends GraphStage[FlowShape[ByteString, ByteString]] {
 
   private val in = Inlet[ByteString]("Json.in")
   private val out = Outlet[ByteString]("Json.out")

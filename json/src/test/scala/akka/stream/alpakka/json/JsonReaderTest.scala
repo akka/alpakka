@@ -16,7 +16,7 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class JsonParsingTest extends WordSpec with Matchers with BeforeAndAfterAll {
+class JsonReaderTest extends WordSpec with Matchers with BeforeAndAfterAll {
   implicit val system: ActorSystem = ActorSystem("Test")
   implicit val mat: Materializer = ActorMaterializer()
 
@@ -45,7 +45,7 @@ class JsonParsingTest extends WordSpec with Matchers with BeforeAndAfterAll {
       // #usage
       val results = Source
         .single(ByteString.fromString(baseDocument))
-        .via(JsonParsing.flow("$.rows[*].doc"))
+        .via(JsonReader.select("$.rows[*].doc"))
         .runWith(Sink.seq)
       // #usage
 
@@ -56,28 +56,28 @@ class JsonParsingTest extends WordSpec with Matchers with BeforeAndAfterAll {
     "properly parse and push elements of json arriving in very small chunks" in {
       val chunks = baseDocument.grouped(2).toList
 
-      val streamed = collect(Source(chunks.map(ByteString.fromString)).via(JsonParsing.flow("$.rows[*].doc")))
+      val streamed = collect(Source(chunks.map(ByteString.fromString)).via(JsonReader.select("$.rows[*].doc")))
       streamed shouldBe expectedElements.map(ByteString.fromString)
     }
 
     "properly parse and push elements of json arriving in larger chunks" in {
       val chunks = baseDocument.grouped(10).toList
 
-      val streamed = collect(Source(chunks.map(ByteString.fromString)).via(JsonParsing.flow("$.rows[*].doc")))
+      val streamed = collect(Source(chunks.map(ByteString.fromString)).via(JsonReader.select("$.rows[*].doc")))
       streamed shouldBe expectedElements.map(ByteString.fromString)
     }
 
     "properly parse and stream a json array as the top-level element" in {
       val content = "[1, 2, 3]"
 
-      val streamed = collect(Source.single(ByteString.fromString(content)).via(JsonParsing.flow("$[*]")))
+      val streamed = collect(Source.single(ByteString.fromString(content)).via(JsonReader.select("$[*]")))
       streamed shouldBe Seq("1", "2", "3").map(ByteString.fromString)
     }
 
     "accept a pre-compiled json path rather than a string as a parameter" in {
       val path = JsonPathCompiler.compile("$.rows[*].doc")
 
-      val streamed = collect(Source.single(ByteString.fromString(baseDocument)).via(JsonParsing.flow(path)))
+      val streamed = collect(Source.single(ByteString.fromString(baseDocument)).via(JsonReader.select(path)))
       streamed shouldBe expectedElements.map(ByteString.fromString)
     }
 
@@ -85,7 +85,7 @@ class JsonParsingTest extends WordSpec with Matchers with BeforeAndAfterAll {
       val doc = "{invalid: json}"
 
       a[JsonSurfingException] shouldBe thrownBy {
-        collect(Source.single(ByteString(doc)).via(JsonParsing.flow("$.invalid[*]")))
+        collect(Source.single(ByteString(doc)).via(JsonReader.select("$.invalid[*]")))
       }
     }
 
@@ -94,7 +94,7 @@ class JsonParsingTest extends WordSpec with Matchers with BeforeAndAfterAll {
       val brokenChunks = Seq("[", "\"test\"", ",", "\"it\"", "\"breaks\"")
 
       a[JsonSurfingException] shouldBe thrownBy {
-        collect(Source(brokenChunks.toVector.map(ByteString.fromString)).via(JsonParsing.flow("$[*]")))
+        collect(Source(brokenChunks.toVector.map(ByteString.fromString)).via(JsonReader.select("$[*]")))
       }
     }
 
@@ -103,12 +103,12 @@ class JsonParsingTest extends WordSpec with Matchers with BeforeAndAfterAll {
       val chunks = Vector("{", "\"numbers\"", ":", "[", "1", ",", "2")
 
       a[JsonSurfingException] shouldBe thrownBy {
-        collect(Source(chunks.map(ByteString.fromString)).via(JsonParsing.flow("$.names[*]")))
+        collect(Source(chunks.map(ByteString.fromString)).via(JsonReader.select("$.names[*]")))
       }
     }
 
     "fail early if the given JsonPath is not parseable" in {
-      a[RuntimeException] shouldBe thrownBy(JsonParsing.flow("invalid"))
+      a[RuntimeException] shouldBe thrownBy(JsonReader.select("invalid"))
     }
   }
 
