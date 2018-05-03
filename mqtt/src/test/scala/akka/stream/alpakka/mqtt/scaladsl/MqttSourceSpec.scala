@@ -52,7 +52,7 @@ class MqttSourceSpec
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
 
-  /** Wrapps a source with restart logic and exposes an equivalent materialized value.
+  /** Wrap a source with restart logic and exposes an equivalent materialized value.
    * Could be simplified when https://github.com/akka/akka/issues/24771 is solved.
    */
   def wrapWithRestart[M](
