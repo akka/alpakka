@@ -30,10 +30,10 @@ import scala.concurrent.{Future, Promise}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
-final class MqttFlowStage(sourceSettings: MqttSourceSettings,
-                          bufferSize: Int,
-                          qos: MqttQoS,
-                          manualAcks: Boolean = false)
+private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
+                                        bufferSize: Int,
+                                        qos: MqttQoS,
+                                        manualAcks: Boolean = false)
     extends GraphStageWithMaterializedValue[FlowShape[MqttMessage, MqttCommittableMessage], Future[Done]] {
   import MqttConnectorLogic._
 
@@ -44,8 +44,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val subscriptionPromise = Promise[Done]
-
-    (new GraphStageLogic(shape) {
+    val logic = new GraphStageLogic(shape) {
       private val backpressure = new Semaphore(bufferSize)
       private var pendingMsg = Option.empty[MqttMessage]
       private val queue = mutable.Queue[MqttCommittableMessage]()
@@ -123,6 +122,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
         override def messageArrived(topic: String, pahoMessage: PahoMqttMessage): Unit =
           onMessage(new MqttCommittableMessage {
             override val message = MqttMessage(topic, ByteString(pahoMessage.getPayload))
+
             override def messageArrivedComplete(): Future[Done] = {
               val promise = Promise[Done]()
               val qos = pahoMessage.getQos match {
@@ -286,6 +286,7 @@ final class MqttFlowStage(sourceSettings: MqttSourceSettings,
             }
         }
       }
-    }, subscriptionPromise.future)
+    }
+    (logic, subscriptionPromise.future)
   }
 }

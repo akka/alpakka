@@ -18,7 +18,7 @@ import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.collection.immutable.Seq
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 
 class MqttSourceSpec
@@ -51,6 +51,28 @@ class MqttSourceSpec
   val sinkSettings = connectionSettings.withClientId(clientId = "source-spec/sink")
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
+
+  /** Wrap a source with restart logic and exposes an equivalent materialized value.
+   * Could be simplified when https://github.com/akka/akka/issues/24771 is solved.
+   */
+  def wrapWithRestart[M](
+      source: => Source[M, Future[Done]]
+  )(implicit ec: ExecutionContext): Source[M, Future[Done]] = {
+    val subscribed = Promise[Done]()
+    RestartSource
+      .withBackoff(
+        minBackoff = 100.millis,
+        maxBackoff = 3.seconds,
+        randomFactor = 0.2,
+        maxRestarts = 5
+      ) { () =>
+        source
+          .mapMaterializedValue { f =>
+            f.onComplete(res => subscribed.complete(res))
+          }
+      }
+      .mapMaterializedValue(_ => subscribed.future)
+  }
 
   "mqtt source" should {
     "consume unacknowledged messages from previous sessions using manualAck" in {
@@ -280,7 +302,10 @@ class MqttSourceSpec
           .withWill(lastWill),
         Map(topic1 -> MqttQoS.AtLeastOnce)
       )
-      val source1 = MqttSource.atMostOnce(settings1, 8)
+      val source1 = wrapWithRestart(
+        MqttSource
+          .atMostOnce(settings1, 8)
+      )
 
       val (subscribed, probe) = source1.toMat(TestSink.probe)(Keep.both).run()
 
