@@ -50,7 +50,7 @@ Scala
 Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSourceTest.java) { #run }
 
-Wwe take the first 100 elements from the stream. The reason for this is, that reading messages from
+We take the first 100 elements from the stream. The reason for this is, that reading messages from
 SQS queues never finishes because there is no direct way to determine the end of a queue.
 
 
@@ -62,8 +62,6 @@ Scala
 Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSourceTest.java) { #SqsSourceSettings }
 
-
-The 
 
 Options:
 
