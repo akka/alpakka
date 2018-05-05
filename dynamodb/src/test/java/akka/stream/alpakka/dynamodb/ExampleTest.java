@@ -37,7 +37,7 @@ public class ExampleTest {
 
     public static Pair<DynamoSettings, DynamoClient> setupClient() {
         //#client-construct
-        final DynamoSettings settings = DynamoSettings.apply(system);
+        final DynamoSettings settings = DynamoSettings.create(system);
         final DynamoClient client = DynamoClient.create(settings, system, materializer);
         //#client-construct
         return Pair.create(settings, client);

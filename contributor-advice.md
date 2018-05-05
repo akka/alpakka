@@ -44,17 +44,11 @@ Refrain from using `akka.stream.alpakka` as Config prefix, prefer `alpakka` as r
 
 All the external runtime dependencies for the project, including transitive dependencies, must have an open source license that is equal to, or compatible with, [Apache 2](http://www.apache.org/licenses/LICENSE-2.0).
 
-This must be ensured by manually verifying the license for all the dependencies for the project:
-
-1. Whenever a committer to the project changes a version of a dependency (including Scala) in the build file.
-2. Whenever a committer to the project adds a new dependency.
-3. Whenever a new release is cut (public or private for a customer).
-
-Every external dependency listed in the build file must have a trailing comment with the license name of the dependency.
-
 Which licenses are compatible with Apache 2 are defined in [this doc](http://www.apache.org/legal/3party.html#category-a), where you can see that the licenses that are listed under ``Category A`` automatically compatible with Apache 2, while the ones listed under ``Category B`` needs additional action:
 
 > Each license in this category requires some degree of [reciprocity](http://www.apache.org/legal/3party.html#define-reciprocal); therefore, additional action must be taken in order to minimize the chance that a user of an Apache product will create a derivative work of a reciprocally-licensed portion of an Apache product without being aware of the applicable requirements.
+
+Dependency licenses will be checked automatically by the sbt Whitesource plug-in. 
 
 
 ### Packages & Scoping

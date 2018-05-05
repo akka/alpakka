@@ -24,6 +24,8 @@ object Common extends AutoPlugin {
                             url("https://github.com/akka/alpakka/graphs/contributors")),
     licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
     crossVersion := CrossVersion.binary,
+    crossScalaVersions := Dependencies.ScalaVersions,
+    scalaVersion := crossScalaVersions.value.head,
     scalacOptions ++= Seq(
       "-encoding",
       "UTF-8",

@@ -18,12 +18,19 @@ The code in this documentation is compiled against
 
 Release notes are found at [Github releases](https://github.com/akka/alpakka/releases).
 
+
+## Contributing
+
+Please feel free to contribute to Alpakka by reporting issues you identify, or by suggesting changes to the code. Please refer to our [contributing instructions](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md) and our [contributor advice](https://github.com/akka/alpakka/blob/master/contributor-advice.md) to learn how it can be done.
+
+We want Akka and Alpakka to strive in a welcoming and open atmosphere and expect all contributors to respect our [code of conduct](https://github.com/akka/alpakka/blob/master/CODE_OF_CONDUCT.md).
+
+
 @@ toc { .main depth=2 }
 
 @@@ index
 
 * [Connectors](connectors.md)
-* [External connectors](external-connectors.md) (hosted separately)
 * [External stream components](external-components.md) (hosted separately)
 * [Self-contained examples](examples/index.md)
 * [Other documentation resources](other-docs.md)
