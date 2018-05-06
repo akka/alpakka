@@ -53,14 +53,6 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
 
       override def whenConnected(): Unit = {
         import scala.collection.JavaConverters._
-        val shutdownCallback = getAsyncCallback[(String, Option[ShutdownSignalException])] {
-          case (consumerTag, Some(e)) =>
-            onFailure(
-              new RuntimeException(s"Consumer $queueName with consumerTag $consumerTag shut down unexpectedly", e)
-            )
-          case (consumerTag, None) =>
-            onFailure(new RuntimeException(s"Consumer $queueName with consumerTag $consumerTag shut down unexpectedly"))
-        }
 
         pull(in)
 
@@ -118,11 +110,15 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
 
           override def handleCancel(consumerTag: String): Unit =
             // non consumer initiated cancel, for example happens when the queue has been deleted.
-            shutdownCallback.invoke((consumerTag, None))
+            shutdownCallback.invoke(
+              new RuntimeException(s"Consumer $queueName with consumerTag $consumerTag shut down unexpectedly")
+            )
 
           override def handleShutdownSignal(consumerTag: String, sig: ShutdownSignalException): Unit =
             // "Called when either the channel or the underlying connection has been shut down."
-            shutdownCallback.invoke((consumerTag, Option(sig)))
+            shutdownCallback.invoke(
+              new RuntimeException(s"Consumer $queueName with consumerTag $consumerTag shut down unexpectedly", sig)
+            )
         }
 
         // Create an exclusive queue with a randomly generated name for use as the replyTo portion of RPC
