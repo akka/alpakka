@@ -1,4 +1,4 @@
-# Other documentation
+# Webinars, Presentations and Articles
 
 [Revitalizing Enterprise Integration with Reactive Streams](https://info.lightbend.com/webinar-revitalizing-enterprise-integration-with-reactive-streams-recording.html)
 Webinar by Viktor Klang, Lightbend, March 2018
