@@ -129,9 +129,9 @@ private[jms] class JmsAckSession(override val connection: jms.Connection,
 
   def ack(message: jms.Message): Unit = ackQueue.put(message.acknowledge _)
 
-  override def closeSession(): Unit = stopMessageListenerAndCloseSession
+  override def closeSession(): Unit = stopMessageListenerAndCloseSession()
 
-  override def abortSession(): Unit = stopMessageListenerAndCloseSession
+  override def abortSession(): Unit = stopMessageListenerAndCloseSession()
 
   private def stopMessageListenerAndCloseSession(): Unit = {
     ackQueue.put(() => throw StopMessageListenerException())
@@ -144,14 +144,21 @@ private[jms] class JmsTxSession(override val connection: jms.Connection,
                                 override val destination: jms.Destination)
     extends JmsSession(connection, session, destination) {
 
-  private[jms] val commitQueue = new ArrayBlockingQueue[() => Unit](1)
+  private[jms] val commitQueue = new ArrayBlockingQueue[TxEnvelope => Unit](1)
 
-  def commit(): Unit = commitQueue.put(session.commit _)
+  def commit(commitEnv: TxEnvelope): Unit = commitQueue.put { srcEnv =>
+    require(srcEnv == commitEnv, s"Source envelope mismatch on commit. Source: $srcEnv Commit: $commitEnv")
+    session.commit()
+  }
 
-  def rollback(): Unit = commitQueue.put(session.rollback _)
+  def rollback(commitEnv: TxEnvelope): Unit = commitQueue.put { srcEnv =>
+    require(srcEnv == commitEnv, s"Source envelope mismatch on rollback. Source: $srcEnv Commit: $commitEnv")
+    session.rollback()
+  }
 
   override def abortSession(): Unit = {
-    rollback()
+    // On abort, tombstone the onMessage loop to stop processing messages even if more messages are delivered.
+    commitQueue.put(_ => throw StopMessageListenerException())
     session.close()
   }
 }

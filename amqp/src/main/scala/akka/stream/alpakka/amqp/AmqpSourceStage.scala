@@ -55,8 +55,7 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
 
       override def whenConnected(): Unit = {
         import scala.collection.JavaConverters._
-        // we have only one consumer per connection so global is ok
-        channel.basicQos(bufferSize, true)
+        channel.basicQos(bufferSize)
         val consumerCallback = getAsyncCallback(handleDelivery)
         val shutdownCallback = getAsyncCallback[Option[ShutdownSignalException]] {
           case Some(ex) => onFailure(ex)

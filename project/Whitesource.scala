@@ -2,7 +2,7 @@ import sbt._
 import sbt.Keys._
 import sbtwhitesource.WhiteSourcePlugin.autoImport._
 import sbtwhitesource._
-import com.typesafe.sbt.SbtGit.GitKeys._
+import scala.sys.process.Process
 
 object Whitesource extends AutoPlugin {
   override def requires = WhiteSourcePlugin
@@ -17,7 +17,7 @@ object Whitesource extends AutoPlugin {
     whitesourceAggregateProjectName := {
       (moduleName in LocalRootProject).value + "-" + (
         if (isSnapshot.value)
-          if (gitCurrentBranch.value == "master") "master"
+          if (describe(baseDirectory.value) contains "master") "master"
           else "adhoc"
         else majorMinor((version in LocalRootProject).value).map(_ + "-stable").getOrElse("adhoc")
       )
@@ -25,4 +25,6 @@ object Whitesource extends AutoPlugin {
     whitesourceForceCheckAllDependencies := true,
     whitesourceFailOnError := true,
   )
+
+  private def describe(base: File) = Process(Seq("git", "describe", "--all"), base).!!
 }

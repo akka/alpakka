@@ -1,4 +1,6 @@
-# Other documentation
+# Webinars, Presentations and Articles
+
+[Alpakka (Akka Streams) vs Apache Camel: who wins?](http://www.thedevpiece.com/alpakka-akka-streams-vs-apache-camel-who-wins/) Blog by Gabriel Francisco, May 2018 
 
 [Revitalizing Enterprise Integration with Reactive Streams](https://info.lightbend.com/webinar-revitalizing-enterprise-integration-with-reactive-streams-recording.html)
 Webinar by Viktor Klang, Lightbend, March 2018

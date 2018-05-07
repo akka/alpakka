@@ -8,6 +8,7 @@ import java.util.concurrent.Executors
 
 import akka.stream.alpakka.sqs._
 import akka.stream.scaladsl.Sink
+import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.client.builder.ExecutorFactory
 import com.amazonaws.services.sqs.model.{MessageAttributeValue, QueueDoesNotExistException, SendMessageRequest}
@@ -21,11 +22,28 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
   private val sqsSourceSettings = SqsSourceSettings.Defaults
 
+  "SqsSourceSettings" should {
+    "be constructed" in {
+      //#SqsSourceSettings
+      val settings = SqsSourceSettings.Defaults
+        .withWaitTimeSeconds(20)
+        .withMaxBufferSize(100)
+        .withMaxBatchSize(10)
+        .withAttributes(SenderId, SentTimestamp)
+        .withMessageAttributes(MessageAttributeName.create("bar.*"))
+        .withCloseOnEmptyReceive
+      //#SqsSourceSettings
+
+      settings.maxBufferSize should be(100)
+
+    }
+  }
+
   "SqsSource" should {
 
     "stream a single batch from the queue" taggedAs Integration in {
-
       val queue = randomQueueUrl()
+      implicit val awsSqsClient = sqsClient
       sqsClient.sendMessage(queue, "alpakka")
 
       SqsSource(queue, sqsSourceSettings).take(1).runWith(Sink.head).map(_.getBody shouldBe "alpakka")
@@ -34,7 +52,8 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
     "stream a single batch from the queue with custom client" taggedAs Integration in {
       //#init-custom-client
-      val customSqsClient: AmazonSQSAsync =
+      val credentialsProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"))
+      implicit val customSqsClient: AmazonSQSAsync =
         AmazonSQSAsyncClientBuilder
           .standard()
           .withCredentials(credentialsProvider)
@@ -54,6 +73,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
     "stream multiple batches from the queue" taggedAs Integration in {
 
       val queue = randomQueueUrl()
+      implicit val awsSqsClient = sqsClient
 
       val input = 1 to 100 map { i =>
         s"alpakka-$i"
@@ -62,16 +82,19 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
       input foreach { m =>
         sqsClient.sendMessage(queue, m)
       }
-
+      val res =
+        //#run
+        SqsSource(queue, sqsSourceSettings)
+          .take(100)
+          .runWith(Sink.seq)
       //#run
-      SqsSource(queue, sqsSourceSettings).take(100).runWith(Sink.seq).map(_ should have size 100)
-      //#run
 
+      res.futureValue should have size 100
     }
 
     "continue streaming if receives an empty response" taggedAs Integration in {
-
       val queue = randomQueueUrl()
+      implicit val awsSqsClient = sqsClient
 
       val f = SqsSource(queue, SqsSourceSettings(0, 100, 10)).take(1).runWith(Sink.seq)
 
@@ -82,6 +105,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
     "terminate on an empty response if requested" taggedAs Integration in {
       val queue = randomQueueUrl()
+      implicit val awsSqsClient = sqsClient
 
       sqsClient.sendMessage(queue, "alpakka")
       val f = SqsSource(queue, SqsSourceSettings(0, 100, 10, closeOnEmptyReceive = true)).runWith(Sink.seq)
@@ -90,8 +114,8 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
     }
 
     "finish immediately if the queue does not exist" taggedAs Integration in {
-
       val queue = s"$sqsEndpoint/queue/not-existing"
+      implicit val awsSqsClient = sqsClient
 
       val f = SqsSource(queue, sqsSourceSettings).runWith(Sink.seq)
 
@@ -100,6 +124,8 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
     "ask for all the attributes set in the settings" taggedAs Integration in {
       val queue = randomQueueUrl()
+      implicit val awsSqsClient = sqsClient
+
       val attributes = List(SentTimestamp, ApproximateReceiveCount, SenderId)
       val settings = sqsSourceSettings.copy(attributeNames = attributes)
 
@@ -113,12 +139,13 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
     "ask for all the message attributes set in the settings" taggedAs Integration in {
       val queue = randomQueueUrl()
+      implicit val awsSqsClient = sqsClient
       val messageAttributes = Map(
         "attribute-1" -> new MessageAttributeValue().withStringValue("v1").withDataType("String"),
         "attribute-2" -> new MessageAttributeValue().withStringValue("v2").withDataType("String")
       )
       val settings =
-        sqsSourceSettings.copy(messageAttributeNames = messageAttributes.keys.toList.map(MessageAttributeName))
+        sqsSourceSettings.copy(messageAttributeNames = messageAttributes.keys.toList.map(MessageAttributeName.apply))
 
       sqsClient.sendMessage(new SendMessageRequest(queue, "alpakka").withMessageAttributes(messageAttributes.asJava))
 
