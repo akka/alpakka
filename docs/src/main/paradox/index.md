@@ -18,6 +18,7 @@ The code in this documentation is compiled against
 
 Release notes are found at [Github releases](https://github.com/akka/alpakka/releases).
 
+If you want to try out a connector that has not yet been released, give @ref[snapshots](other-docs/snapshots.md) a spin which are published daily.
 
 ## Contributing
 
