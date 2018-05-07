@@ -64,8 +64,7 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
 
         pull(in)
 
-        // we have only one consumer per connection so global is ok
-        channel.basicQos(bufferSize, true)
+        channel.basicQos(bufferSize)
         val consumerCallback = getAsyncCallback(handleDelivery)
 
         val commitCallback = getAsyncCallback[CommitCallback] {
