@@ -167,15 +167,21 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings)
             session.createConsumer(settings.selector).onComplete {
               case Success(consumer) =>
                 consumer.setMessageListener(new MessageListener {
+
+                  var listenerStopped = false
+
                   def onMessage(message: Message): Unit =
-                    try {
-                      handleMessage.invoke(TxEnvelope(message, session))
-                      val action = session.commitQueue.take()
-                      action()
-                    } catch {
-                      case e: JMSException =>
-                        handleError.invoke(e)
-                    }
+                    if (!listenerStopped)
+                      try {
+                        val envelope = TxEnvelope(message, session)
+                        handleMessage.invoke(envelope)
+                        val action = session.commitQueue.take()
+                        action(envelope)
+                      } catch {
+                        case _: StopMessageListenerException => listenerStopped = true // Tombstone.
+                        case e: IllegalArgumentException => handleError.invoke(e) // Invalid envelope. Fail the stage.
+                        case e: JMSException => handleError.invoke(e)
+                      }
                 })
               case Failure(e) =>
                 fail.invoke(e)
