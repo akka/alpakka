@@ -82,14 +82,17 @@ jobs:
     - stage: techhub-ping
       script: curl -I https://ci.lightbend.com/job/techhub-publisher/build?token=$TECH_HUB_TOKEN
 
+    - stage: publish-nightly
+      script: sbt -J-XX:ReservedCodeCacheSize=128m publish
+
 stages:
   # runs on master commits and PRs
   - name: check
-    if: NOT tag =~ ^v
+    if: NOT tag =~ ^v AND NOT type = cron
 
   # runs on master commits and PRs
   - name: test
-    if: NOT tag =~ ^v
+    if: NOT tag =~ ^v AND NOT type = cron
 
   # runs on main repo master commits
   - name: whitesource-master
@@ -97,16 +100,19 @@ stages:
 
   # runs on main repo version-tagged commits
   - name: whitesource-release
-    if: repo = akka/alpakka AND tag =~ ^v
+    if: repo = akka/alpakka AND tag =~ ^v AND NOT type = cron
 
   # runs on main repo version-tagged commits
   - name: publish
-    if: repo = akka/alpakka AND tag =~ ^v
+    if: repo = akka/alpakka AND tag =~ ^v AND NOT type = cron
 
   # runs on main repo version-tagged commits
   - name: techhub-ping
-    if: repo = akka/alpakka AND tag =~ ^v
+    if: repo = akka/alpakka AND tag =~ ^v AND NOT type = cron
 
+  # runs on main repo and from cron
+  - name: publish-nightly
+    if: repo = akka/alpakka AND type = cron
 
 after_failure:
   - docker-compose logs
