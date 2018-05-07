@@ -7,7 +7,7 @@ part of this project as well as links to components that are maintained by other
 If you'd like to know what integrations with Alpakka look like, have a look at our 
 @ref[self-contained examples](examples/index.md) section.
 
-There are a few blog posts and presentations about Alpakka out there, we've @ref[collected some](other-docs.md).
+There are a few blog posts and presentations about Alpakka out there, we've @ref[collected some](other-docs/webinars-presentations-articles.md).
 
 The code in this documentation is compiled against
 
@@ -33,7 +33,7 @@ We want Akka and Alpakka to strive in a welcoming and open atmosphere and expect
 * [Connectors](connectors.md)
 * [External stream components](external-components.md) (hosted separately)
 * [Self-contained examples](examples/index.md)
-* [Other documentation resources](other-docs.md)
+* [Other documentation resources](other-docs/index.md)
 * [Integration Patterns](patterns.md)
 * [Data Transformations](data-transformations/index.md)
 

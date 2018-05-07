@@ -42,7 +42,7 @@ lazy val alpakka = project
         |
         |Useful sbt tasks:
         |
-        |  docs/local:paradox - builds documentation with locally
+        |  docs/Local/paradox - builds documentation with locally
         |    linked Scala API docs, which can be found at
         |    docs/target/paradox/site/local
         |
