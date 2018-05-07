@@ -308,7 +308,7 @@ class MqttSourceSpec
       // Ensure that the connection made it all the way to the server by waiting until it receives a message
       Await.ready(subscribed, timeout)
       Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
-      probe.requestNext()
+      probe.requestNext() shouldBe msg
 
       // Kill the proxy, producing an unexpected disconnection of the client
       Await.result(proxyKs, timeout).shutdown()
@@ -325,7 +325,7 @@ class MqttSourceSpec
       Await.ready(proxyBinding2, timeout)
 
       Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
-      probe.requestNext() shouldBe MqttMessage(topic1, ByteString("ohi"))
+      probe.requestNext(5.seconds) shouldBe msg
       Await.result(proxyKs2, timeout).shutdown()
     }
 
