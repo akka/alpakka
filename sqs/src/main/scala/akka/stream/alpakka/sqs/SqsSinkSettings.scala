@@ -8,8 +8,8 @@ object SqsSinkSettings {
   val Defaults = SqsSinkSettings(maxInFlight = 10)
 }
 
-//#SqsSinkSettings
 final case class SqsSinkSettings(maxInFlight: Int) {
   require(maxInFlight > 0)
+
+  def withMaxInFlight(maxInFlight: Int): SqsSinkSettings = copy(maxInFlight = maxInFlight)
 }
-//#SqsSinkSettings

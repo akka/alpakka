@@ -8,8 +8,8 @@ import java.util.UUID
 import java.util.concurrent.{CompletableFuture, Future}
 
 import akka.Done
-import akka.stream.alpakka.sqs.{BatchException, SqsBatchFlowSettings}
-import akka.stream.scaladsl.{Keep, Sink}
+import akka.stream.alpakka.sqs._
+import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.TestSource
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.AmazonSQSAsync
@@ -26,9 +26,51 @@ import scala.concurrent.duration._
 
 class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
 
-  it should "send a message" in {
+  "SqsBatchFlowSettings" should "construct settings" in {
+    //#SqsBatchFlowSettings
+    val batchSettings =
+      SqsBatchFlowSettings.Defaults
+        .withMaxBatchSize(10)
+        .withMaxBatchWait(500.millis)
+        .withConcurrentRequests(1)
+    //#SqsBatchFlowSettings
+    batchSettings.maxBatchSize should be(10)
+  }
+
+  "SqsSinkSettings" should "construct settings" in {
+    //#SqsSinkSettings
+    val sinkSettings =
+      SqsSinkSettings.Defaults
+        .withMaxInFlight(10)
+    //#SqsSinkSettings
+    sinkSettings.maxInFlight should be(10)
+  }
+
+  "SqsAckSinkSettings" should "construct settings" in {
+    //#SqsAckSinkSettings
+    val sinkSettings =
+      SqsAckSinkSettings.Defaults
+        .withMaxInFlight(10)
+    //#SqsAckSinkSettings
+    sinkSettings.maxInFlight should be(10)
+  }
+
+  "SqsBatchAckFlowSettings" should "construct settings" in {
+    //#SqsBatchAckFlowSettings
+    val batchSettings =
+      SqsBatchAckFlowSettings.Defaults
+        .withMaxBatchSize(10)
+        .withMaxBatchWait(500.millis)
+        .withConcurrentRequests(1)
+    //#SqsBatchAckFlowSettings
+    batchSettings.maxBatchSize should be(10)
+  }
+
+  "Sqs Sink" should "send a message" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
-    when(sqsClient.sendMessageAsync(any[SendMessageRequest](), any())).thenAnswer(
+    when(
+      sqsClient.sendMessageAsync(any[SendMessageRequest](), any[AsyncHandler[SendMessageRequest, SendMessageResult]]())
+    ).thenAnswer(
       new Answer[AnyRef] {
         override def answer(invocation: InvocationOnMock): Future[SendMessageResult] = {
           val sendMessageRequest = invocation.getArgument[SendMessageRequest](0)
@@ -47,12 +89,15 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
     probe.sendNext("notused").sendComplete()
     Await.result(future, 1.second) shouldBe Done
 
-    verify(sqsClient, times(1)).sendMessageAsync(any[SendMessageRequest](), any)
+    verify(sqsClient, times(1))
+      .sendMessageAsync(any[SendMessageRequest](), any[AsyncHandler[SendMessageRequest, SendMessageResult]]())
   }
 
   it should "fail stage on client failure and fail the promise" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
-    when(sqsClient.sendMessageAsync(any[SendMessageRequest](), any())).thenAnswer(
+    when(
+      sqsClient.sendMessageAsync(any[SendMessageRequest](), any[AsyncHandler[SendMessageRequest, SendMessageResult]]())
+    ).thenAnswer(
       new Answer[AnyRef] {
         override def answer(invocation: InvocationOnMock): Object = {
           invocation
@@ -70,7 +115,8 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       Await.result(future, 1.second)
     }
 
-    verify(sqsClient, times(1)).sendMessageAsync(any[SendMessageRequest](), any)
+    verify(sqsClient, times(1))
+      .sendMessageAsync(any[SendMessageRequest](), any[AsyncHandler[SendMessageRequest, SendMessageResult]]())
   }
 
   it should "failure the promise on upstream failure" in {
@@ -86,7 +132,9 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   it should "complete promise after all messages have been sent" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
-    when(sqsClient.sendMessageAsync(any[SendMessageRequest](), any())).thenAnswer(
+    when(
+      sqsClient.sendMessageAsync(any[SendMessageRequest](), any[AsyncHandler[SendMessageRequest, SendMessageResult]]())
+    ).thenAnswer(
       new Answer[AnyRef] {
         override def answer(invocation: InvocationOnMock): Object = {
           val sendMessageRequest = invocation.getArgument[SendMessageRequest](0)
@@ -110,12 +158,16 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       .sendComplete()
     Await.result(future, 1.second) shouldBe Done
 
-    verify(sqsClient, times(5)).sendMessageAsync(any[SendMessageRequest](), any)
+    verify(sqsClient, times(5))
+      .sendMessageAsync(any[SendMessageRequest](), any[AsyncHandler[SendMessageRequest, SendMessageResult]]())
   }
 
   it should "send batch of messages" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
-    when(sqsClient.sendMessageBatchAsync(any[SendMessageBatchRequest](), any())).thenAnswer(
+    when(
+      sqsClient.sendMessageBatchAsync(any[SendMessageBatchRequest](),
+                                      any[AsyncHandler[SendMessageBatchRequest, SendMessageBatchResult]]())
+    ).thenAnswer(
       new Answer[AnyRef] {
         override def answer(invocation: InvocationOnMock): Future[SendMessageBatchResult] = {
           val sendMessageRequest = invocation.getArgument[SendMessageBatchRequest](0)
@@ -136,12 +188,18 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
     probe.sendNext("notused").sendComplete()
     Await.result(future, 1.second) shouldBe Done
 
-    verify(sqsClient, times(1)).sendMessageBatchAsync(any[SendMessageBatchRequest](), any())
+    verify(sqsClient, times(1)).sendMessageBatchAsync(
+      any[SendMessageBatchRequest](),
+      any[AsyncHandler[SendMessageBatchRequest, SendMessageBatchResult]]()
+    )
   }
 
   it should "send all messages in batches of given size" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
-    when(sqsClient.sendMessageBatchAsync(any[SendMessageBatchRequest](), any())).thenAnswer(
+    when(
+      sqsClient.sendMessageBatchAsync(any[SendMessageBatchRequest](),
+                                      any[AsyncHandler[SendMessageBatchRequest, SendMessageBatchResult]]())
+    ).thenAnswer(
       new Answer[AnyRef] {
         override def answer(invocation: InvocationOnMock): Future[SendMessageBatchResult] = {
           val sendMessageRequest = invocation.getArgument[SendMessageBatchRequest](0)
@@ -178,12 +236,18 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       .sendComplete()
     Await.result(future, 1.second) shouldBe Done
 
-    verify(sqsClient, times(2)).sendMessageBatchAsync(any[SendMessageBatchRequest](), any())
+    verify(sqsClient, times(2)).sendMessageBatchAsync(
+      any[SendMessageBatchRequest](),
+      any[AsyncHandler[SendMessageBatchRequest, SendMessageBatchResult]]()
+    )
   }
 
   it should "fail if any of the messages in batch failed" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
-    when(sqsClient.sendMessageBatchAsync(any[SendMessageBatchRequest](), any())).thenAnswer(
+    when(
+      sqsClient.sendMessageBatchAsync(any[SendMessageBatchRequest](),
+                                      any[AsyncHandler[SendMessageBatchRequest, SendMessageBatchResult]]())
+    ).thenAnswer(
       new Answer[AnyRef] {
         override def answer(invocation: InvocationOnMock): Future[SendMessageBatchResult] = {
           val sendMessageRequest = invocation.getArgument[SendMessageBatchRequest](0)
@@ -219,15 +283,20 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       Await.result(future, 1.second)
     }
 
-    verify(sqsClient, times(1)).sendMessageBatchAsync(any[SendMessageBatchRequest](), any())
+    verify(sqsClient, times(1)).sendMessageBatchAsync(
+      any[SendMessageBatchRequest](),
+      any[AsyncHandler[SendMessageBatchRequest, SendMessageBatchResult]]()
+    )
   }
 
   it should "fail if whole batch is failed" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
-    when(sqsClient.sendMessageBatchAsync(any[SendMessageBatchRequest](), any())).thenAnswer(
+    when(
+      sqsClient.sendMessageBatchAsync(any[SendMessageBatchRequest](),
+                                      any[AsyncHandler[SendMessageBatchRequest, SendMessageBatchResult]]())
+    ).thenAnswer(
       new Answer[AnyRef] {
         override def answer(invocation: InvocationOnMock): Future[SendMessageBatchResult] = {
-          val sendMessageRequest = invocation.getArgument[SendMessageBatchRequest](0)
           invocation
             .getArgument[AsyncHandler[SendMessageBatchRequest, SendMessageBatchResult]](1)
             .onError(new Exception("SQS Exception"))
@@ -249,12 +318,18 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       Await.result(future, 1.second)
     }
 
-    verify(sqsClient, times(1)).sendMessageBatchAsync(any[SendMessageBatchRequest](), any())
+    verify(sqsClient, times(1)).sendMessageBatchAsync(
+      any[SendMessageBatchRequest](),
+      any[AsyncHandler[SendMessageBatchRequest, SendMessageBatchResult]]()
+    )
   }
 
   it should "send all batches of messages" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
-    when(sqsClient.sendMessageBatchAsync(any[SendMessageBatchRequest](), any())).thenAnswer(
+    when(
+      sqsClient.sendMessageBatchAsync(any[SendMessageBatchRequest](),
+                                      any[AsyncHandler[SendMessageBatchRequest, SendMessageBatchResult]]())
+    ).thenAnswer(
       new Answer[AnyRef] {
         override def answer(invocation: InvocationOnMock): Future[SendMessageBatchResult] = {
           val sendMessageRequest = invocation.getArgument[SendMessageBatchRequest](0)
@@ -295,6 +370,9 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       .sendComplete()
     Await.result(future, 1.second) shouldBe Done
 
-    verify(sqsClient, times(2)).sendMessageBatchAsync(any[SendMessageBatchRequest](), any())
+    verify(sqsClient, times(2)).sendMessageBatchAsync(
+      any[SendMessageBatchRequest](),
+      any[AsyncHandler[SendMessageBatchRequest, SendMessageBatchResult]]()
+    )
   }
 }
