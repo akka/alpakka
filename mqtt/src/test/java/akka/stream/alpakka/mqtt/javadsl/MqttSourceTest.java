@@ -213,8 +213,8 @@ public class MqttSourceTest {
 
   @Test
   public void supportWillMessage() throws Exception {
-    String topic1 = "source-spec/topic1";
-    String willTopic = "source-spec/will";
+    String topic1 = "source-test/topic1";
+    String willTopic = "source-test/will";
     final MqttConnectionSettings baseConnectionSettings = MqttConnectionSettings.create(
             "tcp://localhost:1883",
             "test-java-client",

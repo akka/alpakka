@@ -43,9 +43,6 @@ class MqttSourceSpec
   //#create-connection-settings
 
   val topic1 = "source-spec/topic1"
-  val topic2 = "source-spec/topic2"
-  val secureTopic = "source-spec/secure-topic1"
-  val willTopic = "source-spec/will"
 
   val sourceSettings = connectionSettings.withClientId(clientId = "source-spec/source")
   val sinkSettings = connectionSettings.withClientId(clientId = "source-spec/sink")
@@ -82,9 +79,13 @@ class MqttSourceSpec
       val input = Vector("one", "two", "three", "four", "five")
 
       //#create-source-with-manualacks
-      val connectionSettings = sourceSettings.withCleanSession(false)
-      val mqttSourceSettings = MqttSourceSettings(connectionSettings, Map(topic -> MqttQoS.AtLeastOnce))
-      val mqttSource = MqttSource.atLeastOnce(mqttSourceSettings, 8)
+      val sourceConnectionSettings = connectionSettings
+        .withClientId(clientId = "source-spec/source1")
+        .withCleanSession(false)
+      val mqttSourceSettings = MqttSourceSettings(sourceConnectionSettings, Map(topic -> MqttQoS.AtLeastOnce))
+
+      val mqttSource: Source[MqttCommittableMessage, Future[Done]] =
+        MqttSource.atLeastOnce(mqttSourceSettings, 8)
       //#create-source-with-manualacks
 
       val (subscribed, unackedResult) = mqttSource.take(input.size).toMat(Sink.seq)(Keep.both).run()
@@ -141,6 +142,7 @@ class MqttSourceSpec
     }
 
     "receive messages from multiple topics" in {
+      val topic2 = "source-spec/topic2"
       val messages = (0 until 7)
         .flatMap(
           i =>
@@ -187,6 +189,7 @@ class MqttSourceSpec
     }
 
     "fail connection when not providing the requested credentials" in {
+      val secureTopic = "source-spec/secure-topic1"
       val settings =
         MqttSourceSettings(sourceSettings.withAuth("username1", "bad_password"),
                            Map(secureTopic -> MqttQoS.AtLeastOnce))
@@ -200,6 +203,7 @@ class MqttSourceSpec
     }
 
     "receive a message from a topic with right credentials" in {
+      val secureTopic = "source-spec/secure-topic2"
       val msg = MqttMessage(secureTopic, ByteString("ohi"))
 
       val settings = MqttSourceSettings(sourceSettings
@@ -328,6 +332,7 @@ class MqttSourceSpec
     "support will message" in {
       import system.dispatcher
 
+      val willTopic = "source-spec/will"
       val msg = MqttMessage(topic1, ByteString("ohi"))
 
       //#will-message
