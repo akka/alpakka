@@ -33,24 +33,6 @@ import static org.junit.Assert.assertEquals;
 
 public class SqsAckSinkTest extends BaseSqsTest {
 
-    private static ActorSystem system;
-    private static ActorMaterializer materializer;
-
-
-    @BeforeClass
-    public static void setup() {
-
-        //#init-mat
-        system = ActorSystem.create();
-        materializer = ActorMaterializer.create(system);
-        //#init-mat
-    }
-
-    @AfterClass
-    public static void teardown() {
-        TestKit.shutdownActorSystem(system);
-    }
-
     @Test
     public void testAcknowledge() throws Exception {
         final String queueUrl = "none";
@@ -73,9 +55,9 @@ public class SqsAckSinkTest extends BaseSqsTest {
         CompletionStage<Done> done = Source
                 .single(pair)
                 .runWith(SqsAckSink.create(queueUrl, awsClient), materializer);
+        //#ack
 
         done.toCompletableFuture().get(1, TimeUnit.SECONDS);
-        //#ack
         verify(awsClient).deleteMessageAsync(any(DeleteMessageRequest.class), any());
     }
 
@@ -102,9 +84,9 @@ public class SqsAckSinkTest extends BaseSqsTest {
                 .single(pair)
                 .via(SqsAckFlow.create(queueUrl, awsClient))
                 .runWith(Sink.ignore(), materializer);
+        //#flow-ack
 
         done.toCompletableFuture().get(1, TimeUnit.SECONDS);
-        //#flow-ack
         verify(awsClient).deleteMessageAsync(any(DeleteMessageRequest.class), any());
     }
 
@@ -130,8 +112,8 @@ public class SqsAckSinkTest extends BaseSqsTest {
         CompletionStage<Done> done = Source
                 .single(pair)
                 .runWith(SqsAckSink.create(queueUrl, awsClient), materializer);
-        done.toCompletableFuture().get(1, TimeUnit.SECONDS);
         //#requeue
+        done.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
         verify(awsClient)
                 .changeMessageVisibilityAsync(
@@ -154,8 +136,8 @@ public class SqsAckSinkTest extends BaseSqsTest {
                 .single(pair)
                 .via(SqsAckFlow.create(queueUrl, awsClient))
                 .runWith(Sink.head(), materializer);
-        AckResult result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
         //#ignore
+        AckResult result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
         assertEquals(Option.empty(), result.metadata());
         assertEquals("test", result.message());
@@ -187,9 +169,9 @@ public class SqsAckSinkTest extends BaseSqsTest {
                 .fromIterator(() -> messages.iterator())
                 .via(SqsAckFlow.grouped(queueUrl, awsClient))
                 .runWith(Sink.ignore(), materializer);
+        //#batch-ack
 
         done.toCompletableFuture().get(1, TimeUnit.SECONDS);
-        //#batch-ack
         verify(awsClient).deleteMessageBatchAsync(any(DeleteMessageBatchRequest.class), any());
     }
 
@@ -219,9 +201,9 @@ public class SqsAckSinkTest extends BaseSqsTest {
                 .fromIterator(() -> messages.iterator())
                 .via(SqsAckFlow.grouped(queueUrl, awsClient))
                 .runWith(Sink.ignore(), materializer);
+        //#batch-requeue
 
         done.toCompletableFuture().get(1, TimeUnit.SECONDS);
-        //#batch-requeue
         verify(awsClient).changeMessageVisibilityBatchAsync(any(ChangeMessageVisibilityBatchRequest.class), any());
     }
 
@@ -242,8 +224,8 @@ public class SqsAckSinkTest extends BaseSqsTest {
                 .fromIterator(() -> messages.iterator())
                 .via(SqsAckFlow.grouped(queueUrl, awsClient))
                 .runWith(Sink.seq(), materializer);
-        List<AckResult> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
         //#batch-ignore
+        List<AckResult> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
         assertEquals(10, result.size());
         for (int i = 0; i< 10 ; i++) {

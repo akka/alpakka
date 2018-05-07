@@ -5,35 +5,31 @@
 package akka.stream.alpakka.sqs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import com.amazonaws.auth.{AWSCredentialsProvider, AWSStaticCredentialsProvider, BasicAWSCredentials}
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
-import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
+import akka.stream.{ActorMaterializer, Materializer}
+import com.amazonaws.services.sqs.AmazonSQSAsync
 import org.elasticmq.rest.sqs.{SQSLimits, SQSRestServer, SQSRestServerBuilder}
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite, Tag}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 
-trait DefaultTestContext extends BeforeAndAfterAll with BeforeAndAfterEach { this: Suite =>
+trait DefaultTestContext extends BeforeAndAfterAll with BeforeAndAfterEach with ScalaFutures { this: Suite =>
 
   //#init-mat
-  implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem()
+  implicit val mat: Materializer = ActorMaterializer()
   //#init-mat
 
   var sqsServer: SQSRestServer = _
   def sqsAddress = sqsServer.waitUntilStarted().localAddress
-  def sqsPort = sqsAddress.getPort
   def sqsEndpoint: String =
-    s"http://${sqsAddress.getHostName}:$sqsPort"
+    s"http://${sqsAddress.getHostName}:${sqsAddress.getPort}"
 
   object Integration extends Tag("akka.stream.alpakka.sqs.scaladsl.Integration")
 
-  val credentialsProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"))
-
-  implicit def sqsClient = createAsyncClient(sqsEndpoint, credentialsProvider)
+  def sqsClient = createAsyncClient(sqsEndpoint)
 
   def randomQueueUrl(): String = sqsClient.createQueue(s"queue-${Random.nextInt}").getQueueUrl
 
@@ -50,15 +46,21 @@ trait DefaultTestContext extends BeforeAndAfterAll with BeforeAndAfterEach { thi
       super.afterAll()
     }
 
-  def createAsyncClient(sqsEndpoint: String, credentialsProvider: AWSCredentialsProvider): AmazonSQSAsync = {
+  def createAsyncClient(sqsEndpoint: String): AmazonSQSAsync = {
     //#init-client
-    val client: AmazonSQSAsync = AmazonSQSAsyncClientBuilder
+    import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+    import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
+    import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
+
+    val credentialsProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"))
+    implicit val awsSqsClient: AmazonSQSAsync = AmazonSQSAsyncClientBuilder
       .standard()
       .withCredentials(credentialsProvider)
       .withEndpointConfiguration(new EndpointConfiguration(sqsEndpoint, "eu-central-1"))
       .build()
+    system.registerOnTermination(awsSqsClient.shutdown())
     //#init-client
-    client
+    awsSqsClient
   }
 
 }

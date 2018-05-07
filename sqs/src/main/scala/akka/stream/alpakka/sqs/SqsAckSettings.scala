@@ -10,11 +10,11 @@ object SqsAckSinkSettings {
   val Defaults = SqsAckSinkSettings(maxInFlight = 10)
 }
 
-//#SqsAckSinkSettings
 final case class SqsAckSinkSettings(maxInFlight: Int) {
   require(maxInFlight > 0)
+
+  def withMaxInFlight(maxInFlight: Int): SqsAckSinkSettings = copy(maxInFlight = maxInFlight)
 }
-//#SqsAckSinkSettings
 
 object SqsBatchAckFlowSettings {
   val Defaults = SqsBatchAckFlowSettings(
@@ -24,7 +24,6 @@ object SqsBatchAckFlowSettings {
   )
 }
 
-//#SqsBatchAckFlowSettings
 final case class SqsBatchAckFlowSettings(maxBatchSize: Int, maxBatchWait: FiniteDuration, concurrentRequests: Int) {
   require(concurrentRequests > 0)
   require(
@@ -32,11 +31,12 @@ final case class SqsBatchAckFlowSettings(maxBatchSize: Int, maxBatchWait: Finite
     s"Invalid value for maxBatchSize: $maxBatchSize. It should be 0 < maxBatchSize < 10, due to the Amazon SQS requirements."
   )
   def withMaxBatchSize(maxBatchSize: Int): SqsBatchAckFlowSettings = this.copy(maxBatchSize = maxBatchSize)
+  def withMaxBatchWait(length: Long, unit: TimeUnit): SqsBatchAckFlowSettings =
+    this.copy(maxBatchWait = FiniteDuration(length, unit))
   def withMaxBatchWait(maxBatchWait: FiniteDuration): SqsBatchAckFlowSettings = this.copy(maxBatchWait = maxBatchWait)
   def withConcurrentRequests(concurrentRequests: Int): SqsBatchAckFlowSettings =
     this.copy(concurrentRequests = concurrentRequests)
 }
-//#SqsBatchAckFlowSettings
 
 sealed abstract class MessageAction
 

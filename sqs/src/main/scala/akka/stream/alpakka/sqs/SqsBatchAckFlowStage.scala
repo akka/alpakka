@@ -23,18 +23,19 @@ private[sqs] final class SqsBatchDeleteFlowStage(queueUrl: String, sqsClient: Am
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GenericStage[Iterable[Message]](shape) {
-      private def handleDelete(request: DeleteMessageBatchRequest): Unit = {
-        val entries = request.getEntries
-        for (entry <- entries.asScala)
-          log.debug(s"Deleted message {}", entry.getReceiptHandle)
-        inFlight -= entries.size()
-        checkForCompletion()
-      }
       private var deleteCallback: AsyncCallback[DeleteMessageBatchRequest] = _
+
       override def preStart(): Unit = {
         super.preStart()
-        deleteCallback = getAsyncCallback[DeleteMessageBatchRequest](handleDelete)
+        deleteCallback = getAsyncCallback[DeleteMessageBatchRequest] { request =>
+          val entries = request.getEntries
+          for (entry <- entries.asScala)
+            log.debug(s"Deleted message {}", entry.getReceiptHandle)
+          inFlight -= entries.size()
+          checkForCompletion()
+        }
       }
+
       override def onPush(): Unit = {
         val messagesIt = grab(in)
         val messages = messagesIt.toList
@@ -42,39 +43,41 @@ private[sqs] final class SqsBatchDeleteFlowStage(queueUrl: String, sqsClient: Am
         val responsePromise = Promise[List[AckResult]]
         inFlight += nrOfMessages
 
-        sqsClient.deleteMessageBatchAsync(
-          new DeleteMessageBatchRequest(
-            queueUrl,
-            messages.zipWithIndex.map {
-              case (message, index) =>
-                new DeleteMessageBatchRequestEntry().withReceiptHandle(message.getReceiptHandle).withId(index.toString)
-            }.asJava
-          ),
-          new AsyncHandler[DeleteMessageBatchRequest, DeleteMessageBatchResult]() {
-            override def onError(exception: Exception): Unit = {
-              val batchException = BatchException(messages.size, exception)
+        val request = new DeleteMessageBatchRequest(
+          queueUrl,
+          messages.zipWithIndex.map {
+            case (message, index) =>
+              new DeleteMessageBatchRequestEntry().withReceiptHandle(message.getReceiptHandle).withId(index.toString)
+          }.asJava
+        )
+        val handler = new AsyncHandler[DeleteMessageBatchRequest, DeleteMessageBatchResult]() {
+          override def onError(exception: Exception): Unit = {
+            val batchException = BatchException(messages.size, exception)
+            responsePromise.failure(batchException)
+            failureCallback.invoke(batchException)
+          }
+
+          override def onSuccess(request: DeleteMessageBatchRequest, result: DeleteMessageBatchResult): Unit =
+            if (!result.getFailed.isEmpty) {
+              val nrOfFailedMessages = result.getFailed.size()
+              val batchException: BatchException =
+                BatchException(
+                  batchSize = nrOfMessages,
+                  cause = new Exception(
+                    s"Some messages failed to delete. $nrOfFailedMessages of $nrOfMessages messages failed"
+                  )
+                )
               responsePromise.failure(batchException)
               failureCallback.invoke(batchException)
+            } else {
+              responsePromise.success(messages.map(msg => AckResult(Some(result), msg.getBody)))
+              deleteCallback.invoke(request)
             }
 
-            override def onSuccess(request: DeleteMessageBatchRequest, result: DeleteMessageBatchResult): Unit =
-              if (!result.getFailed.isEmpty) {
-                val nrOfFailedMessages = result.getFailed.size()
-                val batchException: BatchException =
-                  BatchException(
-                    batchSize = nrOfMessages,
-                    cause = new Exception(
-                      s"Some messages failed to delete. $nrOfFailedMessages of $nrOfMessages messages failed"
-                    )
-                  )
-                responsePromise.failure(batchException)
-                failureCallback.invoke(batchException)
-              } else {
-                responsePromise.success(messages.map(msg => AckResult(Some(result), msg.getBody)))
-                deleteCallback.invoke(request)
-              }
-
-          }
+        }
+        sqsClient.deleteMessageBatchAsync(
+          request,
+          handler
         )
         push(out, responsePromise.future)
       }
