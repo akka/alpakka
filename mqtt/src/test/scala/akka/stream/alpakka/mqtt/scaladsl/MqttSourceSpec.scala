@@ -284,8 +284,10 @@ class MqttSourceSpec
 
       val msg = MqttMessage(topic1, ByteString("ohi"))
 
+
       // Create a proxy to RabbitMQ so it can be shutdown
-      val (proxyBinding, connection) = Tcp().bind("localhost", 1337).toMat(Sink.head)(Keep.both).run()
+      val proxyPort = 1337 // make sure to keep it separate from ports used by other tests
+      val (proxyBinding, connection) = Tcp().bind("localhost", proxyPort).toMat(Sink.head)(Keep.both).run()
       val proxyKs = connection.map(
         _.handleWith(
           Tcp()
@@ -299,7 +301,7 @@ class MqttSourceSpec
         sourceSettings
           .withAutomaticReconnect(true)
           .withCleanSession(false)
-          .withBroker("tcp://localhost:1337"),
+          .withBroker(s"tcp://localhost:$proxyPort"),
         Map(topic1 -> MqttQoS.AtLeastOnce)
       )
 
@@ -314,7 +316,7 @@ class MqttSourceSpec
       Await.result(proxyKs, timeout).shutdown()
 
       // Restart the proxy
-      val (proxyBinding2, connection2) = Tcp().bind("localhost", 1337).toMat(Sink.head)(Keep.both).run()
+      val (proxyBinding2, connection2) = Tcp().bind("localhost", proxyPort).toMat(Sink.head)(Keep.both).run()
       val proxyKs2 = connection2.map(
         _.handleWith(
           Tcp()
@@ -340,7 +342,8 @@ class MqttSourceSpec
       //#will-message
 
       // Create a proxy to RabbitMQ so it can be shutdown
-      val (proxyBinding, connection) = Tcp().bind("localhost", 1337).toMat(Sink.head)(Keep.both).run()
+      val proxyPort = 1338 // make sure to keep it separate from ports used by other tests
+      val (proxyBinding, connection) = Tcp().bind("localhost", proxyPort).toMat(Sink.head)(Keep.both).run()
       val proxyKs = connection.map(
         _.handleWith(
           Tcp()
@@ -353,7 +356,7 @@ class MqttSourceSpec
       val settings1 = MqttSourceSettings(
         sourceSettings
           .withClientId("source-spec/testator")
-          .withBroker("tcp://localhost:1337")
+          .withBroker(s"tcp://localhost:$proxyPort")
           .withWill(lastWill),
         Map(topic1 -> MqttQoS.AtLeastOnce)
       )

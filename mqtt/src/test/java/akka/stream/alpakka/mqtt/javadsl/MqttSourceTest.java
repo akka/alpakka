@@ -234,8 +234,9 @@ public class MqttSourceTest {
     //#will-message
 
     // Create a proxy to RabbitMQ so it can be shutdown
+    int proxyPort = 1347; // make sure to keep it separate from ports used by other tests
     Pair<CompletionStage<Tcp.ServerBinding>, CompletionStage<Tcp.IncomingConnection>> result1 = Tcp.get(system)
-            .bind("localhost", 1337).toMat(Sink.head(), Keep.both()).run(materializer);
+            .bind("localhost", proxyPort).toMat(Sink.head(), Keep.both()).run(materializer);
 
     CompletionStage<UniqueKillSwitch> proxyKs = result1.second().toCompletableFuture().thenApply(conn ->
       conn.handleWith(
@@ -252,7 +253,7 @@ public class MqttSourceTest {
     MqttSourceSettings settings1 = MqttSourceSettings.create(
       sourceSettings
         .withClientId("source-spec/testator")
-        .withBroker("tcp://localhost:1337")
+        .withBroker("tcp://localhost:" + String.valueOf(proxyPort))
         .withWill(lastWill)
     ).withSubscriptions(Pair.create(topic1, MqttQoS.atLeastOnce()));
 
