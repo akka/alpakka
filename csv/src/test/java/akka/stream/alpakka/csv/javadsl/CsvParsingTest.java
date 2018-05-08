@@ -98,7 +98,7 @@ public class CsvParsingTest {
             assertThat(cause, is(instanceOf(MalformedCsvException.class)));
             MalformedCsvException csvException = (MalformedCsvException) cause;
             assertThat(csvException.getLineNo(), equalTo(2L));
-            assertThat(csvException.getBytePos(), equalTo(4));
+            assertThat(csvException.getBytePos(), equalTo(5));
         }
     }
 
