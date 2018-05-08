@@ -77,6 +77,10 @@ object MqttSourceSettings {
     MqttSourceSettings(connectionSettings)
 }
 
+/**
+ * Connection settings passed to the underlying Paho client.
+ * @see https://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttConnectOptions.html
+ */
 final case class MqttConnectionSettings(
     broker: String,
     clientId: String,
