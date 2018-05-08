@@ -57,10 +57,6 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
         import scala.collection.JavaConverters._
         channel.basicQos(bufferSize)
         val consumerCallback = getAsyncCallback(handleDelivery)
-        val shutdownCallback = getAsyncCallback[Option[ShutdownSignalException]] {
-          case Some(ex) => onFailure(ex)
-          case None => if (unackedMessages == 0) completeStage()
-        }
 
         val commitCallback = getAsyncCallback[CommitCallback] {
           case AckArguments(deliveryTag, multiple, promise) => {
@@ -110,11 +106,15 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
 
           override def handleCancel(consumerTag: String): Unit =
             // non consumer initiated cancel, for example happens when the queue has been deleted.
-            shutdownCallback.invoke(None)
+            shutdownCallback.invoke(
+              new RuntimeException(s"Consumer with consumerTag $consumerTag shut down unexpectedly")
+            )
 
           override def handleShutdownSignal(consumerTag: String, sig: ShutdownSignalException): Unit =
             // "Called when either the channel or the underlying connection has been shut down."
-            shutdownCallback.invoke(Option(sig))
+            shutdownCallback.invoke(
+              new RuntimeException(s"Consumer with consumerTag $consumerTag shut down unexpectedly", sig)
+            )
         }
 
         def setupNamedQueue(settings: NamedQueueSourceSettings): Unit =
