@@ -5,6 +5,7 @@
 package akka.stream.alpakka.s3.javadsl;
 
 import java.util.concurrent.CompletionStage;
+
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
@@ -24,7 +25,6 @@ public class JavaExamplesSnippets {
 
     // Java examples documentation snippet only
 
-    // #java-initialization-example
     private static ActorSystem system = ActorSystem.create();
     private static Materializer materializer = ActorMaterializer.create(system);
 
@@ -51,23 +51,33 @@ public class JavaExamplesSnippets {
     );
 
     private final S3Client client = new S3Client(settings, system, materializer);
-    // #java-initialization-example
 
-    // #java-example
-    public CompletionStage<MultipartUploadResult> aes256Encryption(String sourceBucket, String sourceKey,
-                                                                   String targetBucket, String targetKey) {
-        return client.multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, S3Headers.empty(),
-                ServerSideEncryption.AES256$.MODULE$);
+    public void aes256Encryption(String sourceBucket, String sourceKey,
+                                 String targetBucket, String targetKey) {
+        // #java-example
+        // setting the encryption to AES256
+        CompletionStage<MultipartUploadResult> result = client.multipartCopy(
+                sourceBucket, sourceKey,
+                targetBucket, targetKey,
+                S3Headers.empty(),
+                ServerSideEncryption.AES256$.MODULE$
+            );
+        // #java-example
     }
-    // #java-example
 
-    // #java-example
-    public CompletionStage<MultipartUploadResult> cannedAcl(String sourceBucket, String sourceKey,
-                                                            String targetBucket, String targetKey) {
-        return client.multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey,
-                S3Headers.apply(CannedAcl.Private$.MODULE$), null);
+    public void cannedAcl(String sourceBucket, String sourceKey,
+                          String targetBucket, String targetKey) {
+        // #java-example
+
+        // using canned ACL
+        CompletionStage<MultipartUploadResult> result = client.multipartCopy(
+                sourceBucket, sourceKey,
+                targetBucket, targetKey,
+                S3Headers.apply(CannedAcl.Private$.MODULE$),
+                null // encryption
+            );
+        // #java-example
     }
-    // #java-example
 
 
 }
