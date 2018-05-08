@@ -128,14 +128,16 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
   it should "copy a file from source bucket to target bucket with source version id provided" in {
     mockCopyVersioned()
 
-    //#multipart-copy-versioned
+    //#multipart-copy
+
+    // pass the source version
     val result: Future[MultipartUploadResult] =
       s3Client.multipartCopy(bucket,
                              bucketKey,
                              targetBucket,
                              targetBucketKey,
-                             Some("3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo"))
-    //#multipart-copy-versioned
+                             sourceVersionId = Some("3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo"))
+    //#multipart-copy
 
     result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag)
   }

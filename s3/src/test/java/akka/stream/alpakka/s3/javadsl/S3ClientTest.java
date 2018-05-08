@@ -226,9 +226,41 @@ public class S3ClientTest extends S3WireMockBase {
     public void copyUploadWithContentLengthLessThenChunkSize() throws Exception {
         mockCopy();
 
+        String bucket = bucket();
+        String sourceKey = bucketKey();
+        String targetBucket = targetBucket();
+        String targetKey = targetBucketKey();
         //#multipart-copy
-        final CompletionStage<MultipartUploadResult> resultCompletionStage = client
-                .multipartCopy(bucket(), bucketKey(), targetBucket(), targetBucketKey());
+        final CompletionStage<MultipartUploadResult> resultCompletionStage = client.multipartCopy(
+                bucket, sourceKey,
+                targetBucket, targetKey
+            );
+        //#multipart-copy
+
+        final MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag()));
+    }
+
+    @Test
+    public void copyUploadWithSourceVersion() throws Exception {
+        mockCopyVersioned();
+
+        String bucket = bucket();
+        String sourceKey = bucketKey();
+        String targetBucket = targetBucket();
+        String targetKey = targetBucketKey();
+        //#multipart-copy
+
+        // pass the source version
+        String sourceVersionId = "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo";
+        final CompletionStage<MultipartUploadResult> resultCompletionStage = client.multipartCopy(
+                bucket, sourceKey,
+                targetBucket, targetKey,
+                sourceVersionId,
+                S3Headers.empty(),
+                null // encryption
+            );
         //#multipart-copy
 
         final MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);

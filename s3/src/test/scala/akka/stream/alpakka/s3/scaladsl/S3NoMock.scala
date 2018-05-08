@@ -147,7 +147,7 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     )
   }
 
-  List(createAWSConnectionProperties, createBluemixConnectionProperties).map { settings =>
+  List(createAWSConnectionProperties, createBluemixConnectionProperties).foreach { settings =>
     it should s"list with real credentials (${settings.name})" in {
       val result = settings.defaultRegionClient.listBucket(settings.defaultRegionBucket, None).runWith(Sink.seq)
 
