@@ -287,9 +287,9 @@ class MqttSourceSpec
 
       val msg = MqttMessage(topic1, ByteString("ohi"))
 
-      // Create a proxy to RabbitMQ so it can be shutdown
-      val proxyPort = 1337 // make sure to keep it separate from ports used by other tests
-      val (proxyBinding, connection) = Tcp().bind("localhost", proxyPort).toMat(Sink.head)(Keep.both).run()
+      // Create a proxy on an available port so it can be shut down
+      val (proxyBinding, connection) = Tcp().bind("localhost", 0).toMat(Sink.head)(Keep.both).run()
+      val proxyPort = proxyBinding.futureValue.localAddress.getPort
       val proxyKs = connection.map(
         _.handleWith(
           Tcp()
@@ -311,6 +311,7 @@ class MqttSourceSpec
 
       // Ensure that the connection made it all the way to the server by waiting until it receives a message
       Await.ready(subscribed, timeout)
+
       Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
       try {
         probe.requestNext()
@@ -347,9 +348,9 @@ class MqttSourceSpec
       val lastWill = MqttMessage(willTopic, ByteString("ohi"), Some(MqttQoS.AtLeastOnce), retained = true)
       //#will-message
 
-      // Create a proxy to RabbitMQ so it can be shutdown
-      val proxyPort = 1338 // make sure to keep it separate from ports used by other tests
-      val (proxyBinding, connection) = Tcp().bind("localhost", proxyPort).toMat(Sink.head)(Keep.both).run()
+      // Create a proxy on an available port so it can be shut down
+      val (proxyBinding, connection) = Tcp().bind("localhost", 0).toMat(Sink.head)(Keep.both).run()
+      val proxyPort = proxyBinding.futureValue.localAddress.getPort
       val proxyKs = connection.map(
         _.handleWith(
           Tcp()
