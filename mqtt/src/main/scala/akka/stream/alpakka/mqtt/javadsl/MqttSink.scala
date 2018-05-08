@@ -8,7 +8,6 @@ import java.util.concurrent.CompletionStage
 
 import akka.Done
 import akka.stream.alpakka.mqtt.{MqttConnectionSettings, MqttMessage, MqttQoS, MqttSourceSettings}
-import akka.stream.javadsl.Sink
 
 object MqttSink {
 
@@ -19,5 +18,5 @@ object MqttSink {
              qos: MqttQoS): akka.stream.javadsl.Sink[MqttMessage, CompletionStage[Done]] =
     MqttFlow
       .create(MqttSourceSettings(connectionSettings), 0, qos)
-      .to(Sink.ignore.asScala)
+      .to(akka.stream.scaladsl.Sink.ignore)
 }

@@ -29,6 +29,6 @@ object ElasticsearchSink {
   ): akka.stream.javadsl.Sink[IncomingMessage[T, NotUsed], CompletionStage[Done]] =
     ElasticsearchFlow
       .create(indexName, typeName, settings, client, objectMapper)
-      .toMat(Sink.ignore, Keep.right[NotUsed, CompletionStage[Done]])
+      .toMat(Sink.ignore[java.util.List[IncomingMessageResult[T, NotUsed]]], Keep.right[NotUsed, CompletionStage[Done]])
 
 }
