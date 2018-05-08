@@ -20,7 +20,8 @@ object OrientDBSink {
              settings: OrientDBUpdateSettings): Sink[OIncomingMessage[ODocument, NotUsed], CompletionStage[Done]] =
     OrientDBFlow
       .create(className, settings)
-      .toMat(Sink.ignore, Keep.right[NotUsed, CompletionStage[Done]])
+      .toMat(Sink.ignore[java.util.List[OIncomingMessage[ODocument, NotUsed]]],
+             Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
    * Java API: creates a sink that accepts as specific type
@@ -30,5 +31,5 @@ object OrientDBSink {
                clazz: Class[T]): Sink[OIncomingMessage[T, NotUsed], CompletionStage[Done]] =
     OrientDBFlow
       .typed[T](className, settings, Some(clazz))
-      .toMat(Sink.ignore, Keep.right[NotUsed, CompletionStage[Done]])
+      .toMat(Sink.ignore[java.util.List[OIncomingMessage[T, NotUsed]]], Keep.right[NotUsed, CompletionStage[Done]])
 }
