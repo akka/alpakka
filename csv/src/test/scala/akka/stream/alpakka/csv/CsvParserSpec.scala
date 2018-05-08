@@ -181,6 +181,11 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
 
     "quoted values may contain CR, LF" in {
       expectInOut("one,\"two\r\ntwo\",three\n", List("one", "two\r\ntwo", "three"))
+      expectInOut("one,\"two\r\ntwo\",three", List("one", "two\r\ntwo", "three"))(requireLineEnd = false)
+    }
+
+    "quoted values may contain CR, LF in last field" in {
+      expectInOut("one,\"two\r\ntwo\"", List("one", "two\r\ntwo"))(requireLineEnd = false)
     }
 
     "handle escaping split over two inputs" in {

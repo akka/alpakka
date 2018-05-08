@@ -118,20 +118,6 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
     var state: State = LineStart
     val fieldBuilder = new FieldBuilder(buf)
 
-    def wrongCharEscaped() =
-      throw new MalformedCsvException(
-        currentLineNo,
-        pos,
-        s"wrong escaping at $currentLineNo:$pos, only escape or delimiter may be escaped"
-      )
-
-    def wrongCharEscapedWithinQuotes() =
-      throw new MalformedCsvException(
-        currentLineNo,
-        pos,
-        s"wrong escaping at $currentLineNo:$pos, only escape or quote may be escaped within quotes"
-      )
-
     def noCharEscaped() =
       throw new MalformedCsvException(currentLineNo,
                                       pos,
@@ -268,7 +254,11 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
               pos += 1
 
             case b =>
-              wrongCharEscaped()
+              throw new MalformedCsvException(
+                currentLineNo,
+                pos,
+                s"wrong escaping at $currentLineNo:$pos, only escape or delimiter may be escaped"
+              )
           }
 
         case QuoteStarted =>
@@ -334,7 +324,11 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
               pos += 1
 
             case b =>
-              wrongCharEscapedWithinQuotes()
+              throw new MalformedCsvException(
+                currentLineNo,
+                pos,
+                s"wrong escaping at $currentLineNo:$pos, only escape or quote may be escaped within quotes"
+              )
           }
 
         case WithinQuotedFieldQuote =>
@@ -379,7 +373,7 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
         case WithinField =>
           columns :+= fieldBuilder.result(pos)
           Some(columns.toList)
-        case QuoteEnd =>
+        case QuoteEnd | WithinQuotedFieldQuote =>
           columns :+= fieldBuilder.result(pos - 1)
           Some(columns.toList)
         case WithinFieldEscaped | WithinQuotedFieldEscaped =>
