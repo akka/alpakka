@@ -85,6 +85,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
   def download(s3Location: S3Location,
                range: Option[ByteRange],
+               versionId: Option[String],
                sse: Option[ServerSideEncryption]): (Source[ByteString, NotUsed], Future[ObjectMetadata]) = {
     import mat.executionContext
     val s3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(GetObject) })
@@ -127,10 +128,11 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
   def getObjectMetadata(bucket: String,
                         key: String,
+                        versionId: Option[String],
                         sse: Option[ServerSideEncryption]): Future[Option[ObjectMetadata]] = {
     implicit val ec = mat.executionContext
     val s3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(HeadObject) })
-    request(S3Location(bucket, key), HttpMethods.HEAD, s3Headers = s3Headers).flatMap {
+    request(S3Location(bucket, key), HttpMethods.HEAD, versionId = versionId, s3Headers = s3Headers).flatMap {
       case HttpResponse(OK, headers, entity, _) =>
         entity.discardBytes().future().map { _ =>
           Some(computeMetaData(headers, entity))
@@ -144,9 +146,9 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     }
   }
 
-  def deleteObject(s3Location: S3Location): Future[Done] = {
+  def deleteObject(s3Location: S3Location, versionId: Option[String]): Future[Done] = {
     implicit val ec = mat.executionContext
-    request(s3Location, HttpMethods.DELETE).flatMap {
+    request(s3Location, HttpMethods.DELETE, versionId = versionId).flatMap {
       case HttpResponse(NoContent, _, entity, _) =>
         entity.discardBytes().future().map(_ => Done)
       case HttpResponse(_, _, entity, _) =>
@@ -193,8 +195,9 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
   def request(s3Location: S3Location,
               method: HttpMethod = HttpMethods.GET,
               rangeOption: Option[ByteRange] = None,
+              versionId: Option[String] = None,
               s3Headers: S3Headers = S3Headers.empty): Future[HttpResponse] =
-    signAndGet(requestHeaders(getDownloadRequest(s3Location, method, s3Headers), rangeOption))
+    signAndGet(requestHeaders(getDownloadRequest(s3Location, method, s3Headers, versionId), rangeOption))
 
   private def requestHeaders(downloadRequest: HttpRequest, rangeOption: Option[ByteRange]): HttpRequest =
     rangeOption match {
@@ -251,7 +254,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
     // Pre step get source meta to get content length (size of the object)
     val eventualMaybeObjectSize: Future[Option[Long]] =
-      getObjectMetadata(sourceLocation.bucket, sourceLocation.key, sse).map(_.map(_.contentLength))
+      getObjectMetadata(sourceLocation.bucket, sourceLocation.key, sourceVersionId, sse).map(_.map(_.contentLength))
     val eventualPartitions =
       eventualMaybeObjectSize.map(_.map(createPartitions(chunkSize, sourceLocation)).getOrElse(Nil))
     val partitions = Source.fromFuture(eventualPartitions)

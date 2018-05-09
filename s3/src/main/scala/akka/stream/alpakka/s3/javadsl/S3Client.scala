@@ -139,6 +139,14 @@ final class ObjectMetadata private[javadsl] (
    */
   def getLastModified: DateTime =
     scalaMetadata.lastModified
+
+  /**
+   * Gets the value of the version id header. The version id will only be available
+   * if the versioning is enabled in the bucket
+   *
+   * @return optional version id of the object
+   */
+  def getVersionId: Optional[String] = scalaMetadata.versionId.fold(Optional.empty[String]())(Optional.of)
 }
 
 object MultipartUploadResult {
@@ -193,12 +201,28 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @param s3Headers any headers you want to add
    * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the raw [[HttpResponse]]
    */
+  def request(bucket: String, key: String, method: HttpMethod, s3Headers: S3Headers): CompletionStage[HttpResponse] =
+    request(bucket, key, null, method, s3Headers)
+
+  /**
+   * Use this to extend the library
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param method the [[akka.http.javadsl.model.HttpMethod HttpMethod]] to use when making the request
+   * @param s3Headers any headers you want to add
+   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the raw [[HttpResponse]]
+   */
   def request(bucket: String,
               key: String,
+              versionId: String,
               method: HttpMethod = HttpMethods.GET,
               s3Headers: S3Headers = S3Headers.empty): CompletionStage[HttpResponse] =
     impl
-      .request(S3Location(bucket, key), method.asInstanceOf[ScalaHttpMethod], s3Headers = s3Headers)
+      .request(S3Location(bucket, key),
+               method.asInstanceOf[ScalaHttpMethod],
+               versionId = Option(versionId),
+               s3Headers = s3Headers)
       .map(_.asInstanceOf[HttpResponse])(system.dispatcher)
       .toJava
 
@@ -210,12 +234,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @return A [[java.util.concurrent.CompletionStage CompletionStage]] containing an [[java.util.Optional Optional]] that will be empty in case the object does not exist
    */
   def getObjectMetadata(bucket: String, key: String): CompletionStage[Optional[ObjectMetadata]] =
-    impl
-      .getObjectMetadata(bucket, key, None)
-      .map { opt =>
-        Optional.ofNullable(opt.map(metaDataToJava).orNull)
-      }(mat.executionContext)
-      .toJava
+    getObjectMetadata(bucket, key, null)
 
   /**
    * Gets the metadata for a S3 Object
@@ -228,8 +247,22 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
   def getObjectMetadata(bucket: String,
                         key: String,
                         sse: ServerSideEncryption): CompletionStage[Optional[ObjectMetadata]] =
+    getObjectMetadata(bucket, key, null, sse)
+
+  /**
+   * Gets the metadata for a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param sse the server side encryption to use
+   * @return A [[java.util.concurrent.CompletionStage CompletionStage]] containing an [[java.util.Optional Optional]] that will be empty in case the object does not exist
+   */
+  def getObjectMetadata(bucket: String,
+                        key: String,
+                        versionId: String,
+                        sse: ServerSideEncryption): CompletionStage[Optional[ObjectMetadata]] =
     impl
-      .getObjectMetadata(bucket, key, Some(sse))
+      .getObjectMetadata(bucket, key, Option(versionId), Option(sse))
       .map { opt =>
         Optional.ofNullable(opt.map(metaDataToJava).orNull)
       }(mat.executionContext)
@@ -242,8 +275,21 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @param key the s3 object key
    * @return A [[java.util.concurrent.CompletionStage CompletionStage]] of [[java.lang.Void]]
    */
-  def deleteObject(bucket: String, key: String): CompletionStage[Done] =
-    impl.deleteObject(S3Location(bucket, key)).map(_ => Done.getInstance())(mat.executionContext).toJava
+  def deleteObject(bucket: String, key: String): CompletionStage[Done] = deleteObject(bucket, key, null)
+
+  /**
+   * Deletes a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param versionId optional version id of the object
+   * @return A [[java.util.concurrent.CompletionStage CompletionStage]] of [[java.lang.Void]]
+   */
+  def deleteObject(bucket: String, key: String, versionId: String): CompletionStage[Done] =
+    impl
+      .deleteObject(S3Location(bucket, key), Option(versionId))
+      .map(_ => Done.getInstance())(mat.executionContext)
+      .toJava
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -439,7 +485,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]], and a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[ObjectMetadata]]
    */
   def download(bucket: String, key: String): JPair[Source[ByteString, NotUsed], CompletionStage[ObjectMetadata]] =
-    toJava(impl.download(S3Location(bucket, key), None, None))
+    toJava(impl.download(S3Location(bucket, key), None, None, None))
 
   /**
    * Downloads a S3 Object
@@ -452,7 +498,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
   def download(bucket: String,
                key: String,
                sse: ServerSideEncryption): JPair[Source[ByteString, NotUsed], CompletionStage[ObjectMetadata]] =
-    toJava(impl.download(S3Location(bucket, key), None, Some(sse)))
+    toJava(impl.download(S3Location(bucket, key), None, None, Some(sse)))
 
   /**
    * Downloads a specific byte range of a S3 Object
@@ -466,7 +512,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
                key: String,
                range: ByteRange): JPair[Source[ByteString, NotUsed], CompletionStage[ObjectMetadata]] = {
     val scalaRange = range.asInstanceOf[ScalaByteRange]
-    toJava(impl.download(S3Location(bucket, key), Some(scalaRange), None))
+    toJava(impl.download(S3Location(bucket, key), Some(scalaRange), None, None))
   }
 
   /**
@@ -483,7 +529,26 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
                range: ByteRange,
                sse: ServerSideEncryption): JPair[Source[ByteString, NotUsed], CompletionStage[ObjectMetadata]] = {
     val scalaRange = range.asInstanceOf[ScalaByteRange]
-    toJava(impl.download(S3Location(bucket, key), Some(scalaRange), Some(sse)))
+    toJava(impl.download(S3Location(bucket, key), Some(scalaRange), None, Some(sse)))
+  }
+
+  /**
+   * Downloads a specific byte range of a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param range the [[akka.http.javadsl.model.headers.ByteRange ByteRange]] you want to download
+   * @param versionId optional version id of the object
+   * @param sse the server side encryption to use
+   * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]], and a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[ObjectMetadata]]
+   */
+  def download(bucket: String,
+               key: String,
+               range: ByteRange,
+               versionId: String,
+               sse: ServerSideEncryption): JPair[Source[ByteString, NotUsed], CompletionStage[ObjectMetadata]] = {
+    val scalaRange = range.asInstanceOf[ScalaByteRange]
+    toJava(impl.download(S3Location(bucket, key), Option(scalaRange), Option(versionId), Option(sse)))
   }
 
   /**
