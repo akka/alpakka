@@ -338,4 +338,45 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
         chunkingParallelism
       )
       .mapMaterializedValue(_.map(MultipartUploadResult.apply)(system.dispatcher))
+
+  /**
+   * Copy an S3 object from source bucket to target bucket using multi part copy upload.
+   *
+   * @param sourceBucket source s3 bucket name
+   * @param sourceKey    source s3 key
+   * @param targetBucket target s3 bucket name
+   * @param targetKey    target s3 key
+   * @param sourceVersionId optional version id of source object, if the versioning is enabled in source bucket
+   * @param contentType  an optional [[akka.http.scaladsl.model.ContentType ContentType]]
+   * @param s3Headers any headers you want to add
+   * @param sse an optional server side encryption key
+   * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
+   * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
+   * @return
+   */
+  def multipartCopy(
+      sourceBucket: String,
+      sourceKey: String,
+      targetBucket: String,
+      targetKey: String,
+      sourceVersionId: Option[String] = None,
+      contentType: ContentType = ContentTypes.`application/octet-stream`,
+      s3Headers: Option[S3Headers] = None,
+      sse: Option[ServerSideEncryption] = None,
+      chunkSize: Int = MinChunkSize,
+      chunkingParallelism: Int = 4
+  ): Future[MultipartUploadResult] =
+    impl
+      .multipartCopy(
+        S3Location(sourceBucket, sourceKey),
+        S3Location(targetBucket, targetKey),
+        sourceVersionId,
+        contentType,
+        s3Headers.getOrElse(S3Headers.empty),
+        sse,
+        chunkSize,
+        chunkingParallelism
+      )
+      .run()
+      .map(MultipartUploadResult.apply)(system.dispatcher)
 }
