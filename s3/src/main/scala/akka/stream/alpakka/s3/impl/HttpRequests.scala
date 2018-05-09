@@ -4,6 +4,9 @@
 
 package akka.stream.alpakka.s3.impl
 
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.Uri.{Authority, Query}
@@ -46,7 +49,9 @@ private[alpakka] object HttpRequests {
                          method: HttpMethod = HttpMethods.GET,
                          s3Headers: S3Headers = S3Headers.empty,
                          versionId: Option[String] = None)(implicit conf: S3Settings): HttpRequest = {
-    val query = versionId.map(vId => Query("versionId" -> vId)).getOrElse(Query())
+    val query = versionId
+      .map(vId => Query("versionId" -> URLDecoder.decode(vId, StandardCharsets.UTF_8.toString)))
+      .getOrElse(Query())
     s3Request(s3Location, method, _.withQuery(query))
       .withDefaultHeaders(s3Headers.headers: _*)
   }
