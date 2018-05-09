@@ -7,7 +7,7 @@ package akka.stream.alpakka.s3.impl
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.Uri.{Authority, Query}
-import akka.http.scaladsl.model.headers.Host
+import akka.http.scaladsl.model.headers.{Host, RawHeader}
 import akka.http.scaladsl.model.{ContentTypes, RequestEntity, _}
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.scaladsl.Source
@@ -103,6 +103,30 @@ private[alpakka] object HttpRequests {
         _.withQuery(Query("uploadId" -> upload.uploadId))
       ).withEntity(entity)
     }
+  }
+
+  def uploadCopyPartRequest(multipartCopy: MultipartCopy,
+                            sourceVersionId: Option[String] = None,
+                            s3Headers: S3Headers = S3Headers.empty)(implicit conf: S3Settings): HttpRequest = {
+    val upload = multipartCopy.multipartUpload
+    val copyPartition = multipartCopy.copyPartition
+    val range = copyPartition.range
+    val source = copyPartition.sourceLocation
+    val sourceHeaderValuePrefix = s"/${source.bucket}/${source.key}"
+    val sourceHeaderValue = sourceVersionId
+      .map(versionId => s"$sourceHeaderValuePrefix?versionId=$versionId")
+      .getOrElse(sourceHeaderValuePrefix)
+    val sourceHeader = RawHeader("x-amz-copy-source", sourceHeaderValue)
+    val copyHeaders = range
+      .map(br => Seq(sourceHeader, RawHeader("x-amz-copy-source-range", s"bytes=${br.first}-${br.last - 1}")))
+      .getOrElse(Seq(sourceHeader))
+
+    val allHeaders = s3Headers.headers ++ copyHeaders
+
+    s3Request(upload.s3Location,
+              HttpMethods.PUT,
+              _.withQuery(Query("partNumber" -> copyPartition.partNumber.toString, "uploadId" -> upload.uploadId)))
+      .withDefaultHeaders(allHeaders: _*)
   }
 
   private[this] def s3Request(s3Location: S3Location,

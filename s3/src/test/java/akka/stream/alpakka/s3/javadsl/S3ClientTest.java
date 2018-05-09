@@ -4,11 +4,14 @@
 
 package akka.stream.alpakka.s3.javadsl;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import org.junit.Test;
 import akka.NotUsed;
 import akka.http.javadsl.model.Uri;
 import akka.http.javadsl.model.headers.ByteRange;
@@ -17,8 +20,9 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.s3.MemoryBufferType;
 import akka.stream.alpakka.s3.Proxy;
-import akka.stream.alpakka.s3.impl.ListBucketVersion2;
 import akka.stream.alpakka.s3.S3Settings;
+import akka.stream.alpakka.s3.impl.ListBucketVersion2;
+import akka.stream.alpakka.s3.impl.S3Headers;
 import akka.stream.alpakka.s3.impl.ServerSideEncryption;
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase;
 import akka.stream.javadsl.Sink;
@@ -29,12 +33,8 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.AwsRegionProvider;
-import org.junit.Test;
 import scala.Option;
 import scala.Some;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class S3ClientTest extends S3WireMockBase {
 
@@ -219,5 +219,65 @@ public class S3ClientTest extends S3WireMockBase {
 
         assertEquals(result.key(), listKey());
 
+    }
+
+    @Test
+    public void copyUploadWithContentLengthLessThenChunkSize() throws Exception {
+        mockCopy();
+
+        //#multipart-copy
+        final CompletionStage<MultipartUploadResult> resultCompletionStage = client
+                .multipartCopy(bucket(), bucketKey(), targetBucket(), targetBucketKey());
+        //#multipart-copy
+
+        final MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag()));
+    }
+
+    @Test
+    public void copyUploadWithContentLengthEqualToChunkSize() throws Exception {
+        mockCopy(5242880);
+
+        final CompletionStage<MultipartUploadResult> resultCompletionStage = client
+                .multipartCopy(bucket(), bucketKey(), targetBucket(), targetBucketKey());
+        final MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag()));
+    }
+
+    @Test
+    public void copyUploadWithContentLengthGreaterThenChunkSize() throws Exception {
+        mockCopyMulti();
+
+        final CompletionStage<MultipartUploadResult> resultCompletionStage = client
+                .multipartCopy(bucket(), bucketKey(), targetBucket(), targetBucketKey());
+        final MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag()));
+    }
+
+    @Test
+    public void copyUploadEmptyFile() throws Exception {
+        mockCopy(0);
+
+        final CompletionStage<MultipartUploadResult> resultCompletionStage = client
+                .multipartCopy(bucket(), bucketKey(), targetBucket(), targetBucketKey());
+        final MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag()));
+    }
+
+    @Test
+    public void copyUploadWithCustomHeader() throws Exception {
+        mockCopy();
+
+        final CompletionStage<MultipartUploadResult> resultCompletionStage = client
+                .multipartCopy(bucket(), bucketKey(), targetBucket(), targetBucketKey(), S3Headers.empty(),
+                        ServerSideEncryption.AES256$.MODULE$);
+
+        final MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag()));
     }
 }
