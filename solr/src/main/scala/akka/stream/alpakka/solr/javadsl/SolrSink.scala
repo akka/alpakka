@@ -7,7 +7,7 @@ package akka.stream.alpakka.solr.javadsl
 import java.util.concurrent.CompletionStage
 import java.util.function.Function
 
-import akka.stream.alpakka.solr.{IncomingMessage, SolrUpdateSettings}
+import akka.stream.alpakka.solr.{IncomingMessage, IncomingMessageResult, SolrUpdateSettings}
 import akka.stream.javadsl
 import akka.stream.javadsl.Sink
 import akka.{Done, NotUsed}
@@ -26,7 +26,8 @@ object SolrSink {
   ): javadsl.Sink[IncomingMessage[SolrInputDocument, NotUsed], CompletionStage[Done]] =
     SolrFlow
       .document(collection, settings, client)
-      .toMat(javadsl.Sink.ignore, javadsl.Keep.right[NotUsed, CompletionStage[Done]])
+      .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[SolrInputDocument, NotUsed]]],
+             javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
    * Java API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing type `T`
@@ -40,7 +41,8 @@ object SolrSink {
   ): Sink[IncomingMessage[T, NotUsed], CompletionStage[Done]] =
     SolrFlow
       .bean[T](collection, settings, client, clazz)
-      .toMat(javadsl.Sink.ignore, javadsl.Keep.right[NotUsed, CompletionStage[Done]])
+      .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[T, NotUsed]]],
+             javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
    * Java API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing type `T` with `binder` of type 'T'.
@@ -54,5 +56,6 @@ object SolrSink {
   ): javadsl.Sink[IncomingMessage[T, NotUsed], CompletionStage[Done]] =
     SolrFlow
       .typed[T](collection, settings, binder, client, clazz)
-      .toMat(javadsl.Sink.ignore, javadsl.Keep.right[NotUsed, CompletionStage[Done]])
+      .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[T, NotUsed]]],
+             javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 }
