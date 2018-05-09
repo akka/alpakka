@@ -178,6 +178,7 @@ val defaultParadoxSettings: Seq[Setting[_]] = Seq(
     "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.AkkaVersion}/%s",
     "extref.akka-http-docs.base_url" -> s"http://doc.akka.io/docs/akka-http/${Dependencies.AkkaHttpVersion}/%s",
     "extref.java-api.base_url" -> "https://docs.oracle.com/javase/8/docs/api/index.html?%s.html",
+    "extref.geode.base_url" -> "https://geode.apache.org/docs/guide/16/%s",
     "extref.javaee-api.base_url" -> "https://docs.oracle.com/javaee/7/api/index.html?%s.html",
     "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
     "javadoc.base_url" -> "https://docs.oracle.com/javase/8/docs/api/",
