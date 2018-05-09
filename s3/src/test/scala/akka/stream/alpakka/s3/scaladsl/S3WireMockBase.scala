@@ -102,6 +102,18 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
         )
       )
 
+  def mockHeadWithVersion(versionId: String): Unit =
+    mock
+      .register(
+        head(urlEqualTo(s"/$bucketKey?versionId=$versionId")).willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("ETag", s""""$etag"""")
+            .withHeader("Content-Length", "8")
+            .withHeader("x-amz-version-id", versionId)
+        )
+      )
+
   def mockHeadSSEC(): Unit =
     mock
       .register(
@@ -372,12 +384,13 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
   def mockCopyVersioned(): Unit = mockCopyVersioned(body.length)
   def mockCopyVersioned(expectedContentLength: Int): Unit = {
     mock.register(
-      head(urlEqualTo(s"/$bucketKey"))
+      head(urlEqualTo(s"/$bucketKey?versionId=3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo"))
         .willReturn(
           aResponse()
             .withStatus(200)
             .withHeader("x-amz-id-2", "ef8yU9AS1ed4OpIszj7UDNEHGran")
             .withHeader("x-amz-request-id", "318BC8BC143432E5")
+            .withHeader("x-amz-version-id", "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo")
             .withHeader("ETag", "\"" + etag + "\"")
             .withHeader("Content-Length", s"$expectedContentLength")
         )

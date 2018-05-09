@@ -48,13 +48,33 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     mockHead()
 
+    //#objectMetadata
     val metadata = s3Client.getObjectMetadata(bucket, bucketKey)
+    //#objectMetadata
 
     val Some(result) = metadata.futureValue
 
     result.eTag shouldBe Some(etag)
     result.contentLength shouldBe 8
+    result.versionId shouldBe empty
+  }
 
+  "S3Source" should "download a metadata from S3 for specific version" in {
+
+    val versionId = "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo"
+    mockHeadWithVersion(versionId)
+
+    //#objectMetadata
+    val metadata = s3Client.getObjectMetadata(bucket, bucketKey, Some(versionId))
+    //#objectMetadata
+
+    val Some(result) = metadata.futureValue
+
+    result.eTag shouldBe Some(etag)
+    result.contentLength shouldBe 8
+    result.versionId.fold(fail("unable to get versionId from S3")) { vId =>
+      vId shouldEqual versionId
+    }
   }
 
   it should "download a metadata from S3 using server side encryption" in {
@@ -62,7 +82,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockHeadSSEC()
 
     //#objectMetadata
-    val metadata = s3Client.getObjectMetadata(bucket, bucketKey, Some(sseCustomerKeys))
+    val metadata = s3Client.getObjectMetadata(bucket, bucketKey, sse = Some(sseCustomerKeys))
     //#objectMetadata
 
     val Some(result) = metadata.futureValue

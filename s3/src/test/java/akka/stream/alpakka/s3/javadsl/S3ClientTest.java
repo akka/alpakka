@@ -20,7 +20,6 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.s3.MemoryBufferType;
 import akka.stream.alpakka.s3.Proxy;
-import akka.stream.alpakka.s3.impl.ListBucketVersion2;
 import akka.stream.alpakka.s3.S3Settings;
 import akka.stream.alpakka.s3.impl.ListBucketVersion2;
 import akka.stream.alpakka.s3.impl.S3Headers;
@@ -126,13 +125,38 @@ public class S3ClientTest extends S3WireMockBase {
 
         mockHead();
 
+        //#objectMetadata
         final CompletionStage<Optional<ObjectMetadata>> source = client.getObjectMetadata(bucket(), bucketKey());
+        //#objectMetadata
 
         Optional<ObjectMetadata> result = source.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
-        Optional<String> s3eTag = result.get().getETag();
+        final ObjectMetadata objectMetadata = result.get();
+        Optional<String> s3eTag = objectMetadata.getETag();
+        Optional<String> versionId = objectMetadata.getVersionId();
 
         assertEquals(s3eTag, Optional.of(etag()));
+        assertEquals(versionId, Optional.empty());
+    }
+
+    @Test
+    public void headWithVersion() throws Exception {
+        String versionId = "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo";
+        mockHeadWithVersion(versionId);
+
+        //#objectMetadata
+        final CompletionStage<Optional<ObjectMetadata>> source = client.getObjectMetadata(bucket(), bucketKey(),
+                versionId, null);
+        //#objectMetadata
+
+        Optional<ObjectMetadata> result = source.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        final ObjectMetadata objectMetadata = result.get();
+        Optional<String> s3eTag = objectMetadata.getETag();
+        Optional<String> metadataVersionId = objectMetadata.getVersionId();
+
+        assertEquals(s3eTag, Optional.of(etag()));
+        assertEquals(metadataVersionId, Optional.of(versionId));
     }
 
     @Test
