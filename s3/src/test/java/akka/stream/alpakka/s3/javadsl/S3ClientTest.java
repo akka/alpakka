@@ -192,6 +192,27 @@ public class S3ClientTest extends S3WireMockBase {
     }
 
     @Test
+    public void downloadServerSideEncryptionWithVersion() throws Exception {
+        String versionId = "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo";
+        mockDownloadSSECWithVersion(versionId);
+
+        //#download
+        final Pair<Source<ByteString, NotUsed>, CompletionStage<ObjectMetadata>> sourceAndMeta = client.download(bucket(), bucketKey(), sseCustomerKeys());
+        final Source<ByteString, NotUsed> source = sourceAndMeta.first();
+        final CompletionStage<ObjectMetadata> objectMetadataCompletionStage = sourceAndMeta.second();
+        //#download
+
+        final CompletionStage<String> resultCompletionStage =
+                source.map(ByteString::utf8String).runWith(Sink.head(), materializer);
+
+        String result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+        final ObjectMetadata metadata = objectMetadataCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertEquals(bodySSE(), result);
+        assertEquals(Optional.of(versionId), metadata.getVersionId());
+    }
+
+    @Test
     public void rangedDownload() throws Exception {
 
         mockRangedDownload();

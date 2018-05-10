@@ -118,6 +118,23 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     result.futureValue shouldBe bodySSE
   }
 
+  it should "download a stream of bytes using customer server side encryption with version" in {
+    val versionId = "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo"
+    mockDownloadSSECWithVersion(versionId)
+
+    //#download
+    val (s3Source, metadata) =
+      s3Client.download(bucket, bucketKey, versionId = Some(versionId), sse = Some(sseCustomerKeys))
+    //#download
+
+    val result = s3Source.map(_.utf8String).runWith(Sink.head)
+
+    result.futureValue shouldBe bodySSE
+    metadata.futureValue.versionId.fold(fail("unable to get versionId from S3")) { vId =>
+      vId shouldEqual versionId
+    }
+  }
+
   it should "fail if request returns 404" in {
 
     mock404s()

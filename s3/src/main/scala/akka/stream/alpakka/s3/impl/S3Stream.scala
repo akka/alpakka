@@ -89,7 +89,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
                sse: Option[ServerSideEncryption]): (Source[ByteString, NotUsed], Future[ObjectMetadata]) = {
     import mat.executionContext
     val s3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(GetObject) })
-    val future = request(s3Location, rangeOption = range, s3Headers = s3Headers)
+    val future = request(s3Location, rangeOption = range, versionId = versionId, s3Headers = s3Headers)
     val source = Source
       .fromFuture(future.flatMap(entityForSuccess))
       .map(_.dataBytes)

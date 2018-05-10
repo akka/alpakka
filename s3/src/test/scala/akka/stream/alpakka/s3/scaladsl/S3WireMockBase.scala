@@ -94,6 +94,22 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
           )
       )
 
+  def mockDownloadSSECWithVersion(versionId: String): Unit =
+    mock
+      .register(
+        get(urlEqualTo(s"/$bucketKey?versionId=$versionId"))
+          .withHeader("x-amz-server-side-encryption-customer-algorithm", new EqualToPattern("AES256"))
+          .withHeader("x-amz-server-side-encryption-customer-key", new EqualToPattern(sseCustomerKey))
+          .withHeader("x-amz-server-side-encryption-customer-key-MD5", new EqualToPattern(sseCustomerMd5Key))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""")
+              .withHeader("x-amz-version-id", versionId)
+              .withBody(bodySSE)
+          )
+      )
+
   def mockHead(): Unit =
     mock
       .register(
