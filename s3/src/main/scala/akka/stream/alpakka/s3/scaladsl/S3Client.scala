@@ -198,6 +198,22 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
   private[this] val impl = S3Stream(s3Settings)
 
   /**
+    * Use this to extend the library
+    *
+    * @param bucket the s3 bucket name
+    * @param key the s3 object key
+    * @param method the [[akka.http.scaladsl.model.HttpMethod HttpMethod]] to use when making the request
+    * @param s3Headers any headers you want to add
+    * @return a [[scala.concurrent.Future Future]] containing the raw [[akka.http.scaladsl.model.HttpResponse HttpResponse]]
+    */
+  def request(bucket: String,
+              key: String,
+              method: HttpMethod = HttpMethods.GET,
+              versionId: Option[String] = None,
+              s3Headers: S3Headers = S3Headers.empty): Future[HttpResponse] =
+    impl.request(S3Location(bucket, key), method, versionId = versionId, s3Headers = s3Headers)
+
+  /**
    * Use this to extend the library
    *
    * @param bucket the s3 bucket name
