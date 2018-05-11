@@ -23,11 +23,15 @@ import com.amazonaws.regions.AwsRegionProvider
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
-final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
+final case class MultipartUploadResult(location: Uri,
+                                       bucket: String,
+                                       key: String,
+                                       etag: String,
+                                       versionId: Option[String])
 
 object MultipartUploadResult {
   def apply(r: CompleteMultipartUploadResult): MultipartUploadResult =
-    new MultipartUploadResult(r.location, r.bucket, r.key, r.etag)
+    new MultipartUploadResult(r.location, r.bucket, r.key, r.etag, r.versionId)
 }
 
 /**

@@ -31,7 +31,11 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.Future
 
-final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
+final case class MultipartUploadResult(location: Uri,
+                                       bucket: String,
+                                       key: String,
+                                       etag: String,
+                                       versionId: Optional[String])
 
 /**
  * @param bucketName The name of the bucket in which this object is stored
@@ -151,7 +155,11 @@ final class ObjectMetadata private[javadsl] (
 
 object MultipartUploadResult {
   def create(r: CompleteMultipartUploadResult): MultipartUploadResult =
-    new MultipartUploadResult(Uri.create(r.location), r.bucket, r.key, r.etag)
+    new MultipartUploadResult(Uri.create(r.location),
+                              r.bucket,
+                              r.key,
+                              r.etag,
+                              r.versionId.fold(Optional.empty[String]())(Optional.of))
 }
 
 object S3Client {
