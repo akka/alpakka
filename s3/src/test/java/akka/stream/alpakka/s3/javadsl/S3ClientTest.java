@@ -321,7 +321,7 @@ public class S3ClientTest extends S3WireMockBase {
         final MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
         assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(),
-                etag(), Optional.empty()));
+                etag(), Optional.of("43jfkodU8493jnFJD9fjj3HHNVfdsQUIFDNsidf038jfdsjGFDSIRp")));
     }
 
     @Test

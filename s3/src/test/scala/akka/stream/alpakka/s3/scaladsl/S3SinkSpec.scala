@@ -139,7 +139,11 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
                              sourceVersionId = Some("3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo"))
     //#multipart-copy
 
-    result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag, None)
+    result.futureValue shouldBe MultipartUploadResult(targetUrl,
+                                                      targetBucket,
+                                                      targetBucketKey,
+                                                      etag,
+                                                      Some("43jfkodU8493jnFJD9fjj3HHNVfdsQUIFDNsidf038jfdsjGFDSIRp"))
   }
 
   override protected def afterAll(): Unit = {

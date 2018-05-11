@@ -460,6 +460,7 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
             .withHeader("Content-Type", "application/xml; charset=UTF-8")
             .withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt")
             .withHeader("x-amz-request-id", "5A37448A3762224333")
+            .withHeader("x-amz-version-id", "43jfkodU8493jnFJD9fjj3HHNVfdsQUIFDNsidf038jfdsjGFDSIRp")
             .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
                          |<CompleteMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                          |  <Location>$targetUrl</Location>
