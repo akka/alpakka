@@ -9,10 +9,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import org.junit.Ignore;
 import org.junit.Test;
 import akka.NotUsed;
 import akka.http.javadsl.model.Uri;
@@ -193,26 +191,19 @@ public class S3ClientTest extends S3WireMockBase {
         assertEquals(bodySSE(), result);
     }
 
-    // TODO: figure out how to complete two CompletionStages in Java
-    @Ignore
+    @Test
     public void downloadServerSideEncryptionWithVersion() throws Exception {
         String versionId = "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo";
         mockDownloadSSECWithVersion(versionId);
 
         //#download
-        final Pair<Source<ByteString, NotUsed>, CompletionStage<ObjectMetadata>> sourceAndMeta = client.download(bucket(), bucketKey(), sseCustomerKeys());
+        final Pair<Source<ByteString, NotUsed>, CompletionStage<ObjectMetadata>> sourceAndMeta =
+                client.download(bucket(), bucketKey(), null, versionId, sseCustomerKeys());
         final Source<ByteString, NotUsed> source = sourceAndMeta.first();
         final CompletionStage<String> resultCompletionStage =
                 source.map(ByteString::utf8String).runWith(Sink.head(), materializer);
         final CompletionStage<ObjectMetadata> objectMetadataCompletionStage = sourceAndMeta.second();
         //#download
-
-        final CompletableFuture<Void> completableFuture = CompletableFuture.allOf(
-                resultCompletionStage.toCompletableFuture(),
-                objectMetadataCompletionStage.toCompletableFuture());
-
-        completableFuture.get(5, TimeUnit.SECONDS);
-        final boolean done = completableFuture.isDone();
 
         final String result = resultCompletionStage.toCompletableFuture().get();
         final ObjectMetadata metadata = objectMetadataCompletionStage.toCompletableFuture().get();
