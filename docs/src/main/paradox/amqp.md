@@ -1,6 +1,8 @@
 # AMQP Connector
 
-The AMQP connector provides Akka Stream sources and sinks to connect to AMQP servers.
+The AMQP connector provides Akka Stream sources and sinks to connect to AMQP 0.9.1 servers (RabbitMQ, OpenAMQ, etc.).
+
+AMQP 1.0 is currently not supported (Qpid, ActiveMQ, Solace, etc.).
 
 ## Reported issues
 
