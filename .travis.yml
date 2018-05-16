@@ -116,7 +116,7 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
-  timeout: 300
+  timeout: 900
 
 env:
   global:
