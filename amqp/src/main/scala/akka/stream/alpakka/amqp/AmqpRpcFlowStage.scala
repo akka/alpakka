@@ -191,7 +191,7 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
             val props = elem.props.getOrElse(new BasicProperties()).builder.replyTo(queueName).build()
             channel.basicPublish(
               exchange,
-              routingKey,
+              elem.routingKey.getOrElse(routingKey),
               elem.mandatory,
               elem.immediate,
               props,
