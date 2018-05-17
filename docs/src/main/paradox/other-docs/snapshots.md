@@ -3,7 +3,7 @@
 [bintray-badge]:  https://api.bintray.com/packages/akka/snapshots/alpakka/images/download.svg
 [bintray]:        https://bintray.com/akka/snapshots/alpakka/_latestVersion 
 
-Snapshots are published daily to a repository in bintray. Add the following to your project build definition to resolve Alpakka snapshots:
+Snapshots are published after every merged PR to a repository in bintray. Add the following to your project build definition to resolve Alpakka snapshots:
 
 sbt
 :   ```scala
