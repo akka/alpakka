@@ -12,7 +12,7 @@ before_install:
 # default script for jobs, that do not have any specified
 script:
   - ${PRE_CMD:=return 0} # do nothing if not set
-  - sbt -J-XX:ReservedCodeCacheSize=128m -J-Xmx800M -J-Xms800M -J-server "$CMD"
+  - sbt -jvm-opts .jvmopts-travis "$CMD"
 
 jobs:
   include:
@@ -74,49 +74,35 @@ jobs:
     - env: CMD=+unix-domain-socket/testChanged
     - env: CMD=+xml/testChanged
 
-    - stage: whitesource-master
-      script: sbt whitesourceCheckPolicies whitesourceUpdate
-
-    - stage: whitesource-release
+    - stage: whitesource
       script: sbt whitesourceCheckPolicies whitesourceUpdate
 
     - stage: publish
-      script: sbt -J-XX:ReservedCodeCacheSize=128m +publish
+      script: sbt -jvm-opts .jvmopts-travis +publish
 
     - stage: techhub-ping
       script: curl -I https://ci.lightbend.com/job/techhub-publisher/build?token=$TECH_HUB_TOKEN
 
-    - stage: publish-nightly
-      script: sbt -J-XX:ReservedCodeCacheSize=128m publish
-
 stages:
   # runs on master commits and PRs
   - name: check
-    if: NOT tag =~ ^v AND NOT type = cron
+    if: NOT tag =~ ^v
 
   # runs on master commits and PRs
   - name: test
-    if: NOT tag =~ ^v AND NOT type = cron
+    if: NOT tag =~ ^v
 
-  # runs on main repo master commits
-  - name: whitesource-master
-    if: repo = akka/alpakka AND branch = master AND type = push
+  # runs on main repo master commits or version-tagged commits
+  - name: whitesource
+    if: repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v )
 
-  # runs on main repo version-tagged commits
-  - name: whitesource-release
-    if: repo = akka/alpakka AND tag =~ ^v AND NOT type = cron
-
-  # runs on main repo version-tagged commits
+  # runs on main repo master commits or version-tagged commits
   - name: publish
-    if: repo = akka/alpakka AND tag =~ ^v AND NOT type = cron
+    if: repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v )
 
   # runs on main repo version-tagged commits
   - name: techhub-ping
-    if: repo = akka/alpakka AND tag =~ ^v AND NOT type = cron
-
-  # runs on main repo and from cron
-  - name: publish-nightly
-    if: repo = akka/alpakka AND type = cron
+    if: repo = akka/alpakka AND tag =~ ^v
 
 after_failure:
   - docker-compose logs
@@ -130,6 +116,7 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
+  timeout: 900
 
 env:
   global:
