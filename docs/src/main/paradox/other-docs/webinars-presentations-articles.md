@@ -1,5 +1,8 @@
 # Webinars, Presentations and Articles
 
+[Stream a file to AWS S3 using Akka Streams (via Alpakka) in Play Framework](https://blog.knoldus.com/2018/05/04/stream-a-file-to-aws-s3-using-akka-streams-via-alpakka-in-play-framework/)
+blog by Sidharth Khattri, May 2018
+
 [Alpakka (Akka Streams) vs Apache Camel: who wins?](http://www.thedevpiece.com/alpakka-akka-streams-vs-apache-camel-who-wins/) Blog by Gabriel Francisco, May 2018 
 
 [Revitalizing Enterprise Integration with Reactive Streams](https://info.lightbend.com/webinar-revitalizing-enterprise-integration-with-reactive-streams-recording.html)
