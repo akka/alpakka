@@ -47,6 +47,7 @@ jobs:
     - env: CMD=+google-cloud-pub-sub/testChanged
     - env: CMD=+google-fcm/testChanged
     - env: CMD=+hbase/testChanged
+    - env: CMD=+hdfs/testChanged
     - env:
       - PRE_CMD="docker-compose up -d ironauth ironmq"
       - CMD=+ironmq/testChanged
