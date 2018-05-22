@@ -5,9 +5,11 @@
 package akka.stream.alpakka.hdfs.javadsl
 
 import akka.NotUsed
+import akka.japi.Pair
 import akka.stream.alpakka.hdfs.scaladsl.{HdfsFlow => ScalaHdfsFlow}
 import akka.stream.alpakka.hdfs.{HdfsWritingSettings, RotationStrategy, SyncStrategy, WriteLog}
 import akka.stream.javadsl
+import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.io.SequenceFile.CompressionType
@@ -82,15 +84,19 @@ object HdfsFlow {
       settings: HdfsWritingSettings,
       classK: Class[K],
       classV: Class[V]
-  ): javadsl.Flow[(K, V), WriteLog, NotUsed] =
-    ScalaHdfsFlow
-      .sequence[K, V](
-        fs,
-        syncStrategy,
-        rotationStrategy,
-        settings,
-        classK,
-        classV
+  ): javadsl.Flow[Pair[K, V], WriteLog, NotUsed] =
+    Flow[Pair[K, V]]
+      .map(_.toScala)
+      .via(
+        ScalaHdfsFlow
+          .sequence[K, V](
+            fs,
+            syncStrategy,
+            rotationStrategy,
+            settings,
+            classK,
+            classV
+          )
       )
       .asJava
 
@@ -115,17 +121,21 @@ object HdfsFlow {
       settings: HdfsWritingSettings,
       classK: Class[K],
       classV: Class[V]
-  ): javadsl.Flow[(K, V), WriteLog, NotUsed] =
-    ScalaHdfsFlow
-      .sequence[K, V](
-        fs,
-        syncStrategy,
-        rotationStrategy,
-        compressionType,
-        compressionCodec,
-        settings,
-        classK,
-        classV
+  ): javadsl.Flow[Pair[K, V], WriteLog, NotUsed] =
+    Flow[Pair[K, V]]
+      .map(_.toScala)
+      .via(
+        ScalaHdfsFlow
+          .sequence[K, V](
+            fs,
+            syncStrategy,
+            rotationStrategy,
+            compressionType,
+            compressionCodec,
+            settings,
+            classK,
+            classV
+          )
       )
       .asJava
 

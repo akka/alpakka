@@ -8,6 +8,7 @@ import java.util.concurrent.CompletionStage
 
 import akka.stream.alpakka.hdfs.{HdfsWritingSettings, RotationStrategy, SyncStrategy, WriteLog}
 import akka.stream.javadsl
+import akka.japi.Pair
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import org.apache.hadoop.fs.FileSystem
@@ -72,7 +73,7 @@ object HdfsSink {
       settings: HdfsWritingSettings,
       classK: Class[K],
       classV: Class[V]
-  ): javadsl.Sink[(K, V), CompletionStage[Done]] =
+  ): javadsl.Sink[Pair[K, V], CompletionStage[Done]] =
     HdfsFlow
       .sequence(
         fs,
@@ -105,7 +106,7 @@ object HdfsSink {
       settings: HdfsWritingSettings,
       classK: Class[K],
       classV: Class[V]
-  ): javadsl.Sink[(K, V), CompletionStage[Done]] =
+  ): javadsl.Sink[Pair[K, V], CompletionStage[Done]] =
     HdfsFlow
       .sequence(
         fs,
