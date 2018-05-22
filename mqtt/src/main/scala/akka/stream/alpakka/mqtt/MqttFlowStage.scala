@@ -50,26 +50,26 @@ private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
       private val queue = mutable.Queue[MqttCommittableMessage]()
       private val unackedMessages = new AtomicInteger()
 
-      private val mqttSubscriptionCallback: Try[IMqttToken] => Unit = { conn =>
+      private val onSubscribe = getAsyncCallback[Try[IMqttToken]] { conn =>
         subscriptionPromise.complete(conn.map { _ =>
           Done
         })
         pull(in)
       }
 
-      private def onConnect =
+      private val onConnect =
         getAsyncCallback[IMqttAsyncClient]((client: IMqttAsyncClient) => {
           if (manualAcks) client.setManualAcks(true)
           val (topics, qoses) = sourceSettings.subscriptions.unzip
           if (topics.nonEmpty) {
-            client.subscribe(topics.toArray, qoses.map(_.byteValue.toInt).toArray, (), mqttSubscriptionCallback)
+            client.subscribe(topics.toArray, qoses.map(_.byteValue.toInt).toArray, (), onSubscribe.invoke _)
           } else {
             subscriptionPromise.complete(Success(Done))
             pull(in)
           }
         })
 
-      private def onConnectionLost = getAsyncCallback[Throwable](onFailure)
+      private val onConnectionLost = getAsyncCallback[Throwable](onFailure)
 
       private def onMessage(message: MqttCommittableMessage): Unit = {
         backpressure.acquire()
@@ -91,7 +91,7 @@ private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
         case Failure(ex) => onFailure(ex)
       }
 
-      private def commitCallback =
+      private val commitCallback =
         getAsyncCallback[CommitCallbackArguments](
           (args: CommitCallbackArguments) =>
             try {
