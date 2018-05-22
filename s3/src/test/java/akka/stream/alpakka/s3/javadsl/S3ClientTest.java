@@ -146,7 +146,7 @@ public class S3ClientTest extends S3WireMockBase {
 
         //#objectMetadata
         final CompletionStage<Optional<ObjectMetadata>> source = client.getObjectMetadata(bucket(), bucketKey(),
-                versionId, null);
+                Optional.of(versionId), null);
         //#objectMetadata
 
         Optional<ObjectMetadata> result = source.toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -198,7 +198,7 @@ public class S3ClientTest extends S3WireMockBase {
 
         //#download
         final Pair<Source<ByteString, NotUsed>, CompletionStage<ObjectMetadata>> sourceAndMeta =
-                client.download(bucket(), bucketKey(), null, versionId, sseCustomerKeys());
+                client.download(bucket(), bucketKey(), null, Optional.of(versionId), sseCustomerKeys());
         final Source<ByteString, NotUsed> source = sourceAndMeta.first();
         final CompletionStage<String> resultCompletionStage =
                 source.map(ByteString::utf8String).runWith(Sink.head(), materializer);
@@ -302,7 +302,7 @@ public class S3ClientTest extends S3WireMockBase {
         final CompletionStage<MultipartUploadResult> resultCompletionStage = client.multipartCopy(
                 bucket, sourceKey,
                 targetBucket, targetKey,
-                sourceVersionId,
+                Optional.of(sourceVersionId),
                 S3Headers.empty(),
                 null // encryption
             );
