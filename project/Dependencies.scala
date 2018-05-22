@@ -162,7 +162,7 @@ object Dependencies {
 
   val Hdfs = {
     val hadoopVersion = "3.1.0"
-    val catsVersion = "1.0.1"
+    val catsVersion = "1.1.0"
     Seq(
       libraryDependencies ++= Seq(
         "org.apache.hadoop" % "hadoop-client" % hadoopVersion, // ApacheV2
