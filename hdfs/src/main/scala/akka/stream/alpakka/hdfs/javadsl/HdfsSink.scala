@@ -6,8 +6,7 @@ package akka.stream.alpakka.hdfs.javadsl
 
 import java.util.concurrent.CompletionStage
 
-import akka.stream.alpakka.hdfs.{HdfsWritingSettings, WriteLog}
-import akka.stream.alpakka.hdfs.scaladsl.{RotationStrategy, SyncStrategy}
+import akka.stream.alpakka.hdfs.{HdfsWritingSettings, RotationStrategy, SyncStrategy, WriteLog}
 import akka.stream.javadsl
 import akka.util.ByteString
 import akka.{Done, NotUsed}

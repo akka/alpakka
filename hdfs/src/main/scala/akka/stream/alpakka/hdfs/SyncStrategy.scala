@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.hdfs.scaladsl
+package akka.stream.alpakka.hdfs
 
 sealed trait SyncStrategy extends Strategy {
   type S = SyncStrategy

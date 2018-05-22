@@ -5,7 +5,6 @@
 package akka.stream.alpakka.hdfs
 
 import akka.stream.alpakka.hdfs.HdfsWritingSettings._
-import akka.stream.alpakka.hdfs.scaladsl.FilePathGenerator
 
 final case class HdfsWritingSettings(
     overwrite: Boolean = true,
@@ -26,4 +25,22 @@ object HdfsWritingSettings {
    * Java API
    */
   def create(): HdfsWritingSettings = HdfsWritingSettings()
+}
+
+final case class WriteLog(path: String, rotation: Int)
+
+private[hdfs] sealed abstract class FileUnit(val byteCount: Long)
+
+object FileUnit {
+  case object KB extends FileUnit(Math.pow(2, 10).toLong)
+  case object MB extends FileUnit(Math.pow(2, 20).toLong)
+  case object GB extends FileUnit(Math.pow(2, 30).toLong)
+  case object TB extends FileUnit(Math.pow(2, 40).toLong)
+}
+
+private[hdfs] trait Strategy {
+  type S <: Strategy
+  def should(): Boolean
+  def reset(): S
+  def update(offset: Long): S
 }

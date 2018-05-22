@@ -5,7 +5,7 @@
 package akka.stream.alpakka.hdfs.scaladsl
 
 import akka.Done
-import akka.stream.alpakka.hdfs.HdfsWritingSettings
+import akka.stream.alpakka.hdfs.{HdfsWritingSettings, RotationStrategy, SyncStrategy}
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.util.ByteString
 import org.apache.hadoop.fs.FileSystem

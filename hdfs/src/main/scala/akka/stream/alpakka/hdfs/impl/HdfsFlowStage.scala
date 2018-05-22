@@ -2,21 +2,19 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.hdfs
+package akka.stream.alpakka.hdfs.impl
 
 import akka.NotUsed
 import akka.event.Logging
-import akka.stream.alpakka.hdfs.HdfsFlowLogic.{FlowState, FlowStep, LogicState}
-import akka.stream.alpakka.hdfs.scaladsl.RotationStrategy.TimeRotationStrategy
-import akka.stream.alpakka.hdfs.scaladsl.{RotationStrategy, SyncStrategy}
-import akka.stream.alpakka.hdfs.writer.HdfsWriter
+import akka.stream.alpakka.hdfs.RotationStrategy.TimeRotationStrategy
+import akka.stream.alpakka.hdfs.impl.HdfsFlowLogic.{FlowState, FlowStep, LogicState}
+import akka.stream.alpakka.hdfs.impl.writer.HdfsWriter
+import akka.stream.alpakka.hdfs.{HdfsWritingSettings, RotationStrategy, SyncStrategy, WriteLog}
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import cats.data.State
 
 import scala.concurrent.Future
-
-final case class WriteLog(path: String, rotation: Int)
 
 /**
  * Internal API
@@ -166,7 +164,7 @@ private final class HdfsFlowLogic[W, I](
   }
 }
 
-private[hdfs] object HdfsFlowLogic {
+private object HdfsFlowLogic {
 
   type FlowStep[W, I, A] = State[FlowState[W, I], A]
   object FlowStep {

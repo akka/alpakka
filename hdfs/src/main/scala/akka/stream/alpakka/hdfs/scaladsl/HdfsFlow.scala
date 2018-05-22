@@ -5,8 +5,9 @@
 package akka.stream.alpakka.hdfs.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.hdfs.writer.{CompressedDataWriter, DataWriter, SequenceWriter}
-import akka.stream.alpakka.hdfs.{HdfsFlowStage, HdfsWritingSettings, WriteLog}
+import akka.stream.alpakka.hdfs._
+import akka.stream.alpakka.hdfs.impl.HdfsFlowStage
+import akka.stream.alpakka.hdfs.impl.writer.{CompressedDataWriter, DataWriter, SequenceWriter}
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import org.apache.hadoop.fs.FileSystem

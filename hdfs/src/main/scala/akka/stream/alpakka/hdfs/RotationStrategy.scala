@@ -2,18 +2,9 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.hdfs.scaladsl
+package akka.stream.alpakka.hdfs
 
 import scala.concurrent.duration.FiniteDuration
-
-private[scaladsl] sealed abstract class FileUnit(val byteCount: Long)
-
-object FileUnit {
-  case object KB extends FileUnit(Math.pow(2, 10).toLong)
-  case object MB extends FileUnit(Math.pow(2, 20).toLong)
-  case object GB extends FileUnit(Math.pow(2, 30).toLong)
-  case object TB extends FileUnit(Math.pow(2, 40).toLong)
-}
 
 sealed trait RotationStrategy extends Strategy {
   type S = RotationStrategy

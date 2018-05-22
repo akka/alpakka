@@ -5,8 +5,8 @@
 package akka.stream.alpakka.hdfs.javadsl
 
 import akka.NotUsed
-import akka.stream.alpakka.hdfs.scaladsl.{RotationStrategy, SyncStrategy, HdfsFlow => ScalaHdfsFlow}
-import akka.stream.alpakka.hdfs.{HdfsWritingSettings, WriteLog}
+import akka.stream.alpakka.hdfs.scaladsl.{HdfsFlow => ScalaHdfsFlow}
+import akka.stream.alpakka.hdfs.{HdfsWritingSettings, RotationStrategy, SyncStrategy, WriteLog}
 import akka.stream.javadsl
 import akka.util.ByteString
 import org.apache.hadoop.fs.FileSystem

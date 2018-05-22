@@ -9,7 +9,7 @@ import java.nio.ByteBuffer
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.hdfs.scaladsl.{FileUnit, HdfsFlow, RotationStrategy, SyncStrategy}
+import akka.stream.alpakka.hdfs.scaladsl.HdfsFlow
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
 import org.apache.commons.io.IOUtils

@@ -2,10 +2,10 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.hdfs.writer
+package akka.stream.alpakka.hdfs.impl.writer
 
-import akka.stream.alpakka.hdfs.scaladsl.FilePathGenerator
-import akka.stream.alpakka.hdfs.writer.HdfsWriter.{createTargetPath, NewLineByteArray}
+import akka.stream.alpakka.hdfs.FilePathGenerator
+import akka.stream.alpakka.hdfs.impl.writer.HdfsWriter.{createTargetPath, NewLineByteArray}
 import akka.util.ByteString
 import org.apache.commons.io.FilenameUtils
 import org.apache.hadoop.fs.{FSDataOutputStream, FileSystem, Path}
