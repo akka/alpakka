@@ -459,7 +459,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
       "Akka in Action",
       "Effective Akka",
       "Learning Scala",
-      "Programming in Scala Programming",
+      "Programming in Scala Programming"
     ).map(ByteString(_)).iterator
 
   private def setupCluster(): Unit = {
