@@ -4,14 +4,47 @@
 
 package akka.stream.alpakka.hdfs
 
+import akka.stream.alpakka.hdfs.RotationStrategy._
+
 import scala.concurrent.duration.FiniteDuration
 
 sealed trait RotationStrategy extends Strategy {
   type S = RotationStrategy
 }
 
-object RotationStrategy {
+private[hdfs] object RotationStrategy {
+  final case class SizeRotationStrategy(
+      bytesWritten: Long,
+      maxBytes: Double
+  ) extends RotationStrategy {
+    def should(): Boolean = bytesWritten >= maxBytes
+    def reset(): RotationStrategy = copy(bytesWritten = 0)
+    def update(offset: Long): RotationStrategy = copy(bytesWritten = offset)
+  }
 
+  final case class CountRotationStrategy(
+      messageWritten: Long,
+      size: Long
+  ) extends RotationStrategy {
+    def should(): Boolean = messageWritten >= size
+    def reset(): RotationStrategy = copy(messageWritten = 0)
+    def update(offset: Long): RotationStrategy = copy(messageWritten = messageWritten + 1)
+  }
+
+  final case class TimeRotationStrategy(interval: FiniteDuration) extends RotationStrategy {
+    def should(): Boolean = false
+    def reset(): RotationStrategy = this
+    def update(offset: Long): RotationStrategy = this
+  }
+
+  case object NoRotationStrategy extends RotationStrategy {
+    def should(): Boolean = false
+    def reset(): RotationStrategy = this
+    def update(offset: Long): RotationStrategy = this
+  }
+}
+
+object RotationStrategyFactory {
   /*
    * Creates [[SizeRotationStrategy]]
    */
@@ -31,35 +64,4 @@ object RotationStrategy {
    * Creates [[NoRotationStrategy]]
    */
   def none: RotationStrategy = NoRotationStrategy
-
-  private final case class SizeRotationStrategy(
-      bytesWritten: Long,
-      maxBytes: Double
-  ) extends RotationStrategy {
-    def should(): Boolean = bytesWritten >= maxBytes
-    def reset(): RotationStrategy = copy(bytesWritten = 0)
-    def update(offset: Long): RotationStrategy = copy(bytesWritten = offset)
-  }
-
-  private final case class CountRotationStrategy(
-      messageWritten: Long,
-      size: Long
-  ) extends RotationStrategy {
-    def should(): Boolean = messageWritten >= size
-    def reset(): RotationStrategy = copy(messageWritten = 0)
-    def update(offset: Long): RotationStrategy = copy(messageWritten = messageWritten + 1)
-  }
-
-  private[hdfs] final case class TimeRotationStrategy(interval: FiniteDuration) extends RotationStrategy {
-    def should(): Boolean = false
-    def reset(): RotationStrategy = this
-    def update(offset: Long): RotationStrategy = this
-  }
-
-  private case object NoRotationStrategy extends RotationStrategy {
-    def should(): Boolean = false
-    def reset(): RotationStrategy = this
-    def update(offset: Long): RotationStrategy = this
-  }
-
 }

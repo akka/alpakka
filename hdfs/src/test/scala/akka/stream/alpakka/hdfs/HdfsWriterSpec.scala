@@ -4,28 +4,25 @@
 
 package akka.stream.alpakka.hdfs
 
-import java.io.{File, InputStream, StringWriter}
-import java.nio.ByteBuffer
+import java.io.File
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.hdfs.scaladsl.HdfsFlow
+import akka.stream.alpakka.hdfs.util.ScalaTestUtils._
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
-import org.apache.commons.io.IOUtils
-import org.apache.hadoop.fs.{FileStatus, Path}
+import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hdfs.{HdfsConfiguration, MiniDFSCluster}
 import org.apache.hadoop.io.SequenceFile.CompressionType
+import org.apache.hadoop.io.Text
 import org.apache.hadoop.io.compress._
 import org.apache.hadoop.io.compress.zlib.ZlibCompressor.CompressionLevel
-import org.apache.hadoop.io.{SequenceFile, Text}
 import org.apache.hadoop.test.PathUtils
-import org.scalatest.{Assertion, _}
+import org.scalatest._
 
-import scala.collection.mutable.ListBuffer
-import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, _}
-import scala.util.Random
+import scala.concurrent.{Await, ExecutionContextExecutor}
 
 class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
@@ -33,8 +30,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
   private val destionation = "/tmp/alpakka/"
 
   //#init-mat
-  implicit val system = ActorSystem()
-  implicit val materializer = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem()
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
   //#init-mat
   //#init-client
   import org.apache.hadoop.conf.Configuration
@@ -47,6 +44,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
   var fs: FileSystem = FileSystem.get(conf)
   //#init-client
 
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
+
   fs.getConf.setEnum("zlib.compress.level", CompressionLevel.BEST_SPEED)
 
   val settings = HdfsWritingSettings()
@@ -55,13 +54,13 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
     "use file size rotation and produce five files" in {
       val flow = HdfsFlow.data(
         fs,
-        SyncStrategy.count(50),
-        RotationStrategy.size(0.01, FileUnit.KB),
+        SyncStrategyFactory.count(50),
+        RotationStrategyFactory.size(0.01, FileUnit.KB),
         settings
       )
 
       val resF = Source
-        .fromIterator(() => books)
+        .fromIterator(() => books.toIterator)
         .via(flow)
         .runWith(Sink.seq)
 
@@ -74,8 +73,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
         WriteLog("4", 4)
       )
 
-      verifyOutputFileSize(logs)
-      readLogs(logs) shouldBe books.map(_.utf8String).toSeq
+      verifyOutputFileSize(fs, logs)
+      readLogs(fs, logs) shouldBe books.map(_.utf8String)
     }
 
     "use file size rotation and produce exactly two files" in {
@@ -84,8 +83,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val flow = HdfsFlow.data(
         fs,
-        SyncStrategy.count(500),
-        RotationStrategy.size(0.5, FileUnit.KB),
+        SyncStrategyFactory.count(500),
+        RotationStrategyFactory.size(0.5, FileUnit.KB),
         HdfsWritingSettings()
       )
 
@@ -97,12 +96,12 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
       val logs = Await.result(resF, Duration.Inf)
       logs.size shouldEqual 2
 
-      val files = getFiles
+      val files = getFiles(fs)
       files.map(_.getLen).sum shouldEqual 1024
       files.foreach(f => f.getLen should be <= 512L)
 
-      verifyOutputFileSize(logs)
-      readLogs(logs).flatten shouldBe data.flatMap(_.utf8String)
+      verifyOutputFileSize(fs, logs)
+      readLogsWithFlatten(fs, logs) shouldBe data.flatMap(_.utf8String)
     }
 
     "detect upstream finish and move remaining data to hdfs" in {
@@ -111,8 +110,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val flow = HdfsFlow.data(
         fs,
-        SyncStrategy.count(500),
-        RotationStrategy.size(1, FileUnit.GB), // Use huge rotation
+        SyncStrategyFactory.count(500),
+        RotationStrategyFactory.size(1, FileUnit.GB), // Use huge rotation
         HdfsWritingSettings()
       )
 
@@ -124,70 +123,69 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
       val logs = Await.result(resF, Duration.Inf)
       logs.size shouldEqual 1
 
-      getFiles.head.getLen shouldEqual 1024
+      getFiles(fs).head.getLen shouldEqual 1024
 
-      verifyOutputFileSize(logs)
-      readLogs(logs).flatten shouldBe data.flatMap(_.utf8String)
+      verifyOutputFileSize(fs, logs)
+      readLogsWithFlatten(fs, logs) shouldBe data.flatMap(_.utf8String)
     }
 
     "use buffer rotation and produce three files" in {
       val flow = HdfsFlow.data(
         fs,
-        SyncStrategy.count(1),
-        RotationStrategy.count(2),
+        SyncStrategyFactory.count(1),
+        RotationStrategyFactory.count(2),
         settings
       )
 
       val resF = Source
-        .fromIterator(() => books)
+        .fromIterator(() => books.toIterator)
         .via(flow)
         .runWith(Sink.seq)
 
       val logs = Await.result(resF, Duration.Inf)
       logs.size shouldEqual 3
 
-      verifyOutputFileSize(logs)
-      readLogs(logs) shouldBe books.map(_.utf8String).grouped(2).map(_.mkString).toSeq
+      verifyOutputFileSize(fs, logs)
+      readLogs(fs, logs) shouldBe books.map(_.utf8String).grouped(2).map(_.mkString).toSeq
     }
 
-    "use timed rotation" in {
+    "use time rotation" in {
       val (cancellable, resF) = Source
         .tick(0.millis, 50.milliseconds, ByteString("I love Alpakka!"))
         .via(
           HdfsFlow.data(
             fs,
-            SyncStrategy.none,
-            RotationStrategy.time(500.milliseconds),
+            SyncStrategyFactory.none,
+            RotationStrategyFactory.time(500.milliseconds),
             HdfsWritingSettings()
           )
         )
         .toMat(Sink.seq)(Keep.both)
         .run()
 
-      implicit val ec = system.dispatcher
       system.scheduler.scheduleOnce(1500.milliseconds)(cancellable.cancel()) // cancel within 1500 milliseconds
       val logs = Await.result(resF, Duration.Inf)
-      verifyOutputFileSize(logs)
+      verifyOutputFileSize(fs, logs)
       List(3, 4) should contain(logs.size)
     }
 
     "should use no rotation and produce one file" in {
       val flow = HdfsFlow.data(
         fs,
-        SyncStrategy.none,
-        RotationStrategy.none,
+        SyncStrategyFactory.none,
+        RotationStrategyFactory.none,
         HdfsWritingSettings()
       )
 
       val resF = Source
-        .fromIterator(() => books)
+        .fromIterator(() => books.toIterator)
         .via(flow)
         .runWith(Sink.seq)
 
       val res = Await.result(resF, Duration.Inf)
       res.size shouldEqual 1
 
-      val files = getFiles
+      val files = getFiles(fs)
       files.size shouldEqual res.size
       files.head.getLen shouldEqual books.map(_.toArray.length).sum
     }
@@ -211,8 +209,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val flow = HdfsFlow.data(
         fs,
-        SyncStrategy.count(50),
-        RotationStrategy.size(0.01, FileUnit.KB),
+        SyncStrategyFactory.count(50),
+        RotationStrategyFactory.size(0.01, FileUnit.KB),
         settings
       )
 
@@ -233,8 +231,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
         WriteLog("3", 3)
       )
 
-      verifyOutputFileSize(logs)
-      readLogs(logs) shouldBe messagesFromKafka.map(_.book.title)
+      verifyOutputFileSize(fs, logs)
+      readLogs(fs, logs) shouldBe messagesFromKafka.map(_.book.title)
     }
   }
 
@@ -246,8 +244,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val flow = HdfsFlow.compressed(
         fs,
-        SyncStrategy.count(1),
-        RotationStrategy.size(0.1, FileUnit.MB),
+        SyncStrategyFactory.count(1),
+        RotationStrategyFactory.size(0.1, FileUnit.MB),
         codec,
         settings
       )
@@ -269,8 +267,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
         WriteLog("5.deflate", 5)
       )
 
-      verifyOutputFileSize(logs)
-      verifyLogsWithCodec(content, logs, codec)
+      verifyOutputFileSize(fs, logs)
+      verifyLogsWithCodec(fs, content, logs, codec)
     }
 
     "use buffer rotation and produce five files" in {
@@ -279,14 +277,14 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val flow = HdfsFlow.compressed(
         fs,
-        SyncStrategy.count(1),
-        RotationStrategy.count(1),
+        SyncStrategyFactory.count(1),
+        RotationStrategyFactory.count(1),
         codec,
         settings
       )
 
       val resF = Source
-        .fromIterator(() => books)
+        .fromIterator(() => books.toIterator)
         .via(flow)
         .runWith(Sink.seq)
 
@@ -299,8 +297,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
         WriteLog("4.deflate", 4)
       )
 
-      verifyOutputFileSize(logs)
-      verifyLogsWithCodec(books.toSeq, logs, codec)
+      verifyOutputFileSize(fs, logs)
+      verifyLogsWithCodec(fs, books, logs, codec)
     }
 
     "should use no rotation and produce one file" in {
@@ -309,8 +307,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val flow = HdfsFlow.compressed(
         fs,
-        SyncStrategy.none,
-        RotationStrategy.none,
+        SyncStrategyFactory.none,
+        RotationStrategyFactory.none,
         codec,
         settings
       )
@@ -327,8 +325,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
         WriteLog("0.deflate", 0)
       )
 
-      verifyOutputFileSize(logs)
-      verifyLogsWithCodec(content, logs, codec)
+      verifyOutputFileSize(fs, logs)
+      verifyLogsWithCodec(fs, content, logs, codec)
     }
   }
 
@@ -336,8 +334,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
     "use file size rotation and produce six files without a compression" in {
       val flow = HdfsFlow.sequence(
         fs,
-        SyncStrategy.none,
-        RotationStrategy.size(1, FileUnit.MB),
+        SyncStrategyFactory.none,
+        RotationStrategyFactory.size(1, FileUnit.MB),
         settings,
         classOf[Text],
         classOf[Text]
@@ -353,8 +351,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val logs = Await.result(resF, Duration.Inf)
 
-      verifyOutputFileSize(logs)
-      verifySequenceFile(content, logs)
+      verifyOutputFileSize(fs, logs)
+      verifySequenceFile(fs, content, logs)
     }
 
     "use file size rotation and produce six files with a compression" in {
@@ -363,8 +361,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val flow = HdfsFlow.sequence(
         fs,
-        SyncStrategy.none,
-        RotationStrategy.size(1, FileUnit.MB),
+        SyncStrategyFactory.none,
+        RotationStrategyFactory.size(1, FileUnit.MB),
         CompressionType.BLOCK,
         codec,
         settings,
@@ -382,42 +380,39 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val logs = Await.result(resF, Duration.Inf)
 
-      verifyOutputFileSize(logs)
-      verifySequenceFile(content, logs)
+      verifyOutputFileSize(fs, logs)
+      verifySequenceFile(fs, content, logs)
     }
 
     "use buffer rotation and produce five files" in {
       val flow = HdfsFlow.sequence(
         fs,
-        SyncStrategy.none,
-        RotationStrategy.count(1),
+        SyncStrategyFactory.none,
+        RotationStrategyFactory.count(1),
         settings,
         classOf[Text],
         classOf[Text]
       )
 
-      def content = books.zipWithIndex.map {
-        case (data, index) =>
-          new Text(index.toString) -> new Text(data.utf8String)
-      }
+      def content = booksForSequenceWriter
 
       val resF = Source
-        .fromIterator(() => content)
+        .fromIterator(() => content.toIterator)
         .via(flow)
         .runWith(Sink.seq)
 
       val logs = Await.result(resF, Duration.Inf)
 
       logs.size shouldEqual 5
-      verifyOutputFileSize(logs)
-      verifySequenceFile(content.toSeq, logs)
+      verifyOutputFileSize(fs, logs)
+      verifySequenceFile(fs, content, logs)
     }
 
     "should use no rotation and produce one file" in {
       val flow = HdfsFlow.sequence(
         fs,
-        SyncStrategy.none,
-        RotationStrategy.none,
+        SyncStrategyFactory.none,
+        RotationStrategyFactory.none,
         settings,
         classOf[Text],
         classOf[Text]
@@ -434,8 +429,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
       val logs = Await.result(resF, Duration.Inf)
 
       logs.size shouldEqual 1
-      verifyOutputFileSize(logs)
-      verifySequenceFile(content, logs)
+      verifyOutputFileSize(fs, logs)
+      verifySequenceFile(fs, content, logs)
     }
   }
 
@@ -453,15 +448,6 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
     hdfsCluster.shutdown()
   }
 
-  private def books: Iterator[ByteString] =
-    List(
-      "Akka Concurrency",
-      "Akka in Action",
-      "Effective Akka",
-      "Learning Scala",
-      "Programming in Scala Programming"
-    ).map(ByteString(_)).iterator
-
   private def setupCluster(): Unit = {
     val baseDir = new File(PathUtils.getTestDir(getClass), "miniHDFS")
     val conf = new HdfsConfiguration
@@ -469,75 +455,5 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
     val builder = new MiniDFSCluster.Builder(conf)
     hdfsCluster = builder.nameNodePort(54310).format(true).build()
     hdfsCluster.waitClusterUp()
-  }
-
-  private def getFiles: Seq[FileStatus] = {
-    val p = new Path(destionation)
-    fs.listStatus(p)
-  }
-
-  private def readLogs(logs: Seq[WriteLog]): Seq[String] =
-    logs.map(log => new Path(destionation, log.path)).map(f => read(fs.open(f)))
-
-  private def readLogsWithCodec(logs: Seq[WriteLog], codec: CompressionCodec): Seq[String] =
-    logs.map(log => new Path(destionation, log.path)).map { file =>
-      read(codec.createInputStream(fs.open(file)))
-    }
-
-  private def read(stream: InputStream): String = {
-    val writer = new StringWriter
-    IOUtils.copy(stream, writer, "UTF-8")
-    writer.toString
-  }
-
-  private def verifyOutputFileSize(logs: Seq[WriteLog]): Assertion =
-    getFiles.size shouldEqual logs.size
-
-  private def verifyLogsWithCodec(content: Seq[ByteString], logs: Seq[WriteLog], codec: CompressionCodec): Assertion = {
-    val pureContent: String = content.map(_.utf8String).mkString
-    val contentFromHdfsWithCodec: String = readLogsWithCodec(logs, codec).mkString
-    val contentFromHdfs: String = readLogs(logs).mkString
-    contentFromHdfs should !==(pureContent)
-    contentFromHdfsWithCodec shouldEqual pureContent
-  }
-
-  private def readSequenceFile(log: WriteLog): List[(Text, Text)] = {
-    val reader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(new Path(destionation, log.path)))
-    var key = new Text
-    var value = new Text
-    val results = new ListBuffer[(Text, Text)]()
-    while (reader.next(key, value)) {
-      results += ((key, value))
-      key = new Text
-      value = new Text
-    }
-    results.toList
-  }
-
-  private def verifySequenceFile(content: Seq[(Text, Text)], logs: Seq[WriteLog]): Assertion =
-    logs.flatMap(readSequenceFile) shouldEqual content
-
-  /*
-    It generates count * byte size list with random char
-   */
-  private def generateFakeContent(count: Double, byte: Long): List[ByteString] =
-    ByteBuffer
-      .allocate((count * byte).toInt)
-      .array()
-      .toList
-      .map(_ => Random.nextPrintableChar)
-      .map(ByteString(_))
-
-  private def generateFakeContentWithPartitions(count: Double, byte: Long, partition: Int): List[ByteString] = {
-    val fakeData = generateFakeContent(count, byte)
-    val groupSize = Math.ceil(fakeData.size / partition.toDouble).toInt
-    fakeData.grouped(groupSize).map(list => ByteString(list.map(_.utf8String).mkString)).toList
-  }
-
-  private def generateFakeContentForSequence(count: Double, byte: Long): List[(Text, Text)] = {
-    val half = ((count * byte) / 2).toInt
-    (0 to half)
-      .map(_ => (new Text(Random.nextPrintableChar.toString), new Text(Random.nextPrintableChar.toString)))
-      .toList
   }
 }

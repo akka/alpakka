@@ -29,13 +29,13 @@ object HdfsWritingSettings {
 
 final case class WriteLog(path: String, rotation: Int)
 
-private[hdfs] sealed abstract class FileUnit(val byteCount: Long)
+private[hdfs] sealed case class FileUnit(byteCount: Long)
 
 object FileUnit {
-  case object KB extends FileUnit(Math.pow(2, 10).toLong)
-  case object MB extends FileUnit(Math.pow(2, 20).toLong)
-  case object GB extends FileUnit(Math.pow(2, 30).toLong)
-  case object TB extends FileUnit(Math.pow(2, 40).toLong)
+  val KB = FileUnit(Math.pow(2, 10).toLong)
+  val MB = FileUnit(Math.pow(2, 20).toLong)
+  val GB = FileUnit(Math.pow(2, 30).toLong)
+  val TB = FileUnit(Math.pow(2, 40).toLong)
 }
 
 private[hdfs] trait Strategy {
