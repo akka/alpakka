@@ -11,7 +11,7 @@ object Dependencies {
   }
 
   val AwsSdkVersion = "1.11.342"
-  val AkkaHttpVersion = "10.0.13"
+  val AkkaHttpVersion = "10.1.1"
 
   val Common = Seq(
     // These libraries are added to all modules via the `Common` AutoPlugin
@@ -159,7 +159,7 @@ object Dependencies {
   val IronMq = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-      "de.heikoseeberger" %% "akka-http-circe" % "1.11.0" // ApacheV2
+      "de.heikoseeberger" %% "akka-http-circe" % "1.20.1" // ApacheV2
     )
   )
 
