@@ -73,7 +73,10 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
 
     def parseQueues(json: Json) = {
 
-      def extractName(json: Json) = json.hcursor.downField("name").as[Json].getOrElse(Json.Null)
+      def extractName(json: Json) = json.hcursor.downField("name").as[Json] match {
+        case Right(r) => r
+        case Left(_) => Json.Null
+      }
 
       json.hcursor
         .downField("queues")
@@ -222,11 +225,14 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
       .flatMap(Unmarshal(_).to[Json])
       .map { json =>
         for {
-          reservationId <- json.hcursor.downField("reservation_id").as[Reservation.Id]
+          reservationId <- json.hcursor.downField("reservation_id").as[Reservation.Id] match {
+            case Right(r) => Some(r)
+            case Left(_) => None
+          }
         } yield reservation.copy(reservationId = reservationId)
       }
       .collect {
-        case Right(r) => r
+        case Some(r) => r
       }
 
   }
