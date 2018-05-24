@@ -290,13 +290,14 @@ class MqttSourceSpec
       // Create a proxy on an available port so it can be shut down
       val (proxyBinding, connection) = Tcp().bind("localhost", 0).toMat(Sink.head)(Keep.both).run()
       val proxyPort = proxyBinding.futureValue.localAddress.getPort
-      val proxyKs = connection.map(
-        _.handleWith(
+      val proxyKs = connection.map { c =>
+        Thread.sleep(1000) // FIXME remove after https://github.com/akka/alpakka/issues/972
+        c.handleWith(
           Tcp()
             .outgoingConnection("localhost", 1883)
             .viaMat(KillSwitches.single)(Keep.right)
         )
-      )
+      }
       Await.ready(proxyBinding, timeout)
 
       val settings1 = MqttSourceSettings(
@@ -324,13 +325,14 @@ class MqttSourceSpec
 
       // Restart the proxy
       val (proxyBinding2, connection2) = Tcp().bind("localhost", proxyPort).toMat(Sink.head)(Keep.both).run()
-      val proxyKs2 = connection2.map(
-        _.handleWith(
+      val proxyKs2 = connection2.map { c =>
+        Thread.sleep(1000) // FIXME remove after https://github.com/akka/alpakka/issues/972
+        c.handleWith(
           Tcp()
             .outgoingConnection("localhost", 1883)
             .viaMat(KillSwitches.single)(Keep.right)
         )
-      )
+      }
       Await.ready(proxyBinding2, timeout)
 
       Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
@@ -351,13 +353,14 @@ class MqttSourceSpec
       // Create a proxy on an available port so it can be shut down
       val (proxyBinding, connection) = Tcp().bind("localhost", 0).toMat(Sink.head)(Keep.both).run()
       val proxyPort = proxyBinding.futureValue.localAddress.getPort
-      val proxyKs = connection.map(
-        _.handleWith(
+      val proxyKs = connection.map { c =>
+        Thread.sleep(1000) // FIXME remove after https://github.com/akka/alpakka/issues/972
+        c.handleWith(
           Tcp()
             .outgoingConnection("localhost", 1883)
             .viaMat(KillSwitches.single)(Keep.right)
         )
-      )
+      }
       Await.ready(proxyBinding, timeout)
 
       val settings1 = MqttSourceSettings(
