@@ -252,7 +252,7 @@ public class MqttSourceTest {
     @SuppressWarnings("unchecked")
     MqttSourceSettings settings1 = MqttSourceSettings.create(
       sourceSettings
-        .withClientId("source-spec/testator")
+        .withClientId("source-test/testator")
         .withBroker("tcp://localhost:" + String.valueOf(proxyPort))
         .withWill(lastWill)
     ).withSubscriptions(Pair.create(topic1, MqttQoS.atLeastOnce()));
@@ -271,7 +271,7 @@ public class MqttSourceTest {
 
     @SuppressWarnings("unchecked")
     MqttSourceSettings settings2 = MqttSourceSettings
-        .create(sourceSettings.withClientId("source-spec/executor"))
+        .create(sourceSettings.withClientId("source-test/executor"))
         .withSubscriptions(Pair.create(willTopic, MqttQoS.atLeastOnce()));
     Source<MqttMessage, CompletionStage<Done>> source2 = MqttSource.atMostOnce(settings2, 8);
 
