@@ -6,10 +6,11 @@ package akka.stream.alpakka.hdfs.impl
 
 import akka.NotUsed
 import akka.event.Logging
-import akka.stream.alpakka.hdfs.RotationStrategy.TimeRotationStrategy
+import akka.stream.alpakka.hdfs.impl.strategy.RotationStrategy.TimeRotationStrategy
 import akka.stream.alpakka.hdfs.impl.HdfsFlowLogic.{FlowState, FlowStep, LogicState}
+import akka.stream.alpakka.hdfs.impl.strategy.{RotationStrategy, SyncStrategy}
 import akka.stream.alpakka.hdfs.impl.writer.HdfsWriter
-import akka.stream.alpakka.hdfs.{HdfsWritingSettings, RotationStrategy, SyncStrategy, WriteLog}
+import akka.stream.alpakka.hdfs.{HdfsWritingSettings, WriteLog}
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import cats.data.State

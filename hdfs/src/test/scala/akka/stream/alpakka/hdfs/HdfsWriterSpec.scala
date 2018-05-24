@@ -39,7 +39,6 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
   val conf = new Configuration()
   conf.set("fs.default.name", "hdfs://localhost:54310")
-  // conf.setEnum("zlib.compress.level", CompressionLevel.BEST_COMPRESSION)
 
   var fs: FileSystem = FileSystem.get(conf)
   //#init-client
@@ -105,16 +104,17 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
     }
 
     "detect upstream finish and move remaining data to hdfs" in {
+      // Use huge rotation
       val data = generateFakeContent(1, FileUnit.KB.byteCount)
       val dataIterator = data.toIterator
-
+      //#define-data
       val flow = HdfsFlow.data(
         fs,
         SyncStrategyFactory.count(500),
-        RotationStrategyFactory.size(1, FileUnit.GB), // Use huge rotation
+        RotationStrategyFactory.size(1, FileUnit.GB),
         HdfsWritingSettings()
       )
-
+      //#define-data
       val resF = Source
         .fromIterator(() => dataIterator)
         .via(flow)
@@ -239,9 +239,12 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
   "CompressedDataWriter" should {
     "use file size rotation and produce six files" in {
 
+      //#define-codec
       val codec = new DefaultCodec()
       codec.setConf(fs.getConf)
+      //#define-codec
 
+      //#define-compress
       val flow = HdfsFlow.compressed(
         fs,
         SyncStrategyFactory.count(1),
@@ -249,7 +252,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
         codec,
         settings
       )
-
+      //#define-compress
       val content = generateFakeContentWithPartitions(1, FileUnit.MB.byteCount, 30)
 
       val resF = Source
@@ -332,6 +335,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
   "SequenceWriter" should {
     "use file size rotation and produce six files without a compression" in {
+      //#define-sequence
       val flow = HdfsFlow.sequence(
         fs,
         SyncStrategyFactory.none,
@@ -340,6 +344,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
         classOf[Text],
         classOf[Text]
       )
+      //#define-sequence
 
       // half MB data becomes more when it is sequence
       val content = generateFakeContentForSequence(0.5, FileUnit.MB.byteCount)
@@ -359,6 +364,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
       val codec = new DefaultCodec()
       codec.setConf(fs.getConf)
 
+      //#define-sequence-compressed
       val flow = HdfsFlow.sequence(
         fs,
         SyncStrategyFactory.none,
@@ -369,6 +375,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
         classOf[Text],
         classOf[Text]
       )
+      //#define-sequence-compressed
 
       // half MB data becomes more when it is sequence
       val content = generateFakeContentForSequence(0.5, FileUnit.MB.byteCount)
@@ -455,5 +462,18 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
     val builder = new MiniDFSCluster.Builder(conf)
     hdfsCluster = builder.nameNodePort(54310).format(true).build()
     hdfsCluster.waitClusterUp()
+  }
+
+  private def documentation(): Unit = {
+    //#define-generator
+    val pathGenerator =
+      FilePathGenerator.create(
+        (rotationCount: Long, timestamp: Long) => s"/tmp/alpakka/$rotationCount-$timestamp"
+      )
+    //#define-generator
+    //#define-settings
+    val settings =
+      HdfsWritingSettings(overwrite = true, newLine = false, pathGenerator = pathGenerator)
+    //#define-settings
   }
 }

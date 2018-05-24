@@ -7,6 +7,7 @@ package akka.stream.alpakka.hdfs.scaladsl
 import akka.NotUsed
 import akka.stream.alpakka.hdfs._
 import akka.stream.alpakka.hdfs.impl.HdfsFlowStage
+import akka.stream.alpakka.hdfs.impl.strategy.{RotationStrategy, SyncStrategy}
 import akka.stream.alpakka.hdfs.impl.writer.{CompressedDataWriter, DataWriter, SequenceWriter}
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString

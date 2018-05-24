@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -130,13 +131,14 @@ public class HdfsWriterTest {
   public void testDataWriterDetectUpstreamFinish() throws Exception {
     List<ByteString> data = JavaTestUtils.generateFakeContent(1.0, FileUnit.KB().byteCount());
 
+    // #define-data
     Flow<ByteString, WriteLog, NotUsed> flow =
         HdfsFlow.data(
             fs,
             SyncStrategyFactory.count(500),
             RotationStrategyFactory.size(1, FileUnit.GB()),
             settings);
-
+    // #define-data
     CompletionStage<List<WriteLog>> resF =
         Source.from(data).via(flow).runWith(Sink.seq(), materializer);
 
@@ -227,9 +229,12 @@ public class HdfsWriterTest {
 
   @Test
   public void testCompressedDataWriterWithSizeRotation() throws Exception {
+    // #define-codec
     DefaultCodec codec = new DefaultCodec();
     codec.setConf(fs.getConf());
+    // #define-codec
 
+    // #define-compress
     Flow<ByteString, WriteLog, NotUsed> flow =
         HdfsFlow.compressed(
             fs,
@@ -237,6 +242,7 @@ public class HdfsWriterTest {
             RotationStrategyFactory.size(0.1, FileUnit.MB()),
             codec,
             settings);
+    // #define-compress
 
     List<ByteString> content =
         JavaTestUtils.generateFakeContentWithPartitions(1, FileUnit.MB().byteCount(), 30);
@@ -310,6 +316,7 @@ public class HdfsWriterTest {
 
   @Test
   public void testSequenceWriterWithSizeRotationWithoutCompression() throws Exception {
+    // #define-sequence-compressed
     Flow<Pair<Text, Text>, WriteLog, NotUsed> flow =
         HdfsFlow.sequence(
             fs,
@@ -318,6 +325,7 @@ public class HdfsWriterTest {
             settings,
             Text.class,
             Text.class);
+    // #define-sequence-compressed
 
     List<Pair<Text, Text>> content =
         JavaTestUtils.generateFakeContentForSequence(0.5, FileUnit.MB().byteCount());
@@ -336,6 +344,7 @@ public class HdfsWriterTest {
     DefaultCodec codec = new DefaultCodec();
     codec.setConf(fs.getConf());
 
+    // #define-sequence
     Flow<Pair<Text, Text>, WriteLog, NotUsed> flow =
         HdfsFlow.sequence(
             fs,
@@ -346,6 +355,7 @@ public class HdfsWriterTest {
             settings,
             Text.class,
             Text.class);
+    // #define-sequence
 
     List<Pair<Text, Text>> content =
         JavaTestUtils.generateFakeContentForSequence(0.5, FileUnit.MB().byteCount());
@@ -442,5 +452,19 @@ public class HdfsWriterTest {
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath());
     hdfsCluster = new MiniDFSCluster.Builder(conf).nameNodePort(54310).format(true).build();
     hdfsCluster.waitClusterUp();
+  }
+
+  private static void documentation() {
+    // #define-generator
+    BiFunction<Long, Long, String> func =
+        (rotationCount, timestamp) -> "/tmp/alpakka/" + rotationCount + "-" + timestamp;
+    FilePathGenerator pathGenerator = FilePathGenerator.create(func);
+    // #define-generator
+    // #define-settings
+    HdfsWritingSettings.create()
+        .withOverwrite(true)
+        .withNewLine(false)
+        .withPathGenerator(pathGenerator);
+    // #define-settings
   }
 }

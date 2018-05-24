@@ -25,6 +25,7 @@
 * [FTP](ftp.md)
 * [Google Cloud Pub/Sub](google-cloud-pub-sub.md)
 * [Google Firebase Cloud Messaging](google-fcm.md)
+* [Hadoop Distributed File System](hdfs.md)
 * [HBase](hbase.md)
 * [HTTP](external/http.md)
 * [IronMQ](ironmq.md)
