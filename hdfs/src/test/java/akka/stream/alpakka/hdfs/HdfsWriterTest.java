@@ -6,15 +6,18 @@ package akka.stream.alpakka.hdfs;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.actor.Cancellable;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.hdfs.javadsl.HdfsFlow;
 import akka.stream.alpakka.hdfs.util.JavaTestUtils;
 import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -29,6 +32,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.concurrent.duration.Duration;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,6 +41,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -162,6 +167,34 @@ public class HdfsWriterTest {
 
     assertEquals(logs.size(), 3);
     JavaTestUtils.verifyFlattenContent(fs, logs, books);
+  }
+
+  @Test
+  public void testDataWriterWithTimeRotation() throws Exception {
+    Pair<Cancellable, CompletionStage<List<WriteLog>>> resF =
+        Source.tick(
+                java.time.Duration.ofMillis(0),
+                java.time.Duration.ofMillis(50),
+                ByteString.fromString("I love Alpakka!"))
+            .via(
+                HdfsFlow.data(
+                    fs,
+                    SyncStrategyFactory.none(),
+                    RotationStrategyFactory.time(Duration.create(500, TimeUnit.MILLISECONDS)),
+                    settings))
+            .toMat(Sink.seq(), Keep.both())
+            .run(materializer);
+
+    system
+        .scheduler()
+        .scheduleOnce(
+            java.time.Duration.ofMillis(1500),
+            () -> resF.first().cancel(),
+            system.dispatcher()); // cancel within 1500 milliseconds
+
+    List<WriteLog> logs = new ArrayList<>(resF.second().toCompletableFuture().get());
+    JavaTestUtils.verifyOutputFileSize(fs, logs);
+    assertTrue(ArrayUtils.contains(new int[] {3, 4}, logs.size()));
   }
 
   @Test
