@@ -75,8 +75,10 @@ private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
     if ((channel ne null) && channel.isOpen) channel.close()
     channel = null
 
-    connection.removeShutdownListener(shutdownListener)
-    settings.connectionProvider.release(connection)
-    connection = null
+    if (connection ne null) {
+      connection.removeShutdownListener(shutdownListener)
+      settings.connectionProvider.release(connection)
+      connection = null
+    }
   }
 }
