@@ -103,11 +103,11 @@ private[ftp] trait FtpSource extends FtpSourceFactory[FTPClient] {
   protected val ftpIOSinkName: String = FtpIOSinkName
 }
 
-private[ftp] trait FtpsSource extends FtpSourceFactory[FTPClient] {
+private[ftp] trait FtpsSource extends FtpSourceFactory[FTPSClient] {
   protected final val FtpsBrowserSourceName = "FtpsBrowserSource"
   protected final val FtpsIOSourceName = "FtpsIOSource"
   protected final val FtpsIOSinkName = "FtpsIOSink"
-  protected val ftpClient: () => FTPClient = () => new FTPSClient
+  protected val ftpClient: () => FTPSClient = () => new FTPSClient
   protected val ftpBrowserSourceName: String = FtpsBrowserSourceName
   protected val ftpIOSourceName: String = FtpsIOSourceName
   protected val ftpIOSinkName: String = FtpsIOSinkName
@@ -178,8 +178,8 @@ private[ftp] trait FtpSourceParams extends FtpSource with FtpDefaultSettings {
 }
 
 private[ftp] trait FtpsSourceParams extends FtpsSource with FtpsDefaultSettings {
-  type S = FtpFileSettings
-  protected[this] val ftpLike: FtpLike[FTPClient, S] = FtpLike.ftpLikeInstance
+  type S = FtpsSettings
+  protected[this] val ftpLike: FtpLike[FTPSClient, S] = FtpLike.ftpsLikeInstance
 }
 
 private[ftp] trait SftpSourceParams extends SftpSource with SftpDefaultSettings {

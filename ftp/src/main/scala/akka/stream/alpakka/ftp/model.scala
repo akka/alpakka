@@ -94,13 +94,15 @@ object FtpSettings {
  * @param credentials credentials (username and password)
  * @param binary specifies the file transfer mode, BINARY or ASCII. Default is ASCII (false)
  * @param passiveMode specifies whether to use passive mode connections. Default is active mode (false)
+ * @param explicitSSL specifies whether to use ssl encryption for data connections. Default is no (false).
  */
 final case class FtpsSettings(
     host: InetAddress,
     port: Int = FtpsSettings.DefaultFtpsPort,
     credentials: FtpCredentials = AnonFtpCredentials,
     binary: Boolean = false,
-    passiveMode: Boolean = false
+    passiveMode: Boolean = false,
+    explicitSSL: Boolean = false
 ) extends FtpFileSettings {
   def withPort(port: Int): FtpsSettings =
     copy(port = port)
@@ -113,6 +115,9 @@ final case class FtpsSettings(
 
   def withPassiveMode(passiveMode: Boolean): FtpsSettings =
     copy(passiveMode = passiveMode)
+
+  def withExplicitSSL(explicitSSL: Boolean): FtpsSettings =
+    copy(explicitSSL = explicitSSL)
 }
 
 object FtpsSettings {

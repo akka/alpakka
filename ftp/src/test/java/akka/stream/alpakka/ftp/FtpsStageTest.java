@@ -74,7 +74,8 @@ public class FtpsStageTest extends FtpsSupportImpl implements CommonFtpStageTest
             getPort(),
             FtpCredentials.createAnonCredentials(),
             false, // binary
-            true   // passiveMode
+            true,  // passiveMode
+            false  // explicitSSL
     );
     //#create-settings
     return settings;
