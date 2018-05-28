@@ -168,7 +168,39 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
         .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
 
-    val result = TestHttpApi.pull(TestCredentials.projectId, "sub1", accessToken, TestCredentials.apiKey)
+    val result = TestHttpApi.pull(TestCredentials.projectId, "sub1", Some(accessToken), TestCredentials.apiKey)
+    result.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", publishMessage))))
+
+  }
+
+  it should "Pull with results without access token in emulated mode" in {
+    object TestEmulatorHttpApi extends HttpApi {
+      override val isEmulated = true
+      val PubSubGoogleApisHost = s"http://localhost:${wiremockServer.port()}"
+      val GoogleApisHost = s"http://localhost:${wiremockServer.port()}"
+    }
+
+    val publishMessage =
+      PubSubMessage(messageId = "1", data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
+
+    val pullResponse =
+      """{"receivedMessages":[{"ackId":"ack1","message":{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1"}}]}"""
+
+    val pullRequest = """{"returnImmediately":true,"maxMessages":1000}"""
+
+    mock.register(
+      WireMock
+        .post(
+          urlEqualTo(
+            s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:pull"
+          )
+        )
+        .withRequestBody(WireMock.equalTo(pullRequest))
+        .withHeader("Authorization", WireMock.absent())
+        .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
+    )
+
+    val result = TestEmulatorHttpApi.pull(TestCredentials.projectId, "sub1", None, TestCredentials.apiKey)
     result.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", publishMessage))))
 
   }
@@ -191,7 +223,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
         .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
 
-    val result = TestHttpApi.pull(TestCredentials.projectId, "sub1", accessToken, TestCredentials.apiKey)
+    val result = TestHttpApi.pull(TestCredentials.projectId, "sub1", Some(accessToken), TestCredentials.apiKey)
     result.futureValue shouldBe PullResponse(None)
 
   }

@@ -31,13 +31,27 @@ private final class GooglePubSubSource(projectId: String,
       def fetch(implicit mat: Materializer): Unit = {
         import mat.executionContext
 
-        val req = session.getToken().flatMap { token =>
-          httpApi.pull(project = projectId, subscription = subscription, accessToken = token, apiKey = apiKey)
+        if (httpApi.isEmulated) {
+          httpApi
+            .pull(project = projectId, subscription = subscription, maybeAccessToken = None, apiKey = apiKey)
+            .onComplete { tr =>
+              callback.invoke(tr -> mat)
+            }
+          state = Fetching
+        } else {
+          session
+            .getToken()
+            .flatMap { token =>
+              httpApi.pull(project = projectId,
+                           subscription = subscription,
+                           maybeAccessToken = Some(token),
+                           apiKey = apiKey)
+            }
+            .onComplete { tr =>
+              callback.invoke(tr -> mat)
+            }
+          state = Fetching
         }
-        req.onComplete { tr =>
-          callback.invoke(tr -> mat)
-        }
-        state = Fetching
       }
 
       private val callback = getAsyncCallback[(Try[PullResponse], Materializer)] {
