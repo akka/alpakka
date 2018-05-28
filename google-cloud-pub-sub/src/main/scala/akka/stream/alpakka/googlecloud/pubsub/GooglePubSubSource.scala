@@ -32,12 +32,10 @@ private final class GooglePubSubSource(projectId: String,
         import mat.executionContext
 
         val req = if (httpApi.isEmulated) {
-          val resp = httpApi
+          httpApi
             .pull(project = projectId, subscription = subscription, maybeAccessToken = None, apiKey = apiKey)
-          state = Fetching
-          resp
         } else {
-          val resp = session
+          session
             .getToken()
             .flatMap { token =>
               httpApi.pull(project = projectId,
@@ -45,13 +43,11 @@ private final class GooglePubSubSource(projectId: String,
                            maybeAccessToken = Some(token),
                            apiKey = apiKey)
             }
-          state = Fetching
-          resp
         }
-
         req.onComplete { tr =>
           callback.invoke(tr -> mat)
         }
+        state = Fetching
       }
 
       private val callback = getAsyncCallback[(Try[PullResponse], Materializer)] {
