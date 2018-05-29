@@ -68,7 +68,7 @@ private trait HttpApi {
     DefaultJsonProtocol.jsonFormat1(AcknowledgeRequest.apply)
   private implicit val pullRequestFormat = DefaultJsonProtocol.jsonFormat2(HttpApi.PullRequest)
 
-  def pull(project: String, subscription: String, accessToken: String, apiKey: String)(
+  def pull(project: String, subscription: String, maybeAccessToken: Option[String], apiKey: String)(
       implicit as: ActorSystem,
       materializer: Materializer
   ): Future[PullResponse] = {
@@ -80,7 +80,7 @@ private trait HttpApi {
 
     for {
       request <- Marshal((HttpMethods.POST, uri, request)).to[HttpRequest]
-      response <- Http().singleRequest(request.addCredentials(OAuth2BearerToken(accessToken)))
+      response <- doRequest(request, maybeAccessToken)
       pullResponse <- Unmarshal(response).to[PullResponse]
     } yield pullResponse
   }
