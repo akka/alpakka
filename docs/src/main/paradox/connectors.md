@@ -12,6 +12,7 @@
 * [AWS S3 Connector](s3.md)
 * [AWS SNS Connector](sns.md)
 * [AWS SQS Connector](sqs.md)
+* [Azure Event Hubs](external/azure-event-hubs.md)
 * [Azure IoT Hub](external/azure-iot-hub.md)
 * [Azure Storage Queue](azure-storage-queue.md)
 * [Cassandra Connector](cassandra.md)
