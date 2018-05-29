@@ -14,6 +14,8 @@ private[ftp] trait FtpsOperations extends CommonFtpOperations { _: FtpLike[FTPSC
   def connect(connectionSettings: FtpsSettings)(implicit ftpClient: FTPSClient): Try[Handler] = Try {
     ftpClient.connect(connectionSettings.host, connectionSettings.port)
 
+    connectionSettings.configureConnection(ftpClient)
+
     ftpClient.login(
       connectionSettings.credentials.username,
       connectionSettings.credentials.password
@@ -25,10 +27,6 @@ private[ftp] trait FtpsOperations extends CommonFtpOperations { _: FtpLike[FTPSC
 
     if (connectionSettings.passiveMode) {
       ftpClient.enterLocalPassiveMode()
-    }
-
-    if (connectionSettings.explicitSSL) {
-      ftpClient.execPROT("P")
     }
 
     ftpClient

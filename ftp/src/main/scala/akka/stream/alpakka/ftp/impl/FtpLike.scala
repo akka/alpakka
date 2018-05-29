@@ -35,7 +35,7 @@ protected[ftp] trait FtpLike[FtpClient, S <: RemoteFileSettings] {
 
 object FtpLike {
   // type class instances
-  implicit val ftpLikeInstance = new FtpLike[FTPClient, FtpFileSettings] with FtpOperations
+  implicit val ftpLikeInstance = new FtpLike[FTPClient, FtpSettings] with FtpOperations
   implicit val ftpsLikeInstance = new FtpLike[FTPSClient, FtpsSettings] with FtpsOperations
   implicit val sFtpLikeInstance = new FtpLike[SSHClient, SftpSettings] with SftpOperations
 }

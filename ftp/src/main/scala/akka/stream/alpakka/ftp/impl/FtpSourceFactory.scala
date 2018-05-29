@@ -173,7 +173,7 @@ private[ftp] trait SftpDefaultSettings {
 }
 
 private[ftp] trait FtpSourceParams extends FtpSource with FtpDefaultSettings {
-  type S = FtpFileSettings
+  type S = FtpSettings
   protected[this] val ftpLike: FtpLike[FTPClient, S] = FtpLike.ftpLikeInstance
 }
 
