@@ -8,7 +8,7 @@ import java.io.{InputStream, StringWriter}
 import java.nio.ByteBuffer
 import java.util
 
-import akka.stream.alpakka.hdfs.WriteLog
+import akka.stream.alpakka.hdfs.RotationMessage
 import akka.util.ByteString
 import org.apache.commons.io.IOUtils
 import org.apache.hadoop.fs.{FileStatus, FileSystem, Path}
@@ -44,23 +44,25 @@ sealed trait TestUtils {
 
   def generateFakeContentWithPartitions(count: Double, bytes: Long, partition: Int): Sequence[ByteString]
 
-  def readSequenceFile(fs: FileSystem, log: WriteLog): Sequence[Pair[Text, Text]]
+  def readSequenceFile(fs: FileSystem, log: RotationMessage): Sequence[Pair[Text, Text]]
 
-  def verifySequenceFile(fs: FileSystem, content: Sequence[Pair[Text, Text]], logs: Sequence[WriteLog]): Assertion
+  def verifySequenceFile(fs: FileSystem,
+                         content: Sequence[Pair[Text, Text]],
+                         logs: Sequence[RotationMessage]): Assertion
 
   def generateFakeContentForSequence(count: Double, bytes: Long): Sequence[Pair[Text, Text]]
 
-  def verifyOutputFileSize(fs: FileSystem, logs: Sequence[WriteLog]): Assertion
+  def verifyOutputFileSize(fs: FileSystem, logs: Sequence[RotationMessage]): Assertion
 
-  def readLogs(fs: FileSystem, logs: Sequence[WriteLog]): Sequence[String]
+  def readLogs(fs: FileSystem, logs: Sequence[RotationMessage]): Sequence[String]
 
-  def readLogsWithFlatten(fs: FileSystem, logs: Sequence[WriteLog]): Sequence[Char]
+  def readLogsWithFlatten(fs: FileSystem, logs: Sequence[RotationMessage]): Sequence[Char]
 
-  def readLogsWithCodec(fs: FileSystem, logs: Sequence[WriteLog], codec: CompressionCodec): Sequence[String]
+  def readLogsWithCodec(fs: FileSystem, logs: Sequence[RotationMessage], codec: CompressionCodec): Sequence[String]
 
   def verifyLogsWithCodec(fs: FileSystem,
                           content: Sequence[ByteString],
-                          logs: Sequence[WriteLog],
+                          logs: Sequence[RotationMessage],
                           codec: CompressionCodec): Assertion
 }
 
@@ -95,13 +97,13 @@ object ScalaTestUtils extends TestUtils with Matchers {
       .map(_ => Random.nextPrintableChar)
       .map(ByteString(_))
 
-  def verifyOutputFileSize(fs: FileSystem, logs: Sequence[WriteLog]): Assertion =
+  def verifyOutputFileSize(fs: FileSystem, logs: Sequence[RotationMessage]): Assertion =
     ScalaTestUtils.getFiles(fs).size shouldEqual logs.size
 
-  def readLogs(fs: FileSystem, logs: Sequence[WriteLog]): Sequence[String] =
+  def readLogs(fs: FileSystem, logs: Sequence[RotationMessage]): Sequence[String] =
     logs.map(log => new Path(destination, log.path)).map(f => read(fs.open(f)))
 
-  def readLogsWithFlatten(fs: FileSystem, logs: Sequence[WriteLog]): Sequence[Char] =
+  def readLogsWithFlatten(fs: FileSystem, logs: Sequence[RotationMessage]): Sequence[Char] =
     readLogs(fs, logs).flatten
 
   def generateFakeContentWithPartitions(count: Double, bytes: Long, partition: Int): Sequence[ByteString] = {
@@ -110,14 +112,14 @@ object ScalaTestUtils extends TestUtils with Matchers {
     fakeData.grouped(groupSize).map(list => ByteString(list.map(_.utf8String).mkString)).toList
   }
 
-  def readLogsWithCodec(fs: FileSystem, logs: Sequence[WriteLog], codec: CompressionCodec): Sequence[String] =
+  def readLogsWithCodec(fs: FileSystem, logs: Sequence[RotationMessage], codec: CompressionCodec): Sequence[String] =
     logs.map(log => new Path(destination, log.path)).map { file =>
       read(codec.createInputStream(fs.open(file)))
     }
 
   def verifyLogsWithCodec(fs: FileSystem,
                           content: Sequence[ByteString],
-                          logs: Sequence[WriteLog],
+                          logs: Sequence[RotationMessage],
                           codec: CompressionCodec): Assertion = {
     val pureContent: String = content.map(_.utf8String).mkString
     val contentFromHdfsWithCodec: String = readLogsWithCodec(fs, logs, codec).mkString
@@ -126,7 +128,7 @@ object ScalaTestUtils extends TestUtils with Matchers {
     contentFromHdfsWithCodec shouldEqual pureContent
   }
 
-  def readSequenceFile(fs: FileSystem, log: WriteLog): Sequence[(Text, Text)] = {
+  def readSequenceFile(fs: FileSystem, log: RotationMessage): Sequence[(Text, Text)] = {
     val reader = new SequenceFile.Reader(fs.getConf, SequenceFile.Reader.file(new Path(destination, log.path)))
     var key = new Text
     var value = new Text
@@ -139,7 +141,7 @@ object ScalaTestUtils extends TestUtils with Matchers {
     results.toList
   }
 
-  def verifySequenceFile(fs: FileSystem, content: Sequence[(Text, Text)], logs: Sequence[WriteLog]): Assertion =
+  def verifySequenceFile(fs: FileSystem, content: Sequence[(Text, Text)], logs: Sequence[RotationMessage]): Assertion =
     logs.flatMap(readSequenceFile(fs, _)) shouldEqual content
 
   def generateFakeContentForSequence(count: Double, bytes: Long): Sequence[(Text, Text)] = {
@@ -171,13 +173,13 @@ object JavaTestUtils extends TestUtils {
   def generateFakeContent(count: Double, bytes: Long): Sequence[ByteString] =
     ScalaTestUtils.generateFakeContent(count, bytes).asJava
 
-  def verifyOutputFileSize(fs: FileSystem, logs: Sequence[WriteLog]): Unit =
+  def verifyOutputFileSize(fs: FileSystem, logs: Sequence[RotationMessage]): Unit =
     assertEquals(getFiles(fs).size(), logs.size())
 
-  def readLogs(fs: FileSystem, logs: Sequence[WriteLog]): Sequence[String] =
+  def readLogs(fs: FileSystem, logs: Sequence[RotationMessage]): Sequence[String] =
     ScalaTestUtils.readLogs(fs, logs.asScala).asJava
 
-  def readLogsWithFlatten(fs: FileSystem, logs: Sequence[WriteLog]): Sequence[Char] =
+  def readLogsWithFlatten(fs: FileSystem, logs: Sequence[RotationMessage]): Sequence[Char] =
     ScalaTestUtils.readLogsWithFlatten(fs, logs.asScala).asJava
 
   def generateFakeContentWithPartitions(count: Double, bytes: Long, partition: Int): Sequence[ByteString] =
@@ -185,7 +187,7 @@ object JavaTestUtils extends TestUtils {
 
   def verifyLogsWithCodec(fs: FileSystem,
                           content: Sequence[ByteString],
-                          logs: Sequence[WriteLog],
+                          logs: Sequence[RotationMessage],
                           codec: CompressionCodec): Assertion = {
     val pureContent: String = content.asScala.map(_.utf8String).mkString
     val contentFromHdfsWithCodec: String = ScalaTestUtils.readLogsWithCodec(fs, logs.asScala, codec).mkString
@@ -194,19 +196,19 @@ object JavaTestUtils extends TestUtils {
     assertEquals(contentFromHdfsWithCodec, pureContent)
   }
 
-  def readSequenceFile(fs: FileSystem, log: WriteLog): Sequence[Pair[Text, Text]] =
+  def readSequenceFile(fs: FileSystem, log: RotationMessage): Sequence[Pair[Text, Text]] =
     ScalaTestUtils.readSequenceFile(fs, log).map { case (k, v) => akka.japi.Pair(k, v) }.asJava
 
-  def verifySequenceFile(fs: FileSystem, content: Sequence[Pair[Text, Text]], logs: Sequence[WriteLog]): Unit =
+  def verifySequenceFile(fs: FileSystem, content: Sequence[Pair[Text, Text]], logs: Sequence[RotationMessage]): Unit =
     assertArrayEquals(logs.asScala.flatMap(readSequenceFile(fs, _).asScala).asJava.toArray, content.toArray)
 
   def generateFakeContentForSequence(count: Double, bytes: Long): Sequence[Pair[Text, Text]] =
     ScalaTestUtils.generateFakeContentForSequence(count, bytes).map { case (k, v) => akka.japi.Pair(k, v) }.asJava
 
-  def readLogsWithCodec(fs: FileSystem, logs: Sequence[WriteLog], codec: CompressionCodec): Sequence[String] =
+  def readLogsWithCodec(fs: FileSystem, logs: Sequence[RotationMessage], codec: CompressionCodec): Sequence[String] =
     ScalaTestUtils.readLogsWithCodec(fs, logs.asScala, codec).asJava
 
-  def verifyFlattenContent(fs: FileSystem, logs: Sequence[WriteLog], content: Sequence[ByteString]): Unit =
+  def verifyFlattenContent(fs: FileSystem, logs: Sequence[RotationMessage], content: Sequence[ByteString]): Unit =
     assertArrayEquals(readLogsWithFlatten(fs, logs).toArray, content.asScala.flatMap(_.utf8String).asJava.toArray)
 
 }

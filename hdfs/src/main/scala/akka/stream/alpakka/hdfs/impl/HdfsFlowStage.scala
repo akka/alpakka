@@ -6,30 +6,29 @@ package akka.stream.alpakka.hdfs.impl
 
 import akka.NotUsed
 import akka.event.Logging
-import akka.stream.alpakka.hdfs.impl.strategy.RotationStrategy.TimeRotationStrategy
+import akka.stream.alpakka.hdfs._
 import akka.stream.alpakka.hdfs.impl.HdfsFlowLogic.{FlowState, FlowStep, LogicState}
+import akka.stream.alpakka.hdfs.impl.strategy.RotationStrategy.TimeRotationStrategy
 import akka.stream.alpakka.hdfs.impl.strategy.{RotationStrategy, SyncStrategy}
 import akka.stream.alpakka.hdfs.impl.writer.HdfsWriter
-import akka.stream.alpakka.hdfs.{HdfsWritingSettings, WriteLog}
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import cats.data.State
 
-import scala.concurrent.Future
-
 /**
  * Internal API
  */
-private[hdfs] final class HdfsFlowStage[W, I](
+private[hdfs] final class HdfsFlowStage[W, I, C](
     ss: SyncStrategy,
     rs: RotationStrategy,
     settings: HdfsWritingSettings,
     hdfsWriter: HdfsWriter[W, I]
-) extends GraphStage[FlowShape[I, Future[WriteLog]]] {
+) extends GraphStage[FlowShape[IncomingMessage[I, C], OutgoingMessage[C]]] {
 
-  private val in = Inlet[I](Logging.simpleName(this) + ".in")
-  private val out = Outlet[Future[WriteLog]](Logging.simpleName(this) + ".out")
-  override val shape: FlowShape[I, Future[WriteLog]] = FlowShape(in, out)
+  private val in = Inlet[IncomingMessage[I, C]](Logging.simpleName(this) + ".in")
+  private val out = Outlet[OutgoingMessage[C]](Logging.simpleName(this) + ".out")
+
+  override val shape: FlowShape[IncomingMessage[I, C], OutgoingMessage[C]] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new HdfsFlowLogic(ss, rs, settings, hdfsWriter, in, out, shape)
@@ -38,19 +37,20 @@ private[hdfs] final class HdfsFlowStage[W, I](
 /**
  * Internal API
  */
-private final class HdfsFlowLogic[W, I](
+private final class HdfsFlowLogic[W, I, C](
     initialSyncStrategy: SyncStrategy,
     initialRotationStrategy: RotationStrategy,
     settings: HdfsWritingSettings,
     initialHdfsWriter: HdfsWriter[W, I],
-    inlet: Inlet[I],
-    outlet: Outlet[Future[WriteLog]],
-    shape: FlowShape[I, Future[WriteLog]]
+    inlet: Inlet[IncomingMessage[I, C]],
+    outlet: Outlet[OutgoingMessage[C]],
+    shape: FlowShape[IncomingMessage[I, C], OutgoingMessage[C]]
 ) extends TimerGraphStageLogic(shape)
     with InHandler
     with OutHandler {
 
   private var state = FlowState(initialHdfsWriter, initialRotationStrategy, initialSyncStrategy)
+  private val flushProgram = tryRotateOutput(true).flatMap { case (_, message) => tryPush(message.toSeq) }
 
   setHandlers(inlet, outlet, this)
 
@@ -73,9 +73,7 @@ private final class HdfsFlowLogic[W, I](
   }
 
   override def onTimer(timerKey: Any): Unit =
-    state = tryRotateOutput(true)
-      .runS(state)
-      .value
+    state = flushProgram.runS(state).value
 
   override def onUpstreamFailure(ex: Throwable): Unit =
     failStage(ex)
@@ -83,9 +81,9 @@ private final class HdfsFlowLogic[W, I](
   override def onUpstreamFinish(): Unit =
     state.logicState match {
       case LogicState.Writing =>
-        tryRotateOutput(true)
-          .run(state)
+        flushProgram
           .map(_ => completeStage())
+          .run(state)
           .value
       case _ => completeStage()
     }
@@ -95,14 +93,17 @@ private final class HdfsFlowLogic[W, I](
       pull(inlet)
     }
 
-  private def onPushProgram(input: I) =
+  private def onPushProgram(input: IncomingMessage[I, C]) =
     for {
       _ <- setLogicState(LogicState.Writing)
-      offset <- write(input)
+      offset <- write(input.source)
       _ <- updateSync(offset)
       _ <- updateRotation(offset)
       _ <- trySyncOutput
-      _ <- tryRotateOutput(false)
+      rotationResult <- tryRotateOutput(false)
+      (rotationCount, maybeRotationMessage) = rotationResult
+      messages = Seq(Some(WrittenMessage(input.passThrough, rotationCount)), maybeRotationMessage)
+      _ <- tryPush(messages.flatten)
     } yield tryPull()
 
   private def setLogicState(logicState: LogicState): FlowStep[W, I, LogicState] =
@@ -128,12 +129,18 @@ private final class HdfsFlowLogic[W, I](
       (state.copy(syncStrategy = newSync), newSync)
     }
 
-  private def tryRotateOutput(force: Boolean): FlowStep[W, I, Boolean] =
-    FlowStep[W, I, Boolean] { state =>
+  /*
+    It tries to rotate output file.
+    If it rotates, it returns previous rotation and a message,
+    else, it returns current rotation without a message.
+   */
+  private def tryRotateOutput(force: Boolean): FlowStep[W, I, (Int, Option[RotationMessage])] =
+    FlowStep[W, I, (Int, Option[RotationMessage])] { state =>
       if (state.rotationStrategy.should() || force) {
-        (rotateOutput(state), true)
+        val (newState, message) = rotateOutput(state)
+        (newState, (state.rotationCount, Some(message)))
       } else {
-        (state, false)
+        (state, (state.rotationCount, None))
       }
     }
 
@@ -148,20 +155,26 @@ private final class HdfsFlowLogic[W, I](
       }
     }
 
-  private def rotateOutput(state: FlowState[W, I]): FlowState[W, I] = {
+  private def tryPush(messages: Seq[OutgoingMessage[C]]): FlowStep[W, I, Unit] =
+    FlowStep[W, I, Unit] { state =>
+      if (messages.nonEmpty)
+        emitMultiple(outlet, messages.toIterator)
+      (state, ())
+    }
+
+  private def rotateOutput(state: FlowState[W, I]): (FlowState[W, I], RotationMessage) = {
     val newRotationCount = state.rotationCount + 1
     val newRotation = state.rotationStrategy.reset()
     val newWriter = state.writer.rotate(newRotationCount)
 
     state.writer.moveToTarget()
 
-    val message = WriteLog(state.writer.targetFileName, state.rotationCount)
-    push(outlet, Future.successful(message))
-
-    state.copy(rotationCount = newRotationCount,
-               writer = newWriter,
-               rotationStrategy = newRotation,
-               logicState = LogicState.Idle)
+    val message = RotationMessage(state.writer.targetFileName, state.rotationCount)
+    val newState = state.copy(rotationCount = newRotationCount,
+                              writer = newWriter,
+                              rotationStrategy = newRotation,
+                              logicState = LogicState.Idle)
+    (newState, message)
   }
 }
 

@@ -35,7 +35,7 @@ The connector provides three Flows. Each flow requires `RotationStrategy` and `S
 @scala[@scaladoc[HdfsFlow](akka.stream.alpakka.hdfs.scaladsl.HdfsFlow$).]
 @java[@scaladoc[HdfsFlow](akka.stream.alpakka.hdfs.javadsl.HdfsFlow$).]
 
-The flows push `WriteLog` to a downstream.
+The flows push `OutgoingMessage` to a downstream.
 
 ### Data Writer
 
@@ -73,7 +73,7 @@ Java
 
 ### Sequence Writer
 
-Use `HdfsFlow.compress` to stream a flat file consisting of binary key/value pairs.
+Use `HdfsFlow.sequence` to stream a flat file consisting of binary key/value pairs.
 
 #### Without Compression
 
@@ -105,6 +105,32 @@ Scala
 
 Java
 : @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-sequence-compressed }
+
+### Passing data through HdfsFlow
+
+Use `HdfsFlow.dataWithPassThrough`, `HdfsFlow.compressedWithPassThrough` or `HdfsFlow.sequenceWithPassThrough`.
+
+When streaming documents from Kafka, you might want to commit to Kafka. The flow will emit two messages.
+For every input, it will produce `WrittenMessage` and when it rotates, `RotationMessage`.
+
+Let's say that we have these classes.
+
+
+Scala
+: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-kafka-classes }
+
+Java
+: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-kafka-classes }
+
+
+Then, we can stream with `passThrough`.
+
+
+Scala
+: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #kafka-example }
+
+Java
+: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #kafka-example }
 
 
 ## Configuration

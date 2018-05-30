@@ -6,6 +6,7 @@ package akka.stream.alpakka.hdfs
 
 import java.util.function.BiFunction
 
+import akka.NotUsed
 import akka.stream.alpakka.hdfs.HdfsWritingSettings._
 import akka.stream.alpakka.hdfs.impl.strategy.{RotationStrategy, SyncStrategy}
 import org.apache.hadoop.fs.Path
@@ -34,7 +35,26 @@ object HdfsWritingSettings {
     HdfsWritingSettings()
 }
 
-final case class WriteLog(path: String, rotation: Int)
+final case class IncomingMessage[T, C](source: T, passThrough: C)
+
+object IncomingMessage {
+  // Apply method to use when not using passThrough
+  def apply[T](source: T): IncomingMessage[T, NotUsed] =
+    IncomingMessage(source, NotUsed)
+
+  // Java-api - without passThrough
+  def create[T](source: T): IncomingMessage[T, NotUsed] =
+    IncomingMessage(source)
+
+  // Java-api - with passThrough
+  def create[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
+    IncomingMessage(source, passThrough)
+
+}
+
+sealed abstract class OutgoingMessage[+T]
+final case class RotationMessage(path: String, rotation: Int) extends OutgoingMessage[Nothing]
+final case class WrittenMessage[T](passThrough: T, inRotation: Int) extends OutgoingMessage[T]
 
 sealed case class FileUnit(byteCount: Long)
 

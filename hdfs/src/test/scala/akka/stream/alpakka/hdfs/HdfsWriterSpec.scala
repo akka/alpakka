@@ -60,16 +60,17 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => books.toIterator)
+        .map(IncomingMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
       val logs = Await.result(resF, Duration.Inf)
       logs shouldBe Seq(
-        WriteLog("0", 0),
-        WriteLog("1", 1),
-        WriteLog("2", 2),
-        WriteLog("3", 3),
-        WriteLog("4", 4)
+        RotationMessage("0", 0),
+        RotationMessage("1", 1),
+        RotationMessage("2", 2),
+        RotationMessage("3", 3),
+        RotationMessage("4", 4)
       )
 
       verifyOutputFileSize(fs, logs)
@@ -89,6 +90,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => dataIterator)
+        .map(IncomingMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -117,6 +119,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
       //#define-data
       val resF = Source
         .fromIterator(() => dataIterator)
+        .map(IncomingMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -139,6 +142,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => books.toIterator)
+        .map(IncomingMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -152,6 +156,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
     "use time rotation" in {
       val (cancellable, resF) = Source
         .tick(0.millis, 50.milliseconds, ByteString("I love Alpakka!"))
+        .map(IncomingMessage(_))
         .via(
           HdfsFlow.data(
             fs,
@@ -179,60 +184,82 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => books.toIterator)
+        .map(IncomingMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
-      val res = Await.result(resF, Duration.Inf)
-      res.size shouldEqual 1
+      val logs = Await.result(resF, Duration.Inf)
+      logs.size shouldEqual 1
 
       val files = getFiles(fs)
-      files.size shouldEqual res.size
+      files.size shouldEqual logs.size
       files.head.getLen shouldEqual books.map(_.toArray.length).sum
     }
 
-    "kafka-example - store data" in {
-      // todo consider to implement pass through feature
+    "kafka-example - store data with passThrough" in {
+      //#define-kafka-classes
+      case class Book(title: String)
+      case class KafkaOffset(offset: Int)
+      case class KafkaMessage(book: Book, offset: KafkaOffset)
+      //#define-kafka-classes
+
       //#kafka-example
       // We're going to pretend we got messages from kafka.
       // After we've written them to HDFS, we want
       // to commit the offset to Kafka
-      case class Book(title: String)
-      case class KafkaOffset(offset: Int)
-      case class KafkaMessage(book: Book, offset: KafkaOffset)
-
       val messagesFromKafka = List(
         KafkaMessage(Book("Akka Concurrency"), KafkaOffset(0)),
         KafkaMessage(Book("Akka in Action"), KafkaOffset(1)),
         KafkaMessage(Book("Effective Akka"), KafkaOffset(2)),
-        KafkaMessage(Book("Learning Scala"), KafkaOffset(3))
+        KafkaMessage(Book("Learning Scala"), KafkaOffset(3)),
+        KafkaMessage(Book("Scala Puzzlers"), KafkaOffset(4)),
+        KafkaMessage(Book("Scala for Spark in Production"), KafkaOffset(5))
       )
 
-      val flow = HdfsFlow.data(
-        fs,
-        SyncStrategyFactory.count(50),
-        RotationStrategyFactory.size(0.01, FileUnit.KB),
-        settings
-      )
+      var committedOffsets = List[KafkaOffset]()
+
+      def commitToKafka(offset: KafkaOffset): Unit =
+        committedOffsets = committedOffsets :+ offset
 
       val resF = Source(messagesFromKafka)
         .map { kafkaMessage: KafkaMessage =>
           val book = kafkaMessage.book
           // Transform message so that we can write to hdfs
-          ByteString(book.title)
+          IncomingMessage(ByteString(book.title), kafkaMessage.offset)
         }
-        .via(flow)
+        .via(
+          HdfsFlow.dataWithPassThrough[KafkaOffset](
+            fs,
+            SyncStrategyFactory.count(50),
+            RotationStrategyFactory.count(4),
+            HdfsWritingSettings(newLine = true)
+          )
+        )
+        .map { message =>
+          message match {
+            case WrittenMessage(passThrough, _) =>
+              commitToKafka(passThrough)
+            case _ => ()
+          }
+          message
+        }
+        .collect {
+          case rm: RotationMessage => rm
+        }
         .runWith(Sink.seq)
+      //#kafka-example
 
       val logs = Await.result(resF, Duration.Inf)
       logs shouldBe Seq(
-        WriteLog("0", 0),
-        WriteLog("1", 1),
-        WriteLog("2", 2),
-        WriteLog("3", 3)
+        RotationMessage("0", 0),
+        RotationMessage("1", 1)
       )
 
+      // Make sure all messages was committed to kafka
+      assert(List(0, 1, 2, 3, 4, 5) == committedOffsets.map(_.offset))
+
       verifyOutputFileSize(fs, logs)
-      readLogs(fs, logs) shouldBe messagesFromKafka.map(_.book.title)
+      readLogs(fs, logs).flatMap(_.split("\n")) shouldBe messagesFromKafka.map(_.book.title)
     }
   }
 
@@ -257,17 +284,18 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => content.toIterator)
+        .map(IncomingMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
       val logs = Await.result(resF, Duration.Inf)
       logs shouldBe Seq(
-        WriteLog("0.deflate", 0),
-        WriteLog("1.deflate", 1),
-        WriteLog("2.deflate", 2),
-        WriteLog("3.deflate", 3),
-        WriteLog("4.deflate", 4),
-        WriteLog("5.deflate", 5)
+        RotationMessage("0.deflate", 0),
+        RotationMessage("1.deflate", 1),
+        RotationMessage("2.deflate", 2),
+        RotationMessage("3.deflate", 3),
+        RotationMessage("4.deflate", 4),
+        RotationMessage("5.deflate", 5)
       )
 
       verifyOutputFileSize(fs, logs)
@@ -288,16 +316,17 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => books.toIterator)
+        .map(IncomingMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
       val logs = Await.result(resF, Duration.Inf)
       logs shouldBe Seq(
-        WriteLog("0.deflate", 0),
-        WriteLog("1.deflate", 1),
-        WriteLog("2.deflate", 2),
-        WriteLog("3.deflate", 3),
-        WriteLog("4.deflate", 4)
+        RotationMessage("0.deflate", 0),
+        RotationMessage("1.deflate", 1),
+        RotationMessage("2.deflate", 2),
+        RotationMessage("3.deflate", 3),
+        RotationMessage("4.deflate", 4)
       )
 
       verifyOutputFileSize(fs, logs)
@@ -320,12 +349,13 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => content.toIterator)
+        .map(IncomingMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
       val logs = Await.result(resF, Duration.Inf)
       logs shouldEqual Seq(
-        WriteLog("0.deflate", 0)
+        RotationMessage("0.deflate", 0)
       )
 
       verifyOutputFileSize(fs, logs)
@@ -351,6 +381,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => content.toIterator)
+        .map(IncomingMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -382,6 +413,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => content.toIterator)
+        .map(IncomingMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -401,10 +433,11 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
         classOf[Text]
       )
 
-      def content = booksForSequenceWriter
+      val content = booksForSequenceWriter
 
       val resF = Source
         .fromIterator(() => content.toIterator)
+        .map(IncomingMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -430,6 +463,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => content.toIterator)
+        .map(IncomingMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
