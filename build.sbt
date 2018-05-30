@@ -166,52 +166,37 @@ lazy val unixdomainsocket = alpakkaProject("unix-domain-socket", "unixdomainsock
 
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
 
-val Local = config("local")
-val defaultParadoxSettings: Seq[Setting[_]] = Seq(
-  paradoxTheme := Some(builtinParadoxTheme("generic")),
-  paradoxProperties ++= Map(
-    "version" -> version.value,
-    "scalaVersion" -> scalaVersion.value,
-    "scalaBinaryVersion" -> scalaBinaryVersion.value,
-    "akkaVersion" -> Dependencies.AkkaVersion,
-    "akkaHttpVersion" -> Dependencies.AkkaHttpVersion,
-    "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.AkkaVersion}/%s",
-    "extref.akka-http-docs.base_url" -> s"http://doc.akka.io/docs/akka-http/${Dependencies.AkkaHttpVersion}/%s",
-    "extref.java-api.base_url" -> "https://docs.oracle.com/javase/8/docs/api/index.html?%s.html",
-    "extref.geode.base_url" -> "https://geode.apache.org/docs/guide/16/%s",
-    "extref.javaee-api.base_url" -> "https://docs.oracle.com/javaee/7/api/index.html?%s.html",
-    "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
-    "javadoc.base_url" -> "https://docs.oracle.com/javase/8/docs/api/",
-    "javadoc.javax.jms.base_url" -> "https://docs.oracle.com/javaee/7/api/",
-    "javadoc.akka.base_url" -> s"http://doc.akka.io/japi/akka/${Dependencies.AkkaVersion}/",
-    "javadoc.akka.http.base_url" -> s">http://doc.akka.io/japi/akka-http/${Dependencies.AkkaHttpVersion}/",
-    "scaladoc.scala.base_url" -> s"http://www.scala-lang.org/api/current/",
-    "scaladoc.akka.base_url" -> s"http://doc.akka.io/api/akka/${Dependencies.AkkaVersion}",
-    "scaladoc.akka.http.base_url" -> s"https://doc.akka.io/api/akka-http/${Dependencies.AkkaHttpVersion}/",
-    "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}",
-    "snip.alpakka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath
-  ),
-  sourceDirectory := baseDirectory.value / "src" / "main"
-)
-
 lazy val docs = project
   .enablePlugins(ParadoxPlugin, NoPublish)
   .disablePlugins(BintrayPlugin)
   .settings(
     name := "Alpakka",
-    inConfig(Compile)(defaultParadoxSettings),
-    ParadoxPlugin.paradoxSettings(Local),
-    inConfig(Local)(defaultParadoxSettings),
+    paradoxTheme := Some(builtinParadoxTheme("generic")),
+    paradoxProperties ++= Map(
+      "version" -> version.value,
+      "scalaVersion" -> scalaVersion.value,
+      "scalaBinaryVersion" -> scalaBinaryVersion.value,
+      "akkaVersion" -> Dependencies.AkkaVersion,
+      "akkaHttpVersion" -> Dependencies.AkkaHttpVersion,
+      "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.AkkaVersion}/%s",
+      "extref.akka-http-docs.base_url" -> s"http://doc.akka.io/docs/akka-http/${Dependencies.AkkaHttpVersion}/%s",
+      "extref.java-api.base_url" -> "https://docs.oracle.com/javase/8/docs/api/index.html?%s.html",
+      "extref.geode.base_url" -> "https://geode.apache.org/docs/guide/16/%s",
+      "extref.javaee-api.base_url" -> "https://docs.oracle.com/javaee/7/api/index.html?%s.html",
+      "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
+      "javadoc.base_url" -> "https://docs.oracle.com/javase/8/docs/api/",
+      "javadoc.javax.jms.base_url" -> "https://docs.oracle.com/javaee/7/api/",
+      "javadoc.akka.base_url" -> s"http://doc.akka.io/japi/akka/${Dependencies.AkkaVersion}/",
+      "javadoc.akka.http.base_url" -> s">http://doc.akka.io/japi/akka-http/${Dependencies.AkkaHttpVersion}/",
+      "scaladoc.scala.base_url" -> s"http://www.scala-lang.org/api/current/",
+      "scaladoc.akka.base_url" -> s"http://doc.akka.io/api/akka/${Dependencies.AkkaVersion}",
+      "scaladoc.akka.http.base_url" -> s"https://doc.akka.io/api/akka-http/${Dependencies.AkkaHttpVersion}/",
+      "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}",
+      "snip.alpakka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath
+    ),
     paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
-    paradoxProperties in Local ++= Map(
-      // point API doc links to locally generated API docs
-      "scaladoc.akka.stream.alpakka.base_url" -> sbt.io.Path
-        .rebase(
-          (baseDirectory in ThisBuild).value,
-          "../../../../../"
-        )((sbtunidoc.BaseUnidocPlugin.autoImport.unidoc in alpakka in Compile).value.head)
-        .get
-    )
+    paradoxLocalApiKey := "scaladoc.akka.stream.alpakka.base_url",
+    paradoxLocalApiDir := (alpakka/Compile/sbtunidoc.BaseUnidocPlugin.autoImport.unidoc).value.head,
   )
 
 lazy val `doc-examples` = project
