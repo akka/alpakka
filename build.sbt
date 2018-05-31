@@ -196,7 +196,7 @@ lazy val docs = project
     ),
     paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     paradoxLocalApiKey := "scaladoc.akka.stream.alpakka.base_url",
-    paradoxLocalApiDir := (alpakka/Compile/sbtunidoc.BaseUnidocPlugin.autoImport.unidoc).value.head,
+    paradoxLocalApiDir := (alpakka / Compile / sbtunidoc.BaseUnidocPlugin.autoImport.unidoc).value.head,
   )
 
 lazy val `doc-examples` = project
