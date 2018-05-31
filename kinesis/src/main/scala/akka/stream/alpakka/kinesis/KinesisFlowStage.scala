@@ -84,7 +84,7 @@ private[kinesis] final class KinesisFlowStage(
           inFlight -= 1
           waitingRetries.put(retryToken, Job(attempt + 1, errors.map(_._2)))
           scheduleOnce(retryToken, backoffStrategy match {
-            case Exponential => retryInitialTimeout * scala.math.pow(2, attempt).toInt
+            case Exponential => retryInitialTimeout * scala.math.pow(2, attempt - 1).toInt
             case Linear => retryInitialTimeout * attempt
           })
           retryToken += 1
