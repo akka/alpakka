@@ -1,0 +1,43 @@
+/*
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ */
+
+package akka.stream.alpakka.udp.scaladsl
+
+import java.net.InetSocketAddress
+
+import akka.NotUsed
+import akka.actor.ActorSystem
+import akka.stream.alpakka.udp.UdpMessage
+import akka.stream.alpakka.udp.impl.{UdpBindFlow, UdpFireAndForgetFlow}
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Flow
+
+import scala.concurrent.Future
+
+object Udp {
+
+  /**
+   * Creates a flow that will send all incoming [UdpMessage] messages to the remote address
+   * contained in the message. All incoming messages are also emitted from the flow for
+   * subsequent processing.
+   */
+  def fireAndForgetFlow()(implicit sys: ActorSystem): Flow[UdpMessage, UdpMessage, NotUsed] =
+    Flow.fromGraph(new UdpFireAndForgetFlow())
+
+  /**
+   * Creates a sink that will send all incoming [UdpMessage] messages to the remote address
+   * contained in the message.
+   */
+  def fireAndForgetSink()(implicit sys: ActorSystem): Sink[UdpMessage, NotUsed] = fireAndForgetFlow().to(Sink.ignore)
+
+  /**
+   * Creates a flow that upon materialization binds to the given `localAddress`. All incoming
+   * messages to the `localAddress` are emitted from the flow. All incoming messages to the flow
+   * are sent to the remote address contained in the message.
+   */
+  def bindFlow(
+      localAddress: InetSocketAddress
+  )(implicit sys: ActorSystem): Flow[UdpMessage, UdpMessage, Future[InetSocketAddress]] =
+    Flow.fromGraph(new UdpBindFlow(localAddress))
+}

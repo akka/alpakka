@@ -1,86 +1,105 @@
+/*
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.udp
 
-import java.net.{InetSocketAddress, ServerSocket}
-import java.util.concurrent.atomic.AtomicInteger
+import java.net.InetSocketAddress
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
-import akka.io.{IO, Udp}
+import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.udp.sink.{UdpMessage, UdpSink}
-import akka.stream.scaladsl.Source
-import akka.testkit.{TestActorRef, TestKit}
+import akka.stream.alpakka.udp.scaladsl.Udp
+import akka.stream.scaladsl.{Keep, Source}
+import akka.stream.testkit.scaladsl.TestSource
+import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.TestKit
 import akka.util.ByteString
-import org.scalatest.concurrent.Eventually
-import org.scalatest.time.{Milliseconds, Second, Seconds, Span}
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec, WordSpecLike}
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.duration._
 
-object Utils {
-  def freePort: Try[Int] = {
-    Try {
-      val s = new ServerSocket(0)
-      try {
-        s.getLocalPort
-      } catch {
-        case any: Throwable ⇒
-          throw any
-      } finally {
-        s.close
+class UdpSpec
+    extends TestKit(ActorSystem("UdpSpec"))
+    with WordSpecLike
+    with Matchers
+    with ScalaFutures
+    with BeforeAndAfterAll {
+
+  implicit val mat = ActorMaterializer()
+  implicit val pat = PatienceConfig(3.seconds, 50.millis)
+
+  val bindToLocal = new InetSocketAddress("localhost", 0)
+  private def msg(msg: String, destination: InetSocketAddress) =
+    UdpMessage(ByteString(msg), destination)
+
+  override def afterAll =
+    TestKit.shutdownActorSystem(system)
+
+  "UDP stream" must {
+    "send and receive messages" in {
+
+      val messagesToSend = 100
+
+      val ((pub, bound), sub) = TestSource
+        .probe[UdpMessage](system)
+        .viaMat(Udp.bindFlow(bindToLocal))(Keep.both)
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
+
+      val boundAddress = bound.futureValue
+
+      sub.ensureSubscription()
+      sub.request(messagesToSend)
+
+      Source(1 to messagesToSend)
+        .map(i => ByteString(s"Message $i"))
+        .map(UdpMessage(_, boundAddress))
+        .runWith(Udp.fireAndForgetSink())
+
+      (1 to messagesToSend).foreach { _ =>
+        sub.requestNext()
       }
+      sub.cancel()
     }
-  }
-}
 
-class UdpSpec extends TestKit(ActorSystem("udp-test"))
-  with WordSpecLike
-  with Matchers
-  with Eventually
-  with BeforeAndAfterAll {
+    "ping-pong messages" in {
+      val ((pub1, bound1), sub1) = TestSource
+        .probe[UdpMessage](system)
+        .viaMat(Udp.bindFlow(bindToLocal))(Keep.both)
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
 
-  override implicit val patienceConfig = PatienceConfig(
-    timeout = scaled(Span(3, Seconds)),
-    interval = scaled(Span(50, Milliseconds)))
+      val ((pub2, bound2), sub2) = TestSource
+        .probe[UdpMessage](system)
+        .viaMat(Udp.bindFlow(bindToLocal))(Keep.both)
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
 
-  override def afterAll = {
-    system.terminate()
-  }
+      val boundAddress1 = bound1.futureValue
+      val boundAddress2 = bound2.futureValue
 
-  "UDP sink" must {
-    "messages sent via the stream" in {
+      sub1.ensureSubscription()
+      sub2.ensureSubscription()
 
-      implicit val materializer = ActorMaterializer()
+      sub2.request(1)
+      pub1.sendNext(msg("Hi!", boundAddress2))
+      sub2.requestNext().data.utf8String shouldBe "Hi!"
 
-      Utils.freePort match {
-        case Failure(ex) ⇒ fail(ex)
-        case Success(port) ⇒
-          val messagesToSend = 100
-          val receivedCount = new AtomicInteger(0)
-          val address = new InetSocketAddress("localhost", port)
+      sub1.request(1)
+      pub2.sendNext(msg("Hello!", boundAddress1))
+      sub1.requestNext().data.utf8String shouldBe "Hello!"
 
-          val server = TestActorRef(new Actor {
-            override def preStart(): Unit = {
-              IO(Udp) ! Udp.Bind(self, address)
-            }
-            def receive = {
-              case Udp.Bound(_) ⇒
-                context.become(ready(sender()))
-            }
-            def ready(socket: ActorRef): Receive = {
-              case Udp.Received(data, remote) ⇒
-                receivedCount.incrementAndGet()
-            }
-          })
+      sub2.request(1)
+      pub1.sendNext(msg("See ya.", boundAddress2))
+      sub2.requestNext().data.utf8String shouldBe "See ya."
 
-          Source(1 to messagesToSend)
-            .map({ i ⇒ ByteString(s"message $i") })
-            .map(UdpMessage(_, address))
-            .runWith(new UdpSink)
+      sub1.request(1)
+      pub2.sendNext(msg("Bye!", boundAddress1))
+      sub1.requestNext().data.utf8String shouldBe "Bye!"
 
-          eventually {
-            receivedCount.intValue() shouldBe messagesToSend
-          }
-      }
+      sub1.cancel()
+      sub2.cancel()
     }
   }
 
