@@ -4,8 +4,12 @@
 
 package akka.stream.alpakka.ftp
 
-import akka.stream.alpakka.ftp.scaladsl.{FtpApi, Sftp, SftpApi}
+import java.io.PrintWriter
+
+import akka.stream.alpakka.ftp.scaladsl.{Sftp, SftpApi}
 import net.schmizz.sshj.DefaultConfig
+import org.apache.commons.net.PrintCommandListener
+import org.apache.commons.net.ftp.FTPClient
 
 object scalaExamples {
 
@@ -19,7 +23,10 @@ object scalaExamples {
       InetAddress.getByName("localhost"),
       credentials = AnonFtpCredentials,
       binary = true,
-      passiveMode = true
+      passiveMode = true,
+      configureConnection = (ftpClient: FTPClient) => {
+        ftpClient.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.out), true))
+      }
     )
     //#create-settings
   }

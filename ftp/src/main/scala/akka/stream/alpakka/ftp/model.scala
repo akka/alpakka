@@ -57,6 +57,8 @@ sealed abstract class FtpFileSettings extends RemoteFileSettings {
  * @param credentials credentials (username and password)
  * @param binary specifies the file transfer mode, BINARY or ASCII. Default is ASCII (false)
  * @param passiveMode specifies whether to use passive mode connections. Default is active mode (false)
+ * @param configureConnection A function which will be called after connecting to the server. Use this for
+ *                            any custom configuration required by the server you are connecting to.
  */
 final case class FtpSettings(
     host: InetAddress,
@@ -101,7 +103,7 @@ object FtpSettings {
  * @param binary specifies the file transfer mode, BINARY or ASCII. Default is ASCII (false)
  * @param passiveMode specifies whether to use passive mode connections. Default is active mode (false)
  * @param configureConnection A function which will be called after connecting to the server. Use this for
- *                            any custom configuration required by the server you're connecting to.
+ *                            any custom configuration required by the server you are connecting to.
  */
 final case class FtpsSettings(
     host: InetAddress,
