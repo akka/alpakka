@@ -82,6 +82,13 @@ final case class FtpSettings(
 
   def withConfigureConnection(configureConnection: FTPClient => Unit): FtpSettings =
     copy(configureConnection = configureConnection)
+
+  /**
+   * Java API:
+   * Sets the configure connection callback.
+   */
+  def withConfigureConnectionConsumer(configureConnection: java.util.function.Consumer[FTPClient]): FtpSettings =
+    copy(configureConnection = configureConnection.accept)
 }
 
 object FtpSettings {
