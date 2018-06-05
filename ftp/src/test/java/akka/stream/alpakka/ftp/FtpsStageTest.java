@@ -69,13 +69,12 @@ public class FtpsStageTest extends FtpsSupportImpl implements CommonFtpStageTest
 
   private FtpsSettings settings() throws Exception {
     //#create-settings
-    final FtpsSettings settings = new FtpsSettings(
-            InetAddress.getByName("localhost"),
-            getPort(),
-            FtpCredentials.createAnonCredentials(),
-            false, // binary
-            true   // passiveMode
-    );
+    final FtpsSettings settings = FtpsSettings.create(
+            InetAddress.getByName("localhost"))
+            .withPort(getPort())
+            .withCredentials(FtpCredentials.createAnonCredentials())
+            .withBinary(false)
+            .withPassiveMode(false);
     //#create-settings
     return settings;
   }

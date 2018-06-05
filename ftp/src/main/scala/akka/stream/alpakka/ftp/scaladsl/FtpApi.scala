@@ -11,7 +11,8 @@ import akka.stream.alpakka.ftp.{FtpFile, RemoteFileSettings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import net.schmizz.sshj.SSHClient
-import org.apache.commons.net.ftp.FTPClient
+import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
+
 import scala.concurrent.Future
 
 sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
@@ -169,7 +170,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
 
 class SftpApi extends FtpApi[SSHClient] with SftpSourceParams
 object Ftp extends FtpApi[FTPClient] with FtpSourceParams
-object Ftps extends FtpApi[FTPClient] with FtpsSourceParams
+object Ftps extends FtpApi[FTPSClient] with FtpsSourceParams
 
 object Sftp extends SftpApi {
 
