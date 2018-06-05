@@ -260,6 +260,34 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
 
     defaultRegionClient.deleteObject(otherRegionBucket, objectKey).futureValue shouldEqual akka.Done
   }
+
+  it should "upload, copy, download the copy, and delete" in {
+    val sourceKey = "original/file.txt"
+    val targetKey = "copy/file.txt"
+    val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
+
+    val results = for {
+      upload <- source.runWith(defaultRegionClient.multipartUpload(defaultRegionBucket, sourceKey))
+      copy <- defaultRegionClient.multipartCopy(defaultRegionBucket, sourceKey, defaultRegionBucket, targetKey)
+      download <- defaultRegionClient
+        .download(defaultRegionBucket, targetKey)
+        ._1
+        .map(_.decodeString("utf8"))
+        .runWith(Sink.head)
+    } yield (upload, copy, download)
+
+    whenReady(results) {
+      case (upload, copy, downloaded) =>
+        upload.bucket shouldEqual defaultRegionBucket
+        upload.key shouldEqual sourceKey
+        copy.bucket shouldEqual defaultRegionBucket
+        copy.key shouldEqual targetKey
+        downloaded shouldBe objectValue
+
+        defaultRegionClient.deleteObject(defaultRegionBucket, sourceKey).futureValue shouldEqual akka.Done
+        defaultRegionClient.deleteObject(defaultRegionBucket, targetKey).futureValue shouldEqual akka.Done
+    }
+  }
 }
 
 /*

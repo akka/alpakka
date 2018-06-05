@@ -23,11 +23,15 @@ import com.amazonaws.regions.AwsRegionProvider
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
-final case class MultipartUploadResult(location: Uri, bucket: String, key: String, etag: String)
+final case class MultipartUploadResult(location: Uri,
+                                       bucket: String,
+                                       key: String,
+                                       etag: String,
+                                       versionId: Option[String])
 
 object MultipartUploadResult {
   def apply(r: CompleteMultipartUploadResult): MultipartUploadResult =
-    new MultipartUploadResult(r.location, r.bucket, r.key, r.etag)
+    new MultipartUploadResult(r.location, r.bucket, r.key, r.etag, r.versionId)
 }
 
 /**
@@ -143,6 +147,16 @@ final class ObjectMetadata private (
     case ct: `Last-Modified` => ct.date
   }.get
 
+  /**
+   * Gets the value of the version id header. The version id will only be available
+   * if the versioning is enabled in the bucket
+   *
+   * @return optional version id of the object
+   */
+  lazy val versionId: Option[String] = metadata.collectFirst {
+    case v if v.lowercaseName() == "x-amz-version-id" => v.value()
+  }
+
 }
 object ObjectMetadata {
   def apply(metadata: Seq[HttpHeader]) = new ObjectMetadata(metadata)
@@ -193,37 +207,42 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param method the [[akka.http.scaladsl.model.HttpMethod HttpMethod]] to use when making the request
+   * @param versionId optional version id of the object
    * @param s3Headers any headers you want to add
    * @return a [[scala.concurrent.Future Future]] containing the raw [[akka.http.scaladsl.model.HttpResponse HttpResponse]]
    */
   def request(bucket: String,
               key: String,
               method: HttpMethod = HttpMethods.GET,
+              versionId: Option[String] = None,
               s3Headers: S3Headers = S3Headers.empty): Future[HttpResponse] =
-    impl.request(S3Location(bucket, key), method, s3Headers = s3Headers)
+    impl.request(S3Location(bucket, key), method, versionId = versionId, s3Headers = s3Headers)
 
   /**
    * Gets the metadata for a S3 Object
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
+   * @param versionId optional version id of the object
    * @param sse the server side encryption to use
    * @return A [[scala.concurrent.Future Future]] containing an [[scala.Option]] that will be [[scala.None]] in case the object does not exist
    */
   def getObjectMetadata(bucket: String,
                         key: String,
+                        versionId: Option[String] = None,
                         sse: Option[ServerSideEncryption] = None): Future[Option[ObjectMetadata]] =
-    impl.getObjectMetadata(bucket, key, sse)
+    impl.getObjectMetadata(bucket, key, versionId, sse)
 
   /**
    * Deletes a S3 Object
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
+   * @param versionId optional version idof the object
    * @return A [[scala.concurrent.Future Future]] of [[akka.Done]]
    */
-  def deleteObject(bucket: String, key: String): Future[Done] =
-    impl.deleteObject(S3Location(bucket, key))
+  def deleteObject(bucket: String, key: String, versionId: Option[String] = None): Future[Done] =
+    impl.deleteObject(S3Location(bucket, key), versionId)
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -258,8 +277,9 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
   def download(bucket: String,
                key: String,
                range: Option[ByteRange] = None,
+               versionId: Option[String] = None,
                sse: Option[ServerSideEncryption] = None): (Source[ByteString, NotUsed], Future[ObjectMetadata]) =
-    impl.download(S3Location(bucket, key), range, sse)
+    impl.download(S3Location(bucket, key), range, versionId, sse)
 
   /**
    * Will return a source of object metadata for a given bucket with optional prefix using version 2 of the List Bucket API.

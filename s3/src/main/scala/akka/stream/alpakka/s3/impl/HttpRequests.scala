@@ -4,6 +4,9 @@
 
 package akka.stream.alpakka.s3.impl
 
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.Uri.{Authority, Query}
@@ -44,9 +47,14 @@ private[alpakka] object HttpRequests {
 
   def getDownloadRequest(s3Location: S3Location,
                          method: HttpMethod = HttpMethods.GET,
-                         s3Headers: S3Headers = S3Headers.empty)(implicit conf: S3Settings): HttpRequest =
-    s3Request(s3Location, method)
+                         s3Headers: S3Headers = S3Headers.empty,
+                         versionId: Option[String] = None)(implicit conf: S3Settings): HttpRequest = {
+    val query = versionId
+      .map(vId => Query("versionId" -> URLDecoder.decode(vId, StandardCharsets.UTF_8.toString)))
+      .getOrElse(Query())
+    s3Request(s3Location, method, _.withQuery(query))
       .withDefaultHeaders(s3Headers.headers: _*)
+  }
 
   def uploadRequest(s3Location: S3Location,
                     payload: Source[ByteString, _],
@@ -129,9 +137,9 @@ private[alpakka] object HttpRequests {
       .withDefaultHeaders(allHeaders: _*)
   }
 
-  private[this] def s3Request(s3Location: S3Location,
-                              method: HttpMethod = HttpMethods.GET,
-                              uriFn: (Uri => Uri) = identity)(implicit conf: S3Settings): HttpRequest =
+  private[this] def s3Request(s3Location: S3Location, method: HttpMethod, uriFn: Uri => Uri = identity)(
+      implicit conf: S3Settings
+  ): HttpRequest =
     HttpRequest(method)
       .withHeaders(Host(requestAuthority(s3Location.bucket, conf.s3RegionProvider.getRegion)))
       .withUri(uriFn(requestUri(s3Location.bucket, Some(s3Location.key))))

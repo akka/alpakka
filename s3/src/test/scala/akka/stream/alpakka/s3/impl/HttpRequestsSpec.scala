@@ -109,6 +109,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     req.uri.authority.host.toString shouldEqual "s3.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/image-1024@2x"
+    req.uri.rawQueryString shouldBe empty
   }
 
   it should "initiate multipart upload with path-style access in other regions" in {
@@ -128,6 +129,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     req.uri.authority.host.toString shouldEqual "s3-eu-west-1.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/image-1024@2x"
+    req.uri.rawQueryString shouldBe empty
   }
 
   it should "support download requests via HTTP when such scheme configured for `proxy`" in {
@@ -151,6 +153,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
     req.uri.path.toString shouldEqual "//test/foo.txt"
+    req.uri.rawQueryString shouldBe empty
   }
 
   it should "support download requests with keys containing spaces" in {
@@ -162,6 +165,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
     req.uri.path.toString shouldEqual "/test%20folder/test%20file.txt"
+    req.uri.rawQueryString shouldBe empty
   }
 
   it should "support download requests with keys containing spaces with path-style access in other regions" in {
@@ -173,6 +177,21 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     req.uri.authority.host.toString shouldEqual "s3-eu-west-1.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/test%20folder/test%20file.txt"
+    req.uri.rawQueryString shouldBe empty
+  }
+
+  it should "add versionId query parameter when provided" in {
+    implicit val settings = getSettings(pathStyleAccess = true)
+
+    val location = S3Location("bucket", "test/foo.txt")
+    val versionId = "123456"
+    val req = HttpRequests.getDownloadRequest(location, versionId = Some(versionId))
+
+    req.uri.authority.host.toString shouldEqual "s3.amazonaws.com"
+    req.uri.path.toString shouldEqual "/bucket/test/foo.txt"
+    req.uri.rawQueryString.fold(fail("query string is empty while it was supposed to be populated")) { rawQueryString =>
+      rawQueryString shouldEqual s"versionId=$versionId"
+    }
   }
 
   it should "support multipart init upload requests via HTTP when such scheme configured for `proxy`" in {
