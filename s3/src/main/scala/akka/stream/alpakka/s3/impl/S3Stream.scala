@@ -346,9 +346,6 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
                        sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(InitiateMultipartUpload) }
                      ))
 
-    // use the same key for all sub-requests (chunks)
-    val key: SigningKey = signingKey
-
     val headers: S3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(UploadPart) })
 
     SplitAfterSize(chunkSize)(atLeastOneByteString)
@@ -361,7 +358,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
             uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload.data, chunkedPayload.size, headers)
           (partRequest, (uploadInfo, chunkIndex))
       }
-      .mapAsync(parallelism) { case (req, info) => Signer.signedRequest(req, key).zip(Future.successful(info)) }
+      .mapAsync(parallelism) { case (req, info) => Signer.signedRequest(req, SigningKey).zip(Future.successful(info)) }
   }
 
   private def getChunkBuffer(chunkSize: Int) = settings.bufferType match {
