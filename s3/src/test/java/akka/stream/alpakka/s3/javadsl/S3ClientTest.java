@@ -20,7 +20,6 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.s3.MemoryBufferType;
 import akka.stream.alpakka.s3.Proxy;
-import akka.stream.alpakka.s3.impl.ListBucketVersion2;
 import akka.stream.alpakka.s3.S3Settings;
 import akka.stream.alpakka.s3.impl.ListBucketVersion2;
 import akka.stream.alpakka.s3.impl.S3Headers;
@@ -83,7 +82,7 @@ public class S3ClientTest extends S3WireMockBase {
 
         MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
-        assertEquals(new MultipartUploadResult(Uri.create(url()), bucket(), bucketKey(), etag()), result);
+        assertEquals(new MultipartUploadResult(Uri.create(url()), bucket(), bucketKey(), etag(), Optional.empty()), result);
     }
 
     @Test
@@ -100,7 +99,7 @@ public class S3ClientTest extends S3WireMockBase {
 
         MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
-        assertEquals(new MultipartUploadResult(Uri.create(url()), bucket(), bucketKey(), etag()), result);
+        assertEquals(new MultipartUploadResult(Uri.create(url()), bucket(), bucketKey(), etag(), Optional.empty()), result);
     }
 
     @Test
@@ -126,13 +125,38 @@ public class S3ClientTest extends S3WireMockBase {
 
         mockHead();
 
+        //#objectMetadata
         final CompletionStage<Optional<ObjectMetadata>> source = client.getObjectMetadata(bucket(), bucketKey());
+        //#objectMetadata
 
         Optional<ObjectMetadata> result = source.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
-        Optional<String> s3eTag = result.get().getETag();
+        final ObjectMetadata objectMetadata = result.get();
+        Optional<String> s3eTag = objectMetadata.getETag();
+        Optional<String> versionId = objectMetadata.getVersionId();
 
         assertEquals(s3eTag, Optional.of(etag()));
+        assertEquals(versionId, Optional.empty());
+    }
+
+    @Test
+    public void headWithVersion() throws Exception {
+        String versionId = "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo";
+        mockHeadWithVersion(versionId);
+
+        //#objectMetadata
+        final CompletionStage<Optional<ObjectMetadata>> source = client.getObjectMetadata(bucket(), bucketKey(),
+                Optional.of(versionId), null);
+        //#objectMetadata
+
+        Optional<ObjectMetadata> result = source.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        final ObjectMetadata objectMetadata = result.get();
+        Optional<String> s3eTag = objectMetadata.getETag();
+        Optional<String> metadataVersionId = objectMetadata.getVersionId();
+
+        assertEquals(s3eTag, Optional.of(etag()));
+        assertEquals(metadataVersionId, Optional.of(versionId));
     }
 
     @Test
@@ -165,6 +189,27 @@ public class S3ClientTest extends S3WireMockBase {
         String result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
         assertEquals(bodySSE(), result);
+    }
+
+    @Test
+    public void downloadServerSideEncryptionWithVersion() throws Exception {
+        String versionId = "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo";
+        mockDownloadSSECWithVersion(versionId);
+
+        //#download
+        final Pair<Source<ByteString, NotUsed>, CompletionStage<ObjectMetadata>> sourceAndMeta =
+                client.download(bucket(), bucketKey(), null, Optional.of(versionId), sseCustomerKeys());
+        final Source<ByteString, NotUsed> source = sourceAndMeta.first();
+        final CompletionStage<String> resultCompletionStage =
+                source.map(ByteString::utf8String).runWith(Sink.head(), materializer);
+        final CompletionStage<ObjectMetadata> objectMetadataCompletionStage = sourceAndMeta.second();
+        //#download
+
+        final String result = resultCompletionStage.toCompletableFuture().get();
+        final ObjectMetadata metadata = objectMetadataCompletionStage.toCompletableFuture().get();
+
+        assertEquals(bodySSE(), result);
+        assertEquals(Optional.of(versionId), metadata.getVersionId());
     }
 
     @Test
@@ -239,7 +284,8 @@ public class S3ClientTest extends S3WireMockBase {
 
         final MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
-        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag()));
+        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(),
+                etag(), Optional.empty()));
     }
 
     @Test
@@ -250,22 +296,22 @@ public class S3ClientTest extends S3WireMockBase {
         String sourceKey = bucketKey();
         String targetBucket = targetBucket();
         String targetKey = targetBucketKey();
-        //#multipart-copy
 
-        // pass the source version
+        //#multipart-copy-with-source-version
         String sourceVersionId = "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo";
         final CompletionStage<MultipartUploadResult> resultCompletionStage = client.multipartCopy(
                 bucket, sourceKey,
                 targetBucket, targetKey,
-                sourceVersionId,
+                Optional.of(sourceVersionId),
                 S3Headers.empty(),
                 null // encryption
             );
-        //#multipart-copy
+        //#multipart-copy-with-source-version
 
         final MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
-        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag()));
+        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(),
+                etag(), Optional.of("43jfkodU8493jnFJD9fjj3HHNVfdsQUIFDNsidf038jfdsjGFDSIRp")));
     }
 
     @Test
@@ -276,7 +322,8 @@ public class S3ClientTest extends S3WireMockBase {
                 .multipartCopy(bucket(), bucketKey(), targetBucket(), targetBucketKey());
         final MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
-        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag()));
+        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(),
+                etag(), Optional.empty()));
     }
 
     @Test
@@ -287,7 +334,8 @@ public class S3ClientTest extends S3WireMockBase {
                 .multipartCopy(bucket(), bucketKey(), targetBucket(), targetBucketKey());
         final MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
-        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag()));
+        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(),
+                etag(), Optional.empty()));
     }
 
     @Test
@@ -298,7 +346,8 @@ public class S3ClientTest extends S3WireMockBase {
                 .multipartCopy(bucket(), bucketKey(), targetBucket(), targetBucketKey());
         final MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
-        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag()));
+        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(),
+                etag(), Optional.empty()));
     }
 
     @Test
@@ -311,6 +360,7 @@ public class S3ClientTest extends S3WireMockBase {
 
         final MultipartUploadResult result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
-        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag()));
+        assertEquals(result, new MultipartUploadResult(Uri.create(targetUrl()), targetBucket(), targetBucketKey(),
+                etag(), Optional.empty()));
     }
 }

@@ -94,11 +94,39 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
           )
       )
 
+  def mockDownloadSSECWithVersion(versionId: String): Unit =
+    mock
+      .register(
+        get(urlEqualTo(s"/$bucketKey?versionId=$versionId"))
+          .withHeader("x-amz-server-side-encryption-customer-algorithm", new EqualToPattern("AES256"))
+          .withHeader("x-amz-server-side-encryption-customer-key", new EqualToPattern(sseCustomerKey))
+          .withHeader("x-amz-server-side-encryption-customer-key-MD5", new EqualToPattern(sseCustomerMd5Key))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""")
+              .withHeader("x-amz-version-id", versionId)
+              .withBody(bodySSE)
+          )
+      )
+
   def mockHead(): Unit =
     mock
       .register(
         head(urlEqualTo(s"/$bucketKey")).willReturn(
           aResponse().withStatus(200).withHeader("ETag", s""""$etag"""").withHeader("Content-Length", "8")
+        )
+      )
+
+  def mockHeadWithVersion(versionId: String): Unit =
+    mock
+      .register(
+        head(urlEqualTo(s"/$bucketKey?versionId=$versionId")).willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("ETag", s""""$etag"""")
+            .withHeader("Content-Length", "8")
+            .withHeader("x-amz-version-id", versionId)
         )
       )
 
@@ -372,12 +400,13 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
   def mockCopyVersioned(): Unit = mockCopyVersioned(body.length)
   def mockCopyVersioned(expectedContentLength: Int): Unit = {
     mock.register(
-      head(urlEqualTo(s"/$bucketKey"))
+      head(urlEqualTo(s"/$bucketKey?versionId=3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo"))
         .willReturn(
           aResponse()
             .withStatus(200)
             .withHeader("x-amz-id-2", "ef8yU9AS1ed4OpIszj7UDNEHGran")
             .withHeader("x-amz-request-id", "318BC8BC143432E5")
+            .withHeader("x-amz-version-id", "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo")
             .withHeader("ETag", "\"" + etag + "\"")
             .withHeader("Content-Length", s"$expectedContentLength")
         )
@@ -431,6 +460,7 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
             .withHeader("Content-Type", "application/xml; charset=UTF-8")
             .withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt")
             .withHeader("x-amz-request-id", "5A37448A3762224333")
+            .withHeader("x-amz-version-id", "43jfkodU8493jnFJD9fjj3HHNVfdsQUIFDNsidf038jfdsjGFDSIRp")
             .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
                          |<CompleteMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                          |  <Location>$targetUrl</Location>
