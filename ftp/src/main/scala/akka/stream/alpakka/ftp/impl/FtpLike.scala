@@ -6,7 +6,8 @@ package akka.stream.alpakka.ftp
 package impl
 
 import net.schmizz.sshj.SSHClient
-import org.apache.commons.net.ftp.FTPClient
+import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
+
 import scala.collection.immutable
 import scala.util.Try
 import java.io.{InputStream, OutputStream}
@@ -34,6 +35,7 @@ protected[ftp] trait FtpLike[FtpClient, S <: RemoteFileSettings] {
 
 object FtpLike {
   // type class instances
-  implicit val ftpLikeInstance = new FtpLike[FTPClient, FtpFileSettings] with FtpOperations
+  implicit val ftpLikeInstance = new FtpLike[FTPClient, FtpSettings] with FtpOperations
+  implicit val ftpsLikeInstance = new FtpLike[FTPSClient, FtpsSettings] with FtpsOperations
   implicit val sFtpLikeInstance = new FtpLike[SSHClient, SftpSettings] with SftpOperations
 }

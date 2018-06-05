@@ -2,16 +2,16 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.ftp
-package impl
+package akka.stream.alpakka.ftp.impl
 
-import org.apache.commons.net.ftp.{FTP, FTPClient}
+import akka.stream.alpakka.ftp.FtpsSettings
+import org.apache.commons.net.ftp.{FTP, FTPSClient}
 
 import scala.util.Try
 
-private[ftp] trait FtpOperations extends CommonFtpOperations { _: FtpLike[FTPClient, FtpSettings] =>
+private[ftp] trait FtpsOperations extends CommonFtpOperations { _: FtpLike[FTPSClient, FtpsSettings] =>
 
-  def connect(connectionSettings: FtpSettings)(implicit ftpClient: FTPClient): Try[Handler] = Try {
+  def connect(connectionSettings: FtpsSettings)(implicit ftpClient: FTPSClient): Try[Handler] = Try {
     ftpClient.connect(connectionSettings.host, connectionSettings.port)
 
     connectionSettings.configureConnection(ftpClient)
@@ -32,7 +32,7 @@ private[ftp] trait FtpOperations extends CommonFtpOperations { _: FtpLike[FTPCli
     ftpClient
   }
 
-  def disconnect(handler: Handler)(implicit ftpClient: FTPClient): Unit =
+  def disconnect(handler: Handler)(implicit ftpClient: FTPSClient): Unit =
     if (ftpClient.isConnected) {
       ftpClient.logout()
       ftpClient.disconnect()
