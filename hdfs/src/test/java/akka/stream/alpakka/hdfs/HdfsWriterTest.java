@@ -27,7 +27,6 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.DefaultCodec;
-import org.apache.hadoop.test.PathUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -528,7 +527,7 @@ public class HdfsWriterTest {
   }
 
   private static void setupCluster() throws IOException {
-    File baseDir = new File(PathUtils.getTestDir(HdfsWriterTest.class), "miniHDFS-java");
+    File baseDir = new File(JavaTestUtils.getTestDir(), "miniHDFS-java");
     HdfsConfiguration conf = new HdfsConfiguration();
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath());
     hdfsCluster = new MiniDFSCluster.Builder(conf).nameNodePort(54310).format(true).build();

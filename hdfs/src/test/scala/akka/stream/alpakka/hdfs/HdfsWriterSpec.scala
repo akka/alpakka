@@ -18,7 +18,6 @@ import org.apache.hadoop.io.SequenceFile.CompressionType
 import org.apache.hadoop.io.Text
 import org.apache.hadoop.io.compress._
 import org.apache.hadoop.io.compress.zlib.ZlibCompressor.CompressionLevel
-import org.apache.hadoop.test.PathUtils
 import org.scalatest._
 
 import scala.concurrent.duration.{Duration, _}
@@ -490,7 +489,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
   }
 
   private def setupCluster(): Unit = {
-    val baseDir = new File(PathUtils.getTestDir(getClass), "miniHDFS")
+    val baseDir = new File(getTestDir, "miniHDFS")
     val conf = new HdfsConfiguration
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath)
     val builder = new MiniDFSCluster.Builder(conf)

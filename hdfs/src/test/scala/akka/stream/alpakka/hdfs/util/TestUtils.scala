@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.hdfs.util
 
-import java.io.{InputStream, StringWriter}
+import java.io.{File, InputStream, StringWriter}
 import java.nio.ByteBuffer
 import java.util
 
@@ -30,6 +30,15 @@ sealed trait TestUtils {
     val writer = new StringWriter
     IOUtils.copy(stream, writer, "UTF-8")
     writer.toString
+  }
+
+  def getTestDir: File = {
+    val targetDir = new File("hdfs/target")
+    val testWorkingDir =
+      new File(targetDir, s"hdfs-${System.currentTimeMillis}")
+    if (!testWorkingDir.isDirectory)
+      testWorkingDir.mkdirs
+    testWorkingDir
   }
 
   def destination = "/tmp/alpakka/"
