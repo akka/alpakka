@@ -39,7 +39,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
   val conf = new Configuration()
   conf.set("fs.default.name", "hdfs://localhost:54310")
 
-  var fs: FileSystem = FileSystem.get(conf)
+  val fs: FileSystem = FileSystem.get(conf)
   //#init-client
 
   implicit val ec: ExecutionContextExecutor = system.dispatcher
@@ -500,7 +500,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
   private def documentation(): Unit = {
     //#define-generator
     val pathGenerator =
-      FilePathGenerator.create(
+      FilePathGenerator(
         (rotationCount: Long, timestamp: Long) => s"/tmp/alpakka/$rotationCount-$timestamp"
       )
     //#define-generator
