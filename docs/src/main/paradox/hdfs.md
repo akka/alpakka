@@ -16,6 +16,11 @@ For more information about Hadoop, please visit the [Hadoop documentation](https
   version=$version$
 }
 
+## Specifying a Hadoop Version
+
+By default, HDFS connector uses Hadoop **3.1.0**. If you are using a different version of Hadoop, 
+you should exclude the Hadoop libraries from the connector dependency and add the dependency for your preferred version.
+
 ## Set up client
 
 Flows provided by this connector need a prepared `org.apache.hadoop.fs.FileSystem` to 
