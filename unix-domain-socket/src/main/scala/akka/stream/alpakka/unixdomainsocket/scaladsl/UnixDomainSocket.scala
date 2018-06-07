@@ -19,7 +19,7 @@ import akka.actor.{
   ExtensionIdProvider
 }
 import akka.stream._
-import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source, SourceQueueWithComplete}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.util.ByteString
 import jnr.enxio.channels.NativeSelectorProvider
@@ -130,9 +130,10 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                         channel.write(buffer)
                         true
                       } catch {
-                        case _: IOException =>
+                        case e: IOException =>
                           key.cancel()
                           key.channel.close()
+                          sent.failure(e)
                           false
                       }
 
@@ -251,47 +252,47 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
         SendAvailable(ByteBuffer.allocate(sendBufferSize)),
         ReceiveAvailable(receiveQueue, ByteBuffer.allocate(receiveBufferSize))
       ) // FIXME: No need for the costly allocation of direct buffers yet given https://github.com/jnr/jnr-unixsocket/pull/49
-    val sendSink =
-      BroadcastHub
-        .sink[ByteString]
-        .mapMaterializedValue { sendSource =>
-          sendSource
-            .expand { bytes =>
-              if (bytes.size <= sendBufferSize) {
-                List(bytes).toIterator
+
+    val sendSink = Sink.fromGraph(
+      Flow[ByteString]
+        .expand { bytes =>
+          if (bytes.size <= sendBufferSize) {
+            Iterator.single(bytes)
+          } else {
+            @annotation.tailrec
+            def splitToBufferSize(bytes: ByteString, acc: Vector[ByteString]): Vector[ByteString] =
+              if (bytes.nonEmpty) {
+                val (left, right) = bytes.splitAt(sendBufferSize)
+                splitToBufferSize(right, acc :+ left)
               } else {
-                def splitToBufferSize(bytes: ByteString, acc: List[ByteString]): List[ByteString] =
-                  if (bytes.nonEmpty) {
-                    val (left, right) = bytes.splitAt(sendBufferSize)
-                    splitToBufferSize(right, acc :+ left)
-                  } else {
-                    acc
-                  }
-                splitToBufferSize(bytes, List.empty).toIterator
+                acc
               }
-            }
-            .mapAsync(1) { bytes =>
-              // Note - it is an error to get here and not have an AvailableSendContext
-              val sent = Promise[Done]
-              val sendBuffer = sendReceiveContext.send.buffer
-              sendBuffer.clear()
-              val copied = bytes.copyToBuffer(sendBuffer)
-              sendBuffer.flip()
-              require(copied == bytes.size) // It is an error to exceed our buffer size given the above expand
-              sendReceiveContext.send = SendRequested(sendBuffer, sent)
-              sel.wakeup()
-              sent.future.map(_ => bytes)
-            }
-            .watchTermination() {
-              case (m, done) =>
-                done.onComplete { _ =>
-                  sendReceiveContext.send = CloseRequested
-                  sel.wakeup()
-                }
-                (m, done)
-            }
-            .runWith(Sink.ignore)
+            splitToBufferSize(bytes, Vector.empty).toIterator
+          }
         }
+        .mapAsync(1) { bytes =>
+          // Note - it is an error to get here and not have an AvailableSendContext
+          val sent = Promise[Done]
+          val sendBuffer = sendReceiveContext.send.buffer
+          sendBuffer.clear()
+          val copied = bytes.copyToBuffer(sendBuffer)
+          sendBuffer.flip()
+          require(copied == bytes.size) // It is an error to exceed our buffer size given the above expand
+          sendReceiveContext.send = SendRequested(sendBuffer, sent)
+          sel.wakeup()
+          sent.future.map(_ => bytes)
+        }
+        .watchTermination() {
+          case (m, done) =>
+            done.onComplete { _ =>
+              sendReceiveContext.send = CloseRequested
+              sel.wakeup()
+            }
+            (m, done)
+        }
+        .to(Sink.ignore)
+    )
+
     (sendReceiveContext, Flow.fromSinkAndSource(sendSink, Source.fromFutureSource(receiveSource)))
   }
 
