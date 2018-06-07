@@ -10,7 +10,7 @@ object Dependencies {
     case _ => "2.5.12"
   }
 
-  val AwsSdkVersion = "1.11.340"
+  val AwsSdkVersion = "1.11.342"
   val AkkaHttpVersion = "10.0.13"
 
   val Common = Seq(
