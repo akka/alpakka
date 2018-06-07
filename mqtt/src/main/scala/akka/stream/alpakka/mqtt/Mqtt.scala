@@ -122,8 +122,8 @@ final case class MqttConnectionSettings(
   def withAutomaticReconnect(automaticReconnect: Boolean): MqttConnectionSettings =
     copy(automaticReconnect = automaticReconnect)
 
-  def withKeepAliveInterval(connectionTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
-    copy(connectionTimeout = FiniteDuration(connectionTimeout, unit))
+  def withKeepAliveInterval(keepAliveInterval: Int, unit: TimeUnit): MqttConnectionSettings =
+    copy(keepAliveInterval = FiniteDuration(keepAliveInterval, unit))
 
   def withConnectionTimeout(connectionTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
     copy(connectionTimeout = FiniteDuration(connectionTimeout, unit))
@@ -132,7 +132,7 @@ final case class MqttConnectionSettings(
     copy(disconnectQuiesceTimeout = FiniteDuration(disconnectQuiesceTimeout, unit))
 
   def withDisconnectTimeout(disconnectTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
-    copy(disconnectQuiesceTimeout = FiniteDuration(disconnectTimeout, unit))
+    copy(disconnectTimeout = FiniteDuration(disconnectTimeout, unit))
 
   def withMaxInFlight(maxInFlight: Int): MqttConnectionSettings =
     copy(maxInFlight = maxInFlight)
