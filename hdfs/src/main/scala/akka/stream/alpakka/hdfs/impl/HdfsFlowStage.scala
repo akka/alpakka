@@ -50,7 +50,7 @@ private final class HdfsFlowLogic[W, I, C](
     with OutHandler {
 
   private var state = FlowState(initialHdfsWriter, initialRotationStrategy, initialSyncStrategy)
-  
+
   private val flushProgram = rotateOutput.flatMap(message => tryPush(Seq(message)))
 
   setHandlers(inlet, outlet, this)
