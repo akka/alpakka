@@ -5,7 +5,7 @@
 package akka.stream.alpakka.hdfs.impl.writer
 
 import akka.stream.alpakka.hdfs.FilePathGenerator
-import akka.stream.alpakka.hdfs.impl.writer.HdfsWriter.{createTargetPath, NewLineByteArray}
+import akka.stream.alpakka.hdfs.impl.writer.HdfsWriter._
 import akka.util.ByteString
 import org.apache.hadoop.fs.{FSDataOutputStream, FileSystem, Path}
 
@@ -15,7 +15,9 @@ private[writer] final case class DataWriter(
     maybeTargetPath: Option[Path],
     overwrite: Boolean
 ) extends HdfsWriter[FSDataOutputStream, ByteString] {
-  protected lazy val target: Path = maybeTargetPath.getOrElse(createTargetPath(pathGenerator, 0))
+
+  protected lazy val target: Path =
+    getOrCreatePath(maybeTargetPath, createTargetPath(pathGenerator, 0))
 
   def sync(): Unit = output.hsync()
 
@@ -32,7 +34,8 @@ private[writer] final case class DataWriter(
     copy(maybeTargetPath = Some(createTargetPath(pathGenerator, rotationCount)))
   }
 
-  protected def create(fs: FileSystem, file: Path): FSDataOutputStream = fs.create(file, overwrite)
+  def create(fs: FileSystem, file: Path): FSDataOutputStream = fs.create(file, overwrite)
+
 }
 
 private[hdfs] object DataWriter {

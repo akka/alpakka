@@ -50,7 +50,8 @@ private final class HdfsFlowLogic[W, I, C](
     with OutHandler {
 
   private var state = FlowState(initialHdfsWriter, initialRotationStrategy, initialSyncStrategy)
-  private val flushProgram = tryRotateOutput(true).flatMap { case (_, message) => tryPush(message.toSeq) }
+  
+  private val flushProgram = rotateOutput.flatMap(message => tryPush(Seq(message)))
 
   setHandlers(inlet, outlet, this)
 
@@ -82,8 +83,8 @@ private final class HdfsFlowLogic[W, I, C](
     state.logicState match {
       case LogicState.Writing =>
         flushProgram
-          .map(_ => completeStage())
           .run(state)
+          .map(_ => completeStage())
           .value
       case _ => completeStage()
     }
@@ -100,7 +101,7 @@ private final class HdfsFlowLogic[W, I, C](
       _ <- updateSync(offset)
       _ <- updateRotation(offset)
       _ <- trySyncOutput
-      rotationResult <- tryRotateOutput(false)
+      rotationResult <- tryRotateOutput
       (rotationCount, maybeRotationMessage) = rotationResult
       messages = Seq(Some(WrittenMessage(input.passThrough, rotationCount)), maybeRotationMessage)
       _ <- tryPush(messages.flatten)
@@ -129,16 +130,38 @@ private final class HdfsFlowLogic[W, I, C](
       (state.copy(syncStrategy = newSync), newSync)
     }
 
+  private def rotateOutput: FlowStep[W, I, RotationMessage] =
+    FlowStep[W, I, RotationMessage] { state =>
+      val newRotationCount = state.rotationCount + 1
+      val newRotation = state.rotationStrategy.reset()
+      val newWriter = state.writer.rotate(newRotationCount)
+
+      state.writer.moveToTarget()
+
+      val message = RotationMessage(state.writer.targetFileName, state.rotationCount)
+      val newState = state.copy(rotationCount = newRotationCount,
+                                writer = newWriter,
+                                rotationStrategy = newRotation,
+                                logicState = LogicState.Idle)
+
+      (newState, message)
+    }
+
   /*
     It tries to rotate output file.
-    If it rotates, it returns previous rotation and a message,
+    If it rotates, it returns previous rotation count and a message,
     else, it returns current rotation without a message.
    */
-  private def tryRotateOutput(force: Boolean): FlowStep[W, I, (Int, Option[RotationMessage])] =
+  private def tryRotateOutput: FlowStep[W, I, (Int, Option[RotationMessage])] =
     FlowStep[W, I, (Int, Option[RotationMessage])] { state =>
-      if (state.rotationStrategy.should() || force) {
-        val (newState, message) = rotateOutput(state)
-        (newState, (state.rotationCount, Some(message)))
+      if (state.rotationStrategy.should()) {
+        rotateOutput
+          .run(state)
+          .map {
+            case (newState, message) =>
+              (newState, (state.rotationCount, Some(message)))
+          }
+          .value
       } else {
         (state, (state.rotationCount, None))
       }
@@ -162,20 +185,6 @@ private final class HdfsFlowLogic[W, I, C](
       (state, ())
     }
 
-  private def rotateOutput(state: FlowState[W, I]): (FlowState[W, I], RotationMessage) = {
-    val newRotationCount = state.rotationCount + 1
-    val newRotation = state.rotationStrategy.reset()
-    val newWriter = state.writer.rotate(newRotationCount)
-
-    state.writer.moveToTarget()
-
-    val message = RotationMessage(state.writer.targetFileName, state.rotationCount)
-    val newState = state.copy(rotationCount = newRotationCount,
-                              writer = newWriter,
-                              rotationStrategy = newRotation,
-                              logicState = LogicState.Idle)
-    (newState, message)
-  }
 }
 
 private object HdfsFlowLogic {

@@ -5,7 +5,7 @@
 package akka.stream.alpakka.hdfs.impl.writer
 
 import akka.stream.alpakka.hdfs.FilePathGenerator
-import akka.stream.alpakka.hdfs.impl.writer.HdfsWriter.{createTargetPath, NewLineByteArray}
+import akka.stream.alpakka.hdfs.impl.writer.HdfsWriter._
 import akka.util.ByteString
 import org.apache.commons.io.FilenameUtils
 import org.apache.hadoop.fs.{FSDataOutputStream, FileSystem, Path}
@@ -18,7 +18,8 @@ private[writer] final case class CompressedDataWriter(
     maybeTargetPath: Option[Path],
     overwrite: Boolean
 ) extends HdfsWriter[FSDataOutputStream, ByteString] {
-  protected lazy val target: Path = maybeTargetPath.getOrElse(outputFileWithExtension(0))
+
+  protected lazy val target: Path = getOrCreatePath(maybeTargetPath, outputFileWithExtension(0))
 
   private val compressor: Compressor = CodecPool.getCompressor(compressionCodec, fs.getConf)
   private val cmpOutput: CompressionOutputStream = compressionCodec.createOutputStream(output, compressor)
@@ -51,6 +52,7 @@ private[writer] final case class CompressedDataWriter(
       candidatePath.suffix(codecExtension)
     else candidatePath
   }
+
 }
 
 private[hdfs] object CompressedDataWriter {

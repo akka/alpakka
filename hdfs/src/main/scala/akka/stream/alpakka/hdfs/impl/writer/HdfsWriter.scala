@@ -13,7 +13,9 @@ import org.apache.hadoop.fs.{FileSystem, Path}
  * Internal API
  */
 private[hdfs] trait HdfsWriter[W, I] {
+
   protected lazy val output: W = create(fs, temp)
+
   protected lazy val temp: Path = tempFromTarget(pathGenerator, target)
 
   def moveToTarget(): Boolean = {
@@ -23,14 +25,21 @@ private[hdfs] trait HdfsWriter[W, I] {
   }
 
   def sync(): Unit
+
   def targetFileName: String = target.getName
+
   def write(input: I, addNewLine: Boolean): Long
+
   def rotate(rotationCount: Long): HdfsWriter[W, I]
 
   protected def target: Path
+
   protected def fs: FileSystem
+
   protected def pathGenerator: FilePathGenerator
+
   protected def create(fs: FileSystem, file: Path): W
+
 }
 
 private[writer] object HdfsWriter {
@@ -42,5 +51,8 @@ private[writer] object HdfsWriter {
 
   def tempFromTarget(generator: FilePathGenerator, target: Path): Path =
     new Path(generator.tempDirectory, target.getName)
+
+  def getOrCreatePath(maybePath: Option[Path], default: => Path): Path =
+    maybePath.getOrElse(default)
 
 }

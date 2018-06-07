@@ -5,7 +5,7 @@
 package akka.stream.alpakka.hdfs.impl.writer
 
 import akka.stream.alpakka.hdfs.FilePathGenerator
-import akka.stream.alpakka.hdfs.impl.writer.HdfsWriter.createTargetPath
+import akka.stream.alpakka.hdfs.impl.writer.HdfsWriter._
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile.{CompressionType, Writer}
 import org.apache.hadoop.io.compress.CompressionCodec
@@ -17,7 +17,9 @@ private[writer] final case class SequenceWriter[K <: Writable, V <: Writable](
     pathGenerator: FilePathGenerator,
     maybeTargetPath: Option[Path]
 ) extends HdfsWriter[SequenceFile.Writer, (K, V)] {
-  protected lazy val target: Path = maybeTargetPath.getOrElse(createTargetPath(pathGenerator, 0))
+
+  protected lazy val target: Path =
+    getOrCreatePath(maybeTargetPath, createTargetPath(pathGenerator, 0))
 
   def sync(): Unit = output.hsync()
 
@@ -35,6 +37,7 @@ private[writer] final case class SequenceWriter[K <: Writable, V <: Writable](
     val ops = SequenceFile.Writer.file(file) +: writerOptions
     SequenceFile.createWriter(fs.getConf, ops: _*)
   }
+
 }
 
 private[hdfs] object SequenceWriter {
