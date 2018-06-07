@@ -15,7 +15,7 @@ private[writer] final case class DataWriter(
     maybeTargetPath: Option[Path],
     overwrite: Boolean
 ) extends HdfsWriter[FSDataOutputStream, ByteString] {
-  protected val target: Path = maybeTargetPath.getOrElse(createTargetPath(pathGenerator, 0))
+  protected lazy val target: Path = maybeTargetPath.getOrElse(createTargetPath(pathGenerator, 0))
 
   def sync(): Unit = output.hsync()
 

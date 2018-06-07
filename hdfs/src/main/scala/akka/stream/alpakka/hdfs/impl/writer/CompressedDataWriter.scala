@@ -18,7 +18,7 @@ private[writer] final case class CompressedDataWriter(
     maybeTargetPath: Option[Path],
     overwrite: Boolean
 ) extends HdfsWriter[FSDataOutputStream, ByteString] {
-  protected val target: Path = maybeTargetPath.getOrElse(outputFileWithExtension(0))
+  protected lazy val target: Path = maybeTargetPath.getOrElse(outputFileWithExtension(0))
 
   private val compressor: Compressor = CodecPool.getCompressor(compressionCodec, fs.getConf)
   private val cmpOutput: CompressionOutputStream = compressionCodec.createOutputStream(output, compressor)

@@ -17,7 +17,7 @@ private[writer] final case class SequenceWriter[K <: Writable, V <: Writable](
     pathGenerator: FilePathGenerator,
     maybeTargetPath: Option[Path]
 ) extends HdfsWriter[SequenceFile.Writer, (K, V)] {
-  protected val target: Path = maybeTargetPath.getOrElse(createTargetPath(pathGenerator, 0))
+  protected lazy val target: Path = maybeTargetPath.getOrElse(createTargetPath(pathGenerator, 0))
 
   def sync(): Unit = output.hsync()
 
