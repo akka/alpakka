@@ -9,9 +9,11 @@ import java.nio.ByteBuffer
 import java.util
 
 import akka.stream.alpakka.hdfs.RotationMessage
+import akka.stream.scaladsl
 import akka.util.ByteString
 import org.apache.commons.io.IOUtils
 import org.apache.hadoop.fs.{FileStatus, FileSystem, Path}
+import org.apache.hadoop.hdfs.{HdfsConfiguration, MiniDFSCluster}
 import org.apache.hadoop.io.compress.CompressionCodec
 import org.apache.hadoop.io.{SequenceFile, Text}
 import org.scalatest.Matchers
@@ -24,6 +26,7 @@ sealed trait TestUtils {
 
   protected type Sequence[_]
   protected type Pair[_, _]
+  protected type StreamSource[_, _]
   protected type Assertion
 
   def read(stream: InputStream): String = {
@@ -39,6 +42,16 @@ sealed trait TestUtils {
     if (!testWorkingDir.isDirectory)
       testWorkingDir.mkdirs
     testWorkingDir
+  }
+
+  def setupCluster(): MiniDFSCluster = {
+    val baseDir = new File(getTestDir, "miniHDFS")
+    val conf = new HdfsConfiguration
+    conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath)
+    val builder = new MiniDFSCluster.Builder(conf)
+    val hdfsCluster = builder.nameNodePort(54310).format(true).build()
+    hdfsCluster.waitClusterUp()
+    hdfsCluster
   }
 
   def destination = "/tmp/alpakka/"
@@ -78,6 +91,7 @@ sealed trait TestUtils {
 object ScalaTestUtils extends TestUtils with Matchers {
   type Sequence[A] = Seq[A]
   type Pair[A, B] = (A, B)
+  type StreamSource[A, B] = scaladsl.Source[A, B]
   type Assertion = org.scalatest.Assertion
 
   val books: Sequence[ByteString] = List(
@@ -159,7 +173,6 @@ object ScalaTestUtils extends TestUtils with Matchers {
       .map(_ => (new Text(Random.nextPrintableChar.toString), new Text(Random.nextPrintableChar.toString)))
       .toList
   }
-
 }
 
 object JavaTestUtils extends TestUtils {

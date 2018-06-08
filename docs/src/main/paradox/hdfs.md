@@ -1,6 +1,6 @@
 # Hadoop Distributed File System - HDFS
 
-The connector offers Flows that interact with HDFS file systems.
+The connector offers Flows and Sources that interact with HDFS file systems.
 
 For more information about Hadoop, please visit the [Hadoop documentation](https://hadoop.apache.org/).
 
@@ -178,6 +178,42 @@ Java
 @scala[@scaladoc[SyncStrategy](akka.stream.alpakka.hdfs.SyncStrategyFactory$).]
 @java[@scaladoc[SyncStrategy](akka.stream.alpakka.hdfs.SyncStrategyFactory$).]
 
+## Reading
+
+Use `HdfsSource` to read from HDFS.
+@scala[@scaladoc[HdfsSource](akka.stream.alpakka.hdfs.scaladsl.HdfsSource$).]
+@java[@scaladoc[HdfsSource](akka.stream.alpakka.hdfs.javadsl.HdfsSource$).]
+
+
+### Data Reader
+
+
+Scala
+: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsReaderSpec.scala) { #define-data-source }
+
+Java
+: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsReaderTest.java) { #define-data-source }
+
+
+### Compressed Data Reader
+
+
+Scala
+: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsReaderSpec.scala) { #define-compressed-source }
+
+Java
+: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsReaderTest.java) { #define-compressed-source }
+
+
+### Sequence Reader
+
+
+Scala
+: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsReaderSpec.scala) { #define-sequence-source }
+
+Java
+: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsReaderTest.java) { #define-sequence-source }
+
 
 ## Running the example code
 
@@ -187,10 +223,12 @@ Scala
 :   ```
     sbt
     > hdfs/testOnly *.HdfsWriterSpec
+    > hdfs/testOnly *.HdfsReaderSpec
     ```
 
 Java
 :   ```
     sbt
     > hdfs/testOnly *.HdfsWriterTest
+    > hdfs/testOnly *.HdfsReaderTest
     ```

@@ -22,7 +22,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
@@ -33,7 +32,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.duration.Duration;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -498,7 +496,7 @@ public class HdfsWriterTest {
 
   @BeforeClass
   public static void setup() throws Exception {
-    setupCluster();
+    hdfsCluster = JavaTestUtils.setupCluster();
 
     // #init-client
     Configuration conf = new Configuration();
@@ -524,14 +522,6 @@ public class HdfsWriterTest {
   public void afterEach() throws IOException {
     fs.delete(new Path(destionation), true);
     fs.delete(settings.pathGenerator().apply(0L, 0L).getParent(), true);
-  }
-
-  private static void setupCluster() throws IOException {
-    File baseDir = new File(JavaTestUtils.getTestDir(), "miniHDFS-java");
-    HdfsConfiguration conf = new HdfsConfiguration();
-    conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath());
-    hdfsCluster = new MiniDFSCluster.Builder(conf).nameNodePort(54310).format(true).build();
-    hdfsCluster.waitClusterUp();
   }
 
   private static void documentation() {

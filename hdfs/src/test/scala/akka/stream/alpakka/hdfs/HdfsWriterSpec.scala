@@ -4,8 +4,6 @@
 
 package akka.stream.alpakka.hdfs
 
-import java.io.File
-
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.hdfs.scaladsl.HdfsFlow
@@ -13,7 +11,7 @@ import akka.stream.alpakka.hdfs.util.ScalaTestUtils._
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.hdfs.{HdfsConfiguration, MiniDFSCluster}
+import org.apache.hadoop.hdfs.MiniDFSCluster
 import org.apache.hadoop.io.SequenceFile.CompressionType
 import org.apache.hadoop.io.Text
 import org.apache.hadoop.io.compress._
@@ -481,20 +479,11 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
   }
 
   override protected def beforeAll(): Unit =
-    setupCluster()
+    hdfsCluster = setupCluster()
 
   override protected def afterAll(): Unit = {
     fs.close()
     hdfsCluster.shutdown()
-  }
-
-  private def setupCluster(): Unit = {
-    val baseDir = new File(getTestDir, "miniHDFS")
-    val conf = new HdfsConfiguration
-    conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath)
-    val builder = new MiniDFSCluster.Builder(conf)
-    hdfsCluster = builder.nameNodePort(54310).format(true).build()
-    hdfsCluster.waitClusterUp()
   }
 
   private def documentation(): Unit = {

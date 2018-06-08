@@ -19,13 +19,14 @@ import org.apache.hadoop.io.compress.CompressionCodec
 
 object HdfsFlow {
 
-  /*
-   * Java API: creates a Flow with [[HdfsFlowStage]] for [[FSDataOutputStream]]
+  /**
+   * Java API: creates a Flow with [[akka.stream.alpakka.hdfs.impl.HdfsFlowStage]]
+   * for [[org.apache.hadoop.fs.FSDataOutputStream]]
    *
-   * @param fs HDFS FileSystem
-   * @param syncStrategy Sync Strategy
-   * @param rotationStrategy Rotation Strategy
-   * @param settings Hdfs writing settings
+   * @param fs file system
+   * @param syncStrategy sync strategy
+   * @param rotationStrategy rotation strategy
+   * @param settings hdfs writing settings
    */
   def data(
       fs: FileSystem,
@@ -35,13 +36,14 @@ object HdfsFlow {
   ): javadsl.Flow[IncomingMessage[ByteString, NotUsed], RotationMessage, NotUsed] =
     ScalaHdfsFlow.data(fs, syncStrategy, rotationStrategy, settings).asJava
 
-  /*
-   * Java API: creates a Flow with [[HdfsFlowStage]] for [[FSDataOutputStream]] with `passThrough` of type `C`
+  /**
+   * Java API: creates a Flow with [[akka.stream.alpakka.hdfs.impl.HdfsFlowStage]]
+   * for [[org.apache.hadoop.fs.FSDataOutputStream]] with `passThrough` of type `C`
    *
-   * @param fs HDFS FileSystem
-   * @param syncStrategy Sync Strategy
-   * @param rotationStrategy Rotation Strategy
-   * @param settings Hdfs writing settings
+   * @param fs file system
+   * @param syncStrategy sync strategy
+   * @param rotationStrategy rotation strategy
+   * @param settings hdfs writing settings
    */
   def dataWithPassThrough[C](
       fs: FileSystem,
@@ -58,14 +60,15 @@ object HdfsFlow {
       )
       .asJava
 
-  /*
-   * Java API: creates a Flow with [[HdfsFlowStage]] for [[CompressionOutputStream]]
+  /**
+   * Java API: creates a Flow with [[akka.stream.alpakka.hdfs.impl.HdfsFlowStage]]
+   * for [[org.apache.hadoop.io.compress.CompressionOutputStream]]
    *
-   * @param fs HDFS FileSystem
-   * @param syncStrategy Sync Strategy
-   * @param rotationStrategy Rotation Strategy
-   * @param compressionCodec a class encapsulates a streaming compression/decompression pair.
-   * @param settings Hdfs writing settings
+   * @param fs file system
+   * @param syncStrategy sync strategy
+   * @param rotationStrategy rotation strategy
+   * @param compressionCodec a streaming compression/decompression pair
+   * @param settings hdfs writing settings
    */
   def compressed(
       fs: FileSystem,
@@ -76,14 +79,15 @@ object HdfsFlow {
   ): javadsl.Flow[IncomingMessage[ByteString, NotUsed], RotationMessage, NotUsed] =
     ScalaHdfsFlow.compressed(fs, syncStrategy, rotationStrategy, compressionCodec, settings).asJava
 
-  /*
-   * Java API: creates a Flow with [[HdfsFlowStage]] for [[CompressionOutputStream]] with `passThrough` of type `C`
+  /**
+   * Java API: creates a Flow with [[akka.stream.alpakka.hdfs.impl.HdfsFlowStage]]
+   * for [[org.apache.hadoop.io.compress.CompressionOutputStream]] with `passThrough` of type `C`
    *
-   * @param fs HDFS FileSystem
-   * @param syncStrategy Sync Strategy
-   * @param rotationStrategy Rotation Strategy
-   * @param compressionCodec a class encapsulates a streaming compression/decompression pair.
-   * @param settings Hdfs writing settings
+   * @param fs file system
+   * @param syncStrategy sync strategy
+   * @param rotationStrategy rotation strategy
+   * @param compressionCodec a streaming compression/decompression pair
+   * @param settings hdfs writing settings
    */
   def compressedWithPassThrough[C](
       fs: FileSystem,
@@ -102,13 +106,14 @@ object HdfsFlow {
       )
       .asJava
 
-  /*
-   * Java API: creates a Flow with [[HdfsFlowStage]] for [[SequenceFile.Writer]] without a compression
+  /**
+   * Java API: creates a Flow with [[akka.stream.alpakka.hdfs.impl.HdfsFlowStage]]
+   * for [[org.apache.hadoop.io.SequenceFile.Writer]] without a compression
    *
-   * @param fs Hdfs FileSystem
+   * @param fs file system
    * @param syncStrategy sync strategy
    * @param rotationStrategy rotation strategy
-   * @param settings Hdfs writing settings
+   * @param settings hdfs writing settings
    * @param classK a key class
    * @param classV a value class
    */
@@ -123,15 +128,16 @@ object HdfsFlow {
     sequenceWithPassThrough[K, V, NotUsed](fs, syncStrategy, rotationStrategy, settings, classK, classV)
       .collect(ScalaHdfsFlow.OnlyRotationMessage)
 
-  /*
-   * Java API: creates a Flow with [[HdfsFlowStage]] for [[SequenceFile.Writer]] with a compression
+  /**
+   * Java API: creates a Flow with [[akka.stream.alpakka.hdfs.impl.HdfsFlowStage]]
+   * for [[org.apache.hadoop.io.SequenceFile.Writer]] with a compression
    *
-   * @param fs Hdfs FileSystem
+   * @param fs file system
    * @param syncStrategy sync strategy
    * @param rotationStrategy rotation strategy
    * @param compressionType a compression type used to compress key/value pairs in the SequenceFile
-   * @param compressionCodec a class encapsulates a streaming compression/decompression pair.
-   * @param settings Hdfs writing settings
+   * @param compressionCodec a streaming compression/decompression pair
+   * @param settings hdfs writing settings
    * @param classK a key class
    * @param classV a value class
    */
@@ -156,14 +162,15 @@ object HdfsFlow {
       classV
     ).collect(ScalaHdfsFlow.OnlyRotationMessage)
 
-  /*
-   * Java API: creates a Flow with [[HdfsFlowStage]] for [[SequenceFile.Writer]]
+  /**
+   * Java API: creates a Flow with [[akka.stream.alpakka.hdfs.impl.HdfsFlowStage]]
+   * for [[org.apache.hadoop.io.SequenceFile.Writer]]
    * with `passThrough` of type `C` and without a compression
    *
-   * @param fs Hdfs FileSystem
+   * @param fs file system
    * @param syncStrategy sync strategy
    * @param rotationStrategy rotation strategy
-   * @param settings Hdfs writing settings
+   * @param settings hdfs writing settings
    * @param classK a key class
    * @param classV a value class
    */
@@ -190,16 +197,17 @@ object HdfsFlow {
       )
       .asJava
 
-  /*
-   * Java API: creates a Flow with [[HdfsFlowStage]] for [[SequenceFile.Writer]]
+  /**
+   * Java API: creates a Flow with [[akka.stream.alpakka.hdfs.impl.HdfsFlowStage]]
+   * for [[org.apache.hadoop.io.SequenceFile.Writer]]
    * with `passThrough` of type `C` and a compression
    *
-   * @param fs Hdfs FileSystem
+   * @param fs file system
    * @param syncStrategy sync strategy
    * @param rotationStrategy rotation strategy
    * @param compressionType a compression type used to compress key/value pairs in the SequenceFile
-   * @param compressionCodec a class encapsulates a streaming compression/decompression pair.
-   * @param settings Hdfs writing settings
+   * @param compressionCodec a streaming compression/decompression pair
+   * @param settings hdfs writing settings
    * @param classK a key class
    * @param classV a value class
    */
