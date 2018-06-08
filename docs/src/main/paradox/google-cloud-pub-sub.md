@@ -2,6 +2,10 @@
 
 The google cloud pub/sub connector provides a way to connect to google clouds managed pub/sub https://cloud.google.com/pubsub/.
 
+We provide two means of communicating to PubSub:
+1. Via normal HTTP requests (i.e. https://pubsub.googleapis.com)
+2. Via GRPC protocol, using Google's provided Java libraries.
+
 
 ### Reported issues
 
@@ -16,7 +20,7 @@ The google cloud pub/sub connector provides a way to connect to google clouds ma
   version=$version$
 }
 
-## Usage
+## Usage (HTTP)
 
 Prepare your credentials for access to google cloud pub/sub.
 
@@ -65,6 +69,63 @@ Scala
 
 Java
 : @@snip ($alpakka$/google-cloud-pub-sub/src/test/java/akka/stream/alpakka/googlecloud/pubsub/ExampleUsageJava.java) { #subscribe-auto-ack }
+
+## Usage (GRPC)
+
+Credentials are automatically collected from your `GOOGLE_APPLICATION_CREDENTIAL` environment variable. Please check
+[Google official documentation](https://cloud.google.com/pubsub/docs/reference/libraries#setting_up_authentication) for more details.
+
+Prepare the actor system and materializer:
+
+Scala
+: @@snip ($alpakka$/google-cloud-pub-sub/src/test/scala/akka/stream/alpakka/googlecloud/pubsub/ExampleUsageGrpc.scala) { #init-mat }
+
+Java
+: @@snip ($alpakka$/google-cloud-pub-sub/src/test/java/akka/stream/alpakka/googlecloud/pubsub/ExampleUsageJavaGrpc.java) { #init-mat }
+
+### Client configuration
+
+We need to configure the client which will connect using GRPC.
+
+Scala
+: @@snip ($alpakka$/google-cloud-pub-sub/src/test/scala/akka/stream/alpakka/googlecloud/pubsub/ExampleUsageGrpc.scala) { #init-client }
+
+Java
+: @@snip ($alpakka$/google-cloud-pub-sub/src/test/java/akka/stream/alpakka/googlecloud/pubsub/ExampleUsageJavaGrpc.java) { #init-client }
+
+The option `usePlaintext` is useful when used in conjunction with [PubSub emulator](https://cloud.google.com/pubsub/docs/emulator).
+`returnImmediately` and `maxMessages` match the spec as given in the [Google PubSub documentation](https://cloud.google.com/pubsub/docs/reference/rest/v1/projects.subscriptions/pull).
+
+The parallelism parameter allows more than a single in-flight request. See [GitHub PR #759](https://github.com/akka/alpakka/pull/759) for more details.
+
+The `retryOnFailure` and `maxConsecutiveErrors` are used to re-establish connection to PubSub if the connection is terminated by PubSub. Note retrying to connect is implemented using exponential back0off.
+
+### Publishing 
+
+We first construct a message and then a request using Google's builders. We declare a singleton source which will go via our publishing flow. All messages sent to the flow are published to PubSub.
+
+Scala
+: @@snip ($alpakka$/google-cloud-pub-sub/src/test/scala/akka/stream/alpakka/googlecloud/pubsub/ExampleUsageGrpc.scala) { #publish-single }
+
+Java
+: @@snip ($alpakka$/google-cloud-pub-sub/src/test/java/akka/stream/alpakka/googlecloud/pubsub/ExampleUsageJavaGrpc.java) { #publish-single }
+
+
+Similarly to before, we can publish a batch of messages for greater efficiency.
+
+Scala
+: @@snip ($alpakka$/google-cloud-pub-sub/src/test/scala/akka/stream/alpakka/googlecloud/pubsub/ExampleUsageGrpc.scala) { #publish-fast }
+
+Java
+: @@snip ($alpakka$/google-cloud-pub-sub/src/test/java/akka/stream/alpakka/googlecloud/pubsub/ExampleUsageJavaGrpc.java) { #publish-fast }
+
+Finally, to automatically acknowledge messages and send messages to your own sink, once can do the following:
+
+Scala
+: @@snip ($alpakka$/google-cloud-pub-sub/src/test/scala/akka/stream/alpakka/googlecloud/pubsub/ExampleUsageGrpc.scala) { #subscribe-auto-ack }
+
+Java
+: @@snip ($alpakka$/google-cloud-pub-sub/src/test/java/akka/stream/alpakka/googlecloud/pubsub/ExampleUsageJavaGrpc.java) { #subscribe-auto-ack }
 
 ## Running the examples
 

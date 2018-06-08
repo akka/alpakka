@@ -54,3 +54,11 @@ private final case class PullResponse(receivedMessages: Option[immutable.Seq[Rec
 private final case class OAuthResponse(access_token: String, token_type: String, expires_in: Int)
 
 private final case class AccessTokenExpiry(accessToken: String, expiresAt: Long)
+
+final case class PubSubConfig(
+    host: String = "pubsub.googleapis.com",
+    port: Int = 443,
+    usePlaintext: Boolean = false,
+    returnImmediately: Boolean = true,
+    maxMessages: Int = 1000
+)
