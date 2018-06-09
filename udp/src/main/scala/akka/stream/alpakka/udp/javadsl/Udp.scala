@@ -22,15 +22,15 @@ object Udp {
    * contained in the message. All incoming messages are also emitted from the flow for
    * subsequent processing.
    */
-  def fireAndForgetFlow(sys: ActorSystem): Flow[UdpMessage, UdpMessage, NotUsed] =
-    scaladsl.Udp.fireAndForgetFlow()(sys).asJava
+  def sendFlow(sys: ActorSystem): Flow[UdpMessage, UdpMessage, NotUsed] =
+    scaladsl.Udp.sendFlow()(sys).asJava
 
   /**
    * Creates a sink that will send all incoming [UdpMessage] messages to the remote address
    * contained in the message.
    */
-  def fireAndForgetSink(sys: ActorSystem): Sink[UdpMessage, NotUsed] =
-    scaladsl.Udp.fireAndForgetSink()(sys).asJava
+  def sendSink(sys: ActorSystem): Sink[UdpMessage, NotUsed] =
+    scaladsl.Udp.sendSink()(sys).asJava
 
   /**
    * Creates a flow that upon materialization binds to the given `localAddress`. All incoming

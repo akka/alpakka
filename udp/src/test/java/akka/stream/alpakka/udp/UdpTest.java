@@ -9,6 +9,7 @@ import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.udp.javadsl.Udp;
+import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestPublisher;
@@ -41,25 +42,44 @@ public class UdpTest {
 
   @Test
   public void testSendAndReceiveMessages() throws Exception {
+    // #bind-address
     final InetSocketAddress bindToLocal = new InetSocketAddress("localhost", 0);
-    final Integer messagesToSend = 100;
+    // #bind-address
+
+    // #bind-flow
+    final Flow<UdpMessage, UdpMessage, CompletionStage<InetSocketAddress>> bindFlow =
+      Udp.bindFlow(bindToLocal, system);
+    // #bind-flow
 
     final Pair<Pair<TestPublisher.Probe<UdpMessage>, CompletionStage<InetSocketAddress>>, TestSubscriber.Probe<UdpMessage>> materialized =
       TestSource.<UdpMessage>probe(system)
-        .viaMat(Udp.bindFlow(bindToLocal, system), Keep.both())
+        .viaMat(bindFlow, Keep.both())
         .toMat(TestSink.probe(system), Keep.both())
         .run(materializer);
 
-    final InetSocketAddress boundAddress = materialized.first().second().toCompletableFuture().get();
+    {
+      // #send-messages
+      final InetSocketAddress destination = new InetSocketAddress("my.server", 27015);
+      // #send-messages
+    }
+
+    final InetSocketAddress destination = materialized.first().second().toCompletableFuture().get();
+
+    // #send-messages
+    final Integer messagesToSend = 100;
+
+    // #send-messages
 
     final TestSubscriber.Probe<UdpMessage> sub = materialized.second();
     sub.ensureSubscription();
     sub.request(messagesToSend);
 
+    // #send-messages
     Source.range(1, messagesToSend)
         .map(i -> ByteString.fromString("Message " + i))
-        .map(bs -> UdpMessage.create(bs, boundAddress))
-        .runWith(Udp.fireAndForgetSink(system), materializer);
+        .map(bs -> UdpMessage.create(bs, destination))
+        .runWith(Udp.sendSink(system), materializer);
+    // #send-messages
 
     for (int i = 0; i < messagesToSend; i++) {
       sub.requestNext();

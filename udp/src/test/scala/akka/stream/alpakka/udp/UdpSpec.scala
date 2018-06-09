@@ -9,7 +9,7 @@ import java.net.InetSocketAddress
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.udp.scaladsl.Udp
-import akka.stream.scaladsl.{Keep, Source}
+import akka.stream.scaladsl.{Flow, Keep, Source}
 import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestKit
@@ -17,6 +17,7 @@ import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class UdpSpec
@@ -29,7 +30,10 @@ class UdpSpec
   implicit val mat = ActorMaterializer()
   implicit val pat = PatienceConfig(3.seconds, 50.millis)
 
+  // #bind-address
   val bindToLocal = new InetSocketAddress("localhost", 0)
+  // #bind-address
+
   private def msg(msg: String, destination: InetSocketAddress) =
     UdpMessage(ByteString(msg), destination)
 
@@ -39,23 +43,39 @@ class UdpSpec
   "UDP stream" must {
     "send and receive messages" in {
 
-      val messagesToSend = 100
+      // #bind-flow
+      val bindFlow: Flow[UdpMessage, UdpMessage, Future[InetSocketAddress]] =
+        Udp.bindFlow(bindToLocal)
+      // #bind-flow
 
       val ((pub, bound), sub) = TestSource
         .probe[UdpMessage](system)
-        .viaMat(Udp.bindFlow(bindToLocal))(Keep.both)
+        .viaMat(bindFlow)(Keep.both)
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
-      val boundAddress = bound.futureValue
+      val destination = bound.futureValue
+
+      {
+        // #send-messages
+        val destination = new InetSocketAddress("my.server", 27015)
+        // #send-messages
+      }
+
+      // #send-messages
+      val messagesToSend = 100
+
+      // #send-messages
 
       sub.ensureSubscription()
       sub.request(messagesToSend)
 
+      // #send-messages
       Source(1 to messagesToSend)
         .map(i => ByteString(s"Message $i"))
-        .map(UdpMessage(_, boundAddress))
-        .runWith(Udp.fireAndForgetSink())
+        .map(UdpMessage(_, destination))
+        .runWith(Udp.sendSink())
+      // #send-messages
 
       (1 to messagesToSend).foreach { _ =>
         sub.requestNext()

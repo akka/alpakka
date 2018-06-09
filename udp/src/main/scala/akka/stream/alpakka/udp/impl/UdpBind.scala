@@ -7,6 +7,7 @@ package akka.stream.alpakka.udp.impl
 import java.net.InetSocketAddress
 
 import akka.actor.{ActorRef, ActorSystem}
+import akka.annotation.InternalApi
 import akka.io.{IO, Udp}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.alpakka.udp.UdpMessage
@@ -14,7 +15,11 @@ import akka.stream.stage._
 
 import scala.concurrent.{Future, Promise}
 
-class UdpBindLogic(localAddress: InetSocketAddress, boundPromise: Promise[InetSocketAddress])(
+/**
+ * Binds to the given local address using UDP manager actor.
+ */
+@InternalApi
+final class UdpBindLogic(localAddress: InetSocketAddress, boundPromise: Promise[InetSocketAddress])(
     val shape: FlowShape[UdpMessage, UdpMessage]
 )(implicit val system: ActorSystem)
     extends GraphStageLogic(shape) {
@@ -84,7 +89,8 @@ class UdpBindLogic(localAddress: InetSocketAddress, boundPromise: Promise[InetSo
   )
 }
 
-class UdpBindFlow(localAddress: InetSocketAddress)(implicit val system: ActorSystem)
+@InternalApi
+final class UdpBindFlow(localAddress: InetSocketAddress)(implicit val system: ActorSystem)
     extends GraphStageWithMaterializedValue[FlowShape[UdpMessage, UdpMessage], Future[InetSocketAddress]] {
 
   val in: Inlet[UdpMessage] = Inlet("UdpBindFlow.in")
