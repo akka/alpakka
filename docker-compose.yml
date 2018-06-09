@@ -65,6 +65,8 @@ services:
       - "1883:1883"
     volumes:
       - ./mqtt/src/test/travis:/mqtt/config/conf.d
+  postgres:
+    image: sebastianharko/postgres # PostgreSQL 9.4 with configuration that allows creating "logical decoding" slots
   kudu-master-data:
     image: kunickiaj/kudu
     volumes:
@@ -91,7 +93,3 @@ services:
     command: tserver
     links:
       - kudu-master
-  postgres:
-    image: postgres
-    environment:
-      POSTGRES_PASSWORD: changeme123
