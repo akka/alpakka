@@ -27,7 +27,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.Future;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -62,7 +61,7 @@ public class HdfsReaderTest {
     for (RotationMessage log : logs) {
       Path path = new Path("/tmp/alpakka", log.path());
       // #define-data-source
-      Source<ByteString, Future<IOResult>> source = HdfsSource.data(fs, path);
+      Source<ByteString, CompletionStage<IOResult>> source = HdfsSource.data(fs, path);
       // #define-data-source
       ArrayList<ByteString> result =
           new ArrayList<>(source.runWith(Sink.seq(), materializer).toCompletableFuture().get());
@@ -101,7 +100,7 @@ public class HdfsReaderTest {
     for (RotationMessage log : logs) {
       Path path = new Path("/tmp/alpakka", log.path());
       // #define-compressed-source
-      Source<ByteString, Future<IOResult>> source = HdfsSource.compressed(fs, path, codec);
+      Source<ByteString, CompletionStage<IOResult>> source = HdfsSource.compressed(fs, path, codec);
       // #define-compressed-source
       ArrayList<ByteString> result =
           new ArrayList<>(source.runWith(Sink.seq(), materializer).toCompletableFuture().get());

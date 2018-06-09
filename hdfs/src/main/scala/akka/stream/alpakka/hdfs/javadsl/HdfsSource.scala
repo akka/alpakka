@@ -4,17 +4,19 @@
 
 package akka.stream.alpakka.hdfs.javadsl
 
+import java.util.concurrent.CompletionStage
+
 import akka.NotUsed
 import akka.japi.Pair
 import akka.stream.alpakka.hdfs.scaladsl.{HdfsSource => ScalaHdfsSource}
 import akka.stream.javadsl.Source
-import akka.stream.{javadsl, IOResult}
+import akka.stream.{IOResult, javadsl}
 import akka.util.ByteString
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.Writable
 import org.apache.hadoop.io.compress.CompressionCodec
 
-import scala.concurrent.Future
+import scala.compat.java8.FutureConverters._
 
 object HdfsSource {
 
@@ -27,8 +29,8 @@ object HdfsSource {
   def data(
       fs: FileSystem,
       path: Path,
-  ): javadsl.Source[ByteString, Future[IOResult]] =
-    ScalaHdfsSource.data(fs, path).asJava
+  ): javadsl.Source[ByteString, CompletionStage[IOResult]] =
+    ScalaHdfsSource.data(fs, path).mapMaterializedValue(_.toJava).asJava
 
   /**
    * Java API: creates a [[Source]] that consumes as [[ByteString]]
@@ -41,8 +43,8 @@ object HdfsSource {
       fs: FileSystem,
       path: Path,
       chunkSize: Int
-  ): javadsl.Source[ByteString, Future[IOResult]] =
-    ScalaHdfsSource.data(fs, path, chunkSize).asJava
+  ): javadsl.Source[ByteString, CompletionStage[IOResult]] =
+    ScalaHdfsSource.data(fs, path, chunkSize).mapMaterializedValue(_.toJava).asJava
 
   /**
    * Java API: creates a [[Source]] that consumes as [[ByteString]]
@@ -55,8 +57,8 @@ object HdfsSource {
       fs: FileSystem,
       path: Path,
       codec: CompressionCodec
-  ): javadsl.Source[ByteString, Future[IOResult]] =
-    ScalaHdfsSource.compressed(fs, path, codec).asJava
+  ): javadsl.Source[ByteString, CompletionStage[IOResult]] =
+    ScalaHdfsSource.compressed(fs, path, codec).mapMaterializedValue(_.toJava).asJava
 
   /**
    * Java API: creates a [[Source]] that consumes as [[ByteString]]
@@ -71,8 +73,8 @@ object HdfsSource {
       path: Path,
       codec: CompressionCodec,
       chunkSize: Int = 8192
-  ): javadsl.Source[ByteString, Future[IOResult]] =
-    ScalaHdfsSource.compressed(fs, path, codec, chunkSize).asJava
+  ): javadsl.Source[ByteString, CompletionStage[IOResult]] =
+    ScalaHdfsSource.compressed(fs, path, codec, chunkSize).mapMaterializedValue(_.toJava).asJava
 
   /**
    * Java API: creates a [[Source]] that consumes as [[(K, V]]
