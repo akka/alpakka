@@ -4,13 +4,11 @@
 
 package akka.stream.alpakka.hdfs.impl.strategy
 
+import akka.stream.alpakka.hdfs.RotationStrategy
+
 import scala.concurrent.duration.FiniteDuration
 
-sealed trait RotationStrategy extends Strategy {
-  type S = RotationStrategy
-}
-
-private[hdfs] object RotationStrategy {
+private[hdfs] object DefaultRotationStrategy {
   final case class SizeRotationStrategy(
       bytesWritten: Long,
       maxBytes: Double

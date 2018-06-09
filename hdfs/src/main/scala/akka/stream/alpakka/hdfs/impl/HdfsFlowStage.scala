@@ -8,8 +8,8 @@ import akka.NotUsed
 import akka.event.Logging
 import akka.stream.alpakka.hdfs._
 import akka.stream.alpakka.hdfs.impl.HdfsFlowLogic.{FlowState, FlowStep, LogicState}
-import akka.stream.alpakka.hdfs.impl.strategy.RotationStrategy.TimeRotationStrategy
-import akka.stream.alpakka.hdfs.impl.strategy.{RotationStrategy, SyncStrategy}
+import akka.stream.alpakka.hdfs.impl.strategy.DefaultRotationStrategy.TimeRotationStrategy
+import akka.stream.alpakka.hdfs.impl.strategy.{DefaultRotationStrategy, DefaultSyncStrategy}
 import akka.stream.alpakka.hdfs.impl.writer.HdfsWriter
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}

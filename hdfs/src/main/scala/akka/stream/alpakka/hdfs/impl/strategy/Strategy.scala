@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.hdfs.impl.strategy
 
-private[strategy] trait Strategy {
+private[hdfs] trait Strategy {
   type S <: Strategy
   def should(): Boolean
   def reset(): S

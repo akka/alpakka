@@ -94,10 +94,7 @@ public class HdfsWriterTest {
   public void testDataWriterFileSizeRotationWithFiveFile() throws Exception {
     Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.data(
-            fs,
-            SyncStrategyFactory.count(50),
-            RotationStrategyFactory.size(0.01, FileUnit.KB()),
-            settings);
+            fs, SyncStrategy.count(50), RotationStrategy.size(0.01, FileUnit.KB()), settings);
 
     CompletionStage<List<RotationMessage>> resF =
         Source.from(books).map(IncomingMessage::create).via(flow).runWith(Sink.seq(), materializer);
@@ -120,10 +117,7 @@ public class HdfsWriterTest {
 
     Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.data(
-            fs,
-            SyncStrategyFactory.count(500),
-            RotationStrategyFactory.size(0.5, FileUnit.KB()),
-            settings);
+            fs, SyncStrategy.count(500), RotationStrategy.size(0.5, FileUnit.KB()), settings);
 
     CompletionStage<List<RotationMessage>> resF =
         Source.from(data).map(IncomingMessage::create).via(flow).runWith(Sink.seq(), materializer);
@@ -133,7 +127,8 @@ public class HdfsWriterTest {
     assertEquals(logs.size(), 2);
 
     List<FileStatus> files = JavaTestUtils.getFiles(fs);
-    assertEquals(files.stream().map(FileStatus::getLen).reduce((a, b) -> a + b).get().longValue(), 1024L);
+    assertEquals(
+        files.stream().map(FileStatus::getLen).reduce((a, b) -> a + b).get().longValue(), 1024L);
     files.forEach(file -> assertTrue(file.getLen() <= 512L));
     JavaTestUtils.verifyOutputFileSize(fs, logs);
     JavaTestUtils.verifyFlattenContent(fs, logs, data);
@@ -146,10 +141,7 @@ public class HdfsWriterTest {
     // #define-data
     Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.data(
-            fs,
-            SyncStrategyFactory.count(500),
-            RotationStrategyFactory.size(1, FileUnit.GB()),
-            settings);
+            fs, SyncStrategy.count(500), RotationStrategy.size(1, FileUnit.GB()), settings);
     // #define-data
     CompletionStage<List<RotationMessage>> resF =
         Source.from(data).map(IncomingMessage::create).via(flow).runWith(Sink.seq(), materializer);
@@ -165,7 +157,7 @@ public class HdfsWriterTest {
   @Test
   public void testDataWriterWithBufferRotation() throws Exception {
     Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
-        HdfsFlow.data(fs, SyncStrategyFactory.count(1), RotationStrategyFactory.count(2), settings);
+        HdfsFlow.data(fs, SyncStrategy.count(1), RotationStrategy.count(2), settings);
 
     CompletionStage<List<RotationMessage>> resF =
         Source.from(books).map(IncomingMessage::create).via(flow).runWith(Sink.seq(), materializer);
@@ -187,8 +179,8 @@ public class HdfsWriterTest {
             .via(
                 HdfsFlow.data(
                     fs,
-                    SyncStrategyFactory.none(),
-                    RotationStrategyFactory.time(Duration.create(500, TimeUnit.MILLISECONDS)),
+                    SyncStrategy.none(),
+                    RotationStrategy.time(Duration.create(500, TimeUnit.MILLISECONDS)),
                     settings))
             .toMat(Sink.seq(), Keep.both())
             .run(materializer);
@@ -208,7 +200,7 @@ public class HdfsWriterTest {
   @Test
   public void testDataWriterWithNoRotation() throws Exception {
     Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
-        HdfsFlow.data(fs, SyncStrategyFactory.none(), RotationStrategyFactory.none(), settings);
+        HdfsFlow.data(fs, SyncStrategy.none(), RotationStrategy.none(), settings);
 
     CompletionStage<List<RotationMessage>> resF =
         Source.from(books).map(IncomingMessage::create).via(flow).runWith(Sink.seq(), materializer);
@@ -243,8 +235,8 @@ public class HdfsWriterTest {
     Flow<IncomingMessage<ByteString, KafkaOffset>, OutgoingMessage<KafkaOffset>, NotUsed> flow =
         HdfsFlow.dataWithPassThrough(
             fs,
-            SyncStrategyFactory.count(50),
-            RotationStrategyFactory.count(4),
+            SyncStrategy.count(50),
+            RotationStrategy.count(4),
             HdfsWritingSettings.create().withNewLine(true));
 
     CompletionStage<List<RotationMessage>> resF =
@@ -271,7 +263,8 @@ public class HdfsWriterTest {
     // #kafka-example
 
     ArrayList<RotationMessage> logs = new ArrayList<>(resF.toCompletableFuture().get());
-    List<RotationMessage> expect = Arrays.asList(new RotationMessage("0", 0), new RotationMessage("1", 1));
+    List<RotationMessage> expect =
+        Arrays.asList(new RotationMessage("0", 0), new RotationMessage("1", 1));
 
     // Make sure all messages was committed to kafka
     assertEquals(Arrays.asList(0, 1, 2, 3, 4, 5), kafkaCommitter.committedOffsets);
@@ -297,11 +290,7 @@ public class HdfsWriterTest {
     // #define-compress
     Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.compressed(
-            fs,
-            SyncStrategyFactory.count(50),
-            RotationStrategyFactory.size(0.1, FileUnit.MB()),
-            codec,
-            settings);
+            fs, SyncStrategy.count(50), RotationStrategy.size(0.1, FileUnit.MB()), codec, settings);
     // #define-compress
 
     List<ByteString> content =
@@ -334,8 +323,7 @@ public class HdfsWriterTest {
     codec.setConf(fs.getConf());
 
     Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
-        HdfsFlow.compressed(
-            fs, SyncStrategyFactory.count(1), RotationStrategyFactory.count(1), codec, settings);
+        HdfsFlow.compressed(fs, SyncStrategy.count(1), RotationStrategy.count(1), codec, settings);
 
     CompletionStage<List<RotationMessage>> resF =
         Source.from(books).map(IncomingMessage::create).via(flow).runWith(Sink.seq(), materializer);
@@ -360,8 +348,7 @@ public class HdfsWriterTest {
     codec.setConf(fs.getConf());
 
     Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
-        HdfsFlow.compressed(
-            fs, SyncStrategyFactory.none(), RotationStrategyFactory.none(), codec, settings);
+        HdfsFlow.compressed(fs, SyncStrategy.none(), RotationStrategy.none(), codec, settings);
 
     List<ByteString> content =
         JavaTestUtils.generateFakeContentWithPartitions(1, FileUnit.MB().byteCount(), 30);
@@ -386,8 +373,8 @@ public class HdfsWriterTest {
     Flow<IncomingMessage<Pair<Text, Text>, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.sequence(
             fs,
-            SyncStrategyFactory.none(),
-            RotationStrategyFactory.size(1, FileUnit.MB()),
+            SyncStrategy.none(),
+            RotationStrategy.size(1, FileUnit.MB()),
             settings,
             Text.class,
             Text.class);
@@ -417,8 +404,8 @@ public class HdfsWriterTest {
     Flow<IncomingMessage<Pair<Text, Text>, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.sequence(
             fs,
-            SyncStrategyFactory.none(),
-            RotationStrategyFactory.size(1, FileUnit.MB()),
+            SyncStrategy.none(),
+            RotationStrategy.size(1, FileUnit.MB()),
             SequenceFile.CompressionType.BLOCK,
             codec,
             settings,
@@ -445,12 +432,7 @@ public class HdfsWriterTest {
   public void testSequenceWriterWithBufferRotation() throws Exception {
     Flow<IncomingMessage<Pair<Text, Text>, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.sequence(
-            fs,
-            SyncStrategyFactory.none(),
-            RotationStrategyFactory.count(1),
-            settings,
-            Text.class,
-            Text.class);
+            fs, SyncStrategy.none(), RotationStrategy.count(1), settings, Text.class, Text.class);
 
     List<Pair<Text, Text>> content = JavaTestUtils.booksForSequenceWriter();
 
@@ -471,12 +453,7 @@ public class HdfsWriterTest {
   public void testSequenceWriterWithNoRotation() throws Exception {
     Flow<IncomingMessage<Pair<Text, Text>, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.sequence(
-            fs,
-            SyncStrategyFactory.none(),
-            RotationStrategyFactory.none(),
-            settings,
-            Text.class,
-            Text.class);
+            fs, SyncStrategy.none(), RotationStrategy.none(), settings, Text.class, Text.class);
 
     List<Pair<Text, Text>> content =
         JavaTestUtils.generateFakeContentForSequence(0.5, FileUnit.MB().byteCount());

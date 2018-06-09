@@ -9,7 +9,6 @@ import java.nio.ByteBuffer
 import java.util
 
 import akka.stream.alpakka.hdfs.RotationMessage
-import akka.stream.scaladsl
 import akka.util.ByteString
 import org.apache.commons.io.IOUtils
 import org.apache.hadoop.fs.{FileStatus, FileSystem, Path}
@@ -26,7 +25,6 @@ sealed trait TestUtils {
 
   protected type Sequence[_]
   protected type Pair[_, _]
-  protected type StreamSource[_, _]
   protected type Assertion
 
   def read(stream: InputStream): String = {
@@ -91,7 +89,6 @@ sealed trait TestUtils {
 object ScalaTestUtils extends TestUtils with Matchers {
   type Sequence[A] = Seq[A]
   type Pair[A, B] = (A, B)
-  type StreamSource[A, B] = scaladsl.Source[A, B]
   type Assertion = org.scalatest.Assertion
 
   val books: Sequence[ByteString] = List(

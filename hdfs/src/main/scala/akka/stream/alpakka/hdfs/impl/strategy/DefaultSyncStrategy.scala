@@ -4,11 +4,9 @@
 
 package akka.stream.alpakka.hdfs.impl.strategy
 
-sealed trait SyncStrategy extends Strategy {
-  type S = SyncStrategy
-}
+import akka.stream.alpakka.hdfs.SyncStrategy
 
-private[hdfs] object SyncStrategy {
+private[hdfs] object DefaultSyncStrategy {
   final case class CountSyncStrategy(
       executeCount: Long = 0,
       count: Long

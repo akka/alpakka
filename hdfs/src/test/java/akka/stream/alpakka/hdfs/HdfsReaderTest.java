@@ -51,10 +51,7 @@ public class HdfsReaderTest {
 
     Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.data(
-            fs,
-            SyncStrategyFactory.count(500),
-            RotationStrategyFactory.size(0.5, FileUnit.KB()),
-            settings);
+            fs, SyncStrategy.count(500), RotationStrategy.size(0.5, FileUnit.KB()), settings);
 
     CompletionStage<List<RotationMessage>> resF =
         Source.from(data).map(IncomingMessage::create).via(flow).runWith(Sink.seq(), materializer);
@@ -87,11 +84,7 @@ public class HdfsReaderTest {
 
     Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.compressed(
-            fs,
-            SyncStrategyFactory.count(1),
-            RotationStrategyFactory.size(0.1, FileUnit.MB()),
-            codec,
-            settings);
+            fs, SyncStrategy.count(1), RotationStrategy.size(0.1, FileUnit.MB()), codec, settings);
 
     List<ByteString> content =
         JavaTestUtils.generateFakeContentWithPartitions(1, FileUnit.MB().byteCount(), 30);
@@ -128,8 +121,8 @@ public class HdfsReaderTest {
     Flow<IncomingMessage<Pair<Text, Text>, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.sequence(
             fs,
-            SyncStrategyFactory.none(),
-            RotationStrategyFactory.size(1, FileUnit.MB()),
+            SyncStrategy.none(),
+            RotationStrategy.size(1, FileUnit.MB()),
             settings,
             Text.class,
             Text.class);

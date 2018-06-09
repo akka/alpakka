@@ -39,8 +39,8 @@ class HdfsReaderSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
     "read data file" in {
       val flow = HdfsFlow.data(
         fs,
-        SyncStrategyFactory.count(500),
-        RotationStrategyFactory.size(0.5, FileUnit.KB),
+        SyncStrategy.count(500),
+        RotationStrategy.size(0.5, FileUnit.KB),
         HdfsWritingSettings()
       )
 
@@ -76,8 +76,8 @@ class HdfsReaderSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val flow = HdfsFlow.compressed(
         fs,
-        SyncStrategyFactory.count(1),
-        RotationStrategyFactory.size(0.1, FileUnit.MB),
+        SyncStrategy.count(1),
+        RotationStrategy.size(0.1, FileUnit.MB),
         codec,
         settings
       )
@@ -111,8 +111,8 @@ class HdfsReaderSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
     "read sequence file" in {
       val flow = HdfsFlow.sequence(
         fs,
-        SyncStrategyFactory.none,
-        RotationStrategyFactory.size(1, FileUnit.MB),
+        SyncStrategy.none,
+        RotationStrategy.size(1, FileUnit.MB),
         settings,
         classOf[Text],
         classOf[Text]

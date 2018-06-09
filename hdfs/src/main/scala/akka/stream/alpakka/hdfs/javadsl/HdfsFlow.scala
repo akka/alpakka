@@ -6,9 +6,9 @@ package akka.stream.alpakka.hdfs.javadsl
 
 import akka.NotUsed
 import akka.japi.Pair
-import akka.stream.alpakka.hdfs.impl.strategy.{RotationStrategy, SyncStrategy}
+import akka.stream.alpakka.hdfs._
+import akka.stream.alpakka.hdfs.impl.strategy.DefaultSyncStrategy
 import akka.stream.alpakka.hdfs.scaladsl.{HdfsFlow => ScalaHdfsFlow}
-import akka.stream.alpakka.hdfs.{HdfsWritingSettings, IncomingMessage, OutgoingMessage, RotationMessage}
 import akka.stream.javadsl
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString

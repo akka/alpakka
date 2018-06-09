@@ -8,7 +8,9 @@ import java.util.function.BiFunction
 
 import akka.NotUsed
 import akka.stream.alpakka.hdfs.HdfsWritingSettings._
-import akka.stream.alpakka.hdfs.impl.strategy.{RotationStrategy, SyncStrategy}
+import akka.stream.alpakka.hdfs.impl.strategy.DefaultRotationStrategy._
+import akka.stream.alpakka.hdfs.impl.strategy.DefaultSyncStrategy._
+import akka.stream.alpakka.hdfs.impl.strategy.Strategy
 import org.apache.hadoop.fs.Path
 
 import scala.concurrent.duration.FiniteDuration
@@ -72,10 +74,11 @@ sealed abstract class FilePathGenerator extends ((Long, Long) => Path) {
 object FilePathGenerator {
   private val DefaultTempDirectory = "/tmp/alpakka-hdfs"
 
-  /*
+  /**
    * Scala API: creates [[FilePathGenerator]] to rotate output
-   * @param f a function that takes rotation count and timestamp to return path of output
-   * @param temp the temporary directory that [[HdfsFlowStage]] use
+   *
+   * @param f    a function that takes rotation count and timestamp to return path of output
+   * @param temp the temporary directory that [[akka.stream.alpakka.hdfs.impl.HdfsFlowStage]] use
    */
   def apply(f: (Long, Long) => String, temp: String = DefaultTempDirectory): FilePathGenerator =
     new FilePathGenerator {
@@ -83,15 +86,17 @@ object FilePathGenerator {
       def apply(rotationCount: Long, timestamp: Long): Path = new Path(f(rotationCount, timestamp))
     }
 
-  /*
+  /**
    * Java API: creates [[FilePathGenerator]] to rotate output
+   *
    * @param f a function that takes rotation count and timestamp to return path of output
    */
   def create(f: BiFunction[java.lang.Long, java.lang.Long, String]): FilePathGenerator =
     FilePathGenerator(javaFuncToScalaFunc(f), DefaultTempDirectory)
 
-  /*
+  /**
    * Java API: creates [[FilePathGenerator]] to rotate output
+   *
    * @param f a function that takes rotation count and timestamp to return path of output
    */
   def create(f: BiFunction[java.lang.Long, java.lang.Long, String], temp: String): FilePathGenerator =
@@ -102,50 +107,58 @@ object FilePathGenerator {
 
 }
 
-object RotationStrategyFactory {
+abstract class RotationStrategy extends Strategy {
+  type S = RotationStrategy
+}
 
-  import impl.strategy.RotationStrategy._
+object RotationStrategy {
 
-  /*
+  /**
    * Creates [[SizeRotationStrategy]]
+   *
    * @param count a count of [[FileUnit]]
-   * @param unit [[FileUnit]]
+   * @param unit a file unit
    */
   def size(count: Double, unit: FileUnit): RotationStrategy =
     SizeRotationStrategy(0, count * unit.byteCount)
 
-  /*
-   * Creates [[CountedRotationStrategy]]
+  /**
+   * Creates [[CountRotationStrategy]]
+   *
    * @param count message count to rotate files
    */
   def count(count: Long): RotationStrategy =
     CountRotationStrategy(0, count)
 
-  /*
-   * Creates [[TimedRotationStrategy]]
+  /**
+   * Creates [[TimeRotationStrategy]]
+   *
    * @param interval duration to rotate files
    */
   def time(interval: FiniteDuration): RotationStrategy =
     TimeRotationStrategy(interval)
 
-  /*
+  /**
    * Creates [[NoRotationStrategy]]
    */
   def none: RotationStrategy =
     NoRotationStrategy
 }
 
-object SyncStrategyFactory {
+abstract class SyncStrategy extends Strategy {
+  type S = SyncStrategy
+}
 
-  import impl.strategy.SyncStrategy._
+object SyncStrategy {
 
-  /*
+  /**
    * Creates [[CountSyncStrategy]]
+   *
    * @param count message count to synchronize the output
    */
   def count(count: Long): SyncStrategy = CountSyncStrategy(0, count)
 
-  /*
+  /**
    * Creates [[NoSyncStrategy]]
    */
   def none: SyncStrategy = NoSyncStrategy
