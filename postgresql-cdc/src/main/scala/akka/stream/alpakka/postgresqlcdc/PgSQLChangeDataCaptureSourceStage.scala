@@ -142,7 +142,7 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
    */
   private case class SlotChange(transactionId: Long, location: String, data: String)
 
-  private object Grammar {
+  private[postgresqlcdc] object Grammar {
 
     // We need to parse a log statement such as the following:
     //
