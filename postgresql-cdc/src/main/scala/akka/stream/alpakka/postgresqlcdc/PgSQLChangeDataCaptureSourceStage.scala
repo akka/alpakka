@@ -4,13 +4,14 @@
 
 package akka.stream.alpakka.postgresqlcdc
 
-import java.sql.{DriverManager, PreparedStatement}
+import java.sql.{Connection, DriverManager, PreparedStatement}
 
 import akka.NotUsed
+import akka.event.LoggingAdapter
 import akka.stream.stage._
 import akka.stream.{Attributes, Outlet, SourceShape}
 
-import scala.collection.mutable
+import scala.collection.mutable.Queue
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.util.control.NonFatal
@@ -47,7 +48,58 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
 
   import Grammar._
 
-  def transformSlotChanges(slotChanges: Set[SlotChange]): Set[ChangeSet] = {
+  private def getConnection(connectionString: String): Connection = {
+    val driver = "org.postgresql.Driver"
+    Class.forName(driver)
+    DriverManager.getConnection(connectionString)
+  }
+
+  /** Checks that the slot exists. Not necessary, just for helping the user */
+  private def checkSlotExists(conn: Connection, slotName: String)(implicit log: LoggingAdapter): Unit = {
+    val getReplicationSlots = conn.prepareStatement(
+      "SELECT * FROM pg_replication_slots WHERE " +
+      "slot_name = ?"
+    )
+    getReplicationSlots.setString(1, slotName)
+    val rs = getReplicationSlots.executeQuery()
+    if (rs.next()) {
+      val database = rs.getString("database")
+      val plugin = rs.getString("plugin")
+      plugin match {
+        case "test_decoding" =>
+          log.info("found replication slot with name {} for database {}", slotName, database)
+        case _ =>
+          log.warning("please use the test_decoding plugin for replication slot with name {}", slotName)
+      }
+    } else {
+      log.warning("replication slot with name {} does not exist", slotName)
+    }
+  }
+
+  private def buildGetSlotChangesStmt(conn: Connection, slotName: String, maxItems: Int): PreparedStatement = {
+    val getSlotChangesStmt: PreparedStatement =
+      conn.prepareStatement(
+        "SELECT * FROM " +
+        "pg_logical_slot_get_changes(?, NULL, ?, 'include-timestamp', 'on')"
+      )
+    getSlotChangesStmt.setString(1, slotName)
+    getSlotChangesStmt.setInt(2, maxItems)
+    getSlotChangesStmt
+  }
+
+  private def getSlotChanges(getSlotChangesStmt: PreparedStatement): Set[SlotChange] = {
+    val rs = getSlotChangesStmt.executeQuery()
+    val result = ArrayBuffer[SlotChange]()
+    while (rs.next()) {
+      val data = rs.getString("data")
+      val location = rs.getString("location")
+      val transactionId = rs.getLong("xid")
+      result += SlotChange(transactionId, location, data)
+    }
+    result.toSet
+  }
+
+  private def transformSlotChanges(slotChanges: Set[SlotChange]): Set[ChangeSet] = {
 
     slotChanges.groupBy(_.transactionId).map {
 
@@ -69,7 +121,7 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
     }
   }.filter(_.changes.nonEmpty).toSet
 
-  def parseKeyValuePairs(keyValuePairs: String): Set[Field] =
+  private def parseKeyValuePairs(keyValuePairs: String): Set[Field] =
     KeyValuePair
       .findAllMatchIn(keyValuePairs)
       .collect {
@@ -88,9 +140,9 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
   /** Represents a row in the table we get from PostgreSQL when we query
    * SELECT * FROM pg_logical_slot_get_changes(..)
    */
-  case class SlotChange(transactionId: Long, location: String, data: String)
+  private case class SlotChange(transactionId: Long, location: String, data: String)
 
-  object Grammar {
+  private object Grammar {
 
     // We need to parse a log statement such as the following:
     //
@@ -142,66 +194,27 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
 private[postgresqlcdc] class PgSQLChangeDataCaptureSourceStage(settings: PostgreSQLChangeDataCaptureSettings)
     extends GraphStage[SourceShape[ChangeSet]] {
 
+  import PgSQLChangeDataCaptureSourceStage._
+
   private val out: Outlet[ChangeSet] = Outlet[ChangeSet]("PostgreSQLCDC.out")
+
+  override def shape: SourceShape[ChangeSet] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with StageLogging {
 
-      import PgSQLChangeDataCaptureSourceStage._
+      private val buffer = new Queue[ChangeSet]()
 
-      private val driver = "org.postgresql.Driver"
-      Class.forName(driver)
-      private val conn = DriverManager.getConnection(settings.connectionString)
+      private lazy val conn: Connection = getConnection(settings.connectionString)
 
-      checkSlotExists()
-
-      private val getSlotChangesStmt: PreparedStatement = conn.prepareStatement(
-        "SELECT * FROM " +
-        "pg_logical_slot_get_changes(?, NULL, ?, 'include-timestamp', 'on')"
-      )
-      getSlotChangesStmt.setString(1, settings.slotName)
-      getSlotChangesStmt.setInt(2, settings.maxItems)
-
-      private def checkSlotExists(): Unit = {
-        val getReplicationSlots = conn.prepareStatement(
-          "SELECT * FROM pg_replication_slots WHERE " +
-          "slot_name = ?"
-        )
-        getReplicationSlots.setString(1, settings.slotName)
-        val rs = getReplicationSlots.executeQuery()
-        if (rs.next()) {
-          val database = rs.getString("database")
-          val plugin = rs.getString("plugin")
-          plugin match {
-            case "test_decoding" =>
-              log.info("found replication slot with name {} for database {}", settings.slotName, database)
-            case _ =>
-              log.warning("please use the test_decoding plugin for replication slot with name {}", settings.slotName)
-          }
-        } else {
-          log.warning("replication slot with name {} does not exist", settings.slotName)
-        }
-      }
-
-      private def getSlotChanges(): Set[SlotChange] = {
-        val rs = getSlotChangesStmt.executeQuery()
-        val result = ArrayBuffer[SlotChange]()
-        while (rs.next()) {
-          val data = rs.getString("data")
-          val location = rs.getString("location")
-          val transactionId = rs.getLong("xid")
-          result += SlotChange(transactionId, location, data)
-        }
-        result.toSet
-      }
-
-      private val buffer = mutable.Queue[ChangeSet]()
+      private lazy val prepStmt: PreparedStatement =
+        buildGetSlotChangesStmt(conn, slotName = settings.slotName, maxItems = settings.maxItems)
 
       override def onTimer(timerKey: Any): Unit =
         retrieveChanges()
 
       private def retrieveChanges(): Unit = {
-        val result: Set[ChangeSet] = transformSlotChanges(getSlotChanges())
+        val result: Set[ChangeSet] = transformSlotChanges(getSlotChanges(prepStmt))
 
         if (result.isEmpty) {
           if (isAvailable(out)) {
@@ -212,6 +225,11 @@ private[postgresqlcdc] class PgSQLChangeDataCaptureSourceStage(settings: Postgre
           push(out, buffer.dequeue())
 
         }
+      }
+
+      override def preStart(): Unit = {
+        super.preStart()
+        checkSlotExists(conn, settings.slotName)(log)
       }
 
       override def postStop(): Unit = {
@@ -234,7 +252,5 @@ private[postgresqlcdc] class PgSQLChangeDataCaptureSourceStage(settings: Postgre
             retrieveChanges()
       })
     }
-
-  override def shape: SourceShape[ChangeSet] = SourceShape(out)
 
 }

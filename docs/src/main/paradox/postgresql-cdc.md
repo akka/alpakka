@@ -88,17 +88,18 @@ with the `test_decoding` plugin (which is the only logical decoding plugin that 
 
 ### Code
 
-Without further ado:
+Without further ado, a minimalist example:
 
 ``` scala
-val connectionString =
-  "jdbc:postgresql://localhost/test?user=fred&password=secret&ssl=true"
+
+val connectionString = "jdbc:postgresql://localhost/pgdb?user=pguser&password=pguser"
 val slotName = "slot_name"
 val settings = PostgreSQLChangeDataCaptureSettings(connectionString, slotName)
 
 PostgreSQLCapturer(settings)
-  .map { c: ChangeSet => log.info(c) }
+  .map { c: ChangeSet => log.info(s"captured change: $c") }
   .to(Sink.ignore)
+  .run()
 
 
 ```
