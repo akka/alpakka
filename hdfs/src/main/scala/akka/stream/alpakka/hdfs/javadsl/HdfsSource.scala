@@ -10,7 +10,7 @@ import akka.NotUsed
 import akka.japi.Pair
 import akka.stream.alpakka.hdfs.scaladsl.{HdfsSource => ScalaHdfsSource}
 import akka.stream.javadsl.Source
-import akka.stream.{IOResult, javadsl}
+import akka.stream.{javadsl, IOResult}
 import akka.util.ByteString
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.Writable
@@ -28,7 +28,7 @@ object HdfsSource {
    */
   def data(
       fs: FileSystem,
-      path: Path,
+      path: Path
   ): javadsl.Source[ByteString, CompletionStage[IOResult]] =
     ScalaHdfsSource.data(fs, path).mapMaterializedValue(_.toJava).asJava
 
