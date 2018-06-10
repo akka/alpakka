@@ -32,13 +32,13 @@ The flow fails with an @javadoc[UnmappableCharacterException](java.nio.charset.U
 if a character is not representable in the targeted character set.
 
 Scala
-: @@snip ($alpakka$/text/src/test/scala/akka/stream/alpakka/text/scaladsl/CharsetCodingFlowsSpec.scala) { #transcoding }
+: @@snip ($alpakka$/text/src/test/scala/docs/scaladsl/CharsetCodingFlowsDoc.scala) { #transcoding }
 
 Java
-: @@snip ($alpakka$/text/src/test/java/akka/stream/alpakka/text/javadsl/CharsetCodingFlowsTest.java) { #transcoding }
+: @@snip ($alpakka$/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java) { #transcoding }
 
-@scala[@github[Source on Github](/text/src/test/scala/akka/stream/alpakka/text/scaladsl/CharsetCodingFlowsSpec.scala)]
-@java[@github[Source on Github](/text/src/test/java/akka/stream/alpakka/text/javadsl/CharsetCodingFlowsTest.java)]
+@scala[@github[Source on Github](/text/src/test/scala/docs/scaladsl/CharsetCodingFlowsDoc.scala)]
+@java[@github[Source on Github](/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java)]
 
 
 ## Text encoding
@@ -50,27 +50,27 @@ The flow fails with an @javadoc[UnmappableCharacterException](java.nio.charset.U
 if a character is not representable in the targeted character set.
 
 Scala
-: @@snip ($alpakka$/text/src/test/scala/akka/stream/alpakka/text/scaladsl/CharsetCodingFlowsSpec.scala) { #encoding }
+: @@snip ($alpakka$/text/src/test/scala/docs/scaladsl/CharsetCodingFlowsDoc.scala) { #encoding }
 
 Java
-: @@snip ($alpakka$/text/src/test/java/akka/stream/alpakka/text/javadsl/CharsetCodingFlowsTest.java) { #encoding }
+: @@snip ($alpakka$/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java) { #encoding }
 
-@scala[@github[Source on Github](/text/src/test/scala/akka/stream/alpakka/text/scaladsl/CharsetCodingFlowsSpec.scala)]
-@java[@github[Source on Github](/text/src/test/java/akka/stream/alpakka/text/javadsl/CharsetCodingFlowsTest.java)]
+@scala[@github[Source on Github](/text/src/test/scala/docs/scaladsl/CharsetCodingFlowsDoc.scala)]
+@java[@github[Source on Github](/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java)]
 
 
 ## Text decoding
 
 The text decoding flow converts incoming ByteStrings to Strings using the given 
-character encoding. As some characters may not exist in 't be encoded with 
+character encoding. 
 
 Scala
-: @@snip ($alpakka$/text/src/test/scala/akka/stream/alpakka/text/scaladsl/CharsetCodingFlowsSpec.scala) { #decoding }
+: @@snip ($alpakka$/text/src/test/scala/docs/scaladsl/CharsetCodingFlowsDoc.scala) { #decoding }
 
 Java
-: @@snip ($alpakka$/text/src/test/java/akka/stream/alpakka/text/javadsl/CharsetCodingFlowsTest.java) { #decoding }
+: @@snip ($alpakka$/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java) { #decoding }
 
-@scala[@github[Source on Github](/text/src/test/scala/akka/stream/alpakka/text/scaladsl/CharsetCodingFlowsSpec.scala)]
-@java[@github[Source on Github](/text/src/test/java/akka/stream/alpakka/text/javadsl/CharsetCodingFlowsTest.java)]
+@scala[@github[Source on Github](/text/src/test/scala/docs/scaladsl/CharsetCodingFlowsDoc.scala)]
+@java[@github[Source on Github](/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java)]
 
 
