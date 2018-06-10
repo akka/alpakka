@@ -36,13 +36,13 @@ sealed trait Change {
 
 case class Field(columnName: String, columnType: String, value: String)
 
-case class RowInserted(schemaName: String, tableName: String, fields: Set[Field]) extends Change
+case class RowInserted(schemaName: String, tableName: String, fields: List[Field]) extends Change
 
-case class RowUpdated(schemaName: String, tableName: String, fields: Set[Field]) extends Change
+case class RowUpdated(schemaName: String, tableName: String, fields: List[Field]) extends Change
 
-case class RowDeleted(schemaName: String, tableName: String, fields: Set[Field]) extends Change
+case class RowDeleted(schemaName: String, tableName: String, fields: List[Field]) extends Change
 
-case class ChangeSet(transactionId: Long, changes: Set[Change]) // TODO: add timestamp
+case class ChangeSet(transactionId: Long, changes: List[Change]) // TODO: add timestamp
 
 private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
 
@@ -104,7 +104,7 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
     slotChanges.groupBy(_.transactionId).map {
 
       case (transactionId: Long, slotChanges: Set[SlotChange]) =>
-        val changes: Set[Change] = slotChanges.collect {
+        val changes: List[Change] = slotChanges.collect {
 
           case SlotChange(_, _, ChangeStatement(schemaName, tableName, "UPDATE", properties)) =>
             RowUpdated(schemaName, tableName, parseKeyValuePairs(properties))
@@ -114,14 +114,14 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
 
           case SlotChange(_, _, ChangeStatement(schemaName, tableName, "INSERT", properties)) =>
             RowInserted(schemaName, tableName, parseKeyValuePairs(properties))
-        }
+        }.toList
 
         ChangeSet(transactionId, changes)
 
     }
   }.filter(_.changes.nonEmpty).toSet
 
-  private def parseKeyValuePairs(keyValuePairs: String): Set[Field] =
+  private def parseKeyValuePairs(keyValuePairs: String): List[Field] =
     KeyValuePair
       .findAllMatchIn(keyValuePairs)
       .collect {
@@ -135,7 +135,7 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
           }
           Field(columnName, columnType, value)
       }
-      .toSet
+      .toList
 
   /** Represents a row in the table we get from PostgreSQL when we query
    * SELECT * FROM pg_logical_slot_get_changes(..)

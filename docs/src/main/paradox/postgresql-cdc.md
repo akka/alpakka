@@ -42,18 +42,18 @@ transaction id. A 'change' can be one of the following:
 * **RowInserted**
     * schemaName: String
     * tableName: String
-    * fields: Set[Field]
+    * fields: List[Field]
 
 * **RowUpdated**
     * schemaName: String
     * tableName: String
-    * fields: Set[Field]
+    * fields: List[Field]
         * note: new version of the fields only
 
 * **RowDeleted**
     * schemaName: String
     * tableName: String
-    * fields: Set[Field]
+    * fields: List[Field]
 
 A **Field** is defined as Field(columnName: String, columnType: String, value: String).
 
@@ -97,10 +97,10 @@ val slotName = "slot_name"
 val settings = PostgreSQLChangeDataCaptureSettings(connectionString, slotName)
 
 PostgreSQLCapturer(settings)
-  .map { c: ChangeSet => log.info(s"captured change: $c") }
+  .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
+  .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
   .to(Sink.ignore)
   .run()
-
 
 ```
 

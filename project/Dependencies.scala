@@ -251,6 +251,10 @@ object Dependencies {
       )
   )
 
+  val PostgreSqlDriver = Seq(
+    libraryDependencies ++= Seq("org.postgresql" % "postgresql" % "42.2.1" % Test) // BSD 2-clause "Simplified" License
+  )
+
   val S3 = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
