@@ -87,7 +87,7 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
     getSlotChangesStmt
   }
 
-  private def getSlotChanges(getSlotChangesStmt: PreparedStatement): Set[SlotChange] = {
+  private def getSlotChanges(getSlotChangesStmt: PreparedStatement): List[SlotChange] = {
     val rs = getSlotChangesStmt.executeQuery()
     val result = ArrayBuffer[SlotChange]()
     while (rs.next()) {
@@ -96,14 +96,14 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
       val transactionId = rs.getLong("xid")
       result += SlotChange(transactionId, location, data)
     }
-    result.toSet
+    result.toList
   }
 
-  private def transformSlotChanges(slotChanges: Set[SlotChange]): Set[ChangeSet] = {
+  private def transformSlotChanges(slotChanges: List[SlotChange]): List[ChangeSet] = {
 
     slotChanges.groupBy(_.transactionId).map {
 
-      case (transactionId: Long, slotChanges: Set[SlotChange]) =>
+      case (transactionId: Long, slotChanges: List[SlotChange]) =>
         val changes: List[Change] = slotChanges.collect {
 
           case SlotChange(_, _, ChangeStatement(schemaName, tableName, "UPDATE", properties)) =>
@@ -114,12 +114,12 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
 
           case SlotChange(_, _, ChangeStatement(schemaName, tableName, "INSERT", properties)) =>
             RowInserted(schemaName, tableName, parseKeyValuePairs(properties))
-        }.toList
+        }
 
         ChangeSet(transactionId, changes)
 
     }
-  }.filter(_.changes.nonEmpty).toSet
+  }.filter(_.changes.nonEmpty).toList.sortBy(_.transactionId)
 
   private def parseKeyValuePairs(keyValuePairs: String): List[Field] =
     KeyValuePair
@@ -214,7 +214,7 @@ private[postgresqlcdc] class PgSQLChangeDataCaptureSourceStage(settings: Postgre
         retrieveChanges()
 
       private def retrieveChanges(): Unit = {
-        val result: Set[ChangeSet] = transformSlotChanges(getSlotChanges(prepStmt))
+        val result: List[ChangeSet] = transformSlotChanges(getSlotChanges(prepStmt))
 
         if (result.isEmpty) {
           if (isAvailable(out)) {

@@ -14,8 +14,6 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.{ImplicitSender, TestKit}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-import scala.concurrent.duration._
-
 class PostgresSQLCapturerSpec
     extends TestKit(ActorSystem())
     with WordSpecLike
@@ -27,7 +25,7 @@ class PostgresSQLCapturerSpec
 
   private val connectionString = "jdbc:postgresql://localhost/pgdb?user=pguser&password=pguser"
 
-  private implicit val materializer = ActorMaterializer()
+  private implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   private implicit val conn: Connection = getConnection(connectionString)
 
@@ -37,7 +35,7 @@ class PostgresSQLCapturerSpec
     DriverManager.getConnection(connectionString)
   }
 
-  private def creatCustomersTable(implicit conn: Connection): Unit = {
+  private def createCustomersTable(implicit conn: Connection): Unit = {
     val createStatement =
       conn.prepareStatement("""
           |CREATE TABLE customers (
@@ -54,8 +52,7 @@ class PostgresSQLCapturerSpec
 
   private def dropTableCustomers()(implicit conn: Connection): Unit = {
     val dropStatement =
-      conn.prepareStatement("""
-          |DROP TABLE customers;
+      conn.prepareStatement("""|DROP TABLE customers;
         """.stripMargin)
     dropStatement.execute()
   }
@@ -68,6 +65,20 @@ class PostgresSQLCapturerSpec
     insertStatement.setString(3, lName)
     insertStatement.setString(4, email)
     insertStatement.execute()
+  }
+
+  private def updateCustomerEmail(id: Int, newEmail: String)(implicit conn: Connection): Unit = {
+    val updateStatement =
+      conn.prepareStatement("UPDATE customers SET email = ? WHERE Id = ?")
+    updateStatement.setString(1, newEmail)
+    updateStatement.setInt(2, id)
+    updateStatement.execute()
+  }
+
+  private def deleteCustomers()(implicit conn: Connection): Unit = {
+    val deleteStatement =
+      conn.prepareStatement("DELETE FROM customers")
+    deleteStatement.execute()
   }
 
   private def setUpLogicalDecodingSlot()(implicit conn: Connection): Unit = {
@@ -83,12 +94,20 @@ class PostgresSQLCapturerSpec
   override def beforeAll(): Unit = {
     log.info("setting up logical decoding slot and creating customers table")
     setUpLogicalDecodingSlot()
-    creatCustomersTable
+    createCustomersTable
     log.info("inserting data into customers table")
-    insertCustomer(id = 0, fName = "J", lName = "L", email = "j.l@akka.io")
-    insertCustomer(id = 1, fName = "G", lName = "H", email = "g.h@akka.io")
-    insertCustomer(id = 2, fName = "P", lName = "M", email = "p.m@akka.io")
-    insertCustomer(id = 3, fName = "R", lName = "S", email = "r.s@akka.io")
+    // some inserts
+    insertCustomer(id = 0, fName = "John", lName = "Lennon", email = "john.lennon@akka.io")
+    insertCustomer(id = 1, fName = "George", lName = "Harrison", email = "george.harrison@akka.io")
+    insertCustomer(id = 2, fName = "Paul", lName = "McCartney", email = "paul.mccartney@akka.io")
+    insertCustomer(id = 3, fName = "Ringo", lName = "Star", email = "ringo.star@akka.io")
+    // some updates
+    updateCustomerEmail(id = 0, "john.lennon@thebeatles.com")
+    updateCustomerEmail(id = 1, "george.harrison@thebeatles.com")
+    updateCustomerEmail(id = 2, "paul.mccartney@thebeatles.com")
+    updateCustomerEmail(id = 3, "ringo.star@thebeatles.com")
+    // some deletes
+    deleteCustomers()
 
   }
 
@@ -115,20 +134,92 @@ class PostgresSQLCapturerSpec
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
-        .request(4)
+        .request(9)
+        //
+        // expecting the insert events first
+        //
         .expectNextChainingPF {
-          case c @ ChangeSet(_, List(RowInserted("public", "customers", fields))) =>
+          case c @ ChangeSet(_, List(RowInserted("public", "customers", fields)))
+              if fields.map(f => f.columnName -> f.value).toSet == Set(
+                "id" -> "0",
+                "first_name" -> "John",
+                "last_name" -> "Lennon",
+                "email" -> "john.lennon@akka.io"
+              ) => // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, List(RowInserted("public", "customers", fields))) =>
+          case c @ ChangeSet(_, List(RowInserted("public", "customers", fields)))
+              if fields.map(f => f.columnName -> f.value).toSet == Set(
+                "id" -> "1",
+                "first_name" -> "George",
+                "last_name" -> "Harrison",
+                "email" -> "george.harrison@akka.io"
+              ) => // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, List(RowInserted("public", "customers", fields))) =>
+          case c @ ChangeSet(_, List(RowInserted("public", "customers", fields)))
+              if fields.map(f => f.columnName -> f.value).toSet == Set(
+                "id" -> "2",
+                "first_name" -> "Paul",
+                "last_name" -> "McCartney",
+                "email" -> "paul.mccartney@akka.io"
+              ) => // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, List(RowInserted("public", "customers", fields))) =>
+          case c @ ChangeSet(_, List(RowInserted("public", "customers", fields)))
+              if fields.map(f => f.columnName -> f.value).toSet == Set(
+                "id" -> "3",
+                "first_name" -> "Ringo",
+                "last_name" -> "Star",
+                "email" -> "ringo.star@akka.io"
+              ) => // success
         }
-        .expectNoMessage(3 seconds)
+        //
+        // expecting the update events next
+        //
+        .expectNextChainingPF {
+          case c @ ChangeSet(_, List(RowUpdated("public", "customers", fields)))
+              if fields.map(f => f.columnName -> f.value).toSet == Set(
+                "id" -> "0",
+                "first_name" -> "John",
+                "last_name" -> "Lennon",
+                "email" -> "john.lennon@thebeatles.com"
+              ) => // success
+        }
+        .expectNextChainingPF {
+          case c @ ChangeSet(_, List(RowUpdated("public", "customers", fields)))
+              if fields.map(f => f.columnName -> f.value).toSet == Set(
+                "id" -> "1",
+                "first_name" -> "George",
+                "last_name" -> "Harrison",
+                "email" -> "george.harrison@thebeatles.com"
+              ) => // success
+        }
+        .expectNextChainingPF {
+          case c @ ChangeSet(_, List(RowUpdated("public", "customers", fields)))
+              if fields.map(f => f.columnName -> f.value).toSet == Set(
+                "id" -> "2",
+                "first_name" -> "Paul",
+                "last_name" -> "McCartney",
+                "email" -> "paul.mccartney@thebeatles.com"
+              ) => // success
+        }
+        .expectNextChainingPF {
+          case c @ ChangeSet(_, List(RowUpdated("public", "customers", fields)))
+              if fields.map(f => f.columnName -> f.value).toSet == Set(
+                "id" -> "3",
+                "first_name" -> "Ringo",
+                "last_name" -> "Star",
+                "email" -> "ringo.star@thebeatles.com"
+              ) => // success
+        }
+        //
+        //  expecting the delete events next (all in a single transaction )
+        //
+        .expectNextChainingPF {
+          case c @ ChangeSet(_, deleteEvents)
+              if deleteEvents.size == 4 && deleteEvents.count(_.isInstanceOf[RowDeleted]) == 4 => // success
+        }
 
     }
 
