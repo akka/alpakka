@@ -22,7 +22,7 @@ Documentation
 
 - [Alpakka Kafka connector reference](https://doc.akka.io/docs/akka-stream-kafka/current/) documentation
 
-To keep up with the latest Alpakka releases check out [Alpakka releases](https://github.com/akka/alpakka/releases) and [Alpakka Kafka connector releases](https://github.com/akka/reactive-kafka/releases).
+To keep up with the latest Alpakka releases check out [Alpakka releases](https://github.com/akka/alpakka/releases) and [Alpakka Kafka connector releases](https://github.com/akka/alpakka-kafka/releases).
 
 
 Community
