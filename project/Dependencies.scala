@@ -62,7 +62,7 @@ object Dependencies {
       "com.google.jimfs" % "jimfs" % "1.1", // ApacheV2
       "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-      // https://github.com/akka/reactive-kafka/releases
+      // https://github.com/akka/alpakka-kafka/releases
       "com.typesafe.akka" %% "akka-stream-kafka" % "0.18",
       // https://github.com/manub/scalatest-embedded-kafka/tags
       "net.manub" %% "scalatest-embedded-kafka" % "1.0.0", // MIT
