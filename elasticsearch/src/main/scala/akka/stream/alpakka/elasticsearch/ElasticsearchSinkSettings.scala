@@ -16,15 +16,12 @@ object ElasticsearchSinkSettings {
  * elastic returns error one some of the documents in a
  * bulk request.
  */
-//#sink-settings
 final case class ElasticsearchSinkSettings(bufferSize: Int = 10,
                                            retryInterval: Int = 5000,
                                            maxRetry: Int = 100,
                                            retryPartialFailure: Boolean = false,
                                            docAsUpsert: Boolean = false,
-                                           versionType: Option[String] = None)
-//#sink-settings
-{
+                                           versionType: Option[String] = None) {
   def withBufferSize(bufferSize: Int): ElasticsearchSinkSettings =
     copy(bufferSize = bufferSize)
 
