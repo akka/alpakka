@@ -178,6 +178,7 @@ lazy val docs = project
       "scalaBinaryVersion" -> scalaBinaryVersion.value,
       "akkaVersion" -> Dependencies.AkkaVersion,
       "akkaHttpVersion" -> Dependencies.AkkaHttpVersion,
+      "slickVersion" -> Dependencies.SlickVersion,
       "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.AkkaVersion}/%s",
       "extref.akka-http-docs.base_url" -> s"http://doc.akka.io/docs/akka-http/${Dependencies.AkkaHttpVersion}/%s",
       "extref.java-api.base_url" -> "https://docs.oracle.com/javase/8/docs/api/index.html?%s.html",
