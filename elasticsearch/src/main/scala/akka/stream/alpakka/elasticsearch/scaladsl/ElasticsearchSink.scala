@@ -5,7 +5,7 @@
 package akka.stream.alpakka.elasticsearch.scaladsl
 
 import akka.{Done, NotUsed}
-import akka.stream.alpakka.elasticsearch.IncomingMessage
+import akka.stream.alpakka.elasticsearch._
 import akka.stream.scaladsl.{Keep, Sink}
 import org.elasticsearch.client.RestClient
 import spray.json.JsonWriter
@@ -20,7 +20,9 @@ object ElasticsearchSink {
   /**
    * Creates a [[akka.stream.scaladsl.Sink]] to Elasticsearch for [[IncomingMessage]] containing type `T`.
    */
-  def create[T](indexName: String, typeName: String, settings: ElasticsearchSinkSettings = ElasticsearchSinkSettings())(
+  def create[T](indexName: String,
+                typeName: String,
+                settings: ElasticsearchSinkSettings = ElasticsearchSinkSettings.Default)(
       implicit client: RestClient,
       writer: JsonWriter[T]
   ): Sink[IncomingMessage[T, NotUsed], Future[Done]] =

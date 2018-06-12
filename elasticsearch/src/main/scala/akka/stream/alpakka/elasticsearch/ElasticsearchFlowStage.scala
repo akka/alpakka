@@ -19,7 +19,6 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import ElasticsearchFlowStage._
 import akka.NotUsed
-import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSinkSettings
 import org.apache.http.message.BasicHeader
 import org.apache.http.util.EntityUtils
 

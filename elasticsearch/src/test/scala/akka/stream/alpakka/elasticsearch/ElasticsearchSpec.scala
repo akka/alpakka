@@ -101,13 +101,9 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   private def documentation: Unit = {
     //#source-settings
-    import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSourceSettings
-
     val sourceSettings = ElasticsearchSourceSettings(bufferSize = 10)
     //#source-settings
     //#sink-settings
-    import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSinkSettings
-
     val sinkSettings =
       ElasticsearchSinkSettings(bufferSize = 10, retryInterval = 5000, maxRetry = 100, retryPartialFailure = true)
     //#sink-settings
@@ -528,7 +524,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         "sink7",
         "book",
         """{"match_all": {}}""",
-        ElasticsearchSourceSettings()
+        ElasticsearchSourceSettings.Default
       ).map { message =>
           message.source
         }
@@ -837,7 +833,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
                           "query" -> """ {"match_all": {}} """,
                           "_source" -> """ ["id", "a", "c"] """
                         ),
-                        ElasticsearchSourceSettings())
+                        ElasticsearchSourceSettings.Default)
         .map { message =>
           message.source
         }
