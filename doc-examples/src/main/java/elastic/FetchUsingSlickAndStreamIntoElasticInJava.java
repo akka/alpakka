@@ -10,9 +10,9 @@ package elastic;
         import akka.stream.ActorMaterializer;
         import akka.stream.Materializer;
 
+        import akka.stream.alpakka.elasticsearch.ElasticsearchSinkSettings;
         import akka.stream.alpakka.elasticsearch.IncomingMessage;
         import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSink;
-        import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSinkSettings;
         import org.apache.http.HttpHost;
         import org.elasticsearch.client.RestClient;
 
@@ -96,7 +96,7 @@ public class FetchUsingSlickAndStreamIntoElasticInJava {
                     .create(                                                             // (9)
                         "movie",
                         "boxoffice",
-                        new ElasticsearchSinkSettings(),
+                        ElasticsearchSinkSettings.Default(),
                         elasticSearchClient,
                         objectToJsonMapper
                     ), materializer);
