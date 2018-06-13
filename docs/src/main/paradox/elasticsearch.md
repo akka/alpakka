@@ -80,9 +80,10 @@ Java
 : @@snip ($alpakka$/elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #source-settings }
 
 
-| Parameter  | Default | Description                                                                                                              |
-| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
-| bufferSize | 10      | `ElasticsearchSource` retrieves messages from Elasticsearch by scroll scan. This buffer size is used as the scroll size. | 
+| Parameter              | Default | Description                                                                                                              |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| bufferSize             | 10      | `ElasticsearchSource` retrieves messages from Elasticsearch by scroll scan. This buffer size is used as the scroll size. | 
+| includeDocumentVersion | false   | Tell Elasticsearch to return the documents `_version` property with the search results. See [Version](http://nocf-www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html) and [Optimistic Concurrenct Control](https://www.elastic.co/guide/en/elasticsearch/guide/current/optimistic-concurrency-control.html) to know about this property. |
 
 
 Also, we can configure the sink by `ElasticsearchSinkSettings`.
