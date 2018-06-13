@@ -33,7 +33,7 @@ object ElasticsearchFlow {
         new ElasticsearchFlowStage[T, NotUsed](indexName,
                                                typeName,
                                                client,
-                                               settings.asScala,
+                                               settings,
                                                new JacksonWriter[T](objectMapper))
       )
       .mapAsync(1)(identity)
@@ -53,11 +53,7 @@ object ElasticsearchFlow {
   ): akka.stream.javadsl.Flow[IncomingMessage[T, C], JavaList[IncomingMessageResult[T, C]], NotUsed] =
     Flow
       .fromGraph(
-        new ElasticsearchFlowStage[T, C](indexName,
-                                         typeName,
-                                         client,
-                                         settings.asScala,
-                                         new JacksonWriter[T](objectMapper))
+        new ElasticsearchFlowStage[T, C](indexName, typeName, client, settings, new JacksonWriter[T](objectMapper))
       )
       .mapAsync(1)(identity)
       .map(x => x.asJava)
