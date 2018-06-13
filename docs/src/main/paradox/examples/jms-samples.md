@@ -6,10 +6,21 @@
 - converts incoming data to `akka.util.ByteString` (3),
 - and appends the data to the file `target/out` (2).
 
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-jms_$scalaBinaryVersion$
+  version=$version$
+}
+
 Scala
 : @@snip ($alpakka$/doc-examples/src/main/scala/jms/JmsToFile.scala) { #sample }
 
-@github[Full source](/doc-examples/src/main/scala/jms/JmsToFile.scala) { #sample }
+Java
+: @@snip ($alpakka$/doc-examples/src/main/java/jms/JmsToFileInJava.java) { #sample }
+
+
+@scala[@github[Full source](/doc-examples/src/main/scala/jms/JmsToFile.scala) { #sample }]
+@java[@github[Full source](/doc-examples/src/main/java/jms/JmsToFileInJava.java) { #sample }]
 
 
 ### Example: Read text messages from JMS queue and create one file per message
@@ -20,10 +31,20 @@ Scala
 - creates an intermediary stream writing the incoming data to a file using the counter 
 value to create unique file names (4). 
 
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-jms_$scalaBinaryVersion$
+  version=$version$
+}
+
 Scala
 : @@snip ($alpakka$/doc-examples/src/main/scala/jms/JmsToOneFilePerMessage.scala) { #sample }
 
-@github[Full source](/doc-examples/src/main/scala/jms/JmsToOneFilePerMessage.scala) { #sample }
+Java
+: @@snip ($alpakka$/doc-examples/src/main/java/jms/JmsToOneFilePerMessageInJava.java) { #sample }
+
+@scala[@github[Full source](/doc-examples/src/main/scala/jms/JmsToOneFilePerMessage.scala) { #sample }]
+@java[@github[Full source](/doc-examples/src/main/java/jms/JmsToOneFilePerMessageInJava.java) { #sample }]
 
 
 
@@ -34,6 +55,16 @@ Scala
 - puts the received text into an `HttpRequest` (3),
 - sends the created request via Akka Http (4),
 - prints the `HttpResponse` to standard out (5).
+
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-jms_$scalaBinaryVersion$
+  version=$version$
+  group2=com.typesafe.akka
+  artifact2=akka-http_$scalaBinaryVersion$
+  version=$akkaHttpVersion$
+}
+
 
 Scala
 : @@snip ($alpakka$/doc-examples/src/main/scala/jms/JmsToHttpGet.scala) { #sample }
