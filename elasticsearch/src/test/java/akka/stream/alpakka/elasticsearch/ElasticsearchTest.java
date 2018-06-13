@@ -8,12 +8,6 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
-//#sink-settings
-import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSinkSettings;
-//#sink-settings
-//#source-settings
-import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSourceSettings;
-//#source-settings
 import akka.stream.alpakka.elasticsearch.javadsl.*;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -32,7 +26,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
@@ -111,14 +104,12 @@ public class ElasticsearchTest {
 
   private void documentation() {
     //#source-settings
-
-    ElasticsearchSourceSettings sourceSettings = new ElasticsearchSourceSettings()
+    ElasticsearchSourceSettings sourceSettings = ElasticsearchSourceSettings.Default()
         .withBufferSize(10);
     //#source-settings
     //#sink-settings
-
     ElasticsearchSinkSettings sinkSettings =
-        new ElasticsearchSinkSettings()
+        ElasticsearchSinkSettings.Default()
             .withBufferSize(10)
             .withRetryInterval(5000)
             .withMaxRetry(100)
@@ -131,8 +122,8 @@ public class ElasticsearchTest {
   public void jsObjectStream() throws Exception {
     // Copy source/book to sink1/book through JsObject stream
     //#run-jsobject
-    ElasticsearchSourceSettings sourceSettings = new ElasticsearchSourceSettings();
-    ElasticsearchSinkSettings sinkSettings = new ElasticsearchSinkSettings();
+    ElasticsearchSourceSettings sourceSettings = ElasticsearchSourceSettings.Default();
+    ElasticsearchSinkSettings sinkSettings = ElasticsearchSinkSettings.Default();
 
     Source<OutgoingMessage<Map<String, Object>>, NotUsed> source = ElasticsearchSource.create(
         "source",
@@ -163,7 +154,7 @@ public class ElasticsearchTest {
       "sink1",
       "book",
       "{\"match_all\": {}}",
-      new ElasticsearchSourceSettings().withBufferSize(5),
+      ElasticsearchSourceSettings.Default().withBufferSize(5),
       client)
     .map(m -> (String) m.source().get("title"))
     .runWith(Sink.seq(), materializer);
@@ -188,8 +179,8 @@ public class ElasticsearchTest {
   public void typedStream() throws Exception {
     // Copy source/book to sink2/book through JsObject stream
     //#run-typed
-    ElasticsearchSourceSettings sourceSettings = new ElasticsearchSourceSettings();
-    ElasticsearchSinkSettings sinkSettings = new ElasticsearchSinkSettings();
+    ElasticsearchSourceSettings sourceSettings = ElasticsearchSourceSettings.Default();
+    ElasticsearchSinkSettings sinkSettings = ElasticsearchSinkSettings.Default();
 
     Source<OutgoingMessage<Book>, NotUsed> source = ElasticsearchSource.typed(
         "source",
@@ -221,7 +212,7 @@ public class ElasticsearchTest {
       "sink2",
       "book",
       "{\"match_all\": {}}",
-      new ElasticsearchSourceSettings().withBufferSize(5),
+      ElasticsearchSourceSettings.Default().withBufferSize(5),
       client,
       Book.class)
       .map(m -> m.source().title)
@@ -251,14 +242,14 @@ public class ElasticsearchTest {
         "source",
         "book",
         "{\"match_all\": {}}",
-        new ElasticsearchSourceSettings().withBufferSize(5),
+        ElasticsearchSourceSettings.Default().withBufferSize(5),
         client,
         Book.class)
         .map(m -> IncomingMessage.create(m.id(), m.source()))
         .via(ElasticsearchFlow.create(
                 "sink3",
                 "book",
-                new ElasticsearchSinkSettings().withBufferSize(5),
+                ElasticsearchSinkSettings.Default().withBufferSize(5),
                 client,
                 new ObjectMapper()))
         .runWith(Sink.seq(), materializer);
@@ -276,7 +267,7 @@ public class ElasticsearchTest {
         "sink3",
         "book",
         "{\"match_all\": {}}",
-        new ElasticsearchSourceSettings().withBufferSize(5),
+        ElasticsearchSourceSettings.Default().withBufferSize(5),
         client,
         Book.class)
         .map(m -> m.source().title)
@@ -325,7 +316,7 @@ public class ElasticsearchTest {
                     ElasticsearchFlow.createWithPassThrough(
                             "sink6",
                             "book",
-                            new ElasticsearchSinkSettings().withBufferSize(5),
+                            ElasticsearchSinkSettings.Default().withBufferSize(5),
                             client,
                             new ObjectMapper())
             ).map(messageResults -> {
@@ -352,7 +343,7 @@ public class ElasticsearchTest {
             "sink6",
             "book",
             "{\"match_all\": {}}",
-             new ElasticsearchSourceSettings(),
+             ElasticsearchSourceSettings.Default(),
              client,
              Book.class)
             .map( m -> m.source().title)
@@ -380,7 +371,7 @@ public class ElasticsearchTest {
             .via(ElasticsearchFlow.create(
                     indexName,
                     typeName,
-                    new ElasticsearchSinkSettings().withBufferSize(5).withMaxRetry(0),
+                    ElasticsearchSinkSettings.Default().withBufferSize(5).withMaxRetry(0),
                     client,
                     new ObjectMapper()))
             .runWith(Sink.seq(), materializer).toCompletableFuture().get();
@@ -392,7 +383,7 @@ public class ElasticsearchTest {
       indexName,
       typeName,
       "{\"match_all\": {}}",
-      new ElasticsearchSourceSettings().withIncludeDocumentVersion(true),
+      ElasticsearchSourceSettings.Default().withIncludeDocumentVersion(true),
       client,
       Book.class)
       .runWith(Sink.head(), materializer)
@@ -407,7 +398,7 @@ public class ElasticsearchTest {
       .via(ElasticsearchFlow.create(
         indexName,
         typeName,
-        new ElasticsearchSinkSettings().withBufferSize(5).withMaxRetry(0),
+        ElasticsearchSinkSettings.Default().withBufferSize(5).withMaxRetry(0),
         client,
         new ObjectMapper()))
       .runWith(Sink.seq(), materializer).toCompletableFuture().get();
@@ -420,7 +411,7 @@ public class ElasticsearchTest {
             .via(ElasticsearchFlow.create(
                     indexName,
                     typeName,
-                    new ElasticsearchSinkSettings().withBufferSize(5).withMaxRetry(0),
+                    ElasticsearchSinkSettings.Default().withBufferSize(5).withMaxRetry(0),
                     client,
                     new ObjectMapper()))
             .runWith(Sink.seq(), materializer).toCompletableFuture().get().get(0).get(0).success();
@@ -442,7 +433,7 @@ public class ElasticsearchTest {
       .via(ElasticsearchFlow.create(
         indexName,
         typeName,
-        new ElasticsearchSinkSettings().withBufferSize(5).withMaxRetry(0).withVersionType("external"),
+        ElasticsearchSinkSettings.Default().withBufferSize(5).withMaxRetry(0).withVersionType("external"),
         client,
         new ObjectMapper()))
       .runWith(Sink.seq(), materializer).toCompletableFuture().get();
@@ -454,7 +445,7 @@ public class ElasticsearchTest {
       indexName,
       typeName,
       "{\"match_all\": {}}",
-      new ElasticsearchSourceSettings().withIncludeDocumentVersion(true),
+      ElasticsearchSourceSettings.Default().withIncludeDocumentVersion(true),
       client,
       Book.class)
       .runWith(Sink.seq(), materializer)
@@ -501,7 +492,7 @@ public class ElasticsearchTest {
             .via(ElasticsearchFlow.create(
                     indexName,
                     typeName,
-                    new ElasticsearchSinkSettings().withBufferSize(5).withMaxRetry(0),
+                    ElasticsearchSinkSettings.Default().withBufferSize(5).withMaxRetry(0),
                     client,
                     new ObjectMapper()))
             .runWith(Sink.seq(), materializer).toCompletableFuture().get();
@@ -520,7 +511,7 @@ public class ElasticsearchTest {
             indexName,
             typeName,
             searchParams, // <-- Using searchParams
-            new ElasticsearchSourceSettings(),
+            ElasticsearchSourceSettings.Default(),
             client,
             TestDoc.class,
             new ObjectMapper())

@@ -47,7 +47,7 @@ object ElasticsearchSource {
         Option(typeName),
         Map("query" -> query),
         client,
-        settings.asScala,
+        settings,
         new JacksonReader[java.util.Map[String, Object]](objectMapper, classOf[java.util.Map[String, Object]])
       )
     )
@@ -74,7 +74,7 @@ object ElasticsearchSource {
         Option(typeName),
         searchParams.asScala.toMap,
         client,
-        settings.asScala,
+        settings,
         new JacksonReader[java.util.Map[String, Object]](objectMapper, classOf[java.util.Map[String, Object]])
       )
     )
@@ -108,7 +108,7 @@ object ElasticsearchSource {
         Option(typeName),
         Map("query" -> query),
         client,
-        settings.asScala,
+        settings,
         new JacksonReader[T](objectMapper, clazz)
       )
     )
@@ -136,7 +136,7 @@ object ElasticsearchSource {
         Option(typeName),
         searchParams.asScala.toMap,
         client,
-        settings.asScala,
+        settings,
         new JacksonReader[T](objectMapper, clazz)
       )
     )
