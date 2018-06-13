@@ -32,6 +32,9 @@ final class UdpSendLogic(val shape: FlowShape[UdpMessage, UdpMessage])(implicit 
     IO(Udp) ! Udp.SimpleSender
   }
 
+  override def postStop(): Unit =
+    stopSimpleSender()
+
   private def processIncoming(event: (ActorRef, Any)): Unit = event match {
     case (sender, Udp.SimpleSenderReady) ⇒
       simpleSender = sender
@@ -52,16 +55,6 @@ final class UdpSendLogic(val shape: FlowShape[UdpMessage, UdpMessage])(implicit 
         simpleSender ! Udp.Send(msg.data, msg.remote)
         push(out, msg)
       }
-
-      override def onUpstreamFinish(): Unit = {
-        stopSimpleSender()
-        super.onUpstreamFinish()
-      }
-
-      override def onUpstreamFailure(ex: Throwable): Unit = {
-        stopSimpleSender()
-        super.onUpstreamFailure(ex)
-      }
     }
   )
 
@@ -69,11 +62,6 @@ final class UdpSendLogic(val shape: FlowShape[UdpMessage, UdpMessage])(implicit 
     out,
     new OutHandler {
       override def onPull(): Unit = if (simpleSender != null) pull(in)
-
-      override def onDownstreamFinish(): Unit = {
-        stopSimpleSender()
-        super.onDownstreamFinish()
-      }
     }
   )
 }

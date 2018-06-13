@@ -34,6 +34,9 @@ final class UdpBindLogic(localAddress: InetSocketAddress, boundPromise: Promise[
     IO(Udp) ! Udp.Bind(sender, localAddress)
   }
 
+  override def postStop(): Unit =
+    unbindListener()
+
   private def processIncoming(event: (ActorRef, Any)): Unit = event match {
     case (sender, Udp.Bound(boundAddress)) ⇒
       boundPromise.success(boundAddress)
@@ -63,16 +66,6 @@ final class UdpBindLogic(localAddress: InetSocketAddress, boundPromise: Promise[
         listener ! Udp.Send(msg.data, msg.remote)
         pull(in)
       }
-
-      override def onUpstreamFinish(): Unit = {
-        unbindListener()
-        super.onUpstreamFinish()
-      }
-
-      override def onUpstreamFailure(ex: Throwable): Unit = {
-        unbindListener()
-        super.onUpstreamFailure(ex)
-      }
     }
   )
 
@@ -80,11 +73,6 @@ final class UdpBindLogic(localAddress: InetSocketAddress, boundPromise: Promise[
     out,
     new OutHandler {
       override def onPull(): Unit = ()
-
-      override def onDownstreamFinish(): Unit = {
-        unbindListener()
-        super.onDownstreamFinish()
-      }
     }
   )
 }
