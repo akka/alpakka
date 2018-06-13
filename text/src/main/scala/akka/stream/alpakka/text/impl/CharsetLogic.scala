@@ -7,6 +7,7 @@ package akka.stream.alpakka.text.impl
 import java.nio.{ByteBuffer, CharBuffer}
 import java.nio.charset.{Charset, CharsetDecoder, CharsetEncoder}
 
+import akka.annotation.InternalApi
 import akka.stream.{FlowShape, Inlet, Outlet}
 import akka.stream.stage.{GraphStageLogic, InHandler, OutHandler}
 import akka.util.ByteString
@@ -14,7 +15,7 @@ import akka.util.ByteString
 /**
  * ByteBuffer to CharBuffer decoding logic.
  */
-private[impl] trait Decoding {
+@InternalApi private[impl] trait Decoding {
   protected def decoder: CharsetDecoder
 
   protected def failStage(exception: Throwable): Unit
@@ -46,7 +47,7 @@ private[impl] trait Decoding {
 
 }
 
-private[impl] trait Encoding {
+@InternalApi private[impl] trait Encoding {
   protected def encoder: CharsetEncoder
 
   protected def failStage(exception: Throwable): Unit
@@ -91,7 +92,7 @@ private[impl] trait Encoding {
 
 }
 
-private[impl] class DecodingLogic(in: Inlet[ByteString],
+@InternalApi private[impl] class DecodingLogic(in: Inlet[ByteString],
                                   out: Outlet[String],
                                   shape: FlowShape[ByteString, String],
                                   incoming: Charset)
