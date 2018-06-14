@@ -57,8 +57,7 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
   /** Checks that the slot exists. Not necessary, just for helping the user */
   private def checkSlotExists(conn: Connection, slotName: String)(implicit log: LoggingAdapter): Unit = {
     val getReplicationSlots = conn.prepareStatement(
-      "SELECT * FROM pg_replication_slots WHERE " +
-      "slot_name = ?"
+      "SELECT * FROM pg_replication_slots WHERE slot_name = ?"
     )
     getReplicationSlots.setString(1, slotName)
     val rs = getReplicationSlots.executeQuery()
@@ -79,8 +78,7 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
   private def buildGetSlotChangesStmt(conn: Connection, slotName: String, maxItems: Int): PreparedStatement = {
     val getSlotChangesStmt: PreparedStatement =
       conn.prepareStatement(
-        "SELECT * FROM " +
-        "pg_logical_slot_get_changes(?, NULL, ?, 'include-timestamp', 'on')"
+        "SELECT * FROM pg_logical_slot_get_changes(?, NULL, ?, 'include-timestamp', 'on')"
       )
     getSlotChangesStmt.setString(1, slotName)
     getSlotChangesStmt.setInt(2, maxItems)
@@ -153,14 +151,15 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
 
     val Begin: Regex = "BEGIN (\\d+)".r
 
-    val Commit
-      : Regex = "COMMIT (\\d+) \\(at (\\d{4}-\\d{2}-\\d{2}) (\\d{2}:\\d{2}:\\d{2}\\.\\d+\\+\\d{2})\\)".r // matches
-    // a commit message like COMMIT 2380 (at 2018-04-09 17:56:36.730413+00)
+    val Commit: Regex = "COMMIT (\\d+) \\(at (\\d{4}-\\d{2}-\\d{2}) (\\d{2}:\\d{2}:\\d{2}\\.\\d+\\+\\d{2})\\)".r
+    // matches a commit message like COMMIT 2380 (at 2018-04-09 17:56:36.730413+00)
 
-    val DoubleQuotedString: String = "\"(?:\\\\\"|\"{2}|[^\"])+\"" // matches "Scala", "'Scala'"
+    val DoubleQuotedString: String = "\"(?:\\\\\"|\"{2}|[^\"])+\""
+    // matches "Scala", "'Scala'"
     // or "The ""Scala"" language", "The \"Scala\" language" etc.
 
-    val SingleQuotedString1: String = "'(?:\\\\'|'{2}|[^'])+'" // matches 'Scala', 'The ''Scala'' language' etc.
+    val SingleQuotedString1: String = "'(?:\\\\'|'{2}|[^'])+'"
+    // matches 'Scala', 'The ''Scala'' language' etc.
 
     val SingleQuotedString2: Regex = "'((?:\\\\'|'{2}|[^'])+)'".r
 
@@ -176,14 +175,17 @@ private[postgresqlcdc] object PgSQLChangeDataCaptureSourceStage {
 
     val ChangeType: String = "\\bINSERT|\\bDELETE|\\bUPDATE"
 
-    val TypeDeclaration: String = "[a-zA-Z0-9 ]+" // matches: [character varying] or [integer]
+    val TypeDeclaration: String = "[a-zA-Z0-9 ]+"
+    // matches: character varying, integer, xml etc.
 
-    val NonStringValue: String = "[^ \"']+" // matches: true, false, 3.14, 42 etc.
+    val NonStringValue: String = "[^ \"']+"
+    // matches: true, false, 3.14, 42 etc.
 
-    val Value: String = s"(?:$NonStringValue)|(?:$SingleQuotedString1)" // matches: true, false, 3.14 or 'Strings can have spaces'
+    val Value: String = s"(?:$NonStringValue)|(?:$SingleQuotedString1)"
+    // matches: true, false, 3.14 or 'Strings can have spaces'
 
     val ChangeStatement: Regex =
-      s"table ($SchemaIdentifier)\\.($TableIdentifier): ($ChangeType): (.+)".r
+      s"(?s)table ($SchemaIdentifier)\\.($TableIdentifier): ($ChangeType): (.+)".r
 
     val KeyValuePair: Regex = s"($FieldIdentifier)\\[($TypeDeclaration)\\]:($Value)".r
 

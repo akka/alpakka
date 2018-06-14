@@ -34,6 +34,15 @@ class TestParsing extends FunSuite with Matchers {
 
     ex3 should fullyMatch regex (ChangeStatement withGroups ("public", "\"Users\"", "DELETE", "..."))
 
+    val ex4 = "table public.sales: UPDATE: id[integer]:0 info[jsonb]:'{\"name\": \"alpakka\", \"countries\": [\"*\"]}'"
+
+    ex4 should fullyMatch regex ChangeStatement
+
+    val ex5 =
+      "table public.sales: UPDATE: id[integer]:0 info[jsonb]:'{\n\"name\": \"alpakka\",\n\"countries\": [\"*\"]\n}'"
+
+    ex5 should fullyMatch regex ChangeStatement
+
   }
 
   test("regular expression for double quoted string") {
@@ -79,7 +88,7 @@ class TestParsing extends FunSuite with Matchers {
 
   }
 
-  test("regular expression for values") {
+  test("regular expression for values - general") {
 
     val ex1 = "'scala'"
     ex1 should fullyMatch regex Value
@@ -94,6 +103,14 @@ class TestParsing extends FunSuite with Matchers {
     ex3 should fullyMatch regex Value
     ex3 should fullyMatch regex NonStringValue
     ex3 shouldNot fullyMatch regex SingleQuotedString1
+
+    val ex4 = """'<foo><bar id="42"></bar></foo>'"""
+    ex4 should fullyMatch regex Value
+    ex4 shouldNot fullyMatch regex NonStringValue
+
+    val ex5 = "'<foo>\n<bar id=\"42\">\n</bar>\n</foo>'"
+    ex5 should fullyMatch regex Value
+    ex5 shouldNot fullyMatch regex NonStringValue
 
   }
 
