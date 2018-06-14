@@ -14,7 +14,8 @@ import akka.util.ByteString
 /**
  * Decodes a stream of bytes into a stream of characters, using a supplied [[java.nio.charset.Charset]].
  */
-@InternalApi private[text] class CharsetDecodingFlow(incoming: Charset) extends GraphStage[FlowShape[ByteString, String]] {
+@InternalApi
+private[text] class CharsetDecodingFlow(incoming: Charset) extends GraphStage[FlowShape[ByteString, String]] {
   final private val in = Inlet[ByteString]("in")
   final private val out = Outlet[String]("out")
   override val shape: FlowShape[ByteString, String] = FlowShape(in, out)

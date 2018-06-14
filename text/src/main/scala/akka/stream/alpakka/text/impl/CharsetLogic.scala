@@ -15,7 +15,8 @@ import akka.util.ByteString
 /**
  * ByteBuffer to CharBuffer decoding logic.
  */
-@InternalApi private[impl] trait Decoding {
+@InternalApi
+private[impl] trait Decoding {
   protected def decoder: CharsetDecoder
 
   protected def failStage(exception: Throwable): Unit
@@ -47,7 +48,8 @@ import akka.util.ByteString
 
 }
 
-@InternalApi private[impl] trait Encoding {
+@InternalApi
+private[impl] trait Encoding {
   protected def encoder: CharsetEncoder
 
   protected def failStage(exception: Throwable): Unit
@@ -92,7 +94,8 @@ import akka.util.ByteString
 
 }
 
-@InternalApi private[impl] class DecodingLogic(in: Inlet[ByteString],
+@InternalApi
+private[impl] class DecodingLogic(in: Inlet[ByteString],
                                   out: Outlet[String],
                                   shape: FlowShape[ByteString, String],
                                   incoming: Charset)
