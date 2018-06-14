@@ -5,6 +5,7 @@
 package jms
 
 // #sample
+import akka.Done
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.{WebSocketRequest, WebSocketUpgradeResponse}
@@ -50,14 +51,14 @@ object JmsToWebSocket extends JmsSampleBase with App {
   val webSocketFlow: Flow[ws.Message, ws.Message, Future[WebSocketUpgradeResponse]] = // (2)
     Http().webSocketClientFlow(WebSocketRequest("ws://localhost:8080/webSocket/ping"))
 
-  val (runningSource, wsUpgradeResponse): (KillSwitch, Future[WebSocketUpgradeResponse]) =
+  val ((runningSource, wsUpgradeResponse), streamCompletion): ((KillSwitch, Future[WebSocketUpgradeResponse]), Future[Done]) =
                                                      // stream element type
     jmsSource                                        //: String
       .map(ws.TextMessage(_))                        //: ws.TextMessage                  (3)
       .viaMat(webSocketFlow)(Keep.both)              //: ws.TextMessage                  (4)
       .mapAsync(1)(wsMessageToString)                //: String                          (5)
       .map("client received: " + _)                  //: String                          (6)
-      .toMat(Sink.foreach(println))(Keep.left)       //                                  (7)
+      .toMat(Sink.foreach(println))(Keep.both)       //                                  (7)
       .run()
   // #sample
   // format: on
@@ -76,6 +77,7 @@ object JmsToWebSocket extends JmsSampleBase with App {
   runningSource.shutdown()
 
   for {
+    _ <- streamCompletion
     _ <- actorSystem.terminate()
     _ <- WebServer.stop()
     _ <- ActiveMqBroker.stop()

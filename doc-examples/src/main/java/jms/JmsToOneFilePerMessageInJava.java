@@ -88,6 +88,8 @@ public class JmsToOneFilePerMessageInJava {
     KillSwitch runningSource = pair.first();
     CompletionStage<Done> streamCompletion = pair.second();
 
+    Thread.sleep(2 * 1000);
+
     runningSource.shutdown();
     streamCompletion.thenAccept(res -> system.terminate());
     system.getWhenTerminated().thenAccept(t ->
