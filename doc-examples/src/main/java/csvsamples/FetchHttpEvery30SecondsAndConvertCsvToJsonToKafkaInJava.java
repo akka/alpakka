@@ -125,7 +125,7 @@ public class FetchHttpEvery30SecondsAndConvertCsvToJsonToKafkaInJava {
             .map(this::cleanseCsvData)                                        //: Map<String, String>     (6)
             .map(this::toJson)                                                //: String                  (7)
             .map(elem ->
-                new ProducerRecord<String, String>("topic1", elem)        //: Kafka ProducerRecord    (8)
+                new ProducerRecord<String, String>("topic1", elem)            //: Kafka ProducerRecord    (8)
             )
             .toMat(Producer.plainSink(kafkaProducerSettings), Keep.both())
             .run(materializer);
