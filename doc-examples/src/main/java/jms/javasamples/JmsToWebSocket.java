@@ -2,32 +2,35 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package jms;
+package jms.javasamples;
 
 // #sample
-
 import akka.Done;
 import akka.actor.ActorSystem;
+import akka.japi.Pair;
+
+import akka.http.javadsl.Http;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
-import akka.http.javadsl.Http;
-import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.ws.WebSocketRequest;
 import akka.http.javadsl.model.ws.WebSocketUpgradeResponse;
-import akka.japi.Pair;
+
 import akka.stream.ActorMaterializer;
 import akka.stream.KillSwitch;
 import akka.stream.Materializer;
-import akka.stream.alpakka.jms.JmsConsumerSettings;
-import akka.stream.alpakka.jms.JmsProducerSettings;
-import akka.stream.alpakka.jms.javadsl.JmsConsumer;
-import akka.stream.alpakka.jms.javadsl.JmsProducer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.util.ByteString;
+
+import akka.stream.alpakka.jms.JmsConsumerSettings;
+import akka.stream.alpakka.jms.JmsProducerSettings;
+import akka.stream.alpakka.jms.javadsl.JmsConsumer;
+import akka.stream.alpakka.jms.javadsl.JmsProducer;
+
+import java.util.concurrent.CompletionStage;
+// #sample
 import playground.ActiveMqBroker;
 import playground.WebServer;
 import scala.concurrent.ExecutionContext;
@@ -36,14 +39,12 @@ import javax.jms.ConnectionFactory;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
-// #sample
 
-public class JmsToWebSocketInJava {
+public class JmsToWebSocket {
 
   public static void main(String[] args) throws Exception {
-    JmsToWebSocketInJava me = new JmsToWebSocketInJava();
+    JmsToWebSocket me = new JmsToWebSocket();
     me.run();
   }
 
@@ -58,21 +59,6 @@ public class JmsToWebSocketInJava {
         );
     Source.from(Arrays.asList(msgs)).runWith(jmsSink, materializer);
   }
-
-  private CompletionStage<String> wsMessageToString(Message msg) {
-    if (msg.isText()) {
-      TextMessage tMsg = msg.asTextMessage();
-      if (tMsg.isStrict()) {
-        return CompletableFuture.completedFuture(tMsg.getStrictText());
-      } else {
-        CompletionStage<List<String>> strings = tMsg.getStreamedText().runWith(Sink.seq(), materializer);
-        return strings.thenApply(list -> String.join("", list));
-      }
-    } else {
-      return CompletableFuture.completedFuture(msg.toString());
-    }
-  }
-
 
   private void run() throws Exception {
     ActiveMqBroker activeMqBroker = new ActiveMqBroker();
@@ -98,16 +84,16 @@ public class JmsToWebSocketInJava {
     Flow<Message, Message, CompletionStage<WebSocketUpgradeResponse>> webSocketFlow = // (2)
       http.webSocketClientFlow(WebSocketRequest.create("ws://localhost:8080/webSocket/ping"));
 
-
     Pair<Pair<KillSwitch, CompletionStage<WebSocketUpgradeResponse>>, CompletionStage<Done>> pair =
         jmsSource                                                  //: String
             .map(s -> {
               Message msg = TextMessage.create(s);
               return msg;
-            })                           //: ByteString   (2)
-            .viaMat(webSocketFlow, Keep.both())
-            .mapAsync(4, this::wsMessageToString)             //: HttpResponse (4)
-            .toMat(Sink.foreach(System.out::println), Keep.both()) //               (5)
+            })                                                     //: Message           (3)
+            .viaMat(webSocketFlow, Keep.both())                    //: Message           (4)
+            .mapAsync(4, this::wsMessageToString)                  //: String            (5)
+            .map(s -> "client received: " + s)                     //: String            (6)
+            .toMat(Sink.foreach(System.out::println), Keep.both()) //                    (7)
             .run(materializer);
     // #sample
     KillSwitch runningSource = pair.first().first();
@@ -130,5 +116,26 @@ public class JmsToWebSocketInJava {
       activeMqBroker.stop(ec);
     });
   }
+
+  // #sample
+
+  /**
+   * Convert potentially chunked WebSocket Message to a string.
+   */
+  private CompletionStage<String> wsMessageToString(Message msg) {
+    if (msg.isText()) {
+      TextMessage tMsg = msg.asTextMessage();
+      if (tMsg.isStrict()) {
+        return CompletableFuture.completedFuture(tMsg.getStrictText());
+      } else {
+        CompletionStage<List<String>> strings = tMsg.getStreamedText().runWith(Sink.seq(), materializer);
+        return strings.thenApply(list -> String.join("", list));
+      }
+    } else {
+      return CompletableFuture.completedFuture(msg.toString());
+    }
+  }
+  // #sample
+
 
 }

@@ -9,15 +9,16 @@ import akka.Done
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.{WebSocketRequest, WebSocketUpgradeResponse}
+
 import akka.stream.KillSwitch
-import akka.stream.alpakka.jms.JmsConsumerSettings
-import akka.stream.alpakka.jms.scaladsl.JmsConsumer
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 
-import scala.collection.immutable.Seq
+import akka.stream.alpakka.jms.JmsConsumerSettings
+import akka.stream.alpakka.jms.scaladsl.JmsConsumer
+
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 // #sample
+import scala.concurrent.duration.DurationInt
 import playground.{ActiveMqBroker, WebServer}
 
 object JmsToWebSocket extends JmsSampleBase with App {
@@ -27,18 +28,6 @@ object JmsToWebSocket extends JmsSampleBase with App {
 
   val connectionFactory = ActiveMqBroker.createConnectionFactory
   enqueue(connectionFactory)("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
-
-  def wsMessageToString: ws.Message => Future[String] = {
-    case message: ws.TextMessage.Strict =>
-      Future.successful(message.text)
-
-    case message: ws.TextMessage.Streamed =>
-      val seq: Future[Seq[String]] = message.textStream.runWith(Sink.seq)
-      seq.map(seq => seq.mkString)
-
-    case message =>
-      Future.successful(message.toString)
-  }
 
   // format: off
   // #sample
@@ -82,5 +71,23 @@ object JmsToWebSocket extends JmsSampleBase with App {
     _ <- WebServer.stop()
     _ <- ActiveMqBroker.stop()
   } ()
+
+  // #sample
+
+  /**
+   * Convert potentially chunked WebSocket Message to a string.
+   */
+  def wsMessageToString: ws.Message => Future[String] = {
+    case message: ws.TextMessage.Strict =>
+      Future.successful(message.text)
+
+    case message: ws.TextMessage.Streamed =>
+      val seq = message.textStream.runWith(Sink.seq)
+      seq.map(seq => seq.mkString)
+
+    case message =>
+      Future.successful(message.toString)
+  }
+  // #sample
 
 }

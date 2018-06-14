@@ -2,10 +2,9 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package jms;
+package jms.javasamples;
 
 // #sample
-
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.Http;
@@ -33,10 +32,10 @@ import javax.jms.ConnectionFactory;
 import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
 
-public class JmsToHttpGetInJava {
+public class JmsToHttpGet {
 
   public static void main(String[] args) throws Exception {
-    JmsToHttpGetInJava me = new JmsToHttpGetInJava();
+    JmsToHttpGet me = new JmsToHttpGet();
     me.run();
   }
 

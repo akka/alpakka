@@ -7,7 +7,7 @@ object Dependencies {
 
   val AkkaVersion = sys.env.get("AKKA_SERIES") match {
     case Some("2.4") => sys.error("Akka 2.4 is not supported anymore")
-    case _ => "2.5.12"
+    case _ => "2.5.13"
   }
 
   val AwsSdkVersion = "1.11.342"

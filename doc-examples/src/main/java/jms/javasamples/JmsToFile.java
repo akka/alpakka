@@ -2,13 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package jms;
+package jms.javasamples;
 
 // #sample
-import akka.Done;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
+import akka.stream.IOResult;
 import akka.stream.KillSwitch;
 import akka.stream.Materializer;
 import akka.stream.alpakka.jms.JmsConsumerSettings;
@@ -22,20 +22,20 @@ import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
 
 // #sample
+
 import playground.ActiveMqBroker;
 import scala.concurrent.ExecutionContext;
 
 import javax.jms.ConnectionFactory;
+import java.util.Arrays;
 
-
-public class JmsToOneFilePerMessageInJava {
+public class JmsToFile {
 
   public static void main(String[] args) throws Exception {
-    JmsToOneFilePerMessageInJava me = new JmsToOneFilePerMessageInJava();
+    JmsToFile me = new JmsToFile();
     me.run();
   }
 
@@ -67,28 +67,19 @@ public class JmsToOneFilePerMessageInJava {
                 .withQueue("test")
         );
 
-    Pair<KillSwitch, CompletionStage<Done>> pair =
+    Sink<ByteString, CompletionStage<IOResult>> fileSink =
+        FileIO.toPath(Paths.get("target/out.txt")); // (2)
+
+    Pair<KillSwitch, CompletionStage<IOResult>> pair =
         jmsSource                              //: String
-            .map(ByteString::fromString)       //: ByteString    (2)
-            .zip(Source.fromIterator(() -> Arrays.asList(0, 1, 2, 3).iterator())) //: Pair<ByteString, Integer> (3)
-            .mapAsyncUnordered(5, (in) -> {
-                  ByteString byteString = in.first();
-                  Integer number = in.second();
-                  return
-                      Source                            //   (4)
-                          .single(byteString)
-                          .runWith(FileIO.toPath(Paths.get("target/out-" + number + ".txt")), materializer);
-                }
-            )                                           //: IoResult
-            .toMat(Sink.ignore(), Keep.both())
+            .map(ByteString::fromString)       //: ByteString    (3)
+            .toMat(fileSink, Keep.both())
             .run(materializer);
 
     // #sample
 
     KillSwitch runningSource = pair.first();
-    CompletionStage<Done> streamCompletion = pair.second();
-
-    Thread.sleep(2 * 1000);
+    CompletionStage<IOResult> streamCompletion = pair.second();
 
     runningSource.shutdown();
     streamCompletion.thenAccept(res -> system.terminate());
