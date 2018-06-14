@@ -3,9 +3,9 @@
 ### Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
-  group1=com.lightbend.akka
-  artifact1=akka-stream-alpakka-file_$scalaBinaryVersion$
-  version1=$version$
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-file_$scalaBinaryVersion$
+  version=$version$
   group2=com.lightbend.akka
   artifact2=akka-stream-alpakka-ftp_$scalaBinaryVersion$
   version2=$version$
