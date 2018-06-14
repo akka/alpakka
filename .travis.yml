@@ -71,6 +71,7 @@ jobs:
     - env: CMD=+solr/testChanged
     - env: CMD=+sqs/testChanged
     - env: CMD=+sse/testChanged
+    - env: CMD=+text/testChanged
     - env: CMD=+unix-domain-socket/testChanged
     - env: CMD=+xml/testChanged
 
