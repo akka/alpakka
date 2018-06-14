@@ -62,14 +62,19 @@ Java
   version=$version$
   group2=com.typesafe.akka
   artifact2=akka-http_$scalaBinaryVersion$
-  version=$akkaHttpVersion$
+  version2=$akkaHttpVersion$
 }
 
 
 Scala
 : @@snip ($alpakka$/doc-examples/src/main/scala/jms/JmsToHttpGet.scala) { #sample }
 
-@github[Full source](/doc-examples/src/main/scala/jms/JmsToHttpGet.scala) { #sample }
+Java
+: @@snip ($alpakka$/doc-examples/src/main/java/jms/JmsToHttpGetInJava.java) { #sample }
+
+
+@scala[@github[Full source](/doc-examples/src/main/scala/jms/JmsToHttpGet.scala) { #sample }]
+@java[@github[Full source](/doc-examples/src/main/java/jms/JmsToHttpGetInJava.java) { #sample }]
 
 
 
