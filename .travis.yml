@@ -21,10 +21,11 @@ jobs:
       env: SCALAFMT_CHECK
     - script: sbt scalafmtSbtCheck || { echo "[error] Unformatted sbt code found. Please run 'scalafmtSbt' and commit the reformatted code."; false; }
       env: SCALAFMT_SBT_CHECK
+    - env: CMD="Test/compile"
+    - env: CMD="docs/paradox"
 
     - stage: test
-      env: CMD=docs/paradox
-    - env:
+      env:
       - PRE_CMD="docker-compose up -d amqp"
       - CMD=+amqp/testChanged
     - env: CMD=+awslambda/testChanged
