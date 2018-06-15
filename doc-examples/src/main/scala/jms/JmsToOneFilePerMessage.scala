@@ -27,16 +27,16 @@ object JmsToOneFilePerMessage extends JmsSampleBase with App {
   // format: off
   // #sample
 
-  val jmsSource: Source[String, KillSwitch] =                                  // (1)
+  val jmsSource: Source[String, KillSwitch] =                                   // (1)
     JmsConsumer.textSource(
       JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("test")
     )
                                                             // stream element type
   val runningSource = jmsSource                             //: String
-    .map(ByteString(_))                                     //: ByteString        (2)
-    .zip(Source.fromIterator(() => Iterator.from(0)))       //: (ByteString, Int) (3)
+    .map(ByteString(_))                                     //: ByteString         (2)
+    .zipWithIndex                                           //: (ByteString, Long) (3)
     .mapAsyncUnordered(parallelism = 5) { case (byteStr, number) =>
-      Source                                                //                    (4)
+      Source                                                //                     (4)
         .single(byteStr)
         .runWith(FileIO.toPath(Paths.get(s"target/out-$number.txt")))
     }                                                       //: IoResult
