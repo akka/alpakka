@@ -12,8 +12,7 @@ import org.apache.ftpserver.listener.ListenerFactory
 import org.apache.ftpserver.usermanager.PropertiesUserManagerFactory
 import playground.filesystem.JimfsFactory
 
-class FtpServerEmbedded {
-
+object FtpServerEmbedded {
   val DEFAULT_LISTENER = "default"
 
   def start(fs: FileSystem, port: Int): FtpServer = {
@@ -36,7 +35,4 @@ class FtpServerEmbedded {
     ftpServer.start()
     ftpServer
   }
-
 }
-
-object FtpServerEmbedded extends FtpServerEmbedded
