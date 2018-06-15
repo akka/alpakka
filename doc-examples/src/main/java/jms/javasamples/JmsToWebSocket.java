@@ -84,6 +84,7 @@ public class JmsToWebSocket {
     Flow<Message, Message, CompletionStage<WebSocketUpgradeResponse>> webSocketFlow = // (2)
       http.webSocketClientFlow(WebSocketRequest.create("ws://localhost:8080/webSocket/ping"));
 
+    int parallelism = 4;
     Pair<Pair<KillSwitch, CompletionStage<WebSocketUpgradeResponse>>, CompletionStage<Done>> pair =
         jmsSource                                                  //: String
             .map(s -> {
@@ -91,7 +92,7 @@ public class JmsToWebSocket {
               return msg;
             })                                                     //: Message           (3)
             .viaMat(webSocketFlow, Keep.both())                    //: Message           (4)
-            .mapAsync(4, this::wsMessageToString)                  //: String            (5)
+            .mapAsync(parallelism, this::wsMessageToString)        //: String            (5)
             .map(s -> "client received: " + s)                     //: String            (6)
             .toMat(Sink.foreach(System.out::println), Keep.both()) //                    (7)
             .run(materializer);

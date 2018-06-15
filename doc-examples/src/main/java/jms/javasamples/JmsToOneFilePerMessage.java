@@ -67,11 +67,12 @@ public class JmsToOneFilePerMessage {
                 .withQueue("test")
         );
 
+    int parallelism = 5;
     Pair<KillSwitch, CompletionStage<Done>> pair =
         jmsConsumer                            //: String
             .map(ByteString::fromString)       //: ByteString             (2)
             .zipWithIndex()                    //: Pair<ByteString, Long> (3)
-            .mapAsyncUnordered(5, (in) -> {
+            .mapAsyncUnordered(parallelism, (in) -> {
                   ByteString byteString = in.first();
                   Long number = in.second();
                   return

@@ -74,6 +74,7 @@ public class JmsToHttpGet {
         );
 
 
+    int parallelism = 4;
     Pair<KillSwitch, CompletionStage<Done>> pair =
         jmsSource                                                  //: String
             .map(ByteString::fromString)                           //: ByteString   (2)
@@ -81,7 +82,7 @@ public class JmsToHttpGet {
                 HttpRequest.create("http://localhost:8080/hello")
                     .withEntity(bs)
             )                                                      //: HttpRequest  (3)
-            .mapAsyncUnordered(4, http::singleRequest)             //: HttpResponse (4)
+            .mapAsyncUnordered(parallelism, http::singleRequest)   //: HttpResponse (4)
             .toMat(Sink.foreach(System.out::println), Keep.both()) //               (5)
             .run(materializer);
     // #sample
