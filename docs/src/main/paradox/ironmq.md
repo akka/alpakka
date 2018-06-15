@@ -1,16 +1,14 @@
-# IronMq Connector
+# IronMQ
 
-The IronMq connector provides an Akka stream source and sink to connect to the [IronMQ](https://www.iron.io/platform/ironmq/) queue.
+The IronMQ connector provides an Akka stream source and sink to connect to the [IronMQ](https://www.iron.io/platform/ironmq/) queue.
 
-IronMq is a simple point-to-point queue, but it is possible to implement a fan-out semantic by configure the queue as push
+IronMQ is a simple point-to-point queue, but it is possible to implement a fan-out semantic by configure the queue as push
 queue and set other queue as subscribers. More information about that could be found on
-[IronMq documentation](https://www.iron.io/ironmq-fan-out-support/)
-
+[IronMQ documentation](https://www.iron.io/ironmq-fan-out-support/)
 
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aironmq)
-
 
 ## Artifacts
 
@@ -22,7 +20,7 @@ queue and set other queue as subscribers. More information about that could be f
 
 ## Usage
 
-IronMq can be used either in cloud or on-premise. Either way you need a authentication token and a project ID. These can
+IronMQ can be used either in cloud or on-premise. Either way you need a authentication token and a project ID. These can
 be set in the Typesafe config:
 
 @@snip ($alpakka$/ironmq/src/main/resources/reference.conf)
@@ -58,7 +56,7 @@ For each `PushMessage` from the upstream you will have exactly one `Message.Id` 
 if the producer will implement a batch mechanism in the future.
 
 The producer also provides a Committable aware Flow/Sink as `Flow[(PushMessage, ToCommit), (Message.Id, CommitResult), CommitMat]`.
-It can be used to consume a Flow from an IronMq consumer or any other source that provides a commit mechanism.
+It can be used to consume a Flow from an IronMQ consumer or any other source that provides a commit mechanism.
 
 > Test code requires IronMQ running in the background. You can start it quickly using docker:
 >

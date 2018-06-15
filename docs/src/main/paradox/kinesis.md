@@ -1,4 +1,4 @@
-# AWS Kinesis Connector
+# AWS Kinesis
 
 The AWS Kinesis connector provides flows for streaming data to and from Kinesis Data streams and to Kinesis Firehose streams.
 

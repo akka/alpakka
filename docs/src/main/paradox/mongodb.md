@@ -1,4 +1,4 @@
-# MongoDB Connector
+# MongoDB
 
 The MongoDB connector allows you to read and save documents. You can query as a stream of documents from @scaladoc[MongoSource](akka.stream.alpakka.mongodb.scaladsl.MongoSource$) or update documents in a collection with @scaladoc[MongoSink](akka.stream.alpakka.mongodb.scaladsl.MongoSink$).
 
@@ -14,12 +14,9 @@ Please read more about it in the [ReactiveMongo documentation](http://reactivemo
 
 @@@
 
-
-
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Amongodb)
-
 
 ## Artifacts
 

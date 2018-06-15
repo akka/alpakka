@@ -1,15 +1,13 @@
-# HBase connector
+# HBase
 
 A flow and a composite sink to write element in [HBase](http://hbase.apache.org).
 
 HBase is a column family NoSQL Database backed by HDFS.
 
-
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Ahbase)
 
- 
 # Usage
 
 Build a converter and a tableSetting.

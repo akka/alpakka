@@ -1,4 +1,4 @@
-# AMQP Connector
+# AMQP
 
 The AMQP connector provides Akka Stream sources and sinks to connect to AMQP 0.9.1 servers (RabbitMQ, OpenAMQ, etc.).
 
