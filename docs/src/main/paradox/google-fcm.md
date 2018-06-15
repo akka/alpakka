@@ -9,11 +9,9 @@ So the error parsing, the condition builder, the apns object and some other obje
 could (and possibly will) be improved.
 @@@
 
-
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Agoogle-fcm)
-
 
 ## Artifacts
 

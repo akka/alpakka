@@ -1,11 +1,10 @@
-# MQTT Connector
+# MQTT
 
 The MQTT connector provides an Akka Stream source, sink and flow to connect to MQTT servers. It is based on [Eclipse Paho](https://www.eclipse.org/paho/clients/java/). 
 
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Amqtt)
-
 
 ## Artifacts
 

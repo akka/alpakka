@@ -1,14 +1,12 @@
-# Kudu connector
+# Apache Kudu
 
 A flow and a composite sink to write element in [Kudu](http://kudu.apache.org).
 
 Apache Kudu is a free and open source column-oriented data store of the Apache Hadoop ecosystem.
 
-
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Akudu)
-
 
 # Usage
 

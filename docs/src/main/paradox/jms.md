@@ -1,12 +1,10 @@
-# JMS Connector
+# JMS
 
 The JMS connector provides Akka Stream sources and sinks to connect to JMS providers.
-
 
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Ajms)
-
 
 ## Artifacts
 

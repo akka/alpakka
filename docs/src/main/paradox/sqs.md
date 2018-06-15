@@ -1,9 +1,8 @@
-# AWS SQS Connector
+# AWS SQS
 
 The AWS SQS connector provides Akka Stream sources and sinks for AWS SQS queues.
 
 For more information about AWS SQS please visit the [official documentation](https://aws.amazon.com/documentation/sqs/).
-
 
 ### Reported issues
 

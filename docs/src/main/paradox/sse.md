@@ -1,12 +1,10 @@
-# Server-sent Events (SSE) Connector
+# Server-sent Events (SSE)
 
 The SSE connector provides a continuous source of server-sent events recovering from connection failure.
-
 
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Asse)
-
 
 ## Artifacts
 

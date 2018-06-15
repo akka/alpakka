@@ -1,12 +1,10 @@
-# AWS DynamoDB Connector
+# AWS DynamoDB
 
 The AWS DynamoDB connector provides a flow for streaming DynamoDB requests. For more information about DynamoDB please visit the [official documentation](https://aws.amazon.com/dynamodb/).
-
 
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Adynamodb)
-
 
 ## Artifacts
 

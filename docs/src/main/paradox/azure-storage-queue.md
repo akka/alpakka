@@ -1,4 +1,4 @@
-# Azure Storage Queue Connector
+# Azure Storage Queue
 
 The Azure Storage Queue connector provides an Akka Stream Source and Sinks for Azure Storage Queue integration.
 
@@ -7,7 +7,6 @@ Azure Storage Queue is a queuing service similar to Amazon's SQS. It is designed
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aazure-storage-queue)
-
 
 ### Artifacts
 
