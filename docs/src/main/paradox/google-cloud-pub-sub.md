@@ -2,11 +2,9 @@
 
 The google cloud pub/sub connector provides a way to connect to google clouds managed pub/sub https://cloud.google.com/pubsub/.
 
-
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Agoogle-cloud-pub-sub)
-
 
 ## Artifacts
 
