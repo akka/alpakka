@@ -92,7 +92,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "org.elasticsearch.client" % "rest" % "5.5.3", // ApacheV2
       "io.spray" %% "spray-json" % "1.3.3", // ApacheV2
-      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.4", // ApacheV2
+      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.6", // ApacheV2
       "org.codelibs" % "elasticsearch-cluster-runner" % "5.6.0.0" % Test // ApacheV2
     )
   )
