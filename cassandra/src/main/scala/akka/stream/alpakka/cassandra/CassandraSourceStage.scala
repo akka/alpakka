@@ -17,51 +17,60 @@ final class CassandraSourceStage(futStmt: Future[Statement], session: Session) e
   val out: Outlet[Row] = Outlet("CassandraSource.out")
   override val shape: SourceShape[Row] = SourceShape(out)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) {
-      var maybeRs = Option.empty[ResultSet]
-      var futFetchedCallback: AsyncCallback[Try[ResultSet]] = _
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+    var maybeRs = Option.empty[ResultSet]
+    var futFetchedCallback: Try[ResultSet] => Unit = _
+    var isFetching = true // set to true until prestart's callback will set to false
+    var minimumPreFetchSize: Int = _
 
-      override def preStart(): Unit = {
-        implicit val ec = materializer.executionContext
-
-        futFetchedCallback = getAsyncCallback[Try[ResultSet]](tryPushAfterFetch)
-
-        val futRs = futStmt.flatMap(stmt => session.executeAsync(stmt).asScala())
-        futRs.onComplete(futFetchedCallback.invoke)
-      }
-
-      setHandler(
-        out,
-        new OutHandler {
-          override def onPull(): Unit = {
-            implicit val ec = materializer.executionContext
-
-            maybeRs match {
-              case Some(rs) if rs.getAvailableWithoutFetching > 0 => push(out, rs.one())
-              case Some(rs) if rs.isExhausted => completeStage()
-              case Some(rs) =>
-                // fetch next page
-                val futRs = rs.fetchMoreResults().asScala()
-                futRs.onComplete(futFetchedCallback.invoke)
-              case None => () // doing nothing, waiting for futRs in preStart() to be completed
-            }
-          }
-        }
-      )
-
-      private def tryPushAfterFetch(rsOrFailure: Try[ResultSet]): Unit = rsOrFailure match {
-        case Success(rs) =>
-          maybeRs = Some(rs)
-          if (rs.getAvailableWithoutFetching > 0) {
-            if (isAvailable(out)) {
-              push(out, rs.one())
-            }
-          } else {
-            completeStage()
-          }
-
-        case Failure(failure) => failStage(failure)
-      }
+    override def preStart(): Unit = {
+      futFetchedCallback = getAsyncCallback[Try[ResultSet]](tryPushAfterFetch).invoke
+      val exec = materializer.executionContext
+      futStmt.foreach { stmt: Statement =>
+        minimumPreFetchSize = math.max(1, stmt.getFetchSize / 2)
+        val gFut = session.executeAsync(stmt)
+        GuavaFutures.invokeTryCallback(gFut, exec)(futFetchedCallback)
+      }(exec)
     }
+
+    setHandler(
+      out,
+      new OutHandler {
+        override def onPull(): Unit = maybeRs.foreach { rs =>
+          val currentlyAvailableRows = rs.getAvailableWithoutFetching
+
+          if (!isFetching && currentlyAvailableRows < minimumPreFetchSize) {
+            isFetching = true
+            // fetch next page
+            val gFut = rs.fetchMoreResults()
+            val exec = materializer.executionContext
+            GuavaFutures.invokeTryCallback(gFut, exec)(futFetchedCallback)
+          }
+
+          if (currentlyAvailableRows > 0)
+            push(out, rs.one())
+        }
+      }
+    )
+
+    private[this] def tryPushAfterFetch(rsOrFailure: Try[ResultSet]): Unit = rsOrFailure match {
+      case Success(newRs) =>
+        isFetching = false
+
+        val rs = maybeRs.getOrElse {
+          maybeRs = Some(newRs)
+          newRs
+        }
+
+        if (rs.getAvailableWithoutFetching > 0) {
+          if (isAvailable(out)) {
+            push(out, rs.one())
+          }
+        } else {
+          completeStage()
+        }
+
+      case Failure(failure) => failStage(failure)
+    }
+  }
 }
