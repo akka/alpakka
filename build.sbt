@@ -199,7 +199,8 @@ lazy val docs = project
       "scaladoc.akka.base_url" -> s"http://doc.akka.io/api/akka/${Dependencies.AkkaVersion}",
       "scaladoc.akka.http.base_url" -> s"https://doc.akka.io/api/akka-http/${Dependencies.AkkaHttpVersion}/",
       "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}",
-      "snip.alpakka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath
+      "snip.alpakka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
+      "javadoc.org.apache.hadoop.base_url" -> s"https://hadoop.apache.org/docs/r${Dependencies.HadoopVersion}/api/"
     ),
     paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     paradoxLocalApiKey := "scaladoc.akka.stream.alpakka.base_url",

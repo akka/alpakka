@@ -44,7 +44,7 @@ The flows push `OutgoingMessage` to a downstream.
 
 ### Data Writer
 
-Use `HdfsFlow.data` to stream with `FSDataOutputStream` without any compression.
+Use `HdfsFlow.data` to stream with @javadoc[FSDataOutputStream](org.apache.hadoop.fs.FSDataOutputStream) without any compression.
 
 
 Scala
@@ -56,7 +56,7 @@ Java
 
 ### Compressed Data Writer
 
-First, create `CompressionCodec`.
+First, create @javadoc[CompressionCodec](org.apache.hadoop.io.compress.CompressionCodec).
 
 
 Scala
@@ -66,7 +66,7 @@ Java
 : @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-codec }
 
 
-Then, use `HdfsFlow.compress` to stream with `CompressionOutputStream` and `CompressionCodec`. 
+Then, use `HdfsFlow.compress` to stream with @javadoc[CompressionOutputStream](org.apache.hadoop.io.compress.CompressionOutputStream) and @javadoc[CompressionCodec](org.apache.hadoop.io.compress.CompressionCodec). 
 
 
 Scala
@@ -152,9 +152,7 @@ Java
 
 ### File path generator
 
-`FilePathGenerator` provides a functionality to generate rotation path in HDFS. 
-@scala[@scaladoc[FilePathGenerator](akka.stream.alpakka.hdfs.FilePathGenerator$).]
-@java[@scaladoc[FilePathGenerator](akka.stream.alpakka.hdfs.FilePathGenerator$).]
+@scaladoc[FilePathGenerator](akka.stream.alpakka.hdfs.FilePathGenerator$) provides a functionality to generate rotation path in HDFS. 
 
 Scala
 : @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-generator }
@@ -166,17 +164,12 @@ Java
 ### Rotation Strategy
 
 
-`RotationStrategy` provides a functionality to decide when to rotate files.
-@scala[@scaladoc[RotationStrategy](akka.stream.alpakka.hdfs.RotationStrategyFactory$).]
-@java[@scaladoc[RotationStrategy](akka.stream.alpakka.hdfs.RotationStrategyFactory$).]
-
+@scaladoc[RotationStrategy](akka.stream.alpakka.hdfs.RotationStrategyFactory$) provides a functionality to decide when to rotate files.
 
 ### Sync Strategy
 
 
-`SyncStrategy` provides a functionality to decide when to synchronize the output.
-@scala[@scaladoc[SyncStrategy](akka.stream.alpakka.hdfs.SyncStrategyFactory$).]
-@java[@scaladoc[SyncStrategy](akka.stream.alpakka.hdfs.SyncStrategyFactory$).]
+@scaladoc[SyncStrategy](akka.stream.alpakka.hdfs.SyncStrategyFactory$) provides a functionality to decide when to synchronize the output.
 
 ## Reading
 

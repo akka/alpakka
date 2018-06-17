@@ -160,8 +160,9 @@ object Dependencies {
     )
   }
 
+  val HadoopVersion = "3.1.0"
   val Hdfs = {
-    val hadoopVersion = "3.1.0"
+    val hadoopVersion = HadoopVersion
     val catsVersion = "1.1.0"
     Seq(
       libraryDependencies ++= Seq(
