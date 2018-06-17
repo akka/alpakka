@@ -57,7 +57,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => books.toIterator)
-        .map(IncomingMessage(_))
+        .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -87,7 +87,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => dataIterator)
-        .map(IncomingMessage(_))
+        .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -116,7 +116,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
       //#define-data
       val resF = Source
         .fromIterator(() => dataIterator)
-        .map(IncomingMessage(_))
+        .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -139,7 +139,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => books.toIterator)
-        .map(IncomingMessage(_))
+        .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -153,7 +153,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
     "use time rotation" in {
       val (cancellable, resF) = Source
         .tick(0.millis, 50.milliseconds, ByteString("I love Alpakka!"))
-        .map(IncomingMessage(_))
+        .map(HdfsWriteMessage(_))
         .via(
           HdfsFlow.data(
             fs,
@@ -181,7 +181,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => books.toIterator)
-        .map(IncomingMessage(_))
+        .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -222,7 +222,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
         .map { kafkaMessage: KafkaMessage =>
           val book = kafkaMessage.book
           // Transform message so that we can write to hdfs
-          IncomingMessage(ByteString(book.title), kafkaMessage.offset)
+          HdfsWriteMessage(ByteString(book.title), kafkaMessage.offset)
         }
         .via(
           HdfsFlow.dataWithPassThrough[KafkaOffset](
@@ -281,7 +281,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => content.toIterator)
-        .map(IncomingMessage(_))
+        .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -313,7 +313,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => books.toIterator)
-        .map(IncomingMessage(_))
+        .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -346,7 +346,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => content.toIterator)
-        .map(IncomingMessage(_))
+        .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -378,7 +378,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => content.toIterator)
-        .map(IncomingMessage(_))
+        .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -410,7 +410,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => content.toIterator)
-        .map(IncomingMessage(_))
+        .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -434,7 +434,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => content.toIterator)
-        .map(IncomingMessage(_))
+        .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -460,7 +460,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF = Source
         .fromIterator(() => content.toIterator)
-        .map(IncomingMessage(_))
+        .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 

@@ -37,20 +37,20 @@ object HdfsWritingSettings {
     HdfsWritingSettings()
 }
 
-final case class IncomingMessage[T, C](source: T, passThrough: C)
+final case class HdfsWriteMessage[T, C](source: T, passThrough: C)
 
-object IncomingMessage {
+object HdfsWriteMessage {
   // Apply method to use when not using passThrough
-  def apply[T](source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(source, NotUsed)
+  def apply[T](source: T): HdfsWriteMessage[T, NotUsed] =
+    HdfsWriteMessage(source, NotUsed)
 
   // Java-api - without passThrough
-  def create[T](source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(source)
+  def create[T](source: T): HdfsWriteMessage[T, NotUsed] =
+    HdfsWriteMessage(source)
 
   // Java-api - with passThrough
-  def create[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(source, passThrough)
+  def create[T, C](source: T, passThrough: C): HdfsWriteMessage[T, C] =
+    HdfsWriteMessage(source, passThrough)
 
 }
 

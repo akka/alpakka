@@ -48,7 +48,7 @@ class HdfsReaderSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF1 = Source
         .fromIterator(() => content.toIterator)
-        .map(IncomingMessage(_))
+        .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -86,7 +86,7 @@ class HdfsReaderSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF1 = Source
         .fromIterator(() => content.toIterator)
-        .map(IncomingMessage(_))
+        .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 
@@ -122,7 +122,7 @@ class HdfsReaderSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val resF1 = Source
         .fromIterator(() => content.toIterator)
-        .map(IncomingMessage(_))
+        .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
 

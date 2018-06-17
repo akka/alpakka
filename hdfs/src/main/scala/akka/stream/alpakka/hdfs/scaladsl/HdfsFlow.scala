@@ -34,7 +34,7 @@ object HdfsFlow {
       syncStrategy: SyncStrategy,
       rotationStrategy: RotationStrategy,
       settings: HdfsWritingSettings
-  ): Flow[IncomingMessage[ByteString, NotUsed], RotationMessage, NotUsed] =
+  ): Flow[HdfsWriteMessage[ByteString, NotUsed], RotationMessage, NotUsed] =
     dataWithPassThrough[NotUsed](fs, syncStrategy, rotationStrategy, settings)
       .collect(OnlyRotationMessage)
 
@@ -51,7 +51,7 @@ object HdfsFlow {
       syncStrategy: SyncStrategy,
       rotationStrategy: RotationStrategy,
       settings: HdfsWritingSettings
-  ): Flow[IncomingMessage[ByteString, C], OutgoingMessage[C], NotUsed] =
+  ): Flow[HdfsWriteMessage[ByteString, C], OutgoingMessage[C], NotUsed] =
     Flow
       .fromGraph(
         new HdfsFlowStage[FSDataOutputStream, ByteString, C](
@@ -77,7 +77,7 @@ object HdfsFlow {
       rotationStrategy: RotationStrategy,
       compressionCodec: CompressionCodec,
       settings: HdfsWritingSettings
-  ): Flow[IncomingMessage[ByteString, NotUsed], RotationMessage, NotUsed] =
+  ): Flow[HdfsWriteMessage[ByteString, NotUsed], RotationMessage, NotUsed] =
     compressedWithPassThrough[NotUsed](fs, syncStrategy, rotationStrategy, compressionCodec, settings)
       .collect(OnlyRotationMessage)
 
@@ -97,7 +97,7 @@ object HdfsFlow {
       rotationStrategy: RotationStrategy,
       compressionCodec: CompressionCodec,
       settings: HdfsWritingSettings
-  ): Flow[IncomingMessage[ByteString, C], OutgoingMessage[C], NotUsed] =
+  ): Flow[HdfsWriteMessage[ByteString, C], OutgoingMessage[C], NotUsed] =
     Flow
       .fromGraph(
         new HdfsFlowStage[FSDataOutputStream, ByteString, C](
@@ -130,7 +130,7 @@ object HdfsFlow {
       settings: HdfsWritingSettings,
       classK: Class[K],
       classV: Class[V]
-  ): Flow[IncomingMessage[(K, V), NotUsed], RotationMessage, NotUsed] =
+  ): Flow[HdfsWriteMessage[(K, V), NotUsed], RotationMessage, NotUsed] =
     sequenceWithPassThrough[K, V, NotUsed](fs, syncStrategy, rotationStrategy, settings, classK, classV)
       .collect(OnlyRotationMessage)
 
@@ -155,7 +155,7 @@ object HdfsFlow {
       settings: HdfsWritingSettings,
       classK: Class[K],
       classV: Class[V]
-  ): Flow[IncomingMessage[(K, V), NotUsed], RotationMessage, NotUsed] =
+  ): Flow[HdfsWriteMessage[(K, V), NotUsed], RotationMessage, NotUsed] =
     sequenceWithPassThrough[K, V, NotUsed](
       fs,
       syncStrategy,
@@ -185,7 +185,7 @@ object HdfsFlow {
       settings: HdfsWritingSettings,
       classK: Class[K],
       classV: Class[V]
-  ): Flow[IncomingMessage[(K, V), C], OutgoingMessage[C], NotUsed] =
+  ): Flow[HdfsWriteMessage[(K, V), C], OutgoingMessage[C], NotUsed] =
     Flow
       .fromGraph(
         new HdfsFlowStage[SequenceFile.Writer, (K, V), C](
@@ -218,7 +218,7 @@ object HdfsFlow {
       settings: HdfsWritingSettings,
       classK: Class[K],
       classV: Class[V]
-  ): Flow[IncomingMessage[(K, V), C], OutgoingMessage[C], NotUsed] =
+  ): Flow[HdfsWriteMessage[(K, V), C], OutgoingMessage[C], NotUsed] =
     Flow
       .fromGraph(
         new HdfsFlowStage[SequenceFile.Writer, (K, V), C](

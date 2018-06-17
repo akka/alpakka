@@ -23,12 +23,12 @@ private[hdfs] final class HdfsFlowStage[W, I, C](
     rs: RotationStrategy,
     settings: HdfsWritingSettings,
     hdfsWriter: HdfsWriter[W, I]
-) extends GraphStage[FlowShape[IncomingMessage[I, C], OutgoingMessage[C]]] {
+) extends GraphStage[FlowShape[HdfsWriteMessage[I, C], OutgoingMessage[C]]] {
 
-  private val in = Inlet[IncomingMessage[I, C]](Logging.simpleName(this) + ".in")
+  private val in = Inlet[HdfsWriteMessage[I, C]](Logging.simpleName(this) + ".in")
   private val out = Outlet[OutgoingMessage[C]](Logging.simpleName(this) + ".out")
 
-  override val shape: FlowShape[IncomingMessage[I, C], OutgoingMessage[C]] = FlowShape(in, out)
+  override val shape: FlowShape[HdfsWriteMessage[I, C], OutgoingMessage[C]] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new HdfsFlowLogic(ss, rs, settings, hdfsWriter, in, out, shape)
@@ -39,13 +39,13 @@ private[hdfs] final class HdfsFlowStage[W, I, C](
  */
 @akka.annotation.InternalApi
 private final class HdfsFlowLogic[W, I, C](
-    initialSyncStrategy: SyncStrategy,
-    initialRotationStrategy: RotationStrategy,
-    settings: HdfsWritingSettings,
-    initialHdfsWriter: HdfsWriter[W, I],
-    inlet: Inlet[IncomingMessage[I, C]],
-    outlet: Outlet[OutgoingMessage[C]],
-    shape: FlowShape[IncomingMessage[I, C], OutgoingMessage[C]]
+                                            initialSyncStrategy: SyncStrategy,
+                                            initialRotationStrategy: RotationStrategy,
+                                            settings: HdfsWritingSettings,
+                                            initialHdfsWriter: HdfsWriter[W, I],
+                                            inlet: Inlet[HdfsWriteMessage[I, C]],
+                                            outlet: Outlet[OutgoingMessage[C]],
+                                            shape: FlowShape[HdfsWriteMessage[I, C], OutgoingMessage[C]]
 ) extends TimerGraphStageLogic(shape)
     with InHandler
     with OutHandler {
@@ -95,7 +95,7 @@ private final class HdfsFlowLogic[W, I, C](
       pull(inlet)
     }
 
-  private def onPushProgram(input: IncomingMessage[I, C]) =
+  private def onPushProgram(input: HdfsWriteMessage[I, C]) =
     for {
       _ <- setLogicState(LogicState.Writing)
       offset <- write(input.source)

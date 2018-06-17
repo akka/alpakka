@@ -48,12 +48,12 @@ public class HdfsReaderTest {
   public void testReadDataFile() throws Exception {
     List<ByteString> data = JavaTestUtils.generateFakeContent(1.0, FileUnit.KB().byteCount());
 
-    Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
+    Flow<HdfsWriteMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.data(
             fs, SyncStrategy.count(500), RotationStrategy.size(0.5, FileUnit.KB()), settings);
 
     CompletionStage<List<RotationMessage>> resF =
-        Source.from(data).map(IncomingMessage::create).via(flow).runWith(Sink.seq(), materializer);
+        Source.from(data).map(HdfsWriteMessage::create).via(flow).runWith(Sink.seq(), materializer);
 
     List<RotationMessage> logs = new ArrayList<>(resF.toCompletableFuture().get());
     List<Character> readData = new ArrayList<>();
@@ -81,7 +81,7 @@ public class HdfsReaderTest {
     DefaultCodec codec = new DefaultCodec();
     codec.setConf(fs.getConf());
 
-    Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
+    Flow<HdfsWriteMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.compressed(
             fs, SyncStrategy.count(1), RotationStrategy.size(0.1, FileUnit.MB()), codec, settings);
 
@@ -90,7 +90,7 @@ public class HdfsReaderTest {
 
     CompletionStage<List<RotationMessage>> resF =
         Source.from(content)
-            .map(IncomingMessage::create)
+            .map(HdfsWriteMessage::create)
             .via(flow)
             .runWith(Sink.seq(), materializer);
 
@@ -117,7 +117,7 @@ public class HdfsReaderTest {
 
   @Test
   public void testReadSequenceFile() throws Exception {
-    Flow<IncomingMessage<Pair<Text, Text>, NotUsed>, RotationMessage, NotUsed> flow =
+    Flow<HdfsWriteMessage<Pair<Text, Text>, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.sequence(
             fs,
             SyncStrategy.none(),
@@ -131,7 +131,7 @@ public class HdfsReaderTest {
 
     CompletionStage<List<RotationMessage>> resF =
         Source.from(content)
-            .map(IncomingMessage::create)
+            .map(HdfsWriteMessage::create)
             .via(flow)
             .runWith(Sink.seq(), materializer);
 

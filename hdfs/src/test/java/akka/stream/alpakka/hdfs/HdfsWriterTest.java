@@ -92,12 +92,12 @@ public class HdfsWriterTest {
 
   @Test
   public void testDataWriterFileSizeRotationWithFiveFile() throws Exception {
-    Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
+    Flow<HdfsWriteMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.data(
             fs, SyncStrategy.count(50), RotationStrategy.size(0.01, FileUnit.KB()), settings);
 
     CompletionStage<List<RotationMessage>> resF =
-        Source.from(books).map(IncomingMessage::create).via(flow).runWith(Sink.seq(), materializer);
+        Source.from(books).map(HdfsWriteMessage::create).via(flow).runWith(Sink.seq(), materializer);
 
     List<RotationMessage> result = new ArrayList<>(resF.toCompletableFuture().get());
     List<RotationMessage> expect =
@@ -115,12 +115,12 @@ public class HdfsWriterTest {
   public void testDataWriterFileSizeRotationWithTwoFile() throws Exception {
     List<ByteString> data = JavaTestUtils.generateFakeContent(1.0, FileUnit.KB().byteCount());
 
-    Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
+    Flow<HdfsWriteMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.data(
             fs, SyncStrategy.count(500), RotationStrategy.size(0.5, FileUnit.KB()), settings);
 
     CompletionStage<List<RotationMessage>> resF =
-        Source.from(data).map(IncomingMessage::create).via(flow).runWith(Sink.seq(), materializer);
+        Source.from(data).map(HdfsWriteMessage::create).via(flow).runWith(Sink.seq(), materializer);
 
     List<RotationMessage> logs = new ArrayList<>(resF.toCompletableFuture().get());
 
@@ -139,12 +139,12 @@ public class HdfsWriterTest {
     List<ByteString> data = JavaTestUtils.generateFakeContent(1.0, FileUnit.KB().byteCount());
 
     // #define-data
-    Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
+    Flow<HdfsWriteMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.data(
             fs, SyncStrategy.count(500), RotationStrategy.size(1, FileUnit.GB()), settings);
     // #define-data
     CompletionStage<List<RotationMessage>> resF =
-        Source.from(data).map(IncomingMessage::create).via(flow).runWith(Sink.seq(), materializer);
+        Source.from(data).map(HdfsWriteMessage::create).via(flow).runWith(Sink.seq(), materializer);
 
     List<RotationMessage> logs = new ArrayList<>(resF.toCompletableFuture().get());
     assertEquals(logs.size(), 1);
@@ -156,11 +156,11 @@ public class HdfsWriterTest {
 
   @Test
   public void testDataWriterWithBufferRotation() throws Exception {
-    Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
+    Flow<HdfsWriteMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.data(fs, SyncStrategy.count(1), RotationStrategy.count(2), settings);
 
     CompletionStage<List<RotationMessage>> resF =
-        Source.from(books).map(IncomingMessage::create).via(flow).runWith(Sink.seq(), materializer);
+        Source.from(books).map(HdfsWriteMessage::create).via(flow).runWith(Sink.seq(), materializer);
 
     List<RotationMessage> logs = new ArrayList<>(resF.toCompletableFuture().get());
 
@@ -175,7 +175,7 @@ public class HdfsWriterTest {
                 java.time.Duration.ofMillis(0),
                 java.time.Duration.ofMillis(50),
                 ByteString.fromString("I love Alpakka!"))
-            .map(IncomingMessage::create)
+            .map(HdfsWriteMessage::create)
             .via(
                 HdfsFlow.data(
                     fs,
@@ -199,11 +199,11 @@ public class HdfsWriterTest {
 
   @Test
   public void testDataWriterWithNoRotation() throws Exception {
-    Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
+    Flow<HdfsWriteMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.data(fs, SyncStrategy.none(), RotationStrategy.none(), settings);
 
     CompletionStage<List<RotationMessage>> resF =
-        Source.from(books).map(IncomingMessage::create).via(flow).runWith(Sink.seq(), materializer);
+        Source.from(books).map(HdfsWriteMessage::create).via(flow).runWith(Sink.seq(), materializer);
 
     List<RotationMessage> logs = new ArrayList<>(resF.toCompletableFuture().get());
 
@@ -232,7 +232,7 @@ public class HdfsWriterTest {
 
     final KafkaCommitter kafkaCommitter = new KafkaCommitter();
 
-    Flow<IncomingMessage<ByteString, KafkaOffset>, OutgoingMessage<KafkaOffset>, NotUsed> flow =
+    Flow<HdfsWriteMessage<ByteString, KafkaOffset>, OutgoingMessage<KafkaOffset>, NotUsed> flow =
         HdfsFlow.dataWithPassThrough(
             fs,
             SyncStrategy.count(50),
@@ -245,7 +245,7 @@ public class HdfsWriterTest {
                 kafkaMessage -> {
                   Book book = kafkaMessage.book;
                   // Transform message so that we can write to hdfs\
-                  return IncomingMessage.create(
+                  return HdfsWriteMessage.create(
                       ByteString.fromString(book.title), kafkaMessage.offset);
                 })
             .via(flow)
@@ -288,7 +288,7 @@ public class HdfsWriterTest {
     // #define-codec
 
     // #define-compress
-    Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
+    Flow<HdfsWriteMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.compressed(
             fs, SyncStrategy.count(50), RotationStrategy.size(0.1, FileUnit.MB()), codec, settings);
     // #define-compress
@@ -298,7 +298,7 @@ public class HdfsWriterTest {
 
     CompletionStage<List<RotationMessage>> resF =
         Source.fromIterator(content::iterator)
-            .map(IncomingMessage::create)
+            .map(HdfsWriteMessage::create)
             .via(flow)
             .runWith(Sink.seq(), materializer);
 
@@ -322,11 +322,11 @@ public class HdfsWriterTest {
     DefaultCodec codec = new DefaultCodec();
     codec.setConf(fs.getConf());
 
-    Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
+    Flow<HdfsWriteMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.compressed(fs, SyncStrategy.count(1), RotationStrategy.count(1), codec, settings);
 
     CompletionStage<List<RotationMessage>> resF =
-        Source.from(books).map(IncomingMessage::create).via(flow).runWith(Sink.seq(), materializer);
+        Source.from(books).map(HdfsWriteMessage::create).via(flow).runWith(Sink.seq(), materializer);
 
     List<RotationMessage> logs = new ArrayList<>(resF.toCompletableFuture().get());
     List<RotationMessage> expect =
@@ -347,7 +347,7 @@ public class HdfsWriterTest {
     DefaultCodec codec = new DefaultCodec();
     codec.setConf(fs.getConf());
 
-    Flow<IncomingMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
+    Flow<HdfsWriteMessage<ByteString, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.compressed(fs, SyncStrategy.none(), RotationStrategy.none(), codec, settings);
 
     List<ByteString> content =
@@ -355,7 +355,7 @@ public class HdfsWriterTest {
 
     CompletionStage<List<RotationMessage>> resF =
         Source.fromIterator(content::iterator)
-            .map(IncomingMessage::create)
+            .map(HdfsWriteMessage::create)
             .via(flow)
             .runWith(Sink.seq(), materializer);
 
@@ -370,7 +370,7 @@ public class HdfsWriterTest {
   @Test
   public void testSequenceWriterWithSizeRotationWithoutCompression() throws Exception {
     // #define-sequence-compressed
-    Flow<IncomingMessage<Pair<Text, Text>, NotUsed>, RotationMessage, NotUsed> flow =
+    Flow<HdfsWriteMessage<Pair<Text, Text>, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.sequence(
             fs,
             SyncStrategy.none(),
@@ -385,7 +385,7 @@ public class HdfsWriterTest {
 
     CompletionStage<List<RotationMessage>> resF =
         Source.fromIterator(content::iterator)
-            .map(IncomingMessage::create)
+            .map(HdfsWriteMessage::create)
             .via(flow)
             .runWith(Sink.seq(), materializer);
 
@@ -401,7 +401,7 @@ public class HdfsWriterTest {
     codec.setConf(fs.getConf());
 
     // #define-sequence
-    Flow<IncomingMessage<Pair<Text, Text>, NotUsed>, RotationMessage, NotUsed> flow =
+    Flow<HdfsWriteMessage<Pair<Text, Text>, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.sequence(
             fs,
             SyncStrategy.none(),
@@ -418,7 +418,7 @@ public class HdfsWriterTest {
 
     CompletionStage<List<RotationMessage>> resF =
         Source.fromIterator(content::iterator)
-            .map(IncomingMessage::create)
+            .map(HdfsWriteMessage::create)
             .via(flow)
             .runWith(Sink.seq(), materializer);
 
@@ -430,7 +430,7 @@ public class HdfsWriterTest {
 
   @Test
   public void testSequenceWriterWithBufferRotation() throws Exception {
-    Flow<IncomingMessage<Pair<Text, Text>, NotUsed>, RotationMessage, NotUsed> flow =
+    Flow<HdfsWriteMessage<Pair<Text, Text>, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.sequence(
             fs, SyncStrategy.none(), RotationStrategy.count(1), settings, Text.class, Text.class);
 
@@ -438,7 +438,7 @@ public class HdfsWriterTest {
 
     CompletionStage<List<RotationMessage>> resF =
         Source.fromIterator(content::iterator)
-            .map(IncomingMessage::create)
+            .map(HdfsWriteMessage::create)
             .via(flow)
             .runWith(Sink.seq(), materializer);
 
@@ -451,7 +451,7 @@ public class HdfsWriterTest {
 
   @Test
   public void testSequenceWriterWithNoRotation() throws Exception {
-    Flow<IncomingMessage<Pair<Text, Text>, NotUsed>, RotationMessage, NotUsed> flow =
+    Flow<HdfsWriteMessage<Pair<Text, Text>, NotUsed>, RotationMessage, NotUsed> flow =
         HdfsFlow.sequence(
             fs, SyncStrategy.none(), RotationStrategy.none(), settings, Text.class, Text.class);
 
@@ -460,7 +460,7 @@ public class HdfsWriterTest {
 
     CompletionStage<List<RotationMessage>> resF =
         Source.fromIterator(content::iterator)
-            .map(IncomingMessage::create)
+            .map(HdfsWriteMessage::create)
             .via(flow)
             .runWith(Sink.seq(), materializer);
 
