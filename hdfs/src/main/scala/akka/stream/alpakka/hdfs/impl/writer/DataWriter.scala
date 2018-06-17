@@ -9,6 +9,7 @@ import akka.stream.alpakka.hdfs.impl.writer.HdfsWriter._
 import akka.util.ByteString
 import org.apache.hadoop.fs.{FSDataOutputStream, FileSystem, Path}
 
+@akka.annotation.InternalApi
 private[writer] final case class DataWriter(
     fs: FileSystem,
     pathGenerator: FilePathGenerator,

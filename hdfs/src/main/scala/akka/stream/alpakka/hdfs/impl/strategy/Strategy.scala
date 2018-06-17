@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.hdfs.impl.strategy
 
+@akka.annotation.InternalApi
 private[hdfs] trait Strategy {
   type S <: Strategy
   def should(): Boolean

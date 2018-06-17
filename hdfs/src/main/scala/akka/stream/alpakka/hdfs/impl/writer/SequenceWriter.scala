@@ -11,6 +11,7 @@ import org.apache.hadoop.io.SequenceFile.{CompressionType, Writer}
 import org.apache.hadoop.io.compress.CompressionCodec
 import org.apache.hadoop.io.{SequenceFile, Writable}
 
+@akka.annotation.InternalApi
 private[writer] final case class SequenceWriter[K <: Writable, V <: Writable](
     fs: FileSystem,
     writerOptions: Seq[Writer.Option],

@@ -17,6 +17,7 @@ import cats.data.State
 /**
  * Internal API
  */
+@akka.annotation.InternalApi
 private[hdfs] final class HdfsFlowStage[W, I, C](
     ss: SyncStrategy,
     rs: RotationStrategy,
@@ -36,6 +37,7 @@ private[hdfs] final class HdfsFlowStage[W, I, C](
 /**
  * Internal API
  */
+@akka.annotation.InternalApi
 private final class HdfsFlowLogic[W, I, C](
     initialSyncStrategy: SyncStrategy,
     initialRotationStrategy: RotationStrategy,

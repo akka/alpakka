@@ -11,6 +11,7 @@ import org.apache.commons.io.FilenameUtils
 import org.apache.hadoop.fs.{FSDataOutputStream, FileSystem, Path}
 import org.apache.hadoop.io.compress.{CodecPool, CompressionCodec, CompressionOutputStream, Compressor}
 
+@akka.annotation.InternalApi
 private[writer] final case class CompressedDataWriter(
     fs: FileSystem,
     compressionCodec: CompressionCodec,

@@ -12,6 +12,7 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 /**
  * Internal API
  */
+@akka.annotation.InternalApi
 private[hdfs] trait HdfsWriter[W, I] {
 
   protected lazy val output: W = create(fs, temp)
