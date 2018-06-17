@@ -19,7 +19,7 @@ object HdfsSource {
   /**
    * Scala API: creates a [[Source]] that consumes as [[ByteString]]
    *
-   * @param fs file system
+   * @param fs Hadoop file system
    * @param path the file to open
    * @param chunkSize the size of each read operation, defaults to 8192
    */
@@ -33,7 +33,7 @@ object HdfsSource {
   /**
    * Scala API: creates a [[Source]] that consumes as [[ByteString]]
    *
-   * @param fs file system
+   * @param fs Hadoop file system
    * @param path the file to open
    * @param codec a streaming compression/decompression pair
    * @param chunkSize the size of each read operation, defaults to 8192
@@ -49,7 +49,7 @@ object HdfsSource {
   /**
    * Scala API: creates a [[Source]] that consumes as [[(K, V]]
    *
-   * @param fs file system
+   * @param fs Hadoop file system
    * @param path the file to open
    * @param classK a key class
    * @param classV a value class

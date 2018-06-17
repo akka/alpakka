@@ -24,7 +24,7 @@ object HdfsFlow {
   /**
    * Scala API: creates a Flow with [[HdfsFlowStage]] for [[FSDataOutputStream]]
    *
-   * @param fs file system
+   * @param fs Hadoop file system
    * @param syncStrategy sync strategy
    * @param rotationStrategy rotation strategy
    * @param settings hdfs writing settings
@@ -41,7 +41,7 @@ object HdfsFlow {
   /**
    * Scala API: creates a Flow with [[HdfsFlowStage]] for [[FSDataOutputStream]] with `passThrough` of type `C`
    *
-   * @param fs file system
+   * @param fs Hadoop file system
    * @param syncStrategy sync strategy
    * @param rotationStrategy rotation strategy
    * @param settings hdfs writing settings
@@ -65,7 +65,7 @@ object HdfsFlow {
   /**
    * Scala API: creates a Flow with [[HdfsFlowStage]] for [[CompressionOutputStream]]
    *
-   * @param fs file system
+   * @param fs Hadoop file system
    * @param syncStrategy sync strategy
    * @param rotationStrategy rotation strategy
    * @param compressionCodec a streaming compression/decompression pair
@@ -85,7 +85,7 @@ object HdfsFlow {
    * Scala API: creates a Flow with [[HdfsFlowStage]] for [[CompressionOutputStream]]
    * with `passThrough` of type `C`
    *
-   * @param fs file system
+   * @param fs Hadoop file system
    * @param syncStrategy sync strategy
    * @param rotationStrategy rotation strategy
    * @param compressionCodec a streaming compression/decompression pair
@@ -116,7 +116,7 @@ object HdfsFlow {
   /**
    * Scala API: creates a Flow with [[HdfsFlowStage]] for [[SequenceFile.Writer]] without a compression
    *
-   * @param fs file system
+   * @param fs Hadoop file system
    * @param syncStrategy sync strategy
    * @param rotationStrategy rotation strategy
    * @param settings hdfs writing settings
@@ -137,7 +137,7 @@ object HdfsFlow {
   /**
    * Scala API: creates a Flow with [[HdfsFlowStage]] for [[SequenceFile.Writer]] with a compression
    *
-   * @param fs file system
+   * @param fs Hadoop file system
    * @param syncStrategy sync strategy
    * @param rotationStrategy rotation strategy
    * @param compressionType a compression type used to compress key/value pairs in the SequenceFile
@@ -200,7 +200,7 @@ object HdfsFlow {
    * Scala API: creates a Flow with [[HdfsFlowStage]] for [[SequenceFile.Writer]]
    * with `passThrough` of type `C` and a compression
    *
-   * @param fs file system
+   * @param fs Hadoop file system
    * @param syncStrategy sync strategy
    * @param rotationStrategy rotation strategy
    * @param compressionType a compression type used to compress key/value pairs in the SequenceFile
