@@ -37,7 +37,7 @@ object HdfsWritingSettings {
     HdfsWritingSettings()
 }
 
-final case class HdfsWriteMessage[T, C](source: T, passThrough: C)
+final case class HdfsWriteMessage[T, P](source: T, passThrough: P)
 
 object HdfsWriteMessage {
   // Apply method to use when not using passThrough
@@ -49,14 +49,14 @@ object HdfsWriteMessage {
     HdfsWriteMessage(source)
 
   // Java-api - with passThrough
-  def create[T, C](source: T, passThrough: C): HdfsWriteMessage[T, C] =
+  def create[T, P](source: T, passThrough: P): HdfsWriteMessage[T, P] =
     HdfsWriteMessage(source, passThrough)
 
 }
 
-sealed abstract class OutgoingMessage[+T]
+sealed abstract class OutgoingMessage[+P]
 final case class RotationMessage(path: String, rotation: Int) extends OutgoingMessage[Nothing]
-final case class WrittenMessage[T](passThrough: T, inRotation: Int) extends OutgoingMessage[T]
+final case class WrittenMessage[P](passThrough: P, inRotation: Int) extends OutgoingMessage[P]
 
 sealed case class FileUnit(byteCount: Long)
 

@@ -46,15 +46,15 @@ object HdfsFlow {
    * @param rotationStrategy rotation strategy
    * @param settings hdfs writing settings
    */
-  def dataWithPassThrough[C](
+  def dataWithPassThrough[P](
       fs: FileSystem,
       syncStrategy: SyncStrategy,
       rotationStrategy: RotationStrategy,
       settings: HdfsWritingSettings
-  ): Flow[HdfsWriteMessage[ByteString, C], OutgoingMessage[C], NotUsed] =
+  ): Flow[HdfsWriteMessage[ByteString, P], OutgoingMessage[P], NotUsed] =
     Flow
       .fromGraph(
-        new HdfsFlowStage[FSDataOutputStream, ByteString, C](
+        new HdfsFlowStage[FSDataOutputStream, ByteString, P](
           syncStrategy,
           rotationStrategy,
           settings,
@@ -91,16 +91,16 @@ object HdfsFlow {
    * @param compressionCodec a streaming compression/decompression pair
    * @param settings hdfs writing settings
    */
-  def compressedWithPassThrough[C](
+  def compressedWithPassThrough[P](
       fs: FileSystem,
       syncStrategy: SyncStrategy,
       rotationStrategy: RotationStrategy,
       compressionCodec: CompressionCodec,
       settings: HdfsWritingSettings
-  ): Flow[HdfsWriteMessage[ByteString, C], OutgoingMessage[C], NotUsed] =
+  ): Flow[HdfsWriteMessage[ByteString, P], OutgoingMessage[P], NotUsed] =
     Flow
       .fromGraph(
-        new HdfsFlowStage[FSDataOutputStream, ByteString, C](
+        new HdfsFlowStage[FSDataOutputStream, ByteString, P](
           syncStrategy,
           rotationStrategy,
           settings,
@@ -178,17 +178,17 @@ object HdfsFlow {
    * @param classK a key class
    * @param classV a value class
    */
-  def sequenceWithPassThrough[K <: Writable, V <: Writable, C](
+  def sequenceWithPassThrough[K <: Writable, V <: Writable, P](
       fs: FileSystem,
       syncStrategy: SyncStrategy,
       rotationStrategy: RotationStrategy,
       settings: HdfsWritingSettings,
       classK: Class[K],
       classV: Class[V]
-  ): Flow[HdfsWriteMessage[(K, V), C], OutgoingMessage[C], NotUsed] =
+  ): Flow[HdfsWriteMessage[(K, V), P], OutgoingMessage[P], NotUsed] =
     Flow
       .fromGraph(
-        new HdfsFlowStage[SequenceFile.Writer, (K, V), C](
+        new HdfsFlowStage[SequenceFile.Writer, (K, V), P](
           syncStrategy,
           rotationStrategy,
           settings,
@@ -209,7 +209,7 @@ object HdfsFlow {
    * @param classK a key class
    * @param classV a value class
    */
-  def sequenceWithPassThrough[K <: Writable, V <: Writable, C](
+  def sequenceWithPassThrough[K <: Writable, V <: Writable, P](
       fs: FileSystem,
       syncStrategy: SyncStrategy,
       rotationStrategy: RotationStrategy,
@@ -218,10 +218,10 @@ object HdfsFlow {
       settings: HdfsWritingSettings,
       classK: Class[K],
       classV: Class[V]
-  ): Flow[HdfsWriteMessage[(K, V), C], OutgoingMessage[C], NotUsed] =
+  ): Flow[HdfsWriteMessage[(K, V), P], OutgoingMessage[P], NotUsed] =
     Flow
       .fromGraph(
-        new HdfsFlowStage[SequenceFile.Writer, (K, V), C](
+        new HdfsFlowStage[SequenceFile.Writer, (K, V), P](
           syncStrategy,
           rotationStrategy,
           settings,

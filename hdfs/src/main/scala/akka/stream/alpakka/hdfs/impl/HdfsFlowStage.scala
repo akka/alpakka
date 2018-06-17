@@ -39,13 +39,13 @@ private[hdfs] final class HdfsFlowStage[W, I, C](
  */
 @akka.annotation.InternalApi
 private final class HdfsFlowLogic[W, I, C](
-                                            initialSyncStrategy: SyncStrategy,
-                                            initialRotationStrategy: RotationStrategy,
-                                            settings: HdfsWritingSettings,
-                                            initialHdfsWriter: HdfsWriter[W, I],
-                                            inlet: Inlet[HdfsWriteMessage[I, C]],
-                                            outlet: Outlet[OutgoingMessage[C]],
-                                            shape: FlowShape[HdfsWriteMessage[I, C], OutgoingMessage[C]]
+    initialSyncStrategy: SyncStrategy,
+    initialRotationStrategy: RotationStrategy,
+    settings: HdfsWritingSettings,
+    initialHdfsWriter: HdfsWriter[W, I],
+    inlet: Inlet[HdfsWriteMessage[I, C]],
+    outlet: Outlet[OutgoingMessage[C]],
+    shape: FlowShape[HdfsWriteMessage[I, C], OutgoingMessage[C]]
 ) extends TimerGraphStageLogic(shape)
     with InHandler
     with OutHandler {

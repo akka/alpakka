@@ -44,14 +44,14 @@ object HdfsFlow {
    * @param rotationStrategy rotation strategy
    * @param settings hdfs writing settings
    */
-  def dataWithPassThrough[C](
+  def dataWithPassThrough[P](
       fs: FileSystem,
       syncStrategy: SyncStrategy,
       rotationStrategy: RotationStrategy,
       settings: HdfsWritingSettings
-  ): javadsl.Flow[HdfsWriteMessage[ByteString, C], OutgoingMessage[C], NotUsed] =
+  ): javadsl.Flow[HdfsWriteMessage[ByteString, P], OutgoingMessage[P], NotUsed] =
     ScalaHdfsFlow
-      .dataWithPassThrough[C](
+      .dataWithPassThrough[P](
         fs,
         syncStrategy,
         rotationStrategy,
@@ -88,15 +88,15 @@ object HdfsFlow {
    * @param compressionCodec a streaming compression/decompression pair
    * @param settings hdfs writing settings
    */
-  def compressedWithPassThrough[C](
+  def compressedWithPassThrough[P](
       fs: FileSystem,
       syncStrategy: SyncStrategy,
       rotationStrategy: RotationStrategy,
       compressionCodec: CompressionCodec,
       settings: HdfsWritingSettings
-  ): javadsl.Flow[HdfsWriteMessage[ByteString, C], OutgoingMessage[C], NotUsed] =
+  ): javadsl.Flow[HdfsWriteMessage[ByteString, P], OutgoingMessage[P], NotUsed] =
     ScalaHdfsFlow
-      .compressedWithPassThrough[C](
+      .compressedWithPassThrough[P](
         fs,
         syncStrategy,
         rotationStrategy,
@@ -173,19 +173,19 @@ object HdfsFlow {
    * @param classK a key class
    * @param classV a value class
    */
-  def sequenceWithPassThrough[K <: Writable, V <: Writable, C](
+  def sequenceWithPassThrough[K <: Writable, V <: Writable, P](
       fs: FileSystem,
       syncStrategy: SyncStrategy,
       rotationStrategy: RotationStrategy,
       settings: HdfsWritingSettings,
       classK: Class[K],
       classV: Class[V]
-  ): javadsl.Flow[HdfsWriteMessage[Pair[K, V], C], OutgoingMessage[C], NotUsed] =
-    Flow[HdfsWriteMessage[Pair[K, V], C]]
+  ): javadsl.Flow[HdfsWriteMessage[Pair[K, V], P], OutgoingMessage[P], NotUsed] =
+    Flow[HdfsWriteMessage[Pair[K, V], P]]
       .map(message => message.copy(source = message.source.toScala))
       .via(
         ScalaHdfsFlow
-          .sequenceWithPassThrough[K, V, C](
+          .sequenceWithPassThrough[K, V, P](
             fs,
             syncStrategy,
             rotationStrategy,
@@ -210,7 +210,7 @@ object HdfsFlow {
    * @param classK a key class
    * @param classV a value class
    */
-  def sequenceWithPassThrough[K <: Writable, V <: Writable, C](
+  def sequenceWithPassThrough[K <: Writable, V <: Writable, P](
       fs: FileSystem,
       syncStrategy: SyncStrategy,
       rotationStrategy: RotationStrategy,
@@ -219,12 +219,12 @@ object HdfsFlow {
       settings: HdfsWritingSettings,
       classK: Class[K],
       classV: Class[V]
-  ): javadsl.Flow[HdfsWriteMessage[Pair[K, V], C], OutgoingMessage[C], NotUsed] =
-    Flow[HdfsWriteMessage[Pair[K, V], C]]
+  ): javadsl.Flow[HdfsWriteMessage[Pair[K, V], P], OutgoingMessage[P], NotUsed] =
+    Flow[HdfsWriteMessage[Pair[K, V], P]]
       .map(message => message.copy(source = message.source.toScala))
       .via(
         ScalaHdfsFlow
-          .sequenceWithPassThrough[K, V, C](
+          .sequenceWithPassThrough[K, V, P](
             fs,
             syncStrategy,
             rotationStrategy,
