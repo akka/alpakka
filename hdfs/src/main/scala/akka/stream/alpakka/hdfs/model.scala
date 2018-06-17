@@ -40,15 +40,28 @@ object HdfsWritingSettings {
 final case class HdfsWriteMessage[T, P](source: T, passThrough: P)
 
 object HdfsWriteMessage {
-  // Apply method to use when not using passThrough
+  /**
+    * Scala API - creates [[HdfsWriteMessage]] to use when not using passThrough
+    *
+    * @param source a message
+    */
   def apply[T](source: T): HdfsWriteMessage[T, NotUsed] =
     HdfsWriteMessage(source, NotUsed)
 
-  // Java-api - without passThrough
+  /**
+    * Java API - creates [[HdfsWriteMessage]] to use when not using passThrough
+    *
+    * @param source a message
+    */
   def create[T](source: T): HdfsWriteMessage[T, NotUsed] =
     HdfsWriteMessage(source)
 
-  // Java-api - with passThrough
+  /**
+    * Java API - creates [[HdfsWriteMessage]] to use with passThrough
+    *
+    * @param source a message
+    * @param passThrough pass-through data
+    */
   def create[T, P](source: T, passThrough: P): HdfsWriteMessage[T, P] =
     HdfsWriteMessage(source, passThrough)
 
