@@ -11,6 +11,7 @@ import akka.annotation.DoNotInherit
 import com.rabbitmq.client.{Address, Connection, ConnectionFactory, ExceptionHandler}
 
 import scala.annotation.tailrec
+import scala.collection.immutable
 
 /**
  * Only for internal implementations
@@ -50,7 +51,7 @@ object AmqpUriConnectionProvider {
 }
 
 final case class AmqpDetailsConnectionProvider(
-    hostAndPortList: Seq[(String, Int)],
+    hostAndPortList: immutable.Seq[(String, Int)],
     credentials: Option[AmqpCredentials] = None,
     virtualHost: Option[String] = None,
     sslProtocol: Option[String] = None,
@@ -168,16 +169,16 @@ object AmqpCredentials {
  *                     If empty, it defaults to the host and port in the underlying factory.
  */
 final case class AmqpConnectionFactoryConnectionProvider(factory: ConnectionFactory,
-                                                         private val hostAndPorts: Seq[(String, Int)] = Seq())
+                                                         private val hostAndPorts: immutable.Seq[(String, Int)] = Nil)
     extends AmqpConnectionProvider {
 
   /**
    * @return A list of hosts and ports for this AMQP connection factory.
    *         Uses host and port from the underlying factory if hostAndPorts was left out on construction.
    */
-  def hostAndPortList: Seq[(String, Int)] =
+  def hostAndPortList: immutable.Seq[(String, Int)] =
     if (hostAndPorts.isEmpty)
-      Seq((factory.getHost, factory.getPort))
+      immutable.Seq((factory.getHost, factory.getPort))
     else
       hostAndPorts.toList
 

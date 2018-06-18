@@ -2,22 +2,20 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.amqp
+package akka.stream.alpakka.amqp.impl
 
-import akka.stream.stage.GraphStageLogic
+import akka.stream.alpakka.amqp.{AmqpConnectorSettings, BindingDeclaration, ExchangeDeclaration, QueueDeclaration}
+import akka.stream.stage.{AsyncCallback, GraphStageLogic}
 import com.rabbitmq.client._
 
 import scala.util.control.NonFatal
 
-/**
- * Internal API
- */
-private[amqp] trait AmqpConnectorLogic { this: GraphStageLogic =>
+private trait AmqpConnectorLogic { this: GraphStageLogic =>
 
   private var connection: Connection = _
   protected var channel: Channel = _
 
-  protected lazy val shutdownCallback = getAsyncCallback(onFailure)
+  protected lazy val shutdownCallback: AsyncCallback[Throwable] = getAsyncCallback(onFailure)
   private lazy val shutdownListener = new ShutdownListener {
     override def shutdownCompleted(cause: ShutdownSignalException): Unit = shutdownCallback.invoke(cause)
   }
