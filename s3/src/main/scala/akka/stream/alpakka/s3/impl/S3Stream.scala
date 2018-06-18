@@ -94,6 +94,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     import mat.executionContext
     val s3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(GetObject) })
     val future = request(s3Location, rangeOption = range, versionId = versionId, s3Headers = s3Headers)
+      .map(response => response.withEntity(response.entity.withoutSizeLimit))
     val source = Source
       .fromFuture(future.flatMap(entityForSuccess).map(_._1))
       .map(_.dataBytes)
