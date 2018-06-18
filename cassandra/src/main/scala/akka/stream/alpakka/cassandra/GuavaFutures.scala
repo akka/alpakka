@@ -11,10 +11,8 @@ import scala.util.{Failure, Success, Try}
 
 private[cassandra] object GuavaFutures {
 
-  def invokeTryCallback[T](
-      listenableFuture: ListenableFuture[T],
-      executor: java.util.concurrent.Executor = ExecutionContext.global
-  )(callback: Try[T] => Unit): Unit =
+  def invokeTryCallback[T](listenableFuture: ListenableFuture[T],
+                           executor: java.util.concurrent.Executor)(callback: Try[T] => Unit): Unit =
     Futures.addCallback(
       listenableFuture,
       new FutureCallback[T] {
