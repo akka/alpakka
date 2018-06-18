@@ -36,6 +36,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(PublishUnidoc)
+  .disablePlugins(MimaPlugin)
   .aggregate(modules: _*)
   .aggregate(`doc-examples`)
   .settings(
@@ -53,7 +54,11 @@ lazy val alpakka = project
         |   Make sure to run `docker-compose up` first.
         |
         |  mqtt/testOnly *.MqttSourceSpec - runs a single test
-      """.stripMargin
+        |
+        |  mimaReportBinaryIssues - checks whether this current API
+        |    is binary compatible with the released version
+      """.stripMargin,
+    mimaPreviousArtifacts := previousStableVersion.value.map(organization.value %% name.value % _).toSet
   )
 
 lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp)
@@ -171,7 +176,7 @@ lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
 
 lazy val docs = project
   .enablePlugins(ParadoxPlugin, NoPublish)
-  .disablePlugins(BintrayPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
   .settings(
     name := "Alpakka",
     paradoxTheme := Some(builtinParadoxTheme("generic")),
@@ -205,7 +210,7 @@ lazy val docs = project
 
 lazy val `doc-examples` = project
   .enablePlugins(NoPublish, AutomateHeaderPlugin)
-  .disablePlugins(BintrayPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
   .dependsOn(
     modules.map(p => classpathDependency(p)): _*
   )
