@@ -5,11 +5,15 @@
 package docs.scaladsl
 
 import akka.NotUsed
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import akka.stream.alpakka.reference.scaladsl.Reference
 import akka.stream.alpakka.reference.{Authentication, ReferenceReadMessage, ReferenceWriteMessage, SourceSettings}
-import akka.stream.scaladsl.{Flow, Source}
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.testkit.TestKit
 import akka.util.ByteString
-import org.scalatest.WordSpec
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -17,7 +21,10 @@ import scala.concurrent.Future
 /**
  * Append "Spec" to every Scala test suite.
  */
-class ReferenceSpec extends WordSpec {
+class ReferenceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures with Matchers {
+
+  implicit val sys = ActorSystem("ReferenceSpec")
+  implicit val mat = ActorMaterializer()
 
   "reference connector" should {
 
@@ -58,24 +65,49 @@ class ReferenceSpec extends WordSpec {
         Reference.flow()
     }
 
-    "compile write message" in {
-      val singleData = ReferenceWriteMessage().withData(ByteString("one"))
+    "run source" in {
+      val source = Reference.source(SourceSettings())
 
-      val multiData = ReferenceWriteMessage().withData(
-        ByteString("one"),
-        ByteString("two"),
-        ByteString("three")
-      )
+      val msg = source.runWith(Sink.head).futureValue
+      msg.data should contain theSameElementsAs Seq(ByteString("one"))
+    }
 
-      val seqData = ReferenceWriteMessage().withData(
+    "run flow" in {
+      val flow = Reference.flow()
+      val source = Source(
         immutable.Seq(
-          ByteString("one"),
-          ByteString("two"),
-          ByteString("three")
+          ReferenceWriteMessage().withData(ByteString("one")),
+          ReferenceWriteMessage().withData(
+            ByteString("two"),
+            ByteString("three"),
+            ByteString("four")
+          ),
+          ReferenceWriteMessage().withData(
+            immutable.Seq(
+              ByteString("five"),
+              ByteString("six"),
+              ByteString("seven")
+            )
+          )
         )
       )
+
+      val result = source.via(flow).runWith(Sink.seq).futureValue.flatMap(_.data)
+
+      result should contain theSameElementsAs Seq(
+        "one",
+        "two",
+        "three",
+        "four",
+        "five",
+        "six",
+        "seven"
+      ).map(ByteString.apply)
     }
 
   }
+
+  override def afterAll() =
+    TestKit.shutdownActorSystem(sys)
 
 }

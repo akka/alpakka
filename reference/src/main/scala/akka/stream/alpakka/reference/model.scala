@@ -169,8 +169,8 @@ final class ReferenceReadMessage private (
   /**
    * Java API
    *
-   * If the model class is only meant to be consumed (as opposed to created) from the user API,
-   * create getters (as opposed to setters) for Java API.
+   * If the model class is meant to be also consumed from the user API,
+   * create getter for Java API.
    */
   def getData(): JavaList[ByteString] = {
     import scala.collection.JavaConverters._
@@ -182,7 +182,7 @@ final class ReferenceReadMessage private (
 }
 
 object ReferenceReadMessage {
-  def apply(): ReferenceWriteMessage = new ReferenceWriteMessage()
+  def apply(): ReferenceReadMessage = new ReferenceReadMessage()
 }
 
 /**
@@ -195,12 +195,25 @@ final class ReferenceWriteMessage private (
     copy(data = data)
 
   /**
+   * Java API
+   *
    * When settings class has an attribute of Scala collection type,
    * use varargs annotation to generate a Java API varargs method.
    */
   @varargs
   def withData(data: ByteString*): ReferenceWriteMessage =
     copy(data = data.to[immutable.Seq])
+
+  /**
+   * Java API
+   *
+   * If the model class is meant to be also consumed from the user API,
+   * create getter for Java API.
+   */
+  def getData(): JavaList[ByteString] = {
+    import scala.collection.JavaConverters._
+    data.asJava
+  }
 
   private def copy(data: immutable.Seq[ByteString] = data) =
     new ReferenceWriteMessage(data)

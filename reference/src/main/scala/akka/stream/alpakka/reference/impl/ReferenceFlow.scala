@@ -8,7 +8,7 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.alpakka.reference.ReferenceWriteMessage
-import akka.stream.stage.{GraphStage, GraphStageLogic}
+import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 
 /**
  * private package hides the class from the API in Scala. However it is still
@@ -26,6 +26,14 @@ import akka.stream.stage.{GraphStage, GraphStageLogic}
    * Initialization logic
    */
   override def preStart(): Unit = {}
+
+  setHandler(in, new InHandler {
+    override def onPush(): Unit = push(out, grab(in))
+  })
+
+  setHandler(out, new OutHandler {
+    override def onPull(): Unit = pull(in)
+  })
 
   /**
    * Cleanup logic

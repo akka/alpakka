@@ -9,8 +9,10 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream._
 import akka.stream.alpakka.reference.{ReferenceReadMessage, SourceSettings}
-import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue}
+import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, OutHandler}
+import akka.util.ByteString
 
+import scala.collection.immutable
 import scala.concurrent.{Future, Promise}
 
 /**
@@ -31,6 +33,13 @@ import scala.concurrent.{Future, Promise}
    */
   override def preStart(): Unit =
     startupPromise.success(NotUsed)
+
+  setHandler(out, new OutHandler {
+    override def onPull(): Unit = push(
+      out,
+      ReferenceReadMessage().withData(immutable.Seq(ByteString("one")))
+    )
+  })
 
   /**
    * Cleanup logic
