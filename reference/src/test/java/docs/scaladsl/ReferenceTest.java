@@ -6,7 +6,7 @@
  * Start package with 'docs' prefix when testing APIs as a user.
  * This prevents any visibility issues that may be hidden.
  */
-package docs.akka.stream.alpakka.reference;
+package docs.scaladsl;
 
 import akka.NotUsed;
 import akka.stream.alpakka.reference.Authentication;

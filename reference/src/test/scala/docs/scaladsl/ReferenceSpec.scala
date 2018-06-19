@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package docs.akka.stream.alpakka.reference
+package docs.scaladsl
 
 import akka.NotUsed
 import akka.stream.alpakka.reference.scaladsl.Reference

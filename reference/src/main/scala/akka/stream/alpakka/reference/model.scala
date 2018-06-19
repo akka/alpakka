@@ -11,6 +11,10 @@ import java.util.function.Predicate
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration._
 
+private[reference] object Testo {
+  val aaa = 1
+}
+
 /**
  * Settings class constructor is private and not exposed as API.
  * Adding or removing arguments to methods with default values is not binary
