@@ -33,7 +33,7 @@ object AmqpSink {
    * or because of an amqp failure
    */
   def replyTo(settings: AmqpReplyToSinkSettings): Sink[OutgoingMessage, Future[Done]] =
-    Sink.fromGraph(new AmqpReplyToSinkStage(settings))
+    Sink.fromGraph(new impl.AmqpReplyToSinkStage(settings))
 
   /**
    * Scala API:
@@ -46,6 +46,6 @@ object AmqpSink {
    * or because of an amqp failure
    */
   def apply(settings: AmqpSinkSettings): Sink[OutgoingMessage, Future[Done]] =
-    Sink.fromGraph(new AmqpSinkStage(settings))
+    Sink.fromGraph(new impl.AmqpSinkStage(settings))
 
 }

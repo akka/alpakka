@@ -2,32 +2,24 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.amqp
+package akka.stream.alpakka.amqp.impl
 
 import akka.Done
-import akka.stream._
+import akka.annotation.InternalApi
+import akka.stream.alpakka.amqp._
 import akka.stream.alpakka.amqp.scaladsl.CommittableIncomingMessage
-import akka.stream.stage._
+import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
+import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.util.ByteString
 import com.rabbitmq.client.AMQP.BasicProperties
-import com.rabbitmq.client._
+import com.rabbitmq.client.{DefaultConsumer, Envelope, ShutdownSignalException}
 
 import scala.collection.mutable
-import scala.concurrent.Promise
-import scala.util.Try
+import scala.concurrent.{Future, Promise}
+import scala.util.Success
 
-final case class IncomingMessage(bytes: ByteString, envelope: Envelope, properties: BasicProperties)
-
-trait CommitCallback
-final case class AckArguments(deliveryTag: Long, multiple: Boolean, promise: Promise[Done]) extends CommitCallback
-final case class NackArguments(deliveryTag: Long, multiple: Boolean, requeue: Boolean, promise: Promise[Done])
-    extends CommitCallback
-
-object AmqpSourceStage {
-
-  private val defaultAttributes = Attributes.name("AmqpSource")
-
-}
+private final case class AckArguments(deliveryTag: Long, multiple: Boolean, promise: Promise[Done])
+private final case class NackArguments(deliveryTag: Long, multiple: Boolean, requeue: Boolean, promise: Promise[Done])
 
 /**
  * Connects to an AMQP server upon materialization and consumes messages from it emitting them
@@ -36,14 +28,15 @@ object AmqpSourceStage {
  *
  * @param bufferSize The max number of elements to prefetch and buffer at any given time.
  */
-final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
+@InternalApi
+private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
     extends GraphStage[SourceShape[CommittableIncomingMessage]] { stage =>
 
   val out = Outlet[CommittableIncomingMessage]("AmqpSource.out")
 
   override val shape: SourceShape[CommittableIncomingMessage] = SourceShape.of(out)
 
-  override protected def initialAttributes: Attributes = AmqpSourceStage.defaultAttributes
+  override protected def initialAttributes: Attributes = Attributes.name("AmqpSource")
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with AmqpConnectorLogic {
@@ -58,27 +51,28 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
         channel.basicQos(bufferSize)
         val consumerCallback = getAsyncCallback(handleDelivery)
 
-        val commitCallback = getAsyncCallback[CommitCallback] {
-          case AckArguments(deliveryTag, multiple, promise) => {
+        val ackCallback = getAsyncCallback[AckArguments] {
+          case AckArguments(deliveryTag, multiple, promise) =>
             try {
               channel.basicAck(deliveryTag, multiple)
               unackedMessages -= 1
               if (unackedMessages == 0 && isClosed(out)) completeStage()
-              promise.complete(Try(Done))
+              promise.complete(Success(Done))
             } catch {
               case e: Throwable => promise.failure(e)
             }
-          }
-          case NackArguments(deliveryTag, multiple, requeue, promise) => {
+        }
+
+        val nackCallback = getAsyncCallback[NackArguments] {
+          case NackArguments(deliveryTag, multiple, requeue, promise) =>
             try {
               channel.basicNack(deliveryTag, multiple, requeue)
               unackedMessages -= 1
               if (unackedMessages == 0 && isClosed(out)) completeStage()
-              promise.complete(Try(Done))
+              promise.complete(Success(Done))
             } catch {
               case e: Throwable => promise.failure(e)
             }
-          }
         }
 
         val amqpSourceConsumer = new DefaultConsumer(channel) {
@@ -90,15 +84,15 @@ final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
               new CommittableIncomingMessage {
                 override val message = IncomingMessage(ByteString(body), envelope, properties)
 
-                override def ack(multiple: Boolean) = {
+                override def ack(multiple: Boolean): Future[Done] = {
                   val promise = Promise[Done]()
-                  commitCallback.invoke(AckArguments(message.envelope.getDeliveryTag, multiple, promise))
+                  ackCallback.invoke(AckArguments(message.envelope.getDeliveryTag, multiple, promise))
                   promise.future
                 }
 
-                override def nack(multiple: Boolean, requeue: Boolean) = {
+                override def nack(multiple: Boolean, requeue: Boolean): Future[Done] = {
                   val promise = Promise[Done]()
-                  commitCallback.invoke(NackArguments(message.envelope.getDeliveryTag, multiple, requeue, promise))
+                  nackCallback.invoke(NackArguments(message.envelope.getDeliveryTag, multiple, requeue, promise))
                   promise.future
                 }
               }
