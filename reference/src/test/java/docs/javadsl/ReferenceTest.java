@@ -6,13 +6,15 @@
  * Start package with 'docs' prefix when testing APIs as a user.
  * This prevents any visibility issues that may be hidden.
  */
-package docs.scaladsl;
+package docs.javadsl;
 
 import akka.NotUsed;
 import akka.stream.alpakka.reference.Authentication;
 import akka.stream.alpakka.reference.ReferenceReadMessage;
+import akka.stream.alpakka.reference.ReferenceWriteMessage;
 import akka.stream.alpakka.reference.SourceSettings;
 import akka.stream.alpakka.reference.javadsl.Reference;
+import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
 import org.junit.After;
 import org.junit.Before;
@@ -49,10 +51,20 @@ class ReferenceTest {
 
   @Test
   public void sourceCompilationTest() {
+    // #source
     final SourceSettings settings = SourceSettings.create();
 
     final Source<ReferenceReadMessage, CompletionStage<NotUsed>> source =
       Reference.source(settings);
+    // #source
+  }
+
+  @Test
+  public void flowCompilationTest() {
+    // #flow
+    final Flow<ReferenceWriteMessage, ReferenceWriteMessage, NotUsed> flow =
+      Reference.flow();
+    // #flow
   }
 
   /**

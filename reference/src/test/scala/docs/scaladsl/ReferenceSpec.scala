@@ -6,8 +6,8 @@ package docs.scaladsl
 
 import akka.NotUsed
 import akka.stream.alpakka.reference.scaladsl.Reference
-import akka.stream.alpakka.reference.{Authentication, ReferenceReadMessage, SourceSettings}
-import akka.stream.scaladsl.Source
+import akka.stream.alpakka.reference.{Authentication, ReferenceReadMessage, ReferenceWriteMessage, SourceSettings}
+import akka.stream.scaladsl.{Flow, Source}
 import org.scalatest.WordSpec
 
 import scala.concurrent.Future
@@ -37,10 +37,19 @@ class ReferenceSpec extends WordSpec {
     }
 
     "compile source" in {
+      // #source
       val settings: SourceSettings = SourceSettings()
 
       val source: Source[ReferenceReadMessage, Future[NotUsed]] =
         Reference.source(settings)
+      // #source
+    }
+
+    "compile flow" in {
+      // #flow
+      val flow: Flow[ReferenceWriteMessage, ReferenceWriteMessage, NotUsed] =
+        Reference.flow()
+      // #flow
     }
 
   }
