@@ -8,8 +8,10 @@ import akka.NotUsed
 import akka.stream.alpakka.reference.scaladsl.Reference
 import akka.stream.alpakka.reference.{Authentication, ReferenceReadMessage, ReferenceWriteMessage, SourceSettings}
 import akka.stream.scaladsl.{Flow, Source}
+import akka.util.ByteString
 import org.scalatest.WordSpec
 
+import scala.collection.immutable
 import scala.concurrent.Future
 
 /**
@@ -54,6 +56,24 @@ class ReferenceSpec extends WordSpec {
       implicit val ec = scala.concurrent.ExecutionContext.global
       val flow2: Flow[ReferenceWriteMessage, ReferenceWriteMessage, NotUsed] =
         Reference.flow()
+    }
+
+    "compile write message" in {
+      val singleData = ReferenceWriteMessage().withData(ByteString("one"))
+
+      val multiData = ReferenceWriteMessage().withData(
+        ByteString("one"),
+        ByteString("two"),
+        ByteString("three")
+      )
+
+      val seqData = ReferenceWriteMessage().withData(
+        immutable.Seq(
+          ByteString("one"),
+          ByteString("two"),
+          ByteString("three")
+        )
+      )
     }
 
   }

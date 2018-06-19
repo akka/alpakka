@@ -16,6 +16,7 @@ import akka.stream.alpakka.reference.SourceSettings;
 import akka.stream.alpakka.reference.javadsl.Reference;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
+import akka.util.ByteString;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -71,6 +72,19 @@ class ReferenceTest {
     final Executor ex = Executors.newCachedThreadPool();
     final Flow<ReferenceWriteMessage, ReferenceWriteMessage, NotUsed> flow2 =
       Reference.flowAsyncMapped(ex);
+  }
+
+  @Test
+  public void writeMessageCompilationTest() {
+    final ReferenceWriteMessage singleData = ReferenceWriteMessage.create().withData(
+      ByteString.fromString("one")
+    );
+
+    final ReferenceWriteMessage multiData = ReferenceWriteMessage.create().withData(
+      ByteString.fromString("one"),
+      ByteString.fromString("two"),
+      ByteString.fromString("three")
+    );
   }
 
   /**

@@ -6,8 +6,13 @@ package akka.stream.alpakka.reference
 
 // rename Java imports if the name clashes with the Scala name
 import java.time.{Duration => JavaDuration}
+import java.util.{List => JavaList}
 import java.util.function.Predicate
 
+import akka.util.ByteString
+
+import scala.annotation.varargs
+import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration._
 
@@ -155,9 +160,60 @@ object Authentication {
 /**
  * Use "Read" in message data types to signify that the message was read from outside.
  */
-final class ReferenceReadMessage private () {}
+final class ReferenceReadMessage private (
+    val data: immutable.Seq[ByteString] = immutable.Seq.empty
+) {
+  def withData(data: immutable.Seq[ByteString]): ReferenceReadMessage =
+    copy(data = data)
+
+  /**
+   * Java API
+   *
+   * If the model class is only meant to be consumed (as opposed to created) from the user API,
+   * create getters (as opposed to setters) for Java API.
+   */
+  def getData(): JavaList[ByteString] = {
+    import scala.collection.JavaConverters._
+    data.asJava
+  }
+
+  private def copy(data: immutable.Seq[ByteString] = data) =
+    new ReferenceReadMessage(data)
+}
+
+object ReferenceReadMessage {
+  def apply(): ReferenceWriteMessage = new ReferenceWriteMessage()
+}
 
 /**
  * Use "Write" in message data types to signify that the messages is to be written to outside.
  */
-final class ReferenceWriteMessage private () {}
+final class ReferenceWriteMessage private (
+    val data: immutable.Seq[ByteString] = immutable.Seq.empty
+) {
+  def withData(data: immutable.Seq[ByteString]): ReferenceWriteMessage =
+    copy(data = data)
+
+  /**
+   * When settings class has an attribute of Scala collection type,
+   * use varargs annotation to generate a Java API varargs method.
+   */
+  @varargs
+  def withData(data: ByteString*): ReferenceWriteMessage =
+    copy(data = data.to[immutable.Seq])
+
+  private def copy(data: immutable.Seq[ByteString] = data) =
+    new ReferenceWriteMessage(data)
+
+  override def toString: String =
+    s"""ReferenceWriteMessage(
+       |  data       = $data
+       |)""".stripMargin
+}
+
+object ReferenceWriteMessage {
+
+  def apply(): ReferenceWriteMessage = new ReferenceWriteMessage()
+
+  def create(): ReferenceWriteMessage = ReferenceWriteMessage()
+}
