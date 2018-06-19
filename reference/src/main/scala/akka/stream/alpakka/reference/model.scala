@@ -16,10 +16,6 @@ import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration._
 
-private[reference] object Testo {
-  val aaa = 1
-}
-
 /**
  * Settings class constructor is private and not exposed as API.
  * Adding or removing arguments to methods with default values is not binary
@@ -170,7 +166,7 @@ final class ReferenceReadMessage private (
    * Java API
    *
    * If the model class is meant to be also consumed from the user API,
-   * create getter for Java API.
+   * but the attribute class is Scala specific, create getter for Java API.
    */
   def getData(): JavaList[ByteString] = {
     import scala.collection.JavaConverters._
@@ -208,7 +204,7 @@ final class ReferenceWriteMessage private (
    * Java API
    *
    * If the model class is meant to be also consumed from the user API,
-   * create getter for Java API.
+   * but the attribute class is Scala specific, create getter for Java API.
    */
   def getData(): JavaList[ByteString] = {
     import scala.collection.JavaConverters._
