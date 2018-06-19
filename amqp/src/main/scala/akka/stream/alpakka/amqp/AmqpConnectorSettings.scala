@@ -22,7 +22,7 @@ sealed trait AmqpSourceSettings extends AmqpConnectorSettings
 final case class NamedQueueSourceSettings(
     connectionProvider: AmqpConnectionProvider,
     queue: String,
-    declarations: immutable.Seq[Declaration] = Nil,
+    declarations: immutable.Seq[Declaration] = immutable.Seq.empty,
     noLocal: Boolean = false,
     exclusive: Boolean = false,
     consumerTag: String = "default",
