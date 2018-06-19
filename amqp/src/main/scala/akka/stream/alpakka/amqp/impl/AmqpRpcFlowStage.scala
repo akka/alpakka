@@ -2,10 +2,14 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.amqp
+package akka.stream.alpakka.amqp.impl
+
+import java.util.Collections
 
 import akka.Done
+import akka.annotation.InternalApi
 import akka.stream._
+import akka.stream.alpakka.amqp._
 import akka.stream.alpakka.amqp.scaladsl.CommittableIncomingMessage
 import akka.stream.stage._
 import akka.util.ByteString
@@ -14,13 +18,7 @@ import com.rabbitmq.client._
 
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
-import scala.util.Try
-
-object AmqpRpcFlowStage {
-
-  private val defaultAttributes =
-    Attributes.name("AmqpRpcFlow").and(ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher"))
-}
+import scala.util.Success
 
 /**
  * This stage materializes to a Future[String], which is the name of the private exclusive queue used for RPC communication
@@ -28,7 +26,8 @@ object AmqpRpcFlowStage {
  * @param responsesPerMessage The number of responses that should be expected for each message placed on the queue. This
  *                            can be overridden per message by including `expectedReplies` in the the header of the [[OutgoingMessage]]
  */
-final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, responsesPerMessage: Int = 1)
+@InternalApi
+private[amqp] final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, responsesPerMessage: Int = 1)
     extends GraphStageWithMaterializedValue[FlowShape[OutgoingMessage, CommittableIncomingMessage], Future[String]] {
   stage =>
 
@@ -37,7 +36,10 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
 
   override def shape: FlowShape[OutgoingMessage, CommittableIncomingMessage] = FlowShape.of(in, out)
 
-  override protected def initialAttributes: Attributes = AmqpRpcFlowStage.defaultAttributes
+  override protected def initialAttributes: Attributes =
+    Attributes
+      .name("AmqpRpcFlow")
+      .and(ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher"))
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[String]) = {
     val promise = Promise[String]()
@@ -52,32 +54,33 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
       private var outstandingMessages = 0
 
       override def whenConnected(): Unit = {
-        import scala.collection.JavaConverters._
 
         pull(in)
 
         channel.basicQos(bufferSize)
         val consumerCallback = getAsyncCallback(handleDelivery)
 
-        val commitCallback = getAsyncCallback[CommitCallback] {
+        val commitCallback = getAsyncCallback[AckArguments] {
           case AckArguments(deliveryTag, multiple, promise) => {
             try {
               channel.basicAck(deliveryTag, multiple)
               unackedMessages -= 1
               if (unackedMessages == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty && outstandingMessages == 0)))
                 completeStage()
-              promise.complete(Try(Done))
+              promise.complete(Success(Done))
             } catch {
               case e: Throwable => promise.failure(e)
             }
           }
+        }
+        val nackCallback = getAsyncCallback[NackArguments] {
           case NackArguments(deliveryTag, multiple, requeue, promise) => {
             try {
               channel.basicNack(deliveryTag, multiple, requeue)
               unackedMessages -= 1
               if (unackedMessages == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty && outstandingMessages == 0)))
                 completeStage()
-              promise.complete(Try(Done))
+              promise.complete(Success(Done))
             } catch {
               case e: Throwable => promise.failure(e)
             }
@@ -93,15 +96,15 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
               new CommittableIncomingMessage {
                 override val message = IncomingMessage(ByteString(body), envelope, properties)
 
-                override def ack(multiple: Boolean) = {
+                override def ack(multiple: Boolean): Future[Done] = {
                   val promise = Promise[Done]()
                   commitCallback.invoke(AckArguments(message.envelope.getDeliveryTag, multiple, promise))
                   promise.future
                 }
 
-                override def nack(multiple: Boolean, requeue: Boolean) = {
+                override def nack(multiple: Boolean, requeue: Boolean): Future[Done] = {
                   val promise = Promise[Done]()
-                  commitCallback.invoke(NackArguments(message.envelope.getDeliveryTag, multiple, requeue, promise))
+                  nackCallback.invoke(NackArguments(message.envelope.getDeliveryTag, multiple, requeue, promise))
                   promise.future
                 }
               }
@@ -127,7 +130,7 @@ final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, respon
             false,
             true,
             true,
-            Map.empty[String, AnyRef].asJava
+            Collections.emptyMap()
           )
           .getQueue
 

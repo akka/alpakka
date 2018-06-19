@@ -60,46 +60,8 @@ public class AmqpConnectorsTest {
 
   private AmqpConnectionProvider connectionProvider = AmqpLocalConnectionProvider.getInstance();
 
-  @Test
   public void publishAndConsume() throws Exception {
-    //#queue-declaration
-    final String queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis();
-    final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
-    //#queue-declaration
-
-    @SuppressWarnings("unchecked")
-    AmqpDetailsConnectionProvider connectionProvider = AmqpDetailsConnectionProvider.create("invalid", 5673)
-        .withHostsAndPorts(Pair.create("localhost", 5672), Pair.create("localhost", 5674));
-
-    //#create-sink
-    final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
-        AmqpSinkSettings.create(connectionProvider)
-            .withRoutingKey(queueName)
-            .withDeclarations(queueDeclaration)
-    );
-    //#create-sink
-
-    //#create-source
-    final Integer bufferSize = 10;
-    final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.atMostOnceSource(
-        NamedQueueSourceSettings.create(
-            connectionProvider,
-            queueName
-        ).withDeclarations(queueDeclaration),
-        bufferSize
-    );
-    //#create-source
-
-    //#run-sink
-    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
-    Source.from(input).map(ByteString::fromString).runWith(amqpSink, materializer);
-    //#run-sink
-
-    //#run-source
-    final CompletionStage<List<IncomingMessage>> result = amqpSource.take(input.size()).runWith(Sink.seq(), materializer);
-    //#run-source
-
-    assertEquals(input, result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.bytes().utf8String()).collect(Collectors.toList()));
+    // see AmqpDocsTest
   }
 
   @Test(expected = ConnectException.class)
@@ -157,141 +119,16 @@ public class AmqpConnectorsTest {
     //assertEquals(input, result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.bytes().utf8String()).collect(Collectors.toList()));
   }
 
-  @Test
   public void publishAndConsumeRpc() throws Exception {
-
-    final String queueName = "amqp-conn-it-spec-rpc-queue-" + System.currentTimeMillis();
-    final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
-
-    //#create-rpc-flow
-    final Flow<ByteString,ByteString, CompletionStage<String>> ampqRpcFlow = AmqpRpcFlow.createSimple(
-        AmqpSinkSettings.create(connectionProvider).withRoutingKey(queueName).withDeclarations(queueDeclaration), 1);
-    //#create-rpc-flow
-
-    final Integer bufferSize = 10;
-    final Source<IncomingMessage, NotUsed> amqpSource = AmqpSource.atMostOnceSource(
-        NamedQueueSourceSettings.create( connectionProvider, queueName)
-            .withDeclarations(queueDeclaration),
-        bufferSize
-    );
-
-    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
-    //#run-rpc-flow
-    Pair<CompletionStage<String>, TestSubscriber.Probe<ByteString>> result = Source.from(input)
-        .map(ByteString::fromString)
-        .viaMat(ampqRpcFlow, Keep.right())
-        .toMat(TestSink.probe(system), Keep.both())
-        .run(materializer);
-    //#run-rpc-flow
-    result.first().toCompletableFuture().get(3, TimeUnit.SECONDS);
-
-    Sink<OutgoingMessage, CompletionStage<Done>> amqpSink = AmqpSink.createReplyTo(
-        AmqpReplyToSinkSettings.create(connectionProvider)
-    );
-
-    amqpSource.map(b ->
-        new OutgoingMessage(b.bytes().concat(ByteString.fromString("a")), false, false, Optional.of(b.properties()), Optional.empty())
-    ).runWith(amqpSink, materializer);
-
-    result.second().request(5)
-        .expectNextUnordered(
-            ByteString.fromString("onea"),
-            ByteString.fromString("twoa"),
-            ByteString.fromString("threea"),
-            ByteString.fromString("foura"),
-            ByteString.fromString("fivea")
-        ).expectComplete();
+    // see AmqpDocsTest
   }
 
-  @Test
   public void publishFanoutAndConsume() throws Exception {
-    //#exchange-declaration
-    final String exchangeName = "amqp-conn-it-spec-pub-sub" + System.currentTimeMillis();
-    final ExchangeDeclaration exchangeDeclaration = ExchangeDeclaration.create(exchangeName, "fanout");
-    //#exchange-declaration
-
-    //#create-exchange-sink
-    final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
-      AmqpSinkSettings.create(connectionProvider)
-            .withExchange(exchangeName)
-            .withDeclarations(exchangeDeclaration)
-    );
-    //#create-exchange-sink
-
-    //#create-exchange-source
-    final Integer fanoutSize = 4;
-    final Integer bufferSize = 1;
-
-    Source<Pair<Integer, String>, NotUsed> mergedSources = Source.empty();
-    for (Integer i = 0; i < fanoutSize; i++) {
-      final Integer fanoutBranch = i;
-      mergedSources = mergedSources.merge(
-          AmqpSource.atMostOnceSource(
-              TemporaryQueueSourceSettings.create(
-                  connectionProvider,
-                  exchangeName
-              ).withDeclarations(exchangeDeclaration),
-              bufferSize
-          )
-              .map(msg -> Pair.create(fanoutBranch, msg.bytes().utf8String()))
-      );
-    }
-    //#create-exchange-source
-
-    final CompletableFuture<Done> completion = new CompletableFuture<>();
-    mergedSources
-      .runWith(Sink.fold(new HashSet<Integer>(), (seen, branchElem) -> {
-        if (seen.size() == fanoutSize) {
-          completion.complete(Done.getInstance());
-        }
-        seen.add(branchElem.first());
-        return seen;
-      }), materializer);
-
-    system.scheduler().scheduleOnce(
-      Duration.create(5, TimeUnit.SECONDS),
-      () -> completion.completeExceptionally(new Error("Did not get at least one element from every fanout branch")),
-      system.dispatcher());
-
-    Source.repeat("stuff").map(ByteString::fromString).runWith(amqpSink, materializer);
-
-    assertEquals(Done.getInstance(), completion.get(10, TimeUnit.SECONDS));
+    // see AmqpDocsTest
   }
 
-  @Test
   public void publishAndConsumeWithoutAutoAck() throws Exception {
-    final String queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis();
-    final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
-
-    final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
-      AmqpSinkSettings.create(connectionProvider)
-        .withRoutingKey(queueName)
-        .withDeclarations(queueDeclaration)
-    );
-
-    //#create-source-withoutautoack
-    final Integer bufferSize = 10;
-    final Source<CommittableIncomingMessage, NotUsed> amqpSource = AmqpSource.committableSource(
-      NamedQueueSourceSettings.create(
-        connectionProvider,
-        queueName
-      ).withDeclarations(queueDeclaration),
-      bufferSize
-    );
-    //#create-source-withoutautoack
-
-    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
-    Source.from(input).map(ByteString::fromString).runWith(amqpSink, materializer);
-
-    //#run-source-withoutautoack
-    final CompletionStage<List<IncomingMessage>> result =
-        amqpSource
-            .mapAsync(1, cm -> cm.ack(false).thenApply(unused -> cm.message()))
-            .take(input.size())
-            .runWith(Sink.seq(), materializer);
-    //#run-source-withoutautoack
-
-    assertEquals(input, result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.bytes().utf8String()).collect(Collectors.toList()));
+    // see AmqpDocsTest
   }
 
   @Test
@@ -339,37 +176,7 @@ public class AmqpConnectorsTest {
 
   @Test
   public void republishMessageWithoutAutoAckIfNacked() throws Exception {
-    final String queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis();
-    final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
-
-    final Sink<ByteString, CompletionStage<Done>> amqpSink = AmqpSink.createSimple(
-        AmqpSinkSettings.create(connectionProvider).withRoutingKey(queueName).withDeclarations(queueDeclaration)
-    );
-
-    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
-    Source.from(input).map(ByteString::fromString).runWith(amqpSink, materializer).toCompletableFuture().get(5, TimeUnit.SECONDS);
-
-    final Integer bufferSize = 10;
-    final Source<CommittableIncomingMessage, NotUsed> amqpSource = AmqpSource.committableSource(
-        NamedQueueSourceSettings.create(connectionProvider, queueName).withDeclarations(queueDeclaration),
-        bufferSize
-    );
-
-    //#run-source-withoutautoack-and-nack
-    final CompletionStage<List<CommittableIncomingMessage>> result1 = amqpSource
-        .take(input.size())
-        .mapAsync(1, cm -> cm.nack(false, true).thenApply(unused -> cm))
-        .runWith(Sink.seq(), materializer);
-    //#run-source-withoutautoack-and-nack
-
-    result1.toCompletableFuture().get(3, TimeUnit.SECONDS);
-
-    final CompletionStage<List<CommittableIncomingMessage>> result2 = amqpSource
-        .mapAsync(1, cm -> cm.ack(false).thenApply(unused -> cm))
-        .take(input.size())
-        .runWith(Sink.seq(), materializer);
-
-    assertEquals(input, result2.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().map(m -> m.message().bytes().utf8String()).collect(Collectors.toList()));
+    // see AmqpDocsTest
   }
 
   @Test

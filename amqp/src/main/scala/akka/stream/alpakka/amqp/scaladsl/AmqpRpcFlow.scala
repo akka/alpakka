@@ -71,6 +71,6 @@ object AmqpRpcFlow {
   def committableFlow(settings: AmqpSinkSettings,
                       bufferSize: Int,
                       repliesPerMessage: Int = 1): Flow[OutgoingMessage, CommittableIncomingMessage, Future[String]] =
-    Flow.fromGraph(new AmqpRpcFlowStage(settings, bufferSize, repliesPerMessage))
+    Flow.fromGraph(new impl.AmqpRpcFlowStage(settings, bufferSize, repliesPerMessage))
 
 }
