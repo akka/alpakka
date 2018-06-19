@@ -21,6 +21,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * Append "Test" to every Java test suite.
@@ -65,6 +67,10 @@ class ReferenceTest {
     final Flow<ReferenceWriteMessage, ReferenceWriteMessage, NotUsed> flow =
       Reference.flow();
     // #flow
+
+    final Executor ex = Executors.newCachedThreadPool();
+    final Flow<ReferenceWriteMessage, ReferenceWriteMessage, NotUsed> flow2 =
+      Reference.flowAsyncMapped(ex);
   }
 
   /**

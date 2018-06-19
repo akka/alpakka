@@ -9,7 +9,7 @@ import akka.stream.alpakka.reference.impl.{ReferenceFlow, ReferenceSource}
 import akka.stream.alpakka.reference.{ReferenceReadMessage, ReferenceWriteMessage, SourceSettings}
 import akka.stream.scaladsl.{Flow, Source}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 object Reference {
 
@@ -27,4 +27,10 @@ object Reference {
    */
   def flow(): Flow[ReferenceWriteMessage, ReferenceWriteMessage, NotUsed] =
     Flow.fromGraph(new ReferenceFlow())
+
+  /**
+   * If the operator needs an ExecutionContext, take it as an implicit parameter.
+   */
+  def flowAsyncMapped()(implicit ec: ExecutionContext): Flow[ReferenceWriteMessage, ReferenceWriteMessage, NotUsed] =
+    flow().mapAsync(parallelism = 4)(m => Future { m })
 }

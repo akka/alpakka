@@ -50,6 +50,10 @@ class ReferenceSpec extends WordSpec {
       val flow: Flow[ReferenceWriteMessage, ReferenceWriteMessage, NotUsed] =
         Reference.flow()
       // #flow
+
+      implicit val ec = scala.concurrent.ExecutionContext.global
+      val flow2: Flow[ReferenceWriteMessage, ReferenceWriteMessage, NotUsed] =
+        Reference.flow()
     }
 
   }

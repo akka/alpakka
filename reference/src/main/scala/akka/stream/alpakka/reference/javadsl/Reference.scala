@@ -4,12 +4,14 @@
 
 package akka.stream.alpakka.reference.javadsl
 
-import java.util.concurrent.CompletionStage
+import java.util.concurrent.{CompletionStage, Executor}
 
 import akka.NotUsed
 import akka.stream.alpakka.reference
 import akka.stream.alpakka.reference.{ReferenceReadMessage, ReferenceWriteMessage, SourceSettings}
 import akka.stream.javadsl.{Flow, Source}
+
+import scala.concurrent.ExecutionContext
 
 object Reference {
 
@@ -28,5 +30,11 @@ object Reference {
    */
   def flow(): Flow[ReferenceWriteMessage, ReferenceWriteMessage, NotUsed] =
     reference.scaladsl.Reference.flow().asJava
+
+  /**
+   * In Java API take Executor as parameter if the operator needs to perform asynchronous tasks.
+   */
+  def flowAsyncMapped(ex: Executor): Flow[ReferenceWriteMessage, ReferenceWriteMessage, NotUsed] =
+    reference.scaladsl.Reference.flowAsyncMapped()(ExecutionContext.fromExecutor(ex)).asJava
 
 }
