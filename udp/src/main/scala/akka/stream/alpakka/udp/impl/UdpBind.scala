@@ -18,8 +18,8 @@ import scala.concurrent.{Future, Promise}
 /**
  * Binds to the given local address using UDP manager actor.
  */
-@InternalApi
-final class UdpBindLogic(localAddress: InetSocketAddress, boundPromise: Promise[InetSocketAddress])(
+@InternalApi private[udp] final class UdpBindLogic(localAddress: InetSocketAddress,
+                                                   boundPromise: Promise[InetSocketAddress])(
     val shape: FlowShape[UdpMessage, UdpMessage]
 )(implicit val system: ActorSystem)
     extends GraphStageLogic(shape) {
@@ -77,8 +77,7 @@ final class UdpBindLogic(localAddress: InetSocketAddress, boundPromise: Promise[
   )
 }
 
-@InternalApi
-final class UdpBindFlow(localAddress: InetSocketAddress)(implicit val system: ActorSystem)
+@InternalApi private[udp] final class UdpBindFlow(localAddress: InetSocketAddress)(implicit val system: ActorSystem)
     extends GraphStageWithMaterializedValue[FlowShape[UdpMessage, UdpMessage], Future[InetSocketAddress]] {
 
   val in: Inlet[UdpMessage] = Inlet("UdpBindFlow.in")

@@ -16,9 +16,9 @@ import akka.stream._
  * After send command is issued to the UDP manager actor the message
  * is passed-through to the output for possible further processing.
  */
-@InternalApi
-final class UdpSendLogic(val shape: FlowShape[UdpMessage, UdpMessage])(implicit val system: ActorSystem)
-    extends GraphStageLogic(shape) {
+@InternalApi private[udp] final class UdpSendLogic(val shape: FlowShape[UdpMessage, UdpMessage])(
+    implicit val system: ActorSystem
+) extends GraphStageLogic(shape) {
 
   implicit def self: ActorRef = stageActor.ref
 
@@ -66,8 +66,8 @@ final class UdpSendLogic(val shape: FlowShape[UdpMessage, UdpMessage])(implicit 
   )
 }
 
-@InternalApi
-final class UdpSendFlow(implicit val system: ActorSystem) extends GraphStage[FlowShape[UdpMessage, UdpMessage]] {
+@InternalApi private[udp] final class UdpSendFlow(implicit val system: ActorSystem)
+    extends GraphStage[FlowShape[UdpMessage, UdpMessage]] {
 
   val in: Inlet[UdpMessage] = Inlet("UdpSendFlow.in")
   val out: Outlet[UdpMessage] = Outlet("UdpSendFlow.in")
