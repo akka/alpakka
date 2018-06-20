@@ -76,7 +76,9 @@ class ReferenceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
       val flow = Reference.flow()
       val source = Source(
         immutable.Seq(
-          ReferenceWriteMessage().withData(ByteString("one")),
+          ReferenceWriteMessage()
+            .withData(ByteString("one"))
+            .withMetrics(Map("rps" -> 20L, "rpm" -> 30L)),
           ReferenceWriteMessage().withData(
             ByteString("two"),
             ByteString("three"),
@@ -92,9 +94,9 @@ class ReferenceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
         )
       )
 
-      val result = source.via(flow).runWith(Sink.seq).futureValue.flatMap(_.data)
+      val result = source.via(flow).runWith(Sink.seq).futureValue
 
-      result should contain theSameElementsAs Seq(
+      result.flatMap(_.data) should contain theSameElementsAs Seq(
         "one",
         "two",
         "three",
@@ -103,6 +105,8 @@ class ReferenceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
         "six",
         "seven"
       ).map(ByteString.apply)
+
+      result.head.metrics.get("total") should contain(50L)
     }
 
   }

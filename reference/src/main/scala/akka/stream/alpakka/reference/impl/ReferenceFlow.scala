@@ -27,9 +27,16 @@ import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
    */
   override def preStart(): Unit = {}
 
-  setHandler(in, new InHandler {
-    override def onPush(): Unit = push(out, grab(in))
-  })
+  setHandler(
+    in,
+    new InHandler {
+      override def onPush(): Unit = {
+        val msg = grab(in)
+        val total = msg.metrics.values.sum
+        push(out, msg.withMetrics(msg.metrics + ("total" -> total)))
+      }
+    }
+  )
 
   setHandler(out, new OutHandler {
     override def onPull(): Unit = pull(in)

@@ -10,6 +10,7 @@ package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.reference.Authentication;
@@ -25,6 +26,7 @@ import akka.util.ByteString;
 import org.junit.*;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
@@ -102,7 +104,7 @@ public class ReferenceTest {
 
     Assert.assertEquals(
       msg.getData(),
-      Arrays.asList(ByteString.fromString("one"))
+      Collections.singletonList(ByteString.fromString("one"))
     );
   }
 
@@ -112,9 +114,9 @@ public class ReferenceTest {
       Reference.flow();
 
     final Source<ReferenceWriteMessage, NotUsed> source = Source.from(Arrays.asList(
-      ReferenceWriteMessage.create().withData(
-        ByteString.fromString("one")
-      ),
+      ReferenceWriteMessage.create()
+        .withData(ByteString.fromString("one"))
+        .withMetrics(Pair.create("rps", 20L), Pair.create("rpm", Long.valueOf(30L))),
       ReferenceWriteMessage.create().withData(
         ByteString.fromString("two"),
         ByteString.fromString("three"),
@@ -123,13 +125,15 @@ public class ReferenceTest {
     ));
 
     final CompletionStage<List<ReferenceWriteMessage>> stage = source.via(flow).runWith(Sink.seq(), mat);
-    final List<ByteString> result =
-      stage.toCompletableFuture().get().stream()
-        .flatMap(m -> m.getData().stream())
-        .collect(Collectors.toList());
+    final List<ReferenceWriteMessage> result =
+      stage.toCompletableFuture().get();
+
+    final  List<ByteString> bytes = result.stream()
+      .flatMap(m -> m.getData().stream())
+      .collect(Collectors.toList());
 
     Assert.assertEquals(
-      result,
+      bytes,
       Arrays.asList(
         ByteString.fromString("one"),
         ByteString.fromString("two"),
@@ -137,6 +141,9 @@ public class ReferenceTest {
         ByteString.fromString("four")
       )
     );
+
+    final long actual = result.stream().findFirst().get().getMetrics().get("total");
+    Assert.assertEquals(50L, actual);
   }
 
   /**
