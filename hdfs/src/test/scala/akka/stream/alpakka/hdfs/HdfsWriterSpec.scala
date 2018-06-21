@@ -24,7 +24,7 @@ import scala.concurrent.{Await, ExecutionContextExecutor}
 class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
   private var hdfsCluster: MiniDFSCluster = _
-  private val destionation = "/tmp/alpakka/"
+  private val destination = "/tmp/alpakka/"
 
   //#init-mat
   implicit val system: ActorSystem = ActorSystem()
@@ -473,7 +473,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
   }
 
   override protected def afterEach(): Unit = {
-    fs.delete(new Path(destionation), true)
+    fs.delete(new Path(destination), true)
     fs.delete(settings.pathGenerator(0, 0).getParent, true)
     ()
   }

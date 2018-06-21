@@ -40,7 +40,7 @@ public class HdfsReaderTest {
   private static MiniDFSCluster hdfsCluster = null;
   private static ActorSystem system;
   private static ActorMaterializer materializer;
-  private static String destionation = JavaTestUtils.destination();
+  private static String destination = JavaTestUtils.destination();
   private static FileSystem fs = null;
   private static HdfsWritingSettings settings = HdfsWritingSettings.create();
 
@@ -174,7 +174,7 @@ public class HdfsReaderTest {
 
   @After
   public void afterEach() throws IOException {
-    fs.delete(new Path(destionation), true);
+    fs.delete(new Path(destination), true);
     fs.delete(settings.pathGenerator().apply(0L, 0L).getParent(), true);
   }
 }
