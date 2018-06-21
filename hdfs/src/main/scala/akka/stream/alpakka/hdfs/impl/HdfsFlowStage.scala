@@ -11,7 +11,7 @@ import akka.stream.alpakka.hdfs.impl.HdfsFlowLogic.{FlowState, FlowStep, LogicSt
 import akka.stream.alpakka.hdfs.impl.strategy.DefaultRotationStrategy.TimeRotationStrategy
 import akka.stream.alpakka.hdfs.impl.writer.HdfsWriter
 import akka.stream.stage._
-import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
+import akka.stream._
 import cats.data.State
 
 /**
@@ -29,6 +29,9 @@ private[hdfs] final class HdfsFlowStage[W, I, C](
   private val out = Outlet[OutgoingMessage[C]](Logging.simpleName(this) + ".out")
 
   override val shape: FlowShape[HdfsWriteMessage[I, C], OutgoingMessage[C]] = FlowShape(in, out)
+
+  override protected def initialAttributes: Attributes =
+    super.initialAttributes and ActorAttributes.IODispatcher
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new HdfsFlowLogic(ss, rs, settings, hdfsWriter, in, out, shape)

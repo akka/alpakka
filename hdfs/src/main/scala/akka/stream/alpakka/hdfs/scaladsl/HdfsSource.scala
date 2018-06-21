@@ -5,7 +5,8 @@
 package akka.stream.alpakka.hdfs.scaladsl
 
 import akka.NotUsed
-import akka.stream.IOResult
+import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
+import akka.stream.{Attributes, IOResult}
 import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -70,7 +71,9 @@ object HdfsSource {
       }
       .takeWhile(_._1)
       .map(_._2)
-    Source.fromIterator(() => it)
+    Source
+      .fromIterator(() => it)
+      .addAttributes(Attributes(IODispatcher))
   }
 
 }
