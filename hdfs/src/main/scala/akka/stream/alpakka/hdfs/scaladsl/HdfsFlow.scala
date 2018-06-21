@@ -12,7 +12,7 @@ import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import org.apache.hadoop.fs.{FSDataOutputStream, FileSystem}
 import org.apache.hadoop.io.SequenceFile.CompressionType
-import org.apache.hadoop.io.compress.{CompressionCodec, CompressionOutputStream}
+import org.apache.hadoop.io.compress.CompressionCodec
 import org.apache.hadoop.io.{SequenceFile, Writable}
 
 object HdfsFlow {
@@ -22,7 +22,7 @@ object HdfsFlow {
   }
 
   /**
-   * Scala API: creates a Flow with [[HdfsFlowStage]] for [[FSDataOutputStream]]
+   * Scala API: creates a Flow for [[org.apache.hadoop.fs.FSDataOutputStream]]
    *
    * @param fs Hadoop file system
    * @param syncStrategy sync strategy
@@ -39,7 +39,8 @@ object HdfsFlow {
       .collect(OnlyRotationMessage)
 
   /**
-   * Scala API: creates a Flow with [[HdfsFlowStage]] for [[FSDataOutputStream]] with `passThrough` of type `C`
+   * Scala API: creates a Flow for [[org.apache.hadoop.fs.FSDataOutputStream]]
+   * with `passThrough` of type `C`
    *
    * @param fs Hadoop file system
    * @param syncStrategy sync strategy
@@ -63,7 +64,7 @@ object HdfsFlow {
       )
 
   /**
-   * Scala API: creates a Flow with [[HdfsFlowStage]] for [[CompressionOutputStream]]
+   * Scala API: creates a Flow for [[org.apache.hadoop.io.compress.CompressionOutputStream]]
    *
    * @param fs Hadoop file system
    * @param syncStrategy sync strategy
@@ -82,7 +83,7 @@ object HdfsFlow {
       .collect(OnlyRotationMessage)
 
   /**
-   * Scala API: creates a Flow with [[HdfsFlowStage]] for [[CompressionOutputStream]]
+   * Scala API: creates a Flow for [[org.apache.hadoop.io.compress.CompressionOutputStream]]
    * with `passThrough` of type `C`
    *
    * @param fs Hadoop file system
@@ -114,7 +115,8 @@ object HdfsFlow {
       )
 
   /**
-   * Scala API: creates a Flow with [[HdfsFlowStage]] for [[SequenceFile.Writer]] without a compression
+   * Scala API: creates a Flow for [[org.apache.hadoop.io.SequenceFile.Writer]]
+   * without a compression
    *
    * @param fs Hadoop file system
    * @param syncStrategy sync strategy
@@ -135,7 +137,8 @@ object HdfsFlow {
       .collect(OnlyRotationMessage)
 
   /**
-   * Scala API: creates a Flow with [[HdfsFlowStage]] for [[SequenceFile.Writer]] with a compression
+   * Scala API: creates a Flow for [[org.apache.hadoop.io.SequenceFile.Writer]]
+   * with a compression
    *
    * @param fs Hadoop file system
    * @param syncStrategy sync strategy
@@ -168,7 +171,7 @@ object HdfsFlow {
     ).collect(OnlyRotationMessage)
 
   /**
-   * Scala API: creates a Flow with [[HdfsFlowStage]] for [[SequenceFile.Writer]]
+   * Scala API: creates a Flow for [[org.apache.hadoop.io.SequenceFile.Writer]]
    * with `passThrough` of type `C` and without a compression
    *
    * @param fs sync strategy
@@ -197,7 +200,7 @@ object HdfsFlow {
       )
 
   /**
-   * Scala API: creates a Flow with [[HdfsFlowStage]] for [[SequenceFile.Writer]]
+   * Scala API: creates a Flow for [[org.apache.hadoop.io.SequenceFile.Writer]]
    * with `passThrough` of type `C` and a compression
    *
    * @param fs Hadoop file system

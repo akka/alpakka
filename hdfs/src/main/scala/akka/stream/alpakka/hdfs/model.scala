@@ -132,7 +132,8 @@ abstract class RotationStrategy extends Strategy {
 object RotationStrategy {
 
   /**
-   * Creates [[SizeRotationStrategy]]
+   * Creates a rotation strategy that will trigger a file rotation
+   * after a certain size of messages have been processed.
    *
    * @param count a count of [[FileUnit]]
    * @param unit a file unit
@@ -141,7 +142,8 @@ object RotationStrategy {
     SizeRotationStrategy(0, count * unit.byteCount)
 
   /**
-   * Creates [[CountRotationStrategy]]
+   * Creates a rotation strategy that will trigger a file rotation
+   * after a certain number of messages have been processed.
    *
    * @param count message count to rotate files
    */
@@ -149,7 +151,8 @@ object RotationStrategy {
     CountRotationStrategy(0, count)
 
   /**
-   * Creates [[TimeRotationStrategy]]
+   * Creates a rotation strategy that will trigger a file rotation
+   * after a finite duration.
    *
    * @param interval duration to rotate files
    */
@@ -157,7 +160,8 @@ object RotationStrategy {
     TimeRotationStrategy(interval)
 
   /**
-   * Creates [[NoRotationStrategy]]
+   * Creates a non-functioning rotation strategy that will not trigger
+   * a file rotation, mostly suitable for finite streams and testing.
    */
   def none: RotationStrategy =
     NoRotationStrategy
@@ -170,14 +174,16 @@ abstract class SyncStrategy extends Strategy {
 object SyncStrategy {
 
   /**
-   * Creates [[CountSyncStrategy]]
+   * Creates a synchronization strategy that will trigger the Hadoop file system
+   * sync after a certain number of messages have been processed.
    *
    * @param count message count to synchronize the output
    */
   def count(count: Long): SyncStrategy = CountSyncStrategy(0, count)
 
   /**
-   * Creates [[NoSyncStrategy]]
+   * Creates a non-functioning synchronization strategy that will not trigger
+   * the Hadoop file system sync.
    */
   def none: SyncStrategy = NoSyncStrategy
 
