@@ -29,7 +29,7 @@ private[hdfs] trait HdfsWriter[W, I] {
 
   def targetFileName: String = target.getName
 
-  def write(input: I, addNewLine: Boolean): Long
+  def write(input: I, separator: Option[Array[Byte]]): Long
 
   def rotate(rotationCount: Long): HdfsWriter[W, I]
 
@@ -44,8 +44,6 @@ private[hdfs] trait HdfsWriter[W, I] {
 }
 
 private[writer] object HdfsWriter {
-
-  val NewLineByteArray: Array[Byte] = ByteString(System.getProperty("line.separator")).toArray
 
   def createTargetPath(generator: FilePathGenerator, c: Long): Path =
     generator(c, System.currentTimeMillis / 1000)

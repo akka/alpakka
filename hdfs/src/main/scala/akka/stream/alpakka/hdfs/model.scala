@@ -11,6 +11,7 @@ import akka.stream.alpakka.hdfs.HdfsWritingSettings._
 import akka.stream.alpakka.hdfs.impl.strategy.DefaultRotationStrategy._
 import akka.stream.alpakka.hdfs.impl.strategy.DefaultSyncStrategy._
 import akka.stream.alpakka.hdfs.impl.strategy.Strategy
+import akka.util.ByteString
 import org.apache.hadoop.fs.Path
 
 import scala.concurrent.duration.FiniteDuration
@@ -18,10 +19,13 @@ import scala.concurrent.duration.FiniteDuration
 final case class HdfsWritingSettings(
     overwrite: Boolean = true,
     newLine: Boolean = false,
+    lineSeparator: String = System.getProperty("line.separator"),
     pathGenerator: FilePathGenerator = DefaultFilePathGenerator
 ) {
+  private[hdfs] val newLineByteArray = ByteString(lineSeparator).toArray
   def withOverwrite(overwrite: Boolean): HdfsWritingSettings = copy(overwrite = overwrite)
   def withNewLine(newLine: Boolean): HdfsWritingSettings = copy(newLine = newLine)
+  def withLineSeparator(lineSeparator: String): HdfsWritingSettings = copy(lineSeparator = lineSeparator)
   def withPathGenerator(generator: FilePathGenerator): HdfsWritingSettings = copy(pathGenerator = generator)
 }
 

@@ -495,7 +495,12 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
     //#define-generator
     //#define-settings
     val settings =
-      HdfsWritingSettings(overwrite = true, newLine = false, pathGenerator = pathGenerator)
+      HdfsWritingSettings(
+        overwrite = true,
+        newLine = false,
+        lineSeparator = System.getProperty("line.separator"),
+        pathGenerator = pathGenerator
+      )
     //#define-settings
   }
 }

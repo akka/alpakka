@@ -29,11 +29,10 @@ private[writer] final case class CompressedDataWriter(
 
   def sync(): Unit = output.hsync()
 
-  def write(input: ByteString, addNewLine: Boolean): Long = {
+  def write(input: ByteString, separator: Option[Array[Byte]]): Long = {
     val bytes = input.toArray
     cmpOutput.write(bytes)
-    if (addNewLine)
-      cmpOutput.write(NewLineByteArray)
+    separator.foreach(output.write)
     compressor.getBytesWritten
   }
 

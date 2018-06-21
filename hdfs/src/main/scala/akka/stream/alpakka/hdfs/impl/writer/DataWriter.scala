@@ -22,11 +22,10 @@ private[writer] final case class DataWriter(
 
   def sync(): Unit = output.hsync()
 
-  def write(input: ByteString, addNewLine: Boolean): Long = {
+  def write(input: ByteString, separator: Option[Array[Byte]]): Long = {
     val bytes = input.toArray
     output.write(bytes)
-    if (addNewLine)
-      output.write(NewLineByteArray)
+    separator.foreach(output.write)
     output.size()
   }
 

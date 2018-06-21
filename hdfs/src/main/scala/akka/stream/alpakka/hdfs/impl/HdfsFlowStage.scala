@@ -55,6 +55,7 @@ private final class HdfsFlowLogic[W, I, C](
 
   private var state = FlowState(initialHdfsWriter, initialRotationStrategy, initialSyncStrategy)
 
+  private val separator = Option(settings.newLineByteArray).filter(_ => settings.newLine)
   private val flushProgram = rotateOutput.flatMap(message => tryPush(Seq(message)))
 
   setHandlers(inlet, outlet, this)
@@ -118,7 +119,7 @@ private final class HdfsFlowLogic[W, I, C](
 
   private def write(input: I): FlowStep[W, I, Long] =
     FlowStep[W, I, Long] { state =>
-      val newOffset = state.writer.write(input, settings.newLine)
+      val newOffset = state.writer.write(input, separator)
       (state, newOffset)
     }
 

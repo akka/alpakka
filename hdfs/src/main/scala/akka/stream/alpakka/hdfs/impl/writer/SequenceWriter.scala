@@ -24,7 +24,7 @@ private[writer] final case class SequenceWriter[K <: Writable, V <: Writable](
 
   def sync(): Unit = output.hsync()
 
-  def write(input: (K, V), addNewLine: Boolean): Long = {
+  def write(input: (K, V), separator: Option[Array[Byte]]): Long = {
     output.append(input._1, input._2)
     output.getLength
   }
