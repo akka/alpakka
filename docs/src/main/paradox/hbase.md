@@ -10,6 +10,14 @@ HBase is a column family NoSQL Database backed by HDFS.
 
 # Usage
 
+## Artifacts
+
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-hbase_$scalaBinaryVersion$
+  version=$version$
+}
+
 Build a converter and a tableSetting.
 
 Converter will map the domain object to HBase column.
