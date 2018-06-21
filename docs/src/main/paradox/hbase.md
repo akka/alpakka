@@ -10,7 +10,13 @@ HBase is a column family NoSQL Database backed by HDFS.
 
 # Usage
 
-Add `"com.lightbend.akka" %% "akka-stream-alpakka-hbase" % "0.19"` library as a dependency.
+## Artifacts
+
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-hbase_$scalaBinaryVersion$
+  version=$version$
+}
 
 Build a converter and a tableSetting.
 
