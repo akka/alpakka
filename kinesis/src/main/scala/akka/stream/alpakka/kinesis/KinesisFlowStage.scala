@@ -21,22 +21,21 @@ import com.amazonaws.services.kinesis.model.{
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 import scala.language.postfixOps
 
-private[kinesis] final class KinesisFlowStage(
+private[kinesis] final class KinesisFlowStage[T](
     streamName: String,
     maxRetries: Int,
     backoffStrategy: RetryBackoffStrategy,
     retryInitialTimeout: FiniteDuration
 )(implicit kinesisClient: AmazonKinesisAsync)
-    extends GraphStage[FlowShape[Seq[PutRecordsRequestEntry], Future[PutRecordsResult]]] {
+    extends GraphStage[FlowShape[Seq[(PutRecordsRequestEntry, T)], Future[Seq[(PutRecordsResultEntry, T)]]]] {
 
-  private val in = Inlet[Seq[PutRecordsRequestEntry]]("KinesisFlowStage.in")
-  private val out = Outlet[Future[PutRecordsResult]]("KinesisFlowStage.out")
+  private val in = Inlet[Seq[(PutRecordsRequestEntry, T)]]("KinesisFlowStage.in")
+  private val out = Outlet[Future[Seq[(PutRecordsResultEntry, T)]]]("KinesisFlowStage.out")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -47,11 +46,11 @@ private[kinesis] final class KinesisFlowStage(
 
       private var completionState: Option[Try[Unit]] = _
 
-      private val pendingRequests: mutable.Queue[Job] = mutable.Queue.empty
-      private var resultCallback: AsyncCallback[Result] = _
+      private val pendingRequests: mutable.Queue[Job[T]] = mutable.Queue.empty
+      private var resultCallback: AsyncCallback[Result[T]] = _
       private var inFlight: Int = _
 
-      private val waitingRetries: mutable.HashMap[Token, Job] = mutable.HashMap.empty
+      private val waitingRetries: mutable.HashMap[Token, Job[T]] = mutable.HashMap.empty
       private var retryToken: Token = _
 
       private def tryToExecute() =
@@ -61,7 +60,7 @@ private[kinesis] final class KinesisFlowStage(
           val job = pendingRequests.dequeue()
           push(
             out,
-            putRecords(
+            putRecords[T](
               streamName,
               job.records,
               recordsToRetry => resultCallback.invoke(Result(job.attempt, recordsToRetry))
@@ -69,7 +68,7 @@ private[kinesis] final class KinesisFlowStage(
           )
         }
 
-      private def handleResult(result: Result): Unit = result match {
+      private def handleResult(result: Result[T]): Unit = result match {
         case Result(_, Nil) =>
           log.debug("PutRecords call finished successfully")
           inFlight -= 1
@@ -78,11 +77,11 @@ private[kinesis] final class KinesisFlowStage(
           checkForCompletion()
         case Result(attempt, errors) if attempt > maxRetries =>
           log.debug("PutRecords call finished with partial errors after {} attempts", attempt)
-          failStage(ErrorPublishingRecords(attempt, errors.map(_._1)))
+          failStage(ErrorPublishingRecords(attempt, errors.map({ case (_, res, ctx) => (res, ctx) })))
         case Result(attempt, errors) =>
           log.debug("PutRecords call finished with partial errors; scheduling retry")
           inFlight -= 1
-          waitingRetries.put(retryToken, Job(attempt + 1, errors.map(_._2)))
+          waitingRetries.put(retryToken, Job(attempt + 1, errors.map({ case (req, _, ctx) => (req, ctx) })))
           scheduleOnce(retryToken, backoffStrategy match {
             case Exponential => retryInitialTimeout * scala.math.pow(2, attempt - 1).toInt
             case Linear => retryInitialTimeout * attempt
@@ -110,7 +109,7 @@ private[kinesis] final class KinesisFlowStage(
         completionState = None
         inFlight = 0
         retryToken = 0
-        resultCallback = getAsyncCallback[Result](handleResult)
+        resultCallback = getAsyncCallback[Result[T]](handleResult)
         pull(in)
       }
 
@@ -147,35 +146,41 @@ private[kinesis] final class KinesisFlowStage(
 
 object KinesisFlowStage {
 
-  private def putRecords(
+  private def putRecords[T](
       streamName: String,
-      recordEntries: Seq[PutRecordsRequestEntry],
-      retryRecordsCallback: Seq[(PutRecordsResultEntry, PutRecordsRequestEntry)] => Unit
-  )(implicit kinesisClient: AmazonKinesisAsync): Future[PutRecordsResult] = {
+      recordEntries: Seq[(PutRecordsRequestEntry, T)],
+      retryRecordsCallback: Seq[(PutRecordsRequestEntry, PutRecordsResultEntry, T)] => Unit
+  )(implicit kinesisClient: AmazonKinesisAsync): Future[Seq[(PutRecordsResultEntry, T)]] = {
 
-    val p = Promise[PutRecordsResult]
+    val p = Promise[Seq[(PutRecordsResultEntry, T)]]
 
     kinesisClient
       .putRecordsAsync(
         new PutRecordsRequest()
           .withStreamName(streamName)
-          .withRecords(recordEntries.asJavaCollection),
+          .withRecords(recordEntries.map(_._1).asJavaCollection),
         new AsyncHandler[PutRecordsRequest, PutRecordsResult] {
 
           override def onError(exception: Exception): Unit =
             p.failure(FailurePublishingRecords(exception))
 
           override def onSuccess(request: PutRecordsRequest, result: PutRecordsResult): Unit = {
+            val correlatedRequestResult = result.getRecords.asScala
+              .zip(recordEntries)
+              .map({ case (res, (req, ctx)) => (req, res, ctx) })
             if (result.getFailedRecordCount > 0) {
               retryRecordsCallback(
-                result.getRecords.asScala
-                  .zip(request.getRecords.asScala)
-                  .filter(_._1.getErrorCode != null)
+                correlatedRequestResult
+                  .filter(_._2.getErrorCode != null)
               )
             } else {
               retryRecordsCallback(Nil)
             }
-            p.success(result)
+            p.success(
+              correlatedRequestResult
+                .filter(_._2.getErrorCode == null)
+                .map({ case (_, res, ctx) => (res, ctx) })
+            )
           }
         }
       )
@@ -183,7 +188,7 @@ object KinesisFlowStage {
     p.future
   }
 
-  private case class Result(attempt: Int, recordsToRetry: Seq[(PutRecordsResultEntry, PutRecordsRequestEntry)])
-  private case class Job(attempt: Int, records: Seq[PutRecordsRequestEntry])
+  private case class Result[T](attempt: Int, recordsToRetry: Seq[(PutRecordsRequestEntry, PutRecordsResultEntry, T)])
+  private case class Job[T](attempt: Int, records: Seq[(PutRecordsRequestEntry, T)])
 
 }
