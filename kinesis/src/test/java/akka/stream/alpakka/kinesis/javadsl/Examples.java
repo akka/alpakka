@@ -6,6 +6,7 @@ package akka.stream.alpakka.kinesis.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.kinesis.KinesisFlowSettings;
 import akka.stream.alpakka.kinesis.ShardSettings;
@@ -80,6 +81,12 @@ public class Examples {
 
   final Flow<PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed> defaultSettingsFlow =
       KinesisFlow.apply("streamName", amazonKinesisAsync);
+
+  final Flow<Pair<PutRecordsRequestEntry, String>, Pair<PutRecordsResultEntry, String>, NotUsed> flowWithStringContext =
+      KinesisFlow.withUserContext("streamName", flowSettings, amazonKinesisAsync);
+
+  final Flow<Pair<PutRecordsRequestEntry, String>, Pair<PutRecordsResultEntry, String>, NotUsed> defaultSettingsFlowWithStringContext =
+      KinesisFlow.withUserContext("streamName", flowSettings, amazonKinesisAsync);
 
   final Sink<PutRecordsRequestEntry, NotUsed> sink =
       KinesisSink.apply("streamName", flowSettings, amazonKinesisAsync);
