@@ -74,7 +74,22 @@ object HdfsWriteMessage {
 }
 
 sealed abstract class OutgoingMessage[+P]
+
+/**
+ * Class `RotationMessage` represents an outgoing message of the rotation event
+ *
+ * @param path     an absolute path of an output file in Hdfs
+ * @param rotation a number of rotation of an output
+ */
 final case class RotationMessage(path: String, rotation: Int) extends OutgoingMessage[Nothing]
+
+/**
+ * Class `WrittenMessage` represents an outgoing message of the writing event
+ *
+ * @param passThrough a value of pass-through
+ * @param inRotation  a number of the rotation that writing event occurred
+ * @tparam P type of the value of pass-through
+ */
 final case class WrittenMessage[P](passThrough: P, inRotation: Int) extends OutgoingMessage[P]
 
 sealed case class FileUnit(byteCount: Long)
