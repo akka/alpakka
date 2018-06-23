@@ -6,13 +6,14 @@ package akka.stream.alpakka.hdfs.impl
 
 import akka.NotUsed
 import akka.event.Logging
+import akka.stream._
 import akka.stream.alpakka.hdfs._
 import akka.stream.alpakka.hdfs.impl.HdfsFlowLogic.{FlowState, FlowStep, LogicState}
-import akka.stream.alpakka.hdfs.impl.strategy.DefaultRotationStrategy.TimeRotationStrategy
 import akka.stream.alpakka.hdfs.impl.writer.HdfsWriter
 import akka.stream.stage._
-import akka.stream._
 import cats.data.State
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Internal API
@@ -41,7 +42,7 @@ private[hdfs] final class HdfsFlowStage[W, I, C](
  * Internal API
  */
 @akka.annotation.InternalApi
-private final class HdfsFlowLogic[W, I, C](
+private[hdfs] final class HdfsFlowLogic[W, I, C](
     initialSyncStrategy: SyncStrategy,
     initialRotationStrategy: RotationStrategy,
     settings: HdfsWritingSettings,
@@ -58,6 +59,9 @@ private final class HdfsFlowLogic[W, I, C](
   private val separator = Option(settings.newLineByteArray).filter(_ => settings.newLine)
   private val flushProgram = rotateOutput.flatMap(message => tryPush(Seq(message)))
 
+  private[impl] val sharedScheduleFn =
+    schedulePeriodicallyWithInitialDelay(NotUsed, _: FiniteDuration, _: FiniteDuration)
+
   setHandlers(inlet, outlet, this)
 
   def onPush(): Unit =
@@ -69,12 +73,7 @@ private final class HdfsFlowLogic[W, I, C](
     tryPull()
 
   override def preStart(): Unit = {
-    // Schedule timer to rotate output file
-    initialRotationStrategy match {
-      case timed: TimeRotationStrategy =>
-        schedulePeriodicallyWithInitialDelay(NotUsed, timed.interval, timed.interval)
-      case _ => ()
-    }
+    initialRotationStrategy.preStart(this)
     tryPull()
   }
 

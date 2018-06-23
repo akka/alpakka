@@ -8,6 +8,7 @@ import java.util.function.BiFunction
 
 import akka.NotUsed
 import akka.stream.alpakka.hdfs.HdfsWritingSettings._
+import akka.stream.alpakka.hdfs.impl.HdfsFlowLogic
 import akka.stream.alpakka.hdfs.impl.strategy.DefaultRotationStrategy._
 import akka.stream.alpakka.hdfs.impl.strategy.DefaultSyncStrategy._
 import akka.stream.alpakka.hdfs.impl.strategy.Strategy
@@ -127,6 +128,7 @@ object FilePathGenerator {
 
 abstract class RotationStrategy extends Strategy {
   type S = RotationStrategy
+  protected[hdfs] def preStart[W, I, C](logic: HdfsFlowLogic[W, I, C]): Unit
 }
 
 object RotationStrategy {
