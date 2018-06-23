@@ -27,7 +27,7 @@ private[hdfs] trait HdfsWriter[W, I] {
 
   def sync(): Unit
 
-  def targetFileName: String = target.getName
+  def targetPath: String = target.toString
 
   def write(input: I, separator: Option[Array[Byte]]): Long
 

@@ -142,7 +142,7 @@ private[hdfs] final class HdfsFlowLogic[W, I, C](
 
       state.writer.moveToTarget()
 
-      val message = RotationMessage(state.writer.targetFileName, state.rotationCount)
+      val message = RotationMessage(state.writer.targetPath, state.rotationCount)
       val newState = state.copy(rotationCount = newRotationCount,
                                 writer = newWriter,
                                 rotationStrategy = newRotation,

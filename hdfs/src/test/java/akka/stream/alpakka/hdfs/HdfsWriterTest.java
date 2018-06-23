@@ -105,11 +105,11 @@ public class HdfsWriterTest {
     List<RotationMessage> result = new ArrayList<>(resF.toCompletableFuture().get());
     List<RotationMessage> expect =
         Arrays.asList(
-            new RotationMessage("0", 0),
-            new RotationMessage("1", 1),
-            new RotationMessage("2", 2),
-            new RotationMessage("3", 3),
-            new RotationMessage("4", 4));
+            new RotationMessage(output("0"), 0),
+            new RotationMessage(output("1"), 1),
+            new RotationMessage(output("2"), 2),
+            new RotationMessage(output("3"), 3),
+            new RotationMessage(output("4"), 4));
 
     assertEquals(expect, result);
   }
@@ -273,7 +273,7 @@ public class HdfsWriterTest {
 
     ArrayList<RotationMessage> logs = new ArrayList<>(resF.toCompletableFuture().get());
     List<RotationMessage> expect =
-        Arrays.asList(new RotationMessage("0", 0), new RotationMessage("1", 1));
+        Arrays.asList(new RotationMessage(output("0"), 0), new RotationMessage(output("1"), 1));
 
     // Make sure all messages was committed to kafka
     assertEquals(Arrays.asList(0, 1, 2, 3, 4, 5), kafkaCommitter.committedOffsets);
@@ -314,12 +314,12 @@ public class HdfsWriterTest {
     List<RotationMessage> logs = new ArrayList<>(resF.toCompletableFuture().get());
     List<RotationMessage> expect =
         Arrays.asList(
-            new RotationMessage("0.deflate", 0),
-            new RotationMessage("1.deflate", 1),
-            new RotationMessage("2.deflate", 2),
-            new RotationMessage("3.deflate", 3),
-            new RotationMessage("4.deflate", 4),
-            new RotationMessage("5.deflate", 5));
+            new RotationMessage(output("0.deflate"), 0),
+            new RotationMessage(output("1.deflate"), 1),
+            new RotationMessage(output("2.deflate"), 2),
+            new RotationMessage(output("3.deflate"), 3),
+            new RotationMessage(output("4.deflate"), 4),
+            new RotationMessage(output("5.deflate"), 5));
 
     assertEquals(logs, expect);
     JavaTestUtils.verifyOutputFileSize(fs, logs);
@@ -343,11 +343,11 @@ public class HdfsWriterTest {
     List<RotationMessage> logs = new ArrayList<>(resF.toCompletableFuture().get());
     List<RotationMessage> expect =
         Arrays.asList(
-            new RotationMessage("0.deflate", 0),
-            new RotationMessage("1.deflate", 1),
-            new RotationMessage("2.deflate", 2),
-            new RotationMessage("3.deflate", 3),
-            new RotationMessage("4.deflate", 4));
+            new RotationMessage(output("0.deflate"), 0),
+            new RotationMessage(output("1.deflate"), 1),
+            new RotationMessage(output("2.deflate"), 2),
+            new RotationMessage(output("3.deflate"), 3),
+            new RotationMessage(output("4.deflate"), 4));
 
     assertEquals(logs, expect);
     JavaTestUtils.verifyOutputFileSize(fs, logs);
@@ -372,7 +372,8 @@ public class HdfsWriterTest {
             .runWith(Sink.seq(), materializer);
 
     List<RotationMessage> logs = new ArrayList<>(resF.toCompletableFuture().get());
-    List<RotationMessage> expect = Collections.singletonList(new RotationMessage("0.deflate", 0));
+    List<RotationMessage> expect =
+        Collections.singletonList(new RotationMessage(output("0.deflate"), 0));
 
     assertEquals(logs, expect);
     JavaTestUtils.verifyOutputFileSize(fs, logs);
@@ -511,6 +512,10 @@ public class HdfsWriterTest {
   public void afterEach() throws IOException {
     fs.delete(new Path(destination), true);
     fs.delete(settings.pathGenerator().apply(0L, 0L).getParent(), true);
+  }
+
+  private static String output(String s) {
+    return destination + s;
   }
 
   private static void documentation() {

@@ -63,11 +63,11 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val logs = Await.result(resF, Duration.Inf)
       logs shouldBe Seq(
-        RotationMessage("0", 0),
-        RotationMessage("1", 1),
-        RotationMessage("2", 2),
-        RotationMessage("3", 3),
-        RotationMessage("4", 4)
+        RotationMessage(output("0"), 0),
+        RotationMessage(output("1"), 1),
+        RotationMessage(output("2"), 2),
+        RotationMessage(output("3"), 3),
+        RotationMessage(output("4"), 4)
       )
 
       verifyOutputFileSize(fs, logs)
@@ -248,8 +248,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val logs = Await.result(resF, Duration.Inf)
       logs shouldBe Seq(
-        RotationMessage("0", 0),
-        RotationMessage("1", 1)
+        RotationMessage(output("0"), 0),
+        RotationMessage(output("1"), 1)
       )
 
       // Make sure all messages was committed to kafka
@@ -287,12 +287,12 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val logs = Await.result(resF, Duration.Inf)
       logs shouldBe Seq(
-        RotationMessage("0.deflate", 0),
-        RotationMessage("1.deflate", 1),
-        RotationMessage("2.deflate", 2),
-        RotationMessage("3.deflate", 3),
-        RotationMessage("4.deflate", 4),
-        RotationMessage("5.deflate", 5)
+        RotationMessage(output("0.deflate"), 0),
+        RotationMessage(output("1.deflate"), 1),
+        RotationMessage(output("2.deflate"), 2),
+        RotationMessage(output("3.deflate"), 3),
+        RotationMessage(output("4.deflate"), 4),
+        RotationMessage(output("5.deflate"), 5)
       )
 
       verifyOutputFileSize(fs, logs)
@@ -319,11 +319,11 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val logs = Await.result(resF, Duration.Inf)
       logs shouldBe Seq(
-        RotationMessage("0.deflate", 0),
-        RotationMessage("1.deflate", 1),
-        RotationMessage("2.deflate", 2),
-        RotationMessage("3.deflate", 3),
-        RotationMessage("4.deflate", 4)
+        RotationMessage(output("0.deflate"), 0),
+        RotationMessage(output("1.deflate"), 1),
+        RotationMessage(output("2.deflate"), 2),
+        RotationMessage(output("3.deflate"), 3),
+        RotationMessage(output("4.deflate"), 4)
       )
 
       verifyOutputFileSize(fs, logs)
@@ -352,7 +352,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
       val logs = Await.result(resF, Duration.Inf)
       logs shouldEqual Seq(
-        RotationMessage("0.deflate", 0)
+        RotationMessage(output("0.deflate"), 0)
       )
 
       verifyOutputFileSize(fs, logs)
@@ -485,6 +485,8 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
     fs.close()
     hdfsCluster.shutdown()
   }
+
+  private def output(s: String): String = s"$destination$s"
 
   private def documentation(): Unit = {
     //#define-generator
