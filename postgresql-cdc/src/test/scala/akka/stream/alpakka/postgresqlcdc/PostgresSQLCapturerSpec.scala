@@ -16,7 +16,7 @@ import akka.testkit.{ImplicitSender, TestKit}
 import org.postgresql.util.PGobject
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-class PostgresSQLCapturerSpec
+abstract class PostgresSQLCapturerSpec(postgreSQLPortNumber: Int)
     extends TestKit(ActorSystem())
     with WordSpecLike
     with ImplicitSender
@@ -25,7 +25,8 @@ class PostgresSQLCapturerSpec
 
   private val log = Logging(system, classOf[PostgresSQLCapturerSpec])
 
-  private val connectionString = "jdbc:postgresql://localhost/pgdb1?user=pguser&password=pguser"
+  private val connectionString =
+    s"jdbc:postgresql://localhost:${postgreSQLPortNumber}/pgdb1?user=pguser&password=pguser"
 
   private implicit val materializer: ActorMaterializer = ActorMaterializer()
 
@@ -411,7 +412,7 @@ class PostgresSQLCapturerSpec
 
     }
 
-    "can deal with null columns" in {
+    "be able to deal with null columns" in {
 
       insertEmployee(0, "Giovanni", "employee")
       updateEmployee(0, null)
@@ -434,3 +435,7 @@ class PostgresSQLCapturerSpec
   }
 
 }
+
+class ChangeDataCapturePostgresSQL94 extends PostgresSQLCapturerSpec(5432)
+
+class ChangeDataCapturePostgreSQL104 extends PostgresSQLCapturerSpec(5433)

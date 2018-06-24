@@ -65,8 +65,14 @@ services:
       - "1883:1883"
     volumes:
       - ./mqtt/src/test/travis:/mqtt/config/conf.d
-  postgres:
-    image: sebastianharko/postgres # PostgreSQL 9.4 with configuration that allows creating "logical decoding" slots
+  postgres94:
+    image: sebastianharko/postgres94 # PostgreSQL 9.4 with configuration that allows creating "logical decoding" slots
+    ports:
+      - "5432:5432"
+  postgres104:
+    image: sebastianharko/postgres104
+    ports:
+      - "5433:5432"
   kudu-master-data:
     image: kunickiaj/kudu
     volumes:

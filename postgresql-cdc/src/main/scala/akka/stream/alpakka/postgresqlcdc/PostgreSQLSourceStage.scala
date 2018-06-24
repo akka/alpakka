@@ -61,9 +61,8 @@ private[postgresqlcdc] object PostgreSQLSourceStage {
     val result = ArrayBuffer[SlotChange]()
     while (rs.next()) {
       val data = rs.getString("data")
-      val location = rs.getString("location")
       val transactionId = rs.getLong("xid")
-      result += SlotChange(transactionId, location, data)
+      result += SlotChange(transactionId, data)
     }
     result.toList
   }
@@ -75,13 +74,13 @@ private[postgresqlcdc] object PostgreSQLSourceStage {
       case (transactionId: Long, slotChanges: List[SlotChange]) =>
         val changes: List[Change] = slotChanges.collect {
 
-          case SlotChange(_, _, ChangeStatement(schemaName, tableName, "UPDATE", changes)) =>
+          case SlotChange(_, ChangeStatement(schemaName, tableName, "UPDATE", changes)) =>
             RowUpdated(schemaName, tableName, parseKeyValuePairs(changes))
 
-          case SlotChange(_, _, ChangeStatement(schemaName, tableName, "DELETE", changes)) =>
+          case SlotChange(_, ChangeStatement(schemaName, tableName, "DELETE", changes)) =>
             RowDeleted(schemaName, tableName, parseKeyValuePairs(changes))
 
-          case SlotChange(_, _, ChangeStatement(schemaName, tableName, "INSERT", changes)) =>
+          case SlotChange(_, ChangeStatement(schemaName, tableName, "INSERT", changes)) =>
             RowInserted(schemaName, tableName, parseKeyValuePairs(changes))
         }
 
@@ -93,7 +92,7 @@ private[postgresqlcdc] object PostgreSQLSourceStage {
   /** Represents a row in the table we get from PostgreSQL when we query
    * SELECT * FROM pg_logical_slot_get_changes(..)
    */
-  private case class SlotChange(transactionId: Long, location: String, data: String)
+  private case class SlotChange(transactionId: Long, data: String)
 
 }
 

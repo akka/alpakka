@@ -1,15 +1,17 @@
 # Lightweight "Change Data Capture" for PostgreSQL
 
 This provides an Akka Stream Source that can stream changes from a PostgreSQL database. Here, by
-"change", we mean database events such as: RowDeleted(..), RowInserted(..), RowUpdated(..). This provides
-the tooling for implementing the [Strangler Application](https://www.martinfowler.com/bliki/StranglerApplication.html) /
+"change", we mean database events such as: RowDeleted(..), RowInserted(..), RowUpdated(..). A
+typical practical use case is to have a stream that continuously replicates data from PostgreSQL to ElasticSearch. But more generally,
+this provides the tooling for implementing the [Strangler Application](https://www.martinfowler.com/bliki/StranglerApplication.html) /
 [Event Interception](https://www.martinfowler.com/bliki/EventInterception.html) patterns that Martin Fowler popularized.
 
 ## How It Works
 
 This Akka Stream Source makes use of the "logical decoding" feature of PostgreSQL (available since PostgreSQL 9.4).
 It uses the `test_decoding` plugin that comes pre-packaged with PostgreSQL. Enabling a "logical decoding" slot
-in PostgreSQL has minimal performance overhead and requires very little configuration.
+in PostgreSQL requires very little configuration and, generally, has minimal performance overhead. However, please consult
+the PostgreSQL documentation to understand the performance implications.
 
 ## Limitations
 
@@ -56,7 +58,7 @@ transaction id. A 'change' can be one of the following:
     * fields: List[Field]
 
 A **Field** is defined as Field(columnName: String, columnType: String, value: String). The Scala DSL implements the above
-classes as Scala case classes. Java DSL users get equivalent POJOs.
+classes as Scala case classes. The Java DSL provides equivalent **POJOs**.
 
 ## Usage
 
