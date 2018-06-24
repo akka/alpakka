@@ -8,8 +8,9 @@ import java.sql.{Connection, DriverManager}
 
 import akka.actor.ActorSystem
 import akka.event.Logging
+import akka.stream.alpakka.postgresqlcdc.scaladsl.Plugins.TestDecoding
 import akka.stream.{ActorMaterializer, Attributes}
-import akka.stream.alpakka.postgresqlcdc.scaladsl.PostgreSQLCapturer
+import akka.stream.alpakka.postgresqlcdc.scaladsl._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.{ImplicitSender, TestKit}
 import org.postgresql.util.PGobject
@@ -24,7 +25,7 @@ class PostgresSQLCapturerSpec
 
   private val log = Logging(system, classOf[PostgresSQLCapturerSpec])
 
-  private val connectionString = "jdbc:postgresql://localhost/pgdb?user=pguser&password=pguser"
+  private val connectionString = "jdbc:postgresql://localhost/pgdb1?user=pguser&password=pguser"
 
   private implicit val materializer: ActorMaterializer = ActorMaterializer()
 
@@ -71,6 +72,16 @@ class PostgresSQLCapturerSpec
       | );
     """.stripMargin).execute()
 
+  private def createEmployeesTable()(implicit conn: Connection): Unit =
+    conn.prepareStatement("""
+        |CREATE TABLE employees (
+        | id serial NOT NULL PRIMARY KEY,
+        | name VARCHAR(255) NOT NULL,
+        | position VARCHAR(255) DEFAULT NULL
+        |);
+        |
+      """.stripMargin).execute()
+
   private def dropTableCustomers()(implicit conn: Connection): Unit =
     conn.prepareStatement("DROP TABLE customers;").execute()
 
@@ -79,6 +90,9 @@ class PostgresSQLCapturerSpec
 
   private def dropTablePurchaseOrders()(implicit conn: Connection): Unit =
     conn.prepareStatement("DROP TABLE purchase_orders;").execute()
+
+  private def dropTableEmployees()(implicit conn: Connection): Unit =
+    conn.prepareStatement("DROP TABLE employees;").execute()
 
   private def insertCustomer(id: Int, fName: String, lName: String, email: String)(implicit conn: Connection): Unit = {
     val insertStatement =
@@ -150,6 +164,23 @@ class PostgresSQLCapturerSpec
     deleteStatement.execute()
   }
 
+  private def insertEmployee(id: Int, name: String, position: String)(implicit conn: Connection): Unit = {
+    val insertStatement =
+      conn.prepareStatement("INSERT INTO employees(id, name, position) VALUES(?, ?, ?);")
+    insertStatement.setInt(1, id)
+    insertStatement.setString(2, name)
+    insertStatement.setString(3, position)
+    insertStatement.execute()
+  }
+
+  private def updateEmployee(id: Int, newPosition: String)(implicit conn: Connection): Unit = {
+    val updateStatement =
+      conn.prepareStatement("UPDATE employees SET position = ? WHERE id = ?;")
+    updateStatement.setString(1, newPosition)
+    updateStatement.setInt(2, id)
+    updateStatement.execute()
+  }
+
   private def setUpLogicalDecodingSlot()(implicit conn: Connection): Unit = {
     val stmt = conn.prepareStatement("SELECT * FROM pg_create_logical_replication_slot('scalatest','test_decoding')")
     stmt.execute()
@@ -166,6 +197,7 @@ class PostgresSQLCapturerSpec
     createCustomersTable()
     createSalesTable()
     createPurchaseOrdersTable()
+    createEmployeesTable()
   }
 
   override def afterAll: Unit = {
@@ -178,6 +210,7 @@ class PostgresSQLCapturerSpec
     dropTableCustomers()
     dropTableSales()
     dropTablePurchaseOrders()
+    dropTableEmployees()
 
     conn.close()
 
@@ -201,9 +234,7 @@ class PostgresSQLCapturerSpec
       // some deletes
       deleteCustomers()
 
-      val settings = PostgreSQLChangeDataCaptureSettings(connectionString, slotName = "scalatest")
-
-      PostgreSQLCapturer(settings)
+      ChangeDataCapture(PostgreSQLInstance(connectionString, slotName = "scalatest", TestDecoding))
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
@@ -301,9 +332,7 @@ class PostgresSQLCapturerSpec
       updateSale(id = 0, newInfo = """{"name": "alpakka", "countries": ["*"]}""")
       deleteSale(0)
 
-      val settings = PostgreSQLChangeDataCaptureSettings(connectionString, slotName = "scalatest")
-
-      PostgreSQLCapturer(settings)
+      ChangeDataCapture(PostgreSQLInstance(connectionString, slotName = "scalatest", Plugins.TestDecoding))
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
@@ -368,9 +397,7 @@ class PostgresSQLCapturerSpec
 
       deletePurchaseOrder(id = 0)
 
-      val settings = PostgreSQLChangeDataCaptureSettings(connectionString, slotName = "scalatest")
-
-      PostgreSQLCapturer(settings)
+      ChangeDataCapture(PostgreSQLInstance(connectionString, slotName = "scalatest", Plugins.TestDecoding))
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
@@ -380,6 +407,26 @@ class PostgresSQLCapturerSpec
         }
         .expectNextChainingPF {
           case c @ ChangeSet(_, List(RowDeleted(_, _, _))) => // success
+        }
+
+    }
+
+    "can deal with null columns" in {
+
+      insertEmployee(0, "Giovanni", "employee")
+      updateEmployee(0, null)
+
+      ChangeDataCapture(PostgreSQLInstance(connectionString, slotName = "scalatest", Plugins.TestDecoding))
+        .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
+        .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
+        .runWith(TestSink.probe[ChangeSet])
+        .request(2)
+        .expectNextChainingPF {
+          case c @ ChangeSet(_, List(RowInserted("public", "employees", _))) => // success
+        }
+        .expectNextChainingPF {
+          case c @ ChangeSet(_, List(RowUpdated("public", "employees", fields)))
+              if fields.contains(Field("\"position\"", "character varying", "null")) => // success
         }
 
     }

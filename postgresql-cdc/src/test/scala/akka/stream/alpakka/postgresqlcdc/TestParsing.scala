@@ -5,7 +5,7 @@
 package akka.stream.alpakka.postgresqlcdc
 
 import org.scalatest.{FunSuite, Matchers}
-import akka.stream.alpakka.postgresqlcdc.PgSQLChangeDataCaptureSourceStage.Grammar._
+import akka.stream.alpakka.postgresqlcdc.TestDecodingPlugin._
 
 class TestParsing extends FunSuite with Matchers {
 

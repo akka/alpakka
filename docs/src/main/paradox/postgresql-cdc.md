@@ -3,7 +3,7 @@
 This provides an Akka Stream Source that can stream changes from a PostgreSQL database. Here, by
 "change", we mean database events such as: RowDeleted(..), RowInserted(..), RowUpdated(..). This provides
 the tooling for implementing the [Strangler Application](https://www.martinfowler.com/bliki/StranglerApplication.html) /
-[Event Interception](https://www.martinfowler.com/bliki/EventInterception.html) technique that Martin Fowler popularized.
+[Event Interception](https://www.martinfowler.com/bliki/EventInterception.html) patterns that Martin Fowler popularized.
 
 ## How It Works
 
@@ -55,7 +55,8 @@ transaction id. A 'change' can be one of the following:
     * tableName: String
     * fields: List[Field]
 
-A **Field** is defined as Field(columnName: String, columnType: String, value: String).
+A **Field** is defined as Field(columnName: String, columnType: String, value: String). The Scala DSL implements the above
+classes as Scala case classes. Java DSL users get equivalent POJOs.
 
 ## Usage
 
@@ -94,9 +95,8 @@ Without further ado, a minimalist example:
 
 val connectionString = "jdbc:postgresql://localhost/pgdb?user=pguser&password=pguser"
 val slotName = "slot_name"
-val settings = PostgreSQLChangeDataCaptureSettings(connectionString, slotName)
 
-PostgreSQLCapturer(settings)
+ChangeDataCapture(PostgreSQLInstance(connectionString, slotName, Plugins.TestDecoding))
   .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
   .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
   .to(Sink.ignore)
@@ -116,10 +116,9 @@ case class UserDeregistered(id: String)
 val connectionString =
   "jdbc:postgresql://localhost/test?user=fred&password=secret&ssl=true"
 val slotName = "slot_name"
-val settings = PostgreSQLChangeDataCaptureSettings(connectionString, slotName)
 
-PostgreSQLCapturer(settings)
-  .flatMap(_.changes)
+ChangeDataCapture(PostgreSQLInstance(connectionString, slotName, Plugins.TestDecoding))
+  .mapConcat(_.changes)
   .collect { // collect is map and filter
     case RowDeleted(transactionId, "public", "users", fields) =>
       val userId = fields.find(_.columnName == "user_id").map(_.value).getOrElse("unknown")
