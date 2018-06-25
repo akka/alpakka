@@ -25,7 +25,8 @@ public class TestJavaDsl {
     static ActorSystem system;
     static Materializer materializer;
     static Connection connection;
-    static final String connectionString = "jdbc:postgresql://localhost:5433/pgdb2?user=pguser&password=pguser";
+
+    static final String connectionString = "jdbc:postgresql://localhost:5435/pgdb2?user=pguser&password=pguser";
 
     private static void createUsersTable() throws Exception {
         connection.prepareStatement("CREATE TABLE users (id SERIAL NOT NULL PRIMARY KEY, info TEXT NOT NULL);").execute();

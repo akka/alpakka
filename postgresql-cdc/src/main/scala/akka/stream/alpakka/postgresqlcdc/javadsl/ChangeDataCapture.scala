@@ -42,6 +42,7 @@ object ChangeDataCapture {
                 new javadsl.RowDeleted(schemaName, tableName, fields.map { f: scaladsl.Field =>
                   new javadsl.Field(f.columnName, f.columnType, f.value)
                 }.asJava)
+
             }
           }.asJava
         )

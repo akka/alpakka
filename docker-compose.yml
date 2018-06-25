@@ -69,10 +69,18 @@ services:
     image: sebastianharko/postgres94 # PostgreSQL 9.4 with configuration that allows creating "logical decoding" slots
     ports:
       - "5432:5432"
-  postgres104:
-    image: sebastianharko/postgres104
+  postgres95:
+    image: sebastianharko/postgres95 # PostgreSQL 9.5 with configuration that allows creating "logical decoding" slots
     ports:
       - "5433:5432"
+  postgres96:
+    image: sebastianharko/postgres96 # PostgreSQL 9.6 with configuration that allows creating "logical decoding" slots
+    ports:
+      - "5434:5432"
+  postgres104:
+    image: sebastianharko/postgres104 # PostgreSQL 10.4 with configuration that allows creating "logical decoding" slots
+    ports:
+      - "5435:5432"
   kudu-master-data:
     image: kunickiaj/kudu
     volumes:

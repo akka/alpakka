@@ -16,14 +16,14 @@ import akka.testkit.{ImplicitSender, TestKit}
 import org.postgresql.util.PGobject
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-abstract class PostgresSQLCapturerSpec(postgreSQLPortNumber: Int)
+abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
     extends TestKit(ActorSystem())
     with WordSpecLike
     with ImplicitSender
     with Matchers
     with BeforeAndAfterAll {
 
-  private val log = Logging(system, classOf[PostgresSQLCapturerSpec])
+  private val log = Logging(system, classOf[PostgreSQLCapturerSpec])
 
   private val connectionString =
     s"jdbc:postgresql://localhost:${postgreSQLPortNumber}/pgdb1?user=pguser&password=pguser"
@@ -436,6 +436,16 @@ abstract class PostgresSQLCapturerSpec(postgreSQLPortNumber: Int)
 
 }
 
-class ChangeDataCapturePostgresSQL94 extends PostgresSQLCapturerSpec(5432)
+// See docker-compose.yml
+// 5432 - PostgreSQL 9.4
+// 5433 - PostgreSQL 9.5
+// 5434 - PostgreSQL 9.6
+// 5435 - PostgreSQL 10.4
 
-class ChangeDataCapturePostgreSQL104 extends PostgresSQLCapturerSpec(5433)
+class ChangeDataCapturePostgreSQL94 extends PostgreSQLCapturerSpec(5432)
+
+class ChangeDataCapturePostgreSQL95 extends PostgreSQLCapturerSpec(5433)
+
+class ChangeDataCapturePostgreSQL96 extends PostgreSQLCapturerSpec(5434)
+
+class ChangeDataCapturePostgreSQL104 extends PostgreSQLCapturerSpec(5435)
