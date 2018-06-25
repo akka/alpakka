@@ -28,31 +28,6 @@ public class TestJavaDsl {
 
     static final String connectionString = "jdbc:postgresql://localhost:5435/pgdb2?user=pguser&password=pguser";
 
-    private static void createUsersTable() throws Exception {
-        connection.prepareStatement("CREATE TABLE users (id SERIAL NOT NULL PRIMARY KEY, info TEXT NOT NULL);").execute();
-    }
-
-    private static void dropUsersTable() throws Exception {
-        connection.prepareStatement("DROP TABLE users;").execute();
-    }
-
-    private static void insertUser(int id, String info) throws Exception {
-        PreparedStatement st = connection.prepareStatement("INSERT INTO users(id, info) VALUES(?, ?);");
-        st.setInt(1, id);
-        st.setString(2, info);
-        st.execute();
-    }
-
-    private static void updateUser(int id, String newInfo) throws Exception {
-        PreparedStatement st = connection.prepareStatement("UPDATE users SET info = ? WHERE id = ?;");
-        st.setString(1, newInfo);
-        st.setInt(2, id);
-        st.execute();
-    }
-
-    private static void deleteUsers() throws Exception {
-        connection.prepareStatement("DELETE FROM users;").execute();
-    }
 
     @BeforeClass
     public static void setup() throws Exception {
@@ -60,10 +35,10 @@ public class TestJavaDsl {
         materializer = ActorMaterializer.create(system);
         String driver = "org.postgresql.Driver";
         Class.forName(driver).newInstance();
-        connection = DriverManager.getConnection(connectionString);
+        connection = FakeDb.getConnection(connectionString);
         // set the logical replication slot
-        connection.prepareStatement("SELECT * FROM pg_create_logical_replication_slot('junit','test_decoding')").execute();
-        createUsersTable();
+        FakeDb.setUpLogicalDecodingSlot("junit", connection);
+        FakeDb.createCustomersTable(connection);
     }
 
     @AfterClass
@@ -71,18 +46,21 @@ public class TestJavaDsl {
         TestKit.shutdownActorSystem(system);
         system = null;
         materializer = null;
-        dropUsersTable();
+        FakeDb.dropTableCustomers(connection);
         // drop the logical replication slot
-        connection.prepareStatement("SELECT * FROM pg_drop_replication_slot('junit')").execute();
+        FakeDb.dropLogicalDecodingSlot("junit", connection);
         connection.close();
     }
 
     @Test
-    public void testIt() throws Exception {
+    public void testIt() {
 
-        insertUser(1, "freemium user");
-        updateUser(1, "premium user");
-        deleteUsers();
+        // some inserts
+        FakeDb.insertCustomer(0, "John", "Lennon", "john.lennon@akka.io", connection);
+        // some updates
+        FakeDb.updateCustomerEmail(0, "john.lennon@thebeatles.com", connection);
+        // some deletes
+        FakeDb.deleteCustomers(connection);
 
         final PostgreSQLInstance postgreSQLInstance = new PostgreSQLInstance(connectionString,
                 "junit",
