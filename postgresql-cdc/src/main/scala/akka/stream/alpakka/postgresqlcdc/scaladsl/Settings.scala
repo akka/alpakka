@@ -6,13 +6,13 @@ package akka.stream.alpakka.postgresqlcdc.scaladsl
 
 import scala.concurrent.duration._
 
-sealed trait Plugin
+sealed trait Mode
 
-object Plugins {
+object Mode {
 
-  case object TestDecoding extends Plugin
+  case object Get extends Mode
 
-  case object Wal2Json extends Plugin
+  case class Peek(fromLsn: Long) extends Mode
 
 }
 
@@ -25,6 +25,6 @@ object Plugins {
  */
 final case class PostgreSQLInstance(connectionString: String,
                                     slotName: String,
-                                    plugin: Plugin,
+                                    mode: Mode = Mode.Get,
                                     maxItems: Int = 128,
                                     duration: FiniteDuration = 2000.milliseconds)

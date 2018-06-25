@@ -7,7 +7,6 @@ package akka.stream.alpakka.postgresqlcdc.javadsl
 import akka.NotUsed
 import akka.stream.alpakka.postgresqlcdc.PostgreSQLSourceStage
 import akka.stream.alpakka.postgresqlcdc._
-import akka.stream.alpakka.postgresqlcdc.scaladsl.Plugins
 import akka.stream.scaladsl.Source
 
 import scala.concurrent.duration._
@@ -53,9 +52,9 @@ object ChangeDataCapture {
     scaladsl.PostgreSQLInstance(
       instance.getConnectionString,
       instance.getSlotName,
-      instance.getPlugin match {
-        case Plugin.TestDecoding => Plugins.TestDecoding
-        case Plugin.Wal2Json => Plugins.Wal2Json
+      instance.getPeekFrom match {
+        case -1L => scaladsl.Mode.Get
+        case x: Long => scaladsl.Mode.Peek(x)
       },
       instance.getMaxItems,
       instance.getDurationMillis.milliseconds

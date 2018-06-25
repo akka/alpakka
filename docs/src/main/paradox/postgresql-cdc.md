@@ -16,8 +16,9 @@ the PostgreSQL documentation to understand the performance implications.
 ## Limitations
 
 * It cannot capture events regarding changes to tables' structure (i.e. column removed, table dropped, table
-index added etc.).
+index added, change of column type etc.).
 * When a row update is captured, the previous version of the row is lost / not available.
+    * Unless the REPLICA IDENTITY setting for the table is changed from the default.
 * It doesn't work with older version of PostgreSQL (i.e < 9.4).
 
 ## Artifacts
@@ -89,6 +90,15 @@ Again, you need the proper configuration, see the links above. If you don't have
 Note that any slot name is fine but this Akka Stream Source is only compatible (as of now)
 with the `test_decoding` plugin (which is the only logical decoding plugin that ships with PostgreSQL).
 
+### Peek vs Get
+
+Two modes can be used:
+
+* Get
+    * "at most once delivery" between the source and the sink
+* Peek(fromLsn: Long)
+    * "at least once delivery" between the source and the sink
+
 ### Code
 
 Without further ado, a minimalist example:
@@ -98,7 +108,7 @@ Without further ado, a minimalist example:
 val connectionString = "jdbc:postgresql://localhost/pgdb?user=pguser&password=pguser"
 val slotName = "slot_name"
 
-ChangeDataCapture(PostgreSQLInstance(connectionString, slotName, Plugins.TestDecoding))
+ChangeDataCapture(PostgreSQLInstance(connectionString, slotName, Mode.Get))
   .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
   .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
   .to(Sink.ignore)
@@ -119,7 +129,7 @@ val connectionString =
   "jdbc:postgresql://localhost/test?user=fred&password=secret&ssl=true"
 val slotName = "slot_name"
 
-ChangeDataCapture(PostgreSQLInstance(connectionString, slotName, Plugins.TestDecoding))
+ChangeDataCapture(PostgreSQLInstance(connectionString, slotName, Modes.Get))
   .mapConcat(_.changes)
   .collect { // collect is map and filter
     case RowDeleted(transactionId, "public", "users", fields) =>

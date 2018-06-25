@@ -8,7 +8,6 @@ import java.sql.{Connection, DriverManager}
 
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.stream.alpakka.postgresqlcdc.scaladsl.Plugins.TestDecoding
 import akka.stream.{ActorMaterializer, Attributes}
 import akka.stream.alpakka.postgresqlcdc.scaladsl._
 import akka.stream.testkit.scaladsl.TestSink
@@ -235,7 +234,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
       // some deletes
       deleteCustomers()
 
-      ChangeDataCapture(PostgreSQLInstance(connectionString, slotName = "scalatest", TestDecoding))
+      ChangeDataCapture(PostgreSQLInstance(connectionString, slotName = "scalatest"))
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
@@ -333,7 +332,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
       updateSale(id = 0, newInfo = """{"name": "alpakka", "countries": ["*"]}""")
       deleteSale(0)
 
-      ChangeDataCapture(PostgreSQLInstance(connectionString, slotName = "scalatest", Plugins.TestDecoding))
+      ChangeDataCapture(PostgreSQLInstance(connectionString, slotName = "scalatest"))
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
@@ -398,7 +397,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
 
       deletePurchaseOrder(id = 0)
 
-      ChangeDataCapture(PostgreSQLInstance(connectionString, slotName = "scalatest", Plugins.TestDecoding))
+      ChangeDataCapture(PostgreSQLInstance(connectionString, slotName = "scalatest"))
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
@@ -417,7 +416,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
       insertEmployee(0, "Giovanni", "employee")
       updateEmployee(0, null)
 
-      ChangeDataCapture(PostgreSQLInstance(connectionString, slotName = "scalatest", Plugins.TestDecoding))
+      ChangeDataCapture(PostgreSQLInstance(connectionString, slotName = "scalatest"))
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])

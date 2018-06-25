@@ -7,6 +7,7 @@ package akka.stream.alpakka.postgresqlcdc
 import java.sql.{Connection, DriverManager, PreparedStatement}
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.stream.alpakka.postgresqlcdc.scaladsl._
 import akka.stream.stage._
@@ -15,9 +16,7 @@ import akka.stream.{Attributes, Outlet, SourceShape}
 import scala.collection.mutable.{ArrayBuffer, Queue}
 import scala.util.control.NonFatal
 
-private[postgresqlcdc] object PostgreSQLSourceStage {
-
-  import TestDecodingPlugin._
+@InternalApi private[postgresqlcdc] object PostgreSQLSourceStage {
 
   private def getConnection(connectionString: String): Connection = {
     val driver = "org.postgresql.Driver"
@@ -26,7 +25,9 @@ private[postgresqlcdc] object PostgreSQLSourceStage {
   }
 
   /** Checks that the slot exists. Not necessary, just for helping the user */
-  private def checkSlotExists(conn: Connection, slotName: String)(implicit log: LoggingAdapter): Unit = {
+  private def checkSlotExists(conn: Connection, slotName: String)(
+      implicit log: LoggingAdapter
+  ): Unit = {
     val getReplicationSlots = conn.prepareStatement(
       "SELECT * FROM pg_replication_slots WHERE slot_name = ?"
     )
@@ -34,12 +35,12 @@ private[postgresqlcdc] object PostgreSQLSourceStage {
     val rs = getReplicationSlots.executeQuery()
     if (rs.next()) {
       val database = rs.getString("database")
-      val plugin = rs.getString("plugin")
-      plugin match {
+      val foundPlugin = rs.getString("plugin")
+      foundPlugin match {
         case "test_decoding" =>
-          log.info("found replication slot with name {} for database {}", slotName, database)
+          log.info("found replication slot with name {} for database {} using test_decoding plugin", slotName, database)
         case _ =>
-          log.warning("please use the test_decoding plugin for replication slot with name {}", slotName)
+          log.warning("improper plugin configuration for slot with name {}", slotName)
       }
     } else {
       log.warning("replication slot with name {} does not exist", slotName)
@@ -67,36 +68,14 @@ private[postgresqlcdc] object PostgreSQLSourceStage {
     result.toList
   }
 
-  private def transformSlotChanges(slotChanges: List[SlotChange]): List[ChangeSet] = {
-
-    slotChanges.groupBy(_.transactionId).map {
-
-      case (transactionId: Long, slotChanges: List[SlotChange]) =>
-        val changes: List[Change] = slotChanges.collect {
-
-          case SlotChange(_, ChangeStatement(schemaName, tableName, "UPDATE", changes)) =>
-            RowUpdated(schemaName, tableName, parseKeyValuePairs(changes))
-
-          case SlotChange(_, ChangeStatement(schemaName, tableName, "DELETE", changes)) =>
-            RowDeleted(schemaName, tableName, parseKeyValuePairs(changes))
-
-          case SlotChange(_, ChangeStatement(schemaName, tableName, "INSERT", changes)) =>
-            RowInserted(schemaName, tableName, parseKeyValuePairs(changes))
-        }
-
-        ChangeSet(transactionId, changes)
-
-    }
-  }.filter(_.changes.nonEmpty).toList.sortBy(_.transactionId)
-
   /** Represents a row in the table we get from PostgreSQL when we query
    * SELECT * FROM pg_logical_slot_get_changes(..)
    */
-  private case class SlotChange(transactionId: Long, data: String)
+  case class SlotChange(transactionId: Long, data: String)
 
 }
 
-private[postgresqlcdc] class PostgreSQLSourceStage(settings: PostgreSQLInstance)
+@InternalApi private[postgresqlcdc] class PostgreSQLSourceStage(settings: PostgreSQLInstance)
     extends GraphStage[SourceShape[ChangeSet]] {
 
   import PostgreSQLSourceStage._
@@ -117,7 +96,11 @@ private[postgresqlcdc] class PostgreSQLSourceStage(settings: PostgreSQLInstance)
         retrieveChanges()
 
       private def retrieveChanges(): Unit = {
-        val result: List[ChangeSet] = transformSlotChanges(getSlotChanges(prepStmt))
+
+        val result: List[ChangeSet] = {
+          val slotChanges = getSlotChanges(prepStmt)
+          TestDecodingPlugin.transformSlotChanges(slotChanges)
+        }
 
         if (result.isEmpty) {
           if (isAvailable(out)) {

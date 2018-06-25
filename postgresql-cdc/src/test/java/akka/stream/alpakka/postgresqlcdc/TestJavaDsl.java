@@ -86,7 +86,7 @@ public class TestJavaDsl {
 
         final PostgreSQLInstance postgreSQLInstance = new PostgreSQLInstance(connectionString,
                 "junit",
-                Plugin.TestDecoding,
+                -1,
                 128,
                 1000
         );

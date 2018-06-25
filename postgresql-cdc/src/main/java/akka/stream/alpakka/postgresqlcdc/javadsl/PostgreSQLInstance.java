@@ -4,13 +4,13 @@
 
 package akka.stream.alpakka.postgresqlcdc.javadsl;
 
-public class PostgreSQLInstance {
+public final class PostgreSQLInstance {
 
     private String connectionString;
 
     private String slotName;
 
-    private Plugin plugin;
+    private long peekFrom;
 
     private int maxItems;
 
@@ -24,8 +24,8 @@ public class PostgreSQLInstance {
         return slotName;
     }
 
-    public Plugin getPlugin() {
-        return plugin;
+    public long getPeekFrom() {
+        return peekFrom;
     }
 
     public int getMaxItems() {
@@ -39,12 +39,12 @@ public class PostgreSQLInstance {
 
     public PostgreSQLInstance(String connectionString,
                               String slotName,
-                              Plugin plugin,
+                              long peekFrom,
                               int maxItems,
                               long durationMillis) {
         this.connectionString = connectionString;
         this.slotName = slotName;
-        this.plugin = plugin;
+        this.peekFrom = peekFrom;
         this.maxItems = maxItems;
         this.durationMillis = durationMillis;
     }

@@ -4,11 +4,13 @@
 
 package akka.stream.alpakka.postgresqlcdc
 
-import akka.stream.alpakka.postgresqlcdc.scaladsl.Field
+import akka.annotation.InternalApi
+import akka.stream.alpakka.postgresqlcdc.PostgreSQLSourceStage.SlotChange
+import akka.stream.alpakka.postgresqlcdc.scaladsl._
 
 import scala.util.matching.Regex
 
-private[postgresqlcdc] object TestDecodingPlugin {
+@InternalApi private[postgresqlcdc] object TestDecodingPlugin {
 
   // We need to parse a log statement such as the following:
   //
@@ -72,5 +74,27 @@ private[postgresqlcdc] object TestDecodingPlugin {
           Field(columnName, columnType, value)
       }
       .toList
+
+  def transformSlotChanges(slotChanges: List[SlotChange]): List[ChangeSet] = {
+
+    slotChanges.groupBy(_.transactionId).map {
+
+      case (transactionId: Long, slotChanges: List[SlotChange]) =>
+        val changes: List[Change] = slotChanges.collect {
+
+          case SlotChange(_, ChangeStatement(schemaName, tableName, "UPDATE", changes)) =>
+            RowUpdated(schemaName, tableName, parseKeyValuePairs(changes))
+
+          case SlotChange(_, ChangeStatement(schemaName, tableName, "DELETE", changes)) =>
+            RowDeleted(schemaName, tableName, parseKeyValuePairs(changes))
+
+          case SlotChange(_, ChangeStatement(schemaName, tableName, "INSERT", changes)) =>
+            RowInserted(schemaName, tableName, parseKeyValuePairs(changes))
+        }
+
+        ChangeSet(transactionId, changes)
+
+    }
+  }.filter(_.changes.nonEmpty).toList.sortBy(_.transactionId)
 
 }
