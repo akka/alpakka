@@ -37,10 +37,6 @@ Scala
 Java
 : @@snip ($alpakka$/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java) { #transcoding }
 
-@scala[@github[Source on Github](/text/src/test/scala/docs/scaladsl/CharsetCodingFlowsDoc.scala)]
-@java[@github[Source on Github](/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java)]
-
-
 ## Text encoding
 
 The text encoding flow converts incoming Strings to binary text data (ByteString) with the 
@@ -55,10 +51,6 @@ Scala
 Java
 : @@snip ($alpakka$/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java) { #encoding }
 
-@scala[@github[Source on Github](/text/src/test/scala/docs/scaladsl/CharsetCodingFlowsDoc.scala)]
-@java[@github[Source on Github](/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java)]
-
-
 ## Text decoding
 
 The text decoding flow converts incoming ByteStrings to Strings using the given 
@@ -69,8 +61,3 @@ Scala
 
 Java
 : @@snip ($alpakka$/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java) { #decoding }
-
-@scala[@github[Source on Github](/text/src/test/scala/docs/scaladsl/CharsetCodingFlowsDoc.scala)]
-@java[@github[Source on Github](/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java)]
-
-

@@ -100,7 +100,7 @@ The Scala DSL expects you to use the special `sql"..."`, `sqlu"..."`, and `sqlt"
 
 Unfortunately, String interpolation is a Scala language feature that cannot be directly translated to Java. This means that query strings in the Java DSL will need to be manually prepared using plain Java Strings (or a `StringBuilder`).
 
-The following examples put it all together to perform a simple streaming query. The full source code for these examples can be found together with the unit tests of the Slick connector [on Github](https://github.com/akka/alpakka/tree/master/slick/src/test).
+The following examples put it all together to perform a simple streaming query.
 
 Scala
 : @@snip ($alpakka$/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/DocSnippets.scala) { #source-example }
