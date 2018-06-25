@@ -1,4 +1,4 @@
-# CSV examples
+# CSV
 
 ### Example: Fetch CSV from Internet and publish the data as JSON to Kafka
 

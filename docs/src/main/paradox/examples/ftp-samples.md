@@ -1,4 +1,4 @@
-# FTP examples
+# FTP
 
 ### Artifacts
 

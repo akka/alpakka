@@ -1,4 +1,4 @@
-# Elasticsearch examples
+# Elasticsearch
 
 ### Example: Index all data from an RDBMS table into Elasticsearch
 
