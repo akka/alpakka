@@ -56,10 +56,6 @@ Scala
 Java
 : @@snip ($alpakka$/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpTraversingExample.java) { #traversing }
 
-@scala[@github[Source on Github](/ftp/src/test/scala/akka/stream/alpakka/ftp/scalaExamples.scala) { #traversing }]
-@java[@github[Source on Github](/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpTraversingExample.java) { #traversing }]
-
-
 This source will emit @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) elements with no significant materialization.
 
 For both FTPs and SFTP servers, you will need to use the `FTPs` and `SFTP` API respectively.
@@ -74,10 +70,6 @@ Scala
 Java
 : @@snip ($alpakka$/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpRetrievingExample.java) { #retrieving }
 
-@scala[@github[Source on Github](/ftp/src/test/scala/akka/stream/alpakka/ftp/scalaExamples.scala) { #retrieving }]
-@java[@github[Source on Github](/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpRetrievingExample.java) { #retrieving }]
-
-
 This source will emit @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 
 For both FTPs and SFTP servers, you will need to use the `FTPs` and `SFTP` API respectively.
@@ -91,10 +83,6 @@ Scala
 
 Java
 : @@snip ($alpakka$/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpWritingExample.java) { #storing }
-
-@scala[@github[Source on Github](/ftp/src/test/scala/akka/stream/alpakka/ftp/scalaExamples.scala) { #storing }]
-@java[@github[Source on Github](/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpWritingExample.java) { #storing }]
-
 
 This sink will consume @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 

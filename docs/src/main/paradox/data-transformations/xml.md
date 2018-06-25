@@ -26,10 +26,6 @@ Scala
 Java
 : @@snip ($alpakka$/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #parser }
 
-@scala[@github[Source on Github](/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlProcessingTest.scala) { #parser }]
-@java[@github[Source on Github](/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #parser }]
-
-
 To parse an XML document run XML document source with this parser.
 
 Scala
@@ -48,10 +44,6 @@ Scala
 Java
 : @@snip ($alpakka$/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlWritingTest.java) { #writer }
 
-@scala[@github[Source on Github](/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlWritingTest.scala) { #writer }]
-@java[@github[Source on Github](/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlWritingTest.java) { #writer }]
-
-
 To write an XML document run XML document source with this writer.
 
 Scala
@@ -64,16 +56,11 @@ Java
 
 Use @scaladoc[XmlParsing.subslice](akka.stream.alpakka.xml.scaladsl.XmlParsing$) to filter out all elements not corresponding to a certain path.
 
-
 Scala
 : @@snip ($alpakka$/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlSubsliceTest.scala) { #subslice }
 
 Java
 : @@snip ($alpakka$/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #subslice }
-
-@scala[@github[Source on Github](/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlSubsliceTest.scala) { #subslice }]
-@java[@github[Source on Github](/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #subslice }]
-
 
 To get a subslice of an XML document run XML document source with this parser.
 
