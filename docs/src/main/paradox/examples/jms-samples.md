@@ -1,4 +1,4 @@
-# JMS examples
+# JMS
 
 ### Example: Read text messages from JMS queue and append to file
 
