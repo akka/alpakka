@@ -69,6 +69,8 @@ final class ReferenceReadMessage private (
 
 object ReferenceReadMessage {
   def apply(): ReferenceReadMessage = new ReferenceReadMessage()
+
+  def create(): ReferenceReadMessage = ReferenceReadMessage()
 }
 
 /**
