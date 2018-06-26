@@ -5,9 +5,9 @@
 package akka.stream.alpakka.hdfs.scaladsl
 
 import akka.NotUsed
-import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
-import akka.stream.{Attributes, IOResult}
+import akka.stream.ActorAttributes.IODispatcher
 import akka.stream.scaladsl.{Source, StreamConverters}
+import akka.stream.{Attributes, IOResult}
 import akka.util.ByteString
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.compress.CompressionCodec
