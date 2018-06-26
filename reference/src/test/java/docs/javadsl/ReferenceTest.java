@@ -103,14 +103,14 @@ public class ReferenceTest {
     final ReferenceReadMessage msg = stage.toCompletableFuture().get();
 
     Assert.assertEquals(
-      msg.getData(),
-      Collections.singletonList(ByteString.fromString("one"))
+      Collections.singletonList(ByteString.fromString("one")),
+      msg.getData()
     );
 
     final Integer expected = 100;
     Assert.assertEquals(
-      msg.getBytesRead(),
-      expected
+      expected,
+      msg.getBytesRead()
     );
 
     Assert.assertNull(msg.getBytesReadFailure());
@@ -141,13 +141,13 @@ public class ReferenceTest {
       .collect(Collectors.toList());
 
     Assert.assertEquals(
-      bytes,
       Arrays.asList(
         ByteString.fromString("one"),
         ByteString.fromString("two"),
         ByteString.fromString("three"),
         ByteString.fromString("four")
-      )
+      ),
+      bytes
     );
 
     final long actual = result.stream().findFirst().get().getMetrics().get("total");
