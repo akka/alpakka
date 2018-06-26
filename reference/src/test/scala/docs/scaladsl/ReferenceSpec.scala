@@ -4,7 +4,7 @@
 
 package docs.scaladsl
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.reference.scaladsl.Reference
@@ -49,7 +49,7 @@ class ReferenceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
       // #source
       val settings: SourceSettings = SourceSettings()
 
-      val source: Source[ReferenceReadMessage, Future[NotUsed]] =
+      val source: Source[ReferenceReadMessage, Future[Done]] =
         Reference.source(settings)
       // #source
     }

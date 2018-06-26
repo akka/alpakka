@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.reference.impl
 
-import akka.NotUsed
+import akka.Done
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream._
@@ -23,7 +23,7 @@ import scala.util.Success
  */
 @InternalApi private[reference] final class ReferenceSourceStageLogic(
     val settings: SourceSettings,
-    val startupPromise: Promise[NotUsed],
+    val startupPromise: Promise[Done],
     val shape: SourceShape[ReferenceReadMessage]
 ) extends GraphStageLogic(shape) {
 
@@ -33,7 +33,7 @@ import scala.util.Success
    * Initialization logic
    */
   override def preStart(): Unit =
-    startupPromise.success(NotUsed)
+    startupPromise.success(Done)
 
   setHandler(out, new OutHandler {
     override def onPull(): Unit = push(
@@ -50,8 +50,8 @@ import scala.util.Success
   override def postStop(): Unit = {}
 }
 
-@InternalApi final class ReferenceSource(settings: SourceSettings)
-    extends GraphStageWithMaterializedValue[SourceShape[ReferenceReadMessage], Future[NotUsed]] {
+@InternalApi private[reference] final class ReferenceSource(settings: SourceSettings)
+    extends GraphStageWithMaterializedValue[SourceShape[ReferenceReadMessage], Future[Done]] {
   val out: Outlet[ReferenceReadMessage] = Outlet(Logging.simpleName(this) + ".out")
 
   override def initialAttributes: Attributes =
@@ -59,9 +59,9 @@ import scala.util.Success
 
   override val shape: SourceShape[ReferenceReadMessage] = SourceShape(out)
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[NotUsed]) = {
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     // materialized value created as a new instance on every materialization
-    val startupPromise = Promise[NotUsed]
+    val startupPromise = Promise[Done]
     val logic = new ReferenceSourceStageLogic(settings, startupPromise, shape)
     (logic, startupPromise.future)
   }

@@ -6,7 +6,7 @@ package akka.stream.alpakka.reference.javadsl
 
 import java.util.concurrent.{CompletionStage, Executor}
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.stream.alpakka.reference
 import akka.stream.alpakka.reference.{ReferenceReadMessage, ReferenceWriteMessage, SourceSettings}
 import akka.stream.javadsl.{Flow, Source}
@@ -20,7 +20,7 @@ object Reference {
    *
    * Call Scala source factory and convert both: the source and materialized values to Java classes.
    */
-  def source(settings: SourceSettings): Source[ReferenceReadMessage, CompletionStage[NotUsed]] = {
+  def source(settings: SourceSettings): Source[ReferenceReadMessage, CompletionStage[Done]] = {
     import scala.compat.java8.FutureConverters._
     reference.scaladsl.Reference.source(settings).mapMaterializedValue(_.toJava).asJava
   }

@@ -8,6 +8,7 @@
  */
 package docs.javadsl;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
@@ -77,7 +78,7 @@ public class ReferenceTest {
     // #source
     final SourceSettings settings = SourceSettings.create();
 
-    final Source<ReferenceReadMessage, CompletionStage<NotUsed>> source =
+    final Source<ReferenceReadMessage, CompletionStage<Done>> source =
       Reference.source(settings);
     // #source
   }
@@ -96,7 +97,7 @@ public class ReferenceTest {
 
   @Test
   public void testSource() throws Exception {
-    final Source<ReferenceReadMessage, CompletionStage<NotUsed>> source =
+    final Source<ReferenceReadMessage, CompletionStage<Done>> source =
       Reference.source(SourceSettings.create());
 
     final CompletionStage<ReferenceReadMessage> stage = source.runWith(Sink.head(), mat);

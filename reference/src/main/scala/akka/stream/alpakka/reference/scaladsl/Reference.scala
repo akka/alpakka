@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.reference.scaladsl
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.stream.alpakka.reference.impl.{ReferenceFlow, ReferenceSource}
 import akka.stream.alpakka.reference.{ReferenceReadMessage, ReferenceWriteMessage, SourceSettings}
 import akka.stream.scaladsl.{Flow, Source}
@@ -18,7 +18,7 @@ object Reference {
    *
    * Also describe the significance of the materialized value.
    */
-  def source(settings: SourceSettings): Source[ReferenceReadMessage, Future[NotUsed]] =
+  def source(settings: SourceSettings): Source[ReferenceReadMessage, Future[Done]] =
     Source.fromGraph(new ReferenceSource(settings))
 
   /**

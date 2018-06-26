@@ -48,7 +48,8 @@ import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
   override def postStop(): Unit = {}
 }
 
-@InternalApi final class ReferenceFlow() extends GraphStage[FlowShape[ReferenceWriteMessage, ReferenceWriteMessage]] {
+@InternalApi private[reference] final class ReferenceFlow()
+    extends GraphStage[FlowShape[ReferenceWriteMessage, ReferenceWriteMessage]] {
   val in: Inlet[ReferenceWriteMessage] = Inlet(Logging.simpleName(this) + ".in")
   val out: Outlet[ReferenceWriteMessage] = Outlet(Logging.simpleName(this) + ".out")
 
