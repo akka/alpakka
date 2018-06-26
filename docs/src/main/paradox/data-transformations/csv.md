@@ -62,10 +62,6 @@ Scala
 Java
 : @@snip ($alpakka$/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvParsingTest.java) { #line-scanner }
 
-@scala[@github[Source on Github](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvParsingSpec.scala)]
-@java[@github[Source on Github](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvParsingTest.java)]
-
-
 To convert the `ByteString` columns as `String`, a `map` operation can be added to the Flow:
 
 Scala
@@ -73,10 +69,6 @@ Scala
 
 Java
 : @@snip ($alpakka$/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvParsingTest.java) { #line-scanner-string }
-
-@scala[@github[Source on Github](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvParsingSpec.scala)]
-@java[@github[Source on Github](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvParsingTest.java)]
-
 
 ## CSV conversion into a map
 
@@ -108,10 +100,6 @@ Scala
 
 Java
 : @@snip ($alpakka$/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java) { #column-names }
-
-@scala[@github[Source on Github](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvToMapSpec.scala)]
-@java[@github[Source on Github](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java)]
-
 
 ## CSV formatting
 
@@ -145,6 +133,3 @@ Scala
 
 Java
 : @@snip ($alpakka$/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFormattingTest.java) { #formatting }
-
-@scala[@github[Source on Github](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFormattingSpec.scala)]
-@java[@github[Source on Github](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFormattingTest.java)]

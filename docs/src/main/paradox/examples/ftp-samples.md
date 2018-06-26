@@ -1,4 +1,4 @@
-# FTP examples
+# FTP
 
 ### Artifacts
 
@@ -25,9 +25,6 @@ Scala
 
 Java
 : @@snip ($alpakka$/doc-examples/src/main/java/ftpsamples/FtpToFileExample.java) { #sample }
-
-@github[Full source](/doc-examples/src/main/scala/ftpsamples/FtpToFile.scala) { #sample }
-
 
 ### Running the example code
 

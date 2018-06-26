@@ -1,4 +1,4 @@
-# JMS examples
+# JMS
 
 ### Example: Read text messages from JMS queue and append to file
 
@@ -11,10 +11,6 @@ Scala
 
 Java
 : @@snip ($alpakka$/doc-examples/src/main/java/jms/javasamples/JmsToFile.java) { #sample }
-
-@scala[@github[Full source](/doc-examples/src/main/scala/jms/JmsToFile.scala) { #sample }]
-@java[@github[Full source](/doc-examples/src/main/java/jms/javasamples/JmsToFile.java) { #sample }]
-
 
 ### Example: Read text messages from JMS queue and create one file per message
 
@@ -30,11 +26,6 @@ Scala
 Java
 : @@snip ($alpakka$/doc-examples/src/main/java/jms/javasamples/JmsToOneFilePerMessage.java) { #sample }
 
-@scala[@github[Full source](/doc-examples/src/main/scala/jms/JmsToOneFilePerMessage.scala) { #sample }]
-@java[@github[Full source](/doc-examples/src/main/java/jms/javasamples/JmsToOneFilePerMessage.java) { #sample }]
-
-
-
 ### Example: Read text messages from JMS queue and send to web server
 
 - listens to the JMS queue "test" receiving `String`s (1),
@@ -48,11 +39,6 @@ Scala
 
 Java
 : @@snip ($alpakka$/doc-examples/src/main/java/jms/javasamples/JmsToHttpGet.java) { #sample }
-
-@scala[@github[Full source](/doc-examples/src/main/scala/jms/JmsToHttpGet.scala) { #sample }]
-@java[@github[Full source](/doc-examples/src/main/java/jms/javasamples/JmsToHttpGet.java) { #sample }]
-
-
 
 ### Example: Read text messages from JMS queue and send to web socket
 
@@ -69,10 +55,6 @@ Scala
 
 Java
 : @@snip ($alpakka$/doc-examples/src/main/java/jms/javasamples/JmsToWebSocket.java) { #sample }
-
-@scala[@github[Full source](/doc-examples/src/main/scala/jms/JmsToWebSocket.scala) { #sample }]
-@java[@github[Full source](/doc-examples/src/main/java/jms/javasamples/JmsToWebSocket.java) { #sample }]
-
 
 ### Running the example code
 
