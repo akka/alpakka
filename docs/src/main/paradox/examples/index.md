@@ -6,9 +6,9 @@ These examples are meant to give you a view of how Alpakka can help you solving 
 
 @@@ index
 
-* [JMS samples](jms-samples.md)
-* [FTP samples](ftp-samples.md)
-* [CSV samples](csv-samples.md)
-* [Elasticsearch samples](elasticsearch-samples.md)
+* [CSV](csv-samples.md)
+* [Elasticsearch](elasticsearch-samples.md)
+* [FTP](ftp-samples.md)
+* [JMS](jms-samples.md)
 
 @@@

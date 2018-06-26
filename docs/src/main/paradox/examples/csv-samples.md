@@ -1,4 +1,4 @@
-# CSV examples
+# CSV
 
 ### Example: Fetch CSV from Internet and publish the data as JSON to Kafka
 
@@ -22,10 +22,6 @@ Scala
 
 Java
 : @@snip ($alpakka$/doc-examples/src/main/java/csvsamples/FetchHttpEvery30SecondsAndConvertCsvToJsonToKafkaInJava.java) { #sample }
-
-
-@scala[@github[Full source](/doc-examples/src/main/scala/csvsamples/FetchHttpEvery30SecondsAndConvertCsvToJsonToKafka.scala) { #sample }]
-@java[@github[Full source](/doc-examples/src/main/java/csvsamples/FetchHttpEvery30SecondsAndConvertCsvToJsonToKafkaInJava.java) { #sample }]
 
 ### Helper code
 

@@ -1,4 +1,4 @@
-# Elasticsearch examples
+# Elasticsearch
 
 ### Example: Index all data from an RDBMS table into Elasticsearch
 
@@ -20,10 +20,6 @@ Scala
 
 Java
 : @@snip ($alpakka$/doc-examples/src/main/java/elastic/FetchUsingSlickAndStreamIntoElasticInJava.java) { #sample }
-
-@scala[@github[Full source](/doc-examples/src/main/scala/elastic/FetchUsingSlickAndStreamIntoElastic.scala) { #sample }]
-@java[@github[Full source](/doc-examples/src/main/java/elastic/FetchUsingSlickAndStreamIntoElasticInJava.java) { #sample }]
-
 
 ### Running the example code
 
