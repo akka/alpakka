@@ -106,6 +106,14 @@ public class ReferenceTest {
       msg.getData(),
       Collections.singletonList(ByteString.fromString("one"))
     );
+
+    final Integer expected = 100;
+    Assert.assertEquals(
+      msg.getBytesRead(),
+      expected
+    );
+
+    Assert.assertNull(msg.getBytesReadFailure());
   }
 
   @Test

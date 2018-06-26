@@ -12,17 +12,22 @@ import akka.util.ByteString
 
 import scala.annotation.varargs
 import scala.collection.immutable
-
 import akka.japi.Pair
+
+import scala.util.{Failure, Success, Try}
 
 /**
  * Use "Read" in message data types to signify that the message was read from outside.
  */
 final class ReferenceReadMessage private (
-    val data: immutable.Seq[ByteString] = immutable.Seq.empty
+    val data: immutable.Seq[ByteString] = immutable.Seq.empty,
+    val bytesRead: Try[Int] = Success(0)
 ) {
   def withData(data: immutable.Seq[ByteString]): ReferenceReadMessage =
     copy(data = data)
+
+  def withBytesRead(bytesRead: Try[Int]): ReferenceReadMessage =
+    copy(bytesRead = bytesRead)
 
   /**
    * Java API
@@ -35,8 +40,31 @@ final class ReferenceReadMessage private (
     data.asJava
   }
 
-  private def copy(data: immutable.Seq[ByteString] = data) =
-    new ReferenceReadMessage(data)
+  /**
+   * Java API
+   *
+   * If the model class is scala.util.Try, then two getters should be created.
+   * One for getting the value, and another for getting the exception.
+   *
+   * Should return null if the Try contains a Failure.
+   */
+  def getBytesRead(): Integer = bytesRead match {
+    case Success(bytesRead) => bytesRead
+    case Failure(_) => null
+  }
+
+  /**
+   * Java API
+   *
+   * Return the exception if the Try contains a Failure, otherwise return a null.
+   */
+  def getBytesReadFailure(): Throwable = bytesRead match {
+    case Success(_) => null
+    case Failure(ex) => ex
+  }
+
+  private def copy(data: immutable.Seq[ByteString] = data, bytesRead: Try[Int] = bytesRead) =
+    new ReferenceReadMessage(data, bytesRead)
 }
 
 object ReferenceReadMessage {
@@ -85,6 +113,8 @@ final class ReferenceWriteMessage private (
   }
 
   /**
+   * Java API
+   *
    * Java getter needs to return Java Long classes which is converted from Scala Long.
    */
   def getMetrics(): JavaMap[String, JavaLong] = {
@@ -103,7 +133,6 @@ final class ReferenceWriteMessage private (
 }
 
 object ReferenceWriteMessage {
-
   def apply(): ReferenceWriteMessage = new ReferenceWriteMessage()
 
   def create(): ReferenceWriteMessage = ReferenceWriteMessage()

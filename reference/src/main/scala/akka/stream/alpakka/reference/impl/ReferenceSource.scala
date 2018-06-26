@@ -14,6 +14,7 @@ import akka.util.ByteString
 
 import scala.collection.immutable
 import scala.concurrent.{Future, Promise}
+import scala.util.Success
 
 /**
  * private package hides the class from the API in Scala. However it is still
@@ -37,7 +38,9 @@ import scala.concurrent.{Future, Promise}
   setHandler(out, new OutHandler {
     override def onPull(): Unit = push(
       out,
-      ReferenceReadMessage().withData(immutable.Seq(ByteString("one")))
+      ReferenceReadMessage()
+        .withData(immutable.Seq(ByteString("one")))
+        .withBytesRead(Success(100))
     )
   })
 
