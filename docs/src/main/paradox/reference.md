@@ -17,13 +17,11 @@ about the technology connector is using.
   version=$version$
 }
 
-## Usage
+## Reading messages
 
 Give a brief description of the usage of this connector. If you want to mention a
 class name, make sure to link to the API docs:
 @scaladoc[ReferenceReadMessage](akka.stream.alpakka.reference.ReferenceReadMessage).
-
-### Reading messages
 
 If any of the API classes are different between Scala and Java, link to both API docs:
 @scala[@scaladoc[Reference](akka.stream.alpakka.reference.scaladsl.Reference$)]
@@ -37,7 +35,7 @@ Scala
 Java
 : @@snip [snip]($alpakka$/reference/src/test/java/docs/javadsl/ReferenceTest.java) { #source }
 
-### Writing messages
+## Writing messages
 
 Show an example code snippet of how a flow of this connector can be created.
 
@@ -47,7 +45,7 @@ Scala
 Java
 : @@snip [snip]($alpakka$/reference/src/test/java/docs/javadsl/ReferenceTest.java) { #flow }
 
-### Running the example code
+## Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
 
