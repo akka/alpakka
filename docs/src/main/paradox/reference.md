@@ -35,6 +35,9 @@ Scala
 Java
 : @@snip [snip]($alpakka$/reference/src/test/java/docs/javadsl/ReferenceTest.java) { #source }
 
+Wrap language specific text with language specific directives,
+like @scala[`@scala` for Scala specific text]@java[`@java` for Java specific text].
+
 ## Writing messages
 
 Show an example code snippet of how a flow of this connector can be created.
