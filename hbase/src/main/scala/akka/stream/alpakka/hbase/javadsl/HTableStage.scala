@@ -19,9 +19,8 @@ object HTableStage {
   def table[T](conf: Configuration,
                tableName: TableName,
                columnFamilies: java.util.List[String],
-               converter: java.util.function.Function[T, java.util.List[Mutation]]): HTableSettings[T] = {
+               converter: java.util.function.Function[T, java.util.List[Mutation]]): HTableSettings[T] =
     HTableSettings.create(conf, tableName, columnFamilies, converter)
-  }
 
   def sink[A](config: HTableSettings[A]): akka.stream.javadsl.Sink[A, Future[Done]] =
     Flow[A].via(flow(config)).toMat(Sink.ignore)(Keep.right).asJava

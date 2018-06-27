@@ -35,25 +35,28 @@ private[hbase] class HBaseFlowStage[A](settings: HTableSettings[A]) extends Grap
           pull(in)
       })
 
-      setHandler(in, new InHandler {
-        override def onPush() = {
-          val msg = grab(in)
+      setHandler(
+        in,
+        new InHandler {
+          override def onPush() = {
+            val msg = grab(in)
 
-          val mutations = settings.converter(msg)
+            val mutations = settings.converter(msg)
 
-          for (mutation <- mutations) {
-            mutation match {
-              case x: Put => table.put(x)
-              case x: Delete => table.delete(x)
-              case x: Append => table.append(x)
-              case x: Increment => table.increment(x)
+            for (mutation <- mutations) {
+              mutation match {
+                case x: Put => table.put(x)
+                case x: Delete => table.delete(x)
+                case x: Append => table.append(x)
+                case x: Increment => table.increment(x)
+              }
             }
+
+            push(out, msg)
           }
 
-          push(out, msg)
         }
-
-      })
+      )
 
       override def postStop() = {
         log.debug("Stage completed")
