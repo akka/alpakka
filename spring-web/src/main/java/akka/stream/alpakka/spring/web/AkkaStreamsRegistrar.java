@@ -22,15 +22,18 @@ public class AkkaStreamsRegistrar {
   public void registerAdapters(ReactiveAdapterRegistry registry) {
     Assert.notNull(registry, "registry must not be null");
     registry.registerReactiveType(
-      multiValue(akka.stream.javadsl.Source.class, akka.stream.javadsl.Source::empty),
-      source -> ((akka.stream.javadsl.Source<?, ?>) source).runWith(akka.stream.javadsl.Sink.asPublisher(AsPublisher.WITH_FANOUT), materializer),
-      akka.stream.javadsl.Source::fromPublisher
-    );
-    
+        multiValue(akka.stream.javadsl.Source.class, akka.stream.javadsl.Source::empty),
+        source ->
+            ((akka.stream.javadsl.Source<?, ?>) source)
+                .runWith(
+                    akka.stream.javadsl.Sink.asPublisher(AsPublisher.WITH_FANOUT), materializer),
+        akka.stream.javadsl.Source::fromPublisher);
+
     registry.registerReactiveType(
-      multiValue(akka.stream.scaladsl.Source.class, akka.stream.scaladsl.Source::empty),
-      source -> ((akka.stream.scaladsl.Source<?, ?>) source).runWith(akka.stream.scaladsl.Sink.asPublisher(true), materializer),
-      akka.stream.scaladsl.Source::fromPublisher
-    );
+        multiValue(akka.stream.scaladsl.Source.class, akka.stream.scaladsl.Source::empty),
+        source ->
+            ((akka.stream.scaladsl.Source<?, ?>) source)
+                .runWith(akka.stream.scaladsl.Sink.asPublisher(true), materializer),
+        akka.stream.scaladsl.Source::fromPublisher);
   }
 }

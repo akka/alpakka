@@ -58,13 +58,16 @@ import playground.KafkaEmbedded;
 public class FetchHttpEvery30SecondsAndConvertCsvToJsonToKafkaInJava {
 
   public static void main(String[] args) throws Exception {
-    FetchHttpEvery30SecondsAndConvertCsvToJsonToKafkaInJava me = new FetchHttpEvery30SecondsAndConvertCsvToJsonToKafkaInJava();
+    FetchHttpEvery30SecondsAndConvertCsvToJsonToKafkaInJava me =
+        new FetchHttpEvery30SecondsAndConvertCsvToJsonToKafkaInJava();
     me.run();
   }
 
   // #helper
-  final HttpRequest httpRequest = HttpRequest.create("https://www.nasdaq.com/screening/companies-by-name.aspx?exchange=NASDAQ&render=download")
-      .withHeaders(Collections.singletonList(Accept.create(MediaRanges.ALL_TEXT)));
+  final HttpRequest httpRequest =
+      HttpRequest.create(
+              "https://www.nasdaq.com/screening/companies-by-name.aspx?exchange=NASDAQ&render=download")
+          .withHeaders(Collections.singletonList(Accept.create(MediaRanges.ALL_TEXT)));
 
   private Source<ByteString, ?> extractEntityData(HttpResponse httpResponse) {
     if (httpResponse.status() == StatusCodes.OK) {
@@ -76,9 +79,10 @@ public class FetchHttpEvery30SecondsAndConvertCsvToJsonToKafkaInJava {
 
   private Map<String, String> cleanseCsvData(Map<String, ByteString> map) {
     Map<String, String> out = new HashMap<>(map.size());
-    map.forEach((key, value) -> {
-      if (!key.isEmpty()) out.put(key, value.utf8String());
-    });
+    map.forEach(
+        (key, value) -> {
+          if (!key.isEmpty()) out.put(key, value.utf8String());
+        });
     return out;
   }
 
@@ -88,19 +92,19 @@ public class FetchHttpEvery30SecondsAndConvertCsvToJsonToKafkaInJava {
     StringWriter sw = new StringWriter();
     JsonGenerator generator = jsonFactory.createGenerator(sw);
     generator.writeStartObject();
-    map.forEach((key, value) -> {
-      try {
-        generator.writeStringField(key, value);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    map.forEach(
+        (key, value) -> {
+          try {
+            generator.writeStringField(key, value);
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        });
     generator.writeEndObject();
     generator.close();
     return sw.toString();
   }
   // #helper
-
 
   private void run() throws Exception {
     ActorSystem system = ActorSystem.create();
@@ -108,40 +112,45 @@ public class FetchHttpEvery30SecondsAndConvertCsvToJsonToKafkaInJava {
 
     int kafkaPort = 19000;
     KafkaEmbedded.start(kafkaPort);
-    ProducerSettings<String, String> kafkaProducerSettings = ProducerSettings.create(system, new StringSerializer(), new StringSerializer())
-        .withBootstrapServers(String.format("localhost:%d", kafkaPort));
+    ProducerSettings<String, String> kafkaProducerSettings =
+        ProducerSettings.create(system, new StringSerializer(), new StringSerializer())
+            .withBootstrapServers(String.format("localhost:%d", kafkaPort));
 
     Http http = Http.get(system);
 
-
     Pair<Cancellable, CompletionStage<Done>> stagePair =
         // #sample
-        Source
-            .tick(Duration.ofSeconds(1), Duration.ofSeconds(30), httpRequest) //: HttpRequest             (1)
-            .mapAsync(1, http::singleRequest)                                 //: HttpResponse            (2)
-            .flatMapConcat(this::extractEntityData)                           //: ByteString              (3)
-            .via(CsvParsing.lineScanner())                                    //: List<ByteString>        (4)
-            .via(CsvToMap.toMap())                                            //: Map<String, ByteString> (5)
-            .map(this::cleanseCsvData)                                        //: Map<String, String>     (6)
-            .map(this::toJson)                                                //: String                  (7)
-            .map(elem ->
-                new ProducerRecord<String, String>("topic1", elem)            //: Kafka ProducerRecord    (8)
-            )
+        Source.tick(
+                Duration.ofSeconds(1),
+                Duration.ofSeconds(30),
+                httpRequest) // : HttpRequest             (1)
+            .mapAsync(1, http::singleRequest) // : HttpResponse            (2)
+            .flatMapConcat(this::extractEntityData) // : ByteString              (3)
+            .via(CsvParsing.lineScanner()) // : List<ByteString>        (4)
+            .via(CsvToMap.toMap()) // : Map<String, ByteString> (5)
+            .map(this::cleanseCsvData) // : Map<String, String>     (6)
+            .map(this::toJson) // : String                  (7)
+            .map(
+                elem ->
+                    new ProducerRecord<String, String>(
+                        "topic1", elem) // : Kafka ProducerRecord    (8)
+                )
             .toMat(Producer.plainSink(kafkaProducerSettings), Keep.both())
             .run(materializer);
     // #sample
 
-    ConsumerSettings<String, String> kafkaConsumerSettings = ConsumerSettings.create(system, new StringDeserializer(), new StringDeserializer())
-        .withBootstrapServers(String.format("localhost:%d", kafkaPort))
-        .withGroupId("topic1")
-        .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    ConsumerSettings<String, String> kafkaConsumerSettings =
+        ConsumerSettings.create(system, new StringDeserializer(), new StringDeserializer())
+            .withBootstrapServers(String.format("localhost:%d", kafkaPort))
+            .withGroupId("topic1")
+            .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
-    Consumer.DrainingControl<Done> control = Consumer
-        .atMostOnceSource(kafkaConsumerSettings, Subscriptions.topics("topic1"))
-        .map(ConsumerRecord::value)
-        .toMat(Sink.foreach(System.out::println), Keep.both())
-        .mapMaterializedValue(Consumer::createDrainingControl)
-        .run(materializer);
+    Consumer.DrainingControl<Done> control =
+        Consumer.atMostOnceSource(kafkaConsumerSettings, Subscriptions.topics("topic1"))
+            .map(ConsumerRecord::value)
+            .toMat(Sink.foreach(System.out::println), Keep.both())
+            .mapMaterializedValue(Consumer::createDrainingControl)
+            .run(materializer);
 
     Cancellable tick = stagePair.first();
     CompletionStage<Done> streamCompletion = stagePair.second();
@@ -153,9 +162,10 @@ public class FetchHttpEvery30SecondsAndConvertCsvToJsonToKafkaInJava {
 
     streamCompletion
         .thenApplyAsync(done -> control.drainAndShutdown(ec))
-        .thenAccept(done -> {
-          KafkaEmbedded.stop();
-          system.terminate();
-        });
+        .thenAccept(
+            done -> {
+              KafkaEmbedded.stop();
+              system.terminate();
+            });
   }
 }
