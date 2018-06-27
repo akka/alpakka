@@ -4,7 +4,7 @@
 
 package ftpsamples;
 
-//#sample
+// #sample
 import akka.japi.Pair;
 import akka.stream.IOResult;
 import akka.stream.alpakka.ftp.FtpSettings;
@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
-//#sample
+// #sample
 
 public class FtpToFileExample extends ActorSystemAvailable {
 
@@ -39,59 +39,57 @@ public class FtpToFileExample extends ActorSystemAvailable {
     ftpFileSystem.putFileOnFtp("/home/anonymous", "hello.txt");
     ftpFileSystem.putFileOnFtp("/home/anonymous", "hello2.txt");
 
-    //#sample
-    final FtpSettings ftpSettings = FtpSettings
-      .create(InetAddress.getByName("localhost"))
-      .withPort(port);
+    // #sample
+    final FtpSettings ftpSettings =
+        FtpSettings.create(InetAddress.getByName("localhost")).withPort(port);
     final Integer parallelism = 5;
 
-    //#sample
+    // #sample
 
     final Path targetDir = Paths.get("target/");
     final CompletionStage<List<Pair<String, IOResult>>> fetchedFiles =
-      //#sample
-      Ftp
-        .ls("/", ftpSettings)                                             //: FtpFile (1)
-        .filter(ftpFile -> ftpFile.isFile())                              //: FtpFile (2)
-        .mapAsyncUnordered(parallelism, ftpFile -> {                      // (3)
-          final Path localPath = targetDir.resolve("." + ftpFile.path());
-          final CompletionStage<IOResult> fetchFile = Ftp
-            .fromPath(ftpFile.path(), ftpSettings)
-            .runWith(FileIO.toPath(localPath), actorMaterializer());      // (4)
-          return fetchFile.thenApply(ioResult ->                          // (5)
-            Pair.create(ftpFile.path(), ioResult));
-        })                                                                //: (String, IOResult)
-        .runWith(Sink.seq(), actorMaterializer());                        // (6)
-      //#sample
+        // #sample
+        Ftp.ls("/", ftpSettings) // : FtpFile (1)
+            .filter(ftpFile -> ftpFile.isFile()) // : FtpFile (2)
+            .mapAsyncUnordered(
+                parallelism,
+                ftpFile -> { // (3)
+                  final Path localPath = targetDir.resolve("." + ftpFile.path());
+                  final CompletionStage<IOResult> fetchFile =
+                      Ftp.fromPath(ftpFile.path(), ftpSettings)
+                          .runWith(FileIO.toPath(localPath), actorMaterializer()); // (4)
+                  return fetchFile.thenApply(
+                      ioResult -> // (5)
+                      Pair.create(ftpFile.path(), ioResult));
+                }) // : (String, IOResult)
+            .runWith(Sink.seq(), actorMaterializer()); // (6)
+    // #sample
 
     fetchedFiles
-      .thenApply(files ->
-        files
-          .stream()
-          .filter(pathResult -> !pathResult.second().wasSuccessful())
-          .collect(Collectors.toList())
-      )
-      .whenComplete((res, ex) -> {
-        if (res != null) {
-          if (res.isEmpty()) {
-            System.out.println("all files fetched");
-          }
-          else {
-            System.out.println("errors occured: " + res.toString());
-          }
-        }
-        else {
-          System.out.println("the stream failed");
-        }
+        .thenApply(
+            files ->
+                files
+                    .stream()
+                    .filter(pathResult -> !pathResult.second().wasSuccessful())
+                    .collect(Collectors.toList()))
+        .whenComplete(
+            (res, ex) -> {
+              if (res != null) {
+                if (res.isEmpty()) {
+                  System.out.println("all files fetched");
+                } else {
+                  System.out.println("errors occured: " + res.toString());
+                }
+              } else {
+                System.out.println("the stream failed");
+              }
 
-        actorSystem().terminate();
-        actorSystem().getWhenTerminated().thenAccept(t ->
-          ftpServer.stop());
-      });
+              actorSystem().terminate();
+              actorSystem().getWhenTerminated().thenAccept(t -> ftpServer.stop());
+            });
   }
 
   public static void main(String[] args) throws UnknownHostException {
     new FtpToFileExample().run();
   }
-
 }

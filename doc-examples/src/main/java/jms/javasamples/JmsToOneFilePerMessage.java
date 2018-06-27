@@ -31,7 +31,6 @@ import scala.concurrent.ExecutionContext;
 
 import javax.jms.ConnectionFactory;
 
-
 public class JmsToOneFilePerMessage {
 
   public static void main(String[] args) throws Exception {
@@ -45,12 +44,9 @@ public class JmsToOneFilePerMessage {
 
   private void enqueue(ConnectionFactory connectionFactory, String... msgs) {
     Sink<String, ?> jmsSink =
-        JmsProducer.textSink(
-            JmsProducerSettings.create(connectionFactory).withQueue("test")
-        );
+        JmsProducer.textSink(JmsProducerSettings.create(connectionFactory).withQueue("test"));
     Source.from(Arrays.asList(msgs)).runWith(jmsSink, materializer);
   }
-
 
   private void run() throws Exception {
     ActiveMqBroker activeMqBroker = new ActiveMqBroker();
@@ -60,27 +56,25 @@ public class JmsToOneFilePerMessage {
     enqueue(connectionFactory, "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
     // #sample
 
-    Source<String, KillSwitch> jmsConsumer =                           // (1)
+    Source<String, KillSwitch> jmsConsumer = // (1)
         JmsConsumer.textSource(
-            JmsConsumerSettings.create(connectionFactory)
-                .withBufferSize(10)
-                .withQueue("test")
-        );
+            JmsConsumerSettings.create(connectionFactory).withBufferSize(10).withQueue("test"));
 
     int parallelism = 5;
     Pair<KillSwitch, CompletionStage<Done>> pair =
-        jmsConsumer                            //: String
-            .map(ByteString::fromString)       //: ByteString             (2)
-            .zipWithIndex()                    //: Pair<ByteString, Long> (3)
-            .mapAsyncUnordered(parallelism, (in) -> {
+        jmsConsumer // : String
+            .map(ByteString::fromString) // : ByteString             (2)
+            .zipWithIndex() // : Pair<ByteString, Long> (3)
+            .mapAsyncUnordered(
+                parallelism,
+                (in) -> {
                   ByteString byteString = in.first();
                   Long number = in.second();
-                  return
-                      Source                                           // (4)
-                          .single(byteString)
-                          .runWith(FileIO.toPath(Paths.get("target/out-" + number + ".txt")), materializer);
-                }
-            )                                  //: IoResult
+                  return Source // (4)
+                      .single(byteString)
+                      .runWith(
+                          FileIO.toPath(Paths.get("target/out-" + number + ".txt")), materializer);
+                }) // : IoResult
             .toMat(Sink.ignore(), Keep.both())
             .run(materializer);
 
@@ -93,9 +87,6 @@ public class JmsToOneFilePerMessage {
 
     runningSource.shutdown();
     streamCompletion.thenAccept(res -> system.terminate());
-    system.getWhenTerminated().thenAccept(t ->
-        activeMqBroker.stop(ec)
-    );
-
+    system.getWhenTerminated().thenAccept(t -> activeMqBroker.stop(ec));
   }
 }

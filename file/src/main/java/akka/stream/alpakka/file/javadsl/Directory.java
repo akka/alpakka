@@ -17,26 +17,23 @@ import java.nio.file.Path;
 
 public final class Directory {
 
-  /**
-   * List all files in the given directory
-   */
+  /** List all files in the given directory */
   public static Source<Path, NotUsed> ls(Path directory) {
     return akka.stream.alpakka.file.scaladsl.Directory.ls(directory).asJava();
   }
 
-  /**
-   * Recursively list files and directories in the given directory, depth first.
-   */
+  /** Recursively list files and directories in the given directory, depth first. */
   public static Source<Path, NotUsed> walk(Path directory) {
     return StreamConverters.fromJavaStream(() -> Files.walk(directory));
   }
 
   /**
-   * Recursively list files and directories in the given directory, depth first,
-   * with a maximum directory depth limit and a possibly set of options (See {@link java.nio.file.Files#walk} for
+   * Recursively list files and directories in the given directory, depth first, with a maximum
+   * directory depth limit and a possibly set of options (See {@link java.nio.file.Files#walk} for
    * details.
    */
-  public static Source<Path, NotUsed> walk(Path directory, int maxDepth, FileVisitOption... options) {
+  public static Source<Path, NotUsed> walk(
+      Path directory, int maxDepth, FileVisitOption... options) {
     return StreamConverters.fromJavaStream(() -> Files.walk(directory, maxDepth, options));
   }
 }

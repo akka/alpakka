@@ -4,13 +4,11 @@
 
 package akka.stream.alpakka.csv.javadsl;
 
-/**
- * Select which fields to quote in CSV formatting.
- */
+/** Select which fields to quote in CSV formatting. */
 public enum CsvQuotingStyle {
-    /** Quote all fields */
-    ALWAYS,
+  /** Quote all fields */
+  ALWAYS,
 
-    /** Quote only fields requiring quotes */
-    REQUIRED;
+  /** Quote only fields requiring quotes */
+  REQUIRED;
 }

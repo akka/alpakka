@@ -45,12 +45,9 @@ public class JmsToHttpGet {
 
   private void enqueue(ConnectionFactory connectionFactory, String... msgs) {
     Sink<String, ?> jmsSink =
-        JmsProducer.textSink(
-            JmsProducerSettings.create(connectionFactory).withQueue("test")
-        );
+        JmsProducer.textSink(JmsProducerSettings.create(connectionFactory).withQueue("test"));
     Source.from(Arrays.asList(msgs)).runWith(jmsSink, materializer);
   }
-
 
   private void run() throws Exception {
     ActiveMqBroker activeMqBroker = new ActiveMqBroker();
@@ -59,30 +56,25 @@ public class JmsToHttpGet {
     WebServer webserver = new WebServer();
     webserver.start("localhost", 8080);
 
-
     ConnectionFactory connectionFactory = activeMqBroker.createConnectionFactory();
     enqueue(connectionFactory, "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
     // #sample
 
     final Http http = Http.get(system);
 
-    Source<String, KillSwitch> jmsSource =        // (1)
+    Source<String, KillSwitch> jmsSource = // (1)
         JmsConsumer.textSource(
-            JmsConsumerSettings.create(connectionFactory)
-                .withBufferSize(10)
-                .withQueue("test")
-        );
-
+            JmsConsumerSettings.create(connectionFactory).withBufferSize(10).withQueue("test"));
 
     int parallelism = 4;
     Pair<KillSwitch, CompletionStage<Done>> pair =
-        jmsSource                                                  //: String
-            .map(ByteString::fromString)                           //: ByteString   (2)
-            .map(bs ->
-                HttpRequest.create("http://localhost:8080/hello")
-                    .withEntity(bs)
-            )                                                      //: HttpRequest  (3)
-            .mapAsyncUnordered(parallelism, http::singleRequest)   //: HttpResponse (4)
+        jmsSource // : String
+            .map(ByteString::fromString) // : ByteString   (2)
+            .map(
+                bs ->
+                    HttpRequest.create("http://localhost:8080/hello")
+                        .withEntity(bs)) // : HttpRequest  (3)
+            .mapAsyncUnordered(parallelism, http::singleRequest) // : HttpResponse (4)
             .toMat(Sink.foreach(System.out::println), Keep.both()) //               (5)
             .run(materializer);
     // #sample
@@ -92,10 +84,12 @@ public class JmsToHttpGet {
 
     runningSource.shutdown();
     streamCompletion.thenAccept(res -> system.terminate());
-    system.getWhenTerminated().thenAccept(t -> {
-      webserver.stop();
-      activeMqBroker.stop(ec);
-    });
+    system
+        .getWhenTerminated()
+        .thenAccept(
+            t -> {
+              webserver.stop();
+              activeMqBroker.stop(ec);
+            });
   }
-
 }
