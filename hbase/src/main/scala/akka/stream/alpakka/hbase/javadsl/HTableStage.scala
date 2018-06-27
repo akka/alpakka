@@ -10,9 +10,8 @@ import akka.stream.scaladsl.{Flow, Keep, Sink}
 import akka.{Done, NotUsed}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.TableName
-import org.apache.hadoop.hbase.client.Put
+import org.apache.hadoop.hbase.client.Mutation
 
-import scala.collection.immutable
 import scala.concurrent.Future
 
 object HTableStage {
@@ -20,10 +19,8 @@ object HTableStage {
   def table[T](conf: Configuration,
                tableName: TableName,
                columnFamilies: java.util.List[String],
-               converter: java.util.function.Function[T, Put]): HTableSettings[T] = {
-    import scala.compat.java8.FunctionConverters._
-    import scala.collection.JavaConverters._
-    HTableSettings(conf, tableName, immutable.Seq(columnFamilies.asScala: _*), asScalaFromFunction(converter))
+               converter: java.util.function.Function[T, java.util.List[Mutation]]): HTableSettings[T] = {
+    HTableSettings.create(conf, tableName, columnFamilies, converter)
   }
 
   def sink[A](config: HTableSettings[A]): akka.stream.javadsl.Sink[A, Future[Done]] =

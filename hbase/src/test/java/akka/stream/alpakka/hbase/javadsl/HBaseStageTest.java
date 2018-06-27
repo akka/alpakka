@@ -18,6 +18,7 @@ import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

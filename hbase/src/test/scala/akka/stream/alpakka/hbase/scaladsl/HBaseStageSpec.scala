@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.hbase.HTableSettings
 import akka.stream.scaladsl.{Sink, Source}
-import org.apache.hadoop.hbase.client.Put
+import org.apache.hadoop.hbase.client.{Mutation, Put}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.scalatest.{Matchers, WordSpec}
@@ -28,10 +28,10 @@ class HBaseStageSpec extends WordSpec with Matchers {
   implicit def toBytes(string: String): Array[Byte] = Bytes.toBytes(string)
   case class Person(id: Int, name: String)
 
-  val hBaseConverter: Person => Put = { person =>
+  val hBaseConverter: Person => immutable.Seq[Mutation] = { person =>
     val put = new Put(s"id_${person.id}")
     put.addColumn("info", "name", person.name)
-    put
+    List(put)
   }
   //#create-converter
 
