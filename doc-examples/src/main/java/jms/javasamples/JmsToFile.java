@@ -45,12 +45,9 @@ public class JmsToFile {
 
   private void enqueue(ConnectionFactory connectionFactory, String... msgs) {
     Sink<String, ?> jmsSink =
-        JmsProducer.textSink(
-            JmsProducerSettings.create(connectionFactory).withQueue("test")
-        );
+        JmsProducer.textSink(JmsProducerSettings.create(connectionFactory).withQueue("test"));
     Source.from(Arrays.asList(msgs)).runWith(jmsSink, materializer);
   }
-
 
   private void run() throws Exception {
     ActiveMqBroker activeMqBroker = new ActiveMqBroker();
@@ -60,19 +57,16 @@ public class JmsToFile {
     enqueue(connectionFactory, "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
     // #sample
 
-    Source<String, KillSwitch> jmsSource =        // (1)
+    Source<String, KillSwitch> jmsSource = // (1)
         JmsConsumer.textSource(
-            JmsConsumerSettings.create(connectionFactory)
-                .withBufferSize(10)
-                .withQueue("test")
-        );
+            JmsConsumerSettings.create(connectionFactory).withBufferSize(10).withQueue("test"));
 
     Sink<ByteString, CompletionStage<IOResult>> fileSink =
         FileIO.toPath(Paths.get("target/out.txt")); // (2)
 
     Pair<KillSwitch, CompletionStage<IOResult>> pair =
-        jmsSource                              //: String
-            .map(ByteString::fromString)       //: ByteString    (3)
+        jmsSource // : String
+            .map(ByteString::fromString) // : ByteString    (3)
             .toMat(fileSink, Keep.both())
             .run(materializer);
 
@@ -83,9 +77,6 @@ public class JmsToFile {
 
     runningSource.shutdown();
     streamCompletion.thenAccept(res -> system.terminate());
-    system.getWhenTerminated().thenAccept(t ->
-        activeMqBroker.stop(ec)
-    );
-
+    system.getWhenTerminated().thenAccept(t -> activeMqBroker.stop(ec));
   }
 }

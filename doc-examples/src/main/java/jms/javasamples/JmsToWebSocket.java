@@ -40,7 +40,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-
 public class JmsToWebSocket {
 
   public static void main(String[] args) throws Exception {
@@ -54,9 +53,7 @@ public class JmsToWebSocket {
 
   private void enqueue(ConnectionFactory connectionFactory, String... msgs) {
     Sink<String, ?> jmsSink =
-        JmsProducer.textSink(
-            JmsProducerSettings.create(connectionFactory).withQueue("test")
-        );
+        JmsProducer.textSink(JmsProducerSettings.create(connectionFactory).withQueue("test"));
     Source.from(Arrays.asList(msgs)).runWith(jmsSink, materializer);
   }
 
@@ -67,33 +64,30 @@ public class JmsToWebSocket {
     WebServer webserver = new WebServer();
     webserver.start("localhost", 8080);
 
-
     ConnectionFactory connectionFactory = activeMqBroker.createConnectionFactory();
     enqueue(connectionFactory, "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
     // #sample
 
     final Http http = Http.get(system);
 
-    Source<String, KillSwitch> jmsSource =        // (1)
+    Source<String, KillSwitch> jmsSource = // (1)
         JmsConsumer.textSource(
-            JmsConsumerSettings.create(connectionFactory)
-                .withBufferSize(10)
-                .withQueue("test")
-        );
+            JmsConsumerSettings.create(connectionFactory).withBufferSize(10).withQueue("test"));
 
     Flow<Message, Message, CompletionStage<WebSocketUpgradeResponse>> webSocketFlow = // (2)
-      http.webSocketClientFlow(WebSocketRequest.create("ws://localhost:8080/webSocket/ping"));
+        http.webSocketClientFlow(WebSocketRequest.create("ws://localhost:8080/webSocket/ping"));
 
     int parallelism = 4;
     Pair<Pair<KillSwitch, CompletionStage<WebSocketUpgradeResponse>>, CompletionStage<Done>> pair =
-        jmsSource                                                  //: String
-            .map(s -> {
-              Message msg = TextMessage.create(s);
-              return msg;
-            })                                                     //: Message           (3)
-            .viaMat(webSocketFlow, Keep.both())                    //: Message           (4)
-            .mapAsync(parallelism, this::wsMessageToString)        //: String            (5)
-            .map(s -> "client received: " + s)                     //: String            (6)
+        jmsSource // : String
+            .map(
+                s -> {
+                  Message msg = TextMessage.create(s);
+                  return msg;
+                }) // : Message           (3)
+            .viaMat(webSocketFlow, Keep.both()) // : Message           (4)
+            .mapAsync(parallelism, this::wsMessageToString) // : String            (5)
+            .map(s -> "client received: " + s) // : String            (6)
             .toMat(Sink.foreach(System.out::println), Keep.both()) //                    (7)
             .run(materializer);
     // #sample
@@ -101,35 +95,40 @@ public class JmsToWebSocket {
     CompletionStage<WebSocketUpgradeResponse> wsUpgradeResponse = pair.first().second();
     CompletionStage<Done> streamCompletion = pair.second();
 
-    wsUpgradeResponse.thenApply(upgrade -> {
-      if (upgrade.response().status() == StatusCodes.SWITCHING_PROTOCOLS) {
-        return "WebSocket established";
-      } else {
-        throw new RuntimeException("Connection failed: " + upgrade.response().status());
-      }
-    }).thenAccept(System.out::println);
+    wsUpgradeResponse
+        .thenApply(
+            upgrade -> {
+              if (upgrade.response().status() == StatusCodes.SWITCHING_PROTOCOLS) {
+                return "WebSocket established";
+              } else {
+                throw new RuntimeException("Connection failed: " + upgrade.response().status());
+              }
+            })
+        .thenAccept(System.out::println);
 
     Thread.sleep(2 * 1000);
     runningSource.shutdown();
     streamCompletion.thenAccept(res -> system.terminate());
-    system.getWhenTerminated().thenAccept(t -> {
-      webserver.stop();
-      activeMqBroker.stop(ec);
-    });
+    system
+        .getWhenTerminated()
+        .thenAccept(
+            t -> {
+              webserver.stop();
+              activeMqBroker.stop(ec);
+            });
   }
 
   // #sample
 
-  /**
-   * Convert potentially chunked WebSocket Message to a string.
-   */
+  /** Convert potentially chunked WebSocket Message to a string. */
   private CompletionStage<String> wsMessageToString(Message msg) {
     if (msg.isText()) {
       TextMessage tMsg = msg.asTextMessage();
       if (tMsg.isStrict()) {
         return CompletableFuture.completedFuture(tMsg.getStrictText());
       } else {
-        CompletionStage<List<String>> strings = tMsg.getStreamedText().runWith(Sink.seq(), materializer);
+        CompletionStage<List<String>> strings =
+            tMsg.getStreamedText().runWith(Sink.seq(), materializer);
         return strings.thenApply(list -> String.join("", list));
       }
     } else {
@@ -137,6 +136,5 @@ public class JmsToWebSocket {
     }
   }
   // #sample
-
 
 }

@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.spring.web;
 
-//#configure
+// #configure
 
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
@@ -21,29 +21,31 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 @ConditionalOnClass(akka.stream.javadsl.Source.class)
 public class SpringWebAkkaStreamsConfiguration {
 
-    private final ActorSystem system;
-    private final ActorMaterializer mat;
+  private final ActorSystem system;
+  private final ActorMaterializer mat;
 
-    @Autowired
-    public SpringWebAkkaStreamsConfiguration(RequestMappingHandlerAdapter requestMappingHandlerAdapter) {
-        final ReactiveAdapterRegistry registry = requestMappingHandlerAdapter.getReactiveAdapterRegistry();
+  @Autowired
+  public SpringWebAkkaStreamsConfiguration(
+      RequestMappingHandlerAdapter requestMappingHandlerAdapter) {
+    final ReactiveAdapterRegistry registry =
+        requestMappingHandlerAdapter.getReactiveAdapterRegistry();
 
-        system = ActorSystem.create("SpringWebAkkaStreamsSystem");
-        mat = ActorMaterializer.create(system);
-        new AkkaStreamsRegistrar(mat).registerAdapters(registry);
-    }
+    system = ActorSystem.create("SpringWebAkkaStreamsSystem");
+    mat = ActorMaterializer.create(system);
+    new AkkaStreamsRegistrar(mat).registerAdapters(registry);
+  }
 
-    @Bean
-    @ConditionalOnMissingBean(ActorSystem.class)
-    public ActorSystem getActorSystem() {
-        return system;
-    }
+  @Bean
+  @ConditionalOnMissingBean(ActorSystem.class)
+  public ActorSystem getActorSystem() {
+    return system;
+  }
 
-    @Bean
-    @ConditionalOnMissingBean(Materializer.class)
-    public ActorMaterializer getMaterializer() {
-        return mat;
-    }
+  @Bean
+  @ConditionalOnMissingBean(Materializer.class)
+  public ActorMaterializer getMaterializer() {
+    return mat;
+  }
 }
 
-//#configure
+// #configure
