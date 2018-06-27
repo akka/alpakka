@@ -160,6 +160,22 @@ object Dependencies {
     )
   }
 
+  val HadoopVersion = "3.1.0"
+  val Hdfs = {
+    val hadoopVersion = HadoopVersion
+    val catsVersion = "1.1.0"
+    Seq(
+      libraryDependencies ++= Seq(
+        "org.apache.hadoop" % "hadoop-client" % hadoopVersion, // ApacheV2
+        "org.typelevel" %% "cats-core" % catsVersion, // MIT,
+        //Test
+        "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion % Test classifier "tests", // ApacheV2
+        "org.apache.hadoop" % "hadoop-common" % hadoopVersion % Test classifier "tests", // ApacheV2
+        "org.apache.hadoop" % "hadoop-minicluster" % hadoopVersion % Test // ApacheV2
+      )
+    )
+  }
+
   val IronMq = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,

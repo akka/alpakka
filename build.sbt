@@ -12,6 +12,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   googleCloudPubSub,
   googleFcm,
   hbase,
+  hdfs,
   ironmq,
   jms,
   jsonStreaming,
@@ -120,6 +121,8 @@ lazy val googleFcm = alpakkaProject(
 
 lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, fork in Test := true)
 
+lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs, parallelExecution in Test := false)
+
 lazy val ironmq = alpakkaProject("ironmq", "ironmq", Dependencies.IronMq)
 
 lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms, parallelExecution in Test := false)
@@ -201,7 +204,8 @@ lazy val docs = project
       "scaladoc.akka.base_url" -> s"http://doc.akka.io/api/akka/${Dependencies.AkkaVersion}",
       "scaladoc.akka.http.base_url" -> s"https://doc.akka.io/api/akka-http/${Dependencies.AkkaHttpVersion}/",
       "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}",
-      "snip.alpakka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath
+      "snip.alpakka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
+      "javadoc.org.apache.hadoop.base_url" -> s"https://hadoop.apache.org/docs/r${Dependencies.HadoopVersion}/api/"
     ),
     paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     paradoxLocalApiKey := "scaladoc.akka.stream.alpakka.base_url",
