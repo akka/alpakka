@@ -43,8 +43,6 @@ private[kinesisfirehose] final class KinesisFirehoseFlowStage(
       type Token = Int
       type RetryCount = Int
 
-      private val retryBaseInMillis = retryInitialTimeout.toMillis
-
       private var completionState: Option[Try[Unit]] = _
 
       private val pendingRequests: mutable.Queue[Job] = mutable.Queue.empty
@@ -84,7 +82,7 @@ private[kinesisfirehose] final class KinesisFirehoseFlowStage(
           inFlight -= 1
           waitingRetries.put(retryToken, Job(attempt + 1, errors.map(_._2)))
           scheduleOnce(retryToken, backoffStrategy match {
-            case Exponential => scala.math.pow(retryBaseInMillis, attempt).toInt millis
+            case Exponential => retryInitialTimeout * scala.math.pow(2, attempt - 1).toInt
             case Linear => retryInitialTimeout * attempt
           })
           retryToken += 1
