@@ -251,8 +251,10 @@ object Dependencies {
       )
   )
 
-  val PostgreSqlDriver = Seq(
-    libraryDependencies ++= Seq("org.postgresql" % "postgresql" % "42.2.1" % Test) // BSD 2-clause "Simplified" License
+  val PostgreSqlCdc = Seq(
+    libraryDependencies ++= Seq(
+      "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.0", // BSD-style
+      "org.postgresql" % "postgresql" % "42.2.1" % Test) // BSD 2-clause "Simplified" License
   )
 
   val S3 = Seq(

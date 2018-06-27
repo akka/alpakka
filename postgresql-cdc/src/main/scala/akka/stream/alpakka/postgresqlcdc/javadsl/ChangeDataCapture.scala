@@ -5,11 +5,10 @@
 package akka.stream.alpakka.postgresqlcdc.javadsl
 
 import akka.NotUsed
-import akka.stream.alpakka.postgresqlcdc.PostgreSQLSourceStage
-import akka.stream.alpakka.postgresqlcdc._
+import akka.stream.alpakka.postgresqlcdc.{PostgreSQLSourceStage, _}
+import akka.stream.alpakka.postgresqlcdc.scaladsl.PostgreSQLInstance
 import akka.stream.scaladsl.Source
 
-import scala.concurrent.duration._
 import scala.collection.JavaConverters._
 
 object ChangeDataCapture {
@@ -18,9 +17,9 @@ object ChangeDataCapture {
    * Converts the events emitted (Scala Case Classes) to Java POJOs. May imply some GC pressure but it makes the API
    * so much more usable from a Java perspective.
    */
-  def from(instance: javadsl.PostgreSQLInstance): akka.stream.javadsl.Source[ChangeSet, NotUsed] =
+  def from(instance: PostgreSQLInstance): akka.stream.javadsl.Source[ChangeSet, NotUsed] =
     Source
-      .fromGraph(new PostgreSQLSourceStage(toScalaPostgreSQLInstance(instance)))
+      .fromGraph(new PostgreSQLSourceStage(instance))
       .map { t: scaladsl.ChangeSet =>
         new javadsl.ChangeSet(
           t.transactionId,
@@ -47,17 +46,5 @@ object ChangeDataCapture {
         )
       }
       .asJava
-
-  private def toScalaPostgreSQLInstance(instance: javadsl.PostgreSQLInstance): scaladsl.PostgreSQLInstance =
-    scaladsl.PostgreSQLInstance(
-      instance.getConnectionString,
-      instance.getSlotName,
-      instance.getPeekFrom match {
-        case -1L => scaladsl.Mode.Get
-        case x: Long => scaladsl.Mode.Peek(x)
-      },
-      instance.getMaxItems,
-      instance.getDurationMillis.milliseconds
-    )
 
 }

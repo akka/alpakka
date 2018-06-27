@@ -26,11 +26,13 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
   private val log = Logging(system, classOf[PostgreSQLCapturerSpec])
 
   private val connectionString =
-    s"jdbc:postgresql://localhost:${postgreSQLPortNumber}/pgdb1?user=pguser&password=pguser"
+    s"jdbc:postgresql://localhost:$postgreSQLPortNumber/pgdb1?user=pguser&password=pguser"
 
   private implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   private implicit val conn: Connection = getConnection(connectionString)
+
+  private val postgreSQLInstance = PostgreSQLInstance().withConnectionString(connectionString).withSlotName("scalatest")
 
   override def beforeAll(): Unit = {
     log.info("setting up logical decoding slot and creating customers table")
@@ -75,7 +77,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
       // some deletes
       deleteCustomers()
 
-      ChangeDataCapture(PostgreSQLInstance(connectionString, slotName = "scalatest"))
+      ChangeDataCapture(postgreSQLInstance)
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
@@ -173,7 +175,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
       updateSale(id = 0, newInfo = """{"name": "alpakka", "countries": ["*"]}""")
       deleteSale(0)
 
-      ChangeDataCapture(PostgreSQLInstance(connectionString, slotName = "scalatest"))
+      ChangeDataCapture(postgreSQLInstance)
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
@@ -238,7 +240,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
 
       deletePurchaseOrder(id = 0)
 
-      ChangeDataCapture(PostgreSQLInstance(connectionString, slotName = "scalatest"))
+      ChangeDataCapture(postgreSQLInstance)
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
@@ -257,7 +259,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
       insertEmployee(0, "Giovanni", "employee")
       updateEmployee(0, null)
 
-      ChangeDataCapture(PostgreSQLInstance(connectionString, slotName = "scalatest"))
+      ChangeDataCapture(postgreSQLInstance)
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])

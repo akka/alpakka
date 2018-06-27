@@ -8,26 +8,26 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.postgresqlcdc.javadsl.*;
+import akka.stream.alpakka.postgresqlcdc.javadsl.Change;
+import akka.stream.alpakka.postgresqlcdc.javadsl.ChangeDataCapture;
+import akka.stream.alpakka.postgresqlcdc.javadsl.ChangeSet;
+import akka.stream.alpakka.postgresqlcdc.scaladsl.PostgreSQLInstance;
+import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
-import akka.stream.javadsl.Source;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 
 public class TestJavaDsl {
 
-    static ActorSystem system;
-    static Materializer materializer;
-    static Connection connection;
+    private static ActorSystem system;
+    private static Materializer materializer;
+    private static Connection connection;
 
-    static final String connectionString = "jdbc:postgresql://localhost:5435/pgdb2?user=pguser&password=pguser";
-
+    private static final String connectionString = "jdbc:postgresql://localhost:5435/pgdb2?user=pguser&password=pguser";
 
     @BeforeClass
     public static void setup() throws Exception {
@@ -62,12 +62,10 @@ public class TestJavaDsl {
         // some deletes
         FakeDb.deleteCustomers(connection);
 
-        final PostgreSQLInstance postgreSQLInstance = new PostgreSQLInstance(connectionString,
-                "junit",
-                -1,
-                128,
-                1000
-        );
+        final PostgreSQLInstance postgreSQLInstance = PostgreSQLInstance
+                .create()
+                .withConnectionString(connectionString)
+                .withSlotName("junit");
 
         final Source<Change, NotUsed> source = ChangeDataCapture
                 .from(postgreSQLInstance)
