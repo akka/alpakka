@@ -13,7 +13,7 @@ services:
     ports:
       - "9042:9042"
   orientdb:
-    image: orientdb:latest
+    image: orientdb:2.2.35
     ports:
       - "2424:2424"
     environment:
