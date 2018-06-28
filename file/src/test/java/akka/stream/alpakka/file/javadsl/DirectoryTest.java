@@ -42,7 +42,6 @@ public class DirectoryTest {
     materializer = ActorMaterializer.create(system);
   }
 
-
   @Test
   public void listFiles() throws Exception {
     final Path dir = fs.getPath("listfiles");
@@ -54,8 +53,8 @@ public class DirectoryTest {
     final Source<Path, NotUsed> source = Directory.ls(dir);
     // #ls
 
-    final List<Path> result = source.runWith(Sink.seq(), materializer)
-        .toCompletableFuture().get(3, TimeUnit.SECONDS);
+    final List<Path> result =
+        source.runWith(Sink.seq(), materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(result.size(), 2);
     assertEquals(result.get(0), file1);
     assertEquals(result.get(1), file2);
@@ -78,8 +77,8 @@ public class DirectoryTest {
     final Source<Path, NotUsed> source = Directory.walk(root);
     // #walk
 
-    final List<Path> result = source.runWith(Sink.seq(), materializer)
-        .toCompletableFuture().get(3, TimeUnit.SECONDS);
+    final List<Path> result =
+        source.runWith(Sink.seq(), materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(result, Arrays.asList(root, subdir1, file1, subdir2, file2));
   }
 
@@ -100,8 +99,8 @@ public class DirectoryTest {
     final Source<Path, NotUsed> source = Directory.walk(root, 1, FileVisitOption.FOLLOW_LINKS);
     // #walk
 
-    final List<Path> result = source.runWith(Sink.seq(), materializer)
-        .toCompletableFuture().get(3, TimeUnit.SECONDS);
+    final List<Path> result =
+        source.runWith(Sink.seq(), materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(result, Arrays.asList(root, subdir1, subdir2));
   }
 

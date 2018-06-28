@@ -15,51 +15,45 @@ import org.junit.Test;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
-
 public class GeodeSinkTestCase extends GeodeBaseTestCase {
 
+  @Test
+  public void sinkTest() throws ExecutionException, InterruptedException {
 
-    @Test
-    public void sinkTest() throws ExecutionException, InterruptedException {
+    ReactiveGeode reactiveGeode = createReactiveGeode();
 
-        ReactiveGeode reactiveGeode = createReactiveGeode();
+    Sink<Person, CompletionStage<Done>> sink =
+        reactiveGeode.sink(personRegionSettings, new PersonPdxSerializer());
 
-        Sink<Person, CompletionStage<Done>> sink = reactiveGeode.sink(personRegionSettings, new PersonPdxSerializer());
+    Source<Person, NotUsed> source = buildPersonsSource(100, 101, 103, 104, 105);
 
-        Source<Person, NotUsed> source = buildPersonsSource(100, 101, 103, 104, 105);
+    RunnableGraph<CompletionStage<Done>> runnableGraph = source.toMat(sink, Keep.right());
 
-        RunnableGraph<CompletionStage<Done>> runnableGraph = source
-                .toMat(sink, Keep.right());
+    CompletionStage<Done> stage = runnableGraph.run(materializer);
 
-        CompletionStage<Done> stage = runnableGraph.run(materializer);
+    stage.toCompletableFuture().get();
 
-        stage.toCompletableFuture().get();
+    reactiveGeode.close();
+  }
 
-        reactiveGeode.close();
+  @Test
+  public void sinkAnimalTest() throws ExecutionException, InterruptedException {
 
-    }
+    ReactiveGeode reactiveGeode = createReactiveGeode();
 
-    @Test
-    public void sinkAnimalTest() throws ExecutionException, InterruptedException {
+    Source<Animal, NotUsed> source = buildAnimalsSource(100, 101, 103, 104, 105);
 
-        ReactiveGeode reactiveGeode = createReactiveGeode();
+    // #sink
+    Sink<Animal, CompletionStage<Done>> sink =
+        reactiveGeode.sink(animalRegionSettings, new AnimalPdxSerializer());
 
-        Source<Animal, NotUsed> source = buildAnimalsSource(100, 101, 103, 104, 105);
+    RunnableGraph<CompletionStage<Done>> runnableGraph = source.toMat(sink, Keep.right());
+    // #sink
 
-        //#sink
-        Sink<Animal, CompletionStage<Done>> sink = reactiveGeode.sink(animalRegionSettings, new AnimalPdxSerializer());
+    CompletionStage<Done> stage = runnableGraph.run(materializer);
 
-        RunnableGraph<CompletionStage<Done>> runnableGraph = source
-                .toMat(sink, Keep.right());
-        //#sink
+    stage.toCompletableFuture().get();
 
-        CompletionStage<Done> stage = runnableGraph.run(materializer);
-
-        stage.toCompletableFuture().get();
-
-        reactiveGeode.close();
-
-    }
-
-
+    reactiveGeode.close();
+  }
 }

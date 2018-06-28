@@ -34,7 +34,8 @@ interface CommonFtpStageTest extends FtpSupport, AkkaSupport {
 
   Sink<FtpFile, CompletionStage<IOResult>> getRemoveSink() throws Exception;
 
-  Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(Function<FtpFile, String> destinationPath) throws Exception;
+  Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(Function<FtpFile, String> destinationPath)
+      throws Exception;
 
   default void listFiles() throws Exception {
     final int numFiles = 30;
@@ -51,7 +52,7 @@ interface CommonFtpStageTest extends FtpSupport, AkkaSupport {
     Source<FtpFile, NotUsed> source = getBrowserSource(basePath);
 
     Pair<NotUsed, TestSubscriber.Probe<FtpFile>> pairResult =
-            source.toMat(TestSink.probe(system), Keep.both()).run(materializer);
+        source.toMat(TestSink.probe(system), Keep.both()).run(materializer);
     TestSubscriber.Probe<FtpFile> probe = pairResult.second();
     probe.request(demand).expectNextN(numFiles);
     probe.expectComplete();
@@ -66,7 +67,7 @@ interface CommonFtpStageTest extends FtpSupport, AkkaSupport {
 
     Source<ByteString, CompletionStage<IOResult>> source = getIOSource("/" + fileName);
     Pair<CompletionStage<IOResult>, TestSubscriber.Probe<ByteString>> pairResult =
-            source.toMat(TestSink.probe(system), Keep.both()).run(materializer);
+        source.toMat(TestSink.probe(system), Keep.both()).run(materializer);
     TestSubscriber.Probe<ByteString> probe = pairResult.second();
     probe.request(100).expectNextOrComplete();
 
@@ -85,7 +86,7 @@ interface CommonFtpStageTest extends FtpSupport, AkkaSupport {
 
     Sink<ByteString, CompletionStage<IOResult>> sink = getIOSink("/" + fileName);
     CompletionStage<IOResult> resultCompletionStage =
-            Source.single(fileContent).runWith(sink, materializer);
+        Source.single(fileContent).runWith(sink, materializer);
 
     int expectedNumOfBytes = getLoremIpsum().getBytes().length;
     IOResult result = resultCompletionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -103,8 +104,7 @@ interface CommonFtpStageTest extends FtpSupport, AkkaSupport {
     final Materializer materializer = getMaterializer();
     Source<FtpFile, NotUsed> source = getBrowserSource("/");
     Sink<FtpFile, CompletionStage<IOResult>> sink = getRemoveSink();
-    CompletionStage<IOResult> resultCompletionStage =
-            source.runWith(sink, materializer);
+    CompletionStage<IOResult> resultCompletionStage = source.runWith(sink, materializer);
 
     IOResult result = resultCompletionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
@@ -122,8 +122,7 @@ interface CommonFtpStageTest extends FtpSupport, AkkaSupport {
     final Materializer materializer = getMaterializer();
     Source<FtpFile, NotUsed> source = getBrowserSource("/");
     Sink<FtpFile, CompletionStage<IOResult>> sink = getMoveSink((ftpFile) -> fileName2);
-    CompletionStage<IOResult> resultCompletionStage =
-            source.runWith(sink, materializer);
+    CompletionStage<IOResult> resultCompletionStage = source.runWith(sink, materializer);
 
     IOResult result = resultCompletionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
 

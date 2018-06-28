@@ -18,22 +18,30 @@ import java.util.concurrent.CompletionStage;
 
 public class Examples {
 
-    //#init-client
-    BasicAWSCredentials credentials = new BasicAWSCredentials("x", "x");
-    AmazonSNSAsync snsClient = AmazonSNSAsyncClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(credentials)).build();
-    //#init-client
+  // #init-client
+  BasicAWSCredentials credentials = new BasicAWSCredentials("x", "x");
+  AmazonSNSAsync snsClient =
+      AmazonSNSAsyncClientBuilder.standard()
+          .withCredentials(new AWSStaticCredentialsProvider(credentials))
+          .build();
+  // #init-client
 
-    //#init-system
-    ActorSystem system = ActorSystem.create();
-    ActorMaterializer materializer = ActorMaterializer.create(system);
-    //#init-system
+  // #init-system
+  ActorSystem system = ActorSystem.create();
+  ActorMaterializer materializer = ActorMaterializer.create(system);
+  // #init-system
 
-    //#use-sink
-    CompletionStage<Done> sink = Source.single("message").runWith(SnsPublisher.createSink("topic-arn", snsClient), materializer);
-    //#use-sink
+  // #use-sink
+  CompletionStage<Done> sink =
+      Source.single("message")
+          .runWith(SnsPublisher.createSink("topic-arn", snsClient), materializer);
+  // #use-sink
 
-    //#use-flow
-    CompletionStage<Done> flow = Source.single("message").via(SnsPublisher.createFlow("topic-arn", snsClient)).runWith(Sink.ignore(), materializer);
-    //#use-flow
+  // #use-flow
+  CompletionStage<Done> flow =
+      Source.single("message")
+          .via(SnsPublisher.createFlow("topic-arn", snsClient))
+          .runWith(Sink.ignore(), materializer);
+  // #use-flow
 
 }

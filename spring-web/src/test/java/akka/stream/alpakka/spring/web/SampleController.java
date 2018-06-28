@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.spring.web;
 
-//#use
+// #use
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.Materializer;
@@ -18,11 +18,7 @@ public class SampleController {
 
   @RequestMapping("/")
   public Source<String, NotUsed> index() {
-    return
-      Source.repeat("Hello world!")
-        .intersperse("\n")
-        .take(10);
+    return Source.repeat("Hello world!").intersperse("\n").take(10);
   }
-
 }
-//#use
+// #use

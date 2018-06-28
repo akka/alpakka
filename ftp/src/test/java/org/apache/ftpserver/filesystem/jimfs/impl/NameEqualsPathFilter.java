@@ -14,8 +14,7 @@ public class NameEqualsPathFilter implements DirectoryStream.Filter<Path> {
 
   private boolean caseInsensitive = false;
 
-  public NameEqualsPathFilter(final String nameToMatch,
-                              final boolean caseInsensitive) {
+  public NameEqualsPathFilter(final String nameToMatch, final boolean caseInsensitive) {
     this.nameToMatch = nameToMatch;
     this.caseInsensitive = caseInsensitive;
   }
@@ -23,7 +22,7 @@ public class NameEqualsPathFilter implements DirectoryStream.Filter<Path> {
   @Override
   public boolean accept(Path entry) throws IOException {
     if (caseInsensitive) {
-     return entry.getFileName().toString().equalsIgnoreCase(nameToMatch);
+      return entry.getFileName().toString().equalsIgnoreCase(nameToMatch);
     } else {
       return entry.getFileName().toString().equals(nameToMatch);
     }

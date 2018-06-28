@@ -36,69 +36,73 @@ import static org.junit.Assert.*;
 
 public class CharsetCodingFlowsDoc {
 
-    private final static ActorSystem system = ActorSystem.create();
-    private final static Materializer materializer = ActorMaterializer.create(system);
+  private static final ActorSystem system = ActorSystem.create();
+  private static final Materializer materializer = ActorMaterializer.create(system);
 
-    @AfterClass
-    public static void afterAll() {
-        system.terminate();
-    }
+  @AfterClass
+  public static void afterAll() {
+    system.terminate();
+  }
 
-    @Test
-    public void encodingExample() throws Exception {
-        Path targetFile = Paths.get("target/outdata.txt");
+  @Test
+  public void encodingExample() throws Exception {
+    Path targetFile = Paths.get("target/outdata.txt");
 
-        Properties properties = System.getProperties();
-        List<String> strings = properties.stringPropertyNames().stream().map(p -> p + " -> " + properties.getProperty(p)).collect(Collectors.toList());
+    Properties properties = System.getProperties();
+    List<String> strings =
+        properties
+            .stringPropertyNames()
+            .stream()
+            .map(p -> p + " -> " + properties.getProperty(p))
+            .collect(Collectors.toList());
+    // #encoding
+    Source<String, ?> stringSource = // ...
         // #encoding
-        Source<String, ?> stringSource = // ...
-                // #encoding
-                Source.from(strings);
-        final CompletionStage<IOResult> streamCompletion =
-                // #encoding
-                stringSource
-                        .via(TextFlow.encoding(StandardCharsets.US_ASCII))
-                        .intersperse(ByteString.fromString("\n"))
-                        .runWith(FileIO.toPath(targetFile), materializer);
+        Source.from(strings);
+    final CompletionStage<IOResult> streamCompletion =
         // #encoding
-        IOResult result = streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
-        assertTrue(result.wasSuccessful());
-    }
+        stringSource
+            .via(TextFlow.encoding(StandardCharsets.US_ASCII))
+            .intersperse(ByteString.fromString("\n"))
+            .runWith(FileIO.toPath(targetFile), materializer);
+    // #encoding
+    IOResult result = streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    assertTrue(result.wasSuccessful());
+  }
 
-    @Test
-    public void decodingExample() throws Exception {
-        ByteString utf16bytes = ByteString.fromString("äåûßêëé", StandardCharsets.UTF_16);
+  @Test
+  public void decodingExample() throws Exception {
+    ByteString utf16bytes = ByteString.fromString("äåûßêëé", StandardCharsets.UTF_16);
+    // #decoding
+    Source<ByteString, ?> byteStringSource = // ...
         // #decoding
-        Source<ByteString, ?> byteStringSource = // ...
-                // #decoding
-                Source.single(utf16bytes);
-        CompletionStage<List<String>> streamCompletion =
-                // #decoding
-                byteStringSource
-                        .via(TextFlow.decoding(StandardCharsets.UTF_16))
-                        .runWith(Sink.seq(), materializer);
+        Source.single(utf16bytes);
+    CompletionStage<List<String>> streamCompletion =
         // #decoding
-        List<String> result = streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
-        assertEquals(Arrays.asList("äåûßêëé"), result);
+        byteStringSource
+            .via(TextFlow.decoding(StandardCharsets.UTF_16))
+            .runWith(Sink.seq(), materializer);
+    // #decoding
+    List<String> result = streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    assertEquals(Arrays.asList("äåûßêëé"), result);
+  }
 
-    }
+  @Test
+  public void transcodingExample() throws Exception {
+    Path targetFile = Paths.get("target/outdata.txt");
+    ByteString utf16bytes = ByteString.fromString("äåûßêëé", StandardCharsets.UTF_16);
 
-    @Test
-    public void transcodingExample() throws Exception {
-        Path targetFile = Paths.get("target/outdata.txt");
-        ByteString utf16bytes = ByteString.fromString("äåûßêëé", StandardCharsets.UTF_16);
-
+    // #transcoding
+    Source<ByteString, ?> byteStringSource = // ...
         // #transcoding
-        Source<ByteString, ?> byteStringSource = // ...
-                // #transcoding
-                Source.single(utf16bytes);
-        CompletionStage<IOResult> streamCompletion =
-                // #transcoding
-                byteStringSource
-                        .via(TextFlow.transcoding(StandardCharsets.UTF_16, StandardCharsets.UTF_8))
-                        .runWith(FileIO.toPath(targetFile), materializer);
+        Source.single(utf16bytes);
+    CompletionStage<IOResult> streamCompletion =
         // #transcoding
-        IOResult result = streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
-        assertTrue(result.wasSuccessful());
-    }
+        byteStringSource
+            .via(TextFlow.transcoding(StandardCharsets.UTF_16, StandardCharsets.UTF_8))
+            .runWith(FileIO.toPath(targetFile), materializer);
+    // #transcoding
+    IOResult result = streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    assertTrue(result.wasSuccessful());
+  }
 }

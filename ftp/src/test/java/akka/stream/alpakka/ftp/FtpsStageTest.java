@@ -63,19 +63,20 @@ public class FtpsStageTest extends FtpsSupportImpl implements CommonFtpStageTest
     return Ftps.remove(settings());
   }
 
-  public Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(Function<FtpFile, String> destinationPath) throws Exception {
+  public Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(
+      Function<FtpFile, String> destinationPath) throws Exception {
     return Ftps.move(destinationPath, settings());
   }
 
   private FtpsSettings settings() throws Exception {
-    //#create-settings
-    final FtpsSettings settings = FtpsSettings.create(
-            InetAddress.getByName("localhost"))
+    // #create-settings
+    final FtpsSettings settings =
+        FtpsSettings.create(InetAddress.getByName("localhost"))
             .withPort(getPort())
             .withCredentials(FtpCredentials.createAnonCredentials())
             .withBinary(false)
             .withPassiveMode(false);
-    //#create-settings
+    // #create-settings
     return settings;
   }
 }

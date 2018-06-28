@@ -43,13 +43,13 @@ public class OrientDBTest {
   private static ActorSystem system;
   private static ActorMaterializer materializer;
 
-  //#init-settings
+  // #init-settings
   private static String url = "remote:127.0.0.1:2424/";
   private static String dbName = "GratefulDeadConcertsJava";
   private static String dbUrl = url + dbName;
   private static String username = "root";
   private static String password = "root";
-  //#init-settings
+  // #init-settings
 
   private static String source = "source1";
   private static String sink1 = "sink1";
@@ -57,7 +57,7 @@ public class OrientDBTest {
   private static String sink3 = "sink3";
   private static String sink6 = "sink6";
 
-  //#define-class
+  // #define-class
   public class source1 {
 
     private String book_title;
@@ -83,7 +83,7 @@ public class OrientDBTest {
       return book_title;
     }
   }
-  //#define-class
+  // #define-class
 
   public class KafkaOffset {
 
@@ -132,22 +132,21 @@ public class OrientDBTest {
 
   @BeforeClass
   public static void setup() throws Exception {
-    //#init-mat
+    // #init-mat
     system = ActorSystem.create();
     materializer = ActorMaterializer.create(system);
-    //#init-mat
+    // #init-mat
 
-    //#init-db
+    // #init-db
     oServerAdmin = new OServerAdmin(url).connect(username, password);
     if (!oServerAdmin.existsDatabase(dbName, "plocal")) {
       oServerAdmin.createDatabase(dbName, "document", "plocal");
     }
-    //#init-db
-
+    // #init-db
 
     oDatabase =
-      new OPartitionedDatabasePool(dbUrl, username, password,
-        Runtime.getRuntime().availableProcessors(), 10);
+        new OPartitionedDatabasePool(
+            dbUrl, username, password, Runtime.getRuntime().availableProcessors(), 10);
     client = oDatabase.acquire();
 
     register(source);
@@ -186,8 +185,7 @@ public class OrientDBTest {
   }
 
   private static void flush(String className, String fieldName, String fieldValue) {
-    ODocument oDocument = new ODocument()
-      .field(fieldName, fieldValue);
+    ODocument oDocument = new ODocument().field(fieldName, fieldValue);
     oDocument.setClassNameIfExists(className);
     oDocument.save();
   }
@@ -201,43 +199,32 @@ public class OrientDBTest {
   @Test
   public void oDocObjectStream() throws Exception {
     // Copy source to sink1 through ODocument stream
-    //#run-odocument
-    CompletionStage<Done> f1 = OrientDBSource.create(
-      source,
-      OrientDBSourceSettings.create(oDatabase),
-      null
-    )
-      .map(m -> OIncomingMessage.create(m.oDocument()))
-      .runWith(
-        OrientDBSink.create(
-          sink1,
-          OrientDBUpdateSettings.create(oDatabase)
-        ),
-        materializer
-      );
-    //#run-odocument
+    // #run-odocument
+    CompletionStage<Done> f1 =
+        OrientDBSource.create(source, OrientDBSourceSettings.create(oDatabase), null)
+            .map(m -> OIncomingMessage.create(m.oDocument()))
+            .runWith(
+                OrientDBSink.create(sink1, OrientDBUpdateSettings.create(oDatabase)), materializer);
+    // #run-odocument
 
     f1.toCompletableFuture().get(60, TimeUnit.SECONDS);
 
-    CompletionStage<List<String>> f2 = OrientDBSource.create(
-      sink1,
-      OrientDBSourceSettings.create(oDatabase),
-      null
-    )
-      .map(m -> m.oDocument().<String>field("book_title"))
-      .runWith(Sink.seq(), materializer);
+    CompletionStage<List<String>> f2 =
+        OrientDBSource.create(sink1, OrientDBSourceSettings.create(oDatabase), null)
+            .map(m -> m.oDocument().<String>field("book_title"))
+            .runWith(Sink.seq(), materializer);
 
     List<String> result = new ArrayList<>(f2.toCompletableFuture().get(60, TimeUnit.SECONDS));
 
-    List<String> expect = Arrays.asList(
-      "Akka Concurrency",
-      "Akka in Action",
-      "Effective Akka",
-      "Learning Scala",
-      "Programming in Scala",
-      "Scala Puzzlers",
-      "Scala for Spark in Production"
-    );
+    List<String> expect =
+        Arrays.asList(
+            "Akka Concurrency",
+            "Akka in Action",
+            "Effective Akka",
+            "Learning Scala",
+            "Programming in Scala",
+            "Scala Puzzlers",
+            "Scala for Spark in Production");
 
     Collections.sort(result);
     assertEquals(expect, result);
@@ -246,55 +233,47 @@ public class OrientDBTest {
   @Test
   public void typedStream() throws Exception {
     // Copy source/book to sink2/book through Typed stream
-    //#run-typed
-    CompletionStage<Done> f1 = OrientDBSource.typed(
-      source,
-      OrientDBSourceSettings.create(oDatabase),
-      source1.class,
-      null
-    )
-      .map(m -> {
-        ODatabaseDocumentTx db = oDatabase.acquire();
-        db.setDatabaseOwner(new OObjectDatabaseTx(db));
-        ODatabaseRecordThreadLocal.instance().set(db);
-        sink2 sink = new sink2();
-        sink.setBook_title(m.oDocument().getBook_title());
-        return OIncomingMessage.create(sink);
-      })
-      .runWith(OrientDBSink.typed(
-        sink2,
-        OrientDBUpdateSettings.create(oDatabase),
-        sink2.class
-      ), materializer);
-    //#run-typed
+    // #run-typed
+    CompletionStage<Done> f1 =
+        OrientDBSource.typed(source, OrientDBSourceSettings.create(oDatabase), source1.class, null)
+            .map(
+                m -> {
+                  ODatabaseDocumentTx db = oDatabase.acquire();
+                  db.setDatabaseOwner(new OObjectDatabaseTx(db));
+                  ODatabaseRecordThreadLocal.instance().set(db);
+                  sink2 sink = new sink2();
+                  sink.setBook_title(m.oDocument().getBook_title());
+                  return OIncomingMessage.create(sink);
+                })
+            .runWith(
+                OrientDBSink.typed(sink2, OrientDBUpdateSettings.create(oDatabase), sink2.class),
+                materializer);
+    // #run-typed
 
     f1.toCompletableFuture().get(60, TimeUnit.SECONDS);
 
-    CompletionStage<List<String>> f2 = OrientDBSource.typed(
-      sink2,
-      OrientDBSourceSettings.create(oDatabase),
-      sink2.class,
-      null
-    )
-      .map(m -> {
-        ODatabaseDocumentTx db = oDatabase.acquire();
-        db.setDatabaseOwner(new OObjectDatabaseTx(db));
-        ODatabaseRecordThreadLocal.instance().set(db);
-        return m.oDocument().getBook_title();
-      })
-      .runWith(Sink.seq(), materializer);
+    CompletionStage<List<String>> f2 =
+        OrientDBSource.typed(sink2, OrientDBSourceSettings.create(oDatabase), sink2.class, null)
+            .map(
+                m -> {
+                  ODatabaseDocumentTx db = oDatabase.acquire();
+                  db.setDatabaseOwner(new OObjectDatabaseTx(db));
+                  ODatabaseRecordThreadLocal.instance().set(db);
+                  return m.oDocument().getBook_title();
+                })
+            .runWith(Sink.seq(), materializer);
 
     List<String> result = new ArrayList<>(f2.toCompletableFuture().get(60, TimeUnit.SECONDS));
 
-    List<String> expect = Arrays.asList(
-      "Akka Concurrency",
-      "Akka in Action",
-      "Effective Akka",
-      "Learning Scala",
-      "Programming in Scala",
-      "Scala Puzzlers",
-      "Scala for Spark in Production"
-    );
+    List<String> expect =
+        Arrays.asList(
+            "Akka Concurrency",
+            "Akka in Action",
+            "Effective Akka",
+            "Learning Scala",
+            "Programming in Scala",
+            "Scala Puzzlers",
+            "Scala for Spark in Production");
 
     Collections.sort(result);
     assertEquals(expect, result);
@@ -302,103 +281,100 @@ public class OrientDBTest {
 
   @Test
   public void typedStreamWithPassThrough() throws Exception {
-    //#kafka-example
+    // #kafka-example
     // We're going to pretend we got messages from kafka.
     // After we've written them to OrientDB, we want
     // to commit the offset to Kafka
 
     List<Integer> committedOffsets = new ArrayList<>();
-    List<messagesFromKafka> messagesFromKafkas = Arrays.asList(
-        new messagesFromKafka("Akka Concurrency", new KafkaOffset(0)),
-        new messagesFromKafka("Akka in Action", new KafkaOffset(1)),
-        new messagesFromKafka("Effective Akka", new KafkaOffset(2)));
+    List<messagesFromKafka> messagesFromKafkas =
+        Arrays.asList(
+            new messagesFromKafka("Akka Concurrency", new KafkaOffset(0)),
+            new messagesFromKafka("Akka in Action", new KafkaOffset(1)),
+            new messagesFromKafka("Effective Akka", new KafkaOffset(2)));
 
-    Consumer<KafkaOffset> commitToKafka = new Consumer<KafkaOffset>() {
-      @Override
-      public void accept(KafkaOffset kafkaOffset) {
-        committedOffsets.add(kafkaOffset.getOffset());
-      }
-    };
+    Consumer<KafkaOffset> commitToKafka =
+        new Consumer<KafkaOffset>() {
+          @Override
+          public void accept(KafkaOffset kafkaOffset) {
+            committedOffsets.add(kafkaOffset.getOffset());
+          }
+        };
 
     Source.from(messagesFromKafkas)
-      .map(kafkaMessage -> {
-        String book_title = kafkaMessage.getBook_title();
-        return OIncomingMessage.create(new ODocument().field("book_title", book_title),
-          kafkaMessage.kafkaOffset);
-      })
-      .via(OrientDBFlow.createWithPassThrough(
-        sink6,
-        OrientDBUpdateSettings.create(oDatabase)
-      ))
-      .map(messages -> {
-        ODatabaseDocumentTx db = oDatabase.acquire();
-        db.setDatabaseOwner(new OObjectDatabaseTx(db));
-        ODatabaseRecordThreadLocal.instance().set(db);
-        messages.stream()
-          .forEach(message -> {
-            commitToKafka.accept(((KafkaOffset) message.passThrough()));
-          });
-        return NotUsed.getInstance();
-      })
-      .runWith(Sink.seq(), materializer)
-      .toCompletableFuture().get(60, TimeUnit.SECONDS);
-    //#kafka-example
+        .map(
+            kafkaMessage -> {
+              String book_title = kafkaMessage.getBook_title();
+              return OIncomingMessage.create(
+                  new ODocument().field("book_title", book_title), kafkaMessage.kafkaOffset);
+            })
+        .via(OrientDBFlow.createWithPassThrough(sink6, OrientDBUpdateSettings.create(oDatabase)))
+        .map(
+            messages -> {
+              ODatabaseDocumentTx db = oDatabase.acquire();
+              db.setDatabaseOwner(new OObjectDatabaseTx(db));
+              ODatabaseRecordThreadLocal.instance().set(db);
+              messages
+                  .stream()
+                  .forEach(
+                      message -> {
+                        commitToKafka.accept(((KafkaOffset) message.passThrough()));
+                      });
+              return NotUsed.getInstance();
+            })
+        .runWith(Sink.seq(), materializer)
+        .toCompletableFuture()
+        .get(60, TimeUnit.SECONDS);
+    // #kafka-example
 
     assertEquals(Arrays.asList(0, 1, 2), committedOffsets);
 
-    List<Object> result2 = OrientDBSource.create(
-      sink6,
-      OrientDBSourceSettings.create(oDatabase),
-      null
-    ).map(m -> m.oDocument().field("book_title"))
-     .runWith(Sink.seq(), materializer)
-     .toCompletableFuture().get(60, TimeUnit.SECONDS);
+    List<Object> result2 =
+        OrientDBSource.create(sink6, OrientDBSourceSettings.create(oDatabase), null)
+            .map(m -> m.oDocument().field("book_title"))
+            .runWith(Sink.seq(), materializer)
+            .toCompletableFuture()
+            .get(60, TimeUnit.SECONDS);
 
     assertEquals(
-      messagesFromKafkas.stream().map(m -> m.getBook_title()).sorted().collect(Collectors.toList()),
-      result2.stream().sorted().collect(Collectors.toList())
-    );
+        messagesFromKafkas
+            .stream()
+            .map(m -> m.getBook_title())
+            .sorted()
+            .collect(Collectors.toList()),
+        result2.stream().sorted().collect(Collectors.toList()));
   }
 
   @Test
   public void flow() throws Exception {
     // Copy source to sink3 through ODocument stream
-    //#run-flow
-    CompletionStage<List<List<OIncomingMessage<ODocument, NotUsed>>>> f1 = OrientDBSource.create(
-      source,
-      OrientDBSourceSettings.create(oDatabase),
-      null
-    )
-      .map(m -> OIncomingMessage.create(m.oDocument()))
-      .via(OrientDBFlow.create(
-        sink3,
-        OrientDBUpdateSettings.create(oDatabase)
-      ))
-      .runWith(Sink.seq(), materializer);
-    //#run-flow
+    // #run-flow
+    CompletionStage<List<List<OIncomingMessage<ODocument, NotUsed>>>> f1 =
+        OrientDBSource.create(source, OrientDBSourceSettings.create(oDatabase), null)
+            .map(m -> OIncomingMessage.create(m.oDocument()))
+            .via(OrientDBFlow.create(sink3, OrientDBUpdateSettings.create(oDatabase)))
+            .runWith(Sink.seq(), materializer);
+    // #run-flow
 
     f1.toCompletableFuture().get();
 
     // Assert docs in sink3
-    CompletionStage<List<String>> f2 = OrientDBSource.create(
-      sink3,
-      OrientDBSourceSettings.create(oDatabase),
-      null
-    )
-      .map(m -> m.oDocument().<String>field("book_title"))
-      .runWith(Sink.seq(), materializer);
+    CompletionStage<List<String>> f2 =
+        OrientDBSource.create(sink3, OrientDBSourceSettings.create(oDatabase), null)
+            .map(m -> m.oDocument().<String>field("book_title"))
+            .runWith(Sink.seq(), materializer);
 
     List<String> result2 = new ArrayList<>(f2.toCompletableFuture().get(60, TimeUnit.SECONDS));
 
-    List<String> expect = Arrays.asList(
-      "Akka Concurrency",
-      "Akka in Action",
-      "Effective Akka",
-      "Learning Scala",
-      "Programming in Scala",
-      "Scala Puzzlers",
-      "Scala for Spark in Production"
-    );
+    List<String> expect =
+        Arrays.asList(
+            "Akka Concurrency",
+            "Akka in Action",
+            "Effective Akka",
+            "Learning Scala",
+            "Programming in Scala",
+            "Scala Puzzlers",
+            "Scala for Spark in Production");
 
     Collections.sort(result2);
     assertEquals(expect, result2);

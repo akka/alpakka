@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.ftp.examples;
 
-//#traversing
+// #traversing
 import akka.NotUsed;
 import akka.stream.alpakka.ftp.FtpFile;
 import akka.stream.alpakka.ftp.FtpSettings;
@@ -13,8 +13,9 @@ import akka.stream.javadsl.Source;
 
 public class FtpTraversingExample {
 
-    public Source<FtpFile, NotUsed> listFiles(String basePath, FtpSettings settings) throws Exception {
-        return Ftp.ls(basePath, settings);
-    }
+  public Source<FtpFile, NotUsed> listFiles(String basePath, FtpSettings settings)
+      throws Exception {
+    return Ftp.ls(basePath, settings);
+  }
 }
-//#traversing
+// #traversing

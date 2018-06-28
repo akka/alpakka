@@ -34,27 +34,41 @@ public class JsonReaderUsageTest {
     final String secondDoc = "{\"name\":\"test2\"}";
     final String thirdDoc = "{\"name\":\"test3\"}";
 
-    final ByteString doc = ByteString.fromString("{" +
-      "\"size\": 3," +
-      "\"rows\": [" +
-        "{\"id\": 1, \"doc\":" + firstDoc + "}," +
-        "{\"id\": 2, \"doc\":" + secondDoc + "}," +
-        "{\"id\": 3, \"doc\":" + thirdDoc + "}" +
-      "]}");
+    final ByteString doc =
+        ByteString.fromString(
+            "{"
+                + "\"size\": 3,"
+                + "\"rows\": ["
+                + "{\"id\": 1, \"doc\":"
+                + firstDoc
+                + "},"
+                + "{\"id\": 2, \"doc\":"
+                + secondDoc
+                + "},"
+                + "{\"id\": 3, \"doc\":"
+                + thirdDoc
+                + "}"
+                + "]}");
 
     // #usage
-    final CompletionStage<List<ByteString>> resultStage = Source
-      .single(doc)
-      .via(JsonReader.select("$.rows[*].doc"))
-      .runWith(Sink.seq(), materializer);
+    final CompletionStage<List<ByteString>> resultStage =
+        Source.single(doc)
+            .via(JsonReader.select("$.rows[*].doc"))
+            .runWith(Sink.seq(), materializer);
     // #usage
 
-    resultStage.thenAccept((list) -> {
-      assertThat(list, hasItems(
-        ByteString.fromString(firstDoc),
-        ByteString.fromString(secondDoc),
-        ByteString.fromString(thirdDoc)));
-    }).toCompletableFuture().get(5, TimeUnit.SECONDS);
+    resultStage
+        .thenAccept(
+            (list) -> {
+              assertThat(
+                  list,
+                  hasItems(
+                      ByteString.fromString(firstDoc),
+                      ByteString.fromString(secondDoc),
+                      ByteString.fromString(thirdDoc)));
+            })
+        .toCompletableFuture()
+        .get(5, TimeUnit.SECONDS);
   }
 
   @BeforeClass

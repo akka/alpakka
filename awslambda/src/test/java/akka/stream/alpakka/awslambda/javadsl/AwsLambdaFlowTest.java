@@ -32,38 +32,37 @@ import static org.mockito.Mockito.when;
 
 public class AwsLambdaFlowTest {
 
-    private static ActorSystem system;
-    private static ActorMaterializer materializer;
-    private static AWSLambdaAsyncClient awsLambdaClient;
+  private static ActorSystem system;
+  private static ActorMaterializer materializer;
+  private static AWSLambdaAsyncClient awsLambdaClient;
 
+  @BeforeClass
+  public static void setup() {
+    system = ActorSystem.create();
+    materializer = ActorMaterializer.create(system);
+    awsLambdaClient = mock(AWSLambdaAsyncClient.class);
+  }
 
-    @BeforeClass
-    public static void setup() {
-        system = ActorSystem.create();
-        materializer = ActorMaterializer.create(system);
-        awsLambdaClient = mock(AWSLambdaAsyncClient.class);
-    }
+  @AfterClass
+  public static void teardown() {
+    TestKit.shutdownActorSystem(system);
+  }
 
-    @AfterClass
-    public static void teardown() {
-        TestKit.shutdownActorSystem(system);
-    }
-
-    @Test
-    public void lambdaFlow() throws Exception {
-        InvokeRequest invokeRequest = new InvokeRequest();
-        InvokeResult invokeResult = new InvokeResult();
-        when(awsLambdaClient.invokeAsync(eq(invokeRequest), any())).thenAnswer(
-                invocation -> {
-                    AsyncHandler<InvokeRequest, InvokeResult> handler = invocation.getArgument(1);
-                    handler.onSuccess(invokeRequest, invokeResult);
-                    return new CompletableFuture<>();
-                }
-        );
-        Flow<InvokeRequest, InvokeResult, NotUsed> flow = AwsLambdaFlow.create(awsLambdaClient, 1);
-        Source<InvokeRequest, NotUsed> source = Source.single(invokeRequest);
-        final CompletionStage<List<InvokeResult>> stage = source.via(flow).runWith(Sink.seq(), materializer);
-        assertEquals(1, stage.toCompletableFuture().get(3, TimeUnit.SECONDS).size());
-    }
-
+  @Test
+  public void lambdaFlow() throws Exception {
+    InvokeRequest invokeRequest = new InvokeRequest();
+    InvokeResult invokeResult = new InvokeResult();
+    when(awsLambdaClient.invokeAsync(eq(invokeRequest), any()))
+        .thenAnswer(
+            invocation -> {
+              AsyncHandler<InvokeRequest, InvokeResult> handler = invocation.getArgument(1);
+              handler.onSuccess(invokeRequest, invokeResult);
+              return new CompletableFuture<>();
+            });
+    Flow<InvokeRequest, InvokeResult, NotUsed> flow = AwsLambdaFlow.create(awsLambdaClient, 1);
+    Source<InvokeRequest, NotUsed> source = Source.single(invokeRequest);
+    final CompletionStage<List<InvokeResult>> stage =
+        source.via(flow).runWith(Sink.seq(), materializer);
+    assertEquals(1, stage.toCompletableFuture().get(3, TimeUnit.SECONDS).size());
+  }
 }

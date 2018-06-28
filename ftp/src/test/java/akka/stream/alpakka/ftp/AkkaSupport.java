@@ -8,6 +8,7 @@ import akka.actor.ActorSystem;
 import akka.stream.Materializer;
 
 interface AkkaSupport {
-    ActorSystem getSystem();
-    Materializer getMaterializer();
+  ActorSystem getSystem();
+
+  Materializer getMaterializer();
 }
