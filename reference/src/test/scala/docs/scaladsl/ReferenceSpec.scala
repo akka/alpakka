@@ -26,6 +26,8 @@ class ReferenceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
   implicit val sys = ActorSystem("ReferenceSpec")
   implicit val mat = ActorMaterializer()
 
+  final val ClientId = "test-client-id"
+
   "reference connector" should {
 
     /**
@@ -39,7 +41,7 @@ class ReferenceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
       val noAuth: Authentication.None =
         Authentication.None
 
-      val settings: SourceSettings = SourceSettings()
+      val settings: SourceSettings = SourceSettings(ClientId)
 
       settings.withAuthentication(providedAuth)
       settings.withAuthentication(noAuth)
@@ -47,7 +49,7 @@ class ReferenceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
 
     "compile source" in {
       // #source
-      val settings: SourceSettings = SourceSettings()
+      val settings: SourceSettings = SourceSettings(ClientId)
 
       val source: Source[ReferenceReadMessage, Future[Done]] =
         Reference.source(settings)
@@ -66,7 +68,7 @@ class ReferenceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
     }
 
     "run source" in {
-      val source = Reference.source(SourceSettings())
+      val source = Reference.source(SourceSettings(ClientId))
 
       val msg = source.runWith(Sink.head).futureValue
       msg.data should contain theSameElementsAs Seq(ByteString("one"))

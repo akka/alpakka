@@ -18,16 +18,19 @@ import scala.concurrent.duration._
  * to add or remove attributes without introducing binary incompatibilities.
  */
 final class SourceSettings private (
-    val clientId: Option[String] = None,
+    val clientId: String,
+    val traceId: Option[String] = None,
     val authentication: Authentication = Authentication.None,
     val pollInterval: Duration = 5.seconds
 ) {
+
+  def withClientId(clientId: String): SourceSettings = copy(clientId = clientId)
 
   /**
    * Immutable setter which can be used from both Java and Scala, even if the
    * attribute is stored in a Scala specific class.
    */
-  def withClientId(clientId: String): SourceSettings = copy(clientId = Some(clientId))
+  def withTraceId(traceId: String): SourceSettings = copy(traceId = Some(traceId))
 
   /**
    * Separate setters for every attribute enables easy evolution of settings classes by allowing
@@ -54,14 +57,16 @@ final class SourceSettings private (
   /**
    * Private copy method for internal use only.
    */
-  private def copy(clientId: Option[String] = clientId,
+  private def copy(clientId: String = clientId,
+                   traceId: Option[String] = traceId,
                    authentication: Authentication = authentication,
                    pollInterval: Duration = pollInterval) =
-    new SourceSettings(clientId, authentication, pollInterval)
+    new SourceSettings(clientId, traceId, authentication, pollInterval)
 
   override def toString: String =
     s"""SourceSettings(
        |  clientId       = $clientId
+       |  traceId        = $traceId
        |  authentication = $authentication
        |  pollInterval   = $pollInterval
        |)""".stripMargin
@@ -72,14 +77,14 @@ object SourceSettings {
   /**
    * Factory method for Scala.
    */
-  def apply(): SourceSettings = new SourceSettings()
+  def apply(clientId: String): SourceSettings = new SourceSettings(clientId)
 
   /**
    * Java API
    *
    * Factory method for Java.
    */
-  def create(): SourceSettings = SourceSettings()
+  def create(clientId: String): SourceSettings = SourceSettings(clientId)
 }
 
 /**

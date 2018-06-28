@@ -42,6 +42,8 @@ public class ReferenceTest {
   static ActorSystem sys;
   static Materializer mat;
 
+  final static String ClientId = "test-client-id";
+
   /**
    * Called before test suite.
    */
@@ -67,7 +69,7 @@ public class ReferenceTest {
     final Authentication.None noAuth =
       Authentication.createNone();
 
-    final SourceSettings settings = SourceSettings.create();
+    final SourceSettings settings = SourceSettings.create(ClientId);
 
     settings.withAuthentication(providedAuth);
     settings.withAuthentication(noAuth);
@@ -76,7 +78,7 @@ public class ReferenceTest {
   @Test
   public void sourceCompilationTest() {
     // #source
-    final SourceSettings settings = SourceSettings.create();
+    final SourceSettings settings = SourceSettings.create(ClientId);
 
     final Source<ReferenceReadMessage, CompletionStage<Done>> source =
       Reference.source(settings);
@@ -98,7 +100,7 @@ public class ReferenceTest {
   @Test
   public void testSource() throws Exception {
     final Source<ReferenceReadMessage, CompletionStage<Done>> source =
-      Reference.source(SourceSettings.create());
+      Reference.source(SourceSettings.create(ClientId));
 
     final CompletionStage<ReferenceReadMessage> stage = source.runWith(Sink.head(), mat);
     final ReferenceReadMessage msg = stage.toCompletableFuture().get();
