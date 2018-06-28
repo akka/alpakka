@@ -486,9 +486,6 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
                        sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(InitiateMultipartUpload) }
                      ))
 
-    // use the same key for all sub-requests (chunks)
-    val key: SigningKey = signingKey
-
     val headers: S3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(CopyPart) })
 
     requestInfo
@@ -502,7 +499,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       }
       .mapConcat(identity)
       .mapAsync(parallelism) {
-        case (req, info) => Signer.signedRequest(req, key).zip(Future.successful(info))
+        case (req, info) => Signer.signedRequest(req, signingKey).zip(Future.successful(info))
       }
   }
 
