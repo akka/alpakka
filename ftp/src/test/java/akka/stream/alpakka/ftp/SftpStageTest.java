@@ -59,18 +59,19 @@ public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest
     return Sftp.remove(settings());
   }
 
-  public Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(Function<FtpFile, String> destinationPath) throws Exception {
+  public Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(
+      Function<FtpFile, String> destinationPath) throws Exception {
     return Sftp.move(destinationPath, settings());
   }
 
   private SftpSettings settings() throws Exception {
-    //#create-settings
-    final SftpSettings settings = SftpSettings.create(
-            InetAddress.getByName("localhost"))
+    // #create-settings
+    final SftpSettings settings =
+        SftpSettings.create(InetAddress.getByName("localhost"))
             .withPort(getPort())
             .withCredentials(FtpCredentials.createAnonCredentials())
             .withStrictHostKeyChecking(false);
-    //#create-settings
+    // #create-settings
     return settings;
   }
 }

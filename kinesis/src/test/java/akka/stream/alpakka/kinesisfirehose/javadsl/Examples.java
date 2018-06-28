@@ -18,46 +18,47 @@ import java.util.concurrent.TimeUnit;
 
 public class Examples {
 
-    //#init-client
-    final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
+  // #init-client
+  final ActorSystem system = ActorSystem.create();
+  final ActorMaterializer materializer = ActorMaterializer.create(system);
 
-    final com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsync amazonKinesisFirehoseAsync
-            = AmazonKinesisFirehoseAsyncClientBuilder.defaultClient();
-    //#init-client
+  final com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsync
+      amazonKinesisFirehoseAsync = AmazonKinesisFirehoseAsyncClientBuilder.defaultClient();
+  // #init-client
 
-    {
-        //#init-client
+  {
+    // #init-client
 
-        system.registerOnTermination(amazonKinesisFirehoseAsync::shutdown);
-        //#init-client
-    }
+    system.registerOnTermination(amazonKinesisFirehoseAsync::shutdown);
+    // #init-client
+  }
 
-    //#flow-settings
-    final KinesisFirehoseFlowSettings flowSettings = KinesisFirehoseFlowSettings.create()
-            .withParallelism(1)
-            .withMaxBatchSize(500)
-            .withMaxRecordsPerSecond(1_000)
-            .withMaxBytesPerSecond(1_000_000)
-            .withMaxRecordsPerSecond(5)
-            .withBackoffStrategyExponential()
-            .withRetryInitialTimeout(100L, TimeUnit.MILLISECONDS);
+  // #flow-settings
+  final KinesisFirehoseFlowSettings flowSettings =
+      KinesisFirehoseFlowSettings.create()
+          .withParallelism(1)
+          .withMaxBatchSize(500)
+          .withMaxRecordsPerSecond(1_000)
+          .withMaxBytesPerSecond(1_000_000)
+          .withMaxRecordsPerSecond(5)
+          .withBackoffStrategyExponential()
+          .withRetryInitialTimeout(100L, TimeUnit.MILLISECONDS);
 
-    final KinesisFirehoseFlowSettings defaultFlowSettings = KinesisFirehoseFlowSettings.create();
-    //#flow-settings
+  final KinesisFirehoseFlowSettings defaultFlowSettings = KinesisFirehoseFlowSettings.create();
+  // #flow-settings
 
-    //#flow-sink
-    final Flow<Record, PutRecordBatchResponseEntry, NotUsed> flow
-            = KinesisFirehoseFlow.apply("streamName", flowSettings, amazonKinesisFirehoseAsync);
+  // #flow-sink
+  final Flow<Record, PutRecordBatchResponseEntry, NotUsed> flow =
+      KinesisFirehoseFlow.apply("streamName", flowSettings, amazonKinesisFirehoseAsync);
 
-    final Flow<Record, PutRecordBatchResponseEntry, NotUsed> defaultSettingsFlow
-            = KinesisFirehoseFlow.apply("streamName", amazonKinesisFirehoseAsync);
+  final Flow<Record, PutRecordBatchResponseEntry, NotUsed> defaultSettingsFlow =
+      KinesisFirehoseFlow.apply("streamName", amazonKinesisFirehoseAsync);
 
-    final Sink<Record, NotUsed> sink
-            = KinesisFirehoseSink.apply("streamName", flowSettings, amazonKinesisFirehoseAsync);
+  final Sink<Record, NotUsed> sink =
+      KinesisFirehoseSink.apply("streamName", flowSettings, amazonKinesisFirehoseAsync);
 
-    final Sink<Record, NotUsed> defaultSettingsSink
-            = KinesisFirehoseSink.apply("streamName", amazonKinesisFirehoseAsync);
-    //#flow-sink
+  final Sink<Record, NotUsed> defaultSettingsSink =
+      KinesisFirehoseSink.apply("streamName", amazonKinesisFirehoseAsync);
+  // #flow-sink
 
 }

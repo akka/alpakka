@@ -29,58 +29,83 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
 public class ExampleSpec {
-    static ActorSystem system;
-    static ActorMaterializer materializer;
-    static ShardSettings settings;
-    static AmazonKinesisAsync amazonKinesisAsync;
+  static ActorSystem system;
+  static ActorMaterializer materializer;
+  static ShardSettings settings;
+  static AmazonKinesisAsync amazonKinesisAsync;
 
-    public static Pair<ActorSystem, ActorMaterializer> setupMaterializer() {
-        final ActorSystem system = ActorSystem.create();
-        final ActorMaterializer materializer = ActorMaterializer.create(system);
-        return Pair.create(system, materializer);
-    }
+  public static Pair<ActorSystem, ActorMaterializer> setupMaterializer() {
+    final ActorSystem system = ActorSystem.create();
+    final ActorMaterializer materializer = ActorMaterializer.create(system);
+    return Pair.create(system, materializer);
+  }
 
+  public static Pair<ShardSettings, AmazonKinesisAsync> setupClient() {
+    final ShardSettings settings =
+        ShardSettings.create(
+            "my-stream",
+            "shard-id",
+            ShardIteratorType.LATEST,
+            FiniteDuration.create(1L, "second"),
+            500);
+    final AmazonKinesisAsync client = mock(AmazonKinesisAsync.class);
+    return Pair.create(settings, client);
+  }
 
-    public static Pair<ShardSettings, AmazonKinesisAsync> setupClient() {
-        final ShardSettings settings = ShardSettings.create("my-stream", "shard-id", ShardIteratorType.LATEST, FiniteDuration.create(1L, "second"), 500);
-        final AmazonKinesisAsync client = mock(AmazonKinesisAsync.class);
-        return Pair.create(settings, client);
-    }
+  @BeforeClass
+  public static void setup() throws Exception {
+    System.setProperty("aws.accessKeyId", "someKeyId");
+    System.setProperty("aws.secretKey", "someSecretKey");
 
-    @BeforeClass
-    public static void setup() throws Exception {
-        System.setProperty("aws.accessKeyId", "someKeyId");
-        System.setProperty("aws.secretKey", "someSecretKey");
+    final Pair<ActorSystem, ActorMaterializer> sysmat = setupMaterializer();
+    system = sysmat.first();
+    materializer = sysmat.second();
 
-        final Pair<ActorSystem, ActorMaterializer> sysmat = setupMaterializer();
-        system = sysmat.first();
-        materializer = sysmat.second();
+    final Pair<ShardSettings, AmazonKinesisAsync> setclient = setupClient();
+    settings = setclient.first();
+    amazonKinesisAsync = setclient.second();
+  }
 
-        final Pair<ShardSettings, AmazonKinesisAsync> setclient = setupClient();
-        settings = setclient.first();
-        amazonKinesisAsync = setclient.second();
-    }
+  @Ignore("This test appears to trigger a deadlock, see https://github.com/akka/alpakka/issues/390")
+  @Test
+  public void PullRecord() throws Exception {
 
-    @Ignore("This test appears to trigger a deadlock, see https://github.com/akka/alpakka/issues/390")
-    @Test
-    public void PullRecord() throws Exception {
+    when(amazonKinesisAsync.describeStream(anyString()))
+        .thenReturn(
+            new DescribeStreamResult()
+                .withStreamDescription(
+                    new StreamDescription()
+                        .withShards(new Shard().withShardId("id"))
+                        .withHasMoreShards(false)));
+    when(amazonKinesisAsync.getShardIteratorAsync(any(), any()))
+        .thenAnswer(
+            (Answer)
+                invocation -> {
+                  AsyncHandler<GetShardIteratorRequest, GetShardIteratorResult> args =
+                      (AsyncHandler<GetShardIteratorRequest, GetShardIteratorResult>)
+                          invocation.getArguments()[1];
+                  args.onSuccess(new GetShardIteratorRequest(), new GetShardIteratorResult());
+                  return CompletableFuture.completedFuture(new GetShardIteratorResult());
+                });
 
-        when(amazonKinesisAsync.describeStream(anyString())).thenReturn(new DescribeStreamResult().withStreamDescription(new StreamDescription().withShards(new Shard().withShardId("id")).withHasMoreShards(false)));
-        when(amazonKinesisAsync.getShardIteratorAsync(any(), any())).thenAnswer((Answer) invocation -> {
-            AsyncHandler<GetShardIteratorRequest, GetShardIteratorResult> args = (AsyncHandler<GetShardIteratorRequest, GetShardIteratorResult>) invocation.getArguments()[1];
-            args.onSuccess(new GetShardIteratorRequest(), new GetShardIteratorResult());
-            return CompletableFuture.completedFuture(new GetShardIteratorResult());
-        });
+    when(amazonKinesisAsync.getRecordsAsync(any(), any()))
+        .thenAnswer(
+            (Answer)
+                invocation -> {
+                  AsyncHandler<GetRecordsRequest, GetRecordsResult> args =
+                      (AsyncHandler<GetRecordsRequest, GetRecordsResult>)
+                          invocation.getArguments()[1];
+                  args.onSuccess(
+                      new GetRecordsRequest(),
+                      new GetRecordsResult()
+                          .withRecords(new Record().withSequenceNumber("1"))
+                          .withNextShardIterator("iter"));
+                  return CompletableFuture.completedFuture(new GetRecordsResult());
+                });
 
-        when(amazonKinesisAsync.getRecordsAsync(any(), any())).thenAnswer((Answer) invocation -> {
-            AsyncHandler<GetRecordsRequest, GetRecordsResult> args = (AsyncHandler<GetRecordsRequest, GetRecordsResult>) invocation.getArguments()[1];
-            args.onSuccess(new GetRecordsRequest(), new GetRecordsResult().withRecords(new Record().withSequenceNumber("1")).withNextShardIterator("iter"));
-            return CompletableFuture.completedFuture(new GetRecordsResult());
-        });
+    final Source<Record, NotUsed> source = KinesisSource.basic(settings, amazonKinesisAsync);
+    final CompletionStage<Record> record = source.runWith(Sink.head(), materializer);
 
-        final Source<Record, NotUsed> source = KinesisSource.basic(settings, amazonKinesisAsync);
-        final CompletionStage<Record> record = source.runWith(Sink.head(), materializer);
-
-        assertEquals("1", record.toCompletableFuture().get(10, TimeUnit.SECONDS).getSequenceNumber());
-    }
+    assertEquals("1", record.toCompletableFuture().get(10, TimeUnit.SECONDS).getSequenceNumber());
+  }
 }

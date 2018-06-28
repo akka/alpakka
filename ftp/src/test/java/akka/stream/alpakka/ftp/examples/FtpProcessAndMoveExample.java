@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.ftp.examples;
 
-//#processAndMove
+// #processAndMove
 import akka.NotUsed;
 import akka.japi.Pair;
 import akka.stream.alpakka.ftp.FtpFile;
@@ -18,12 +18,15 @@ import java.util.function.Function;
 
 public class FtpProcessAndMoveExample {
 
-    public RunnableGraph<NotUsed> processAndMove(String sourcePath, Function<FtpFile, String> destinationPath, FtpSettings settings) throws Exception {
-        return Ftp
-                .ls(sourcePath, settings)
-                .flatMapConcat(ftpFile -> Ftp.fromPath(ftpFile.path(), settings).map(data -> new Pair<>(data, ftpFile)))
-                .alsoTo(FileIO.toPath(Files.createTempFile("downloaded", "tmp")).contramap(Pair::first))
-                .to(Ftp.move(destinationPath, settings).contramap(Pair::second));
-    }
+  public RunnableGraph<NotUsed> processAndMove(
+      String sourcePath, Function<FtpFile, String> destinationPath, FtpSettings settings)
+      throws Exception {
+    return Ftp.ls(sourcePath, settings)
+        .flatMapConcat(
+            ftpFile ->
+                Ftp.fromPath(ftpFile.path(), settings).map(data -> new Pair<>(data, ftpFile)))
+        .alsoTo(FileIO.toPath(Files.createTempFile("downloaded", "tmp")).contramap(Pair::first))
+        .to(Ftp.move(destinationPath, settings).contramap(Pair::second));
+  }
 }
-//#processAndMove
+// #processAndMove

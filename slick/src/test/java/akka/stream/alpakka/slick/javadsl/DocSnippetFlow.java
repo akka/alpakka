@@ -4,7 +4,7 @@
 
 package example;
 
-//#flow-example
+// #flow-example
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -26,25 +26,32 @@ public class DocSnippetFlow {
 
     final SlickSession session = SlickSession.forConfig("slick-h2");
 
-    final List<User> users = IntStream.range(0, 42).boxed().map((i) -> new User(i, "Name"+i)).collect(Collectors.toList());
+    final List<User> users =
+        IntStream.range(0, 42)
+            .boxed()
+            .map((i) -> new User(i, "Name" + i))
+            .collect(Collectors.toList());
 
     final CompletionStage<Done> done =
-      Source
-        .from(users)
-        .via(
-          Slick.<User>flow(
-            session,
-            // add an optional second argument to specify the parallism factor (int)
-            (user) -> "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES (" + user.id + ", '" + user.name + "')"
-          )
-        )
-        .log("nr-of-updated-rows")
-        .runWith(Sink.ignore(), materializer);
+        Source.from(users)
+            .via(
+                Slick.<User>flow(
+                    session,
+                    // add an optional second argument to specify the parallism factor (int)
+                    (user) ->
+                        "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES ("
+                            + user.id
+                            + ", '"
+                            + user.name
+                            + "')"))
+            .log("nr-of-updated-rows")
+            .runWith(Sink.ignore(), materializer);
 
-    done.whenComplete((value, exception) -> {
-      session.close();
-      system.terminate();
-    });
+    done.whenComplete(
+        (value, exception) -> {
+          session.close();
+          system.terminate();
+        });
   }
 }
-//#flow-example
+// #flow-example

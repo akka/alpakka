@@ -50,40 +50,42 @@ public class MqttFlowTest {
 
   @AfterClass
   public static void teardown() {
-        TestKit.shutdownActorSystem(system);
-    }
+    TestKit.shutdownActorSystem(system);
+  }
 
   @Test
   public void establishBidirectionalConnectionAndSubscribeToATopic() throws Exception {
-    final MqttConnectionSettings connectionSettings = MqttConnectionSettings.create(
-      "tcp://localhost:1883",
-      "test-java-client",
-      new MemoryPersistence()
-    );
+    final MqttConnectionSettings connectionSettings =
+        MqttConnectionSettings.create(
+            "tcp://localhost:1883", "test-java-client", new MemoryPersistence());
 
     @SuppressWarnings("unchecked")
-    final MqttSourceSettings settings = MqttSourceSettings
-      .create(connectionSettings.withClientId("flow-test/flow"))
-      .withSubscriptions(Pair.create("flow-test/topic", MqttQoS.atMostOnce()));
+    final MqttSourceSettings settings =
+        MqttSourceSettings.create(connectionSettings.withClientId("flow-test/flow"))
+            .withSubscriptions(Pair.create("flow-test/topic", MqttQoS.atMostOnce()));
 
-    //#create-flow
+    // #create-flow
     final Flow<MqttMessage, MqttMessage, CompletionStage<Done>> mqttFlow =
-      MqttFlow.create(settings, 8, MqttQoS.atLeastOnce());
-    //#create-flow
+        MqttFlow.create(settings, 8, MqttQoS.atLeastOnce());
+    // #create-flow
 
     final Source<MqttMessage, CompletableFuture<Optional<MqttMessage>>> source = Source.maybe();
 
-    //#run-flow
-    final Pair<Pair<CompletableFuture<Optional<MqttMessage>>, CompletionStage<Done>>, CompletionStage<List<MqttMessage>>> result =
-      source
-        .viaMat(mqttFlow, Keep.both())
-        .toMat(Sink.seq(), Keep.both())
-        .run(materializer);
-    //#run-flow
+    // #run-flow
+    final Pair<
+            Pair<CompletableFuture<Optional<MqttMessage>>, CompletionStage<Done>>,
+            CompletionStage<List<MqttMessage>>>
+        result =
+            source.viaMat(mqttFlow, Keep.both()).toMat(Sink.seq(), Keep.both()).run(materializer);
+    // #run-flow
 
-    result.first().second().thenAccept(a -> {
-      result.first().first().complete(Optional.empty());
-      assertFalse(result.second().toCompletableFuture().isCompletedExceptionally());
-    });
+    result
+        .first()
+        .second()
+        .thenAccept(
+            a -> {
+              result.first().first().complete(Optional.empty());
+              assertFalse(result.second().toCompletableFuture().isCompletedExceptionally());
+            });
   }
 }

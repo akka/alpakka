@@ -30,50 +30,55 @@ import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket.ServerBindi
 
 public class UnixDomainSocketTest {
 
-    private static ActorSystem system;
-    private static Materializer materializer;
+  private static ActorSystem system;
+  private static Materializer materializer;
 
-    private static Pair<ActorSystem, Materializer> setupMaterializer() {
-        final ActorSystem system = ActorSystem.create();
-        final Materializer materializer = ActorMaterializer.create(system);
-        return Pair.create(system, materializer);
-    }
+  private static Pair<ActorSystem, Materializer> setupMaterializer() {
+    final ActorSystem system = ActorSystem.create();
+    final Materializer materializer = ActorMaterializer.create(system);
+    return Pair.create(system, materializer);
+  }
 
-    @BeforeClass
-    public static void setup() throws Exception {
-        final Pair<ActorSystem, Materializer> sysmat = setupMaterializer();
-        system = sysmat.first();
-        materializer = sysmat.second();
-    }
+  @BeforeClass
+  public static void setup() throws Exception {
+    final Pair<ActorSystem, Materializer> sysmat = setupMaterializer();
+    system = sysmat.first();
+    materializer = sysmat.second();
+  }
 
-    @AfterClass
-    public static void teardown() {
-        TestKit.shutdownActorSystem(system);
-    }
+  @AfterClass
+  public static void teardown() {
+    TestKit.shutdownActorSystem(system);
+  }
 
-    @Test
-    public void aUnixDomainSocketShouldReceiveWhatIsSent() throws Exception {
-        File file = Files.createTempFile("aUnixDomainSocketShouldReceiveWhatIsSent1", ".sock").toFile();
-        Assert.assertTrue(file.delete());
-        file.deleteOnExit();
+  @Test
+  public void aUnixDomainSocketShouldReceiveWhatIsSent() throws Exception {
+    File file = Files.createTempFile("aUnixDomainSocketShouldReceiveWhatIsSent1", ".sock").toFile();
+    Assert.assertTrue(file.delete());
+    file.deleteOnExit();
 
-        //#binding
-        final Source<IncomingConnection, CompletionStage<ServerBinding>> connections =
-                UnixDomainSocket.get(system).bind(file);
-        //#binding
+    // #binding
+    final Source<IncomingConnection, CompletionStage<ServerBinding>> connections =
+        UnixDomainSocket.get(system).bind(file);
+    // #binding
 
-        //#outgoingConnection
-        connections.runForeach(connection -> {
-            System.out.println("New connection from: " + connection.remoteAddress());
+    // #outgoingConnection
+    connections.runForeach(
+        connection -> {
+          System.out.println("New connection from: " + connection.remoteAddress());
 
-            final Flow<ByteString, ByteString, NotUsed> echo = Flow.of(ByteString.class)
-                    .via(Framing.delimiter(ByteString.fromString("\n"), 256, FramingTruncation.DISALLOW))
-                    .map(ByteString::utf8String)
-                    .map(s -> s + "!!!\n")
-                    .map(ByteString::fromString);
+          final Flow<ByteString, ByteString, NotUsed> echo =
+              Flow.of(ByteString.class)
+                  .via(
+                      Framing.delimiter(
+                          ByteString.fromString("\n"), 256, FramingTruncation.DISALLOW))
+                  .map(ByteString::utf8String)
+                  .map(s -> s + "!!!\n")
+                  .map(ByteString::fromString);
 
-            connection.handleWith(echo, materializer);
-        }, materializer);
-        //#outgoingConnection
-    }
+          connection.handleWith(echo, materializer);
+        },
+        materializer);
+    // #outgoingConnection
+  }
 }

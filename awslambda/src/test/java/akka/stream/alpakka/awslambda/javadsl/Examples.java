@@ -24,22 +24,24 @@ import java.util.concurrent.Executors;
 
 public class Examples {
 
-    //#init-mat
-    ActorSystem system = ActorSystem.create();
-    ActorMaterializer materializer = ActorMaterializer.create(system);
-    //#init-mat
+  // #init-mat
+  ActorSystem system = ActorSystem.create();
+  ActorMaterializer materializer = ActorMaterializer.create(system);
+  // #init-mat
 
-    //#init-client
-    BasicAWSCredentials credentials = new BasicAWSCredentials("x", "x");
-    AWSLambdaAsync awsLambdaClient = AWSLambdaAsyncClientBuilder.standard()
-            .withCredentials(new AWSStaticCredentialsProvider(credentials)).build();
-    //#init-client
+  // #init-client
+  BasicAWSCredentials credentials = new BasicAWSCredentials("x", "x");
+  AWSLambdaAsync awsLambdaClient =
+      AWSLambdaAsyncClientBuilder.standard()
+          .withCredentials(new AWSStaticCredentialsProvider(credentials))
+          .build();
+  // #init-client
 
-    //#run
-    InvokeRequest request = new InvokeRequest()
-            .withFunctionName("lambda-function-name")
-            .withPayload("test-payload");
-    Flow<InvokeRequest, InvokeResult, NotUsed> flow = AwsLambdaFlow.create(awsLambdaClient, 1);
-    final CompletionStage<List<InvokeResult>> stage = Source.single(request).via(flow).runWith(Sink.seq(), materializer);
-    //#run
+  // #run
+  InvokeRequest request =
+      new InvokeRequest().withFunctionName("lambda-function-name").withPayload("test-payload");
+  Flow<InvokeRequest, InvokeResult, NotUsed> flow = AwsLambdaFlow.create(awsLambdaClient, 1);
+  final CompletionStage<List<InvokeResult>> stage =
+      Source.single(request).via(flow).runWith(Sink.seq(), materializer);
+  // #run
 }

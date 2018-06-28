@@ -47,25 +47,25 @@ public class DirectoryChangesSourceTest {
     system = ActorSystem.create();
     materializer = ActorMaterializer.create(system);
 
-    fs = Jimfs.newFileSystem(
-      Configuration.forCurrentPlatform()
-        .toBuilder()
-        .setWatchServiceConfiguration(WatchServiceConfiguration.polling(10, TimeUnit.MILLISECONDS))
-        .build()
-    );
+    fs =
+        Jimfs.newFileSystem(
+            Configuration.forCurrentPlatform()
+                .toBuilder()
+                .setWatchServiceConfiguration(
+                    WatchServiceConfiguration.polling(10, TimeUnit.MILLISECONDS))
+                .build());
 
     testDir = fs.getPath("testdir");
 
     Files.createDirectory(testDir);
   }
 
-
   @Test
   public void sourceShouldEmitOnDirectoryChanges() throws Exception {
     final TestSubscriber.Probe<Pair<Path, DirectoryChange>> probe = TestSubscriber.probe(system);
 
     DirectoryChangesSource.create(testDir, FiniteDuration.create(250, TimeUnit.MILLISECONDS), 200)
-      .runWith(Sink.fromSubscriber(probe), materializer);
+        .runWith(Sink.fromSubscriber(probe), materializer);
 
     probe.request(1);
 
@@ -90,19 +90,16 @@ public class DirectoryChangesSourceTest {
     probe.cancel();
   }
 
-
   @Test
   public void emitMultipleChanges() throws Exception {
     final TestSubscriber.Probe<Pair<Path, DirectoryChange>> probe =
-      TestSubscriber.<Pair<Path, DirectoryChange>>probe(system);
+        TestSubscriber.<Pair<Path, DirectoryChange>>probe(system);
 
     final int numberOfChanges = 50;
 
     DirectoryChangesSource.create(
-      testDir,
-      FiniteDuration.create(250, TimeUnit.MILLISECONDS),
-      numberOfChanges * 2
-    ).runWith(Sink.fromSubscriber(probe), materializer);
+            testDir, FiniteDuration.create(250, TimeUnit.MILLISECONDS), numberOfChanges * 2)
+        .runWith(Sink.fromSubscriber(probe), materializer);
 
     probe.request(numberOfChanges);
 
@@ -136,7 +133,8 @@ public class DirectoryChangesSourceTest {
   }
 
   public static void main(String[] args) {
-    if(args.length != 1) throw new IllegalArgumentException("Usage: DirectoryChangesSourceTest [path]");
+    if (args.length != 1)
+      throw new IllegalArgumentException("Usage: DirectoryChangesSourceTest [path]");
     final String path = args[0];
 
     final ActorSystem system = ActorSystem.create();
@@ -147,15 +145,15 @@ public class DirectoryChangesSourceTest {
     final FiniteDuration pollingInterval = FiniteDuration.create(1, TimeUnit.SECONDS);
     final int maxBufferSize = 1000;
     final Source<Pair<Path, DirectoryChange>, NotUsed> changes =
-      DirectoryChangesSource.create(fs.getPath(path), pollingInterval, maxBufferSize);
+        DirectoryChangesSource.create(fs.getPath(path), pollingInterval, maxBufferSize);
 
-
-    changes.runForeach((Pair<Path, DirectoryChange> pair) -> {
-      final Path changedPath = pair.first();
-      final DirectoryChange change = pair.second();
-      System.out.println("Path: " + changedPath + ", Change: " + change);
-    }, materializer);
+    changes.runForeach(
+        (Pair<Path, DirectoryChange> pair) -> {
+          final Path changedPath = pair.first();
+          final DirectoryChange change = pair.second();
+          System.out.println("Path: " + changedPath + ", Change: " + change);
+        },
+        materializer);
     // #minimal-sample
   }
-
 }

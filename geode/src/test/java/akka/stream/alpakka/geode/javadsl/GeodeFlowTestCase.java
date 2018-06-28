@@ -15,32 +15,25 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
-
-
 public class GeodeFlowTestCase extends GeodeBaseTestCase {
 
+  @Test
+  public void flow() throws ExecutionException, InterruptedException {
 
-    @Test
-    public void flow() throws ExecutionException, InterruptedException {
+    ReactiveGeode reactiveGeode = createReactiveGeode();
 
-        ReactiveGeode reactiveGeode = createReactiveGeode();
+    Source<Person, NotUsed> source = buildPersonsSource(110, 111, 113, 114, 115);
 
-        Source<Person, NotUsed> source = buildPersonsSource(110, 111, 113, 114, 115);
+    // #flow
+    Flow<Person, Person, NotUsed> flow =
+        reactiveGeode.flow(personRegionSettings, new PersonPdxSerializer());
 
-        //#flow
-        Flow<Person, Person, NotUsed> flow = reactiveGeode.flow(personRegionSettings, new PersonPdxSerializer());
+    CompletionStage<List<Person>> run =
+        source.via(flow).toMat(Sink.seq(), Keep.right()).run(materializer);
+    // #flow
 
-        CompletionStage<List<Person>> run = source
-                .via(flow)
-                .toMat(Sink.seq(), Keep.right())
-                .run(materializer);
-        //#flow
+    run.toCompletableFuture().get();
 
-        run.toCompletableFuture().get();
-
-        reactiveGeode.close();
-
-    }
-
-
+    reactiveGeode.close();
+  }
 }

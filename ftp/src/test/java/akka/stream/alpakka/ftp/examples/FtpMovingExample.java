@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.ftp.examples;
 
-//#moving
+// #moving
 import akka.stream.IOResult;
 import akka.stream.alpakka.ftp.FtpFile;
 import akka.stream.alpakka.ftp.FtpSettings;
@@ -15,8 +15,9 @@ import java.util.function.Function;
 
 public class FtpMovingExample {
 
-    public Sink<FtpFile, CompletionStage<IOResult>> move(Function<FtpFile, String> destinationPath, FtpSettings settings) throws Exception {
-        return Ftp.move(destinationPath, settings);
-    }
+  public Sink<FtpFile, CompletionStage<IOResult>> move(
+      Function<FtpFile, String> destinationPath, FtpSettings settings) throws Exception {
+    return Ftp.move(destinationPath, settings);
+  }
 }
-//#moving
+// #moving

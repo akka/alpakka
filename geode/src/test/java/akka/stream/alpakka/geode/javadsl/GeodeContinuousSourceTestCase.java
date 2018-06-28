@@ -19,37 +19,41 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
-
 public class GeodeContinuousSourceTestCase extends GeodeBaseTestCase {
 
-    @Test
-    public void continuousSourceTest() throws ExecutionException, InterruptedException {
+  @Test
+  public void continuousSourceTest() throws ExecutionException, InterruptedException {
 
-        ReactiveGeodeWithPoolSubscription reactiveGeode = createReactiveGeodeWithPoolSubscription();
+    ReactiveGeodeWithPoolSubscription reactiveGeode = createReactiveGeodeWithPoolSubscription();
 
-        //#continuousQuery
-        CompletionStage<Done> fut = reactiveGeode.continuousQuery("test", "select * from /persons", new PersonPdxSerializer())
-                .runForeach(p -> {
-                    LOGGER.debug(p.toString());
-                    if (p.getId() == 120) {
-                        reactiveGeode.closeContinuousQuery("test");
-                    }
-                }, materializer);
-        //#continuousQuery
+    // #continuousQuery
+    CompletionStage<Done> fut =
+        reactiveGeode
+            .continuousQuery("test", "select * from /persons", new PersonPdxSerializer())
+            .runForeach(
+                p -> {
+                  LOGGER.debug(p.toString());
+                  if (p.getId() == 120) {
+                    reactiveGeode.closeContinuousQuery("test");
+                  }
+                },
+                materializer);
+    // #continuousQuery
 
-        Flow<Person, Person, NotUsed> flow = reactiveGeode.flow(personRegionSettings, new PersonPdxSerializer());
+    Flow<Person, Person, NotUsed> flow =
+        reactiveGeode.flow(personRegionSettings, new PersonPdxSerializer());
 
-        Pair<NotUsed, CompletionStage<List<Person>>> run = Source.from(Arrays.asList(120)).map((i)
-                -> new Person(i, String.format("Java flow %d", i), new Date())).via(flow).toMat(Sink.seq(), Keep.both()).run(materializer);
+    Pair<NotUsed, CompletionStage<List<Person>>> run =
+        Source.from(Arrays.asList(120))
+            .map((i) -> new Person(i, String.format("Java flow %d", i), new Date()))
+            .via(flow)
+            .toMat(Sink.seq(), Keep.both())
+            .run(materializer);
 
-        run.second().toCompletableFuture().get();
+    run.second().toCompletableFuture().get();
 
+    fut.toCompletableFuture().get();
 
-        fut.toCompletableFuture().get();
-
-        reactiveGeode.close();
-
-    }
-
-
+    reactiveGeode.close();
+  }
 }
