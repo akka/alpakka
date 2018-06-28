@@ -25,59 +25,58 @@ import static scala.compat.java8.JFunction.func;
 
 public class GeodeBaseTestCase {
 
+  protected static final Logger LOGGER = LoggerFactory.getLogger(GeodeFlowTestCase.class);
 
-    protected static final Logger LOGGER = LoggerFactory.getLogger(GeodeFlowTestCase.class);
+  private static ActorSystem system;
+  protected static Materializer materializer;
+  private String geodeDockerHostname = "localhost";
 
-    private static ActorSystem system;
-    protected static Materializer materializer;
-    private String geodeDockerHostname="localhost";
+  {
+    String geodeItHostname = System.getenv("IT_GEODE_HOSTNAME");
+    if (geodeItHostname != null) geodeDockerHostname = geodeItHostname;
+  }
 
-    {
-        String geodeItHostname=System.getenv("IT_GEODE_HOSTNAME");
-        if(geodeItHostname!=null)
-            geodeDockerHostname=geodeItHostname;
-    }
+  // #region
+  protected RegionSettings<Integer, Person> personRegionSettings =
+      new RegionSettings<>("persons", func(Person::getId));
+  protected RegionSettings<Integer, Animal> animalRegionSettings =
+      new RegionSettings<>("animals", func(Animal::getId));
+  // #region
 
-    //#region
-    protected RegionSettings<Integer, Person> personRegionSettings = new RegionSettings<>("persons", func(Person::getId));
-    protected RegionSettings<Integer, Animal> animalRegionSettings = new RegionSettings<>("animals", func(Animal::getId));
-    //#region
+  @BeforeClass
+  public static void setup() {
+    system = ActorSystem.create();
+    materializer = ActorMaterializer.create(system);
+  }
 
-    @BeforeClass
-    public static void setup() {
-        system = ActorSystem.create();
-        materializer = ActorMaterializer.create(system);
+  static Source<Person, NotUsed> buildPersonsSource(Integer... ids) {
+    return Source.from(Arrays.asList(ids))
+        .map((i) -> new Person(i, String.format("Person Java %d", i), new Date()));
+  }
 
-    }
+  static Source<Animal, NotUsed> buildAnimalsSource(Integer... ids) {
+    return Source.from(Arrays.asList(ids))
+        .map((i) -> new Animal(i, String.format("Animal Java %d", i), 1));
+  }
 
-    static Source<Person, NotUsed> buildPersonsSource(Integer... ids) {
-        return Source.from(Arrays.asList(ids))
-                .map((i) -> new Person(i, String.format("Person Java %d", i), new Date()));
-    }
+  protected ReactiveGeode createReactiveGeode() {
+    // #connection
+    GeodeSettings settings =
+        GeodeSettings.create(geodeDockerHostname, 10334)
+            .withConfiguration(func(c -> c.setPoolIdleTimeout(10)));
+    return new ReactiveGeode(settings);
+    // #connection
+  }
 
-    static Source<Animal, NotUsed> buildAnimalsSource(Integer... ids) {
-        return Source.from(Arrays.asList(ids))
-                .map((i) -> new Animal(i, String.format("Animal Java %d", i), 1));
-    }
+  protected ReactiveGeodeWithPoolSubscription createReactiveGeodeWithPoolSubscription() {
+    GeodeSettings settings = GeodeSettings.create(geodeDockerHostname, 10334);
+    // #connection-with-pool
+    return new ReactiveGeodeWithPoolSubscription(settings);
+    // #connection-with-pool
+  }
 
-    protected ReactiveGeode createReactiveGeode() {
-        //#connection
-        GeodeSettings settings = GeodeSettings.create(geodeDockerHostname, 10334)
-                .withConfiguration(func(c->c.setPoolIdleTimeout(10)));
-        return new ReactiveGeode(settings);
-        //#connection
-    }
-
-    protected ReactiveGeodeWithPoolSubscription createReactiveGeodeWithPoolSubscription() {
-        GeodeSettings settings = GeodeSettings.create(geodeDockerHostname, 10334);
-        //#connection-with-pool
-        return new ReactiveGeodeWithPoolSubscription(settings);
-        //#connection-with-pool
-    }
-
-    @AfterClass
-    public static void teardown() {
-        TestKit.shutdownActorSystem(system);
-    }
-
+  @AfterClass
+  public static void teardown() {
+    TestKit.shutdownActorSystem(system);
+  }
 }

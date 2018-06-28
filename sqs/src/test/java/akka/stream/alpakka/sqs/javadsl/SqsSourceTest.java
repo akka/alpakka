@@ -29,69 +29,67 @@ import static org.junit.Assert.assertEquals;
 
 public class SqsSourceTest extends BaseSqsTest {
 
-    private final SqsSourceSettings sqsSourceSettings =
-            SqsSourceSettings.create(20, 100, 10);
+  private final SqsSourceSettings sqsSourceSettings = SqsSourceSettings.create(20, 100, 10);
 
-    @Test
-    public void streamFromQueue() throws Exception {
+  @Test
+  public void streamFromQueue() throws Exception {
 
-        final String queueUrl = randomQueueUrl();
-        sqsClient.sendMessage(queueUrl, "alpakka");
+    final String queueUrl = randomQueueUrl();
+    sqsClient.sendMessage(queueUrl, "alpakka");
 
-        //#run
-        final CompletionStage<String> cs = SqsSource.create(queueUrl, sqsSourceSettings, sqsClient)
-                .map(Message::getBody)
-                .runWith(Sink.head(), materializer);
-        //#run
+    // #run
+    final CompletionStage<String> cs =
+        SqsSource.create(queueUrl, sqsSourceSettings, sqsClient)
+            .map(Message::getBody)
+            .runWith(Sink.head(), materializer);
+    // #run
 
-        assertEquals("alpakka", cs.toCompletableFuture().get(10, TimeUnit.SECONDS));
+    assertEquals("alpakka", cs.toCompletableFuture().get(10, TimeUnit.SECONDS));
+  }
 
-    }
+  @Test
+  public void settings() throws Exception {
+    // #SqsSourceSettings
+    SqsSourceSettings settings =
+        SqsSourceSettings.Defaults()
+            .withWaitTimeSeconds(20)
+            .withMaxBufferSize(100)
+            .withMaxBatchSize(10)
+            .withAttributes(Attribute.senderId(), Attribute.sentTimestamp())
+            .withMessageAttributes(MessageAttributeName.create("bar.*"))
+            .withCloseOnEmptyReceive();
+    // #SqsSourceSettings
+    assertEquals(100, settings.maxBufferSize());
+  }
 
-    @Test
-    public void settings() throws Exception {
-        //#SqsSourceSettings
-        SqsSourceSettings settings =
-                SqsSourceSettings.Defaults()
-                        .withWaitTimeSeconds(20)
-                        .withMaxBufferSize(100)
-                        .withMaxBatchSize(10)
-                        .withAttributes(Attribute.senderId(), Attribute.sentTimestamp())
-                        .withMessageAttributes(MessageAttributeName.create("bar.*"))
-                        .withCloseOnEmptyReceive();
-        //#SqsSourceSettings
-        assertEquals(100, settings.maxBufferSize());
-    }
+  @Test
+  public void streamFromQueueWithCustomClient() throws Exception {
 
-    @Test
-    public void streamFromQueueWithCustomClient() throws Exception {
+    final String queueUrl = randomQueueUrl();
 
-        final String queueUrl = randomQueueUrl();
+    // #init-custom-client
+    AWSCredentialsProvider credentialsProvider =
+        new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"));
 
-        //#init-custom-client
-        AWSCredentialsProvider credentialsProvider =
-                new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"));
+    AmazonSQSAsync customSqsClient =
+        AmazonSQSAsyncClientBuilder.standard()
+            .withCredentials(credentialsProvider)
+            .withExecutorFactory(() -> Executors.newFixedThreadPool(10))
+            .withEndpointConfiguration(
+                new AwsClientBuilder.EndpointConfiguration(sqsEndpoint, "eu-central-1"))
+            .build();
+    // #init-custom-client
 
-        AmazonSQSAsync customSqsClient =
-                AmazonSQSAsyncClientBuilder
-                        .standard()
-                        .withCredentials(credentialsProvider)
-                        .withExecutorFactory(() -> Executors.newFixedThreadPool(10))
-                        .withEndpointConfiguration(
-                                new AwsClientBuilder.EndpointConfiguration(sqsEndpoint, "eu-central-1"))
-                        .build();
-        //#init-custom-client
+    sqsClient.sendMessage(queueUrl, "alpakka");
 
-        sqsClient.sendMessage(queueUrl, "alpakka");
+    // #run
+    final CompletionStage<String> cs =
+        SqsSource.create(queueUrl, sqsSourceSettings, customSqsClient)
+            .map(Message::getBody)
+            .take(1)
+            .runWith(Sink.head(), materializer);
+    // #run
 
-        //#run
-        final CompletionStage<String> cs = SqsSource.create(queueUrl, sqsSourceSettings, customSqsClient)
-                .map(Message::getBody)
-                .take(1)
-                .runWith(Sink.head(), materializer);
-        //#run
-
-        assertEquals("alpakka", cs.toCompletableFuture().get(10, TimeUnit.SECONDS));
-
-    }
+    assertEquals("alpakka", cs.toCompletableFuture().get(10, TimeUnit.SECONDS));
+  }
 }

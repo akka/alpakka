@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.slick.javadsl;
 
-//#flowWithPassThrough-example
+// #flowWithPassThrough-example
 
 import akka.Done;
 import akka.actor.ActorSystem;
@@ -53,39 +53,57 @@ public class DocSnippetFlowWithPassThrough {
     }
   }
 
-
   public static void main(String[] args) throws Exception {
     final ActorSystem system = ActorSystem.create();
     final Materializer materializer = ActorMaterializer.create(system);
 
     final SlickSession session = SlickSession.forConfig("slick-h2");
 
-    final List<User> users = IntStream.range(0, 42).boxed().map((i) -> new User(i, "Name"+i)).collect(Collectors.toList());
+    final List<User> users =
+        IntStream.range(0, 42)
+            .boxed()
+            .map((i) -> new User(i, "Name" + i))
+            .collect(Collectors.toList());
 
-    List<KafkaMessage<User>> messagesFromKafka = users.stream()
+    List<KafkaMessage<User>> messagesFromKafka =
+        users
+            .stream()
             .map(user -> new KafkaMessage<>(user, new CommittableOffset(users.indexOf(user))))
             .collect(Collectors.toList());
 
     final CompletionStage<Done> done =
-      Source
-        .from(messagesFromKafka)
-        .via(
-          Slick.flowWithPassThrough(
-            session,
-            system.dispatcher(),
-            // add an optional second argument to specify the parallism factor (int)
-            (kafkaMessage) -> "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES (" + kafkaMessage.msg.id + ", '" + kafkaMessage.msg.name + "')",
-            (kafkaMessage, insertCount) -> kafkaMessage.map(user -> new Pair(user, insertCount)) // allows to keep the kafka message offset so it can be committed in a next stage
-          )
-        )
-        .log("nr-of-updated-rows")
-        .mapAsync(1, kafkaMessage -> kafkaMessage.offset.commit()) // in correct order, commit Kafka message
-        .runWith(Sink.ignore(), materializer);
+        Source.from(messagesFromKafka)
+            .via(
+                Slick.flowWithPassThrough(
+                    session,
+                    system.dispatcher(),
+                    // add an optional second argument to specify the parallism factor (int)
+                    (kafkaMessage) ->
+                        "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES ("
+                            + kafkaMessage.msg.id
+                            + ", '"
+                            + kafkaMessage.msg.name
+                            + "')",
+                    (kafkaMessage, insertCount) ->
+                        kafkaMessage.map(
+                            user ->
+                                new Pair(
+                                    user,
+                                    insertCount)) // allows to keep the kafka message offset so it
+                                                  // can be committed in a next stage
+                    ))
+            .log("nr-of-updated-rows")
+            .mapAsync(
+                1,
+                kafkaMessage ->
+                    kafkaMessage.offset.commit()) // in correct order, commit Kafka message
+            .runWith(Sink.ignore(), materializer);
 
-    done.whenComplete((value, exception) -> {
-      session.close();
-      system.terminate();
-    });
+    done.whenComplete(
+        (value, exception) -> {
+          session.close();
+          system.terminate();
+        });
   }
 }
-//#flowWithPassThrough-example
+// #flowWithPassThrough-example

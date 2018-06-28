@@ -23,61 +23,65 @@ import com.amazonaws.regions.AwsRegionProvider;
 
 public class JavaExamplesSnippets {
 
-    // Java examples documentation snippet only
+  // Java examples documentation snippet only
 
-    private static ActorSystem system = ActorSystem.create();
-    private static Materializer materializer = ActorMaterializer.create(system);
+  private static ActorSystem system = ActorSystem.create();
+  private static Materializer materializer = ActorMaterializer.create(system);
 
-    private final AWSCredentialsProvider credentials = new AWSStaticCredentialsProvider(
-            new BasicAWSCredentials("my-AWS-access-key-ID", "my-AWS-password"));
+  private final AWSCredentialsProvider credentials =
+      new AWSStaticCredentialsProvider(
+          new BasicAWSCredentials("my-AWS-access-key-ID", "my-AWS-password"));
 
-    private AwsRegionProvider regionProvider(String region) {
-        return new AwsRegionProvider() {
-            @Override
-            public String getRegion() throws SdkClientException {
-                return region;
-            }
-        };
-    }
+  private AwsRegionProvider regionProvider(String region) {
+    return new AwsRegionProvider() {
+      @Override
+      public String getRegion() throws SdkClientException {
+        return region;
+      }
+    };
+  }
 
-    private final S3Settings settings = new S3Settings(
-            MemoryBufferType.getInstance(),
-            null,
-            credentials,
-            regionProvider("us-east-1"),
-            false,
-            scala.Option.empty(),
-            ListBucketVersion2.getInstance()
-    );
+  private final S3Settings settings =
+      new S3Settings(
+          MemoryBufferType.getInstance(),
+          null,
+          credentials,
+          regionProvider("us-east-1"),
+          false,
+          scala.Option.empty(),
+          ListBucketVersion2.getInstance());
 
-    private final S3Client client = new S3Client(settings, system, materializer);
+  private final S3Client client = new S3Client(settings, system, materializer);
 
-    public void aes256Encryption(String sourceBucket, String sourceKey,
-                                 String targetBucket, String targetKey) {
-        // #java-example
-        // setting the encryption to AES256
-        CompletionStage<MultipartUploadResult> result = client.multipartCopy(
-                sourceBucket, sourceKey,
-                targetBucket, targetKey,
-                S3Headers.empty(),
-                ServerSideEncryption.AES256$.MODULE$
+  public void aes256Encryption(
+      String sourceBucket, String sourceKey, String targetBucket, String targetKey) {
+    // #java-example
+    // setting the encryption to AES256
+    CompletionStage<MultipartUploadResult> result =
+        client.multipartCopy(
+            sourceBucket,
+            sourceKey,
+            targetBucket,
+            targetKey,
+            S3Headers.empty(),
+            ServerSideEncryption.AES256$.MODULE$);
+    // #java-example
+  }
+
+  public void cannedAcl(
+      String sourceBucket, String sourceKey, String targetBucket, String targetKey) {
+    // #java-example
+
+    // using canned ACL
+    CompletionStage<MultipartUploadResult> result =
+        client.multipartCopy(
+            sourceBucket,
+            sourceKey,
+            targetBucket,
+            targetKey,
+            S3Headers.apply(CannedAcl.Private$.MODULE$),
+            null // encryption
             );
-        // #java-example
-    }
-
-    public void cannedAcl(String sourceBucket, String sourceKey,
-                          String targetBucket, String targetKey) {
-        // #java-example
-
-        // using canned ACL
-        CompletionStage<MultipartUploadResult> result = client.multipartCopy(
-                sourceBucket, sourceKey,
-                targetBucket, targetKey,
-                S3Headers.apply(CannedAcl.Private$.MODULE$),
-                null // encryption
-            );
-        // #java-example
-    }
-
-
+    // #java-example
+  }
 }

@@ -20,7 +20,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-
 public class EventSourceTest {
 
   @SuppressWarnings("ConstantConditions")
@@ -33,7 +32,7 @@ public class EventSourceTest {
 
     int nrOfSamples = 10;
 
-    //#event-source
+    // #event-source
 
     final Http http = Http.get(system);
     Function<HttpRequest, CompletionStage<HttpResponse>> send =
@@ -43,9 +42,9 @@ public class EventSourceTest {
     final Optional<String> lastEventId = Optional.of("2");
     Source<ServerSentEvent, NotUsed> eventSource =
         EventSource.create(targetUri, send, lastEventId, materializer);
-    //#event-source
+    // #event-source
 
-    //#consume-events
+    // #consume-events
 
     int elements = 1;
     FiniteDuration per = FiniteDuration.create(500, TimeUnit.MILLISECONDS);
@@ -55,6 +54,6 @@ public class EventSourceTest {
         .throttle(elements, per, maximumBurst, ThrottleMode.shaping())
         .take(nrOfSamples)
         .runWith(Sink.seq(), materializer);
-    //#consume-events
+    // #consume-events
   }
 }

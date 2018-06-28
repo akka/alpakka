@@ -42,25 +42,28 @@ public class RawKeySftpSourceTest extends SftpSupportImpl implements CommonFtpSt
   }
 
   public Sink<FtpFile, CompletionStage<IOResult>> getRemoveSink() throws Exception {
-     return Sftp.remove(settings());
+    return Sftp.remove(settings());
   }
 
-  public Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(Function<FtpFile, String> destinationPath) throws Exception {
+  public Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(
+      Function<FtpFile, String> destinationPath) throws Exception {
     return Sftp.move(destinationPath, settings());
   }
 
   private SftpSettings settings() throws Exception {
-    //#create-settings
-    final SftpSettings settings = SftpSettings.create(InetAddress.getByName("localhost"))
+    // #create-settings
+    final SftpSettings settings =
+        SftpSettings.create(InetAddress.getByName("localhost"))
             .withPort(getPort())
-            .withCredentials(new FtpCredentials.NonAnonFtpCredentials("different user and password", "will fail password auth"))
+            .withCredentials(
+                new FtpCredentials.NonAnonFtpCredentials(
+                    "different user and password", "will fail password auth"))
             .withStrictHostKeyChecking(false) // strictHostKeyChecking
             .withSftpIdentity(
-                    SftpIdentity.createRawSftpIdentity(
-                            Files.readAllBytes(Paths.get(getClientPrivateKeyFile().getPath())),
-                            CLIENT_PRIVATE_KEY_PASSPHRASE)
-    );
-    //#create-settings
+                SftpIdentity.createRawSftpIdentity(
+                    Files.readAllBytes(Paths.get(getClientPrivateKeyFile().getPath())),
+                    CLIENT_PRIVATE_KEY_PASSPHRASE));
+    // #create-settings
     return settings;
   }
 }

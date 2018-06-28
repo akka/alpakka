@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.ftp.examples;
 
-//#removing
+// #removing
 import akka.stream.IOResult;
 import akka.stream.alpakka.ftp.FtpFile;
 import akka.stream.alpakka.ftp.FtpSettings;
@@ -14,8 +14,8 @@ import java.util.concurrent.CompletionStage;
 
 public class FtpRemovingExample {
 
-    public Sink<FtpFile, CompletionStage<IOResult>> remove(FtpSettings settings) throws Exception {
-        return Ftp.remove(settings);
-    }
+  public Sink<FtpFile, CompletionStage<IOResult>> remove(FtpSettings settings) throws Exception {
+    return Ftp.remove(settings);
+  }
 }
-//#removing
+// #removing

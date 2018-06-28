@@ -5,31 +5,30 @@
 package akka.stream.alpakka.geode.javadsl;
 
 public class Animal {
-    final private int id;
-    final private String name;
-    final private int owner;
+  private final int id;
+  private final String name;
+  private final int owner;
 
+  public Animal(int id, String name, int owner) {
+    this.id = id;
+    this.name = name;
+    this.owner = owner;
+  }
 
-    public Animal(int id, String name, int owner) {
-        this.id = id;
-        this.name = name;
-        this.owner = owner;
-    }
+  public int getId() {
+    return id;
+  }
 
-    public int getId() {
-        return id;
-    }
+  public String getName() {
+    return name;
+  }
 
-    public String getName() {
-        return name;
-    }
+  public int getOwner() {
+    return owner;
+  }
 
-    public int getOwner() {
-        return owner;
-    }
-
-    @Override
-    public String toString() {
-        return getId() +": " + getName() + " owner: " + getOwner();
-    }
+  @Override
+  public String toString() {
+    return getId() + ": " + getName() + " owner: " + getOwner();
+  }
 }
