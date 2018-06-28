@@ -17,11 +17,24 @@ Java
 
 ### Restarting of the source
 
+The MQTT source gets wrapped by a `RestartSource` to mitigate the 
+@ref:[Paho initial connections problem](../mqtt.md#setup).
 
 Java
 : @@snip ($alpakka$/doc-examples/src/main/java/mqtt/javasamples/MqttGroupedWithin.java) { #restarting }
 
 ### Json helper code
+
+To use Java 8 time types (`Instant`) with Jackson, extra dependencies are required.
+
+@@dependency [sbt,Maven,Gradle] {
+  group1=com.fasterxml.jackson.datatype
+  artifact1=jackson-datatype-jdk8
+  version1=2.9.6
+  group2=com.fasterxml.jackson.datatype
+  artifact2=jackson-datatype-jsr310
+  version2=2.9.6
+}
 
 Java
 : @@snip ($alpakka$/doc-examples/src/main/java/mqtt/javasamples/MqttGroupedWithin.java) { #json-mechanics }
@@ -33,7 +46,7 @@ This example is contained in a stand-alone runnable main, it can be run
  from `sbt` like this:
  
 
-Scala
+sbt
 :   ```
     sbt
     > doc-examples/run

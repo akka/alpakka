@@ -38,7 +38,6 @@ import java.util.concurrent.CompletionStage;
 
 public class MqttGroupedWithin {
 
-
   public static void main(String[] args) throws Exception {
     MqttGroupedWithin me = new MqttGroupedWithin();
     me.run();
@@ -49,23 +48,17 @@ public class MqttGroupedWithin {
 
   // #json-mechanics
 
-  /**
-   * Data elements sent via MQTT broker.
-   */
-  final static public class Measurement {
+  /** Data elements sent via MQTT broker. */
+  public static final class Measurement {
     public final Instant timestamp;
     public final long level;
 
     @JsonCreator
     public Measurement(
-
-        @JsonProperty("timestamp") Instant timestamp,
-        @JsonProperty("level") long level
-    ) {
+        @JsonProperty("timestamp") Instant timestamp, @JsonProperty("level") long level) {
       this.timestamp = timestamp;
       this.level = level;
     }
-
   }
 
   private final JsonFactory jsonFactory = new JsonFactory();
@@ -86,81 +79,84 @@ public class MqttGroupedWithin {
   // #json-mechanics
 
   // #restarting
-  /**
-   * Wrap a source with restart logic and exposes an equivalent materialized value.
-   */
-  <M> Source<M, CompletionStage<Done>> wrapWithAsRestartSource(Creator<Source<M, CompletionStage<Done>>> source) {
+  /** Wrap a source with restart logic and exposes an equivalent materialized value. */
+  <M> Source<M, CompletionStage<Done>> wrapWithAsRestartSource(
+      Creator<Source<M, CompletionStage<Done>>> source) {
     // makes use of the fact that these sources materialize a CompletionStage<Done>
     CompletableFuture<Done> fut = new CompletableFuture<>();
-    return RestartSource
-        .withBackoff(
+    return RestartSource.withBackoff(
             Duration.ofMillis(100),
             Duration.ofSeconds(3),
             0.2d, // randomFactor
-            5, //maxRestarts,
-            () -> source.create().mapMaterializedValue(mat -> mat.handle((done, exception) -> {
-              if (done != null) {
-                fut.complete(done);
-              } else {
-                fut.completeExceptionally(exception);
-              }
-              return fut.toCompletableFuture();
-            }))
-        ).mapMaterializedValue(ignore -> fut.toCompletableFuture());
+            5, // maxRestarts,
+            () ->
+                source
+                    .create()
+                    .mapMaterializedValue(
+                        mat ->
+                            mat.handle(
+                                (done, exception) -> {
+                                  if (done != null) {
+                                    fut.complete(done);
+                                  } else {
+                                    fut.completeExceptionally(exception);
+                                  }
+                                  return fut.toCompletableFuture();
+                                })))
+        .mapMaterializedValue(ignore -> fut.toCompletableFuture());
   }
   // #restarting
 
-
   void run() throws Exception {
     // #flow
-    final MqttConnectionSettings connectionSettings = MqttConnectionSettings.create(
-        "tcp://localhost:1883",                      // (1)
-        "coffee-client",
-        new MemoryPersistence()
-    );
+    final MqttConnectionSettings connectionSettings =
+        MqttConnectionSettings.create(
+            "tcp://localhost:1883", // (1)
+            "coffee-client",
+            new MemoryPersistence());
 
     final String topic = "coffee/level";
 
     @SuppressWarnings("unchecked")
-    MqttSourceSettings sourceSettings = MqttSourceSettings
-        .create(
-            connectionSettings.withClientId("coffee-control")
-        )
-        .withSubscriptions(Pair.create(topic, MqttQoS.atLeastOnce())); // (2)
+    MqttSourceSettings sourceSettings =
+        MqttSourceSettings.create(connectionSettings.withClientId("coffee-control"))
+            .withSubscriptions(Pair.create(topic, MqttQoS.atLeastOnce())); // (2)
 
     Source<MqttMessage, CompletionStage<Done>> restartingMqttSource =
-      wrapWithAsRestartSource(                                         // (3)
-          () -> MqttSource.atMostOnce(sourceSettings, 8)
-      );
+        wrapWithAsRestartSource( // (3)
+            () -> MqttSource.atMostOnce(sourceSettings, 8));
 
     Pair<Pair<CompletionStage<Done>, UniqueKillSwitch>, CompletionStage<Done>> completions =
         restartingMqttSource
-            .viaMat(KillSwitches.single(), Keep.both())                // (4)
-            .map(m -> m.payload().utf8String())                        // (5)
-            .map(measurementReader::readValue)                         // (6)
-            .groupedWithin(50, Duration.ofSeconds(5))                  // (7)
-            .map(list -> asJsonArray("measurements", list))            // (8)
+            .viaMat(KillSwitches.single(), Keep.both()) // (4)
+            .map(m -> m.payload().utf8String()) // (5)
+            .map(measurementReader::readValue) // (6)
+            .groupedWithin(50, Duration.ofSeconds(5)) // (7)
+            .map(list -> asJsonArray("measurements", list)) // (8)
             .toMat(Sink.foreach(System.out::println), Keep.both())
             .run(materializer);
     // #flow
 
-
     // start producing messages to MQTT
     CompletionStage<Done> subscriptionInitialized = completions.first().first();
-    CompletionStage<UniqueKillSwitch> producer = subscriptionInitialized.thenApply(d -> produceMessages(measurementWriter, connectionSettings, topic));
+    CompletionStage<UniqueKillSwitch> producer =
+        subscriptionInitialized.thenApply(
+            d -> produceMessages(measurementWriter, connectionSettings, topic));
 
     KillSwitch listener = completions.first().second();
 
     CompletionStage<Done> streamCompletion = completions.second();
     streamCompletion
-        .handle((done, exception) -> {
-          if (exception != null) {
-            exception.printStackTrace();
-            return null;
-          } else {
-            return done;
-          }
-        }).thenRun(() -> system.terminate());
+        .handle(
+            (done, exception) -> {
+              if (exception != null) {
+                exception.printStackTrace();
+                return null;
+              } else {
+                return done;
+              }
+            })
+        .thenRun(() -> system.terminate());
 
     Thread.sleep(10 * 1000);
 
@@ -168,29 +164,29 @@ public class MqttGroupedWithin {
     listener.shutdown();
   }
 
-  /**
-   * Simulate messages from MQTT by writing to topic registered in MQTT broker.
-   */
-  private UniqueKillSwitch produceMessages(ObjectWriter measurementWriter, MqttConnectionSettings connectionSettings, String topic) {
-    List<Measurement> input = Arrays.asList(
-        new Measurement(Instant.now(), 40),
-        new Measurement(Instant.now(), 60),
-        new Measurement(Instant.now(), 80),
-        new Measurement(Instant.now(), 100),
-        new Measurement(Instant.now(), 120)
-    );
+  /** Simulate messages from MQTT by writing to topic registered in MQTT broker. */
+  private UniqueKillSwitch produceMessages(
+      ObjectWriter measurementWriter, MqttConnectionSettings connectionSettings, String topic) {
+    List<Measurement> input =
+        Arrays.asList(
+            new Measurement(Instant.now(), 40),
+            new Measurement(Instant.now(), 60),
+            new Measurement(Instant.now(), 80),
+            new Measurement(Instant.now(), 100),
+            new Measurement(Instant.now(), 120));
 
     MqttConnectionSettings sinkSettings = connectionSettings.withClientId("coffee-supervisor");
 
-    final Sink<MqttMessage, CompletionStage<Done>> mqttSink = MqttSink.create(sinkSettings, MqttQoS.atLeastOnce());
-    UniqueKillSwitch killSwitch = Source
-        .cycle(() -> input.iterator())
-        .throttle(4, Duration.ofSeconds(1))
-        .map(m -> measurementWriter.writeValueAsString(m))
-        .map(s -> MqttMessage.create(topic, ByteString.fromString(s)))
-        .viaMat(KillSwitches.single(), Keep.right())
-        .toMat(mqttSink, Keep.left())
-        .run(materializer);
+    final Sink<MqttMessage, CompletionStage<Done>> mqttSink =
+        MqttSink.create(sinkSettings, MqttQoS.atLeastOnce());
+    UniqueKillSwitch killSwitch =
+        Source.cycle(() -> input.iterator())
+            .throttle(4, Duration.ofSeconds(1))
+            .map(m -> measurementWriter.writeValueAsString(m))
+            .map(s -> MqttMessage.create(topic, ByteString.fromString(s)))
+            .viaMat(KillSwitches.single(), Keep.right())
+            .toMat(mqttSink, Keep.left())
+            .run(materializer);
     return killSwitch;
   }
 }
