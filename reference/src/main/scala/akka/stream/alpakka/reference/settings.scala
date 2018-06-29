@@ -8,6 +8,8 @@ package akka.stream.alpakka.reference
 import java.time.{Duration => JavaDuration}
 import java.util.function.Predicate
 
+import scala.compat.java8.DurationConverters._
+import scala.compat.java8.FunctionConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration._
 
@@ -49,10 +51,8 @@ final class SourceSettings private (
    * Start method documentation text with "Java API" to make it easy to notice
    * Java specific methods when browsing generated API documentation.
    */
-  def withPollInterval(pollInterval: JavaDuration): SourceSettings = {
-    import scala.compat.java8.DurationConverters._
+  def withPollInterval(pollInterval: JavaDuration): SourceSettings =
     copy(pollInterval = pollInterval.toScala)
-  }
 
   /**
    * Private copy method for internal use only.
@@ -123,10 +123,8 @@ object Authentication {
      * A different name is needed because after type erasure functional interfaces
      * become ambiguous in Scala 2.12.
      */
-    def withVerifierPredicate(verifier: Predicate[String]): Provided = {
-      import scala.compat.java8.FunctionConverters._
+    def withVerifierPredicate(verifier: Predicate[String]): Provided =
       copy(verifier = verifier.asScala)
-    }
 
     private def copy(verifier: String => Boolean = verifier) =
       new Provided(verifier)

@@ -12,6 +12,7 @@ import akka.util.ByteString
 
 import scala.annotation.varargs
 import scala.collection.immutable
+import scala.collection.JavaConverters._
 import akka.japi.Pair
 
 import scala.util.{Failure, Success, Try}
@@ -35,10 +36,8 @@ final class ReferenceReadMessage private (
    * If the model class is meant to be also consumed from the user API,
    * but the attribute class is Scala specific, create getter for Java API.
    */
-  def getData(): JavaList[ByteString] = {
-    import scala.collection.JavaConverters._
+  def getData(): JavaList[ByteString] =
     data.asJava
-  }
 
   /**
    * Java API
@@ -109,20 +108,16 @@ final class ReferenceWriteMessage private (
    * If the model class is meant to be also consumed from the user API,
    * but the attribute class is Scala specific, create getter for Java API.
    */
-  def getData(): JavaList[ByteString] = {
-    import scala.collection.JavaConverters._
+  def getData(): JavaList[ByteString] =
     data.asJava
-  }
 
   /**
    * Java API
    *
    * Java getter needs to return Java Long classes which is converted from Scala Long.
    */
-  def getMetrics(): JavaMap[String, JavaLong] = {
-    import scala.collection.JavaConverters._
+  def getMetrics(): JavaMap[String, JavaLong] =
     metrics.mapValues(JavaLong.valueOf).asJava
-  }
 
   private def copy(data: immutable.Seq[ByteString] = data, metrics: Map[String, Long] = metrics) =
     new ReferenceWriteMessage(data, metrics)
