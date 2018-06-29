@@ -89,18 +89,19 @@ final class ReferenceWriteMessage private (
    * Java API
    *
    * When settings class has an attribute of Scala collection type,
-   * use varargs annotation to generate a Java API varargs method.
+   * create a setter that takes a corresponding Java collection type.
    */
-  @varargs def withData(data: ByteString*): ReferenceWriteMessage =
-    copy(data = data.to[immutable.Seq])
+  def withData(data: JavaList[ByteString]): ReferenceWriteMessage =
+    copy(data = data.asScala.toIndexedSeq)
 
   /**
    * Java API
    *
+   * When settings class has an attribute of Scala Long class,
    * Java setter needs to take Java Long class and convert to Scala Long.
    */
-  @varargs def withMetrics(metrics: Pair[String, JavaLong]*): ReferenceWriteMessage =
-    copy(metrics = metrics.map(pair => (pair.first, Long.unbox(pair.second))).toMap)
+  def withMetrics(metrics: JavaMap[String, JavaLong]): ReferenceWriteMessage =
+    copy(metrics = metrics.asScala.mapValues(Long.unbox).toMap)
 
   /**
    * Java API

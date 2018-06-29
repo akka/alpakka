@@ -26,9 +26,7 @@ import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.*;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -124,15 +122,21 @@ public class ReferenceTest {
     final Flow<ReferenceWriteMessage, ReferenceWriteMessage, NotUsed> flow =
       Reference.flow();
 
+    Map<String, Long> metrics = new HashMap<String, Long>()
+    {{
+      put("rps", 20L);
+      put("rpm", Long.valueOf(30L));
+    }};
+
     final Source<ReferenceWriteMessage, NotUsed> source = Source.from(Arrays.asList(
       ReferenceWriteMessage.create()
-        .withData(ByteString.fromString("one"))
-        .withMetrics(Pair.create("rps", 20L), Pair.create("rpm", Long.valueOf(30L))),
-      ReferenceWriteMessage.create().withData(
+        .withData(Collections.singletonList(ByteString.fromString("one")))
+        .withMetrics(metrics),
+      ReferenceWriteMessage.create().withData(Arrays.asList(
         ByteString.fromString("two"),
         ByteString.fromString("three"),
         ByteString.fromString("four")
-      )
+      ))
     ));
 
     final CompletionStage<List<ReferenceWriteMessage>> stage = source.via(flow).runWith(Sink.seq(), mat);

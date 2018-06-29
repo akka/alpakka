@@ -79,12 +79,14 @@ class ReferenceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
       val source = Source(
         immutable.Seq(
           ReferenceWriteMessage()
-            .withData(ByteString("one"))
+            .withData(immutable.Seq(ByteString("one")))
             .withMetrics(Map("rps" -> 20L, "rpm" -> 30L)),
           ReferenceWriteMessage().withData(
-            ByteString("two"),
-            ByteString("three"),
-            ByteString("four")
+            immutable.Seq(
+              ByteString("two"),
+              ByteString("three"),
+              ByteString("four")
+            )
           ),
           ReferenceWriteMessage().withData(
             immutable.Seq(
