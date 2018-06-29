@@ -83,6 +83,7 @@ object Dependencies {
 
   val DynamoDB = Seq(
     libraryDependencies ++= Seq(
+      "org.scala-lang.modules" %% "scala-java8-compat" % "0.8.0", // BSD-style
       "com.amazonaws" % "aws-java-sdk-dynamodb" % AwsSdkVersion, // ApacheV2
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
     )

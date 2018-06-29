@@ -10,15 +10,15 @@ import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.dynamodb.impl.DynamoSettings;
 import akka.stream.alpakka.dynamodb.javadsl.DynamoClient;
-import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.amazonaws.services.dynamodbv2.model.*;
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits.CreateTable;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
+
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 public class ExampleTest {
 
@@ -60,11 +60,10 @@ public class ExampleTest {
   @Test
   public void listTables() throws Exception {
     // #simple-request
-    final Future<ListTablesResult> listTablesResultFuture =
+    final CompletionStage<ListTablesResult> listTablesResultFuture =
         client.listTables(new ListTablesRequest());
     // #simple-request
-    final Duration duration = Duration.create(5, "seconds");
-    ListTablesResult result = Await.result(listTablesResultFuture, duration);
+    ListTablesResult result = listTablesResultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS);
   }
 
   @Test
