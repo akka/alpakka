@@ -18,8 +18,7 @@ import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Mutation;
-import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -69,6 +68,31 @@ public class HBaseStageTest {
         return Arrays.asList(put);
       };
   // #create-converter
+
+  // #create-converter-mutations
+  Function<Person, List<Mutation>> mutationsHBaseConverter =
+      person -> {
+        try {
+          Put put = new Put(String.format("id_%d", person.id).getBytes("UTF-8"));
+          put.addColumn(
+              "info".getBytes("UTF-8"), "name".getBytes("UTF-8"), person.name.getBytes("UTF-8"));
+
+          Append append = new Append(String.format("id_%d", person.id).getBytes("UTF-8"));
+          append.add(
+              "info".getBytes("UTF-8"), "aliases".getBytes("UTF-8"), person.name.getBytes("UTF-8"));
+
+          Delete delete = new Delete(String.format("id_%d", person.id).getBytes("UTF-8"));
+
+          Increment increment = new Increment(String.format("id_%d", person.id).getBytes("UTF-8"));
+          increment.addColumn("info".getBytes("UTF-8"), "age".getBytes("UTF-8"), 1);
+
+          return Arrays.asList(append, put, delete, increment);
+        } catch (UnsupportedEncodingException e) {
+          e.printStackTrace();
+          return Arrays.asList();
+        }
+      };
+  // #create-converter-mutations
 
   @Test
   public void sink() throws ExecutionException, InterruptedException, TimeoutException {

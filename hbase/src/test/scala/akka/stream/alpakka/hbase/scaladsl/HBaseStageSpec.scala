@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.hbase.HTableSettings
 import akka.stream.scaladsl.{Sink, Source}
-import org.apache.hadoop.hbase.client.{Mutation, Put}
+import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.scalatest.{Matchers, WordSpec}
@@ -34,6 +34,27 @@ class HBaseStageSpec extends WordSpec with Matchers {
     List(put)
   }
   //#create-converter
+
+  //#create-converter-mutations
+  val mutationsHBaseConverter: Person => immutable.Seq[Mutation] = { person =>
+    // Insert or update a row
+    val put = new Put(s"id_${person.id}")
+    put.addColumn("info", "name", person.name)
+
+    // Append to a cell
+    val append = new Append(s"id_${person.id}")
+    append.add("info", "aliases", person.name)
+
+    // Delete the specified row
+    val delete = new Delete(s"id_${person.id}")
+
+    // Increment a cell value
+    val increment = new Increment(s"id_${person.id}")
+    increment.addColumn("info", "age", 1)
+
+    List(append, put, delete, increment)
+  }
+  //#create-converter-mutations
 
   //#create-settings
   val tableSettings =
