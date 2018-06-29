@@ -8,7 +8,6 @@ package akka.stream.alpakka.reference
 import java.time.{Duration => JavaDuration}
 import java.util.function.Predicate
 
-import scala.compat.java8.DurationConverters._
 import scala.compat.java8.FunctionConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration._
@@ -52,7 +51,7 @@ final class SourceSettings private (
    * Java specific methods when browsing generated API documentation.
    */
   def withPollInterval(pollInterval: JavaDuration): SourceSettings =
-    copy(pollInterval = pollInterval.toScala)
+    copy(pollInterval = Duration.fromNanos(pollInterval.toNanos))
 
   /**
    * Private copy method for internal use only.

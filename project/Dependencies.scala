@@ -219,7 +219,6 @@ object Dependencies {
   val Reference = Seq(
     // connector specific library dependencies and resolver settings
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.0" // BSD-style
     )
   )
 
