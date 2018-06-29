@@ -56,7 +56,7 @@ public class HBaseStageTest {
   }
 
   // #create-converter
-  Function<Person, Put> hBaseConverter =
+  Function<Person, List<Mutation>> hBaseConverter =
       person -> {
         Put put = null;
         try {
@@ -66,7 +66,7 @@ public class HBaseStageTest {
         } catch (UnsupportedEncodingException e) {
           e.printStackTrace();
         }
-        return put;
+        return Arrays.asList(put);
       };
   // #create-converter
 
