@@ -123,5 +123,8 @@ class TestParsing extends FunSuite with Matchers {
     val ex2 = """"Name"[character varying]:'scala'"""
     ex2 should fullyMatch regex KeyValuePair.withGroups("\"Name\"", "character varying", "'scala'")
 
+    val ex3 = """tags[text[]]:'{awesome}'"""
+    ex3 should fullyMatch regex KeyValuePair.withGroups("tags", "text[]", "'{awesome}'")
+
   }
 }

@@ -4,14 +4,12 @@
 
 package akka.stream.alpakka.postgresqlcdc;
 
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.postgresqlcdc.javadsl.Change;
 import akka.stream.alpakka.postgresqlcdc.javadsl.ChangeDataCapture;
-import akka.stream.alpakka.postgresqlcdc.javadsl.ChangeSet;
-import akka.stream.alpakka.postgresqlcdc.scaladsl.PostgreSQLInstance;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
@@ -20,6 +18,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.sql.Connection;
+import java.util.ArrayList;
 
 public class TestJavaDsl {
 
@@ -56,19 +55,17 @@ public class TestJavaDsl {
     public void testIt() {
 
         // some inserts
-        FakeDb.insertCustomer(0, "John", "Lennon", "john.lennon@akka.io", connection);
+        FakeDb.insertCustomer(0, "John", "Lennon", "john.lennon@akka.io", new ArrayList(), connection);
         // some updates
         FakeDb.updateCustomerEmail(0, "john.lennon@thebeatles.com", connection);
         // some deletes
         FakeDb.deleteCustomers(connection);
 
         final PostgreSQLInstance postgreSQLInstance = PostgreSQLInstance
-                .create()
-                .withConnectionString(connectionString)
-                .withSlotName("junit");
+                .create(connectionString, "junit");
 
         final Source<Change, NotUsed> source = ChangeDataCapture
-                .from(postgreSQLInstance)
+                .source(postgreSQLInstance)
                 .mapConcat(ChangeSet::getChanges);
 
         source.runWith(TestSink.probe(system), materializer)
@@ -78,3 +75,4 @@ public class TestJavaDsl {
     }
 
 }
+

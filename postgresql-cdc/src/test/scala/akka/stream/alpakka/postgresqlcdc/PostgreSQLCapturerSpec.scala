@@ -8,7 +8,7 @@ import java.sql.Connection
 
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.stream.alpakka.postgresqlcdc.scaladsl._
+import akka.stream.alpakka.postgresqlcdc.scaladsl.ChangeDataCapture
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ActorMaterializer, Attributes}
 import akka.testkit.{ImplicitSender, TestKit}
@@ -32,7 +32,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
 
   private implicit val conn: Connection = getConnection(connectionString)
 
-  private val postgreSQLInstance = PostgreSQLInstance().withConnectionString(connectionString).withSlotName("scalatest")
+  private val postgreSQLInstance = PostgreSQLInstance(connectionString, slotName = "scalatest")
 
   override def beforeAll(): Unit = {
     log.info("setting up logical decoding slot and creating customers table")
@@ -65,19 +65,34 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
 
       log.info("inserting data into customers table")
       // some inserts
-      insertCustomer(id = 0, fName = "John", lName = "Lennon", email = "john.lennon@akka.io")
-      insertCustomer(id = 1, fName = "George", lName = "Harrison", email = "george.harrison@akka.io")
-      insertCustomer(id = 2, fName = "Paul", lName = "McCartney", email = "paul.mccartney@akka.io")
-      insertCustomer(id = 3, fName = "Ringo", lName = "Star", email = "ringo.star@akka.io")
+
+      insertCustomer(id = 0, fName = "John", lName = "Lennon", email = "john.lennon@akka.io", tags = List("awesome"))
+
+      insertCustomer(id = 1,
+                     fName = "George",
+                     lName = "Harrison",
+                     email = "george.harrison@akka.io",
+                     tags = List("awesome"))
+
+      insertCustomer(id = 2,
+                     fName = "Paul",
+                     lName = "McCartney",
+                     email = "paul.mccartney@akka.io",
+                     tags = List("awesome"))
+
+      insertCustomer(id = 3, fName = "Ringo", lName = "Star", email = "ringo.star@akka.io", tags = List("awesome"))
+
       // some updates
       updateCustomerEmail(id = 0, "john.lennon@thebeatles.com")
       updateCustomerEmail(id = 1, "george.harrison@thebeatles.com")
       updateCustomerEmail(id = 2, "paul.mccartney@thebeatles.com")
       updateCustomerEmail(id = 3, "ringo.star@thebeatles.com")
+
       // some deletes
       deleteCustomers()
 
-      ChangeDataCapture(postgreSQLInstance)
+      ChangeDataCapture
+        .source(postgreSQLInstance)
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
@@ -91,7 +106,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
                 "id" -> "0",
                 "first_name" -> "John",
                 "last_name" -> "Lennon",
-                "email" -> "john.lennon@akka.io"
+                "email" -> "john.lennon@akka.io",
+                "tags" -> "{awesome}"
               ) => // success
         }
         .expectNextChainingPF {
@@ -100,7 +116,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
                 "id" -> "1",
                 "first_name" -> "George",
                 "last_name" -> "Harrison",
-                "email" -> "george.harrison@akka.io"
+                "email" -> "george.harrison@akka.io",
+                "tags" -> "{awesome}"
               ) => // success
         }
         .expectNextChainingPF {
@@ -109,7 +126,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
                 "id" -> "2",
                 "first_name" -> "Paul",
                 "last_name" -> "McCartney",
-                "email" -> "paul.mccartney@akka.io"
+                "email" -> "paul.mccartney@akka.io",
+                "tags" -> "{awesome}"
               ) => // success
         }
         .expectNextChainingPF {
@@ -118,7 +136,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
                 "id" -> "3",
                 "first_name" -> "Ringo",
                 "last_name" -> "Star",
-                "email" -> "ringo.star@akka.io"
+                "email" -> "ringo.star@akka.io",
+                "tags" -> "{awesome}"
               ) => // success
         }
         //
@@ -130,7 +149,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
                 "id" -> "0",
                 "first_name" -> "John",
                 "last_name" -> "Lennon",
-                "email" -> "john.lennon@thebeatles.com"
+                "email" -> "john.lennon@thebeatles.com",
+                "tags" -> "{awesome}"
               ) => // success
         }
         .expectNextChainingPF {
@@ -139,7 +159,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
                 "id" -> "1",
                 "first_name" -> "George",
                 "last_name" -> "Harrison",
-                "email" -> "george.harrison@thebeatles.com"
+                "email" -> "george.harrison@thebeatles.com",
+                "tags" -> "{awesome}"
               ) => // success
         }
         .expectNextChainingPF {
@@ -148,7 +169,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
                 "id" -> "2",
                 "first_name" -> "Paul",
                 "last_name" -> "McCartney",
-                "email" -> "paul.mccartney@thebeatles.com"
+                "email" -> "paul.mccartney@thebeatles.com",
+                "tags" -> "{awesome}"
               ) => // success
         }
         .expectNextChainingPF {
@@ -157,7 +179,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
                 "id" -> "3",
                 "first_name" -> "Ringo",
                 "last_name" -> "Star",
-                "email" -> "ringo.star@thebeatles.com"
+                "email" -> "ringo.star@thebeatles.com",
+                "tags" -> "{awesome}"
               ) => // success
         }
         //
@@ -175,7 +198,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
       updateSale(id = 0, newInfo = """{"name": "alpakka", "countries": ["*"]}""")
       deleteSale(0)
 
-      ChangeDataCapture(postgreSQLInstance)
+      ChangeDataCapture
+        .source(postgreSQLInstance)
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
@@ -240,7 +264,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
 
       deletePurchaseOrder(id = 0)
 
-      ChangeDataCapture(postgreSQLInstance)
+      ChangeDataCapture
+        .source(postgreSQLInstance)
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
@@ -258,18 +283,56 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
 
       insertEmployee(0, "Giovanni", "employee")
       updateEmployee(0, null)
+      deleteEmployees()
 
-      ChangeDataCapture(postgreSQLInstance)
+      ChangeDataCapture
+        .source(postgreSQLInstance)
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
-        .request(2)
+        .request(3)
         .expectNextChainingPF {
           case c @ ChangeSet(_, List(RowInserted("public", "employees", _))) => // success
         }
         .expectNextChainingPF {
           case c @ ChangeSet(_, List(RowUpdated("public", "employees", fields)))
               if fields.contains(Field("\"position\"", "character varying", "null")) => // success
+        }
+        .expectNextChainingPF {
+          case c @ ChangeSet(_, List(RowDeleted("public", "employees", fields))) => // success
+        }
+
+    }
+
+    "be able to ignore tables and columns" in {
+
+      // employees (ignored)
+      insertEmployee(0, "Giovanni", "employee")
+      updateEmployee(0, null)
+      deleteEmployees()
+
+      // sales (not ignored)
+      insertSale(id = 0, info = """{"name": "alpaca", "countries": ["Peru", "Bolivia", "Ecuador", "Chile"]}""")
+      updateSale(id = 0, newInfo = """{"name": "alpakka", "countries": ["*"]}""")
+      deleteSale(0)
+
+      ChangeDataCapture
+        .source(
+          postgreSQLInstance.withTablesToIgnore(List("employees")).withColumnsToIgnore(Map("sales" -> List("info")))
+        )
+        .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
+        .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
+        .runWith(TestSink.probe[ChangeSet])
+        .request(3)
+        .expectNextChainingPF {
+          case c @ ChangeSet(_, List(RowInserted("public", "sales", _))) => // success
+        }
+        .expectNextChainingPF {
+          case c @ ChangeSet(_, List(RowUpdated("public", "sales", fields)))
+              if !fields.exists(_.columnName == "info") => // success
+        }
+        .expectNextChainingPF {
+          case c @ ChangeSet(_, List(RowDeleted("public", "sales", _))) => // success
         }
 
     }

@@ -5,8 +5,7 @@
 package akka.stream.alpakka.postgresqlcdc
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.postgresqlcdc.PostgreSQLSourceStage.SlotChange
-import akka.stream.alpakka.postgresqlcdc.scaladsl._
+import akka.stream.alpakka.postgresqlcdc.PostgreSQL.SlotChange
 
 import scala.util.matching.Regex
 
@@ -37,16 +36,10 @@ import scala.util.matching.Regex
 
   val Identifier: String = s"(?:$UnquotedIdentifier)|(?:$DoubleQuotedString)"
 
-  val SchemaIdentifier: String = Identifier
-
-  val TableIdentifier: String = Identifier
-
   val FieldIdentifier: String = Identifier
 
-  val ChangeType: String = "\\bINSERT|\\bDELETE|\\bUPDATE"
-
-  val TypeDeclaration: String = "[a-zA-Z0-9 ]+"
-  // matches: character varying, integer, xml etc.
+  val TypeDeclaration: String = "(?:[a-zA-Z0-9 ]|\\[[0-9]*\\])+"
+  // matches: character varying, integer, xml, text[], text[][], integer[], integer[3], integer[3][3] etc.
 
   val NonStringValue: String = "[^ \"']+"
   // matches: true, false, 3.14, 42 etc.
@@ -54,8 +47,12 @@ import scala.util.matching.Regex
   val Value: String = s"(?:$NonStringValue)|(?:$SingleQuotedString1)"
   // matches: true, false, 3.14 or 'Strings can have spaces'
 
-  val ChangeStatement: Regex =
+  val ChangeStatement: Regex = {
+    val SchemaIdentifier: String = Identifier
+    val TableIdentifier: String = Identifier
+    val ChangeType: String = "\\bINSERT|\\bDELETE|\\bUPDATE"
     s"(?s)table ($SchemaIdentifier)\\.($TableIdentifier): ($ChangeType): (.+)".r
+  }
 
   val KeyValuePair: Regex = s"($FieldIdentifier)\\[($TypeDeclaration)\\]:($Value)".r
 
@@ -75,21 +72,29 @@ import scala.util.matching.Regex
       }
       .toList
 
-  def transformSlotChanges(slotChanges: List[SlotChange]): List[ChangeSet] = {
+  def transformSlotChanges(slotChanges: List[SlotChange],
+                           ignoreTables: List[String],
+                           ignoreColumns: Map[String, List[String]]): List[ChangeSet] = {
+
+    def parseKeyValuePairsWithFilter(tableName: String, keyValuePair: String): List[Field] =
+      parseKeyValuePairs(keyValuePair).filterNot(f => ignoreColumns.get(tableName).exists(_.contains(f.columnName)))
 
     slotChanges.groupBy(_.transactionId).map {
 
       case (transactionId: Long, slotChanges: List[SlotChange]) =>
         val changes: List[Change] = slotChanges.collect {
 
-          case SlotChange(_, ChangeStatement(schemaName, tableName, "UPDATE", changes)) =>
-            RowUpdated(schemaName, tableName, parseKeyValuePairs(changes))
+          case SlotChange(_, ChangeStatement(schemaName, tableName, "UPDATE", changesStr))
+              if !ignoreTables.contains(tableName) =>
+            RowUpdated(schemaName, tableName, parseKeyValuePairsWithFilter(tableName, changesStr))
 
-          case SlotChange(_, ChangeStatement(schemaName, tableName, "DELETE", changes)) =>
-            RowDeleted(schemaName, tableName, parseKeyValuePairs(changes))
+          case SlotChange(_, ChangeStatement(schemaName, tableName, "DELETE", changesStr))
+              if !ignoreTables.contains(tableName) =>
+            RowDeleted(schemaName, tableName, parseKeyValuePairsWithFilter(tableName, changesStr))
 
-          case SlotChange(_, ChangeStatement(schemaName, tableName, "INSERT", changes)) =>
-            RowInserted(schemaName, tableName, parseKeyValuePairs(changes))
+          case SlotChange(_, ChangeStatement(schemaName, tableName, "INSERT", changesStr))
+              if !ignoreTables.contains(tableName) =>
+            RowInserted(schemaName, tableName, parseKeyValuePairsWithFilter(tableName, changesStr))
         }
 
         ChangeSet(transactionId, changes)

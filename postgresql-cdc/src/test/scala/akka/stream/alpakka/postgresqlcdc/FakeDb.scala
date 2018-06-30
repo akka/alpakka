@@ -24,6 +24,7 @@ object FakeDb {
                               |  first_name VARCHAR(255) NOT NULL,
                               |  last_name VARCHAR(255) NOT NULL,
                               |  email VARCHAR(255) NOT NULL,
+                              |  tags TEXT[] NOT NULL,
                               |  PRIMARY KEY(id)
                               |);
                             """.stripMargin)
@@ -73,13 +74,24 @@ object FakeDb {
   def dropTableEmployees()(implicit conn: Connection): Unit =
     conn.prepareStatement("DROP TABLE employees;").execute()
 
-  def insertCustomer(id: Int, fName: String, lName: String, email: String)(implicit conn: Connection): Unit = {
+  // for the Java DSL test
+  def insertCustomer(id: Int, fName: String, lName: String, email: String, tags: java.util.List[String])(
+      implicit conn: Connection
+  ): Unit = {
+    import scala.collection.JavaConverters._
+    insertCustomer(id, fName, lName, email, tags.asScala.toList)(conn)
+  }
+
+  def insertCustomer(id: Int, fName: String, lName: String, email: String, tags: List[String])(
+      implicit conn: Connection
+  ): Unit = {
     val insertStatement =
-      conn.prepareStatement("INSERT INTO customers(id, first_name, last_name, email) VALUES(?, ?, ?, ?)")
+      conn.prepareStatement("INSERT INTO customers(id, first_name, last_name, email, tags) VALUES(?, ?, ?, ?, ?)")
     insertStatement.setInt(1, id)
     insertStatement.setString(2, fName)
     insertStatement.setString(3, lName)
     insertStatement.setString(4, email)
+    insertStatement.setArray(5, conn.createArrayOf("text", tags.toArray))
     insertStatement.execute()
   }
 
@@ -159,6 +171,9 @@ object FakeDb {
     updateStatement.setInt(2, id)
     updateStatement.execute()
   }
+
+  def deleteEmployees()(implicit conn: Connection): Unit =
+    conn.prepareStatement("DELETE FROM employees;").execute()
 
   def setUpLogicalDecodingSlot(slotName: String)(implicit conn: Connection): Unit = {
     val stmt = conn.prepareStatement(s"SELECT * FROM pg_create_logical_replication_slot('${slotName}','test_decoding')")
