@@ -4,7 +4,12 @@
 
 package akka.stream.alpakka.kinesis
 
+import java.util
+
 import KinesisFlowSettings._
+import com.amazonaws.services.kinesis.AmazonKinesisAsync
+import com.amazonaws.services.kinesis.model.Shard
+
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
 
@@ -71,4 +76,22 @@ object KinesisFlowSettings {
       backoffStrategy = Exponential,
       retryInitialTimeout = 100.millis
     )
+
+  def byStreamName(streamName: String)(implicit kinesisClient: AmazonKinesisAsync): KinesisFlowSettings = {
+    val shards = new util.ArrayList[Shard]()
+    var exclusiveStartShardId: String = null
+
+    do {
+      val describeStreamResult = kinesisClient.describeStream(streamName, exclusiveStartShardId)
+      shards.addAll(describeStreamResult.getStreamDescription.getShards)
+      if (describeStreamResult.getStreamDescription.getHasMoreShards && shards.size() > 0) {
+        exclusiveStartShardId = shards.get(shards.size() - 1).getShardId
+      } else {
+        exclusiveStartShardId = null
+      }
+    } while (exclusiveStartShardId != null)
+
+    KinesisFlowSettings.byNumberOfShards(shards.size())
+  }
+
 }
