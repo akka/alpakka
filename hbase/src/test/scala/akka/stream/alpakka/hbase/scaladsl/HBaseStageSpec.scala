@@ -22,9 +22,9 @@ import scala.util.{Failure, Success}
 
 class HBaseStageSpec extends WordSpec with Matchers {
 
-  val hbaseIT = sys.env.get("HBASE_TEST")
+  val hbaseIT: Option[String] = sys.env.get("HBASE_TEST")
 
-  //#create-converter
+  //#create-converter-put
   implicit def toBytes(string: String): Array[Byte] = Bytes.toBytes(string)
   case class Person(id: Int, name: String)
 
@@ -33,28 +33,52 @@ class HBaseStageSpec extends WordSpec with Matchers {
     put.addColumn("info", "name", person.name)
     List(put)
   }
-  //#create-converter
+  //#create-converter-put
 
-  //#create-converter-mutations
-  val mutationsHBaseConverter: Person => immutable.Seq[Mutation] = { person =>
-    // Insert or update a row
-    val put = new Put(s"id_${person.id}")
-    put.addColumn("info", "name", person.name)
-
+  //#create-converter-append
+  val appendHBaseConverter: Person => immutable.Seq[Mutation] = { person =>
     // Append to a cell
     val append = new Append(s"id_${person.id}")
     append.add("info", "aliases", person.name)
+    List(append)
+  }
+  //#create-converter-append
 
+  //#create-converter-delete
+  val deleteHBaseConverter: Person => immutable.Seq[Mutation] = { person =>
     // Delete the specified row
     val delete = new Delete(s"id_${person.id}")
+    List(delete)
+  }
+  //#create-converter-delete
 
+  //#create-converter-increment
+  val incrementHBaseConverter: Person => immutable.Seq[Mutation] = { person =>
     // Increment a cell value
     val increment = new Increment(s"id_${person.id}")
     increment.addColumn("info", "age", 1)
-
-    List(append, put, delete, increment)
+    List(increment)
   }
-  //#create-converter-mutations
+  //#create-converter-increment
+
+  //#create-converter-complex
+  val mutationsHBaseConverter: Person => immutable.Seq[Mutation] = { person =>
+    if (person.id != 0) {
+      if (person.name.isEmpty) {
+        // Delete the specified row
+        val delete = new Delete(s"id_${person.id}")
+        List(delete)
+      } else {
+        // Insert or update a row
+        val put = new Put(s"id_${person.id}")
+        put.addColumn("info", "name", person.name)
+        List(put)
+      }
+    } else {
+      List.empty
+    }
+  }
+  //#create-converter-complex
 
   //#create-settings
   val tableSettings =
@@ -64,8 +88,8 @@ class HBaseStageSpec extends WordSpec with Matchers {
     "HBase stages " must {
 
       "sinks in hbase" in {
-        implicit val actorSystem = ActorSystem("reactiveStreams")
-        implicit val materilizer = ActorMaterializer()
+        implicit val actorSystem: ActorSystem = ActorSystem("reactiveStreams")
+        implicit val materilizer: ActorMaterializer = ActorMaterializer()
 
         //#sink
         val sink = HTableStage.sink[Person](tableSettings)
@@ -73,18 +97,16 @@ class HBaseStageSpec extends WordSpec with Matchers {
         val f = Source(1 to 10).map(i => Person(i, s"zozo_$i")).runWith(sink)
         //#sink
 
-        f.onComplete {
-          case e =>
-            actorSystem.terminate()
-        }
+        f.onComplete(e =>
+          actorSystem.terminate())
 
         Await.ready(f, Duration.Inf)
 
       }
 
       "flows through hbase" in {
-        implicit val actorSystem = ActorSystem("reactiveStreams")
-        implicit val materilizer = ActorMaterializer()
+        implicit val actorSystem: ActorSystem = ActorSystem("reactiveStreams")
+        implicit val materilizer: ActorMaterializer = ActorMaterializer()
 
         //#flow
         val flow = HTableStage.flow[Person](tableSettings)
