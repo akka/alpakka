@@ -56,7 +56,7 @@ class HBaseStageSpec extends WordSpec with Matchers {
   val incrementHBaseConverter: Person => immutable.Seq[Mutation] = { person =>
     // Increment a cell value
     val increment = new Increment(s"id_${person.id}")
-    increment.addColumn("info", "age", 1)
+    increment.addColumn("info", "numberOfChanges", 1)
     List(increment)
   }
   //#create-converter-increment
@@ -72,7 +72,11 @@ class HBaseStageSpec extends WordSpec with Matchers {
         // Insert or update a row
         val put = new Put(s"id_${person.id}")
         put.addColumn("info", "name", person.name)
-        List(put)
+
+        val increment = new Increment(s"id_${person.id}")
+        increment.addColumn("info", "numberOfChanges", 1)
+
+        List(put, increment)
       }
     } else {
       List.empty
