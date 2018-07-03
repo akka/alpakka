@@ -168,10 +168,12 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                       val pendingResult = queue.offer(ByteString(buffer))
                       pendingResult.onComplete(_ => sel.wakeup())
                       sendReceiveContext.receive = PendingReceiveAck(queue, buffer, pendingResult)
-                      key.interestOps(key.interestOps() & ~SelectionKey.OP_READ)
                     } else {
                       queue.complete()
                     }
+
+                    key.interestOps(key.interestOps() & ~SelectionKey.OP_READ)
+
                   case PendingReceiveAck(receiveQueue, receiveBuffer, pendingResult) if pendingResult.isCompleted =>
                     pendingResult.value.get match {
                       case Success(QueueOfferResult.Enqueued) =>
