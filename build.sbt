@@ -140,7 +140,7 @@ lazy val orientdb = alpakkaProject("orientdb",
                                    fork in Test := true,
                                    parallelExecution in Test := false)
 
-lazy val reference = alpakkaProject("reference", "reference", Dependencies.Reference)
+lazy val reference = alpakkaProject("reference", "reference", Dependencies.Reference).enablePlugins(NoPublish)
 
 lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3)
 
