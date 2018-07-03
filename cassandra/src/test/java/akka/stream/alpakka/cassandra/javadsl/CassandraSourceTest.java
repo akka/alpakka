@@ -23,7 +23,6 @@ import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
-import scala.concurrent.ExecutionContextExecutor;
 
 import java.util.List;
 import java.util.Set;
@@ -50,8 +49,6 @@ public class CassandraSourceTest {
 
   private static ActorSystem system;
   private static Materializer materializer;
-  private static ExecutionContextExecutor ec;
-
   private static Session session;
 
   private static Session setupSession() {
@@ -70,16 +67,11 @@ public class CassandraSourceTest {
     return Pair.create(system, materializer);
   }
 
-  private static ExecutionContextExecutor setupExecutionContext() {
-    return system.dispatcher();
-  }
-
   @BeforeClass
   public static void setup() {
     final Pair<ActorSystem, Materializer> sysmat = setupMaterializer();
     system = sysmat.first();
     materializer = sysmat.second();
-    ec = setupExecutionContext();
 
     session = setupSession();
 
@@ -145,7 +137,7 @@ public class CassandraSourceTest {
 
     // #run-flow
     final Flow<Integer, Integer, NotUsed> flow =
-        CassandraFlow.createWithPassThrough(2, preparedStatement, statementBinder, session, ec);
+        CassandraFlow.createWithPassThrough(2, preparedStatement, statementBinder, session);
 
     CompletionStage<List<Integer>> result = source.via(flow).runWith(Sink.seq(), materializer);
     // #run-flow
@@ -189,7 +181,7 @@ public class CassandraSourceTest {
     // #run-batching-flow
     final Flow<ToInsert, ToInsert, NotUsed> flow =
         CassandraFlow.createUnloggedBatchWithPassThrough(
-            2, preparedStatement, statementBinder, (ti) -> ti.id, defaultSettings, session, ec);
+            2, preparedStatement, statementBinder, (ti) -> ti.id, defaultSettings, session);
 
     CompletionStage<List<ToInsert>> result = source.via(flow).runWith(Sink.seq(), materializer);
     // #run-batching-flow
