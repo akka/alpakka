@@ -19,10 +19,19 @@ object CassandraFlow {
   def createWithPassThrough[T](parallelism: Int,
                                statement: PreparedStatement,
                                statementBinder: BiFunction[T, PreparedStatement, BoundStatement],
-                               session: Session,
-                               ec: ExecutionContext): Flow[T, T, NotUsed] =
+                               session: Session): Flow[T, T, NotUsed] =
     ScalaCFlow
-      .createWithPassThrough[T](parallelism, statement, (t, p) => statementBinder.apply(t, p))(session, ec)
+      .createWithPassThrough[T](parallelism, statement, (t, p) => statementBinder.apply(t, p))(session)
+      .asJava
+
+  @deprecated("use createWithPassThrough without ExecutionContext instead", "0.20")
+  def createWithPassThrough[T](parallelism: Int,
+                               statement: PreparedStatement,
+                               statementBinder: BiFunction[T, PreparedStatement, BoundStatement],
+                               session: Session,
+                               ignored: ExecutionContext): Flow[T, T, NotUsed] =
+    ScalaCFlow
+      .createWithPassThrough[T](parallelism, statement, (t, p) => statementBinder.apply(t, p))(session)
       .asJava
 
   /**
@@ -36,14 +45,36 @@ object CassandraFlow {
                                                statement: PreparedStatement,
                                                statementBinder: BiFunction[T, PreparedStatement, BoundStatement],
                                                partitionKey: Function[T, K],
-                                               settings: CassandraBatchSettings = CassandraBatchSettings.Defaults,
-                                               session: Session,
-                                               ec: ExecutionContext): Flow[T, T, NotUsed] =
+                                               settings: CassandraBatchSettings,
+                                               session: Session): Flow[T, T, NotUsed] =
     ScalaCFlow
       .createUnloggedBatchWithPassThrough[T, K](parallelism,
                                                 statement,
                                                 (t, p) => statementBinder.apply(t, p),
                                                 t => partitionKey.apply(t),
-                                                settings)(session, ec)
+                                                settings)(session)
+      .asJava
+
+  /**
+   * Creates a flow that batches using an unlogged batch. Use this when most of the elements in the stream
+   * share the same partition key. Cassandra unlogged batches that share the same partition key will only
+   * resolve to one write internally in Cassandra, boosting write performance.
+   *
+   * Be aware that this stage does not preserve the upstream order.
+   */
+  @deprecated("use createUnloggedBatchWithPassThrough without ExecutionContext instead", "0.20")
+  def createUnloggedBatchWithPassThrough[T, K](parallelism: Int,
+                                               statement: PreparedStatement,
+                                               statementBinder: BiFunction[T, PreparedStatement, BoundStatement],
+                                               partitionKey: Function[T, K],
+                                               settings: CassandraBatchSettings,
+                                               session: Session,
+                                               ignored: ExecutionContext): Flow[T, T, NotUsed] =
+    ScalaCFlow
+      .createUnloggedBatchWithPassThrough[T, K](parallelism,
+                                                statement,
+                                                (t, p) => statementBinder.apply(t, p),
+                                                t => partitionKey.apply(t),
+                                                settings)(session)
       .asJava
 }
