@@ -219,7 +219,7 @@ object Dependencies {
   val Reference = Seq(
     // connector specific library dependencies and resolver settings
     libraryDependencies ++= Seq(
-    )
+      )
   )
 
   val S3 = Seq(
