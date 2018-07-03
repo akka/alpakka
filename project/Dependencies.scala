@@ -232,6 +232,12 @@ object Dependencies {
     )
   )
 
+  val Reference = Seq(
+    // connector specific library dependencies and resolver settings
+    libraryDependencies ++= Seq(
+      )
+  )
+
   val S3 = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
