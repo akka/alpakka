@@ -1,5 +1,10 @@
 # Some advice for Alpakka contributors
 
+## Reference connector
+
+To inspect how all of the below listed guidelines are to be implemented in practice, take a look at
+[the reference](reference/) connector. Feel free to use the reference connector as a starting point for new connectors.
+
 ## API design
 
 ### Public factory methods
@@ -10,10 +15,14 @@ simple and easy to use.
 
 ### Flows
 
+> Reference connector [model classes](reference/src/main/scala/akka/stream/alpakka/reference/model.scala)
+
 When designing Flows, consider adding an extra field to the in- and out-messages which is passed through. A common
 use case we see, is committing a Kafka offset after passing data to another system.
 
 ### Java APIs
+
+> Reference connector [Java API factory methods](reference/src/main/scala/akka/stream/alpakka/javadsl/Reference.scala)
 
 Alpakka, same as Akka, aims to keep 100% feature parity between the various language DSLs.
 
@@ -26,17 +35,18 @@ Alpakka, same as Akka, aims to keep 100% feature parity between the various lang
 
 ### Settings
 
+> Reference connector [settings classes](reference/src/main/scala/akka/stream/alpakka/reference/settings.scala)
+
 Most technologies will have a couple of configuration settings that will be needed for several Sinks, Flows, or Sinks. 
 Create case classes collecting these settings instead of passing them in every method.
 
-Create a default instance in the companion object with good defaults which can be updated via `copy` or `withXxxx` methods.
+Create a default instance in the companion object with good defaults which can be updated via `withXxxx` methods.
 
-As Java can't use the `copy` methods, add `withXxxx` methods to specify certain fields in the settings instance.
+Add `withXxxx` methods to specify certain fields in the settings instance.
 
 In case you see the need to support reading the settings from `Config`, offer a method taking the `Config` instance so
 that the user can apply a proper namespace.
 Refrain from using `akka.stream.alpakka` as Config prefix, prefer `alpakka` as root namespace.
-
 
 ## Implementation details
 
@@ -50,7 +60,6 @@ Which licenses are compatible with Apache 2 are defined in [this doc](http://www
 
 Dependency licenses will be checked automatically by the sbt Whitesource plug-in. 
 
-
 ### Packages & Scoping
 
 Use `private`, `private[connector]` and `final` extensively to limit the API surface.
@@ -59,10 +68,12 @@ Use `private`, `private[connector]` and `final` extensively to limit the API sur
 | -----------------------------------------|------------------------
 | `akka.stream.alpakka.connector.javadsl`  | Java-only part of the API, normally factories for Sources, Flows and Sinks
 | `akka.stream.alpakka.connector.scaladsl` | Scala-only part of the API, normally factories for Sources, Flows and Sinks
-| `akka.stream.alpakka.connector`          | Shared API, eg. settings classes, implementation if thorowly made private
-| `akka.stream.alpakka.connector.impl`     | Optional, implementation in separate package
+| `akka.stream.alpakka.connector`          | Shared API, eg. settings classes
+| `akka.stream.alpakka.connector.impl`     | Implementation in separate package
 
 ### Graph stage checklist
+
+> Reference connector [operator implementations](reference/src/main/scala/akka/stream/alpakka/reference/impl/)
 
 * Keep mutable state within the `GraphStageLogic` only 
 * Open connections in `preStart`
@@ -84,8 +95,10 @@ as a Flow. This can be easily done by reusing the Flow implementation:
 
 You do not need to expose every configuration a Flow offers this way -- Focus on the most important ones.
 
-
 ## Test
+
+> Reference connector [Scala](reference/src/test/scala/docs/scaladsl/ReferenceSpec.scala) and
+> [Java](reference/src/test/java/docs/javadsl/ReferenceTest.java) tests
 
 Write tests for all public methods and possible settings.
 
@@ -95,6 +108,8 @@ Please ensure that you limit the amount of resources used by the containers.
 
 ## Documentation
 
+> Reference connector [paradox documentation](docs/src/main/paradox/refernece.md)
+
 Using [Paradox](https://github.com/lightbend/paradox) syntax (which is very close to markdown), create or complement
 the documentation in the `docs` module.
 Prepare code snippets to be integrated by Paradox in the tests. Such example should be part of real tests and not in
@@ -102,5 +117,5 @@ unused methods.
 
 Use ScalaDoc if you see the need to describe the API usage better than the naming does.
 
-Run `sbt docs/local:paradox` to generate reference docs while developing. Generated documentation can be 
+Run `sbt docs/Local/paradox` to generate reference docs while developing. Generated documentation can be 
 found in the `./docs/target/paradox/site/local` directory.
