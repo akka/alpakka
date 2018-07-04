@@ -22,15 +22,15 @@ object Udp {
    * contained in the message. All incoming messages are also emitted from the flow for
    * subsequent processing.
    */
-  def sendFlow(sys: ActorSystem): Flow[Datagram, Datagram, NotUsed] =
-    scaladsl.Udp.sendFlow()(sys).asJava
+  def sendFlow(system: ActorSystem): Flow[Datagram, Datagram, NotUsed] =
+    scaladsl.Udp.sendFlow()(system).asJava
 
   /**
    * Creates a sink that will send all incoming [UdpMessage] messages to the remote address
    * contained in the message.
    */
-  def sendSink(sys: ActorSystem): Sink[Datagram, NotUsed] =
-    scaladsl.Udp.sendSink()(sys).asJava
+  def sendSink(system: ActorSystem): Sink[Datagram, NotUsed] =
+    scaladsl.Udp.sendSink()(system).asJava
 
   /**
    * Creates a flow that upon materialization binds to the given `localAddress`. All incoming
@@ -38,6 +38,6 @@ object Udp {
    * are sent to the remote address contained in the message.
    */
   def bindFlow(localAddress: InetSocketAddress,
-               sys: ActorSystem): Flow[Datagram, Datagram, CompletionStage[InetSocketAddress]] =
-    scaladsl.Udp.bindFlow(localAddress)(sys).mapMaterializedValue(_.toJava).asJava
+               system: ActorSystem): Flow[Datagram, Datagram, CompletionStage[InetSocketAddress]] =
+    scaladsl.Udp.bindFlow(localAddress)(system).mapMaterializedValue(_.toJava).asJava
 }
