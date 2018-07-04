@@ -149,7 +149,8 @@ lazy val orientdb = alpakkaProject("orientdb",
                                    fork in Test := true,
                                    parallelExecution in Test := false)
 
-lazy val reference = alpakkaProject("reference", "reference", Dependencies.Reference).enablePlugins(NoPublish)
+lazy val reference = alpakkaProject("reference", "reference", Dependencies.Reference, publish / skip := true)
+  .disablePlugins(BintrayPlugin)
 
 lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3)
 
@@ -184,10 +185,11 @@ lazy val unixdomainsocket = alpakkaProject("unix-domain-socket", "unixdomainsock
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
 
 lazy val docs = project
-  .enablePlugins(ParadoxPlugin, NoPublish)
+  .enablePlugins(ParadoxPlugin)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .settings(
     name := "Alpakka",
+    publish / skip := true,
     paradoxTheme := Some(builtinParadoxTheme("generic")),
     paradoxProperties ++= Map(
       "version" -> version.value,
@@ -219,13 +221,14 @@ lazy val docs = project
   )
 
 lazy val `doc-examples` = project
-  .enablePlugins(NoPublish, AutomateHeaderPlugin)
+  .enablePlugins(AutomateHeaderPlugin)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .dependsOn(
     modules.map(p => classpathDependency(p)): _*
   )
   .settings(
     name := s"akka-stream-alpakka-doc-examples",
+    publish / skip := true,
     Dependencies.`Doc-examples`
   )
 
