@@ -4,9 +4,9 @@
 
 package akka.stream.alpakka.geode.scaladsl
 
-import akka.stream.alpakka.geode.internal._
-import akka.stream.alpakka.geode.internal.pdx.{PdxDecoder, PdxEncoder, ShapelessPdxSerializer}
-import akka.stream.alpakka.geode.internal.stage.{GeodeContinuousSourceStage, GeodeFiniteSourceStage, GeodeFlowStage}
+import akka.stream.alpakka.geode.impl._
+import akka.stream.alpakka.geode.impl.pdx.{PdxDecoder, PdxEncoder, ShapelessPdxSerializer}
+import akka.stream.alpakka.geode.impl.stage.{GeodeContinuousSourceStage, GeodeFiniteSourceStage, GeodeFlowStage}
 import akka.stream.alpakka.geode.{AkkaPdxSerializer, GeodeSettings, RegionSettings}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}

@@ -9,10 +9,10 @@ import akka.NotUsed;
 import akka.stream.alpakka.geode.AkkaPdxSerializer;
 import akka.stream.alpakka.geode.GeodeSettings;
 import akka.stream.alpakka.geode.RegionSettings;
-import akka.stream.alpakka.geode.internal.GeodeCache;
-import akka.stream.alpakka.geode.internal.stage.GeodeContinuousSourceStage;
-import akka.stream.alpakka.geode.internal.stage.GeodeFiniteSourceStage;
-import akka.stream.alpakka.geode.internal.stage.GeodeFlowStage;
+import akka.stream.alpakka.geode.impl.GeodeCache;
+import akka.stream.alpakka.geode.impl.stage.GeodeContinuousSourceStage;
+import akka.stream.alpakka.geode.impl.stage.GeodeFiniteSourceStage;
+import akka.stream.alpakka.geode.impl.stage.GeodeFlowStage;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -62,39 +62,5 @@ public class ReactiveGeode extends GeodeCache {
 
   public void close() {
     close(false);
-  }
-}
-
-/** Reactive geode with server event subscription. Can build continuous source. */
-class ReactiveGeodeWithPoolSubscription extends ReactiveGeode {
-
-  /**
-   * Subscribes to server event.
-   *
-   * @return ClientCacheFactory with server event subscription.
-   */
-  public final ClientCacheFactory configure(ClientCacheFactory factory) {
-    return super.configure(factory).setPoolSubscriptionEnabled(true);
-  }
-
-  public ReactiveGeodeWithPoolSubscription(GeodeSettings settings) {
-    super(settings);
-  }
-
-  public <V> Source<V, Future<Done>> continuousQuery(
-      String queryName, String query, AkkaPdxSerializer<V> serializer) {
-
-    registerPDXSerializer(serializer, serializer.clazz());
-    return Source.fromGraph(
-        new GeodeContinuousSourceStage<V>(cache(), Symbol.apply(queryName), query));
-  }
-
-  public boolean closeContinuousQuery(String name) throws CqException {
-
-    QueryService qs = cache().getQueryService();
-    CqQuery query = qs.getCq(name);
-    if (query == null) return false;
-    query.close();
-    return true;
   }
 }
