@@ -11,13 +11,31 @@ import java.util.{List => JavaList, Map => JavaMap}
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
-sealed trait Mode
+sealed abstract class Mode
 
-object Mode {
+object Modes {
 
-  case object Get extends Mode
+  /**
+   * We make singleton objects extend an abstract class with the same name.
+   * This makes it possible to refer to the object type without `.type`.
+   */
+  // at most once delivery
+  sealed abstract class Get extends Mode
+  case object Get extends Get
 
-  case class Peek(fromLsn: Long) extends Mode
+  // at least once delivery
+  sealed abstract class Peek extends Mode
+  case object Peek extends Peek
+
+  /**
+   * Java API
+   */
+  def chooseGetMode(): Get = Get
+
+  /**
+   * Java API
+   */
+  def choosePeekMode(): Peek = Peek
 
 }
 
@@ -34,7 +52,7 @@ object Mode {
  */
 final class PostgreSQLInstance private (val connectionString: String,
                                         val slotName: String,
-                                        val mode: Mode = Mode.Get,
+                                        val mode: Mode = Modes.Get,
                                         val createSlotOnStart: Boolean = true,
                                         val tablesToIgnore: List[String] = List(),
                                         val columnsToIgnore: Map[String, List[String]] = Map(),
@@ -104,7 +122,7 @@ final class PostgreSQLInstance private (val connectionString: String,
        | createSlotOnStart = $createSlotOnStart
        | tablesToIgnore = $tablesToIgnore
        | columnsToIgnore = $columnsToIgnore
-       | mode = $Mode
+       | mode = $mode
        | maxItems = $maxItems
        | pollInterval = $pollInterval
        |)""".stripMargin

@@ -2,7 +2,7 @@
 
 This provides an Akka Stream Source that can stream changes from a PostgreSQL database. Here, by
 "change", we mean database events such as: RowDeleted(..), RowInserted(..), RowUpdated(..). A
-typical practical use case is to have a stream that continuously replicates data from PostgreSQL to ElasticSearch. But more generally,
+typical practical use case  is to have a stream that continuously replicates data from PostgreSQL to ElasticSearch. But more generally,
 this provides the tooling for implementing the [Strangler Application](https://www.martinfowler.com/bliki/StranglerApplication.html) /
 [Event Interception](https://www.martinfowler.com/bliki/EventInterception.html) patterns that Martin Fowler popularized.
 
@@ -15,26 +15,27 @@ the PostgreSQL documentation to understand the performance implications: [the Po
 
 ## Events Emitted
 
-This Akka Streams Source emits elements of the type **ChangeSet**. A change set is a set of changes that share a
+This Akka Streams Source emits elements of the type @scaladoc[ChangeSet](akka.stream.alpakka.postgresqlcdc.ChangeSet). A change set is a set of changes that share a
 transaction id. A 'change' can be one of the following:
 
-* **RowInserted**
+* @scaladoc[RowInserted](akka.stream.alpakka.postgresqlcdc.RowInserted)
     * schemaName: String
     * tableName: String
     * fields: A list of fields
 
-* **RowUpdated**
+* @scaladoc[RowUpdated](akka.stream.alpakka.postgresqlcdc.RowUpdated)
     * schemaName: String
     * tableName: String
     * fields: A list of fields
         * note: only the new version of the fields (by default)
 
-* **RowDeleted**
+* @scaladoc[RowDeleted](akka.stream.alpakka.postgresqlcdc.RowDeleted)
     * schemaName: String
     * tableName: String
     * fields: A list of fields
 
-A **Field** is defined as a class with 3 attributes of type String : columnName, columnType, value.
+A @scaladoc[Field](akka.stream.alpakka.postgresqlcdc.Field) is defined as a class with 3 attributes of type String : columnName, columnType, value. The onus is on the user to turn the stringly-typed @scaladoc[Field](akka.stream.alpakka.postgresqlcdc.Field)
+into something domain specific and more strongly typed.
 
 ## Artifacts
 
@@ -68,9 +69,11 @@ echo "wal_level=logical" >> /etc/postgresql/9.4/main/postgresql.conf
 echo "max_replication_slots=8" >> /etc/postgresql/9.4/main/postgresql.conf
 ```
 
-If you run your PostgreSQL on AWS RDS, you probably don't have direct access to the `postgresql.conf` onfiguration file and you have to use
-AWS RDS option groups: you simply have to set the ```rds.logical_replication``` parameter to ```1``` in the option group
-associated with your RDS instance. See [the AWS RDS documentation](https://aws.amazon.com/blogs/aws/amazon-rds-for-postgresql-new-minor-versions-logical-replication-dms-and-more/).
+If you use a cloud-based managed database service (e.g., AWS RDS), you usually don't have direct access to the `postgresql.conf` configuration file and you have to use
+a configuration panel instead:
+
+* On AWS RDS:
+    * Use option groups: you simply have to set the ```rds.logical_replication``` parameter to ```1``` in the option group associated with your RDS instance. See [the AWS RDS documentation](https://aws.amazon.com/blogs/aws/amazon-rds-for-postgresql-new-minor-versions-logical-replication-dms-and-more/).
 
 ### Source Settings
 
@@ -123,5 +126,5 @@ ChangeDataCapture.source(PostgreSQLInstance(connectionString, slotName))
 * It cannot capture events regarding changes to tables' structure (i.e. column removed, table dropped, table
 index added, change of column type etc.).
 * When a row update is captured, the previous version of the row is lost / not available.
-    * Unless the REPLICA IDENTITY setting for the table is changed from the default.
+    * Unless the `REPLICA IDENTITY` setting for the table is changed from the default.
 * It doesn't work with older version of PostgreSQL (i.e < 9.4).

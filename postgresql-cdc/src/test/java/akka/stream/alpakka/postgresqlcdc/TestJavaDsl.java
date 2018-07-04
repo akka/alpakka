@@ -18,6 +18,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.sql.Connection;
+import java.time.Instant;
 import java.util.ArrayList;
 
 public class TestJavaDsl {
@@ -53,9 +54,10 @@ public class TestJavaDsl {
 
     @Test
     public void testIt() {
+        Instant time = Instant.parse("1964-02-23T00:00:00Z");
 
         // some inserts
-        FakeDb.insertCustomer(0, "John", "Lennon", "john.lennon@akka.io", new ArrayList(), connection);
+        FakeDb.insertCustomer(0, "John", "Lennon", "john.lennon@akka.io", new ArrayList(), time, connection);
         // some updates
         FakeDb.updateCustomerEmail(0, "john.lennon@thebeatles.com", connection);
         // some deletes
