@@ -38,6 +38,7 @@
 * [Slick (JDBC)](slick.md)
 * [Spring Web](spring-web.md)
 * [TCP](external/tcp.md)
+* [UDP](udp.md)
 * [Unix Domain Sockets](unix-domain-socket.md)
 
 @@@
