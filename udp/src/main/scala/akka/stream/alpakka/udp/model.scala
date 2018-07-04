@@ -8,11 +8,11 @@ import java.net.InetSocketAddress
 
 import akka.util.ByteString
 
-final case class UdpMessage(data: ByteString, remote: InetSocketAddress)
-object UdpMessage {
+final case class Datagram(data: ByteString, remote: InetSocketAddress)
+object Datagram {
 
   /**
    * Java API
    */
-  def create(data: ByteString, remote: InetSocketAddress) = UdpMessage(data, remote)
+  def create(data: ByteString, remote: InetSocketAddress) = Datagram(data, remote)
 }

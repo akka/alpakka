@@ -1,6 +1,6 @@
 # UDP
 
-The UDP connector provides Akka Stream flows that allow to send and receive UDP messages.
+The UDP connector provides Akka Stream flows that allow to send and receive UDP datagrams.
 
 ### Reported issues
 
@@ -18,18 +18,18 @@ The UDP connector provides Akka Stream flows that allow to send and receive UDP 
 
 ### Sending
 
-Messages can be sent to remote destinations by using a `Udp.sendFlow` or `Udp.sendSink` which can be found in the
+Datagrams can be sent to remote destinations by using a `Udp.sendFlow` or `Udp.sendSink` which can be found in the
 @scaladoc[Udp](akka.stream.alpakka.udp.scaladsl.Udp$) factory object.
 
 Scala
-: @@snip ($alpakka$/udp/src/test/scala/akka/stream/alpakka/udp/UdpSpec.scala) { #send-messages }
+: @@snip ($alpakka$/udp/src/test/scala/akka/stream/alpakka/udp/UdpSpec.scala) { #send-datagrams }
 
 Java
-: @@snip ($alpakka$/udp/src/test/java/akka/stream/alpakka/udp/UdpTest.java) { #send-messages }
+: @@snip ($alpakka$/udp/src/test/java/akka/stream/alpakka/udp/UdpTest.java) { #send-datagrams }
 
 ### Receiving
 
-First create an address which will be used to bind and listen for incoming messages.
+First create an address which will be used to bind and listen for incoming datagrams.
 
 Scala
 : @@snip ($alpakka$/udp/src/test/scala/akka/stream/alpakka/udp/UdpSpec.scala) { #bind-address }
@@ -37,8 +37,8 @@ Scala
 Java
 : @@snip ($alpakka$/udp/src/test/java/akka/stream/alpakka/udp/UdpTest.java) { #bind-address }
 
-A Flow created from `Udp.bindFlow` will bind to the given address. All messages coming from the network
-to the bound address will be sent downstream. Messages received from the upstream will be sent to their
+A Flow created from `Udp.bindFlow` will bind to the given address. All datagrams coming from the network
+to the bound address will be sent downstream. Datagrams received from the upstream will be sent to their
 corresponding destination addresses.
 
 The flow materializes to the @scala[`Future[InetSocketAddress]`]@java[`CompletionStage[InetSocketAddress]`] which

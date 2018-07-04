@@ -9,7 +9,7 @@ import java.util.concurrent.CompletionStage
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.alpakka.udp.UdpMessage
+import akka.stream.alpakka.udp.Datagram
 import akka.stream.javadsl.{Flow, Sink}
 import akka.stream.alpakka.udp.scaladsl
 
@@ -22,14 +22,14 @@ object Udp {
    * contained in the message. All incoming messages are also emitted from the flow for
    * subsequent processing.
    */
-  def sendFlow(sys: ActorSystem): Flow[UdpMessage, UdpMessage, NotUsed] =
+  def sendFlow(sys: ActorSystem): Flow[Datagram, Datagram, NotUsed] =
     scaladsl.Udp.sendFlow()(sys).asJava
 
   /**
    * Creates a sink that will send all incoming [UdpMessage] messages to the remote address
    * contained in the message.
    */
-  def sendSink(sys: ActorSystem): Sink[UdpMessage, NotUsed] =
+  def sendSink(sys: ActorSystem): Sink[Datagram, NotUsed] =
     scaladsl.Udp.sendSink()(sys).asJava
 
   /**
@@ -38,6 +38,6 @@ object Udp {
    * are sent to the remote address contained in the message.
    */
   def bindFlow(localAddress: InetSocketAddress,
-               sys: ActorSystem): Flow[UdpMessage, UdpMessage, CompletionStage[InetSocketAddress]] =
+               sys: ActorSystem): Flow[Datagram, Datagram, CompletionStage[InetSocketAddress]] =
     scaladsl.Udp.bindFlow(localAddress)(sys).mapMaterializedValue(_.toJava).asJava
 }

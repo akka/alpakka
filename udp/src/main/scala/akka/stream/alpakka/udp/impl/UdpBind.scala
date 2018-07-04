@@ -10,7 +10,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.annotation.InternalApi
 import akka.io.{IO, Udp}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
-import akka.stream.alpakka.udp.UdpMessage
+import akka.stream.alpakka.udp.Datagram
 import akka.stream.stage._
 
 import scala.concurrent.{Future, Promise}
@@ -20,7 +20,7 @@ import scala.concurrent.{Future, Promise}
  */
 @InternalApi private[udp] final class UdpBindLogic(localAddress: InetSocketAddress,
                                                    boundPromise: Promise[InetSocketAddress])(
-    val shape: FlowShape[UdpMessage, UdpMessage]
+    val shape: FlowShape[Datagram, Datagram]
 )(implicit val system: ActorSystem)
     extends GraphStageLogic(shape) {
 
@@ -48,7 +48,7 @@ import scala.concurrent.{Future, Promise}
       failStage(ex)
     case (_, Udp.Received(data, sender)) =>
       if (isAvailable(out)) {
-        push(out, UdpMessage(data, sender))
+        push(out, Datagram(data, sender))
       }
     case _ =>
   }
@@ -78,12 +78,12 @@ import scala.concurrent.{Future, Promise}
 }
 
 @InternalApi private[udp] final class UdpBindFlow(localAddress: InetSocketAddress)(implicit val system: ActorSystem)
-    extends GraphStageWithMaterializedValue[FlowShape[UdpMessage, UdpMessage], Future[InetSocketAddress]] {
+    extends GraphStageWithMaterializedValue[FlowShape[Datagram, Datagram], Future[InetSocketAddress]] {
 
-  val in: Inlet[UdpMessage] = Inlet("UdpBindFlow.in")
-  val out: Outlet[UdpMessage] = Outlet("UdpBindFlow.in")
+  val in: Inlet[Datagram] = Inlet("UdpBindFlow.in")
+  val out: Outlet[Datagram] = Outlet("UdpBindFlow.in")
 
-  val shape: FlowShape[UdpMessage, UdpMessage] = FlowShape.of(in, out)
+  val shape: FlowShape[Datagram, Datagram] = FlowShape.of(in, out)
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val boundPromise = Promise[InetSocketAddress]
     (new UdpBindLogic(localAddress, boundPromise)(shape), boundPromise.future)

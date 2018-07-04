@@ -8,7 +8,7 @@ import java.net.InetSocketAddress
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.alpakka.udp.UdpMessage
+import akka.stream.alpakka.udp.Datagram
 import akka.stream.alpakka.udp.impl.{UdpBindFlow, UdpSendFlow}
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Flow
@@ -22,14 +22,14 @@ object Udp {
    * contained in the message. All incoming messages are also emitted from the flow for
    * subsequent processing.
    */
-  def sendFlow()(implicit sys: ActorSystem): Flow[UdpMessage, UdpMessage, NotUsed] =
+  def sendFlow()(implicit sys: ActorSystem): Flow[Datagram, Datagram, NotUsed] =
     Flow.fromGraph(new UdpSendFlow())
 
   /**
    * Creates a sink that will send all incoming [UdpMessage] messages to the remote address
    * contained in the message.
    */
-  def sendSink()(implicit sys: ActorSystem): Sink[UdpMessage, NotUsed] = sendFlow().to(Sink.ignore)
+  def sendSink()(implicit sys: ActorSystem): Sink[Datagram, NotUsed] = sendFlow().to(Sink.ignore)
 
   /**
    * Creates a flow that upon materialization binds to the given `localAddress`. All incoming
@@ -38,6 +38,6 @@ object Udp {
    */
   def bindFlow(
       localAddress: InetSocketAddress
-  )(implicit sys: ActorSystem): Flow[UdpMessage, UdpMessage, Future[InetSocketAddress]] =
+  )(implicit sys: ActorSystem): Flow[Datagram, Datagram, Future[InetSocketAddress]] =
     Flow.fromGraph(new UdpBindFlow(localAddress))
 }

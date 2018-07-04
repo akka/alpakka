@@ -47,39 +47,39 @@ public class UdpTest {
     // #bind-address
 
     // #bind-flow
-    final Flow<UdpMessage, UdpMessage, CompletionStage<InetSocketAddress>> bindFlow =
+    final Flow<Datagram, Datagram, CompletionStage<InetSocketAddress>> bindFlow =
       Udp.bindFlow(bindToLocal, system);
     // #bind-flow
 
-    final Pair<Pair<TestPublisher.Probe<UdpMessage>, CompletionStage<InetSocketAddress>>, TestSubscriber.Probe<UdpMessage>> materialized =
-      TestSource.<UdpMessage>probe(system)
+    final Pair<Pair<TestPublisher.Probe<Datagram>, CompletionStage<InetSocketAddress>>, TestSubscriber.Probe<Datagram>> materialized =
+      TestSource.<Datagram>probe(system)
         .viaMat(bindFlow, Keep.both())
         .toMat(TestSink.probe(system), Keep.both())
         .run(materializer);
 
     {
-      // #send-messages
+      // #send-datagrams
       final InetSocketAddress destination = new InetSocketAddress("my.server", 27015);
-      // #send-messages
+      // #send-datagrams
     }
 
     final InetSocketAddress destination = materialized.first().second().toCompletableFuture().get();
 
-    // #send-messages
+    // #send-datagrams
     final Integer messagesToSend = 100;
 
-    // #send-messages
+    // #send-datagrams
 
-    final TestSubscriber.Probe<UdpMessage> sub = materialized.second();
+    final TestSubscriber.Probe<Datagram> sub = materialized.second();
     sub.ensureSubscription();
     sub.request(messagesToSend);
 
-    // #send-messages
+    // #send-datagrams
     Source.range(1, messagesToSend)
         .map(i -> ByteString.fromString("Message " + i))
-        .map(bs -> UdpMessage.create(bs, destination))
+        .map(bs -> Datagram.create(bs, destination))
         .runWith(Udp.sendSink(system), materializer);
-    // #send-messages
+    // #send-datagrams
 
     for (int i = 0; i < messagesToSend; i++) {
       sub.requestNext();

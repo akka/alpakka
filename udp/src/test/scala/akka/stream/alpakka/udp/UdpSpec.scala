@@ -35,7 +35,7 @@ class UdpSpec
   // #bind-address
 
   private def msg(msg: String, destination: InetSocketAddress) =
-    UdpMessage(ByteString(msg), destination)
+    Datagram(ByteString(msg), destination)
 
   override def afterAll =
     TestKit.shutdownActorSystem(system)
@@ -44,12 +44,12 @@ class UdpSpec
     "send and receive messages" in {
 
       // #bind-flow
-      val bindFlow: Flow[UdpMessage, UdpMessage, Future[InetSocketAddress]] =
+      val bindFlow: Flow[Datagram, Datagram, Future[InetSocketAddress]] =
         Udp.bindFlow(bindToLocal)
       // #bind-flow
 
       val ((pub, bound), sub) = TestSource
-        .probe[UdpMessage](system)
+        .probe[Datagram](system)
         .viaMat(bindFlow)(Keep.both)
         .toMat(TestSink.probe)(Keep.both)
         .run()
@@ -57,25 +57,25 @@ class UdpSpec
       val destination = bound.futureValue
 
       {
-        // #send-messages
+        // #send-datagrams
         val destination = new InetSocketAddress("my.server", 27015)
-        // #send-messages
+        // #send-datagrams
       }
 
-      // #send-messages
+      // #send-datagrams
       val messagesToSend = 100
 
-      // #send-messages
+      // #send-datagrams
 
       sub.ensureSubscription()
       sub.request(messagesToSend)
 
-      // #send-messages
+      // #send-datagrams
       Source(1 to messagesToSend)
         .map(i => ByteString(s"Message $i"))
-        .map(UdpMessage(_, destination))
+        .map(Datagram(_, destination))
         .runWith(Udp.sendSink())
-      // #send-messages
+      // #send-datagrams
 
       (1 to messagesToSend).foreach { _ =>
         sub.requestNext()
@@ -85,13 +85,13 @@ class UdpSpec
 
     "ping-pong messages" in {
       val ((pub1, bound1), sub1) = TestSource
-        .probe[UdpMessage](system)
+        .probe[Datagram](system)
         .viaMat(Udp.bindFlow(bindToLocal))(Keep.both)
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
       val ((pub2, bound2), sub2) = TestSource
-        .probe[UdpMessage](system)
+        .probe[Datagram](system)
         .viaMat(Udp.bindFlow(bindToLocal))(Keep.both)
         .toMat(TestSink.probe)(Keep.both)
         .run()
