@@ -31,6 +31,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   sqs,
   sse,
   text,
+  udp,
   unixdomainsocket,
   xml
 )
@@ -175,6 +176,8 @@ lazy val sqs = alpakkaProject("sqs",
 lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse)
 
 lazy val text = alpakkaProject("text", "text")
+
+lazy val udp = alpakkaProject("udp", "udp")
 
 lazy val unixdomainsocket = alpakkaProject("unix-domain-socket", "unixdomainsocket", Dependencies.UnixDomainSocket)
 
