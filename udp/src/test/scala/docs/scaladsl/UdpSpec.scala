@@ -2,16 +2,16 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.udp
+package docs.scaladsl
 
 import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.udp.Datagram
 import akka.stream.alpakka.udp.scaladsl.Udp
 import akka.stream.scaladsl.{Flow, Keep, Source}
-import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.{TestSink, TestSource}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures

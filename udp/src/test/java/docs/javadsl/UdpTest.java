@@ -2,12 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.udp;
+package docs.javadsl;
 
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.udp.Datagram;
 import akka.stream.alpakka.udp.javadsl.Udp;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
