@@ -41,7 +41,7 @@ A Flow created from `Udp.bindFlow` will bind to the given address. All datagrams
 to the bound address will be sent downstream. Datagrams received from the upstream will be sent to their
 corresponding destination addresses.
 
-The flow materializes to the @scala[`Future[InetSocketAddress]`]@java[`CompletionStage[InetSocketAddress]`] which
+The flow materializes to the @scala[`Future[InetSocketAddress]`]@java[`CompletionStage<InetSocketAddress>`] which
 will eventually hold the address the flow was finally bound to.
 
 Scala
