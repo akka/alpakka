@@ -5,6 +5,7 @@
 package akka.stream.alpakka.postgresqlcdc
 
 import java.sql.{Connection, DriverManager}
+import java.time.Instant
 
 import org.postgresql.util.PGobject
 
@@ -25,6 +26,7 @@ object FakeDb {
                               |  last_name VARCHAR(255) NOT NULL,
                               |  email VARCHAR(255) NOT NULL,
                               |  tags TEXT[] NOT NULL,
+                              |  time TIMESTAMPTZ,
                               |  PRIMARY KEY(id)
                               |);
                             """.stripMargin)
@@ -75,23 +77,26 @@ object FakeDb {
     conn.prepareStatement("DROP TABLE employees;").execute()
 
   // for the Java DSL test
-  def insertCustomer(id: Int, fName: String, lName: String, email: String, tags: java.util.List[String])(
+  def insertCustomer(id: Int, fName: String, lName: String, email: String, tags: java.util.List[String], time: Instant)(
       implicit conn: Connection
   ): Unit = {
     import scala.collection.JavaConverters._
-    insertCustomer(id, fName, lName, email, tags.asScala.toList)(conn)
+    insertCustomer(id, fName, lName, email, tags.asScala.toList, time)(conn)
   }
 
-  def insertCustomer(id: Int, fName: String, lName: String, email: String, tags: List[String])(
+  def insertCustomer(id: Int, fName: String, lName: String, email: String, tags: List[String], time: Instant)(
       implicit conn: Connection
   ): Unit = {
     val insertStatement =
-      conn.prepareStatement("INSERT INTO customers(id, first_name, last_name, email, tags) VALUES(?, ?, ?, ?, ?)")
+      conn.prepareStatement(
+        "INSERT INTO customers(id, first_name, last_name, email, tags, time) VALUES(?, ?, ?, ?, ?, ?)"
+      )
     insertStatement.setInt(1, id)
     insertStatement.setString(2, fName)
     insertStatement.setString(3, lName)
     insertStatement.setString(4, email)
     insertStatement.setArray(5, conn.createArrayOf("text", tags.toArray))
+    insertStatement.setTimestamp(6, new java.sql.Timestamp(time.toEpochMilli))
     insertStatement.execute()
   }
 

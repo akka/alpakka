@@ -48,20 +48,17 @@ private[postgresqlcdc] final class PostgreSQLSourceStageLogic(val settings: Post
     retrieveChanges()
 
   private def retrieveChanges(): Unit = {
+
     val result: List[ChangeSet] = {
       val slotChanges = getSlotChanges(getSlotChangesStatement)
       TestDecodingPlugin.transformSlotChanges(slotChanges, settings.tablesToIgnore, settings.columnsToIgnore)
     }
 
-    if (result.isEmpty) {
-      if (isAvailable(out)) {
-        scheduleOnce(NotUsed, settings.pollInterval)
-      }
-    } else {
+    if (result.nonEmpty) {
       buffer ++= result
       push(out, buffer.dequeue())
-
-    }
+    } else if (isAvailable(out))
+      scheduleOnce(NotUsed, settings.pollInterval)
   }
 
   private def out = shape.out

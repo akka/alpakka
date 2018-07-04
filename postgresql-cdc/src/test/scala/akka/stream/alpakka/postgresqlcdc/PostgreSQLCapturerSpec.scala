@@ -61,26 +61,42 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
 
   "A PostgreSQL change data capture source" must {
 
-    "capture changes to a table with numeric / character columns" in {
+    "capture changes to a table with numeric / character / array / timestamp columns" in {
+
+      import java.time.Instant
 
       log.info("inserting data into customers table")
       // some inserts
 
-      insertCustomer(id = 0, fName = "John", lName = "Lennon", email = "john.lennon@akka.io", tags = List("awesome"))
+      val time = Instant.parse("1964-02-23T00:00:00Z")
+
+      insertCustomer(id = 0,
+                     fName = "John",
+                     lName = "Lennon",
+                     email = "john.lennon@akka.io",
+                     tags = List("awesome"),
+                     time)
 
       insertCustomer(id = 1,
                      fName = "George",
                      lName = "Harrison",
                      email = "george.harrison@akka.io",
-                     tags = List("awesome"))
+                     tags = List("awesome"),
+                     time)
 
       insertCustomer(id = 2,
                      fName = "Paul",
                      lName = "McCartney",
                      email = "paul.mccartney@akka.io",
-                     tags = List("awesome"))
+                     tags = List("awesome"),
+                     time)
 
-      insertCustomer(id = 3, fName = "Ringo", lName = "Star", email = "ringo.star@akka.io", tags = List("awesome"))
+      insertCustomer(id = 3,
+                     fName = "Ringo",
+                     lName = "Star",
+                     email = "ringo.star@akka.io",
+                     tags = List("awesome"),
+                     time)
 
       // some updates
       updateCustomerEmail(id = 0, "john.lennon@thebeatles.com")
@@ -107,7 +123,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
                 "first_name" -> "John",
                 "last_name" -> "Lennon",
                 "email" -> "john.lennon@akka.io",
-                "tags" -> "{awesome}"
+                "tags" -> "{awesome}",
+                "\"time\"" -> "1964-02-22 16:00:00-08"
               ) => // success
         }
         .expectNextChainingPF {
@@ -117,7 +134,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
                 "first_name" -> "George",
                 "last_name" -> "Harrison",
                 "email" -> "george.harrison@akka.io",
-                "tags" -> "{awesome}"
+                "tags" -> "{awesome}",
+                "\"time\"" -> "1964-02-22 16:00:00-08"
               ) => // success
         }
         .expectNextChainingPF {
@@ -127,7 +145,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
                 "first_name" -> "Paul",
                 "last_name" -> "McCartney",
                 "email" -> "paul.mccartney@akka.io",
-                "tags" -> "{awesome}"
+                "tags" -> "{awesome}",
+                "\"time\"" -> "1964-02-22 16:00:00-08"
               ) => // success
         }
         .expectNextChainingPF {
@@ -137,7 +156,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
                 "first_name" -> "Ringo",
                 "last_name" -> "Star",
                 "email" -> "ringo.star@akka.io",
-                "tags" -> "{awesome}"
+                "tags" -> "{awesome}",
+                "\"time\"" -> "1964-02-22 16:00:00-08"
               ) => // success
         }
         //
@@ -150,7 +170,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
                 "first_name" -> "John",
                 "last_name" -> "Lennon",
                 "email" -> "john.lennon@thebeatles.com",
-                "tags" -> "{awesome}"
+                "tags" -> "{awesome}",
+                "\"time\"" -> "1964-02-22 16:00:00-08"
               ) => // success
         }
         .expectNextChainingPF {
@@ -160,7 +181,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
                 "first_name" -> "George",
                 "last_name" -> "Harrison",
                 "email" -> "george.harrison@thebeatles.com",
-                "tags" -> "{awesome}"
+                "tags" -> "{awesome}",
+                "\"time\"" -> "1964-02-22 16:00:00-08"
               ) => // success
         }
         .expectNextChainingPF {
@@ -170,7 +192,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
                 "first_name" -> "Paul",
                 "last_name" -> "McCartney",
                 "email" -> "paul.mccartney@thebeatles.com",
-                "tags" -> "{awesome}"
+                "tags" -> "{awesome}",
+                "\"time\"" -> "1964-02-22 16:00:00-08"
               ) => // success
         }
         .expectNextChainingPF {
@@ -180,7 +203,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
                 "first_name" -> "Ringo",
                 "last_name" -> "Star",
                 "email" -> "ringo.star@thebeatles.com",
-                "tags" -> "{awesome}"
+                "tags" -> "{awesome}",
+                "\"time\"" -> "1964-02-22 16:00:00-08"
               ) => // success
         }
         //
