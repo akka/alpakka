@@ -20,18 +20,49 @@ simple and easy to use.
 When designing Flows, consider adding an extra field to the in- and out-messages which is passed through. A common
 use case we see, is committing a Kafka offset after passing data to another system.
 
-### Java APIs
+### Implementing the Java API in Scala
 
 > Reference connector [Java API factory methods](reference/src/main/scala/akka/stream/alpakka/javadsl/Reference.scala)
 
-Alpakka, same as Akka, aims to keep 100% feature parity between the various language DSLs.
+Alpakka, same as Akka, aims to keep 100% feature parity between the various language DSLs. Implementing even the API for Java in Scala has proven the most viable way to do it, as long as you keep the following in mind:
 
-* Provide factory methods for Sources, Flows and Sinks in the `javadsl` package wrapping all the methods in the Scala API
-* The Akka Stream Scala instances have a `.asJava` method to convert to the `akka.stream.javadsl` counterparts
-* Let the Java API use Java standard types (`java.util.Optional`, `java.util.List`, ...) and convert using
-`JavaConverters` where needed
-* Use the `akka.japi.Pair` class to return tuples
-* Use `scala.compat.java8.FutureConverters` to translate Futures to `CompletionStage`s
+
+1. Keep entry points separated in `javadsl` and `scaladsl`
+
+1. Provide factory methods for Sources, Flows and Sinks in the `javadsl` package wrapping all the methods in the Scala API. The Akka Stream Scala instances have a `.asJava` method to convert to the `akka.stream.javadsl` counterparts.
+
+1. When using Scala `object` instances, offer a `getInstance()` method and add a sealed abstract class (to support 2.11) to get the return type.
+
+1. When the Scala API contains an `apply` method, use `create` for Java users.
+
+1. Do not nest Scala `object`s more than two levels (as access from Java becomes weird)
+
+1. Be careful to convert values within data structures (eg. for `scala.Long` vs. `java.lang.Long`, use `scala.Long.box(value)`)
+
+1. When compiling with both Scala 2.11 and 2.12, some methods considered overloads in 2.11, become ambiguous in 2.12 as both may be functional interfaces.
+
+1. Complement any methods with Scala collections with a Java collection version
+
+1. Use the `akka.japi.Pair` class to return tuples
+
+1. If the underlying Scala code requires an `ExecutionContext`, make the Java API take an `Executor` and use `ExecutionContext.fromExecutor(executor)` for conversion.
+
+1. Make use of `scala-java8-compat` conversions, see [GitHub](https://github.com/scala/scala-java8-compat) (eg. `scala.compat.java8.FutureConverters` to translate Futures to `CompletionStage`s).
+
+
+### Overview of Scala types and their Java counterparts
+
+| Scala | Java |
+|-------|------|
+| `scala.Option[T]` | `java.util.Optional<T>` (`OptionalDouble`, ...) |
+| `scala.collection.immutable.Seq[T]` | `java.util.List<T>` |
+| `scala.concurrent.Future[T]` | `java.util.concurrent.CompletionStage<T>` |
+| `scala.concurrent.Promise[T]` | `java.util.concurrent.CompletableFuture<T>` |
+| `scala.concurrent.duration.FiniteDuration` | `java.time.Duration` |
+| `T => Unit` | `java.util.function.Consumer<T>` |
+| `() => R` (`scala.Function0[R]`) | `java.util.function.Supplier<R>` |
+| `T => R` (`scala.Function1[T, R]`) | `java.util.function.Function<T, R>` |
+
 
 ### Settings
 
@@ -48,7 +79,25 @@ In case you see the need to support reading the settings from `Config`, offer a 
 that the user can apply a proper namespace.
 Refrain from using `akka.stream.alpakka` as Config prefix, prefer `alpakka` as root namespace.
 
+
 ## Implementation details
+
+### Evolving APIs with binary compatibility
+
+All Akka APIs aim to evolve in a binary compatible way within minor versions.
+
+1. Do not use any default arguments
+
+1. Do not use case classes (as the public copy method relies on default arguments)
+
+1. To generate a case class replacement, consider using [Kaze Class](https://github.com/ktoso/kaze-class)
+
+See [Binary Compatibilty Rules](https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html) in the Akka documentation.
+
+See [Binary Compatibility for library authors](https://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html)
+
+Use [MigrationManager (MiMa)](https://github.com/lightbend/migration-manager) to validate, if versions are binary compatible. MiMa is part of the Alpakka build and its checks can be triggered by `mimaReportBinaryIssues`.
+
 
 ### External Dependencies
 
