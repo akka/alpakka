@@ -3,7 +3,7 @@ Alpakka [![scaladex-badge][]][scaladex] [![maven-central-badge][]][maven-central
 
 [scaladex]:              https://index.scala-lang.org/akka/alpakka
 [scaladex-badge]:        https://index.scala-lang.org/akka/alpakka/latest.svg
-[maven-central]:         https://search.maven.org/search?q=akka-stream-alpakka
+[maven-central]:         https://search.maven.org/#search%7Cga%7C1%7Cakka-stream-alpakka
 [maven-central-badge]:   https://maven-badges.herokuapp.com/maven-central/com.lightbend.akka/akka-stream-alpakka-file_2.12/badge.svg
 [travis]:                https://travis-ci.org/akka/alpakka
 [travis-badge]:          https://travis-ci.org/akka/alpakka.svg?branch=master
