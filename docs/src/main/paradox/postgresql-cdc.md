@@ -64,7 +64,7 @@ Note that the PostgreSQL JDBC driver is not included in the main JAR.
 According to the PostgreSQL documentation, before you can use logical decoding, you must set `wal_level` to `logical` and
 `max_replication_slots` to at least 1. This can be as simple as:
 
-```
+```bash
 echo "wal_level=logical" >> /etc/postgresql/9.4/main/postgresql.conf
 echo "max_replication_slots=8" >> /etc/postgresql/9.4/main/postgresql.conf
 ```
@@ -77,7 +77,35 @@ a configuration panel instead:
 
 ### Source Settings
 
-TODO
+We configure the source using @scaladoc[PostgreSQLInstance](akka.stream.alpakka.postgresqlcdc.PostgreSQLInstance) and @scaladoc[ChangeDateCaptureSettings](akka.stream.alpakka.postgresqlcdc.ChangeDataCaptureSettings):
+
+@scaladoc[PostgreSQLInstance](akka.stream.alpakka.postgresqlcdc.PostgreSQLInstance):
+
+|Setting                 | Meaning                           | Required|
+| -----------------------|-----------------------------------|---------|
+| JDBC connection string | JDBC connection string            | yes     |
+| slot name              | name of logical replication slot  | yes     |
+
+@scaladoc[ChangeDateCaptureSettings](akka.stream.alpakka.postgresqlcdc.ChangeDataCaptureSettings):
+
+| Setting           | Meaning                                   | Default   |
+| ------------------|-------------------------------------------|-----------|
+| createSlotOnStart | create logical replication slot on start  | true      |
+| tablesToIgnore    | a list of tables to ignore                | empty     |
+| columnsToIgnore   | what columns to ignore per table          | empty     |
+| mode              | choose between "Get" (at most once) or  "Peek" (at least once). If you choose "Peek", you'll need an ack sink or flow, to acknowledge consumption of the event  | Get |
+| maxItems          | maximum number of "changes" to pull in one go | 128   |
+| pollInterval      | duration between polls                    | 2 seconds |
+
+Example source settings:
+
+Scala
+: @@snip ($alpakka$/postgresql-cdc/src/test/scala/akka/stream/alpakka/postgresqlcdc/TestScalaDsl.scala) { #ChangeDataCaptureSettings }
+
+Java
+: @@snip ($alpakka$/postgresql-cdc/src/test/java/akka/stream/alpakka/postgresqlcdc/TestJavaDsl.java) { #ChangeDataCaptureSettings }
+
+
 
 ### Code
 

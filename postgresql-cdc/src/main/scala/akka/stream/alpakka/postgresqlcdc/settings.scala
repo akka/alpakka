@@ -41,8 +41,6 @@ object Modes {
 
 /** Settings for PostgreSQL CDC
  *
- * @param connectionString  PostgreSQL JDBC connection string
- * @param slotName          Name of the "logical decoding" slot
  * @param mode              Choose between "at most once delivery" / "at least once"
  * @param createSlotOnStart Create logical decoding slot when the source starts (if it doesn't already exist...)
  * @param tablesToIgnore    Tables to ignore
@@ -50,83 +48,104 @@ object Modes {
  * @param maxItems          Specifies how many rows are fetched in one batch
  * @param pollInterval      Duration between polls
  */
-final class PostgreSQLInstance private (val connectionString: String,
-                                        val slotName: String,
-                                        val mode: Mode = Modes.Get,
-                                        val createSlotOnStart: Boolean = true,
-                                        val tablesToIgnore: List[String] = List(),
-                                        val columnsToIgnore: Map[String, List[String]] = Map(),
-                                        val maxItems: Int = 128,
-                                        val pollInterval: FiniteDuration = 2000.milliseconds) {
+final class ChangeDataCaptureSettings private (val mode: Mode = Modes.Get,
+                                               val createSlotOnStart: Boolean = true,
+                                               val tablesToIgnore: List[String] = List(),
+                                               val columnsToIgnore: Map[String, List[String]] = Map(),
+                                               val maxItems: Int = 128,
+                                               val pollInterval: FiniteDuration = 2000.milliseconds) {
 
-  def withMode(mode: Mode): PostgreSQLInstance =
+  def withMode(mode: Mode): ChangeDataCaptureSettings =
     copy(mode = mode)
 
-  def withCreateSlotOnStart(createSlotOnStart: Boolean): PostgreSQLInstance =
+  def withCreateSlotOnStart(createSlotOnStart: Boolean): ChangeDataCaptureSettings =
     copy(createSlotOnStart = createSlotOnStart)
 
-  def withTablesToIgnore(tablesToIgnore: List[String]): PostgreSQLInstance =
+  def withTablesToIgnore(tablesToIgnore: List[String]): ChangeDataCaptureSettings =
     copy(tablesToIgnore = tablesToIgnore)
 
   /**
    * Java API
    */
-  def withTablesToIgnore(tablesToIgnore: JavaList[String]): PostgreSQLInstance =
+  def withTablesToIgnore(tablesToIgnore: JavaList[String]): ChangeDataCaptureSettings =
     copy(tablesToIgnore = tablesToIgnore.asScala.toList)
 
-  def withColumnsToIgnore(columnsToIgnore: Map[String, List[String]]): PostgreSQLInstance =
+  def withColumnsToIgnore(columnsToIgnore: Map[String, List[String]]): ChangeDataCaptureSettings =
     copy(columnsToIgnore = columnsToIgnore)
 
   /**
    * Java API
    */
-  def withColumnsToIgnore(columnsToIgnore: JavaMap[String, JavaList[String]]): PostgreSQLInstance =
+  def withColumnsToIgnore(columnsToIgnore: JavaMap[String, JavaList[String]]): ChangeDataCaptureSettings =
     copy(columnsToIgnore = columnsToIgnore.asScala.mapValues(_.asScala).mapValues(_.toList).toMap)
 
-  def withMaxItems(maxItems: Int): PostgreSQLInstance =
+  def withMaxItems(maxItems: Int): ChangeDataCaptureSettings =
     copy(maxItems = maxItems)
 
-  def withPollInterval(pollInterval: FiniteDuration): PostgreSQLInstance =
+  def withPollInterval(pollInterval: FiniteDuration): ChangeDataCaptureSettings =
     copy(pollInterval = pollInterval)
 
   /**
    * Java API
    */
-  def withPollInterval(pollInterval: JavaDuration): PostgreSQLInstance = {
+  def withPollInterval(pollInterval: JavaDuration): ChangeDataCaptureSettings = {
     import scala.compat.java8.DurationConverters._
     copy(pollInterval = pollInterval.toScala)
   }
 
-  private def copy(connectionString: String = connectionString,
-                   slotName: String = slotName,
-                   mode: Mode = mode,
+  private def copy(mode: Mode = mode,
                    createSlotOnStart: Boolean = createSlotOnStart,
                    tablesToIgnore: List[String] = tablesToIgnore,
                    columnsToIgnore: Map[String, List[String]] = columnsToIgnore,
                    maxItems: Int = maxItems,
-                   pollInterval: FiniteDuration = pollInterval): PostgreSQLInstance =
-    new PostgreSQLInstance(connectionString,
-                           slotName,
-                           mode,
-                           createSlotOnStart,
-                           tablesToIgnore,
-                           columnsToIgnore,
-                           maxItems,
-                           pollInterval)
+                   pollInterval: FiniteDuration = pollInterval): ChangeDataCaptureSettings =
+    new ChangeDataCaptureSettings(mode, createSlotOnStart, tablesToIgnore, columnsToIgnore, maxItems, pollInterval)
 
   override def toString: String =
     s"""
-       |PostgreSQLInstance(
-       | connectionString = $connectionString
-       | slotName = $slotName
-       | createSlotOnStart = $createSlotOnStart
-       | tablesToIgnore = $tablesToIgnore
-       | columnsToIgnore = $columnsToIgnore
-       | mode = $mode
-       | maxItems = $maxItems
-       | pollInterval = $pollInterval
+       |ChangeDataCaptureSettings(
+       |  createSlotOnStart = $createSlotOnStart
+       |  tablesToIgnore = $tablesToIgnore
+       |  columnsToIgnore = $columnsToIgnore
+       |  mode = $mode
+       |  maxItems = $maxItems
+       |  pollInterval = $pollInterval
        |)""".stripMargin
 
+}
+
+object ChangeDataCaptureSettings {
+
+  /**
+   * Factory method for Scala.
+   */
+  def apply(): ChangeDataCaptureSettings =
+    new ChangeDataCaptureSettings()
+
+  /**
+   * Java API
+   *
+   * Factory method for Java.
+   */
+  def create(): ChangeDataCaptureSettings =
+    ChangeDataCaptureSettings()
+}
+
+/**
+ * PostgreSQL connection settings
+ *
+ * @param jdbcConnectionString JDBC connection string
+ * @param slotName             Name of logical slot
+ */
+final class PostgreSQLInstance private (val jdbcConnectionString: String, val slotName: String) {
+
+  // no reason to have withXxxx(...) since both jdbcConnectionString and slotName are required arguments
+
+  override def toString =
+    s"""PostgreSQLInstance(
+       |  jdbcConnectionString = $jdbcConnectionString,
+       |  slotName=$slotName
+       |)""".stripMargin
 }
 
 object PostgreSQLInstance {
@@ -134,17 +153,15 @@ object PostgreSQLInstance {
   /**
    * Factory method for Scala.
    */
-  def apply(connectionString: String, slotName: String): PostgreSQLInstance = {
-    require(connectionString != null, "connectionString cannot be null")
-    require(slotName.matches("[a-z0-9_]+"), "invalid replication slot name")
-    new PostgreSQLInstance(connectionString, slotName)
-  }
+  def apply(jdbcConnectionString: String, slotName: String): PostgreSQLInstance =
+    new PostgreSQLInstance(jdbcConnectionString, slotName)
 
   /**
    * Java API
    *
    * Factory method for Java.
    */
-  def create(connectionString: String, slotName: String): PostgreSQLInstance =
-    PostgreSQLInstance(connectionString, slotName)
+  def create(jdbcConnectionString: String, slotName: String): PostgreSQLInstance =
+    PostgreSQLInstance(jdbcConnectionString, slotName)
+
 }

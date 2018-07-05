@@ -16,20 +16,22 @@ import scala.collection.mutable
 import scala.util.control.NonFatal
 
 @InternalApi
-private[postgresqlcdc] final class PostgreSQLSourceStage(settings: PostgreSQLInstance)
+private[postgresqlcdc] final class PostgreSQLSourceStage(instance: PostgreSQLInstance,
+                                                         settings: ChangeDataCaptureSettings)
     extends GraphStage[SourceShape[ChangeSet]] {
 
   private val out: Outlet[ChangeSet] = Outlet[ChangeSet]("postgresqlcdc.out")
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new PostgreSQLSourceStageLogic(settings, shape)
+    new PostgreSQLSourceStageLogic(instance, settings, shape)
 
   override def shape: SourceShape[ChangeSet] = SourceShape(out)
 
 }
 
 @InternalApi
-private[postgresqlcdc] final class PostgreSQLSourceStageLogic(val settings: PostgreSQLInstance,
+private[postgresqlcdc] final class PostgreSQLSourceStageLogic(val instance: PostgreSQLInstance,
+                                                              val settings: ChangeDataCaptureSettings,
                                                               val shape: SourceShape[ChangeSet])
     extends TimerGraphStageLogic(shape)
     with StageLogging {
@@ -37,10 +39,10 @@ private[postgresqlcdc] final class PostgreSQLSourceStageLogic(val settings: Post
   import PostgreSQL._
 
   private lazy val getSlotChangesStatement: PreparedStatement =
-    buildGetSlotChangesStmt(slotName = settings.slotName, maxItems = settings.maxItems)
+    buildGetSlotChangesStmt(slotName = instance.slotName, maxItems = settings.maxItems)
   private val buffer = new mutable.Queue[ChangeSet]()
 
-  private implicit lazy val conn: Connection = getConnection(settings.connectionString)
+  private implicit lazy val conn: Connection = getConnection(instance.jdbcConnectionString)
 
   private implicit lazy val logging: LoggingAdapter = log // bring log into implicit scope
 
@@ -64,9 +66,9 @@ private[postgresqlcdc] final class PostgreSQLSourceStageLogic(val settings: Post
   private def out = shape.out
 
   override def preStart(): Unit = {
-    val slotExists = checkSlotExists(settings.slotName)
+    val slotExists = checkSlotExists(instance.slotName)
     if (!slotExists && settings.createSlotOnStart)
-      setUpSlot(settings.slotName)
+      setUpSlot(instance.slotName)
   }
 
   override def postStop(): Unit =

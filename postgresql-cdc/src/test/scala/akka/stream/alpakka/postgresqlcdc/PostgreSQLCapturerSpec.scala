@@ -108,7 +108,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
       deleteCustomers()
 
       ChangeDataCapture
-        .source(postgreSQLInstance)
+        .source(postgreSQLInstance, ChangeDataCaptureSettings())
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
@@ -223,7 +223,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
       deleteSale(0)
 
       ChangeDataCapture
-        .source(postgreSQLInstance)
+        .source(postgreSQLInstance, ChangeDataCaptureSettings())
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
@@ -289,7 +289,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
       deletePurchaseOrder(id = 0)
 
       ChangeDataCapture
-        .source(postgreSQLInstance)
+        .source(postgreSQLInstance, ChangeDataCaptureSettings())
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
@@ -310,7 +310,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
       deleteEmployees()
 
       ChangeDataCapture
-        .source(postgreSQLInstance)
+        .source(postgreSQLInstance, ChangeDataCaptureSettings())
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
@@ -341,9 +341,10 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
       deleteSale(0)
 
       ChangeDataCapture
-        .source(
-          postgreSQLInstance.withTablesToIgnore(List("employees")).withColumnsToIgnore(Map("sales" -> List("info")))
-        )
+        .source(postgreSQLInstance,
+                ChangeDataCaptureSettings()
+                  .withTablesToIgnore(List("employees"))
+                  .withColumnsToIgnore(Map("sales" -> List("info"))))
         .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])

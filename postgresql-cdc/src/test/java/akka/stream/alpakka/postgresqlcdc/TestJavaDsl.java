@@ -18,8 +18,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.sql.Connection;
+import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
+import java.util.*;
 
 public class TestJavaDsl {
 
@@ -52,6 +53,29 @@ public class TestJavaDsl {
         connection.close();
     }
 
+
+    @Test
+    public void constructSettings() {
+        //#ChangeDataCaptureSettings
+        final String connectionString = "jdbc:postgresql://localhost:5435/pgdb?user=pguser&password=pguser";
+
+        final PostgreSQLInstance postgreSQLInstance = PostgreSQLInstance
+                .create(connectionString, "slot_name");
+
+        final ChangeDataCaptureSettings changeDataCaptureSettings = ChangeDataCaptureSettings
+                .create()
+                .withCreateSlotOnStart(false)
+                .withMaxItems(256)
+                .withPollInterval(Duration.ofSeconds(7))
+                .withMode(Modes.choosePeekMode())
+                .withTablesToIgnore(Collections.singletonList("user_personal_information")) // ignore the user_personal_information table
+                .withColumnsToIgnore(new HashMap<String, List<String>>() {{
+                    put("images", Collections.singletonList("binary")); // ignore the binary column in the images table
+                }});
+        //#ChangeDataCaptureSettings
+
+    }
+
     @Test
     public void testIt() {
         Instant time = Instant.parse("1964-02-23T00:00:00Z");
@@ -67,7 +91,7 @@ public class TestJavaDsl {
                 .create(connectionString, "junit");
 
         final Source<Change, NotUsed> source = ChangeDataCapture
-                .source(postgreSQLInstance)
+                .source(postgreSQLInstance, ChangeDataCaptureSettings.create())
                 .mapConcat(ChangeSet::getChanges);
 
         source.runWith(TestSink.probe(system), materializer)
