@@ -20,61 +20,97 @@ object FakeDb {
   def createCustomersTable()(implicit conn: Connection): Unit = {
     val createStatement =
       conn.prepareStatement("""
-                              |CREATE TABLE customers (
-                              |  id SERIAL,
-                              |  first_name VARCHAR(255) NOT NULL,
-                              |  last_name VARCHAR(255) NOT NULL,
-                              |  email VARCHAR(255) NOT NULL,
-                              |  tags TEXT[] NOT NULL,
-                              |  time TIMESTAMPTZ,
-                              |  PRIMARY KEY(id)
-                              |);
-                            """.stripMargin)
+          |CREATE TABLE customers (
+          |  id SERIAL,
+          |  first_name VARCHAR(255) NOT NULL,
+          |  last_name VARCHAR(255) NOT NULL,
+          |  email VARCHAR(255) NOT NULL,
+          |  tags TEXT[] NOT NULL,
+          |  time TIMESTAMPTZ,
+          |  PRIMARY KEY(id)
+          |);
+        """.stripMargin)
 
     createStatement.execute()
+    createStatement.close()
   }
 
   def createSalesTable()(implicit conn: Connection): Unit = {
     val createStatement =
       conn.prepareStatement("""
-                              |CREATE TABLE sales (
-                              | id SERIAL NOT NULL PRIMARY KEY,
-                              | info JSONB NOT NULL
-                              |);
-                            """.stripMargin)
+          |CREATE TABLE sales (
+          | id SERIAL NOT NULL PRIMARY KEY,
+          | info JSONB NOT NULL
+          |);
+        """.stripMargin)
     createStatement.execute()
-
+    createStatement.close()
   }
 
-  def createPurchaseOrdersTable()(implicit conn: Connection): Unit =
-    conn.prepareStatement("""
-                            |CREATE TABLE purchase_orders (
-                            | id SERIAL NOT NULL PRIMARY KEY,
-                            | info XML NOT NULL
-                            | );
-                          """.stripMargin).execute()
+  def createPurchaseOrdersTable()(implicit conn: Connection): Unit = {
+    val st = conn.prepareStatement("""
+        |CREATE TABLE purchase_orders (
+        | id SERIAL NOT NULL PRIMARY KEY,
+        | info XML NOT NULL
+        | );
+      """.stripMargin)
+    st.execute()
+    st.close()
+  }
 
-  def createEmployeesTable()(implicit conn: Connection): Unit =
-    conn.prepareStatement("""
-                            |CREATE TABLE employees (
-                            | id serial NOT NULL PRIMARY KEY,
-                            | name VARCHAR(255) NOT NULL,
-                            | position VARCHAR(255) DEFAULT NULL
-                            |);
-                            |
-      """.stripMargin).execute()
+  def createEmployeesTable()(implicit conn: Connection): Unit = {
+    val st = conn.prepareStatement("""
+        |CREATE TABLE employees (
+        | id serial NOT NULL PRIMARY KEY,
+        | name VARCHAR(255) NOT NULL,
+        | position VARCHAR(255) DEFAULT NULL
+        |);
+        |
+      """.stripMargin)
+    st.execute()
+    st.close()
+  }
 
-  def dropTableCustomers()(implicit conn: Connection): Unit =
-    conn.prepareStatement("DROP TABLE customers;").execute()
+  def createImagesTable()(implicit conn: Connection): Unit = {
+    val st = conn.prepareStatement("""
+        |CREATE TABLE images(
+        | id serial NOT NULL PRIMARY KEY,
+        | image BYTEA NOT NULL
+        |);
+      """.stripMargin)
+    st.execute()
+    st.close()
+  }
 
-  def dropTableSales()(implicit conn: Connection): Unit =
-    conn.prepareStatement("DROP TABLE sales;").execute()
+  def dropTableCustomers()(implicit conn: Connection): Unit = {
+    val st = conn.prepareStatement("DROP TABLE customers;")
+    st.execute()
+    st.close()
+  }
 
-  def dropTablePurchaseOrders()(implicit conn: Connection): Unit =
-    conn.prepareStatement("DROP TABLE purchase_orders;").execute()
+  def dropTableSales()(implicit conn: Connection): Unit = {
+    val st = conn.prepareStatement("DROP TABLE sales;")
+    st.execute()
+    st.close()
+  }
 
-  def dropTableEmployees()(implicit conn: Connection): Unit =
-    conn.prepareStatement("DROP TABLE employees;").execute()
+  def dropTablePurchaseOrders()(implicit conn: Connection): Unit = {
+    val st = conn.prepareStatement("DROP TABLE purchase_orders;")
+    st.execute()
+    st.close()
+  }
+
+  def dropTableEmployees()(implicit conn: Connection): Unit = {
+    val st = conn.prepareStatement("DROP TABLE employees;")
+    st.execute()
+    st.close()
+  }
+
+  def dropTableImages()(implicit conn: Connection): Unit = {
+    val st = conn.prepareStatement("DROP TABLE images;")
+    st.execute()
+    st.close()
+  }
 
   // for the Java DSL test
   def insertCustomer(id: Int, fName: String, lName: String, email: String, tags: java.util.List[String], time: Instant)(
@@ -98,6 +134,7 @@ object FakeDb {
     insertStatement.setArray(5, conn.createArrayOf("text", tags.toArray))
     insertStatement.setTimestamp(6, new java.sql.Timestamp(time.toEpochMilli))
     insertStatement.execute()
+    insertStatement.close()
   }
 
   def updateCustomerEmail(id: Int, newEmail: String)(implicit conn: Connection): Unit = {
@@ -106,12 +143,14 @@ object FakeDb {
     updateStatement.setString(1, newEmail)
     updateStatement.setInt(2, id)
     updateStatement.execute()
+    updateStatement.close()
   }
 
   def deleteCustomers()(implicit conn: Connection): Unit = {
     val deleteStatement =
       conn.prepareStatement("DELETE FROM customers")
     deleteStatement.execute()
+    deleteStatement.close()
   }
 
   def insertSale(id: Int, info: String)(implicit conn: Connection): Unit = {
@@ -123,6 +162,7 @@ object FakeDb {
     insertStatement.setInt(1, id)
     insertStatement.setObject(2, pgObject)
     insertStatement.execute()
+    insertStatement.close()
   }
 
   def updateSale(id: Int, newInfo: String)(implicit conn: Connection): Unit = {
@@ -134,6 +174,7 @@ object FakeDb {
     updateStatement.setObject(1, pgObject)
     updateStatement.setInt(2, id)
     updateStatement.execute()
+    updateStatement.close()
   }
 
   def deleteSale(id: Int)(implicit conn: Connection): Unit = {
@@ -141,6 +182,7 @@ object FakeDb {
       conn.prepareStatement("DELETE FROM sales WHERE id = ?;")
     deleteStatement.setInt(1, id)
     deleteStatement.execute()
+    deleteStatement.close()
   }
 
   def insertPurchaseOrder(id: Int, info: String)(implicit conn: Connection): Unit = {
@@ -151,6 +193,7 @@ object FakeDb {
     insertStatement.setInt(1, id)
     insertStatement.setObject(2, pGobject)
     insertStatement.execute()
+    insertStatement.close()
   }
 
   def deletePurchaseOrder(id: Int)(implicit conn: Connection): Unit = {
@@ -158,6 +201,7 @@ object FakeDb {
       conn.prepareStatement("DELETE FROM purchase_orders WHERE id = ?;")
     deleteStatement.setInt(1, id)
     deleteStatement.execute()
+    deleteStatement.close()
   }
 
   def insertEmployee(id: Int, name: String, position: String)(implicit conn: Connection): Unit = {
@@ -167,6 +211,7 @@ object FakeDb {
     insertStatement.setString(2, name)
     insertStatement.setString(3, position)
     insertStatement.execute()
+    insertStatement.close()
   }
 
   def updateEmployee(id: Int, newPosition: String)(implicit conn: Connection): Unit = {
@@ -175,19 +220,43 @@ object FakeDb {
     updateStatement.setString(1, newPosition)
     updateStatement.setInt(2, id)
     updateStatement.execute()
+    updateStatement.close()
   }
 
-  def deleteEmployees()(implicit conn: Connection): Unit =
-    conn.prepareStatement("DELETE FROM employees;").execute()
+  def deleteEmployees()(implicit conn: Connection): Unit = {
+    val st = conn.prepareStatement("DELETE FROM employees;")
+    st.execute()
+    st.close()
+  }
+
+  def insertImage(id: Int, imageName: String)(implicit conn: Connection): Unit = {
+    val fis = FakeDb.getClass.getResourceAsStream(imageName)
+    assert(fis != null)
+    val insertStatement =
+      conn.prepareStatement("INSERT INTO images(id, image) VALUES(?, ?)")
+    insertStatement.setInt(1, id)
+    insertStatement.setBinaryStream(2, fis)
+    insertStatement.execute()
+    insertStatement.close()
+    fis.close()
+  }
+
+  def deleteImages()(implicit conn: Connection): Unit = {
+    val deleteSt = conn.prepareStatement("DELETE FROM images;")
+    deleteSt.execute()
+    deleteSt.close()
+  }
 
   def setUpLogicalDecodingSlot(slotName: String)(implicit conn: Connection): Unit = {
     val stmt = conn.prepareStatement(s"SELECT * FROM pg_create_logical_replication_slot('${slotName}','test_decoding')")
     stmt.execute()
+    stmt.close()
   }
 
   def dropLogicalDecodingSlot(slotName: String)(implicit conn: Connection): Unit = {
     val stmt = conn.prepareStatement(s"SELECT * FROM pg_drop_replication_slot('${slotName}')")
     stmt.execute()
+    stmt.close()
   }
 
 }

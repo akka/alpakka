@@ -111,42 +111,24 @@ Java
 
 Without further ado, a minimalist example:
 
-``` scala
+Scala
+: @@snip ($alpakka$/postgresql-cdc/src/test/scala/akka/stream/alpakka/postgresqlcdc/TestScalaDsl.scala) { #BasicExample }
 
-val connectionString = "jdbc:postgresql://localhost/pgdb?user=pguser&password=pguser"
-val slotName = "slot_name"
+Java
+: @@snip ($alpakka$/postgresql-cdc/src/test/java/akka/stream/alpakka/postgresqlcdc/TestJavaDsl.java) { #BasicExample }
 
-ChangeDataCapture.source(PostgreSQLInstance(connectionString, slotName))
-  .log("postgresqlcdc", cs => s"captured changes: ${cs.toString}")
-  .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
-  .to(Sink.ignore)
-  .run()
 
-```
 
 ### Stream Changes, Map to Domain Events
 
 You want to map these database change events (i.e. RowDeleted) to real domain events (i.e. UserDeregistered), aiming to adopt a Domain Driven Design approach.
 
-```scala
+Scala
+: @@snip ($alpakka$/postgresql-cdc/src/test/scala/akka/stream/alpakka/postgresqlcdc/TestScalaDsl.scala) { #ProcessEventsExample }
 
-// Define your domain event
-case class UserDeregistered(id: String)
+Java
+: @@snip ($alpakka$/postgresql-cdc/src/test/java/akka/stream/alpakka/postgresqlcdc/TestJavaDsl.java) { #ProcessEventsExample }
 
-val connectionString =
-  "jdbc:postgresql://localhost/test?user=fred&password=secret&ssl=true"
-val slotName = "slot_name"
-
-ChangeDataCapture.source(PostgreSQLInstance(connectionString, slotName))
-  .mapConcat(_.changes)
-  .collect { // collect is map and filter
-    case RowDeleted(transactionId, "public", "users", fields) =>
-      val userId = fields.find(_.columnName == "user_id").map(_.value).getOrElse("unknown")
-      UserDeregistered(userId)
-    }
-  } // continue to a sink
-
-```
 
 
 ## Limitations

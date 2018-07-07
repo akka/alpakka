@@ -10,6 +10,7 @@ import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.postgresqlcdc.javadsl.ChangeDataCapture;
+import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
@@ -21,6 +22,8 @@ import java.sql.Connection;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import akka.event.Logging;
+import akka.stream.Attributes;
 
 public class TestJavaDsl {
 
@@ -54,8 +57,8 @@ public class TestJavaDsl {
     }
 
 
-    @Test
-    public void constructSettings() {
+    // for documentation
+    public void exampleConstructSettings() {
         //#ChangeDataCaptureSettings
         final String connectionString = "jdbc:postgresql://localhost:5435/pgdb?user=pguser&password=pguser";
 
@@ -74,6 +77,71 @@ public class TestJavaDsl {
                 }});
         //#ChangeDataCaptureSettings
 
+    }
+
+    // for documentation
+    public void exampleBasic() {
+        //#BasicExample
+
+        final ActorSystem system = ActorSystem.create();
+        final Materializer materializer = ActorMaterializer.create(system);
+
+        final String connectionString = "jdbc:postgresql://localhost:5435/pgdb?user=pguser&password=pguser";
+
+        final PostgreSQLInstance postgreSQLInstance = PostgreSQLInstance
+                .create(connectionString, "slot_name");
+
+        ChangeDataCapture
+                .source(postgreSQLInstance, ChangeDataCaptureSettings.create())
+                .log("postgresqlcdc", changeSet -> String.format("captured changes: %s", changeSet.toString()))
+                .withAttributes(Attributes.createLogLevels(Logging.InfoLevel(), Logging.DebugLevel(), Logging.ErrorLevel()))
+                .to(Sink.ignore())
+                .run(materializer);
+
+        //#BasicExample
+    }
+
+    // for documentation
+    public void exampleProcessEvents() {
+        //#ProcessEventsExample
+
+        class UserDeregistered {
+
+            private String userId;
+
+            public UserDeregistered(String userId) {
+                this.userId = userId;
+            }
+
+            public String getUserId() {
+                return userId;
+            }
+        }
+
+        final ActorSystem system = ActorSystem.create();
+        final Materializer materializer = ActorMaterializer.create(system);
+
+        final String connectionString = "jdbc:postgresql://localhost:5435/pgdb?user=pguser&password=pguser";
+
+        final PostgreSQLInstance postgreSQLInstance = PostgreSQLInstance
+                .create(connectionString, "slot_name");
+
+        ChangeDataCapture
+                .source(postgreSQLInstance, ChangeDataCaptureSettings.create())
+                .mapConcat(ChangeSet::getChanges)
+                .collectType(RowDeleted.class)
+                .map(deletedRow -> {
+                  String userId = deletedRow.getFields()
+                          .stream()
+                          .filter(f -> f.getColumnName().equals("user_id"))
+                          .map(Field::getValue)
+                          .findFirst()
+                          .orElse("unknown");
+                  return new UserDeregistered(userId);
+                })
+                .to(Sink.ignore())
+                .run(materializer);
+        //#ProcessEventsExample
     }
 
     @Test

@@ -41,6 +41,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
     createSalesTable()
     createPurchaseOrdersTable()
     createEmployeesTable()
+    createImagesTable()
   }
 
   override def afterAll: Unit = {
@@ -54,6 +55,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
     dropTableSales()
     dropTablePurchaseOrders()
     dropTableEmployees()
+    dropTableImages()
 
     conn.close()
 
@@ -299,6 +301,39 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
         }
         .expectNextChainingPF {
           case c @ ChangeSet(_, List(RowDeleted(_, _, _))) => // success
+        }
+
+    }
+
+    "be able to deal with bytea columns" in {
+
+      val expectedByteArray: Array[Byte] = {
+        import java.nio.file.{Files, Paths}
+        Files.readAllBytes(Paths.get(this.getClass.getResource("/scala-icon.png").toURI))
+      }
+
+      insertImage(0, "/scala-icon.png") // from postgresql-cdc/src/test/resources/scala-icon.png
+      deleteImages()
+
+      ChangeDataCapture
+        .source(postgreSQLInstance, ChangeDataCaptureSettings())
+        .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
+        .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
+        .runWith(TestSink.probe[ChangeSet])
+        .request(2)
+        .expectNextChainingPF {
+          case c @ ChangeSet(_, List(RowInserted("public", "images", fields)))
+              if fields
+                .filter(_.columnName == "image")
+                .exists(v => {
+                  import javax.xml.bind.DatatypeConverter
+                  // from PG docs: The "hex" format encodes binary data as 2 hexadecimal digits per byte, most significant nibble first.
+                  // The entire string is preceded by the sequence \x
+                  DatatypeConverter.parseHexBinary(v.value.substring(2)) sameElements expectedByteArray
+                }) => // success
+        }
+        .expectNextChainingPF {
+          case c @ ChangeSet(_, List(RowDeleted("public", "images", _))) => // success
         }
 
     }
