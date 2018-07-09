@@ -4,27 +4,24 @@
 
 package akka.stream.alpakka.reference.javadsl;
 
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executor;
-
 import akka.Done;
 import akka.NotUsed;
-import akka.stream.alpakka.reference.SourceSettings;
-import akka.stream.alpakka.reference.ReferenceWriteMessage;
 import akka.stream.alpakka.reference.ReferenceReadMessage;
+import akka.stream.alpakka.reference.ReferenceWriteMessage;
+import akka.stream.alpakka.reference.SourceSettings;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
+import scala.concurrent.ExecutionContext$;
 
-import scala.concurrent.ExecutionContext;
-import scala.compat.java8.FutureConverters;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 
 public class Reference {
 
   public static Source<ReferenceReadMessage, CompletionStage<Done>> source(
       SourceSettings settings) {
     return akka.stream.alpakka.reference.scaladsl.Reference.source(settings)
-        .mapMaterializedValue(FutureConverters::toJava)
-        .asJava();
+        .<ReferenceReadMessage, CompletionStage<Done>>asJava();
   }
 
   /**
@@ -38,7 +35,7 @@ public class Reference {
   public static Flow<ReferenceWriteMessage, ReferenceWriteMessage, NotUsed> flowAsyncMapped(
       Executor ex) {
     return akka.stream.alpakka.reference.scaladsl.Reference.flowAsyncMapped(
-            ExecutionContext.fromExecutor(ex))
+            ExecutionContext$.MODULE$.fromExecutor(ex))
         .asJava();
   }
 }
