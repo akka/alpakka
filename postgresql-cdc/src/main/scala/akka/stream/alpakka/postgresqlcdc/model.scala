@@ -132,6 +132,7 @@ final class RowUpdated private (val schemaName: String,
    */
   def getFieldsOld: java.util.List[Field] = fieldsOld.asJava
 
+  // auto-generated
   override def equals(other: Any): Boolean = other match {
     case that: RowUpdated =>
       schemaName == that.schemaName &&
@@ -141,11 +142,13 @@ final class RowUpdated private (val schemaName: String,
     case _ => false
   }
 
+  // auto-generated
   override def hashCode(): Int = {
     val state = Seq(schemaName, tableName, fieldsNew, fieldsOld)
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 
+  // auto-generated
   override def toString =
     s"RowUpdated(schemaName=$schemaName, tableName=$tableName, fieldsNew=$fieldsNew, fieldsOld=$fieldsOld)"
 }

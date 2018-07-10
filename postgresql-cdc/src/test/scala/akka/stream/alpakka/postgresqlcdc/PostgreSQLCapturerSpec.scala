@@ -297,7 +297,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
         .runWith(TestSink.probe[ChangeSet])
         .request(2)
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, List(RowInserted("public", "purchase_orders", fields))) => // success
+          case c @ ChangeSet(_, _, _, List(RowInserted("public", "purchase_orders", _))) => // success
         }
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, List(RowDeleted(_, _, _))) => // success
@@ -358,7 +358,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
               if fields.contains(Field("\"position\"", "character varying", "null")) => // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, List(RowDeleted("public", "employees", fields))) => // success
+          case c @ ChangeSet(_, _, _, List(RowDeleted("public", "employees", _))) => // success
         }
 
     }

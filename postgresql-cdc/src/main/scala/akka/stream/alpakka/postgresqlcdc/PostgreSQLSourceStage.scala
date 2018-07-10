@@ -50,7 +50,10 @@ private[postgresqlcdc] final class PostgreSQLSourceStageLogic(val instance: Post
 
     val result: List[ChangeSet] = {
       val slotChanges = pullChanges(settings.mode, instance.slotName, settings.maxItems)
-      TestDecodingPlugin.transformSlotChanges(slotChanges, settings.columnsToIgnore)
+      settings.plugin match {
+        case Plugins.TestDecoding => TestDecodingPlugin.transformSlotChanges(slotChanges, settings.columnsToIgnore)
+        // leaving room for other plugin implementations
+      }
     }
 
     if (result.nonEmpty) {

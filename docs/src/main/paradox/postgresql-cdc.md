@@ -90,13 +90,14 @@ We configure the source using @scaladoc[PostgreSQLInstance](akka.stream.alpakka.
 
 @scaladoc[PgCdcSourceSettings](akka.stream.alpakka.postgresqlcdc.PgCdcSourceSettings):
 
-| Setting           | Meaning                                       | Default   | Required |
-| ------------------|-----------------------------------------------|-----------|----------|
-| createSlotOnStart | create the logical replication slot on start  | true      | no       |
-| columnsToIgnore   | what columns to ignore per table: use "*" to ignore all columns in a table | empty     | no       |
+| Setting           | Meaning                                       | Default      | Required |
+| ------------------|-----------------------------------------------|--------------|----------|
+| createSlotOnStart | create the logical replication slot on start  | true         | no       |
+| plugin            | only one option as of now                     | TestDecoding | no    |
+| columnsToIgnore   | what columns to ignore per table: use * to ignore all columns in a table | none | no |
 | mode              | choose between "Get" (at most once) or  "Peek" (at least once). If you choose "Peek", you'll need the ACK Sink, to acknowledge consumption of the event  | Get | no |
-| maxItems          | maximum number of changes to pull in one go   | 128   | no           |
-| pollInterval      | duration between polls                        | 2 seconds | no       |
+| maxItems          | maximum number of changes to pull in one go   | 128          | no           |
+| pollInterval      | duration between polls                        | 2 seconds    | no           |
 
 Example source settings:
 

@@ -42,16 +42,35 @@ object Modes {
 
 }
 
+sealed abstract class Plugin
+
+object Plugins {
+
+  sealed abstract class TestDecoding extends Plugin
+
+  case object TestDecoding extends TestDecoding
+
+  // sealed abstract class Wal2Json extends Plugin /* WIP */
+
+  /**
+   * Java API
+   */
+  def createTestDecoding(): TestDecoding = TestDecoding
+
+}
+
 /** Settings for the PostgreSQL CDC source
  *
  * @param mode              Choose between "at most once delivery" / "at least once"
  * @param createSlotOnStart Create logical decoding slot when the source starts (if it doesn't already exist...)
+ * @param plugin            Plugin to use. Only "test_decoding" supported right now.
  * @param columnsToIgnore   Columns to ignore
  * @param maxItems          Specifies how many rows are fetched in one batch
  * @param pollInterval      Duration between polls
  */
 final class PgCdcSourceSettings private (val mode: Mode = Modes.Get,
                                          val createSlotOnStart: Boolean = true,
+                                         val plugin: Plugin = Plugins.TestDecoding,
                                          val columnsToIgnore: Map[String, List[String]] = Map(),
                                          val maxItems: Int = 128,
                                          val pollInterval: FiniteDuration = 2000.milliseconds) {
@@ -61,6 +80,9 @@ final class PgCdcSourceSettings private (val mode: Mode = Modes.Get,
 
   def withCreateSlotOnStart(createSlotOnStart: Boolean): PgCdcSourceSettings =
     copy(createSlotOnStart = createSlotOnStart)
+
+  def withPlugin(plugin: Plugin): PgCdcSourceSettings =
+    copy(plugin = plugin)
 
   def withColumnsToIgnore(columnsToIgnore: Map[String, List[String]]): PgCdcSourceSettings =
     copy(columnsToIgnore = columnsToIgnore)
@@ -87,17 +109,19 @@ final class PgCdcSourceSettings private (val mode: Mode = Modes.Get,
 
   private def copy(mode: Mode = mode,
                    createSlotOnStart: Boolean = createSlotOnStart,
+                   plugin: Plugin = plugin,
                    columnsToIgnore: Map[String, List[String]] = columnsToIgnore,
                    maxItems: Int = maxItems,
                    pollInterval: FiniteDuration = pollInterval): PgCdcSourceSettings =
-    new PgCdcSourceSettings(mode, createSlotOnStart, columnsToIgnore, maxItems, pollInterval)
+    new PgCdcSourceSettings(mode, createSlotOnStart, plugin, columnsToIgnore, maxItems, pollInterval)
 
   override def toString: String =
     s"""
        |SourceSettings(
-       |  createSlotOnStart = $createSlotOnStart
-       |  columnsToIgnore = $columnsToIgnore
        |  mode = $mode
+       |  createSlotOnStart = $createSlotOnStart
+       |  plugin = $plugin
+       |  columnsToIgnore = $columnsToIgnore
        |  maxItems = $maxItems
        |  pollInterval = $pollInterval
        |)""".stripMargin
