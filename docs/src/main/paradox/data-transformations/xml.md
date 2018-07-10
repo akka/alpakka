@@ -69,3 +69,23 @@ Scala
 
 Java
 : @@snip ($alpakka$/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #subslice-usage }
+
+## XML Subtree
+
+Use @scaladoc[XmlParsing.subtree](akka.stream.alpakka.xml.scaladsl.XmlParsing$) to handle elements matched to a certain path and their child nodes as `org.w3c.dom.Element`.
+
+Scala
+: @@snip ($alpakka$/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlSubtreeTest.scala) { #subtree }
+
+Java
+: @@snip ($alpakka$/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #subtree }
+
+To get a subtree of an XML document run XML document source with this parser.
+
+Scala
+: @@snip ($alpakka$/xml/src/test/scala/akka/stream/alpakka/xml/scaladsl/XmlSubtreeTest.scala) { #subtree-usage }
+
+Java
+: @@snip ($alpakka$/xml/src/test/java/akka/stream/alpakka/xml/javadsl/XmlParsingTest.java) { #subtree-usage }
+
+
