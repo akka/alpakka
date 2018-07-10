@@ -83,7 +83,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
            |    "book": {
            |      "dynamic": "strict",
            |      "properties": {
-           |        "title": { "type": "string"}
+           |        "title": { "type": "text"}
            |      }
            |    }
            |  }
