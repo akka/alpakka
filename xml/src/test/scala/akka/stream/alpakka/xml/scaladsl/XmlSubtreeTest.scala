@@ -6,7 +6,6 @@ package akka.stream.alpakka.xml.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.xml._
 import akka.stream.alpakka.xml.javadsl.XmlHelper
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
@@ -54,7 +53,7 @@ class XmlSubtreeTest extends WordSpec with Matchers with BeforeAndAfterAll {
 
     "properly extract subtree of nested events" in {
 
-      //#subslice-usage
+      //#subtree-usage
       val doc =
         """
           |<doc>
@@ -66,7 +65,7 @@ class XmlSubtreeTest extends WordSpec with Matchers with BeforeAndAfterAll {
           |</doc>
         """.stripMargin
       val resultFuture = Source.single(doc).runWith(parse)
-      //#subslice-usage
+      //#subtree-usage
 
       val result = Await.result(resultFuture, 3.seconds)
 
