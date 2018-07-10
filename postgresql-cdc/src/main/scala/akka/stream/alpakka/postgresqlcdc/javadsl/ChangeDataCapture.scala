@@ -5,13 +5,15 @@
 package akka.stream.alpakka.postgresqlcdc.javadsl
 
 import akka.NotUsed
-import akka.stream.alpakka.postgresqlcdc.{ChangeDataCaptureSettings, ChangeSet}
-import akka.stream.javadsl.Source
-import akka.stream.alpakka.postgresqlcdc._
+import akka.stream.alpakka.postgresqlcdc.{ChangeSet, PgCdcSourceSettings, _}
+import akka.stream.javadsl.{Sink, Source}
 
 object ChangeDataCapture {
 
-  def source(instance: PostgreSQLInstance, settings: ChangeDataCaptureSettings): Source[ChangeSet, NotUsed] =
+  def source(instance: PostgreSQLInstance, settings: PgCdcSourceSettings): Source[ChangeSet, NotUsed] =
     scaladsl.ChangeDataCapture.source(instance, settings).asJava
+
+  def ackSink(instance: PostgreSQLInstance, settings: PgCdcAckSinkSettings): Sink[ChangeSet, NotUsed] =
+    scaladsl.ChangeDataCapture.ackSink(instance, settings).asJava
 
 }

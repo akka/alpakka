@@ -4,8 +4,7 @@
 
 package akka.stream.alpakka.postgresqlcdc
 
-import java.util
-
+import java.time.ZonedDateTime
 import scala.collection.JavaConverters._
 
 sealed abstract class Change {
@@ -15,12 +14,12 @@ sealed abstract class Change {
   /**
    * Java API
    */
-  def getSchemaName(): String = schemaName
+  def getSchemaName: String = schemaName
 
   /**
    * Java API
    */
-  def getTableName(): String = tableName
+  def getTableName: String = tableName
 
 }
 
@@ -38,18 +37,19 @@ final class Field private (val columnName: String, val columnType: String, val v
   /**
    * Java API
    */
-  def getColumnName(): String = columnName
+  def getColumnName: String = columnName
 
   /**
    * Java API
    */
-  def getColumnType(): String = columnType
+  def getColumnType: String = columnType
 
   /**
    * Java API
    */
-  def getValue(): String = value
+  def getValue: String = value
 
+  // auto-generated
   override def equals(other: Any): Boolean = other match {
     case that: Field =>
       columnName == that.columnName &&
@@ -58,12 +58,15 @@ final class Field private (val columnName: String, val columnType: String, val v
     case _ => false
   }
 
+  // auto-generated
   override def hashCode(): Int = {
     val state = Seq(columnName, columnType, value)
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 
+  // auto-generated
   override def toString = s"Field(columnName=$columnName, columnType=$columnType, value=$value)"
+
 }
 
 object RowInserted {
@@ -82,8 +85,9 @@ final class RowInserted private (val schemaName: String, val tableName: String, 
   /**
    * Java API
    */
-  def getFields(): java.util.List[Field] = fields.asJava
+  def getFields: java.util.List[Field] = fields.asJava
 
+  // auto-generated
   override def equals(other: Any): Boolean = other match {
     case that: RowInserted =>
       schemaName == that.schemaName &&
@@ -92,45 +96,58 @@ final class RowInserted private (val schemaName: String, val tableName: String, 
     case _ => false
   }
 
+  // auto-generated
   override def hashCode(): Int = {
     val state = Seq(schemaName, tableName, fields)
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 
+  // auto-generated
   override def toString = s"RowInserted(schemaName=$schemaName, tableName=$tableName, fields=$fields)"
 }
 
 object RowUpdated {
 
-  def unapply(arg: RowUpdated): Option[(String, String, List[Field])] =
-    Some((arg.schemaName, arg.tableName, arg.fields))
+  def unapply(arg: RowUpdated): Some[(String, String, List[Field], List[Field])] =
+    Some((arg.schemaName, arg.tableName, arg.fieldsNew, arg.fieldsOld))
 
-  def apply(schemaName: String, tableName: String, fields: List[Field]): RowUpdated =
-    new RowUpdated(schemaName, tableName, fields)
+  def apply(schemaName: String, tableName: String, fieldsNew: List[Field], fieldsOld: List[Field]): RowUpdated =
+    new RowUpdated(schemaName, tableName, fieldsNew, fieldsOld)
 
 }
 
-final class RowUpdated private (val schemaName: String, val tableName: String, val fields: List[Field]) extends Change {
+final class RowUpdated private (val schemaName: String,
+                                val tableName: String,
+                                val fieldsNew: List[Field],
+                                val fieldsOld: List[Field])
+    extends Change {
 
   /**
    * Java API
    */
-  def getFields(): java.util.List[Field] = fields.asJava
+  def getFieldsNew: java.util.List[Field] = fieldsNew.asJava
+
+  /**
+   * Java API
+   */
+  def getFieldsOld: java.util.List[Field] = fieldsOld.asJava
 
   override def equals(other: Any): Boolean = other match {
     case that: RowUpdated =>
       schemaName == that.schemaName &&
       tableName == that.tableName &&
-      fields == that.fields
+      fieldsNew == that.fieldsNew &&
+      fieldsOld == that.fieldsOld
     case _ => false
   }
 
   override def hashCode(): Int = {
-    val state = Seq(schemaName, tableName, fields)
+    val state = Seq(schemaName, tableName, fieldsNew, fieldsOld)
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 
-  override def toString = s"RowUpdated($schemaName, $tableName, $fields, $hashCode)"
+  override def toString =
+    s"RowUpdated(schemaName=$schemaName, tableName=$tableName, fieldsNew=$fieldsNew, fieldsOld=$fieldsOld)"
 }
 
 object RowDeleted {
@@ -148,9 +165,10 @@ final class RowDeleted private (val schemaName: String, val tableName: String, v
   /**
    * Java API
    */
-  def getFields(): util.List[Field] =
+  def getFields: java.util.List[Field] =
     fields.asJava
 
+  // auto-generated
   override def equals(other: Any): Boolean = other match {
     case that: RowDeleted =>
       schemaName == that.schemaName &&
@@ -159,42 +177,60 @@ final class RowDeleted private (val schemaName: String, val tableName: String, v
     case _ => false
   }
 
+  // auto-generated
   override def hashCode(): Int = {
     val state = Seq(schemaName, tableName, fields)
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 
+  // auto-generated
   override def toString = s"RowDeleted(schemaName=$schemaName, tableName=$tableName, fields=$fields)"
 }
 
 object ChangeSet {
 
-  def unapply(arg: ChangeSet): Option[(Long, List[Change])] =
-    Some((arg.transactionId, arg.changes))
+  def unapply(arg: ChangeSet): Option[(Long, String, ZonedDateTime, List[Change])] =
+    Some((arg.transactionId, arg.location, arg.zonedDateTime, arg.changes))
 
-  def apply(transactionId: Long, changes: List[Change]): ChangeSet = new ChangeSet(transactionId, changes)
+  def apply(transactionId: Long, location: String, zonedDateTime: ZonedDateTime, changes: List[Change]): ChangeSet =
+    new ChangeSet(transactionId, location, zonedDateTime, changes)
 
 }
 
-final class ChangeSet private (val transactionId: Long, val changes: List[Change]) {
+final class ChangeSet private (val transactionId: Long,
+                               val location: String,
+                               val zonedDateTime: ZonedDateTime,
+                               val changes: List[Change]) {
 
   /**
    * Java API
    */
-  def getChanges(): java.util.List[Change] =
+  def getChanges: java.util.List[Change] =
     changes.asJava
 
+  /**
+   * Java API
+   */
+  def getZonedDateTime: ZonedDateTime =
+    zonedDateTime
+
+  // auto-generated
   override def equals(other: Any): Boolean = other match {
     case that: ChangeSet =>
       transactionId == that.transactionId &&
+      location == that.location &&
+      zonedDateTime == that.zonedDateTime &&
       changes == that.changes
     case _ => false
   }
 
+  // auto-generated
   override def hashCode(): Int = {
-    val state = Seq(transactionId, changes)
+    val state = Seq(transactionId, location, zonedDateTime, changes)
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 
-  override def toString = s"ChangeSet(transactionId=$transactionId, changes=$changes)"
+  // auto-generated
+  override def toString =
+    s"ChangeSet(transactionId=$transactionId, location=$location, zonedDateTime=$zonedDateTime, changes=$changes)"
 }

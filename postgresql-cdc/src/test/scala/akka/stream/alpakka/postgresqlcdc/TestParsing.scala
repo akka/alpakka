@@ -4,127 +4,158 @@
 
 package akka.stream.alpakka.postgresqlcdc
 
-import org.scalatest.{FunSuite, Matchers}
+import java.time.{LocalDate, LocalTime, ZoneId}
+
 import akka.stream.alpakka.postgresqlcdc.TestDecodingPlugin._
+import fastparse.core.Parsed
+import org.scalatest.{FunSuite, Matchers}
 
 class TestParsing extends FunSuite with Matchers {
 
-  test("COMMIT and BEGIN regular expressions") {
+  test("parsing double quoted string") {
 
-    "BEGIN 2379" should fullyMatch regex (Begin withGroups "2379")
+    val ex1 = "\"Hello\""
+    doubleQuotedString.parse(ex1) should matchPattern { case Parsed.Success("\"Hello\"", _) => }
 
-    "COMMIT 2213 (at 2018-04-09 05:52:42.626311+00)" should fullyMatch regex (Commit
-    withGroups ("2213", "2018-04-09", "05:52:42.626311+00"))
+    val ex2 = "\"Hello \\\"world\\\"\""
+    doubleQuotedString.parse(ex2) should matchPattern { case Parsed.Success("\"Hello \\\"world\\\"\"", _) => }
 
-    "COMMIT 2380 (at 2018-04-09 17:56:36.730413+00)" should fullyMatch regex (Commit
-    withGroups ("2380", "2018-04-09", "17:56:36.730413+00"))
-  }
-
-  test("regular expression for UPDATE, INSERT, DELETE log statements") {
-
-    val ex1 = "table public.\"Users\": UPDATE: ..."
-
-    ex1 should fullyMatch regex (ChangeStatement withGroups ("public", "\"Users\"", "UPDATE", "..."))
-
-    val ex2 = "table public.\"Users\": INSERT: ..."
-
-    ex2 should fullyMatch regex (ChangeStatement withGroups ("public", "\"Users\"", "INSERT", "..."))
-
-    val ex3 = "table public.\"Users\": DELETE: ..."
-
-    ex3 should fullyMatch regex (ChangeStatement withGroups ("public", "\"Users\"", "DELETE", "..."))
-
-    val ex4 = "table public.sales: UPDATE: id[integer]:0 info[jsonb]:'{\"name\": \"alpakka\", \"countries\": [\"*\"]}'"
-
-    ex4 should fullyMatch regex ChangeStatement
-
-    val ex5 =
-      "table public.sales: UPDATE: id[integer]:0 info[jsonb]:'{\n\"name\": \"alpakka\",\n\"countries\": [\"*\"]\n}'"
-
-    ex5 should fullyMatch regex ChangeStatement
+    val ex3 = """"users""""
+    doubleQuotedString.parse(ex3) should matchPattern { case Parsed.Success("\"users\"", _) => }
 
   }
 
-  test("regular expression for double quoted string") {
-
-    val ex1 = """"Hello \"world\"""""
-    ex1 should fullyMatch regex (s"($DoubleQuotedString)".r withGroups """"Hello \"world\""""")
-
-  }
-
-  test("regular expression for single quoted strings") {
+  test("parsing single quoted strings") {
 
     val ex1 = "'Hello world'"
-    ex1 should fullyMatch regex (s"($SingleQuotedString1)".r withGroups "'Hello world'")
-    ex1 should fullyMatch regex (SingleQuotedString2 withGroups "Hello world")
+    singleQuotedString.parse(ex1) should matchPattern { case Parsed.Success("Hello world", _) => }
 
     val ex2 = "'Hello ''world'''"
-    ex2 should fullyMatch regex (s"($SingleQuotedString1)".r withGroups "'Hello ''world'''")
-    ex2 should fullyMatch regex (SingleQuotedString2 withGroups "Hello ''world''")
+    singleQuotedString.parse(ex2) should matchPattern { case Parsed.Success("Hello ''world''", _) => }
 
   }
 
-  test("regular expression for identifiers") {
+  test("parsing unquoted strings") {
+
+    val ex1 = "some_thing_42"
+
+    unquotedIdentifier.parse(ex1) should matchPattern { case Parsed.Success("some_thing_42", _) => }
+
+    val ex2 = "\""
+
+    unquotedIdentifier.parse(ex2) should not matchPattern { case Parsed.Success(_, _) => }
+
+  }
+
+  test("parsing identifiers") {
 
     val ex1 = "users"
-    ex1 should fullyMatch regex Identifier.r
+    identifier.parse(ex1) should matchPattern { case Parsed.Success("users", _) => }
 
-    val ex2 = """"users""""
-    ex2 should fullyMatch regex Identifier.r
+    val ex2 = "\"USERS\""
+    identifier.parse(ex2) should matchPattern { case Parsed.Success("\"USERS\"", _) => }
 
     val ex3 = "'users'"
-    ex3 shouldNot fullyMatch regex Identifier.r
+    identifier.parse(ex3) should not matchPattern { case Parsed.Success(_, _) => }
 
   }
 
-  test("regular expression for type declaration") {
+  test("parsing type declarations") {
 
-    val ex1 = "integer"
+    val ex1 = "[integer]"
+    typeDeclaration.parse(ex1) should matchPattern { case Parsed.Success("integer", _) => }
 
-    ex1 should fullyMatch regex TypeDeclaration.r
-
-    val ex2 = "character varying"
-    ex2 should fullyMatch regex TypeDeclaration.r
+    val ex2 = "[character varying]"
+    typeDeclaration.parse(ex2) should matchPattern { case Parsed.Success("character varying", _) => }
 
   }
 
-  test("regular expression for values - general") {
+  test("parsing values") {
 
     val ex1 = "'scala'"
-    ex1 should fullyMatch regex Value
-    ex1 shouldNot fullyMatch regex NonStringValue
+    TestDecodingPlugin.value.parse(ex1) should matchPattern { case Parsed.Success("scala", _) => }
 
     val ex2 = "true"
-    ex2 should fullyMatch regex Value
-    ex2 should fullyMatch regex NonStringValue
-    ex2 shouldNot fullyMatch regex SingleQuotedString1
+    TestDecodingPlugin.value.parse(ex2) should matchPattern { case Parsed.Success("true", _) => }
 
     val ex3 = "3.14"
-    ex3 should fullyMatch regex Value
-    ex3 should fullyMatch regex NonStringValue
-    ex3 shouldNot fullyMatch regex SingleQuotedString1
+    TestDecodingPlugin.value.parse(ex3) should matchPattern { case Parsed.Success("3.14", _) => }
 
     val ex4 = """'<foo><bar id="42"></bar></foo>'"""
-    ex4 should fullyMatch regex Value
-    ex4 shouldNot fullyMatch regex NonStringValue
+    TestDecodingPlugin.value.parse(ex4) should matchPattern {
+      case Parsed.Success("""<foo><bar id="42"></bar></foo>""", _) =>
+    }
 
     val ex5 = "'<foo>\n<bar id=\"42\">\n</bar>\n</foo>'"
-    ex5 should fullyMatch regex Value
-    ex5 shouldNot fullyMatch regex NonStringValue
+    TestDecodingPlugin.value.parse(ex5) should matchPattern {
+      case Parsed.Success("<foo>\n<bar id=\"42\">\n</bar>\n</foo>", _) =>
+    }
 
   }
 
-  test("regular expression for key value pairs") {
+  test("parsing fields") {
 
-    val ex1 = """"Id"[integer]:1"""
+    val ex1 = "a[integer]:1"
+    data.parse(ex1) should matchPattern {
+      case Parsed.Success(List(Field("a", "integer", "1")), _) =>
+    }
 
-    ex1 should fullyMatch regex KeyValuePair.withGroups("\"Id\"", "integer", "1")
-
-    val ex2 = """"Name"[character varying]:'scala'"""
-    ex2 should fullyMatch regex KeyValuePair.withGroups("\"Name\"", "character varying", "'scala'")
-
-    val ex3 = """tags[text[]]:'{awesome}'"""
-    ex3 should fullyMatch regex KeyValuePair.withGroups("tags", "text[]", "'{awesome}'")
+    val ex2 = "a[integer]:1 b[integer]:2"
+    data.parse(ex2) should matchPattern {
+      case Parsed.Success(List(Field("a", "integer", "1"), Field("b", "integer", "2")), _) =>
+    }
 
   }
+
+  test("parsing BEGIN and COMMIT statements") {
+
+    begin.parse("BEGIN 2379") should matchPattern { case Parsed.Success(BeginStatement(2379), _) => }
+
+    date.parse("2018-04-09") should matchPattern { case Parsed.Success(localDate: LocalDate, _) => }
+
+    time.parse("05:52:42.626311+00") should matchPattern {
+      case Parsed.Success((localTime: LocalTime, zoneId: ZoneId), _) =>
+    }
+
+    commit.parse("COMMIT 2213 (at 2018-04-09 05:52:42.626311+00)") should matchPattern {
+      case Parsed.Success(CommitStatement(2213, zonedDateTime), _) =>
+    }
+
+  }
+
+  test("parsing UPDATE, INSERT, DELETE log statements") {
+
+    val ex1 = "table public.aa: UPDATE: a[integer]:1 b[integer]:1 c[integer]:3"
+    changeStatement.parse(ex1) should matchPattern {
+      case Parsed.Success(RowUpdated("public",
+                                     "aa",
+                                     List(Field("a", "integer", "1"),
+                                          Field("b", "integer", "1"),
+                                          Field("c", "integer", "3")),
+                                     List()),
+                          _) => // success
+    }
+
+    val ex2 = "table public.sales: UPDATE: id[integer]:0 info[jsonb]:'{\"name\": \"alpakka\", \"countries\": [\"*\"]}'"
+    changeStatement.parse(ex2) should matchPattern {
+      case Parsed.Success(
+          RowUpdated("public", "sales", List(Field("id", "integer", "0"), Field("info", "jsonb", _)), List()),
+          _
+          ) => // success
+    }
+
+    val ex3 =
+      "table public.aa: UPDATE: old-key: a[integer]:3 b[integer]:2 new-tuple: a[integer]:1 b[integer]:2 c[integer]:3"
+    changeStatement.parse(ex3) should matchPattern {
+      case Parsed.Success(RowUpdated("public",
+                                     "aa",
+                                     List(Field("a", "integer", "1"),
+                                          Field("b", "integer", "2"),
+                                          Field("c", "integer", "3")),
+                                     List(Field("a", "integer", "3"), Field("b", "integer", "2"))),
+                          _) => // success
+    }
+
+  }
+
 }

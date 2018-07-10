@@ -58,30 +58,48 @@ public class TestJavaDsl {
 
 
     // for documentation
-    public void exampleConstructSettings() {
-        //#ChangeDataCaptureSettings
+    public void exampleConstructSettingsForSource() {
+        //#SourceSettings
         final String connectionString = "jdbc:postgresql://localhost:5435/pgdb?user=pguser&password=pguser";
 
         final PostgreSQLInstance postgreSQLInstance = PostgreSQLInstance
                 .create(connectionString, "slot_name");
 
-        final ChangeDataCaptureSettings changeDataCaptureSettings = ChangeDataCaptureSettings
+        final PgCdcSourceSettings changeDataCaptureSettings = PgCdcSourceSettings
                 .create()
                 .withCreateSlotOnStart(false)
                 .withMaxItems(256)
                 .withPollInterval(Duration.ofSeconds(7))
-                .withMode(Modes.choosePeekMode())
-                .withTablesToIgnore(Collections.singletonList("user_personal_information")) // ignore the user_personal_information table
+                .withMode(Modes.createPeekMode())
                 .withColumnsToIgnore(new HashMap<String, List<String>>() {{
-                    put("images", Collections.singletonList("binary")); // ignore the binary column in the images table
+                    put("images", Collections.singletonList("binary"));
+                    put("user_personal_information", Collections.singletonList("*"));
+                    // ignore the binary column in the images table and ignore the user_personal_information table
                 }});
-        //#ChangeDataCaptureSettings
-
+        //#SourceSettings
     }
 
     // for documentation
-    public void exampleBasic() {
-        //#BasicExample
+    public void exampleConstructSettingsForAckSink() {
+        //#AckSinkSettings
+
+        final String connectionString = "jdbc:postgresql://localhost:5435/pgdb?user=pguser&password=pguser";
+
+        final PostgreSQLInstance postgreSQLInstance = PostgreSQLInstance
+                .create(connectionString, "slot_name");
+
+        final PgCdcAckSinkSettings ackSinkSettings = PgCdcAckSinkSettings
+                .create()
+                .withMaxItems(16)
+                .withMaxItemsWait(Duration.ofSeconds(7));
+
+        //#AckSinkSettings
+    }
+
+
+    // for documentation
+    public void exampleGet() {
+        //#GetExample
 
         final ActorSystem system = ActorSystem.create();
         final Materializer materializer = ActorMaterializer.create(system);
@@ -91,19 +109,18 @@ public class TestJavaDsl {
         final PostgreSQLInstance postgreSQLInstance = PostgreSQLInstance
                 .create(connectionString, "slot_name");
 
-        ChangeDataCapture
-                .source(postgreSQLInstance, ChangeDataCaptureSettings.create())
+        ChangeDataCapture.source(postgreSQLInstance, PgCdcSourceSettings.create())
                 .log("postgresqlcdc", changeSet -> String.format("captured changes: %s", changeSet.toString()))
                 .withAttributes(Attributes.createLogLevels(Logging.InfoLevel(), Logging.DebugLevel(), Logging.ErrorLevel()))
                 .to(Sink.ignore())
                 .run(materializer);
 
-        //#BasicExample
+        //#GetExample
     }
 
     // for documentation
-    public void exampleProcessEvents() {
-        //#ProcessEventsExample
+    public void examplePeek() {
+        //#PeekExample
 
         class UserDeregistered {
 
@@ -127,7 +144,7 @@ public class TestJavaDsl {
                 .create(connectionString, "slot_name");
 
         ChangeDataCapture
-                .source(postgreSQLInstance, ChangeDataCaptureSettings.create())
+                .source(postgreSQLInstance, PgCdcSourceSettings.create())
                 .mapConcat(ChangeSet::getChanges)
                 .collectType(RowDeleted.class)
                 .map(deletedRow -> {
@@ -141,7 +158,7 @@ public class TestJavaDsl {
                 })
                 .to(Sink.ignore())
                 .run(materializer);
-        //#ProcessEventsExample
+        //#PeekExample
     }
 
     @Test
@@ -159,7 +176,7 @@ public class TestJavaDsl {
                 .create(connectionString, "junit");
 
         final Source<Change, NotUsed> source = ChangeDataCapture
-                .source(postgreSQLInstance, ChangeDataCaptureSettings.create())
+                .source(postgreSQLInstance, PgCdcSourceSettings.create())
                 .mapConcat(ChangeSet::getChanges);
 
         source.runWith(TestSink.probe(system), materializer)

@@ -12,6 +12,7 @@ This Akka Stream Source makes use of the "logical decoding" feature of PostgreSQ
 It uses the `test_decoding` plugin that comes pre-packaged with PostgreSQL. Enabling a "logical decoding" slot
 in PostgreSQL requires very little configuration and, generally, has minimal performance overhead. However, please consult
 the PostgreSQL documentation to understand the performance implications: [the PostgreSQL documentation](https://www.postgresql.org/docs/10.4/static/logicaldecoding-example.html).
+**Note**: support for other plugins (e.g., `wal2json` is in the works).
 
 ## Events Emitted
 
@@ -39,6 +40,7 @@ into something domain specific and more strongly typed.
 
 ## Artifacts
 
+
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-postgresql-cdc_$scalaBinaryVersion$
@@ -65,8 +67,8 @@ According to the PostgreSQL documentation, before you can use logical decoding, 
 `max_replication_slots` to at least 1. This can be as simple as:
 
 ```bash
-echo "wal_level=logical" >> /etc/postgresql/9.4/main/postgresql.conf
-echo "max_replication_slots=8" >> /etc/postgresql/9.4/main/postgresql.conf
+echo "wal_level=logical" >> /etc/postgresql/10/main/postgresql.conf
+echo "max_replication_slots=8" >> /etc/postgresql/10/main/postgresql.conf
 ```
 
 If you use a cloud-based managed database service (e.g., AWS RDS), you usually don't have direct access to the `postgresql.conf` configuration file and you have to use
@@ -77,7 +79,7 @@ a configuration panel instead:
 
 ### Source Settings
 
-We configure the source using @scaladoc[PostgreSQLInstance](akka.stream.alpakka.postgresqlcdc.PostgreSQLInstance) and @scaladoc[ChangeDateCaptureSettings](akka.stream.alpakka.postgresqlcdc.ChangeDataCaptureSettings):
+We configure the source using @scaladoc[PostgreSQLInstance](akka.stream.alpakka.postgresqlcdc.PostgreSQLInstance) and @scaladoc[PgCdcSourceSettings](akka.stream.alpakka.postgresqlcdc.PgCdcSourceSettings):
 
 @scaladoc[PostgreSQLInstance](akka.stream.alpakka.postgresqlcdc.PostgreSQLInstance):
 
@@ -86,49 +88,65 @@ We configure the source using @scaladoc[PostgreSQLInstance](akka.stream.alpakka.
 | JDBC connection string | JDBC connection string            | yes     |
 | slot name              | name of logical replication slot  | yes     |
 
-@scaladoc[ChangeDateCaptureSettings](akka.stream.alpakka.postgresqlcdc.ChangeDataCaptureSettings):
+@scaladoc[PgCdcSourceSettings](akka.stream.alpakka.postgresqlcdc.PgCdcSourceSettings):
 
-| Setting           | Meaning                                   | Default   |
-| ------------------|-------------------------------------------|-----------|
-| createSlotOnStart | create logical replication slot on start  | true      |
-| tablesToIgnore    | a list of tables to ignore                | empty     |
-| columnsToIgnore   | what columns to ignore per table          | empty     |
-| mode              | choose between "Get" (at most once) or  "Peek" (at least once). If you choose "Peek", you'll need an ack sink or flow, to acknowledge consumption of the event  | Get |
-| maxItems          | maximum number of "changes" to pull in one go | 128   |
-| pollInterval      | duration between polls                    | 2 seconds |
+| Setting           | Meaning                                       | Default   | Required |
+| ------------------|-----------------------------------------------|-----------|----------|
+| createSlotOnStart | create the logical replication slot on start  | true      | no       |
+| columnsToIgnore   | what columns to ignore per table: use "*" to ignore all columns in a table | empty     | no       |
+| mode              | choose between "Get" (at most once) or  "Peek" (at least once). If you choose "Peek", you'll need the ACK Sink, to acknowledge consumption of the event  | Get | no |
+| maxItems          | maximum number of changes to pull in one go   | 128   | no           |
+| pollInterval      | duration between polls                        | 2 seconds | no       |
 
 Example source settings:
 
 Scala
-: @@snip ($alpakka$/postgresql-cdc/src/test/scala/akka/stream/alpakka/postgresqlcdc/TestScalaDsl.scala) { #ChangeDataCaptureSettings }
+: @@snip ($alpakka$/postgresql-cdc/src/test/scala/akka/stream/alpakka/postgresqlcdc/TestScalaDsl.scala) { #SourceSettings }
 
 Java
-: @@snip ($alpakka$/postgresql-cdc/src/test/java/akka/stream/alpakka/postgresqlcdc/TestJavaDsl.java) { #ChangeDataCaptureSettings }
+: @@snip ($alpakka$/postgresql-cdc/src/test/java/akka/stream/alpakka/postgresqlcdc/TestJavaDsl.java) { #SourceSettings }
 
 
 
-### Code
+### Source Usage
 
 Without further ado, a minimalist example:
 
 Scala
-: @@snip ($alpakka$/postgresql-cdc/src/test/scala/akka/stream/alpakka/postgresqlcdc/TestScalaDsl.scala) { #BasicExample }
+: @@snip ($alpakka$/postgresql-cdc/src/test/scala/akka/stream/alpakka/postgresqlcdc/TestScalaDsl.scala) { #GetExample }
 
 Java
-: @@snip ($alpakka$/postgresql-cdc/src/test/java/akka/stream/alpakka/postgresqlcdc/TestJavaDsl.java) { #BasicExample }
+: @@snip ($alpakka$/postgresql-cdc/src/test/java/akka/stream/alpakka/postgresqlcdc/TestJavaDsl.java) { #GetExample }
 
 
+### ACK Sink Settings
 
-### Stream Changes, Map to Domain Events
+We configure the ACK sink using @scaladoc[PostgreSQLInstance](akka.stream.alpakka.postgresqlcdc.PostgreSQLInstance) and @scaladoc[PgAckSinkSettings](akka.stream.alpakka.postgresqlcdc.PgAckSinkSettings):
+
+@scaladoc[PostgreSQLInstance](akka.stream.alpakka.postgresqlcdc.PostgreSQLInstance):
+
+|Setting                 | Meaning                           | Required|
+| -----------------------|-----------------------------------|---------|
+| JDBC connection string | JDBC connection string            | yes     |
+| slot name              | name of logical replication slot  | yes     |
+
+@scaladoc[PgAckSinkSettings](akka.stream.alpakka.postgresqlcdc.PgAckSinkSettings):
+
+|Setting               |Meaning                                                                     | Default              | Required |
+|----------------------|----------------------------------------------------------------------------|----------------------|----------|
+| maxItems             | ideal number of ChangeSets to acknowledge at once                          | 16                   | no       |
+| maxItemsWait         | maximum duration for which the stage waits until maxItems have accumulated | 3 second             | no       |
+
+
+### ACK Sink Usage
 
 You want to map these database change events (i.e. RowDeleted) to real domain events (i.e. UserDeregistered), aiming to adopt a Domain Driven Design approach.
 
 Scala
-: @@snip ($alpakka$/postgresql-cdc/src/test/scala/akka/stream/alpakka/postgresqlcdc/TestScalaDsl.scala) { #ProcessEventsExample }
+: @@snip ($alpakka$/postgresql-cdc/src/test/scala/akka/stream/alpakka/postgresqlcdc/TestScalaDsl.scala) { #PeekExample }
 
 Java
-: @@snip ($alpakka$/postgresql-cdc/src/test/java/akka/stream/alpakka/postgresqlcdc/TestJavaDsl.java) { #ProcessEventsExample }
-
+: @@snip ($alpakka$/postgresql-cdc/src/test/java/akka/stream/alpakka/postgresqlcdc/TestJavaDsl.java) { #PeekExample }
 
 
 ## Limitations
@@ -136,5 +154,10 @@ Java
 * It cannot capture events regarding changes to tables' structure (i.e. column removed, table dropped, table
 index added, change of column type etc.).
 * When a row update is captured, the previous version of the row is lost / not available.
-    * Unless the `REPLICA IDENTITY` setting for the table is changed from the default.
+    * Unless `REPLICA IDENTITY FULL` is set for the table.
 * It doesn't work with older version of PostgreSQL (i.e < 9.4).
+
+## Important Note
+
+* Remember to drop the slot after you are done using it.
+

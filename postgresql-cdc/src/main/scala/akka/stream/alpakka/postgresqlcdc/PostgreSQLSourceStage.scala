@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.postgresqlcdc
 
-import java.sql.{Connection, PreparedStatement}
+import java.sql.Connection
 
 import akka.NotUsed
 import akka.annotation.InternalApi
@@ -16,8 +16,7 @@ import scala.collection.mutable
 import scala.util.control.NonFatal
 
 @InternalApi
-private[postgresqlcdc] final class PostgreSQLSourceStage(instance: PostgreSQLInstance,
-                                                         settings: ChangeDataCaptureSettings)
+private[postgresqlcdc] final class PostgreSQLSourceStage(instance: PostgreSQLInstance, settings: PgCdcSourceSettings)
     extends GraphStage[SourceShape[ChangeSet]] {
 
   private val out: Outlet[ChangeSet] = Outlet[ChangeSet]("postgresqlcdc.out")
@@ -31,15 +30,13 @@ private[postgresqlcdc] final class PostgreSQLSourceStage(instance: PostgreSQLIns
 
 @InternalApi
 private[postgresqlcdc] final class PostgreSQLSourceStageLogic(val instance: PostgreSQLInstance,
-                                                              val settings: ChangeDataCaptureSettings,
+                                                              val settings: PgCdcSourceSettings,
                                                               val shape: SourceShape[ChangeSet])
     extends TimerGraphStageLogic(shape)
     with StageLogging {
 
   import PostgreSQL._
 
-  private lazy val getSlotChangesStatement: PreparedStatement =
-    buildGetSlotChangesStmt(slotName = instance.slotName, maxItems = settings.maxItems)
   private val buffer = new mutable.Queue[ChangeSet]()
 
   private implicit lazy val conn: Connection = getConnection(instance.jdbcConnectionString)
@@ -52,8 +49,8 @@ private[postgresqlcdc] final class PostgreSQLSourceStageLogic(val instance: Post
   private def retrieveChanges(): Unit = {
 
     val result: List[ChangeSet] = {
-      val slotChanges = getSlotChanges(getSlotChangesStatement)
-      TestDecodingPlugin.transformSlotChanges(slotChanges, settings.tablesToIgnore, settings.columnsToIgnore)
+      val slotChanges = pullChanges(settings.mode, instance.slotName, settings.maxItems)
+      TestDecodingPlugin.transformSlotChanges(slotChanges, settings.columnsToIgnore)
     }
 
     if (result.nonEmpty) {
@@ -61,14 +58,15 @@ private[postgresqlcdc] final class PostgreSQLSourceStageLogic(val instance: Post
       push(out, buffer.dequeue())
     } else if (isAvailable(out))
       scheduleOnce(NotUsed, settings.pollInterval)
+
   }
 
-  private def out = shape.out
+  private def out: Outlet[ChangeSet] = shape.out
 
   override def preStart(): Unit = {
     val slotExists = checkSlotExists(instance.slotName)
     if (!slotExists && settings.createSlotOnStart)
-      setUpSlot(instance.slotName)
+      createSlot(instance.slotName)
   }
 
   override def postStop(): Unit =

@@ -4,44 +4,55 @@
 
 package akka.stream.alpakka.postgresqlcdc
 
+import akka.actor.ActorSystem
+import akka.event.Logging
+import akka.stream.{ActorMaterializer, Attributes}
+import akka.stream.alpakka.postgresqlcdc.scaladsl.ChangeDataCapture
 import akka.stream.scaladsl.Sink
 import org.scalatest.{FunSuite, Matchers}
+import scala.concurrent.duration._
 
 import scala.language.postfixOps
 
 class TestScalaDsl extends FunSuite with Matchers {
 
-  ignore("ChangeDataCaptureSettings / PostgreSQLInstance example") {
+  ignore("SourceSettings snippet for docs") {
 
-    //#ChangeDataCaptureSettings
-    import scala.concurrent.duration._
-    import akka.stream.alpakka.postgresqlcdc._
+    //#SourceSettings
 
     val connectionString = "jdbc:postgresql://localhost:5435/pgdb?user=pguser&password=pguser"
 
     val postgreSQLInstance = PostgreSQLInstance(connectionString, "slot_name")
 
-    val changeDataCaptureSettings = ChangeDataCaptureSettings()
+    val changeDataCaptureSettings = PgCdcSourceSettings()
       .withCreateSlotOnStart(false)
       .withMaxItems(256)
       .withPollInterval(7 seconds)
       .withMode(Modes.Peek)
-      .withTablesToIgnore(List("user_personal_information")) // ignore the user_personal_information table
-      .withColumnsToIgnore(Map("images" -> List("binary"))) // ignore the binary column in the images table
-    //#ChangeDataCaptureSettings
+      .withColumnsToIgnore(Map("images" -> List("binary"), "user_personal_information" -> List("*")))
+    // ignore the binary column in the images table and ignore the user_personal_information table
+    //#SourceSettings
   }
 
-  ignore("basic example") {
+  ignore("AckSinkSettings snippet for docs") {
 
-    //#BasicExample
+    //#AckSinkSettings
 
-    import akka.actor.ActorSystem
-    import akka.event.Logging
-    import akka.stream.ActorMaterializer
-    import akka.stream.Attributes
-    import akka.stream.scaladsl.Sink
-    import akka.stream.alpakka.postgresqlcdc._
-    import akka.stream.alpakka.postgresqlcdc.scaladsl.ChangeDataCapture
+    val connectionString = "jdbc:postgresql://localhost:5435/pgdb?user=pguser&password=pguser"
+
+    val postgreSQLInstance = PostgreSQLInstance(connectionString, "slot_name")
+
+    val ackSinkSettings = PgCdcAckSinkSettings()
+      .withMaxItems(16)
+      .withMaxItemsWait(7 seconds)
+
+    //#AckSinkSettings
+
+  }
+
+  ignore("Source usage (get mode) snippet for docs") {
+
+    //#GetExample
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
@@ -50,24 +61,19 @@ class TestScalaDsl extends FunSuite with Matchers {
     val slotName = "slot_name"
 
     ChangeDataCapture
-      .source(PostgreSQLInstance(connectionString, slotName), ChangeDataCaptureSettings())
+      .source(PostgreSQLInstance(connectionString, slotName), PgCdcSourceSettings())
       .log("postgresqlcdc", cs => s"captured changes: ${cs.toString}")
       .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
       .to(Sink.ignore)
       .run()
 
-    //#BasicExample
+    //#GetExample
 
   }
 
-  ignore("process events example") {
+  ignore("Source usage (peek mode) snippet for docs") {
 
-    //#ProcessEventsExample
-
-    import akka.actor.ActorSystem
-    import akka.stream.ActorMaterializer
-    import akka.stream.alpakka.postgresqlcdc._
-    import akka.stream.alpakka.postgresqlcdc.scaladsl.ChangeDataCapture
+    //#PeekExample
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
@@ -80,7 +86,7 @@ class TestScalaDsl extends FunSuite with Matchers {
     val slotName = "slot_name"
 
     ChangeDataCapture
-      .source(PostgreSQLInstance(connectionString, slotName), ChangeDataCaptureSettings())
+      .source(PostgreSQLInstance(connectionString, slotName), PgCdcSourceSettings())
       .mapConcat(_.changes)
       .collect { // collect is map and filter
         case RowDeleted("public", "users", fields) =>
@@ -90,7 +96,7 @@ class TestScalaDsl extends FunSuite with Matchers {
       .to(Sink.ignore)
       .run()
 
-    //#ProcessEventsExample
+    //#PeekExample
 
   }
 

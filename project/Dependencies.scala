@@ -253,7 +253,8 @@ object Dependencies {
 
   val PostgreSqlCdc = Seq(
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.0", // BSD-style
+      "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.0", // BSD-style,
+      "com.lihaoyi" %% "fastparse" % "1.0.0", // The MIT License (MIT)
       "org.postgresql" % "postgresql" % "42.2.1" % Test) // BSD 2-clause "Simplified" License
   )
 
