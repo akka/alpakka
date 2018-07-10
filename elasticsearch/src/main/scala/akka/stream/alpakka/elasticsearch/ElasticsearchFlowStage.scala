@@ -69,7 +69,7 @@ final case class IncomingMessage[T, C](id: Option[String],
   def withVersion(version: Long): IncomingMessage[T, C] =
     this.copy(version = Option(version))
 
-  def withIndexName(indexName: String) =
+  def withIndexName(indexName: String): IncomingMessage[T, C] =
     this.copy(indexName = Option(indexName))
 }
 
