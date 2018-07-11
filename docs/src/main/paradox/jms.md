@@ -533,7 +533,6 @@ Scala
       JmsConsumerSettings(queueConnectionFactory)
         .withDestination(CustomDestination(TestQueueName, createMqQueue(TestQueueName)))
     )
-     
     ```
 
 Java
@@ -566,7 +565,6 @@ Java
         .create(queueConnectionFactory)
         .withDestination(new CustomDestination(testQueueName,createMqQueue(testQueueName)))
     );
-    
     ```
 
 ### Create a JmsProducer to an IBM MQ Topic
