@@ -14,6 +14,7 @@ import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.w3c.dom.Element;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -22,6 +23,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertThat;
@@ -86,7 +88,7 @@ public class XmlParsingTest {
             + "  <elem>"
             + "    <item>i1</item>"
             + "    <item><sub>i2</sub></item>"
-            + "     <item>i3</item>"
+            + "    <item>i3</item>"
             + "  </elem>"
             + "</doc>";
     final CompletionStage<List<ParseEvent>> resultStage =
@@ -104,6 +106,42 @@ public class XmlParsingTest {
                       Characters.create("i2"),
                       EndElement.create("sub"),
                       Characters.create("i3")));
+            })
+        .toCompletableFuture()
+        .get(5, TimeUnit.SECONDS);
+  }
+
+  @Test
+  public void xmlSubtree() throws InterruptedException, ExecutionException, TimeoutException {
+
+    // #subtree
+    final Sink<String, CompletionStage<List<Element>>> parse =
+        Flow.<String>create()
+            .map(ByteString::fromString)
+            .via(XmlParsing.parser())
+            .via(XmlParsing.subtree(Arrays.asList("doc", "elem", "item")))
+            .toMat(Sink.seq(), Keep.right());
+    // #subtree
+
+    // #subtree-usage
+    final String doc =
+        "<doc>"
+            + "  <elem>"
+            + "    <item>i1</item>"
+            + "    <item><sub>i2</sub></item>"
+            + "    <item>i3</item>"
+            + "  </elem>"
+            + "</doc>";
+    final CompletionStage<List<Element>> resultStage =
+        Source.single(doc).runWith(parse, materializer);
+    // #subtree-usage
+
+    resultStage
+        .thenAccept(
+            (list) -> {
+              assertThat(
+                  list.stream().map(e -> XmlHelper.asString(e).trim()).collect(Collectors.toList()),
+                  hasItems("<item>i1</item>", "<item><sub>i2</sub></item>", "<item>i3</item>"));
             })
         .toCompletableFuture()
         .get(5, TimeUnit.SECONDS);
