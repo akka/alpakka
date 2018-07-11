@@ -22,64 +22,191 @@ import akka.NotUsed
 import org.apache.http.message.BasicHeader
 import org.apache.http.util.EntityUtils
 
-object IncomingMessage {
+object IncomingIndexMessage {
   // Apply method to use when not using passThrough
   def apply[T](id: Option[String], source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(id, source, NotUsed)
+    IncomingIndexMessage(id, source, NotUsed)
 
   // Apply method to use when not using passThrough
   def apply[T](id: Option[String], source: T, version: Long): IncomingMessage[T, NotUsed] =
-    IncomingMessage(id, source, NotUsed, Option(version))
+    IncomingIndexMessage(id, source, NotUsed, Option(version))
 
   // Java-api - without passThrough
   def create[T](id: String, source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Option(id), source)
+    IncomingIndexMessage(Option(id), source)
 
   // Java-api - without passThrough
   def create[T](id: String, source: T, version: Long): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Option(id), source, version)
+    IncomingIndexMessage(Option(id), source, version)
 
   // Java-api - without passThrough
   def create[T](source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(None, source)
+    IncomingIndexMessage(None, source)
 
   // Java-api - with passThrough
   def create[T, C](id: String, source: T, passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(Option(id), source, passThrough)
+    IncomingIndexMessage(Option(id), source, passThrough)
 
   // Java-api - with passThrough
   def create[T, C](id: String, source: T, passThrough: C, version: Long): IncomingMessage[T, C] =
-    IncomingMessage(Option(id), source, passThrough, Option(version))
+    IncomingIndexMessage(Option(id), source, passThrough, Option(version))
 
   // Java-api - with passThrough
   def create[T, C](id: String, source: T, passThrough: C, version: Long, indexName: String): IncomingMessage[T, C] =
-    IncomingMessage(Option(id), source, passThrough, Option(version), Option(indexName))
+    IncomingIndexMessage(Option(id), source, passThrough, Option(version), Option(indexName))
 
   // Java-api - with passThrough
   def create[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(None, source, passThrough)
+    IncomingIndexMessage(None, source, passThrough)
 }
 
-final case class IncomingMessage[T, C](id: Option[String],
-                                       source: T,
-                                       passThrough: C,
-                                       version: Option[Long] = None,
-                                       indexName: Option[String] = None) {
+object IncomingUpdateMessage {
+  // Apply method to use when not using passThrough
+  def apply[T](id: String, source: T): IncomingMessage[T, NotUsed] =
+    IncomingUpdateMessage(id, source, NotUsed)
 
-  def withVersion(version: Long): IncomingMessage[T, C] =
+  // Apply method to use when not using passThrough
+  def apply[T](id: String, source: T, upsert: Boolean): IncomingMessage[T, NotUsed] =
+    IncomingUpdateMessage(id, source, NotUsed, upsert)
+
+  // Apply method to use when not using passThrough
+  def apply[T](id: String, source: T, version: Long): IncomingMessage[T, NotUsed] =
+    IncomingUpdateMessage(id, source, NotUsed, false, Option(version))
+
+  // Apply method to use when not using passThrough
+  def apply[T](id: String, source: T, upsert: Boolean, version: Long): IncomingMessage[T, NotUsed] =
+    IncomingUpdateMessage(id, source, NotUsed, upsert, Option(version))
+
+  // Java-api - without passThrough
+  def create[T](id: String, source: T): IncomingMessage[T, NotUsed] =
+    IncomingUpdateMessage(id, source, NotUsed)
+
+  // Java-api - without passThrough
+  def create[T](id: String, source: T, upsert: Boolean): IncomingMessage[T, NotUsed] =
+    IncomingUpdateMessage(id, source, NotUsed, upsert)
+
+  // Java-api - without passThrough
+  def create[T](id: String, source: T, version: Long): IncomingMessage[T, NotUsed] =
+    IncomingUpdateMessage(id, source, NotUsed, false, Some(version))
+
+  // Java-api - without passThrough
+  def create[T](id: String, source: T, upsert: Boolean, version: Long): IncomingMessage[T, NotUsed] =
+    IncomingUpdateMessage(id, source, NotUsed, upsert, Some(version))
+
+  // Java-api - with passThrough
+  def create[T, C](id: String, source: T, passThrough: C): IncomingMessage[T, C] =
+    IncomingUpdateMessage(id, source, passThrough)
+
+  // Java-api - with passThrough
+  def create[T, C](id: String, source: T, passThrough: C, upsert: Boolean): IncomingMessage[T, C] =
+    IncomingUpdateMessage(id, source, passThrough, upsert)
+
+  // Java-api - with passThrough
+  def create[T, C](id: String, source: T, passThrough: C, version: Long): IncomingMessage[T, C] =
+    IncomingUpdateMessage(id, source, passThrough, false, Option(version))
+
+  // Java-api - with passThrough
+  def create[T, C](id: String, source: T, passThrough: C, upsert: Boolean, version: Long): IncomingMessage[T, C] =
+    IncomingUpdateMessage(id, source, passThrough, upsert, Option(version))
+
+  // Java-api - with passThrough
+  def create[T, C](id: String, source: T, passThrough: C, version: Long, indexName: String): IncomingMessage[T, C] =
+    IncomingUpdateMessage(id, source, passThrough, false, Option(version), Option(indexName))
+
+  // Java-api - with passThrough
+  def create[T, C](id: String,
+                   source: T,
+                   passThrough: C,
+                   upsert: Boolean,
+                   version: Long,
+                   indexName: String): IncomingMessage[T, C] =
+    IncomingUpdateMessage(id, source, passThrough, upsert, Option(version), Option(indexName))
+
+}
+
+object IncomingDeleteMessage {
+  // Apply method to use when not using passThrough
+  def apply[T](id: String): IncomingDeleteMessage[T, NotUsed] =
+    IncomingDeleteMessage(id, NotUsed)
+
+  // Apply method to use when not using passThrough
+  def apply[T](id: String, version: Long): IncomingDeleteMessage[T, NotUsed] =
+    IncomingDeleteMessage(id, NotUsed, Option(version))
+
+  // Java-api - without passThrough
+  def create[T](id: String): IncomingDeleteMessage[T, NotUsed] =
+    IncomingDeleteMessage(id)
+
+  // Java-api - without passThrough
+  def create[T](id: String, version: Long): IncomingDeleteMessage[T, NotUsed] =
+    IncomingDeleteMessage(id, version)
+
+  // Java-api - with passThrough
+  def create[T, C](id: String, passThrough: C): IncomingDeleteMessage[T, C] =
+    IncomingDeleteMessage(id, passThrough)
+
+  // Java-api - with passThrough
+  def create[T, C](id: String, passThrough: C, version: Long): IncomingDeleteMessage[T, C] =
+    IncomingDeleteMessage(id, passThrough, Option(version))
+
+  // Java-api - with passThrough
+  def create[T, C](id: String, passThrough: C, version: Long, indexName: String): IncomingDeleteMessage[T, C] =
+    IncomingDeleteMessage(id, passThrough, Option(version), Option(indexName))
+}
+
+sealed trait IncomingMessage[T, C] {
+  val passThrough: C
+  val version: Option[Long]
+  val indexName: Option[String]
+  def withVersion(version: Long): IncomingMessage[T, C]
+  def withIndexName(indexName: String): IncomingMessage[T, C]
+}
+
+final case class IncomingDeleteMessage[T, C](id: String,
+                                             passThrough: C,
+                                             version: Option[Long] = None,
+                                             indexName: Option[String] = None)
+    extends IncomingMessage[T, C] {
+
+  def withVersion(version: Long): IncomingDeleteMessage[T, C] =
     this.copy(version = Option(version))
 
-  def withIndexName(indexName: String): IncomingMessage[T, C] =
+  def withIndexName(indexName: String): IncomingDeleteMessage[T, C] =
     this.copy(indexName = Option(indexName))
 }
 
-object IncomingMessageResult {
-  // Apply method to use when not using passThrough
-  def apply[T](source: T, success: Boolean, errorMsg: Option[String]): IncomingMessageResult[T, NotUsed] =
-    IncomingMessageResult(source, NotUsed, success, errorMsg)
+final case class IncomingIndexMessage[T, C](id: Option[String],
+                                            source: T,
+                                            passThrough: C,
+                                            version: Option[Long] = None,
+                                            indexName: Option[String] = None)
+    extends IncomingMessage[T, C] {
+
+  def withVersion(version: Long): IncomingIndexMessage[T, C] =
+    this.copy(version = Option(version))
+
+  def withIndexName(indexName: String): IncomingIndexMessage[T, C] =
+    this.copy(indexName = Option(indexName))
 }
 
-final case class IncomingMessageResult[T, C](source: T, passThrough: C, success: Boolean, errorMsg: Option[String])
+final case class IncomingUpdateMessage[T, C](id: String,
+                                             source: T,
+                                             passThrough: C,
+                                             upsert: Boolean = false,
+                                             version: Option[Long] = None,
+                                             indexName: Option[String] = None)
+    extends IncomingMessage[T, C] {
+
+  def withVersion(version: Long): IncomingUpdateMessage[T, C] =
+    this.copy(version = Option(version))
+
+  def withIndexName(indexName: String): IncomingUpdateMessage[T, C] =
+    this.copy(indexName = Option(indexName))
+}
+
+case class IncomingMessageResult[T2, C2](message: IncomingMessage[T2, C2], error: Option[String]) {
+  val success = error.isEmpty
+}
 
 trait MessageWriter[T] {
   def convert(message: T): String
@@ -106,7 +233,6 @@ class ElasticsearchFlowStage[T, C](
       private val responseHandler = getAsyncCallback[(Seq[IncomingMessage[T, C]], Response)](handleResponse)
       private var failedMessages: Seq[IncomingMessage[T, C]] = Nil
       private var retryCount: Int = 0
-      private val insertKeyword: String = if (!settings.docAsUpsert) "index" else "update"
 
       override def preStart(): Unit =
         pull(in)
@@ -139,25 +265,25 @@ class ElasticsearchFlowStage[T, C](
       private def handleSuccess(): Unit =
         completeStage()
 
-      private case class MessageWithResult[T2, C2](m: IncomingMessage[T2, C2], r: IncomingMessageResult[T2, C2])
-
       private def handleResponse(args: (Seq[IncomingMessage[T, C]], Response)): Unit = {
         val (messages, response) = args
         val responseJson = EntityUtils.toString(response.getEntity).parseJson
 
         // If some commands in bulk request failed, pass failed messages to follows.
         val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
-        val messageResults: Seq[MessageWithResult[T, C]] = items.elements.zip(messages).map {
+        val messageResults: Seq[IncomingMessageResult[T, C]] = items.elements.zip(messages).map {
           case (item, message) =>
-            val res = item.asJsObject.fields(insertKeyword).asJsObject
+            val command = message match {
+              case _: IncomingIndexMessage[_, _] => "index"
+              case _: IncomingUpdateMessage[_, _] => "update"
+              case _: IncomingDeleteMessage[_, _] => "delete"
+            }
+            val res = item.asJsObject.fields(command).asJsObject
             val error: Option[String] = res.fields.get("error").map(_.toString())
-            MessageWithResult(
-              message,
-              IncomingMessageResult(message.source, message.passThrough, error.isEmpty, error)
-            )
+            IncomingMessageResult(message, error)
         }
 
-        val failedMsgs = messageResults.filterNot(_.r.success)
+        val failedMsgs = messageResults.filterNot(_.error.isEmpty)
 
         if (failedMsgs.nonEmpty && settings.retryPartialFailure && retryCount < settings.maxRetry) {
           retryPartialFailedMessages(messageResults, failedMsgs)
@@ -167,30 +293,30 @@ class ElasticsearchFlowStage[T, C](
       }
 
       private def retryPartialFailedMessages(
-          messageResults: Seq[MessageWithResult[T, C]],
-          failedMsgs: Seq[MessageWithResult[T, C]]
+          messageResults: Seq[IncomingMessageResult[T, C]],
+          failedMsgs: Seq[IncomingMessageResult[T, C]]
       ): Unit = {
         // Retry partial failed messages
         // NOTE: When we partially return message like this, message will arrive out of order downstream
         // and it can break commit-logic when using Kafka
         retryCount = retryCount + 1
-        failedMessages = failedMsgs.map(_.m) // These are the messages we're going to retry
+        failedMessages = failedMsgs.map(_.message) // These are the messages we're going to retry
         scheduleOnce(NotUsed, settings.retryInterval.millis)
 
-        val successMsgs = messageResults.filter(_.r.success)
+        val successMsgs = messageResults.filter(_.error.isEmpty)
         if (successMsgs.nonEmpty) {
           // push the messages that DID succeed
-          val resultForSucceededMsgs = successMsgs.map(_.r)
-          emit(out, Future.successful(resultForSucceededMsgs))
+          //val resultForSucceededMsgs = successMsgs.map(_.r)
+          emit(out, Future.successful(successMsgs))
         }
       }
 
-      private def forwardAllResults(messageResults: Seq[MessageWithResult[T, C]]): Unit = {
+      private def forwardAllResults(messageResults: Seq[IncomingMessageResult[T, C]]): Unit = {
         retryCount = 0 // Clear retryCount
 
         // Push result
-        val listOfResults = messageResults.map(_.r)
-        emit(out, Future.successful(listOfResults))
+        //val listOfResults = messageResults.map(_.r)
+        emit(out, Future.successful(messageResults))
 
         // Fetch next messages from queue and send them
         val nextMessages = (1 to settings.bufferSize).flatMap { _ =>
@@ -213,22 +339,53 @@ class ElasticsearchFlowStage[T, C](
             val indexNameToUse: String = message.indexName.getOrElse(indexName)
 
             JsObject(
-              insertKeyword -> JsObject(
-                Seq(
-                  Option("_index" -> JsString(indexNameToUse)),
-                  Option("_type" -> JsString(typeName)),
-                  message.version.map { version =>
-                    "_version" -> JsNumber(version)
-                  },
-                  settings.versionType.map { versionType =>
-                    "version_type" -> JsString(versionType)
-                  },
-                  message.id.map { id =>
-                    "_id" -> JsString(id)
-                  }
-                ).flatten: _*
-              )
-            ).toString + "\n" + messageToJsonString(message)
+              message match {
+                case x: IncomingIndexMessage[_, _] =>
+                  "index" -> JsObject(
+                    Seq(
+                      Option("_index" -> JsString(indexNameToUse)),
+                      Option("_type" -> JsString(typeName)),
+                      message.version.map { version =>
+                        "_version" -> JsNumber(version)
+                      },
+                      settings.versionType.map { versionType =>
+                        "version_type" -> JsString(versionType)
+                      },
+                      x.id.map { id =>
+                        "_id" -> JsString(id)
+                      }
+                    ).flatten: _*
+                  )
+                case x: IncomingUpdateMessage[_, _] =>
+                  "update" -> JsObject(
+                    Seq(
+                      Option("_index" -> JsString(indexNameToUse)),
+                      Option("_type" -> JsString(typeName)),
+                      message.version.map { version =>
+                        "_version" -> JsNumber(version)
+                      },
+                      settings.versionType.map { versionType =>
+                        "version_type" -> JsString(versionType)
+                      },
+                      Option("_id" -> JsString(x.id))
+                    ).flatten: _*
+                  )
+                case x: IncomingDeleteMessage[_, _] =>
+                  "delete" -> JsObject(
+                    Seq(
+                      Option("_index" -> JsString(indexNameToUse)),
+                      Option("_type" -> JsString(typeName)),
+                      message.version.map { version =>
+                        "_version" -> JsNumber(version)
+                      },
+                      settings.versionType.map { versionType =>
+                        "version_type" -> JsString(versionType)
+                      },
+                      Option("_id" -> JsString(x.id))
+                    ).flatten: _*
+                  )
+              }
+            ).toString + messageToJsonString(message)
           }
           .mkString("", "\n", "\n")
 
@@ -248,13 +405,20 @@ class ElasticsearchFlowStage[T, C](
       }
 
       private def messageToJsonString(message: IncomingMessage[T, C]): String =
-        if (!settings.docAsUpsert) {
-          writer.convert(message.source)
-        } else {
-          JsObject(
-            "doc" -> writer.convert(message.source).parseJson,
-            "doc_as_upsert" -> JsTrue
-          ).toString
+        message match {
+          case x: IncomingIndexMessage[T, C] =>
+            "\n" + writer.convert(x.source)
+          case x: IncomingUpdateMessage[T, C] if x.upsert =>
+            "\n" + JsObject(
+              "doc" -> writer.convert(x.source).parseJson,
+              "doc_as_upsert" -> JsTrue
+            ).toString
+          case x: IncomingUpdateMessage[T, C] =>
+            "\n" + JsObject(
+              "doc" -> writer.convert(x.source).parseJson,
+            ).toString
+          case x: IncomingDeleteMessage[T, C] =>
+            ""
         }
 
       setHandlers(in, out, this)

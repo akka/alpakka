@@ -20,7 +20,7 @@ final case class ElasticsearchSinkSettings(bufferSize: Int = 10,
                                            retryInterval: Int = 5000,
                                            maxRetry: Int = 100,
                                            retryPartialFailure: Boolean = false,
-                                           docAsUpsert: Boolean = false,
+                                           //docAsUpsert: Boolean = false,
                                            versionType: Option[String] = None) {
   def withBufferSize(bufferSize: Int): ElasticsearchSinkSettings =
     copy(bufferSize = bufferSize)
@@ -34,8 +34,8 @@ final case class ElasticsearchSinkSettings(bufferSize: Int = 10,
   def withRetryPartialFailure(retryPartialFailure: Boolean): ElasticsearchSinkSettings =
     copy(retryPartialFailure = retryPartialFailure)
 
-  def withDocAsUpsert(docAsUpsert: Boolean): ElasticsearchSinkSettings =
-    copy(docAsUpsert = docAsUpsert)
+//  def withDocAsUpsert(docAsUpsert: Boolean): ElasticsearchSinkSettings =
+//    copy(docAsUpsert = docAsUpsert)
 
   def withVersionType(versionType: String): ElasticsearchSinkSettings =
     copy(versionType = Some(versionType))
