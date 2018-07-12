@@ -118,7 +118,7 @@ Use `private`, `private[connector]` and `final` extensively to limit the API sur
 | `akka.stream.alpakka.connector.javadsl`  | Java-only part of the API, normally factories for Sources, Flows and Sinks
 | `akka.stream.alpakka.connector.scaladsl` | Scala-only part of the API, normally factories for Sources, Flows and Sinks
 | `akka.stream.alpakka.connector`          | Shared API, eg. settings classes
-| `akka.stream.alpakka.connector.impl`     | Implementation in separate package
+| `akka.stream.alpakka.connector.impl`     | Internal implementation in separate package
 
 ### Graph stage checklist
 
@@ -157,7 +157,7 @@ Please ensure that you limit the amount of resources used by the containers.
 
 ## Documentation
 
-> Reference connector [paradox documentation](docs/src/main/paradox/refernece.md)
+> Reference connector [paradox documentation](docs/src/main/paradox/reference.md)
 
 Using [Paradox](https://github.com/lightbend/paradox) syntax (which is very close to markdown), create or complement
 the documentation in the `docs` module.

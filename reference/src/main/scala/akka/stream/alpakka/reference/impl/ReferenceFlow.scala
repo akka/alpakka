@@ -11,9 +11,11 @@ import akka.stream.alpakka.reference.ReferenceWriteMessage
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 
 /**
- * private package hides the class from the API in Scala. However it is still
- * visible in Java. Use "InternalApi" annotation to communicate to Java developers
- * that this is private API.
+ * INTERNAL API
+ *
+ * Private package hides the class from the API in Scala. However it is still
+ * visible in Java. Use "InternalApi" annotation and "INTERNAL API" as the first
+ * line in scaladoc to communicate to Java developers that this is private API.
  */
 @InternalApi private[reference] final class ReferenceFlowStageLogic(
     val shape: FlowShape[ReferenceWriteMessage, ReferenceWriteMessage]
@@ -48,6 +50,9 @@ import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
   override def postStop(): Unit = {}
 }
 
+/**
+ * INTERNAL API
+ */
 @InternalApi private[reference] final class ReferenceFlow()
     extends GraphStage[FlowShape[ReferenceWriteMessage, ReferenceWriteMessage]] {
   val in: Inlet[ReferenceWriteMessage] = Inlet(Logging.simpleName(this) + ".in")

@@ -64,6 +64,9 @@ final class ReferenceReadMessage private (
 
   private def copy(data: immutable.Seq[ByteString] = data, bytesRead: Try[Int] = bytesRead) =
     new ReferenceReadMessage(data, bytesRead)
+
+  override def toString: String =
+    s"ReferenceReadMessage(data=$data, bytesRead=$bytesRead)"
 }
 
 object ReferenceReadMessage {
@@ -124,10 +127,7 @@ final class ReferenceWriteMessage private (
     new ReferenceWriteMessage(data, metrics)
 
   override def toString: String =
-    s"""ReferenceWriteMessage(
-       |  data       = $data
-       |  metrics    = $metrics
-       |)""".stripMargin
+    s"ReferenceWriteMessage(data=$data, metrics=$metrics)"
 }
 
 object ReferenceWriteMessage {
