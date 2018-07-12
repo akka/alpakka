@@ -10,6 +10,6 @@ These examples are meant to give you a view of how Alpakka can help you solving 
 * [Elasticsearch](elasticsearch-samples.md)
 * [FTP](ftp-samples.md)
 * [JMS](jms-samples.md)
-* [MQTT samples](mqtt-samples.md)
+* [MQTT](mqtt-samples.md)
 
 @@@

@@ -1,4 +1,4 @@
-# MQTT examples
+# MQTT
 
 ## Example: Read from an MQTT topic, group messages and publish to Kafka
 
