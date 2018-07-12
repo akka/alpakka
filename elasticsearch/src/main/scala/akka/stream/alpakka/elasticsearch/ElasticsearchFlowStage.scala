@@ -315,7 +315,6 @@ class ElasticsearchFlowStage[T, C](
         retryCount = 0 // Clear retryCount
 
         // Push result
-        //val listOfResults = messageResults.map(_.r)
         emit(out, Future.successful(messageResults))
 
         // Fetch next messages from queue and send them
