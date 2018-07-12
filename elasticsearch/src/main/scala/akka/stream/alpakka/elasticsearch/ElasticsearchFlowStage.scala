@@ -415,9 +415,9 @@ class ElasticsearchFlowStage[T, C](
             ).toString
           case x: IncomingUpdateMessage[T, C] =>
             "\n" + JsObject(
-              "doc" -> writer.convert(x.source).parseJson,
+              "doc" -> writer.convert(x.source).parseJson
             ).toString
-          case x: IncomingDeleteMessage[T, C] =>
+          case _: IncomingDeleteMessage[T, C] =>
             ""
         }
 
