@@ -7,7 +7,9 @@ package akka.stream.alpakka.postgresqlcdc;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.event.Logging;
 import akka.stream.ActorMaterializer;
+import akka.stream.Attributes;
 import akka.stream.Materializer;
 import akka.stream.alpakka.postgresqlcdc.javadsl.ChangeDataCapture;
 import akka.stream.javadsl.Sink;
@@ -17,13 +19,15 @@ import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.Tuple2;
 
 import java.sql.Connection;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
-import akka.event.Logging;
-import akka.stream.Attributes;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 
 public class TestJavaDsl {
 
@@ -122,11 +126,11 @@ public class TestJavaDsl {
     public void examplePeek() {
         //#PeekExample
 
-        class UserDeregistered {
+        class UserRegistered {
 
             private String userId;
 
-            public UserDeregistered(String userId) {
+            public UserRegistered(String userId) {
                 this.userId = userId;
             }
 
@@ -143,21 +147,26 @@ public class TestJavaDsl {
         final PostgreSQLInstance postgreSQLInstance = PostgreSQLInstance
                 .create(connectionString, "slot_name");
 
-        ChangeDataCapture
-                .source(postgreSQLInstance, PgCdcSourceSettings.create())
-                .mapConcat(ChangeSet::getChanges)
-                .collectType(RowDeleted.class)
-                .map(deletedRow -> {
-                  String userId = deletedRow.getFields()
-                          .stream()
-                          .filter(f -> f.getColumnName().equals("user_id"))
-                          .map(Field::getValue)
-                          .findFirst()
-                          .orElse("unknown");
-                  return new UserDeregistered(userId);
-                })
-                .to(Sink.ignore())
+        final Source<ChangeSet, NotUsed> source = ChangeDataCapture.source(postgreSQLInstance, PgCdcSourceSettings.create());
+
+        final Sink<ChangeSet, NotUsed> ackSink = ChangeDataCapture.ackSink(postgreSQLInstance, PgCdcAckSinkSettings.create());
+
+        source.filter(changeSet -> changeSet.getChanges().get(0) instanceof RowInserted)
+                .filter(changeSet -> changeSet.getChanges().get(0).getTableName().equals("users"))
+                .map(changeSet -> {
+                        String userId = ((RowInserted)(changeSet.getChanges().get(0))).getFields()
+                                .stream()
+                                .filter(f -> f.getColumnName().equals("user_id"))
+                                .map(Field::getValue)
+                                .findFirst()
+                                .orElse("unknown");
+                        return Tuple2.apply(changeSet, new UserRegistered(userId));
+                    })
+                .map(result -> result) // do something useful e.g., publish to SQS
+                .map(tuple -> tuple._1)
+                .to(ackSink)
                 .run(materializer);
+
         //#PeekExample
     }
 
@@ -181,7 +190,7 @@ public class TestJavaDsl {
 
         source.runWith(TestSink.probe(system), materializer)
                 .request(3)
-                .expectNextN(3); // TODO: improve test
+                .expectNextN(3);
 
     }
 

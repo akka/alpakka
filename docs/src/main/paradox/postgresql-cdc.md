@@ -9,10 +9,10 @@ this provides the tooling for implementing the [Strangler Application](https://w
 ## How It Works
 
 This Akka Stream Source makes use of the "logical decoding" feature of PostgreSQL (available since PostgreSQL 9.4).
-It uses the `test_decoding` plugin that comes pre-packaged with PostgreSQL. Enabling a "logical decoding" slot
+It uses the `test_decoding` plugin that comes pre-packaged with PostgreSQL. Enabling a logical replication slot
 in PostgreSQL requires very little configuration and, generally, has minimal performance overhead. However, please consult
 the PostgreSQL documentation to understand the performance implications: [the PostgreSQL documentation](https://www.postgresql.org/docs/10.4/static/logicaldecoding-example.html).
-**Note**: support for other plugins (e.g., `wal2json` is in the works).
+**Note**: support for other decoding plugins (e.g., `wal2json` is in the works).
 
 ## Events Emitted
 
@@ -27,8 +27,9 @@ transaction id. A 'change' can be one of the following:
 * @scaladoc[RowUpdated](akka.stream.alpakka.postgresqlcdc.RowUpdated)
     * schemaName: String
     * tableName: String
-    * fields: A list of fields
-        * note: only the new version of the fields (by default)
+    * fieldsNew: A list of fields
+    * fieldsOld: A list of fields
+        * empty - unless `REPLICA IDENTITY FULL` is set for the table. See [Limitations](##Limitations).
 
 * @scaladoc[RowDeleted](akka.stream.alpakka.postgresqlcdc.RowDeleted)
     * schemaName: String
@@ -94,12 +95,13 @@ We configure the source using @scaladoc[PostgreSQLInstance](akka.stream.alpakka.
 | ------------------|-----------------------------------------------|--------------|----------|
 | createSlotOnStart | create the logical replication slot on start  | true         | no       |
 | plugin            | only one option as of now                     | TestDecoding | no    |
-| columnsToIgnore   | what columns to ignore per table: use * to ignore all columns in a table | none | no |
-| mode              | choose between "Get" (at most once) or  "Peek" (at least once). If you choose "Peek", you'll need the ACK Sink, to acknowledge consumption of the event  | Get | no |
+| columnsToIgnore   | what columns to ignore per table. * syntax is supported: use it to ignore all columns in a table, or all columns with a given name regardless of what table they are in | none | no |
+| mode              | choose between "Get" (at most once) or  "Peek" (at least once). If you choose "Peek", you'll need the [Ack Sink](## Ack Sink Settings), to acknowledge consumption of the event  | Get | no |
 | maxItems          | maximum number of changes to pull in one go   | 128          | no           |
 | pollInterval      | duration between polls                        | 2 seconds    | no           |
 
 Example source settings:
+
 
 Scala
 : @@snip ($alpakka$/postgresql-cdc/src/test/scala/akka/stream/alpakka/postgresqlcdc/TestScalaDsl.scala) { #SourceSettings }
@@ -120,11 +122,11 @@ Java
 : @@snip ($alpakka$/postgresql-cdc/src/test/java/akka/stream/alpakka/postgresqlcdc/TestJavaDsl.java) { #GetExample }
 
 
-### ACK Sink Settings
+### Ack Sink Settings
 
-We configure the ACK sink using @scaladoc[PostgreSQLInstance](akka.stream.alpakka.postgresqlcdc.PostgreSQLInstance) and @scaladoc[PgAckSinkSettings](akka.stream.alpakka.postgresqlcdc.PgAckSinkSettings):
+We configure the Ack sink using @scaladoc[PostgreSQLInstance](akka.stream.alpakka.postgresqlcdc.PostgreSQLInstance) and @scaladoc[PgAckSinkSettings](akka.stream.alpakka.postgresqlcdc.PgAckSinkSettings):
 
-@scaladoc[PostgreSQLInstance](akka.stream.alpakka.postgresqlcdc.PostgreSQLInstance):
+@scaladoc[PostgreSQLInstance](akka.stream.alpakka.postgresqlcdc.PostgreSQLInstance)
 
 |Setting                 | Meaning                           | Required|
 | -----------------------|-----------------------------------|---------|
@@ -139,9 +141,11 @@ We configure the ACK sink using @scaladoc[PostgreSQLInstance](akka.stream.alpakk
 | maxItemsWait         | maximum duration for which the stage waits until maxItems have accumulated | 3 second             | no       |
 
 
-### ACK Sink Usage
+### Ack Sink Usage
 
-You want to map these database change events (i.e. RowDeleted) to real domain events (i.e. UserDeregistered), aiming to adopt a Domain Driven Design approach.
+You want to map these database change events (i.e. RowInserted) to real domain events
+(i.e. UserRegistered - aiming to adopt a Domain Driven Design approach) and publish the domain events to a queue (e.g, AWS SQS)
+and use the Ack Sink to acknowledge consumption.
 
 Scala
 : @@snip ($alpakka$/postgresql-cdc/src/test/scala/akka/stream/alpakka/postgresqlcdc/TestScalaDsl.scala) { #PeekExample }
@@ -155,7 +159,7 @@ Java
 * It cannot capture events regarding changes to tables' structure (i.e. column removed, table dropped, table
 index added, change of column type etc.).
 * When a row update is captured, the previous version of the row is lost / not available.
-    * Unless `REPLICA IDENTITY FULL` is set for the table.
+    * Unless `REPLICA IDENTITY FULL` is set for the table. Use `ALTER TABLE "TABLE_NAME" REPLICA IDENTITY FULL`.
 * It doesn't work with older version of PostgreSQL (i.e < 9.4).
 
 ## Important Note

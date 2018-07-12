@@ -42,11 +42,15 @@ object Modes {
 
 }
 
-sealed abstract class Plugin
+sealed abstract class Plugin {
+  val name: String
+}
 
 object Plugins {
 
-  sealed abstract class TestDecoding extends Plugin
+  sealed abstract class TestDecoding extends Plugin {
+    override val name = "test_decoding"
+  }
 
   case object TestDecoding extends TestDecoding
 

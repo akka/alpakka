@@ -9,6 +9,7 @@ import java.time.Instant
 
 import org.postgresql.util.PGobject
 
+/* for testing */
 object FakeDb {
 
   def getConnection(connectionString: String): Connection = {
@@ -82,35 +83,39 @@ object FakeDb {
     st.close()
   }
 
-  def dropTableCustomers()(implicit conn: Connection): Unit = {
-    val st = conn.prepareStatement("DROP TABLE customers;")
+  def createWeatherTable()(implicit conn: Connection): Unit = {
+    val createTableSt = conn.prepareStatement("""
+        |CREATE TABLE "WEATHER"(
+        | id serial NOT NULL PRIMARY KEY,
+        | city VARCHAR(255) NOT NULL,
+        | weather VARCHAR(255) NOT NULL
+        |);
+      """.stripMargin)
+    createTableSt.execute()
+    createTableSt.close()
+
+    val alterTableSt = conn.prepareStatement("ALTER TABLE \"WEATHER\" REPLICA IDENTITY FULL")
+    alterTableSt.execute()
+    alterTableSt.close()
+  }
+
+  def dropTable(name: String)(implicit conn: Connection): Unit = {
+    val st = conn.prepareCall(s"DROP TABLE $name")
     st.execute()
     st.close()
   }
 
-  def dropTableSales()(implicit conn: Connection): Unit = {
-    val st = conn.prepareStatement("DROP TABLE sales;")
-    st.execute()
-    st.close()
-  }
+  def dropTableCustomers()(implicit conn: Connection): Unit = dropTable("customers")
 
-  def dropTablePurchaseOrders()(implicit conn: Connection): Unit = {
-    val st = conn.prepareStatement("DROP TABLE purchase_orders;")
-    st.execute()
-    st.close()
-  }
+  def dropTableSales()(implicit conn: Connection): Unit = dropTable("sales")
 
-  def dropTableEmployees()(implicit conn: Connection): Unit = {
-    val st = conn.prepareStatement("DROP TABLE employees;")
-    st.execute()
-    st.close()
-  }
+  def dropTablePurchaseOrders()(implicit conn: Connection): Unit = dropTable("purchase_orders")
 
-  def dropTableImages()(implicit conn: Connection): Unit = {
-    val st = conn.prepareStatement("DROP TABLE images;")
-    st.execute()
-    st.close()
-  }
+  def dropTableEmployees()(implicit conn: Connection): Unit = dropTable("employees")
+
+  def dropTableImages()(implicit conn: Connection): Unit = dropTable("images")
+
+  def dropTableWeather()(implicit conn: Connection): Unit = dropTable(""""WEATHER"""")
 
   // for the Java DSL test
   def insertCustomer(id: Int, fName: String, lName: String, email: String, tags: java.util.List[String], time: Instant)(
@@ -243,6 +248,29 @@ object FakeDb {
 
   def deleteImages()(implicit conn: Connection): Unit = {
     val deleteSt = conn.prepareStatement("DELETE FROM images;")
+    deleteSt.execute()
+    deleteSt.close()
+  }
+
+  def insertWeather(id: Int, city: String, weather: String)(implicit conn: Connection): Unit = {
+    val insertStatement = conn.prepareStatement("INSERT INTO \"WEATHER\"(id, city, weather) VALUES(?, ?, ?)")
+    insertStatement.setInt(1, id)
+    insertStatement.setString(2, city)
+    insertStatement.setString(3, weather)
+    insertStatement.execute()
+    insertStatement.close()
+  }
+
+  def updateWeather(id: Int, newWeather: String)(implicit conn: Connection): Unit = {
+    val updateStatement = conn.prepareStatement("UPDATE \"WEATHER\" SET weather = ? WHERE id = ?")
+    updateStatement.setString(1, newWeather)
+    updateStatement.setInt(2, id)
+    updateStatement.execute()
+    updateStatement.close()
+  }
+
+  def deleteWeathers()(implicit conn: Connection): Unit = {
+    val deleteSt = conn.prepareStatement("DELETE FROM \"WEATHER\";")
     deleteSt.execute()
     deleteSt.close()
   }

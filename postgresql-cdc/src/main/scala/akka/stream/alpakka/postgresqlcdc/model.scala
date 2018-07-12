@@ -207,6 +207,8 @@ final class ChangeSet private (val transactionId: Long,
 
   /**
    * Java API
+   *
+   * Never that this never returns an empty list
    */
   def getChanges: java.util.List[Change] =
     changes.asJava

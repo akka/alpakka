@@ -42,6 +42,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
     createPurchaseOrdersTable()
     createEmployeesTable()
     createImagesTable()
+    createWeatherTable()
   }
 
   override def afterAll: Unit = {
@@ -56,6 +57,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
     dropTablePurchaseOrders()
     dropTableEmployees()
     dropTableImages()
+    dropTableWeather()
 
     conn.close()
 
@@ -359,6 +361,38 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
         }
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, List(RowDeleted("public", "employees", _))) => // success
+        }
+
+    }
+
+    "be able to get both old version / new version of a row in case of an update operation" in {
+
+      insertWeather(0, "Seattle", "rainy")
+      updateWeather(0, "sunny")
+      deleteWeathers()
+
+      ChangeDataCapture
+        .source(postgreSQLInstance, PgCdcSourceSettings())
+        .log("postgresqlcdc", cs => s"captured change: ${cs.toString}")
+        .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
+        .runWith(TestSink.probe[ChangeSet])
+        .request(3)
+        .expectNextChainingPF {
+          case c @ ChangeSet(_, _, _, RowInserted("public", """"WEATHER"""", _) :: Nil) => // success
+        }
+        .expectNextChainingPF {
+          case c @ ChangeSet(_, _, _, RowUpdated("public", """"WEATHER"""", fieldsNew, fieldsOld) :: Nil)
+              if fieldsNew.map(f => f.columnName -> f.value).toSet == Set("id" -> "0",
+                                                                          "city" -> "Seattle",
+                                                                          "weather" -> "sunny") &&
+              fieldsOld.map(f => f.columnName -> f.value).toSet == Set(
+                "id" -> "0",
+                "city" -> "Seattle",
+                "weather" -> "rainy"
+              ) => // success
+        }
+        .expectNextChainingPF {
+          case ChangeSet(_, _, _, (d: RowDeleted) :: Nil) => // success
         }
 
     }

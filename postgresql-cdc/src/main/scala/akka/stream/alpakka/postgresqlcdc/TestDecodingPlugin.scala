@@ -15,9 +15,13 @@ import scala.collection.mutable.ArrayBuffer
 
 @InternalApi private[postgresqlcdc] object TestDecodingPlugin {
 
+  //
   // We need to parse a log statement such as the following:
   //
-  // table public.data: INSERT: id[integer]:3 data[text]:'3'
+  // BEGIN 2380
+  // table public.table_name: INSERT: id[integer]:3 data[text]:'3'
+  // COMMIT 2380 (at 2018-04-09 17:56:36.730413+00)
+  //
 
   case class BeginStatement(number: Long)
 
@@ -59,44 +63,44 @@ import scala.collection.mutable.ArrayBuffer
 
   val begin: Parser[BeginStatement] = P("BEGIN" ~ space ~ numberLong).map(BeginStatement)
 
-  val commit: Parser[CommitStatement] =
-    P("COMMIT" ~ space ~ numberLong ~ space ~ "(" ~ "at" ~ space ~ timestamp ~ ")").map(CommitStatement.tupled)
   // matches a commit message like COMMIT 2380 (at 2018-04-09 17:56:36.730413+00)
   // captures the commit number and the time
+  val commit: Parser[CommitStatement] =
+    P("COMMIT" ~ space ~ numberLong ~ space ~ "(" ~ "at" ~ space ~ timestamp ~ ")").map(CommitStatement.tupled)
 
+  // matches "Scala", "'Scala'" or "The ""Scala"" language", "The \"Scala\" language" etc
+  // captures the full string
   val doubleQuotedString: Parser[String] = {
     val twoDoubleQuotes = P("\"\"")
     val escapeDoubleQuote = P("\\\"")
     val escape = P(twoDoubleQuotes | escapeDoubleQuote)
     P(doubleQuote ~ P((!(escape | doubleQuote) ~ AnyChar) | escape).rep ~ doubleQuote).!
   }
-  // matches "Scala", "'Scala'" or "The ""Scala"" language", "The \"Scala\" language" etc
-  // captures the full string
 
+  // matches 'Scala', 'The ''Scala'' language' etc.
+  // captures what's inside the single quotes (i.e., for 'Scala' it captures Scala)
   val singleQuotedString: Parser[String] = {
     val twoSingleQuoutes = P("''")
     val escapeSingleQuote = P("\\\'")
     val escape = P(twoSingleQuoutes | escapeSingleQuote)
     P(singleQuote ~ P((!(escape | singleQuote) ~ AnyChar) | escape).rep.! ~ singleQuote)
   }
-  // matches 'Scala', 'The ''Scala'' language' etc.
-  // captures what's inside the single quotes (i.e., for 'Scala' it captures Scala)
 
-  val unquotedIdentifier: Parser[String] = P(lowerCaseLetter | digit | "$" | "_").rep(min = 1).!
   // captures my_column_name
+  val unquotedIdentifier: Parser[String] = P(lowerCaseLetter | digit | "$" | "_").rep(min = 1).!
 
-  val identifier: Parser[String] = P(unquotedIdentifier | doubleQuotedString)
   // captures my_column_name or "MY_COLUMN_NAME"
+  val identifier: Parser[String] = P(unquotedIdentifier | doubleQuotedString)
 
+  // matches [character varying], [integer], [xml], [text[]], [text[][]], [integer[]], [integer[3]], [integer[3][3]] etc.
+  // captures what's inside the square brackets
   val typeDeclaration: Parser[String] = {
     val arraySyntax = P("[" ~ digit.rep(min = 0) ~ "]")
     "[" ~ P(space | letter | digit | arraySyntax).rep.! ~ "]"
   }
-  // matches [character varying], [integer], [xml], [text[]], [text[][]], [integer[]], [integer[3]], [integer[3][3]] etc.
-  // captures what's inside the square brackets
 
-  val value: Parser[String] = P(P(!(space | singleQuote) ~ AnyChar).rep(min = 1).! | singleQuotedString)
   // matches 42, 3.14, true, false or 'some string value'
+  val value: Parser[String] = P(P(!(space | singleQuote) ~ AnyChar).rep(min = 1).! | singleQuotedString)
 
   val changeType: Parser[String] = P("INSERT" | "UPDATE" | "DELETE").!
 

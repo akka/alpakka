@@ -6,12 +6,12 @@ package akka.stream.alpakka.postgresqlcdc
 
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.stream.{ActorMaterializer, Attributes}
 import akka.stream.alpakka.postgresqlcdc.scaladsl.ChangeDataCapture
 import akka.stream.scaladsl.Sink
+import akka.stream.{ActorMaterializer, Attributes}
 import org.scalatest.{FunSuite, Matchers}
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import scala.language.postfixOps
 
 class TestScalaDsl extends FunSuite with Matchers {
@@ -79,21 +79,25 @@ class TestScalaDsl extends FunSuite with Matchers {
     implicit val materializer = ActorMaterializer()
 
     // Define your domain event
-    case class UserDeregistered(id: String)
+    case class UserRegistered(id: String)
 
     val connectionString =
       "jdbc:postgresql://localhost/test?user=fred&password=secret&ssl=true"
     val slotName = "slot_name"
 
-    ChangeDataCapture
-      .source(PostgreSQLInstance(connectionString, slotName), PgCdcSourceSettings())
-      .mapConcat(_.changes)
+    val pgSqlInstance = PostgreSQLInstance(connectionString, slotName)
+    val source = ChangeDataCapture.source(pgSqlInstance, PgCdcSourceSettings())
+    val ackSink = ChangeDataCapture.ackSink(pgSqlInstance, PgCdcAckSinkSettings())
+
+    source
       .collect { // collect is map and filter
-        case RowDeleted("public", "users", fields) =>
+        case cs @ ChangeSet(_, _, _, RowInserted("public", "users", fields) :: Nil) =>
           val userId = fields.find(_.columnName == "user_id").map(_.value).getOrElse("unknown")
-          UserDeregistered(userId)
+          (cs, UserRegistered(userId))
       }
-      .to(Sink.ignore)
+      .map(identity) // do something useful e.g., publish to SQS
+      .map(_._1)
+      .to(ackSink) // acknowledge
       .run()
 
     //#PeekExample

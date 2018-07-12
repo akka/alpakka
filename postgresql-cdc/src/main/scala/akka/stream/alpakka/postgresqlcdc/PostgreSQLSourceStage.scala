@@ -67,9 +67,9 @@ private[postgresqlcdc] final class PostgreSQLSourceStageLogic(val instance: Post
   private def out: Outlet[ChangeSet] = shape.out
 
   override def preStart(): Unit = {
-    val slotExists = checkSlotExists(instance.slotName)
+    val slotExists = checkSlotExists(instance.slotName, settings.plugin)
     if (!slotExists && settings.createSlotOnStart)
-      createSlot(instance.slotName)
+      createSlot(instance.slotName, settings.plugin)
   }
 
   override def postStop(): Unit =

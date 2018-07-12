@@ -21,7 +21,7 @@ import scala.util.Try
   }
 
   /** Checks that the slot exists */
-  def checkSlotExists(slotName: String)(implicit conn: Connection, log: LoggingAdapter): Boolean = {
+  def checkSlotExists(slotName: String, plugin: Plugin)(implicit conn: Connection, log: LoggingAdapter): Boolean = {
 
     val getReplicationSlots = conn.prepareStatement(
       "SELECT * FROM pg_replication_slots WHERE slot_name = ?"
@@ -36,10 +36,11 @@ import scala.util.Try
       val database = rs.getString("database")
       val foundPlugin = rs.getString("plugin")
       foundPlugin match {
-        case "test_decoding" =>
-          log.info("found logical replication slot with name {} for database {} using test_decoding plugin",
+        case plugin.name =>
+          log.info("found logical replication slot with name {} for database {} using {} plugin",
                    slotName,
-                   database)
+                   database,
+                   plugin.name)
         case _ =>
           log.warning("improper plugin configuration for slot with name {}", slotName)
       }
@@ -47,9 +48,9 @@ import scala.util.Try
     }
   }
 
-  def createSlot(slotName: String)(implicit conn: Connection, log: LoggingAdapter): Unit = {
+  def createSlot(slotName: String, plugin: Plugin)(implicit conn: Connection, log: LoggingAdapter): Unit = {
     log.info("setting up logical replication slot {}", slotName)
-    val stmt = conn.prepareStatement(s"SELECT * FROM pg_create_logical_replication_slot('$slotName','test_decoding')")
+    val stmt = conn.prepareStatement(s"SELECT * FROM pg_create_logical_replication_slot('$slotName','${plugin.name}')")
     stmt.execute()
   }
 
@@ -67,6 +68,15 @@ import scala.util.Try
     statement.setString(1, slotName)
     statement.setInt(2, maxItems)
     statement
+  }
+
+  def flush(slotName: String, upToLsn: String)(implicit conn: Connection): Unit = {
+    val statement: PreparedStatement =
+      conn.prepareStatement("SELECT * FROM pg_logical_slot_get_changes(?,?, NULL) LIMIT 0")
+    statement.setString(1, slotName)
+    statement.setString(2, upToLsn)
+    statement.execute()
+    statement.close()
   }
 
   def pullChanges(mode: Mode, slotName: String, maxItems: Int)(implicit conn: Connection): List[SlotChange] = {
