@@ -228,7 +228,7 @@ public class AmqpDocsTest {
 
   @Test
   public void publishAndConsumeWithoutAutoAck() throws Exception {
-    final String queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis();
+    final String queueName = "amqp-conn-it-spec-no-auto-ack-" + System.currentTimeMillis();
     final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
 
     final Sink<ByteString, CompletionStage<Done>> amqpSink =
@@ -269,7 +269,7 @@ public class AmqpDocsTest {
 
   @Test
   public void republishMessageWithoutAutoAckIfNacked() throws Exception {
-    final String queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis();
+    final String queueName = "amqp-conn-it-spec-no-auto-ack-nacked-" + System.currentTimeMillis();
     final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
 
     final Sink<ByteString, CompletionStage<Done>> amqpSink =
