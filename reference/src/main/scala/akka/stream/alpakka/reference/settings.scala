@@ -9,7 +9,6 @@ import java.time.{Duration => JavaDuration}
 import java.util.function.Predicate
 
 import scala.compat.java8.FunctionConverters._
-import scala.concurrent.duration.Duration
 import scala.concurrent.duration._
 
 /**
@@ -22,7 +21,7 @@ final class SourceSettings private (
     val clientId: String,
     val traceId: Option[String] = None,
     val authentication: Authentication = Authentication.None,
-    val pollInterval: Duration = 5.seconds
+    val pollInterval: FiniteDuration = 5.seconds
 ) {
 
   def withClientId(clientId: String): SourceSettings = copy(clientId = clientId)
@@ -42,7 +41,7 @@ final class SourceSettings private (
   /**
    * For attributes that uses Java or Scala specific classes, a setter is added for both APIs.
    */
-  def withPollInterval(pollInterval: Duration): SourceSettings = copy(pollInterval = pollInterval)
+  def withPollInterval(pollInterval: FiniteDuration): SourceSettings = copy(pollInterval = pollInterval)
 
   /**
    * Java API
@@ -59,16 +58,11 @@ final class SourceSettings private (
   private def copy(clientId: String = clientId,
                    traceId: Option[String] = traceId,
                    authentication: Authentication = authentication,
-                   pollInterval: Duration = pollInterval) =
+                   pollInterval: FiniteDuration = pollInterval) =
     new SourceSettings(clientId, traceId, authentication, pollInterval)
 
   override def toString: String =
-    s"""SourceSettings(
-       |  clientId       = $clientId
-       |  traceId        = $traceId
-       |  authentication = $authentication
-       |  pollInterval   = $pollInterval
-       |)""".stripMargin
+    s"SourceSettings(clientId=$clientId, traceId=$traceId, authentication=$authentication, pollInterval=$pollInterval)"
 }
 
 object SourceSettings {
@@ -108,7 +102,6 @@ object Authentication {
   final class Provided private (
       verifier: String => Boolean = _ => false
   ) extends Authentication {
-    def verify(credentials: String) = verifier(credentials)
 
     def withVerifier(verifier: String => Boolean): Provided =
       copy(verifier = verifier)
@@ -129,9 +122,7 @@ object Authentication {
       new Provided(verifier)
 
     override def toString: String =
-      s"""Authentication.Provided(
-         |  verifier       = $verifier
-         |)""".stripMargin
+      s"Authentication.Provided(verifier=$verifier)"
   }
 
   object Provided {
@@ -147,5 +138,5 @@ object Authentication {
    *
    * Factory method needed to access nested object.
    */
-  def createProvided() = Provided()
+  def createProvided(): Provided = Provided()
 }
