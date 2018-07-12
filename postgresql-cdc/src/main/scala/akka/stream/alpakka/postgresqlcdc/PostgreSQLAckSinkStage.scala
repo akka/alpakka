@@ -7,15 +7,16 @@ package akka.stream.alpakka.postgresqlcdc
 import java.sql.Connection
 
 import akka.annotation.InternalApi
-import akka.event.LoggingAdapter
 import akka.stream._
 import akka.stream.stage._
-
+import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import scala.util.control.NonFatal
 
 @InternalApi
 private[postgresqlcdc] final class PostgreSQLAckSinkStage(instance: PostgreSQLInstance, settings: PgCdcAckSinkSettings)
     extends GraphStage[SinkShape[ChangeSet]] {
+
+  override def initialAttributes: Attributes = super.initialAttributes and IODispatcher
 
   private val in: Inlet[ChangeSet] = Inlet[ChangeSet]("postgresqlcdc.in")
 
@@ -33,13 +34,25 @@ private[postgresqlcdc] final class PostgreSQLSinkStageLogic(val instance: Postgr
 
   import PostgreSQL._
 
-  private implicit lazy val conn: Connection = getConnection(instance.jdbcConnectionString)
+  private var items: List[String] = List.empty[String] // LSNs of un-acked items (cannot grow > settings.maxItems)
 
-  private implicit lazy val logging: LoggingAdapter = log // bring log into implicit scope
+  private implicit lazy val conn: Connection = getConnection(instance.jdbcConnectionString)
 
   private def in: Inlet[ChangeSet] = shape.in
 
-  override def onTimer(timerKey: Any): Unit = {}
+  override def onTimer(timerKey: Any): Unit = {
+    acknowledgeItems()
+    scheduleOnce("postgresqlcdc-ack-sink-timer", settings.maxItemsWait)
+  }
+
+  private def acknowledgeItems(): Unit =
+    items.headOption match {
+      case Some(v) =>
+        flush(instance.slotName, v)
+        items = Nil
+      case None =>
+        log.debug("no items to acknowledge consumption of")
+    }
 
   override def preStart(): Unit =
     pull(shape.in)
@@ -47,6 +60,9 @@ private[postgresqlcdc] final class PostgreSQLSinkStageLogic(val instance: Postgr
   setHandler(in, new InHandler {
     override def onPush(): Unit = {
       val e: ChangeSet = grab(in)
+      items = e.location :: items
+      if (items.size == settings.maxItems)
+        acknowledgeItems()
       pull(in)
     }
   })

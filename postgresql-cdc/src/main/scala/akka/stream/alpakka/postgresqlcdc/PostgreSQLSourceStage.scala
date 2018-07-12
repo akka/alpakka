@@ -6,9 +6,9 @@ package akka.stream.alpakka.postgresqlcdc
 
 import java.sql.Connection
 
-import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
+import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.stage._
 import akka.stream.{Attributes, Outlet, SourceShape}
 
@@ -20,6 +20,9 @@ private[postgresqlcdc] final class PostgreSQLSourceStage(instance: PostgreSQLIns
     extends GraphStage[SourceShape[ChangeSet]] {
 
   private val out: Outlet[ChangeSet] = Outlet[ChangeSet]("postgresqlcdc.out")
+
+  override def initialAttributes: Attributes =
+    super.initialAttributes and IODispatcher
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new PostgreSQLSourceStageLogic(instance, settings, shape)
@@ -60,7 +63,7 @@ private[postgresqlcdc] final class PostgreSQLSourceStageLogic(val instance: Post
       buffer ++= result
       push(out, buffer.dequeue())
     } else if (isAvailable(out))
-      scheduleOnce(NotUsed, settings.pollInterval)
+      scheduleOnce("postgresqlcdc-source-timer", settings.pollInterval)
 
   }
 
