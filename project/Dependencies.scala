@@ -324,8 +324,8 @@ object Dependencies {
 
   val Xml = Seq(
     libraryDependencies ++= Seq(
-      "com.fasterxml" % "aalto-xml" % "1.0.0", // ApacheV2,
-      "org.scala-lang.modules" %% "scala-java8-compat" % "0.8.0" // BSD-style
+      "com.fasterxml" % "aalto-xml" % "1.1.0", // ApacheV2,
+      "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.0" // BSD-style
     )
   )
 
