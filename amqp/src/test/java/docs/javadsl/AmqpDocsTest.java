@@ -61,7 +61,7 @@ public class AmqpDocsTest {
   @Test
   public void publishAndConsume() throws Exception {
     // #queue-declaration
-    final String queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis();
+    final String queueName = "amqp-conn-it-test-simple-queue-" + System.currentTimeMillis();
     final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
     // #queue-declaration
 
@@ -110,7 +110,7 @@ public class AmqpDocsTest {
   @Test
   public void publishAndConsumeRpc() throws Exception {
 
-    final String queueName = "amqp-conn-it-spec-rpc-queue-" + System.currentTimeMillis();
+    final String queueName = "amqp-conn-it-test-rpc-queue-" + System.currentTimeMillis();
     final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
 
     // #create-rpc-flow
@@ -169,7 +169,7 @@ public class AmqpDocsTest {
   @Test
   public void publishFanoutAndConsume() throws Exception {
     // #exchange-declaration
-    final String exchangeName = "amqp-conn-it-spec-pub-sub" + System.currentTimeMillis();
+    final String exchangeName = "amqp-conn-it-test-pub-sub-" + System.currentTimeMillis();
     final ExchangeDeclaration exchangeDeclaration =
         ExchangeDeclaration.create(exchangeName, "fanout");
     // #exchange-declaration
@@ -228,7 +228,7 @@ public class AmqpDocsTest {
 
   @Test
   public void publishAndConsumeWithoutAutoAck() throws Exception {
-    final String queueName = "amqp-conn-it-spec-no-auto-ack-" + System.currentTimeMillis();
+    final String queueName = "amqp-conn-it-test-no-auto-ack-" + System.currentTimeMillis();
     final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
 
     final Sink<ByteString, CompletionStage<Done>> amqpSink =
@@ -269,7 +269,7 @@ public class AmqpDocsTest {
 
   @Test
   public void republishMessageWithoutAutoAckIfNacked() throws Exception {
-    final String queueName = "amqp-conn-it-spec-no-auto-ack-nacked-" + System.currentTimeMillis();
+    final String queueName = "amqp-conn-it-test-no-auto-ack-nacked-" + System.currentTimeMillis();
     final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
 
     final Sink<ByteString, CompletionStage<Done>> amqpSink =
