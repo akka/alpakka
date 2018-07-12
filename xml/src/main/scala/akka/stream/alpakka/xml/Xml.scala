@@ -13,6 +13,8 @@ import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.util.{ByteString, ByteStringBuilder}
 import com.fasterxml.aalto.stax.InputFactoryImpl
+import com.fasterxml.aalto.util.IllegalCharHandler
+import com.fasterxml.aalto.util.IllegalCharHandler.ReplacingIllegalCharHandler
 import com.fasterxml.aalto.{AsyncByteArrayFeeder, AsyncXMLInputFactory, AsyncXMLStreamReader}
 import org.w3c.dom.Element
 
@@ -196,7 +198,8 @@ object Xml {
   /**
    * Internal API
    */
-  private[xml] class StreamingXmlParser extends GraphStage[FlowShape[ByteString, ParseEvent]] {
+  private[xml] class StreamingXmlParser(ignoreInvalidChars: Boolean)
+      extends GraphStage[FlowShape[ByteString, ParseEvent]] {
     val in: Inlet[ByteString] = Inlet("XMLParser.in")
     val out: Outlet[ParseEvent] = Outlet("XMLParser.out")
     override val shape: FlowShape[ByteString, ParseEvent] = FlowShape(in, out)
@@ -208,6 +211,9 @@ object Xml {
 
         private val feeder: AsyncXMLInputFactory = new InputFactoryImpl()
         private val parser: AsyncXMLStreamReader[AsyncByteArrayFeeder] = feeder.createAsyncFor(Array.empty)
+        if (ignoreInvalidChars) {
+          parser.getConfig.setIllegalCharHandler(new ReplacingIllegalCharHandler(0))
+        }
 
         setHandlers(in, out, this)
 
