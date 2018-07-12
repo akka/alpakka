@@ -75,8 +75,10 @@ object Dependencies {
       "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.2.2", // ApacheV2
       "org.codelibs" % "elasticsearch-cluster-runner" % "6.2.2.0", // ApacheV2
       "io.netty" % "netty-all" % "4.1.16.Final", // ApacheV2
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.6",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.6",
       "org.slf4j" % "log4j-over-slf4j" % "1.7.25",
-      "org.slf4j" % "slf4j-jcl" % "1.7.25",
+      "org.slf4j" % "jcl-over-slf4j" % "1.7.25",
       "ch.qos.logback" % "logback-classic" % "1.2.3" // Eclipse Public License 1.0
     )
   )

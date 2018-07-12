@@ -1,6 +1,7 @@
 # anonymous user
 topic source-spec/topic1
 topic source-spec/topic2
+topic coffee/level
 topic source-spec/will
 topic source-spec/manualacks
 topic source-spec/pendingacks
