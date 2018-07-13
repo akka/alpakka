@@ -306,7 +306,6 @@ class ElasticsearchFlowStage[T, C](
         val successMsgs = messageResults.filter(_.error.isEmpty)
         if (successMsgs.nonEmpty) {
           // push the messages that DID succeed
-          //val resultForSucceededMsgs = successMsgs.map(_.r)
           emit(out, Future.successful(successMsgs))
         }
       }
