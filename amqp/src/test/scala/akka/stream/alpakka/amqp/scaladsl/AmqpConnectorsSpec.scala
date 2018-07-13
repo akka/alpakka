@@ -371,5 +371,34 @@ class AmqpConnectorsSpec extends AmqpSpec {
       result.map(_.envelope.getRoutingKey) shouldEqual routingKeys
       result.map(_.bytes.utf8String) shouldEqual input
     }
+
+    "declare connection that does not require server acks" in {
+      val connectionProvider =
+        AmqpDetailsConnectionProvider("localhost", 5672)
+
+      val queueName = "amqp-conn-it-spec-fire-and-forget-" + System.currentTimeMillis()
+      val queueDeclaration = QueueDeclaration(queueName)
+
+      val amqpSink = AmqpSink.simple(
+        AmqpSinkSettings(connectionProvider)
+          .withRoutingKey(queueName)
+          .withDeclarations(queueDeclaration)
+      )
+
+      val amqpSource = AmqpSource
+        .committableSource(
+          NamedQueueSourceSettings(connectionProvider, queueName, ackRequired = false)
+            .withDeclarations(queueDeclaration),
+          bufferSize = 10
+        )
+        .mapAsync(1)(cm => cm.ack().map(_ => cm))
+
+      val input = Vector("one", "two", "three", "four", "five")
+      Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
+
+      val result = amqpSource.take(input.size).runWith(Sink.seq)
+
+      result.futureValue.map(_.message.bytes.utf8String) shouldEqual input
+    }
   }
 }

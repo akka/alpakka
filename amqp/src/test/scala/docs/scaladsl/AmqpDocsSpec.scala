@@ -155,7 +155,7 @@ class AmqpDocsSpec extends AmqpSpec {
     }
 
     "publish and consume elements through a simple queue again in the same JVM without autoAck" in {
-      val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
+      val queueName = "amqp-conn-it-spec-no-auto-ack-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
@@ -186,7 +186,7 @@ class AmqpDocsSpec extends AmqpSpec {
 
     "republish message without autoAck if nack is sent" in {
 
-      val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
+      val queueName = "amqp-conn-it-spec-no-auto-ack-nacked-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(

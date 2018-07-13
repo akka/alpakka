@@ -25,6 +25,7 @@ final case class NamedQueueSourceSettings(
     declarations: immutable.Seq[Declaration] = immutable.Seq.empty,
     noLocal: Boolean = false,
     exclusive: Boolean = false,
+    ackRequired: Boolean = true,
     consumerTag: String = "default",
     arguments: Map[String, AnyRef] = Map.empty
 ) extends AmqpSourceSettings {
@@ -34,6 +35,8 @@ final case class NamedQueueSourceSettings(
   def withNoLocal(noLocal: Boolean): NamedQueueSourceSettings = copy(noLocal = noLocal)
 
   def withExclusive(exclusive: Boolean): NamedQueueSourceSettings = copy(exclusive = exclusive)
+
+  def withAckRequired(ackRequired: Boolean): NamedQueueSourceSettings = copy(ackRequired = ackRequired)
 
   def withConsumerTag(consumerTag: String): NamedQueueSourceSettings = copy(consumerTag = consumerTag)
 
