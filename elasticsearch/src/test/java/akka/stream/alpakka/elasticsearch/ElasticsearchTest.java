@@ -388,7 +388,7 @@ public class ElasticsearchTest {
     flush(indexName);
 
     // Update document to version 2
-    Source.single(IncomingIndexMessage.create("1", book, 1L))
+    Source.single(IncomingIndexMessage.create("1", book).withVersion(1L))
         .via(
             ElasticsearchFlow.create(
                 indexName,
@@ -405,7 +405,7 @@ public class ElasticsearchTest {
     // Try to update document with wrong version to assert that we can send it
     long oldVersion = 1;
     boolean success =
-        Source.single(IncomingIndexMessage.create("1", book, oldVersion))
+        Source.single(IncomingIndexMessage.create("1", book).withVersion(oldVersion))
             .via(
                 ElasticsearchFlow.create(
                     indexName,
@@ -433,7 +433,7 @@ public class ElasticsearchTest {
     long externalVersion = 5;
 
     // Insert new document using external version
-    Source.single(IncomingIndexMessage.create("1", book, externalVersion))
+    Source.single(IncomingIndexMessage.create("1", book).withVersion(externalVersion))
         .via(
             ElasticsearchFlow.create(
                 indexName,
