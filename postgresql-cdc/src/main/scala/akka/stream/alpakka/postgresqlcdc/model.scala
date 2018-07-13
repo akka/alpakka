@@ -33,6 +33,9 @@ sealed abstract class Change {
 
   /**
    * Java API
+   *
+   * Commit log sequence number you need for the Ack Sink.
+   * Note that this is for the WHOLE transaction that this change is part of.
    */
   def getCommitLogSeqNum: String = commitLogSeqNum
 
@@ -266,7 +269,7 @@ final class ChangeSet private (val transactionId: Long,
   /**
    * Java API
    *
-   * Never that this never returns an empty list
+   * Note that this never returns an empty list. All change sets with empty changes are filtered out.
    */
   def getChanges: java.util.List[Change] =
     changes.asJava
@@ -279,6 +282,8 @@ final class ChangeSet private (val transactionId: Long,
 
   /**
    * Java API
+   *
+   * Commit log sequence number you need for the Ack Sink.
    */
   def getCommitLogSeqNum: String = commitLogSeqNum
 

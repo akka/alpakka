@@ -192,7 +192,7 @@ final class PgCdcAckSinkSettings private (val maxItems: Int = 16,
     new PgCdcAckSinkSettings(maxItems, maxItemsWait)
 
   // auto-generated
-  override def toString = s"PgCdcAckSinkSettings($maxItems, $maxItemsWait)"
+  override def toString = s"PgCdcAckSinkSettings(maxItems=$maxItems, maxItemsWait=$maxItemsWait)"
 
 }
 

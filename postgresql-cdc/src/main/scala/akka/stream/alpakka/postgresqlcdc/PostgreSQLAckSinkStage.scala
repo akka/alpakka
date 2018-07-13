@@ -25,6 +25,7 @@ private[postgresqlcdc] final class PostgreSQLAckSinkStage(instance: PostgreSQLIn
 
   override def shape: SinkShape[AckLogSeqNum] = SinkShape(in)
 }
+
 @InternalApi
 private[postgresqlcdc] final class PostgreSQLSinkStageLogic(val instance: PostgreSQLInstance,
                                                             val settings: PgCdcAckSinkSettings,
@@ -35,6 +36,7 @@ private[postgresqlcdc] final class PostgreSQLSinkStageLogic(val instance: Postgr
   import PostgreSQL._
 
   private var items: List[String] = List.empty[String] // LSNs of un-acked items (cannot grow > settings.maxItems)
+  // note that these have to be received in order (i.e. can't use mapAsyncUnordered before this)
 
   private implicit lazy val conn: Connection = getConnection(instance.jdbcConnectionString)
 
