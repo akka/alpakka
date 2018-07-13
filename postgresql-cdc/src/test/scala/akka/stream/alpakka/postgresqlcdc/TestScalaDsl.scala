@@ -9,12 +9,20 @@ import akka.event.Logging
 import akka.stream.alpakka.postgresqlcdc.scaladsl.ChangeDataCapture
 import akka.stream.scaladsl.Sink
 import akka.stream.{ActorMaterializer, Attributes}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class TestScalaDsl extends FunSuite with Matchers {
+class TestScalaDsl extends FunSuite with Matchers with BeforeAndAfterAll {
+
+  override def afterAll(): Unit = {
+    import FakeDb._
+    val connectionString = "jdbc:postgresql://localhost:5435/pgdb?user=pguser&password=pguser"
+    implicit val con = getConnection(connectionString)
+    dropLogicalDecodingSlot("slot_name")
+    con.close()
+  }
 
   ignore("SourceSettings snippet for docs") {
 
@@ -96,7 +104,7 @@ class TestScalaDsl extends FunSuite with Matchers {
           (cs, UserRegistered(userId))
       }
       .map(identity) // do something useful e.g., publish to SQS
-      .map(_._1)
+      .map(t ⇒ AckLogSeqNum(t._1.commitLogSeqNum))
       .to(ackSink) // acknowledge
       .run()
 

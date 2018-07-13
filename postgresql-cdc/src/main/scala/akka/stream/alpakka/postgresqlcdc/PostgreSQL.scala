@@ -70,11 +70,11 @@ import scala.util.Try
     statement
   }
 
-  def flush(slotName: String, upToLsn: String)(implicit conn: Connection): Unit = {
+  def flush(slotName: String, upToLogSeqNum: String)(implicit conn: Connection): Unit = {
     val statement: PreparedStatement =
-      conn.prepareStatement("SELECT * FROM pg_logical_slot_get_changes(?,?, NULL) LIMIT 0")
+      conn.prepareStatement("SELECT * FROM pg_logical_slot_get_changes(?,?, NULL)") // TODO: turn into prepareCall
     statement.setString(1, slotName)
-    statement.setString(2, upToLsn)
+    statement.setString(2, upToLogSeqNum)
     statement.execute()
     statement.close()
   }

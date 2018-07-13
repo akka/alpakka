@@ -383,8 +383,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, RowUpdated("public", """"WEATHER"""", _, _, fieldsNew, fieldsOld) :: Nil)
               if fieldsNew.map(f ⇒ f.columnName -> f.value).toSet == Set("id" -> "0",
-                                                                          "city" -> "Seattle",
-                                                                          "weather" -> "sunny") &&
+                                                                         "city" -> "Seattle",
+                                                                         "weather" -> "sunny") &&
               fieldsOld.map(f ⇒ f.columnName -> f.value).toSet == Set(
                 "id" -> "0",
                 "city" -> "Seattle",

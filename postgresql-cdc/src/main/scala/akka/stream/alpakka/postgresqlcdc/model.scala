@@ -13,7 +13,7 @@ sealed abstract class Change {
   val schemaName: String
   val tableName: String
 
-  val location: String
+  val commitLogSeqNum: String
   val transactionId: Long
 
   /**
@@ -34,7 +34,7 @@ sealed abstract class Change {
   /**
    * Java API
    */
-  def getLocation: String = location
+  def getCommitLogSeqNum: String = commitLogSeqNum
 
 }
 
@@ -87,20 +87,20 @@ final class Field private (val columnName: String, val columnType: String, val v
 object RowInserted {
 
   def unapply(arg: RowInserted): Option[(String, String, String, Long, List[Field])] =
-    Some((arg.schemaName, arg.tableName, arg.location, arg.transactionId, arg.fields))
+    Some((arg.schemaName, arg.tableName, arg.commitLogSeqNum, arg.transactionId, arg.fields))
 
   def apply(schemaName: String,
             tableName: String,
-            location: String,
+            logSeqNum: String,
             transactionId: Long,
             fields: List[Field]): RowInserted =
-    new RowInserted(schemaName, tableName, location, transactionId, fields)
+    new RowInserted(schemaName, tableName, logSeqNum, transactionId, fields)
 
 }
 
 final class RowInserted private (val schemaName: String,
                                  val tableName: String,
-                                 val location: String,
+                                 val commitLogSeqNum: String,
                                  val transactionId: Long,
                                  val fields: List[Field])
     extends Change {
@@ -110,47 +110,50 @@ final class RowInserted private (val schemaName: String,
    */
   def getFields: java.util.List[Field] = fields.asJava
 
+  // auto-generated
   override def equals(other: Any): Boolean = other match {
     case that: RowInserted ⇒
       schemaName == that.schemaName &&
       tableName == that.tableName &&
-      location == that.location &&
+      commitLogSeqNum == that.commitLogSeqNum &&
       transactionId == that.transactionId &&
       fields == that.fields
     case _ ⇒ false
   }
 
+  // auto-generated
   override def hashCode(): Int = {
-    val state = Seq(schemaName, tableName, location, transactionId, fields)
+    val state = Seq(schemaName, tableName, commitLogSeqNum, transactionId, fields)
     state.map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
   }
 
+  // auto-generated
   override def toString =
-    s"RowInserted(schemaName=$schemaName, tableName=$tableName, location=$location, transactionId=$transactionId, fields=$fields)"
+    s"RowInserted(schemaName=$schemaName, tableName=$tableName, commitLogSeqNum=$commitLogSeqNum, transactionId=$transactionId, fields=$fields)"
 
   def copy(fields: List[Field]): RowInserted =
-    new RowInserted(schemaName, tableName, location, transactionId, fields)
+    new RowInserted(schemaName, tableName, commitLogSeqNum, transactionId, fields)
 
 }
 
 object RowUpdated {
 
   def unapply(arg: RowUpdated): Some[(String, String, String, Long, List[Field], List[Field])] =
-    Some((arg.schemaName, arg.tableName, arg.location, arg.transactionId, arg.fieldsNew, arg.fieldsOld))
+    Some((arg.schemaName, arg.tableName, arg.commitLogSeqNum, arg.transactionId, arg.fieldsNew, arg.fieldsOld))
 
   def apply(schemaName: String,
             tableName: String,
-            location: String,
+            commitLogSeqNum: String,
             transactionId: Long,
             fieldsNew: List[Field],
             fieldsOld: List[Field]): RowUpdated =
-    new RowUpdated(schemaName, tableName, location, transactionId, fieldsNew, fieldsOld)
+    new RowUpdated(schemaName, tableName, commitLogSeqNum, transactionId, fieldsNew, fieldsOld)
 
 }
 
 final class RowUpdated private (val schemaName: String,
                                 val tableName: String,
-                                val location: String,
+                                val commitLogSeqNum: String,
                                 val transactionId: Long,
                                 val fieldsNew: List[Field],
                                 val fieldsOld: List[Field])
@@ -166,47 +169,50 @@ final class RowUpdated private (val schemaName: String,
    */
   def getFieldsOld: java.util.List[Field] = fieldsOld.asJava
 
+  // auto-generated
   override def equals(other: Any): Boolean = other match {
     case that: RowUpdated ⇒
       schemaName == that.schemaName &&
       tableName == that.tableName &&
-      location == that.location &&
+      commitLogSeqNum == that.commitLogSeqNum &&
       transactionId == that.transactionId &&
       fieldsNew == that.fieldsNew &&
       fieldsOld == that.fieldsOld
     case _ ⇒ false
   }
 
+  // auto-generated
   override def hashCode(): Int = {
-    val state = Seq(schemaName, tableName, location, transactionId, fieldsNew, fieldsOld)
+    val state = Seq(schemaName, tableName, commitLogSeqNum, transactionId, fieldsNew, fieldsOld)
     state.map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
   }
 
+  // auto-generated
   override def toString =
-    s"RowUpdated(schemaName=$schemaName, tableName=$tableName, location=$location, transactionId=$transactionId, fieldsNew=$fieldsNew, fieldsOld=$fieldsOld)"
+    s"RowUpdated(schemaName=$schemaName, tableName=$tableName, commitLogSeqNum=$commitLogSeqNum, transactionId=$transactionId, fieldsNew=$fieldsNew, fieldsOld=$fieldsOld)"
 
   def copy(fieldsNew: List[Field], fieldsOld: List[Field]): RowUpdated =
-    new RowUpdated(schemaName, tableName, location, transactionId, fieldsNew, fieldsOld)
+    new RowUpdated(schemaName, tableName, commitLogSeqNum, transactionId, fieldsNew, fieldsOld)
 
 }
 
 object RowDeleted {
 
   def unapply(arg: RowDeleted): Option[(String, String, String, Long, List[Field])] =
-    Some((arg.schemaName, arg.tableName, arg.location, arg.transactionId, arg.fields))
+    Some((arg.schemaName, arg.tableName, arg.commitLogSeqNum, arg.transactionId, arg.fields))
 
   def apply(schemaName: String,
             tableName: String,
-            location: String,
+            logSeqNum: String,
             transactionId: Long,
             fields: List[Field]): RowDeleted =
-    new RowDeleted(schemaName, tableName, location, transactionId, fields)
+    new RowDeleted(schemaName, tableName, logSeqNum, transactionId, fields)
 
 }
 
 final class RowDeleted private (val schemaName: String,
                                 val tableName: String,
-                                val location: String,
+                                val commitLogSeqNum: String,
                                 val transactionId: Long,
                                 val fields: List[Field])
     extends Change {
@@ -217,32 +223,35 @@ final class RowDeleted private (val schemaName: String,
   def getFields: java.util.List[Field] =
     fields.asJava
 
+  // auto-generated
   override def equals(other: Any): Boolean = other match {
     case that: RowDeleted ⇒
       schemaName == that.schemaName &&
       tableName == that.tableName &&
-      location == that.location &&
+      commitLogSeqNum == that.commitLogSeqNum &&
       transactionId == that.transactionId &&
       fields == that.fields
     case _ ⇒ false
   }
 
+  // auto-generated
   override def hashCode(): Int = {
-    val state = Seq(schemaName, tableName, location, transactionId, fields)
+    val state = Seq(schemaName, tableName, commitLogSeqNum, transactionId, fields)
     state.map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
   }
 
-  override def toString = s"RowDeleted($schemaName, $tableName, $location, $transactionId, $fields)"
-
   def copy(fields: List[Field]): RowDeleted =
-    new RowDeleted(schemaName, tableName, location, transactionId, fields)
+    new RowDeleted(schemaName, tableName, commitLogSeqNum, transactionId, fields)
 
+  // auto-generated
+  override def toString =
+    s"RowDeleted(schemaName=$schemaName, tableName=$tableName, commitLogSeqNum=$commitLogSeqNum, transactionId=$transactionId, fields=$fields)"
 }
 
 object ChangeSet {
 
   def unapply(arg: ChangeSet): Option[(Long, String, Instant, List[Change])] =
-    Some((arg.transactionId, arg.lastLocation, arg.instant, arg.changes))
+    Some((arg.transactionId, arg.commitLogSeqNum, arg.instant, arg.changes))
 
   def apply(transactionId: Long, location: String, instant: Instant, changes: List[Change]): ChangeSet =
     new ChangeSet(transactionId, location, instant, changes)
@@ -250,7 +259,7 @@ object ChangeSet {
 }
 
 final class ChangeSet private (val transactionId: Long,
-                               val lastLocation: String,
+                               val commitLogSeqNum: String,
                                val instant: Instant,
                                val changes: List[Change]) {
 
@@ -268,20 +277,50 @@ final class ChangeSet private (val transactionId: Long,
   def getInstant: Instant =
     instant
 
+  /**
+   * Java API
+   */
+  def getCommitLogSeqNum: String = commitLogSeqNum
+
+  // auto-generated
   override def equals(other: Any): Boolean = other match {
     case that: ChangeSet ⇒
       transactionId == that.transactionId &&
-      lastLocation == that.lastLocation &&
+      commitLogSeqNum == that.commitLogSeqNum &&
       instant == that.instant &&
       changes == that.changes
     case _ ⇒ false
   }
 
+  // auto-generated
   override def hashCode(): Int = {
-    val state = Seq(transactionId, lastLocation, instant, changes)
+    val state = Seq(transactionId, commitLogSeqNum, instant, changes)
     state.map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
   }
 
+  // auto-generated
   override def toString =
-    s"ChangeSet(transactionId=$transactionId, lastLocation=$lastLocation, instant=$instant, changes=$changes)"
+    s"ChangeSet(transactionId=$transactionId, commitLogSeqNum=$commitLogSeqNum, instant=$instant, changes=$changes)"
+}
+
+object AckLogSeqNum {
+
+  def apply(logSeqNum: String): AckLogSeqNum = new AckLogSeqNum(logSeqNum)
+
+  /**
+   * Java API
+   */
+  def create(logSeqNum: String): AckLogSeqNum = AckLogSeqNum(logSeqNum)
+
+}
+
+final class AckLogSeqNum private (val logSeqNum: String) {
+
+  override def toString = s"AckLogSeqNum(logSeqNum=$logSeqNum)"
+
+  /**
+   * Java API
+   */
+  def getLogSeqNum(): String = logSeqNum
+
 }

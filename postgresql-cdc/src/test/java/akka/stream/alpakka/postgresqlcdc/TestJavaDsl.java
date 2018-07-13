@@ -149,7 +149,7 @@ public class TestJavaDsl {
 
         final Source<ChangeSet, NotUsed> source = ChangeDataCapture.source(postgreSQLInstance, PgCdcSourceSettings.create());
 
-        final Sink<ChangeSet, NotUsed> ackSink = ChangeDataCapture.ackSink(postgreSQLInstance, PgCdcAckSinkSettings.create());
+        final Sink<AckLogSeqNum, NotUsed> ackSink = ChangeDataCapture.ackSink(postgreSQLInstance, PgCdcAckSinkSettings.create());
 
         source.filter(changeSet -> changeSet.getChanges().get(0) instanceof RowInserted)
                 .filter(changeSet -> changeSet.getChanges().get(0).getTableName().equals("users"))
@@ -163,7 +163,7 @@ public class TestJavaDsl {
                         return Tuple2.apply(changeSet, new UserRegistered(userId));
                     })
                 .map(result -> result) // do something useful e.g., publish to SQS
-                .map(tuple -> tuple._1)
+                .map(tuple -> AckLogSeqNum.create(tuple._1.commitLogSeqNum()))
                 .to(ackSink)
                 .run(materializer);
 

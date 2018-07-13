@@ -156,14 +156,21 @@ import scala.collection.mutable.ArrayBuffer
     val ignoreTables: Set[String] = colsToIgnorePerTable.filter { case (_, v) ⇒ v == "*" :: Nil }.keys.toSet
 
     val result = ArrayBuffer[Change]()
-    var zonedDateTime: ZonedDateTime = null
+    var instant: Instant = null
+    var commitLogSeqNum: String = null
 
-    slotChanges.map(s ⇒ (s, statement.parse(s.data))).foreach {
+    (slotChanges.last, commit.parse(slotChanges.last.data)) match {
+      case (s, Parsed.Success(CommitStatement(_, t: ZonedDateTime), _)) ⇒
+        instant = t.toInstant
+        commitLogSeqNum = s.location
+      case (s, f: Parsed.Failure) ⇒
+        log.error("failure {} when parsing {}", f.toString(), s.data)
+    }
 
-      case (_, Parsed.Success(c: BeginStatement, _)) ⇒ // we can ignore this one
+    slotChanges.drop(1).dropRight(1).map(s ⇒ (s, changeStatement.parse(s.data))).foreach {
 
       case (s, Parsed.Success(changeBuilder: ChangeBuilder, _)) ⇒
-        val change = changeBuilder((s.location, transactionId))
+        val change = changeBuilder((commitLogSeqNum, transactionId))
         if (!ignoreTables.contains(change.tableName)) {
           val hidden: Field ⇒ Boolean =
             f ⇒ getColsToIgnoreForTable(change.tableName, colsToIgnorePerTable).contains(f.columnName)
@@ -175,16 +182,12 @@ import scala.collection.mutable.ArrayBuffer
           })
         }
 
-      case (_, Parsed.Success(CommitStatement(_, t: ZonedDateTime), _)) ⇒
-        zonedDateTime = t
-
       case (s, f: Parsed.Failure) ⇒
         log.error("failure {} when parsing {}", f.toString(), s.data)
 
-      case _ ⇒ // ignore
     }
 
-    ChangeSet(transactionId, slotChanges.last.location, zonedDateTime.toInstant, result.toList)
+    ChangeSet(transactionId, slotChanges.last.location, instant, result.toList)
   }
 
   def transformSlotChanges(slotChanges: List[SlotChange], colsToIgnorePerTable: Map[String, List[String]])(

@@ -14,21 +14,21 @@ import scala.util.control.NonFatal
 
 @InternalApi
 private[postgresqlcdc] final class PostgreSQLAckSinkStage(instance: PostgreSQLInstance, settings: PgCdcAckSinkSettings)
-    extends GraphStage[SinkShape[ChangeSet]] {
+    extends GraphStage[SinkShape[AckLogSeqNum]] {
 
   override def initialAttributes: Attributes = super.initialAttributes and IODispatcher
 
-  private val in: Inlet[ChangeSet] = Inlet[ChangeSet]("postgresqlcdc.in")
+  private val in: Inlet[AckLogSeqNum] = Inlet[AckLogSeqNum]("postgresqlcdc.in")
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new PostgreSQLSinkStageLogic(instance, settings, shape)
 
-  override def shape: SinkShape[ChangeSet] = SinkShape(in)
+  override def shape: SinkShape[AckLogSeqNum] = SinkShape(in)
 }
 @InternalApi
 private[postgresqlcdc] final class PostgreSQLSinkStageLogic(val instance: PostgreSQLInstance,
                                                             val settings: PgCdcAckSinkSettings,
-                                                            val shape: SinkShape[ChangeSet])
+                                                            val shape: SinkShape[AckLogSeqNum])
     extends TimerGraphStageLogic(shape)
     with StageLogging {
 
@@ -38,7 +38,7 @@ private[postgresqlcdc] final class PostgreSQLSinkStageLogic(val instance: Postgr
 
   private implicit lazy val conn: Connection = getConnection(instance.jdbcConnectionString)
 
-  private def in: Inlet[ChangeSet] = shape.in
+  private def in: Inlet[AckLogSeqNum] = shape.in
 
   override def onTimer(timerKey: Any): Unit = {
     acknowledgeItems()
@@ -61,8 +61,8 @@ private[postgresqlcdc] final class PostgreSQLSinkStageLogic(val instance: Postgr
     in,
     new InHandler {
       override def onPush(): Unit = {
-        val e: ChangeSet = grab(in)
-        items = e.lastLocation :: items
+        val e: AckLogSeqNum = grab(in)
+        items = e.logSeqNum :: items
         if (items.size == settings.maxItems)
           acknowledgeItems()
         pull(in)

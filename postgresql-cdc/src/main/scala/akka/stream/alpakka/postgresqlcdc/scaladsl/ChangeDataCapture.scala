@@ -14,7 +14,7 @@ object ChangeDataCapture {
   def source(instance: PostgreSQLInstance, settings: PgCdcSourceSettings): Source[ChangeSet, NotUsed] =
     Source.fromGraph(new PostgreSQLSourceStage(instance, settings))
 
-  def ackSink(instance: PostgreSQLInstance, settings: PgCdcAckSinkSettings): Sink[ChangeSet, NotUsed] =
+  def ackSink(instance: PostgreSQLInstance, settings: PgCdcAckSinkSettings): Sink[AckLogSeqNum, NotUsed] =
     Sink.fromGraph(new PostgreSQLAckSinkStage(instance, settings))
 
 }

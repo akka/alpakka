@@ -13,7 +13,7 @@ object ChangeDataCapture {
   def source(instance: PostgreSQLInstance, settings: PgCdcSourceSettings): Source[ChangeSet, NotUsed] =
     scaladsl.ChangeDataCapture.source(instance, settings).asJava
 
-  def ackSink(instance: PostgreSQLInstance, settings: PgCdcAckSinkSettings): Sink[ChangeSet, NotUsed] =
+  def ackSink(instance: PostgreSQLInstance, settings: PgCdcAckSinkSettings): Sink[AckLogSeqNum, NotUsed] =
     scaladsl.ChangeDataCapture.ackSink(instance, settings).asJava
 
 }
