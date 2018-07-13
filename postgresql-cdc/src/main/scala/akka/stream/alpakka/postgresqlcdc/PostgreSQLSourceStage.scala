@@ -54,7 +54,7 @@ private[postgresqlcdc] final class PostgreSQLSourceStageLogic(val instance: Post
     val result: List[ChangeSet] = {
       val slotChanges = pullChanges(settings.mode, instance.slotName, settings.maxItems)
       settings.plugin match {
-        case Plugins.TestDecoding => TestDecodingPlugin.transformSlotChanges(slotChanges, settings.columnsToIgnore)
+        case Plugins.TestDecoding ⇒ TestDecodingPlugin.transformSlotChanges(slotChanges, settings.columnsToIgnore)
         // leaving room for other plugin implementations
       }
     }
@@ -80,7 +80,7 @@ private[postgresqlcdc] final class PostgreSQLSourceStageLogic(val instance: Post
       conn.close()
       log.debug("closed connection")
     } catch {
-      case NonFatal(e) =>
+      case NonFatal(e) ⇒
         log.error("failed to close connection", e)
     }
 

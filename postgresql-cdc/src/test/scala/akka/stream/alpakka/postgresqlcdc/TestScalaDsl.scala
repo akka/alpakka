@@ -29,7 +29,7 @@ class TestScalaDsl extends FunSuite with Matchers {
       .withMaxItems(256)
       .withPollInterval(7 seconds)
       .withMode(Modes.Peek)
-      .withColumnsToIgnore(Map("images" -> List("binary"), "user_personal_information" -> List("*")))
+      .withColumnsToIgnore(Map("images" → List("binary"), "user_personal_information" → List("*")))
     // ignore the binary column in the images table and ignore the user_personal_information table
     //#SourceSettings
   }
@@ -62,7 +62,7 @@ class TestScalaDsl extends FunSuite with Matchers {
 
     ChangeDataCapture
       .source(PostgreSQLInstance(connectionString, slotName), PgCdcSourceSettings())
-      .log("postgresqlcdc", cs => s"captured changes: ${cs.toString}")
+      .log("postgresqlcdc", cs ⇒ s"captured changes: ${cs.toString}")
       .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
       .to(Sink.ignore)
       .run()
@@ -91,7 +91,7 @@ class TestScalaDsl extends FunSuite with Matchers {
 
     source
       .collect { // collect is map and filter
-        case cs @ ChangeSet(_, _, _, RowInserted("public", "users", fields) :: Nil) =>
+        case cs @ ChangeSet(_, _, _, RowInserted("public", "users", _, _, fields) :: Nil) ⇒
           val userId = fields.find(_.columnName == "user_id").map(_.value).getOrElse("unknown")
           (cs, UserRegistered(userId))
       }

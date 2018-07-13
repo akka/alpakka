@@ -5,12 +5,11 @@
 package akka.stream.alpakka.postgresqlcdc
 
 // rename Java imports if the name clashes with the Scala name
-import java.time.{Duration => JavaDuration}
-import java.util.{List => JavaList, Map => JavaMap}
+import java.time.{Duration ⇒ JavaDuration}
+import java.util.{List ⇒ JavaList, Map ⇒ JavaMap}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 sealed abstract class Mode
 
@@ -119,17 +118,9 @@ final class PgCdcSourceSettings private (val mode: Mode = Modes.Get,
                    pollInterval: FiniteDuration = pollInterval): PgCdcSourceSettings =
     new PgCdcSourceSettings(mode, createSlotOnStart, plugin, columnsToIgnore, maxItems, pollInterval)
 
-  override def toString: String =
-    s"""
-       |SourceSettings(
-       |  mode = $mode
-       |  createSlotOnStart = $createSlotOnStart
-       |  plugin = $plugin
-       |  columnsToIgnore = $columnsToIgnore
-       |  maxItems = $maxItems
-       |  pollInterval = $pollInterval
-       |)""".stripMargin
-
+  // auto-generated
+  override def toString =
+    s"PgCdcSourceSettings(mode=$mode, createSlotOnStart=$createSlotOnStart, plugin=$plugin, columnsToIgnore=$columnsToIgnore, maxItems=$maxItems, pollInterval=$pollInterval)"
 }
 
 object PgCdcSourceSettings {
@@ -159,11 +150,8 @@ final class PostgreSQLInstance private (val jdbcConnectionString: String, val sl
 
   // no reason to have withXxxx(...) since both jdbcConnectionString and slotName are required arguments
 
-  override def toString =
-    s"""PostgreSQLInstance(
-       |  jdbcConnectionString = $jdbcConnectionString,
-       |  slotName=$slotName
-       |)""".stripMargin
+  override def toString = s"PostgreSQLInstance(jdbcConnectionString=$jdbcConnectionString, slotName=$slotName)"
+
 }
 
 object PostgreSQLInstance {
@@ -187,12 +175,6 @@ object PostgreSQLInstance {
 final class PgCdcAckSinkSettings private (val maxItems: Int = 16,
                                           val maxItemsWait: FiniteDuration = 3000 milliseconds) {
 
-  override def toString =
-    s"""AckSinkSettings(
-       |  maxItems=$maxItems,
-       |  maxItemsWait=$maxItemsWait
-       )""".stripMargin
-
   def withMaxItemsWait(maxItemsWait: FiniteDuration): PgCdcAckSinkSettings =
     copy(maxItemsWait = maxItemsWait)
 
@@ -208,6 +190,9 @@ final class PgCdcAckSinkSettings private (val maxItems: Int = 16,
 
   private def copy(maxItems: Int = maxItems, maxItemsWait: FiniteDuration = maxItemsWait): PgCdcAckSinkSettings =
     new PgCdcAckSinkSettings(maxItems, maxItemsWait)
+
+  // auto-generated
+  override def toString = s"PgCdcAckSinkSettings($maxItems, $maxItemsWait)"
 
 }
 

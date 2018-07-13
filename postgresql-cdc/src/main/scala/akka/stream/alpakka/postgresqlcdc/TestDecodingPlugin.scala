@@ -49,17 +49,17 @@ import scala.collection.mutable.ArrayBuffer
 
   val fourDigitInt: Parser[Int] = P(digit.rep(exactly = 4).!.map(_.toInt))
 
-  val date: Parser[LocalDate] = P(fourDigitInt ~ "-" ~ twoDigitInt ~ "-" ~ twoDigitInt).map { t =>
+  val date: Parser[LocalDate] = P(fourDigitInt ~ "-" ~ twoDigitInt ~ "-" ~ twoDigitInt).map { t ⇒
     LocalDate.of(t._1, t._2, t._3)
   }
 
   val time: Parser[(LocalTime, ZoneId)] =
     P(twoDigitInt ~ ":" ~ twoDigitInt ~ ":" ~ twoDigitInt ~ "." ~ numberInt ~ (P("+" | "-") ~ digit.rep(min = 1)).!)
-      .map { t =>
-        LocalTime.of(t._1, t._2, t._3, t._4) -> ZoneOffset.of(t._5)
+      .map { t ⇒
+        LocalTime.of(t._1, t._2, t._3, t._4) → ZoneOffset.of(t._5)
       }
 
-  val timestamp: Parser[ZonedDateTime] = P(date ~ space ~ time).map(s => ZonedDateTime.of(s._1, s._2._1, s._2._2))
+  val timestamp: Parser[ZonedDateTime] = P(date ~ space ~ time).map(s ⇒ ZonedDateTime.of(s._1, s._2._1, s._2._2))
 
   val begin: Parser[BeginStatement] = P("BEGIN" ~ space ~ numberLong).map(BeginStatement)
 
@@ -106,7 +106,7 @@ import scala.collection.mutable.ArrayBuffer
 
   val data: Parser[List[Field]] = P(identifier ~ typeDeclaration ~ ":" ~ value)
     .rep(min = 1, sep = space)
-    .map(s => s.map(f => Field(f._1, f._2, f._3)))
+    .map(s ⇒ s.map(f ⇒ Field(f._1, f._2, f._3)))
     .map(_.toList)
 
   // when we have both the old version and the new version of the row
@@ -115,87 +115,86 @@ import scala.collection.mutable.ArrayBuffer
   )
 
   // when we have only the new version of the row
-  val latest: Parser[(List[Field], List[Field])] = data.map(v => (List.empty[Field], v))
+  val latest: Parser[(List[Field], List[Field])] = data.map(v ⇒ (List.empty[Field], v))
 
-  val changeStatement: Parser[Change] =
-    P(
-      s"table" ~ space ~ identifier ~ "." ~ identifier ~ ":" ~ space ~ changeType ~ ":" ~ space ~ P(latest | both)
-    ).map { m =>
-      {
-        val schemaName = m._1
-        val tableName = m._2
-        val fields = m._4
-        m._3 match {
-          case "INSERT" => RowInserted(schemaName, tableName, fields._2)
-          case "DELETE" => RowDeleted(schemaName, tableName, fields._2)
-          case "UPDATE" => RowUpdated(schemaName, tableName, fields._2, fields._1)
+  abstract class ChangeBuilder extends (((String, Long)) ⇒ Change) // (location: String, transactionId: Long) => Change
+
+  val changeStatement: Parser[ChangeBuilder] =
+    P(s"table" ~ space ~ identifier ~ "." ~ identifier ~ ":" ~ space ~ changeType ~ ":" ~ space ~ P(latest | both))
+      .map { m ⇒
+        {
+          val schemaName = m._1
+          val tableName = m._2
+          val fields = m._4
+          new ChangeBuilder {
+            override def apply(info: (String, Long)): Change =
+              m._3 match {
+                case "INSERT" ⇒
+                  RowInserted(schemaName, tableName, info._1, info._2, fields._2)
+                case "DELETE" ⇒
+                  RowDeleted(schemaName, tableName, info._1, info._2, fields._2)
+                case "UPDATE" ⇒
+                  RowUpdated(schemaName, tableName, info._1, info._2, fieldsNew = fields._2, fieldsOld = fields._1)
+              }
+          }
         }
       }
-    }
 
-  val statement: P[Object] = P(changeStatement | begin | commit)
+  val statement = P(changeStatement | begin | commit)
 
-  def slotChangesToChangeSet(transactionId: Long,
-                             slotChanges: List[SlotChange])(implicit log: LoggingAdapter): ChangeSet = {
+  def getColsToIgnoreForTable(tableName: String, colsToIgnorePerTable: Map[String, List[String]]): Set[String] = {
+    val colsToAlwaysIgnore: Set[String] = colsToIgnorePerTable.filter { case (k, _) ⇒ k == "*" }.values.flatten.toSet
+    colsToAlwaysIgnore ++ colsToIgnorePerTable.get(tableName).map(_.toSet).getOrElse(Set.empty)
+  }
+
+  def slotChangesToChangeSet(
+      transactionId: Long,
+      slotChanges: List[SlotChange],
+      colsToIgnorePerTable: Map[String, List[String]]
+  )(implicit log: LoggingAdapter): ChangeSet = {
+
+    val ignoreTables: Set[String] = colsToIgnorePerTable.filter { case (_, v) ⇒ v == "*" :: Nil }.keys.toSet
 
     val result = ArrayBuffer[Change]()
     var zonedDateTime: ZonedDateTime = null
 
-    slotChanges.map(s => statement.parse(s.data)).foreach {
-      case Parsed.Success(c: BeginStatement, _) => // ignore
-      case Parsed.Success(c: Change, _) =>
-        result += c
-      case Parsed.Success(CommitStatement(_, t: ZonedDateTime), _) => zonedDateTime = t
-      case f: Parsed.Failure =>
-        log.error("failed to parse item", f.toString())
-      case _ => // ignore
-    }
+    slotChanges.map(s ⇒ (s, statement.parse(s.data))).foreach {
 
-    ChangeSet(transactionId, slotChanges.last.location, zonedDateTime, result.toList)
-  }
+      case (_, Parsed.Success(c: BeginStatement, _)) ⇒ // we can ignore this one
 
-  def filterOutColumns(cs: ChangeSet, ignoreColumnsPerTable: Map[String, List[String]]): ChangeSet = {
-
-    val ignoreTables: Set[String] = ignoreColumnsPerTable.filter { case (_, v) => v == List("*") }.keys.toSet
-    val ignoreColumns: Set[String] = ignoreColumnsPerTable.filter { case (k, v) => k == "*" }.values.flatten.toSet
-
-    val result = cs.changes.filter(c => !ignoreTables.contains(c.tableName)).map { change =>
-      {
-        val toIgnore = ignoreColumns ++ ignoreColumnsPerTable.get(change.tableName).map(_.toSet).getOrElse(Set.empty)
-        change match {
-
-          case RowInserted(s, t, fields) =>
-            RowInserted(schemaName = s, tableName = t, fields = fields.filter(f => !toIgnore.contains(f.columnName)))
-
-          case RowDeleted(s, t, fields) =>
-            RowDeleted(schemaName = s, tableName = t, fields = fields.filter(f => !toIgnore.contains(f.columnName)))
-
-          case RowUpdated(s, t, fieldsNew, fieldsOld) =>
-            RowUpdated(
-              schemaName = s,
-              tableName = t,
-              fieldsNew = fieldsNew.filter(f => !toIgnore.contains(f.columnName)),
-              fieldsOld = fieldsOld.filter(f => !toIgnore.contains(f.columnName))
-            )
+      case (s, Parsed.Success(changeBuilder: ChangeBuilder, _)) ⇒
+        val change = changeBuilder((s.location, transactionId))
+        if (!ignoreTables.contains(change.tableName)) {
+          val hidden: Field ⇒ Boolean =
+            f ⇒ getColsToIgnoreForTable(change.tableName, colsToIgnorePerTable).contains(f.columnName)
+          result += (change match {
+            case insert: RowInserted ⇒ insert.copy(insert.fields.filterNot(hidden))
+            case delete: RowDeleted ⇒ delete.copy(delete.fields.filterNot(hidden))
+            case update: RowUpdated ⇒
+              update.copy(update.fieldsNew.filterNot(hidden), update.fieldsOld.filterNot(hidden))
+          })
         }
-      }
 
+      case (_, Parsed.Success(CommitStatement(_, t: ZonedDateTime), _)) ⇒
+        zonedDateTime = t
+
+      case (s, f: Parsed.Failure) ⇒
+        log.error("failure {} when parsing {}", f.toString(), s.data)
+
+      case _ ⇒ // ignore
     }
 
-    ChangeSet(cs.transactionId, cs.location, cs.zonedDateTime, result)
-
+    ChangeSet(transactionId, slotChanges.last.location, zonedDateTime.toInstant, result.toList)
   }
 
-  def transformSlotChanges(slotChanges: List[SlotChange], ignoreColumnsPerTable: Map[String, List[String]])(
+  def transformSlotChanges(slotChanges: List[SlotChange], colsToIgnorePerTable: Map[String, List[String]])(
       implicit log: LoggingAdapter
   ): List[ChangeSet] =
     slotChanges
       .groupBy(_.transactionId)
       .map {
-        case (transactionId: Long, changesByTransactionId: List[SlotChange]) => {
-          val changeSet = slotChangesToChangeSet(transactionId, changesByTransactionId)
-          filterOutColumns(changeSet, ignoreColumnsPerTable)
-        }
+        case (transactionId: Long, changesByTransactionId: List[SlotChange]) ⇒
+          slotChangesToChangeSet(transactionId, changesByTransactionId, colsToIgnorePerTable)
       }
       .filter(_.changes.nonEmpty)
       .toList

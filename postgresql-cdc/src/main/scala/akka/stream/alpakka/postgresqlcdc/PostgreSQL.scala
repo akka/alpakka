@@ -36,12 +36,12 @@ import scala.util.Try
       val database = rs.getString("database")
       val foundPlugin = rs.getString("plugin")
       foundPlugin match {
-        case plugin.name =>
+        case plugin.name ⇒
           log.info("found logical replication slot with name {} for database {} using {} plugin",
                    slotName,
                    database,
                    plugin.name)
-        case _ =>
+        case _ ⇒
           log.warning("improper plugin configuration for slot with name {}", slotName)
       }
       true
@@ -81,8 +81,8 @@ import scala.util.Try
 
   def pullChanges(mode: Mode, slotName: String, maxItems: Int)(implicit conn: Connection): List[SlotChange] = {
     val pullChangesStatement = mode match {
-      case Modes.Get => buildGetSlotChangesStatement(slotName, maxItems)
-      case Modes.Peek => buildPeekSlotChangesStatement(slotName, maxItems)
+      case Modes.Get ⇒ buildGetSlotChangesStatement(slotName, maxItems)
+      case Modes.Peek ⇒ buildPeekSlotChangesStatement(slotName, maxItems)
     }
     val rs = pullChangesStatement.executeQuery()
     val result = ArrayBuffer[SlotChange]()

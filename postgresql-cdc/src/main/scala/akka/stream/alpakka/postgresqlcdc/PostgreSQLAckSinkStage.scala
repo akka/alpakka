@@ -47,32 +47,35 @@ private[postgresqlcdc] final class PostgreSQLSinkStageLogic(val instance: Postgr
 
   private def acknowledgeItems(): Unit =
     items.headOption match {
-      case Some(v) =>
+      case Some(v) ⇒
         flush(instance.slotName, v)
         items = Nil
-      case None =>
+      case None ⇒
         log.debug("no items to acknowledge consumption of")
     }
 
   override def preStart(): Unit =
     pull(shape.in)
 
-  setHandler(in, new InHandler {
-    override def onPush(): Unit = {
-      val e: ChangeSet = grab(in)
-      items = e.location :: items
-      if (items.size == settings.maxItems)
-        acknowledgeItems()
-      pull(in)
+  setHandler(
+    in,
+    new InHandler {
+      override def onPush(): Unit = {
+        val e: ChangeSet = grab(in)
+        items = e.lastLocation :: items
+        if (items.size == settings.maxItems)
+          acknowledgeItems()
+        pull(in)
+      }
     }
-  })
+  )
 
   override def postStop(): Unit =
     try {
       conn.close()
       log.debug("closed connection")
     } catch {
-      case NonFatal(e) =>
+      case NonFatal(e) ⇒
         log.error("failed to close connection", e)
     }
 
