@@ -18,8 +18,13 @@ object XmlParsing {
   /**
    * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
    */
-  val parser: Flow[ByteString, ParseEvent, NotUsed] =
-    Flow.fromGraph(new StreamingXmlParser)
+  val parser: Flow[ByteString, ParseEvent, NotUsed] = parser(false)
+
+  /**
+   * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
+   */
+  def parser(ignoreInvalidChars: Boolean = false): Flow[ByteString, ParseEvent, NotUsed] =
+    Flow.fromGraph(new StreamingXmlParser(ignoreInvalidChars))
 
   /**
    * A Flow that transforms a stream of XML ParseEvents. This stage coalesces consequitive CData and Characters
