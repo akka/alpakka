@@ -18,7 +18,13 @@ object XmlParsing {
    * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
    */
   def parser(): akka.stream.javadsl.Flow[ByteString, ParseEvent, NotUsed] =
-    xml.scaladsl.XmlParsing.parser.asJava
+    xml.scaladsl.XmlParsing.parser(false).asJava
+
+  /**
+   * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
+   */
+  def parser(ignoreInvalidChars: Boolean): akka.stream.javadsl.Flow[ByteString, ParseEvent, NotUsed] =
+    xml.scaladsl.XmlParsing.parser(ignoreInvalidChars).asJava
 
   /**
    * A Flow that transforms a stream of XML ParseEvents. This stage coalesces consequitive CData and Characters
