@@ -114,7 +114,7 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
         def setupNamedQueue(settings: NamedQueueSourceSettings): Unit =
           channel.basicConsume(
             settings.queue,
-            false, // never auto-ack
+            !settings.ackRequired,
             settings.consumerTag, // consumer tag
             settings.noLocal,
             settings.exclusive,
