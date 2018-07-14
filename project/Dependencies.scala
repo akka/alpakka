@@ -246,9 +246,8 @@ object Dependencies {
   )
 
   val PostgreSqlCdc = Seq(
-    libraryDependencies ++= Seq(
-      "com.lihaoyi" %% "fastparse" % "1.0.0", // The MIT License (MIT)
-      "org.postgresql" % "postgresql" % "42.2.1" % Test) // BSD 2-clause "Simplified" License
+    libraryDependencies ++= Seq("com.lihaoyi" %% "fastparse" % "1.0.0", // The MIT License (MIT)
+                                "org.postgresql" % "postgresql" % "42.2.1" % Test) // BSD 2-clause "Simplified" License
   )
 
   val Reference = Seq(
