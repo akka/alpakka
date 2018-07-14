@@ -105,10 +105,8 @@ final class PgCdcSourceSettings private (val mode: Mode = Modes.Get,
   /**
    * Java API
    */
-  def withPollInterval(pollInterval: JavaDuration): PgCdcSourceSettings = {
-    import scala.compat.java8.DurationConverters._
-    copy(pollInterval = pollInterval.toScala)
-  }
+  def withPollInterval(pollInterval: JavaDuration): PgCdcSourceSettings =
+    copy(pollInterval = Duration.fromNanos(pollInterval.toNanos))
 
   private def copy(mode: Mode = mode,
                    createSlotOnStart: Boolean = createSlotOnStart,
@@ -181,10 +179,8 @@ final class PgCdcAckSinkSettings private (val maxItems: Int = 16,
   /**
    * Java API
    */
-  def withMaxItemsWait(maxItemsWait: JavaDuration): PgCdcAckSinkSettings = {
-    import scala.compat.java8.DurationConverters._
-    copy(maxItemsWait = maxItemsWait.toScala)
-  }
+  def withMaxItemsWait(maxItemsWait: JavaDuration): PgCdcAckSinkSettings =
+    copy(maxItemsWait = Duration.fromNanos(maxItemsWait.toNanos))
 
   def withMaxItems(maxItems: Int): PgCdcAckSinkSettings = copy(maxItems = maxItems)
 

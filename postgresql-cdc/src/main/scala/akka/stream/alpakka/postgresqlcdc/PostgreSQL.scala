@@ -34,6 +34,7 @@ import scala.util.Try
 
     if (!rs.next()) {
       log.info("logical replication slot with name {} does not exist", slotName)
+      rs.close()
       false
     } else {
       val database = rs.getString("database")
@@ -47,6 +48,7 @@ import scala.util.Try
         case _ ⇒
           log.warning("improper plugin configuration for slot with name {}", slotName)
       }
+      rs.close()
       true
     }
   }
