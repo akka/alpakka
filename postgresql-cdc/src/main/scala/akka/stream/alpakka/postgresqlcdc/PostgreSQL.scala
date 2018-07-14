@@ -12,6 +12,9 @@ import akka.event.LoggingAdapter
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
 
+/**
+ * INTERNAL API
+ */
 @InternalApi private[postgresqlcdc] object PostgreSQL {
 
   def getConnection(connectionString: String): Connection = {

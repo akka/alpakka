@@ -12,8 +12,11 @@ import akka.stream.stage._
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import scala.util.control.NonFatal
 
-@InternalApi
-private[postgresqlcdc] final class PostgreSQLAckSinkStage(instance: PostgreSQLInstance, settings: PgCdcAckSinkSettings)
+/**
+ * INTERNAL API
+ */
+@InternalApi private[postgresqlcdc] final class PostgreSQLAckSinkStage(instance: PostgreSQLInstance,
+                                                                       settings: PgCdcAckSinkSettings)
     extends GraphStage[SinkShape[AckLogSeqNum]] {
 
   override def initialAttributes: Attributes = super.initialAttributes and IODispatcher
@@ -26,10 +29,12 @@ private[postgresqlcdc] final class PostgreSQLAckSinkStage(instance: PostgreSQLIn
   override def shape: SinkShape[AckLogSeqNum] = SinkShape(in)
 }
 
-@InternalApi
-private[postgresqlcdc] final class PostgreSQLSinkStageLogic(val instance: PostgreSQLInstance,
-                                                            val settings: PgCdcAckSinkSettings,
-                                                            val shape: SinkShape[AckLogSeqNum])
+/**
+ * INTERNAL API
+ */
+@InternalApi private[postgresqlcdc] final class PostgreSQLSinkStageLogic(val instance: PostgreSQLInstance,
+                                                                         val settings: PgCdcAckSinkSettings,
+                                                                         val shape: SinkShape[AckLogSeqNum])
     extends TimerGraphStageLogic(shape)
     with StageLogging {
 

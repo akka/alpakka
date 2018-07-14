@@ -15,8 +15,11 @@ import akka.stream.{Attributes, Outlet, SourceShape}
 import scala.collection.mutable
 import scala.util.control.NonFatal
 
-@InternalApi
-private[postgresqlcdc] final class PostgreSQLSourceStage(instance: PostgreSQLInstance, settings: PgCdcSourceSettings)
+/**
+ * INTERNAL API
+ */
+@InternalApi private[postgresqlcdc] final class PostgreSQLSourceStage(instance: PostgreSQLInstance,
+                                                                      settings: PgCdcSourceSettings)
     extends GraphStage[SourceShape[ChangeSet]] {
 
   private val out: Outlet[ChangeSet] = Outlet[ChangeSet]("postgresqlcdc.out")
@@ -31,10 +34,12 @@ private[postgresqlcdc] final class PostgreSQLSourceStage(instance: PostgreSQLIns
 
 }
 
-@InternalApi
-private[postgresqlcdc] final class PostgreSQLSourceStageLogic(val instance: PostgreSQLInstance,
-                                                              val settings: PgCdcSourceSettings,
-                                                              val shape: SourceShape[ChangeSet])
+/**
+ * INTERNAL API
+ */
+@InternalApi private[postgresqlcdc] final class PostgreSQLSourceStageLogic(val instance: PostgreSQLInstance,
+                                                                           val settings: PgCdcSourceSettings,
+                                                                           val shape: SourceShape[ChangeSet])
     extends TimerGraphStageLogic(shape)
     with StageLogging {
 

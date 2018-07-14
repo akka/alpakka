@@ -13,15 +13,20 @@ import fastparse.all._
 
 import scala.collection.mutable.ArrayBuffer
 
+/**
+ * INTERNAL API
+ */
 @InternalApi private[postgresqlcdc] object TestDecodingPlugin {
 
-  //
-  // We need to parse a log statement such as the following:
-  //
-  // BEGIN 2380
-  // table public.table_name: INSERT: id[integer]:3 data[text]:'3'
-  // COMMIT 2380 (at 2018-04-09 17:56:36.730413+00)
-  //
+  /*
+
+  We need to parse a log statement such as the following:
+
+  BEGIN 2380
+  table public.table_name: INSERT: id[integer]:3 data[text]:'3'
+  COMMIT 2380 (at 2018-04-09 17:56:36.730413+00)
+
+   */
 
   case class BeginStatement(number: Long)
 
