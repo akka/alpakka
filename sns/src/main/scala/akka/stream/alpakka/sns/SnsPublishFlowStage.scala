@@ -11,12 +11,12 @@ import com.amazonaws.services.sns.AmazonSNSAsync
 import com.amazonaws.services.sns.model.{PublishRequest, PublishResult}
 
 private[akka] final class SnsPublishFlowStage(topicArn: String, snsClient: AmazonSNSAsync)
-    extends GraphStage[FlowShape[String, PublishResult]] {
+    extends GraphStage[FlowShape[PublishRequest, PublishResult]] {
 
-  private val in = Inlet[String]("SnsPublishFlow.in")
+  private val in = Inlet[PublishRequest]("SnsPublishFlow.in")
   private val out = Outlet[PublishResult]("SnsPublishFlow.out")
 
-  override def shape: FlowShape[String, PublishResult] = FlowShape.of(in, out)
+  override def shape: FlowShape[PublishRequest, PublishResult] = FlowShape.of(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
@@ -43,7 +43,7 @@ private[akka] final class SnsPublishFlowStage(topicArn: String, snsClient: Amazo
 
       override def onPush(): Unit = {
         isMessageInFlight = true
-        val request = new PublishRequest().withTopicArn(topicArn).withMessage(grab(in))
+        val request = grab(in).withTopicArn(topicArn)
         snsClient.publishAsync(request, asyncHandler)
       }
 

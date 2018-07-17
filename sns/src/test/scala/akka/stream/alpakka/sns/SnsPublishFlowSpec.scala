@@ -22,7 +22,66 @@ import scala.concurrent.duration._
 
 class SnsPublishFlowSpec extends FlatSpec with DefaultTestContext with MustMatchers {
 
-  it should "publish a single message to sns" in {
+  it should "publish a single PublishRequest message to sns" in {
+    val publishRequest = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message")
+    val publishResult = new PublishResult().withMessageId("message-id")
+
+    when(snsClient.publishAsync(meq(publishRequest), any())).thenAnswer(
+      new Answer[AnyRef] {
+        override def answer(invocation: InvocationOnMock): Future[PublishResult] = {
+          invocation
+            .getArgument[AsyncHandler[PublishRequest, PublishResult]](1)
+            .onSuccess(publishRequest, publishResult)
+          CompletableFuture.completedFuture(publishResult)
+        }
+      }
+    )
+
+    val (probe, future) =
+      TestSource.probe[PublishRequest].via(SnsPublisher.publishFlow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
+    probe.sendNext(new PublishRequest().withMessage("sns-message")).sendComplete()
+
+    Await.result(future, 1.second) mustBe publishResult :: Nil
+    verify(snsClient, times(1)).publishAsync(meq(publishRequest), any())
+  }
+
+  it should "publish multiple PublishRequest messages to sns" in {
+    val publishResult = new PublishResult().withMessageId("message-id")
+
+    when(snsClient.publishAsync(any[PublishRequest](), any())).thenAnswer(
+      new Answer[AnyRef] {
+        override def answer(invocation: InvocationOnMock): Future[PublishResult] = {
+          val publishRequest = invocation.getArgument[PublishRequest](0)
+          invocation
+            .getArgument[AsyncHandler[PublishRequest, PublishResult]](1)
+            .onSuccess(publishRequest, publishResult)
+          CompletableFuture.completedFuture(publishResult)
+        }
+      }
+    )
+
+    val (probe, future) =
+      TestSource.probe[PublishRequest].via(SnsPublisher.publishFlow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
+
+    probe
+      .sendNext(new PublishRequest().withMessage("sns-message-1"))
+      .sendNext(new PublishRequest().withMessage("sns-message-2"))
+      .sendNext(new PublishRequest().withMessage("sns-message-3"))
+      .sendComplete()
+
+    Await.result(future, 1.second) mustBe publishResult :: publishResult :: publishResult :: Nil
+
+    val expectedFirst = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message-1")
+    verify(snsClient, times(1)).publishAsync(meq(expectedFirst), any())
+
+    val expectedSecond = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message-2")
+    verify(snsClient, times(1)).publishAsync(meq(expectedSecond), any())
+
+    val expectedThird = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message-3")
+    verify(snsClient, times(1)).publishAsync(meq(expectedThird), any())
+  }
+
+  it should "publish a single string message to sns" in {
     val publishRequest = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message")
     val publishResult = new PublishResult().withMessageId("message-id")
 
@@ -44,7 +103,7 @@ class SnsPublishFlowSpec extends FlatSpec with DefaultTestContext with MustMatch
     verify(snsClient, times(1)).publishAsync(meq(publishRequest), any())
   }
 
-  it should "publish multiple messages to sns" in {
+  it should "publish multiple string messages to sns" in {
     val publishResult = new PublishResult().withMessageId("message-id")
 
     when(snsClient.publishAsync(any[PublishRequest](), any())).thenAnswer(
