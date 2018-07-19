@@ -25,19 +25,11 @@ import org.apache.http.util.EntityUtils
 object IncomingIndexMessage {
   // Apply method to use when not using passThrough
   def apply[T](source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(id = None, source = Some(source), passThrough = NotUsed, operation = Index)
+    IncomingMessage(Index, None, Some(source))
 
   // Apply method to use when not using passThrough
   def apply[T](id: String, source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(id = Some(id), source = Some(source), passThrough = NotUsed, operation = Index)
-
-  // Apply method to use when using passThrough
-  def apply[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(id = None, source = Some(source), passThrough = passThrough, Index, None, None)
-
-  // Apply method to use when using passThrough
-  def apply[T, C](id: String, source: T, passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(Some(id), Some(source), passThrough, Index, None, None)
+    IncomingMessage(Index, Some(id), Some(source))
 
   // Java-api - without passThrough
   def create[T](source: T): IncomingMessage[T, NotUsed] =
@@ -46,78 +38,49 @@ object IncomingIndexMessage {
   // Java-api - without passThrough
   def create[T](id: String, source: T): IncomingMessage[T, NotUsed] =
     IncomingIndexMessage(id, source)
-
-  // Java-api - with passThrough
-  def create[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
-    IncomingIndexMessage(source, passThrough)
-
-  // Java-api - with passThrough
-  def create[T, C](id: String, source: T, passThrough: C): IncomingMessage[T, C] =
-    IncomingIndexMessage(id, source, passThrough)
 }
 
 object IncomingUpdateMessage {
   // Apply method to use when not using passThrough
   def apply[T](id: String, source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Some(id), Some(source), NotUsed, Update, None, None)
-
-  // Apply method to use when using passThrough
-  def apply[T, C](id: String, source: T, passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(Some(id), Some(source), passThrough, Update, None, None)
+    IncomingMessage(Update, Some(id), Some(source))
 
   // Java-api - without passThrough
   def create[T](id: String, source: T): IncomingMessage[T, NotUsed] =
     IncomingUpdateMessage(id, source)
-
-  // Java-api - with passThrough
-  def create[T, C](id: String, source: T, passThrough: C): IncomingMessage[T, C] =
-    IncomingUpdateMessage(id, source, passThrough)
 }
 
 object IncomingUpsertMessage {
   // Apply method to use when not using passThrough
   def apply[T](id: String, source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Some(id), Some(source), NotUsed, Upsert, None, None)
-
-  // Apply method to use when using passThrough
-  def apply[T, C](id: String, source: T, passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(Some(id), Some(source), passThrough, Upsert, None, None)
+    IncomingMessage(Upsert, Some(id), Some(source))
 
   // Java-api - without passThrough
   def create[T](id: String, source: T): IncomingMessage[T, NotUsed] =
     IncomingUpdateMessage(id, source)
-
-  // Java-api - with passThrough
-  def create[T, C](id: String, source: T, passThrough: C): IncomingMessage[T, C] =
-    IncomingUpdateMessage(id, source, passThrough)
 }
 
 object IncomingDeleteMessage {
   // Apply method to use when not using passThrough
   def apply[T](id: String): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Some(id), None, NotUsed, Delete, None, None)
-
-  // Apply method to use when using passThrough
-  def apply[T, C](id: String, passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(Some(id), None, passThrough, Delete, None, None)
+    IncomingMessage(Delete, Some(id), None)
 
   // Java-api - without passThrough
   def create[T](id: String): IncomingMessage[T, NotUsed] =
     IncomingDeleteMessage(id)
-
-  // Java-api - with passThrough
-  def create[T, C](id: String, passThrough: C): IncomingMessage[T, C] =
-    IncomingDeleteMessage(id, passThrough)
 }
 
 case class IncomingMessage[T, C] private (
+    operation: Operation,
     id: Option[String],
     source: Option[T],
-    passThrough: C,
-    operation: Operation,
+    passThrough: C = NotUsed,
     version: Option[Long] = None,
     indexName: Option[String] = None
 ) {
+  def withPassThrough[P](passThrough: P): IncomingMessage[T, P] =
+    this.copy(passThrough = passThrough)
+
   def withVersion(version: Long): IncomingMessage[T, C] =
     this.copy(version = Option(version))
 

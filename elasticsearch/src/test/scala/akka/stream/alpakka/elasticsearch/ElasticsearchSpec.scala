@@ -409,7 +409,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           println("title: " + book.title)
 
           // Transform message so that we can write to elastic
-          IncomingIndexMessage(id, book, kafkaMessage.offset)
+          IncomingIndexMessage(id, book).withPassThrough(kafkaMessage.offset)
         }
         .via( // write to elastic
           ElasticsearchFlow.createWithPassThrough[Book, KafkaOffset](

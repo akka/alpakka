@@ -295,7 +295,7 @@ public class ElasticsearchTest {
               String id = book.title;
 
               // Transform message so that we can write to elastic
-              return IncomingIndexMessage.create(id, book, kafkaMessage.offset);
+              return IncomingIndexMessage.create(id, book).withPassThrough(kafkaMessage.offset);
             })
         .via( // write to elastic
             ElasticsearchFlow.createWithPassThrough(
