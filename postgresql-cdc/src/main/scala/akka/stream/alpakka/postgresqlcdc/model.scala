@@ -7,6 +7,8 @@ package akka.stream.alpakka.postgresqlcdc
 import java.time.Instant
 
 import scala.collection.JavaConverters._
+import java.util.{List ⇒ JavaList}
+import java.util.{Map ⇒ JavaMap}
 
 sealed abstract class Change {
 
@@ -108,10 +110,24 @@ final class RowInserted private (val schemaName: String,
                                  val fields: List[Field])
     extends Change {
 
+  lazy val data: Map[String, String] = fields.map(f ⇒ f.columnName → f.value).toMap
+
+  lazy val schema: Map[String, String] = fields.map(f ⇒ f.columnName → f.value).toMap
+
   /**
    * Java API
    */
-  def getFields: java.util.List[Field] = fields.asJava
+  def getData: JavaMap[String, String] = data.asJava
+
+  /**
+   * Java API
+   */
+  def getSchema: JavaMap[String, String] = schema.asJava
+
+  /**
+   * Java API
+   */
+  def getFields: JavaList[Field] = fields.asJava
 
   // auto-generated
   override def equals(other: Any): Boolean = other match {
@@ -130,13 +146,12 @@ final class RowInserted private (val schemaName: String,
     state.map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
   }
 
-  // auto-generated
-  override def toString =
-    s"RowInserted(schemaName=$schemaName, tableName=$tableName, commitLogSeqNum=$commitLogSeqNum, transactionId=$transactionId, fields=$fields)"
-
   def copy(fields: List[Field]): RowInserted =
     new RowInserted(schemaName, tableName, commitLogSeqNum, transactionId, fields)
 
+  // auto-generated
+  override def toString =
+    s"RowInserted(data=$data, schema=$schema, schemaName=$schemaName, tableName=$tableName, commitLogSeqNum=$commitLogSeqNum, transactionId=$transactionId)"
 }
 
 object RowUpdated {
@@ -162,15 +177,43 @@ final class RowUpdated private (val schemaName: String,
                                 val fieldsOld: List[Field])
     extends Change {
 
-  /**
-   * Java API
-   */
-  def getFieldsNew: java.util.List[Field] = fieldsNew.asJava
+  lazy val dataNew: Map[String, String] = fieldsNew.map(f ⇒ f.columnName → f.value).toMap
+
+  lazy val schemaNew: Map[String, String] = fieldsNew.map(f ⇒ f.columnName → f.value).toMap
+
+  lazy val dataOld: Map[String, String] = fieldsOld.map(f ⇒ f.columnName → f.value).toMap
+
+  lazy val schemaOld: Map[String, String] = fieldsOld.map(f ⇒ f.columnName → f.value).toMap
 
   /**
    * Java API
    */
-  def getFieldsOld: java.util.List[Field] = fieldsOld.asJava
+  def getDataNew: JavaMap[String, String] = dataNew.asJava
+
+  /**
+   * Java API
+   */
+  def getSchemaNew: JavaMap[String, String] = schemaNew.asJava
+
+  /**
+   * Java API
+   */
+  def getDataOld: JavaMap[String, String] = dataOld.asJava
+
+  /**
+   * Java API
+   */
+  def getSchemaOld: JavaMap[String, String] = schemaOld.asJava
+
+  /**
+   * Java API
+   */
+  def getFieldsNew: JavaList[Field] = fieldsNew.asJava
+
+  /**
+   * Java API
+   */
+  def getFieldsOld: JavaList[Field] = fieldsOld.asJava
 
   // auto-generated
   override def equals(other: Any): Boolean = other match {
@@ -190,12 +233,12 @@ final class RowUpdated private (val schemaName: String,
     state.map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
   }
 
-  // auto-generated
-  override def toString =
-    s"RowUpdated(schemaName=$schemaName, tableName=$tableName, commitLogSeqNum=$commitLogSeqNum, transactionId=$transactionId, fieldsNew=$fieldsNew, fieldsOld=$fieldsOld)"
-
   def copy(fieldsNew: List[Field], fieldsOld: List[Field]): RowUpdated =
     new RowUpdated(schemaName, tableName, commitLogSeqNum, transactionId, fieldsNew, fieldsOld)
+
+  // auto-generated
+  override def toString =
+    s"RowUpdated(dataNew=$dataNew, schemaNew=$schemaNew, dataOld=$dataOld, schemaOld=$schemaOld, schemaName=$schemaName, tableName=$tableName, commitLogSeqNum=$commitLogSeqNum, transactionId=$transactionId)"
 
 }
 
@@ -220,10 +263,24 @@ final class RowDeleted private (val schemaName: String,
                                 val fields: List[Field])
     extends Change {
 
+  lazy val data: Map[String, String] = fields.map(f ⇒ f.columnName → f.value).toMap
+
+  lazy val schema: Map[String, String] = fields.map(f ⇒ f.columnName → f.value).toMap
+
   /**
    * Java API
    */
-  def getFields: java.util.List[Field] =
+  def getData: JavaMap[String, String] = data.asJava
+
+  /**
+   * Java API
+   */
+  def getSchema: JavaMap[String, String] = schema.asJava
+
+  /**
+   * Java API
+   */
+  def getFields: JavaList[Field] =
     fields.asJava
 
   // auto-generated
@@ -248,7 +305,7 @@ final class RowDeleted private (val schemaName: String,
 
   // auto-generated
   override def toString =
-    s"RowDeleted(schemaName=$schemaName, tableName=$tableName, commitLogSeqNum=$commitLogSeqNum, transactionId=$transactionId, fields=$fields)"
+    s"RowDeleted(data=$data, schema=$schema, schemaName=$schemaName, tableName=$tableName, commitLogSeqNum=$commitLogSeqNum, transactionId=$transactionId)"
 }
 
 object ChangeSet {
@@ -271,7 +328,7 @@ final class ChangeSet private (val transactionId: Long,
    *
    * Note that this never returns an empty list. All change sets with empty changes are filtered out.
    */
-  def getChanges: java.util.List[Change] =
+  def getChanges: JavaList[Change] =
     changes.asJava
 
   /**
@@ -321,6 +378,7 @@ object AckLogSeqNum {
 
 final class AckLogSeqNum private (val logSeqNum: String) {
 
+  // auto-generated
   override def toString = s"AckLogSeqNum(logSeqNum=$logSeqNum)"
 
   /**

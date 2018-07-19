@@ -122,94 +122,88 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
         //
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, RowInserted("public", "customers", _, _, fields) :: Nil)
-              if fields.map(f ⇒ f.columnName -> f.value).toSet == Set(
+              if (Set(
                 "id" -> "0",
                 "first_name" -> "John",
                 "last_name" -> "Lennon",
                 "email" -> "john.lennon@akka.io",
-                "tags" -> "{awesome}",
-                "\"time\"" -> "1964-02-22 16:00:00-08"
-              ) ⇒ // success
+                "tags" -> "{awesome}"
+              ) -- fields.map(f ⇒ f.columnName -> f.value).toSet) == Set() ⇒ // success
         }
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, RowInserted("public", "customers", _, _, fields) :: Nil)
-              if fields.map(f ⇒ f.columnName -> f.value).toSet == Set(
+              if (Set(
                 "id" -> "1",
                 "first_name" -> "George",
                 "last_name" -> "Harrison",
                 "email" -> "george.harrison@akka.io",
                 "tags" -> "{awesome}",
-                "\"time\"" -> "1964-02-22 16:00:00-08"
-              ) ⇒ // success
+              ) -- fields.map(f ⇒ f.columnName -> f.value).toSet) == Set() ⇒ // success
         }
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, RowInserted("public", "customers", _, _, fields) :: Nil)
-              if fields.map(f ⇒ f.columnName -> f.value).toSet == Set(
+              if (Set(
                 "id" -> "2",
                 "first_name" -> "Paul",
                 "last_name" -> "McCartney",
                 "email" -> "paul.mccartney@akka.io",
                 "tags" -> "{awesome}",
-                "\"time\"" -> "1964-02-22 16:00:00-08"
-              ) ⇒ // success
+              ) -- fields.map(f ⇒ f.columnName -> f.value).toSet) == Set() ⇒ // success
         }
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, RowInserted("public", "customers", _, _, fields) :: Nil)
-              if fields.map(f ⇒ f.columnName -> f.value).toSet == Set(
+              if (Set(
                 "id" -> "3",
                 "first_name" -> "Ringo",
                 "last_name" -> "Star",
                 "email" -> "ringo.star@akka.io",
                 "tags" -> "{awesome}",
-                "\"time\"" -> "1964-02-22 16:00:00-08"
-              ) ⇒ // success
+              ) -- fields.map(f ⇒ f.columnName -> f.value).toSet) == Set() ⇒ // success
         }
         //
         // expecting the update events next
         //
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, RowUpdated("public", "customers", _, _, fields, _) :: Nil)
-              if fields.map(f ⇒ f.columnName -> f.value).toSet == Set(
+              if (Set(
                 "id" -> "0",
                 "first_name" -> "John",
                 "last_name" -> "Lennon",
                 "email" -> "john.lennon@thebeatles.com",
                 "tags" -> "{awesome}",
-                "\"time\"" -> "1964-02-22 16:00:00-08"
-              ) ⇒ // success
+              ) -- fields.map(f ⇒ f.columnName -> f.value).toSet) == Set() ⇒ // success
         }
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, RowUpdated("public", "customers", _, _, fields, _) :: Nil)
-              if fields.map(f ⇒ f.columnName -> f.value).toSet == Set(
+              if (Set(
                 "id" -> "1",
                 "first_name" -> "George",
                 "last_name" -> "Harrison",
                 "email" -> "george.harrison@thebeatles.com",
                 "tags" -> "{awesome}",
-                "\"time\"" -> "1964-02-22 16:00:00-08"
-              ) ⇒ // success
+              ) -- fields.map(f ⇒ f.columnName -> f.value).toSet) == Set() ⇒ // success
         }
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, RowUpdated("public", "customers", _, _, fields, _) :: Nil)
-              if fields.map(f ⇒ f.columnName -> f.value).toSet == Set(
+              if (Set(
                 "id" -> "2",
                 "first_name" -> "Paul",
                 "last_name" -> "McCartney",
                 "email" -> "paul.mccartney@thebeatles.com",
                 "tags" -> "{awesome}",
-                "\"time\"" -> "1964-02-22 16:00:00-08"
-              ) ⇒ // success
+              ) -- fields.map(f ⇒ f.columnName -> f.value).toSet) == Set() ⇒ // success
+
         }
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, RowUpdated("public", "customers", _, _, fields, _) :: Nil)
-              if fields.map(f ⇒ f.columnName -> f.value).toSet == Set(
+              if (Set(
                 "id" -> "3",
                 "first_name" -> "Ringo",
                 "last_name" -> "Star",
                 "email" -> "ringo.star@thebeatles.com",
                 "tags" -> "{awesome}",
-                "\"time\"" -> "1964-02-22 16:00:00-08"
-              ) ⇒ // success
+              ) -- fields.map(f ⇒ f.columnName -> f.value).toSet) == Set() ⇒ // success
+
         }
         //
         //  expecting the delete events next (all in a single transaction )
