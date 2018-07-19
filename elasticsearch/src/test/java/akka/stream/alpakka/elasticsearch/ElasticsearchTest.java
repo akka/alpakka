@@ -128,7 +128,7 @@ public class ElasticsearchTest {
         ElasticsearchSource.create("source", "book", "{\"match_all\": {}}", sourceSettings, client);
     CompletionStage<Done> f1 =
         source
-            .map(m -> IncomingMessage.create(m.id(), m.source()))
+            .map(m -> IncomingIndexMessage.create(m.id(), m.source()))
             .runWith(
                 ElasticsearchSink.create("sink1", "book", sinkSettings, client, new ObjectMapper()),
                 materializer);
@@ -177,7 +177,7 @@ public class ElasticsearchTest {
             "source", "book", "{\"match_all\": {}}", sourceSettings, client, Book.class);
     CompletionStage<Done> f1 =
         source
-            .map(m -> IncomingMessage.create(m.id(), m.source()))
+            .map(m -> IncomingIndexMessage.create(m.id(), m.source()))
             .runWith(
                 ElasticsearchSink.create("sink2", "book", sinkSettings, client, new ObjectMapper()),
                 materializer);
@@ -227,7 +227,7 @@ public class ElasticsearchTest {
                 ElasticsearchSourceSettings.Default().withBufferSize(5),
                 client,
                 Book.class)
-            .map(m -> IncomingMessage.create(m.id(), m.source()))
+            .map(m -> IncomingIndexMessage.create(m.id(), m.source()))
             .via(
                 ElasticsearchFlow.create(
                     "sink3",
@@ -295,7 +295,7 @@ public class ElasticsearchTest {
               String id = book.title;
 
               // Transform message so that we can write to elastic
-              return IncomingMessage.create(id, book, kafkaMessage.offset);
+              return IncomingIndexMessage.create(id, book).withPassThrough(kafkaMessage.offset);
             })
         .via( // write to elastic
             ElasticsearchFlow.createWithPassThrough(
@@ -313,7 +313,7 @@ public class ElasticsearchTest {
                         if (!result.success())
                           throw new RuntimeException("Failed to write message to elastic");
                         // Commit to kafka
-                        kafkaCommitter.commit(result.passThrough());
+                        kafkaCommitter.commit(result.message().passThrough());
                       });
               return NotUsed.getInstance();
             })
@@ -356,7 +356,7 @@ public class ElasticsearchTest {
 
     // Insert document
     Book book = new Book("b");
-    Source.single(IncomingMessage.create("1", book))
+    Source.single(IncomingIndexMessage.create("1", book))
         .via(
             ElasticsearchFlow.create(
                 indexName,
@@ -388,7 +388,7 @@ public class ElasticsearchTest {
     flush(indexName);
 
     // Update document to version 2
-    Source.single(IncomingMessage.create("1", book, 1L))
+    Source.single(IncomingIndexMessage.create("1", book).withVersion(1L))
         .via(
             ElasticsearchFlow.create(
                 indexName,
@@ -405,7 +405,7 @@ public class ElasticsearchTest {
     // Try to update document with wrong version to assert that we can send it
     long oldVersion = 1;
     boolean success =
-        Source.single(IncomingMessage.create("1", book, oldVersion))
+        Source.single(IncomingIndexMessage.create("1", book).withVersion(oldVersion))
             .via(
                 ElasticsearchFlow.create(
                     indexName,
@@ -433,7 +433,7 @@ public class ElasticsearchTest {
     long externalVersion = 5;
 
     // Insert new document using external version
-    Source.single(IncomingMessage.create("1", book, externalVersion))
+    Source.single(IncomingIndexMessage.create("1", book).withVersion(externalVersion))
         .via(
             ElasticsearchFlow.create(
                 indexName,
@@ -500,7 +500,7 @@ public class ElasticsearchTest {
 
     // Insert document
     Source.from(docs)
-        .map((TestDoc d) -> IncomingMessage.create(d.id, d))
+        .map((TestDoc d) -> IncomingIndexMessage.create(d.id, d))
         .via(
             ElasticsearchFlow.create(
                 indexName,
