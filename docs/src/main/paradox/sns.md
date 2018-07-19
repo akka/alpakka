@@ -38,7 +38,7 @@ This is all preparation that we are going to need.
 
 ### Publish messages to a SNS topic
 
-Now we can publish a String message to any SNS topic where we have access to by providing the topic ARN to the
+Now we can publish a message to any SNS topic where we have access to by providing the topic ARN to the
 @scaladoc[SnsPublisher](akka.stream.alpakka.sns.scaladsl.SnsPublisher$) Flow or Sink factory method.
 
 ### Using a Flow
