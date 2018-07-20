@@ -288,11 +288,7 @@ public class ElasticsearchTest {
     Source.from(requests)
         .via(
             ElasticsearchFlow.create(
-                "sink8",
-                "book",
-                ElasticsearchSinkSettings.Default(),
-                client,
-                new ObjectMapper()))
+                "sink8", "book", ElasticsearchSinkSettings.Default(), client, new ObjectMapper()))
         .runWith(Sink.seq(), materializer)
         .toCompletableFuture()
         .get();
@@ -306,7 +302,7 @@ public class ElasticsearchTest {
                 "sink8",
                 "book",
                 "{\"match_all\": {}}",
-                ElasticsearchSourceSettings.Default().withBufferSize(5),
+                ElasticsearchSourceSettings.Default(),
                 client,
                 Book.class)
             .map(m -> m.source().title)
