@@ -460,7 +460,6 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       )
 
       // Create new documents in sink7/book using the upsert method
-      //#run-flow
       val f1 = Source(books)
         .map { book: (String, Book) =>
           IncomingUpsertMessage(id = book._1, source = book._2)
@@ -472,7 +471,6 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           )
         )
         .runWith(Sink.seq)
-      //#run-flow
 
       val result1 = Await.result(f1, Duration.Inf)
       flush("sink7")
@@ -497,7 +495,6 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       )
 
       // Update sink7/book with the second dataset
-      //#run-flow
       val f2 = Source(updatedBooks)
         .map { book: (String, JsObject) =>
           IncomingUpsertMessage(id = book._1, source = book._2)
@@ -509,7 +506,6 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           )
         )
         .runWith(Sink.seq)
-      //#run-flow
 
       val result2 = Await.result(f2, Duration.Inf)
       flush("sink7")
@@ -549,7 +545,9 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   }
 
   "ElasticsearchFlow" should {
-    "handle multiple types of commands correctly" in {
+    "handle multiple types of operations correctly" in {
+      //#multiple-operations
+      // Create, update, upsert and delete documents in sink8/book
       val requests = List[IncomingMessage[Book, NotUsed]](
         IncomingIndexMessage(id = "00001", source = Book("Book 1")),
         IncomingUpsertMessage(id = "00002", source = Book("Book 2")),
@@ -558,8 +556,6 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         IncomingDeleteMessage(id = "00002")
       )
 
-      // Create new documents in sink7/book using the upsert method
-      //#run-flow
       val f1 = Source(requests)
         .via(
           ElasticsearchFlow.create[Book](
@@ -568,7 +564,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           )
         )
         .runWith(Sink.seq)
-      //#run-flow
+      //#multiple-operations
 
       val result1 = Await.result(f1, Duration.Inf)
       flush("sink8")
