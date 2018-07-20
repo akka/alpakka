@@ -68,7 +68,7 @@ Java
 
 ### Incoming message types
 
-In the above examples, `IncomingIndexMessage` is used as the input to `ElasticsearchSink`. This means requesting `index` operation to Elasticsearch. It's able to request other operations using following message types:
+In the above examples, `IncomingIndexMessage` is used as the input to `ElasticsearchSink`. This means requesting `index` operation to Elasticsearch. It's possible to request other operations using following message types:
 
 | Message type           | Description                                                                                          |
 | ---------------------- | ---------------------------------------------------------------------------------------------------- |
