@@ -1,12 +1,10 @@
-# AWS DynamoDB Connector
+# AWS DynamoDB
 
 The AWS DynamoDB connector provides a flow for streaming DynamoDB requests. For more information about DynamoDB please visit the [official documentation](https://aws.amazon.com/dynamodb/).
-
 
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Adynamodb)
-
 
 ## Artifacts
 
@@ -18,9 +16,22 @@ The AWS DynamoDB connector provides a flow for streaming DynamoDB requests. For 
 
 ## Usage
 
-This connector uses the [default credential provider chain](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html) provided by the [DynamoDB Java SDK](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/basics.html) to retrieve credentials.
+This connector will uses the [default credential provider chain](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html) 
+provided by the [DynamoDB Java SDK](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/basics.html) to retrieve credentials.
 
-Before you can construct the client, you need an @scaladoc[ActorSystem](akka.actor.ActorSystem), @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer), and @scaladoc[ExecutionContext](scala.concurrent.ExecutionContext).
+If you wish to use static credentials they can be defined in the config
+
+Define Static Credentials in Config
+: @@snip ($alpakka$/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/DynamoSettingsSpec.scala) { #static-creds }
+
+Alternatively any type of `AWSCredentialsProvider` can be provided programmatically via the default @scaladoc[DynamoSettings](akka.stream.alpakka.dynamodb.impl.DynamoSettings) 
+constructor
+
+Supply Credentials Provider to Constructor
+: @@snip ($alpakka$/dynamodb/src/main/scala/akka/stream/alpakka/dynamodb/impl/DynamoSettings.scala) { #init-settings } 
+
+Before you can construct the client, you need an @scaladoc[ActorSystem](akka.actor.ActorSystem), 
+@scaladoc[ActorMaterializer](akka.stream.ActorMaterializer), and @scaladoc[ExecutionContext](scala.concurrent.ExecutionContext).
 
 Scala
 : @@snip ($alpakka$/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #init-client }

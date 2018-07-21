@@ -7,7 +7,7 @@ package akka.stream.alpakka.ftp.impl
 import akka.stream.alpakka.ftp.FtpCredentials.{AnonFtpCredentials, NonAnonFtpCredentials}
 import akka.stream.alpakka.ftp.{FtpFile, FtpFileSettings, FtpSettings, FtpsSettings, RemoteFileSettings, SftpSettings}
 import net.schmizz.sshj.SSHClient
-import org.apache.commons.net.ftp.FTPClient
+import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
 import java.net.InetAddress
 
 private[ftp] trait FtpSourceFactory[FtpClient] { self =>
@@ -103,11 +103,11 @@ private[ftp] trait FtpSource extends FtpSourceFactory[FTPClient] {
   protected val ftpIOSinkName: String = FtpIOSinkName
 }
 
-private[ftp] trait FtpsSource extends FtpSourceFactory[FTPClient] {
+private[ftp] trait FtpsSource extends FtpSourceFactory[FTPSClient] {
   protected final val FtpsBrowserSourceName = "FtpsBrowserSource"
   protected final val FtpsIOSourceName = "FtpsIOSource"
   protected final val FtpsIOSinkName = "FtpsIOSink"
-  protected val ftpClient: () => FTPClient = () => new FTPClient
+  protected val ftpClient: () => FTPSClient = () => new FTPSClient
   protected val ftpBrowserSourceName: String = FtpsBrowserSourceName
   protected val ftpIOSourceName: String = FtpsIOSourceName
   protected val ftpIOSinkName: String = FtpsIOSinkName
@@ -117,7 +117,8 @@ private[ftp] trait SftpSource extends FtpSourceFactory[SSHClient] {
   protected final val sFtpBrowserSourceName = "sFtpBrowserSource"
   protected final val sFtpIOSourceName = "sFtpIOSource"
   protected final val sFtpIOSinkName = "sFtpIOSink"
-  protected val ftpClient: () => SSHClient = () => new SSHClient
+  def sshClient(): SSHClient = new SSHClient()
+  protected val ftpClient: () => SSHClient = sshClient
   protected val ftpBrowserSourceName: String = sFtpBrowserSourceName
   protected val ftpIOSourceName: String = sFtpIOSourceName
   protected val ftpIOSinkName: String = sFtpIOSinkName
@@ -172,13 +173,13 @@ private[ftp] trait SftpDefaultSettings {
 }
 
 private[ftp] trait FtpSourceParams extends FtpSource with FtpDefaultSettings {
-  type S = FtpFileSettings
+  type S = FtpSettings
   protected[this] val ftpLike: FtpLike[FTPClient, S] = FtpLike.ftpLikeInstance
 }
 
 private[ftp] trait FtpsSourceParams extends FtpsSource with FtpsDefaultSettings {
-  type S = FtpFileSettings
-  protected[this] val ftpLike: FtpLike[FTPClient, S] = FtpLike.ftpLikeInstance
+  type S = FtpsSettings
+  protected[this] val ftpLike: FtpLike[FTPSClient, S] = FtpLike.ftpsLikeInstance
 }
 
 private[ftp] trait SftpSourceParams extends SftpSource with SftpDefaultSettings {

@@ -4,9 +4,12 @@
 
 package akka.stream.alpakka.dynamodb.impl
 
+import com.amazonaws.auth.AWSCredentialsProvider
+
 abstract class ClientSettings {
   val region: String
   val host: String
   val port: Int
   val parallelism: Int
+  val credentialsProvider: AWSCredentialsProvider
 }

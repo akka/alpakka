@@ -1,14 +1,12 @@
-# File Connectors
+# Files
 
 The File connectors provide additional connectors for filesystems complementing
 the sources and sinks for files already included in core Akka Streams
-(which can be found in @java[@javadoc[akka.stream.javadsl.FileIO](akka.stream.javadsl.FileIO$)]@scala[@scaladoc[akka.stream.scaladsl.FileIO](akka.stream.scaladsl.FileIO$))]).
-
+(which can be found in @java[@javadoc[akka.stream.javadsl.FileIO](akka.stream.javadsl.FileIO$)]@scala[@scaladoc[akka.stream.scaladsl.FileIO](akka.stream.scaladsl.FileIO$)]).
 
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Afile)
-
 
 ## Artifacts
 
@@ -17,6 +15,13 @@ the sources and sinks for files already included in core Akka Streams
   artifact=akka-stream-alpakka-file_$scalaBinaryVersion$
   version=$version$
 }
+
+## Writing to and reading from files
+
+Use the `FileIO` class to create streams reading from or writing to files. It is part part of Akka streams. 
+
+[Akka Streaming File IO documentation](https://doc.akka.io/docs/akka/current/stream/stream-io.html#streaming-file-io)
+
 
 ## Tailing a file into a stream
 
@@ -35,10 +40,6 @@ Scala
 
 Java
 : @@snip ($alpakka$/file/src/test/java/akka/stream/alpakka/file/javadsl/FileTailSourceTest.java) { #simple-lines }
-
-@scala[@github[Source on Github](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/FileTailSourceSpec.scala) { #simple-lines }]
-@java[@github[Source on Github](/file/src/test/java/akka/stream/alpakka/file/javadsl/FileTailSourceTest.java) { #simple-lines }]
-
 
 ## Listing directory contents
 
@@ -60,10 +61,6 @@ Scala
 Java
 : @@snip ($alpakka$/file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryTest.java) { #walk }
 
-@scala[@github[Source on Github](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/DirectorySpec.scala)]
-@java[@github[Source on Github](/file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryTest.java)]
-
-
 ## Listening to changes in a directory
 
 The `DirectoryChangesSource` will emit elements every time there is a change to a watched directory
@@ -77,10 +74,6 @@ Scala
 
 Java
 : @@snip ($alpakka$/file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryChangesSourceTest.java) { #minimal-sample }
-
-@scala[@github[Source on Github](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/DirectoryChangesSourceSpec.scala) { #minimal-sample }]
-@java[@github[Source on Github](/file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryChangesSourceTest.java) { #minimal-sample }]
-
 
 ## Rotating the file to stream into 
 
@@ -101,9 +94,6 @@ Scala
 Java
 : @@snip ($alpakka$/file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #sample }
 
-@scala[@github[Source on Github](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #sample }]
-@java[@github[Source on Github](/file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #sample }]
-
 ### Example: size-based rotation
 
 Scala
@@ -112,9 +102,6 @@ Scala
 Java
 : @@snip ($alpakka$/file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #size }
 
-@scala[@github[Source on Github](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #size }]
-@java[@github[Source on Github](/file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #size }]
-
 ### Example: time-based rotation
 
 Scala
@@ -122,10 +109,6 @@ Scala
 
 Java
 : @@snip ($alpakka$/file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #time }
-
-@scala[@github[Source on Github](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #time }]
-@java[@github[Source on Github](/file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #time }]
-
 
 ### Running the example code
 
@@ -136,20 +119,20 @@ Scala
 :   ```
     sbt
     // tail source
-    > akka-stream-alpakka-file/test:runMain akka.stream.alpakka.file.scaladsl.FileTailSourceSpec /some/path/toa/file
+    > file/Test/runMain akka.stream.alpakka.file.scaladsl.FileTailSourceSpec /some/path/toa/file
     // or directory changes
-    > akka-stream-alpakka-file/test:runMain akka.stream.alpakka.file.scaladsl.DirectoryChangesSourceSpec /some/directory/path
+    > file/Test/runMain akka.stream.alpakka.file.scaladsl.DirectoryChangesSourceSpec /some/directory/path
     // File rotator
-    > akka-stream-alpakka-file/test:runMain akka.stream.alpakka.file.scaladsl.LogRotatorSinkTest
+    > file/Test/runMain akka.stream.alpakka.file.scaladsl.LogRotatorSinkTest
     ```
 
 Java
 :   ```
     sbt
     // tail source
-    > akka-stream-alpakka-file/test:runMain akka.stream.alpakka.file.javadsl.FileTailSourceTest /some/path/toa/file
+    > file/Test/runMain akka.stream.alpakka.file.javadsl.FileTailSourceTest /some/path/toa/file
     // or directory changes
-    > akka-stream-alpakka-file/test:runMain akka.stream.alpakka.file.javadsl.DirectoryChangesSourceTest /some/directory/path
+    > file/Test/runMain akka.stream.alpakka.file.javadsl.DirectoryChangesSourceTest /some/directory/path
     // File rotator
-    > akka-stream-alpakka-file/test:runMain akka.stream.alpakka.file.javadsl.LogRotatorSinkTest
+    > file/Test/runMain akka.stream.alpakka.file.javadsl.LogRotatorSinkTest
     ```

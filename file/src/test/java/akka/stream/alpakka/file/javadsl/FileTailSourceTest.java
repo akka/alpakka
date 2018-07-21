@@ -35,7 +35,6 @@ import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.junit.Assert.assertEquals;
 
-
 public class FileTailSourceTest {
 
   private FileSystem fs;
@@ -49,33 +48,32 @@ public class FileTailSourceTest {
     materializer = ActorMaterializer.create(system);
   }
 
-
-
   @Test
   public void canReadAnEntireFile() throws Exception {
     final Path path = fs.getPath("/file");
     final String dataInFile = "a\nb\nc\nd";
     Files.write(path, dataInFile.getBytes(UTF_8));
 
-    final Source<ByteString, NotUsed> source = akka.stream.alpakka.file.javadsl.FileTailSource.create(
-      path,
-      8192, // chunk size
-      0, // starting position
-      FiniteDuration.create(250, TimeUnit.MILLISECONDS));
+    final Source<ByteString, NotUsed> source =
+        akka.stream.alpakka.file.javadsl.FileTailSource.create(
+            path,
+            8192, // chunk size
+            0, // starting position
+            FiniteDuration.create(250, TimeUnit.MILLISECONDS));
 
     final TestSubscriber.Probe<ByteString> subscriber = TestSubscriber.probe(system);
 
     final UniqueKillSwitch killSwitch =
-      source.viaMat(KillSwitches.single(), Keep.right())
-        .to(Sink.fromSubscriber(subscriber))
-        .run(materializer);
+        source
+            .viaMat(KillSwitches.single(), Keep.right())
+            .to(Sink.fromSubscriber(subscriber))
+            .run(materializer);
 
     ByteString result = subscriber.requestNext();
     assertEquals(dataInFile, result.utf8String());
 
     killSwitch.shutdown();
     subscriber.expectComplete();
-
   }
 
   @Test
@@ -83,20 +81,21 @@ public class FileTailSourceTest {
     final Path path = fs.getPath("/file");
     Files.write(path, "a\n".getBytes(UTF_8));
 
-    final Source<String, NotUsed> source = akka.stream.alpakka.file.javadsl.FileTailSource.createLines(
-      path,
-      8192, // chunk size
-      FiniteDuration.create(250, TimeUnit.MILLISECONDS),
-      "\n",
-      StandardCharsets.UTF_8
-    );
+    final Source<String, NotUsed> source =
+        akka.stream.alpakka.file.javadsl.FileTailSource.createLines(
+            path,
+            8192, // chunk size
+            FiniteDuration.create(250, TimeUnit.MILLISECONDS),
+            "\n",
+            StandardCharsets.UTF_8);
 
     final TestSubscriber.Probe<String> subscriber = TestSubscriber.probe(system);
 
     final UniqueKillSwitch killSwitch =
-      source.viaMat(KillSwitches.single(), Keep.right())
-        .to(Sink.fromSubscriber(subscriber))
-        .run(materializer);
+        source
+            .viaMat(KillSwitches.single(), Keep.right())
+            .to(Sink.fromSubscriber(subscriber))
+            .run(materializer);
 
     String result1 = subscriber.requestNext();
     assertEquals("a", result1);
@@ -122,10 +121,9 @@ public class FileTailSourceTest {
     materializer = null;
   }
 
-
   // small sample of usage, tails the first argument file path
   public static void main(String... args) {
-    if(args.length != 1) throw new IllegalArgumentException("Usage: FileTailSourceTest [path]");
+    if (args.length != 1) throw new IllegalArgumentException("Usage: FileTailSourceTest [path]");
     final String path = args[0];
 
     final ActorSystem system = ActorSystem.create();
@@ -137,10 +135,10 @@ public class FileTailSourceTest {
     final int maxLineSize = 8192;
 
     final Source<String, NotUsed> lines =
-      akka.stream.alpakka.file.javadsl.FileTailSource.createLines(fs.getPath(path), maxLineSize, pollingInterval);
+        akka.stream.alpakka.file.javadsl.FileTailSource.createLines(
+            fs.getPath(path), maxLineSize, pollingInterval);
 
     lines.runForeach((line) -> System.out.println(line), materializer);
     // #simple-lines
   }
-
 }

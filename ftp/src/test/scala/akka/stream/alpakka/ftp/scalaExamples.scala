@@ -9,16 +9,34 @@ object scalaExamples {
   // settings
   object settings {
     //#create-settings
+    import akka.stream.alpakka.ftp.FtpSettings
     import akka.stream.alpakka.ftp.FtpCredentials.AnonFtpCredentials
+    import org.apache.commons.net.PrintCommandListener
+    import org.apache.commons.net.ftp.FTPClient
+    import java.io.PrintWriter
     import java.net.InetAddress
 
     val settings = FtpSettings(
       InetAddress.getByName("localhost"),
       credentials = AnonFtpCredentials,
       binary = true,
-      passiveMode = true
+      passiveMode = true,
+      configureConnection = (ftpClient: FTPClient) => {
+        ftpClient.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.out), true))
+      }
     )
     //#create-settings
+  }
+
+  object sshConfigure {
+    //#configure-custom-ssh-client
+    import akka.stream.alpakka.ftp.scaladsl.{Sftp, SftpApi}
+    import net.schmizz.sshj.DefaultConfig
+    import net.schmizz.sshj.SSHClient
+
+    val sshClient: SSHClient = new SSHClient(new DefaultConfig)
+    val configuredClient: SftpApi = Sftp(sshClient)
+    //#configure-custom-ssh-client
   }
 
   object traversing {

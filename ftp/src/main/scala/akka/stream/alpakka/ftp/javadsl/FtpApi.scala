@@ -15,9 +15,10 @@ import akka.stream.scaladsl.{Source => ScalaSource}
 import akka.stream.scaladsl.{Sink => ScalaSink}
 import akka.util.ByteString
 import net.schmizz.sshj.SSHClient
-import org.apache.commons.net.ftp.FTPClient
+import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
 import java.util.concurrent.CompletionStage
 import java.util.function._
+
 import scala.compat.java8.FunctionConverters._
 
 sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
@@ -235,7 +236,19 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
 
   protected[this] implicit def ftpLike: FtpLike[FtpClient, S]
 }
-
+class SftpApi extends FtpApi[SSHClient] with SftpSourceParams
 object Ftp extends FtpApi[FTPClient] with FtpSourceParams
-object Ftps extends FtpApi[FTPClient] with FtpsSourceParams
-object Sftp extends FtpApi[SSHClient] with SftpSourceParams
+object Ftps extends FtpApi[FTPSClient] with FtpsSourceParams
+object Sftp extends SftpApi {
+
+  /**
+   * Java API: creates a [[akka.stream.alpakka.ftp.javadsl.SftpApi]]
+   *
+   * @param customSshClient custom ssh client
+   * @return A [[akka.stream.alpakka.ftp.javadsl.SftpApi]]
+   */
+  def create(customSshClient: SSHClient): SftpApi =
+    new SftpApi {
+      override val sshClient = customSshClient
+    }
+}

@@ -1,7 +1,7 @@
 import sbt._
 import sbt.Keys._
 import sbt.plugins.JvmPlugin
-import com.lucidchart.sbt.scalafmt.ScalafmtCorePlugin.autoImport._
+import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
 import de.heikoseeberger.sbtheader._
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import sbtunidoc.BaseUnidocPlugin.autoImport._
@@ -24,6 +24,8 @@ object Common extends AutoPlugin {
                             url("https://github.com/akka/alpakka/graphs/contributors")),
     licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
     crossVersion := CrossVersion.binary,
+    crossScalaVersions := Dependencies.ScalaVersions,
+    scalaVersion := crossScalaVersions.value.head,
     scalacOptions ++= Seq(
       "-encoding",
       "UTF-8",

@@ -1,4 +1,4 @@
-# OrientDB Connector
+# OrientDB
 
 The OrientDB connector provides Akka Stream sources and sinks for OrientDB.
 

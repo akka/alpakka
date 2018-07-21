@@ -28,38 +28,33 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
 
       var completionState: Option[Try[Unit]] = None
 
-      private def handleFailure(exception: Exception): Unit = {
-        log.error(exception, "Client failure: {}", exception.getMessage)
-        inFlight -= 1
-        failStage(exception)
-        if (inFlight == 0 && inIsClosed)
-          checkForCompletion()
-      }
-
-      private def handleChangeVisibility(request: ChangeMessageVisibilityRequest): Unit = {
-        log.debug(s"Set visibility timeout for message {} to {}",
-                  request.getReceiptHandle,
-                  request.getVisibilityTimeout)
-        inFlight -= 1
-        if (inFlight == 0 && inIsClosed)
-          checkForCompletion()
-      }
-      private def handleDelete(request: DeleteMessageRequest): Unit = {
-        log.debug(s"Deleted message {}", request.getReceiptHandle)
-        inFlight -= 1
-        if (inFlight == 0 && inIsClosed)
-          checkForCompletion()
-      }
-
       var failureCallback: AsyncCallback[Exception] = _
       var changeVisibilityCallback: AsyncCallback[ChangeMessageVisibilityRequest] = _
       var deleteCallback: AsyncCallback[DeleteMessageRequest] = _
 
       override def preStart(): Unit = {
         super.preStart()
-        failureCallback = getAsyncCallback[Exception](handleFailure)
-        changeVisibilityCallback = getAsyncCallback[ChangeMessageVisibilityRequest](handleChangeVisibility)
-        deleteCallback = getAsyncCallback[DeleteMessageRequest](handleDelete)
+        failureCallback = getAsyncCallback[Exception] { exception =>
+          log.error(exception, "Client failure: {}", exception)
+          inFlight -= 1
+          failStage(exception)
+          if (inFlight == 0 && inIsClosed)
+            checkForCompletion()
+        }
+        changeVisibilityCallback = getAsyncCallback[ChangeMessageVisibilityRequest] { request =>
+          log.debug(s"Set visibility timeout for message {} to {}",
+                    request.getReceiptHandle,
+                    request.getVisibilityTimeout)
+          inFlight -= 1
+          if (inFlight == 0 && inIsClosed)
+            checkForCompletion()
+        }
+        deleteCallback = getAsyncCallback[DeleteMessageRequest] { request =>
+          log.debug(s"Deleted message {}", request.getReceiptHandle)
+          inFlight -= 1
+          if (inFlight == 0 && inIsClosed)
+            checkForCompletion()
+        }
       }
 
       override protected def logSource: Class[_] = classOf[SqsAckFlowStage]
@@ -100,39 +95,43 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
             val responsePromise = Promise[AckResult]
             action match {
               case MessageAction.Delete =>
+                val handler = new AsyncHandler[DeleteMessageRequest, DeleteMessageResult] {
+
+                  override def onError(exception: Exception): Unit = {
+                    responsePromise.failure(exception)
+                    failureCallback.invoke(exception)
+                  }
+
+                  override def onSuccess(request: DeleteMessageRequest, result: DeleteMessageResult): Unit = {
+                    responsePromise.success(AckResult(Some(result), message.getBody))
+                    deleteCallback.invoke(request)
+                  }
+                }
                 sqsClient.deleteMessageAsync(
                   new DeleteMessageRequest(queueUrl, message.getReceiptHandle),
-                  new AsyncHandler[DeleteMessageRequest, DeleteMessageResult] {
-
-                    override def onError(exception: Exception): Unit = {
-                      responsePromise.failure(exception)
-                      failureCallback.invoke(exception)
-                    }
-
-                    override def onSuccess(request: DeleteMessageRequest, result: DeleteMessageResult): Unit = {
-                      responsePromise.success(AckResult(Some(result), message.getBody))
-                      deleteCallback.invoke(request)
-                    }
-                  }
+                  handler
                 )
+
               case MessageAction.ChangeMessageVisibility(visibilityTimeout) =>
+                val handler = new AsyncHandler[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult] {
+
+                  override def onError(exception: Exception): Unit = {
+                    responsePromise.failure(exception)
+                    failureCallback.invoke(exception)
+                  }
+
+                  override def onSuccess(request: ChangeMessageVisibilityRequest,
+                                         result: ChangeMessageVisibilityResult): Unit = {
+                    responsePromise.success(AckResult(Some(result), message.getBody))
+                    changeVisibilityCallback.invoke(request)
+                  }
+                }
                 sqsClient
                   .changeMessageVisibilityAsync(
                     new ChangeMessageVisibilityRequest(queueUrl, message.getReceiptHandle, visibilityTimeout),
-                    new AsyncHandler[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult] {
-
-                      override def onError(exception: Exception): Unit = {
-                        responsePromise.failure(exception)
-                        failureCallback.invoke(exception)
-                      }
-
-                      override def onSuccess(request: ChangeMessageVisibilityRequest,
-                                             result: ChangeMessageVisibilityResult): Unit = {
-                        responsePromise.success(AckResult(Some(result), message.getBody))
-                        changeVisibilityCallback.invoke(request)
-                      }
-                    }
+                    handler
                   )
+
               case MessageAction.Ignore =>
                 responsePromise.success(AckResult(None, message.getBody))
             }

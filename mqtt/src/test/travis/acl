@@ -1,6 +1,7 @@
 # anonymous user
 topic source-spec/topic1
 topic source-spec/topic2
+topic coffee/level
 topic source-spec/will
 topic source-spec/manualacks
 topic source-spec/pendingacks
@@ -8,9 +9,11 @@ topic sink-spec/topic1
 topic sink-spec/topic2
 topic source-test/topic1
 topic source-test/topic2
+topic source-test/will
 topic source-test/manualacks
 topic source-test/pendingacks
 
 user username1
 topic source-spec/secure-topic1
+topic source-spec/secure-topic2
 topic sink-spec/secure-topic1

@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.amqp.scaladsl
 
+import java.net.ConnectException
+
 import akka.stream.alpakka.amqp._
 import com.rabbitmq.client.ConnectionFactory
 
@@ -18,6 +20,13 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
       connectionProvider.release(connection2)
     }
 
+    "not error if releasing an already closed LocalAmqpConnection" in {
+      val connectionProvider = AmqpLocalConnectionProvider
+      val connection1 = connectionProvider.get
+      connectionProvider.release(connection1)
+      connectionProvider.release(connection1)
+    }
+
     "create a new connection per invocation of AmqpConnectionUri" in {
       val connectionProvider = AmqpUriConnectionProvider("amqp://localhost:5672")
       val connection1 = connectionProvider.get
@@ -25,6 +34,13 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
       connection1 should not equal connection2
       connectionProvider.release(connection1)
       connectionProvider.release(connection2)
+    }
+
+    "not error if releasing an already closed AmqpConnectionUri" in {
+      val connectionProvider = AmqpUriConnectionProvider("amqp://localhost:5672")
+      val connection1 = connectionProvider.get
+      connectionProvider.release(connection1)
+      connectionProvider.release(connection1)
     }
 
     "create a new connection per invocation of AmqpConnectionDetails" in {
@@ -36,6 +52,13 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
       connectionProvider.release(connection2)
     }
 
+    "not error if releasing an already closed AmqpConnectionDetails" in {
+      val connectionProvider = AmqpDetailsConnectionProvider(List(("localhost", 5672)))
+      val connection1 = connectionProvider.get
+      connectionProvider.release(connection1)
+      connectionProvider.release(connection1)
+    }
+
     "create a new connection per invocation of AmqpConnectionFactory" in {
       val connectionFactory = new ConnectionFactory()
       val connectionProvider = AmqpConnectionFactoryConnectionProvider(connectionFactory, List(("localhost", 5672)))
@@ -44,6 +67,14 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
       connection1 should not equal connection2
       connectionProvider.release(connection1)
       connectionProvider.release(connection2)
+    }
+
+    "not error if releasing an already closed AmqpConnectionFactory" in {
+      val connectionFactory = new ConnectionFactory()
+      val connectionProvider = AmqpConnectionFactoryConnectionProvider(connectionFactory, List(("localhost", 5672)))
+      val connection1 = connectionProvider.get
+      connectionProvider.release(connection1)
+      connectionProvider.release(connection1)
     }
   }
 
@@ -150,6 +181,15 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
       reusableConnectionProvider.release(connection1)
       connection1.isOpen should be(false)
       connection2.isOpen should be(false)
+    }
+
+    "not leave the provider in an invalid state if getting the connection fails" in {
+      val connectionProvider = AmqpDetailsConnectionProvider(List(("localhost", 5673)))
+      val reusableConnectionProvider = AmqpCachedConnectionProvider(connectionProvider, automaticRelease = false)
+      try reusableConnectionProvider.get
+      catch { case e: Throwable => e shouldBe an[ConnectException] }
+      try reusableConnectionProvider.get
+      catch { case e: Throwable => e shouldBe an[ConnectException] }
     }
   }
 }

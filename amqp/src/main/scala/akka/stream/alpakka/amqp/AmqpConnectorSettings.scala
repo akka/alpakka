@@ -4,12 +4,17 @@
 
 package akka.stream.alpakka.amqp
 
+import akka.annotation.InternalApi
+
+import scala.collection.immutable
+
 /**
  * Internal API
  */
+@InternalApi
 sealed trait AmqpConnectorSettings {
   def connectionProvider: AmqpConnectionProvider
-  def declarations: Seq[Declaration]
+  def declarations: immutable.Seq[Declaration]
 }
 
 sealed trait AmqpSourceSettings extends AmqpConnectorSettings
@@ -17,26 +22,30 @@ sealed trait AmqpSourceSettings extends AmqpConnectorSettings
 final case class NamedQueueSourceSettings(
     connectionProvider: AmqpConnectionProvider,
     queue: String,
-    declarations: Seq[Declaration] = Seq.empty,
+    declarations: immutable.Seq[Declaration] = immutable.Seq.empty,
     noLocal: Boolean = false,
     exclusive: Boolean = false,
+    ackRequired: Boolean = true,
     consumerTag: String = "default",
     arguments: Map[String, AnyRef] = Map.empty
 ) extends AmqpSourceSettings {
   @annotation.varargs
-  def withDeclarations(declarations: Declaration*) = copy(declarations = declarations.toList)
+  def withDeclarations(declarations: Declaration*): NamedQueueSourceSettings = copy(declarations = declarations.toList)
 
-  def withNoLocal(noLocal: Boolean) = copy(noLocal = noLocal)
+  def withNoLocal(noLocal: Boolean): NamedQueueSourceSettings = copy(noLocal = noLocal)
 
-  def withExclusive(exclusive: Boolean) = copy(exclusive = exclusive)
+  def withExclusive(exclusive: Boolean): NamedQueueSourceSettings = copy(exclusive = exclusive)
 
-  def withConsumerTag(consumerTag: String) = copy(consumerTag = consumerTag)
+  def withAckRequired(ackRequired: Boolean): NamedQueueSourceSettings = copy(ackRequired = ackRequired)
 
-  def withArguments(argument: (String, AnyRef), arguments: (String, AnyRef)*) =
+  def withConsumerTag(consumerTag: String): NamedQueueSourceSettings = copy(consumerTag = consumerTag)
+
+  def withArguments(argument: (String, AnyRef), arguments: (String, AnyRef)*): NamedQueueSourceSettings =
     copy(arguments = (argument +: arguments).toMap)
 
   @annotation.varargs
-  def withArguments(argument: akka.japi.Pair[String, AnyRef], arguments: akka.japi.Pair[String, AnyRef]*) =
+  def withArguments(argument: akka.japi.Pair[String, AnyRef],
+                    arguments: akka.japi.Pair[String, AnyRef]*): NamedQueueSourceSettings =
     copy(arguments = (argument +: arguments).map(_.toScala).toMap)
 }
 
@@ -52,13 +61,14 @@ object NamedQueueSourceSettings {
 final case class TemporaryQueueSourceSettings(
     connectionProvider: AmqpConnectionProvider,
     exchange: String,
-    declarations: Seq[Declaration] = Seq.empty,
+    declarations: immutable.Seq[Declaration] = Nil,
     routingKey: Option[String] = None
 ) extends AmqpSourceSettings {
-  def withRoutingKey(routingKey: String) = copy(routingKey = Some(routingKey))
+  def withRoutingKey(routingKey: String): TemporaryQueueSourceSettings = copy(routingKey = Some(routingKey))
 
   @annotation.varargs
-  def withDeclarations(declarations: Declaration*) = copy(declarations = declarations.toList)
+  def withDeclarations(declarations: Declaration*): TemporaryQueueSourceSettings =
+    copy(declarations = declarations.toList)
 }
 
 object TemporaryQueueSourceSettings {
@@ -97,14 +107,14 @@ final case class AmqpSinkSettings(
     connectionProvider: AmqpConnectionProvider,
     exchange: Option[String] = None,
     routingKey: Option[String] = None,
-    declarations: Seq[Declaration] = Seq.empty
+    declarations: immutable.Seq[Declaration] = Nil
 ) extends AmqpConnectorSettings {
-  def withExchange(exchange: String) = copy(exchange = Some(exchange))
+  def withExchange(exchange: String): AmqpSinkSettings = copy(exchange = Some(exchange))
 
-  def withRoutingKey(routingKey: String) = copy(routingKey = Some(routingKey))
+  def withRoutingKey(routingKey: String): AmqpSinkSettings = copy(routingKey = Some(routingKey))
 
   @annotation.varargs
-  def withDeclarations(declarations: Declaration*) = copy(declarations = declarations.toList)
+  def withDeclarations(declarations: Declaration*): AmqpSinkSettings = copy(declarations = declarations.toList)
 }
 
 object AmqpSinkSettings {
@@ -125,17 +135,18 @@ final case class QueueDeclaration(
     autoDelete: Boolean = false,
     arguments: Map[String, AnyRef] = Map.empty
 ) extends Declaration {
-  def withDurable(durable: Boolean) = copy(durable = durable)
+  def withDurable(durable: Boolean): QueueDeclaration = copy(durable = durable)
 
-  def withExclusive(exclusive: Boolean) = copy(exclusive = exclusive)
+  def withExclusive(exclusive: Boolean): QueueDeclaration = copy(exclusive = exclusive)
 
-  def withAutoDelete(autoDelete: Boolean) = copy(autoDelete = autoDelete)
+  def withAutoDelete(autoDelete: Boolean): QueueDeclaration = copy(autoDelete = autoDelete)
 
-  def withArguments(argument: (String, AnyRef), arguments: (String, AnyRef)*) =
+  def withArguments(argument: (String, AnyRef), arguments: (String, AnyRef)*): QueueDeclaration =
     copy(arguments = (argument +: arguments).toMap)
 
   @annotation.varargs
-  def withArguments(argument: akka.japi.Pair[String, AnyRef], arguments: akka.japi.Pair[String, AnyRef]*) =
+  def withArguments(argument: akka.japi.Pair[String, AnyRef],
+                    arguments: akka.japi.Pair[String, AnyRef]*): QueueDeclaration =
     copy(arguments = (argument +: arguments).map(_.toScala).toMap)
 }
 
@@ -153,13 +164,14 @@ final case class BindingDeclaration(
     routingKey: Option[String] = None,
     arguments: Map[String, AnyRef] = Map.empty
 ) extends Declaration {
-  def withRoutingKey(routingKey: String) = copy(routingKey = Some(routingKey))
+  def withRoutingKey(routingKey: String): BindingDeclaration = copy(routingKey = Some(routingKey))
 
-  def withArguments(argument: (String, AnyRef), arguments: (String, AnyRef)*) =
+  def withArguments(argument: (String, AnyRef), arguments: (String, AnyRef)*): BindingDeclaration =
     copy(arguments = (argument +: arguments).toMap)
 
   @annotation.varargs
-  def withArguments(argument: akka.japi.Pair[String, AnyRef], arguments: akka.japi.Pair[String, AnyRef]*) =
+  def withArguments(argument: akka.japi.Pair[String, AnyRef],
+                    arguments: akka.japi.Pair[String, AnyRef]*): BindingDeclaration =
     copy(arguments = (argument +: arguments).map(_.toScala).toMap)
 }
 
@@ -179,17 +191,18 @@ final case class ExchangeDeclaration(
     internal: Boolean = false,
     arguments: Map[String, AnyRef] = Map.empty
 ) extends Declaration {
-  def withDurable(durable: Boolean) = copy(durable = durable)
+  def withDurable(durable: Boolean): ExchangeDeclaration = copy(durable = durable)
 
-  def withAutoDelete(autoDelete: Boolean) = copy(autoDelete = autoDelete)
+  def withAutoDelete(autoDelete: Boolean): ExchangeDeclaration = copy(autoDelete = autoDelete)
 
-  def withInternal(internal: Boolean) = copy(internal = internal)
+  def withInternal(internal: Boolean): ExchangeDeclaration = copy(internal = internal)
 
-  def withArguments(argument: (String, AnyRef), arguments: (String, AnyRef)*) =
+  def withArguments(argument: (String, AnyRef), arguments: (String, AnyRef)*): ExchangeDeclaration =
     copy(arguments = (argument +: arguments).toMap)
 
   @annotation.varargs
-  def withArguments(argument: akka.japi.Pair[String, AnyRef], arguments: akka.japi.Pair[String, AnyRef]*) =
+  def withArguments(argument: akka.japi.Pair[String, AnyRef],
+                    arguments: akka.japi.Pair[String, AnyRef]*): ExchangeDeclaration =
     copy(arguments = (argument +: arguments).map(_.toScala).toMap)
 }
 

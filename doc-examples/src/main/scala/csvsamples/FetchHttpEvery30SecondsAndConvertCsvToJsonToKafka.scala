@@ -7,22 +7,17 @@ package csvsamples
 // #sample
 import akka.http.scaladsl._
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
+import akka.http.scaladsl.model.headers.Accept
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, MediaRanges}
 import akka.kafka.scaladsl.{Consumer, Producer}
 import akka.kafka.{ConsumerSettings, ProducerSettings, Subscriptions}
 import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
-import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.kafka.common.serialization.{
-  ByteArrayDeserializer,
-  ByteArraySerializer,
-  StringDeserializer,
-  StringSerializer
-}
-import playground.ActorSystemAvailable
+import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
+import playground.{ActorSystemAvailable, KafkaEmbedded}
 import spray.json.{DefaultJsonProtocol, JsValue, JsonWriter}
 
 import scala.concurrent.duration.DurationInt
@@ -35,7 +30,8 @@ object FetchHttpEvery30SecondsAndConvertCsvToJsonToKafka
 
   // format: off
   // #helper
-  val httpRequest = HttpRequest(uri = "http://www.nasdaq.com/screening/companies-by-name.aspx?exchange=NASDAQ&render=download")
+  val httpRequest = HttpRequest(uri = "https://www.nasdaq.com/screening/companies-by-name.aspx?exchange=NASDAQ&render=download")
+    .withHeaders(Accept(MediaRanges.`text/*`))
 
   def extractEntityData(response: HttpResponse): Source[ByteString, _] =
     response match {
@@ -55,9 +51,9 @@ object FetchHttpEvery30SecondsAndConvertCsvToJsonToKafka
   // format: on
 
   val kafkaPort = 19000
-  EmbeddedKafka.start()(EmbeddedKafkaConfig(kafkaPort))
+  KafkaEmbedded.start(kafkaPort)
 
-  val kafkaProducerSettings = ProducerSettings(actorSystem, new ByteArraySerializer, new StringSerializer)
+  val kafkaProducerSettings = ProducerSettings(actorSystem, new StringSerializer, new StringSerializer)
     .withBootstrapServers(s"localhost:$kafkaPort")
 
   val (ticks, future) =
@@ -74,25 +70,33 @@ object FetchHttpEvery30SecondsAndConvertCsvToJsonToKafka
       .map(toJson)                                                 //: JsValue                 (7)
       .map(_.compactPrint)                                         //: String (JSON formatted)
       .map { elem =>
-        new ProducerRecord[Array[Byte], String]("topic1", elem)    //: Kafka ProducerRecord
+        new ProducerRecord[String, String]("topic1", elem)         //: Kafka ProducerRecord    (8)
       }
       .toMat(Producer.plainSink(kafkaProducerSettings))(Keep.both)
       .run()
       // #sample
       // format: on
 
-  val kafkaConsumerSettings = ConsumerSettings(actorSystem, new ByteArrayDeserializer, new StringDeserializer)
+  val kafkaConsumerSettings = ConsumerSettings(actorSystem, new StringDeserializer, new StringDeserializer)
     .withBootstrapServers(s"localhost:$kafkaPort")
     .withGroupId("topic1")
     .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
 
-  val done = Consumer
+  val control = Consumer
     .atMostOnceSource(kafkaConsumerSettings, Subscriptions.topics("topic1"))
     .map(_.value)
-    .runWith(Sink.foreach(println))
+    .toMat(Sink.foreach(println))(Keep.both)
+    .mapMaterializedValue(Consumer.DrainingControl.apply)
+    .run()
 
   wait(1.minutes)
   ticks.cancel()
-  EmbeddedKafka.stop()
-  terminateActorSystem()
+
+  for {
+    _ <- future
+    _ <- control.drainAndShutdown()
+  } {
+    KafkaEmbedded.stop()
+    terminateActorSystem()
+  }
 }

@@ -1,12 +1,10 @@
-# MQTT Connector
+# MQTT
 
-The MQTT connector provides an Akka Stream source, sink and flow to connect to MQTT servers.
-
+The MQTT connector provides an Akka Stream source, sink and flow to connect to MQTT servers. It is based on [Eclipse Paho](https://www.eclipse.org/paho/clients/java/). 
 
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Amqtt)
-
 
 ## Artifacts
 
@@ -16,7 +14,11 @@ The MQTT connector provides an Akka Stream source, sink and flow to connect to M
   version=$version$
 }
 
-## Usage
+## Setup
+
+@@@ warning { title='Use delayed stream restarts' }
+Note that the following examples do not provide any connection management and are designed to get you going quickly. Consider empty client IDs to auto-generate unique identifiers and the use of [delayed stream restarts](https://doc.akka.io/docs/akka/current/stream/stream-error.html?language=scala#delayed-restarts-with-a-backoff-stage). The underlying Paho library's auto-reconnect feature [does not handle initial connections by design](https://github.com/eclipse/paho.mqtt.golang/issues/77).
+@@@
 
 First we need to define various settings, that are required when connecting to an MQTT server.
 
@@ -28,6 +30,10 @@ Java
 
 Here we used @scaladoc[MqttConnectionSettings](akka.stream.alpakka.mqtt.MqttConnectionSettings$) factory to set the address of the server, client ID, which needs to be unique for every client, and client persistence implementation (@extref[MemoryPersistence](paho-api:org/eclipse/paho/client/mqttv3/persist/MemoryPersistence)) which allows to control reliability guarantees.
 
+Most settings are passed on to Paho's @extref[MqttConnectOptions](paho-api:org/eclipse/paho/client/mqttv3/MqttConnectOptions) and documented there. 
+
+
+## Reading from MQTT
 
 Then let's create a source that is going to connect to the MQTT server upon materialization and receive messages that are sent to the subscribed topics.
 
@@ -66,6 +72,8 @@ Scala
 Java
 : @@snip ($alpakka$/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #run-source-with-manualacks }
 
+
+## Publishing to MQTT
 
 To publish messages to the MQTT server create a sink and run it.
 

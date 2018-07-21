@@ -12,8 +12,8 @@ import akka.stream.alpakka.mqtt.scaladsl.{MqttCommittableMessage => ScalaMqttCom
 import scala.compat.java8.FutureConverters
 
 /**
-  * This implicit classes allow to convert the Committable and CommittableMessage between scaladsl and javadsl.
-  */
+ * This implicit classes allow to convert the Committable and CommittableMessage between scaladsl and javadsl.
+ */
 package object javadsl {
   import FutureConverters._
 

@@ -11,7 +11,6 @@ import javax.jms._
 import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.ActorMaterializer
 import akka.stream.stage.GraphStageLogic
-
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -74,12 +73,8 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
     onConnection.invoke(connection)
 
     val createDestination = jmsSettings.destination match {
-      case Some(Queue(name)) =>
-        session: Session =>
-          session.createQueue(name)
-      case Some(Topic(name)) =>
-        session: Session =>
-          session.createTopic(name)
+      case Some(destination) =>
+        destination.create
       case _ => throw new IllegalArgumentException("Destination is missing")
     }
 
@@ -134,8 +129,12 @@ private[jms] class JmsAckSession(override val connection: jms.Connection,
 
   def ack(message: jms.Message): Unit = ackQueue.put(message.acknowledge _)
 
-  override def abortSession(): Unit = {
-    ackQueue.put(() => throw new java.lang.IllegalStateException("Shutdown"))
+  override def closeSession(): Unit = stopMessageListenerAndCloseSession()
+
+  override def abortSession(): Unit = stopMessageListenerAndCloseSession()
+
+  private def stopMessageListenerAndCloseSession(): Unit = {
+    ackQueue.put(() => throw StopMessageListenerException())
     session.close()
   }
 }
@@ -145,14 +144,21 @@ private[jms] class JmsTxSession(override val connection: jms.Connection,
                                 override val destination: jms.Destination)
     extends JmsSession(connection, session, destination) {
 
-  private[jms] val commitQueue = new ArrayBlockingQueue[() => Unit](1)
+  private[jms] val commitQueue = new ArrayBlockingQueue[TxEnvelope => Unit](1)
 
-  def commit(): Unit = commitQueue.put(session.commit _)
+  def commit(commitEnv: TxEnvelope): Unit = commitQueue.put { srcEnv =>
+    require(srcEnv == commitEnv, s"Source envelope mismatch on commit. Source: $srcEnv Commit: $commitEnv")
+    session.commit()
+  }
 
-  def rollback(): Unit = commitQueue.put(session.rollback _)
+  def rollback(commitEnv: TxEnvelope): Unit = commitQueue.put { srcEnv =>
+    require(srcEnv == commitEnv, s"Source envelope mismatch on rollback. Source: $srcEnv Commit: $commitEnv")
+    session.rollback()
+  }
 
   override def abortSession(): Unit = {
-    rollback()
+    // On abort, tombstone the onMessage loop to stop processing messages even if more messages are delivered.
+    commitQueue.put(_ => throw StopMessageListenerException())
     session.close()
   }
 }

@@ -13,7 +13,7 @@ services:
     ports:
       - "9042:9042"
   orientdb:
-    image: orientdb:latest
+    image: orientdb:2.2.35
     ports:
       - "2424:2424"
     environment:
@@ -25,7 +25,7 @@ services:
       - "8001:8000"
   geode:
     container_name: geode
-    image: apachegeode/geode:1.4.0
+    image: apachegeode/geode:1.6.0
     hostname: geode
     mem_limit: 2g
     expose:
@@ -65,3 +65,29 @@ services:
       - "1883:1883"
     volumes:
       - ./mqtt/src/test/travis:/mqtt/config/conf.d
+  kudu-master-data:
+    image: kunickiaj/kudu
+    volumes:
+      - /var/lib/kudu/master
+  kudu-tserver-data:
+    image: kunickiaj/kudu
+    volumes:
+      - /var/lib/kudu/tserver
+  kudu-master:
+    image: kunickiaj/kudu
+    ports:
+      - 7051:7051
+    volumes_from:
+      - kudu-master-data
+    command: master
+  kudu-tserver:
+    image: kunickiaj/kudu
+    environment:
+      - KUDU_MASTER=kudu-master
+    ports:
+      - 7050:7050
+    volumes_from:
+      - kudu-tserver-data
+    command: tserver
+    links:
+      - kudu-master

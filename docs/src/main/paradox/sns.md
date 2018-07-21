@@ -1,4 +1,4 @@
-# AWS SNS Connector
+# AWS SNS
 
 The AWS SNS connector provides an Akka Stream Flow and Sink for push notifications through AWS SNS.
 
@@ -7,7 +7,6 @@ For more information about AWS SNS please visit the [official documentation](htt
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aaws-sns)
-
 
 ## Artifacts
 
@@ -39,7 +38,7 @@ This is all preparation that we are going to need.
 
 ### Publish messages to a SNS topic
 
-Now we can publish a String message to any SNS topic where we have access to by providing the topic ARN to the
+Now we can publish a message to any SNS topic where we have access to by providing the topic ARN to the
 @scaladoc[SnsPublisher](akka.stream.alpakka.sns.scaladsl.SnsPublisher$) Flow or Sink factory method.
 
 ### Using a Flow

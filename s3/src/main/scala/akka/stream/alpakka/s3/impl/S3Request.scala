@@ -6,12 +6,14 @@ package akka.stream.alpakka.s3.impl
 
 trait S3Request
 
-case object GetObject extends S3Request
+private[impl] case object GetObject extends S3Request
 
-case object HeadObject extends S3Request
+private[impl] case object HeadObject extends S3Request
 
-case object PutObject extends S3Request
+private[impl] case object PutObject extends S3Request
 
-case object InitiateMultipartUpload extends S3Request
+private[impl] case object InitiateMultipartUpload extends S3Request
 
-case object UploadPart extends S3Request
+private[impl] case object UploadPart extends S3Request
+
+private[impl] case object CopyPart extends S3Request

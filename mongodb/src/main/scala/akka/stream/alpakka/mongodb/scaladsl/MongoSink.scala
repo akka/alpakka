@@ -9,6 +9,7 @@ import akka.Done
 import org.mongodb.scala.bson.conversions.Bson
 import org.mongodb.scala.model.UpdateOptions
 import org.mongodb.scala.MongoCollection
+import org.mongodb.scala.model.InsertManyOptions
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -33,6 +34,17 @@ object MongoSink {
       implicit executionContext: ExecutionContext
   ): Sink[Seq[T], Future[Done]] =
     MongoFlow.insertMany(parallelism, collection).toMat(Sink.ignore)(Keep.right)
+
+  /**
+   * A [[akka.stream.scaladsl.Sink Sink]] that will insert batches of documents into a collection.
+   * @param parallelism number of batches of documents to insert in parallel.
+   * @param collection mongo db collection to insert to.
+   * @param options options to apply to the operation
+   */
+  def insertMany[T](parallelism: Int, collection: MongoCollection[T], options: InsertManyOptions)(
+      implicit executionContext: ExecutionContext
+  ): Sink[Seq[T], Future[Done]] =
+    MongoFlow.insertMany(parallelism, collection, options).toMat(Sink.ignore)(Keep.right)
 
   /**
    * A [[akka.stream.scaladsl.Sink Sink]] that will update documents as defined by a [[DocumentUpdate]].

@@ -4,12 +4,11 @@
 
 package akka.stream.alpakka.s3.impl
 
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.stream.alpakka.s3.{MemoryBufferType, S3Settings}
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
 import akka.util.ByteString
@@ -45,7 +44,8 @@ class S3StreamSpec(_system: ActorSystem)
     }
     val location = S3Location("test-bucket", "test-key")
 
-    implicit val settings = new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None)
+    implicit val settings =
+      new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
 
     val s3stream = new S3Stream(settings)
     val result: HttpRequest = s3stream invokePrivate requestHeaders(getDownloadRequest(location), None)
@@ -70,7 +70,8 @@ class S3StreamSpec(_system: ActorSystem)
     val location = S3Location("test-bucket", "test-key")
     val range = ByteRange(1, 4)
 
-    implicit val settings = new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None)
+    implicit val settings =
+      new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
 
     val s3stream = new S3Stream(settings)
     val result: HttpRequest = s3stream invokePrivate requestHeaders(getDownloadRequest(location), Some(range))
@@ -92,7 +93,8 @@ class S3StreamSpec(_system: ActorSystem)
       new AwsRegionProvider {
         def getRegion: String = "us-east-1"
       }
-    implicit val settings = new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None)
+    implicit val settings =
+      new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
     val s3stream = new S3Stream(settings)
 
     def nonEmptySrc = Source.repeat(ByteString("hello world"))
@@ -117,6 +119,90 @@ class S3StreamSpec(_system: ActorSystem)
       .toMat(Sink.seq[ByteString])(Keep.right)
       .run()
       .futureValue should equal(Seq(ByteString.empty))
+  }
+
+  it should "create partitions when object size is not multiple of chunk size" in {
+    val chunkSize = 25
+    val objectSize = 69L
+    val sourceLocation = S3Location("test-bucket", "test-key")
+
+    val credentialsProvider =
+      new AWSStaticCredentialsProvider(
+        new BasicAWSCredentials(
+          "test-Id",
+          "test-key"
+        )
+      )
+    val regionProvider =
+      new AwsRegionProvider {
+        def getRegion: String = "us-east-1"
+      }
+    implicit val settings: S3Settings =
+      new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
+    val s3stream = new S3Stream(settings)
+
+    val partitions: List[CopyPartition] = s3stream.createPartitions(chunkSize, sourceLocation)(objectSize)
+    partitions should have length 3
+    partitions should equal(
+      List(
+        CopyPartition(1, sourceLocation, Some(ByteRange(0, 25))),
+        CopyPartition(2, sourceLocation, Some(ByteRange(25, 50))),
+        CopyPartition(3, sourceLocation, Some(ByteRange(50, 69)))
+      )
+    )
+  }
+
+  it should "create partitions when object size is multiple of chunk size" in {
+    val chunkSize = 25
+    val objectSize = 50L
+    val sourceLocation = S3Location("test-bucket", "test-key")
+
+    val credentialsProvider =
+      new AWSStaticCredentialsProvider(
+        new BasicAWSCredentials(
+          "test-Id",
+          "test-key"
+        )
+      )
+    val regionProvider =
+      new AwsRegionProvider {
+        def getRegion: String = "us-east-1"
+      }
+    implicit val settings: S3Settings =
+      new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
+    val s3stream = new S3Stream(settings)
+
+    val partitions: List[CopyPartition] = s3stream.createPartitions(chunkSize, sourceLocation)(objectSize)
+    partitions should have length 2
+    partitions should equal(
+      List(CopyPartition(1, sourceLocation, Some(ByteRange(0, 25))),
+           CopyPartition(2, sourceLocation, Some(ByteRange(25, 50))))
+    )
+  }
+
+  it should "partition with object size is equal to 0 should not contain range info" in {
+    val chunkSize = 25
+    val objectSize = 0L
+    val sourceLocation = S3Location("test-bucket", "test-key")
+
+    val credentialsProvider =
+      new AWSStaticCredentialsProvider(
+        new BasicAWSCredentials(
+          "test-Id",
+          "test-key"
+        )
+      )
+    val regionProvider =
+      new AwsRegionProvider {
+        def getRegion: String = "us-east-1"
+      }
+    implicit val settings: S3Settings =
+      new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
+    val s3stream = new S3Stream(settings)
+
+    val partitions: List[CopyPartition] = s3stream.createPartitions(chunkSize, sourceLocation)(objectSize)
+    partitions should have length 1
+    partitions should equal(List(CopyPartition(1, sourceLocation)))
   }
 
 }

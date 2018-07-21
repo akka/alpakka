@@ -31,8 +31,18 @@ private final class GooglePubSubSource(projectId: String,
       def fetch(implicit mat: Materializer): Unit = {
         import mat.executionContext
 
-        val req = session.getToken().flatMap { token =>
-          httpApi.pull(project = projectId, subscription = subscription, accessToken = token, apiKey = apiKey)
+        val req = if (httpApi.isEmulated) {
+          httpApi
+            .pull(project = projectId, subscription = subscription, maybeAccessToken = None, apiKey = apiKey)
+        } else {
+          session
+            .getToken()
+            .flatMap { token =>
+              httpApi.pull(project = projectId,
+                           subscription = subscription,
+                           maybeAccessToken = Some(token),
+                           apiKey = apiKey)
+            }
         }
         req.onComplete { tr =>
           callback.invoke(tr -> mat)

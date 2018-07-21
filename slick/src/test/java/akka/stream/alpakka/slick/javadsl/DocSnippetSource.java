@@ -4,12 +4,12 @@
 
 package example;
 
-//#important-imports
+// #important-imports
 import akka.stream.javadsl.*;
 import akka.stream.alpakka.slick.javadsl.*;
-//#important-imports
+// #important-imports
 
-//#source-example
+// #source-example
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
@@ -29,19 +29,18 @@ public class DocSnippetSource {
     final SlickSession session = SlickSession.forConfig("slick-h2");
 
     final CompletionStage<Done> done =
-      Slick
-        .source(
-          session,
-          "SELECT ID, NAME FROM ALPAKKA_SLICK_JAVADSL_TEST_USERS",
-          (SlickRow row) -> new User(row.nextInt(), row.nextString())
-        )
-        .log("user")
-        .runWith(Sink.ignore(), materializer);
+        Slick.source(
+                session,
+                "SELECT ID, NAME FROM ALPAKKA_SLICK_JAVADSL_TEST_USERS",
+                (SlickRow row) -> new User(row.nextInt(), row.nextString()))
+            .log("user")
+            .runWith(Sink.ignore(), materializer);
 
-    done.whenComplete((value, exception) -> {
-      session.close();
-      system.terminate();
-    });
+    done.whenComplete(
+        (value, exception) -> {
+          session.close();
+          system.terminate();
+        });
   }
 }
-//#source-example
+// #source-example

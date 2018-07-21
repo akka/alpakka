@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.unixdomainsocket.scaladsl
 
-import java.io.File
+import java.io.{File, IOException}
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector}
 
@@ -19,7 +19,7 @@ import akka.actor.{
   ExtensionIdProvider
 }
 import akka.stream._
-import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source, SourceQueueWithComplete}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.util.ByteString
 import jnr.enxio.channels.NativeSelectorProvider
@@ -123,8 +123,21 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
               case sendReceiveContext: SendReceiveContext =>
                 sendReceiveContext.send match {
                   case SendRequested(buffer, sent) if keySelectable && key.isWritable =>
-                    key.channel().asInstanceOf[UnixSocketChannel].write(buffer)
-                    if (buffer.remaining == 0) {
+                    val channel = key.channel().asInstanceOf[UnixSocketChannel]
+
+                    val written =
+                      try {
+                        channel.write(buffer)
+                        true
+                      } catch {
+                        case e: IOException =>
+                          key.cancel()
+                          key.channel.close()
+                          sent.failure(e)
+                          false
+                      }
+
+                    if (written && buffer.remaining == 0) {
                       sendReceiveContext.send = SendAvailable(buffer)
                       key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE)
                       sent.success(Done)
@@ -139,18 +152,28 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                 sendReceiveContext.receive match {
                   case ReceiveAvailable(queue, buffer) if keySelectable && key.isReadable =>
                     buffer.clear()
-                    val n = key.channel.asInstanceOf[UnixSocketChannel].read(buffer)
+
+                    val channel = key.channel.asInstanceOf[UnixSocketChannel]
+
+                    val n =
+                      try {
+                        channel.read(buffer)
+                      } catch {
+                        // socket could have been closed in the meantime, so read will throw this
+                        case _: IOException => -1
+                      }
+
                     if (n >= 0) {
                       buffer.flip()
                       val pendingResult = queue.offer(ByteString(buffer))
                       pendingResult.onComplete(_ => sel.wakeup())
                       sendReceiveContext.receive = PendingReceiveAck(queue, buffer, pendingResult)
-                      key.interestOps(key.interestOps() & ~SelectionKey.OP_READ)
                     } else {
                       queue.complete()
-                      key.cancel()
-                      key.channel.close()
                     }
+
+                    key.interestOps(key.interestOps() & ~SelectionKey.OP_READ)
+
                   case PendingReceiveAck(receiveQueue, receiveBuffer, pendingResult) if pendingResult.isCompleted =>
                     pendingResult.value.get match {
                       case Success(QueueOfferResult.Enqueued) =>
@@ -162,6 +185,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                         key.channel.close()
                     }
                   case _: ReceiveAvailable =>
+                  case _: PendingReceiveAck =>
                 }
               case _: ((Selector, SelectionKey) => Unit) @unchecked =>
             }
@@ -230,48 +254,48 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
         SendAvailable(ByteBuffer.allocate(sendBufferSize)),
         ReceiveAvailable(receiveQueue, ByteBuffer.allocate(receiveBufferSize))
       ) // FIXME: No need for the costly allocation of direct buffers yet given https://github.com/jnr/jnr-unixsocket/pull/49
-    val sendSink =
-      BroadcastHub
-        .sink[ByteString]
-        .mapMaterializedValue { sendSource =>
-          sendSource
-            .expand { bytes =>
-              if (bytes.size <= sendBufferSize) {
-                List(bytes).toIterator
+
+    val sendSink = Sink.fromGraph(
+      Flow[ByteString]
+        .expand { bytes =>
+          if (bytes.size <= sendBufferSize) {
+            Iterator.single(bytes)
+          } else {
+            @annotation.tailrec
+            def splitToBufferSize(bytes: ByteString, acc: Vector[ByteString]): Vector[ByteString] =
+              if (bytes.nonEmpty) {
+                val (left, right) = bytes.splitAt(sendBufferSize)
+                splitToBufferSize(right, acc :+ left)
               } else {
-                def splitToBufferSize(bytes: ByteString, acc: List[ByteString]): List[ByteString] =
-                  if (bytes.nonEmpty) {
-                    val (left, right) = bytes.splitAt(sendBufferSize)
-                    splitToBufferSize(right, acc :+ left)
-                  } else {
-                    acc
-                  }
-                splitToBufferSize(bytes, List.empty).toIterator
+                acc
               }
-            }
-            .mapAsync(1) { bytes =>
-              // Note - it is an error to get here and not have an AvailableSendContext
-              val sent = Promise[Done]
-              val sendBuffer = sendReceiveContext.send.buffer
-              sendBuffer.clear()
-              val copied = bytes.copyToBuffer(sendBuffer)
-              sendBuffer.flip()
-              require(copied == bytes.size) // It is an error to exceed our buffer size given the above expand
-              sendReceiveContext.send = SendRequested(sendBuffer, sent)
-              sel.wakeup()
-              sent.future.map(_ => bytes)
-            }
-            .watchTermination() {
-              case (m, done) =>
-                done.onComplete { _ =>
-                  sendReceiveContext.send = CloseRequested
-                  sel.wakeup()
-                }
-                (m, done)
-            }
-            .runWith(Sink.ignore)
+            splitToBufferSize(bytes, Vector.empty).toIterator
+          }
         }
-    (sendReceiveContext, Flow.fromSinkAndSourceCoupled(sendSink, Source.fromFutureSource(receiveSource)))
+        .mapAsync(1) { bytes =>
+          // Note - it is an error to get here and not have an AvailableSendContext
+          val sent = Promise[Done]
+          val sendBuffer = sendReceiveContext.send.buffer
+          sendBuffer.clear()
+          val copied = bytes.copyToBuffer(sendBuffer)
+          sendBuffer.flip()
+          require(copied == bytes.size) // It is an error to exceed our buffer size given the above expand
+          sendReceiveContext.send = SendRequested(sendBuffer, sent)
+          sel.wakeup()
+          sent.future.map(_ => bytes)
+        }
+        .watchTermination() {
+          case (m, done) =>
+            done.onComplete { _ =>
+              sendReceiveContext.send = CloseRequested
+              sel.wakeup()
+            }
+            (m, done)
+        }
+        .to(Sink.ignore)
+    )
+
+    (sendReceiveContext, Flow.fromSinkAndSource(sendSink, Source.fromFutureSource(receiveSource)))
   }
 
   /*
@@ -394,6 +418,7 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
                        acceptKey(address, incomingConnectionQueue, halfClose, receiveBufferSize, sendBufferSize) _)
     try {
       channel.socket().bind(address, backlog)
+      sel.wakeup()
       serverBinding.success(
         ServerBinding(address) { () =>
           registeredKey.cancel()

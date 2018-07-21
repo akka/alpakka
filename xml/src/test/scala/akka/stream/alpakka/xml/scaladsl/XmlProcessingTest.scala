@@ -256,6 +256,39 @@ class XmlProcessingTest extends WordSpec with Matchers with BeforeAndAfterAll {
       val result = Await.result(resultFuture, 3.seconds)
       result should ===(elements)
     }
+
+    "fail if XML includes invalid characters" in {
+      val doc = "<doc>text\btext</doc>"
+      val resultFuture = Source.single(doc).runWith(parse)
+
+      assertThrows[com.fasterxml.aalto.UncheckedStreamException] {
+        Await.result(resultFuture, 3.seconds)
+      }
+    }
+
+    "ignore invalid characters in XML" in {
+      val doc = "<doc>text\btext</doc>"
+      val resultFuture = Source
+        .single(doc)
+        .runWith(
+          Flow[String]
+            .map(ByteString(_))
+            .via(XmlParsing.parser(true))
+            .toMat(Sink.seq)(Keep.right)
+        )
+
+      val result = Await.result(resultFuture, 3.seconds)
+      result.toList should ===(
+        List(
+          StartDocument,
+          StartElement("doc"),
+          Characters("text\ntext"),
+          EndElement("doc"),
+          EndDocument
+        )
+      )
+    }
+
   }
 
   override protected def afterAll(): Unit = system.terminate()

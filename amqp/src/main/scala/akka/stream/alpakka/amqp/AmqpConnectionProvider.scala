@@ -11,6 +11,7 @@ import akka.annotation.DoNotInherit
 import com.rabbitmq.client.{Address, Connection, ConnectionFactory, ExceptionHandler}
 
 import scala.annotation.tailrec
+import scala.collection.immutable
 
 /**
  * Only for internal implementations
@@ -18,7 +19,7 @@ import scala.annotation.tailrec
 @DoNotInherit
 sealed trait AmqpConnectionProvider {
   def get: Connection
-  def release(connection: Connection): Unit = connection.close()
+  def release(connection: Connection): Unit = if (connection.isOpen) connection.close()
 }
 
 /**
@@ -50,7 +51,7 @@ object AmqpUriConnectionProvider {
 }
 
 final case class AmqpDetailsConnectionProvider(
-    hostAndPortList: Seq[(String, Int)],
+    hostAndPortList: immutable.Seq[(String, Int)],
     credentials: Option[AmqpCredentials] = None,
     virtualHost: Option[String] = None,
     sslProtocol: Option[String] = None,
@@ -61,7 +62,8 @@ final case class AmqpDetailsConnectionProvider(
     networkRecoveryInterval: Option[Int] = None,
     automaticRecoveryEnabled: Option[Boolean] = None,
     topologyRecoveryEnabled: Option[Boolean] = None,
-    exceptionHandler: Option[ExceptionHandler] = None
+    exceptionHandler: Option[ExceptionHandler] = None,
+    connectionName: Option[String] = None
 ) extends AmqpConnectionProvider {
 
   def withHostsAndPorts(hostAndPort: (String, Int), hostAndPorts: (String, Int)*): AmqpDetailsConnectionProvider =
@@ -100,6 +102,9 @@ final case class AmqpDetailsConnectionProvider(
   def withExceptionHandler(exceptionHandler: ExceptionHandler): AmqpDetailsConnectionProvider =
     copy(exceptionHandler = Option(exceptionHandler))
 
+  def withConnectionName(name: String): AmqpDetailsConnectionProvider =
+    copy(connectionName = Option(name))
+
   /**
    * Java API
    */
@@ -126,7 +131,7 @@ final case class AmqpDetailsConnectionProvider(
     topologyRecoveryEnabled.foreach(factory.setTopologyRecoveryEnabled)
     exceptionHandler.foreach(factory.setExceptionHandler)
 
-    factory.newConnection(hostAndPortList.map(hp => new Address(hp._1, hp._2)).asJava)
+    factory.newConnection(hostAndPortList.map(hp => new Address(hp._1, hp._2)).asJava, connectionName.orNull)
   }
 
 }
@@ -164,16 +169,16 @@ object AmqpCredentials {
  *                     If empty, it defaults to the host and port in the underlying factory.
  */
 final case class AmqpConnectionFactoryConnectionProvider(factory: ConnectionFactory,
-                                                         private val hostAndPorts: Seq[(String, Int)] = Seq())
+                                                         private val hostAndPorts: immutable.Seq[(String, Int)] = Nil)
     extends AmqpConnectionProvider {
 
   /**
    * @return A list of hosts and ports for this AMQP connection factory.
    *         Uses host and port from the underlying factory if hostAndPorts was left out on construction.
    */
-  def hostAndPortList: Seq[(String, Int)] =
+  def hostAndPortList: immutable.Seq[(String, Int)] =
     if (hostAndPorts.isEmpty)
-      Seq((factory.getHost, factory.getPort))
+      immutable.Seq((factory.getHost, factory.getPort))
     else
       hostAndPorts.toList
 
@@ -214,12 +219,19 @@ final case class AmqpCachedConnectionProvider(provider: AmqpConnectionProvider, 
   override def get: Connection = state.get match {
     case Empty =>
       if (state.compareAndSet(Empty, Connecting)) {
-        val connection = provider.get
-        if (!state.compareAndSet(Connecting, Connected(connection, 1)))
-          throw new ConcurrentModificationException(
-            "Unexpected concurrent modification while creating the connection."
-          )
-        connection
+        try {
+          val connection = provider.get
+          if (!state.compareAndSet(Connecting, Connected(connection, 1)))
+            throw new ConcurrentModificationException(
+              "Unexpected concurrent modification while creating the connection."
+            )
+          connection
+        } catch {
+          case e: ConcurrentModificationException => throw e
+          case e: Throwable =>
+            state.compareAndSet(Connecting, Empty)
+            throw e
+        }
       } else get
     case Connecting => get
     case c @ Connected(connection, clients) =>

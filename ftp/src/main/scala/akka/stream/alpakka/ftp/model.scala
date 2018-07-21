@@ -8,6 +8,8 @@ import akka.stream.alpakka.ftp.FtpCredentials.AnonFtpCredentials
 import java.net.InetAddress
 import java.nio.file.attribute.PosixFilePermission
 
+import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
+
 /**
  * FTP remote file descriptor.
  *
@@ -55,13 +57,16 @@ sealed abstract class FtpFileSettings extends RemoteFileSettings {
  * @param credentials credentials (username and password)
  * @param binary specifies the file transfer mode, BINARY or ASCII. Default is ASCII (false)
  * @param passiveMode specifies whether to use passive mode connections. Default is active mode (false)
+ * @param configureConnection A function which will be called after connecting to the server. Use this for
+ *                            any custom configuration required by the server you are connecting to.
  */
 final case class FtpSettings(
     host: InetAddress,
     port: Int = FtpSettings.DefaultFtpPort,
     credentials: FtpCredentials = AnonFtpCredentials,
     binary: Boolean = false,
-    passiveMode: Boolean = false
+    passiveMode: Boolean = false,
+    configureConnection: FTPClient => Unit = _ => {}
 ) extends FtpFileSettings {
   def withPort(port: Int): FtpSettings =
     copy(port = port)
@@ -74,6 +79,16 @@ final case class FtpSettings(
 
   def withPassiveMode(passiveMode: Boolean): FtpSettings =
     copy(passiveMode = passiveMode)
+
+  def withConfigureConnection(configureConnection: FTPClient => Unit): FtpSettings =
+    copy(configureConnection = configureConnection)
+
+  /**
+   * Java API:
+   * Sets the configure connection callback.
+   */
+  def withConfigureConnectionConsumer(configureConnection: java.util.function.Consumer[FTPClient]): FtpSettings =
+    copy(configureConnection = configureConnection.accept)
 }
 
 object FtpSettings {
@@ -94,13 +109,16 @@ object FtpSettings {
  * @param credentials credentials (username and password)
  * @param binary specifies the file transfer mode, BINARY or ASCII. Default is ASCII (false)
  * @param passiveMode specifies whether to use passive mode connections. Default is active mode (false)
+ * @param configureConnection A function which will be called after connecting to the server. Use this for
+ *                            any custom configuration required by the server you are connecting to.
  */
 final case class FtpsSettings(
     host: InetAddress,
     port: Int = FtpsSettings.DefaultFtpsPort,
     credentials: FtpCredentials = AnonFtpCredentials,
     binary: Boolean = false,
-    passiveMode: Boolean = false
+    passiveMode: Boolean = false,
+    configureConnection: FTPSClient => Unit = _ => {}
 ) extends FtpFileSettings {
   def withPort(port: Int): FtpsSettings =
     copy(port = port)
@@ -113,6 +131,9 @@ final case class FtpsSettings(
 
   def withPassiveMode(passiveMode: Boolean): FtpsSettings =
     copy(passiveMode = passiveMode)
+
+  def withConfigureConnection(configureConnection: FTPSClient => Unit): FtpsSettings =
+    copy(configureConnection = configureConnection)
 }
 
 object FtpsSettings {

@@ -103,7 +103,7 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings)
                             action()
                             session.pendingAck -= 1
                           } catch {
-                            case _: java.lang.IllegalStateException =>
+                            case _: StopMessageListenerException =>
                               listenerStopped = true
                           }
                           if (!listenerStopped) ackQueued()
@@ -121,7 +121,7 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings)
                         }
                         ackQueued()
                       } catch {
-                        case _: java.lang.IllegalStateException =>
+                        case _: StopMessageListenerException =>
                           listenerStopped = true
                         case e: JMSException =>
                           handleError.invoke(e)
@@ -167,15 +167,21 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings)
             session.createConsumer(settings.selector).onComplete {
               case Success(consumer) =>
                 consumer.setMessageListener(new MessageListener {
+
+                  var listenerStopped = false
+
                   def onMessage(message: Message): Unit =
-                    try {
-                      handleMessage.invoke(TxEnvelope(message, session))
-                      val action = session.commitQueue.take()
-                      action()
-                    } catch {
-                      case e: JMSException =>
-                        handleError.invoke(e)
-                    }
+                    if (!listenerStopped)
+                      try {
+                        val envelope = TxEnvelope(message, session)
+                        handleMessage.invoke(envelope)
+                        val action = session.commitQueue.take()
+                        action(envelope)
+                      } catch {
+                        case _: StopMessageListenerException => listenerStopped = true // Tombstone.
+                        case e: IllegalArgumentException => handleError.invoke(e) // Invalid envelope. Fail the stage.
+                        case e: JMSException => handleError.invoke(e)
+                      }
                 })
               case Failure(e) =>
                 fail.invoke(e)
@@ -254,21 +260,14 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
   })
 
   private def stopSessions(): Unit =
-    if (stopping.compareAndSet(false, true))
-      Future {
-        try {
-          jmsConnection.foreach(_.stop())
-        } catch {
-          case NonFatal(e) => log.error(e, "Error stopping JMS connection {}", jmsConnection)
-        }
-      }.flatMap { _ =>
-          val closeSessionFutures = jmsSessions.map { s =>
-            val f = s.closeSessionAsync()
-            f.onFailure { case e => log.error(e, "Error closing jms session") }
-            f
-          }
-          Future.sequence(closeSessionFutures)
-        }
+    if (stopping.compareAndSet(false, true)) {
+      val closeSessionFutures = jmsSessions.map { s =>
+        val f = s.closeSessionAsync()
+        f.failed.foreach(e => log.error(e, "Error closing jms session"))
+        f
+      }
+      Future
+        .sequence(closeSessionFutures)
         .onComplete { _ =>
           try {
             jmsConnection.foreach(_.close())
@@ -282,18 +281,26 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
             markStopped.invoke(Done)
           }
         }
+    }
 
   private def abortSessions(ex: Throwable): Unit =
     if (stopping.compareAndSet(false, true)) {
-      Future {
-        try {
-          jmsConnection.foreach(_.close())
-          log.info("JMS connection {} closed", jmsConnection)
-          markAborted.invoke(ex)
-        } catch {
-          case NonFatal(e) => log.error(e, "Error closing JMS connection {}", jmsConnection)
-        }
+      val abortSessionFutures = jmsSessions.map { s =>
+        val f = s.abortSessionAsync()
+        f.failed.foreach(e => log.error(e, "Error closing jms session"))
+        f
       }
+      Future
+        .sequence(abortSessionFutures)
+        .onComplete { _ =>
+          try {
+            jmsConnection.foreach(_.close())
+            log.info("JMS connection {} closed", jmsConnection)
+            markAborted.invoke(ex)
+          } catch {
+            case NonFatal(e) => log.error(e, "Error closing JMS connection {}", jmsConnection)
+          }
+        }
     }
 
   private[jms] def killSwitch = new KillSwitch {

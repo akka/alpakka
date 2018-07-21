@@ -40,12 +40,37 @@ class CsvParsingSpec extends CsvSpec {
       val fut =
         // format: off
       // #line-scanner
-        Source.single(ByteString("eins,zwei,drei\n"))
-          .via(CsvParsing.lineScanner())
-          .runWith(Sink.head)
+      Source.single(ByteString("eins,zwei,drei\n"))
+        .via(CsvParsing.lineScanner())
+        .runWith(Sink.head)
       // #line-scanner
       // format: on
-      fut.futureValue should be(List(ByteString("eins"), ByteString("zwei"), ByteString("drei")))
+      val result = fut.futureValue
+      // #line-scanner
+
+      result should be(List(ByteString("eins"), ByteString("zwei"), ByteString("drei")))
+      // #line-scanner
+    }
+
+    "parse one line and map to String" in {
+      // #line-scanner-string
+      import akka.stream.alpakka.csv.scaladsl.CsvParsing
+
+      // #line-scanner-string
+      val fut =
+        // format: off
+      // #line-scanner-string
+      Source.single(ByteString("eins,zwei,drei\n"))
+        .via(CsvParsing.lineScanner())
+        .map(_.map(_.utf8String))
+        .runWith(Sink.head)
+      // #line-scanner-string
+      // format: on
+      val result = fut.futureValue
+      // #line-scanner-string
+
+      result should be(List("eins", "zwei", "drei"))
+      // #line-scanner-string
     }
 
     "parse two lines" in {

@@ -9,10 +9,10 @@ import akka.NotUsed;
 import akka.stream.alpakka.geode.AkkaPdxSerializer;
 import akka.stream.alpakka.geode.GeodeSettings;
 import akka.stream.alpakka.geode.RegionSettings;
-import akka.stream.alpakka.geode.internal.GeodeCache;
-import akka.stream.alpakka.geode.internal.stage.GeodeContinuousSourceStage;
-import akka.stream.alpakka.geode.internal.stage.GeodeFiniteSourceStage;
-import akka.stream.alpakka.geode.internal.stage.GeodeFlowStage;
+import akka.stream.alpakka.geode.impl.GeodeCache;
+import akka.stream.alpakka.geode.impl.stage.GeodeContinuousSourceStage;
+import akka.stream.alpakka.geode.impl.stage.GeodeFiniteSourceStage;
+import akka.stream.alpakka.geode.impl.stage.GeodeFlowStage;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -26,83 +26,41 @@ import scala.concurrent.Future;
 
 import java.util.concurrent.CompletionStage;
 
-
-/**
- * Reactive geode without server event subscription. Cannot build continuous source.
- */
+/** Reactive geode without server event subscription. Cannot build continuous source. */
 public class ReactiveGeode extends GeodeCache {
 
-    final GeodeSettings geodeSettings;
+  final GeodeSettings geodeSettings;
 
-    public ReactiveGeode(GeodeSettings settings) {
-        super(settings);
-        this.geodeSettings = settings;
-    }
+  public ReactiveGeode(GeodeSettings settings) {
+    super(settings);
+    this.geodeSettings = settings;
+  }
 
-    @Override
-    public ClientCacheFactory configure(ClientCacheFactory factory) {
-        return factory.addPoolLocator(geodeSettings.hostname(), geodeSettings.port());
-    }
+  @Override
+  public ClientCacheFactory configure(ClientCacheFactory factory) {
+    return factory.addPoolLocator(geodeSettings.hostname(), geodeSettings.port());
+  }
 
-    public <V> Source<V, Future<Done>> query( String query, AkkaPdxSerializer<V> serializer) {
+  public <V> Source<V, Future<Done>> query(String query, AkkaPdxSerializer<V> serializer) {
 
-        registerPDXSerializer(serializer, serializer.clazz());
-        return Source.fromGraph(new GeodeFiniteSourceStage<V>(cache(), query));
-    }
+    registerPDXSerializer(serializer, serializer.clazz());
+    return Source.fromGraph(new GeodeFiniteSourceStage<V>(cache(), query));
+  }
 
+  public <K, V> Flow<V, V, NotUsed> flow(
+      RegionSettings<K, V> regionSettings, AkkaPdxSerializer<V> serializer) {
 
-    public <K, V> Flow<V, V, NotUsed> flow(RegionSettings<K, V> regionSettings, AkkaPdxSerializer<V> serializer) {
+    registerPDXSerializer(serializer, serializer.clazz());
 
-        registerPDXSerializer(serializer, serializer.clazz());
+    return Flow.fromGraph(new GeodeFlowStage<K, V>(cache(), regionSettings));
+  }
 
-        return Flow.fromGraph(new GeodeFlowStage<K, V>(cache(), regionSettings));
+  public <K, V> Sink<V, CompletionStage<Done>> sink(
+      RegionSettings<K, V> regionSettings, AkkaPdxSerializer<V> serializer) {
+    return flow(regionSettings, serializer).toMat(Sink.ignore(), Keep.right());
+  }
 
-    }
-
-    public <K, V> Sink<V, CompletionStage<Done>> sink(RegionSettings<K, V> regionSettings, AkkaPdxSerializer<V> serializer) {
-        return flow(regionSettings, serializer)
-                .toMat(Sink.ignore(), Keep.right());
-    }
-
-    public void close() {
-        close(false);
-    }
-
-
-}
-
-/**
- * Reactive geode with server event subscription. Can build continuous source.
- */
-class ReactiveGeodeWithPoolSubscription extends ReactiveGeode  {
-
-    /**
-     * Subscribes to server event.
-     * @return ClientCacheFactory with server event subscription.
-     */
-    final public ClientCacheFactory configure(ClientCacheFactory factory) {
-        return super.configure(factory).setPoolSubscriptionEnabled(true);
-    }
-
-    public ReactiveGeodeWithPoolSubscription(GeodeSettings settings) {
-        super(settings);
-    }
-
-    public <V> Source<V, Future<Done>> continuousQuery(String queryName, String query, AkkaPdxSerializer<V> serializer) {
-
-        registerPDXSerializer(serializer, serializer.clazz());
-        return Source.fromGraph(new GeodeContinuousSourceStage<V>(cache(), Symbol.apply(queryName), query));
-    }
-
-    public boolean closeContinuousQuery(String name) throws CqException {
-
-        QueryService qs = cache().getQueryService();
-        CqQuery query = qs.getCq(name);
-        if (query == null)
-            return false;
-        query.close();
-        return true;
-
-    }
-
+  public void close() {
+    close(false);
+  }
 }

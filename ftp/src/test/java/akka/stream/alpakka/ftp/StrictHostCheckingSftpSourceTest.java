@@ -15,7 +15,8 @@ import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-public class StrictHostCheckingSftpSourceTest extends SftpSupportImpl implements CommonFtpStageTest {
+public class StrictHostCheckingSftpSourceTest extends SftpSupportImpl
+    implements CommonFtpStageTest {
 
   @Test
   public void listFiles() throws Exception {
@@ -43,22 +44,25 @@ public class StrictHostCheckingSftpSourceTest extends SftpSupportImpl implements
     return Sftp.remove(settings());
   }
 
-  public Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(Function<FtpFile, String> destinationPath) throws Exception {
+  public Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(
+      Function<FtpFile, String> destinationPath) throws Exception {
     return Sftp.move(destinationPath, settings());
   }
 
   private SftpSettings settings() throws Exception {
-    //#create-settings
-    final SftpSettings settings = SftpSettings.create(InetAddress.getByName("localhost"))
+    // #create-settings
+    final SftpSettings settings =
+        SftpSettings.create(InetAddress.getByName("localhost"))
             .withPort(getPort())
-            .withCredentials(new FtpCredentials.NonAnonFtpCredentials("different user and password", "will fail password auth"))
+            .withCredentials(
+                new FtpCredentials.NonAnonFtpCredentials(
+                    "different user and password", "will fail password auth"))
             .withStrictHostKeyChecking(true) // strictHostKeyChecking
             .withKnownHosts(getKnownHostsFile().getPath())
             .withSftpIdentity(
-                    SftpIdentity.createFileSftpIdentity(
-                            getClientPrivateKeyFile().getPath(),
-                            CLIENT_PRIVATE_KEY_PASSPHRASE));
-    //#create-settings
+                SftpIdentity.createFileSftpIdentity(
+                    getClientPrivateKeyFile().getPath(), CLIENT_PRIVATE_KEY_PASSPHRASE));
+    // #create-settings
     return settings;
   }
 }

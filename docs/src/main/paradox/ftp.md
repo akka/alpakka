@@ -1,15 +1,13 @@
-# FTP Connector
+# FTP
 
 The FTP connector provides Akka Stream sources to connect to FTP, FTPs and SFTP servers. Currently, two kinds of sources are provided:
 
 * one for browsing or traversing the server recursively and,
 * another for retrieving files as a stream of bytes.
 
-
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aftp)
-
 
 ## Artifacts
 
@@ -34,9 +32,19 @@ Java
 The configuration above will create an anonymous connection with a remote FTP server in passive mode. For both FTPs and SFTP servers, you will need to provide the specialized versions of these settings: @scaladoc[FtpsSettings](akka.stream.alpakka.ftp.RemoteFileSettings$$FtpsSettings) or @scaladoc[SftpSettings](akka.stream.alpakka.ftp.RemoteFileSettings$$SftpSettings)
 respectively.
 
+The example demonstrates optional use of `configureConnection` option available on FTP and FTPs clients. Use it to configure any custom parameters the server may require, such as explicit or implicit data transfer encryption.
+
 For non-anonymous connection, please provide an instance of @scaladoc[NonAnonFtpCredentials](akka.stream.alpakka.ftp.FtpCredentials$$NonAnonFtpCredentials) instead.
 
 For connection using a private key, please provide an instance of @scaladoc[SftpIdentity](akka.stream.alpakka.ftp.SftpIdentity) to @scaladoc[SftpSettings](akka.stream.alpakka.ftp.RemoteFileSettings$$SftpSettings).
+
+In order to use a custom SSH client for SFTP please provide an instance of @scaladoc[SSHClient](net.schmizz.sshj.SSHClient).
+
+Scala
+: @@snip ($alpakka$/ftp/src/test/scala/akka/stream/alpakka/ftp/scalaExamples.scala) { #configure-custom-ssh-client }
+
+Java
+: @@snip ($alpakka$/ftp/src/test/java/akka/stream/alpakka/ftp/examples/ConfigureCustomSSHClient.java) { #configure-custom-ssh-client }
 
 ### Traversing a remote FTP folder recursively
 
@@ -47,10 +55,6 @@ Scala
 
 Java
 : @@snip ($alpakka$/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpTraversingExample.java) { #traversing }
-
-@scala[@github[Source on Github](/ftp/src/test/scala/akka/stream/alpakka/ftp/scalaExamples.scala) { #traversing }]
-@java[@github[Source on Github](/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpTraversingExample.java) { #traversing }]
-
 
 This source will emit @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) elements with no significant materialization.
 
@@ -66,10 +70,6 @@ Scala
 Java
 : @@snip ($alpakka$/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpRetrievingExample.java) { #retrieving }
 
-@scala[@github[Source on Github](/ftp/src/test/scala/akka/stream/alpakka/ftp/scalaExamples.scala) { #retrieving }]
-@java[@github[Source on Github](/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpRetrievingExample.java) { #retrieving }]
-
-
 This source will emit @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 
 For both FTPs and SFTP servers, you will need to use the `FTPs` and `SFTP` API respectively.
@@ -83,10 +83,6 @@ Scala
 
 Java
 : @@snip ($alpakka$/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpWritingExample.java) { #storing }
-
-@scala[@github[Source on Github](/ftp/src/test/scala/akka/stream/alpakka/ftp/scalaExamples.scala) { #storing }]
-@java[@github[Source on Github](/ftp/src/test/java/akka/stream/alpakka/ftp/examples/FtpWritingExample.java) { #storing }]
-
 
 This sink will consume @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 

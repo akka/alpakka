@@ -1,14 +1,12 @@
-# Elasticsearch Connector
+# Elasticsearch
 
 The Elasticsearch connector provides Akka Stream sources and sinks for Elasticsearch.
 
 For more information about Elasticsearch please visit the [Elasticsearch documentation](https://www.elastic.co/guide/index.html).
 
-
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aelasticsearch)
-
 
 ## Artifacts
 
@@ -28,7 +26,6 @@ Scala
 
 Java
 : @@snip ($alpakka$/elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #init-client }
-
 
 ## Elasticsearch as Source and Sink
 
@@ -80,9 +77,10 @@ Java
 : @@snip ($alpakka$/elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #source-settings }
 
 
-| Parameter  | Default | Description                                                                                                              |
-| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
-| bufferSize | 10      | `ElasticsearchSource` retrieves messages from Elasticsearch by scroll scan. This buffer size is used as the scroll size. | 
+| Parameter              | Default | Description                                                                                                              |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| bufferSize             | 10      | `ElasticsearchSource` retrieves messages from Elasticsearch by scroll scan. This buffer size is used as the scroll size. | 
+| includeDocumentVersion | false   | Tell Elasticsearch to return the documents `_version` property with the search results. See [Version](http://nocf-www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html) and [Optimistic Concurrenct Control](https://www.elastic.co/guide/en/elasticsearch/guide/current/optimistic-concurrency-control.html) to know about this property. |
 
 
 Also, we can configure the sink by `ElasticsearchSinkSettings`.
@@ -101,6 +99,7 @@ Java
 | maxRetry            | 100     | `ElasticsearchSink` give up and fails the stage if it gets this number of consective failures.         | 
 | retryPartialFailure | true    | A bulk request might fails partially for some reason. If this parameter is true, then `ElasticsearchSink` retries to request these failed messages. Otherwise, failed messages are discarded (or pushed to downstream if you use `ElasticsearchFlow` instead of the sink). |
 | docAsUpsert         | false   | If this parameter is true, `ElasticsearchSink` uses the upsert method to index documents. By default, documents are added using the standard index method (which create or replace). |
+| versionType         | None    | If set, `ElasticsearchSink` uses the chosen versionType to index documents. See [Version types](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types) for accepted settings. |
 
 ## Elasticsearch as Flow
 

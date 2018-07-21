@@ -6,6 +6,7 @@ package akka.stream.alpakka.sqs
 
 import java.util
 
+import akka.Done
 import akka.stream.alpakka.sqs.scaladsl.Result
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
@@ -28,29 +29,25 @@ private[sqs] final class SqsBatchFlowStage(queueUrl: String, sqsClient: AmazonSQ
     new GraphStageLogic(shape) {
       var inFlight: Int = 0
       var inIsClosed = false
-      var completionState: Option[Try[Unit]] = None
+      var completionState: Option[Try[Done]] = None
 
       var failureCallback: AsyncCallback[BatchException] = _
       var sendCallback: AsyncCallback[SendMessageBatchResult] = _
 
       override def preStart(): Unit = {
         super.preStart()
-        failureCallback = getAsyncCallback[BatchException](handleFailure)
-        sendCallback = getAsyncCallback[SendMessageBatchResult](handleSend)
-      }
-
-      private def handleFailure(exception: BatchException): Unit = {
-        inFlight -= exception.batchSize
-        failStage(exception)
-        if (inFlight == 0 && inIsClosed)
-          checkForCompletion()
-      }
-
-      private def handleSend(result: SendMessageBatchResult): Unit = {
-        val batchSize = result.getSuccessful.size() + result.getFailed.size()
-        inFlight -= batchSize
-        if (inFlight == 0 && inIsClosed)
-          checkForCompletion()
+        failureCallback = getAsyncCallback[BatchException] { exception =>
+          inFlight -= exception.batchSize
+          failStage(exception)
+          if (inFlight == 0 && inIsClosed)
+            checkForCompletion()
+        }
+        sendCallback = getAsyncCallback[SendMessageBatchResult] { result =>
+          val batchSize = result.getSuccessful.size() + result.getFailed.size()
+          inFlight -= batchSize
+          if (inFlight == 0 && inIsClosed)
+            checkForCompletion()
+        }
       }
 
       def checkForCompletion() =
@@ -73,7 +70,7 @@ private[sqs] final class SqsBatchFlowStage(queueUrl: String, sqsClient: AmazonSQ
 
           override def onUpstreamFinish() = {
             inIsClosed = true
-            completionState = Some(Success(()))
+            completionState = Some(Success(Done))
             checkForCompletion()
           }
 
@@ -91,49 +88,49 @@ private[sqs] final class SqsBatchFlowStage(queueUrl: String, sqsClient: AmazonSQ
 
             val responsePromise = Promise[List[Result]]
 
-            val batch: SendMessageBatchRequest = createMessageBatch(messages)
-            sqsClient.sendMessageBatchAsync(
-              batch,
-              new AsyncHandler[SendMessageBatchRequest, SendMessageBatchResult] {
-                override def onError(exception: Exception): Unit = {
-                  val batchException = BatchException(messages.size, exception)
+            val handler = new AsyncHandler[SendMessageBatchRequest, SendMessageBatchResult] {
+              override def onError(exception: Exception): Unit = {
+                val batchException = BatchException(messages.size, exception)
+                responsePromise.failure(batchException)
+                failureCallback.invoke(batchException)
+              }
+
+              override def onSuccess(request: SendMessageBatchRequest, result: SendMessageBatchResult): Unit =
+                if (!result.getFailed.isEmpty) {
+                  val nrOfFailedMessages: Int = result.getFailed.size()
+                  val batchException: BatchException =
+                    BatchException(
+                      batchSize = messages.length,
+                      cause = new Exception(
+                        s"Some messages are failed to send. $nrOfFailedMessages of $nrOfMessages messages are failed"
+                      )
+                    )
                   responsePromise.failure(batchException)
                   failureCallback.invoke(batchException)
-                }
+                } else {
+                  val results = ListBuffer.empty[Result]
 
-                override def onSuccess(request: SendMessageBatchRequest, result: SendMessageBatchResult): Unit =
-                  if (!result.getFailed.isEmpty) {
-                    val nrOfFailedMessages: Int = result.getFailed.size()
-                    val batchException: BatchException =
-                      BatchException(
-                        batchSize = messages.length,
-                        cause = new Exception(
-                          s"Some messages are failed to send. $nrOfFailedMessages of $nrOfMessages messages are failed"
-                        )
-                      )
-                    responsePromise.failure(batchException)
-                    failureCallback.invoke(batchException)
-                  } else {
-                    val results = ListBuffer.empty[Result]
+                  val successfulMessages = result.getSuccessful.iterator()
+                  while (successfulMessages.hasNext) {
+                    val successfulMessage: SendMessageBatchResultEntry = successfulMessages.next()
+                    val messageBody: String = messages(successfulMessage.getId.toInt).getMessageBody
 
-                    val successfulMessages = result.getSuccessful.iterator()
-                    while (successfulMessages.hasNext) {
-                      val successfulMessage: SendMessageBatchResultEntry = successfulMessages.next()
-                      val messageBody: String = messages(successfulMessage.getId.toInt).getMessageBody
+                    val sendMessageResult: SendMessageResult = new SendMessageResult()
+                      .withMD5OfMessageAttributes(successfulMessage.getMD5OfMessageAttributes)
+                      .withMD5OfMessageBody(successfulMessage.getMD5OfMessageBody)
+                      .withMessageId(successfulMessage.getMessageId)
+                      .withSequenceNumber(successfulMessage.getSequenceNumber)
 
-                      val sendMessageResult: SendMessageResult = new SendMessageResult()
-                        .withMD5OfMessageAttributes(successfulMessage.getMD5OfMessageAttributes)
-                        .withMD5OfMessageBody(successfulMessage.getMD5OfMessageBody)
-                        .withMessageId(successfulMessage.getMessageId)
-                        .withSequenceNumber(successfulMessage.getSequenceNumber)
-
-                      results += Result(sendMessageResult, messageBody)
-                    }
-
-                    responsePromise.success(results.toList)
-                    sendCallback.invoke(result)
+                    results += Result(sendMessageResult, messageBody)
                   }
-              }
+
+                  responsePromise.success(results.toList)
+                  sendCallback.invoke(result)
+                }
+            }
+            sqsClient.sendMessageBatchAsync(
+              createMessageBatch(messages),
+              handler
             )
             push(out, responsePromise.future)
           }
@@ -156,5 +153,3 @@ private[sqs] final class SqsBatchFlowStage(queueUrl: String, sqsClient: AmazonSQ
       )
     }
 }
-
-case class BatchException(batchSize: Int, cause: Exception) extends Exception(cause)

@@ -23,7 +23,7 @@ object ElasticsearchSource {
   def apply(indexName: String,
             typeName: String,
             query: String,
-            settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings())(
+            settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default)(
       implicit client: RestClient
   ): Source[OutgoingMessage[JsObject], NotUsed] = create(indexName, typeName, query, settings)
 
@@ -50,7 +50,7 @@ object ElasticsearchSource {
   def create(indexName: String,
              typeName: String,
              query: String,
-             settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings())(
+             settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default)(
       implicit client: RestClient
   ): Source[OutgoingMessage[JsObject], NotUsed] =
     create(indexName, Option(typeName), query, settings)
@@ -96,7 +96,7 @@ object ElasticsearchSource {
   def typed[T](indexName: String,
                typeName: String,
                query: String,
-               settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings())(
+               settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default)(
       implicit client: RestClient,
       reader: JsonReader[T]
   ): Source[OutgoingMessage[T], NotUsed] =

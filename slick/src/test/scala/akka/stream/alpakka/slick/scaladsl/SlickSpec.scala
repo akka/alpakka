@@ -14,8 +14,9 @@ import akka.stream.scaladsl._
 import akka.testkit.TestKit
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
+import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
-import slick.jdbc.GetResult
+import slick.jdbc.{GetResult, JdbcProfile}
 
 /**
  * This unit test is run using a local H2 database using
@@ -30,6 +31,13 @@ class SlickSpec extends WordSpec with ScalaFutures with BeforeAndAfterEach with 
   //#init-session
   implicit val session = SlickSession.forConfig("slick-h2")
   //#init-session
+
+  private def documentation: Unit = {
+    //#init-db-config-session
+    val databaseConfig = DatabaseConfig.forConfig[JdbcProfile]("slick-h2")
+    implicit val session = SlickSession.forConfig(databaseConfig)
+    //#init-db-config-session
+  }
 
   import session.profile.api._
 

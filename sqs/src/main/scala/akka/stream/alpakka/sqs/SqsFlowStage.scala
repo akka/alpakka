@@ -4,12 +4,14 @@
 
 package akka.stream.alpakka.sqs
 
+import akka.Done
 import akka.stream.alpakka.sqs.scaladsl.Result
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model.{SendMessageRequest, SendMessageResult}
+
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
@@ -24,7 +26,7 @@ private[sqs] final class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsyn
     new GraphStageLogic(shape) with StageLogging {
       private var inFlight = 0
       var inIsClosed = false
-      var completionState: Option[Try[Unit]] = None
+      var completionState: Option[Try[Done]] = None
 
       override protected def logSource: Class[_] = classOf[SqsFlowStage]
 
@@ -33,23 +35,19 @@ private[sqs] final class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsyn
 
       override def preStart(): Unit = {
         super.preStart()
-        failureCallback = getAsyncCallback[Exception](handleFailure)
-        sendCallback = getAsyncCallback[SendMessageResult](handleSend)
-      }
-
-      private def handleFailure(exception: Exception): Unit = {
-        log.error(exception, "Client failure: {}", exception.getMessage)
-        inFlight -= 1
-        failStage(exception)
-        if (inFlight == 0 && inIsClosed)
-          checkForCompletion()
-      }
-
-      private def handleSend(result: SendMessageResult): Unit = {
-        log.debug(s"Sent message {}", result.getMessageId)
-        inFlight -= 1
-        if (inFlight == 0 && inIsClosed)
-          checkForCompletion()
+        failureCallback = getAsyncCallback[Exception] { exception =>
+          log.error(exception, "Client failure: {}", exception.getMessage)
+          inFlight -= 1
+          failStage(exception)
+          if (inFlight == 0 && inIsClosed)
+            checkForCompletion()
+        }
+        sendCallback = getAsyncCallback[SendMessageResult] { result =>
+          log.debug(s"Sent message {}", result.getMessageId)
+          inFlight -= 1
+          if (inFlight == 0 && inIsClosed)
+            checkForCompletion()
+        }
       }
 
       def checkForCompletion() =
@@ -72,7 +70,7 @@ private[sqs] final class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsyn
 
           override def onUpstreamFinish() = {
             inIsClosed = true
-            completionState = Some(Success(()))
+            completionState = Some(Success(Done))
             checkForCompletion()
           }
 
@@ -87,20 +85,21 @@ private[sqs] final class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsyn
             val msg = grab(in).withQueueUrl(queueUrl)
             val responsePromise = Promise[Result]
 
+            val handler = new AsyncHandler[SendMessageRequest, SendMessageResult] {
+
+              override def onError(exception: Exception): Unit = {
+                responsePromise.failure(exception)
+                failureCallback.invoke(exception)
+              }
+
+              override def onSuccess(request: SendMessageRequest, result: SendMessageResult): Unit = {
+                responsePromise.success(Result(result, msg.getMessageBody))
+                sendCallback.invoke(result)
+              }
+            }
             sqsClient.sendMessageAsync(
               msg,
-              new AsyncHandler[SendMessageRequest, SendMessageResult] {
-
-                override def onError(exception: Exception): Unit = {
-                  responsePromise.failure(exception)
-                  failureCallback.invoke(exception)
-                }
-
-                override def onSuccess(request: SendMessageRequest, result: SendMessageResult): Unit = {
-                  responsePromise.success(Result(result, msg.getMessageBody))
-                  sendCallback.invoke(result)
-                }
-              }
+              handler
             )
             push(out, responsePromise.future)
           }

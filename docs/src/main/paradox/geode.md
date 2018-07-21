@@ -1,4 +1,4 @@
-#Apache Geode connector
+# Apache Geode
 
 [Apache Geode](http://geode.apache.org) is a distributed datagrid (ex Gemfire).
 
@@ -6,11 +6,9 @@ This connector provides flow and a sink to put element in and source to retrieve
 
 Basically it can store data as key, value. Key and value must be serialized, more on this later.
 
-
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Ageode)
-
 
 ## Artifacts
 
@@ -20,40 +18,39 @@ Basically it can store data as key, value. Key and value must be serialized, mor
   version=$version$
 }
 
-
 #Usage
 
 ##Connection
 
 First of all you need to connect to the geode cache. In a client application, connection is handle by a
- [ClientCache](https://geode.apache.org/docs/guide/14/basic_config/the_cache/managing_a_client_cache.html). A single
+ @extref[ClientCache](geode:basic_config/the_cache/managing_a_client_cache.html). A single
  ClientCache per application is enough. ClientCache also holds a single PDXSerializer.
 
 scala
-: @@snip ($alpakka$/geode/src/test/scala/akka/stream/alpakka/geode/scaladsl/GeodeFlowSpec.scala) { #connection }
+: @@snip ($alpakka$/geode/src/test/scala/docs/scaladsl/GeodeFlowSpec.scala) { #connection }
 
 java
-: @@snip ($alpakka$/geode/src/test/java/akka/stream/alpakka/geode/javadsl/GeodeBaseTestCase.java) { #connection }
+: @@snip ($alpakka$/geode/src/test/java/docs/javadsl/GeodeBaseTestCase.java) { #connection }
 
 Apache Geode supports continuous queries. Continuous query relies on server event, thus reactive geode needs to listen to
  those event. This behaviour, as it consumes more resources is isolated in a scala trait and/or an specialized java class.
 
 scala
-: @@snip ($alpakka$/geode/src/test/scala/akka/stream/alpakka/geode/scaladsl/GeodeContinuousSourceSpec.scala) { #connection-with-pool }
+: @@snip ($alpakka$/geode/src/test/scala/docs/scaladsl/GeodeContinuousSourceSpec.scala) { #connection-with-pool }
 
 java
-: @@snip ($alpakka$/geode/src/test/java/akka/stream/alpakka/geode/javadsl/GeodeBaseTestCase.java) { #connection-with-pool }
+: @@snip ($alpakka$/geode/src/test/java/docs/javadsl/GeodeBaseTestCase.java) { #connection-with-pool }
 
 ##Region
 
-Define a [region](https://geode.apache.org/docs/guide/14/basic_config/data_regions/chapter_overview.html) setting to
+Define a @extref[region](geode:/basic_config/data_regions/chapter_overview.html) setting to
 describe how to access region and the key extraction function.
 
 scala
-: @@snip ($alpakka$/geode/src/test/scala/akka/stream/alpakka/geode/scaladsl/GeodeBaseSpec.scala) { #region }
+: @@snip ($alpakka$/geode/src/test/scala/docs/scaladsl/GeodeBaseSpec.scala) { #region }
 
 java
-: @@snip ($alpakka$/geode/src/test/java/akka/stream/alpakka/geode/javadsl/GeodeBaseTestCase.java) { #region }
+: @@snip ($alpakka$/geode/src/test/java/docs/javadsl/GeodeBaseTestCase.java) { #region }
 
 
 ###Serialization
@@ -66,15 +63,15 @@ Object must be serialized to flow in a geode region.
 
 PDX format is the only one supported.
 
-PDXEncoder support many options, see [gemfire_pdx_serialization.html](http://geode.apache.org/docs/guide/14/developing/data_serialization/gemfire_pdx_serialization.html)
+PDXEncoder support many options, see @extref[gemfire_pdx_serialization.html](geode:/developing/data_serialization/gemfire_pdx_serialization.html)
 
 PdxSerializer must be provided to geode when reading or writing to a region.
 
 scala
-:   @@snip ($alpakka$/geode/src/test/scala/akka/stream/alpakka/geode/scaladsl/PersonPdxSerializer.scala) { #person-pdx-serializer }
+:   @@snip ($alpakka$/geode/src/test/scala/docs/scaladsl/PersonPdxSerializer.scala) { #person-pdx-serializer }
 
 java
-:   @@snip ($alpakka$/geode/src/test/java/akka/stream/alpakka/geode/javadsl/PersonPdxSerializer.java) { #person-pdx-serializer }
+:   @@snip ($alpakka$/geode/src/test/java/docs/javadsl/PersonPdxSerializer.java) { #person-pdx-serializer }
 
 
 
@@ -82,26 +79,26 @@ This project provides a generic solution for scala user based on [shapeless](htt
 Java user will need to write by hand their custom serializer.
 
 
-Runtime reflection is also an option see [auto_serialization.html](http://geode.apache.org/docs/guide/14/developing/data_serialization/auto_serialization.html).
+Runtime reflection is also an option see @extref[auto_serialization.html](geode:/developing/data_serialization/auto_serialization.html).
 
 ###Flow usage
 
 This sample stores (case) classes in Geode.
 
 scala
-: @@snip ($alpakka$/geode/src/test/scala/akka/stream/alpakka/geode/scaladsl/GeodeFlowSpec.scala) { #flow }
+: @@snip ($alpakka$/geode/src/test/scala/docs/scaladsl/GeodeFlowSpec.scala) { #flow }
 
 java
-: @@snip ($alpakka$/geode/src/test/java/akka/stream/alpakka/geode/javadsl/GeodeFlowTestCase.java) { #flow }
+: @@snip ($alpakka$/geode/src/test/java/docs/javadsl/GeodeFlowTestCase.java) { #flow }
 
 
 ###Sink usage
 
 scala
-: @@snip ($alpakka$/geode/src/test/scala/akka/stream/alpakka/geode/scaladsl/GeodeSinkSpec.scala) { #sink }
+: @@snip ($alpakka$/geode/src/test/scala/docs/scaladsl/GeodeSinkSpec.scala) { #sink }
 
 java
-: @@snip ($alpakka$/geode/src/test/java/akka/stream/alpakka/geode/javadsl/GeodeSinkTestCase.java) { #sink }
+: @@snip ($alpakka$/geode/src/test/java/docs/javadsl/GeodeSinkTestCase.java) { #sink }
 
 
 ###Source usage
@@ -111,20 +108,20 @@ java
 Apache Geode support simple queries.
 
 scala
-: @@snip ($alpakka$/geode/src/test/scala/akka/stream/alpakka/geode/scaladsl/GeodeFiniteSourceSpec.scala) { #query }
+: @@snip ($alpakka$/geode/src/test/scala/docs/scaladsl/GeodeFiniteSourceSpec.scala) { #query }
 
 java
-: @@snip ($alpakka$/geode/src/test/java/akka/stream/alpakka/geode/javadsl/GeodeFiniteSourceTestCase.java) { #query }
+: @@snip ($alpakka$/geode/src/test/java/docs/javadsl/GeodeFiniteSourceTestCase.java) { #query }
 
 
 ####Continuous query
 
 
 scala
-: @@snip ($alpakka$/geode/src/test/scala/akka/stream/alpakka/geode/scaladsl/GeodeContinuousSourceSpec.scala) { #continuousQuery }
+: @@snip ($alpakka$/geode/src/test/scala/docs/scaladsl/GeodeContinuousSourceSpec.scala) { #continuousQuery }
 
 java
-: @@snip ($alpakka$/geode/src/test/java/akka/stream/alpakka/geode/javadsl/GeodeContinuousSourceTestCase.java) { #continuousQuery }
+: @@snip ($alpakka$/geode/src/test/java/docs/javadsl/GeodeContinuousSourceTestCase.java) { #continuousQuery }
 
 
 ##Geode basic command:

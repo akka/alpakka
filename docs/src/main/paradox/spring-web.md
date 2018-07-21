@@ -9,7 +9,6 @@ detaching these types from RS and allows for a painless migration to [`java.util
 
 This Alpakka module makes it possible to directly return a `Source` in your Spring Web endpoints.
 
-
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aspring-web)

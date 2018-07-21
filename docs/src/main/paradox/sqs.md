@@ -1,9 +1,8 @@
-# AWS SQS Connector
+# AWS SQS
 
 The AWS SQS connector provides Akka Stream sources and sinks for AWS SQS queues.
 
 For more information about AWS SQS please visit the [official documentation](https://aws.amazon.com/documentation/sqs/).
-
 
 ### Reported issues
 
@@ -18,9 +17,20 @@ For more information about AWS SQS please visit the [official documentation](htt
   version=$version$
 }
 
-## Usage
+## Setup
 
-Sources, Flows and Sinks provided by this connector need a prepared `AmazonSQSAsync` to load messages from a queue.
+Prepare an @scaladoc[ActorSystem](akka.actor.ActorSystem) and a @scaladoc[Materializer](akka.stream.Materializer).
+
+Scala
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-mat }
+
+Java
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/BaseSqsTest.java) { #init-mat }
+
+
+This connector requires an implicit `AmazonSQSAsync` instance to communicate with AWS SQS. 
+
+It is your code's responsibility to call `shutdown` to free any resources held by the client. In this example it will be called when the actor system is terminated.
 
 Scala
 : @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-client }
@@ -28,20 +38,10 @@ Scala
 Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/BaseSqsTest.java) { #init-client }
 
-We will also need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
 
-Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-mat }
+## Read from an SQS queue
 
-Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSourceTest.java) { #init-mat }
-
-This is all preparation that we are going to need.
-
-### Stream messages from a SQS queue
-
-Now we can stream AWS Java SDK SQS `Message` objects from any SQS queue where we have access to by providing the queue URL to the
-@scaladoc[SqsSource](akka.stream.alpakka.sqs.scaladsl.SqsSource$) factory.
+The @scala[@scaladoc[SqsSource](akka.stream.alpakka.sqs.scaladsl.SqsSource$)]@java[@scaladoc[SqsSource](akka.stream.alpakka.sqs.javadsl.SqsSource$)] created source reads AWS Java SDK SQS `Message` objects from any SQS queue given by the queue URL.
 
 Scala
 : @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSourceSpec.scala) { #run }
@@ -49,13 +49,18 @@ Scala
 Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSourceTest.java) { #run }
 
-As you have seen we take the first 100 elements from the stream. The reason for this is, that reading messages from
+We take the first 100 elements from the stream. The reason for this is, that reading messages from
 SQS queues never finishes because there is no direct way to determine the end of a queue.
 
-#### Source configuration
+
+### Source configuration
 
 Scala
-: @@snip ($alpakka$/sqs/src/main/scala/akka/stream/alpakka/sqs/SqsSourceSettings.scala) { #SqsSourceSettings }
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSourceSpec.scala) { #SqsSourceSettings }
+
+Java
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSourceTest.java) { #SqsSourceSettings }
+
 
 Options:
 
@@ -64,6 +69,8 @@ Options:
  - `waitTimeSeconds` - the duration for which the call waits for a message to arrive in the queue before
     returning (see `WaitTimeSeconds` in AWS docs). Default: 20 seconds  
  - `closeOnEmptyReceive` - the shutdown behavior of the `Source`. Default: false
+ 
+More details are available in the [AWS SQS Receive Message documentation](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ReceiveMessage.html#API_ReceiveMessage_RequestParameters).
  
 An `SqsSource` can either provide an infinite stream of messages (the default), or can
 drain its source queue until no further messages are available. The latter
@@ -92,7 +99,8 @@ Please make sure to configure a big enough thread pool to avoid resource starvat
 if you share the client between multiple Sources, Sinks and Flows. For the SQS Sinks and Sources the sum of all
 `parallelism` (Source) and `maxInFlight` (Sink) must be less than or equal to the thread pool size.
 
-### Stream messages to a SQS queue
+
+## Write to an SQS queue
 
 Create a sink, that forwards `String` to the SQS queue.
 
@@ -110,11 +118,12 @@ Scala
 Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #run-send-request }
 
-### Stream messages to a SQS queue with underlying batching
+
+## Write batches to an SQS queue
 
 Create a sink, that forwards `String` to the SQS queue. However, the main difference from the previous use case, it batches items and sends as a one request.
 
-Note: There is also another option to send batch of messages to SQS which is using `AmazonSQSBufferedAsyncClient`. 
+Note: There is also another option to send batch of messages to SQS which is using `AmazonSQSBufferedAsyncClient`.
 This client buffers `SendMessageRequest`s under the hood and sends them as a batch instead of sending them one by one. However, beware that `AmazonSQSBufferedAsyncClient`
 does not support FIFO Queues. See [documentation for client-side buffering.](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-client-side-buffering-request-batching.html)
 
@@ -124,10 +133,15 @@ Scala
 Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #group }
 
-#### Batch configuration
+
+### Batch configuration
 
 Scala
-: @@snip ($alpakka$/sqs/src/main/scala/akka/stream/alpakka/sqs/SqsBatchFlowSettings.scala) { #SqsBatchFlowSettings }
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSinkSpec.scala) { #SqsBatchFlowSettings }
+
+Java
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #SqsBatchFlowSettings }
+
 
 Options:
 
@@ -136,8 +150,9 @@ Options:
     Sends what is collects at the end of the time period
     even though the `maxBatchSize` is not fulfilled. Default: 500 milliseconds
  - `concurrentRequests` - the number of batches sending to SQS concurrently.
-    
-### Stream batches of messages to a SQS queue
+
+
+## Write sequences as batches to an SQS queue
 
 Create a sink, that forwards `Seq[String]` to the SQS queue.
 
@@ -161,17 +176,21 @@ Scala
 Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #batch-send-request }
 
-#### Sink configuration
+
+### Sink configuration
 
 Scala
-: @@snip ($alpakka$/sqs/src/main/scala/akka/stream/alpakka/sqs/SqsSinkSettings.scala) { #SqsSinkSettings }
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSinkSpec.scala) { #SqsSinkSettings }
+
+Java
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #SqsSinkSettings }
 
 Options:
 
  - `maxInFlight` - maximum number of messages being processed by `AmazonSQSAsync` at the same time. Default: 10
 
 
-### Message processing with acknowledgement
+## Message processing with acknowledgement
 
 `SqsAckSink` provides possibility to acknowledge (delete), ignore, or postpone a message.
 
@@ -183,51 +202,113 @@ Your flow must decide which action to take and push it with message:
  the message immediately visible to other consumers. See [official documentation](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html)
 for more details.
 
-Scala (ack)
+Acknowledge (delete) messages:
+
+Scala
 : @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #ack }
 
-Scala (ignore)
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #ignore }
-
-Scala (change visibility timeout)
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #requeue }
-
-Java (ack)
+Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #ack }
 
-Java (ignore)
+Ignore messages:
+
+Scala
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #ignore }
+
+Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #ignore }
 
-Java (change visibility timeout)
+Change Visibility Timeout of messages:
+
+Scala
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #requeue }
+
+Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #requeue }
 
-#### SqsAckSink configuration
+### SqsAckSink configuration
 
 Same as the normal `SqsSink`:
 
 Scala
-: @@snip ($alpakka$/sqs/src/main/scala/akka/stream/alpakka/sqs/SqsAckSinkSettings.scala) { #SqsAckSinkSettings }
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSinkSpec.scala) { #SqsAckSinkSettings }
+
+Java
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #SqsAckSinkSettings }
+
 
 Options:
 
  - `maxInFlight` - maximum number of messages being processed by `AmazonSQSAsync` at the same time. Default: 10
 
-### Using SQS as a Flow
+
+## Message processing with acknowledgement with batching
+
+`SqsAckFlow.grouped` is a flow that can acknowledge (delete), ignore, or postpone messages, but it batches items and sends them as one request per action.
+
+Acknowledge (delete) messages:
+
+Scala
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-ack }
+
+Java
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #batch-ack }
+
+Ignore messages:
+
+Scala
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-ignore }
+
+Java
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #batch-ignore }
+
+Change Visibility Timeout of messages:
+
+Scala
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-requeue }
+
+Java
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #batch-requeue }
+
+
+### Batch configuration
+
+Scala
+: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSinkSpec.scala) { #SqsBatchAckFlowSettings }
+
+Java
+: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #SqsBatchAckFlowSettings }
+
+
+Options:
+
+ - `maxBatchSize` - the maximum number of messages in batch to send SQS. Default: 10.
+ - `maxBatchWait` - the maximum duration for which the stage waits until `maxBatchSize` messages arrived.
+    Sends what is collects at the end of the time period
+    even though the `maxBatchSize` is not fulfilled. Default: 500 milliseconds
+ - `concurrentRequests` - the number of batches sending to SQS concurrently.
+
+
+## Using SQS as a Flow
 
 You can also build flow stages which put or acknowledge messages in SQS, backpressure on queue response and then forward
 responses further down the stream. The API is similar to creating Sinks.
 
-Scala (flow)
+Scala
 : @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #flow }
 
-Java (flow)
+Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #flow }
 
-Scala (flow with ack)
+
+With Ack:
+
+Scala
 : @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #flow-ack }
 
-Java (flow with ack)
+Java
 : @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #flow-ack }
+
 
 ### Running the example code
 

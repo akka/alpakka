@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.s3
 
+import akka.stream.alpakka.s3.impl.{ListBucketVersion1, ListBucketVersion2}
 import akka.stream.alpakka.s3.scaladsl.{S3ClientIntegrationSpec, S3WireMockBase}
 import com.amazonaws.auth._
 import com.amazonaws.regions.DefaultAwsRegionProviderChain
@@ -169,4 +170,23 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
     settings.endpointUrl.value shouldEqual endpointUrl
   }
 
+  it should "instantiate with the list bucket api version 2 by default" in {
+    val settings: S3Settings = mkConfig("")
+    settings.listBucketApiVersion shouldEqual ListBucketVersion2
+  }
+
+  it should "instantiate with the list bucket api version 1 if list-bucket-api-version is set to 1" in {
+    val settings: S3Settings = mkConfig("akka.stream.alpakka.s3.list-bucket-api-version = 1")
+    settings.listBucketApiVersion shouldEqual ListBucketVersion1
+  }
+
+  it should "instantiate with the list bucket api version 2 if list-bucket-api-version is set to a number that is neither 1 or 2" in {
+    val settings: S3Settings = mkConfig("akka.stream.alpakka.s3.list-bucket-api-version = 0")
+    settings.listBucketApiVersion shouldEqual ListBucketVersion2
+  }
+
+  it should "instantiate with the list bucket api version 2 if list-bucket-api-version is set to a value that is not a nymber" in {
+    val settings: S3Settings = mkConfig("akka.stream.alpakka.s3.list-bucket-api-version = 'version 1'")
+    settings.listBucketApiVersion shouldEqual ListBucketVersion2
+  }
 }

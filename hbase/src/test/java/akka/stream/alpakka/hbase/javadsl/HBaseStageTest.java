@@ -18,7 +18,7 @@ import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -36,81 +36,168 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
-/**
- * Created by olivier.nouguier@gmail.com on 27/11/2016.
- */
+/** Created by olivier.nouguier@gmail.com on 27/11/2016. */
 @Ignore
 public class HBaseStageTest {
 
-    private static ActorSystem system;
-    private static Materializer materializer;
+  private static ActorSystem system;
+  private static Materializer materializer;
 
-    @BeforeClass
-    public static void setup() {
-        system = ActorSystem.create();
-        materializer = ActorMaterializer.create(system);
-    }
+  @BeforeClass
+  public static void setup() {
+    system = ActorSystem.create();
+    materializer = ActorMaterializer.create(system);
+  }
 
-    @AfterClass
-    public static void teardown() {
-        TestKit.shutdownActorSystem(system);
-    }
+  @AfterClass
+  public static void teardown() {
+    TestKit.shutdownActorSystem(system);
+  }
 
-    //#create-converter
-    Function<Person, Put> hBaseConverter = person -> {
-        Put put = null;
-        try {
-            put = new Put(String.format("id_%d", person.id).getBytes("UTF-8"));
-            put.addColumn("info".getBytes("UTF-8"), "name".getBytes("UTF-8"), person.name.getBytes("UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        return put;
+  // #create-converter-put
+  Function<Person, List<Mutation>> hBaseConverter =
+    person -> {
+      try {
+        Put put = new Put(String.format("id_%d", person.id).getBytes("UTF-8"));
+        put.addColumn(
+          "info".getBytes("UTF-8"), "name".getBytes("UTF-8"), person.name.getBytes("UTF-8"));
+
+        return Collections.singletonList(put);
+      } catch (UnsupportedEncodingException e) {
+        e.printStackTrace();
+        return Collections.emptyList();
+      }
     };
-    //#create-converter
+  // #create-converter-put
+
+  // #create-converter-append
+  Function<Person, List<Mutation>> appendHBaseConverter =
+    person -> {
+      try {
+        Append append = new Append(String.format("id_%d", person.id).getBytes("UTF-8"));
+        append.add(
+          "info".getBytes("UTF-8"), "aliases".getBytes("UTF-8"), person.name.getBytes("UTF-8"));
+
+        return Collections.singletonList(append);
+      } catch (UnsupportedEncodingException e) {
+        e.printStackTrace();
+        return Collections.emptyList();
+      }
+    };
+  // #create-converter-append
+
+  // #create-converter-delete
+  Function<Person, List<Mutation>> deleteHBaseConverter =
+    person -> {
+      try {
+        Delete delete = new Delete(String.format("id_%d", person.id).getBytes("UTF-8"));
+
+        return Collections.singletonList(delete);
+      } catch (UnsupportedEncodingException e) {
+        e.printStackTrace();
+        return Collections.emptyList();
+      }
+    };
+  // #create-converter-delete
+
+  // #create-converter-increment
+  Function<Person, List<Mutation>> incrementHBaseConverter =
+    person -> {
+      try {
+        Increment increment = new Increment(String.format("id_%d", person.id).getBytes("UTF-8"));
+        increment.addColumn("info".getBytes("UTF-8"), "numberOfChanges".getBytes("UTF-8"), 1);
+
+        return Collections.singletonList(increment);
+      } catch (UnsupportedEncodingException e) {
+        e.printStackTrace();
+        return Collections.emptyList();
+      }
+    };
+  // #create-converter-increment
+
+  // #create-converter-complex
+  Function<Person, List<Mutation>> complexHBaseConverter =
+    person -> {
+      try {
+        byte[] id = String.format("id_%d", person.id).getBytes("UTF-8");
+        byte[] infoFamily = "info".getBytes("UTF-8");
+
+        if (person.id != 0 && person.name.isEmpty()) {
+          Delete delete = new Delete(id);
+          return Collections.singletonList(delete);
+        } else if (person.id != 0) {
+          Put put = new Put(id);
+          put.addColumn(infoFamily, "name".getBytes("UTF-8"), person.name.getBytes("UTF-8"));
+
+          Increment increment = new Increment(id);
+          increment.addColumn(infoFamily, "numberOfChanges".getBytes("UTF-8"), 1);
+
+          return Arrays.asList(put, increment);
+        } else {
+          return Collections.emptyList();
+        }
+      } catch (UnsupportedEncodingException e) {
+        e.printStackTrace();
+        return Collections.emptyList();
+      }
+    };
+  // #create-converter-complex
 
 
-    @Test
-    public void sink() throws ExecutionException, InterruptedException, TimeoutException {
+  @Test
+  public void sink() throws InterruptedException, TimeoutException {
 
-        //#create-settings
-        HTableSettings<Person> tableSettings = HTableSettings.create(HBaseConfiguration.create(), TableName.valueOf("person1"), Arrays.asList("info"), hBaseConverter);
-        //#create-settings
+    // #create-settings
+    HTableSettings<Person> tableSettings =
+      HTableSettings.create(
+        HBaseConfiguration.create(),
+        TableName.valueOf("person1"),
+        Collections.singletonList("info"),
+        hBaseConverter);
+    // #create-settings
 
-        //#sink
-        final Sink<Person, scala.concurrent.Future<Done>> sink = HTableStage.sink(tableSettings);
-        Future<Done> o = Source.from(Arrays.asList(100, 101, 102, 103, 104)).map((i) -> new Person(i, String.format("name %d", i))).runWith(sink, materializer);
-        //#sink
+    // #sink
+    final Sink<Person, scala.concurrent.Future<Done>> sink = HTableStage.sink(tableSettings);
+    Future<Done> o =
+      Source.from(Arrays.asList(100, 101, 102, 103, 104))
+        .map((i) -> new Person(i, String.format("name %d", i)))
+        .runWith(sink, materializer);
+    // #sink
 
-        Await.ready(o, Duration.Inf());
+    Await.ready(o, Duration.Inf());
+  }
 
+  @Test
+  public void flow() throws ExecutionException, InterruptedException {
 
-    }
+    HTableSettings<Person> tableSettings =
+      HTableSettings.create(
+        HBaseConfiguration.create(),
+        TableName.valueOf("person2"),
+        Collections.singletonList("info"),
+        hBaseConverter);
 
-    @Test
-    public void flow() throws ExecutionException, InterruptedException {
+    // #flow
+    Flow<Person, Person, NotUsed> flow = HTableStage.flow(tableSettings);
+    Pair<NotUsed, CompletionStage<List<Person>>> run =
+      Source.from(Arrays.asList(200, 201, 202, 203, 204))
+        .map((i) -> new Person(i, String.format("name_%d", i)))
+        .via(flow)
+        .toMat(Sink.seq(), Keep.both())
+        .run(materializer);
+    // #flow
 
-        HTableSettings<Person> tableSettings = HTableSettings.create(HBaseConfiguration.create(), TableName.valueOf("person2"), Collections.singletonList("info"), hBaseConverter);
-
-        //#flow
-        Flow<Person, Person, NotUsed> flow = HTableStage.flow(tableSettings);
-        Pair<NotUsed, CompletionStage<List<Person>>> run = Source.from(Arrays.asList(200, 201, 202, 203, 204)).map((i)
-                -> new Person(i, String.format("name_%d", i))).via(flow).toMat(Sink.seq(), Keep.both()).run(materializer);
-        //#flow
-
-        run.second().toCompletableFuture().get();
-
-    }
-
+    run.second().toCompletableFuture().get();
+  }
 }
 
 class Person {
 
-    int id;
-    String name;
+  int id;
+  String name;
 
-    public Person(int i, String name) {
-        this.id = i;
-        this.name = name;
-    }
+  public Person(int i, String name) {
+    this.id = i;
+    this.name = name;
+  }
 }

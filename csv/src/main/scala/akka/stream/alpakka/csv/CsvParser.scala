@@ -32,12 +32,15 @@ private[csv] object CsvParser {
   private type State = Int
   private final val LineStart = 0
   private final val WithinField = 1
-  private final val AfterDelimiter = 2
-  private final val LineEnd = 3
-  private final val QuoteStarted = 4
-  private final val QuoteEnd = 5
-  private final val WithinQuotedField = 6
-  private final val AfterCr = 7
+  private final val WithinFieldEscaped = 2
+  private final val AfterDelimiter = 3
+  private final val LineEnd = 4
+  private final val QuoteStarted = 5
+  private final val QuoteEnd = 6
+  private final val WithinQuotedField = 7
+  private final val WithinQuotedFieldEscaped = 8
+  private final val WithinQuotedFieldQuote = 9
+  private final val AfterCr = 10
 
   private final val LF: Byte = '\n'
   private final val CR: Byte = '\r'
@@ -92,12 +95,10 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
 
     /** Set up the ByteString builder instead of relying on `ByteString.slice`.
      */
-    @inline def init(x: Byte): Unit =
+    @inline def init(): Unit =
       if (!useBuilder) {
-        builder = ByteString.newBuilder ++= buf.slice(fieldStart, pos) += x
+        builder = ByteString.newBuilder ++= buf.slice(fieldStart, pos)
         useBuilder = true
-      } else {
-        builder += x
       }
 
     @inline def add(x: Byte): Unit =
@@ -116,20 +117,6 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
     var columns = Vector[ByteString]()
     var state: State = LineStart
     val fieldBuilder = new FieldBuilder(buf)
-
-    def wrongCharEscaped() =
-      throw new MalformedCsvException(
-        currentLineNo,
-        pos,
-        s"wrong escaping at $currentLineNo:$pos, only escape or delimiter may be escaped"
-      )
-
-    def wrongCharEscapedWithinQuotes() =
-      throw new MalformedCsvException(
-        currentLineNo,
-        pos,
-        s"wrong escaping at $currentLineNo:$pos, only escape or quote may be escaped within quotes"
-      )
 
     def noCharEscaped() =
       throw new MalformedCsvException(currentLineNo,
@@ -174,6 +161,11 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
               state = QuoteStarted
               pos += 1
               fieldStart = pos
+            case `escapeChar` =>
+              fieldBuilder.init()
+              state = WithinFieldEscaped
+              pos += 1
+              fieldStart = pos
             case `delimiter` =>
               columns :+= ByteString.empty
               state = AfterDelimiter
@@ -202,13 +194,10 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
               pos += 1
               fieldStart = pos
             case `escapeChar` =>
-              if (pos + 1 < buf.length) {
-                if (buf(pos + 1) == escapeChar || buf(pos + 1) == delimiter) {
-                  fieldBuilder.init(buf(pos + 1))
-                  state = WithinField
-                  pos += 2
-                } else wrongCharEscaped()
-              } else noCharEscaped()
+              fieldBuilder.init()
+              state = WithinFieldEscaped
+              pos += 1
+              fieldStart = pos
             case `delimiter` =>
               columns :+= ByteString.empty
               state = AfterDelimiter
@@ -233,13 +222,9 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
         case WithinField =>
           byte match {
             case `escapeChar` =>
-              if (pos + 1 < buf.length) {
-                if (buf(pos + 1) == escapeChar || buf(pos + 1) == delimiter) {
-                  fieldBuilder.add(buf(pos + 1))
-                  state = WithinField
-                  pos += 2
-                } else wrongCharEscaped()
-              } else noCharEscaped()
+              fieldBuilder.init()
+              state = WithinFieldEscaped
+              pos += 1
             case `delimiter` =>
               columns :+= fieldBuilder.result(pos)
               state = AfterDelimiter
@@ -261,25 +246,31 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
               pos += 1
           }
 
+        case WithinFieldEscaped =>
+          byte match {
+            case `escapeChar` | `delimiter` =>
+              fieldBuilder.add(byte)
+              state = WithinField
+              pos += 1
+
+            case b =>
+              throw new MalformedCsvException(
+                currentLineNo,
+                pos,
+                s"wrong escaping at $currentLineNo:$pos, only escape or delimiter may be escaped"
+              )
+          }
+
         case QuoteStarted =>
           byte match {
             case `escapeChar` if escapeChar != quoteChar =>
-              if (pos + 1 < buf.length) {
-                if (buf(pos + 1) == escapeChar || buf(pos + 1) == quoteChar) {
-                  fieldBuilder.init(buf(pos + 1))
-                  state = WithinQuotedField
-                  pos += 2
-                } else wrongCharEscapedWithinQuotes()
-              } else noCharEscaped()
+              fieldBuilder.init()
+              state = WithinQuotedFieldEscaped
+              pos += 1
             case `quoteChar` =>
-              if (pos + 1 < buf.length && buf(pos + 1) == quoteChar) {
-                fieldBuilder.init(byte)
-                state = WithinQuotedField
-                pos += 2
-              } else {
-                state = QuoteEnd
-                pos += 1
-              }
+              fieldBuilder.init()
+              state = WithinQuotedFieldQuote
+              pos += 1
             case b =>
               fieldBuilder.add(b)
               state = WithinQuotedField
@@ -312,27 +303,43 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
         case WithinQuotedField =>
           byte match {
             case `escapeChar` if escapeChar != quoteChar =>
-              if (pos + 1 < buf.length) {
-                if (buf(pos + 1) == escapeChar || buf(pos + 1) == quoteChar) {
-                  fieldBuilder.init(buf(pos + 1))
-                  state = WithinQuotedField
-                  pos += 2
-                } else wrongCharEscapedWithinQuotes()
-              } else noCharEscaped()
-
+              fieldBuilder.init()
+              state = WithinQuotedFieldEscaped
+              pos += 1
             case `quoteChar` =>
-              if (pos + 1 < buf.length && buf(pos + 1) == quoteChar) {
-                fieldBuilder.init(byte)
-                state = WithinQuotedField
-                pos += 2
-              } else {
-                state = QuoteEnd
-                pos += 1
-              }
+              fieldBuilder.init()
+              state = WithinQuotedFieldQuote
+              pos += 1
             case b =>
               fieldBuilder.add(b)
               state = WithinQuotedField
               pos += 1
+          }
+
+        case WithinQuotedFieldEscaped =>
+          byte match {
+            case `escapeChar` | `quoteChar` =>
+              fieldBuilder.add(byte)
+              state = WithinQuotedField
+              pos += 1
+
+            case b =>
+              throw new MalformedCsvException(
+                currentLineNo,
+                pos,
+                s"wrong escaping at $currentLineNo:$pos, only escape or quote may be escaped within quotes"
+              )
+          }
+
+        case WithinQuotedFieldQuote =>
+          byte match {
+            case `quoteChar` =>
+              fieldBuilder.add(byte)
+              state = WithinQuotedField
+              pos += 1
+
+            case b =>
+              state = QuoteEnd
           }
 
         case AfterCr =>
@@ -358,13 +365,19 @@ private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar:
           columns :+= ByteString.empty
           Some(columns.toList)
         case WithinQuotedField =>
-          None
+          throw new MalformedCsvException(
+            currentLineNo,
+            pos,
+            s"unclosed quote at end of input $currentLineNo:$pos, no matching quote found"
+          )
         case WithinField =>
           columns :+= fieldBuilder.result(pos)
           Some(columns.toList)
-        case QuoteEnd =>
+        case QuoteEnd | WithinQuotedFieldQuote =>
           columns :+= fieldBuilder.result(pos - 1)
           Some(columns.toList)
+        case WithinFieldEscaped | WithinQuotedFieldEscaped =>
+          noCharEscaped()
         case _ =>
           Some(columns.toList)
       }

@@ -6,15 +6,16 @@ package akka.stream.alpakka.jms.scaladsl
 
 import java.nio.charset.Charset
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
-import javax.jms.{DeliveryMode, JMSException, Message, TextMessage}
+import javax.jms
+import javax.jms.{DeliveryMode, JMSException, Message, Session, TextMessage}
 
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.{KillSwitch, KillSwitches, ThrottleMode}
 import akka.{Done, NotUsed}
 import org.apache.activemq.ActiveMQConnectionFactory
+import org.apache.activemq.ActiveMQSession
 import org.apache.activemq.command.ActiveMQQueue
-
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
@@ -245,6 +246,46 @@ class JmsConnectorsSpec extends JmsSpec {
       }
     }
 
+    "publish and consume JMS text messages through a queue with custom queue creator " in withServer() { ctx =>
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+      // custom queue creator generating a queue other than the name specified
+      def createQueue(destinationName: String): Session => javax.jms.Queue = { (session: Session) =>
+        val amqSession = session.asInstanceOf[ActiveMQSession]
+        amqSession.createQueue(s"my-$destinationName")
+      }
+      def createQueu2(destinationName: String): Session => javax.jms.Queue = { (session: Session) =>
+        val amqSession = session.asInstanceOf[ActiveMQSession]
+        amqSession.createQueue(s"my-$destinationName")
+      }
+
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
+        JmsProducerSettings(connectionFactory)
+          .withDestination(CustomDestination("custom-numbers", createQueu2("custom-numbers")))
+      )
+
+      val msgsIn: Seq[JmsTextMessage] = (1 to 10).toList.map { n =>
+        JmsTextMessage(n.toString)
+      }
+
+      Source(msgsIn).runWith(jmsSink)
+
+      //#create-custom-jms-queue-source
+      val jmsSource: Source[Message, KillSwitch] = JmsConsumer(
+        JmsConsumerSettings(connectionFactory)
+          .withBufferSize(10)
+          .withDestination(CustomDestination("custom-numbers", createQueu2("custom-numbers")))
+      )
+      //#create-custom-jms-queue-source
+
+      val result: Future[Seq[Message]] = jmsSource.take(msgsIn.size).runWith(Sink.seq)
+
+      // The sent message and the receiving one should have the same properties
+      result.futureValue.zip(msgsIn).foreach {
+        case (out, in) =>
+          out.asInstanceOf[TextMessage].getText shouldEqual in.body
+      }
+    }
+
     "publish JMS text messages with properties through a queue and consume them with a selector" in withServer() {
       ctx =>
         val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
@@ -302,6 +343,60 @@ class JmsConnectorsSpec extends JmsSpec {
       Thread.sleep(500)
       ctx.broker.stop()
       result.failed.futureValue shouldBe an[JMSException]
+    }
+
+    "publish and consume elements through a topic with custom topic creator" in withServer() { ctx =>
+      import system.dispatcher
+
+      def createTopic(destinationName: String): Session => javax.jms.Topic = { (session: Session) =>
+        val amqSession = session.asInstanceOf[ActiveMQSession]
+        amqSession.createTopic(s"my-$destinationName")
+      }
+
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      //#create-custom-jms-topic-sink
+      val jmsTopicSink: Sink[String, Future[Done]] = JmsProducer.textSink(
+        JmsProducerSettings(connectionFactory)
+          .withDestination(CustomDestination("topic", createTopic("topic")))
+      )
+      //#create-custom-jms-topic-sink
+      val jmsTopicSink2: Sink[String, Future[Done]] = JmsProducer.textSink(
+        JmsProducerSettings(connectionFactory)
+          .withDestination(CustomDestination("topic", createTopic("topic")))
+      )
+
+      val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
+      val inNumbers = (1 to 10).map(_.toString)
+
+      //#create-custom-jms-topic-source
+      val jmsTopicSource: Source[String, KillSwitch] = JmsConsumer.textSource(
+        JmsConsumerSettings(connectionFactory)
+          .withBufferSize(10)
+          .withDestination(CustomDestination("topic", createTopic("topic")))
+      )
+      //#create-custom-jms-topic-source
+      val jmsSource2: Source[String, KillSwitch] = JmsConsumer.textSource(
+        JmsConsumerSettings(connectionFactory)
+          .withBufferSize(10)
+          .withDestination(CustomDestination("topic", createTopic("topic")))
+      )
+
+      val expectedSize = in.size + inNumbers.size
+
+      val result1 = jmsTopicSource.take(expectedSize).runWith(Sink.seq).map(_.sorted)
+      val result2 = jmsSource2.take(expectedSize).runWith(Sink.seq).map(_.sorted)
+
+      //We wait a little to be sure that the source is connected
+      Thread.sleep(500)
+
+      Source(in).runWith(jmsTopicSink)
+
+      Source(inNumbers).runWith(jmsTopicSink2)
+
+      val expectedList: List[String] = in ++ inNumbers
+      result1.futureValue shouldEqual expectedList.sorted
+      result2.futureValue shouldEqual expectedList.sorted
     }
 
     "publish and consume elements through a topic " in withServer() { ctx =>
@@ -372,13 +467,13 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#run-jms-source-with-ack
       val result = jmsSource
-        .take(msgsIn.size)
         .map {
           case textMessage: TextMessage =>
             val text = textMessage.getText
             textMessage.acknowledge()
             text
         }
+        .take(msgsIn.size)
         .runWith(Sink.seq)
       //#run-jms-source-with-ack
 
