@@ -92,7 +92,6 @@ object Dependencies {
 
   val Elasticsearch = Seq(
     libraryDependencies ++= Seq(
-      //"org.elasticsearch.client" % "rest" % "5.5.3", // ApacheV2
       "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.3.1", // ApacheV2
       "io.spray" %% "spray-json" % "1.3.4", // ApacheV2
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.6", // ApacheV2
