@@ -32,6 +32,8 @@ import scala.collection.mutable.ArrayBuffer
 
   case class CommitStatement(number: Long, zonedDateTime: ZonedDateTime)
 
+  case class Field(columnName: String, columnType: String, value: String)
+
   val singleQuote: Parser[Unit] = P("'")
 
   val doubleQuote: Parser[Unit] = P("\"")
@@ -124,7 +126,9 @@ import scala.collection.mutable.ArrayBuffer
 
   abstract class ChangeBuilder extends (((String, Long)) ⇒ Change) // (location: String, transactionId: Long) => Change
 
-  val changeStatement: Parser[ChangeBuilder] =
+  val changeStatement: Parser[ChangeBuilder] = {
+    val getData: List[Field] ⇒ Map[String, String] = fieldList ⇒ fieldList.map(f ⇒ f.columnName → f.value).toMap
+    val getSchema: List[Field] ⇒ Map[String, String] = fieldList ⇒ fieldList.map(f ⇒ f.columnName → f.columnType).toMap
     P(s"table" ~ space ~ identifier ~ "." ~ identifier ~ ":" ~ space ~ changeType ~ ":" ~ space ~ P(latest | both))
       .map { m ⇒
         {
@@ -135,15 +139,35 @@ import scala.collection.mutable.ArrayBuffer
             override def apply(info: (String, Long)): Change =
               m._3 match {
                 case "INSERT" ⇒
-                  RowInserted(schemaName, tableName, info._1, info._2, fields._2)
+                  RowInserted(schemaName = schemaName,
+                              tableName = tableName,
+                              logSeqNum = info._1,
+                              transactionId = info._2,
+                              data = getData(fields._2),
+                              schema = getSchema(fields._2))
                 case "DELETE" ⇒
-                  RowDeleted(schemaName, tableName, info._1, info._2, fields._2)
+                  RowDeleted(schemaName = schemaName,
+                             tableName = tableName,
+                             commitLogSeqNum = info._1,
+                             transactionId = info._2,
+                             data = getData(fields._2),
+                             schema = getSchema(fields._2))
                 case "UPDATE" ⇒
-                  RowUpdated(schemaName, tableName, info._1, info._2, fieldsNew = fields._2, fieldsOld = fields._1)
+                  RowUpdated(
+                    schemaName = schemaName,
+                    tableName = tableName,
+                    commitLogSeqNum = info._1,
+                    transactionId = info._2,
+                    dataNew = getData(fields._2),
+                    dataOld = getData(fields._1),
+                    schemaNew = getSchema(fields._2),
+                    schemaOld = getSchema(fields._1)
+                  )
               }
           }
         }
       }
+  }
 
   val statement = P(changeStatement | begin | commit)
 
@@ -177,13 +201,16 @@ import scala.collection.mutable.ArrayBuffer
       case (s, Parsed.Success(changeBuilder: ChangeBuilder, _)) ⇒
         val change = changeBuilder((commitLogSeqNum, transactionId))
         if (!ignoreTables.contains(change.tableName)) {
-          val hidden: Field ⇒ Boolean =
-            f ⇒ getColsToIgnoreForTable(change.tableName, colsToIgnorePerTable).contains(f.columnName)
+          val hidden: String ⇒ Boolean =
+            f ⇒ getColsToIgnoreForTable(change.tableName, colsToIgnorePerTable).contains(f)
           result += (change match {
-            case insert: RowInserted ⇒ insert.copy(insert.fields.filterNot(hidden))
-            case delete: RowDeleted ⇒ delete.copy(delete.fields.filterNot(hidden))
+            case insert: RowInserted ⇒
+              insert.copy(data = insert.data.filterKeys(!hidden(_)))
+            case delete: RowDeleted ⇒
+              delete.copy(data = delete.data.filterKeys(!hidden(_)))
             case update: RowUpdated ⇒
-              update.copy(update.fieldsNew.filterNot(hidden), update.fieldsOld.filterNot(hidden))
+              update.copy(dataNew = update.dataNew.filterKeys(!hidden(_)),
+                          dataOld = update.dataOld.filterKeys(!hidden(_)))
           })
         }
 

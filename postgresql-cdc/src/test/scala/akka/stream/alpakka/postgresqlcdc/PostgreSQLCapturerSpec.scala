@@ -36,6 +36,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
 
   override def beforeAll(): Unit = {
     log.info("setting up logical decoding slot and creating customers table")
+    setTimeZoneUtc()
     setUpLogicalDecodingSlot("scalatest")
     createCustomersTable()
     createSalesTable()
@@ -65,42 +66,26 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
 
   "A PostgreSQL change data capture source" must {
 
-    "capture changes to a table with numeric / character / array / timestamp columns" in {
-
-      import java.time.Instant
+    "capture changes to a table with numeric / character / array columns" in {
 
       log.info("inserting data into customers table")
       // some inserts
 
-      val time = Instant.parse("1964-02-23T00:00:00Z")
-
-      insertCustomer(id = 0,
-                     fName = "John",
-                     lName = "Lennon",
-                     email = "john.lennon@akka.io",
-                     tags = List("awesome"),
-                     time)
+      insertCustomer(id = 0, fName = "John", lName = "Lennon", email = "john.lennon@akka.io", tags = List("awesome"))
 
       insertCustomer(id = 1,
                      fName = "George",
                      lName = "Harrison",
                      email = "george.harrison@akka.io",
-                     tags = List("awesome"),
-                     time)
+                     tags = List("awesome"))
 
       insertCustomer(id = 2,
                      fName = "Paul",
                      lName = "McCartney",
                      email = "paul.mccartney@akka.io",
-                     tags = List("awesome"),
-                     time)
+                     tags = List("awesome"))
 
-      insertCustomer(id = 3,
-                     fName = "Ringo",
-                     lName = "Star",
-                     email = "ringo.star@akka.io",
-                     tags = List("awesome"),
-                     time)
+      insertCustomer(id = 3, fName = "Ringo", lName = "Star", email = "ringo.star@akka.io", tags = List("awesome"))
 
       // some updates
       updateCustomerEmail(id = 0, "john.lennon@thebeatles.com")
@@ -110,6 +95,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
 
       // some deletes
       deleteCustomers()
+
+      val emptyData = Map.empty[String, String]
 
       ChangeDataCapture
         .source(postgreSQLInstance, PgCdcSourceSettings())
@@ -121,88 +108,76 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
         // expecting the insert events first
         //
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowInserted("public", "customers", _, _, fields) :: Nil)
-              if (Set(
-                "id" -> "0",
-                "first_name" -> "John",
-                "last_name" -> "Lennon",
-                "email" -> "john.lennon@akka.io",
-                "tags" -> "{awesome}"
-              ) -- fields.map(f ⇒ f.columnName -> f.value).toSet) == Set() ⇒ // success
+          case c @ ChangeSet(_, _, _, RowInserted("public", "customers", _, _, data) :: Nil)
+              if Map(
+                "id" → "0",
+                "first_name" → "John",
+                "last_name" → "Lennon",
+                "email" → "john.lennon@akka.io",
+                "tags" → "{awesome}"
+              ) == data ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowInserted("public", "customers", _, _, fields) :: Nil)
-              if (Set(
-                "id" -> "1",
-                "first_name" -> "George",
-                "last_name" -> "Harrison",
-                "email" -> "george.harrison@akka.io",
-                "tags" -> "{awesome}",
-              ) -- fields.map(f ⇒ f.columnName -> f.value).toSet) == Set() ⇒ // success
+          case c @ ChangeSet(_, _, _, RowInserted("public", "customers", _, _, data) :: Nil)
+              if Map(
+                "id" → "1",
+                "first_name" → "George",
+                "last_name" → "Harrison",
+                "email" → "george.harrison@akka.io",
+                "tags" → "{awesome}"
+              ) == data ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowInserted("public", "customers", _, _, fields) :: Nil)
-              if (Set(
-                "id" -> "2",
-                "first_name" -> "Paul",
-                "last_name" -> "McCartney",
-                "email" -> "paul.mccartney@akka.io",
-                "tags" -> "{awesome}",
-              ) -- fields.map(f ⇒ f.columnName -> f.value).toSet) == Set() ⇒ // success
+          case c @ ChangeSet(_, _, _, RowInserted("public", "customers", _, _, data) :: Nil)
+              if Map("id" → "2",
+                     "first_name" → "Paul",
+                     "last_name" → "McCartney",
+                     "email" → "paul.mccartney@akka.io",
+                     "tags" → "{awesome}") == data ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowInserted("public", "customers", _, _, fields) :: Nil)
-              if (Set(
-                "id" -> "3",
-                "first_name" -> "Ringo",
-                "last_name" -> "Star",
-                "email" -> "ringo.star@akka.io",
-                "tags" -> "{awesome}",
-              ) -- fields.map(f ⇒ f.columnName -> f.value).toSet) == Set() ⇒ // success
+          case c @ ChangeSet(_, _, _, RowInserted("public", "customers", _, _, data) :: Nil)
+              if Map("id" → "3",
+                     "first_name" → "Ringo",
+                     "last_name" → "Star",
+                     "email" → "ringo.star@akka.io",
+                     "tags" → "{awesome}") == data ⇒ // success
         }
         //
         // expecting the update events next
         //
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowUpdated("public", "customers", _, _, fields, _) :: Nil)
-              if (Set(
-                "id" -> "0",
-                "first_name" -> "John",
-                "last_name" -> "Lennon",
-                "email" -> "john.lennon@thebeatles.com",
-                "tags" -> "{awesome}",
-              ) -- fields.map(f ⇒ f.columnName -> f.value).toSet) == Set() ⇒ // success
+          case c @ ChangeSet(_, _, _, RowUpdated("public", "customers", _, _, dataNew, `emptyData`) :: Nil)
+              if Map("id" → "0",
+                     "first_name" → "John",
+                     "last_name" → "Lennon",
+                     "email" → "john.lennon@thebeatles.com",
+                     "tags" → "{awesome}") == dataNew ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowUpdated("public", "customers", _, _, fields, _) :: Nil)
-              if (Set(
-                "id" -> "1",
-                "first_name" -> "George",
-                "last_name" -> "Harrison",
-                "email" -> "george.harrison@thebeatles.com",
-                "tags" -> "{awesome}",
-              ) -- fields.map(f ⇒ f.columnName -> f.value).toSet) == Set() ⇒ // success
+          case c @ ChangeSet(_, _, _, RowUpdated("public", "customers", _, _, dataNew, `emptyData`) :: Nil)
+              if Map("id" → "1",
+                     "first_name" → "George",
+                     "last_name" → "Harrison",
+                     "email" → "george.harrison@thebeatles.com",
+                     "tags" → "{awesome}") == dataNew ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowUpdated("public", "customers", _, _, fields, _) :: Nil)
-              if (Set(
-                "id" -> "2",
-                "first_name" -> "Paul",
-                "last_name" -> "McCartney",
-                "email" -> "paul.mccartney@thebeatles.com",
-                "tags" -> "{awesome}",
-              ) -- fields.map(f ⇒ f.columnName -> f.value).toSet) == Set() ⇒ // success
+          case c @ ChangeSet(_, _, _, RowUpdated("public", "customers", _, _, dataNew, `emptyData`) :: Nil)
+              if Map("id" -> "2",
+                     "first_name" -> "Paul",
+                     "last_name" -> "McCartney",
+                     "email" -> "paul.mccartney@thebeatles.com",
+                     "tags" -> "{awesome}") == dataNew ⇒ // success
 
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowUpdated("public", "customers", _, _, fields, _) :: Nil)
-              if (Set(
-                "id" -> "3",
-                "first_name" -> "Ringo",
-                "last_name" -> "Star",
-                "email" -> "ringo.star@thebeatles.com",
-                "tags" -> "{awesome}",
-              ) -- fields.map(f ⇒ f.columnName -> f.value).toSet) == Set() ⇒ // success
+          case c @ ChangeSet(_, _, _, RowUpdated("public", "customers", _, _, dataNew, `emptyData`) :: Nil)
+              if Map("id" -> "3",
+                     "first_name" -> "Ringo",
+                     "last_name" -> "Star",
+                     "email" -> "ringo.star@thebeatles.com",
+                     "tags" -> "{awesome}") == dataNew ⇒ // success
 
         }
         //
@@ -227,15 +202,15 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
         .runWith(TestSink.probe[ChangeSet])
         .request(3)
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowInserted("public", "sales", _, _, fields) :: Nil)
-              if fields.map(f ⇒ f.columnName -> f.value).toSet == Set(
+          case c @ ChangeSet(_, _, _, RowInserted("public", "sales", _, _, data) :: Nil)
+              if data == Map(
                 "id" -> "0",
                 "info" -> """{"name": "alpaca", "countries": ["Peru", "Bolivia", "Ecuador", "Chile"]}"""
               ) ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowUpdated("public", "sales", _, _, fields, _) :: Nil)
-              if fields.map(f ⇒ f.columnName -> f.value).toSet == Set(
+          case c @ ChangeSet(_, _, _, RowUpdated("public", "sales", _, _, dataNew, _) :: Nil)
+              if dataNew == Map(
                 "id" -> "0",
                 "info" -> """{"name": "alpakka", "countries": ["*"]}"""
               ) ⇒ // success
@@ -311,6 +286,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
       insertImage(0, "/scala-icon.png") // from postgresql-cdc/src/test/resources/scala-icon.png
       deleteImages()
 
+      import javax.xml.bind.DatatypeConverter // for the parseHexBinary method
+
       ChangeDataCapture
         .source(postgreSQLInstance, PgCdcSourceSettings())
         .log("postgresqlcdc", cs ⇒ s"captured change: ${cs.toString}")
@@ -318,15 +295,10 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
         .runWith(TestSink.probe[ChangeSet])
         .request(2)
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowInserted("public", "images", _, _, fields) :: Nil)
-              if fields
-                .filter(_.columnName == "image")
-                .exists(v ⇒ {
-                  import javax.xml.bind.DatatypeConverter
-                  // from PG docs: The "hex" format encodes binary data as 2 hexadecimal digits per byte, most significant nibble first.
-                  // The entire string is preceded by the sequence \x
-                  DatatypeConverter.parseHexBinary(v.value.substring(2)) sameElements expectedByteArray
-                }) ⇒ // success
+          case c @ ChangeSet(_, _, _, RowInserted("public", "images", _, _, data) :: Nil)
+              // from PG docs: The "hex" format encodes binary data as 2 hexadecimal digits per byte, most significant nibble first.
+              // The entire string is preceded by the sequence \x
+              if DatatypeConverter.parseHexBinary(data("image").substring(2)) sameElements expectedByteArray ⇒ // success
         }
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, List(RowDeleted("public", "images", _, _, _))) ⇒ // success
@@ -350,8 +322,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
           case c @ ChangeSet(_, _, _, RowInserted("public", "employees", _, _, _) :: Nil) ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowUpdated("public", "employees", _, _, fields, _) :: Nil)
-              if fields.contains(Field("\"position\"", "character varying", "null")) ⇒ // success
+          case c @ ChangeSet(_, _, _, RowUpdated("public", "employees", _, _, data, _) :: Nil)
+              if data("\"position\"") == "null" ⇒ // success
         }
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, RowDeleted("public", "employees", _, _, _) :: Nil) ⇒ // success
@@ -375,15 +347,9 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
           case c @ ChangeSet(_, _, _, RowInserted("public", """"WEATHER"""", _, _, _) :: Nil) ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowUpdated("public", """"WEATHER"""", _, _, fieldsNew, fieldsOld) :: Nil)
-              if fieldsNew.map(f ⇒ f.columnName -> f.value).toSet == Set("id" -> "0",
-                                                                         "city" -> "Seattle",
-                                                                         "weather" -> "sunny") &&
-              fieldsOld.map(f ⇒ f.columnName -> f.value).toSet == Set(
-                "id" -> "0",
-                "city" -> "Seattle",
-                "weather" -> "rainy"
-              ) ⇒ // success
+          case c @ ChangeSet(_, _, _, RowUpdated("public", """"WEATHER"""", _, _, dataNew, dataOld) :: Nil)
+              if dataNew == Map("id" -> "0", "city" -> "Seattle", "weather" -> "sunny") &&
+              dataOld == Map("id" -> "0", "city" -> "Seattle", "weather" -> "rainy") ⇒ // success
         }
         .expectNextChainingPF {
           case ChangeSet(_, _, _, (d: RowDeleted) :: Nil) ⇒ // success
@@ -415,8 +381,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
           case c @ ChangeSet(_, _, _, RowInserted("public", "sales", _, _, _) :: Nil) ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowUpdated("public", "sales", _, _, fields, _) :: Nil)
-              if !fields.exists(_.columnName == "info") ⇒ // success
+          case c @ ChangeSet(_, _, _, RowUpdated("public", "sales", _, _, dataNew, _) :: Nil)
+              if !dataNew.contains("info") ⇒ // success
         }
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, RowDeleted("public", "sales", _, _, _) :: Nil) ⇒ // success

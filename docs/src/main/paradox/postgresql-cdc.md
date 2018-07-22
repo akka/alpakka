@@ -20,27 +20,10 @@ This Akka Streams Source emits elements of the type @scaladoc[ChangeSet](akka.st
 transaction id. A 'change' can be one of the following:
 
 * @scaladoc[RowInserted](akka.stream.alpakka.postgresqlcdc.RowInserted)
-    * schemaName: String
-    * tableName: String
-    * fields: A list of fields
-
 * @scaladoc[RowUpdated](akka.stream.alpakka.postgresqlcdc.RowUpdated)
-    * schemaName: String
-    * tableName: String
-    * fieldsNew: A list of fields
-    * fieldsOld: A list of fields
-        * empty - unless `REPLICA IDENTITY FULL` is set for the table. See [Limitations](##Limitations).
-
 * @scaladoc[RowDeleted](akka.stream.alpakka.postgresqlcdc.RowDeleted)
-    * schemaName: String
-    * tableName: String
-    * fields: A list of fields
-
-A @scaladoc[Field](akka.stream.alpakka.postgresqlcdc.Field) is defined as a class with 3 attributes of type String : columnName, columnType, value. The onus is on the user to turn the stringly-typed @scaladoc[Field](akka.stream.alpakka.postgresqlcdc.Field)
-into something domain specific and more strongly typed.
 
 ## Artifacts
-
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
@@ -137,7 +120,7 @@ We configure the Ack sink using @scaladoc[PostgreSQLInstance](akka.stream.alpakk
 
 |Setting               |Meaning                                                                     | Default              | Required |
 |----------------------|----------------------------------------------------------------------------|----------------------|----------|
-| maxItems             | ideal number of ChangeSets to acknowledge at once                          | 16                   | no       |
+| maxItems             | ideal number of items to acknowledge at once                               | 16                   | no       |
 | maxItemsWait         | maximum duration for which the stage waits until maxItems have accumulated | 3 second             | no       |
 
 

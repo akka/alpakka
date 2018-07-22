@@ -98,10 +98,11 @@ class TestScalaDsl extends FunSuite with Matchers with BeforeAndAfterAll {
     val ackSink = ChangeDataCapture.ackSink(pgSqlInstance, PgCdcAckSinkSettings())
 
     source
+      .mapConcat(_.changes)
       .collect { // collect is map and filter
-        case cs @ ChangeSet(_, _, _, RowInserted("public", "users", _, _, fields) :: Nil) ⇒
-          val userId = fields.find(_.columnName == "user_id").map(_.value).getOrElse("unknown")
-          (cs, UserRegistered(userId))
+        case change @ RowInserted("public", "users", _, _, data) ⇒
+          val userId = data("user_id")
+          (change, UserRegistered(userId))
       }
       .map(identity) // do something useful e.g., publish to SQS
       .map(t ⇒ AckLogSeqNum(t._1.commitLogSeqNum))

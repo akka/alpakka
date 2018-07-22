@@ -11,6 +11,8 @@ import fastparse.core.Parsed
 import fastparse.core.Parsed.Success
 import org.scalatest.{FunSuite, Matchers}
 
+import scala.collection.Map
+
 class TestParsing extends FunSuite with Matchers {
 
   test("parsing double quoted string") {
@@ -130,35 +132,41 @@ class TestParsing extends FunSuite with Matchers {
 
     val changeStatementTest = P(changeStatement).map(changeBuilder ⇒ changeBuilder(("unknown", 0)))
 
-    val ex1 = "table public.aa: UPDATE: a[integer]:1 b[integer]:1 c[integer]:3"
+    val ex1 = "table public.abc: UPDATE: a[integer]:1 b[integer]:1 c[integer]:3"
+
+    val ex1ExpectedDataNew = Map("a" → "1", "b" → "1", "c" → "3")
+    val ex1ExpectedDataOld = Map.empty[String, String]
+    val ex1ExpectedSchemaNew = Map("a" → "integer", "b" → "integer", "c" → "integer")
+    val ex1ExpectedSchemaOld = Map.empty[String, String]
+
     changeStatementTest.parse(ex1) should matchPattern {
-      case Success(RowUpdated("public",
-                              "aa",
-                              _,
-                              _,
-                              List(Field("a", "integer", "1"), Field("b", "integer", "1"), Field("c", "integer", "3")),
-                              List()),
-                   _) ⇒ // success
+      case Success(r @ RowUpdated("public", "abc", "unknown", 0, `ex1ExpectedDataNew`, `ex1ExpectedDataOld`), _)
+          if r.schemaOld == ex1ExpectedSchemaOld && r.schemaNew == ex1ExpectedSchemaNew => // success
     }
 
     val ex2 = "table public.sales: UPDATE: id[integer]:0 info[jsonb]:'{\"name\": \"alpakka\", \"countries\": [\"*\"]}'"
+
+    val ex2ExpectedDataNew = Map("id" → "0", "info" → "{\"name\": \"alpakka\", \"countries\": [\"*\"]}")
+    val ex2ExpectedDataOld = Map.empty[String, String]
+    val ex2ExpectedSchemaNew = Map("id" → "integer", "info" → "jsonb")
+    val ex2ExpectedSchemaOld = Map.empty[String, String]
+
     changeStatementTest.parse(ex2) should matchPattern {
-      case Success(
-          RowUpdated("public", "sales", _, _, List(Field("id", "integer", "0"), Field("info", "jsonb", _)), List()),
-          _
-          ) ⇒ // success
+      case Success(r @ RowUpdated("public", "sales", "unknown", 0, `ex2ExpectedDataNew`, `ex2ExpectedDataOld`), _)
+          if r.schemaOld == ex2ExpectedSchemaOld && r.schemaNew == ex2ExpectedSchemaNew ⇒ // success
     }
 
     val ex3 =
-      "table public.aa: UPDATE: old-key: a[integer]:3 b[integer]:2 new-tuple: a[integer]:1 b[integer]:2 c[integer]:3"
+      "table public.abc: UPDATE: old-key: a[integer]:3 b[integer]:2 new-tuple: a[integer]:1 b[integer]:2 c[integer]:3"
+
+    val ex3ExpectedDataNew = Map("a" → "1", "b" → "2", "c" → "3")
+    val ex3ExpectedDataOld = Map("a" → "3", "b" → "2")
+    val ex3ExpectedSchemaNew = Map("a" → "integer", "b" → "integer", "c" → "integer")
+    val ex3ExpectedSchemaOld = Map("a" → "integer", "b" → "integer")
+
     changeStatementTest.parse(ex3) should matchPattern {
-      case Success(RowUpdated("public",
-                              "aa",
-                              _,
-                              _,
-                              List(Field("a", "integer", "1"), Field("b", "integer", "2"), Field("c", "integer", "3")),
-                              List(Field("a", "integer", "3"), Field("b", "integer", "2"))),
-                   _) ⇒ // success
+      case Success(r @ RowUpdated("public", "abc", "unknown", 0, `ex3ExpectedDataNew`, `ex3ExpectedDataOld`), _)
+          if r.schemaOld == ex3ExpectedSchemaOld && r.schemaNew == ex3ExpectedSchemaNew ⇒ // success
     }
 
   }

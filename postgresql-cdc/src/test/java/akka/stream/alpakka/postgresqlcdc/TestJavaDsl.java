@@ -119,7 +119,10 @@ public class TestJavaDsl {
     ChangeDataCapture.source(postgreSQLInstance, PgCdcSourceSettings.create())
         .log(
             "postgresqlcdc",
-            changeSet -> String.format("captured changes: %s", changeSet.toString()))
+            changeSet ->
+                String.format(
+                    "captured changes: %s",
+                    changeSet.toString())) // just log every change set (i.e. transaction)
         .withAttributes(
             Attributes.createLogLevels(
                 Logging.InfoLevel(), Logging.DebugLevel(), Logging.ErrorLevel()))
@@ -162,19 +165,14 @@ public class TestJavaDsl {
         ChangeDataCapture.ackSink(postgreSQLInstance, PgCdcAckSinkSettings.create());
 
     source
-        .filter(changeSet -> changeSet.getChanges().get(0) instanceof RowInserted)
-        .filter(changeSet -> changeSet.getChanges().get(0).getTableName().equals("users"))
+        .mapConcat(ChangeSet::getChanges)
+        .filter(change -> change instanceof RowInserted)
+        .filter(change -> change.getSchemaName().equals("public"))
+        .filter(change -> change.getTableName().equals("users"))
         .map(
-            changeSet -> {
-              String userId =
-                  ((RowInserted) (changeSet.getChanges().get(0)))
-                      .getFields()
-                      .stream()
-                      .filter(f -> f.getColumnName().equals("user_id"))
-                      .map(Field::getValue)
-                      .findFirst()
-                      .orElse("unknown");
-              return Tuple2.apply(changeSet, new UserRegistered(userId));
+            change -> {
+              String userId = ((RowInserted) (change)).getData().get("user_id");
+              return Tuple2.apply(change, new UserRegistered(userId));
             })
         .map(result -> result) // do something useful e.g., publish to SQS
         .map(tuple -> AckLogSeqNum.create(tuple._1.commitLogSeqNum()))
@@ -186,11 +184,8 @@ public class TestJavaDsl {
 
   @Test
   public void testIt() {
-    Instant time = Instant.parse("1964-02-23T00:00:00Z");
-
     // some inserts
-    FakeDb.insertCustomer(
-        0, "John", "Lennon", "john.lennon@akka.io", new ArrayList(), time, connection);
+    FakeDb.insertCustomer(0, "John", "Lennon", "john.lennon@akka.io", new ArrayList(), connection);
     // some updates
     FakeDb.updateCustomerEmail(0, "john.lennon@thebeatles.com", connection);
     // some deletes
