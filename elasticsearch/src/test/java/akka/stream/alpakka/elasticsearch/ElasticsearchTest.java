@@ -274,6 +274,48 @@ public class ElasticsearchTest {
   }
 
   @Test
+  public void testMultipleOperations() throws Exception {
+    // #multiple-operations
+    // Create, update, upsert and delete documents in sink8/book
+    List<IncomingMessage<Book, NotUsed>> requests =
+        Arrays.asList(
+            IncomingIndexMessage.create("00001", new Book("Book 1")),
+            IncomingUpsertMessage.create("00002", new Book("Book 2")),
+            IncomingUpsertMessage.create("00003", new Book("Book 3")),
+            IncomingUpdateMessage.create("00004", new Book("Book 4")),
+            IncomingDeleteMessage.create("00002"));
+
+    Source.from(requests)
+        .via(
+            ElasticsearchFlow.create(
+                "sink8", "book", ElasticsearchSinkSettings.Default(), client, new ObjectMapper()))
+        .runWith(Sink.seq(), materializer)
+        .toCompletableFuture()
+        .get();
+    // #multiple-operations
+
+    flush("sink8");
+
+    // Assert docs in sink8/book
+    CompletionStage<List<String>> f2 =
+        ElasticsearchSource.typed(
+                "sink8",
+                "book",
+                "{\"match_all\": {}}",
+                ElasticsearchSourceSettings.Default(),
+                client,
+                Book.class)
+            .map(m -> m.source().title)
+            .runWith(Sink.seq(), materializer);
+
+    List<String> result2 = new ArrayList<>(f2.toCompletableFuture().get());
+    List<String> expect = Arrays.asList("Book 1", "Book 3");
+    Collections.sort(result2);
+
+    assertEquals(expect, result2);
+  }
+
+  @Test
   public void testKafkaExample() throws Exception {
     // #kafka-example
     // We're going to pretend we got messages from kafka.
