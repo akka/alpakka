@@ -57,7 +57,7 @@ object IncomingUpsertMessage {
 
   // Java-api - without passThrough
   def create[T](id: String, source: T): IncomingMessage[T, NotUsed] =
-    IncomingUpdateMessage(id, source)
+    IncomingUpsertMessage(id, source)
 }
 
 object IncomingDeleteMessage {

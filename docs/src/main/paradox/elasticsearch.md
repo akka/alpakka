@@ -66,6 +66,23 @@ Java
 : @@snip ($alpakka$/elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #run-jsobject }
 
 
+### Incoming message types
+
+In the above examples, `IncomingIndexMessage` is used as the input to `ElasticsearchSink`. This means requesting `index` operation to Elasticsearch. It's possible to request other operations using following message types:
+
+| Message type           | Description                                                                                          |
+| ---------------------- | ---------------------------------------------------------------------------------------------------- |
+| IncomingIndexMessage   | Create a new document. If `id` is specified and it already exists, not create.                       |
+| IncomingUpdateMessage  | Update an existing document. If there is no document with the specified `id`, do nothing.            |
+| IncomingUpsertMessage  | Update an existing document. If there is no document with the specified `id`, create a new document. |
+| IncomingDeleteMessage  | Delete an existing document. If there is no document with the specified `id`, do nothing.            |
+
+Scala
+: @@snip ($alpakka$/elasticsearch/src/test/scala/akka/stream/alpakka/elasticsearch/ElasticsearchSpec.scala) { #multiple-operations }
+
+Java
+: @@snip ($alpakka$/elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #multiple-operations }
+
 ### Configuration
 
 We can configure the source by `ElasticsearchSourceSettings`.
@@ -98,7 +115,6 @@ Java
 | retryInterval       | 5000    | When a request is failed, `ElasticsearchSink` retries that request after this interval (milliseconds). |
 | maxRetry            | 100     | `ElasticsearchSink` give up and fails the stage if it gets this number of consective failures.         | 
 | retryPartialFailure | true    | A bulk request might fails partially for some reason. If this parameter is true, then `ElasticsearchSink` retries to request these failed messages. Otherwise, failed messages are discarded (or pushed to downstream if you use `ElasticsearchFlow` instead of the sink). |
-| docAsUpsert         | false   | If this parameter is true, `ElasticsearchSink` uses the upsert method to index documents. By default, documents are added using the standard index method (which create or replace). |
 | versionType         | None    | If set, `ElasticsearchSink` uses the chosen versionType to index documents. See [Version types](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types) for accepted settings. |
 
 ## Elasticsearch as Flow
