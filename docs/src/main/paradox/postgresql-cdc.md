@@ -17,7 +17,7 @@ the PostgreSQL documentation to understand the performance implications: [the Po
 ## Events Emitted
 
 This Akka Streams Source emits elements of the type @scaladoc[ChangeSet](akka.stream.alpakka.postgresqlcdc.ChangeSet). A change set is a set of changes that share a
-transaction id. A 'change' can be one of the following:
+transaction id. A @scaladoc[Change](akka.stream.alpakka.postgresqlcdc.Change) can be one of the following:
 
 * @scaladoc[RowInserted](akka.stream.alpakka.postgresqlcdc.RowInserted)
 * @scaladoc[RowUpdated](akka.stream.alpakka.postgresqlcdc.RowUpdated)
@@ -77,7 +77,8 @@ We configure the source using @scaladoc[PostgreSQLInstance](akka.stream.alpakka.
 | Setting           | Meaning                                       | Default      | Required |
 | ------------------|-----------------------------------------------|--------------|----------|
 | createSlotOnStart | create the logical replication slot on start  | true         | no       |
-| plugin            | only one option as of now                     | TestDecoding | no    |
+| dropSlotOnFinish  | drop the logical replication slot on stop     | false        | no       |
+| plugin            | only one option as of now                     | TestDecoding | no       |
 | columnsToIgnore   | what columns to ignore per table. * syntax is supported: use it to ignore all columns in a table, or all columns with a given name regardless of what table they are in | none | no |
 | mode              | choose between "Get" (at most once) or  "Peek" (at least once). If you choose "Peek", you'll need the [Ack Sink](## Ack Sink Settings), to acknowledge consumption of the event  | Get | no |
 | maxItems          | maximum number of changes to pull in one go   | 128          | no           |
@@ -142,7 +143,7 @@ Java
 * It cannot capture events regarding changes to tables' structure (i.e. column removed, table dropped, table
 index added, change of column type etc.).
 * When a row update is captured, the previous version of the row is lost / not available.
-    * Unless `REPLICA IDENTITY FULL` is set for the table. Use `ALTER TABLE "TABLE_NAME" REPLICA IDENTITY FULL`.
+    * Unless the table has a non-default `REPLICA IDENTITY` setting. To get the full previous version of the row: `ALTER TABLE "TABLE_NAME" REPLICA IDENTITY FULL`.
 * It doesn't work with older version of PostgreSQL (i.e < 9.4).
 
 ## Important Note

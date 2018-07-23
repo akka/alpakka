@@ -50,8 +50,12 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
     log.info("dropping logical decoding slot and dropping customers table")
     TestKit.shutdownActorSystem(system)
 
-    // The following are useful for local testing but not necessary when running this test on proper CI (like Travis) since
-    // the CI creates fresh docker containers and destroys them after the test is complete anyway.
+    /*
+
+    The following are useful for local testing but not necessary when running this test on proper CI (like Travis) since the CI
+    creates fresh docker containers and destroys them after the test is complete anyway.
+
+     */
     dropLogicalDecodingSlot("scalatest")
     dropTableCustomers()
     dropTableSales()
@@ -104,9 +108,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
         .runWith(TestSink.probe[ChangeSet])
         .request(9)
-        //
         // expecting the insert events first
-        //
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, RowInserted("public", "customers", _, _, data) :: Nil)
               if Map(
@@ -143,9 +145,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
                      "email" → "ringo.star@akka.io",
                      "tags" → "{awesome}") == data ⇒ // success
         }
-        //
         // expecting the update events next
-        //
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, RowUpdated("public", "customers", _, _, dataNew, `emptyData`) :: Nil)
               if Map("id" → "0",
@@ -164,25 +164,23 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
         }
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, RowUpdated("public", "customers", _, _, dataNew, `emptyData`) :: Nil)
-              if Map("id" -> "2",
-                     "first_name" -> "Paul",
-                     "last_name" -> "McCartney",
-                     "email" -> "paul.mccartney@thebeatles.com",
-                     "tags" -> "{awesome}") == dataNew ⇒ // success
+              if Map("id" → "2",
+                     "first_name" → "Paul",
+                     "last_name" → "McCartney",
+                     "email" → "paul.mccartney@thebeatles.com",
+                     "tags" → "{awesome}") == dataNew ⇒ // success
 
         }
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, RowUpdated("public", "customers", _, _, dataNew, `emptyData`) :: Nil)
-              if Map("id" -> "3",
-                     "first_name" -> "Ringo",
-                     "last_name" -> "Star",
-                     "email" -> "ringo.star@thebeatles.com",
-                     "tags" -> "{awesome}") == dataNew ⇒ // success
+              if Map("id" → "3",
+                     "first_name" → "Ringo",
+                     "last_name" → "Star",
+                     "email" → "ringo.star@thebeatles.com",
+                     "tags" → "{awesome}") == dataNew ⇒ // success
 
         }
-        //
         //  expecting the delete events next (all in a single transaction )
-        //
         .expectNextChainingPF {
           case c @ ChangeSet(_, _, _, deleteEvents)
               if deleteEvents.size == 4 && deleteEvents.count(_.isInstanceOf[RowDeleted]) == 4 ⇒ // success
@@ -197,26 +195,27 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
 
       ChangeDataCapture
         .source(postgreSQLInstance, PgCdcSourceSettings())
+        .mapConcat(_.changes)
         .log("postgresqlcdc", cs ⇒ s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
-        .runWith(TestSink.probe[ChangeSet])
+        .runWith(TestSink.probe[Change])
         .request(3)
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowInserted("public", "sales", _, _, data) :: Nil)
+          case RowInserted("public", "sales", _, _, data)
               if data == Map(
-                "id" -> "0",
-                "info" -> """{"name": "alpaca", "countries": ["Peru", "Bolivia", "Ecuador", "Chile"]}"""
+                "id" → "0",
+                "info" → """{"name": "alpaca", "countries": ["Peru", "Bolivia", "Ecuador", "Chile"]}"""
               ) ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowUpdated("public", "sales", _, _, dataNew, _) :: Nil)
+          case RowUpdated("public", "sales", _, _, dataNew, _)
               if dataNew == Map(
-                "id" -> "0",
-                "info" -> """{"name": "alpakka", "countries": ["*"]}"""
+                "id" → "0",
+                "info" → """{"name": "alpakka", "countries": ["*"]}"""
               ) ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowDeleted(_, _, _, _, _) :: Nil) ⇒ // success
+          case RowDeleted(_, _, _, _, _) ⇒ // success
         }
 
     }
@@ -263,15 +262,16 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
 
       ChangeDataCapture
         .source(postgreSQLInstance, PgCdcSourceSettings())
+        .mapConcat(_.changes)
         .log("postgresqlcdc", cs ⇒ s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
-        .runWith(TestSink.probe[ChangeSet])
+        .runWith(TestSink.probe[Change])
         .request(2)
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowInserted("public", "purchase_orders", _, _, _) :: Nil) ⇒ // success
+          case RowInserted("public", "purchase_orders", _, _, _) ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowDeleted(_, _, _, _, _) :: Nil) ⇒ // success
+          case RowDeleted(_, _, _, _, _) ⇒ // success
         }
 
     }
@@ -286,22 +286,23 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
       insertImage(0, "/scala-icon.png") // from postgresql-cdc/src/test/resources/scala-icon.png
       deleteImages()
 
-      import javax.xml.bind.DatatypeConverter // for the parseHexBinary method
+      import javax.xml.bind.DatatypeConverter // this has a parseHexBinary method that turns out to be useful here
 
       ChangeDataCapture
         .source(postgreSQLInstance, PgCdcSourceSettings())
+        .mapConcat(_.changes)
         .log("postgresqlcdc", cs ⇒ s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
-        .runWith(TestSink.probe[ChangeSet])
+        .runWith(TestSink.probe[Change])
         .request(2)
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowInserted("public", "images", _, _, data) :: Nil)
+          case RowInserted("public", "images", _, _, data)
               // from PG docs: The "hex" format encodes binary data as 2 hexadecimal digits per byte, most significant nibble first.
               // The entire string is preceded by the sequence \x
               if DatatypeConverter.parseHexBinary(data("image").substring(2)) sameElements expectedByteArray ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, List(RowDeleted("public", "images", _, _, _))) ⇒ // success
+          case RowDeleted("public", "images", _, _, _) ⇒ // success
         }
 
     }
@@ -314,24 +315,24 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
 
       ChangeDataCapture
         .source(postgreSQLInstance, PgCdcSourceSettings())
+        .mapConcat(_.changes)
         .log("postgresqlcdc", cs ⇒ s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
-        .runWith(TestSink.probe[ChangeSet])
+        .runWith(TestSink.probe[Change])
         .request(3)
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowInserted("public", "employees", _, _, _) :: Nil) ⇒ // success
+          case RowInserted("public", "employees", _, _, _) ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowUpdated("public", "employees", _, _, data, _) :: Nil)
-              if data("\"position\"") == "null" ⇒ // success
+          case RowUpdated("public", "employees", _, _, data, _) if data("\"position\"") == "null" ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowDeleted("public", "employees", _, _, _) :: Nil) ⇒ // success
+          case RowDeleted("public", "employees", _, _, _) ⇒ // success
         }
 
     }
 
-    "be able to get both old version / new version of a row in case of an update operation" in {
+    "be able to get both old version / new version of a row - in case of an update operation on a table with replica identity set to full" in {
 
       insertWeather(0, "Seattle", "rainy")
       updateWeather(0, "sunny")
@@ -339,20 +340,21 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
 
       ChangeDataCapture
         .source(postgreSQLInstance, PgCdcSourceSettings())
+        .mapConcat(_.changes)
         .log("postgresqlcdc", cs ⇒ s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
-        .runWith(TestSink.probe[ChangeSet])
+        .runWith(TestSink.probe[Change])
         .request(3)
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowInserted("public", """"WEATHER"""", _, _, _) :: Nil) ⇒ // success
+          case RowInserted("public", """"WEATHER"""", _, _, _) ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowUpdated("public", """"WEATHER"""", _, _, dataNew, dataOld) :: Nil)
-              if dataNew == Map("id" -> "0", "city" -> "Seattle", "weather" -> "sunny") &&
-              dataOld == Map("id" -> "0", "city" -> "Seattle", "weather" -> "rainy") ⇒ // success
+          case RowUpdated("public", """"WEATHER"""", _, _, dataNew, dataOld)
+              if (dataNew → dataOld) == (Map("id" → "0", "city" → "Seattle", "weather" → "sunny") →
+              Map("id" → "0", "city" → "Seattle", "weather" → "rainy")) ⇒ // success
         }
         .expectNextChainingPF {
-          case ChangeSet(_, _, _, (d: RowDeleted) :: Nil) ⇒ // success
+          case del: RowDeleted ⇒ // success
         }
 
     }
@@ -372,20 +374,20 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
       ChangeDataCapture
         .source(postgreSQLInstance,
                 PgCdcSourceSettings()
-                  .withColumnsToIgnore(Map("employees" -> List("*"), "sales" -> List("info"))))
+                  .withColumnsToIgnore(Map("employees" → List("*"), "sales" → List("info"))))
+        .mapConcat(_.changes)
         .log("postgresqlcdc", cs ⇒ s"captured change: ${cs.toString}")
         .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
-        .runWith(TestSink.probe[ChangeSet])
+        .runWith(TestSink.probe[Change])
         .request(3)
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowInserted("public", "sales", _, _, _) :: Nil) ⇒ // success
+          case RowInserted("public", "sales", _, _, _) ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowUpdated("public", "sales", _, _, dataNew, _) :: Nil)
-              if !dataNew.contains("info") ⇒ // success
+          case RowUpdated("public", "sales", _, _, dataNew, _) if !dataNew.contains("info") ⇒ // success
         }
         .expectNextChainingPF {
-          case c @ ChangeSet(_, _, _, RowDeleted("public", "sales", _, _, _) :: Nil) ⇒ // success
+          case RowDeleted("public", "sales", _, _, _) ⇒ // success
         }
 
     }

@@ -32,30 +32,41 @@ import scala.util.Try
     getReplicationSlots.setString(1, slotName)
     val rs = getReplicationSlots.executeQuery()
 
-    if (!rs.next()) {
-      log.info("logical replication slot with name {} does not exist", slotName)
-      rs.close()
-      false
-    } else {
-      val database = rs.getString("database")
-      val foundPlugin = rs.getString("plugin")
-      foundPlugin match {
-        case plugin.name ⇒
-          log.info("found logical replication slot with name {} for database {} using {} plugin",
-                   slotName,
-                   database,
-                   plugin.name)
-        case _ ⇒
-          log.warning("improper plugin configuration for slot with name {}", slotName)
-      }
-      rs.close()
-      true
+    rs.next() match {
+      case false ⇒
+        log.info("logical replication slot with name {} does not exist", slotName)
+        rs.close()
+        false
+      case true ⇒
+        val database = rs.getString("database")
+        val foundPlugin = rs.getString("plugin")
+        foundPlugin match {
+          case plugin.name ⇒
+            log.info("found logical replication slot with name {} for database {} using {} plugin",
+                     slotName,
+                     database,
+                     plugin.name)
+          case _ ⇒
+            log.warning("improper plugin configuration for slot with name {}", slotName)
+        }
+        rs.close()
+        true
     }
+
   }
 
   def createSlot(slotName: String, plugin: Plugin)(implicit conn: Connection, log: LoggingAdapter): Unit = {
     log.info("setting up logical replication slot {}", slotName)
-    val stmt = conn.prepareStatement(s"SELECT * FROM pg_create_logical_replication_slot('$slotName','${plugin.name}')")
+    val stmt = conn.prepareStatement(s"SELECT * FROM pg_create_logical_replication_slot(?, ?)")
+    stmt.setString(1, slotName)
+    stmt.setString(2, plugin.name)
+    stmt.execute()
+  }
+
+  def dropSlot(slotName: String)(implicit conn: Connection, log: LoggingAdapter): Unit = {
+    log.info("dropping logical replication slot {}", slotName)
+    val stmt = conn.prepareStatement(s"SELECT * FROM pg_drop_logical_replication_slot(?)")
+    stmt.setString(1, slotName)
     stmt.execute()
   }
 
@@ -77,7 +88,7 @@ import scala.util.Try
 
   def flush(slotName: String, upToLogSeqNum: String)(implicit conn: Connection): Unit = {
     val statement: PreparedStatement =
-      conn.prepareStatement("SELECT * FROM pg_logical_slot_get_changes(?,?, NULL)") // TODO: turn into prepareCall
+      conn.prepareStatement("SELECT 1 FROM pg_logical_slot_get_changes(?,?, NULL)")
     statement.setString(1, slotName)
     statement.setString(2, upToLogSeqNum)
     statement.execute()
@@ -94,7 +105,8 @@ import scala.util.Try
     while (rs.next()) {
       val data = rs.getString("data")
       val transactionId = rs.getLong("xid")
-      val location = Try(rs.getString("location")).getOrElse(rs.getString("lsn"))
+      val location = Try(rs.getString("location"))
+        .getOrElse(rs.getString("lsn")) // in older versions of PG the column is called "lsn" not "location"
       result += SlotChange(transactionId, location, data)
     }
     pullChangesStatement.close()

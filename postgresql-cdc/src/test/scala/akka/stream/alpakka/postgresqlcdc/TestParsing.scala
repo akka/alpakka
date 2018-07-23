@@ -141,7 +141,7 @@ class TestParsing extends FunSuite with Matchers {
 
     changeStatementTest.parse(ex1) should matchPattern {
       case Success(r @ RowUpdated("public", "abc", "unknown", 0, `ex1ExpectedDataNew`, `ex1ExpectedDataOld`), _)
-          if r.schemaOld == ex1ExpectedSchemaOld && r.schemaNew == ex1ExpectedSchemaNew => // success
+          if r.schemaOld == ex1ExpectedSchemaOld && r.schemaNew == ex1ExpectedSchemaNew ⇒ // success
     }
 
     val ex2 = "table public.sales: UPDATE: id[integer]:0 info[jsonb]:'{\"name\": \"alpakka\", \"countries\": [\"*\"]}'"

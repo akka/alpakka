@@ -20,11 +20,16 @@ import scala.collection.mutable.ArrayBuffer
 
   /*
 
-  We need to parse a log statement such as the following:
+  What we get from PostgreSQL is something like the following:
 
-  BEGIN 2380
-  table public.table_name: INSERT: id[integer]:3 data[text]:'3'
-  COMMIT 2380 (at 2018-04-09 17:56:36.730413+00)
+  location  | xid |                     data
+ -----------+-----+-----------------------------------------------
+  0/16E0478 | 689 | BEGIN 689
+  0/16E0478 | 689 | table public.data: INSERT: id[integer]:1 data[text]:'1'
+  0/16E0580 | 689 | table public.data: INSERT: id[integer]:2 data[text]:'2'
+  0/16E0650 | 689 | COMMIT 689
+
+  The grammar below is for parsing what is inside the rows of the data column.
 
    */
 
@@ -93,7 +98,7 @@ import scala.collection.mutable.ArrayBuffer
     P(singleQuote ~ P((!(escape | singleQuote) ~ AnyChar) | escape).rep.! ~ singleQuote)
   }
 
-  // captures my_column_name
+  // captures my_column_name or something_else
   val unquotedIdentifier: Parser[String] = P(lowerCaseLetter | digit | "$" | "_").rep(min = 1).!
 
   // captures my_column_name or "MY_COLUMN_NAME"
@@ -111,6 +116,7 @@ import scala.collection.mutable.ArrayBuffer
 
   val changeType: Parser[String] = P("INSERT" | "UPDATE" | "DELETE").!
 
+  // matches a[integer]:1 b[integer]:1 c[integer]:3
   val data: Parser[List[Field]] = P(identifier ~ typeDeclaration ~ ":" ~ value)
     .rep(min = 1, sep = space)
     .map(s ⇒ s.map(f ⇒ Field(f._1, f._2, f._3)))
@@ -124,7 +130,8 @@ import scala.collection.mutable.ArrayBuffer
   // when we have only the new version of the row
   val latest: Parser[(List[Field], List[Field])] = data.map(v ⇒ (List.empty[Field], v))
 
-  abstract class ChangeBuilder extends (((String, Long)) ⇒ Change) // (location: String, transactionId: Long) => Change
+  // note: we need to wrap the function in an abstract class to get rid of a type erasure problem
+  abstract class ChangeBuilder extends (((String, Long)) ⇒ Change) // (location: String, transactionId: Long) ⇒ Change
 
   val changeStatement: Parser[ChangeBuilder] = {
     val getData: List[Field] ⇒ Map[String, String] = fieldList ⇒ fieldList.map(f ⇒ f.columnName → f.value).toMap
@@ -188,6 +195,7 @@ import scala.collection.mutable.ArrayBuffer
     var instant: Instant = null
     var commitLogSeqNum: String = null
 
+    // the last item is the "COMMIT _ (at _)"
     (slotChanges.last, commit.parse(slotChanges.last.data)) match {
       case (s, Parsed.Success(CommitStatement(_, t: ZonedDateTime), _)) ⇒
         instant = t.toInstant
@@ -196,6 +204,7 @@ import scala.collection.mutable.ArrayBuffer
         log.error("failure {} when parsing {}", f.toString(), s.data)
     }
 
+    // we drop the first item and the last item since the first one is just the "BEGIN _" and the last one is the "COMMIT _ (at _)"
     slotChanges.drop(1).dropRight(1).map(s ⇒ (s, changeStatement.parse(s.data))).foreach {
 
       case (s, Parsed.Success(changeBuilder: ChangeBuilder, _)) ⇒

@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.postgresqlcdc
 
-// rename Java imports if the name clashes with the Scala name
+// we rename Java imports if the name clashes with the Scala name
 import java.time.{Duration ⇒ JavaDuration}
 import java.util.{List ⇒ JavaList, Map ⇒ JavaMap}
 
@@ -66,6 +66,7 @@ object Plugins {
  *
  * @param mode              Choose between "at most once delivery" / "at least once"
  * @param createSlotOnStart Create logical decoding slot when the source starts (if it doesn't already exist...)
+ * @param dropSlotOnFinish Drop the logical decoding slot when the source stops
  * @param plugin            Plugin to use. Only "test_decoding" supported right now.
  * @param columnsToIgnore   Columns to ignore
  * @param maxItems          Specifies how many rows are fetched in one batch
@@ -73,6 +74,7 @@ object Plugins {
  */
 final class PgCdcSourceSettings private (val mode: Mode = Modes.Get,
                                          val createSlotOnStart: Boolean = true,
+                                         val dropSlotOnFinish: Boolean = false,
                                          val plugin: Plugin = Plugins.TestDecoding,
                                          val columnsToIgnore: Map[String, List[String]] = Map(),
                                          val maxItems: Int = 128,
@@ -89,6 +91,9 @@ final class PgCdcSourceSettings private (val mode: Mode = Modes.Get,
 
   def withColumnsToIgnore(columnsToIgnore: Map[String, List[String]]): PgCdcSourceSettings =
     copy(columnsToIgnore = columnsToIgnore)
+
+  def withDropSlotOnFinish(dropSlotOnFinish: Boolean): PgCdcSourceSettings =
+    copy(dropSlotOnFinish = dropSlotOnFinish)
 
   /**
    * Java API
@@ -110,29 +115,25 @@ final class PgCdcSourceSettings private (val mode: Mode = Modes.Get,
 
   private def copy(mode: Mode = mode,
                    createSlotOnStart: Boolean = createSlotOnStart,
+                   dropSlotOnFinish: Boolean = dropSlotOnFinish,
                    plugin: Plugin = plugin,
                    columnsToIgnore: Map[String, List[String]] = columnsToIgnore,
                    maxItems: Int = maxItems,
                    pollInterval: FiniteDuration = pollInterval): PgCdcSourceSettings =
-    new PgCdcSourceSettings(mode, createSlotOnStart, plugin, columnsToIgnore, maxItems, pollInterval)
+    new PgCdcSourceSettings(mode, createSlotOnStart, dropSlotOnFinish, plugin, columnsToIgnore, maxItems, pollInterval)
 
   // auto-generated
   override def toString =
-    s"PgCdcSourceSettings(mode=$mode, createSlotOnStart=$createSlotOnStart, plugin=$plugin, columnsToIgnore=$columnsToIgnore, maxItems=$maxItems, pollInterval=$pollInterval)"
+    s"PgCdcSourceSettings(mode=$mode, createSlotOnStart=$createSlotOnStart, dropSlotOnFinish=$dropSlotOnFinish, plugin=$plugin, columnsToIgnore=$columnsToIgnore, maxItems=$maxItems, pollInterval=$pollInterval)"
 }
 
 object PgCdcSourceSettings {
 
-  /**
-   * Factory method for Scala.
-   */
   def apply(): PgCdcSourceSettings =
     new PgCdcSourceSettings()
 
   /**
    * Java API
-   *
-   * Factory method for Java.
    */
   def create(): PgCdcSourceSettings =
     PgCdcSourceSettings()
@@ -154,16 +155,11 @@ final class PostgreSQLInstance private (val jdbcConnectionString: String, val sl
 
 object PostgreSQLInstance {
 
-  /**
-   * Factory method for Scala.
-   */
   def apply(jdbcConnectionString: String, slotName: String): PostgreSQLInstance =
     new PostgreSQLInstance(jdbcConnectionString, slotName)
 
   /**
    * Java API
-   *
-   * Factory method for Java.
    */
   def create(jdbcConnectionString: String, slotName: String): PostgreSQLInstance =
     PostgreSQLInstance(jdbcConnectionString, slotName)
@@ -194,15 +190,10 @@ final class PgCdcAckSinkSettings private (val maxItems: Int = 16,
 
 object PgCdcAckSinkSettings {
 
-  /**
-   * Factory method for Scala.
-   */
   def apply() = new PgCdcAckSinkSettings()
 
   /**
    * Java API
-   *
-   * Factory method for Java.
    */
   def create(): PgCdcAckSinkSettings = PgCdcAckSinkSettings()
 

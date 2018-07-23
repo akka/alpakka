@@ -13,7 +13,6 @@ import akka.stream.stage._
 import akka.stream.{Attributes, Outlet, SourceShape}
 
 import scala.collection.mutable
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -80,14 +79,12 @@ import scala.util.control.NonFatal
       createSlot(instance.slotName, settings.plugin)
   }
 
-  override def postStop(): Unit =
-    try {
-      conn.close()
-      log.debug("closed connection")
-    } catch {
-      case NonFatal(e) ⇒
-        log.error("failed to close connection", e)
+  override def postStop(): Unit = {
+    if (settings.dropSlotOnFinish) {
+      dropSlot(instance.slotName)
     }
+    conn.close()
+  }
 
   setHandler(out, new OutHandler {
 
