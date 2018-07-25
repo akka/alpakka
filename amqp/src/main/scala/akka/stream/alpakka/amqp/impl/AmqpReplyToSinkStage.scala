@@ -64,7 +64,7 @@ private[amqp] final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings
           override def onPush(): Unit = {
             val elem = grab(in)
 
-            val replyTo = elem.props.map(_.getReplyTo)
+            val replyTo = elem.properties.map(_.getReplyTo)
 
             if (replyTo.isDefined) {
               channel.basicPublish(
@@ -72,7 +72,7 @@ private[amqp] final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings
                 replyTo.get,
                 elem.mandatory,
                 elem.immediate,
-                elem.props.orNull,
+                elem.properties.orNull,
                 elem.bytes.toArray
               )
             } else if (settings.failIfReplyToMissing) {

@@ -191,7 +191,7 @@ private[amqp] final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSiz
 
           override def onPush(): Unit = {
             val elem = grab(in)
-            val props = elem.props.getOrElse(new BasicProperties()).builder.replyTo(queueName).build()
+            val props = elem.properties.getOrElse(new BasicProperties()).builder.replyTo(queueName).build()
             channel.basicPublish(
               exchange,
               elem.routingKey.getOrElse(routingKey),
