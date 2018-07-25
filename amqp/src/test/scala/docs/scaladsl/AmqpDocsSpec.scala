@@ -13,6 +13,7 @@ import akka.util.ByteString
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Promise}
+import scala.collection.immutable
 
 /**
  * Needs a local running AMQP server on the default port with no password.
@@ -47,7 +48,7 @@ class AmqpDocsSpec extends AmqpSpec {
 
       //#create-source
       val amqpSource = AmqpSource.atMostOnceSource(
-        NamedQueueSourceSettings(connectionProvider, queueName).withDeclarations(queueDeclaration),
+        NamedQueueSourceSettings(connectionProvider, queueName).withDeclarations(immutable.Seq(queueDeclaration)),
         bufferSize = 10
       )
       //#create-source
@@ -130,7 +131,7 @@ class AmqpDocsSpec extends AmqpSpec {
                 TemporaryQueueSourceSettings(
                   connectionProvider,
                   exchangeName
-                ).withDeclarations(exchangeDeclaration),
+                ).withDeclarations(immutable.Seq(exchangeDeclaration)),
                 bufferSize = 1
               )
               .map(msg => (fanoutBranch, msg.bytes.utf8String))
@@ -166,7 +167,7 @@ class AmqpDocsSpec extends AmqpSpec {
 
       //#create-source-withoutautoack
       val amqpSource = AmqpSource.committableSource(
-        NamedQueueSourceSettings(connectionProvider, queueName).withDeclarations(queueDeclaration),
+        NamedQueueSourceSettings(connectionProvider, queueName).withDeclarations(immutable.Seq(queueDeclaration)),
         bufferSize = 10
       )
       //#create-source-withoutautoack
@@ -199,7 +200,7 @@ class AmqpDocsSpec extends AmqpSpec {
       Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
 
       val amqpSource = AmqpSource.committableSource(
-        NamedQueueSourceSettings(connectionProvider, queueName).withDeclarations(queueDeclaration),
+        NamedQueueSourceSettings(connectionProvider, queueName).withDeclarations(immutable.Seq(queueDeclaration)),
         bufferSize = 10
       )
 
