@@ -31,7 +31,6 @@ Show an example code snippet of how a source of this connector can be created.
 
 Scala
 : @@snip [snip]($alpakka$/reference/src/test/scala/docs/scaladsl/ReferenceSpec.scala) { #source }
-Language specific text can follow immediately after a snippet so it is switched with the snippet tab.
 
 Java
 : @@snip [snip]($alpakka$/reference/src/test/java/docs/javadsl/ReferenceTest.java) { #source }
