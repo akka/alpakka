@@ -6,7 +6,10 @@ package akka.stream.alpakka.amqp
 
 import akka.annotation.InternalApi
 
+import java.util.{List => JavaList, Map => JavaMap}
+
 import scala.collection.immutable
+import scala.collection.JavaConverters._
 
 /**
  * Internal API
@@ -19,37 +22,71 @@ sealed trait AmqpConnectorSettings {
 
 sealed trait AmqpSourceSettings extends AmqpConnectorSettings
 
-final case class NamedQueueSourceSettings(
-    connectionProvider: AmqpConnectionProvider,
-    queue: String,
-    declarations: immutable.Seq[Declaration] = immutable.Seq.empty,
-    noLocal: Boolean = false,
-    exclusive: Boolean = false,
-    ackRequired: Boolean = true,
-    consumerTag: String = "default",
-    arguments: Map[String, AnyRef] = Map.empty
+final class NamedQueueSourceSettings private (
+    val connectionProvider: AmqpConnectionProvider,
+    val queue: String,
+    val declarations: immutable.Seq[Declaration] = immutable.Seq.empty,
+    val noLocal: Boolean = false,
+    val exclusive: Boolean = false,
+    val ackRequired: Boolean = true,
+    val consumerTag: String = "default",
+    val arguments: Map[String, AnyRef] = Map.empty
 ) extends AmqpSourceSettings {
-  @annotation.varargs
-  def withDeclarations(declarations: Declaration*): NamedQueueSourceSettings = copy(declarations = declarations.toList)
 
-  def withNoLocal(noLocal: Boolean): NamedQueueSourceSettings = copy(noLocal = noLocal)
+  def withDeclarations(declaration: immutable.Seq[Declaration]): NamedQueueSourceSettings =
+    copy(declarations = declarations)
 
-  def withExclusive(exclusive: Boolean): NamedQueueSourceSettings = copy(exclusive = exclusive)
+  /**
+   * Java API
+   */
+  def withDeclarations(declarations: JavaList[Declaration]): NamedQueueSourceSettings =
+    copy(declarations = declarations.asScala.toIndexedSeq)
 
-  def withAckRequired(ackRequired: Boolean): NamedQueueSourceSettings = copy(ackRequired = ackRequired)
+  def withNoLocal(noLocal: Boolean): NamedQueueSourceSettings =
+    copy(noLocal = noLocal)
 
-  def withConsumerTag(consumerTag: String): NamedQueueSourceSettings = copy(consumerTag = consumerTag)
+  def withExclusive(exclusive: Boolean): NamedQueueSourceSettings =
+    copy(exclusive = exclusive)
 
-  def withArguments(argument: (String, AnyRef), arguments: (String, AnyRef)*): NamedQueueSourceSettings =
-    copy(arguments = (argument +: arguments).toMap)
+  def withAckRequired(ackRequired: Boolean): NamedQueueSourceSettings =
+    copy(ackRequired = ackRequired)
 
-  @annotation.varargs
-  def withArguments(argument: akka.japi.Pair[String, AnyRef],
-                    arguments: akka.japi.Pair[String, AnyRef]*): NamedQueueSourceSettings =
-    copy(arguments = (argument +: arguments).map(_.toScala).toMap)
+  def withConsumerTag(consumerTag: String): NamedQueueSourceSettings =
+    copy(consumerTag = consumerTag)
+
+  def withArguments(arguments: Map[String, AnyRef]): NamedQueueSourceSettings =
+    copy(arguments = arguments)
+
+  /**
+   * Java API
+   */
+  def withArguments(arguments: JavaMap[String, Object]): NamedQueueSourceSettings =
+    copy(arguments = arguments.asScala.toMap)
+
+  private def copy(declarations: immutable.Seq[Declaration] = declarations,
+                   noLocal: Boolean = noLocal,
+                   exclusive: Boolean = exclusive,
+                   ackRequired: Boolean = ackRequired,
+                   consumerTag: String = consumerTag,
+                   arguments: Map[String, AnyRef] = arguments) =
+    new NamedQueueSourceSettings(
+      connectionProvider,
+      queue,
+      declarations = declarations,
+      noLocal = noLocal,
+      exclusive = exclusive,
+      ackRequired = ackRequired,
+      consumerTag = consumerTag,
+      arguments = arguments
+    )
+
+  override def toString: String =
+    s"NamedQueueSourceSettings(connectionProvider=$connectionProvider, queue=$queue, declarations=$declarations, noLocal=$noLocal, exclusive=$exclusive, ackRequired=$ackRequired, consumerTag=$consumerTag, arguments=$arguments)"
 }
 
 object NamedQueueSourceSettings {
+  def apply(connectionProvider: AmqpConnectionProvider, queue: String): NamedQueueSourceSettings =
+    new NamedQueueSourceSettings(connectionProvider, queue)
 
   /**
    * Java API
@@ -58,20 +95,34 @@ object NamedQueueSourceSettings {
     NamedQueueSourceSettings(connectionProvider, queue)
 }
 
-final case class TemporaryQueueSourceSettings(
-    connectionProvider: AmqpConnectionProvider,
-    exchange: String,
-    declarations: immutable.Seq[Declaration] = Nil,
-    routingKey: Option[String] = None
+final class TemporaryQueueSourceSettings private (
+    val connectionProvider: AmqpConnectionProvider,
+    val exchange: String,
+    val declarations: immutable.Seq[Declaration] = Nil,
+    val routingKey: Option[String] = None
 ) extends AmqpSourceSettings {
+
+  def withDeclarations(declaration: immutable.Seq[Declaration]): TemporaryQueueSourceSettings =
+    copy(declarations = declarations)
+
+  /**
+   * Java API
+   */
+  def withDeclarations(declarations: JavaList[Declaration]): TemporaryQueueSourceSettings =
+    copy(declarations = declarations.asScala.toIndexedSeq)
+
   def withRoutingKey(routingKey: String): TemporaryQueueSourceSettings = copy(routingKey = Some(routingKey))
 
-  @annotation.varargs
-  def withDeclarations(declarations: Declaration*): TemporaryQueueSourceSettings =
-    copy(declarations = declarations.toList)
+  private def copy(declarations: immutable.Seq[Declaration] = declarations, routingKey: Option[String] = routingKey) =
+    new TemporaryQueueSourceSettings(connectionProvider, exchange, declarations = declarations, routingKey = routingKey)
+
+  override def toString: String =
+    s"TemporaryQueueSourceSettings(connectionProvider=$connectionProvider, exchange=$exchange, declarations=$declarations, routingKey=$routingKey)"
 }
 
 object TemporaryQueueSourceSettings {
+  def apply(connectionProvider: AmqpConnectionProvider, exchange: String) =
+    new TemporaryQueueSourceSettings(connectionProvider, exchange)
 
   /**
    * Java API

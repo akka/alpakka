@@ -28,10 +28,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.duration.Duration;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -83,7 +80,7 @@ public class AmqpDocsTest {
     final Source<IncomingMessage, NotUsed> amqpSource =
         AmqpSource.atMostOnceSource(
             NamedQueueSourceSettings.create(connectionProvider, queueName)
-                .withDeclarations(queueDeclaration),
+                .withDeclarations(Collections.singletonList(queueDeclaration)),
             bufferSize);
     // #create-source
 
@@ -126,7 +123,7 @@ public class AmqpDocsTest {
     final Source<IncomingMessage, NotUsed> amqpSource =
         AmqpSource.atMostOnceSource(
             NamedQueueSourceSettings.create(connectionProvider, queueName)
-                .withDeclarations(queueDeclaration),
+                .withDeclarations(Collections.singletonList(queueDeclaration)),
             bufferSize);
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
@@ -189,7 +186,7 @@ public class AmqpDocsTest {
           mergedSources.merge(
               AmqpSource.atMostOnceSource(
                       TemporaryQueueSourceSettings.create(connectionProvider, exchangeName)
-                          .withDeclarations(exchangeDeclaration),
+                          .withDeclarations(Collections.singletonList(exchangeDeclaration)),
                       bufferSize)
                   .map(msg -> Pair.create(fanoutBranch, msg.bytes().utf8String())));
     }
@@ -238,7 +235,7 @@ public class AmqpDocsTest {
     final Source<CommittableIncomingMessage, NotUsed> amqpSource =
         AmqpSource.committableSource(
             NamedQueueSourceSettings.create(connectionProvider, queueName)
-                .withDeclarations(queueDeclaration),
+                .withDeclarations(Collections.singletonList(queueDeclaration)),
             bufferSize);
     // #create-source-withoutautoack
 
@@ -285,7 +282,7 @@ public class AmqpDocsTest {
     final Source<CommittableIncomingMessage, NotUsed> amqpSource =
         AmqpSource.committableSource(
             NamedQueueSourceSettings.create(connectionProvider, queueName)
-                .withDeclarations(queueDeclaration),
+                .withDeclarations(Collections.singletonList(queueDeclaration)),
             bufferSize);
 
     // #run-source-withoutautoack-and-nack

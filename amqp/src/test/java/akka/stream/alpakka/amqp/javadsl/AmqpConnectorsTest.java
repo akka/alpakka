@@ -28,6 +28,7 @@ import scala.concurrent.duration.Duration;
 
 import java.net.ConnectException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -159,7 +160,7 @@ public class AmqpConnectorsTest {
     final Source<IncomingMessage, NotUsed> amqpSource =
         AmqpSource.atMostOnceSource(
             NamedQueueSourceSettings.create(connectionProvider, queueName)
-                .withDeclarations(queueDeclaration),
+                .withDeclarations(Collections.singletonList(queueDeclaration)),
             1);
 
     amqpSource
@@ -194,7 +195,7 @@ public class AmqpConnectorsTest {
     final Source<CommittableIncomingMessage, NotUsed> amqpSource =
         AmqpSource.committableSource(
             NamedQueueSourceSettings.create(connectionProvider, queueName)
-                .withDeclarations(queueDeclaration),
+                .withDeclarations(Collections.singletonList(queueDeclaration)),
             bufferSize);
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
@@ -242,7 +243,8 @@ public class AmqpConnectorsTest {
     final Source<IncomingMessage, NotUsed> amqpSource =
         AmqpSource.atMostOnceSource(
             NamedQueueSourceSettings.create(connectionProvider, queueName)
-                .withDeclarations(exchangeDeclaration, queueDeclaration, bindingDeclaration),
+                .withDeclarations(
+                    Arrays.asList(exchangeDeclaration, queueDeclaration, bindingDeclaration)),
             bufferSize);
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
