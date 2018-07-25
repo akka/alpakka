@@ -17,9 +17,11 @@ import scala.concurrent.{Future, Promise}
 import scala.util.Success
 
 /**
- * private package hides the class from the API in Scala. However it is still
- * visible in Java. Use "InternalApi" annotation to communicate to Java developers
- * that this is private API.
+ * INTERNAL API
+ *
+ * Private package hides the class from the API in Scala. However it is still
+ * visible in Java. Use "InternalApi" annotation and "INTERNAL API" as the first
+ * line in scaladoc to communicate to Java developers that this is private API.
  */
 @InternalApi private[reference] final class ReferenceSourceStageLogic(
     val settings: SourceSettings,
@@ -50,6 +52,9 @@ import scala.util.Success
   override def postStop(): Unit = {}
 }
 
+/**
+ * INTERNAL API
+ */
 @InternalApi private[reference] final class ReferenceSource(settings: SourceSettings)
     extends GraphStageWithMaterializedValue[SourceShape[ReferenceReadMessage], Future[Done]] {
   val out: Outlet[ReferenceReadMessage] = Outlet(Logging.simpleName(this) + ".out")
