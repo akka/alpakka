@@ -146,12 +146,8 @@ public class AmqpDocsTest {
     amqpSource
         .map(
             b ->
-                new OutgoingMessage(
-                    b.bytes().concat(ByteString.fromString("a")),
-                    false,
-                    false,
-                    Optional.of(b.properties()),
-                    Optional.empty()))
+                OutgoingMessage.create(b.bytes().concat(ByteString.fromString("a")), false, false)
+                    .withProperties(b.properties()))
         .runWith(amqpSink, materializer);
 
     result

@@ -59,7 +59,7 @@ private[amqp] final class AmqpSinkStage(settings: AmqpSinkSettings)
               elem.routingKey.getOrElse(routingKey),
               elem.mandatory,
               elem.immediate,
-              elem.props.orNull,
+              elem.properties.orNull,
               elem.bytes.toArray
             )
             pull(in)

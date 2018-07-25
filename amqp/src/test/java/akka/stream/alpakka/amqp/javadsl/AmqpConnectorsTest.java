@@ -28,10 +28,7 @@ import scala.concurrent.duration.Duration;
 
 import java.net.ConnectException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -148,9 +145,7 @@ public class AmqpConnectorsTest {
     Pair<CompletionStage<String>, TestSubscriber.Probe<IncomingMessage>> result =
         Source.from(input)
             .map(ByteString::fromString)
-            .map(
-                bytes ->
-                    new OutgoingMessage(bytes, false, false, Optional.empty(), Optional.empty()))
+            .map(bytes -> OutgoingMessage.create(bytes, false, false))
             .viaMat(ampqRpcFlow, Keep.right())
             .mapAsync(1, cm -> cm.ack(false).thenApply(unused -> cm.message()))
             .toMat(TestSink.probe(system), Keep.both())
@@ -168,10 +163,7 @@ public class AmqpConnectorsTest {
             1);
 
     amqpSource
-        .map(
-            b ->
-                new OutgoingMessage(
-                    b.bytes(), false, false, Optional.of(b.properties()), Optional.empty()))
+        .map(b -> OutgoingMessage.create(b.bytes(), false, false).withProperties(b.properties()))
         .runWith(amqpSink, materializer);
 
     List<IncomingMessage> probeResult =
@@ -259,12 +251,8 @@ public class AmqpConnectorsTest {
     Source.from(input)
         .map(
             s ->
-                new OutgoingMessage(
-                    ByteString.fromString(s),
-                    false,
-                    false,
-                    Optional.empty(),
-                    Optional.of("key." + s)))
+                OutgoingMessage.create(ByteString.fromString(s), false, false)
+                    .withRoutingKey("key." + s))
         .runWith(amqpSink, materializer);
 
     final List<IncomingMessage> result =

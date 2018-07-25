@@ -20,7 +20,7 @@ object AmqpSink {
    * or because of an amqp failure
    */
   def simple(settings: AmqpSinkSettings): Sink[ByteString, Future[Done]] =
-    apply(settings).contramap[ByteString](bytes => OutgoingMessage(bytes, false, false, None))
+    apply(settings).contramap[ByteString](bytes => OutgoingMessage(bytes, false, false))
 
   /**
    * Scala API:
