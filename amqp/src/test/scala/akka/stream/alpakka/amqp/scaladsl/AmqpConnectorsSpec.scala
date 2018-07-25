@@ -96,8 +96,8 @@ class AmqpConnectorsSpec extends AmqpSpec {
       amqpSource
         .mapConcat { b =>
           List(
-            OutgoingMessage(b.bytes.concat(ByteString("a")), false, false, Some(b.properties)),
-            OutgoingMessage(b.bytes.concat(ByteString("aa")), false, false, Some(b.properties))
+            OutgoingMessage(b.bytes.concat(ByteString("a")), false, false).withProperties(b.properties),
+            OutgoingMessage(b.bytes.concat(ByteString("aa")), false, false).withProperties(b.properties)
           )
         }
         .runWith(amqpSink)
@@ -121,7 +121,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
     "handle missing reply-to header correctly" in {
 
-      val outgoingMessage = OutgoingMessage(ByteString.empty, false, false, None)
+      val outgoingMessage = OutgoingMessage(ByteString.empty, false, false)
 
       Source
         .single(outgoingMessage)
@@ -312,7 +312,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val (rpcQueueF, probe) =
         Source(input)
           .map(s => ByteString(s))
-          .map(bytes => OutgoingMessage(bytes, false, false, None))
+          .map(bytes => OutgoingMessage(bytes, false, false))
           .viaMat(amqpRpcFlow)(Keep.right)
           .mapAsync(1)(cm => cm.ack().map(_ => cm.message))
           .toMat(TestSink.probe)(Keep.both)
@@ -328,7 +328,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
         bufferSize = 1
       )
       amqpSource
-        .map(b => OutgoingMessage(b.bytes, false, false, Some(b.properties)))
+        .map(b => OutgoingMessage(b.bytes, false, false).withProperties(b.properties))
         .runWith(amqpSink)
 
       probe.toStrict(3.second).map(_.bytes.utf8String) shouldEqual input
@@ -359,7 +359,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val input = Vector("one", "two", "three", "four", "five")
       val routingKeys = input.map(s => getRoutingKey(s))
       Source(input)
-        .map(s => OutgoingMessage(ByteString(s), false, false, None, Some(getRoutingKey(s))))
+        .map(s => OutgoingMessage(ByteString(s), false, false).withRoutingKey(getRoutingKey(s)))
         .runWith(amqpSink)
         .futureValue shouldEqual Done
 

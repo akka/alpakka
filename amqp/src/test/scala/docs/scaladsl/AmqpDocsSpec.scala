@@ -95,7 +95,7 @@ class AmqpDocsSpec extends AmqpSpec {
       )
 
       amqpSource
-        .map(b => OutgoingMessage(b.bytes.concat(ByteString("a")), false, false, Some(b.properties)))
+        .map(b => OutgoingMessage(b.bytes.concat(ByteString("a")), false, false).withProperties(b.properties))
         .runWith(amqpSink)
 
       probe.request(5).expectNextUnorderedN(input.map(s => ByteString(s.concat("a")))).expectComplete()
