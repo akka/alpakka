@@ -96,7 +96,7 @@ public class ElasticsearchTest {
   private static void register(String indexName, String title) throws IOException {
     client.performRequest(
         "POST",
-        indexName + "/book",
+        indexName + "/_doc",
         new HashMap<>(),
         new StringEntity(String.format("{\"title\": \"%s\"}", title)),
         new BasicHeader("Content-Type", "application/json"));
@@ -125,12 +125,12 @@ public class ElasticsearchTest {
     ElasticsearchSinkSettings sinkSettings = ElasticsearchSinkSettings.Default();
 
     Source<OutgoingMessage<Map<String, Object>>, NotUsed> source =
-        ElasticsearchSource.create("source", "book", "{\"match_all\": {}}", sourceSettings, client);
+        ElasticsearchSource.create("source", "_doc", "{\"match_all\": {}}", sourceSettings, client);
     CompletionStage<Done> f1 =
         source
             .map(m -> IncomingIndexMessage.create(m.id(), m.source()))
             .runWith(
-                ElasticsearchSink.create("sink1", "book", sinkSettings, client, new ObjectMapper()),
+                ElasticsearchSink.create("sink1", "_doc", sinkSettings, client, new ObjectMapper()),
                 materializer);
     // #run-jsobject
 
@@ -142,7 +142,7 @@ public class ElasticsearchTest {
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.create(
                 "sink1",
-                "book",
+                "_doc",
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.Default().withBufferSize(5),
                 client)
@@ -174,12 +174,12 @@ public class ElasticsearchTest {
 
     Source<OutgoingMessage<Book>, NotUsed> source =
         ElasticsearchSource.typed(
-            "source", "book", "{\"match_all\": {}}", sourceSettings, client, Book.class);
+            "source", "_doc", "{\"match_all\": {}}", sourceSettings, client, Book.class);
     CompletionStage<Done> f1 =
         source
             .map(m -> IncomingIndexMessage.create(m.id(), m.source()))
             .runWith(
-                ElasticsearchSink.create("sink2", "book", sinkSettings, client, new ObjectMapper()),
+                ElasticsearchSink.create("sink2", "_doc", sinkSettings, client, new ObjectMapper()),
                 materializer);
     // #run-typed
 
@@ -191,7 +191,7 @@ public class ElasticsearchTest {
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.typed(
                 "sink2",
-                "book",
+                "_doc",
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.Default().withBufferSize(5),
                 client,
@@ -222,7 +222,7 @@ public class ElasticsearchTest {
     CompletionStage<List<List<IncomingMessageResult<Book, NotUsed>>>> f1 =
         ElasticsearchSource.typed(
                 "source",
-                "book",
+                "_doc",
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.Default().withBufferSize(5),
                 client,
@@ -231,7 +231,7 @@ public class ElasticsearchTest {
             .via(
                 ElasticsearchFlow.create(
                     "sink3",
-                    "book",
+                    "_doc",
                     ElasticsearchSinkSettings.Default().withBufferSize(5),
                     client,
                     new ObjectMapper()))
@@ -249,7 +249,7 @@ public class ElasticsearchTest {
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.typed(
                 "sink3",
-                "book",
+                "_doc",
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.Default().withBufferSize(5),
                 client,
@@ -288,7 +288,7 @@ public class ElasticsearchTest {
     Source.from(requests)
         .via(
             ElasticsearchFlow.create(
-                "sink8", "book", ElasticsearchSinkSettings.Default(), client, new ObjectMapper()))
+                "sink8", "_doc", ElasticsearchSinkSettings.Default(), client, new ObjectMapper()))
         .runWith(Sink.seq(), materializer)
         .toCompletableFuture()
         .get();
@@ -300,7 +300,7 @@ public class ElasticsearchTest {
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.typed(
                 "sink8",
-                "book",
+                "_doc",
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.Default(),
                 client,
@@ -342,7 +342,7 @@ public class ElasticsearchTest {
         .via( // write to elastic
             ElasticsearchFlow.createWithPassThrough(
                 "sink6",
-                "book",
+                "_doc",
                 ElasticsearchSinkSettings.Default().withBufferSize(5),
                 client,
                 new ObjectMapper()))
@@ -373,7 +373,7 @@ public class ElasticsearchTest {
     List<String> result2 =
         ElasticsearchSource.typed(
                 "sink6",
-                "book",
+                "_doc",
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.Default(),
                 client,
@@ -394,7 +394,7 @@ public class ElasticsearchTest {
     // all we need to test here is that we can receive and send version
 
     String indexName = "test_using_versions";
-    String typeName = "book";
+    String typeName = "_doc";
 
     // Insert document
     Book book = new Book("b");
@@ -468,7 +468,7 @@ public class ElasticsearchTest {
   @Test
   public void testUsingVersionType() throws Exception {
     String indexName = "book-test-version-type";
-    String typeName = "book";
+    String typeName = "_doc";
 
     Book book = new Book("A sample title");
     String docId = "1";
@@ -532,7 +532,7 @@ public class ElasticsearchTest {
   public void testUsingSearchParams() throws Exception {
 
     String indexName = "test_using_search_params_versions_java";
-    String typeName = "TestDoc";
+    String typeName = "_doc";
 
     List<TestDoc> docs =
         Arrays.asList(
