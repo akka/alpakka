@@ -164,12 +164,12 @@ Java
 ### Rotation Strategy
 
 
-@scaladoc[RotationStrategy](akka.stream.alpakka.hdfs.RotationStrategyFactory$) provides a functionality to decide when to rotate files.
+@scaladoc[RotationStrategy](akka.stream.alpakka.hdfs.RotationStrategy$) provides a functionality to decide when to rotate files.
 
 ### Sync Strategy
 
 
-@scaladoc[SyncStrategy](akka.stream.alpakka.hdfs.SyncStrategyFactory$) provides a functionality to decide when to synchronize the output.
+@scaladoc[SyncStrategy](akka.stream.alpakka.hdfs.SyncStrategy$) provides a functionality to decide when to synchronize the output.
 
 ## Reading
 
