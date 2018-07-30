@@ -66,7 +66,7 @@ object FetchUsingSlickAndStreamIntoElastic extends ActorSystemAvailable with App
         case (id, genre, title, gross) => Movie(id, genre, title, gross)
       }
       .map(movie => IncomingIndexMessage(movie.id.toString, movie))                     // (8)
-      .runWith(ElasticsearchSink.create[Movie]("movie", "boxoffice"))                   // (9)
+      .runWith(ElasticsearchSink.create[Movie]("movie", "_doc"))                        // (9)
 
   done.onComplete {
     case _ =>
