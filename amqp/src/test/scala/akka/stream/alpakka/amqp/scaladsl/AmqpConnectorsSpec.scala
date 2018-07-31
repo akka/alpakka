@@ -134,7 +134,9 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val caught = intercept[RuntimeException] {
         Source
           .single(outgoingMessage)
-          .toMat(AmqpSink.replyTo(AmqpReplyToSinkSettings(connectionProvider, true)))(Keep.right)
+          .toMat(AmqpSink.replyTo(AmqpReplyToSinkSettings(connectionProvider).withFailIfReplyToMissing(true)))(
+            Keep.right
+          )
           .run()
           .futureValue
       }
