@@ -204,29 +204,45 @@ object AmqpSinkSettings {
 
 sealed trait Declaration
 
-final case class QueueDeclaration(
-    name: String,
-    durable: Boolean = false,
-    exclusive: Boolean = false,
-    autoDelete: Boolean = false,
-    arguments: Map[String, AnyRef] = Map.empty
+final class QueueDeclaration private (
+    val name: String,
+    val durable: Boolean = false,
+    val exclusive: Boolean = false,
+    val autoDelete: Boolean = false,
+    val arguments: Map[String, AnyRef] = Map.empty
 ) extends Declaration {
-  def withDurable(durable: Boolean): QueueDeclaration = copy(durable = durable)
 
-  def withExclusive(exclusive: Boolean): QueueDeclaration = copy(exclusive = exclusive)
+  def withDurable(durable: Boolean): QueueDeclaration =
+    copy(durable = durable)
 
-  def withAutoDelete(autoDelete: Boolean): QueueDeclaration = copy(autoDelete = autoDelete)
+  def withExclusive(exclusive: Boolean): QueueDeclaration =
+    copy(exclusive = exclusive)
 
-  def withArguments(argument: (String, AnyRef), arguments: (String, AnyRef)*): QueueDeclaration =
-    copy(arguments = (argument +: arguments).toMap)
+  def withAutoDelete(autoDelete: Boolean): QueueDeclaration =
+    copy(autoDelete = autoDelete)
 
-  @annotation.varargs
-  def withArguments(argument: akka.japi.Pair[String, AnyRef],
-                    arguments: akka.japi.Pair[String, AnyRef]*): QueueDeclaration =
-    copy(arguments = (argument +: arguments).map(_.toScala).toMap)
+  def withArguments(arguments: Map[String, AnyRef]): QueueDeclaration =
+    copy(arguments = arguments)
+
+  /**
+   * Java API
+   */
+  def withArguments(arguments: JavaMap[String, Object]): QueueDeclaration =
+    copy(arguments = arguments.asScala.toMap)
+
+  private def copy(name: String = name,
+                   durable: Boolean = durable,
+                   exclusive: Boolean = exclusive,
+                   autoDelete: Boolean = autoDelete,
+                   arguments: Map[String, AnyRef] = arguments) =
+    new QueueDeclaration(name, durable, exclusive, autoDelete, arguments)
+
+  override def toString: String =
+    s"QueueDeclaration(name=$name, durable=$durable, exclusive=$exclusive, autoDelete=$autoDelete, arguments=$arguments)"
 }
 
 object QueueDeclaration {
+  def apply(name: String): QueueDeclaration = new QueueDeclaration(name)
 
   /**
    * Java API
@@ -234,55 +250,79 @@ object QueueDeclaration {
   def create(name: String): QueueDeclaration = QueueDeclaration(name)
 }
 
-final case class BindingDeclaration(
-    queue: String,
-    exchange: String,
-    routingKey: Option[String] = None,
-    arguments: Map[String, AnyRef] = Map.empty
+final class BindingDeclaration private (
+    val queue: String,
+    val exchange: String,
+    val routingKey: Option[String] = None,
+    val arguments: Map[String, AnyRef] = Map.empty
 ) extends Declaration {
+
   def withRoutingKey(routingKey: String): BindingDeclaration = copy(routingKey = Some(routingKey))
 
-  def withArguments(argument: (String, AnyRef), arguments: (String, AnyRef)*): BindingDeclaration =
-    copy(arguments = (argument +: arguments).toMap)
-
-  @annotation.varargs
-  def withArguments(argument: akka.japi.Pair[String, AnyRef],
-                    arguments: akka.japi.Pair[String, AnyRef]*): BindingDeclaration =
-    copy(arguments = (argument +: arguments).map(_.toScala).toMap)
-}
-
-object BindingDeclaration {
+  def withArguments(arguments: Map[String, AnyRef]): BindingDeclaration =
+    copy(arguments = arguments)
 
   /**
    * Java API
    */
-  def create(queue: String, exchange: String): BindingDeclaration = BindingDeclaration(queue, exchange)
+  def withArguments(arguments: JavaMap[String, Object]): BindingDeclaration =
+    copy(arguments = arguments.asScala.toMap)
+
+  private def copy(routingKey: Option[String] = routingKey, arguments: Map[String, AnyRef] = arguments) =
+    new BindingDeclaration(queue, exchange, routingKey, arguments)
+
+  override def toString: String =
+    s"BindingDeclaration(queue=$queue, exchange=$exchange, routingKey=$routingKey, arguments=$arguments)"
 }
 
-final case class ExchangeDeclaration(
-    name: String,
-    exchangeType: String,
-    durable: Boolean = false,
-    autoDelete: Boolean = false,
-    internal: Boolean = false,
-    arguments: Map[String, AnyRef] = Map.empty
+object BindingDeclaration {
+  def apply(queue: String, exchange: String): BindingDeclaration =
+    new BindingDeclaration(queue, exchange)
+
+  /**
+   * Java API
+   */
+  def create(queue: String, exchange: String): BindingDeclaration =
+    BindingDeclaration(queue, exchange)
+}
+
+final class ExchangeDeclaration private (
+    val name: String,
+    val exchangeType: String,
+    val durable: Boolean = false,
+    val autoDelete: Boolean = false,
+    val internal: Boolean = false,
+    val arguments: Map[String, AnyRef] = Map.empty
 ) extends Declaration {
+
   def withDurable(durable: Boolean): ExchangeDeclaration = copy(durable = durable)
 
   def withAutoDelete(autoDelete: Boolean): ExchangeDeclaration = copy(autoDelete = autoDelete)
 
   def withInternal(internal: Boolean): ExchangeDeclaration = copy(internal = internal)
 
-  def withArguments(argument: (String, AnyRef), arguments: (String, AnyRef)*): ExchangeDeclaration =
-    copy(arguments = (argument +: arguments).toMap)
+  def withArguments(arguments: Map[String, AnyRef]): ExchangeDeclaration =
+    copy(arguments = arguments)
 
-  @annotation.varargs
-  def withArguments(argument: akka.japi.Pair[String, AnyRef],
-                    arguments: akka.japi.Pair[String, AnyRef]*): ExchangeDeclaration =
-    copy(arguments = (argument +: arguments).map(_.toScala).toMap)
+  /**
+   * Java API
+   */
+  def withArguments(arguments: JavaMap[String, Object]): ExchangeDeclaration =
+    copy(arguments = arguments.asScala.toMap)
+
+  private def copy(durable: Boolean = durable,
+                   autoDelete: Boolean = autoDelete,
+                   internal: Boolean = internal,
+                   arguments: Map[String, AnyRef] = arguments) =
+    new ExchangeDeclaration(name, exchangeType, durable, autoDelete, internal, arguments)
+
+  override def toString: String =
+    s"ExchangeDeclaration(name=$name, exchangeType=$exchangeType, durable=$durable, autoDelete=$autoDelete, internal=$internal, arguments=$arguments)"
 }
 
 object ExchangeDeclaration {
+  def apply(name: String, exchangeType: String): ExchangeDeclaration =
+    new ExchangeDeclaration(name, exchangeType)
 
   /**
    * Java API
