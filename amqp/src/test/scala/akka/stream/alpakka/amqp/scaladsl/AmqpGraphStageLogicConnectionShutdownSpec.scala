@@ -23,6 +23,7 @@ import com.rabbitmq.client.{AddressResolver, Connection, ConnectionFactory, Shut
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 
+import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
@@ -79,7 +80,7 @@ class AmqpGraphStageLogicConnectionShutdownSpec
     val amqpSink = AmqpSink.simple(
       AmqpSinkSettings(reusableConnectionProvider)
         .withRoutingKey(queueName)
-        .withDeclarations(queueDeclaration)
+        .withDeclarations(immutable.Seq(queueDeclaration))
     )
 
     val input = Vector("one", "two", "three", "four")
