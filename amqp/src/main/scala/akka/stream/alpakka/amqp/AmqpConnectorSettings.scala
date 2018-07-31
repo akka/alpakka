@@ -159,21 +159,41 @@ object AmqpReplyToSinkSettings {
     AmqpReplyToSinkSettings(connectionProvider)
 }
 
-final case class AmqpSinkSettings(
-    connectionProvider: AmqpConnectionProvider,
-    exchange: Option[String] = None,
-    routingKey: Option[String] = None,
-    declarations: immutable.Seq[Declaration] = Nil
+final class AmqpSinkSettings private (
+    val connectionProvider: AmqpConnectionProvider,
+    val exchange: Option[String] = None,
+    val routingKey: Option[String] = None,
+    val declarations: immutable.Seq[Declaration] = Nil
 ) extends AmqpConnectorSettings {
-  def withExchange(exchange: String): AmqpSinkSettings = copy(exchange = Some(exchange))
 
-  def withRoutingKey(routingKey: String): AmqpSinkSettings = copy(routingKey = Some(routingKey))
+  def withExchange(exchange: String): AmqpSinkSettings =
+    copy(exchange = Some(exchange))
 
-  @annotation.varargs
-  def withDeclarations(declarations: Declaration*): AmqpSinkSettings = copy(declarations = declarations.toList)
+  def withRoutingKey(routingKey: String): AmqpSinkSettings =
+    copy(routingKey = Some(routingKey))
+
+  def withDeclarations(declaration: immutable.Seq[Declaration]): AmqpSinkSettings =
+    copy(declarations = declarations)
+
+  /**
+   * Java API
+   */
+  def withDeclarations(declarations: JavaList[Declaration]): AmqpSinkSettings =
+    copy(declarations = declarations.asScala.toIndexedSeq)
+
+  private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider,
+                   exchange: Option[String] = exchange,
+                   routingKey: Option[String] = routingKey,
+                   declarations: immutable.Seq[Declaration] = declarations) =
+    new AmqpSinkSettings(connectionProvider, exchange, routingKey, declarations)
+
+  override def toString: String =
+    s"AmqpSinkSettings(connectionProvider=$connectionProvider, exchange=$exchange, routingKey=$routingKey, declarations=$declarations)"
 }
 
 object AmqpSinkSettings {
+  def apply(connectionProvider: AmqpConnectionProvider): AmqpSinkSettings =
+    new AmqpSinkSettings(connectionProvider)
 
   /**
    * Java API

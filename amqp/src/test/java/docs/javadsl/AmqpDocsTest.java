@@ -72,7 +72,7 @@ public class AmqpDocsTest {
         AmqpSink.createSimple(
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
-                .withDeclarations(queueDeclaration));
+                .withDeclarations(Collections.singletonList(queueDeclaration)));
     // #create-sink
 
     // #create-source
@@ -115,7 +115,7 @@ public class AmqpDocsTest {
         AmqpRpcFlow.createSimple(
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
-                .withDeclarations(queueDeclaration),
+                .withDeclarations(Collections.singletonList(queueDeclaration)),
             1);
     // #create-rpc-flow
 
@@ -172,7 +172,7 @@ public class AmqpDocsTest {
         AmqpSink.createSimple(
             AmqpSinkSettings.create(connectionProvider)
                 .withExchange(exchangeName)
-                .withDeclarations(exchangeDeclaration));
+                .withDeclarations(Collections.singletonList(exchangeDeclaration)));
     // #create-exchange-sink
 
     // #create-exchange-source
@@ -228,7 +228,7 @@ public class AmqpDocsTest {
         AmqpSink.createSimple(
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
-                .withDeclarations(queueDeclaration));
+                .withDeclarations(Collections.singletonList(queueDeclaration)));
 
     // #create-source-withoutautoack
     final Integer bufferSize = 10;
@@ -269,7 +269,7 @@ public class AmqpDocsTest {
         AmqpSink.createSimple(
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
-                .withDeclarations(queueDeclaration));
+                .withDeclarations(Collections.singletonList(queueDeclaration)));
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     Source.from(input)

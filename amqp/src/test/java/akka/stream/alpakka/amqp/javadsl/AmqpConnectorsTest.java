@@ -73,7 +73,7 @@ public class AmqpConnectorsTest {
         AmqpSink.createSimple(
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
-                .withDeclarations(queueDeclaration));
+                .withDeclarations(Collections.singletonList(queueDeclaration)));
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     final CompletionStage<Done> result =
@@ -101,7 +101,7 @@ public class AmqpConnectorsTest {
         AmqpSink.createSimple(
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
-                .withDeclarations(queueDeclaration));
+                .withDeclarations(Collections.singletonList(queueDeclaration)));
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     final CompletionStage<Done> result =
@@ -140,7 +140,7 @@ public class AmqpConnectorsTest {
         AmqpRpcFlow.committableFlow(
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
-                .withDeclarations(queueDeclaration),
+                .withDeclarations(Collections.singletonList(queueDeclaration)),
             10,
             1);
     Pair<CompletionStage<String>, TestSubscriber.Probe<IncomingMessage>> result =
@@ -189,7 +189,7 @@ public class AmqpConnectorsTest {
         AmqpSink.createSimple(
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
-                .withDeclarations(queueDeclaration));
+                .withDeclarations(Collections.singletonList(queueDeclaration)));
 
     final Integer bufferSize = 10;
     final Source<CommittableIncomingMessage, NotUsed> amqpSource =
@@ -237,7 +237,8 @@ public class AmqpConnectorsTest {
         AmqpSink.create(
             AmqpSinkSettings.create(connectionProvider)
                 .withExchange(exchangeName)
-                .withDeclarations(exchangeDeclaration, queueDeclaration, bindingDeclaration));
+                .withDeclarations(
+                    Arrays.asList(exchangeDeclaration, queueDeclaration, bindingDeclaration)));
 
     final Integer bufferSize = 10;
     final Source<IncomingMessage, NotUsed> amqpSource =

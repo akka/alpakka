@@ -42,7 +42,7 @@ class AmqpDocsSpec extends AmqpSpec {
       val amqpSink = AmqpSink.simple(
         AmqpSinkSettings(connectionProvider)
           .withRoutingKey(queueName)
-          .withDeclarations(queueDeclaration)
+          .withDeclarations(immutable.Seq(queueDeclaration))
       )
       //#create-sink
 
@@ -72,7 +72,7 @@ class AmqpDocsSpec extends AmqpSpec {
 
       //#create-rpc-flow
       val amqpRpcFlow = AmqpRpcFlow.simple(
-        AmqpSinkSettings(connectionProvider).withRoutingKey(queueName).withDeclarations(queueDeclaration)
+        AmqpSinkSettings(connectionProvider).withRoutingKey(queueName).withDeclarations(immutable.Seq(queueDeclaration))
       )
       //#create-rpc-flow
 
@@ -116,7 +116,7 @@ class AmqpDocsSpec extends AmqpSpec {
       val amqpSink = AmqpSink.simple(
         AmqpSinkSettings(connectionProvider)
           .withExchange(exchangeName)
-          .withDeclarations(exchangeDeclaration)
+          .withDeclarations(immutable.Seq(exchangeDeclaration))
       )
       //#create-exchange-sink
 
@@ -162,7 +162,7 @@ class AmqpDocsSpec extends AmqpSpec {
       val amqpSink = AmqpSink.simple(
         AmqpSinkSettings(connectionProvider)
           .withRoutingKey(queueName)
-          .withDeclarations(queueDeclaration)
+          .withDeclarations(immutable.Seq(queueDeclaration))
       )
 
       //#create-source-withoutautoack
@@ -193,7 +193,7 @@ class AmqpDocsSpec extends AmqpSpec {
       val amqpSink = AmqpSink.simple(
         AmqpSinkSettings(connectionProvider)
           .withRoutingKey(queueName)
-          .withDeclarations(queueDeclaration)
+          .withDeclarations(immutable.Seq(queueDeclaration))
       )
 
       val input = Vector("one", "two", "three", "four", "five")
