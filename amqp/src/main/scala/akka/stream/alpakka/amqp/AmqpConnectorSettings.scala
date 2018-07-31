@@ -131,27 +131,32 @@ object TemporaryQueueSourceSettings {
     TemporaryQueueSourceSettings(connectionProvider, exchange)
 }
 
-final case class AmqpReplyToSinkSettings(
-    connectionProvider: AmqpConnectionProvider,
-    failIfReplyToMissing: Boolean = true
+final class AmqpReplyToSinkSettings private (
+    val connectionProvider: AmqpConnectionProvider,
+    val failIfReplyToMissing: Boolean = true
 ) extends AmqpConnectorSettings {
   override final val declarations = Nil
+
+  def withFailIfReplyToMissing(failIfReplyToMissing: Boolean): AmqpReplyToSinkSettings =
+    copy(failIfReplyToMissing = failIfReplyToMissing)
+
+  private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider,
+                   failIfReplyToMissing: Boolean = failIfReplyToMissing) =
+    new AmqpReplyToSinkSettings(connectionProvider, failIfReplyToMissing)
+
+  override def toString: String =
+    s"AmqpReplyToSinkSettings(connectionProvider=$connectionProvider, failIfReplyToMissing=$failIfReplyToMissing)"
 }
 
 object AmqpReplyToSinkSettings {
+  def apply(connectionProvider: AmqpConnectionProvider): AmqpReplyToSinkSettings =
+    new AmqpReplyToSinkSettings(connectionProvider)
 
   /**
    * Java API
    */
   def create(connectionProvider: AmqpConnectionProvider): AmqpReplyToSinkSettings =
     AmqpReplyToSinkSettings(connectionProvider)
-
-  /**
-   * Java API
-   */
-  def create(connectionProvider: AmqpConnectionProvider, failIfReplyToMissing: Boolean): AmqpReplyToSinkSettings =
-    AmqpReplyToSinkSettings(connectionProvider, failIfReplyToMissing)
-
 }
 
 final case class AmqpSinkSettings(
