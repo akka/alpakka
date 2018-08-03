@@ -31,9 +31,15 @@ class UnixDomainSocketSpec
       file.delete()
       file.deleteOnExit()
 
+      //#handler
+      val handler = Flow[ByteString]
+        .fold(ByteString.empty)(_ ++ _)
+        .flatMapConcat(bytes => Source.single(bytes ++ bytes))
+      //#handler
+
       //#binding
       val binding =
-        UnixDomainSocket().bindAndHandle(Flow.fromFunction(identity), file)
+        UnixDomainSocket().bindAndHandle(handler, file)
       //#binding
 
       //#outgoingConnection
@@ -46,7 +52,7 @@ class UnixDomainSocketSpec
             .runWith(Sink.head)
         //#outgoingConnection
         result
-          .map(receiveBytes => assert(receiveBytes == sendBytes))
+          .map(receiveBytes => assert(receiveBytes == sendBytes ++ sendBytes))
           .flatMap {
             case `succeed` => connection.unbind().map(_ => succeed)
             case failedAssertion => failedAssertion
@@ -56,7 +62,7 @@ class UnixDomainSocketSpec
       //#outgoingConnection
     }
 
-    "not be able to bind to a non-existant file" in {
+    "not be able to bind to a non-existent file" in {
       val binding =
         UnixDomainSocket().bindAndHandle(Flow.fromFunction(identity), new File("/thisshouldnotexist"))
 
@@ -65,7 +71,7 @@ class UnixDomainSocketSpec
       }
     }
 
-    "not be able to connect to a non-existant file" in {
+    "not be able to connect to a non-existent file" in {
       val connection =
         Source
           .single(ByteString("hi"))
