@@ -90,7 +90,7 @@ public class DocSnippetFlowWithPassThrough {
                                 new Pair(
                                     user,
                                     insertCount)) // allows to keep the kafka message offset so it
-                                                  // can be committed in a next stage
+                    // can be committed in a next stage
                     ))
             .log("nr-of-updated-rows")
             .mapAsync(
