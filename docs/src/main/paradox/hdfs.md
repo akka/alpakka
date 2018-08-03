@@ -28,10 +28,10 @@ interact with HDFS.
 
 
 Scala
-: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #init-client }
+: @@snip [snip](/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #init-client }
 
 Java
-: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #init-client }
+: @@snip [snip](/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #init-client }
 
 
 ## Writing
@@ -48,10 +48,10 @@ Use `HdfsFlow.data` to stream with @javadoc[FSDataOutputStream](org.apache.hadoo
 
 
 Scala
-: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-data }
+: @@snip [snip](/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-data }
 
 Java
-: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-data }
+: @@snip [snip](/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-data }
 
 
 ### Compressed Data Writer
@@ -60,20 +60,20 @@ First, create @javadoc[CompressionCodec](org.apache.hadoop.io.compress.Compressi
 
 
 Scala
-: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-codec }
+: @@snip [snip](/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-codec }
 
 Java
-: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-codec }
+: @@snip [snip](/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-codec }
 
 
 Then, use `HdfsFlow.compress` to stream with @javadoc[CompressionOutputStream](org.apache.hadoop.io.compress.CompressionOutputStream) and @javadoc[CompressionCodec](org.apache.hadoop.io.compress.CompressionCodec). 
 
 
 Scala
-: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-compress }
+: @@snip [snip](/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-compress }
 
 Java
-: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-compress }
+: @@snip [snip](/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-compress }
 
 
 ### Sequence Writer
@@ -84,10 +84,10 @@ Use `HdfsFlow.sequence` to stream a flat file consisting of binary key/value pai
 
 
 Scala
-: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-sequence }
+: @@snip [snip](/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-sequence }
 
 Java
-: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-sequence }
+: @@snip [snip](/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-sequence }
 
 
 #### With Compression
@@ -96,20 +96,20 @@ First, define a codec.
 
 
 Scala
-: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-codec }
+: @@snip [snip](/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-codec }
 
 Java
-: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-codec }
+: @@snip [snip](/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-codec }
 
 
 Then, create a flow.
 
 
 Scala
-: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-sequence-compressed }
+: @@snip [snip](/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-sequence-compressed }
 
 Java
-: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-sequence-compressed }
+: @@snip [snip](/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-sequence-compressed }
 
 ### Passing data through HdfsFlow
 
@@ -122,20 +122,20 @@ Let's say that we have these classes.
 
 
 Scala
-: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-kafka-classes }
+: @@snip [snip](/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-kafka-classes }
 
 Java
-: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-kafka-classes }
+: @@snip [snip](/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-kafka-classes }
 
 
 Then, we can stream with `passThrough`.
 
 
 Scala
-: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #kafka-example }
+: @@snip [snip](/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #kafka-example }
 
 Java
-: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #kafka-example }
+: @@snip [snip](/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #kafka-example }
 
 
 ## Configuration
@@ -144,10 +144,10 @@ We can configure the sink by `HdfsWritingSettings`.
 
 
 Scala
-: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-settings }
+: @@snip [snip](/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-settings }
 
 Java
-: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-settings }
+: @@snip [snip](/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-settings }
 
 
 ### File path generator
@@ -155,10 +155,10 @@ Java
 @scaladoc[FilePathGenerator](akka.stream.alpakka.hdfs.FilePathGenerator$) provides a functionality to generate rotation path in HDFS. 
 
 Scala
-: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-generator }
+: @@snip [snip](/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsWriterSpec.scala) { #define-generator }
 
 Java
-: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-generator }
+: @@snip [snip](/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsWriterTest.java) { #define-generator }
 
 
 ### Rotation Strategy
@@ -182,30 +182,30 @@ Use `HdfsSource` to read from HDFS.
 
 
 Scala
-: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsReaderSpec.scala) { #define-data-source }
+: @@snip [snip](/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsReaderSpec.scala) { #define-data-source }
 
 Java
-: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsReaderTest.java) { #define-data-source }
+: @@snip [snip](/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsReaderTest.java) { #define-data-source }
 
 
 ### Compressed Data Reader
 
 
 Scala
-: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsReaderSpec.scala) { #define-compressed-source }
+: @@snip [snip](/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsReaderSpec.scala) { #define-compressed-source }
 
 Java
-: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsReaderTest.java) { #define-compressed-source }
+: @@snip [snip](/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsReaderTest.java) { #define-compressed-source }
 
 
 ### Sequence Reader
 
 
 Scala
-: @@snip ($alpakka$/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsReaderSpec.scala) { #define-sequence-source }
+: @@snip [snip](/hdfs/src/test/scala/akka/stream/alpakka/hdfs/HdfsReaderSpec.scala) { #define-sequence-source }
 
 Java
-: @@snip ($alpakka$/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsReaderTest.java) { #define-sequence-source }
+: @@snip [snip](/hdfs/src/test/java/akka/stream/alpakka/hdfs/HdfsReaderTest.java) { #define-sequence-source }
 
 
 ## Running the example code

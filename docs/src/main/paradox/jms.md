@@ -50,10 +50,10 @@ a @javadoc[Serializable](java.io.Serializable) object, a @javadoc[Map](java.util
 First define a @javadoc[javax.jms.ConnectionFactory](javax.jms.ConnectionFactory) depending on the implementation you're using. Here we're using Active MQ.
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #connection-factory }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #connection-factory }
 
 The created @javadoc[ConnectionFactory](javax.jms.ConnectionFactory) is then used for the creation of the different jms sinks or sources (see below).
 
@@ -70,36 +70,36 @@ the creation of sinks according to the message type (see below for an example).
 Create a sink, that accepts and forwards @scaladoc[JmsTextMessage](akka.stream.alpakka.jms.JmsTextMessage$)s to the JMS provider:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-text-sink }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-text-sink }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-text-sink }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-text-sink }
 
 Last step is to @extref[materialize](akka-docs:scala/stream/stream-flows-and-basics) and run the sink(s) we have created.
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-text-sink }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-text-sink }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-text-sink }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-text-sink }
 
 ### Sending byte messages to a JMS provider
 
 Create a sink, that accepts and forwards @scaladoc[JmsByteMessage](akka.stream.alpakka.jms.JmsByteMessage$)s to the JMS provider. 
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-bytearray-sink }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-bytearray-sink }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-bytearray-sink  }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-bytearray-sink  }
 
 Last step is to @extref[materialize](akka-docs:scala/stream/stream-flows-and-basics) and run the sink(s) we have created.
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-bytearray-sink }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-bytearray-sink }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-bytearray-sink }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-bytearray-sink }
 
 
 ### Sending map messages to a JMS provider
@@ -107,18 +107,18 @@ Java
 Create a sink, that accepts and forwards @scaladoc[JmsMapMessage](akka.stream.alpakka.jms.JmsMapMessage$)s to the JMS provider:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-map-sink }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-map-sink }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-map-sink }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-map-sink }
 
 Last step is to @extref[materialize](akka-docs:scala/stream/stream-flows-and-basics) and run the sink(s) we have created.
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-map-sink }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-map-sink }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-map-sink }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-map-sink }
 
 
 ### Sending object messages to a JMS provider
@@ -127,28 +127,28 @@ Create and configure ActiveMQ connection factory to support serialization.
 See [ActiveMQ Security](http://activemq.apache.org/objectmessage.html) for more information on this.
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #connection-factory-object }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #connection-factory-object }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #connection-factory-object }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #connection-factory-object }
 
 
 Create a sink, that accepts and forwards @scaladoc[JmsObjectMessage](akka.stream.alpakka.jms.JmsObjectMessage$)s to the JMS provider:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-object-sink }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-object-sink }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-object-sink }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-object-sink }
 
 
 Last step is to @extref[materialize](akka-docs:scala/stream/stream-flows-and-basics) and run the sink(s) we have created.
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-object-sink }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-object-sink }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-object-sink }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-object-sink }
 
 
 ### Sending  messages with properties to a JMS provider
@@ -156,19 +156,19 @@ Java
 For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set jms properties.
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-properties }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-properties }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-messages-with-properties }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-messages-with-properties }
 
 ### Sending messages with header to a JMS provider
 For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set also jms headers. 
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-headers }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-headers }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-messages-with-headers }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-messages-with-headers }
 
 
 ### Sending messages as a Flow
@@ -179,18 +179,18 @@ For example, you can ensure that a message is persisted to the queue before subs
 Create a flow:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-flow-producer }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-flow-producer }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-flow-producer }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-flow-producer }
 
 Run the flow:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-flow-producer }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-flow-producer }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-flow-producer }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-flow-producer }
 
 
 ## Receiving messages from a JMS provider
@@ -204,20 +204,20 @@ the creation of sinks according to the message type (see below for an example).
 Create a source:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-text-source }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-text-source }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-text-source }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-text-source }
 
 The `bufferSize` parameter controls the maximum number of messages to prefetch before applying backpressure.
 
 Run the source and take the same amount of messages as we previously sent to it.
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-text-source }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-text-source }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-text-source }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-text-source }
 
 
 ### Receiving byte array messages from a JMS provider
@@ -225,20 +225,20 @@ Java
 Create a source:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-bytearray-source }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-bytearray-source }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-bytearray-source }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-bytearray-source }
 
 The `bufferSize` parameter controls the maximum number of messages to prefetch before applying backpressure.
 
 Run the source and take the same amount of messages as we previously sent to it.
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-bytearray-source }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-bytearray-source }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-bytearray-source }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-bytearray-source }
 
 
 ### Receiving @javadoc[Serializable](java.io.Serializable) object messages from a JMS provider
@@ -247,29 +247,29 @@ Create and configure ActiveMQ connection factory to support serialization.
 See [ActiveMQ Security](http://activemq.apache.org/objectmessage.html) for more information on this.
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #connection-factory-object }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #connection-factory-object }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #connection-factory-object }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #connection-factory-object }
 
 
 Create a source:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-object-source }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-object-source }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-object-source }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-object-source }
 
 The `bufferSize` parameter controls the maximum number of messages to prefetch before applying backpressure.
 
 Run the source and take the same amount of messages as we previously sent to it.
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-object-source }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-object-source }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-object-source }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-object-source }
 
 
 ### Receiving @javadoc[Map](java.util.Map) messages from a JMS provider
@@ -277,20 +277,20 @@ Java
 Create a source:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-map-source }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-map-source }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-map-source }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-map-source }
 
 The `bufferSize` parameter controls the maximum number of messages to prefetch before applying backpressure.
 
 Run the source and take the same amount of messages as we previously sent to it.
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-map-source }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-map-source }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-map-source }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-map-source }
 
 
 ### Receiving @javadoc[javax.jms.Message](javax.jms.Message)s from a JMS provider
@@ -298,20 +298,20 @@ Java
 Create a source:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-jms-source }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-jms-source }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-jms-source }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-jms-source }
 
 The `bufferSize` parameter controls the maximum number of messages to prefetch before applying backpressure.
 
 Run the source and specify the amount of messages to take:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-jms-source }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-jms-source }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-jms-source }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-jms-source }
 
 **Notes:**
 
@@ -322,20 +322,20 @@ Java
 Create a @javadoc[javax.jms.Message](javax.jms.Message) source:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-jms-source-client-ack }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-jms-source-client-ack }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-jms-source-client-ack }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-jms-source-client-ack }
 
 The `acknowledgeMode` (@scaladoc[AcknowledgeMode](akka.stream.alpakka.jms.AcknowledgeMode$)) parameter controls the JMS acknowledge mode parameter, see @javadoc[javax.jms.Connection.createSession](javax.jms.Connection#createSession-boolean-int-).
 
 Run the source and take the same amount of messages as we previously sent to it acknowledging them.
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-jms-source-with-ack }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-jms-source-with-ack }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-jms-source-with-ack }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-jms-source-with-ack }
 
 
 ### Receiving @javadoc[javax.jms.Message](javax.jms.Message)s from a JMS provider with a selector
@@ -343,28 +343,28 @@ Java
 Create a @javadoc[javax.jms.Message](javax.jms.Message) source specifying a [JMS selector expression](https://docs.oracle.com/cd/E19798-01/821-1841/bncer/index.html):
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) {             #create-jms-source-with-selector }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) {             #create-jms-source-with-selector }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-jms-source-with-selector }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-jms-source-with-selector }
 
 Verify that we are only receiving messages according to the selector:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #assert-only-odd-messages-received }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #assert-only-odd-messages-received }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #assert-only-odd-messages-received }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #assert-only-odd-messages-received }
 
 ### Receiving and explicitly acknowledging @javadoc[javax.jms.Message](javax.jms.Message)s from a JMS provider
 
 Create a @javadoc[javax.jms.Message](javax.jms.Message) source:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsBufferedAckConnectorsSpec.scala) { #create-jms-source }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsBufferedAckConnectorsSpec.scala) { #create-jms-source }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsBufferedAckConnectorsTest.java) { #create-jms-source }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsBufferedAckConnectorsTest.java) { #create-jms-source }
 
 The `sessionCount` parameter controls the number of JMS sessions to run in parallel.
 
@@ -373,10 +373,10 @@ The `bufferSize` parameter controls the maximum number of messages each JMS sess
 Run the source and specify the amount of messages to take:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsBufferedAckConnectorsSpec.scala) { #run-jms-source }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsBufferedAckConnectorsSpec.scala) { #run-jms-source }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsBufferedAckConnectorsTest.java) { #run-jms-source }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsBufferedAckConnectorsTest.java) { #run-jms-source }
 
 **Notes:**
 
@@ -390,10 +390,10 @@ Java
 Create a @javadoc[javax.jms.Message](javax.jms.Message) source:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsTxConnectorsSpec.scala) { #create-jms-source }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsTxConnectorsSpec.scala) { #create-jms-source }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsTxConnectorsTest.java) { #create-jms-source }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsTxConnectorsTest.java) { #create-jms-source }
 
 The `sessionCount` parameter controls the number of JMS sessions to run in parallel.
 
@@ -402,10 +402,10 @@ The `bufferSize` parameter controls the maximum number of messages each JMS sess
 Run the source and specify the amount of messages to take:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsTxConnectorsSpec.scala) { #run-jms-source }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsTxConnectorsSpec.scala) { #run-jms-source }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsTxConnectorsTest.java) { #run-jms-source }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsTxConnectorsTest.java) { #run-jms-source }
 
 **Notes:**
 
@@ -421,20 +421,20 @@ The browse source will stream the messages in a queue without consuming them.
 Create a source:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-browse-source }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-browse-source }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-browse-source }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-browse-source }
 
 The `messageSelector` parameter can be used to filter the messages. Otherwise it will browse the entire content of the queue.
 
 Unlike the other sources, the browse source will complete after browsing all the messages:
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-browse-source }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-browse-source }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-browse-source }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-browse-source }
 
 **Notes:**
 
@@ -450,18 +450,18 @@ You can use JMS topic in a very similar way.
 For the Sink :
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-topic-sink }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-topic-sink }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-topic-sink }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-topic-sink }
 
 For the source :
 
 Scala
-: @@snip ($alpakka$/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-topic-source }
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-topic-source }
 
 Java
-: @@snip ($alpakka$/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-topic-source }
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-topic-source }
 
 Such sink and source can be started the same way as in the previous example.
 
