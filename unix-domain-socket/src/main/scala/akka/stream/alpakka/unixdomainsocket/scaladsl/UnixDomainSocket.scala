@@ -92,7 +92,8 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
       override val buffer: ByteBuffer,
       sent: Promise[Done]
   ) extends SendContext(buffer)
-  private case class CloseRequested(halfClose: Boolean) extends SendContext(ByteString.empty.asByteBuffer)
+  private case object CloseRequested extends SendContext(ByteString.empty.asByteBuffer)
+  private case object ShutdownRequested extends SendContext(ByteString.empty.asByteBuffer)
 
   private class SendReceiveContext(
       @volatile var send: SendContext,
@@ -143,16 +144,11 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                     }
                   case _: SendRequested =>
                     key.interestOps(key.interestOps() | SelectionKey.OP_WRITE)
-                  case CloseRequested(halfClose) =>
-                    val channel = key.channel().asInstanceOf[UnixSocketChannel]
-
-                    if (halfClose) {
-                      channel.shutdownOutput()
-                    } else {
-                      key.cancel()
-                      key.channel.close()
-                    }
-
+                  case CloseRequested =>
+                    key.cancel()
+                    key.channel.close()
+                  case ShutdownRequested =>
+                    key.channel().asInstanceOf[UnixSocketChannel].shutdownOutput()
                   case _: SendAvailable =>
                 }
                 sendReceiveContext.receive match {
@@ -289,7 +285,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
         .watchTermination() {
           case (m, done) =>
             done.onComplete { _ =>
-              sendReceiveContext.send = CloseRequested(halfClose)
+              sendReceiveContext.send = if (halfClose) ShutdownRequested else CloseRequested
               sel.wakeup()
             }
             (m, done)
