@@ -161,11 +161,9 @@ lazy val simpleCodecs = alpakkaProject("simple-codecs", "simplecodecs")
 
 lazy val slick = alpakkaProject("slick", "slick", Dependencies.Slick)
 
-lazy val sns = alpakkaProject("sns",
-                              "aws.sns",
-                              Dependencies.Sns,
-                              // For mockito https://github.com/akka/alpakka/issues/390
-                              parallelExecution in Test := false)
+lazy val sns = alpakkaProject("sns", "aws.sns", Dependencies.Sns,
+  // For mockito https://github.com/akka/alpakka/issues/390
+  parallelExecution in Test := false)
 
 lazy val solr = alpakkaProject("solr", "solr", Dependencies.Solr, parallelExecution in Test := false)
 
