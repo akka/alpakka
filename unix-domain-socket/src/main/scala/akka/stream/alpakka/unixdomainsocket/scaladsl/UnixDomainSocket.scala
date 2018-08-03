@@ -298,7 +298,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
               sendReceiveContext.send = if (halfClose) ShutdownRequested else CloseRequested
               sel.wakeup()
             }
-            (m, done)
+            Keep.left
         }
         .to(Sink.ignore)
     )
