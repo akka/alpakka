@@ -1,11 +1,11 @@
 lazy val modules: Seq[ProjectReference] = Seq(
   amqp,
+  avroparquet,
   awslambda,
   azureStorageQueue,
   cassandra,
   csv,
   dynamodb,
-  avroparquet,
   elasticsearch,
   files,
   ftp,
@@ -67,6 +67,9 @@ lazy val alpakka = project
 
 lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp)
 
+lazy val avroparquet =
+  alpakkaProject("avroparquet", "avroparquet", Dependencies.AvroParquet, parallelExecution in Test := false)
+
 lazy val awslambda = alpakkaProject("awslambda",
                                     "aws.lambda",
                                     Dependencies.AwsLambda,
@@ -80,8 +83,6 @@ lazy val cassandra = alpakkaProject("cassandra", "cassandra", Dependencies.Cassa
 lazy val csv = alpakkaProject("csv", "csv", Dependencies.Csv)
 
 lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB)
-
-lazy val avroparquet = alpakkaProject("avroparquet","avroparquet",Dependencies.AvroParquet,parallelExecution in Test := false)
 
 lazy val elasticsearch = alpakkaProject(
   "elasticsearch",
@@ -163,9 +164,11 @@ lazy val simpleCodecs = alpakkaProject("simple-codecs", "simplecodecs")
 
 lazy val slick = alpakkaProject("slick", "slick", Dependencies.Slick)
 
-lazy val sns = alpakkaProject("sns", "aws.sns", Dependencies.Sns,
-  // For mockito https://github.com/akka/alpakka/issues/390
-  parallelExecution in Test := false)
+lazy val sns = alpakkaProject("sns",
+                              "aws.sns",
+                              Dependencies.Sns,
+                              // For mockito https://github.com/akka/alpakka/issues/390
+                              parallelExecution in Test := false)
 
 lazy val solr = alpakkaProject("solr", "solr", Dependencies.Solr, parallelExecution in Test := false)
 

@@ -30,7 +30,9 @@ class AvroParquetSinkSpec extends Specification with AfterAll with AbstractAvroP
       val docs = List[Document](Document("id1", "sdaada"), Document("id1", "sdaada"), Document("id3", " fvrfecefedfww"))
 
       val source = Source.fromIterator(() => docs.iterator)
-      //#init-Sink
+
+
+      //#init-sink
       val file = folder + "/test.parquet"
 
       val conf = new Configuration()
@@ -40,7 +42,7 @@ class AvroParquetSinkSpec extends Specification with AfterAll with AbstractAvroP
         AvroParquetWriter.builder[GenericRecord](new Path(file)).withConf(conf).withSchema(schema).build()
 
       val sink: Sink[GenericRecord, Future[Done]] = AvroParquetSink(writer)
-      //#init-Sink
+      //#init-sink
 
       val result: Future[Done] = source
         .map { doc =>
