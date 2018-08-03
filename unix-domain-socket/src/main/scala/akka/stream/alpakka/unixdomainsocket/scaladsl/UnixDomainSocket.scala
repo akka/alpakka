@@ -97,7 +97,9 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
 
   private class SendReceiveContext(
       @volatile var send: SendContext,
-      @volatile var receive: ReceiveContext
+      @volatile var sendClosed: Boolean,
+      @volatile var receive: ReceiveContext,
+      @volatile var receiveClosed: Boolean
   )
 
   /*
@@ -148,9 +150,15 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                   case CloseRequested =>
                     key.cancel()
                     key.channel.close()
+                    sendReceiveContext.receiveClosed = true
+                    sendReceiveContext.sendClosed = true
                   case ShutdownRequested =>
                     try {
                       key.channel().asInstanceOf[UnixSocketChannel].shutdownOutput()
+                      sendReceiveContext.sendClosed = true
+                      if (sendReceiveContext.receiveClosed && sendReceiveContext.sendClosed) {
+                        key.channel().close()
+                      }
                     } catch {
                       // socket could have been closed in the meantime, so shutdownOutput will throw this
                       case _: IOException =>
@@ -180,6 +188,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                       queue.complete()
                       try {
                         channel.shutdownInput()
+                        sendReceiveContext.receiveClosed = true
                       } catch {
                         // socket could have been closed in the meantime, so shutdownInput will throw this
                         case _: IOException =>
@@ -194,6 +203,8 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                         sendReceiveContext.receive = ReceiveAvailable(receiveQueue, receiveBuffer)
                         key.interestOps(key.interestOps() | SelectionKey.OP_READ)
                       case _ =>
+                        sendReceiveContext.receiveClosed = true
+                        sendReceiveContext.sendClosed = true
                         receiveQueue.complete()
                         key.cancel()
                         key.channel.close()
@@ -264,7 +275,9 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
     val sendReceiveContext =
       new SendReceiveContext(
         SendAvailable(ByteBuffer.allocate(sendBufferSize)),
-        ReceiveAvailable(receiveQueue, ByteBuffer.allocate(receiveBufferSize))
+        false,
+        ReceiveAvailable(receiveQueue, ByteBuffer.allocate(receiveBufferSize)),
+        false
       ) // FIXME: No need for the costly allocation of direct buffers yet given https://github.com/jnr/jnr-unixsocket/pull/49
 
     val sendSink = Sink.fromGraph(
