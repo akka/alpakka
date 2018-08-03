@@ -5,6 +5,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   cassandra,
   csv,
   dynamodb,
+  avroparquet,
   elasticsearch,
   files,
   ftp,
