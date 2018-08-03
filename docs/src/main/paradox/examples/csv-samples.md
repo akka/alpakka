@@ -18,18 +18,18 @@ via @extref[Spray JSON](akka-http-docs:common/json-support.html#spray-json-suppo
 - (8) create a Kafka producer record
 
 Scala
-: @@snip ($alpakka$/doc-examples/src/main/scala/csvsamples/FetchHttpEvery30SecondsAndConvertCsvToJsonToKafka.scala) { #sample }
+: @@snip [snip](/doc-examples/src/main/scala/csvsamples/FetchHttpEvery30SecondsAndConvertCsvToJsonToKafka.scala) { #sample }
 
 Java
-: @@snip ($alpakka$/doc-examples/src/main/java/csvsamples/FetchHttpEvery30SecondsAndConvertCsvToJsonToKafkaInJava.java) { #sample }
+: @@snip [snip](/doc-examples/src/main/java/csvsamples/FetchHttpEvery30SecondsAndConvertCsvToJsonToKafkaInJava.java) { #sample }
 
 ### Helper code
 
 Scala
-: @@snip ($alpakka$/doc-examples/src/main/scala/csvsamples/FetchHttpEvery30SecondsAndConvertCsvToJsonToKafka.scala) { #helper }
+: @@snip [snip](/doc-examples/src/main/scala/csvsamples/FetchHttpEvery30SecondsAndConvertCsvToJsonToKafka.scala) { #helper }
 
 Java
-: @@snip ($alpakka$/doc-examples/src/main/java/csvsamples/FetchHttpEvery30SecondsAndConvertCsvToJsonToKafkaInJava.java) { #helper }
+: @@snip [snip](/doc-examples/src/main/java/csvsamples/FetchHttpEvery30SecondsAndConvertCsvToJsonToKafkaInJava.java) { #helper }
 
 
 ### Running the example code

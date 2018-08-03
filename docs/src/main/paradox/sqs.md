@@ -22,10 +22,10 @@ For more information about AWS SQS please visit the [official documentation](htt
 Prepare an @scaladoc[ActorSystem](akka.actor.ActorSystem) and a @scaladoc[Materializer](akka.stream.Materializer).
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-mat }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-mat }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/BaseSqsTest.java) { #init-mat }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/BaseSqsTest.java) { #init-mat }
 
 
 This connector requires an implicit `AmazonSQSAsync` instance to communicate with AWS SQS. 
@@ -33,10 +33,10 @@ This connector requires an implicit `AmazonSQSAsync` instance to communicate wit
 It is your code's responsibility to call `shutdown` to free any resources held by the client. In this example it will be called when the actor system is terminated.
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-client }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-client }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/BaseSqsTest.java) { #init-client }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/BaseSqsTest.java) { #init-client }
 
 
 ## Read from an SQS queue
@@ -44,10 +44,10 @@ Java
 The @scala[@scaladoc[SqsSource](akka.stream.alpakka.sqs.scaladsl.SqsSource$)]@java[@scaladoc[SqsSource](akka.stream.alpakka.sqs.javadsl.SqsSource$)] created source reads AWS Java SDK SQS `Message` objects from any SQS queue given by the queue URL.
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSourceSpec.scala) { #run }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSourceSpec.scala) { #run }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSourceTest.java) { #run }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSourceTest.java) { #run }
 
 We take the first 100 elements from the stream. The reason for this is, that reading messages from
 SQS queues never finishes because there is no direct way to determine the end of a queue.
@@ -56,10 +56,10 @@ SQS queues never finishes because there is no direct way to determine the end of
 ### Source configuration
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSourceSpec.scala) { #SqsSourceSettings }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSourceSpec.scala) { #SqsSourceSettings }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSourceTest.java) { #SqsSourceSettings }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSourceTest.java) { #SqsSourceSettings }
 
 
 Options:
@@ -90,10 +90,10 @@ uses a fixed thread pool with 50 threads by default. To tune the thread pool use
 `AmazonSQSAsyncClient` you can supply a custom `ExecutorService` on client creation.
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSourceSpec.scala) { #init-custom-client }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSourceSpec.scala) { #init-custom-client }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSourceTest.java) { #init-custom-client }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSourceTest.java) { #init-custom-client }
 
 Please make sure to configure a big enough thread pool to avoid resource starvation. This is especially important
 if you share the client between multiple Sources, Sinks and Flows. For the SQS Sinks and Sources the sum of all
@@ -105,18 +105,18 @@ if you share the client between multiple Sources, Sinks and Flows. For the SQS S
 Create a sink, that forwards `String` to the SQS queue.
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #run-string }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #run-string }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #run-string }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #run-string }
 
 Create a sink, that forwards `SendMessageRequest` to the SQS queue.
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #run-send-request }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #run-send-request }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #run-send-request }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #run-send-request }
 
 
 ## Write batches to an SQS queue
@@ -128,19 +128,19 @@ This client buffers `SendMessageRequest`s under the hood and sends them as a bat
 does not support FIFO Queues. See [documentation for client-side buffering.](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-client-side-buffering-request-batching.html)
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #group }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #group }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #group }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #group }
 
 
 ### Batch configuration
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSinkSpec.scala) { #SqsBatchFlowSettings }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSinkSpec.scala) { #SqsBatchFlowSettings }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #SqsBatchFlowSettings }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #SqsBatchFlowSettings }
 
 
 Options:
@@ -160,10 +160,10 @@ Be aware that the size of the batch must be less than or equal to 10 because Ama
 If the batch has more than 10 entries, the request will fail.
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-string }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-string }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #batch-string }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #batch-string }
 
 Create a sink, that forwards `Seq[SendMessageRequest]` to the SQS queue.
 
@@ -171,19 +171,19 @@ Be aware that the size of the batch must be less than or equal to 10 because Ama
 If the batch has more than 10 entries, the request will fail.
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-send-request }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-send-request }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #batch-send-request }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #batch-send-request }
 
 
 ### Sink configuration
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSinkSpec.scala) { #SqsSinkSettings }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSinkSpec.scala) { #SqsSinkSettings }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #SqsSinkSettings }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #SqsSinkSettings }
 
 Options:
 
@@ -205,36 +205,36 @@ for more details.
 Acknowledge (delete) messages:
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #ack }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #ack }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #ack }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #ack }
 
 Ignore messages:
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #ignore }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #ignore }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #ignore }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #ignore }
 
 Change Visibility Timeout of messages:
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #requeue }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #requeue }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #requeue }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #requeue }
 
 ### SqsAckSink configuration
 
 Same as the normal `SqsSink`:
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSinkSpec.scala) { #SqsAckSinkSettings }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSinkSpec.scala) { #SqsAckSinkSettings }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #SqsAckSinkSettings }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #SqsAckSinkSettings }
 
 
 Options:
@@ -249,35 +249,35 @@ Options:
 Acknowledge (delete) messages:
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-ack }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-ack }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #batch-ack }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #batch-ack }
 
 Ignore messages:
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-ignore }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-ignore }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #batch-ignore }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #batch-ignore }
 
 Change Visibility Timeout of messages:
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-requeue }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #batch-requeue }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #batch-requeue }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #batch-requeue }
 
 
 ### Batch configuration
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSinkSpec.scala) { #SqsBatchAckFlowSettings }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSinkSpec.scala) { #SqsBatchAckFlowSettings }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #SqsBatchAckFlowSettings }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #SqsBatchAckFlowSettings }
 
 
 Options:
@@ -295,19 +295,19 @@ You can also build flow stages which put or acknowledge messages in SQS, backpre
 responses further down the stream. The API is similar to creating Sinks.
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #flow }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #flow }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #flow }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsSinkTest.java) { #flow }
 
 
 With Ack:
 
 Scala
-: @@snip ($alpakka$/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #flow-ack }
+: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/SqsSpec.scala) { #flow-ack }
 
 Java
-: @@snip ($alpakka$/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #flow-ack }
+: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/SqsAckSinkTest.java) { #flow-ack }
 
 
 ### Running the example code

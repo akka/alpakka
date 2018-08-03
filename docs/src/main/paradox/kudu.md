@@ -15,32 +15,32 @@ Build a converter and a tableSetting.
 Converter will map the domain object to Kudu row.
 
 scala
-:   @@snip ($alpakka$/kudu/src/test/scala/akka/stream/alpakka/kudu/scaladsl/KuduStageSpec.scala) { #create-converter }
+:   @@snip [snip](/kudu/src/test/scala/akka/stream/alpakka/kudu/scaladsl/KuduStageSpec.scala) { #create-converter }
 
 java
-:   @@snip ($alpakka$/kudu/src/test/java/akka/stream/alpakka/kudu/javadsl/KuduStageTest.java) { #create-converter }
+:   @@snip [snip](/kudu/src/test/java/akka/stream/alpakka/kudu/javadsl/KuduStageTest.java) { #create-converter }
 
 Table will be created on demand.
 
 scala
-:   @@snip ($alpakka$/kudu/src/test/scala/akka/stream/alpakka/kudu/scaladsl/KuduStageSpec.scala) { #create-settings }
+:   @@snip [snip](/kudu/src/test/scala/akka/stream/alpakka/kudu/scaladsl/KuduStageSpec.scala) { #create-settings }
 
 java
-:   @@snip ($alpakka$/kudu/src/test/java/akka/stream/alpakka/kudu/javadsl/KuduStageTest.java) { #create-settings }
+:   @@snip [snip](/kudu/src/test/java/akka/stream/alpakka/kudu/javadsl/KuduStageTest.java) { #create-settings }
 
 ### Flow usage
 
 scala
-: @@snip ($alpakka$/kudu/src/test/scala/akka/stream/alpakka/kudu/scaladsl/KuduStageSpec.scala) { #flow }
+: @@snip [snip](/kudu/src/test/scala/akka/stream/alpakka/kudu/scaladsl/KuduStageSpec.scala) { #flow }
 
 java
-: @@snip ($alpakka$/kudu/src/test/java/akka/stream/alpakka/kudu/javadsl/KuduStageTest.java) { #flow }
+: @@snip [snip](/kudu/src/test/java/akka/stream/alpakka/kudu/javadsl/KuduStageTest.java) { #flow }
 
 
 ### Sink usage
 
 scala
-: @@snip ($alpakka$/kudu/src/test/scala/akka/stream/alpakka/kudu/scaladsl/KuduStageSpec.scala) { #sink }
+: @@snip [snip](/kudu/src/test/scala/akka/stream/alpakka/kudu/scaladsl/KuduStageSpec.scala) { #sink }
 
 java
-: @@snip ($alpakka$/kudu/src/test/java/akka/stream/alpakka/kudu/javadsl/KuduStageTest.java) { #sink }
+: @@snip [snip](/kudu/src/test/java/akka/stream/alpakka/kudu/javadsl/KuduStageTest.java) { #sink }
