@@ -7,10 +7,10 @@
 - and appends the data to the file `target/out` (2).
 
 Scala
-: @@snip ($alpakka$/doc-examples/src/main/scala/jms/JmsToFile.scala) { #sample }
+: @@snip [snip](/doc-examples/src/main/scala/jms/JmsToFile.scala) { #sample }
 
 Java
-: @@snip ($alpakka$/doc-examples/src/main/java/jms/javasamples/JmsToFile.java) { #sample }
+: @@snip [snip](/doc-examples/src/main/java/jms/javasamples/JmsToFile.java) { #sample }
 
 ### Example: Read text messages from JMS queue and create one file per message
 
@@ -21,10 +21,10 @@ Java
 value to create unique file names (4). 
 
 Scala
-: @@snip ($alpakka$/doc-examples/src/main/scala/jms/JmsToOneFilePerMessage.scala) { #sample }
+: @@snip [snip](/doc-examples/src/main/scala/jms/JmsToOneFilePerMessage.scala) { #sample }
 
 Java
-: @@snip ($alpakka$/doc-examples/src/main/java/jms/javasamples/JmsToOneFilePerMessage.java) { #sample }
+: @@snip [snip](/doc-examples/src/main/java/jms/javasamples/JmsToOneFilePerMessage.java) { #sample }
 
 ### Example: Read text messages from JMS queue and send to web server
 
@@ -35,10 +35,10 @@ Java
 - prints the `HttpResponse` to standard out (5).
 
 Scala
-: @@snip ($alpakka$/doc-examples/src/main/scala/jms/JmsToHttpGet.scala) { #sample }
+: @@snip [snip](/doc-examples/src/main/scala/jms/JmsToHttpGet.scala) { #sample }
 
 Java
-: @@snip ($alpakka$/doc-examples/src/main/java/jms/javasamples/JmsToHttpGet.java) { #sample }
+: @@snip [snip](/doc-examples/src/main/java/jms/javasamples/JmsToHttpGet.java) { #sample }
 
 ### Example: Read text messages from JMS queue and send to web socket
 
@@ -51,10 +51,10 @@ Java
 - end the stream by writing the values to standard out (7).
 
 Scala
-: @@snip ($alpakka$/doc-examples/src/main/scala/jms/JmsToWebSocket.scala) { #sample }
+: @@snip [snip](/doc-examples/src/main/scala/jms/JmsToWebSocket.scala) { #sample }
 
 Java
-: @@snip ($alpakka$/doc-examples/src/main/java/jms/javasamples/JmsToWebSocket.java) { #sample }
+: @@snip [snip](/doc-examples/src/main/java/jms/javasamples/JmsToWebSocket.java) { #sample }
 
 ### Running the example code
 

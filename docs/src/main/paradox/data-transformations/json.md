@@ -76,7 +76,7 @@ To define which parts of the structure you want to stream the module supports
 To extract the information needed, run a stream through the `JsonReader.select` flow.
 
 Scala
-: @@snip ($alpakka$/json-streaming/src/test/scala/akka/stream/alpakka/json/JsonReaderTest.scala) { #usage }
+: @@snip [snip](/json-streaming/src/test/scala/akka/stream/alpakka/json/JsonReaderTest.scala) { #usage }
 
 Java
-: @@snip ($alpakka$/json-streaming/src/test/java/akka/stream/alpakka/json/JsonReaderUsageTest.java) { #usage }
+: @@snip [snip](/json-streaming/src/test/java/akka/stream/alpakka/json/JsonReaderUsageTest.java) { #usage }

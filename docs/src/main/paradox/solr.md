@@ -23,10 +23,10 @@ access to Solr.
 
 
 Scala
-: @@snip ($alpakka$/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #init-client }
+: @@snip [snip](/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #init-client }
 
 Java
-: @@snip ($alpakka$/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #init-client }
+: @@snip [snip](/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #init-client }
 
 
 ## Source Usage
@@ -34,10 +34,10 @@ Java
 Create a tuple stream.
 
 Scala
-: @@snip ($alpakka$/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #tuple-stream }
+: @@snip [snip](/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #tuple-stream }
 
 Java
-: @@snip ($alpakka$/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #tuple-stream }
+: @@snip [snip](/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #tuple-stream }
 
 
 Use `SolrSource.create` to create 
@@ -46,10 +46,10 @@ Use `SolrSource.create` to create
 
 
 Scala
-: @@snip ($alpakka$/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #define-source }
+: @@snip [snip](/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #define-source }
 
 Java
-: @@snip ($alpakka$/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #define-source }
+: @@snip [snip](/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #define-source }
 
 ## Sink Usage
 
@@ -59,10 +59,10 @@ Now we can stream messages to Solr by providing the `SolrClient` to the
 
 
 Scala
-: @@snip ($alpakka$/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #define-class }
+: @@snip [snip](/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #define-class }
 
 Java
-: @@snip ($alpakka$/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #define-class }
+: @@snip [snip](/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #define-class }
 
 ### With document sink
 
@@ -70,29 +70,29 @@ Use `SolrSink.document` to stream `SolrInputDocument` to Solr.
 
 
 Scala
-: @@snip ($alpakka$/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #run-document }
+: @@snip [snip](/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #run-document }
 
 Java
-: @@snip ($alpakka$/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #run-document }
+: @@snip [snip](/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #run-document }
 
 ### With bean sink
 
 Firstly, create a POJO.
 
 Scala
-: @@snip ($alpakka$/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #define-bean }
+: @@snip [snip](/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #define-bean }
 
 Java
-: @@snip ($alpakka$/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #define-bean }
+: @@snip [snip](/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #define-bean }
 
 Use `SolrSink.bean` to stream POJOs to Solr.
 
 
 Scala
-: @@snip ($alpakka$/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #run-bean }
+: @@snip [snip](/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #run-bean }
 
 Java
-: @@snip ($alpakka$/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #run-bean }
+: @@snip [snip](/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #run-bean }
 
 ### With typed sink
 
@@ -100,10 +100,10 @@ Use `SolrSink.typed` to stream messages with custom binding to Solr.
 
 
 Scala
-: @@snip ($alpakka$/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #run-typed }
+: @@snip [snip](/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #run-typed }
 
 Java
-: @@snip ($alpakka$/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #run-typed }
+: @@snip [snip](/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #run-typed }
 
 ### Configuration
 
@@ -111,10 +111,10 @@ We can configure the sink by `SolrUpdateSettings`.
 
 
 Scala
-: @@snip ($alpakka$/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #solr-update-settings }
+: @@snip [snip](/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #solr-update-settings }
 
 Java
-: @@snip ($alpakka$/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #solr-update-settings }
+: @@snip [snip](/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #solr-update-settings }
 
 
 | Parameter           | Default | Description                                                                                            |
@@ -132,10 +132,10 @@ You can also build flow stages with
 The API is similar to creating Sinks.
 
 Scala
-: @@snip ($alpakka$/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #run-flow }
+: @@snip [snip](/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #run-flow }
 
 Java
-: @@snip ($alpakka$/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #run-flow }
+: @@snip [snip](/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #run-flow }
 
 ### Passing data through SolrFlow
 
@@ -144,10 +144,10 @@ Use `SolrFlow.documentWithPassThrough`, `SolrFlow.beanWithPassThrough` or `SolrF
 When streaming documents from Kafka, you might want to commit to Kafka **AFTER** the document has been written to Solr.
 
 Scala
-: @@snip ($alpakka$/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #kafka-example }
+: @@snip [snip](/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #kafka-example }
 
 Java
-: @@snip ($alpakka$/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #kafka-example }
+: @@snip [snip](/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #kafka-example }
 
 
 ### Running the example code
