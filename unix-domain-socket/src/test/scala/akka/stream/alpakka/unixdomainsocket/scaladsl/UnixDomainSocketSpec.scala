@@ -31,15 +31,9 @@ class UnixDomainSocketSpec
       file.delete()
       file.deleteOnExit()
 
-      //#handler
-      val handler = Flow[ByteString]
-        .fold(ByteString.empty)(_ ++ _)
-        .flatMapConcat(bytes => Source.single(bytes ++ bytes))
-      //#handler
-
       //#binding
       val binding =
-        UnixDomainSocket().bindAndHandle(handler, file)
+        UnixDomainSocket().bindAndHandle(Flow.fromFunction(identity), file)
       //#binding
 
       //#outgoingConnection
@@ -52,7 +46,7 @@ class UnixDomainSocketSpec
             .runWith(Sink.head)
         //#outgoingConnection
         result
-          .map(receiveBytes => assert(receiveBytes == sendBytes ++ sendBytes))
+          .map(receiveBytes => assert(receiveBytes == sendBytes))
           .flatMap {
             case `succeed` => connection.unbind().map(_ => succeed)
             case failedAssertion => failedAssertion
