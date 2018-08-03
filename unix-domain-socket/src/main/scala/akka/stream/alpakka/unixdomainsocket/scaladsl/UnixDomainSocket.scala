@@ -120,6 +120,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
               newConnectionOp(sel, key)
             }
             key.attachment match {
+              case null =>
               case sendReceiveContext: SendReceiveContext =>
                 sendReceiveContext.send match {
                   case SendRequested(buffer, sent) if keySelectable && key.isWritable =>
@@ -218,12 +219,15 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
 
     val acceptingChannel = key.channel().asInstanceOf[UnixServerSocketChannel]
     val acceptedChannel = acceptingChannel.accept()
-    acceptedChannel.configureBlocking(false)
-    val (context, connectionFlow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize, halfClose)
-    acceptedChannel.register(sel, SelectionKey.OP_READ, context)
-    incomingConnectionQueue.offer(
-      IncomingConnection(localAddress, acceptingChannel.getRemoteSocketAddress, connectionFlow)
-    )
+
+    if (acceptedChannel != null) {
+      acceptedChannel.configureBlocking(false)
+      val (context, connectionFlow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize, halfClose)
+      acceptedChannel.register(sel, SelectionKey.OP_READ, context)
+      incomingConnectionQueue.offer(
+        IncomingConnection(localAddress, acceptingChannel.getRemoteSocketAddress, connectionFlow)
+      )
+    }
   }
 
   private def connectKey(remoteAddress: UnixSocketAddress,
@@ -295,7 +299,12 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
         .watchTermination() {
           case (m, done) =>
             done.onComplete { _ =>
-              sendReceiveContext.send = if (halfClose) ShutdownRequested else CloseRequested
+              sendReceiveContext.send = if (halfClose) {
+                ShutdownRequested
+              } else {
+                receiveQueue.complete()
+                CloseRequested
+              }
               sel.wakeup()
             }
             Keep.left
