@@ -148,7 +148,12 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                     key.cancel()
                     key.channel.close()
                   case ShutdownRequested =>
-                    key.channel().asInstanceOf[UnixSocketChannel].shutdownOutput()
+                    try {
+                      key.channel().asInstanceOf[UnixSocketChannel].shutdownOutput()
+                    } catch {
+                      // socket could have been closed in the meantime, so shutdownOutput will throw this
+                      case _: IOException =>
+                    }
                   case _: SendAvailable =>
                 }
                 sendReceiveContext.receive match {
@@ -172,7 +177,12 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                       sendReceiveContext.receive = PendingReceiveAck(queue, buffer, pendingResult)
                     } else {
                       queue.complete()
-                      channel.shutdownInput()
+                      try {
+                        channel.shutdownInput()
+                      } catch {
+                        // socket could have been closed in the meantime, so shutdownInput will throw this
+                        case _: IOException =>
+                      }
                     }
 
                     key.interestOps(key.interestOps() & ~SelectionKey.OP_READ)
