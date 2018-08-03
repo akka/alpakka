@@ -509,26 +509,34 @@ The `MQQueueConnectionFactory` needs a queue manager name and a channel name, th
 connect to the MQ server over TCP/IP or natively through JNI (when the client and server run on the same machine). In the examples below we have chosen to use TCP/IP, which is done by setting the transport type to `CommonConstants.WMQ_CM_CLIENT`.
 
 Scala
-:   ```
+:   &#9;
+
+    ```scala
     import com.ibm.mq.jms.MQQueueConnectionFactory
     import com.ibm.msg.client.wmq.common.CommonConstants
+
     val QueueManagerName = "QM1"
     val TestChannelName = "DEV.APP.SVRCONN"
+
     // Create the IBM MQ QueueConnectionFactory
     val queueConnectionFactory = new MQQueueConnectionFactory()
     queueConnectionFactory.setQueueManager(QueueManagerName)
     queueConnectionFactory.setChannel(TestChannelName)
+
     // Connect to IBM MQ over TCP/IP
     queueConnectionFactory.setTransportType(CommonConstants.WMQ_CM_CLIENT)
     val TestQueueName = "DEV.QUEUE.1"
+
     // Option1: create Source using default factory with just name
     val jmsSource: Source[String, NotUsed] = JmsConsumer.textSource(
       JmsConsumerSettings(queueConnectionFactory).withQueue(TestQueueName)
     )
+
     // Option2: create Source using custom factory
     private def createMqQueue(destinationName: String): Session => MQQueue = { session =>
        ...
-    }    
+    }
+
     val jmsSource: Source[String, NotUsed] = JmsConsumer.textSource(
       JmsConsumerSettings(queueConnectionFactory)
         .withDestination(CustomDestination(TestQueueName, createMqQueue(TestQueueName)))
@@ -536,30 +544,38 @@ Scala
     ```
 
 Java
-:   ```
+:   &#9;
+
+    ```java
     import com.ibm.mq.jms.MQQueueConnectionFactory;
     import com.ibm.msg.client.wmq.common.CommonConstants;
+
     String queueManagerName = "QM1";
     String testChannelName = "DEV.APP.SVRCONN";
+
     // Create the IBM MQ QueueConnectionFactory
     MQQueueConnectionFactory queueConnectionFactory = new MQQueueConnectionFactory();
     queueConnectionFactory.setQueueManager(queueManagerName);
     queueConnectionFactory.setChannel(testChannelName);
+
     // Connect to IBM MQ over TCP/IP
     queueConnectionFactory.setTransportType(CommonConstants.WMQ_CM_CLIENT);
     String testQueueName = "DEV.QUEUE.1";
+
     // Option1: create Source using default factory with just name
     Source<String, NotUsed> jmsSource = JmsConsumer.textSource(
       JmsConsumerSettings
         .create(queueConnectionFactory)
         .withQueue(testQueueName)
     );
+
     // Option2: create Source using custom factory 
     private Function1<Session, Destination> createMqQueue(String destinationName) {
         return (session) -> {
             ...
         };
-    }    
+    }
+
     Source<String, NotUsed> jmsSource = JmsConsumer.textSource(
       JmsConsumerSettings
         .create(queueConnectionFactory)
@@ -571,26 +587,34 @@ Java
 The IBM MQ docker container sets up a `dev/` topic, which is used in the example below.
 
 Scala
-:   ```
+:   &#9;
+
+    ```scala
     import com.ibm.mq.jms.MQTopicConnectionFactory
     import com.ibm.msg.client.wmq.common.CommonConstants
+
     val QueueManagerName = "QM1"
     val TestChannelName = "DEV.APP.SVRCONN"
+
     // Create the IBM MQ TopicConnectionFactory
     val topicConnectionFactory = new MQTopicConnectionFactory()
     topicConnectionFactory.setQueueManager(QueueManagerName)
     topicConnectionFactory.setChannel(TestChannelName)
+
     // Connect to IBM MQ over TCP/IP
     topicConnectionFactory.setTransportType(CommonConstants.WMQ_CM_CLIENT)
     val TestTopicName = "dev/"
+
     // Option1: create Sink using default factory with just name
     val jmsTopicSink: Sink[String, NotUsed] = JmsProducer(
       JmsProducerSettings(topicConnectionFactory).withTopic(TestTopicName)
     )
+
     // Option2: create Sink using custom factory
     private def createMqTopic(destinationName: String): Session => MQTopic = { session =>
         ...
     }    
+
     val jmsTopicSink: Sink[String, NotUsed] = JmsProducer(
       JmsProducerSettings(topicConnectionFactory)
         .withDestination(CustomDestination(TestTopicName, createMqTopic(TestTopicName)))
@@ -598,30 +622,38 @@ Scala
     ```
 
 Java
-:   ```
+:   &#9;
+
+    ```java
     import com.ibm.mq.jms.MQTopicConnectionFactory;
     import com.ibm.msg.client.wmq.common.CommonConstants;
+
     String queueManagerName = "QM1";
     String testChannelName = "DEV.APP.SVRCONN";
+
     // Create the IBM MQ TopicConnectionFactory
     val topicConnectionFactory = new MQTopicConnectionFactory();
     topicConnectionFactory.setQueueManager(queueManagerName);
     topicConnectionFactory.setChannel(testChannelName);
+
     // Connect to IBM MQ over TCP/IP
     topicConnectionFactory.setTransportType(CommonConstants.WMQ_CM_CLIENT);
     String testTopicName = "dev/";
-     // Option1: create Source using default factory with just name
+
+    // Option1: create Source using default factory with just name
     Sink<String, NotUsed> jmsTopicSink = JmsProducer.textSink(
       JmsProducerSettings
         .create(topicConnectionFactory)
         .withTopic(testTopicName)
     );
+
     // Option2: create Source using custom factory 
     private Function1<Session, Destination> createMqTopic(String destinationName) {
         return (session) -> {
             ...
         };
-    }    
+    }
+
     Sink<String, NotUsed> jmsTopicSink = JmsProducer.textSink(
       JmsProducerSettings
         .create(queueConnectionFactory)
