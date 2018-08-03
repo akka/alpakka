@@ -81,6 +81,8 @@ lazy val csv = alpakkaProject("csv", "csv", Dependencies.Csv)
 
 lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB)
 
+lazy val avroparquet = alpakkaProject("avroparquet","avroparquet",Dependencies.AvroParquet,parallelExecution in Test := false)
+
 lazy val elasticsearch = alpakkaProject(
   "elasticsearch",
   "elasticsearch",
