@@ -116,23 +116,33 @@ Both the samples are contained in standalone runnable mains, they can be run
  from `sbt` like this:
 
 Scala
-:   ```
+:   &#9;
+
+    ```
     sbt
+
     // tail source
     > file/Test/runMain akka.stream.alpakka.file.scaladsl.FileTailSourceSpec /some/path/toa/file
+
     // or directory changes
     > file/Test/runMain akka.stream.alpakka.file.scaladsl.DirectoryChangesSourceSpec /some/directory/path
+
     // File rotator
     > file/Test/runMain akka.stream.alpakka.file.scaladsl.LogRotatorSinkTest
     ```
 
 Java
-:   ```
+:   &#9;
+
+    ```
     sbt
+
     // tail source
     > file/Test/runMain akka.stream.alpakka.file.javadsl.FileTailSourceTest /some/path/toa/file
+
     // or directory changes
     > file/Test/runMain akka.stream.alpakka.file.javadsl.DirectoryChangesSourceTest /some/directory/path
+
     // File rotator
     > file/Test/runMain akka.stream.alpakka.file.javadsl.LogRotatorSinkTest
     ```
