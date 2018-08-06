@@ -19,5 +19,5 @@ object AzureQueueSource {
     Source.fromGraph(new AzureQueueSourceStage(() => cloudQueue.get(), settings))
 
   def create(cloudQueue: Supplier[CloudQueue]): Source[CloudQueueMessage, NotUsed] =
-    create(cloudQueue, AzureQueueSourceSettings.Default)
+    create(cloudQueue, AzureQueueSourceSettings())
 }
