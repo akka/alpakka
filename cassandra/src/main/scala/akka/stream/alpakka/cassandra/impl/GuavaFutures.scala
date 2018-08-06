@@ -2,11 +2,11 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.cassandra
+package akka.stream.alpakka.cassandra.impl
 
 import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture}
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 private[cassandra] object GuavaFutures {

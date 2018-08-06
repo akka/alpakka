@@ -5,7 +5,7 @@
 package akka.stream.alpakka.cassandra.scaladsl
 
 import akka.Done
-import akka.stream.alpakka.cassandra.GuavaFutures._
+import akka.stream.alpakka.cassandra.impl.GuavaFutures._
 import akka.stream.scaladsl.{Flow, Keep, Sink}
 import com.datastax.driver.core.{BoundStatement, PreparedStatement, Session}
 
