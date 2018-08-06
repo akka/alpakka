@@ -6,9 +6,11 @@ package akka.stream.alpakka.reference
 
 // rename Java imports if the name clashes with the Scala name
 import java.time.{Duration => JavaDuration}
+import java.util.Optional
 import java.util.function.Predicate
 
 import scala.compat.java8.FunctionConverters._
+import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration._
 
 /**
@@ -51,6 +53,23 @@ final class SourceSettings private (
    */
   def withPollInterval(pollInterval: JavaDuration): SourceSettings =
     copy(pollInterval = Duration.fromNanos(pollInterval.toNanos))
+
+
+  /**
+   * Java API
+   *
+   * A separate getter for Java API that converts Scala Option to Java Optional.
+   */
+  def getTraceId(): Optional[String] =
+    traceId.asJava
+
+  /**
+   * Java API
+   *
+   * A separate getter for Java API that converts Scala Duration to Java Duration.
+   */
+  def getPollInterval(): JavaDuration =
+    JavaDuration.ofNanos(pollInterval.toNanos)
 
   /**
    * Private copy method for internal use only.
