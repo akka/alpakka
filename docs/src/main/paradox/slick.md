@@ -21,18 +21,18 @@ You will also need to add the JDBC driver(s) for the specific relational databas
 As always, before we get started we will need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and a @scaladoc[Materializer](akka.stream.Materializer).
 
 Scala
-: @@snip ($alpakka$/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/SlickSpec.scala) { #init-mat }
+: @@snip [snip](/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/SlickSpec.scala) { #init-mat }
 
 Java
-: @@snip ($alpakka$/slick/src/test/java/akka/stream/alpakka/slick/javadsl/SlickTest.java) { #init-mat }
+: @@snip [snip](/slick/src/test/java/akka/stream/alpakka/slick/javadsl/SlickTest.java) { #init-mat }
 
 You will also always need the following important imports:
 
 Scala
-: @@snip ($alpakka$/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/DocSnippets.scala) { #important-imports }
+: @@snip [snip](/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/DocSnippets.scala) { #important-imports }
 
 Java
-: @@snip ($alpakka$/slick/src/test/java/akka/stream/alpakka/slick/javadsl/DocSnippetSource.java) { #important-imports }
+: @@snip [snip](/slick/src/test/java/akka/stream/alpakka/slick/javadsl/DocSnippetSource.java) { #important-imports }
 
 The full examples for using the `Source`, `Sink`, and `Flow` (listed further down) also include all required imports.
 
@@ -43,20 +43,20 @@ All functionality provided by this connector requires the user to first create a
 If you are using Slick in your project, you can create a `SlickSession` instance by sharing the database configuration:
 
 Scala
-: @@snip ($alpakka$/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/SlickSpec.scala) { #init-db-config-session }
+: @@snip [snip](/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/SlickSpec.scala) { #init-db-config-session }
 
 Otherwise, you can configure your database using [typesafe-config](https://github.com/typesafehub/config) by adding a named configuration to your application.conf and then referring to that configuration when starting the session:
 
 Scala
-: @@snip ($alpakka$/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/SlickSpec.scala) { #init-session }
+: @@snip [snip](/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/SlickSpec.scala) { #init-session }
 
 Java
-: @@snip ($alpakka$/slick/src/test/java/akka/stream/alpakka/slick/javadsl/SlickTest.java) { #init-session }
+: @@snip [snip](/slick/src/test/java/akka/stream/alpakka/slick/javadsl/SlickTest.java) { #init-session }
 
 Here is an example configuration for the H2 database, which is used for the unit tests of the Slick connector itself:
 
 Configuration
-: @@snip ($alpakka$/slick/src/test/resources/application.conf) { #config-h2 }
+: @@snip [snip](/slick/src/test/resources/application.conf) { #config-h2 }
 
 You can specify multiple different database configurations, as long as you use unique names. These can then be loaded by fully qualified configuration name using the `SlickSession.forConfig()` method described above.
 
@@ -65,19 +65,19 @@ The Slick connector supports all the various ways Slick allows you to configure 
 Below are a few configuration examples for other databases. The Slick connector supports all @extref[databases supported by Slick](slick:supported-databases.html) (as of Slick 3.2.x)
 
 Postgres
-: @@snip ($alpakka$/slick/src/test/resources/application.conf) { #config-postgres }
+: @@snip [snip](/slick/src/test/resources/application.conf) { #config-postgres }
 
 MySQL
-: @@snip ($alpakka$/slick/src/test/resources/application.conf) { #config-mysql }
+: @@snip [snip](/slick/src/test/resources/application.conf) { #config-mysql }
 
 DB2
-: @@snip ($alpakka$/slick/src/test/resources/application.conf) { #config-db2 }
+: @@snip [snip](/slick/src/test/resources/application.conf) { #config-db2 }
 
 Oracle
-: @@snip ($alpakka$/slick/src/test/resources/application.conf) { #config-oracle }
+: @@snip [snip](/slick/src/test/resources/application.conf) { #config-oracle }
 
 SQL Server
-: @@snip ($alpakka$/slick/src/test/resources/application.conf) { #config-sqlserver }
+: @@snip [snip](/slick/src/test/resources/application.conf) { #config-sqlserver }
 
 Of course these are just examples. Please visit the @extref[Slick documentation for `DatabaseConfig.fromConfig`](slick:api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig(String,Config,Driver,ClassLoader%29:Database) for the full list of things to configure.
 
@@ -85,10 +85,10 @@ Of course these are just examples. Please visit the @extref[Slick documentation 
 Slick requires you to eventually close your database session to free up connection pool resources. You would usually do this when terminating the `ActorSystem`, by registering a termination handler like this:
 
 Scala
-: @@snip ($alpakka$/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/SlickSpec.scala) { #close-session }
+: @@snip [snip](/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/SlickSpec.scala) { #close-session }
 
 Java
-: @@snip ($alpakka$/slick/src/test/java/akka/stream/alpakka/slick/javadsl/SlickTest.java) { #close-session }
+: @@snip [snip](/slick/src/test/java/akka/stream/alpakka/slick/javadsl/SlickTest.java) { #close-session }
 
 ### Using a Slick Source
 The Slick connector allows you to perform a SQL query and expose the resulting stream of results as an Akka Streams `Source[T]`. Where `T` is any type that can be constructed using a database row.
@@ -103,17 +103,17 @@ Unfortunately, String interpolation is a Scala language feature that cannot be d
 The following examples put it all together to perform a simple streaming query.
 
 Scala
-: @@snip ($alpakka$/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/DocSnippets.scala) { #source-example }
+: @@snip [snip](/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/DocSnippets.scala) { #source-example }
 
 Java
-: @@snip ($alpakka$/slick/src/test/java/akka/stream/alpakka/slick/javadsl/DocSnippetSource.java) { #source-example }
+: @@snip [snip](/slick/src/test/java/akka/stream/alpakka/slick/javadsl/DocSnippetSource.java) { #source-example }
 
 
 #### Typed Queries
 The Scala DSL also supports the use of @extref[Slick Scala queries](slick:concepts.html#scala-queries), which are more type-safe then their plain SQL equivalent. The code will look very similar to the plain SQL example.
 
 Scala
-: @@snip ($alpakka$/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/DocSnippets.scala) { #source-with-typed-query }
+: @@snip [snip](/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/DocSnippets.scala) { #source-with-typed-query }
 
 
 ### Using a Slick Flow or Sink
@@ -122,24 +122,24 @@ If you want to take stream of elements and turn them into side-effecting actions
 The following example show the use of a Slick `Sink` to take a stream of elements and insert them into the database. There is an optional `parallelism` argument to specify how many concurrent streams will be sent to the database. The unit tests for the slick connector have example of performing parallel inserts.
 
 Scala
-: @@snip ($alpakka$/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/DocSnippets.scala) { #sink-example }
+: @@snip [snip](/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/DocSnippets.scala) { #sink-example }
 
 Java
-: @@snip ($alpakka$/slick/src/test/java/akka/stream/alpakka/slick/javadsl/DocSnippetSink.java) { #sink-example }
+: @@snip [snip](/slick/src/test/java/akka/stream/alpakka/slick/javadsl/DocSnippetSink.java) { #sink-example }
 
 For completeness, the Slick connector also exposes a `Flow` that has the exact same functionality as the `Sink` but it allows you to continue the stream for further processing. The return value of every executed statement, e.g. the element values is the fixed type `Int` denoting the number of updated/inserted/deleted rows.
 
 Scala
-: @@snip ($alpakka$/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/DocSnippets.scala) { #flow-example }
+: @@snip [snip](/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/DocSnippets.scala) { #flow-example }
 
 Java
-: @@snip ($alpakka$/slick/src/test/java/akka/stream/alpakka/slick/javadsl/DocSnippetFlow.java) { #flow-example }
+: @@snip [snip](/slick/src/test/java/akka/stream/alpakka/slick/javadsl/DocSnippetFlow.java) { #flow-example }
 
 To have a different return type, use the `flowWithPassThrough` function.
 E.g. when consuming Kafka messages, this allows you to maintain the kafka committable offset so the message can be committed in a next stage in the flow.
 
 Scala
-: @@snip ($alpakka$/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/DocSnippets.scala) { #flowWithPassThrough-example }
+: @@snip [snip](/slick/src/test/scala/akka/stream/alpakka/slick/scaladsl/DocSnippets.scala) { #flowWithPassThrough-example }
 
 Java
-: @@snip ($alpakka$/slick/src/test/java/akka/stream/alpakka/slick/javadsl/DocSnippetFlowWithPassThrough.java) { #flowWithPassThrough-example }
+: @@snip [snip](/slick/src/test/java/akka/stream/alpakka/slick/javadsl/DocSnippetFlowWithPassThrough.java) { #flowWithPassThrough-example }

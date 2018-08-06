@@ -15,10 +15,10 @@ You can achieve a [Splitter](http://www.enterpriseintegrationpatterns.com/patter
 Let's say that we have a stream containing strings. Each string contains a few numbers separated by "-". We want to create out of this a stream that only contains the numbers. 
 
 Scala
-: @@snip ($alpakka$/doc-examples/src/test/scala/akka/stream/alpakka/eip/scaladsl/SplitterExamples.scala) { #Simple-Split }
+: @@snip [snip](/doc-examples/src/test/scala/akka/stream/alpakka/eip/scaladsl/SplitterExamples.scala) { #Simple-Split }
 
 Java
-: @@snip ($alpakka$/doc-examples/src/test/java/akka/stream/alpakka/eip/javadsl/SplitterExamples.java) { #Simple-Split }
+: @@snip [snip](/doc-examples/src/test/java/akka/stream/alpakka/eip/javadsl/SplitterExamples.java) { #Simple-Split }
 
 ## Spliter + Aggregator
 
@@ -28,9 +28,9 @@ Let's say that now we want to create a new stream containing the sums of the num
 
 
 Scala
-: @@snip ($alpakka$/doc-examples/src/test/scala/akka/stream/alpakka/eip/scaladsl/SplitterExamples.scala) { #Aggregate-Split }
+: @@snip [snip](/doc-examples/src/test/scala/akka/stream/alpakka/eip/scaladsl/SplitterExamples.scala) { #Aggregate-Split }
 
 Java
-: @@snip ($alpakka$/doc-examples/src/test/java/akka/stream/alpakka/eip/javadsl/SplitterExamples.java) { #Aggregate-Split }
+: @@snip [snip](/doc-examples/src/test/java/akka/stream/alpakka/eip/javadsl/SplitterExamples.java) { #Aggregate-Split }
 
 While in real life this solution if overkill for such a simple problem (you can just do everything in a map), more complex scenarios, involving in particular I/O, will benefit from the fact that you can paralelize sub-streams and get back-pressure for "free".
