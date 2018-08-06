@@ -2,11 +2,14 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.cassandra.javadsl;
+package docs.javadsl;
 
 import akka.Done;
 import akka.NotUsed;
 import akka.stream.alpakka.cassandra.CassandraBatchSettings;
+import akka.stream.alpakka.cassandra.javadsl.CassandraFlow;
+import akka.stream.alpakka.cassandra.javadsl.CassandraSink;
+import akka.stream.alpakka.cassandra.javadsl.CassandraSource;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
@@ -175,7 +178,7 @@ public class CassandraSourceTest {
                 .collect(Collectors.toList()));
 
     // #settings-batching-flow
-    CassandraBatchSettings defaultSettings = CassandraBatchSettings.Defaults();
+    CassandraBatchSettings defaultSettings = CassandraBatchSettings.create();
     // #settings-batching-flow
 
     // #run-batching-flow

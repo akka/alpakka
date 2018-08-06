@@ -10,7 +10,7 @@ import akka.stream.FlowShape
 import akka.stream.alpakka.cassandra.CassandraBatchSettings
 import akka.stream.scaladsl.{Flow, GraphDSL}
 import com.datastax.driver.core.{BatchStatement, BoundStatement, PreparedStatement, Session}
-import akka.stream.alpakka.cassandra.GuavaFutures._
+import akka.stream.alpakka.cassandra.impl.GuavaFutures._
 
 import scala.collection.JavaConverters._
 
@@ -43,7 +43,7 @@ object CassandraFlow {
       statement: PreparedStatement,
       statementBinder: (T, PreparedStatement) => BoundStatement,
       partitionKey: T => K,
-      settings: CassandraBatchSettings = CassandraBatchSettings.Defaults
+      settings: CassandraBatchSettings = CassandraBatchSettings()
   )(implicit session: Session): Flow[T, T, NotUsed] = {
     val graph = GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._

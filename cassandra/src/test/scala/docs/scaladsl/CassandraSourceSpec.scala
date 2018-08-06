@@ -2,11 +2,12 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.cassandra.scaladsl
+package docs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.cassandra.CassandraBatchSettings
+import akka.stream.alpakka.cassandra.scaladsl.{CassandraFlow, CassandraSink, CassandraSource}
 import akka.stream.scaladsl.{Sink, Source}
 import com.datastax.driver.core.{Cluster, PreparedStatement, SimpleStatement}
 import org.scalatest._
@@ -171,7 +172,7 @@ class CassandraSourceSpec
       //#statement-binder-batching-flow
 
       //#settings-batching-flow
-      val settings: CassandraBatchSettings = CassandraBatchSettings.Defaults
+      val settings: CassandraBatchSettings = CassandraBatchSettings()
       //#settings-batching-flow
 
       //#run-batching-flow

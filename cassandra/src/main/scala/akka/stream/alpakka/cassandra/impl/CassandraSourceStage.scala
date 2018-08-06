@@ -2,8 +2,9 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.cassandra
+package akka.stream.alpakka.cassandra.impl
 
+import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import com.datastax.driver.core.{ResultSet, Row, Session, Statement}
@@ -11,7 +12,11 @@ import com.datastax.driver.core.{ResultSet, Row, Session, Statement}
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-final class CassandraSourceStage(futStmt: Future[Statement], session: Session) extends GraphStage[SourceShape[Row]] {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[cassandra] final class CassandraSourceStage(futStmt: Future[Statement], session: Session)
+    extends GraphStage[SourceShape[Row]] {
   val out: Outlet[Row] = Outlet("CassandraSource.out")
   override val shape: SourceShape[Row] = SourceShape(out)
 
