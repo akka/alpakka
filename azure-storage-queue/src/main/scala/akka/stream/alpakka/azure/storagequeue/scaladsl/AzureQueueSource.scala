@@ -5,9 +5,10 @@
 package akka.stream.alpakka.azure.storagequeue.scaladsl
 
 import com.microsoft.azure.storage.queue.{CloudQueue, CloudQueueMessage}
-import akka.stream.alpakka.azure.storagequeue.{AzureQueueSourceSettings, AzureQueueSourceStage}
+import akka.stream.alpakka.azure.storagequeue.AzureQueueSourceSettings
 import akka.stream.scaladsl.Source
 import akka.NotUsed
+import akka.stream.alpakka.azure.storagequeue.impl.AzureQueueSourceStage
 
 object AzureQueueSource {
 
