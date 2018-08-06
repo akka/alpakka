@@ -82,11 +82,13 @@ public class Examples {
   final Flow<PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed> defaultSettingsFlow =
       KinesisFlow.apply("streamName", amazonKinesisAsync);
 
-  final Flow<Pair<PutRecordsRequestEntry, String>, Pair<PutRecordsResultEntry, String>, NotUsed> flowWithStringContext =
-      KinesisFlow.withUserContext("streamName", flowSettings, amazonKinesisAsync);
+  final Flow<Pair<PutRecordsRequestEntry, String>, Pair<PutRecordsResultEntry, String>, NotUsed>
+      flowWithStringContext =
+          KinesisFlow.withUserContext("streamName", flowSettings, amazonKinesisAsync);
 
-  final Flow<Pair<PutRecordsRequestEntry, String>, Pair<PutRecordsResultEntry, String>, NotUsed> defaultSettingsFlowWithStringContext =
-      KinesisFlow.withUserContext("streamName", flowSettings, amazonKinesisAsync);
+  final Flow<Pair<PutRecordsRequestEntry, String>, Pair<PutRecordsResultEntry, String>, NotUsed>
+      defaultSettingsFlowWithStringContext =
+          KinesisFlow.withUserContext("streamName", flowSettings, amazonKinesisAsync);
 
   final Sink<PutRecordsRequestEntry, NotUsed> sink =
       KinesisSink.apply("streamName", flowSettings, amazonKinesisAsync);
