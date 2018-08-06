@@ -2,20 +2,23 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.azure.storagequeue.scaladsl
+package docs.scaladsl
 
-import org.scalatest._
+import akka.actor.ActorSystem
+import akka.stream._
+import akka.stream.alpakka.azure.storagequeue.DeleteOrUpdateMessage.{Delete, UpdateVisibility}
+import akka.stream.alpakka.azure.storagequeue._
+import akka.stream.alpakka.azure.storagequeue.scaladsl._
+import akka.stream.scaladsl._
+import akka.testkit._
 import com.microsoft.azure.storage._
 import com.microsoft.azure.storage.queue._
+import org.scalatest._
+
+import scala.collection.JavaConverters._
 import scala.concurrent._
 import scala.concurrent.duration._
-import akka.stream.scaladsl._
-import akka.stream._
-import akka.testkit._
-import akka.actor.ActorSystem
 import scala.util.Properties
-import akka.stream.alpakka.azure.storagequeue._
-import scala.collection.JavaConverters._
 
 // These tests are all live since the Azure Storage Emulator
 // does not run on Linux/Docker yet
@@ -75,7 +78,7 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
     val msgs = (1 to 10).map(_ => queueTestMsg)
 
     val futureAssertion =
-      AzureQueueSource(queueFactory, AzureQueueSourceSettings.Default.copy(retrieveRetryTimeout = Some(1.seconds)))
+      AzureQueueSource(queueFactory, AzureQueueSourceSettings().withRetrieveRetryTimeout(1.seconds))
         .take(10)
         .runWith(Sink.seq)
         .map(
@@ -92,7 +95,7 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
     val msgs = (1 to 20).map(_ => queueTestMsg)
     msgs.foreach(m => queue.addMessage(m))
 
-    Await.result(AzureQueueSource(queueFactory, AzureQueueSourceSettings.Default.copy(batchSize = 2))
+    Await.result(AzureQueueSource(queueFactory, AzureQueueSourceSettings().withBatchSize(2))
                    .take(1)
                    .runWith(Sink.seq),
                  timeout)

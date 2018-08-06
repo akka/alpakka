@@ -2,15 +2,17 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.azure.storagequeue
+package akka.stream.alpakka.azure.storagequeue.impl
 
+import akka.annotation.InternalApi
+import akka.stream.alpakka.azure.storagequeue.DeleteOrUpdateMessage
+import akka.stream.alpakka.azure.storagequeue.DeleteOrUpdateMessage.{Delete, UpdateVisibility}
 import com.microsoft.azure.storage.queue.{CloudQueue, CloudQueueMessage}
 
-sealed trait DeleteOrUpdateMessage
-case object Delete extends DeleteOrUpdateMessage
-case class UpdateVisibility(timeout: Int) extends DeleteOrUpdateMessage
-
-private[storagequeue] object AzureQueueSinkFunctions {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[storagequeue] object AzureQueueSinkFunctions {
   def addMessage(
       cloudQueue: () => CloudQueue
   )(msg: CloudQueueMessage, timeToLive: Int = 0, initialVisibilityTimeout: Int = 0): Unit =
@@ -28,7 +30,7 @@ private[storagequeue] object AzureQueueSinkFunctions {
       cloudQueue: () => CloudQueue
   )(msg: CloudQueueMessage, op: DeleteOrUpdateMessage): Unit =
     op match {
-      case Delete => deleteMessage(cloudQueue)(msg)
-      case UpdateVisibility(timeout) => updateMessage(cloudQueue)(msg, timeout)
+      case _: Delete => deleteMessage(cloudQueue)(msg)
+      case m: UpdateVisibility => updateMessage(cloudQueue)(msg, m.timeout)
     }
 }
