@@ -54,7 +54,6 @@ final class SourceSettings private (
   def withPollInterval(pollInterval: JavaDuration): SourceSettings =
     copy(pollInterval = Duration.fromNanos(pollInterval.toNanos))
 
-
   /**
    * Java API
    *
