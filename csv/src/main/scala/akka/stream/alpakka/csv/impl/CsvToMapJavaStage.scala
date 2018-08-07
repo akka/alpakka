@@ -2,14 +2,15 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.csv
+package akka.stream.alpakka.csv.impl
 
 import java.nio.charset.Charset
 import java.util.stream.Collectors
 import java.{util => ju}
 
-import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
+import akka.annotation.InternalApi
 import akka.stream._
+import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.util.ByteString
 
 /**
@@ -18,7 +19,8 @@ import akka.util.ByteString
  * @param columnNames If given, these names are used as map keys; if not first stream element is used
  * @param charset     Character set used to convert header line ByteString to String
  */
-private[csv] abstract class CsvToMapJavaStageBase[V](columnNames: ju.Optional[ju.Collection[String]], charset: Charset)
+@InternalApi private[csv] abstract class CsvToMapJavaStageBase[V](columnNames: ju.Optional[ju.Collection[String]],
+                                                                  charset: Charset)
     extends GraphStage[FlowShape[ju.Collection[ByteString], ju.Map[String, V]]] {
 
   override protected def initialAttributes: Attributes = Attributes.name("CsvToMap")
@@ -73,14 +75,21 @@ private[csv] abstract class CsvToMapJavaStageBase[V](columnNames: ju.Optional[ju
 
 }
 
-private[csv] class CsvToMapJavaStage(columnNames: ju.Optional[ju.Collection[String]], charset: Charset)
+/**
+ * Internal API
+ */
+@InternalApi private[csv] class CsvToMapJavaStage(columnNames: ju.Optional[ju.Collection[String]], charset: Charset)
     extends CsvToMapJavaStageBase[ByteString](columnNames, charset) {
 
   override protected def transformElements(elements: ju.Collection[ByteString]): ju.Collection[ByteString] =
     elements
 }
 
-private[csv] class CsvToMapAsStringsJavaStage(columnNames: ju.Optional[ju.Collection[String]], charset: Charset)
+/**
+ * Internal API
+ */
+@InternalApi private[csv] class CsvToMapAsStringsJavaStage(columnNames: ju.Optional[ju.Collection[String]],
+                                                           charset: Charset)
     extends CsvToMapJavaStageBase[String](columnNames, charset) {
 
   override protected def transformElements(elements: ju.Collection[ByteString]): ju.Collection[String] =

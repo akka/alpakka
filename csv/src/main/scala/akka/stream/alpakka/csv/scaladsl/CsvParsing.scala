@@ -5,7 +5,7 @@
 package akka.stream.alpakka.csv.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.csv.CsvParsingStage
+import akka.stream.alpakka.csv.impl.CsvParsingStage
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 
