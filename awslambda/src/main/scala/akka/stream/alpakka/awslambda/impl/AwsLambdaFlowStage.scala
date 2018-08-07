@@ -2,8 +2,9 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.awslambda
+package akka.stream.alpakka.awslambda.impl
 
+import akka.annotation.InternalApi
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
@@ -12,7 +13,10 @@ import com.amazonaws.services.lambda.model.{InvokeRequest, InvokeResult}
 
 import scala.util.control.NonFatal
 
-final class AwsLambdaFlowStage(awsLambdaClient: AWSLambdaAsync)(parallelism: Int)
+/**
+ * INTERNAL API
+ */
+@InternalApi private[awslambda] final class AwsLambdaFlowStage(awsLambdaClient: AWSLambdaAsync)(parallelism: Int)
     extends GraphStage[FlowShape[InvokeRequest, InvokeResult]] {
 
   val in = Inlet[InvokeRequest]("AwsLambda.in")
