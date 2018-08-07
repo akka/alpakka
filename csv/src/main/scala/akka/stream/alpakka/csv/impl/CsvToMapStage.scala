@@ -2,10 +2,11 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.csv
+package akka.stream.alpakka.csv.impl
 
 import java.nio.charset.Charset
 
+import akka.annotation.InternalApi
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.util.ByteString
@@ -14,12 +15,13 @@ import scala.collection.immutable
 
 /**
  * Internal API: Converts incoming [[List[ByteString]]] to [[Map[String, ByteString]]].
- * @see akka.stream.alpakka.csv.CsvToMapJavaStage
+ * @see akka.stream.alpakka.csv.impl.CsvToMapJavaStage
  *
  * @param columnNames If given, these names are used as map keys; if not first stream element is used
  * @param charset Character set used to convert header line ByteString to String
  */
-private[csv] abstract class CsvToMapStageBase[V](columnNames: Option[immutable.Seq[String]], charset: Charset)
+@InternalApi private[csv] abstract class CsvToMapStageBase[V](columnNames: Option[immutable.Seq[String]],
+                                                              charset: Charset)
     extends GraphStage[FlowShape[immutable.Seq[ByteString], Map[String, V]]] {
 
   override protected def initialAttributes: Attributes = Attributes.name("CsvToMap")
@@ -51,13 +53,19 @@ private[csv] abstract class CsvToMapStageBase[V](columnNames: Option[immutable.S
     }
 }
 
-private[csv] class CsvToMapStage(columnNames: Option[immutable.Seq[String]], charset: Charset)
+/**
+ * Internal API
+ */
+@InternalApi private[csv] class CsvToMapStage(columnNames: Option[immutable.Seq[String]], charset: Charset)
     extends CsvToMapStageBase[ByteString](columnNames, charset) {
 
   override protected def transformElements(elements: immutable.Seq[ByteString]): immutable.Seq[ByteString] = elements
 }
 
-private[csv] class CsvToMapAsStringsStage(columnNames: Option[immutable.Seq[String]], charset: Charset)
+/**
+ * Internal API
+ */
+@InternalApi private[csv] class CsvToMapAsStringsStage(columnNames: Option[immutable.Seq[String]], charset: Charset)
     extends CsvToMapStageBase[String](columnNames, charset) {
 
   override protected def transformElements(elements: immutable.Seq[ByteString]): immutable.Seq[String] =
