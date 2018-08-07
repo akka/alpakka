@@ -97,9 +97,9 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
 
   private class SendReceiveContext(
       @volatile var send: SendContext,
-      @volatile var sendClosed: Boolean,
       @volatile var receive: ReceiveContext,
-      @volatile var receiveClosed: Boolean
+      @volatile var isOutputShutdown: Boolean,
+      @volatile var isInputShutdown: Boolean
   )
 
   /*
@@ -147,23 +147,25 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                     }
                   case _: SendRequested =>
                     key.interestOps(key.interestOps() | SelectionKey.OP_WRITE)
-                  case CloseRequested =>
-                    key.cancel()
-                    key.channel.close()
-                    sendReceiveContext.receiveClosed = true
-                    sendReceiveContext.sendClosed = true
-                  case ShutdownRequested =>
+                  case _: SendAvailable =>
+                  case ShutdownRequested if keySelectable && key.isWritable && !sendReceiveContext.isOutputShutdown =>
                     try {
-                      key.channel().asInstanceOf[UnixSocketChannel].shutdownOutput()
-                      sendReceiveContext.sendClosed = true
-                      if (sendReceiveContext.receiveClosed && sendReceiveContext.sendClosed) {
-                        key.channel().close()
+                      if (sendReceiveContext.isInputShutdown) {
+                        key.cancel()
+                        key.channel.close()
+                      } else {
+                        key.channel.asInstanceOf[UnixSocketChannel].shutdownOutput()
+                        sendReceiveContext.isOutputShutdown = true
+                        key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE)
                       }
                     } catch {
                       // socket could have been closed in the meantime, so shutdownOutput will throw this
                       case _: IOException =>
                     }
-                  case _: SendAvailable =>
+                  case ShutdownRequested =>
+                  case CloseRequested =>
+                    key.cancel()
+                    key.channel.close()
                 }
                 sendReceiveContext.receive match {
                   case ReceiveAvailable(queue, buffer) if keySelectable && key.isReadable =>
@@ -187,8 +189,13 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                     } else {
                       queue.complete()
                       try {
-                        channel.shutdownInput()
-                        sendReceiveContext.receiveClosed = true
+                        if (sendReceiveContext.isOutputShutdown) {
+                          key.cancel()
+                          key.channel().close()
+                        } else {
+                          channel.shutdownInput()
+                          sendReceiveContext.isInputShutdown = true
+                        }
                       } catch {
                         // socket could have been closed in the meantime, so shutdownInput will throw this
                         case _: IOException =>
@@ -203,8 +210,6 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                         sendReceiveContext.receive = ReceiveAvailable(receiveQueue, receiveBuffer)
                         key.interestOps(key.interestOps() | SelectionKey.OP_READ)
                       case _ =>
-                        sendReceiveContext.receiveClosed = true
-                        sendReceiveContext.sendClosed = true
                         receiveQueue.complete()
                         key.cancel()
                         key.channel.close()
@@ -275,9 +280,9 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
     val sendReceiveContext =
       new SendReceiveContext(
         SendAvailable(ByteBuffer.allocate(sendBufferSize)),
-        false,
         ReceiveAvailable(receiveQueue, ByteBuffer.allocate(receiveBufferSize)),
-        false
+        isOutputShutdown = false,
+        isInputShutdown = false
       ) // FIXME: No need for the costly allocation of direct buffers yet given https://github.com/jnr/jnr-unixsocket/pull/49
 
     val sendSink = Sink.fromGraph(
@@ -310,7 +315,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
           sent.future.map(_ => bytes)
         }
         .watchTermination() {
-          case (m, done) =>
+          case (_, done) =>
             done.onComplete { _ =>
               sendReceiveContext.send = if (halfClose) {
                 ShutdownRequested
