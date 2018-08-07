@@ -48,27 +48,27 @@ Byte Order Marks.
 @@@
 
 Scala
-: @@snip [snip](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvParsingSpec.scala) { #flow-type }
+: @@snip [snip](/csv/src/test/scala/docs/scaladsl/CsvParsingSpec.scala) { #flow-type }
 
 Java
-: @@snip [snip](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvParsingTest.java) { #flow-type }
+: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvParsingTest.java) { #flow-type }
 
 
 In this sample we read a single line of CSV formatted data into a list of column elements:
 
 Scala
-: @@snip [snip](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvParsingSpec.scala) { #line-scanner }
+: @@snip [snip](/csv/src/test/scala/docs/scaladsl/CsvParsingSpec.scala) { #line-scanner }
 
 Java
-: @@snip [snip](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvParsingTest.java) { #line-scanner }
+: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvParsingTest.java) { #line-scanner }
 
 To convert the `ByteString` columns as `String`, a `map` operation can be added to the Flow:
 
 Scala
-: @@snip [snip](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvParsingSpec.scala) { #line-scanner-string }
+: @@snip [snip](/csv/src/test/scala/docs/scaladsl/CsvParsingSpec.scala) { #line-scanner-string }
 
 Java
-: @@snip [snip](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvParsingTest.java) { #line-scanner-string }
+: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvParsingTest.java) { #line-scanner-string }
 
 ## CSV conversion into a map
 
@@ -77,29 +77,29 @@ and their `ByteString` values, or alternatively to `String` values. The column n
 the first line of data can be interpreted as the column names.
 
 Scala
-: @@snip [snip](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvToMapSpec.scala) { #flow-type }
+: @@snip [snip](/csv/src/test/scala/docs/scaladsl/CsvToMapSpec.scala) { #flow-type }
 
 Java
-: @@snip [snip](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java) { #flow-type }
+: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvToMapTest.java) { #flow-type }
 
 
 This example uses the first line (the header line) in the CSV data as column names:
 
 Scala
-: @@snip [snip](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvToMapSpec.scala) { #header-line }
+: @@snip [snip](/csv/src/test/scala/docs/scaladsl/CsvToMapSpec.scala) { #header-line }
 
 Java
-: @@snip [snip](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java) { #header-line }
+: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvToMapTest.java) { #header-line }
 
 
 This sample will generate the same output as above, but the column names are specified
 in the code:
 
 Scala
-: @@snip [snip](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvToMapSpec.scala) { #column-names }
+: @@snip [snip](/csv/src/test/scala/docs/scaladsl/CsvToMapSpec.scala) { #column-names }
 
 Java
-: @@snip [snip](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvToMapTest.java) { #column-names }
+: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvToMapTest.java) { #column-names }
 
 ## CSV formatting
 
@@ -113,10 +113,10 @@ selected character set from the constants in `ByteOrderMark`
 
 
 Scala
-: @@snip [snip](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFormattingSpec.scala) { #flow-type }
+: @@snip [snip](/csv/src/test/scala/docs/scaladsl/CsvFormattingSpec.scala) { #flow-type }
 
 Java
-: @@snip [snip](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFormattingTest.java) { #flow-type }
+: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvFormattingTest.java) { #flow-type }
 
 This example uses the default configuration:
 
@@ -129,7 +129,7 @@ This example uses the default configuration:
 - No Byte Order Mark
 
 Scala
-: @@snip [snip](/csv/src/test/scala/akka/stream/alpakka/csv/scaladsl/CsvFormattingSpec.scala) { #formatting }
+: @@snip [snip](/csv/src/test/scala/docs/scaladsl/CsvFormattingSpec.scala) { #formatting }
 
 Java
-: @@snip [snip](/csv/src/test/java/akka/stream/alpakka/csv/javadsl/CsvFormattingTest.java) { #formatting }
+: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvFormattingTest.java) { #formatting }
