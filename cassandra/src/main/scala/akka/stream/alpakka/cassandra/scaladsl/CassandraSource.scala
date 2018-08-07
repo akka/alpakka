@@ -5,7 +5,7 @@
 package akka.stream.alpakka.cassandra.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.cassandra.CassandraSourceStage
+import akka.stream.alpakka.cassandra.impl.CassandraSourceStage
 import akka.stream.scaladsl.Source
 import com.datastax.driver.core._
 
