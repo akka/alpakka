@@ -491,13 +491,13 @@ public class JmsConnectorsTest {
           // #run-jms-source-with-ack
           CompletionStage<List<String>> result =
               jmsSource
-                  .take(msgsIn.size())
                   .map(
                       message -> {
                         String text = ((ActiveMQTextMessage) message).getText();
                         message.acknowledge();
                         return text;
                       })
+                  .take(msgsIn.size())
                   .runWith(Sink.seq(), materializer);
           // #run-jms-source-with-ack
 
