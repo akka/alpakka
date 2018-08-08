@@ -2,32 +2,19 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.csv
+package akka.stream.alpakka.csv.impl
 
 import java.nio.charset.UnsupportedCharsetException
 
+import akka.annotation.InternalApi
+import akka.stream.alpakka.csv.MalformedCsvException
 import akka.stream.alpakka.csv.scaladsl.ByteOrderMark
 import akka.util.{ByteString, ByteStringBuilder}
-
-class MalformedCsvException private[csv] (val lineNo: Long, val bytePos: Int, msg: String) extends Exception(msg) {
-
-  /**
-   * Java API:
-   * Returns the line number where the parser failed.
-   */
-  def getLineNo = lineNo
-
-  /**
-   * Java API:
-   * Returns the byte within the parsed line where the parser failed.
-   */
-  def getBytePos = bytePos
-}
 
 /**
  * INTERNAL API: Use [[akka.stream.alpakka.csv.scaladsl.CsvParsing]] instead.
  */
-private[csv] object CsvParser {
+@InternalApi private[csv] object CsvParser {
 
   private type State = Int
   private final val LineStart = 0
@@ -49,7 +36,10 @@ private[csv] object CsvParser {
 /**
  * INTERNAL API: Use [[akka.stream.alpakka.csv.scaladsl.CsvParsing]] instead.
  */
-private[csv] final class CsvParser(delimiter: Byte, quoteChar: Byte, escapeChar: Byte, maximumLineLength: Int) {
+@InternalApi private[csv] final class CsvParser(delimiter: Byte,
+                                                quoteChar: Byte,
+                                                escapeChar: Byte,
+                                                maximumLineLength: Int) {
 
   import CsvParser._
 

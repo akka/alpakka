@@ -2,8 +2,9 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.csv
+package akka.stream.alpakka.csv.impl
 
+import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
@@ -15,7 +16,10 @@ import scala.util.control.NonFatal
 /**
  * Internal API: Use [[akka.stream.alpakka.csv.scaladsl.CsvParsing]] instead.
  */
-private[csv] class CsvParsingStage(delimiter: Byte, quoteChar: Byte, escapeChar: Byte, maximumLineLength: Int)
+@InternalApi private[csv] class CsvParsingStage(delimiter: Byte,
+                                                quoteChar: Byte,
+                                                escapeChar: Byte,
+                                                maximumLineLength: Int)
     extends GraphStage[FlowShape[ByteString, List[ByteString]]] {
 
   private val in = Inlet[ByteString](Logging.simpleName(this) + ".in")
