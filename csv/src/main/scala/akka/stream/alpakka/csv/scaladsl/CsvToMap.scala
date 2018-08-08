@@ -7,7 +7,7 @@ package akka.stream.alpakka.csv.scaladsl
 import java.nio.charset.{Charset, StandardCharsets}
 
 import akka.NotUsed
-import akka.stream.alpakka.csv.{CsvToMapAsStringsStage, CsvToMapStage}
+import akka.stream.alpakka.csv.impl.{CsvToMapAsStringsStage, CsvToMapStage}
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 

@@ -2,10 +2,11 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.csv
+package akka.stream.alpakka.csv.impl
 
 import java.nio.charset.{Charset, StandardCharsets}
 
+import akka.annotation.InternalApi
 import akka.stream.alpakka.csv.scaladsl.CsvQuotingStyle
 import akka.util.ByteString
 
@@ -14,12 +15,12 @@ import scala.collection.immutable
 /**
  * Internal API
  */
-private[csv] class CsvFormatter(delimiter: Char,
-                                quoteChar: Char,
-                                escapeChar: Char,
-                                endOfLine: String,
-                                quotingStyle: CsvQuotingStyle,
-                                charset: Charset = StandardCharsets.UTF_8) {
+@InternalApi private[csv] class CsvFormatter(delimiter: Char,
+                                             quoteChar: Char,
+                                             escapeChar: Char,
+                                             endOfLine: String,
+                                             quotingStyle: CsvQuotingStyle,
+                                             charset: Charset = StandardCharsets.UTF_8) {
 
   private[this] val charsetName = charset.name()
 

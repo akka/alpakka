@@ -4,8 +4,8 @@
 
 package akka.stream.alpakka.csv.javadsl;
 
-import akka.stream.alpakka.csv.CsvToMapAsStringsJavaStage;
-import akka.stream.alpakka.csv.CsvToMapJavaStage;
+import akka.stream.alpakka.csv.impl.CsvToMapAsStringsJavaStage;
+import akka.stream.alpakka.csv.impl.CsvToMapJavaStage;
 import akka.stream.javadsl.Flow;
 import akka.util.ByteString;
 
