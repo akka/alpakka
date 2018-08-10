@@ -2,18 +2,21 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.azure.storagequeue.javadsl;
+package docs.javadsl;
 
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.azure.storagequeue.*;
+import akka.stream.alpakka.azure.storagequeue.javadsl.*;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import com.microsoft.azure.storage.*;
 import com.microsoft.azure.storage.queue.*;
+
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -140,7 +143,9 @@ public class JavaDslTest extends JUnitSuite {
 
     // We limit us to buffers of size 1 here, so that there are no stale message in the buffer
     final Source<CloudQueueMessage, NotUsed> source =
-        AzureQueueSource.create(queueSupplier, AzureQueueSourceSettings.create(20, 1, 0));
+        AzureQueueSource.create(
+            queueSupplier,
+            AzureQueueSourceSettings.create(20, 1).withRetrieveRetryTimeout(Duration.ZERO));
 
     final Sink<CloudQueueMessage, CompletionStage<Done>> deleteSink =
         AzureQueueDeleteSink.create(queueSupplier);
@@ -164,7 +169,9 @@ public class JavaDslTest extends JUnitSuite {
 
     // We limit us to buffers of size 1 here, so that there are no stale message in the buffer
     final Source<CloudQueueMessage, NotUsed> source =
-        AzureQueueSource.create(queueSupplier, AzureQueueSourceSettings.create(20, 1, 0));
+        AzureQueueSource.create(
+            queueSupplier,
+            AzureQueueSourceSettings.create(20, 1).withRetrieveRetryTimeout(Duration.ZERO));
 
     final Sink<MessageAndDeleteOrUpdate, CompletionStage<Done>> deleteOrUpdateSink =
         AzureQueueDeleteOrUpdateSink.create(queueSupplier);
@@ -172,7 +179,7 @@ public class JavaDslTest extends JUnitSuite {
     final CompletionStage<Done> done =
         source
             .take(10)
-            .map(msg -> new MessageAndDeleteOrUpdate(msg, MessageAndDeleteOrUpdate.delete()))
+            .map(msg -> new MessageAndDeleteOrUpdate(msg, DeleteOrUpdateMessage.createDelete()))
             .runWith(deleteOrUpdateSink, materializer);
 
     done.toCompletableFuture().get(10, TimeUnit.SECONDS);

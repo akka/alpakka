@@ -5,11 +5,13 @@
 package akka.stream.alpakka.azure.storagequeue.javadsl
 
 import com.microsoft.azure.storage.queue.{CloudQueue, CloudQueueMessage}
-import akka.stream.alpakka.azure.storagequeue.{AzureQueueSinkFunctions, Delete, DeleteOrUpdateMessage, UpdateVisibility}
+import akka.stream.alpakka.azure.storagequeue.impl.AzureQueueSinkFunctions
 import akka.stream.javadsl.Sink
 import akka.Done
 import java.util.concurrent.CompletionStage
 import java.util.function.Supplier
+
+import akka.stream.alpakka.azure.storagequeue.DeleteOrUpdateMessage
 
 object AzureQueueSink {
 
@@ -57,10 +59,6 @@ object AzureQueueDeleteSink {
 }
 
 class MessageAndDeleteOrUpdate(val message: CloudQueueMessage, val op: DeleteOrUpdateMessage)
-object MessageAndDeleteOrUpdate {
-  def delete = Delete
-  def updateVisibility(timeout: Integer) = UpdateVisibility(timeout)
-}
 
 object AzureQueueDeleteOrUpdateSink {
 
