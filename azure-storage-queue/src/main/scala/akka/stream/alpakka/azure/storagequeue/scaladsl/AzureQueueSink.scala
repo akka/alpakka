@@ -5,12 +5,14 @@
 package akka.stream.alpakka.azure.storagequeue.scaladsl
 
 import com.microsoft.azure.storage.queue.{CloudQueue, CloudQueueMessage}
-import akka.stream.alpakka.azure.storagequeue.{AzureQueueSinkFunctions, DeleteOrUpdateMessage}
+import akka.stream.alpakka.azure.storagequeue.impl.AzureQueueSinkFunctions
 import akka.stream.scaladsl.{Flow, Keep, Sink}
 import akka.Done
+
 import scala.concurrent.Future
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.Attributes
+import akka.stream.alpakka.azure.storagequeue.DeleteOrUpdateMessage
 
 object AzureQueueSink {
 
