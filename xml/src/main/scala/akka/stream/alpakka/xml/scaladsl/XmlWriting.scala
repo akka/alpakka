@@ -8,7 +8,7 @@ import java.nio.charset.{Charset, StandardCharsets}
 
 import akka.NotUsed
 import akka.stream.alpakka.xml.ParseEvent
-import akka.stream.alpakka.xml.Xml.StreamingXmlWriter
+import akka.stream.alpakka.xml.impl
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 
@@ -19,7 +19,7 @@ object XmlWriting {
    * @param charset charset of encoding
    */
   def writer(charset: Charset): Flow[ParseEvent, ByteString, NotUsed] =
-    Flow.fromGraph(new StreamingXmlWriter(charset))
+    Flow.fromGraph(new impl.StreamingXmlWriter(charset))
 
   /**
    * Writer Flow that takes a stream of XML events similar to SAX and write ByteStrings.
