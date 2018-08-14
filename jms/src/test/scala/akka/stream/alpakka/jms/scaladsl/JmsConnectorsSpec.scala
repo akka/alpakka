@@ -5,17 +5,20 @@
 package akka.stream.alpakka.jms.scaladsl
 
 import java.nio.charset.Charset
-import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
-import javax.jms
-import javax.jms.{DeliveryMode, JMSException, Message, Session, TextMessage}
+import java.util.concurrent.{LinkedBlockingQueue, ThreadLocalRandom, TimeUnit}
 
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.{KillSwitch, KillSwitches, ThrottleMode}
 import akka.{Done, NotUsed}
-import org.apache.activemq.ActiveMQConnectionFactory
-import org.apache.activemq.ActiveMQSession
+import javax.jms._
 import org.apache.activemq.command.ActiveMQQueue
+import org.apache.activemq.{ActiveMQConnectionFactory, ActiveMQSession}
+import org.mockito.ArgumentMatchers._
+import org.mockito.Mockito._
+import org.mockito.invocation.InvocationOnMock
+import org.scalatest.mockito.MockitoSugar
+
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
@@ -23,10 +26,9 @@ import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
-
 final case class DummyObject(payload: String)
 
-class JmsConnectorsSpec extends JmsSpec {
+class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
 
   override implicit val patienceConfig = PatienceConfig(2.minutes)
 
@@ -781,6 +783,81 @@ class JmsConnectorsSpec extends JmsSpec {
       //#run-flow-producer
 
       result.futureValue should ===(input)
+    }
+
+    "publish and consume strings through a queue with multiple sessions" in withServer() { ctx =>
+      //#connection-factory
+      val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+      //#connection-factory
+
+      //#create-text-sink
+      val jmsSink: Sink[String, Future[Done]] = JmsProducer.textSink(
+        JmsProducerSettings(connectionFactory).withQueue("test").withSessionCount(5)
+      )
+      //#create-text-sink
+
+      //#run-text-sink
+      val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
+      val sinkOut = Source(in).runWith(jmsSink)
+      //#run-text-sink
+
+      //#create-text-source
+      val jmsSource: Source[String, KillSwitch] = JmsConsumer.textSource(
+        JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(10).withQueue("test")
+      )
+      //#create-text-source
+
+      //#run-text-source
+      val result = jmsSource.take(in.size).runWith(Sink.seq)
+      //#run-text-source
+
+      result.futureValue should contain allElementsOf in
+    }
+
+    "produce elements in order" in {
+      val factory = mock[ConnectionFactory]
+      val connection = mock[Connection]
+      val session = mock[Session]
+      val producer = mock[MessageProducer]
+      val textMessage = mock[TextMessage]
+
+      when(factory.createConnection()).thenReturn(connection)
+      when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
+      when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
+      when(session.createTextMessage(anyString())).thenReturn(textMessage)
+      when(producer.send(any[Message], anyInt(), anyInt(), anyLong()))
+        .thenAnswer((_: InvocationOnMock) => Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10)))
+
+      val in = (1 to 50).map(i => JmsTextMessage(i.toString))
+      val jmsFlow = JmsProducer.flow[JmsTextMessage](JmsProducerSettings(factory).withQueue("test").withSessionCount(8))
+
+      val result = Source(in).via(jmsFlow).toMat(Sink.seq)(Keep.right).run()
+
+      result.futureValue shouldEqual in
+    }
+
+    "fail on the first failing send" in {
+      val factory = mock[ConnectionFactory]
+      val connection = mock[Connection]
+      val session = mock[Session]
+      val producer = mock[MessageProducer]
+      val textMessage = mock[TextMessage]
+
+      when(factory.createConnection()).thenReturn(connection)
+      when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
+      when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
+      when(session.createTextMessage(anyString())).thenReturn(textMessage)
+      when(producer.send(any[Message], anyInt(), anyInt(), anyLong()))
+        .thenAnswer((_: InvocationOnMock) => ())
+        .thenAnswer((_: InvocationOnMock) => ())
+        .thenAnswer((_: InvocationOnMock) => throw new RuntimeException("failure"))
+
+      val in = (1 to 10).map(i => JmsTextMessage(i.toString))
+      val done = new JmsTextMessage("done")
+      val jmsFlow = JmsProducer.flow[JmsTextMessage](JmsProducerSettings(factory).withQueue("test").withSessionCount(8))
+      val result = Source(in).via(jmsFlow).recover { case _ => done }.toMat(Sink.seq)(Keep.right).run()
+
+      result.futureValue shouldEqual in.take(2) :+ done
     }
   }
 }

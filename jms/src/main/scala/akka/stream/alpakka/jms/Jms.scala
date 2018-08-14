@@ -88,10 +88,12 @@ object JmsProducerSettings {
 final case class JmsProducerSettings(connectionFactory: ConnectionFactory,
                                      destination: Option[Destination] = None,
                                      credentials: Option[Credentials] = None,
+                                     sessionCount: Int = 1,
                                      timeToLive: Option[Duration] = None,
                                      acknowledgeMode: Option[AcknowledgeMode] = None)
     extends JmsSettings {
   def withCredential(credentials: Credentials): JmsProducerSettings = copy(credentials = Some(credentials))
+  def withSessionCount(count: Int): JmsProducerSettings = copy(sessionCount = count)
   def withQueue(name: String): JmsProducerSettings = copy(destination = Some(Queue(name)))
   def withTopic(name: String): JmsProducerSettings = copy(destination = Some(Topic(name)))
   def withDestination(destination: Destination): JmsProducerSettings = copy(destination = Some(destination))
