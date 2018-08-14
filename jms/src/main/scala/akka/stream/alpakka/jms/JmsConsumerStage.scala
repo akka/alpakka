@@ -222,20 +222,11 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
     failStage(ex)
   }
 
-  private[jms] def getDispatcher =
-    attributes.get[ActorAttributes.Dispatcher](
-      ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
-    ) match {
-      case ActorAttributes.Dispatcher("") =>
-        ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
-      case d => d
-    }
-
   private[jms] val handleError = getAsyncCallback[Throwable] { e =>
     fail(out, e)
   }
 
-  override def preStart(): Unit = initSessionAsync(getDispatcher)
+  override def preStart(): Unit = initSessionAsync(executionContext(attributes))
 
   private[jms] val handleMessage = getAsyncCallback[T] { msg =>
     if (isAvailable(out)) {

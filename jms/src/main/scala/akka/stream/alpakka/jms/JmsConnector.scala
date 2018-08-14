@@ -5,12 +5,12 @@
 package akka.stream.alpakka.jms
 
 import java.util.concurrent.ArrayBlockingQueue
+
 import javax.jms
 import javax.jms._
-
-import akka.stream.ActorAttributes.Dispatcher
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorAttributes, ActorMaterializer, Attributes}
 import akka.stream.stage.GraphStageLogic
+
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -40,11 +40,23 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
       onSessionOpened(session)
     }
 
-  private[jms] def initSessionAsync(dispatcher: Dispatcher): Future[Unit] = {
-    ec = materializer match {
+  private[jms] def executionContext(attributes: Attributes): ExecutionContext = {
+    val dispatcher = attributes.get[ActorAttributes.Dispatcher](
+      ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
+    ) match {
+      case ActorAttributes.Dispatcher("") =>
+        ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
+      case d => d
+    }
+
+    materializer match {
       case m: ActorMaterializer => m.system.dispatchers.lookup(dispatcher.dispatcher)
       case x => throw new IllegalArgumentException(s"Stage only works with the ActorMaterializer, was: $x")
     }
+  }
+
+  private[jms] def initSessionAsync(executionContext: ExecutionContext): Future[Unit] = {
+    ec = executionContext
     val future = Future {
       val sessions = openSessions()
       sessions foreach { session =>
@@ -88,6 +100,96 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
       createSession(connection, createDestination)
     }
   }
+}
+
+private[jms] object JmsMessageProducer {
+  def apply(jmsSession: JmsSession, settings: JmsProducerSettings): JmsMessageProducer = {
+    val producer = jmsSession.session.createProducer(jmsSession.destination)
+    if (settings.timeToLive.nonEmpty) {
+      producer.setTimeToLive(settings.timeToLive.get.toMillis)
+    }
+    new JmsMessageProducer(producer, jmsSession)
+  }
+}
+
+private[jms] class JmsMessageProducer(jmsProducer: MessageProducer, jmsSession: JmsSession) {
+
+  def send(elem: JmsMessage): Unit = {
+    val message: Message = createMessage(elem)
+    populateMessageProperties(message, elem.properties())
+
+    val (sendHeaders, headersBeforeSend: Set[JmsHeader]) = elem.headers.partition(_.usedDuringSend)
+    populateMessageHeader(message, headersBeforeSend)
+
+    val deliveryModeOption = findHeader(sendHeaders) { case x: JmsDeliveryMode => x.deliveryMode }
+    val priorityOption = findHeader(sendHeaders) { case x: JmsPriority => x.priority }
+    val timeToLiveInMillisOption = findHeader(sendHeaders) { case x: JmsTimeToLive => x.timeInMillis }
+
+    jmsProducer.send(
+      message,
+      deliveryModeOption.getOrElse(jmsProducer.getDeliveryMode),
+      priorityOption.getOrElse(jmsProducer.getPriority),
+      timeToLiveInMillisOption.getOrElse(jmsProducer.getTimeToLive)
+    )
+  }
+
+  private def findHeader[T](headersDuringSend: Set[JmsHeader])(f: PartialFunction[JmsHeader, T]): Option[T] =
+    headersDuringSend.collectFirst(f)
+
+  private def createMessage(element: JmsMessage): Message =
+    element match {
+
+      case textMessage: JmsTextMessage => jmsSession.session.createTextMessage(textMessage.body)
+
+      case byteMessage: JmsByteMessage =>
+        val newMessage = jmsSession.session.createBytesMessage()
+        newMessage.writeBytes(byteMessage.bytes)
+        newMessage
+
+      case mapMessage: JmsMapMessage =>
+        val newMessage = jmsSession.session.createMapMessage()
+        populateMapMessage(newMessage, mapMessage.body)
+        newMessage
+
+      case objectMessage: JmsObjectMessage => jmsSession.session.createObjectMessage(objectMessage.serializable)
+
+    }
+
+  private def populateMessageProperties(message: javax.jms.Message, properties: Map[String, Any]): Unit =
+    properties.foreach {
+      case (key, v) =>
+        v match {
+          case v: String => message.setStringProperty(key, v)
+          case v: Int => message.setIntProperty(key, v)
+          case v: Boolean => message.setBooleanProperty(key, v)
+          case v: Byte => message.setByteProperty(key, v)
+          case v: Short => message.setShortProperty(key, v)
+          case v: Long => message.setLongProperty(key, v)
+          case v: Double => message.setDoubleProperty(key, v)
+        }
+    }
+
+  private def populateMapMessage(message: javax.jms.MapMessage, map: Map[String, Any]): Unit =
+    map.foreach {
+      case (key, v) =>
+        v match {
+          case v: String => message.setString(key, v)
+          case v: Int => message.setInt(key, v)
+          case v: Boolean => message.setBoolean(key, v)
+          case v: Byte => message.setByte(key, v)
+          case v: Short => message.setShort(key, v)
+          case v: Long => message.setLong(key, v)
+          case v: Double => message.setDouble(key, v)
+          case v: Array[Byte] => message.setBytes(key, v)
+        }
+    }
+
+  private def populateMessageHeader(message: javax.jms.Message, headers: Set[JmsHeader]): Unit =
+    headers.foreach {
+      case JmsType(jmsType) => message.setJMSType(jmsType)
+      case JmsReplyTo(destination) => message.setJMSReplyTo(destination.create(jmsSession.session))
+      case JmsCorrelationId(jmsCorrelationId) => message.setJMSCorrelationID(jmsCorrelationId)
+    }
 }
 
 private[jms] class JmsSession(val connection: jms.Connection,
