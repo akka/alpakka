@@ -5,7 +5,7 @@
 package akka.stream.alpakka.sqs.impl
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.sqs.{AckResult, MessageAction, MessageActionPair}
+import akka.stream.alpakka.sqs.{AckResult, MessageAction}
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
@@ -19,9 +19,9 @@ import scala.util.{Failure, Success, Try}
  * INTERNAL API
  */
 @InternalApi private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
-    extends GraphStage[FlowShape[MessageActionPair, Future[AckResult]]] {
+    extends GraphStage[FlowShape[MessageAction, Future[AckResult]]] {
 
-  private val in = Inlet[MessageActionPair]("messages")
+  private val in = Inlet[MessageAction]("messages")
   private val out = Outlet[Future[AckResult]]("result")
   override val shape = FlowShape(in, out)
 
@@ -95,12 +95,11 @@ import scala.util.{Failure, Success, Try}
 
           override def onPush() = {
             inFlight += 1
-            val pair = grab(in)
-            val message = pair.message
-            val action = pair.action
+            val action = grab(in)
+            val message = action.message
             val responsePromise = Promise[AckResult]
             action match {
-              case MessageAction.Delete =>
+              case _: MessageAction.Delete =>
                 val handler = new AsyncHandler[DeleteMessageRequest, DeleteMessageResult] {
 
                   override def onError(exception: Exception): Unit = {
@@ -118,7 +117,7 @@ import scala.util.{Failure, Success, Try}
                   handler
                 )
 
-              case MessageAction.ChangeMessageVisibility(visibilityTimeout) =>
+              case change: MessageAction.ChangeMessageVisibility =>
                 val handler = new AsyncHandler[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult] {
 
                   override def onError(exception: Exception): Unit = {
@@ -134,11 +133,11 @@ import scala.util.{Failure, Success, Try}
                 }
                 sqsClient
                   .changeMessageVisibilityAsync(
-                    new ChangeMessageVisibilityRequest(queueUrl, message.getReceiptHandle, visibilityTimeout),
+                    new ChangeMessageVisibilityRequest(queueUrl, message.getReceiptHandle, change.visibilityTimeout),
                     handler
                   )
 
-              case MessageAction.Ignore =>
+              case _: MessageAction.Ignore =>
                 responsePromise.success(AckResult(None, message.getBody))
             }
             push(out, responsePromise.future)

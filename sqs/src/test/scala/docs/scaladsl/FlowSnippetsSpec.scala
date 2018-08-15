@@ -4,24 +4,17 @@
 
 package docs.scaladsl
 
-import java.util.concurrent.CompletableFuture
-
 import akka.Done
 import akka.stream.alpakka.sqs._
 import akka.stream.alpakka.sqs.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model._
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{spy, times, verify, when}
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
-import org.scalatest.mockito.MockitoSugar.mock
+import org.mockito.Mockito.{spy, times, verify}
 import org.scalatest.{FlatSpec, Matchers}
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class FlowSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {

@@ -5,7 +5,7 @@
 package akka.stream.alpakka.sqs.scaladsl
 
 import akka.Done
-import akka.stream.alpakka.sqs.{MessageActionPair, SqsAckSinkSettings}
+import akka.stream.alpakka.sqs.{MessageAction, SqsAckSinkSettings}
 import akka.stream.scaladsl.{Keep, Sink}
 import com.amazonaws.services.sqs.AmazonSQSAsync
 
@@ -21,7 +21,7 @@ object SqsAckSink {
    */
   def apply(queueUrl: String, settings: SqsAckSinkSettings = SqsAckSinkSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
-  ): Sink[MessageActionPair, Future[Done]] =
+  ): Sink[MessageAction, Future[Done]] =
     SqsAckFlow.apply(queueUrl, settings).toMat(Sink.ignore)(Keep.right)
 
 }

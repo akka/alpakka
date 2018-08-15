@@ -9,7 +9,6 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.sqs.MessageAction;
-import akka.stream.alpakka.sqs.MessageActionPair;
 import akka.stream.alpakka.sqs.AckResult;
 import akka.stream.alpakka.sqs.javadsl.BaseSqsTest;
 import akka.stream.alpakka.sqs.javadsl.SqsAckFlow;
@@ -53,9 +52,9 @@ public class SqsAckSinkTest extends BaseSqsTest {
             });
 
     // #ack
-    MessageActionPair pair = MessageAction.delete(new Message().withBody("test"));
+    MessageAction action = MessageAction.delete(new Message().withBody("test"));
     CompletionStage<Done> done =
-        Source.single(pair).runWith(SqsAckSink.create(queueUrl, awsClient), materializer);
+        Source.single(action).runWith(SqsAckSink.create(queueUrl, awsClient), materializer);
     // #ack
 
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
@@ -77,9 +76,9 @@ public class SqsAckSinkTest extends BaseSqsTest {
             });
 
     // #flow-ack
-    MessageActionPair pair = MessageAction.delete(new Message().withBody("test-ack-flow"));
+    MessageAction action = MessageAction.delete(new Message().withBody("test-ack-flow"));
     CompletionStage<Done> done =
-        Source.single(pair)
+        Source.single(action)
             .via(SqsAckFlow.create(queueUrl, awsClient))
             .runWith(Sink.ignore(), materializer);
     // #flow-ack
@@ -104,10 +103,10 @@ public class SqsAckSinkTest extends BaseSqsTest {
             });
 
     // #requeue
-    MessageActionPair pair =
+    MessageAction action =
         MessageAction.changeMessageVisibility(new Message().withBody("test"), 12);
     CompletionStage<Done> done =
-        Source.single(pair).runWith(SqsAckSink.create(queueUrl, awsClient), materializer);
+        Source.single(action).runWith(SqsAckSink.create(queueUrl, awsClient), materializer);
     // #requeue
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
@@ -121,9 +120,9 @@ public class SqsAckSinkTest extends BaseSqsTest {
     AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
 
     // #ignore
-    MessageActionPair pair = MessageAction.ignore(new Message().withBody("test"));
+    MessageAction action = MessageAction.ignore(new Message().withBody("test"));
     CompletionStage<AckResult> stage =
-        Source.single(pair)
+        Source.single(action)
             .via(SqsAckFlow.create(queueUrl, awsClient))
             .runWith(Sink.head(), materializer);
     // #ignore
@@ -148,7 +147,7 @@ public class SqsAckSinkTest extends BaseSqsTest {
             });
 
     // #batch-ack
-    List<MessageActionPair> messages = new ArrayList<>();
+    List<MessageAction> messages = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
       messages.add(MessageAction.delete(new Message().withBody("test")));
     }
@@ -180,7 +179,7 @@ public class SqsAckSinkTest extends BaseSqsTest {
             });
 
     // #batch-requeue
-    List<MessageActionPair> messages = new ArrayList<>();
+    List<MessageAction> messages = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
       messages.add(MessageAction.changeMessageVisibility(new Message().withBody("test"), 5));
     }
@@ -201,7 +200,7 @@ public class SqsAckSinkTest extends BaseSqsTest {
     AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
 
     // #batch-ignore
-    List<MessageActionPair> messages = new ArrayList<>();
+    List<MessageAction> messages = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
       messages.add(MessageAction.ignore(new Message().withBody("test")));
     }

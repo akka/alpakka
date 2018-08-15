@@ -13,8 +13,7 @@ import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model.{
   ChangeMessageVisibilityBatchRequest,
   ChangeMessageVisibilityBatchRequestEntry,
-  ChangeMessageVisibilityBatchResult,
-  Message
+  ChangeMessageVisibilityBatchResult
 }
 
 import scala.collection.JavaConverters._
@@ -25,8 +24,8 @@ import scala.concurrent.{Future, Promise}
  */
 @InternalApi private[sqs] final class SqsBatchChangeMessageVisibilityFlowStage(queueUrl: String,
                                                                                sqsClient: AmazonSQSAsync)
-    extends GraphStage[FlowShape[Iterable[(Message, MessageAction.ChangeMessageVisibility)], Future[List[AckResult]]]] {
-  private val in = Inlet[Iterable[(Message, MessageAction.ChangeMessageVisibility)]]("messages")
+    extends GraphStage[FlowShape[Iterable[MessageAction.ChangeMessageVisibility], Future[List[AckResult]]]] {
+  private val in = Inlet[Iterable[MessageAction.ChangeMessageVisibility]]("messages")
   private val out = Outlet[Future[List[AckResult]]]("results")
   override val shape = FlowShape(in, out)
 
@@ -56,10 +55,10 @@ import scala.concurrent.{Future, Promise}
             new ChangeMessageVisibilityBatchRequest(
               queueUrl,
               messages.zipWithIndex.map {
-                case ((message, MessageAction.ChangeMessageVisibility(visibilityTimeout)), index) =>
+                case (action, index) =>
                   new ChangeMessageVisibilityBatchRequestEntry()
-                    .withReceiptHandle(message.getReceiptHandle)
-                    .withVisibilityTimeout(visibilityTimeout)
+                    .withReceiptHandle(action.message.getReceiptHandle)
+                    .withVisibilityTimeout(action.visibilityTimeout)
                     .withId(index.toString)
               }.asJava
             ),
@@ -84,7 +83,7 @@ import scala.concurrent.{Future, Promise}
                   responsePromise.failure(batchException)
                   failureCallback.invoke(batchException)
                 } else {
-                  responsePromise.success(messages.map(msg => AckResult(Some(result), msg._1.getBody)))
+                  responsePromise.success(messages.map(msg => AckResult(Some(result), msg.message.getBody)))
                   changeVisibilityCallback.invoke(request)
                 }
             }

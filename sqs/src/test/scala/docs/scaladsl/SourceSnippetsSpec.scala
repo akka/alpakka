@@ -12,12 +12,11 @@ import akka.stream.scaladsl.Sink
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.client.builder.ExecutorFactory
-import com.amazonaws.services.sqs.model.{Message, MessageAttributeValue, QueueDoesNotExistException, SendMessageRequest}
+import com.amazonaws.services.sqs.model.Message
 import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{AsyncWordSpec, Matchers}
 
-import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.Future
 

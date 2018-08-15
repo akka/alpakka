@@ -9,7 +9,6 @@ import java.util.concurrent.CompletableFuture
 import akka.Done
 import akka.stream.alpakka.sqs._
 import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.testkit.scaladsl.TestSink
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model._
@@ -19,9 +18,6 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest.mockito.MockitoSugar.mock
 import org.scalatest.{FlatSpec, Matchers}
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
 

@@ -8,7 +8,7 @@ import com.amazonaws.services.sqs.model.Message
 
 import scala.compat.java8.OptionConverters._
 
-sealed abstract class MessageAction
+sealed abstract class MessageAction(val message: Message)
 
 object MessageAction {
 
@@ -17,15 +17,23 @@ object MessageAction {
    *
    * @see [https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_DeleteMessage.html DeleteMessage]
    */
-  final case object Delete extends MessageAction {
-    def apply(message: Message): MessageActionPair = MessageActionPair(message, Delete)
+  final class Delete(message: Message) extends MessageAction(message) {
+    override def toString: String = s"Delete($message)"
+  }
+
+  final object Delete {
+    def apply(message: Message): MessageAction = new Delete(message)
   }
 
   /**
    * Ignore the message.
    */
-  final case object Ignore extends MessageAction {
-    def apply(message: Message): MessageActionPair = MessageActionPair(message, Ignore)
+  final class Ignore(message: Message) extends MessageAction(message) {
+    override def toString: String = s"Ignore($message)"
+  }
+
+  final object Ignore {
+    def apply(message: Message): MessageAction = new Ignore(message)
   }
 
   /**
@@ -35,45 +43,29 @@ object MessageAction {
    * @param visibilityTimeout new timeout in seconds
    * @see [https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ChangeMessageVisibility.html ChangeMessageVisibility]
    */
-  final case class ChangeMessageVisibility(visibilityTimeout: Int) extends MessageAction {
+  final class ChangeMessageVisibility(message: Message, val visibilityTimeout: Int) extends MessageAction(message) {
     // SQS requirements
     require(
       0 <= visibilityTimeout && visibilityTimeout <= 43200,
       s"Invalid value ($visibilityTimeout) for visibilityTimeout. Requirement: 0 <= waitTimeSeconds <= 43200"
     )
+    override def toString: String = s"Delete($message)"
   }
 
   object ChangeMessageVisibility {
-    def apply(message: Message, visibilityTimeout: Int): MessageActionPair =
-      MessageActionPair(message, ChangeMessageVisibility(visibilityTimeout))
+    def apply(message: Message, visibilityTimeout: Int): MessageAction =
+      new ChangeMessageVisibility(message, visibilityTimeout)
   }
 
   /**
    * Java API: Delete the message from the queue.
    */
-  def delete: MessageAction = Delete
-
-  /**
-   * Java API: Delete the message from the queue.
-   */
-  def delete(message: Message): MessageActionPair = Delete(message)
+  def delete(message: Message): MessageAction = Delete(message)
 
   /**
    * Java API: Ignore the message.
    */
-  def ignore: MessageAction = Ignore
-
-  /**
-   * Java API: Ignore the message.
-   */
-  def ignore(message: Message): MessageActionPair = Ignore(message)
-
-  /**
-   * Java API: Change the visibility timeout of the message.
-   *
-   * @param visibilityTimeout new timeout in seconds
-   */
-  def changeMessageVisibility(visibilityTimeout: Int): MessageAction = ChangeMessageVisibility(visibilityTimeout)
+  def ignore(message: Message): MessageAction = Ignore(message)
 
   /**
    * Java API: Change the visibility timeout of the message.
@@ -81,54 +73,9 @@ object MessageAction {
    * @param message the message to change
    * @param visibilityTimeout new timeout in seconds
    */
-  def changeMessageVisibility(message: Message, visibilityTimeout: Int): MessageActionPair =
+  def changeMessageVisibility(message: Message, visibilityTimeout: Int): MessageAction =
     ChangeMessageVisibility(message, visibilityTimeout)
 
-}
-
-final class MessageActionPair private (val message: com.amazonaws.services.sqs.model.Message,
-                                       val action: MessageAction) {
-
-  def withMessage(value: com.amazonaws.services.sqs.model.Message): MessageActionPair = copy(message = value)
-  def withAction(value: MessageAction): MessageActionPair = copy(action = value)
-
-  private def copy(message: com.amazonaws.services.sqs.model.Message = message,
-                   action: MessageAction = action): MessageActionPair =
-    new MessageActionPair(message = message, action = action)
-
-  override def toString =
-    s"""package$MessageActionPair(message=$message,action=$action)"""
-
-  override def equals(other: Any): Boolean = other match {
-    case that: MessageActionPair =>
-      java.util.Objects.equals(this.message, that.message) &&
-      java.util.Objects.equals(this.action, that.action)
-    case _ => false
-  }
-
-  override def hashCode(): Int =
-    java.util.Objects.hash(message, action)
-}
-
-object MessageActionPair {
-
-  /** Scala API */
-  def apply(
-      message: com.amazonaws.services.sqs.model.Message,
-      action: MessageAction
-  ): MessageActionPair = new MessageActionPair(
-    message,
-    action
-  )
-
-  /** Java API */
-  def create(
-      message: com.amazonaws.services.sqs.model.Message,
-      action: MessageAction
-  ): MessageActionPair = new MessageActionPair(
-    message,
-    action
-  )
 }
 
 final class AckResult private (
