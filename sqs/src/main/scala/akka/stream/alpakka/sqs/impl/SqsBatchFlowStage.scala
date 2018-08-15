@@ -2,11 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.sqs
+package akka.stream.alpakka.sqs.impl
 
 import java.util
 
 import akka.Done
+import akka.annotation.InternalApi
+import akka.stream.alpakka.sqs.BatchException
 import akka.stream.alpakka.sqs.scaladsl.Result
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
@@ -18,7 +20,10 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
-private[sqs] final class SqsBatchFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
+/**
+ * INTERNAL API
+ */
+@InternalApi private[sqs] final class SqsBatchFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
     extends GraphStage[FlowShape[Iterable[SendMessageRequest], Future[List[Result]]]] {
   private val in = Inlet[Iterable[SendMessageRequest]]("messageBatch")
   private val out = Outlet[Future[List[Result]]]("batchResult")
@@ -90,7 +95,7 @@ private[sqs] final class SqsBatchFlowStage(queueUrl: String, sqsClient: AmazonSQ
 
             val handler = new AsyncHandler[SendMessageBatchRequest, SendMessageBatchResult] {
               override def onError(exception: Exception): Unit = {
-                val batchException = BatchException(messages.size, exception)
+                val batchException = new BatchException(messages.size, exception)
                 responsePromise.failure(batchException)
                 failureCallback.invoke(batchException)
               }
@@ -99,7 +104,7 @@ private[sqs] final class SqsBatchFlowStage(queueUrl: String, sqsClient: AmazonSQ
                 if (!result.getFailed.isEmpty) {
                   val nrOfFailedMessages: Int = result.getFailed.size()
                   val batchException: BatchException =
-                    BatchException(
+                    new BatchException(
                       batchSize = messages.length,
                       cause = new Exception(
                         s"Some messages are failed to send. $nrOfFailedMessages of $nrOfMessages messages are failed"

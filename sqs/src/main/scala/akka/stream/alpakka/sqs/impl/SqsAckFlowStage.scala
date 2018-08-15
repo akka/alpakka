@@ -2,9 +2,10 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.sqs
+package akka.stream.alpakka.sqs.impl
 
-import akka.stream.alpakka.sqs.scaladsl.AckResult
+import akka.annotation.InternalApi
+import akka.stream.alpakka.sqs.{AckResult, MessageAction, MessageActionPair}
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
@@ -14,7 +15,10 @@ import com.amazonaws.services.sqs.model._
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
-private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
+/**
+ * INTERNAL API
+ */
+@InternalApi private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
     extends GraphStage[FlowShape[MessageActionPair, Future[AckResult]]] {
 
   private val in = Inlet[MessageActionPair]("messages")
@@ -91,7 +95,9 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
 
           override def onPush() = {
             inFlight += 1
-            val (message, action) = grab(in)
+            val pair = grab(in)
+            val message = pair.message
+            val action = pair.action
             val responsePromise = Promise[AckResult]
             action match {
               case MessageAction.Delete =>

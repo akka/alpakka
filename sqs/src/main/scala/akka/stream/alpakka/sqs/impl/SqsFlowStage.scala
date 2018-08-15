@@ -2,9 +2,10 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.sqs
+package akka.stream.alpakka.sqs.impl
 
 import akka.Done
+import akka.annotation.InternalApi
 import akka.stream.alpakka.sqs.scaladsl.Result
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
@@ -15,7 +16,10 @@ import com.amazonaws.services.sqs.model.{SendMessageRequest, SendMessageResult}
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
-private[sqs] final class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
+/**
+ * INTERNAL API
+ */
+@InternalApi private[sqs] final class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
     extends GraphStage[FlowShape[SendMessageRequest, Future[Result]]] {
 
   private val in = Inlet[SendMessageRequest]("messages")

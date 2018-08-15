@@ -4,4 +4,6 @@
 
 package akka.stream.alpakka.sqs
 
-case class BatchException(batchSize: Int, cause: Exception) extends Exception(cause)
+final class BatchException(val batchSize: Int, cause: Exception) extends Exception(cause) {
+  def getBatchSize: Int = batchSize
+}

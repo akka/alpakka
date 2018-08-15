@@ -5,15 +5,89 @@
 package akka.stream.alpakka.sqs
 
 import scala.concurrent.duration._
+import akka.util.JavaDurationConverters._
 
-object SqsAckSinkSettings {
-  val Defaults = SqsAckSinkSettings(maxInFlight = 10)
-}
+final class SqsAckSinkSettings private (val maxInFlight: Int) {
 
-final case class SqsAckSinkSettings(maxInFlight: Int) {
   require(maxInFlight > 0)
 
-  def withMaxInFlight(maxInFlight: Int): SqsAckSinkSettings = copy(maxInFlight = maxInFlight)
+  def withMaxInFlight(value: Int): SqsAckSinkSettings = copy(maxInFlight = value)
+
+  private def copy(maxInFlight: Int = maxInFlight): SqsAckSinkSettings =
+    new SqsAckSinkSettings(maxInFlight = maxInFlight)
+
+  override def toString =
+    s"""SqsAckSinkSettings(maxInFlight=$maxInFlight)"""
+}
+
+object SqsAckSinkSettings {
+
+  val Defaults = new SqsAckSinkSettings(maxInFlight = 10)
+
+  /** Scala API */
+  def apply(): SqsAckSinkSettings = Defaults
+
+  /** Java API */
+  def getInstance(): SqsAckSinkSettings = apply()
+
+  /** Scala API */
+  def apply(
+      maxInFlight: Int
+  ): SqsAckSinkSettings = new SqsAckSinkSettings(
+    maxInFlight
+  )
+
+  /** Java API */
+  def create(
+      maxInFlight: Int
+  ): SqsAckSinkSettings = new SqsAckSinkSettings(
+    maxInFlight
+  )
+}
+
+final class SqsBatchAckFlowSettings private (val maxBatchSize: Int,
+                                             val maxBatchWait: scala.concurrent.duration.FiniteDuration,
+                                             val concurrentRequests: Int) {
+
+  require(concurrentRequests > 0)
+  require(
+    maxBatchSize > 0 && maxBatchSize <= 10,
+    s"Invalid value for maxBatchSize: $maxBatchSize. It should be 0 < maxBatchSize < 10, due to the Amazon SQS requirements."
+  )
+
+  def withMaxBatchSize(value: Int): SqsBatchAckFlowSettings = copy(maxBatchSize = value)
+
+  /** Scala API */
+  def withMaxBatchWait(value: scala.concurrent.duration.FiniteDuration): SqsBatchAckFlowSettings =
+    copy(maxBatchWait = value)
+
+  /** Java API */
+  def withMaxBatchWait(value: java.time.Duration): SqsBatchAckFlowSettings =
+    withMaxBatchWait(
+      scala.concurrent.duration.FiniteDuration(value.toMillis, java.util.concurrent.TimeUnit.MILLISECONDS)
+    )
+
+  /**
+   * Java API
+   *
+   * @deprecated use withMaxBatchWait(java.time.Duration) instead
+   */
+  @deprecated("use withMaxBatchWait(java.time.Duration) instead", "0.21")
+  def withMaxBatchWait(length: Long, unit: TimeUnit): SqsBatchAckFlowSettings =
+    this.copy(maxBatchWait = FiniteDuration(length, unit))
+
+  def withConcurrentRequests(value: Int): SqsBatchAckFlowSettings = copy(concurrentRequests = value)
+
+  private def copy(maxBatchSize: Int = maxBatchSize,
+                   maxBatchWait: scala.concurrent.duration.FiniteDuration = maxBatchWait,
+                   concurrentRequests: Int = concurrentRequests): SqsBatchAckFlowSettings =
+    new SqsBatchAckFlowSettings(maxBatchSize = maxBatchSize,
+                                maxBatchWait = maxBatchWait,
+                                concurrentRequests = concurrentRequests)
+
+  override def toString =
+    s"""SqsBatchAckFlowSettings(maxBatchSize=$maxBatchSize,maxBatchWait=$maxBatchWait,concurrentRequests=$concurrentRequests)"""
+
 }
 
 object SqsBatchAckFlowSettings {
@@ -22,83 +96,32 @@ object SqsBatchAckFlowSettings {
     maxBatchWait = 500.millis,
     concurrentRequests = 1
   )
-}
 
-final case class SqsBatchAckFlowSettings(maxBatchSize: Int, maxBatchWait: FiniteDuration, concurrentRequests: Int) {
-  require(concurrentRequests > 0)
-  require(
-    maxBatchSize > 0 && maxBatchSize <= 10,
-    s"Invalid value for maxBatchSize: $maxBatchSize. It should be 0 < maxBatchSize < 10, due to the Amazon SQS requirements."
+  /** Scala API */
+  def apply(): SqsBatchAckFlowSettings = Defaults
+
+  /** Java API */
+  def getInstance(): SqsBatchAckFlowSettings = apply()
+
+  /** Scala API */
+  def apply(
+      maxBatchSize: Int,
+      maxBatchWait: scala.concurrent.duration.FiniteDuration,
+      concurrentRequests: Int
+  ): SqsBatchAckFlowSettings = new SqsBatchAckFlowSettings(
+    maxBatchSize,
+    maxBatchWait,
+    concurrentRequests
   )
-  def withMaxBatchSize(maxBatchSize: Int): SqsBatchAckFlowSettings = this.copy(maxBatchSize = maxBatchSize)
-  def withMaxBatchWait(length: Long, unit: TimeUnit): SqsBatchAckFlowSettings =
-    this.copy(maxBatchWait = FiniteDuration(length, unit))
-  def withMaxBatchWait(maxBatchWait: FiniteDuration): SqsBatchAckFlowSettings = this.copy(maxBatchWait = maxBatchWait)
-  def withConcurrentRequests(concurrentRequests: Int): SqsBatchAckFlowSettings =
-    this.copy(concurrentRequests = concurrentRequests)
-}
 
-sealed abstract class MessageAction
-
-object Delete {
-  @deprecated("Use `MessageAction.Delete` instead", "0.15")
-  def apply(): MessageAction = MessageAction.Delete
-}
-
-object Ignore {
-  @deprecated("Use `MessageAction.Ignore` instead", "0.15")
-  def apply(): MessageAction = MessageAction.Ignore
-}
-
-object ChangeMessageVisibility {
-  @deprecated("Use `MessageAction.ChangeMessageVisibility` instead", "0.15")
-  def apply(visibilityTimeout: Int): MessageAction = MessageAction.ChangeMessageVisibility(visibilityTimeout)
-}
-
-object MessageAction {
-
-  /**
-   * Delete the message from the queue.
-   *
-   * @see [https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_DeleteMessage.html DeleteMessage]
-   */
-  final case object Delete extends MessageAction
-
-  /**
-   * Ignore the message.
-   */
-  final case object Ignore extends MessageAction
-
-  /**
-   * Change the visibility timeout of the message.
-   * The maximum allowed timeout value is 12 hours.
-   *
-   * @param visibilityTimeout new timeout in seconds
-   *
-   * @see [https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ChangeMessageVisibility.html ChangeMessageVisibility]
-   */
-  final case class ChangeMessageVisibility(visibilityTimeout: Int) extends MessageAction {
-    // SQS requirements
-    require(
-      0 <= visibilityTimeout && visibilityTimeout <= 43200,
-      s"Invalid value ($visibilityTimeout) for visibilityTimeout. Requirement: 0 <= waitTimeSeconds <= 43200"
-    )
-  }
-
-  /**
-   * Java API: Delete the message from the queue.
-   */
-  def delete: MessageAction = Delete
-
-  /**
-   * Java API: Ignore the message.
-   */
-  def ignore: MessageAction = Ignore
-
-  /**
-   * Java API: Change the visibility timeout of the message.
-   * @param visibilityTimeout new timeout in seconds
-   */
-  def changeMessageVisibility(visibilityTimeout: Int): MessageAction = ChangeMessageVisibility(visibilityTimeout)
-
+  /** Java API */
+  def create(
+      maxBatchSize: Int,
+      maxBatchWait: java.time.Duration,
+      concurrentRequests: Int
+  ): SqsBatchAckFlowSettings = new SqsBatchAckFlowSettings(
+    maxBatchSize,
+    maxBatchWait.asScala,
+    concurrentRequests
+  )
 }

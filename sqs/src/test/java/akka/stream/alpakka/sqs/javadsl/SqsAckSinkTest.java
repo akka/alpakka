@@ -6,9 +6,11 @@ package akka.stream.alpakka.sqs.javadsl;
 
 import akka.Done;
 import akka.actor.ActorSystem;
+import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.sqs.MessageAction;
-import akka.stream.alpakka.sqs.scaladsl.AckResult;
+import akka.stream.alpakka.sqs.MessageActionPair;
+import akka.stream.alpakka.sqs.AckResult;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
 import akka.testkit.javadsl.TestKit;
@@ -48,8 +50,7 @@ public class SqsAckSinkTest extends BaseSqsTest {
             });
 
     // #ack
-    Tuple2<Message, MessageAction> pair =
-        new Tuple2<>(new Message().withBody("test"), MessageAction.delete());
+    MessageActionPair pair = MessageAction.delete(new Message().withBody("test"));
     CompletionStage<Done> done =
         Source.single(pair).runWith(SqsAckSink.create(queueUrl, awsClient), materializer);
     // #ack
@@ -73,8 +74,7 @@ public class SqsAckSinkTest extends BaseSqsTest {
             });
 
     // #flow-ack
-    Tuple2<Message, MessageAction> pair =
-        new Tuple2<>(new Message().withBody("test-ack-flow"), MessageAction.delete());
+    MessageActionPair pair = MessageAction.delete(new Message().withBody("test-ack-flow"));
     CompletionStage<Done> done =
         Source.single(pair)
             .via(SqsAckFlow.create(queueUrl, awsClient))
@@ -101,8 +101,8 @@ public class SqsAckSinkTest extends BaseSqsTest {
             });
 
     // #requeue
-    Tuple2<Message, MessageAction> pair =
-        new Tuple2<>(new Message().withBody("test"), MessageAction.changeMessageVisibility(12));
+    MessageActionPair pair =
+        MessageAction.changeMessageVisibility(new Message().withBody("test"), 12);
     CompletionStage<Done> done =
         Source.single(pair).runWith(SqsAckSink.create(queueUrl, awsClient), materializer);
     // #requeue
@@ -118,8 +118,7 @@ public class SqsAckSinkTest extends BaseSqsTest {
     AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
 
     // #ignore
-    Tuple2<Message, MessageAction> pair =
-        new Tuple2<>(new Message().withBody("test"), MessageAction.ignore());
+    MessageActionPair pair = MessageAction.ignore(new Message().withBody("test"));
     CompletionStage<AckResult> stage =
         Source.single(pair)
             .via(SqsAckFlow.create(queueUrl, awsClient))
@@ -146,9 +145,9 @@ public class SqsAckSinkTest extends BaseSqsTest {
             });
 
     // #batch-ack
-    List<Tuple2<Message, MessageAction>> messages = new ArrayList<>();
+    List<MessageActionPair> messages = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
-      messages.add(new Tuple2<>(new Message().withBody("test"), MessageAction.delete()));
+      messages.add(MessageAction.delete(new Message().withBody("test")));
     }
     CompletionStage<Done> done =
         Source.fromIterator(() -> messages.iterator())
@@ -178,10 +177,9 @@ public class SqsAckSinkTest extends BaseSqsTest {
             });
 
     // #batch-requeue
-    List<Tuple2<Message, MessageAction>> messages = new ArrayList<>();
+    List<MessageActionPair> messages = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
-      messages.add(
-          new Tuple2<>(new Message().withBody("test"), MessageAction.changeMessageVisibility(5)));
+      messages.add(MessageAction.changeMessageVisibility(new Message().withBody("test"), 5));
     }
     CompletionStage<Done> done =
         Source.fromIterator(() -> messages.iterator())
@@ -200,9 +198,9 @@ public class SqsAckSinkTest extends BaseSqsTest {
     AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
 
     // #batch-ignore
-    List<Tuple2<Message, MessageAction>> messages = new ArrayList<>();
+    List<MessageActionPair> messages = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
-      messages.add(new Tuple2<>(new Message().withBody("test"), MessageAction.ignore()));
+      messages.add(MessageAction.ignore(new Message().withBody("test")));
     }
     CompletionStage<List<AckResult>> stage =
         Source.fromIterator(() -> messages.iterator())

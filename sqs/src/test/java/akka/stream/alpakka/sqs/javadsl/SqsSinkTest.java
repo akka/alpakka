@@ -21,6 +21,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -65,7 +66,7 @@ public class SqsSinkTest extends BaseSqsTest {
     SqsBatchAckFlowSettings flowSettings =
         SqsBatchAckFlowSettings.Defaults()
             .withMaxBatchSize(10)
-            .withMaxBatchWait(500, TimeUnit.MILLISECONDS)
+            .withMaxBatchWait(Duration.ofMillis(500))
             .withConcurrentRequests(1);
     // #SqsBatchAckFlowSettings
     assertEquals(10, flowSettings.maxBatchSize());

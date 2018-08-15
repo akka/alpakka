@@ -6,7 +6,8 @@ package akka.stream.alpakka.sqs.scaladsl
 
 import akka.NotUsed
 import akka.stream.FlowShape
-import akka.stream.alpakka.sqs.{SqsBatchFlowSettings, SqsBatchFlowStage, SqsFlowStage, SqsSinkSettings}
+import akka.stream.alpakka.sqs.impl.{SqsBatchFlowStage, SqsFlowStage}
+import akka.stream.alpakka.sqs.{SqsBatchFlowSettings, SqsSinkSettings}
 import akka.stream.scaladsl.{Flow, GraphDSL}
 import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model.{SendMessageRequest, SendMessageResult}

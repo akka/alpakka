@@ -127,7 +127,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
       implicit val awsSqsClient = sqsClient
 
       val attributes = List(SentTimestamp, ApproximateReceiveCount, SenderId)
-      val settings = sqsSourceSettings.copy(attributeNames = attributes)
+      val settings = sqsSourceSettings.withAttributes(attributes: _*)
 
       sqsClient.sendMessage(queue, "alpakka")
 
@@ -145,7 +145,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
         "attribute-2" -> new MessageAttributeValue().withStringValue("v2").withDataType("String")
       )
       val settings =
-        sqsSourceSettings.copy(messageAttributeNames = messageAttributes.keys.toList.map(MessageAttributeName.apply))
+        sqsSourceSettings.withMessageAttributes(messageAttributes.keys.toList.map(MessageAttributeName.apply): _*)
 
       sqsClient.sendMessage(new SendMessageRequest(queue, "alpakka").withMessageAttributes(messageAttributes.asJava))
 

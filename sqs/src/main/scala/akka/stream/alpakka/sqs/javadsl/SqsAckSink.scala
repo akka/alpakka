@@ -24,7 +24,10 @@ object SqsAckSink {
   def create(queueUrl: String,
              settings: SqsAckSinkSettings,
              sqsClient: AmazonSQSAsync): Sink[MessageActionPair, CompletionStage[Done]] =
-    scaladsl.SqsAckSink.apply(queueUrl, settings)(sqsClient).mapMaterializedValue(_.toJava).asJava
+    scaladsl.SqsAckSink
+      .apply(queueUrl, settings)(sqsClient)
+      .mapMaterializedValue(_.toJava)
+      .asJava
 
   /**
    * Creates a sink for a SQS queue using an

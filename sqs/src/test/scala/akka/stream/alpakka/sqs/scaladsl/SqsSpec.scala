@@ -7,7 +7,7 @@ package akka.stream.alpakka.sqs.scaladsl
 import java.util.concurrent.CompletableFuture
 
 import akka.Done
-import akka.stream.alpakka.sqs.{BatchException, MessageAction, SqsBatchAckFlowSettings, SqsSourceSettings}
+import akka.stream.alpakka.sqs._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import com.amazonaws.handlers.AsyncHandler
@@ -91,7 +91,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       SqsSource(queue)
         .take(1)
         .map { m: Message =>
-          (m, MessageAction.Delete)
+          MessageAction.Delete(m)
         }
         .runWith(SqsAckSink(queue))
     //#ack
@@ -111,7 +111,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       SqsSource(queue)
         .take(1)
         .map { m: Message =>
-          (m, MessageAction.Delete)
+          MessageAction.Delete(m)
         }
         .via(SqsAckFlow(queue))
         .runWith(Sink.ignore)
@@ -153,7 +153,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val future = SqsSource(queue)
       .take(1)
       .map { m: Message =>
-        (m, MessageAction.ChangeMessageVisibility(5))
+        MessageActionPair(m, MessageAction.ChangeMessageVisibility(5))
       }
       .runWith(SqsAckSink(queue))
     //#requeue
@@ -266,7 +266,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       SqsSource(queue)
         .take(1)
         .map { m: Message =>
-          (m, MessageAction.Ignore)
+          MessageAction.Ignore(m)
         }
         .via(SqsAckFlow(queue))
         //#ignore
@@ -291,7 +291,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       SqsSource(queue)
         .take(10)
         .map { m: Message =>
-          (m, MessageAction.Delete)
+          MessageAction.Delete(m)
         }
         .via(SqsAckFlow.grouped(queue, SqsBatchAckFlowSettings.Defaults))
         .runWith(Sink.ignore)
@@ -318,7 +318,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       SqsSource(queue)
         .take(10)
         .map { m: Message =>
-          (m, MessageAction.ChangeMessageVisibility(5))
+          MessageAction.ChangeMessageVisibility(m, 5)
         }
         .via(SqsAckFlow.grouped(queue, SqsBatchAckFlowSettings.Defaults))
         .runWith(Sink.ignore)
@@ -341,7 +341,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       Source(messages)
         .take(10)
         .map { m: Message =>
-          (m, MessageAction.Ignore)
+          MessageAction.Ignore(m)
         }
         .via(SqsAckFlow.grouped("queue", SqsBatchAckFlowSettings.Defaults))
         //#batch-ignore
@@ -367,9 +367,9 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val future = SqsSource(queue)
       .take(10)
       .map { m: Message =>
-        (m, MessageAction.Delete)
+        MessageAction.Delete(m)
       }
-      .via(SqsAckFlow.grouped(queue, SqsBatchAckFlowSettings.Defaults.copy(maxBatchSize = 5)))
+      .via(SqsAckFlow.grouped(queue, SqsBatchAckFlowSettings().withMaxBatchSize(5)))
       .runWith(Sink.ignore)
 
     future.futureValue shouldBe Done
@@ -399,7 +399,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val future = Source(messages)
       .take(10)
       .map { m: Message =>
-        (m, MessageAction.Delete)
+        MessageAction.Delete(m)
       }
       .via(SqsAckFlow.grouped("queue", SqsBatchAckFlowSettings.Defaults))
       .runWith(Sink.ignore)
@@ -425,7 +425,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val future = Source(messages)
       .take(10)
       .map { m: Message =>
-        (m, MessageAction.Delete)
+        MessageAction.Delete(m)
       }
       .via(SqsAckFlow.grouped("queue", SqsBatchAckFlowSettings.Defaults))
       .runWith(Sink.ignore)
@@ -445,7 +445,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val future = Source(messages)
       .take(10)
       .map { m: Message =>
-        (m, MessageAction.Delete)
+        MessageAction.Delete(m)
       }
       .via(SqsAckFlow.grouped("queue", SqsBatchAckFlowSettings.Defaults))
       .runWith(Sink.ignore)
@@ -468,11 +468,11 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       .map { m: Message =>
         val msg =
           if (i % 3 == 0)
-            (m, MessageAction.Delete)
+            MessageAction.Delete(m)
           else if (i % 3 == 1)
-            (m, MessageAction.ChangeMessageVisibility(5))
+            MessageAction.ChangeMessageVisibility(m, 5)
           else
-            (m, MessageAction.Ignore)
+            MessageAction.Ignore(m)
         i += 1
         msg
       }
