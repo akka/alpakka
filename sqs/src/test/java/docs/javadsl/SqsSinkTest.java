@@ -2,29 +2,26 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.sqs.javadsl;
+package docs.javadsl;
 
 import akka.Done;
-import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.sqs.SqsAckSinkSettings;
 import akka.stream.alpakka.sqs.SqsBatchAckFlowSettings;
 import akka.stream.alpakka.sqs.SqsBatchFlowSettings;
 import akka.stream.alpakka.sqs.SqsSinkSettings;
+import akka.stream.alpakka.sqs.javadsl.BaseSqsTest;
+import akka.stream.alpakka.sqs.javadsl.SqsFlow;
+import akka.stream.alpakka.sqs.javadsl.SqsSink;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.javadsl.TestKit;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
@@ -38,7 +35,7 @@ public class SqsSinkTest extends BaseSqsTest {
     SqsBatchFlowSettings batchSettings =
         SqsBatchFlowSettings.Defaults()
             .withMaxBatchSize(10)
-            .withMaxBatchWait(500, TimeUnit.MILLISECONDS)
+            .withMaxBatchWait(Duration.ofMillis(500))
             .withConcurrentRequests(1);
     // #SqsBatchFlowSettings
     assertEquals(10, batchSettings.maxBatchSize());

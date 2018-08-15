@@ -26,46 +26,6 @@ import scala.concurrent.duration._
 
 class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
 
-  "SqsBatchFlowSettings" should "construct settings" in {
-    //#SqsBatchFlowSettings
-    val batchSettings =
-      SqsBatchFlowSettings.Defaults
-        .withMaxBatchSize(10)
-        .withMaxBatchWait(500.millis)
-        .withConcurrentRequests(1)
-    //#SqsBatchFlowSettings
-    batchSettings.maxBatchSize should be(10)
-  }
-
-  "SqsSinkSettings" should "construct settings" in {
-    //#SqsSinkSettings
-    val sinkSettings =
-      SqsSinkSettings.Defaults
-        .withMaxInFlight(10)
-    //#SqsSinkSettings
-    sinkSettings.maxInFlight should be(10)
-  }
-
-  "SqsAckSinkSettings" should "construct settings" in {
-    //#SqsAckSinkSettings
-    val sinkSettings =
-      SqsAckSinkSettings.Defaults
-        .withMaxInFlight(10)
-    //#SqsAckSinkSettings
-    sinkSettings.maxInFlight should be(10)
-  }
-
-  "SqsBatchAckFlowSettings" should "construct settings" in {
-    //#SqsBatchAckFlowSettings
-    val batchSettings =
-      SqsBatchAckFlowSettings.Defaults
-        .withMaxBatchSize(10)
-        .withMaxBatchWait(500.millis)
-        .withConcurrentRequests(1)
-    //#SqsBatchAckFlowSettings
-    batchSettings.maxBatchSize should be(10)
-  }
-
   "Sqs Sink" should "send a message" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
     when(

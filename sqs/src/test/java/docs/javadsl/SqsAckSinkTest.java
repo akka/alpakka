@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.sqs.javadsl;
+package docs.javadsl;
 
 import akka.Done;
 import akka.actor.ActorSystem;
@@ -11,6 +11,9 @@ import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.sqs.MessageAction;
 import akka.stream.alpakka.sqs.MessageActionPair;
 import akka.stream.alpakka.sqs.AckResult;
+import akka.stream.alpakka.sqs.javadsl.BaseSqsTest;
+import akka.stream.alpakka.sqs.javadsl.SqsAckFlow;
+import akka.stream.alpakka.sqs.javadsl.SqsAckSink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
 import akka.testkit.javadsl.TestKit;

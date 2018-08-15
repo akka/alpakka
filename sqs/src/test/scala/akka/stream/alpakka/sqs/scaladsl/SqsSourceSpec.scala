@@ -22,23 +22,6 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
   private val sqsSourceSettings = SqsSourceSettings.Defaults
 
-  "SqsSourceSettings" should {
-    "be constructed" in {
-      //#SqsSourceSettings
-      val settings = SqsSourceSettings.Defaults
-        .withWaitTimeSeconds(20)
-        .withMaxBufferSize(100)
-        .withMaxBatchSize(10)
-        .withAttributes(SenderId, SentTimestamp)
-        .withMessageAttributes(MessageAttributeName.create("bar.*"))
-        .withCloseOnEmptyReceive
-      //#SqsSourceSettings
-
-      settings.maxBufferSize should be(100)
-
-    }
-  }
-
   "SqsSource" should {
 
     "stream a single batch from the queue" taggedAs Integration in {
@@ -48,48 +31,6 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
       SqsSource(queue, sqsSourceSettings).take(1).runWith(Sink.head).map(_.getBody shouldBe "alpakka")
 
-    }
-
-    "stream a single batch from the queue with custom client" taggedAs Integration in {
-      //#init-custom-client
-      val credentialsProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"))
-      implicit val customSqsClient: AmazonSQSAsync =
-        AmazonSQSAsyncClientBuilder
-          .standard()
-          .withCredentials(credentialsProvider)
-          .withExecutorFactory(new ExecutorFactory {
-            override def newExecutor() = Executors.newFixedThreadPool(10)
-          })
-          .withEndpointConfiguration(new EndpointConfiguration(sqsEndpoint, "eu-central-1"))
-          .build()
-      //#init-custom-client
-
-      val queue = randomQueueUrl()
-      customSqsClient.sendMessage(queue, "alpakka")
-
-      SqsSource(queue, sqsSourceSettings)(customSqsClient).take(1).runWith(Sink.head).map(_.getBody shouldBe "alpakka")
-    }
-
-    "stream multiple batches from the queue" taggedAs Integration in {
-
-      val queue = randomQueueUrl()
-      implicit val awsSqsClient = sqsClient
-
-      val input = 1 to 100 map { i =>
-        s"alpakka-$i"
-      }
-
-      input foreach { m =>
-        sqsClient.sendMessage(queue, m)
-      }
-      val res =
-        //#run
-        SqsSource(queue, sqsSourceSettings)
-          .take(100)
-          .runWith(Sink.seq)
-      //#run
-
-      res.futureValue should have size 100
     }
 
     "continue streaming if receives an empty response" taggedAs Integration in {

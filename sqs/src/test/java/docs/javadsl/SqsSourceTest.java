@@ -2,11 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.sqs.javadsl;
+package docs.javadsl;
 
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.sqs.*;
+import akka.stream.alpakka.sqs.javadsl.BaseSqsTest;
+import akka.stream.alpakka.sqs.javadsl.SqsSource;
 import akka.stream.javadsl.Sink;
 import akka.testkit.javadsl.TestKit;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -82,13 +84,10 @@ public class SqsSourceTest extends BaseSqsTest {
 
     sqsClient.sendMessage(queueUrl, "alpakka");
 
-    // #run
     final CompletionStage<String> cs =
         SqsSource.create(queueUrl, sqsSourceSettings, customSqsClient)
             .map(Message::getBody)
-            .take(1)
             .runWith(Sink.head(), materializer);
-    // #run
 
     assertEquals("alpakka", cs.toCompletableFuture().get(10, TimeUnit.SECONDS));
   }
