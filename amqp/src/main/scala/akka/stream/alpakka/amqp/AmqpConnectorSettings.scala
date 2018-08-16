@@ -33,7 +33,10 @@ final class NamedQueueSourceSettings private (
     val arguments: Map[String, AnyRef] = Map.empty
 ) extends AmqpSourceSettings {
 
-  def withDeclarations(declaration: immutable.Seq[Declaration]): NamedQueueSourceSettings =
+  def withDeclaration(declaration: Declaration): NamedQueueSourceSettings =
+    copy(declarations = immutable.Seq(declaration))
+
+  def withDeclarations(declarations: immutable.Seq[Declaration]): NamedQueueSourceSettings =
     copy(declarations = declarations)
 
   /**
@@ -102,7 +105,10 @@ final class TemporaryQueueSourceSettings private (
     val routingKey: Option[String] = None
 ) extends AmqpSourceSettings {
 
-  def withDeclarations(declaration: immutable.Seq[Declaration]): TemporaryQueueSourceSettings =
+  def withDeclaration(declaration: Declaration): TemporaryQueueSourceSettings =
+    copy(declarations = immutable.Seq(declaration))
+
+  def withDeclarations(declarations: immutable.Seq[Declaration]): TemporaryQueueSourceSettings =
     copy(declarations = declarations)
 
   /**
@@ -172,7 +178,10 @@ final class AmqpSinkSettings private (
   def withRoutingKey(routingKey: String): AmqpSinkSettings =
     copy(routingKey = Some(routingKey))
 
-  def withDeclarations(declaration: immutable.Seq[Declaration]): AmqpSinkSettings =
+  def withDeclaration(declaration: Declaration): AmqpSinkSettings =
+    copy(declarations = immutable.Seq(declaration))
+
+  def withDeclarations(declarations: immutable.Seq[Declaration]): AmqpSinkSettings =
     copy(declarations = declarations)
 
   /**

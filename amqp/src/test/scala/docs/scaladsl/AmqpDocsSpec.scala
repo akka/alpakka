@@ -42,13 +42,13 @@ class AmqpDocsSpec extends AmqpSpec {
       val amqpSink = AmqpSink.simple(
         AmqpSinkSettings(connectionProvider)
           .withRoutingKey(queueName)
-          .withDeclarations(immutable.Seq(queueDeclaration))
+          .withDeclaration(queueDeclaration)
       )
       //#create-sink
 
       //#create-source
       val amqpSource = AmqpSource.atMostOnceSource(
-        NamedQueueSourceSettings(connectionProvider, queueName).withDeclarations(immutable.Seq(queueDeclaration)),
+        NamedQueueSourceSettings(connectionProvider, queueName).withDeclaration(queueDeclaration),
         bufferSize = 10
       )
       //#create-source
@@ -72,7 +72,7 @@ class AmqpDocsSpec extends AmqpSpec {
 
       //#create-rpc-flow
       val amqpRpcFlow = AmqpRpcFlow.simple(
-        AmqpSinkSettings(connectionProvider).withRoutingKey(queueName).withDeclarations(immutable.Seq(queueDeclaration))
+        AmqpSinkSettings(connectionProvider).withRoutingKey(queueName).withDeclaration(queueDeclaration)
       )
       //#create-rpc-flow
 
@@ -116,7 +116,7 @@ class AmqpDocsSpec extends AmqpSpec {
       val amqpSink = AmqpSink.simple(
         AmqpSinkSettings(connectionProvider)
           .withExchange(exchangeName)
-          .withDeclarations(immutable.Seq(exchangeDeclaration))
+          .withDeclaration(exchangeDeclaration)
       )
       //#create-exchange-sink
 
@@ -131,7 +131,7 @@ class AmqpDocsSpec extends AmqpSpec {
                 TemporaryQueueSourceSettings(
                   connectionProvider,
                   exchangeName
-                ).withDeclarations(immutable.Seq(exchangeDeclaration)),
+                ).withDeclaration(exchangeDeclaration),
                 bufferSize = 1
               )
               .map(msg => (fanoutBranch, msg.bytes.utf8String))
@@ -162,12 +162,12 @@ class AmqpDocsSpec extends AmqpSpec {
       val amqpSink = AmqpSink.simple(
         AmqpSinkSettings(connectionProvider)
           .withRoutingKey(queueName)
-          .withDeclarations(immutable.Seq(queueDeclaration))
+          .withDeclaration(queueDeclaration)
       )
 
       //#create-source-withoutautoack
       val amqpSource = AmqpSource.committableSource(
-        NamedQueueSourceSettings(connectionProvider, queueName).withDeclarations(immutable.Seq(queueDeclaration)),
+        NamedQueueSourceSettings(connectionProvider, queueName).withDeclaration(queueDeclaration),
         bufferSize = 10
       )
       //#create-source-withoutautoack
@@ -193,14 +193,14 @@ class AmqpDocsSpec extends AmqpSpec {
       val amqpSink = AmqpSink.simple(
         AmqpSinkSettings(connectionProvider)
           .withRoutingKey(queueName)
-          .withDeclarations(immutable.Seq(queueDeclaration))
+          .withDeclaration(queueDeclaration)
       )
 
       val input = Vector("one", "two", "three", "four", "five")
       Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
 
       val amqpSource = AmqpSource.committableSource(
-        NamedQueueSourceSettings(connectionProvider, queueName).withDeclarations(immutable.Seq(queueDeclaration)),
+        NamedQueueSourceSettings(connectionProvider, queueName).withDeclaration(queueDeclaration),
         bufferSize = 10
       )
 
