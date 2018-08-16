@@ -14,8 +14,7 @@ import org.apache.parquet.hadoop.ParquetWriter
 object AvroParquetSink {
 
   def create(writer: ParquetWriter[GenericRecord]): Sink[GenericRecord, CompletionStage[Done]] =
-    Flow
-      .fromGraph(new AvroParquetFlow(writer: ParquetWriter[GenericRecord]))
+    Flow.fromGraph(new AvroParquetFlow(writer: ParquetWriter[GenericRecord]))
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
 }
