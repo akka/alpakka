@@ -73,7 +73,7 @@ public class AmqpConnectorsTest {
         AmqpSink.createSimple(
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
-                .withDeclarations(Collections.singletonList(queueDeclaration)));
+                .withDeclaration(queueDeclaration));
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     final CompletionStage<Done> result =
@@ -101,7 +101,7 @@ public class AmqpConnectorsTest {
         AmqpSink.createSimple(
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
-                .withDeclarations(Collections.singletonList(queueDeclaration)));
+                .withDeclaration(queueDeclaration));
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     final CompletionStage<Done> result =
@@ -140,7 +140,7 @@ public class AmqpConnectorsTest {
         AmqpRpcFlow.committableFlow(
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
-                .withDeclarations(Collections.singletonList(queueDeclaration)),
+                .withDeclaration(queueDeclaration),
             10,
             1);
     Pair<CompletionStage<String>, TestSubscriber.Probe<IncomingMessage>> result =
@@ -160,7 +160,7 @@ public class AmqpConnectorsTest {
     final Source<IncomingMessage, NotUsed> amqpSource =
         AmqpSource.atMostOnceSource(
             NamedQueueSourceSettings.create(connectionProvider, queueName)
-                .withDeclarations(Collections.singletonList(queueDeclaration)),
+                .withDeclaration(queueDeclaration),
             1);
 
     amqpSource
@@ -189,13 +189,13 @@ public class AmqpConnectorsTest {
         AmqpSink.createSimple(
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
-                .withDeclarations(Collections.singletonList(queueDeclaration)));
+                .withDeclaration(queueDeclaration));
 
     final Integer bufferSize = 10;
     final Source<CommittableIncomingMessage, NotUsed> amqpSource =
         AmqpSource.committableSource(
             NamedQueueSourceSettings.create(connectionProvider, queueName)
-                .withDeclarations(Collections.singletonList(queueDeclaration)),
+                .withDeclaration(queueDeclaration),
             bufferSize);
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
