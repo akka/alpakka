@@ -6,5 +6,6 @@
 
 * [Webinars Presentations and Articles](webinars-presentations-articles.md)
 * [Snapshots](snapshots.md)
+* [Reference connector](../reference.md)
 
 @@@
