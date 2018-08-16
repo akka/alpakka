@@ -80,7 +80,7 @@ class AmqpGraphStageLogicConnectionShutdownSpec
     val amqpSink = AmqpSink.simple(
       AmqpSinkSettings(reusableConnectionProvider)
         .withRoutingKey(queueName)
-        .withDeclarations(immutable.Seq(queueDeclaration))
+        .withDeclaration(queueDeclaration)
     )
 
     val input = Vector("one", "two", "three", "four")
