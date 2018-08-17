@@ -52,19 +52,4 @@ class SettingsSnippetsSpec extends FlatSpec with Matchers with DefaultTestContex
     batchSettings.maxBatchSize should be(10)
   }
 
-  "SqsSourceSettings" should "be constructed" in {
-    //#SqsSourceSettings
-    val settings = SqsSourceSettings()
-      .withWaitTimeSeconds(20)
-      .withMaxBufferSize(100)
-      .withMaxBatchSize(10)
-      .withAttributes(SenderId, SentTimestamp)
-      .withMessageAttributes(MessageAttributeName.create("bar.*"))
-      .withCloseOnEmptyReceive()
-    //#SqsSourceSettings
-
-    settings.maxBufferSize should be(100)
-
-  }
-
 }

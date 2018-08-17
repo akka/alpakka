@@ -1,8 +1,14 @@
 # AWS SQS
 
-The AWS SQS connector provides Akka Stream sources and sinks for AWS SQS queues.
+@@@ note { title="Amazon Simple Queue Service" }
+
+Amazon Simple Queue Service (Amazon SQS) offers a secure, durable, and available hosted queue that lets you integrate and decouple distributed software systems and components. Amazon SQS offers common constructs such as dead-letter queues and cost allocation tags. It provides a generic web services API and it can be accessed by any programming language that the AWS SDK supports. 
 
 For more information about AWS SQS please visit the [official documentation](https://aws.amazon.com/documentation/sqs/).
+
+@@@
+
+The AWS SQS connector provides Akka Stream sources and sinks for AWS SQS queues.
 
 ### Reported issues
 
@@ -44,19 +50,18 @@ Java
 The @scala[@scaladoc[SqsSource](akka.stream.alpakka.sqs.scaladsl.SqsSource$)]@java[@scaladoc[SqsSource](akka.stream.alpakka.sqs.javadsl.SqsSource$)] created source reads AWS Java SDK SQS `Message` objects from any SQS queue given by the queue URL.
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SourceSnippetsSpec.scala) { #run }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSourceSnippetsSpec.scala) { #run }
 
 Java
 : @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsSourceTest.java) { #run }
 
-We take the first 100 elements from the stream. The reason for this is, that reading messages from
-SQS queues never finishes because there is no direct way to determine the end of a queue.
+In this example we use the `closeOnEmptyReceive` to let the stream complete when there are no more messages on the queue. In realistic scenarios, you should add a `KillSwitch` to the stream, see ["Controlling stream completion with KillSwitch" in the Akka documentation](https://doc.akka.io/docs/akka/current/stream/stream-dynamic.html#controlling-stream-completion-with-killswitch).
 
 
 ### Source configuration
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SettingsSnippetsSpec.scala) { #SqsSourceSettings }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSourceSnippetsSpec.scala) { #SqsSourceSettings }
 
 Java
 : @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsSourceTest.java) { #SqsSourceSettings }
@@ -68,7 +73,7 @@ Options:
  - `maxBufferSize` - internal buffer size used by the `Source`. Default: 100 messages
  - `waitTimeSeconds` - the duration for which the call waits for a message to arrive in the queue before
     returning (see `WaitTimeSeconds` in AWS docs). Default: 20 seconds  
- - `closeOnEmptyReceive` - the shutdown behavior of the `Source`. Default: false
+ - `closeOnEmptyReceive` - If true, the source completes when no messages are available.
  
 More details are available in the [AWS SQS Receive Message documentation](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ReceiveMessage.html#API_ReceiveMessage_RequestParameters).
  
@@ -77,7 +82,7 @@ drain its source queue until no further messages are available. The latter
 behaviour is enabled by setting the `closeOnEmptyReceive` flag on creation. If set, the
 `Source` will receive messages until it encounters an empty reply from the server. It 
 then continues to emit any remaining messages in its local buffer. The stage will complete
-once the last message has been send downstream.
+once the last message has been sent downstream.
 
 Note that for short-polling (`waitTimeSeconds` of 0), SQS may respond with an empty 
 reply even if there are still messages in the queue. This behavior can be prevented by 
@@ -90,12 +95,12 @@ uses a fixed thread pool with 50 threads by default. To tune the thread pool use
 `AmazonSQSAsyncClient` you can supply a custom `ExecutorService` on client creation.
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SourceSnippetsSpec.scala) { #init-custom-client }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSourceSnippetsSpec.scala) { #init-custom-client }
 
 Java
 : @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsSourceTest.java) { #init-custom-client }
 
-Please make sure to configure a big enough thread pool to avoid resource starvation. This is especially important
+Please make sure to configure a big enough thread pool to avoid resource starvation. This is especially important,
 if you share the client between multiple Sources, Sinks and Flows. For the SQS Sinks and Sources the sum of all
 `parallelism` (Source) and `maxInFlight` (Sink) must be less than or equal to the thread pool size.
 

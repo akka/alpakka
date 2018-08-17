@@ -17,7 +17,7 @@ object MessageAction {
    *
    * @see [https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_DeleteMessage.html DeleteMessage]
    */
-  final class Delete(message: Message) extends MessageAction(message) {
+  final class Delete private (message: Message) extends MessageAction(message) {
     override def toString: String = s"Delete($message)"
   }
 
@@ -28,7 +28,7 @@ object MessageAction {
   /**
    * Ignore the message.
    */
-  final class Ignore(message: Message) extends MessageAction(message) {
+  final class Ignore private (message: Message) extends MessageAction(message) {
     override def toString: String = s"Ignore($message)"
   }
 
@@ -43,7 +43,8 @@ object MessageAction {
    * @param visibilityTimeout new timeout in seconds
    * @see [https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ChangeMessageVisibility.html ChangeMessageVisibility]
    */
-  final class ChangeMessageVisibility(message: Message, val visibilityTimeout: Int) extends MessageAction(message) {
+  final class ChangeMessageVisibility private (message: Message, val visibilityTimeout: Int)
+      extends MessageAction(message) {
     // SQS requirements
     require(
       0 <= visibilityTimeout && visibilityTimeout <= 43200,

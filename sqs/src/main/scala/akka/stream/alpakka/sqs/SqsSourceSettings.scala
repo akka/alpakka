@@ -5,9 +5,8 @@
 package akka.stream.alpakka.sqs
 
 import java.time.temporal.ChronoUnit
-import java.util
 
-import scala.annotation.varargs
+import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
 
@@ -15,8 +14,8 @@ final class SqsSourceSettings private (
     val waitTimeSeconds: Int,
     val maxBufferSize: Int,
     val maxBatchSize: Int,
-    val attributeNames: Seq[AttributeName] = Seq(),
-    val messageAttributeNames: Seq[MessageAttributeName] = Seq(),
+    val attributeNames: immutable.Seq[AttributeName] = immutable.Seq(),
+    val messageAttributeNames: immutable.Seq[MessageAttributeName] = immutable.Seq(),
     val closeOnEmptyReceive: Boolean = false
 ) {
   require(maxBatchSize <= maxBufferSize, "maxBatchSize must be lower or equal than maxBufferSize")
@@ -26,33 +25,76 @@ final class SqsSourceSettings private (
   require(1 <= maxBatchSize && maxBatchSize <= 10,
           s"Invalid value ($maxBatchSize) for maxBatchSize. Requirement: 1 <= maxBatchSize <= 10 ")
 
+  /**
+   * The duration in seconds for which the call waits for a message to arrive in the queue before returning.
+   * (see WaitTimeSeconds in AWS docs).
+   * Default: 20 seconds
+   */
   def withWaitTimeSeconds(seconds: Int): SqsSourceSettings = copy(waitTimeSeconds = seconds)
 
+  /**
+   * The duration for which the call waits for a message to arrive in the queue before returning.
+   * (see WaitTimeSeconds in AWS docs).
+   *
+   * Default: 20 seconds
+   */
   def withWaitTime(duration: FiniteDuration): SqsSourceSettings = copy(waitTimeSeconds = duration.toSeconds.toInt)
+
+  /**
+   * Java API
+   *
+   * The duration in seconds for which the call waits for a message to arrive in the queue before returning.
+   * (see WaitTimeSeconds in AWS docs).
+   *
+   *  Default: 20 seconds
+   */
   def withWaitTime(duration: java.time.Duration): SqsSourceSettings =
     copy(waitTimeSeconds = duration.get(ChronoUnit.SECONDS).toInt)
 
+  /**
+   * Internal buffer size used by the Source.
+   *
+   * Default: 100 messages
+   */
   def withMaxBufferSize(maxBufferSize: Int): SqsSourceSettings = copy(maxBufferSize = maxBufferSize)
 
+  /**
+   * The maximum number of messages to return (see MaxNumberOfMessages in AWS docs).
+   * Default: 10
+   */
   def withMaxBatchSize(maxBatchSize: Int): SqsSourceSettings = copy(maxBatchSize = maxBatchSize)
 
-  @varargs
-  def withAttributes(attributes: AttributeName*): SqsSourceSettings = copy(attributeNames = attributes)
+  def withAttribute(attribute: AttributeName): SqsSourceSettings = copy(attributeNames = immutable.Seq(attribute))
+  def withAttributes(attributes: immutable.Seq[AttributeName]): SqsSourceSettings = copy(attributeNames = attributes)
 
-  @varargs
-  def withMessageAttributes(attributes: MessageAttributeName*): SqsSourceSettings =
+  /** Java API */
+  def withAttributes(attributes: java.util.List[AttributeName]): SqsSourceSettings =
+    copy(attributeNames = attributes.asScala.toList)
+
+  def withMessageAttribute(attributes: MessageAttributeName): SqsSourceSettings =
+    copy(messageAttributeNames = immutable.Seq(attributes))
+  def withMessageAttributes(attributes: immutable.Seq[MessageAttributeName]): SqsSourceSettings =
     copy(messageAttributeNames = attributes)
 
-  def withCloseOnEmptyReceive(): SqsSourceSettings = copy(closeOnEmptyReceive = true)
+  /** Java API */
+  def withMessageAttributes(attributes: java.util.List[MessageAttributeName]): SqsSourceSettings =
+    copy(messageAttributeNames = attributes.asScala.toList)
 
-  def withoutCloseOnEmptyReceive(): SqsSourceSettings = copy(closeOnEmptyReceive = false)
+  /**
+   * If true, the source completes when no messages are available.
+   *
+   * Default: false
+   */
+  def withCloseOnEmptyReceive(value: Boolean): SqsSourceSettings =
+    if (value == closeOnEmptyReceive) this
+    else copy(closeOnEmptyReceive = value)
 
   private def copy(
       waitTimeSeconds: Int = waitTimeSeconds,
       maxBufferSize: Int = maxBufferSize,
       maxBatchSize: Int = maxBatchSize,
-      attributeNames: Seq[AttributeName] = attributeNames,
-      messageAttributeNames: Seq[MessageAttributeName] = messageAttributeNames,
+      attributeNames: immutable.Seq[AttributeName] = attributeNames,
+      messageAttributeNames: immutable.Seq[MessageAttributeName] = messageAttributeNames,
       closeOnEmptyReceive: Boolean = closeOnEmptyReceive
   ): SqsSourceSettings = new SqsSourceSettings(
     waitTimeSeconds,
@@ -75,7 +117,7 @@ final class SqsSourceSettings private (
 }
 
 object SqsSourceSettings {
-  val Defaults = SqsSourceSettings(20, 100, 10)
+  val Defaults = new SqsSourceSettings(20, 100, 10)
 
   /**
    * Scala API
@@ -94,8 +136,8 @@ object SqsSourceSettings {
       waitTimeSeconds: Int,
       maxBufferSize: Int,
       maxBatchSize: Int,
-      attributeNames: Seq[AttributeName] = Seq(),
-      messageAttributeNames: Seq[MessageAttributeName] = Seq(),
+      attributeNames: immutable.Seq[AttributeName] = immutable.Seq(),
+      messageAttributeNames: immutable.Seq[MessageAttributeName] = immutable.Seq(),
       closeOnEmptyReceive: Boolean = false
   ) = new SqsSourceSettings(
     waitTimeSeconds,
@@ -118,28 +160,31 @@ object SqsSourceSettings {
   def create(waitTimeSeconds: Int,
              maxBufferSize: Int,
              maxBatchSize: Int,
-             attributeNames: util.List[AttributeName],
-             messageAttributeNames: util.List[MessageAttributeName]): SqsSourceSettings =
+             attributeNames: java.util.List[AttributeName],
+             messageAttributeNames: java.util.List[MessageAttributeName]): SqsSourceSettings =
     SqsSourceSettings(waitTimeSeconds,
                       maxBufferSize,
                       maxBatchSize,
-                      attributeNames.asScala,
-                      messageAttributeNames.asScala)
+                      attributeNames.asScala.toList,
+                      messageAttributeNames.asScala.toList)
 
   /**
    * Java API
+   *
+   * @deprecated please use `withCloseOnEmptyReceive`, this will be removed before 1.0
    */
+  @deprecated("please use `withCloseOnEmptyReceive`, this will be removed before 1.0", "0.21")
   def create(waitTimeSeconds: Int,
              maxBufferSize: Int,
              maxBatchSize: Int,
-             attributeNames: util.List[AttributeName],
-             messageAttributeNames: util.List[MessageAttributeName],
+             attributeNames: java.util.List[AttributeName],
+             messageAttributeNames: java.util.List[MessageAttributeName],
              closeOnEmptyReceive: Boolean): SqsSourceSettings =
     SqsSourceSettings(waitTimeSeconds,
                       maxBufferSize,
                       maxBatchSize,
-                      attributeNames.asScala,
-                      messageAttributeNames.asScala,
+                      attributeNames.asScala.toList,
+                      messageAttributeNames.asScala.toList,
                       closeOnEmptyReceive)
 
 }
