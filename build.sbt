@@ -177,6 +177,13 @@ lazy val geode =
     }
   )
 
+lazy val googleCloudBigQuery = alpakkaProject(
+  "google-cloud-bigquery",
+  "google.cloud.bigquery",
+  Dependencies.GoogleBigQuery,
+  fork in Test := true
+)
+
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",
   "google.cloud.pubsub",
