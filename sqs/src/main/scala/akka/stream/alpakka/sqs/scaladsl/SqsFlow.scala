@@ -7,7 +7,7 @@ package akka.stream.alpakka.sqs.scaladsl
 import akka.NotUsed
 import akka.stream.FlowShape
 import akka.stream.alpakka.sqs.impl.{SqsBatchFlowStage, SqsFlowStage}
-import akka.stream.alpakka.sqs.{SqsBatchFlowSettings, SqsSinkSettings}
+import akka.stream.alpakka.sqs.{Result, SqsBatchFlowSettings, SqsSinkSettings}
 import akka.stream.scaladsl.{Flow, GraphDSL}
 import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model.{SendMessageRequest, SendMessageResult}
@@ -56,13 +56,3 @@ object SqsFlow {
   ): Flow[Iterable[SendMessageRequest], List[Result], NotUsed] =
     Flow.fromGraph(new SqsBatchFlowStage(queueUrl, sqsClient)).mapAsync(settings.concurrentRequests)(identity)
 }
-
-/**
- * Messages returned by a SqsFlow.
- * @param metadata metadata with AWS response details.
- * @param message message body.
- */
-final case class Result(
-    metadata: SendMessageResult,
-    message: String
-)

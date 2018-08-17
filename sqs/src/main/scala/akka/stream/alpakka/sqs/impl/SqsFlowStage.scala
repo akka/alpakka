@@ -6,7 +6,7 @@ package akka.stream.alpakka.sqs.impl
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.stream.alpakka.sqs.scaladsl.Result
+import akka.stream.alpakka.sqs.Result
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler

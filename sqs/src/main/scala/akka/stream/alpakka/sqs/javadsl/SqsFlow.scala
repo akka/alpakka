@@ -5,12 +5,10 @@
 package akka.stream.alpakka.sqs.javadsl
 
 import akka.NotUsed
-import akka.stream.alpakka.sqs.scaladsl.Result
 import akka.stream.alpakka.sqs._
 import akka.stream.javadsl.Flow
 import akka.stream.scaladsl.{Flow => SFlow}
 import com.amazonaws.services.sqs.AmazonSQSAsync
-import java.lang.{Iterable => JIterable}
 
 import com.amazonaws.services.sqs.model.SendMessageRequest
 
@@ -38,12 +36,16 @@ object SqsFlow {
     scaladsl.SqsFlow.grouped(queueUrl, settings)(sqsClient).asJava
 
   /**
-   * Creates a flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
+   * Creates a message batching flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
    */
   def batch(queueUrl: String,
             settings: SqsBatchFlowSettings,
-            sqsClient: AmazonSQSAsync): Flow[Seq[SendMessageRequest], Seq[Result], NotUsed] =
-    scaladsl.SqsFlow.batch(queueUrl, settings)(sqsClient).asJava
+            sqsClient: AmazonSQSAsync): Flow[java.lang.Iterable[SendMessageRequest], java.util.List[Result], NotUsed] =
+    SFlow[java.lang.Iterable[SendMessageRequest]]
+      .map(_.asScala.toList)
+      .via(scaladsl.SqsFlow.batch(queueUrl, settings)(sqsClient))
+      .map(_.asJava)
+      .asJava
 
   /**
    * Creates a flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]] with default settings.
@@ -61,10 +63,10 @@ object SqsFlow {
    * Creates a flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]] with default settings.
    */
   def batch(queueUrl: String,
-            sqsClient: AmazonSQSAsync): Flow[JIterable[SendMessageRequest], JIterable[Result], NotUsed] =
-    SFlow[JIterable[SendMessageRequest]]
-      .map(jIterable => jIterable.asScala)
+            sqsClient: AmazonSQSAsync): Flow[java.lang.Iterable[SendMessageRequest], java.util.List[Result], NotUsed] =
+    SFlow[java.lang.Iterable[SendMessageRequest]]
+      .map(_.asScala)
       .via(scaladsl.SqsFlow.batch(queueUrl, SqsBatchFlowSettings.Defaults)(sqsClient))
-      .map(sIterable => sIterable.asJava)
+      .map(_.asJava)
       .asJava
 }

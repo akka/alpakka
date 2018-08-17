@@ -79,6 +79,54 @@ object MessageAction {
 
 }
 
+/**
+ * Messages returned by a SqsFlow.
+ * @param metadata metadata with AWS response details.
+ * @param message message body.
+ */
+final class Result private (val metadata: com.amazonaws.services.sqs.model.SendMessageResult, val message: String) {
+
+  /** Java API */
+  def getMetadata: com.amazonaws.services.sqs.model.SendMessageResult = metadata
+
+  /** Java API */
+  def getMessage: String = message
+
+  override def toString =
+    s"""Result(metadata=$metadata,message=$message)"""
+
+  override def equals(other: Any): Boolean = other match {
+    case that: Result =>
+      java.util.Objects.equals(this.metadata, that.metadata) &&
+      java.util.Objects.equals(this.message, that.message)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    java.util.Objects.hash(metadata, message)
+}
+
+object Result {
+
+  /** Scala API */
+  def apply(
+      metadata: com.amazonaws.services.sqs.model.SendMessageResult,
+      message: String
+  ): Result = new Result(
+    metadata,
+    message
+  )
+
+  /** Java API */
+  def create(
+      metadata: com.amazonaws.services.sqs.model.SendMessageResult,
+      message: String
+  ): Result = new Result(
+    metadata,
+    message
+  )
+}
+
 final class AckResult private (
     val metadata: Option[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]],
     val message: String
@@ -91,16 +139,18 @@ final class AckResult private (
   /** Java API */
   def getMessage: String = message
 
-  def withMetadata(value: com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]): AckResult =
-    copy(metadata = Option(value))
-  def withMessage(value: String): AckResult = copy(message = value)
-
-  private def copy(metadata: Option[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]] = metadata,
-                   message: String = message): AckResult = new AckResult(metadata = metadata, message = message)
-
   override def toString =
     s"""AckResult(metadata=$metadata,message=$message)"""
 
+  override def equals(other: Any): Boolean = other match {
+    case that: AckResult =>
+      java.util.Objects.equals(this.metadata, that.metadata) &&
+      java.util.Objects.equals(this.message, that.message)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    java.util.Objects.hash(metadata, message)
 }
 
 object AckResult {

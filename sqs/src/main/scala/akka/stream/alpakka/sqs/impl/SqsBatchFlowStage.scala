@@ -8,8 +8,7 @@ import java.util
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.stream.alpakka.sqs.BatchException
-import akka.stream.alpakka.sqs.scaladsl.Result
+import akka.stream.alpakka.sqs.{BatchException, Result}
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
