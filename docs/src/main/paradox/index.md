@@ -31,6 +31,7 @@ The [Alpakka project](https://developer.lightbend.com/docs/alpakka/current/) is 
 * [File](file.md)
 * [FS2](external/fs2.md)
 * [FTP](ftp.md)
+* [Google Cloud BigQuery](google-cloud-bigquery.md)
 * [Google Cloud Pub/Sub](google-cloud-pub-sub.md)
 * [Google Cloud Pub/Sub gRPC](google-cloud-pub-sub-grpc.md)
 * [Google Firebase Cloud Messaging](google-fcm.md)

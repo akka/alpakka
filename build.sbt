@@ -117,6 +117,13 @@ lazy val ftp = alpakkaProject(
 lazy val geode =
   alpakkaProject("geode", "geode", Dependencies.Geode, fork in Test := true, parallelExecution in Test := false)
 
+lazy val googleCloudBigQuery = alpakkaProject(
+  "google-cloud-bigquery",
+  "google.cloud.bigquery",
+  Dependencies.GoogleBigQuery,
+  fork in Test := true
+)
+
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",
   "google.cloud.pubsub",

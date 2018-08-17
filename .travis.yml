@@ -50,6 +50,7 @@ jobs:
     - env:
       - PRE_CMD="docker-compose up -d geode"
       - CMD=+geode/testChanged
+    - env: CMD=+google-cloud-bigquery/testChanged
     - env: CMD=+google-cloud-pub-sub/testChanged
     - env:
       - PRE_CMD="docker-compose up -d gcloud-pubsub-client"
