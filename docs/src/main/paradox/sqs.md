@@ -315,6 +315,11 @@ Java
 : @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsAckSinkTest.java) { #flow-ack }
 
 
+## Integration testing
+
+For integration testing without touching Amazon SQS, Alpakka uses [ElasticMQ](https://github.com/adamw/elasticmq).
+
+
 ### Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
