@@ -17,25 +17,25 @@ For more information about Apache Parquet please visit the [official documentati
 We will need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
 
 Scala
-: @@snip ($alpakka$/avroparquet/src/test/scala/akka/stream/alpakka/avroparquet/scaladsl/AbstractAvroParquet.scala) { #init-system }
+: @@snip (/avroparquet/src/test/scala/akka/stream/alpakka/avroparquet/scaladsl/AbstractAvroParquet.scala) { #init-system }
 
 Java
-: @@snip ($alpakka$/avroparquet/src/test/java/akka/stream/alpakka/avroparquet/javadsl/Examples.java) { #init-system }
+: @@snip (/avroparquet/src/test/java/akka/stream/alpakka/avroparquet/javadsl/Examples.java) { #init-system }
 
 #Sink Initiation
 
 Scala
-: @@snip ($alpakka$/avroparquet/src/test/scala/akka/stream/alpakka/avroparquet/scaladsl/AvroParquetSinkSpec.scala) { #init-sink }
+: @@snip (/avroparquet/src/test/scala/akka/stream/alpakka/avroparquet/scaladsl/AvroParquetSinkSpec.scala) { #init-sink }
 
 Java
-: @@snip ($alpakka$/avroparquet/src/test/java/akka/stream/alpakka/avroparquet/javadsl/AvroParquetSinkTest.java) { #init-sink }
+: @@snip (/avroparquet/src/test/java/akka/stream/alpakka/avroparquet/javadsl/AvroParquetSinkTest.java) { #init-sink }
 
 #Source Initalization
 Scala
-: @@snip ($alpakka$/avroparquet/src/test/scala/akka/stream/alpakka/avroparquet/scaladsl/AvroParquetSourceSpec.scala) { #init-source }
+: @@snip (/avroparquet/src/test/scala/akka/stream/alpakka/avroparquet/scaladsl/AvroParquetSourceSpec.scala) { #init-source }
 
 Java
-: @@snip ($alpakka$/avroparquet/src/test/java/akka/stream/alpakka/avroparquet/javadsl/Examples.java) { #init-source }
+: @@snip (/avroparquet/src/test/java/akka/stream/alpakka/avroparquet/javadsl/Examples.java) { #init-source }
 
 
 This is all preparation that we are going to need.
