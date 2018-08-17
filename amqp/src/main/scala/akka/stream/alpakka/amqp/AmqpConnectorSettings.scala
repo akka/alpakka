@@ -6,8 +6,6 @@ package akka.stream.alpakka.amqp
 
 import akka.annotation.InternalApi
 
-import java.util.{List => JavaList, Map => JavaMap}
-
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 
@@ -42,7 +40,7 @@ final class NamedQueueSourceSettings private (
   /**
    * Java API
    */
-  def withDeclarations(declarations: JavaList[Declaration]): NamedQueueSourceSettings =
+  def withDeclarations(declarations: java.util.List[Declaration]): NamedQueueSourceSettings =
     copy(declarations = declarations.asScala.toIndexedSeq)
 
   def withNoLocal(noLocal: Boolean): NamedQueueSourceSettings =
@@ -63,7 +61,7 @@ final class NamedQueueSourceSettings private (
   /**
    * Java API
    */
-  def withArguments(arguments: JavaMap[String, Object]): NamedQueueSourceSettings =
+  def withArguments(arguments: java.util.Map[String, Object]): NamedQueueSourceSettings =
     copy(arguments = arguments.asScala.toMap)
 
   private def copy(declarations: immutable.Seq[Declaration] = declarations,
@@ -114,7 +112,7 @@ final class TemporaryQueueSourceSettings private (
   /**
    * Java API
    */
-  def withDeclarations(declarations: JavaList[Declaration]): TemporaryQueueSourceSettings =
+  def withDeclarations(declarations: java.util.List[Declaration]): TemporaryQueueSourceSettings =
     copy(declarations = declarations.asScala.toIndexedSeq)
 
   def withRoutingKey(routingKey: String): TemporaryQueueSourceSettings = copy(routingKey = Some(routingKey))
@@ -187,7 +185,7 @@ final class AmqpSinkSettings private (
   /**
    * Java API
    */
-  def withDeclarations(declarations: JavaList[Declaration]): AmqpSinkSettings =
+  def withDeclarations(declarations: java.util.List[Declaration]): AmqpSinkSettings =
     copy(declarations = declarations.asScala.toIndexedSeq)
 
   private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider,
@@ -236,7 +234,7 @@ final class QueueDeclaration private (
   /**
    * Java API
    */
-  def withArguments(arguments: JavaMap[String, Object]): QueueDeclaration =
+  def withArguments(arguments: java.util.Map[String, Object]): QueueDeclaration =
     copy(arguments = arguments.asScala.toMap)
 
   private def copy(name: String = name,
@@ -274,7 +272,7 @@ final class BindingDeclaration private (
   /**
    * Java API
    */
-  def withArguments(arguments: JavaMap[String, Object]): BindingDeclaration =
+  def withArguments(arguments: java.util.Map[String, Object]): BindingDeclaration =
     copy(arguments = arguments.asScala.toMap)
 
   private def copy(routingKey: Option[String] = routingKey, arguments: Map[String, AnyRef] = arguments) =
@@ -316,7 +314,7 @@ final class ExchangeDeclaration private (
   /**
    * Java API
    */
-  def withArguments(arguments: JavaMap[String, Object]): ExchangeDeclaration =
+  def withArguments(arguments: java.util.Map[String, Object]): ExchangeDeclaration =
     copy(arguments = arguments.asScala.toMap)
 
   private def copy(durable: Boolean = durable,
