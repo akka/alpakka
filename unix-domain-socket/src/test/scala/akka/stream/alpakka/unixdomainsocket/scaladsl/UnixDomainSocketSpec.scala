@@ -7,6 +7,7 @@ package akka.stream.alpakka.unixdomainsocket.scaladsl
 import java.io.{File, IOException}
 import java.nio.file.Files
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
@@ -16,6 +17,7 @@ import jnr.unixsocket.UnixSocketAddress
 import org.scalatest._
 
 import scala.concurrent.duration._
+import scala.concurrent.Promise
 
 class UnixDomainSocketSpec
     extends TestKit(ActorSystem("UnixDomainSocketSpec"))
@@ -89,18 +91,19 @@ class UnixDomainSocketSpec
       file.deleteOnExit()
 
       val sendBytes = ByteString("Hello")
+      val receiving = Promise[Done]
 
       val binding =
         UnixDomainSocket().bindAndHandle(
-          Flow
-            .fromSinkAndSource(Sink.ignore, Source.single(sendBytes).delay(1.second)),
+          Flow.fromFunction[ByteString, ByteString](identity).wireTap(_ => receiving.success(Done)).delay(1.second),
           file,
           halfClose = true
         )
 
       binding.flatMap { connection =>
         Source
-          .empty[ByteString]
+          .tick(0.seconds, 1.second, sendBytes)
+          .takeWhile(_ => !receiving.isCompleted)
           .via(UnixDomainSocket().outgoingConnection(file))
           .runWith(Sink.headOption)
           .flatMap {
