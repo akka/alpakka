@@ -28,10 +28,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.duration.Duration;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -75,7 +72,7 @@ public class AmqpDocsTest {
         AmqpSink.createSimple(
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
-                .withDeclarations(queueDeclaration));
+                .withDeclaration(queueDeclaration));
     // #create-sink
 
     // #create-source
@@ -83,7 +80,7 @@ public class AmqpDocsTest {
     final Source<IncomingMessage, NotUsed> amqpSource =
         AmqpSource.atMostOnceSource(
             NamedQueueSourceSettings.create(connectionProvider, queueName)
-                .withDeclarations(queueDeclaration),
+                .withDeclaration(queueDeclaration),
             bufferSize);
     // #create-source
 
@@ -118,7 +115,7 @@ public class AmqpDocsTest {
         AmqpRpcFlow.createSimple(
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
-                .withDeclarations(queueDeclaration),
+                .withDeclaration(queueDeclaration),
             1);
     // #create-rpc-flow
 
@@ -126,7 +123,7 @@ public class AmqpDocsTest {
     final Source<IncomingMessage, NotUsed> amqpSource =
         AmqpSource.atMostOnceSource(
             NamedQueueSourceSettings.create(connectionProvider, queueName)
-                .withDeclarations(queueDeclaration),
+                .withDeclaration(queueDeclaration),
             bufferSize);
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
@@ -146,12 +143,8 @@ public class AmqpDocsTest {
     amqpSource
         .map(
             b ->
-                new OutgoingMessage(
-                    b.bytes().concat(ByteString.fromString("a")),
-                    false,
-                    false,
-                    Optional.of(b.properties()),
-                    Optional.empty()))
+                OutgoingMessage.create(b.bytes().concat(ByteString.fromString("a")), false, false)
+                    .withProperties(b.properties()))
         .runWith(amqpSink, materializer);
 
     result
@@ -179,7 +172,7 @@ public class AmqpDocsTest {
         AmqpSink.createSimple(
             AmqpSinkSettings.create(connectionProvider)
                 .withExchange(exchangeName)
-                .withDeclarations(exchangeDeclaration));
+                .withDeclaration(exchangeDeclaration));
     // #create-exchange-sink
 
     // #create-exchange-source
@@ -193,7 +186,7 @@ public class AmqpDocsTest {
           mergedSources.merge(
               AmqpSource.atMostOnceSource(
                       TemporaryQueueSourceSettings.create(connectionProvider, exchangeName)
-                          .withDeclarations(exchangeDeclaration),
+                          .withDeclaration(exchangeDeclaration),
                       bufferSize)
                   .map(msg -> Pair.create(fanoutBranch, msg.bytes().utf8String())));
     }
@@ -235,14 +228,14 @@ public class AmqpDocsTest {
         AmqpSink.createSimple(
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
-                .withDeclarations(queueDeclaration));
+                .withDeclaration(queueDeclaration));
 
     // #create-source-withoutautoack
     final Integer bufferSize = 10;
     final Source<CommittableIncomingMessage, NotUsed> amqpSource =
         AmqpSource.committableSource(
             NamedQueueSourceSettings.create(connectionProvider, queueName)
-                .withDeclarations(queueDeclaration),
+                .withDeclaration(queueDeclaration),
             bufferSize);
     // #create-source-withoutautoack
 
@@ -276,7 +269,7 @@ public class AmqpDocsTest {
         AmqpSink.createSimple(
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
-                .withDeclarations(queueDeclaration));
+                .withDeclaration(queueDeclaration));
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     Source.from(input)
@@ -289,7 +282,7 @@ public class AmqpDocsTest {
     final Source<CommittableIncomingMessage, NotUsed> amqpSource =
         AmqpSource.committableSource(
             NamedQueueSourceSettings.create(connectionProvider, queueName)
-                .withDeclarations(queueDeclaration),
+                .withDeclaration(queueDeclaration),
             bufferSize);
 
     // #run-source-withoutautoack-and-nack

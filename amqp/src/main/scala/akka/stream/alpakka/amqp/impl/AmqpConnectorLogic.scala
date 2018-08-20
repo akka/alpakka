@@ -35,31 +35,31 @@ private trait AmqpConnectorLogic { this: GraphStageLogic =>
       import scala.collection.JavaConverters._
 
       settings.declarations.foreach {
-        case QueueDeclaration(name, durable, exclusive, autoDelete, arguments) =>
+        case d: QueueDeclaration =>
           channel.queueDeclare(
-            name,
-            durable,
-            exclusive,
-            autoDelete,
-            arguments.asJava
+            d.name,
+            d.durable,
+            d.exclusive,
+            d.autoDelete,
+            d.arguments.asJava
           )
 
-        case BindingDeclaration(queue, exchange, routingKey, arguments) =>
+        case d: BindingDeclaration =>
           channel.queueBind(
-            queue,
-            exchange,
-            routingKey.getOrElse(""),
-            arguments.asJava
+            d.queue,
+            d.exchange,
+            d.routingKey.getOrElse(""),
+            d.arguments.asJava
           )
 
-        case ExchangeDeclaration(name, exchangeType, durable, autoDelete, internal, arguments) =>
+        case d: ExchangeDeclaration =>
           channel.exchangeDeclare(
-            name,
-            exchangeType,
-            durable,
-            autoDelete,
-            internal,
-            arguments.asJava
+            d.name,
+            d.exchangeType,
+            d.durable,
+            d.autoDelete,
+            d.internal,
+            d.arguments.asJava
           )
       }
 
