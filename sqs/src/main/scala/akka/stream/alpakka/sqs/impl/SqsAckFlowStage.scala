@@ -5,7 +5,7 @@
 package akka.stream.alpakka.sqs.impl
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.sqs.{SqsAckResult, MessageAction}
+import akka.stream.alpakka.sqs.{MessageAction, SqsAckResult}
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler

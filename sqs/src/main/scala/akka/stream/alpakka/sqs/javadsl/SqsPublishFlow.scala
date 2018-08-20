@@ -20,7 +20,7 @@ import scala.collection.JavaConverters._
 object SqsPublishFlow {
 
   /**
-   * Creates a flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
+   * Create a flow publishing `SendMessageRequest` messages to a SQS queue.
    */
   def create(queueUrl: String,
              settings: SqsPublishSettings,
@@ -50,9 +50,11 @@ object SqsPublishFlow {
   /**
    * Creates a message batching flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
    */
-  def batch(queueUrl: String,
-            settings: SqsPublishBatchSettings,
-            sqsClient: AmazonSQSAsync): Flow[java.lang.Iterable[SendMessageRequest], java.util.List[SqsPublishResult], NotUsed] =
+  def batch(
+      queueUrl: String,
+      settings: SqsPublishBatchSettings,
+      sqsClient: AmazonSQSAsync
+  ): Flow[java.lang.Iterable[SendMessageRequest], java.util.List[SqsPublishResult], NotUsed] =
     SFlow[java.lang.Iterable[SendMessageRequest]]
       .map(_.asScala.toList)
       .via(scaladsl.SqsPublishFlow.batch(queueUrl, settings)(sqsClient))
@@ -62,8 +64,10 @@ object SqsPublishFlow {
   /**
    * Creates a flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]] with default settings.
    */
-  def batch(queueUrl: String,
-            sqsClient: AmazonSQSAsync): Flow[java.lang.Iterable[SendMessageRequest], java.util.List[SqsPublishResult], NotUsed] =
+  def batch(
+      queueUrl: String,
+      sqsClient: AmazonSQSAsync
+  ): Flow[java.lang.Iterable[SendMessageRequest], java.util.List[SqsPublishResult], NotUsed] =
     SFlow[java.lang.Iterable[SendMessageRequest]]
       .map(_.asScala)
       .via(scaladsl.SqsPublishFlow.batch(queueUrl, SqsPublishBatchSettings.Defaults)(sqsClient))

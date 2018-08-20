@@ -7,22 +7,59 @@ package docs.scaladsl
 import akka.Done
 import akka.stream.alpakka.sqs._
 import akka.stream.alpakka.sqs.scaladsl._
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.model._
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{spy, verify}
+import org.mockito.Mockito.{spy, times, verify}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class SqsSinkSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
+class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
 
-  private val sqsSourceSettings = SqsSourceSettings.Defaults
+  "SqsPublishSettings" should "construct settings" in {
+    //#SqsPublishSettings
+    val sinkSettings =
+      SqsPublishSettings()
+        .withMaxInFlight(10)
+    //#SqsPublishSettings
+    sinkSettings.maxInFlight should be(10)
+  }
 
-  it should "publish and pull a message" taggedAs Integration in {
+  it should "require valid maxInFlight" in {
+    a[IllegalArgumentException] should be thrownBy {
+      SqsPublishSettings(0)
+    }
+  }
+
+  it should "accept valid parameters" in {
+    SqsPublishSettings(1)
+  }
+
+  "SqsPublishBatchSettings" should "construct settings" in {
+    //#SqsPublishBatchSettings
+    val batchSettings =
+      SqsPublishBatchSettings()
+        .withConcurrentRequests(1)
+    //#SqsPublishBatchSettings
+    batchSettings.concurrentRequests should be(1)
+  }
+
+  "SqsPublishGroupedSettings" should "construct settings" in {
+    //#SqsPublishGroupedSettings
+    val batchSettings =
+      SqsPublishGroupedSettings()
+        .withMaxBatchSize(10)
+        .withMaxBatchWait(500.millis)
+        .withConcurrentRequests(1)
+    //#SqsPublishGroupedSettings
+    batchSettings.concurrentRequests should be(1)
+  }
+
+  "PublishSink" should "publish and pull a message" taggedAs Integration in {
     val queue = randomQueueUrl()
     implicit val awsSqsClient = sqsClient
 
@@ -34,7 +71,7 @@ class SqsSinkSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext
     //#run-string
     Await.ready(future, 1.second)
 
-    val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
+    val probe = SqsSource(queue, SqsSourceSettings.Defaults).runWith(TestSink.probe[Message])
     probe.requestNext().getBody shouldBe "alpakka"
     probe.cancel()
   }
@@ -51,66 +88,9 @@ class SqsSinkSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext
     //#run-send-request
 
     future.futureValue shouldBe Done
-    val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
+    val probe = SqsSource(queue, SqsSourceSettings.Defaults).runWith(TestSink.probe[Message])
     probe.requestNext().getBody shouldBe "alpakka"
     probe.cancel()
-  }
-
-  it should "pull and delete message" taggedAs Integration in {
-    val queue = randomQueueUrl()
-    sqsClient.sendMessage(queue, "alpakka-2")
-    implicit val awsSqsClient = spy(sqsClient)
-
-    val future =
-      //#ack
-      SqsSource(queue)
-        .take(1)
-        .map { m: Message =>
-          MessageAction.Delete(m)
-        }
-        .runWith(SqsAckSink(queue))
-    //#ack
-
-    future.futureValue shouldBe Done
-    verify(awsSqsClient).deleteMessageAsync(any[DeleteMessageRequest],
-                                            any[AsyncHandler[DeleteMessageRequest, DeleteMessageResult]])
-  }
-
-  it should "pull and delay a message" taggedAs Integration in {
-    val queue = randomQueueUrl()
-    sqsClient.sendMessage(queue, "alpakka-3")
-
-    implicit val awsSqsClient = spy(sqsClient)
-    //#requeue
-    val future = SqsSource(queue)
-      .take(1)
-      .map { m: Message =>
-        MessageAction.ChangeMessageVisibility(m, 5)
-      }
-      .runWith(SqsAckSink(queue))
-    //#requeue
-
-    Await.result(future, 1.second) shouldBe Done
-    verify(awsSqsClient).changeMessageVisibilityAsync(
-      any[ChangeMessageVisibilityRequest],
-      any[AsyncHandler[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult]]
-    )
-  }
-
-  it should "pull and ignore a message" taggedAs Integration in {
-    val queue = randomQueueUrl()
-    sqsClient.sendMessage(queue, "alpakka-4")
-
-    implicit val awsSqsClient = spy(sqsClient)
-    //#ignore
-    SqsSource(queue)
-      .map { m: Message =>
-        MessageAction.Ignore(m)
-      }
-      .runWith(SqsAckSink(queue))
-    //#ignore
-
-    // TODO: assertions missing
   }
 
   it should "publish messages by grouping and pull them" taggedAs Integration in {
@@ -125,7 +105,7 @@ class SqsSinkSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext
     //#group
 
     future.futureValue shouldBe Done
-    val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
+    val probe = SqsSource(queue, SqsSourceSettings.Defaults).runWith(TestSink.probe[Message])
     var nrOfMessages = 0
     for (i <- 0 until 20) {
       probe.requestNext()
@@ -149,7 +129,7 @@ class SqsSinkSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext
     //#batch-string
 
     future.futureValue shouldBe Done
-    val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
+    val probe = SqsSource(queue, SqsSourceSettings.Defaults).runWith(TestSink.probe[Message])
     var nrOfMessages = 0
     for (i <- 0 until 10) {
       probe.requestNext()
@@ -173,7 +153,7 @@ class SqsSinkSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext
     //#batch-send-request
 
     future.futureValue shouldBe Done
-    val probe = SqsSource(queue, sqsSourceSettings).runWith(TestSink.probe[Message])
+    val probe = SqsSource(queue, SqsSourceSettings.Defaults).runWith(TestSink.probe[Message])
     var nrOfMessages = 0
     for (i <- 0 until 10) {
       probe.requestNext()
@@ -184,4 +164,25 @@ class SqsSinkSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext
     probe.cancel()
   }
 
+  "PublishFlow" should "put message in a flow, then pass the result further" in {
+    val queue = randomQueueUrl()
+    implicit val awsSqsClient = sqsClient
+
+    val future =
+      //#flow
+      Source
+        .single(new SendMessageRequest().withMessageBody("alpakka"))
+        .via(SqsPublishFlow(queue))
+        .runWith(Sink.foreach(result => println(result.message)))
+    //#flow
+
+    future.futureValue shouldBe Done
+
+    SqsSource(queue, SqsSourceSettings.Defaults)
+      .map(_.getBody)
+      .runWith(TestSink.probe[String])
+      .request(1)
+      .expectNext("alpakka")
+      .cancel()
+  }
 }

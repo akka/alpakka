@@ -81,11 +81,11 @@ object MessageAction {
     ChangeMessageVisibility(message, visibilityTimeout)
 
   /**
-    * Java API: Change the visibility timeout of the message.
-    *
-    * @param message the message to change
-    * @param visibilityTimeout new timeout
-    */
+   * Java API: Change the visibility timeout of the message.
+   *
+   * @param message the message to change
+   * @param visibilityTimeout new timeout
+   */
   def changeMessageVisibility(message: Message, visibilityTimeout: java.time.Duration): MessageAction =
     ChangeMessageVisibility(message, visibilityTimeout.getSeconds.toInt)
 
@@ -96,7 +96,8 @@ object MessageAction {
  * @param metadata metadata with AWS response details.
  * @param message message body.
  */
-final class SqsPublishResult private (val metadata: com.amazonaws.services.sqs.model.SendMessageResult, val message: String) {
+final class SqsPublishResult private (val metadata: com.amazonaws.services.sqs.model.SendMessageResult,
+                                      val message: String) {
 
   /** Java API */
   def getMetadata: com.amazonaws.services.sqs.model.SendMessageResult = metadata

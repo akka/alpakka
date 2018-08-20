@@ -26,7 +26,7 @@ import scala.concurrent.duration._
 
 class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
 
-  "Sqs Sink" should "send a message" in {
+  "SqsPublishSink" should "send a message" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
     when(
       sqsClient.sendMessageAsync(any[SendMessageRequest](), any[AsyncHandler[SendMessageRequest, SendMessageResult]]())

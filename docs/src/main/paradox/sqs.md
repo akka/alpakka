@@ -50,7 +50,7 @@ Java
 The @scala[@scaladoc[SqsSource](akka.stream.alpakka.sqs.scaladsl.SqsSource$)]@java[@scaladoc[SqsSource](akka.stream.alpakka.sqs.javadsl.SqsSource$)] created source reads AWS Java SDK SQS `Message` objects from any SQS queue given by the queue URL.
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSourceSnippetsSpec.scala) { #run }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSourceSpec.scala) { #run }
 
 Java
 : @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsSourceTest.java) { #run }
@@ -61,7 +61,7 @@ In this example we use the `closeOnEmptyReceive` to let the stream complete when
 ### Source configuration
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSourceSnippetsSpec.scala) { #SqsSourceSettings }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSourceSpec.scala) { #SqsSourceSettings }
 
 Java
 : @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsSourceTest.java) { #SqsSourceSettings }
@@ -95,7 +95,7 @@ uses a fixed thread pool with 50 threads by default. To tune the thread pool use
 `AmazonSQSAsyncClient` you can supply a custom `ExecutorService` on client creation.
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSourceSnippetsSpec.scala) { #init-custom-client }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSourceSpec.scala) { #init-custom-client }
 
 Java
 : @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsSourceTest.java) { #init-custom-client }
@@ -105,26 +105,37 @@ if you share the client between multiple Sources, Sinks and Flows. For the SQS S
 `parallelism` (Source) and `maxInFlight` (Sink) must be less than or equal to the thread pool size.
 
 
-## Write to an SQS queue
+## Publish messages to an SQS queue
 
-Create a sink, that forwards `String` to the SQS queue.
-
-Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSinkSnippetsSpec.scala) { #run-string }
-
-Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishSinkTest.java) { #run-string }
-
-Create a sink, that forwards `SendMessageRequest` to the SQS queue.
+Create a `String`-accepting sink, publishing to an SQS queue.
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSinkSnippetsSpec.scala) { #run-send-request }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsPublishSpec.scala) { #run-string }
 
 Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishSinkTest.java) { #run-send-request }
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishTest.java) { #run-string }
 
 
-## Write batches to an SQS queue
+Create a `SendMessageRequest`-accepting sink, that publishes an SQS queue.
+
+Scala
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsPublishSpec.scala) { #run-send-request }
+
+Java
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishTest.java) { #run-send-request }
+
+You can also build flow stages which publish messages to SQS queues, backpressure on queue response, and then forward `SqsPublishResult` ([API](akka.stream.alpakka.sqs.SqsPublishResult)further down the stream. 
+
+Scala
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsPublishSpec.scala) { #flow }
+
+Java
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishTest.java) { #flow }
+
+
+
+
+### Group messages and publish batches to an SQS queue
 
 Create a sink, that forwards `String` to the SQS queue. However, the main difference from the previous use case, it batches items and sends as a one request.
 
@@ -133,19 +144,19 @@ This client buffers `SendMessageRequest`s under the hood and sends them as a bat
 does not support FIFO Queues. See [documentation for client-side buffering.](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-client-side-buffering-request-batching.html)
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSinkSnippetsSpec.scala) { #group }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsPublishSpec.scala) { #group }
 
 Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishSinkTest.java) { #group }
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishTest.java) { #group }
 
 
-### Batch configuration
+### Grouping configuration
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SettingsSnippetsSpec.scala) { #SqsBatchFlowSettings }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsPublishSpec.scala) { #SqsPublishGroupedSettings }
 
 Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishSinkTest.java) { #SqsBatchFlowSettings }
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishTest.java) { #SqsPublishGroupedSettings }
 
 
 Options:
@@ -157,89 +168,107 @@ Options:
  - `concurrentRequests` - the number of batches sending to SQS concurrently.
 
 
-## Write sequences as batches to an SQS queue
+### Publish lists as batches to an SQS queue
 
-Create a sink, that forwards @scala[`Seq[String]`]@java[`List<String>`] to the SQS queue.
-
-Be aware that the size of the batch must be less than or equal to 10 because Amazon SQS has a limit for batch request.
-If the batch has more than 10 entries, the request will fail.
-
-Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSinkSnippetsSpec.scala) { #batch-string }
-
-Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishSinkTest.java) { #batch-string }
-
-Create a sink, that forwards `Seq[SendMessageRequest]` to the SQS queue.
+Create a sink, that publishes @scala[`Iterable[String]`]@java[`Iterable<String>`] to the SQS queue.
 
 Be aware that the size of the batch must be less than or equal to 10 because Amazon SQS has a limit for batch request.
 If the batch has more than 10 entries, the request will fail.
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSinkSnippetsSpec.scala) { #batch-send-request }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsPublishSpec.scala) { #batch-string }
 
 Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishSinkTest.java) { #batch-send-request }
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishTest.java) { #batch-string }
 
+Create a sink, that publishes @scala[`Iterable[SendMessageRequest]`]@java[`Iterable<SendMessageRequest`] to the SQS queue.
 
-### Sink configuration
+@@@ warning
+
+Be aware that the size of the batch must be less than or equal to 10 because Amazon SQS has a limit for batch requests.
+If the batch has more than 10 entries, the request will fail.
+
+@@@
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SettingsSnippetsSpec.scala) { #SqsSinkSettings }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsPublishSpec.scala) { #batch-send-request }
 
 Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishSinkTest.java) { #SqsSinkSettings }
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishTest.java) { #batch-send-request }
+
+
+### Batch configuration
+
+Scala
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsPublishSpec.scala) { #SqsPublishBatchSettings }
+
+Java
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishTest.java) { #SqsPublishBatchSettings }
 
 Options:
 
- - `maxInFlight` - maximum number of messages being processed by `AmazonSQSAsync` at the same time. Default: 10
+ - `concurrentRequests` - the number of batches sending to SQS concurrently.
 
 
-## Message processing with acknowledgement
+## Updating message statuses
 
-`SqsAckSink` provides possibility to acknowledge (delete), ignore, or postpone a message.
+`SqsAckSink` and `SqsAckFlow` provide the possibility to acknowledge (delete), ignore, or postpone messages on an SQS queue. They accept `MessageAction` (@scaladoc[API](akka.stream.alpakka.sqs.MessageAction)) sub-classes to select the action to be taken.
 
-Your flow must decide which action to take and push it with message:
+For every message you may decide which action to take and push it together with message back to the queue:
 
  - `Delete` - delete message from the queue
- - `Ignore` - ignore the message and let it reappear in the queue after visibility timeout
- - `ChangeMessageVisibility(visibilityTimeout: Int)` - can be used to postpone a message, or make
+ - `Ignore` - don't change that message, and let it reappear in the queue after the visibility timeout
+ - `ChangeMessageVisibility(visibilityTimeout)` - can be used to postpone a message, or make
  the message immediately visible to other consumers. See [official documentation](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html)
 for more details.
 
-Acknowledge (delete) messages:
+
+### Acknowledge (delete) messages
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSinkSnippetsSpec.scala) { #ack }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsAckSpec.scala) { #ack }
 
 Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsAckSinkTest.java) { #ack }
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsAckTest.java) { #ack }
 
-Ignore messages:
+
+### Ignore messages
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSinkSnippetsSpec.scala) { #ignore }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsAckSpec.scala) { #ignore }
 
 Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsAckSinkTest.java) { #ignore }
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsAckTest.java) { #ignore }
 
-Change Visibility Timeout of messages:
+
+### Change Visibility Timeout of messages
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSinkSnippetsSpec.scala) { #requeue }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsAckSpec.scala) { #requeue }
 
 Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsAckSinkTest.java) { #requeue }
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsAckTest.java) { #requeue }
 
-### SqsAckSink configuration
 
-Same as the normal `SqsSink`:
+### Update message status in a flow
+
+The flow accepts a `MessageAction` (@scaladoc[API](akka.stream.alpakka.sqs.MessageAction)) sub-classes, and returns `SqsAckResult` (@scaladoc[API](akka.stream.alpakka.sqs.SqsAckResult)) .
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SettingsSnippetsSpec.scala) { #SqsAckSinkSettings }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsAckSpec.scala) { #flow-ack }
 
 Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishSinkTest.java) { #SqsAckSinkSettings }
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsAckTest.java) { #flow-ack }
+
+
+
+### SqsAck configuration
+
+Scala
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsAckSpec.scala) { #SqsAckSettings }
+
+Java
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsAckTest.java) { #SqsAckSettings }
 
 
 Options:
@@ -247,42 +276,42 @@ Options:
  - `maxInFlight` - maximum number of messages being processed by `AmazonSQSAsync` at the same time. Default: 10
 
 
-## Message processing with acknowledgement with batching
+### Updating message statuses in batches with grouping
 
 `SqsAckFlow.grouped` is a flow that can acknowledge (delete), ignore, or postpone messages, but it batches items and sends them as one request per action.
 
 Acknowledge (delete) messages:
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsFlowSnippetsSpec.scala) { #batch-ack }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsAckSpec.scala) { #batch-ack }
 
 Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsAckSinkTest.java) { #batch-ack }
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsAckTest.java) { #batch-ack }
 
 Ignore messages:
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsFlowSnippetsSpec.scala) { #batch-ignore }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsAckSpec.scala) { #batch-ignore }
 
 Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsAckSinkTest.java) { #batch-ignore }
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsAckTest.java) { #batch-ignore }
 
 Change Visibility Timeout of messages:
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsFlowSnippetsSpec.scala) { #batch-requeue }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsAckSpec.scala) { #batch-requeue }
 
 Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsAckSinkTest.java) { #batch-requeue }
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsAckTest.java) { #batch-requeue }
 
 
-### Batch configuration
+### Acknowledge grouping configuration
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SettingsSnippetsSpec.scala) { #SqsBatchAckFlowSettings }
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsAckSpec.scala) { #SqsAckGroupedSettings }
 
 Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishSinkTest.java) { #SqsBatchAckFlowSettings }
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsAckTest.java) { #SqsAckGroupedSettings }
 
 
 Options:
@@ -292,27 +321,6 @@ Options:
     Sends what is collects at the end of the time period
     even though the `maxBatchSize` is not fulfilled. Default: 500 milliseconds
  - `concurrentRequests` - the number of batches sending to SQS concurrently.
-
-
-## Using SQS as a Flow
-
-You can also build flow stages which put or acknowledge messages in SQS, backpressure on queue response and then forward
-responses further down the stream. The API is similar to creating Sinks.
-
-Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsFlowSnippetsSpec.scala) { #flow }
-
-Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishSinkTest.java) { #flow }
-
-
-With Ack:
-
-Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsFlowSnippetsSpec.scala) { #flow-ack }
-
-Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsAckSinkTest.java) { #flow-ack }
 
 
 ## Integration testing

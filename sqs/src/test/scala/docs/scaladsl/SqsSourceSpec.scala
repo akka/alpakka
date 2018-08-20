@@ -12,19 +12,94 @@ import akka.stream.scaladsl.Sink
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.client.builder.ExecutorFactory
-import com.amazonaws.services.sqs.model.Message
+import com.amazonaws.services.sqs.model.{Message, MessageAttributeValue, QueueDoesNotExistException, SendMessageRequest}
 import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{AsyncWordSpec, Matchers}
 
 import scala.collection.immutable
+import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class SqsSourceSnippetsSpec extends AsyncWordSpec with ScalaFutures with Matchers with DefaultTestContext {
+class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with DefaultTestContext {
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
+  "SqsSource" should {
+
+    "stream a single batch from the queue" taggedAs Integration in {
+      val queue = randomQueueUrl()
+      implicit val awsSqsClient = sqsClient
+      sqsClient.sendMessage(queue, "alpakka")
+
+      SqsSource(queue, SqsSourceSettings.Defaults).take(1).runWith(Sink.head).map(_.getBody shouldBe "alpakka")
+
+    }
+
+    "continue streaming if receives an empty response" taggedAs Integration in {
+      val queue = randomQueueUrl()
+      implicit val awsSqsClient = sqsClient
+
+      val f = SqsSource(queue, SqsSourceSettings(0, 100, 10)).take(1).runWith(Sink.seq)
+
+      sqsClient.sendMessage(queue, "alpakka")
+
+      f.map(_ should have size 1)
+    }
+
+    "terminate on an empty response if requested" taggedAs Integration in {
+      val queue = randomQueueUrl()
+      implicit val awsSqsClient = sqsClient
+
+      sqsClient.sendMessage(queue, "alpakka")
+      val f = SqsSource(queue, SqsSourceSettings(0, 100, 10, closeOnEmptyReceive = true)).runWith(Sink.seq)
+
+      f.map(_ should have size 1)
+    }
+
+    "finish immediately if the queue does not exist" taggedAs Integration in {
+      val queue = s"$sqsEndpoint/queue/not-existing"
+      implicit val awsSqsClient = sqsClient
+
+      val f = SqsSource(queue, SqsSourceSettings.Defaults).runWith(Sink.seq)
+
+      f.failed.map(_ shouldBe a[QueueDoesNotExistException])
+    }
+
+    "ask for all the attributes set in the settings" taggedAs Integration in {
+      val queue = randomQueueUrl()
+      implicit val awsSqsClient = sqsClient
+
+      val attributes = List(SentTimestamp, ApproximateReceiveCount, SenderId)
+      val settings = SqsSourceSettings.Defaults.withAttributes(attributes)
+
+      sqsClient.sendMessage(queue, "alpakka")
+
+      SqsSource(queue, settings)
+        .take(1)
+        .runWith(Sink.head)
+        .map(_.getAttributes.keySet.asScala shouldBe attributes.map(_.name).toSet)
+    }
+
+    "ask for all the message attributes set in the settings" taggedAs Integration in {
+      val queue = randomQueueUrl()
+      implicit val awsSqsClient = sqsClient
+      val messageAttributes = Map(
+        "attribute-1" -> new MessageAttributeValue().withStringValue("v1").withDataType("String"),
+        "attribute-2" -> new MessageAttributeValue().withStringValue("v2").withDataType("String")
+      )
+      val settings =
+        SqsSourceSettings.Defaults.withMessageAttributes(messageAttributes.keys.toList.map(MessageAttributeName.apply))
+
+      sqsClient.sendMessage(new SendMessageRequest(queue, "alpakka").withMessageAttributes(messageAttributes.asJava))
+
+      SqsSource(queue, settings)
+        .take(1)
+        .runWith(Sink.head)
+        .map(_.getMessageAttributes.asScala shouldBe messageAttributes)
+    }
+  }
 
   "SqsSourceSettings" should {
     "be constructed" in {

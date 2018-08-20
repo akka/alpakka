@@ -5,8 +5,7 @@
 package docs.javadsl;
 
 import akka.Done;
-import akka.stream.alpakka.sqs.MessageAction;
-import akka.stream.alpakka.sqs.SqsAckResult;
+import akka.stream.alpakka.sqs.*;
 import akka.stream.alpakka.sqs.javadsl.BaseSqsTest;
 import akka.stream.alpakka.sqs.javadsl.SqsAckFlow;
 import akka.stream.alpakka.sqs.javadsl.SqsAckSink;
@@ -18,6 +17,7 @@ import com.amazonaws.services.sqs.model.*;
 import org.junit.Test;
 import scala.Option;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -28,7 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.assertEquals;
 
-public class SqsAckSinkTest extends BaseSqsTest {
+public class SqsAckTest extends BaseSqsTest {
 
   @Test
   public void testAcknowledge() throws Exception {
@@ -52,6 +52,34 @@ public class SqsAckSinkTest extends BaseSqsTest {
 
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
     verify(awsClient).deleteMessageAsync(any(DeleteMessageRequest.class), any());
+  }
+
+  @Test
+  public void constructAckSettings() {
+    // #SqsAckSettings
+    SqsAckSettings sinkSettings = SqsAckSettings.create().withMaxInFlight(10);
+    // #SqsAckSettings
+    assertEquals(10, sinkSettings.maxInFlight());
+  }
+
+  @Test
+  public void constructAckBatchSettings() {
+    // #SqsAckBatchSettings
+    SqsAckBatchSettings flowSettings = SqsAckBatchSettings.create().withConcurrentRequests(1);
+    // #SqsAckBatchSettings
+    assertEquals(1, flowSettings.concurrentRequests());
+  }
+
+  @Test
+  public void constructAckGroupedSettings() {
+    // #SqsAckGroupedSettings
+    SqsAckGroupedSettings flowSettings =
+        SqsAckGroupedSettings.create()
+            .withMaxBatchSize(10)
+            .withMaxBatchWait(Duration.ofMillis(500))
+            .withConcurrentRequests(1);
+    // #SqsAckGroupedSettings
+    assertEquals(10, flowSettings.maxBatchSize());
   }
 
   @Test

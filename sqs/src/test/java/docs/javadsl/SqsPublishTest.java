@@ -5,10 +5,7 @@
 package docs.javadsl;
 
 import akka.Done;
-import akka.stream.alpakka.sqs.SqsAckSettings;
-import akka.stream.alpakka.sqs.SqsAckBatchSettings;
-import akka.stream.alpakka.sqs.SqsPublishBatchSettings;
-import akka.stream.alpakka.sqs.SqsPublishSettings;
+import akka.stream.alpakka.sqs.*;
 import akka.stream.alpakka.sqs.javadsl.BaseSqsTest;
 import akka.stream.alpakka.sqs.javadsl.SqsPublishFlow;
 import akka.stream.alpakka.sqs.javadsl.SqsPublishSink;
@@ -27,43 +24,35 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
-public class SqsPublishSinkTest extends BaseSqsTest {
+public class SqsPublishTest extends BaseSqsTest {
 
   @Test
   public void constructBatchSettings() {
-    // #SqsBatchFlowSettings
+    // #SqsPublishBatchSettings
     SqsPublishBatchSettings batchSettings =
-        SqsPublishBatchSettings.Defaults().withConcurrentRequests(1);
-    // #SqsBatchFlowSettings
+        SqsPublishBatchSettings.create().withConcurrentRequests(1);
+    // #SqsPublishBatchSettings
+    assertEquals(1, batchSettings.concurrentRequests());
+  }
+
+  @Test
+  public void constructGroupedSettings() {
+    // #SqsPublishGroupedSettings
+    SqsPublishGroupedSettings batchSettings =
+        SqsPublishGroupedSettings.create()
+            .withMaxBatchSize(10)
+            .withMaxBatchWait(Duration.ofMillis(500))
+            .withConcurrentRequests(1);
+    // #SqsPublishGroupedSettings
     assertEquals(1, batchSettings.concurrentRequests());
   }
 
   @Test
   public void constructSinkSettings() {
-    // #SqsSinkSettings
-    SqsPublishSettings sinkSettings = SqsPublishSettings.Defaults().withMaxInFlight(10);
-    // #SqsSinkSettings
+    // #SqsPublishSettings
+    SqsPublishSettings sinkSettings = SqsPublishSettings.create().withMaxInFlight(10);
+    // #SqsPublishSettings
     assertEquals(10, sinkSettings.maxInFlight());
-  }
-
-  @Test
-  public void constructAckSinkSettings() {
-    // #SqsAckSinkSettings
-    SqsAckSettings sinkSettings = SqsAckSettings.Defaults().withMaxInFlight(10);
-    // #SqsAckSinkSettings
-    assertEquals(10, sinkSettings.maxInFlight());
-  }
-
-  @Test
-  public void constructBatchAckSinkSettings() {
-    // #SqsBatchAckFlowSettings
-    SqsAckBatchSettings flowSettings =
-        SqsAckBatchSettings.Defaults()
-            .withMaxBatchSize(10)
-            .withMaxBatchWait(Duration.ofMillis(500))
-            .withConcurrentRequests(1);
-    // #SqsBatchAckFlowSettings
-    assertEquals(10, flowSettings.maxBatchSize());
   }
 
   @Test
@@ -73,7 +62,10 @@ public class SqsPublishSinkTest extends BaseSqsTest {
 
     // #run-string
     CompletionStage<Done> done =
-        Source.single("alpakka").runWith(SqsPublishSink.create(queueUrl, sqsClient), materializer);
+        Source.single("alpakka")
+            .runWith(
+                SqsPublishSink.create(queueUrl, SqsPublishSettings.create(), sqsClient),
+                materializer);
     // #run-string
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
     List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
@@ -90,7 +82,9 @@ public class SqsPublishSinkTest extends BaseSqsTest {
     // #run-send-request
     CompletionStage<Done> done =
         Source.single(new SendMessageRequest().withMessageBody("alpakka"))
-            .runWith(SqsPublishSink.messageSink(queueUrl, sqsClient), materializer);
+            .runWith(
+                SqsPublishSink.messageSink(queueUrl, SqsPublishSettings.create(), sqsClient),
+                materializer);
     // #run-send-request
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
     List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
@@ -121,14 +115,16 @@ public class SqsPublishSinkTest extends BaseSqsTest {
     final String queueUrl = randomQueueUrl();
 
     // #group
-    ArrayList<String> messagesToSend = new ArrayList<>();
+    List<String> messagesToSend = new ArrayList<>();
     for (int i = 0; i < 20; i++) {
       messagesToSend.add("message - " + i);
     }
 
     CompletionStage<Done> done =
         Source.from(messagesToSend)
-            .runWith(SqsPublishSink.grouped(queueUrl, sqsClient), materializer);
+            .runWith(
+                SqsPublishSink.grouped(queueUrl, SqsPublishGroupedSettings.create(), sqsClient),
+                materializer);
     // #group
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
@@ -151,14 +147,17 @@ public class SqsPublishSinkTest extends BaseSqsTest {
     final String queueUrl = randomQueueUrl();
 
     // #batch-string
-    ArrayList<String> messagesToSend = new ArrayList<>();
+    List<String> messagesToSend = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
       messagesToSend.add("Message - " + i);
     }
     Iterable<String> it = messagesToSend;
 
     CompletionStage<Done> done =
-        Source.single(it).runWith(SqsPublishSink.batch(queueUrl, sqsClient), materializer);
+        Source.single(it)
+            .runWith(
+                SqsPublishSink.batch(queueUrl, SqsPublishBatchSettings.create(), sqsClient),
+                materializer);
     // #batch-string
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
@@ -176,7 +175,7 @@ public class SqsPublishSinkTest extends BaseSqsTest {
     final String queueUrl = randomQueueUrl();
 
     // #batch-send-request
-    ArrayList<SendMessageRequest> messagesToSend = new ArrayList<>();
+    List<SendMessageRequest> messagesToSend = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
       messagesToSend.add(new SendMessageRequest().withMessageBody("Message - " + i));
     }
@@ -184,7 +183,10 @@ public class SqsPublishSinkTest extends BaseSqsTest {
 
     CompletionStage<Done> done =
         Source.single(it)
-            .runWith(SqsPublishSink.batchedMessageSink(queueUrl, sqsClient), materializer);
+            .runWith(
+                SqsPublishSink.batchedMessageSink(
+                    queueUrl, SqsPublishBatchSettings.create(), sqsClient),
+                materializer);
     // #batch-send-request
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
@@ -201,7 +203,7 @@ public class SqsPublishSinkTest extends BaseSqsTest {
   public void sendMessageWithBatchesAsFlow() throws Exception {
     final String queueUrl = randomQueueUrl();
 
-    ArrayList<SendMessageRequest> messagesToSend = new ArrayList<>();
+    List<SendMessageRequest> messagesToSend = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
       messagesToSend.add(new SendMessageRequest(queueUrl, "Message - " + i));
     }
@@ -226,7 +228,7 @@ public class SqsPublishSinkTest extends BaseSqsTest {
   public void sendBatchesAsFlow() throws Exception {
     final String queueUrl = randomQueueUrl();
 
-    ArrayList<SendMessageRequest> messagesToSend = new ArrayList<>();
+    List<SendMessageRequest> messagesToSend = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
       messagesToSend.add(new SendMessageRequest(queueUrl, "Message - " + i));
     }

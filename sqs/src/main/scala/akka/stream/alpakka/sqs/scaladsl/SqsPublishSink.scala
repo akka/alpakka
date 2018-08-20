@@ -18,7 +18,7 @@ import scala.concurrent.Future
 object SqsPublishSink {
 
   /**
-   * Creates a sink for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
+   * Creates a sink for a SQS queue accepting Strings.
    */
   def apply(queueUrl: String, settings: SqsPublishSettings = SqsPublishSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
@@ -28,7 +28,7 @@ object SqsPublishSink {
       .toMat(messageSink(queueUrl, settings))(Keep.right)
 
   /**
-   * Creates a grouped sink running in batch mode for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
+   * Create a grouped sink running in batch mode for a SQS queue accepting Strings.
    */
   def grouped(queueUrl: String, settings: SqsPublishGroupedSettings = SqsPublishGroupedSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
@@ -38,7 +38,7 @@ object SqsPublishSink {
       .toMat(groupedMessageSink(queueUrl, settings))(Keep.right)
 
   /**
-   * Creates a sink running in batch mode for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
+   * Create a sink running in batch mode for a SQS queue accepting collections of Strings.
    */
   def batch(queueUrl: String, settings: SqsPublishBatchSettings = SqsPublishBatchSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
@@ -47,16 +47,26 @@ object SqsPublishSink {
       .fromFunction((msgs: Iterable[String]) => msgs.map(msg => new SendMessageRequest(queueUrl, msg)))
       .toMat(batchedMessageSink(queueUrl, settings))(Keep.right)
 
+  /**
+   * Creates a sink for a SQS queue accepting SendMessageRequests.
+   */
   def messageSink(queueUrl: String, settings: SqsPublishSettings = SqsPublishSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
   ): Sink[SendMessageRequest, Future[Done]] =
     SqsPublishFlow.apply(queueUrl, settings).toMat(Sink.ignore)(Keep.right)
 
+  /**
+   * Create a flow grouping and publishing `SendMessageRequest` messages in batches to a SQS queue.
+   * @see https://doc.akka.io/docs/akka/current/stream/operators/Source-or-Flow/groupedWithin.html#groupedwithin
+   */
   def groupedMessageSink(queueUrl: String, settings: SqsPublishGroupedSettings = SqsPublishGroupedSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
   ): Sink[SendMessageRequest, Future[Done]] =
     SqsPublishFlow.grouped(queueUrl, settings).toMat(Sink.ignore)(Keep.right)
 
+  /**
+   * Create a flow publishing `SendMessageRequest` messages in batches to a SQS queue.
+   */
   def batchedMessageSink(queueUrl: String, settings: SqsPublishBatchSettings = SqsPublishBatchSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
   ): Sink[Iterable[SendMessageRequest], Future[Done]] =

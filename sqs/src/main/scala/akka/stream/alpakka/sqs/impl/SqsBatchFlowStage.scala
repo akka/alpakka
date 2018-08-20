@@ -4,8 +4,6 @@
 
 package akka.stream.alpakka.sqs.impl
 
-import java.util
-
 import akka.Done
 import akka.annotation.InternalApi
 import akka.stream.alpakka.sqs.{SqsBatchException, SqsPublishResult}
@@ -140,8 +138,8 @@ import scala.util.{Failure, Success, Try}
           }
 
           private def createMessageBatch(messages: Array[SendMessageRequest]): SendMessageBatchRequest = {
-            val messageRequestEntries: util.List[SendMessageBatchRequestEntry] =
-              new util.ArrayList[SendMessageBatchRequestEntry]()
+            val messageRequestEntries: java.util.List[SendMessageBatchRequestEntry] =
+              new java.util.ArrayList[SendMessageBatchRequestEntry](messages.size)
             var id = 0
             messages.foreach { message =>
               val entry = new SendMessageBatchRequestEntry(id.toString, message.getMessageBody)
