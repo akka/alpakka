@@ -524,7 +524,7 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
       channel
         .register(sel, SelectionKey.OP_CONNECT, connectKey(remoteAddress, connectionFinished, cancellable, context) _)
     val connection = Try(channel.connect(remoteAddress))
-    connection.failed.foreach(e => connectionFinished.failure(e))
+    connection.failed.foreach(e => connectionFinished.tryFailure(e))
 
     connectionFlow
       .merge(Source.fromFuture(connectionFinished.future.map(_ => ByteString.empty)))
