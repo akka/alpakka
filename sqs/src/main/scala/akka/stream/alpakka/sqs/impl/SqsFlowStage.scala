@@ -6,7 +6,7 @@ package akka.stream.alpakka.sqs.impl
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.stream.alpakka.sqs.Result
+import akka.stream.alpakka.sqs.SqsPublishResult
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
@@ -20,10 +20,10 @@ import scala.util.{Failure, Success, Try}
  * INTERNAL API
  */
 @InternalApi private[sqs] final class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
-    extends GraphStage[FlowShape[SendMessageRequest, Future[Result]]] {
+    extends GraphStage[FlowShape[SendMessageRequest, Future[SqsPublishResult]]] {
 
   private val in = Inlet[SendMessageRequest]("messages")
-  private val out = Outlet[Future[Result]]("result")
+  private val out = Outlet[Future[SqsPublishResult]]("result")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -87,7 +87,7 @@ import scala.util.{Failure, Success, Try}
           override def onPush() = {
             inFlight += 1
             val msg = grab(in).withQueueUrl(queueUrl)
-            val responsePromise = Promise[Result]
+            val responsePromise = Promise[SqsPublishResult]
 
             val handler = new AsyncHandler[SendMessageRequest, SendMessageResult] {
 
@@ -97,7 +97,7 @@ import scala.util.{Failure, Success, Try}
               }
 
               override def onSuccess(request: SendMessageRequest, result: SendMessageResult): Unit = {
-                responsePromise.success(Result(result, msg.getMessageBody))
+                responsePromise.success(SqsPublishResult(result, msg.getMessageBody))
                 sendCallback.invoke(result)
               }
             }

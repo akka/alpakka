@@ -5,13 +5,13 @@
 package docs.javadsl;
 
 import akka.Done;
-import akka.stream.alpakka.sqs.SqsAckSinkSettings;
-import akka.stream.alpakka.sqs.SqsBatchAckFlowSettings;
-import akka.stream.alpakka.sqs.SqsBatchFlowSettings;
-import akka.stream.alpakka.sqs.SqsSinkSettings;
+import akka.stream.alpakka.sqs.SqsAckSettings;
+import akka.stream.alpakka.sqs.SqsAckBatchSettings;
+import akka.stream.alpakka.sqs.SqsPublishBatchSettings;
+import akka.stream.alpakka.sqs.SqsPublishSettings;
 import akka.stream.alpakka.sqs.javadsl.BaseSqsTest;
-import akka.stream.alpakka.sqs.javadsl.SqsFlow;
-import akka.stream.alpakka.sqs.javadsl.SqsSink;
+import akka.stream.alpakka.sqs.javadsl.SqsPublishFlow;
+import akka.stream.alpakka.sqs.javadsl.SqsPublishSink;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.amazonaws.services.sqs.model.Message;
@@ -27,24 +27,21 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
-public class SqsSinkTest extends BaseSqsTest {
+public class SqsPublishSinkTest extends BaseSqsTest {
 
   @Test
   public void constructBatchSettings() {
     // #SqsBatchFlowSettings
-    SqsBatchFlowSettings batchSettings =
-        SqsBatchFlowSettings.Defaults()
-            .withMaxBatchSize(10)
-            .withMaxBatchWait(Duration.ofMillis(500))
-            .withConcurrentRequests(1);
+    SqsPublishBatchSettings batchSettings =
+        SqsPublishBatchSettings.Defaults().withConcurrentRequests(1);
     // #SqsBatchFlowSettings
-    assertEquals(10, batchSettings.maxBatchSize());
+    assertEquals(1, batchSettings.concurrentRequests());
   }
 
   @Test
   public void constructSinkSettings() {
     // #SqsSinkSettings
-    SqsSinkSettings sinkSettings = SqsSinkSettings.Defaults().withMaxInFlight(10);
+    SqsPublishSettings sinkSettings = SqsPublishSettings.Defaults().withMaxInFlight(10);
     // #SqsSinkSettings
     assertEquals(10, sinkSettings.maxInFlight());
   }
@@ -52,7 +49,7 @@ public class SqsSinkTest extends BaseSqsTest {
   @Test
   public void constructAckSinkSettings() {
     // #SqsAckSinkSettings
-    SqsAckSinkSettings sinkSettings = SqsAckSinkSettings.Defaults().withMaxInFlight(10);
+    SqsAckSettings sinkSettings = SqsAckSettings.Defaults().withMaxInFlight(10);
     // #SqsAckSinkSettings
     assertEquals(10, sinkSettings.maxInFlight());
   }
@@ -60,8 +57,8 @@ public class SqsSinkTest extends BaseSqsTest {
   @Test
   public void constructBatchAckSinkSettings() {
     // #SqsBatchAckFlowSettings
-    SqsBatchAckFlowSettings flowSettings =
-        SqsBatchAckFlowSettings.Defaults()
+    SqsAckBatchSettings flowSettings =
+        SqsAckBatchSettings.Defaults()
             .withMaxBatchSize(10)
             .withMaxBatchWait(Duration.ofMillis(500))
             .withConcurrentRequests(1);
@@ -76,7 +73,7 @@ public class SqsSinkTest extends BaseSqsTest {
 
     // #run-string
     CompletionStage<Done> done =
-        Source.single("alpakka").runWith(SqsSink.create(queueUrl, sqsClient), materializer);
+        Source.single("alpakka").runWith(SqsPublishSink.create(queueUrl, sqsClient), materializer);
     // #run-string
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
     List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
@@ -93,7 +90,7 @@ public class SqsSinkTest extends BaseSqsTest {
     // #run-send-request
     CompletionStage<Done> done =
         Source.single(new SendMessageRequest().withMessageBody("alpakka"))
-            .runWith(SqsSink.messageSink(queueUrl, sqsClient), materializer);
+            .runWith(SqsPublishSink.messageSink(queueUrl, sqsClient), materializer);
     // #run-send-request
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
     List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
@@ -109,7 +106,7 @@ public class SqsSinkTest extends BaseSqsTest {
     // #flow
     CompletionStage<Done> done =
         Source.single(new SendMessageRequest(queueUrl, "alpakka-flow"))
-            .via(SqsFlow.create(queueUrl, sqsClient))
+            .via(SqsPublishFlow.create(queueUrl, sqsClient))
             .runWith(Sink.ignore(), materializer);
     // #flow
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
@@ -130,7 +127,8 @@ public class SqsSinkTest extends BaseSqsTest {
     }
 
     CompletionStage<Done> done =
-        Source.from(messagesToSend).runWith(SqsSink.grouped(queueUrl, sqsClient), materializer);
+        Source.from(messagesToSend)
+            .runWith(SqsPublishSink.grouped(queueUrl, sqsClient), materializer);
     // #group
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
@@ -160,7 +158,7 @@ public class SqsSinkTest extends BaseSqsTest {
     Iterable<String> it = messagesToSend;
 
     CompletionStage<Done> done =
-        Source.single(it).runWith(SqsSink.batch(queueUrl, sqsClient), materializer);
+        Source.single(it).runWith(SqsPublishSink.batch(queueUrl, sqsClient), materializer);
     // #batch-string
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
@@ -185,7 +183,8 @@ public class SqsSinkTest extends BaseSqsTest {
     Iterable<SendMessageRequest> it = messagesToSend;
 
     CompletionStage<Done> done =
-        Source.single(it).runWith(SqsSink.batchedMessageSink(queueUrl, sqsClient), materializer);
+        Source.single(it)
+            .runWith(SqsPublishSink.batchedMessageSink(queueUrl, sqsClient), materializer);
     // #batch-send-request
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
@@ -209,7 +208,7 @@ public class SqsSinkTest extends BaseSqsTest {
 
     CompletionStage<Done> done =
         Source.from(messagesToSend)
-            .via(SqsFlow.grouped(queueUrl, sqsClient))
+            .via(SqsPublishFlow.grouped(queueUrl, sqsClient))
             .runWith(Sink.ignore(), materializer);
 
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
@@ -235,7 +234,7 @@ public class SqsSinkTest extends BaseSqsTest {
 
     CompletionStage<Done> done =
         Source.single(it)
-            .via(SqsFlow.batch(queueUrl, sqsClient))
+            .via(SqsPublishFlow.batch(queueUrl, sqsClient))
             .runWith(Sink.ignore(), materializer);
 
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
@@ -255,7 +254,7 @@ public class SqsSinkTest extends BaseSqsTest {
 
     CompletionStage<Done> done =
         Source.single(new SendMessageRequest(queueUrl, "alpakka-flow"))
-            .via(SqsFlow.create(queueUrl, sqsClient))
+            .via(SqsPublishFlow.create(queueUrl, sqsClient))
             .runWith(Sink.ignore(), materializer);
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
     List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();

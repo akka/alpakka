@@ -12,21 +12,19 @@ import scala.concurrent.duration._
 
 class SettingsSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
-  "SqsBatchFlowSettings" should "construct settings" in {
+  "SqsPublishBatchSettings" should "construct settings" in {
     //#SqsBatchFlowSettings
     val batchSettings =
-      SqsBatchFlowSettings()
-        .withMaxBatchSize(10)
-        .withMaxBatchWait(500.millis)
+      SqsPublishBatchSettings()
         .withConcurrentRequests(1)
     //#SqsBatchFlowSettings
-    batchSettings.maxBatchSize should be(10)
+    batchSettings.concurrentRequests should be(1)
   }
 
   "SqsSinkSettings" should "construct settings" in {
     //#SqsSinkSettings
     val sinkSettings =
-      SqsSinkSettings()
+      SqsPublishSettings()
         .withMaxInFlight(10)
     //#SqsSinkSettings
     sinkSettings.maxInFlight should be(10)
@@ -35,7 +33,7 @@ class SettingsSnippetsSpec extends FlatSpec with Matchers with DefaultTestContex
   "SqsAckSinkSettings" should "construct settings" in {
     //#SqsAckSinkSettings
     val sinkSettings =
-      SqsAckSinkSettings()
+      SqsAckSettings()
         .withMaxInFlight(10)
     //#SqsAckSinkSettings
     sinkSettings.maxInFlight should be(10)
@@ -44,7 +42,7 @@ class SettingsSnippetsSpec extends FlatSpec with Matchers with DefaultTestContex
   "SqsBatchAckFlowSettings" should "construct settings" in {
     //#SqsBatchAckFlowSettings
     val batchSettings =
-      SqsBatchAckFlowSettings()
+      SqsAckBatchSettings()
         .withMaxBatchSize(10)
         .withMaxBatchWait(500.millis)
         .withConcurrentRequests(1)

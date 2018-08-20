@@ -4,18 +4,18 @@
 
 package akka.stream.alpakka.sqs.scaladsl
 
-import akka.stream.alpakka.sqs.SqsSinkSettings
+import akka.stream.alpakka.sqs.SqsPublishSettings
 import org.scalatest.{FlatSpec, Matchers}
 
-class SqsSinkSettingsSpec extends FlatSpec with Matchers {
+class SqsPublishSettingsSpec extends FlatSpec with Matchers {
 
   it should "require valid maxInFlight" in {
     a[IllegalArgumentException] should be thrownBy {
-      SqsSinkSettings(0)
+      SqsPublishSettings(0)
     }
   }
 
   it should "accept valid parameters" in {
-    SqsSinkSettings(1)
+    SqsPublishSettings(1)
   }
 }

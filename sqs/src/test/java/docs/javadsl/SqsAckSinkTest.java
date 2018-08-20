@@ -5,25 +5,18 @@
 package docs.javadsl;
 
 import akka.Done;
-import akka.actor.ActorSystem;
-import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.sqs.MessageAction;
-import akka.stream.alpakka.sqs.AckResult;
+import akka.stream.alpakka.sqs.SqsAckResult;
 import akka.stream.alpakka.sqs.javadsl.BaseSqsTest;
 import akka.stream.alpakka.sqs.javadsl.SqsAckFlow;
 import akka.stream.alpakka.sqs.javadsl.SqsAckSink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
-import akka.testkit.javadsl.TestKit;
 import com.amazonaws.handlers.AsyncHandler;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.model.*;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.Option;
-import scala.Tuple2;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -121,12 +114,12 @@ public class SqsAckSinkTest extends BaseSqsTest {
 
     // #ignore
     MessageAction action = MessageAction.ignore(new Message().withBody("test"));
-    CompletionStage<AckResult> stage =
+    CompletionStage<SqsAckResult> stage =
         Source.single(action)
             .via(SqsAckFlow.create(queueUrl, awsClient))
             .runWith(Sink.head(), materializer);
     // #ignore
-    AckResult result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    SqsAckResult result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
     assertEquals(Option.empty(), result.metadata());
     assertEquals("test", result.message());
@@ -204,12 +197,12 @@ public class SqsAckSinkTest extends BaseSqsTest {
     for (int i = 0; i < 10; i++) {
       messages.add(MessageAction.ignore(new Message().withBody("test")));
     }
-    CompletionStage<List<AckResult>> stage =
+    CompletionStage<List<SqsAckResult>> stage =
         Source.fromIterator(() -> messages.iterator())
             .via(SqsAckFlow.grouped(queueUrl, awsClient))
             .runWith(Sink.seq(), materializer);
     // #batch-ignore
-    List<AckResult> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    List<SqsAckResult> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
     assertEquals(10, result.size());
     for (int i = 0; i < 10; i++) {

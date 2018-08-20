@@ -5,7 +5,7 @@
 package akka.stream.alpakka.sqs.impl
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.sqs.{AckResult, BatchException, MessageAction}
+import akka.stream.alpakka.sqs.{SqsAckResult, SqsBatchException, MessageAction}
 import akka.stream.stage.{AsyncCallback, GraphStage, GraphStageLogic}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
@@ -24,13 +24,13 @@ import scala.concurrent.{Future, Promise}
  */
 @InternalApi private[sqs] final class SqsBatchChangeMessageVisibilityFlowStage(queueUrl: String,
                                                                                sqsClient: AmazonSQSAsync)
-    extends GraphStage[FlowShape[Iterable[MessageAction.ChangeMessageVisibility], Future[List[AckResult]]]] {
+    extends GraphStage[FlowShape[Iterable[MessageAction.ChangeMessageVisibility], Future[List[SqsAckResult]]]] {
   private val in = Inlet[Iterable[MessageAction.ChangeMessageVisibility]]("messages")
-  private val out = Outlet[Future[List[AckResult]]]("results")
+  private val out = Outlet[Future[List[SqsAckResult]]]("results")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new SqsBatchActionStage(shape) {
+    new SqsBatchStageLogic(shape) {
       private def handleChangeVisibility(request: ChangeMessageVisibilityBatchRequest): Unit = {
         val entries = request.getEntries
         for (entry <- entries.asScala)
@@ -47,7 +47,7 @@ import scala.concurrent.{Future, Promise}
         val messagesIt = grab(in)
         val messages = messagesIt.toList
         val nrOfMessages = messages.size
-        val responsePromise = Promise[List[AckResult]]
+        val responsePromise = Promise[List[SqsAckResult]]
         inFlight += nrOfMessages
 
         sqsClient
@@ -64,7 +64,7 @@ import scala.concurrent.{Future, Promise}
             ),
             new AsyncHandler[ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchResult]() {
               override def onError(exception: Exception): Unit = {
-                val batchException = new BatchException(messages.size, exception)
+                val batchException = new SqsBatchException(messages.size, exception)
                 responsePromise.failure(batchException)
                 failureCallback.invoke(batchException)
               }
@@ -73,8 +73,8 @@ import scala.concurrent.{Future, Promise}
                                      result: ChangeMessageVisibilityBatchResult): Unit =
                 if (!result.getFailed.isEmpty) {
                   val nrOfFailedMessages = result.getFailed.size()
-                  val batchException: BatchException =
-                    new BatchException(
+                  val batchException: SqsBatchException =
+                    new SqsBatchException(
                       batchSize = nrOfMessages,
                       cause = new Exception(
                         s"Some messages failed to change visibility. $nrOfFailedMessages of $nrOfMessages messages failed"
@@ -83,7 +83,7 @@ import scala.concurrent.{Future, Promise}
                   responsePromise.failure(batchException)
                   failureCallback.invoke(batchException)
                 } else {
-                  responsePromise.success(messages.map(msg => AckResult(Some(result), msg.message.getBody)))
+                  responsePromise.success(messages.map(msg => SqsAckResult(Some(result), msg.message.getBody)))
                   changeVisibilityCallback.invoke(request)
                 }
             }

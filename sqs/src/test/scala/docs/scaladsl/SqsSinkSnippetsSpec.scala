@@ -18,7 +18,7 @@ import org.scalatest.{FlatSpec, Matchers}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class SinkSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
+class SqsSinkSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   private val sqsSourceSettings = SqsSourceSettings.Defaults
 
@@ -30,7 +30,7 @@ class SinkSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
       //#run-string
       Source
         .single("alpakka")
-        .runWith(SqsSink(queue))
+        .runWith(SqsPublishSink(queue))
     //#run-string
     Await.ready(future, 1.second)
 
@@ -47,7 +47,7 @@ class SinkSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
       //#run-send-request
       Source
         .single(new SendMessageRequest().withMessageBody("alpakka"))
-        .runWith(SqsSink.messageSink(queue))
+        .runWith(SqsPublishSink.messageSink(queue))
     //#run-send-request
 
     future.futureValue shouldBe Done
@@ -121,7 +121,7 @@ class SinkSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val messages = for (i <- 0 until 20) yield s"Message - $i"
 
     val future = Source(messages)
-      .runWith(SqsSink.grouped(queue))
+      .runWith(SqsPublishSink.grouped(queue))
     //#group
 
     future.futureValue shouldBe Done
@@ -145,7 +145,7 @@ class SinkSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val future = Source
       .single(messages)
-      .runWith(SqsSink.batch(queue))
+      .runWith(SqsPublishSink.batch(queue))
     //#batch-string
 
     future.futureValue shouldBe Done
@@ -169,7 +169,7 @@ class SinkSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val future = Source
       .single(messages)
-      .runWith(SqsSink.batchedMessageSink(queue))
+      .runWith(SqsPublishSink.batchedMessageSink(queue))
     //#batch-send-request
 
     future.futureValue shouldBe Done

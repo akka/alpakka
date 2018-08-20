@@ -24,7 +24,7 @@ import org.scalatest.{FlatSpec, Matchers}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
+class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   "Sqs Sink" should "send a message" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
@@ -45,7 +45,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       }
     )
 
-    val (probe, future) = TestSource.probe[String].toMat(SqsSink("notused"))(Keep.both).run()
+    val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink("notused"))(Keep.both).run()
     probe.sendNext("notused").sendComplete()
     Await.result(future, 1.second) shouldBe Done
 
@@ -68,7 +68,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       }
     )
 
-    val (probe, future) = TestSource.probe[String].toMat(SqsSink("notused"))(Keep.both).run()
+    val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink("notused"))(Keep.both).run()
     probe.sendNext("notused").sendComplete()
 
     a[RuntimeException] should be thrownBy {
@@ -79,9 +79,29 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       .sendMessageAsync(any[SendMessageRequest](), any[AsyncHandler[SendMessageRequest, SendMessageResult]]())
   }
 
+  it should "pull a message and publish it to another queue" taggedAs Integration in {
+    val queue1 = randomQueueUrl()
+    val queue2 = randomQueueUrl()
+    implicit val awsSqsClient = sqsClient
+
+    sqsClient.sendMessage(queue1, "alpakka")
+
+    val future = SqsSource(queue1, SqsSourceSettings.Defaults)
+      .take(1)
+      .map { m: Message =>
+        m.getBody
+      }
+      .runWith(SqsPublishSink(queue2))
+    future.futureValue shouldBe Done
+
+    val result = sqsClient.receiveMessage(queue2)
+    result.getMessages.size() shouldBe 1
+    result.getMessages.get(0).getBody shouldBe "alpakka"
+  }
+
   it should "failure the promise on upstream failure" in {
     implicit val sqsClient: AmazonSQSAsync = mock[AmazonSQSAsync]
-    val (probe, future) = TestSource.probe[String].toMat(SqsSink("notused"))(Keep.both).run()
+    val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink("notused"))(Keep.both).run()
 
     probe.sendError(new RuntimeException("Fake upstream failure"))
 
@@ -108,7 +128,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       }
     )
 
-    val (probe, future) = TestSource.probe[String].toMat(SqsSink("notused"))(Keep.both).run()
+    val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink("notused"))(Keep.both).run()
     probe
       .sendNext("test-101")
       .sendNext("test-102")
@@ -144,7 +164,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       }
     )
 
-    val (probe, future) = TestSource.probe[String].toMat(SqsSink.grouped("notused"))(Keep.both).run()
+    val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink.grouped("notused"))(Keep.both).run()
     probe.sendNext("notused").sendComplete()
     Await.result(future, 1.second) shouldBe Done
 
@@ -179,9 +199,9 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
         }
       }
     )
-    val settings: SqsBatchFlowSettings = SqsBatchFlowSettings(5, 500.millis, 1)
+    val settings = SqsPublishGroupedSettings(5, 500.millis, 1)
 
-    val (probe, future) = TestSource.probe[String].toMat(SqsSink.grouped("notused", settings))(Keep.both).run()
+    val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink.grouped("notused", settings))(Keep.both).run()
     probe
       .sendNext("notused - 1")
       .sendNext("notused - 2")
@@ -231,7 +251,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       }
     )
 
-    val (probe, future) = TestSource.probe[String].toMat(SqsSink.grouped("notused"))(Keep.both).run()
+    val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink.grouped("notused"))(Keep.both).run()
     probe
       .sendNext("notused - 1")
       .sendNext("notused - 2")
@@ -239,7 +259,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       .sendNext("notused - 4")
       .sendNext("notused - 5")
       .sendComplete()
-    a[BatchException] should be thrownBy {
+    a[SqsBatchException] should be thrownBy {
       Await.result(future, 1.second)
     }
 
@@ -265,8 +285,8 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       }
     )
 
-    val settings: SqsBatchFlowSettings = SqsBatchFlowSettings(5, 500.millis, 1)
-    val (probe, future) = TestSource.probe[String].toMat(SqsSink.grouped("notused", settings))(Keep.both).run()
+    val settings = SqsPublishGroupedSettings(5, 500.millis, 1)
+    val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink.grouped("notused", settings))(Keep.both).run()
     probe
       .sendNext("notused - 1")
       .sendNext("notused - 2")
@@ -274,7 +294,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       .sendNext("notused - 4")
       .sendNext("notused - 5")
       .sendComplete()
-    a[BatchException] should be thrownBy {
+    a[SqsBatchException] should be thrownBy {
       Await.result(future, 1.second)
     }
 
@@ -309,7 +329,7 @@ class SqsSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
       }
     )
 
-    val (probe, future) = TestSource.probe[Seq[String]].toMat(SqsSink.batch("notused"))(Keep.both).run()
+    val (probe, future) = TestSource.probe[Seq[String]].toMat(SqsPublishSink.batch("notused"))(Keep.both).run()
     probe
       .sendNext(
         Seq(

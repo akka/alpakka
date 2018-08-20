@@ -7,6 +7,7 @@ package akka.stream.alpakka.sqs
 import com.amazonaws.services.sqs.model.Message
 
 import scala.compat.java8.OptionConverters._
+import scala.concurrent.duration.Duration
 
 sealed abstract class MessageAction(val message: Message)
 
@@ -48,14 +49,16 @@ object MessageAction {
     // SQS requirements
     require(
       0 <= visibilityTimeout && visibilityTimeout <= 43200,
-      s"Invalid value ($visibilityTimeout) for visibilityTimeout. Requirement: 0 <= waitTimeSeconds <= 43200"
+      s"Invalid value ($visibilityTimeout) for visibilityTimeout. Requirement: 0 <= visibilityTimeout <= 43200"
     )
-    override def toString: String = s"Delete($message)"
+    override def toString: String = s"ChangeMessageVisibility($message, $visibilityTimeout)"
   }
 
   object ChangeMessageVisibility {
     def apply(message: Message, visibilityTimeout: Int): MessageAction =
       new ChangeMessageVisibility(message, visibilityTimeout)
+    def apply(message: Message, visibilityTimeout: Duration): MessageAction =
+      new ChangeMessageVisibility(message, visibilityTimeout.toSeconds.toInt)
   }
 
   /**
@@ -77,6 +80,15 @@ object MessageAction {
   def changeMessageVisibility(message: Message, visibilityTimeout: Int): MessageAction =
     ChangeMessageVisibility(message, visibilityTimeout)
 
+  /**
+    * Java API: Change the visibility timeout of the message.
+    *
+    * @param message the message to change
+    * @param visibilityTimeout new timeout
+    */
+  def changeMessageVisibility(message: Message, visibilityTimeout: java.time.Duration): MessageAction =
+    ChangeMessageVisibility(message, visibilityTimeout.getSeconds.toInt)
+
 }
 
 /**
@@ -84,7 +96,7 @@ object MessageAction {
  * @param metadata metadata with AWS response details.
  * @param message message body.
  */
-final class Result private (val metadata: com.amazonaws.services.sqs.model.SendMessageResult, val message: String) {
+final class SqsPublishResult private (val metadata: com.amazonaws.services.sqs.model.SendMessageResult, val message: String) {
 
   /** Java API */
   def getMetadata: com.amazonaws.services.sqs.model.SendMessageResult = metadata
@@ -93,10 +105,10 @@ final class Result private (val metadata: com.amazonaws.services.sqs.model.SendM
   def getMessage: String = message
 
   override def toString =
-    s"""Result(metadata=$metadata,message=$message)"""
+    s"""SqsPublishResult(metadata=$metadata,message=$message)"""
 
   override def equals(other: Any): Boolean = other match {
-    case that: Result =>
+    case that: SqsPublishResult =>
       java.util.Objects.equals(this.metadata, that.metadata) &&
       java.util.Objects.equals(this.message, that.message)
     case _ => false
@@ -106,13 +118,13 @@ final class Result private (val metadata: com.amazonaws.services.sqs.model.SendM
     java.util.Objects.hash(metadata, message)
 }
 
-object Result {
+object SqsPublishResult {
 
   /** Scala API */
   def apply(
       metadata: com.amazonaws.services.sqs.model.SendMessageResult,
       message: String
-  ): Result = new Result(
+  ): SqsPublishResult = new SqsPublishResult(
     metadata,
     message
   )
@@ -121,13 +133,13 @@ object Result {
   def create(
       metadata: com.amazonaws.services.sqs.model.SendMessageResult,
       message: String
-  ): Result = new Result(
+  ): SqsPublishResult = new SqsPublishResult(
     metadata,
     message
   )
 }
 
-final class AckResult private (
+final class SqsAckResult private (
     val metadata: Option[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]],
     val message: String
 ) {
@@ -140,10 +152,10 @@ final class AckResult private (
   def getMessage: String = message
 
   override def toString =
-    s"""AckResult(metadata=$metadata,message=$message)"""
+    s"""SqsAckResult(metadata=$metadata,message=$message)"""
 
   override def equals(other: Any): Boolean = other match {
-    case that: AckResult =>
+    case that: SqsAckResult =>
       java.util.Objects.equals(this.metadata, that.metadata) &&
       java.util.Objects.equals(this.message, that.message)
     case _ => false
@@ -153,13 +165,13 @@ final class AckResult private (
     java.util.Objects.hash(metadata, message)
 }
 
-object AckResult {
+object SqsAckResult {
 
   /** Scala API */
   def apply(
       metadata: Option[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]],
       message: String
-  ): AckResult = new AckResult(
+  ): SqsAckResult = new SqsAckResult(
     metadata,
     message
   )
@@ -168,7 +180,7 @@ object AckResult {
   def create(
       metadata: java.util.Optional[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]],
       message: String
-  ): AckResult = new AckResult(
+  ): SqsAckResult = new SqsAckResult(
     metadata.asScala,
     message
   )

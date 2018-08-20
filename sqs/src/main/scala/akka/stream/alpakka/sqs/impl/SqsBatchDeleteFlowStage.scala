@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.sqs.impl
 import akka.annotation.InternalApi
-import akka.stream.alpakka.sqs.{AckResult, BatchException}
+import akka.stream.alpakka.sqs.{SqsAckResult, SqsBatchException}
 import akka.stream.stage.{AsyncCallback, GraphStage, GraphStageLogic}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
@@ -23,13 +23,13 @@ import scala.concurrent.{Future, Promise}
  * INTERNAL API
  */
 @InternalApi private[sqs] final class SqsBatchDeleteFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
-    extends GraphStage[FlowShape[Iterable[Message], Future[List[AckResult]]]] {
+    extends GraphStage[FlowShape[Iterable[Message], Future[List[SqsAckResult]]]] {
   private val in = Inlet[Iterable[Message]]("messages")
-  private val out = Outlet[Future[List[AckResult]]]("results")
+  private val out = Outlet[Future[List[SqsAckResult]]]("results")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new SqsBatchActionStage[Iterable[Message]](shape) {
+    new SqsBatchStageLogic[Iterable[Message]](shape) {
       private var deleteCallback: AsyncCallback[DeleteMessageBatchRequest] = _
 
       override def preStart(): Unit = {
@@ -47,7 +47,7 @@ import scala.concurrent.{Future, Promise}
         val messagesIt = grab(in)
         val messages = messagesIt.toList
         val nrOfMessages = messages.size
-        val responsePromise = Promise[List[AckResult]]
+        val responsePromise = Promise[List[SqsAckResult]]
         inFlight += nrOfMessages
 
         val request = new DeleteMessageBatchRequest(
@@ -59,7 +59,7 @@ import scala.concurrent.{Future, Promise}
         )
         val handler = new AsyncHandler[DeleteMessageBatchRequest, DeleteMessageBatchResult]() {
           override def onError(exception: Exception): Unit = {
-            val batchException = new BatchException(messages.size, exception)
+            val batchException = new SqsBatchException(messages.size, exception)
             responsePromise.failure(batchException)
             failureCallback.invoke(batchException)
           }
@@ -67,8 +67,8 @@ import scala.concurrent.{Future, Promise}
           override def onSuccess(request: DeleteMessageBatchRequest, result: DeleteMessageBatchResult): Unit =
             if (!result.getFailed.isEmpty) {
               val nrOfFailedMessages = result.getFailed.size()
-              val batchException: BatchException =
-                new BatchException(
+              val batchException: SqsBatchException =
+                new SqsBatchException(
                   batchSize = nrOfMessages,
                   cause = new Exception(
                     s"Some messages failed to delete. $nrOfFailedMessages of $nrOfMessages messages failed"
@@ -77,7 +77,7 @@ import scala.concurrent.{Future, Promise}
               responsePromise.failure(batchException)
               failureCallback.invoke(batchException)
             } else {
-              responsePromise.success(messages.map(msg => AckResult(Some(result), msg.getBody)))
+              responsePromise.success(messages.map(msg => SqsAckResult(Some(result), msg.getBody)))
               deleteCallback.invoke(request)
             }
 

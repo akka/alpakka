@@ -7,7 +7,7 @@ package akka.stream.alpakka.sqs.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.Done
-import akka.stream.alpakka.sqs.{scaladsl, MessageAction, SqsAckSinkSettings}
+import akka.stream.alpakka.sqs.{scaladsl, MessageAction, SqsAckSettings}
 import akka.stream.javadsl.Sink
 import com.amazonaws.services.sqs.AmazonSQSAsync
 
@@ -22,7 +22,7 @@ object SqsAckSink {
    * Creates a sink for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
    */
   def create(queueUrl: String,
-             settings: SqsAckSinkSettings,
+             settings: SqsAckSettings,
              sqsClient: AmazonSQSAsync): Sink[MessageAction, CompletionStage[Done]] =
     scaladsl.SqsAckSink
       .apply(queueUrl, settings)(sqsClient)
@@ -34,6 +34,6 @@ object SqsAckSink {
    * [[com.amazonaws.services.sqs.AmazonSQSAsync]] with default settings.
    */
   def create(queueUrl: String, sqsClient: AmazonSQSAsync): Sink[MessageAction, CompletionStage[Done]] =
-    create(queueUrl, SqsAckSinkSettings.Defaults, sqsClient)
+    create(queueUrl, SqsAckSettings.Defaults, sqsClient)
 
 }

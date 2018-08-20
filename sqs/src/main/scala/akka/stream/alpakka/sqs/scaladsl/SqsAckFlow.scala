@@ -23,14 +23,14 @@ object SqsAckFlow {
   /**
    * Creates flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
    */
-  def apply(queueUrl: String, settings: SqsAckSinkSettings = SqsAckSinkSettings.Defaults)(
+  def apply(queueUrl: String, settings: SqsAckSettings = SqsAckSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
-  ): Flow[MessageAction, AckResult, NotUsed] =
+  ): Flow[MessageAction, SqsAckResult, NotUsed] =
     Flow.fromGraph(new SqsAckFlowStage(queueUrl, sqsClient)).mapAsync(settings.maxInFlight)(identity)
 
-  def grouped(queueUrl: String, settings: SqsBatchAckFlowSettings = SqsBatchAckFlowSettings.Defaults)(
+  def grouped(queueUrl: String, settings: SqsAckGroupedSettings = SqsAckGroupedSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
-  ): Flow[MessageAction, AckResult, NotUsed] = {
+  ): Flow[MessageAction, SqsAckResult, NotUsed] = {
     val graph = GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._
 
@@ -44,14 +44,14 @@ object SqsAckFlow {
 
       val sqsDeleteStage = new SqsBatchDeleteFlowStage(queueUrl, sqsClient)
       val sqsChangeVisibilityStage = new SqsBatchChangeMessageVisibilityFlowStage(queueUrl, sqsClient)
-      val flattenFutures = Flow[Future[List[AckResult]]].mapAsync(settings.concurrentRequests)(identity)
-      val ignore = Flow[MessageAction].map(x => Future.successful(List(AckResult(None, x.message.getBody))))
+      val flattenFutures = Flow[Future[List[SqsAckResult]]].mapAsync(settings.concurrentRequests)(identity)
+      val ignore = Flow[MessageAction].map(x => Future.successful(List(SqsAckResult(None, x.message.getBody))))
       val getMessage = Flow[MessageAction].map(_.message)
       val getMessageChangeVisibility =
         Flow[MessageAction].map(_.asInstanceOf[ChangeMessageVisibility])
 
-      val mergeResults = builder.add(Merge[Future[List[AckResult]]](3))
-      val flattenResults = builder.add(Flow[List[AckResult]].mapConcat(identity))
+      val mergeResults = builder.add(Merge[Future[List[SqsAckResult]]](3))
+      val flattenResults = builder.add(Flow[List[SqsAckResult]].mapConcat(identity))
 
       partitionByAction.out(0) ~> getMessage ~> groupingStage[Message] ~> sqsDeleteStage ~> mergeResults ~> flattenFutures ~> flattenResults
       partitionByAction.out(1) ~> getMessageChangeVisibility ~> groupingStage[ChangeMessageVisibility] ~> sqsChangeVisibilityStage ~> mergeResults

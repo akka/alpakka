@@ -21,35 +21,13 @@ import org.scalatest.{FlatSpec, Matchers}
 
 class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
-  private val sqsSourceSettings = SqsSourceSettings.Defaults
-
-  it should "pull a message and publish it to another queue" taggedAs Integration in {
-    val queue1 = randomQueueUrl()
-    val queue2 = randomQueueUrl()
-    implicit val awsSqsClient = sqsClient
-
-    sqsClient.sendMessage(queue1, "alpakka")
-
-    val future = SqsSource(queue1, sqsSourceSettings)
-      .take(1)
-      .map { m: Message =>
-        m.getBody
-      }
-      .runWith(SqsSink(queue2))
-    future.futureValue shouldBe Done
-
-    val result = sqsClient.receiveMessage(queue2)
-    result.getMessages.size() shouldBe 1
-    result.getMessages.get(0).getBody shouldBe "alpakka"
-  }
-
   it should "delete all messages in batches of given size" taggedAs Integration in {
     val queue = randomQueueUrl()
     implicit val awsSqsClient = spy(sqsClient)
 
     val messages = for (i <- 0 until 10) yield new SendMessageRequest().withMessageBody(s"Message - $i")
 
-    val future1 = Source(messages).via(SqsFlow(queue)).runWith(Sink.ignore)
+    val future1 = Source(messages).via(SqsPublishFlow(queue)).runWith(Sink.ignore)
     future1.futureValue shouldBe Done
 
     val future = SqsSource(queue)
@@ -57,7 +35,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       .map { m: Message =>
         MessageAction.Delete(m)
       }
-      .via(SqsAckFlow.grouped(queue, SqsBatchAckFlowSettings().withMaxBatchSize(5)))
+      .via(SqsAckFlow.grouped(queue, SqsAckGroupedSettings().withMaxBatchSize(5)))
       .runWith(Sink.ignore)
 
     future.futureValue shouldBe Done
@@ -89,9 +67,9 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       .map { m: Message =>
         MessageAction.Delete(m)
       }
-      .via(SqsAckFlow.grouped("queue", SqsBatchAckFlowSettings.Defaults))
+      .via(SqsAckFlow.grouped("queue", SqsAckGroupedSettings.Defaults))
       .runWith(Sink.ignore)
-    future.failed.futureValue shouldBe a[BatchException]
+    future.failed.futureValue shouldBe a[SqsBatchException]
   }
 
   it should "fail if the batch request failed" in {
@@ -115,10 +93,10 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       .map { m: Message =>
         MessageAction.Delete(m)
       }
-      .via(SqsAckFlow.grouped("queue", SqsBatchAckFlowSettings.Defaults))
+      .via(SqsAckFlow.grouped("queue", SqsAckGroupedSettings.Defaults))
       .runWith(Sink.ignore)
 
-    future.failed.futureValue shouldBe a[BatchException]
+    future.failed.futureValue shouldBe a[SqsBatchException]
   }
 
   it should "fail if the client invocation failed" in {
@@ -135,7 +113,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
       .map { m: Message =>
         MessageAction.Delete(m)
       }
-      .via(SqsAckFlow.grouped("queue", SqsBatchAckFlowSettings.Defaults))
+      .via(SqsAckFlow.grouped("queue", SqsAckGroupedSettings.Defaults))
       .runWith(Sink.ignore)
 
     future.failed.futureValue shouldBe a[RuntimeException]
@@ -147,7 +125,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val messages = for (i <- 0 until 10) yield new SendMessageRequest().withMessageBody(s"Message - $i")
 
-    val future1 = Source(messages).via(SqsFlow(queue)).runWith(Sink.ignore)
+    val future1 = Source(messages).via(SqsPublishFlow(queue)).runWith(Sink.ignore)
     future1.futureValue shouldBe Done
 
     var i = 0
@@ -164,7 +142,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
         i += 1
         msg
       }
-      .via(SqsAckFlow.grouped(queue, SqsBatchAckFlowSettings.Defaults))
+      .via(SqsAckFlow.grouped(queue, SqsAckGroupedSettings.Defaults))
       .runWith(Sink.ignore)
 
     future.futureValue shouldBe Done

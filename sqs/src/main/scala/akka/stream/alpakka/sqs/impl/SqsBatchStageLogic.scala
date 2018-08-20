@@ -5,13 +5,13 @@
 package akka.stream.alpakka.sqs.impl
 
 import akka.stream._
-import akka.stream.alpakka.sqs.{AckResult, BatchException}
+import akka.stream.alpakka.sqs.{SqsAckResult, SqsBatchException}
 import akka.stream.stage._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-private abstract class SqsBatchActionStage[A](shape: FlowShape[A, Future[scala.List[AckResult]]])
+private abstract class SqsBatchStageLogic[A](shape: FlowShape[A, Future[scala.List[SqsAckResult]]])
     extends GraphStageLogic(shape)
     with InHandler
     with OutHandler
@@ -22,20 +22,20 @@ private abstract class SqsBatchActionStage[A](shape: FlowShape[A, Future[scala.L
 
   private var completionState: Option[Try[Unit]] = None
 
-  private def handleFailure(exception: BatchException): Unit = {
+  private def handleFailure(exception: SqsBatchException): Unit = {
     log.error(exception, "Client failure: {}", exception)
     inFlight -= exception.batchSize
     failStage(exception)
   }
 
-  protected var failureCallback: AsyncCallback[BatchException] = _
+  protected var failureCallback: AsyncCallback[SqsBatchException] = _
 
   override def preStart(): Unit = {
     super.preStart()
-    failureCallback = getAsyncCallback[BatchException](handleFailure)
+    failureCallback = getAsyncCallback[SqsBatchException](handleFailure)
   }
 
-  override protected def logSource: Class[_] = classOf[SqsBatchActionStage[A]]
+  override protected def logSource: Class[_] = classOf[SqsBatchStageLogic[A]]
 
   def checkForCompletion() =
     if (isClosed(in) && inFlight == 0) {

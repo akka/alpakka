@@ -5,7 +5,7 @@
 package akka.stream.alpakka.sqs.impl
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.sqs.{AckResult, MessageAction}
+import akka.stream.alpakka.sqs.{SqsAckResult, MessageAction}
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
@@ -19,10 +19,10 @@ import scala.util.{Failure, Success, Try}
  * INTERNAL API
  */
 @InternalApi private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
-    extends GraphStage[FlowShape[MessageAction, Future[AckResult]]] {
+    extends GraphStage[FlowShape[MessageAction, Future[SqsAckResult]]] {
 
   private val in = Inlet[MessageAction]("messages")
-  private val out = Outlet[Future[AckResult]]("result")
+  private val out = Outlet[Future[SqsAckResult]]("result")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -97,7 +97,7 @@ import scala.util.{Failure, Success, Try}
             inFlight += 1
             val action = grab(in)
             val message = action.message
-            val responsePromise = Promise[AckResult]
+            val responsePromise = Promise[SqsAckResult]
             action match {
               case _: MessageAction.Delete =>
                 val handler = new AsyncHandler[DeleteMessageRequest, DeleteMessageResult] {
@@ -108,7 +108,7 @@ import scala.util.{Failure, Success, Try}
                   }
 
                   override def onSuccess(request: DeleteMessageRequest, result: DeleteMessageResult): Unit = {
-                    responsePromise.success(AckResult(Some(result), message.getBody))
+                    responsePromise.success(SqsAckResult(Some(result), message.getBody))
                     deleteCallback.invoke(request)
                   }
                 }
@@ -127,7 +127,7 @@ import scala.util.{Failure, Success, Try}
 
                   override def onSuccess(request: ChangeMessageVisibilityRequest,
                                          result: ChangeMessageVisibilityResult): Unit = {
-                    responsePromise.success(AckResult(Some(result), message.getBody))
+                    responsePromise.success(SqsAckResult(Some(result), message.getBody))
                     changeVisibilityCallback.invoke(request)
                   }
                 }
@@ -138,7 +138,7 @@ import scala.util.{Failure, Success, Try}
                   )
 
               case _: MessageAction.Ignore =>
-                responsePromise.success(AckResult(None, message.getBody))
+                responsePromise.success(SqsAckResult(None, message.getBody))
             }
             push(out, responsePromise.future)
           }

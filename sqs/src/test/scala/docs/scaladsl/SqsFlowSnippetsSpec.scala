@@ -17,9 +17,7 @@ import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.duration._
 
-class FlowSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
-
-  private val sqsSourceSettings = SqsSourceSettings.Defaults
+class SqsFlowSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   it should "put message in a flow, then pass the result further" in {
     val queue = randomQueueUrl()
@@ -29,13 +27,13 @@ class FlowSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
       //#flow
       Source
         .single(new SendMessageRequest().withMessageBody("alpakka"))
-        .via(SqsFlow(queue))
+        .via(SqsPublishFlow(queue))
         .runWith(Sink.foreach(result => println(result.message)))
     //#flow
 
     future.futureValue shouldBe Done
 
-    SqsSource(queue, sqsSourceSettings)
+    SqsSource(queue, SqsSourceSettings.Defaults)
       .map(_.getBody)
       .runWith(TestSink.probe[String])
       .request(1)
@@ -78,7 +76,7 @@ class FlowSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
         }
         .via(SqsAckFlow(queue))
         //#ignore
-        .runWith(TestSink.probe[AckResult])
+        .runWith(TestSink.probe[SqsAckResult])
         .requestNext(1.second)
 
     result.metadata shouldBe empty
@@ -91,7 +89,7 @@ class FlowSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val messages = for (i <- 0 until 10) yield new SendMessageRequest().withMessageBody(s"Message - $i")
 
-    val future1 = Source(messages).via(SqsFlow(queue)).runWith(Sink.ignore)
+    val future1 = Source(messages).via(SqsPublishFlow(queue)).runWith(Sink.ignore)
     future1.futureValue shouldBe Done
 
     val future =
@@ -101,7 +99,7 @@ class FlowSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
         .map { m: Message =>
           MessageAction.Delete(m)
         }
-        .via(SqsAckFlow.grouped(queue, SqsBatchAckFlowSettings.Defaults))
+        .via(SqsAckFlow.grouped(queue, SqsAckGroupedSettings.Defaults))
         .runWith(Sink.ignore)
     //#batch-ack
 
@@ -118,7 +116,7 @@ class FlowSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val messages = for (i <- 0 until 10) yield new SendMessageRequest().withMessageBody(s"Message - $i")
 
-    val future1 = Source(messages).via(SqsFlow(queue)).runWith(Sink.ignore)
+    val future1 = Source(messages).via(SqsPublishFlow(queue)).runWith(Sink.ignore)
     future1.futureValue shouldBe Done
 
     val future =
@@ -128,7 +126,7 @@ class FlowSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
         .map { m: Message =>
           MessageAction.ChangeMessageVisibility(m, 5)
         }
-        .via(SqsAckFlow.grouped(queue, SqsBatchAckFlowSettings.Defaults))
+        .via(SqsAckFlow.grouped(queue, SqsAckGroupedSettings.Defaults))
         .runWith(Sink.ignore)
     //#batch-requeue
 
@@ -151,9 +149,9 @@ class FlowSnippetsSpec extends FlatSpec with Matchers with DefaultTestContext {
         .map { m: Message =>
           MessageAction.Ignore(m)
         }
-        .via(SqsAckFlow.grouped("queue", SqsBatchAckFlowSettings.Defaults))
+        .via(SqsAckFlow.grouped("queue", SqsAckGroupedSettings.Defaults))
         //#batch-ignore
-        .runWith(TestSink.probe[AckResult])
+        .runWith(TestSink.probe[SqsAckResult])
 
     for (i <- 0 until 10) {
       val result = stream.requestNext()

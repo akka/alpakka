@@ -8,7 +8,7 @@ import java.util
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.stream.alpakka.sqs.{BatchException, Result}
+import akka.stream.alpakka.sqs.{SqsBatchException, SqsPublishResult}
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
@@ -23,11 +23,11 @@ import scala.util.{Failure, Success, Try}
  * INTERNAL API
  */
 @InternalApi private[sqs] final class SqsBatchFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
-    extends GraphStage[FlowShape[Iterable[SendMessageRequest], Future[List[Result]]]] {
+    extends GraphStage[FlowShape[Iterable[SendMessageRequest], Future[List[SqsPublishResult]]]] {
   private val in = Inlet[Iterable[SendMessageRequest]]("messageBatch")
-  private val out = Outlet[Future[List[Result]]]("batchResult")
+  private val out = Outlet[Future[List[SqsPublishResult]]]("batchResult")
 
-  override def shape: FlowShape[Iterable[SendMessageRequest], Future[List[Result]]] = FlowShape(in, out)
+  override def shape: FlowShape[Iterable[SendMessageRequest], Future[List[SqsPublishResult]]] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
@@ -35,12 +35,12 @@ import scala.util.{Failure, Success, Try}
       var inIsClosed = false
       var completionState: Option[Try[Done]] = None
 
-      var failureCallback: AsyncCallback[BatchException] = _
+      var failureCallback: AsyncCallback[SqsBatchException] = _
       var sendCallback: AsyncCallback[SendMessageBatchResult] = _
 
       override def preStart(): Unit = {
         super.preStart()
-        failureCallback = getAsyncCallback[BatchException] { exception =>
+        failureCallback = getAsyncCallback[SqsBatchException] { exception =>
           inFlight -= exception.batchSize
           failStage(exception)
           if (inFlight == 0 && inIsClosed)
@@ -90,11 +90,11 @@ import scala.util.{Failure, Success, Try}
 
             inFlight += nrOfMessages
 
-            val responsePromise = Promise[List[Result]]
+            val responsePromise = Promise[List[SqsPublishResult]]
 
             val handler = new AsyncHandler[SendMessageBatchRequest, SendMessageBatchResult] {
               override def onError(exception: Exception): Unit = {
-                val batchException = new BatchException(messages.size, exception)
+                val batchException = new SqsBatchException(messages.size, exception)
                 responsePromise.failure(batchException)
                 failureCallback.invoke(batchException)
               }
@@ -102,8 +102,8 @@ import scala.util.{Failure, Success, Try}
               override def onSuccess(request: SendMessageBatchRequest, result: SendMessageBatchResult): Unit =
                 if (!result.getFailed.isEmpty) {
                   val nrOfFailedMessages: Int = result.getFailed.size()
-                  val batchException: BatchException =
-                    new BatchException(
+                  val batchException: SqsBatchException =
+                    new SqsBatchException(
                       batchSize = messages.length,
                       cause = new Exception(
                         s"Some messages are failed to send. $nrOfFailedMessages of $nrOfMessages messages are failed"
@@ -112,7 +112,7 @@ import scala.util.{Failure, Success, Try}
                   responsePromise.failure(batchException)
                   failureCallback.invoke(batchException)
                 } else {
-                  val results = ListBuffer.empty[Result]
+                  val results = ListBuffer.empty[SqsPublishResult]
 
                   val successfulMessages = result.getSuccessful.iterator()
                   while (successfulMessages.hasNext) {
@@ -125,7 +125,7 @@ import scala.util.{Failure, Success, Try}
                       .withMessageId(successfulMessage.getMessageId)
                       .withSequenceNumber(successfulMessage.getSequenceNumber)
 
-                    results += Result(sendMessageResult, messageBody)
+                    results += SqsPublishResult(sendMessageResult, messageBody)
                   }
 
                   responsePromise.success(results.toList)

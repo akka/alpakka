@@ -7,42 +7,43 @@ package akka.stream.alpakka.sqs.scaladsl
 import akka.NotUsed
 import akka.stream.FlowShape
 import akka.stream.alpakka.sqs.impl.{SqsBatchFlowStage, SqsFlowStage}
-import akka.stream.alpakka.sqs.{Result, SqsBatchFlowSettings, SqsSinkSettings}
+import akka.stream.alpakka.sqs.{
+  SqsPublishResult, SqsPublishBatchSettings, SqsPublishGroupedSettings, SqsPublishSettings}
 import akka.stream.scaladsl.{Flow, GraphDSL}
 import com.amazonaws.services.sqs.AmazonSQSAsync
-import com.amazonaws.services.sqs.model.{SendMessageRequest, SendMessageResult}
+import com.amazonaws.services.sqs.model.SendMessageRequest
 
 import scala.concurrent.Future
 
 /**
  * Scala API to create SQS flows.
  */
-object SqsFlow {
+object SqsPublishFlow {
 
   /**
    * Creates a flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
    */
-  def apply(queueUrl: String, settings: SqsSinkSettings = SqsSinkSettings.Defaults)(
+  def apply(queueUrl: String, settings: SqsPublishSettings = SqsPublishSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
-  ): Flow[SendMessageRequest, Result, NotUsed] =
+  ): Flow[SendMessageRequest, SqsPublishResult, NotUsed] =
     Flow.fromGraph(new SqsFlowStage(queueUrl, sqsClient)).mapAsync(settings.maxInFlight)(identity)
 
-  def grouped(queueUrl: String, settings: SqsBatchFlowSettings = SqsBatchFlowSettings.Defaults)(
+  def grouped(queueUrl: String, settings: SqsPublishGroupedSettings = SqsPublishGroupedSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
-  ): Flow[SendMessageRequest, Result, NotUsed] = {
+  ): Flow[SendMessageRequest, SqsPublishResult, NotUsed] = {
     val graph = GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._
 
       val groupingStage: FlowShape[SendMessageRequest, Seq[SendMessageRequest]] =
         builder.add(Flow[SendMessageRequest].groupedWithin(settings.maxBatchSize, settings.maxBatchWait))
 
-      val sqsStage: FlowShape[Seq[SendMessageRequest], Future[List[Result]]] =
+      val sqsStage: FlowShape[Seq[SendMessageRequest], Future[List[SqsPublishResult]]] =
         builder.add(new SqsBatchFlowStage(queueUrl, sqsClient))
 
-      val flattenFutures: FlowShape[Future[List[Result]], List[Result]] =
-        builder.add(Flow[Future[List[Result]]].mapAsync(settings.concurrentRequests)(identity))
+      val flattenFutures: FlowShape[Future[List[SqsPublishResult]], List[SqsPublishResult]] =
+        builder.add(Flow[Future[List[SqsPublishResult]]].mapAsync(settings.concurrentRequests)(identity))
 
-      val flattenResults: FlowShape[List[Result], Result] = builder.add(Flow[List[Result]].mapConcat(identity))
+      val flattenResults: FlowShape[List[SqsPublishResult], SqsPublishResult] = builder.add(Flow[List[SqsPublishResult]].mapConcat(identity))
       groupingStage ~> sqsStage ~> flattenFutures ~> flattenResults
 
       FlowShape(groupingStage.in, flattenResults.out)
@@ -51,8 +52,8 @@ object SqsFlow {
     Flow.fromGraph(graph)
   }
 
-  def batch(queueUrl: String, settings: SqsBatchFlowSettings = SqsBatchFlowSettings.Defaults)(
+  def batch(queueUrl: String, settings: SqsPublishBatchSettings = SqsPublishBatchSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
-  ): Flow[Iterable[SendMessageRequest], List[Result], NotUsed] =
+  ): Flow[Iterable[SendMessageRequest], List[SqsPublishResult], NotUsed] =
     Flow.fromGraph(new SqsBatchFlowStage(queueUrl, sqsClient)).mapAsync(settings.concurrentRequests)(identity)
 }
