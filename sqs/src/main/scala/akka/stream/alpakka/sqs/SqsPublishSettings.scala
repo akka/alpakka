@@ -29,14 +29,4 @@ object SqsPublishSettings {
    * Java API
    */
   def create(): SqsPublishSettings = Defaults
-
-  /**
-   * Scala API
-   */
-  def apply(maxInFlight: Int): SqsPublishSettings = new SqsPublishSettings(maxInFlight)
-
-  /**
-   * Java API
-   */
-  def create(maxInFlight: Int): SqsPublishSettings = new SqsPublishSettings(maxInFlight)
 }

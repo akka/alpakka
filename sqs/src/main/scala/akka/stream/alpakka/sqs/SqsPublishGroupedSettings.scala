@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
-import akka.util.JavaDurationConverters._
 
 final class SqsPublishGroupedSettings private (val maxBatchSize: Int,
                                                val maxBatchWait: scala.concurrent.duration.FiniteDuration,
@@ -67,26 +66,4 @@ object SqsPublishGroupedSettings {
 
   /** Java API */
   def create(): SqsPublishGroupedSettings = Defaults
-
-  /** Scala API */
-  def apply(
-      maxBatchSize: Int,
-      maxBatchWait: scala.concurrent.duration.FiniteDuration,
-      concurrentRequests: Int
-  ): SqsPublishGroupedSettings = new SqsPublishGroupedSettings(
-    maxBatchSize,
-    maxBatchWait,
-    concurrentRequests
-  )
-
-  /** Java API */
-  def create(
-      maxBatchSize: Int,
-      maxBatchWait: java.time.Duration,
-      concurrentRequests: Int
-  ): SqsPublishGroupedSettings = new SqsPublishGroupedSettings(
-    maxBatchSize,
-    maxBatchWait.asScala,
-    concurrentRequests
-  )
 }

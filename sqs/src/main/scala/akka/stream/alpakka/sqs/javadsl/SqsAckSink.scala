@@ -29,11 +29,4 @@ object SqsAckSink {
       .mapMaterializedValue(_.toJava)
       .asJava
 
-  /**
-   * Creates a sink for a SQS queue using an
-   * [[com.amazonaws.services.sqs.AmazonSQSAsync]] with default settings.
-   */
-  def create(queueUrl: String, sqsClient: AmazonSQSAsync): Sink[MessageAction, CompletionStage[Done]] =
-    create(queueUrl, SqsAckSettings.Defaults, sqsClient)
-
 }

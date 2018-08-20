@@ -17,7 +17,7 @@ import com.amazonaws.services.sqs.model.Message
 object SqsSource {
 
   /**
-   * Creates a source for a SQS queue.
+   * Create a source for a SQS queue.
    */
   def apply(queueUrl: String, settings: SqsSourceSettings = SqsSourceSettings.Defaults)(
       implicit sqs: AmazonSQSAsync

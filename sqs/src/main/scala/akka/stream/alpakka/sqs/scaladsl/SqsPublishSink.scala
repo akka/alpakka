@@ -13,7 +13,7 @@ import com.amazonaws.services.sqs.model.SendMessageRequest
 import scala.concurrent.Future
 
 /**
- * Scala API to create SQS Sinks.
+ * Scala API to create publishing SQS sinks.
  */
 object SqsPublishSink {
 

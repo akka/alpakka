@@ -3,9 +3,6 @@
  */
 
 package akka.stream.alpakka.sqs
-import scala.concurrent.duration.{FiniteDuration, TimeUnit}
-import scala.concurrent.duration._
-import akka.util.JavaDurationConverters._
 
 final class SqsAckBatchSettings private (val concurrentRequests: Int) {
 

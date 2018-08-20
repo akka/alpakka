@@ -14,9 +14,9 @@ final class SqsSourceSettings private (
     val waitTimeSeconds: Int,
     val maxBufferSize: Int,
     val maxBatchSize: Int,
-    val attributeNames: immutable.Seq[AttributeName] = immutable.Seq(),
-    val messageAttributeNames: immutable.Seq[MessageAttributeName] = immutable.Seq(),
-    val closeOnEmptyReceive: Boolean = false
+    val attributeNames: immutable.Seq[AttributeName],
+    val messageAttributeNames: immutable.Seq[MessageAttributeName],
+    val closeOnEmptyReceive: Boolean
 ) {
   require(maxBatchSize <= maxBufferSize, "maxBatchSize must be lower or equal than maxBufferSize")
   // SQS requirements
@@ -117,7 +117,12 @@ final class SqsSourceSettings private (
 }
 
 object SqsSourceSettings {
-  val Defaults = new SqsSourceSettings(20, 100, 10)
+  val Defaults = new SqsSourceSettings(20,
+                                       100,
+                                       10,
+                                       attributeNames = immutable.Seq(),
+                                       messageAttributeNames = immutable.Seq(),
+                                       closeOnEmptyReceive = false)
 
   /**
    * Scala API
@@ -128,65 +133,6 @@ object SqsSourceSettings {
    * Java API
    */
   def create(): SqsSourceSettings = Defaults
-
-  /**
-   * Scala API
-   */
-  def apply(
-      waitTimeSeconds: Int,
-      maxBufferSize: Int,
-      maxBatchSize: Int,
-      attributeNames: immutable.Seq[AttributeName] = immutable.Seq(),
-      messageAttributeNames: immutable.Seq[MessageAttributeName] = immutable.Seq(),
-      closeOnEmptyReceive: Boolean = false
-  ) = new SqsSourceSettings(
-    waitTimeSeconds,
-    maxBufferSize,
-    maxBatchSize,
-    attributeNames,
-    messageAttributeNames,
-    closeOnEmptyReceive
-  )
-
-  /**
-   * Java API
-   */
-  def create(waitTimeSeconds: Int, maxBufferSize: Int, maxBatchSize: Int): SqsSourceSettings =
-    SqsSourceSettings(waitTimeSeconds, maxBufferSize, maxBatchSize)
-
-  /**
-   * Java API
-   */
-  def create(waitTimeSeconds: Int,
-             maxBufferSize: Int,
-             maxBatchSize: Int,
-             attributeNames: java.util.List[AttributeName],
-             messageAttributeNames: java.util.List[MessageAttributeName]): SqsSourceSettings =
-    SqsSourceSettings(waitTimeSeconds,
-                      maxBufferSize,
-                      maxBatchSize,
-                      attributeNames.asScala.toList,
-                      messageAttributeNames.asScala.toList)
-
-  /**
-   * Java API
-   *
-   * @deprecated please use `withCloseOnEmptyReceive`, this will be removed before 1.0
-   */
-  @deprecated("please use `withCloseOnEmptyReceive`, this will be removed before 1.0", "0.21")
-  def create(waitTimeSeconds: Int,
-             maxBufferSize: Int,
-             maxBatchSize: Int,
-             attributeNames: java.util.List[AttributeName],
-             messageAttributeNames: java.util.List[MessageAttributeName],
-             closeOnEmptyReceive: Boolean): SqsSourceSettings =
-    SqsSourceSettings(waitTimeSeconds,
-                      maxBufferSize,
-                      maxBatchSize,
-                      attributeNames.asScala.toList,
-                      messageAttributeNames.asScala.toList,
-                      closeOnEmptyReceive)
-
 }
 
 /**

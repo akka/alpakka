@@ -100,7 +100,7 @@ public class SqsPublishTest extends BaseSqsTest {
     // #flow
     CompletionStage<Done> done =
         Source.single(new SendMessageRequest(queueUrl, "alpakka-flow"))
-            .via(SqsPublishFlow.create(queueUrl, sqsClient))
+            .via(SqsPublishFlow.create(queueUrl, SqsPublishSettings.create(), sqsClient))
             .runWith(Sink.ignore(), materializer);
     // #flow
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
@@ -210,7 +210,7 @@ public class SqsPublishTest extends BaseSqsTest {
 
     CompletionStage<Done> done =
         Source.from(messagesToSend)
-            .via(SqsPublishFlow.grouped(queueUrl, sqsClient))
+            .via(SqsPublishFlow.grouped(queueUrl, SqsPublishGroupedSettings.create(), sqsClient))
             .runWith(Sink.ignore(), materializer);
 
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
@@ -236,7 +236,7 @@ public class SqsPublishTest extends BaseSqsTest {
 
     CompletionStage<Done> done =
         Source.single(it)
-            .via(SqsPublishFlow.batch(queueUrl, sqsClient))
+            .via(SqsPublishFlow.batch(queueUrl, SqsPublishBatchSettings.create(), sqsClient))
             .runWith(Sink.ignore(), materializer);
 
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
@@ -256,7 +256,7 @@ public class SqsPublishTest extends BaseSqsTest {
 
     CompletionStage<Done> done =
         Source.single(new SendMessageRequest(queueUrl, "alpakka-flow"))
-            .via(SqsPublishFlow.create(queueUrl, sqsClient))
+            .via(SqsPublishFlow.create(queueUrl, SqsPublishSettings.create(), sqsClient))
             .runWith(Sink.ignore(), materializer);
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
     List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();

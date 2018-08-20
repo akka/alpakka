@@ -41,7 +41,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
       val queue = randomQueueUrl()
       implicit val awsSqsClient = sqsClient
 
-      val f = SqsSource(queue, SqsSourceSettings(0, 100, 10)).take(1).runWith(Sink.seq)
+      val f = SqsSource(queue, SqsSourceSettings().withWaitTimeSeconds(0)).take(1).runWith(Sink.seq)
 
       sqsClient.sendMessage(queue, "alpakka")
 
@@ -53,7 +53,8 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
       implicit val awsSqsClient = sqsClient
 
       sqsClient.sendMessage(queue, "alpakka")
-      val f = SqsSource(queue, SqsSourceSettings(0, 100, 10, closeOnEmptyReceive = true)).runWith(Sink.seq)
+      val f =
+        SqsSource(queue, SqsSourceSettings().withWaitTimeSeconds(0).withCloseOnEmptyReceive(true)).runWith(Sink.seq)
 
       f.map(_ should have size 1)
     }
@@ -117,34 +118,37 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
     }
 
     "accept valid parameters" in {
-      val s = SqsSourceSettings(waitTimeSeconds = 1, maxBatchSize = 2, maxBufferSize = 3)
+      val s = SqsSourceSettings()
+        .withWaitTimeSeconds(1)
+        .withMaxBatchSize(2)
+        .withMaxBufferSize(3)
         .withAttribute(All)
       s.attributeNames should be(List(All))
     }
 
     "require maxBatchSize <= maxBufferSize" in {
       a[IllegalArgumentException] should be thrownBy {
-        SqsSourceSettings(waitTimeSeconds = 1, maxBatchSize = 5, maxBufferSize = 3)
+        SqsSourceSettings().withMaxBatchSize(5).withMaxBufferSize(3)
       }
     }
 
     "require waitTimeSeconds within AWS SQS limits" in {
       a[IllegalArgumentException] should be thrownBy {
-        SqsSourceSettings(waitTimeSeconds = -1, maxBatchSize = 1, maxBufferSize = 2)
+        SqsSourceSettings().withWaitTimeSeconds(-1)
       }
 
       a[IllegalArgumentException] should be thrownBy {
-        SqsSourceSettings(waitTimeSeconds = 100, maxBatchSize = 1, maxBufferSize = 2)
+        SqsSourceSettings().withWaitTimeSeconds(100)
       }
     }
 
     "require maxBatchSize within AWS SQS limits" in {
       a[IllegalArgumentException] should be thrownBy {
-        SqsSourceSettings(waitTimeSeconds = 5, maxBatchSize = 0, maxBufferSize = 2)
+        SqsSourceSettings().withMaxBatchSize(0)
       }
 
       a[IllegalArgumentException] should be thrownBy {
-        SqsSourceSettings(waitTimeSeconds = 5, maxBatchSize = 11, maxBufferSize = 2)
+        SqsSourceSettings().withMaxBatchSize(11)
       }
     }
 

@@ -22,9 +22,4 @@ object SqsSource {
   def create(queueUrl: String, settings: SqsSourceSettings, sqs: AmazonSQSAsync): Source[Message, NotUsed] =
     Source.fromGraph(new SqsSourceStage(queueUrl, settings)(sqs))
 
-  /**
-   * Creates a source for a SQS queue with default settings.
-   */
-  def create(queueUrl: String, sqs: AmazonSQSAsync): Source[Message, NotUsed] =
-    Source.fromGraph(new SqsSourceStage(queueUrl, SqsSourceSettings.Defaults)(sqs))
 }

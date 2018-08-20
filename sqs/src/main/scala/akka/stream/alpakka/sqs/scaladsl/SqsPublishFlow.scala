@@ -17,7 +17,7 @@ import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model.SendMessageRequest
 
 /**
- * Scala API to create SQS flows.
+ * Scala API to create publishing SQS flows.
  */
 object SqsPublishFlow {
 

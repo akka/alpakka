@@ -54,7 +54,7 @@ final class SqsAckGroupedSettings private (val maxBatchSize: Int,
 }
 
 object SqsAckGroupedSettings {
-  val Defaults = SqsAckGroupedSettings(
+  val Defaults = new SqsAckGroupedSettings(
     maxBatchSize = 10,
     maxBatchWait = 500.millis,
     concurrentRequests = 1

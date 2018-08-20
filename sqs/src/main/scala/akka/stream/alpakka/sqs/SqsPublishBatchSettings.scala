@@ -27,18 +27,4 @@ object SqsPublishBatchSettings {
 
   /** Java API */
   def create(): SqsPublishBatchSettings = Defaults
-
-  /** Scala API */
-  def apply(
-      concurrentRequests: Int
-  ): SqsPublishBatchSettings = new SqsPublishBatchSettings(
-    concurrentRequests
-  )
-
-  /** Java API */
-  def create(
-      concurrentRequests: Int
-  ): SqsPublishBatchSettings = new SqsPublishBatchSettings(
-    concurrentRequests
-  )
 }

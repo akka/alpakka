@@ -47,7 +47,8 @@ public class SqsAckTest extends BaseSqsTest {
     // #ack
     MessageAction action = MessageAction.delete(new Message().withBody("test"));
     CompletionStage<Done> done =
-        Source.single(action).runWith(SqsAckSink.create(queueUrl, awsClient), materializer);
+        Source.single(action)
+            .runWith(SqsAckSink.create(queueUrl, SqsAckSettings.create(), awsClient), materializer);
     // #ack
 
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
@@ -100,7 +101,7 @@ public class SqsAckTest extends BaseSqsTest {
     MessageAction action = MessageAction.delete(new Message().withBody("test-ack-flow"));
     CompletionStage<Done> done =
         Source.single(action)
-            .via(SqsAckFlow.create(queueUrl, awsClient))
+            .via(SqsAckFlow.create(queueUrl, SqsAckSettings.create(), awsClient))
             .runWith(Sink.ignore(), materializer);
     // #flow-ack
 
@@ -127,7 +128,8 @@ public class SqsAckTest extends BaseSqsTest {
     MessageAction action =
         MessageAction.changeMessageVisibility(new Message().withBody("test"), 12);
     CompletionStage<Done> done =
-        Source.single(action).runWith(SqsAckSink.create(queueUrl, awsClient), materializer);
+        Source.single(action)
+            .runWith(SqsAckSink.create(queueUrl, SqsAckSettings.create(), awsClient), materializer);
     // #requeue
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
@@ -144,7 +146,7 @@ public class SqsAckTest extends BaseSqsTest {
     MessageAction action = MessageAction.ignore(new Message().withBody("test"));
     CompletionStage<SqsAckResult> stage =
         Source.single(action)
-            .via(SqsAckFlow.create(queueUrl, awsClient))
+            .via(SqsAckFlow.create(queueUrl, SqsAckSettings.create(), awsClient))
             .runWith(Sink.head(), materializer);
     // #ignore
     SqsAckResult result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
@@ -174,7 +176,7 @@ public class SqsAckTest extends BaseSqsTest {
     }
     CompletionStage<Done> done =
         Source.fromIterator(() -> messages.iterator())
-            .via(SqsAckFlow.grouped(queueUrl, awsClient))
+            .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.create(), awsClient))
             .runWith(Sink.ignore(), materializer);
     // #batch-ack
 
@@ -206,7 +208,7 @@ public class SqsAckTest extends BaseSqsTest {
     }
     CompletionStage<Done> done =
         Source.fromIterator(() -> messages.iterator())
-            .via(SqsAckFlow.grouped(queueUrl, awsClient))
+            .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.create(), awsClient))
             .runWith(Sink.ignore(), materializer);
     // #batch-requeue
 
@@ -227,7 +229,7 @@ public class SqsAckTest extends BaseSqsTest {
     }
     CompletionStage<List<SqsAckResult>> stage =
         Source.fromIterator(() -> messages.iterator())
-            .via(SqsAckFlow.grouped(queueUrl, awsClient))
+            .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.create(), awsClient))
             .runWith(Sink.seq(), materializer);
     // #batch-ignore
     List<SqsAckResult> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);

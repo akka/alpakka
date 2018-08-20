@@ -9,10 +9,7 @@ import akka.stream.alpakka.sqs._
 import akka.stream.alpakka.sqs.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
-import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.model._
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{spy, times, verify}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.Await
@@ -31,12 +28,12 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   it should "require valid maxInFlight" in {
     a[IllegalArgumentException] should be thrownBy {
-      SqsPublishSettings(0)
+      SqsPublishSettings().withMaxInFlight(0)
     }
   }
 
   it should "accept valid parameters" in {
-    SqsPublishSettings(1)
+    SqsPublishSettings().withMaxInFlight(1)
   }
 
   "SqsPublishBatchSettings" should "construct settings" in {

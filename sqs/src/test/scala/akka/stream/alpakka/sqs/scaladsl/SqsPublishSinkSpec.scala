@@ -199,7 +199,7 @@ class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext 
         }
       }
     )
-    val settings = SqsPublishGroupedSettings(5, 500.millis, 1)
+    val settings = SqsPublishGroupedSettings.create().withMaxBatchSize(5)
 
     val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink.grouped("notused", settings))(Keep.both).run()
     probe
@@ -285,7 +285,7 @@ class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext 
       }
     )
 
-    val settings = SqsPublishGroupedSettings(5, 500.millis, 1)
+    val settings = SqsPublishGroupedSettings().withMaxBatchSize(5)
     val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink.grouped("notused", settings))(Keep.both).run()
     probe
       .sendNext("notused - 1")
