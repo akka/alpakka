@@ -17,6 +17,7 @@ import org.apache.activemq.{ActiveMQConnectionFactory, ActiveMQSession}
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.scalatest.mockito.MockitoSugar
 
 import scala.annotation.tailrec
@@ -821,12 +822,16 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       val producer = mock[MessageProducer]
       val textMessage = mock[TextMessage]
 
+      val delayedSend = new Answer[Unit] {
+        override def answer(invocation: InvocationOnMock): Unit =
+          Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
+      }
+
       when(factory.createConnection()).thenReturn(connection)
       when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
       when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
       when(session.createTextMessage(anyString())).thenReturn(textMessage)
-      when(producer.send(any[Message], anyInt(), anyInt(), anyLong()))
-        .thenAnswer((_: InvocationOnMock) => Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10)))
+      when(producer.send(any[Message], anyInt(), anyInt(), anyLong())).thenAnswer(delayedSend)
 
       val in = (1 to 50).map(i => JmsTextMessage(i.toString))
       val jmsFlow = JmsProducer.flow[JmsTextMessage](JmsProducerSettings(factory).withQueue("test").withSessionCount(8))
@@ -847,10 +852,18 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
       when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
       when(session.createTextMessage(anyString())).thenReturn(textMessage)
+
+      val okay = new Answer[Unit] {
+        override def answer(invocation: InvocationOnMock): Unit = ()
+      }
+      val error = new Answer[Unit] {
+        override def answer(invocation: InvocationOnMock): Unit = throw new RuntimeException("failure")
+      }
+
       when(producer.send(any[Message], anyInt(), anyInt(), anyLong()))
-        .thenAnswer((_: InvocationOnMock) => ())
-        .thenAnswer((_: InvocationOnMock) => ())
-        .thenAnswer((_: InvocationOnMock) => throw new RuntimeException("failure"))
+        .thenAnswer(okay)
+        .thenAnswer(okay)
+        .thenAnswer(error)
 
       val in = (1 to 10).map(i => JmsTextMessage(i.toString))
       val done = new JmsTextMessage("done")
