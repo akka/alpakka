@@ -71,7 +71,9 @@ jobs:
     - env: CMD=+spring-web/testChanged
     - env: CMD=+simple-codecs/testChanged
     - env: CMD=+slick/testChanged
-    - env: CMD=+sns/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d amazonsns"
+      - CMD=+sns/testChanged
     - env: CMD=+solr/testChanged
     - env: CMD=+sqs/testChanged
     - env: CMD=+sse/testChanged

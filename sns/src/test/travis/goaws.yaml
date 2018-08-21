@@ -1,0 +1,47 @@
+Local:                              # Environment name that can be passed on the command line
+                                    #     (i.e.: ./goaws [Local | Dev]  -- defaults to 'Local')
+  Host: localhost                   # hostname of the goaws system  (for docker-compose this is the tag name of the container)
+# you can now use either 1 port for both sns and sqs or alternatively you can comment out Port and use SqsPort + SnsPort for compatibilyt with
+# yopa and (fage-sns + face-sqs).  If both ways are in the config file on the one "Port" will be used by GoAws
+  Port: 4100                        # port to listen on.
+# SqsPort: 9324                     # alterante Sqs Port
+# SnsPort: 9292                     # alternate Sns Port
+  Region: local-01
+  LogMessages: true                 # Log messages (true/false)
+  LogFile: ./goaws_messages.log  # Log filename (for message logging
+  QueueAttributeDefaults:           # default attributes for all queues
+    VisibilityTimeout: 30              # message visibility timeout
+    ReceiveMessageWaitTimeSeconds: 0   # receive message max wait time
+  Queues:                           # List of queues to create at startup
+    - Name: local-queue1                # Queue name
+    - Name: local-queue2                # Queue name
+      ReceiveMessageWaitTimeSeconds: 20 # Queue receive message max wait time
+  Topics:                           # List of topic to create at startup
+    - Name: local-topic1            # Topic name - with some Subscriptions
+      Subscriptions:                # List of Subscriptions to create for this topic (queues will be created as required)
+        - QueueName: local-queue3   # Queue name
+          Raw: false                # Raw message delivery (true/false)
+        - QueueName: local-queue4   # Queue name
+          Raw: true                 # Raw message delivery (true/false)
+          FilterPolicy: '{"foo": ["bar"]}' # Subscription's FilterPolicy, json object as a string
+    - Name: local-topic2            # Topic name - no Subscriptions
+
+Dev:                                # Another environment
+  Host: localhost
+  Port: 4100
+# SqsPort: 9324
+# SnsPort: 9292
+  LogMessages: true
+  LogFile: ./goaws_messages.log
+  Queues:
+    - Name: dev-queue1
+    - Name: dev-queue2
+  Topics:
+    - Name: dev-topic1
+      Subscriptions:
+        - QueueName: dev-queue3
+          Raw: false
+        - QueueName: dev-queue4
+          Raw: true
+    - Name: dev-topic2
+

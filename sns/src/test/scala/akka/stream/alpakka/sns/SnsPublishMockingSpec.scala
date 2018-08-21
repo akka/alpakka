@@ -20,7 +20,7 @@ import org.scalatest._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class SnsPublishFlowSpec extends FlatSpec with DefaultTestContext with MustMatchers {
+class SnsPublishMockingSpec extends FlatSpec with DefaultTestContext with MustMatchers {
 
   it should "publish a single PublishRequest message to sns" in {
     val publishRequest = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message")
