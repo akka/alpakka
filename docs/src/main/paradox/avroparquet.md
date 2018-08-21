@@ -20,7 +20,7 @@ Scala
 : @@snip (/avroparquet/src/test/scala/akka/stream/alpakka/avroparquet/scaladsl/AbstractAvroParquet.scala) { #init-system }
 
 Java
-: @@snip (/avroparquet/src/test/java/akka/stream/alpakka/avroparquet/javadsl/Examples.java) { #init-system }
+: @@snip (/doc-examples/src/main/java/avroparquet/Examples.java) { #init-system }
 
 #Sink Initiation
 
@@ -35,7 +35,7 @@ Scala
 : @@snip (/avroparquet/src/test/scala/akka/stream/alpakka/avroparquet/scaladsl/AvroParquetSourceSpec.scala) { #init-source }
 
 Java
-: @@snip (/avroparquet/src/test/java/akka/stream/alpakka/avroparquet/javadsl/Examples.java) { #init-source }
+: @@snip (/doc-examples/src/main/java/avroparquet/Examples.java) { #init-source }
 
 
 This is all preparation that we are going to need.

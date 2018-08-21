@@ -2,11 +2,12 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.avroparquet.javadsl;
+package avroparquet;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.alpakka.avroparquet.javadsl.AvroParquetSource;
 import akka.stream.javadsl.Source;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
