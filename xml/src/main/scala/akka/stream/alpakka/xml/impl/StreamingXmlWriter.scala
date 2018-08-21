@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.xml.impl
 import java.nio.charset.Charset
 
@@ -9,9 +13,10 @@ import akka.util.{ByteString, ByteStringBuilder}
 import javax.xml.stream.XMLOutputFactory
 
 /**
-  * INTERNAL API
-  */
-@InternalApi private[xml] class StreamingXmlWriter(charset: Charset) extends GraphStage[FlowShape[ParseEvent, ByteString]] {
+ * INTERNAL API
+ */
+@InternalApi private[xml] class StreamingXmlWriter(charset: Charset)
+    extends GraphStage[FlowShape[ParseEvent, ByteString]] {
   val in: Inlet[ParseEvent] = Inlet("XMLWriter.in")
   val out: Outlet[ByteString] = Outlet("XMLWriter.out")
   override val shape: FlowShape[ParseEvent, ByteString] = FlowShape(in, out)
