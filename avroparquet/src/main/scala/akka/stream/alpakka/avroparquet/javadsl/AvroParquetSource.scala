@@ -14,5 +14,3 @@ object AvroParquetSource {
   def create(reader: ParquetReader[GenericRecord]): Source[GenericRecord, NotUsed] =
     Source.fromGraph(new akka.stream.alpakka.avroparquet.impl.AvroParquetSource(reader))
 }
-
-
