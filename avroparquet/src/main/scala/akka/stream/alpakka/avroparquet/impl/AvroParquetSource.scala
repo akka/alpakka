@@ -4,7 +4,8 @@ import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import org.apache.avro.generic.GenericRecord
 import org.apache.parquet.hadoop.ParquetReader
 
-private[avroparquet] class AvroParquetSource(reader: ParquetReader[GenericRecord]) extends GraphStage[SourceShape[GenericRecord]] {
+private[avroparquet] class AvroParquetSource(reader: ParquetReader[GenericRecord])
+    extends GraphStage[SourceShape[GenericRecord]] {
 
   val out: Outlet[GenericRecord] = Outlet("AvroParquetSource")
 

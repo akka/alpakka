@@ -5,7 +5,7 @@ import org.apache.avro.generic.GenericRecord
 import org.apache.parquet.hadoop.ParquetWriter
 
 private[avroparquet] class AvroParquetFlow(writer: ParquetWriter[GenericRecord])
-  extends GraphStage[FlowShape[GenericRecord, GenericRecord]] {
+    extends GraphStage[FlowShape[GenericRecord, GenericRecord]] {
 
   val in: Inlet[GenericRecord] = Inlet("AvroParquetSink.in")
   val out: Outlet[GenericRecord] = Outlet("AvroParquetSink.out")
@@ -43,4 +43,3 @@ private[avroparquet] class AvroParquetFlow(writer: ParquetWriter[GenericRecord])
       })
     }
 }
-
