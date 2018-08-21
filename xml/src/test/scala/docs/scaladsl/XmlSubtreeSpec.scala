@@ -2,33 +2,34 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.xml.scaladsl
+package docs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.alpakka.xml._
+import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.alpakka.xml.scaladsl.XmlParsing
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
+import docs.javadsl.XmlHelper
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class XmlSubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
-  implicit val system = ActorSystem("Test")
-  implicit val mat = ActorMaterializer()
+class XmlSubtreeSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+  implicit val system: ActorSystem = ActorSystem("Test")
+  implicit val mat: Materializer = ActorMaterializer()
 
-  //#subslice
+  //#subtree
   val parse = Flow[String]
     .map(ByteString(_))
     .via(XmlParsing.parser)
-    .via(XmlParsing.subslice("doc" :: "elem" :: "item" :: Nil))
+    .via(XmlParsing.subtree("doc" :: "elem" :: "item" :: Nil))
     .toMat(Sink.seq)(Keep.right)
-  //#subslice
+  //#subtree
 
-  "XML subslice support" must {
+  "XML subtree support" must {
 
-    "properly extract subslices of events" in {
+    "properly extract subtree of events" in {
       val doc =
         """
           |<doc>
@@ -41,18 +42,19 @@ class XmlSubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
         """.stripMargin
 
       val result = Await.result(Source.single(doc).runWith(parse), 3.seconds)
-      result should ===(
-        List(
-          Characters("i1"),
-          Characters("i2"),
-          Characters("i3")
+
+      result.map(XmlHelper.asString(_).trim) should ===(
+        Seq(
+          "<item>i1</item>",
+          "<item>i2</item>",
+          "<item>i3</item>"
         )
       )
     }
 
-    "properly extract subslices of nested events" in {
+    "properly extract subtree of nested events" in {
 
-      //#subslice-usage
+      //#subtree-usage
       val doc =
         """
           |<doc>
@@ -64,16 +66,15 @@ class XmlSubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
           |</doc>
         """.stripMargin
       val resultFuture = Source.single(doc).runWith(parse)
-      //#subslice-usage
+      //#subtree-usage
 
       val result = Await.result(resultFuture, 3.seconds)
-      result should ===(
-        List(
-          Characters("i1"),
-          StartElement("sub", Map.empty[String, String]),
-          Characters("i2"),
-          EndElement("sub"),
-          Characters("i3")
+
+      result.map(XmlHelper.asString(_).trim) should ===(
+        Seq(
+          "<item>i1</item>",
+          "<item><sub>i2</sub></item>",
+          "<item>i3</item>"
         )
       )
     }
@@ -129,14 +130,13 @@ class XmlSubsliceTest extends WordSpec with Matchers with BeforeAndAfterAll {
         """.stripMargin
 
       val result = Await.result(Source.single(doc).runWith(parse), 3.seconds)
-      result should ===(
-        List(
-          Characters("i1"),
-          StartElement("sub", Map.empty[String, String]),
-          Characters("i2"),
-          EndElement("sub"),
-          Characters("i3"),
-          Characters("i4")
+
+      result.map(XmlHelper.asString(_).trim) should ===(
+        Seq(
+          "<item>i1</item>",
+          "<item><sub>i2</sub></item>",
+          "<item>i3</item>",
+          "<item>i4</item>"
         )
       )
     }

@@ -15,8 +15,8 @@ import com.fasterxml.aalto.util.IllegalCharHandler.ReplacingIllegalCharHandler
 import scala.annotation.tailrec
 
 /**
-  * INTERNAL API
-  */
+ * INTERNAL API
+ */
 @InternalApi private[xml] class StreamingXmlParser(ignoreInvalidChars: Boolean)
     extends GraphStage[FlowShape[ByteString, ParseEvent]] {
   val in: Inlet[ByteString] = Inlet("XMLParser.in")
