@@ -29,6 +29,7 @@ jobs:
       env:
       - PRE_CMD="docker-compose up -d amqp"
       - CMD=+amqp/testChanged
+    - env: CMD=+avroparquet/testChanged
     - env: CMD=+awslambda/testChanged
     - env: CMD=+azure-storage-queue/testChanged
     - env:

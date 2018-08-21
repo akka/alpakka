@@ -107,13 +107,11 @@ object Dependencies {
 
   val AvroParquet = Seq(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
-      "org.apache.parquet" % "parquet-avro" % "1.10.0",
-      "org.apache.hadoop" % "hadoop-client" % "3.1.0" % Test,
-      "org.apache.hadoop" % "hadoop-common" % "2.2.0" % Test,
-      "org.specs2" %% "specs2-core" % "4.3.2" % Test,
-      "junit" % "junit" % "4.12" % Test,
-      "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test
+      "org.apache.parquet" % "parquet-avro" % "1.10.0", //Apache2
+      "org.apache.hadoop" % "hadoop-client" % "3.1.0" % Test, //Apache2
+      "org.apache.hadoop" % "hadoop-common" % "2.2.0" % Test, //Apache2
+      "org.specs2" %% "specs2-core" % "4.3.2" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
+      "junit" % "junit" % "4.12" % Test // Eclipse Public License 1.0
     )
   )
 
