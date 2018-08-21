@@ -11,9 +11,10 @@ import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import scala.collection.immutable
 
 /**
-  * INTERNAL API
-  */
-@InternalApi private[xml] class Subslice(path: immutable.Seq[String]) extends GraphStage[FlowShape[ParseEvent, ParseEvent]] {
+ * INTERNAL API
+ */
+@InternalApi private[xml] class Subslice(path: immutable.Seq[String])
+    extends GraphStage[FlowShape[ParseEvent, ParseEvent]] {
   val in: Inlet[ParseEvent] = Inlet("XMLSubslice.in")
   val out: Outlet[ParseEvent] = Outlet("XMLSubslice.out")
   override val shape: FlowShape[ParseEvent, ParseEvent] = FlowShape(in, out)

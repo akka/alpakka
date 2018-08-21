@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.xml.javadsl;
+package docs.javadsl;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
