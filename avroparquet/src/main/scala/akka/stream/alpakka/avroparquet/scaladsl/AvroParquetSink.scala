@@ -14,7 +14,5 @@ import scala.concurrent.Future
 object AvroParquetSink {
 
   def apply(writer: ParquetWriter[GenericRecord]): Sink[GenericRecord, Future[Done]] =
-    Flow.
-      fromGraph(new AvroParquetFlow(writer)).toMat(Sink.ignore)(Keep.right)
+    Flow.fromGraph(new AvroParquetFlow(writer)).toMat(Sink.ignore)(Keep.right)
 }
-
