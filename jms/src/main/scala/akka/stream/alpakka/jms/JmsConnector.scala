@@ -116,7 +116,7 @@ private[jms] class JmsMessageProducer(jmsProducer: MessageProducer, jmsSession: 
 
   def send(elem: JmsMessage): Unit = {
     val message: Message = createMessage(elem)
-    populateMessageProperties(message, elem.properties())
+    populateMessageProperties(message, elem)
 
     val (sendHeaders, headersBeforeSend: Set[JmsHeader]) = elem.headers.partition(_.usedDuringSend)
     populateMessageHeader(message, headersBeforeSend)
@@ -148,15 +148,15 @@ private[jms] class JmsMessageProducer(jmsProducer: MessageProducer, jmsSession: 
 
       case mapMessage: JmsMapMessage =>
         val newMessage = jmsSession.session.createMapMessage()
-        populateMapMessage(newMessage, mapMessage.body)
+        populateMapMessage(newMessage, mapMessage)
         newMessage
 
       case objectMessage: JmsObjectMessage => jmsSession.session.createObjectMessage(objectMessage.serializable)
 
     }
 
-  private def populateMessageProperties(message: javax.jms.Message, properties: Map[String, Any]): Unit =
-    properties.foreach {
+  private def populateMessageProperties(message: javax.jms.Message, jmsMessage: JmsMessage): Unit =
+    jmsMessage.properties().foreach {
       case (key, v) =>
         v match {
           case v: String => message.setStringProperty(key, v)
@@ -166,11 +166,13 @@ private[jms] class JmsMessageProducer(jmsProducer: MessageProducer, jmsSession: 
           case v: Short => message.setShortProperty(key, v)
           case v: Long => message.setLongProperty(key, v)
           case v: Double => message.setDoubleProperty(key, v)
+          case null => throw NullMessageProperty(key, jmsMessage)
+          case _ => throw UnsupportedMessagePropertyType(key, v, jmsMessage)
         }
     }
 
-  private def populateMapMessage(message: javax.jms.MapMessage, map: Map[String, Any]): Unit =
-    map.foreach {
+  private def populateMapMessage(message: javax.jms.MapMessage, jmsMessage: JmsMapMessage): Unit =
+    jmsMessage.body.foreach {
       case (key, v) =>
         v match {
           case v: String => message.setString(key, v)
@@ -181,6 +183,8 @@ private[jms] class JmsMessageProducer(jmsProducer: MessageProducer, jmsSession: 
           case v: Long => message.setLong(key, v)
           case v: Double => message.setDouble(key, v)
           case v: Array[Byte] => message.setBytes(key, v)
+          case null => throw NullMapMessageEntry(key, jmsMessage)
+          case _ => throw UnsupportedMapMessageEntryType(key, v, jmsMessage)
         }
     }
 
