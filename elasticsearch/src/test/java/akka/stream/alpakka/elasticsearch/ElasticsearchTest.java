@@ -623,19 +623,16 @@ public class ElasticsearchTest {
   }
 
   public void compileOnlySample() {
-    String doc = "dummy-doc"
+    String doc = "dummy-doc";
 
-    //#custom-index-name-example
-    IncomingMessage msg = IncomingIndexMessage(doc)
-        .withIndexName("my-index")
-    //#custom-index-name-example
+    // #custom-index-name-example
+    IncomingMessage msg = IncomingIndexMessage.create(doc).withIndexName("my-index");
+    // #custom-index-name-example
 
-    //#custom-metadata-example
+    // #custom-metadata-example
     Map<String, String> metadata = new HashMap<>();
     metadata.put("pipeline", "myPipeline");
-    IncomingMessage msg = IncomingIndexMessage(doc)
-        .withCustomMetadata(metadata)
-    //#custom-metadata-example
+    IncomingMessage msgWithMetadata = IncomingIndexMessage.create(doc).withCustomMetadata(metadata);
+    // #custom-metadata-example
   }
-
 }
