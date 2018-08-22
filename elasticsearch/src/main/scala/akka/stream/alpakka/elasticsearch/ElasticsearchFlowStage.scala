@@ -294,6 +294,8 @@ class ElasticsearchFlowStage[T, C](
 
         // TODO better logging of the json before pushing it
 
+        log.debug("Posting data to elastic search: {}", json)
+
         client.performRequestAsync(
           "POST",
           "/_bulk",
