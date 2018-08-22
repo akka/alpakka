@@ -76,7 +76,8 @@ case class IncomingMessage[T, C] private (
     source: Option[T],
     passThrough: C = NotUsed,
     version: Option[Long] = None,
-    indexName: Option[String] = None
+    indexName: Option[String] = None,
+    customMetadata: Map[String, String] = Map.empty,
 ) {
   def withPassThrough[P](passThrough: P): IncomingMessage[T, P] =
     this.copy(passThrough = passThrough)
@@ -86,6 +87,21 @@ case class IncomingMessage[T, C] private (
 
   def withIndexName(indexName: String): IncomingMessage[T, C] =
     this.copy(indexName = Option(indexName))
+
+  /**
+   * Scala API: define custom metadata for this message. Fields should
+   * have the full metadata field name as key (including the "_" prefix if there is one)
+   */
+  def withCustomMetadata(metadata: Map[String, String]): IncomingMessage[T, C] =
+    this.copy(customMetadata = metadata)
+
+  /**
+   * Java API: define custom metadata for this message. Fields should
+   * have the full metadata field name as key (including the "_" prefix if there is one)
+   */
+  def withCustomMetadata(metadata: java.util.Map[String, String]): IncomingMessage[T, C] =
+    this.copy(customMetadata = metadata.asScala.toMap)
+
 }
 
 sealed trait Operation
@@ -225,57 +241,58 @@ class ElasticsearchFlowStage[T, C](
         val json = messages
           .map { message =>
             val indexNameToUse: String = message.indexName.getOrElse(indexName)
+            val additionalMetadata = message.customMetadata.map { case (field, value) => field -> JsString(value) }
 
-            JsObject(
-              message.operation match {
-                case Index =>
-                  "index" -> JsObject(
-                    Seq(
-                      Option("_index" -> JsString(indexNameToUse)),
-                      Option("_type" -> JsString(typeName)),
-                      message.version.map { version =>
-                        "_version" -> JsNumber(version)
-                      },
-                      settings.versionType.map { versionType =>
-                        "version_type" -> JsString(versionType)
-                      },
-                      message.id.map { id =>
-                        "_id" -> JsString(id)
-                      }
-                    ).flatten: _*
-                  )
-                case Update | Upsert =>
-                  "update" -> JsObject(
-                    Seq(
-                      Option("_index" -> JsString(indexNameToUse)),
-                      Option("_type" -> JsString(typeName)),
-                      message.version.map { version =>
-                        "_version" -> JsNumber(version)
-                      },
-                      settings.versionType.map { versionType =>
-                        "version_type" -> JsString(versionType)
-                      },
-                      Option("_id" -> JsString(message.id.get))
-                    ).flatten: _*
-                  )
-                case Delete =>
-                  "delete" -> JsObject(
-                    Seq(
-                      Option("_index" -> JsString(indexNameToUse)),
-                      Option("_type" -> JsString(typeName)),
-                      message.version.map { version =>
-                        "_version" -> JsNumber(version)
-                      },
-                      settings.versionType.map { versionType =>
-                        "version_type" -> JsString(versionType)
-                      },
-                      Option("_id" -> JsString(message.id.get))
-                    ).flatten: _*
-                  )
-              }
-            ).toString + messageToJsonString(message)
+            JsObject(message.operation match {
+              case Index =>
+                "index" -> JsObject(
+                  (Seq(
+                    Option("_index" -> JsString(indexNameToUse)),
+                    Option("_type" -> JsString(typeName)),
+                    message.version.map { version =>
+                      "_version" -> JsNumber(version)
+                    },
+                    settings.versionType.map { versionType =>
+                      "version_type" -> JsString(versionType)
+                    },
+                    message.id.map { id =>
+                      "_id" -> JsString(id)
+                    }
+                  ).flatten ++ additionalMetadata): _*
+                )
+              case Update | Upsert =>
+                "update" -> JsObject(
+                  (Seq(
+                    Option("_index" -> JsString(indexNameToUse)),
+                    Option("_type" -> JsString(typeName)),
+                    message.version.map { version =>
+                      "_version" -> JsNumber(version)
+                    },
+                    settings.versionType.map { versionType =>
+                      "version_type" -> JsString(versionType)
+                    },
+                    Option("_id" -> JsString(message.id.get))
+                  ).flatten ++ additionalMetadata): _*
+                )
+              case Delete =>
+                "delete" -> JsObject(
+                  (Seq(
+                    Option("_index" -> JsString(indexNameToUse)),
+                    Option("_type" -> JsString(typeName)),
+                    message.version.map { version =>
+                      "_version" -> JsNumber(version)
+                    },
+                    settings.versionType.map { versionType =>
+                      "version_type" -> JsString(versionType)
+                    },
+                    Option("_id" -> JsString(message.id.get))
+                  ).flatten ++ additionalMetadata): _*
+                )
+            }).toString + messageToJsonString(message)
           }
           .mkString("", "\n", "\n")
+
+        // TODO better logging of the json before pushing it
 
         client.performRequestAsync(
           "POST",
