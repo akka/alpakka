@@ -77,7 +77,7 @@ case class IncomingMessage[T, C] private (
     passThrough: C = NotUsed,
     version: Option[Long] = None,
     indexName: Option[String] = None,
-    customMetadata: Map[String, String] = Map.empty,
+    customMetadata: Map[String, String] = Map.empty
 ) {
   def withPassThrough[P](passThrough: P): IncomingMessage[T, P] =
     this.copy(passThrough = passThrough)
