@@ -2,11 +2,12 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.xml.scaladsl
+package docs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.xml._
+import akka.stream.alpakka.xml.scaladsl.XmlParsing
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
@@ -14,9 +15,9 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class XmlCoalesceTest extends WordSpec with Matchers with BeforeAndAfterAll {
-  implicit val system = ActorSystem("Test")
-  implicit val mat = ActorMaterializer()
+class XmlCoalesceSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+  implicit val system: ActorSystem = ActorSystem("Test")
+  implicit val mat: Materializer = ActorMaterializer()
 
   val parse = Flow[String]
     .map(ByteString(_))

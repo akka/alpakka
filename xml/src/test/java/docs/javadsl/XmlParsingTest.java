@@ -2,12 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.xml.javadsl;
+package docs.javadsl;
 
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.xml.*;
+import akka.stream.alpakka.xml.javadsl.XmlParsing;
 import akka.stream.javadsl.*;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;

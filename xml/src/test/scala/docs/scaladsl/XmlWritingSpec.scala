@@ -2,11 +2,12 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.xml.scaladsl
+package docs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.xml._
+import akka.stream.alpakka.xml.scaladsl.XmlWriting
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
@@ -15,9 +16,9 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class XmlWritingTest extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
-  implicit val system = ActorSystem("Test")
-  implicit val mat = ActorMaterializer()
+class XmlWritingSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+  implicit val system: ActorSystem = ActorSystem("Test")
+  implicit val mat: Materializer = ActorMaterializer()
 
   // #writer
   val writer: Sink[ParseEvent, Future[String]] = Flow[ParseEvent]
