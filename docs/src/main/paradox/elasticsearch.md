@@ -147,6 +147,21 @@ index-name for each document:
 
 Scala
 : @@snip [snip](/elasticsearch/src/test/scala/akka/stream/alpakka/elasticsearch/ElasticsearchSpec.scala) { #custom-index-name-example }
+
+Java
+: @@snip [snip](/elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #custom-index-name-example }
+
+### Specifying custom metadata for every document
+
+In some cases you might want to specify custom metadata per document you are inserting, for example a `pipeline`, 
+this can be done like so:
+
+Scala
+: @@snip [snip](/elasticsearch/src/test/scala/akka/stream/alpakka/elasticsearch/ElasticsearchSpec.scala) { #custom-metadata-example }
+
+Java
+: @@snip [snip](/elasticsearch/src/test/java/akka/stream/alpakka/elasticsearch/ElasticsearchTest.java) { #custom-metadata-example }
+
  
 ### More custom searching
 
