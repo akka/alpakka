@@ -23,12 +23,14 @@ private[avroparquet] class AvroParquetSource(reader: ParquetReader[GenericRecord
         override def onPull(): Unit = {
           val record = reader.read()
           Option(record).fold {
-            reader.close()
             complete(out)
           }(push(out, _))
         }
       }
     )
+
+    override def postStop(): Unit = reader.close()
+
   }
   override def shape: SourceShape[GenericRecord] = SourceShape.of(out)
 }

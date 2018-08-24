@@ -1,9 +1,14 @@
 package akka.stream.alpakka.avroparquet.impl
+import akka.annotation.InternalApi
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import org.apache.avro.generic.GenericRecord
 import org.apache.parquet.hadoop.ParquetWriter
 
+/**
+ * Internal API
+ */
+@InternalApi
 private[avroparquet] class AvroParquetFlow(writer: ParquetWriter[GenericRecord])
     extends GraphStage[FlowShape[GenericRecord, GenericRecord]] {
 
@@ -17,18 +22,15 @@ private[avroparquet] class AvroParquetFlow(writer: ParquetWriter[GenericRecord])
         in,
         new InHandler {
 
-          override def onUpstreamFinish(): Unit = {
+          override def onUpstreamFinish(): Unit =
             //super.onUpstreamFinish()
-            writer.close()
             completeStage()
-          }
 
           override def onUpstreamFailure(ex: Throwable): Unit = {
             super.onUpstreamFailure(ex)
             writer.close()
           }
 
-          @scala.throws[Exception](classOf[Exception])
           override def onPush(): Unit = {
             val obtainedValue = grab(in)
             writer.write(obtainedValue)
@@ -41,5 +43,7 @@ private[avroparquet] class AvroParquetFlow(writer: ParquetWriter[GenericRecord])
         override def onPull(): Unit =
           pull(in)
       })
+
+      override def postStop(): Unit = writer.close()
     }
 }
