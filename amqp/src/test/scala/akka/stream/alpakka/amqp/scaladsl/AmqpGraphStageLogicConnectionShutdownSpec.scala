@@ -23,7 +23,6 @@ import com.rabbitmq.client.{AddressResolver, Connection, ConnectionFactory, Shut
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 
-import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
@@ -71,7 +70,8 @@ class AmqpGraphStageLogicConnectionShutdownSpec
       override def newConnection(es: ExecutorService, ar: AddressResolver, name: String): Connection =
         new AmqpProxyConnection(super.newConnection(es, ar, name)) with ShutdownListenerTracking
     }
-    val connectionProvider = AmqpConnectionFactoryConnectionProvider(connectionFactory, List(("localhost", 5672)))
+    val connectionProvider =
+      AmqpConnectionFactoryConnectionProvider(connectionFactory).withHostAndPort("localhost", 5672)
     val reusableConnectionProvider = AmqpCachedConnectionProvider(provider = connectionProvider)
 
     def queueName = "amqp-conn-prov-it-spec-simple-queue-" + System.currentTimeMillis()
