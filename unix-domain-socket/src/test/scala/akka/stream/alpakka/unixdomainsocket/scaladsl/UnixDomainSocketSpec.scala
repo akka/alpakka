@@ -7,12 +7,17 @@ package akka.stream.alpakka.unixdomainsocket.scaladsl
 import java.io.{File, IOException}
 import java.nio.file.Files
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.testkit._
 import akka.util.ByteString
+import jnr.unixsocket.UnixSocketAddress
 import org.scalatest._
+
+import scala.concurrent.duration._
+import scala.concurrent.Promise
 
 class UnixDomainSocketSpec
     extends TestKit(ActorSystem("UnixDomainSocketSpec"))
@@ -56,7 +61,58 @@ class UnixDomainSocketSpec
       //#outgoingConnection
     }
 
-    "not be able to bind to a non-existant file" in {
+    "allow the client to close the connection" in {
+      val file = Files.createTempFile("UnixDomainSocketSpec2", ".sock").toFile
+      file.delete()
+      file.deleteOnExit()
+
+      val sendBytes = ByteString("Hello")
+
+      val binding =
+        UnixDomainSocket().bindAndHandle(Flow[ByteString]
+                                           .delay(5.seconds)
+                                           .map(identity),
+                                         file)
+
+      binding.flatMap { connection =>
+        Source
+          .single(sendBytes)
+          .via(UnixDomainSocket().outgoingConnection(new UnixSocketAddress(file), halfClose = false))
+          .runWith(Sink.headOption)
+          .flatMap {
+            case e if e.isEmpty => connection.unbind().map(_ => succeed)
+          }
+      }
+    }
+
+    "close the server once the client is also closed" in {
+      val file = Files.createTempFile("UnixDomainSocketSpec3", ".sock").toFile
+      file.delete()
+      file.deleteOnExit()
+
+      val sendBytes = ByteString("Hello")
+      val receiving = Promise[Done]
+
+      val binding =
+        UnixDomainSocket().bindAndHandle(
+          Flow.fromFunction[ByteString, ByteString](identity).wireTap(_ => receiving.success(Done)).delay(1.second),
+          file,
+          halfClose = true
+        )
+
+      binding.flatMap { connection =>
+        Source
+          .tick(0.seconds, 1.second, sendBytes)
+          .takeWhile(_ => !receiving.isCompleted)
+          .via(UnixDomainSocket().outgoingConnection(file))
+          .runWith(Sink.headOption)
+          .flatMap {
+            case e if e.nonEmpty => connection.unbind().map(_ => succeed)
+          }
+      }
+    }
+
+    "not be able to bind to a non-existent file" in {
       val binding =
         UnixDomainSocket().bindAndHandle(Flow.fromFunction(identity), new File("/thisshouldnotexist"))
 
@@ -65,7 +121,7 @@ class UnixDomainSocketSpec
       }
     }
 
-    "not be able to connect to a non-existant file" in {
+    "not be able to connect to a non-existent file" in {
       val connection =
         Source
           .single(ByteString("hi"))
