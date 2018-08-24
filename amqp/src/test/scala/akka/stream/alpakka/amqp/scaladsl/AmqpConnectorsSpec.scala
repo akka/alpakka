@@ -33,7 +33,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
     // see AmqpDocsSpec "publish and consume elements through a simple queue again in the same JVM"
 
     "connection should fail to wrong broker" in {
-      val connectionProvider = AmqpDetailsConnectionProvider(List(("localhost", 5673)))
+      val connectionProvider = AmqpDetailsConnectionProvider("localhost", 5673)
 
       val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
@@ -51,8 +51,8 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
     "connection should fail with wrong credentials" in {
       val connectionProvider =
-        AmqpDetailsConnectionProvider(List(("invalid", 5673)))
-          .withHostsAndPorts(("localhost", 5672))
+        AmqpDetailsConnectionProvider("invalid", 5673)
+          .withHostsAndPorts(immutable.Seq("localhost" -> 5672))
           .withCredentials(AmqpCredentials("guest", "guest1"))
 
       val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
@@ -241,7 +241,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
     // "republish message without autoAck if nack is sent"
 
     "keep connection open if downstream closes and there are pending acks" in {
-      val connectionSettings = AmqpDetailsConnectionProvider(List((("localhost", 5672))))
+      val connectionSettings = AmqpDetailsConnectionProvider("localhost", 5672)
 
       val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)

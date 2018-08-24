@@ -80,7 +80,7 @@ public class AmqpConnectionProvidersTest {
     @SuppressWarnings("unchecked")
     AmqpConnectionProvider connectionProvider =
         AmqpConnectionFactoryConnectionProvider.create(connectionFactory)
-            .withHostsAndPorts(Pair.create("localhost", 5672));
+            .withHostAndPort("localhost", 5672);
     Connection connection1 = connectionProvider.get();
     Connection connection2 = connectionProvider.get();
     assertNotEquals(connection1, connection2);
@@ -94,7 +94,7 @@ public class AmqpConnectionProvidersTest {
     @SuppressWarnings("unchecked")
     AmqpConnectionProvider connectionProvider =
         AmqpConnectionFactoryConnectionProvider.create(connectionFactory)
-            .withHostsAndPorts(Pair.create("localhost", 5672));
+            .withHostAndPort("localhost", 5672);
     Connection connection1 = connectionProvider.get();
     connectionProvider.release(connection1);
     connectionProvider.release(connection1);
@@ -164,7 +164,7 @@ public class AmqpConnectionProvidersTest {
     @SuppressWarnings("unchecked")
     AmqpConnectionProvider connectionProvider =
         AmqpConnectionFactoryConnectionProvider.create(connectionFactory)
-            .withHostsAndPorts(Pair.create("localhost", 5672));
+            .withHostAndPort("localhost", 5672);
     AmqpConnectionProvider reusableConnectionProvider =
         AmqpCachedConnectionProvider.create(connectionProvider);
     Connection connection1 = reusableConnectionProvider.get();
@@ -184,7 +184,7 @@ public class AmqpConnectionProvidersTest {
           throws Exception {
     AmqpConnectionProvider connectionProvider = AmqpLocalConnectionProvider.getInstance();
     AmqpConnectionProvider reusableConnectionProvider =
-        AmqpCachedConnectionProvider.create(connectionProvider, false);
+        AmqpCachedConnectionProvider.create(connectionProvider).withAutomaticRelease(false);
     Connection connection1 = reusableConnectionProvider.get();
     Connection connection2 = reusableConnectionProvider.get();
     assertEquals(connection1, connection2);
@@ -200,7 +200,7 @@ public class AmqpConnectionProvidersTest {
     AmqpConnectionProvider connectionProvider =
         AmqpUriConnectionProvider.create("amqp://localhost:5672");
     AmqpConnectionProvider reusableConnectionProvider =
-        AmqpCachedConnectionProvider.create(connectionProvider, false);
+        AmqpCachedConnectionProvider.create(connectionProvider).withAutomaticRelease(false);
     Connection connection1 = reusableConnectionProvider.get();
     Connection connection2 = reusableConnectionProvider.get();
     assertEquals(connection1, connection2);
@@ -216,7 +216,7 @@ public class AmqpConnectionProvidersTest {
     AmqpConnectionProvider connectionProvider =
         AmqpDetailsConnectionProvider.create("localhost", 5672);
     AmqpConnectionProvider reusableConnectionProvider =
-        AmqpCachedConnectionProvider.create(connectionProvider, false);
+        AmqpCachedConnectionProvider.create(connectionProvider).withAutomaticRelease(false);
     Connection connection1 = reusableConnectionProvider.get();
     Connection connection2 = reusableConnectionProvider.get();
     assertEquals(connection1, connection2);
@@ -233,9 +233,9 @@ public class AmqpConnectionProvidersTest {
     @SuppressWarnings("unchecked")
     AmqpConnectionProvider connectionProvider =
         AmqpConnectionFactoryConnectionProvider.create(connectionFactory)
-            .withHostsAndPorts(Pair.create("localhost", 5672));
+            .withHostAndPort("localhost", 5672);
     AmqpConnectionProvider reusableConnectionProvider =
-        AmqpCachedConnectionProvider.create(connectionProvider, false);
+        AmqpCachedConnectionProvider.create(connectionProvider).withAutomaticRelease(false);
     Connection connection1 = reusableConnectionProvider.get();
     Connection connection2 = reusableConnectionProvider.get();
     assertEquals(connection1, connection2);
@@ -250,7 +250,7 @@ public class AmqpConnectionProvidersTest {
     AmqpConnectionProvider connectionProvider =
         AmqpDetailsConnectionProvider.create("localhost", 5673);
     AmqpConnectionProvider reusableConnectionProvider =
-        AmqpCachedConnectionProvider.create(connectionProvider, false);
+        AmqpCachedConnectionProvider.create(connectionProvider).withAutomaticRelease(false);
     try {
       reusableConnectionProvider.get();
     } catch (Exception e) {
