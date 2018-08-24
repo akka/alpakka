@@ -12,6 +12,7 @@ import com.rabbitmq.client.{Address, Connection, ConnectionFactory, ExceptionHan
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.collection.JavaConverters._
 
 /**
  * Only for internal implementations
@@ -34,15 +35,20 @@ case object AmqpLocalConnectionProvider extends AmqpConnectionProvider {
   def getInstance(): AmqpLocalConnectionProvider.type = this
 }
 
-final case class AmqpUriConnectionProvider(uri: String) extends AmqpConnectionProvider {
+final class AmqpUriConnectionProvider private (val uri: String) extends AmqpConnectionProvider {
   override def get: Connection = {
     val factory = new ConnectionFactory
     factory.setUri(uri)
     factory.newConnection
   }
+
+  override def toString: String =
+    s"AmqpUriConnectionProvider(uri=$uri)"
 }
 
 object AmqpUriConnectionProvider {
+
+  def apply(uri: String): AmqpUriConnectionProvider = new AmqpUriConnectionProvider(uri)
 
   /**
    * Java API
@@ -50,24 +56,30 @@ object AmqpUriConnectionProvider {
   def create(uri: String): AmqpUriConnectionProvider = AmqpUriConnectionProvider(uri)
 }
 
-final case class AmqpDetailsConnectionProvider(
-    hostAndPortList: immutable.Seq[(String, Int)],
-    credentials: Option[AmqpCredentials] = None,
-    virtualHost: Option[String] = None,
-    sslProtocol: Option[String] = None,
-    requestedHeartbeat: Option[Int] = None,
-    connectionTimeout: Option[Int] = None,
-    handshakeTimeout: Option[Int] = None,
-    shutdownTimeout: Option[Int] = None,
-    networkRecoveryInterval: Option[Int] = None,
-    automaticRecoveryEnabled: Option[Boolean] = None,
-    topologyRecoveryEnabled: Option[Boolean] = None,
-    exceptionHandler: Option[ExceptionHandler] = None,
-    connectionName: Option[String] = None
+final class AmqpDetailsConnectionProvider private (
+    val hostAndPortList: immutable.Seq[(String, Int)],
+    val credentials: Option[AmqpCredentials] = None,
+    val virtualHost: Option[String] = None,
+    val sslProtocol: Option[String] = None,
+    val requestedHeartbeat: Option[Int] = None,
+    val connectionTimeout: Option[Int] = None,
+    val handshakeTimeout: Option[Int] = None,
+    val shutdownTimeout: Option[Int] = None,
+    val networkRecoveryInterval: Option[Int] = None,
+    val automaticRecoveryEnabled: Option[Boolean] = None,
+    val topologyRecoveryEnabled: Option[Boolean] = None,
+    val exceptionHandler: Option[ExceptionHandler] = None,
+    val connectionName: Option[String] = None
 ) extends AmqpConnectionProvider {
 
-  def withHostsAndPorts(hostAndPort: (String, Int), hostAndPorts: (String, Int)*): AmqpDetailsConnectionProvider =
-    copy(hostAndPortList = (hostAndPort +: hostAndPorts).toList)
+  def withHostAndPort(host: String, port: Int): AmqpDetailsConnectionProvider =
+    copy(hostAndPortList = immutable.Seq(host -> port))
+
+  def withHostsAndPorts(hostAndPorts: immutable.Seq[(String, Int)]): AmqpDetailsConnectionProvider =
+    copy(hostAndPortList = hostAndPorts)
+
+  def withHostsAndPorts(hostAndPorts: java.util.List[akka.japi.Pair[String, Int]]): AmqpDetailsConnectionProvider =
+    copy(hostAndPortList = hostAndPorts.asScala.map(_.toScala).toIndexedSeq)
 
   def withCredentials(amqpCredentials: AmqpCredentials): AmqpDetailsConnectionProvider =
     copy(credentials = Option(amqpCredentials))
@@ -105,14 +117,6 @@ final case class AmqpDetailsConnectionProvider(
   def withConnectionName(name: String): AmqpDetailsConnectionProvider =
     copy(connectionName = Option(name))
 
-  /**
-   * Java API
-   */
-  @annotation.varargs
-  def withHostsAndPorts(hostAndPort: akka.japi.Pair[String, Int],
-                        hostAndPorts: akka.japi.Pair[String, Int]*): AmqpDetailsConnectionProvider =
-    copy(hostAndPortList = (hostAndPort +: hostAndPorts).map(_.toScala).toList)
-
   override def get: Connection = {
     import scala.collection.JavaConverters._
     val factory = new ConnectionFactory
@@ -134,12 +138,43 @@ final case class AmqpDetailsConnectionProvider(
     factory.newConnection(hostAndPortList.map(hp => new Address(hp._1, hp._2)).asJava, connectionName.orNull)
   }
 
+  private def copy(hostAndPortList: immutable.Seq[(String, Int)] = hostAndPortList,
+                   credentials: Option[AmqpCredentials] = credentials,
+                   virtualHost: Option[String] = virtualHost,
+                   sslProtocol: Option[String] = sslProtocol,
+                   requestedHeartbeat: Option[Int] = requestedHeartbeat,
+                   connectionTimeout: Option[Int] = connectionTimeout,
+                   handshakeTimeout: Option[Int] = handshakeTimeout,
+                   shutdownTimeout: Option[Int] = shutdownTimeout,
+                   networkRecoveryInterval: Option[Int] = networkRecoveryInterval,
+                   automaticRecoveryEnabled: Option[Boolean] = automaticRecoveryEnabled,
+                   topologyRecoveryEnabled: Option[Boolean] = topologyRecoveryEnabled,
+                   exceptionHandler: Option[ExceptionHandler] = exceptionHandler,
+                   connectionName: Option[String] = connectionName): AmqpDetailsConnectionProvider =
+    new AmqpDetailsConnectionProvider(
+      hostAndPortList,
+      credentials,
+      virtualHost,
+      sslProtocol,
+      requestedHeartbeat,
+      connectionTimeout,
+      handshakeTimeout,
+      shutdownTimeout,
+      networkRecoveryInterval,
+      automaticRecoveryEnabled,
+      topologyRecoveryEnabled,
+      exceptionHandler,
+      connectionName
+    )
+
+  override def toString: String =
+    s"AmqpDetailsConnectionProvider(hostAndPortList=$hostAndPortList, credentials=$credentials, virtualHost=$virtualHost, sslProtocol=$sslProtocol, requestedHeartbeat=$requestedHeartbeat, connectionTimeout=$connectionTimeout, handshakeTimeout=$handshakeTimeout, shutdownTimeout=$shutdownTimeout, networkRecoveryInterval=$networkRecoveryInterval, automaticRecoveryEnabled=$automaticRecoveryEnabled, topologyRecoveryEnabled=$topologyRecoveryEnabled, exceptionHandler=$exceptionHandler, connectionName=$connectionName)"
 }
 
 object AmqpDetailsConnectionProvider {
 
   def apply(host: String, port: Int): AmqpDetailsConnectionProvider =
-    AmqpDetailsConnectionProvider(List((host, port)))
+    new AmqpDetailsConnectionProvider(immutable.Seq(host -> port))
 
   /**
    * Java API
@@ -148,11 +183,14 @@ object AmqpDetailsConnectionProvider {
     AmqpDetailsConnectionProvider(host, port)
 }
 
-final case class AmqpCredentials(username: String, password: String) {
+final class AmqpCredentials private (val username: String, val password: String) {
   override def toString = s"Credentials($username, ********)"
 }
 
 object AmqpCredentials {
+
+  def apply(username: String, password: String): AmqpCredentials =
+    new AmqpCredentials(username, password)
 
   /**
    * Java API
@@ -168,8 +206,9 @@ object AmqpCredentials {
  * @param hostAndPorts An optional list of host and ports.
  *                     If empty, it defaults to the host and port in the underlying factory.
  */
-final case class AmqpConnectionFactoryConnectionProvider(factory: ConnectionFactory,
-                                                         private val hostAndPorts: immutable.Seq[(String, Int)] = Nil)
+final class AmqpConnectionFactoryConnectionProvider private (val factory: ConnectionFactory,
+                                                             private val hostAndPorts: immutable.Seq[(String, Int)] =
+                                                               Nil)
     extends AmqpConnectionProvider {
 
   /**
@@ -182,25 +221,36 @@ final case class AmqpConnectionFactoryConnectionProvider(factory: ConnectionFact
     else
       hostAndPorts.toList
 
-  def withHostsAndPorts(hostAndPort: (String, Int),
-                        hostAndPorts: (String, Int)*): AmqpConnectionFactoryConnectionProvider =
-    copy(hostAndPorts = (hostAndPort +: hostAndPorts).toList)
+  def withHostAndPort(host: String, port: Int): AmqpConnectionFactoryConnectionProvider =
+    copy(hostAndPorts = immutable.Seq(host -> port))
+
+  def withHostsAndPorts(hostAndPorts: immutable.Seq[(String, Int)]): AmqpConnectionFactoryConnectionProvider =
+    copy(hostAndPorts = hostAndPorts)
 
   /**
    * Java API
    */
-  @annotation.varargs
-  def withHostsAndPorts(hostAndPort: akka.japi.Pair[String, Int],
-                        hostAndPorts: akka.japi.Pair[String, Int]*): AmqpConnectionFactoryConnectionProvider =
-    copy(hostAndPorts = (hostAndPort +: hostAndPorts).map(_.toScala).toList)
+  def withHostsAndPorts(
+      hostAndPorts: java.util.List[akka.japi.Pair[String, Int]]
+  ): AmqpConnectionFactoryConnectionProvider =
+    copy(hostAndPorts = hostAndPorts.asScala.map(_.toScala).toIndexedSeq)
 
   override def get: Connection = {
     import scala.collection.JavaConverters._
     factory.newConnection(hostAndPortList.map(hp => new Address(hp._1, hp._2)).asJava)
   }
+
+  private def copy(hostAndPorts: immutable.Seq[(String, Int)] = hostAndPorts) =
+    new AmqpConnectionFactoryConnectionProvider(factory, hostAndPorts)
+
+  override def toString: String =
+    s"AmqpConnectionFactoryConnectionProvider(factory=$factory, hostAndPorts=$hostAndPorts)"
 }
 
 object AmqpConnectionFactoryConnectionProvider {
+
+  def apply(factory: ConnectionFactory): AmqpConnectionFactoryConnectionProvider =
+    new AmqpConnectionFactoryConnectionProvider(factory)
 
   /**
    * Java API
@@ -209,11 +259,15 @@ object AmqpConnectionFactoryConnectionProvider {
     AmqpConnectionFactoryConnectionProvider(factory: ConnectionFactory)
 }
 
-final case class AmqpCachedConnectionProvider(provider: AmqpConnectionProvider, automaticRelease: Boolean = true)
+final class AmqpCachedConnectionProvider private (val provider: AmqpConnectionProvider,
+                                                  val automaticRelease: Boolean = true)
     extends AmqpConnectionProvider {
 
   import akka.stream.alpakka.amqp.AmqpCachedConnectionProvider._
   private val state = new AtomicReference[State](Empty)
+
+  def withAutomaticRelease(automaticRelease: Boolean): AmqpCachedConnectionProvider =
+    copy(automaticRelease = automaticRelease)
 
   @tailrec
   override def get: Connection = state.get match {
@@ -261,21 +315,24 @@ final case class AmqpCachedConnectionProvider(provider: AmqpConnectionProvider, 
       }
     case Closing => release(connection)
   }
+
+  private def copy(automaticRelease: Boolean = automaticRelease): AmqpCachedConnectionProvider =
+    new AmqpCachedConnectionProvider(provider, automaticRelease)
+
+  override def toString: String =
+    s"AmqpCachedConnectionProvider(provider=$provider, automaticRelease=$automaticRelease)"
 }
 
 object AmqpCachedConnectionProvider {
+
+  def apply(provider: AmqpConnectionProvider): AmqpCachedConnectionProvider =
+    new AmqpCachedConnectionProvider(provider)
 
   /**
    * Java API
    */
   def create(provider: AmqpConnectionProvider): AmqpCachedConnectionProvider =
     AmqpCachedConnectionProvider(provider: AmqpConnectionProvider)
-
-  /**
-   * Java API
-   */
-  def create(provider: AmqpConnectionProvider, automaticRelease: Boolean): AmqpCachedConnectionProvider =
-    AmqpCachedConnectionProvider(provider: AmqpConnectionProvider, automaticRelease)
 
   private sealed trait State
   private case object Empty extends State
