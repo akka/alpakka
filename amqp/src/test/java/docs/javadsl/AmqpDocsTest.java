@@ -65,7 +65,8 @@ public class AmqpDocsTest {
     @SuppressWarnings("unchecked")
     AmqpDetailsConnectionProvider connectionProvider =
         AmqpDetailsConnectionProvider.create("invalid", 5673)
-            .withHostsAndPorts(Pair.create("localhost", 5672), Pair.create("localhost", 5674));
+            .withHostsAndPorts(
+                Arrays.asList(Pair.create("localhost", 5672), Pair.create("localhost", 5674)));
 
     // #create-sink
     final Sink<ByteString, CompletionStage<Done>> amqpSink =

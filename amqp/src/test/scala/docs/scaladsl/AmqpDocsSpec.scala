@@ -31,7 +31,7 @@ class AmqpDocsSpec extends AmqpSpec {
       // use a list of host/port pairs where one is normally invalid, but
       // it should still work as expected,
       val connectionProvider =
-        AmqpDetailsConnectionProvider(List(("invalid", 5673))).withHostsAndPorts(("localhost", 5672))
+        AmqpDetailsConnectionProvider("invalid", 5673).withHostsAndPorts(immutable.Seq("localhost" -> 5672))
 
       //#queue-declaration
       val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
