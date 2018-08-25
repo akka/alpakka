@@ -46,9 +46,9 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
       // in-flight messages with the producers that were used to send them.
       private val inFlightMessagesWithProducer: Buffer[Holder[A]] = Buffer(settings.sessionCount, settings.sessionCount)
 
-      private[jms] def jmsSettings = settings
+      protected def jmsSettings: JmsProducerSettings = settings
 
-      private[jms] def createSession(connection: Connection, createDestination: Session => jms.Destination) = {
+      protected def createSession(connection: Connection, createDestination: Session => jms.Destination): JmsSession = {
         val session =
           connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode)
         new JmsSession(connection, session, createDestination(session))

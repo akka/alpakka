@@ -9,7 +9,7 @@ import java.util.concurrent.ArrayBlockingQueue
 import javax.jms
 import javax.jms._
 import akka.stream.{ActorAttributes, ActorMaterializer, Attributes}
-import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.{AsyncCallback, GraphStageLogic}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -18,17 +18,17 @@ import scala.concurrent.{ExecutionContext, Future}
  */
 private[jms] trait JmsConnector { this: GraphStageLogic =>
 
-  implicit private[jms] var ec: ExecutionContext = _
+  implicit protected var ec: ExecutionContext = _
 
-  private[jms] var jmsConnection: Option[Connection] = None
+  protected var jmsConnection: Option[Connection] = None
 
-  private[jms] var jmsSessions = Seq.empty[JmsSession]
+  protected var jmsSessions = Seq.empty[JmsSession]
 
-  private[jms] def jmsSettings: JmsSettings
+  protected def jmsSettings: JmsSettings
 
-  private[jms] def onSessionOpened(jmsSession: JmsSession): Unit = {}
+  protected def onSessionOpened(jmsSession: JmsSession): Unit = {}
 
-  private[jms] def fail = getAsyncCallback[Throwable](e => failStage(e))
+  protected def fail: AsyncCallback[Throwable] = getAsyncCallback[Throwable](e => failStage(e))
 
   private def onConnection = getAsyncCallback[Connection] { c =>
     jmsConnection = Some(c)
@@ -69,9 +69,9 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
     future
   }
 
-  private[jms] def createSession(connection: Connection, createDestination: jms.Session => jms.Destination): JmsSession
+  protected def createSession(connection: Connection, createDestination: jms.Session => jms.Destination): JmsSession
 
-  private[jms] def openSessions(): Seq[JmsSession] = {
+  protected def openSessions(): Seq[JmsSession] = {
     val factory = jmsSettings.connectionFactory
     val connection = jmsSettings.credentials match {
       case Some(Credentials(username, password)) => factory.createConnection(username, password)
