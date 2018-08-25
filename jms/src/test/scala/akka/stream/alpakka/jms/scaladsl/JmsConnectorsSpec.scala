@@ -787,30 +787,20 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
     }
 
     "publish and consume strings through a queue with multiple sessions" in withServer() { ctx =>
-      //#connection-factory
       val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
-      //#connection-factory
 
-      //#create-text-sink
       val jmsSink: Sink[String, Future[Done]] = JmsProducer.textSink(
         JmsProducerSettings(connectionFactory).withQueue("test").withSessionCount(5)
       )
-      //#create-text-sink
 
-      //#run-text-sink
       val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
       val sinkOut = Source(in).runWith(jmsSink)
-      //#run-text-sink
 
-      //#create-text-source
       val jmsSource: Source[String, KillSwitch] = JmsConsumer.textSource(
         JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(10).withQueue("test")
       )
-      //#create-text-source
 
-      //#run-text-source
       val result = jmsSource.take(in.size).runWith(Sink.seq)
-      //#run-text-source
 
       result.futureValue should contain allElementsOf in
     }

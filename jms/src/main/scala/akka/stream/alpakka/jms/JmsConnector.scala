@@ -40,7 +40,7 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
       onSessionOpened(session)
     }
 
-  private[jms] def executionContext(attributes: Attributes): ExecutionContext = {
+  protected def executionContext(attributes: Attributes): ExecutionContext = {
     val dispatcher = attributes.get[ActorAttributes.Dispatcher](
       ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
     ) match {
@@ -55,7 +55,7 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
     }
   }
 
-  private[jms] def initSessionAsync(executionContext: ExecutionContext): Future[Unit] = {
+  protected def initSessionAsync(executionContext: ExecutionContext): Future[Unit] = {
     ec = executionContext
     val future = Future {
       val sessions = openSessions()
@@ -136,7 +136,7 @@ private[jms] class JmsMessageProducer(jmsProducer: MessageProducer, jmsSession: 
   private def findHeader[T](headersDuringSend: Set[JmsHeader])(f: PartialFunction[JmsHeader, T]): Option[T] =
     headersDuringSend.collectFirst(f)
 
-  private def createMessage(element: JmsMessage): Message =
+  private[jms] def createMessage(element: JmsMessage): Message =
     element match {
 
       case textMessage: JmsTextMessage => jmsSession.session.createTextMessage(textMessage.body)
@@ -155,7 +155,7 @@ private[jms] class JmsMessageProducer(jmsProducer: MessageProducer, jmsSession: 
 
     }
 
-  private def populateMessageProperties(message: javax.jms.Message, jmsMessage: JmsMessage): Unit =
+  private[jms] def populateMessageProperties(message: javax.jms.Message, jmsMessage: JmsMessage): Unit =
     jmsMessage.properties().foreach {
       case (key, v) =>
         v match {
