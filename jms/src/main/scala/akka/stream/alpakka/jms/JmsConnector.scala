@@ -91,8 +91,8 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
     }
 
     val sessionCount = jmsSettings match {
-      case settings: JmsConsumerSettings =>
-        settings.sessionCount
+      case settings: JmsConsumerSettings => settings.sessionCount
+      case settings: JmsProducerSettings => settings.sessionCount
       case _ => 1
     }
 
