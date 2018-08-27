@@ -24,7 +24,7 @@ import scala.collection.immutable
  */
 class AmqpConnectorsSpec extends AmqpSpec {
 
-  override implicit val patienceConfig = PatienceConfig(10.seconds)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(10.seconds)
 
   "The AMQP Connectors" should {
 
@@ -396,7 +396,6 @@ class AmqpConnectorsSpec extends AmqpSpec {
             .withDeclaration(queueDeclaration),
           bufferSize = 10
         )
-        .mapAsync(1)(cm => cm.ack().map(_ => cm))
 
       val input = Vector("one", "two", "three", "four", "five")
       Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
