@@ -28,7 +28,7 @@ object SolrFlow {
           collection,
           client,
           settings,
-          identity
+          Some(identity)
         )
       )
       .mapAsync(1)(identity)
@@ -47,7 +47,7 @@ object SolrFlow {
           collection,
           client,
           settings,
-          new DefaultSolrObjectBinder
+          Some(new DefaultSolrObjectBinder)
         )
       )
       .mapAsync(1)(identity)
@@ -67,7 +67,26 @@ object SolrFlow {
           collection,
           client,
           settings,
-          binder
+          Some(binder)
+        )
+      )
+      .mapAsync(1)(identity)
+
+  /**
+   * Scala API: creates a [[SolrFlowStage]] for message to delete from [[IncomingMessage]] to sequences
+   * of [[IncomingMessageResult]].
+   */
+  def delete(collection: String,
+             settings: SolrUpdateSettings)(implicit client: SolrClient): Flow[IncomingMessage[NotUsed, NotUsed], Seq[
+    IncomingMessageResult[NotUsed, NotUsed]
+  ], NotUsed] =
+    Flow
+      .fromGraph(
+        new SolrFlowStage[NotUsed, NotUsed](
+          collection,
+          client,
+          settings,
+          None
         )
       )
       .mapAsync(1)(identity)
@@ -88,7 +107,7 @@ object SolrFlow {
           collection,
           client,
           settings,
-          identity
+          Some(identity)
         )
       )
       .mapAsync(1)(identity)
@@ -108,7 +127,7 @@ object SolrFlow {
           collection,
           client,
           settings,
-          new DefaultSolrObjectBinder
+          Some(new DefaultSolrObjectBinder)
         )
       )
       .mapAsync(1)(identity)
@@ -128,7 +147,27 @@ object SolrFlow {
           collection,
           client,
           settings,
-          binder
+          Some(binder)
+        )
+      )
+      .mapAsync(1)(identity)
+
+  /**
+   * Scala API: creates a [[SolrFlowStage]] for message to delete from [[IncomingMessage]] to sequences
+   * of [[IncomingMessageResult]] with `passThrough` of type `C`.
+   */
+  def deleteWithPassThrough[C](collection: String, settings: SolrUpdateSettings)(
+      implicit client: SolrClient
+  ): Flow[IncomingMessage[NotUsed, C], Seq[
+    IncomingMessageResult[NotUsed, C]
+  ], NotUsed] =
+    Flow
+      .fromGraph(
+        new SolrFlowStage[NotUsed, C](
+          collection,
+          client,
+          settings,
+          None
         )
       )
       .mapAsync(1)(identity)
