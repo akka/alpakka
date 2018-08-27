@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.unixdomainsocket.scaladsl
+package docs.scaladsl
 
 import java.io.{File, IOException}
 import java.nio.file.Files
@@ -10,14 +10,15 @@ import java.nio.file.Files
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.unixdomainsocket.scaladsl.UnixDomainSocket
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.testkit._
 import akka.util.ByteString
 import jnr.unixsocket.UnixSocketAddress
 import org.scalatest._
 
-import scala.concurrent.duration._
 import scala.concurrent.Promise
+import scala.concurrent.duration._
 
 class UnixDomainSocketSpec
     extends TestKit(ActorSystem("UnixDomainSocketSpec"))
