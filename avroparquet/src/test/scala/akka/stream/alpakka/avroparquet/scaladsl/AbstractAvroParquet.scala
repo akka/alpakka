@@ -8,12 +8,15 @@ import java.io.File
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.apache.avro.Schema
+import org.apache.avro.generic.{GenericRecord, GenericRecordBuilder}
 import org.apache.hadoop.conf.Configuration
 import org.apache.parquet.avro.AvroReadSupport
 
 import scala.util.Random
 
 trait AbstractAvroParquet {
+
+  case class Document(id: String, body: String)
 
   //#init-system
   implicit val system: ActorSystem = ActorSystem()
@@ -36,5 +39,11 @@ trait AbstractAvroParquet {
     directory.deleteRecursively()
 
   }
+
+  def docToRecord(document: Document): GenericRecord =
+    new GenericRecordBuilder(schema)
+      .set("id", document.id)
+      .set("body", document.body)
+      .build()
 
 }

@@ -8,6 +8,7 @@
 * [Apache Geode](geode.md)
 * [Apache Kafka](kafka.md)
 * [Apache Kudu](kudu.md)
+* [Apache Parquet](avroparquet.md)
 * [Apache Solr](solr.md)
 * [AWS DynamoDB](dynamodb.md)
 * [AWS Kinesis](kinesis.md)

@@ -5,9 +5,9 @@
 package akka.stream.alpakka.avroparquet.scaladsl
 import java.util.concurrent.TimeUnit
 
-import akka.{Done, NotUsed}
 import akka.stream.scaladsl.{Keep, Source}
 import akka.stream.testkit.scaladsl.TestSink
+import akka.{Done, NotUsed}
 import org.apache.avro.generic.{GenericRecord, GenericRecordBuilder}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
@@ -17,8 +17,8 @@ import org.apache.parquet.hadoop.{ParquetReader, ParquetWriter}
 import org.specs2.mutable.Specification
 import org.specs2.specification.{AfterAll, BeforeAll}
 
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 class AvroParquetSourceSpec extends Specification with AbstractAvroParquet with AfterAll with BeforeAll {
 

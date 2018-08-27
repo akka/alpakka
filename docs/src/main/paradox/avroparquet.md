@@ -1,6 +1,6 @@
 #Avro Parquet
 
-The Avro Parquet connector provides an Akka Stream Source and Sink for push and pull data to and from parquet files.
+The Avro Parquet connector provides an Akka Stream Source, Sink and Flow for push and pull data to and from parquet files.
 
 For more information about Apache Parquet please visit the [official documentation](https://parquet.apache.org/documentation/latest/).
 
@@ -30,15 +30,20 @@ Scala
 Java
 : @@snip (/avroparquet/src/test/java/akka/stream/alpakka/avroparquet/javadsl/AvroParquetSinkTest.java) { #init-sink }
 
-#Source Initalization
+#Source Initiation
 Scala
 : @@snip (/avroparquet/src/test/scala/akka/stream/alpakka/avroparquet/scaladsl/AvroParquetSourceSpec.scala) { #init-source }
 
 Java
 : @@snip (/doc-examples/src/main/java/avroparquet/Examples.java) { #init-source }
 
-
+#Flow Initiation
+Scala
+: @@snip (/avroparquet/src/test/scala/akka/stream/alpakka/avroparquet/scaladsl/AvroParquetFlowSpec.scala) { #init-flow }
 This is all preparation that we are going to need.
+
+Java
+: @@snip (/doc-examples/src/main/java/avroparquet/Examples.java) { #init-flow }
 
 ### Running the example code
 

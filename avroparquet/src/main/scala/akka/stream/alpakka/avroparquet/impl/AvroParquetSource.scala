@@ -1,9 +1,18 @@
+/*
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.avroparquet.impl
+import akka.annotation.InternalApi
 import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import org.apache.avro.generic.GenericRecord
 import org.apache.parquet.hadoop.ParquetReader
 
+/**
+ * Internal API
+ */
+@InternalApi
 private[avroparquet] class AvroParquetSource(reader: ParquetReader[GenericRecord])
     extends GraphStage[SourceShape[GenericRecord]] {
 

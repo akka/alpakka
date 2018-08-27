@@ -3,10 +3,10 @@
  */
 
 package akka.stream.alpakka.avroparquet.scaladsl
-
 import java.util.concurrent.TimeUnit
-import akka.Done
-import akka.stream.scaladsl.{Sink, Source}
+
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.{Done, NotUsed}
 import org.apache.avro.generic.GenericRecord
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
@@ -14,21 +14,22 @@ import org.apache.parquet.avro.{AvroParquetReader, AvroParquetWriter, AvroReadSu
 import org.apache.parquet.hadoop.ParquetWriter
 import org.apache.parquet.hadoop.util.HadoopInputFile
 import org.specs2.mutable.Specification
-import org.specs2.specification.AfterAll
+
 import scala.collection.mutable
+import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 
-class AvroParquetSinkSpec extends Specification with AfterAll with AbstractAvroParquet {
+class AvroParquetFlowSpec extends Specification with AbstractAvroParquet {
 
-  "ParquetSing Sink" should {
+  "AvroParquet" should {
 
-    "create new Parquet file" in {
+    "insert records in parquet as part of Flow stage" in {
+
       val docs = List[Document](Document("id1", "sdaada"), Document("id1", "sdaada"), Document("id3", " fvrfecefedfww"))
 
       val source = Source.fromIterator(() => docs.iterator)
 
-      //#init-sink
+      //#init-flow
       val file = folder + "/test.parquet"
 
       val conf = new Configuration()
@@ -37,12 +38,13 @@ class AvroParquetSinkSpec extends Specification with AfterAll with AbstractAvroP
       val writer: ParquetWriter[GenericRecord] =
         AvroParquetWriter.builder[GenericRecord](new Path(file)).withConf(conf).withSchema(schema).build()
 
-      val sink: Sink[GenericRecord, Future[Done]] = AvroParquetSink(writer)
-      //#init-sink
+      val flow: Flow[GenericRecord, GenericRecord, NotUsed] = AvroParquetFlow(writer)
 
-      val result: Future[Done] = source
-        .map(docToRecord)
-        .runWith(sink)
+      val result = source
+        .map(f => docToRecord(f))
+        .via(flow)
+        .runWith(Sink.ignore)
+      //#init-flow
 
       Await.result[Done](result, Duration(5, TimeUnit.SECONDS))
       val dataFile = new org.apache.hadoop.fs.Path(file)
@@ -62,5 +64,4 @@ class AvroParquetSinkSpec extends Specification with AfterAll with AbstractAvroP
     }
 
   }
-
 }

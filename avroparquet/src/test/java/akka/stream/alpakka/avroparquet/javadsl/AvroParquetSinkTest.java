@@ -35,21 +35,16 @@ import static junit.framework.TestCase.assertEquals;
 
 public class AvroParquetSinkTest {
 
-  private ActorSystem system;
-  private Materializer materializer;
-
-  private String folder = "javaTestFolder";
-
-  private final String file = "./" + folder + "/test.parquet";
-
   private final Schema schema =
       new Schema.Parser()
           .parse(
               "{\"type\":\"record\",\"name\":\"Document\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"body\",\"type\":\"string\"}]}");
-
   private final Configuration conf = new Configuration();
-
   private final List<GenericRecord> records = new ArrayList<>();
+  private ActorSystem system;
+  private Materializer materializer;
+  private String folder = "javaTestFolder";
+  private final String file = "./" + folder + "/test.parquet";
 
   @Before
   public void setup() {
