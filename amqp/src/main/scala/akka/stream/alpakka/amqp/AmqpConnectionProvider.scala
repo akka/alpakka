@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.annotation.DoNotInherit
 import com.rabbitmq.client.{Address, Connection, ConnectionFactory, ExceptionHandler}
+import javax.net.ssl.{SSLContext, TrustManager}
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -60,7 +61,7 @@ final class AmqpDetailsConnectionProvider private (
     val hostAndPortList: immutable.Seq[(String, Int)],
     val credentials: Option[AmqpCredentials] = None,
     val virtualHost: Option[String] = None,
-    val sslProtocol: Option[String] = None,
+    val sslConfiguration: Option[AmqpSSLConfiguration] = None,
     val requestedHeartbeat: Option[Int] = None,
     val connectionTimeout: Option[Int] = None,
     val handshakeTimeout: Option[Int] = None,
@@ -87,8 +88,8 @@ final class AmqpDetailsConnectionProvider private (
   def withVirtualHost(virtualHost: String): AmqpDetailsConnectionProvider =
     copy(virtualHost = Option(virtualHost))
 
-  def withSslProtocol(sslProtocol: String): AmqpDetailsConnectionProvider =
-    copy(sslProtocol = Option(sslProtocol))
+  def withSSLConfiguration(sslConfiguration: AmqpSSLConfiguration): AmqpDetailsConnectionProvider =
+    copy(sslConfiguration = Option(sslConfiguration))
 
   def withRequestedHeartbeat(requestedHeartbeat: Int): AmqpDetailsConnectionProvider =
     copy(requestedHeartbeat = Option(requestedHeartbeat))
@@ -125,7 +126,17 @@ final class AmqpDetailsConnectionProvider private (
       factory.setPassword(credentials.password)
     }
     virtualHost.foreach(factory.setVirtualHost)
-    sslProtocol.foreach(factory.useSslProtocol)
+    sslConfiguration.foreach(sslConfiguration => {
+      if (sslConfiguration.protocol.isDefined) {
+        if (sslConfiguration.trustManager.isDefined)
+          factory.useSslProtocol(sslConfiguration.protocol.get, sslConfiguration.trustManager.get)
+        else factory.useSslProtocol(sslConfiguration.protocol.get)
+      } else if (sslConfiguration.context.isDefined) {
+        factory.useSslProtocol(sslConfiguration.context.get)
+      } else {
+        factory.useSslProtocol()
+      }
+    })
     requestedHeartbeat.foreach(factory.setRequestedHeartbeat)
     connectionTimeout.foreach(factory.setConnectionTimeout)
     handshakeTimeout.foreach(factory.setHandshakeTimeout)
@@ -141,7 +152,7 @@ final class AmqpDetailsConnectionProvider private (
   private def copy(hostAndPortList: immutable.Seq[(String, Int)] = hostAndPortList,
                    credentials: Option[AmqpCredentials] = credentials,
                    virtualHost: Option[String] = virtualHost,
-                   sslProtocol: Option[String] = sslProtocol,
+                   sslConfiguration: Option[AmqpSSLConfiguration] = sslConfiguration,
                    requestedHeartbeat: Option[Int] = requestedHeartbeat,
                    connectionTimeout: Option[Int] = connectionTimeout,
                    handshakeTimeout: Option[Int] = handshakeTimeout,
@@ -155,7 +166,7 @@ final class AmqpDetailsConnectionProvider private (
       hostAndPortList,
       credentials,
       virtualHost,
-      sslProtocol,
+      sslConfiguration,
       requestedHeartbeat,
       connectionTimeout,
       handshakeTimeout,
@@ -168,7 +179,7 @@ final class AmqpDetailsConnectionProvider private (
     )
 
   override def toString: String =
-    s"AmqpDetailsConnectionProvider(hostAndPortList=$hostAndPortList, credentials=$credentials, virtualHost=$virtualHost, sslProtocol=$sslProtocol, requestedHeartbeat=$requestedHeartbeat, connectionTimeout=$connectionTimeout, handshakeTimeout=$handshakeTimeout, shutdownTimeout=$shutdownTimeout, networkRecoveryInterval=$networkRecoveryInterval, automaticRecoveryEnabled=$automaticRecoveryEnabled, topologyRecoveryEnabled=$topologyRecoveryEnabled, exceptionHandler=$exceptionHandler, connectionName=$connectionName)"
+    s"AmqpDetailsConnectionProvider(hostAndPortList=$hostAndPortList, credentials=$credentials, virtualHost=$virtualHost, sslConfiguration=$sslConfiguration, requestedHeartbeat=$requestedHeartbeat, connectionTimeout=$connectionTimeout, handshakeTimeout=$handshakeTimeout, shutdownTimeout=$shutdownTimeout, networkRecoveryInterval=$networkRecoveryInterval, automaticRecoveryEnabled=$automaticRecoveryEnabled, topologyRecoveryEnabled=$topologyRecoveryEnabled, exceptionHandler=$exceptionHandler, connectionName=$connectionName)"
 }
 
 object AmqpDetailsConnectionProvider {
@@ -197,6 +208,51 @@ object AmqpCredentials {
    */
   def create(username: String, password: String): AmqpCredentials =
     AmqpCredentials(username, password)
+}
+
+final class AmqpSSLConfiguration private (val protocol: Option[String] = None,
+                                          val trustManager: Option[TrustManager] = None,
+                                          val context: Option[SSLContext] = None) {
+  if (protocol.isDefined && context.isDefined) {
+    throw new IllegalArgumentException("Protocol and context can't be defined in the same AmqpSSLConfiguration.")
+  }
+
+  def withProtocol(protocol: String): AmqpSSLConfiguration =
+    copy(protocol = Some(protocol))
+
+  def withProtocolAndTrustManager(protocol: String, trustManager: javax.net.ssl.TrustManager): AmqpSSLConfiguration =
+    copy(protocol = Some(protocol), trustManager = Some(trustManager))
+
+  def withSSLContext(context: Option[javax.net.ssl.SSLContext]): AmqpSSLConfiguration =
+    copy(protocol = protocol)
+
+  private def copy(protocol: Option[String] = protocol,
+                   trustManager: Option[TrustManager] = trustManager,
+                   context: Option[SSLContext] = context): AmqpSSLConfiguration =
+    new AmqpSSLConfiguration(protocol, trustManager, context)
+
+  override def toString: String =
+    if (protocol.isDefined) {
+      if (trustManager.isDefined) s"AmqpSSLConfiguration(protocol=${protocol.get}, trustManager=${trustManager.get})"
+      else s"AmqpSSLConfiguration(protocol=${protocol.get})"
+    } else if (context.isDefined) {
+      s"AmqpSSLConfiguration(context=${context.get})"
+    } else {
+      "AmqpSSLConfiguration()"
+    }
+}
+
+/**
+ * Java API
+ */
+object AmqpSSLConfiguration {
+
+  def create(protocol: String): AmqpSSLConfiguration = new AmqpSSLConfiguration(Some(protocol))
+
+  def create(protocol: String, trustManager: TrustManager): AmqpSSLConfiguration =
+    new AmqpSSLConfiguration(Some(protocol), Some(trustManager))
+
+  def create(context: SSLContext): AmqpSSLConfiguration = new AmqpSSLConfiguration(context = Some(context))
 }
 
 /**
