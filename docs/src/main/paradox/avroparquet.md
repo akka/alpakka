@@ -20,7 +20,7 @@ Scala
 : @@snip (/avroparquet/src/test/scala/akka/stream/alpakka/avroparquet/scaladsl/AbstractAvroParquet.scala) { #init-system }
 
 Java
-: @@snip (/doc-examples/src/main/java/avroparquet/Examples.java) { #init-system }
+: @@snip (/avroparquet/src/test/java/docs/javadsl/Examples.java) { #init-system }
 
 #Sink Initiation
 
