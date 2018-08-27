@@ -35,7 +35,7 @@ Scala
 : @@snip (/avroparquet/src/test/scala/akka/stream/alpakka/avroparquet/scaladsl/AvroParquetSourceSpec.scala) { #init-source }
 
 Java
-: @@snip (/doc-examples/src/main/java/avroparquet/Examples.java) { #init-source }
+: @@snip (/avroparquet/src/test/java/docs/javadsl/Examples.java) { #init-source }
 
 #Flow Initiation
 Scala
@@ -43,7 +43,7 @@ Scala
 This is all preparation that we are going to need.
 
 Java
-: @@snip (/doc-examples/src/main/java/avroparquet/Examples.java) { #init-flow }
+: @@snip (/avroparquet/src/test/java/docs/javadsl/Examples.java) { #init-flow }
 
 ### Running the example code
 
