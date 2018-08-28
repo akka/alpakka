@@ -132,6 +132,20 @@ Use `private`, `private[connector]` and `final` extensively to limit the API sur
 * No Blocking At Any Time -- in other words, avoid blocking whenever possible and replace it with asynchronous 
 programming (async callbacks, stage actors)
 
+## Use of blocking APIs
+
+Many technologies come with client libraries that only support blocking calls. Akka Stream stages that use blocking APIs should preferably be run on Akka's `IODispatcher`. (In rare cases you might want to allow the users to configure another dispatcher to run the blocking operations on.)
+
+To select Akka`s `IODispatcher` for a stage use
+```$scala
+override protected def initialAttributes: Attributes = Attributes(ActorAttributes.IODispatcher)
+```
+
+When the `IODispatcher` is selected, you do NOT need to wrap the blocking calls in `Future`s or `blocking`.
+
+(Issue [akka/akka#25540](https://github.com/akka/akka/issues/25540) requests better support for selecting the correct execution context.)
+
+
 ### Keep the code DRY
 
 Avoid duplication of code between different Sources, Sinks and Flows. Extract the common logic to a common abstract
