@@ -9,6 +9,7 @@ import java.io.File
 import akka.NotUsed
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.stream._
+import akka.stream.alpakka.unixdomainsocket.impl.UnixDomainSocketImpl
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
 import jnr.unixsocket.UnixSocketAddress

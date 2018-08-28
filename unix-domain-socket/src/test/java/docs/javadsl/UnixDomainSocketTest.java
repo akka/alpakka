@@ -54,7 +54,10 @@ public class UnixDomainSocketTest {
 
   @Test
   public void aUnixDomainSocketShouldReceiveWhatIsSent() throws Exception {
-    File file = Files.createTempFile("aUnixDomainSocketShouldReceiveWhatIsSent1", ".sock").toFile();
+    // #binding
+    java.io.File file = // ...
+        // #binding
+        Files.createTempFile("aUnixDomainSocketShouldReceiveWhatIsSent1", ".sock").toFile();
     Assert.assertTrue(file.delete());
     file.deleteOnExit();
 

@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.unixdomainsocket.scaladsl
+package akka.stream.alpakka.unixdomainsocket.impl
 
 import java.io.{File, IOException}
 import java.nio.ByteBuffer
@@ -11,6 +11,7 @@ import java.nio.channels.{SelectionKey, Selector}
 import akka.actor.{Cancellable, CoordinatedShutdown, ExtendedActorSystem, Extension}
 import akka.annotation.InternalApi
 import akka.stream._
+import akka.stream.alpakka.unixdomainsocket.scaladsl
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
@@ -23,12 +24,12 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 /**
- * INTERAL API
+ * INTERNAL API
  */
 @InternalApi
 private[unixdomainsocket] object UnixDomainSocketImpl {
 
-  import UnixDomainSocket._
+  import scaladsl.UnixDomainSocket._
 
   private sealed abstract class ReceiveContext(
       val queue: SourceQueueWithComplete[ByteString],
@@ -298,12 +299,12 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
 }
 
 /**
- * INTERAL API
+ * INTERNAL API
  */
 @InternalApi
 private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedActorSystem) extends Extension {
 
-  import UnixDomainSocket._
+  import scaladsl.UnixDomainSocket._
   import UnixDomainSocketImpl._
 
   private implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
@@ -327,28 +328,6 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
   private val sendBufferSize: Int =
     system.settings.config.getBytes("akka.stream.alpakka.unix-domain-socket.send-buffer-size").toInt
 
-  /**
-   * Creates a [[UnixDomainSocket.ServerBinding]] instance which represents a prospective Unix Domain Socket
-   * server binding on the given `endpoint`.
-   *
-   * Please note that the startup of the server is asynchronous, i.e. after materializing the enclosing
-   * [[akka.stream.scaladsl.RunnableGraph]] the server is not immediately available. Only after the materialized future
-   * completes is the server ready to accept client connections.
-   *
-   * TODO: Support idleTimeout as per Tcp.
-   *
-   * @param file      The file to listen on
-   * @param backlog   Controls the size of the connection backlog
-   * @param halfClose
-   *                  Controls whether the connection is kept open even after writing has been completed to the accepted
-   *                  socket connections.
-   *                  If set to true, the connection will implement the socket half-close mechanism, allowing the client to
-   *                  write to the connection even after the server has finished writing. The socket is only closed
-   *                  after both the client and server finished writing.
-   *                  If set to false, the connection will immediately closed once the server closes its write side,
-   *                  independently whether the client is still attempting to write. This setting is recommended
-   *                  for servers, and therefore it is the default setting.
-   */
   protected def bind(file: File,
                      backlog: Int = 128,
                      halfClose: Boolean = false): Source[IncomingConnection, Future[ServerBinding]] = {
@@ -409,27 +388,6 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
       .mapMaterializedValue(_ => serverBinding.future)
   }
 
-  /**
-   * Creates an [[UnixDomainSocket.OutgoingConnection]] instance representing a prospective Unix Domain client connection to the given endpoint.
-   *
-   * Note that the ByteString chunk boundaries are not retained across the network,
-   * to achieve application level chunks you have to introduce explicit framing in your streams,
-   * for example using the [[akka.stream.scaladsl.Framing]] stages.
-   *
-   * TODO: Support idleTimeout as per Tcp.
-   *
-   * @param remoteAddress The remote address to connect to
-   * @param localAddress  Optional local address for the connection
-   * @param halfClose
-   *                  Controls whether the connection is kept open even after writing has been completed to the accepted
-   *                  socket connections.
-   *                  If set to true, the connection will implement the socket half-close mechanism, allowing the server to
-   *                  write to the connection even after the client has finished writing. The socket is only closed
-   *                  after both the client and server finished writing. This setting is recommended for clients and
-   *                  therefore it is the default setting.
-   *                  If set to false, the connection will immediately closed once the client closes its write side,
-   *                  independently whether the server is still attempting to write.
-   */
   protected def outgoingConnection(
       remoteAddress: UnixSocketAddress,
       localAddress: Option[UnixSocketAddress] = None,

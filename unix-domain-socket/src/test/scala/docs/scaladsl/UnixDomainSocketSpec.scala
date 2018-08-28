@@ -17,7 +17,7 @@ import akka.util.ByteString
 import jnr.unixsocket.UnixSocketAddress
 import org.scalatest._
 
-import scala.concurrent.Promise
+import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration._
 
 class UnixDomainSocketSpec
@@ -33,19 +33,22 @@ class UnixDomainSocketSpec
 
   "A Unix Domain Socket" should {
     "receive what is sent" in {
-      val file = Files.createTempFile("UnixDomainSocketSpec1", ".sock").toFile
+      //#binding
+      val file: java.io.File = // ...
+        //#binding
+        Files.createTempFile("UnixDomainSocketSpec1", ".sock").toFile
       file.delete()
       file.deleteOnExit()
 
       //#binding
-      val binding =
+      val binding: Future[UnixDomainSocket.ServerBinding] =
         UnixDomainSocket().bindAndHandle(Flow.fromFunction(identity), file)
       //#binding
 
       //#outgoingConnection
       binding.flatMap { connection =>
         val sendBytes = ByteString("Hello")
-        val result =
+        val result: Future[ByteString] =
           Source
             .single(sendBytes)
             .via(UnixDomainSocket().outgoingConnection(file))
