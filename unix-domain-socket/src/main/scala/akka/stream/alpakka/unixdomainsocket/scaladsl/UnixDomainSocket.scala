@@ -20,7 +20,6 @@ import akka.actor.{
 }
 import akka.stream._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
-import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.util.ByteString
 import jnr.enxio.channels.NativeSelectorProvider
 import jnr.unixsocket.{UnixServerSocketChannel, UnixSocketAddress, UnixSocketChannel}
@@ -94,10 +93,14 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
       sent: Promise[Done]
   ) extends SendContext(buffer)
   private case object CloseRequested extends SendContext(ByteString.empty.asByteBuffer)
+  private case object ShutdownRequested extends SendContext(ByteString.empty.asByteBuffer)
 
   private class SendReceiveContext(
       @volatile var send: SendContext,
-      @volatile var receive: ReceiveContext
+      @volatile var receive: ReceiveContext,
+      @volatile var halfClose: Boolean,
+      @volatile var isOutputShutdown: Boolean,
+      @volatile var isInputShutdown: Boolean
   )
 
   /*
@@ -120,6 +123,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
               newConnectionOp(sel, key)
             }
             key.attachment match {
+              case null =>
               case sendReceiveContext: SendReceiveContext =>
                 sendReceiveContext.send match {
                   case SendRequested(buffer, sent) if keySelectable && key.isWritable =>
@@ -144,10 +148,25 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                     }
                   case _: SendRequested =>
                     key.interestOps(key.interestOps() | SelectionKey.OP_WRITE)
+                  case _: SendAvailable =>
+                  case ShutdownRequested if key.isValid && !sendReceiveContext.isOutputShutdown =>
+                    try {
+                      if (sendReceiveContext.isInputShutdown) {
+                        key.cancel()
+                        key.channel.close()
+                      } else {
+                        sendReceiveContext.isOutputShutdown = true
+                        key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE)
+                        key.channel.asInstanceOf[UnixSocketChannel].shutdownOutput()
+                      }
+                    } catch {
+                      // socket could have been closed in the meantime, so shutdownOutput will throw this
+                      case _: IOException =>
+                    }
+                  case ShutdownRequested =>
                   case CloseRequested =>
                     key.cancel()
                     key.channel.close()
-                  case _: SendAvailable =>
                 }
                 sendReceiveContext.receive match {
                   case ReceiveAvailable(queue, buffer) if keySelectable && key.isReadable =>
@@ -168,17 +187,28 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
                       val pendingResult = queue.offer(ByteString(buffer))
                       pendingResult.onComplete(_ => sel.wakeup())
                       sendReceiveContext.receive = PendingReceiveAck(queue, buffer, pendingResult)
+                      key.interestOps(key.interestOps() & ~SelectionKey.OP_READ)
                     } else {
                       queue.complete()
+                      try {
+                        if (!sendReceiveContext.halfClose || sendReceiveContext.isOutputShutdown) {
+                          key.cancel()
+                          key.channel().close()
+                        } else {
+                          sendReceiveContext.isInputShutdown = true
+                          channel.shutdownInput()
+                        }
+                      } catch {
+                        // socket could have been closed in the meantime, so shutdownInput will throw this
+                        case _: IOException =>
+                      }
                     }
-
-                    key.interestOps(key.interestOps() & ~SelectionKey.OP_READ)
 
                   case PendingReceiveAck(receiveQueue, receiveBuffer, pendingResult) if pendingResult.isCompleted =>
                     pendingResult.value.get match {
                       case Success(QueueOfferResult.Enqueued) =>
-                        sendReceiveContext.receive = ReceiveAvailable(receiveQueue, receiveBuffer)
                         key.interestOps(key.interestOps() | SelectionKey.OP_READ)
+                        sendReceiveContext.receive = ReceiveAvailable(receiveQueue, receiveBuffer)
                       case _ =>
                         receiveQueue.complete()
                         key.cancel()
@@ -205,17 +235,15 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
 
     val acceptingChannel = key.channel().asInstanceOf[UnixServerSocketChannel]
     val acceptedChannel = acceptingChannel.accept()
-    acceptedChannel.configureBlocking(false)
-    val (context, flow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize)
-    acceptedChannel.register(sel, SelectionKey.OP_READ, context)
-    val connectionFlow =
-      if (halfClose)
-        Flow.fromGraph(new HalfCloseFlow).via(flow)
-      else
-        flow
-    incomingConnectionQueue.offer(
-      IncomingConnection(localAddress, acceptingChannel.getRemoteSocketAddress, connectionFlow)
-    )
+
+    if (acceptedChannel != null) {
+      acceptedChannel.configureBlocking(false)
+      val (context, connectionFlow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize, halfClose)
+      acceptedChannel.register(sel, SelectionKey.OP_READ, context)
+      incomingConnectionQueue.offer(
+        IncomingConnection(localAddress, acceptingChannel.getRemoteSocketAddress, connectionFlow)
+      )
+    }
   }
 
   private def connectKey(remoteAddress: UnixSocketAddress,
@@ -237,7 +265,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
     }
   }
 
-  private def sendReceiveStructures(sel: Selector, receiveBufferSize: Int, sendBufferSize: Int)(
+  private def sendReceiveStructures(sel: Selector, receiveBufferSize: Int, sendBufferSize: Int, halfClose: Boolean)(
       implicit mat: ActorMaterializer,
       ec: ExecutionContext
   ): (SendReceiveContext, Flow[ByteString, ByteString, NotUsed]) = {
@@ -252,7 +280,10 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
     val sendReceiveContext =
       new SendReceiveContext(
         SendAvailable(ByteBuffer.allocate(sendBufferSize)),
-        ReceiveAvailable(receiveQueue, ByteBuffer.allocate(receiveBufferSize))
+        ReceiveAvailable(receiveQueue, ByteBuffer.allocate(receiveBufferSize)),
+        halfClose = halfClose,
+        isOutputShutdown = false,
+        isInputShutdown = false
       ) // FIXME: No need for the costly allocation of direct buffers yet given https://github.com/jnr/jnr-unixsocket/pull/49
 
     val sendSink = Sink.fromGraph(
@@ -285,48 +316,22 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
           sent.future.map(_ => bytes)
         }
         .watchTermination() {
-          case (m, done) =>
+          case (_, done) =>
             done.onComplete { _ =>
-              sendReceiveContext.send = CloseRequested
+              sendReceiveContext.send = if (halfClose) {
+                ShutdownRequested
+              } else {
+                receiveQueue.complete()
+                CloseRequested
+              }
               sel.wakeup()
             }
-            (m, done)
+            Keep.left
         }
         .to(Sink.ignore)
     )
 
     (sendReceiveContext, Flow.fromSinkAndSource(sendSink, Source.fromFutureSource(receiveSource)))
-  }
-
-  /*
-   * A flow that requires the downstream to complete for it to complete i.e. it will
-   * keep going if the upstream completes.
-   */
-  private class HalfCloseFlow extends GraphStage[FlowShape[ByteString, ByteString]] {
-    private val in = Inlet[ByteString]("HalfCloseFlow.in")
-    private val out = Outlet[ByteString]("HalfCloseFlow.out")
-
-    override val shape: FlowShape[ByteString, ByteString] = FlowShape.of(in, out)
-
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-      new GraphStageLogic(shape) {
-
-        override def preStart(): Unit =
-          setKeepGoing(true) // At a minimum, the downstream completion will stop this stage.
-
-        setHandler(in, new InHandler {
-          override def onPush(): Unit =
-            push(out, grab(in))
-
-          override def onUpstreamFinish(): Unit =
-            ()
-        })
-
-        setHandler(out, new OutHandler {
-          override def onPull(): Unit =
-            if (!isClosed(in) && !hasBeenPulled(in)) pull(in)
-        })
-      }
   }
 }
 
@@ -514,18 +519,13 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends Extension {
         case _ =>
           None
       }
-    val (context, flow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize)
+    val (context, connectionFlow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize, halfClose)
     val registeredKey =
       channel
         .register(sel, SelectionKey.OP_CONNECT, connectKey(remoteAddress, connectionFinished, cancellable, context) _)
     val connection = Try(channel.connect(remoteAddress))
-    connection.failed.foreach(e => connectionFinished.failure(e))
+    connection.failed.foreach(e => connectionFinished.tryFailure(e))
 
-    val connectionFlow =
-      if (halfClose)
-        Flow.fromGraph(new HalfCloseFlow).via(flow)
-      else
-        flow
     connectionFlow
       .merge(Source.fromFuture(connectionFinished.future.map(_ => ByteString.empty)))
       .filter(_.nonEmpty) // We merge above so that we can get connection failures - we're not interested in the empty bytes though

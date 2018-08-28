@@ -30,10 +30,10 @@ If any of the API classes are different between Scala and Java, link to both API
 Show an example code snippet of how a source of this connector can be created.
 
 Scala
-: @@snip [snip]($alpakka$/reference/src/test/scala/docs/scaladsl/ReferenceSpec.scala) { #source }
+: @@snip [snip](/reference/src/test/scala/docs/scaladsl/ReferenceSpec.scala) { #source }
 
 Java
-: @@snip [snip]($alpakka$/reference/src/test/java/docs/javadsl/ReferenceTest.java) { #source }
+: @@snip [snip](/reference/src/test/java/docs/javadsl/ReferenceTest.java) { #source }
 
 Wrap language specific text with language specific directives,
 like @scala[`@scala` for Scala specific text]@java[`@java` for Java specific text].
@@ -43,10 +43,10 @@ like @scala[`@scala` for Scala specific text]@java[`@java` for Java specific tex
 Show an example code snippet of how a flow of this connector can be created.
 
 Scala
-: @@snip [snip]($alpakka$/reference/src/test/scala/docs/scaladsl/ReferenceSpec.scala) { #flow }
+: @@snip [snip](/reference/src/test/scala/docs/scaladsl/ReferenceSpec.scala) { #flow }
 
 Java
-: @@snip [snip]($alpakka$/reference/src/test/java/docs/javadsl/ReferenceTest.java) { #flow }
+: @@snip [snip](/reference/src/test/java/docs/javadsl/ReferenceTest.java) { #flow }
 
 ## Running the example code
 

@@ -184,7 +184,14 @@ lazy val text = alpakkaProject("text", "text")
 
 lazy val udp = alpakkaProject("udp", "udp")
 
-lazy val unixdomainsocket = alpakkaProject("unix-domain-socket", "unixdomainsocket", Dependencies.UnixDomainSocket)
+// FIXME: The exclude filter can be removed once we use JNR with
+// https://github.com/jnr/jnr-enxio/pull/28 merged in.
+lazy val unixdomainsocket = alpakkaProject(
+  "unix-domain-socket",
+  "unixdomainsocket",
+  Dependencies.UnixDomainSocket,
+  excludeFilter.in(unmanagedSources.in(headerCreate)) := HiddenFileFilter || "KQSelector.java"
+)
 
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
 
@@ -212,12 +219,11 @@ lazy val docs = project
       "javadoc.javax.jms.base_url" -> "https://docs.oracle.com/javaee/7/api/",
       "javadoc.akka.base_url" -> s"http://doc.akka.io/japi/akka/${Dependencies.AkkaVersion}/",
       "javadoc.akka.http.base_url" -> s"http://doc.akka.io/japi/akka-http/${Dependencies.AkkaHttpVersion}/",
+      "javadoc.org.apache.hadoop.base_url" -> s"https://hadoop.apache.org/docs/r${Dependencies.HadoopVersion}/api/",
       "scaladoc.scala.base_url" -> s"http://www.scala-lang.org/api/current/",
       "scaladoc.akka.base_url" -> s"http://doc.akka.io/api/akka/${Dependencies.AkkaVersion}",
       "scaladoc.akka.http.base_url" -> s"https://doc.akka.io/api/akka-http/${Dependencies.AkkaHttpVersion}/",
-      "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}",
-      "snip.alpakka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
-      "javadoc.org.apache.hadoop.base_url" -> s"https://hadoop.apache.org/docs/r${Dependencies.HadoopVersion}/api/"
+      "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}"
     ),
     paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     paradoxLocalApiKey := "scaladoc.akka.stream.alpakka.base_url",

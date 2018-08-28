@@ -70,7 +70,8 @@ class AmqpGraphStageLogicConnectionShutdownSpec
       override def newConnection(es: ExecutorService, ar: AddressResolver, name: String): Connection =
         new AmqpProxyConnection(super.newConnection(es, ar, name)) with ShutdownListenerTracking
     }
-    val connectionProvider = AmqpConnectionFactoryConnectionProvider(connectionFactory, List(("localhost", 5672)))
+    val connectionProvider =
+      AmqpConnectionFactoryConnectionProvider(connectionFactory).withHostAndPort("localhost", 5672)
     val reusableConnectionProvider = AmqpCachedConnectionProvider(provider = connectionProvider)
 
     def queueName = "amqp-conn-prov-it-spec-simple-queue-" + System.currentTimeMillis()
@@ -79,7 +80,7 @@ class AmqpGraphStageLogicConnectionShutdownSpec
     val amqpSink = AmqpSink.simple(
       AmqpSinkSettings(reusableConnectionProvider)
         .withRoutingKey(queueName)
-        .withDeclarations(queueDeclaration)
+        .withDeclaration(queueDeclaration)
     )
 
     val input = Vector("one", "two", "three", "four")

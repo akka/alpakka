@@ -5,7 +5,7 @@
 package akka.stream.alpakka.awslambda.javadsl
 
 import akka.NotUsed
-import akka.stream.alpakka.awslambda.AwsLambdaFlowStage
+import akka.stream.alpakka.awslambda.impl.AwsLambdaFlowStage
 import akka.stream.javadsl.Flow
 import com.amazonaws.services.lambda.model.{InvokeRequest, InvokeResult}
 import com.amazonaws.services.lambda.AWSLambdaAsync

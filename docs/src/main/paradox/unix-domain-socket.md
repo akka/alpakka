@@ -29,16 +29,16 @@ The binding and connecting APIs are extremely similar to the `Tcp` Akka Streams 
 ### Binding to a file
 
 Scala
-: @@snip ($alpakka$/unix-domain-socket/src/test/scala/akka/stream/alpakka/unixdomainsocket/scaladsl/UnixDomainSocketSpec.scala) { #binding }
+: @@snip [snip](/unix-domain-socket/src/test/scala/akka/stream/alpakka/unixdomainsocket/scaladsl/UnixDomainSocketSpec.scala) { #binding }
 
 Java
-: @@snip ($alpakka$/unix-domain-socket/src/test/java/akka/stream/alpakka/unixdomainsocket/javadsl/UnixDomainSocketTest.java) { #binding }
+: @@snip [snip](/unix-domain-socket/src/test/java/akka/stream/alpakka/unixdomainsocket/javadsl/UnixDomainSocketTest.java) { #binding }
 
 ### Connecting to a file
 
 Scala
-: @@snip ($alpakka$/unix-domain-socket/src/test/scala/akka/stream/alpakka/unixdomainsocket/scaladsl/UnixDomainSocketSpec.scala) { #outgoingConnection }
+: @@snip [snip](/unix-domain-socket/src/test/scala/akka/stream/alpakka/unixdomainsocket/scaladsl/UnixDomainSocketSpec.scala) { #outgoingConnection }
 
 Java
-: @@snip ($alpakka$/unix-domain-socket/src/test/java/akka/stream/alpakka/unixdomainsocket/javadsl/UnixDomainSocketTest.java) { #outgoingConnection }
+: @@snip [snip](/unix-domain-socket/src/test/java/akka/stream/alpakka/unixdomainsocket/javadsl/UnixDomainSocketTest.java) { #outgoingConnection }
 

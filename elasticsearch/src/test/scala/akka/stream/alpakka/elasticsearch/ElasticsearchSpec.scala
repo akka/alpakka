@@ -893,4 +893,12 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
+  def compileOnlySample(): Unit = {
+    val doc = "dummy-doc"
+    //#custom-metadata-example
+    val msg = IncomingIndexMessage(doc)
+      .withCustomMetadata(Map("pipeline" -> "myPipeline"))
+    //#custom-metadata-example
+  }
+
 }

@@ -12,7 +12,7 @@
 - (8) convert the list of measurements to a JSON array structure
 
 Java
-: @@snip ($alpakka$/doc-examples/src/main/java/mqtt/javasamples/MqttGroupedWithin.java) { #flow }
+: @@snip [snip](/doc-examples/src/main/java/mqtt/javasamples/MqttGroupedWithin.java) { #flow }
 
 
 ### Restarting of the source
@@ -21,7 +21,7 @@ The MQTT source gets wrapped by a `RestartSource` to mitigate the
 @ref:[Paho initial connections problem](../mqtt.md#setup).
 
 Java
-: @@snip ($alpakka$/doc-examples/src/main/java/mqtt/javasamples/MqttGroupedWithin.java) { #restarting }
+: @@snip [snip](/doc-examples/src/main/java/mqtt/javasamples/MqttGroupedWithin.java) { #restarting }
 
 ### Json helper code
 
@@ -37,7 +37,7 @@ To use Java 8 time types (`Instant`) with Jackson, extra dependencies are requir
 }
 
 Java
-: @@snip ($alpakka$/doc-examples/src/main/java/mqtt/javasamples/MqttGroupedWithin.java) { #json-mechanics }
+: @@snip [snip](/doc-examples/src/main/java/mqtt/javasamples/MqttGroupedWithin.java) { #json-mechanics }
 
 
 ### Running the example code

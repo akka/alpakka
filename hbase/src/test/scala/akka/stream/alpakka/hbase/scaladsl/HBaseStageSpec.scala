@@ -101,8 +101,7 @@ class HBaseStageSpec extends WordSpec with Matchers {
         val f = Source(1 to 10).map(i => Person(i, s"zozo_$i")).runWith(sink)
         //#sink
 
-        f.onComplete(e =>
-          actorSystem.terminate())
+        f.onComplete(e => actorSystem.terminate())
 
         Await.ready(f, Duration.Inf)
 
