@@ -12,18 +12,20 @@ import akka.stream.alpakka.avroparquet.javadsl.AvroParquetFlow;
 import akka.stream.alpakka.avroparquet.javadsl.AvroParquetSource;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.avro.AvroParquetWriter;
-import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.ParquetWriter;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
-
 import java.io.IOException;
+// #init-reader
+import org.apache.parquet.hadoop.ParquetReader;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.parquet.hadoop.util.HadoopInputFile;
+import org.apache.hadoop.fs.Path;
+import org.apache.avro.Schema;
+import akka.stream.javadsl.Source;
+import org.apache.parquet.avro.AvroParquetReader;
+// #init-reader
 
 public class Examples {
 
@@ -35,10 +37,10 @@ public class Examples {
   ActorSystem system = ActorSystem.create();
   // #init-system
   ActorMaterializer materializer = ActorMaterializer.create(system);
-  // #init-source
-  Configuration conf = new Configuration();
 
   // #init-reader
+  Configuration conf = new Configuration();
+
   ParquetReader<GenericRecord> reader =
       AvroParquetReader.<GenericRecord>builder(
               HadoopInputFile.fromPath(new Path("./test.parquet"), conf))
@@ -48,6 +50,7 @@ public class Examples {
 
   // #init-source
   Source<GenericRecord, NotUsed> source = AvroParquetSource.create(reader);
+  // #init-source
 
   public Examples() throws IOException {
 

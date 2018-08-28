@@ -10,17 +10,24 @@ import akka.stream.alpakka.avroparquet.scaladsl.{AvroParquetSink, AvroParquetSou
 import akka.stream.scaladsl.{Keep, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import akka.{Done, NotUsed}
+
+import org.apache.parquet.avro.AvroParquetWriter
+import org.apache.parquet.hadoop.ParquetWriter
+import org.specs2.mutable.Specification
+import org.specs2.specification.{AfterAll, BeforeAll}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+
+//#init-reader
 import org.apache.avro.generic.{GenericRecord, GenericRecordBuilder}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
-import org.apache.parquet.avro.{AvroParquetReader, AvroParquetWriter, AvroReadSupport}
+import org.apache.parquet.avro.AvroParquetReader
 import org.apache.parquet.hadoop.util.HadoopInputFile
-import org.apache.parquet.hadoop.{ParquetReader, ParquetWriter}
-import org.specs2.mutable.Specification
-import org.specs2.specification.{AfterAll, BeforeAll}
+import org.apache.parquet.hadoop.ParquetReader
+import org.apache.parquet.avro.AvroReadSupport
+//#init-reader
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 
 class AvroParquetSourceSpec extends Specification with AbstractAvroParquet with AfterAll with BeforeAll {
 

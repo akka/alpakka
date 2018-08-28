@@ -12,28 +12,30 @@ import akka.stream.alpakka.avroparquet.javadsl.AvroParquetSink;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.google.common.collect.Lists;
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.generic.GenericRecordBuilder;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.avro.AvroParquetWriter;
 import org.apache.parquet.avro.AvroReadSupport;
 import org.apache.parquet.hadoop.ParquetReader;
-import org.apache.parquet.hadoop.ParquetWriter;
-import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-
 import static junit.framework.TestCase.assertEquals;
+
+//#init-writer
+import org.apache.parquet.hadoop.ParquetWriter;
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.generic.GenericRecordBuilder;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.parquet.hadoop.util.HadoopInputFile;
+//#init-writer
+
 
 public class AvroParquetSinkTest {
 
@@ -60,7 +62,7 @@ public class AvroParquetSinkTest {
 
   @Test
   public void createNewParquetFile() throws InterruptedException, IOException {
-    // #init-writer
+    //#init-writer
     Configuration conf = new Configuration();
     conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true);
     ParquetWriter<GenericRecord> writer =
@@ -68,11 +70,12 @@ public class AvroParquetSinkTest {
             .withConf(conf)
             .withSchema(schema)
             .build();
-    // #init-writer
 
-    // #init-sink
+    //#init-writer
+
+    //#init-sink
     Sink<GenericRecord, CompletionStage<Done>> sink = AvroParquetSink.create(writer);
-    // #init-sink
+    //#init-sink
 
     Source.from(records).runWith(sink, materializer);
 
