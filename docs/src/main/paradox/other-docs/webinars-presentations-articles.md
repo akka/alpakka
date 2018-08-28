@@ -1,5 +1,11 @@
 # Webinars, Presentations and Articles
 
+[Pakk Your Alpakka: Reactive Streams Integrations For AWS, Azure, & Google Cloud](https://www.lightbend.com/blog/pakk-your-alpakka-reactive-streams-integrations-for-aws-azure-google-cloud)
+Webinar by Enno Runne, Alpakka Team @ Lightbend, August 2018
+
+[Patterns for Streaming Telemetry with Akka Streams](https://slideslive.com/38908774/patterns-for-streaming-telemetry-with-akka-streams)
+presentation by Colin Breck, ScalaDays New York, June 2018
+
 [Stream a file to AWS S3 using Akka Streams (via Alpakka) in Play Framework](https://blog.knoldus.com/2018/05/04/stream-a-file-to-aws-s3-using-akka-streams-via-alpakka-in-play-framework/)
 blog by Sidharth Khattri, May 2018
 
