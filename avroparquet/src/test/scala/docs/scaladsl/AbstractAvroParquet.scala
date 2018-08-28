@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.avroparquet.scaladsl
+package docs.scaladsl
 import java.io.File
 
 import akka.actor.ActorSystem

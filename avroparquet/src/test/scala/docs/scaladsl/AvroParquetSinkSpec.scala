@@ -2,10 +2,12 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.avroparquet.scaladsl
+package docs.scaladsl
 
 import java.util.concurrent.TimeUnit
+
 import akka.Done
+import akka.stream.alpakka.avroparquet.scaladsl.AvroParquetSink
 import akka.stream.scaladsl.{Sink, Source}
 import org.apache.avro.generic.GenericRecord
 import org.apache.hadoop.conf.Configuration
@@ -15,6 +17,7 @@ import org.apache.parquet.hadoop.ParquetWriter
 import org.apache.parquet.hadoop.util.HadoopInputFile
 import org.specs2.mutable.Specification
 import org.specs2.specification.AfterAll
+
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -28,7 +31,7 @@ class AvroParquetSinkSpec extends Specification with AfterAll with AbstractAvroP
 
       val source = Source.fromIterator(() => docs.iterator)
 
-      //#init-sink
+      //#init-writer
       val file = folder + "/test.parquet"
 
       val conf = new Configuration()
@@ -36,7 +39,9 @@ class AvroParquetSinkSpec extends Specification with AfterAll with AbstractAvroP
 
       val writer: ParquetWriter[GenericRecord] =
         AvroParquetWriter.builder[GenericRecord](new Path(file)).withConf(conf).withSchema(schema).build()
+      //#init-writer
 
+      //#init-sink
       val sink: Sink[GenericRecord, Future[Done]] = AvroParquetSink(writer)
       //#init-sink
 

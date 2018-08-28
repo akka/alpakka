@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.avroparquet.impl
 import akka.annotation.InternalApi
-import akka.stream.{Attributes, Outlet, SourceShape}
+import akka.stream.{ActorAttributes, Attributes, Outlet, SourceShape}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import org.apache.avro.generic.GenericRecord
 import org.apache.parquet.hadoop.ParquetReader
@@ -17,6 +17,9 @@ private[avroparquet] class AvroParquetSource(reader: ParquetReader[GenericRecord
     extends GraphStage[SourceShape[GenericRecord]] {
 
   val out: Outlet[GenericRecord] = Outlet("AvroParquetSource")
+
+  override protected def initialAttributes: Attributes =
+    super.initialAttributes and ActorAttributes.IODispatcher
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
 

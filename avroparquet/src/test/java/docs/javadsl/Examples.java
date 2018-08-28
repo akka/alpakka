@@ -37,11 +37,15 @@ public class Examples {
   ActorMaterializer materializer = ActorMaterializer.create(system);
   // #init-source
   Configuration conf = new Configuration();
+
+  // #init-reader
   ParquetReader<GenericRecord> reader =
       AvroParquetReader.<GenericRecord>builder(
               HadoopInputFile.fromPath(new Path("./test.parquet"), conf))
           .disableCompatibility()
           .build();
+  // #init-reader
+
   // #init-source
   Source<GenericRecord, NotUsed> source = AvroParquetSource.create(reader);
 

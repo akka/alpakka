@@ -17,29 +17,56 @@ For more information about Apache Parquet please visit the [official documentati
 We will need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
 
 Scala
-: @@snip (/avroparquet/src/test/scala/akka/stream/alpakka/avroparquet/scaladsl/AbstractAvroParquet.scala) { #init-system }
+: @@snip (/avroparquet/src/test/scala/docs/scaladsl/AbstractAvroParquet.scala) { #init-system }
 
 Java
 : @@snip (/avroparquet/src/test/java/docs/javadsl/Examples.java) { #init-system }
 
-#Sink Initiation
-
+#Source Initiation
+Sometimes it might be useful to use parquet file as stream Source. For this we will need to create `AvroParquetReader` 
+instance which produces Parquet `GenericRecord` instances.
+ 
 Scala
-: @@snip (/avroparquet/src/test/scala/akka/stream/alpakka/avroparquet/scaladsl/AvroParquetSinkSpec.scala) { #init-sink }
+: @@snip (/avroparquet/src/test/scala/docs/scaladsl/AvroParquetSourceSpec.scala) { #init-reader } 
 
 Java
-: @@snip (/avroparquet/src/test/java/akka/stream/alpakka/avroparquet/javadsl/AvroParquetSinkTest.java) { #init-sink }
+: @@snip (/avroparquet/src/test/java/docs/javadsl/Examples.java) { #init-reader }
 
-#Source Initiation
+After it, you can create your Source object which accepts instance of `AvroParquetReader` as parameter 
+
 Scala
-: @@snip (/avroparquet/src/test/scala/akka/stream/alpakka/avroparquet/scaladsl/AvroParquetSourceSpec.scala) { #init-source }
+: @@snip (/avroparquet/src/test/scala/docs/scaladsl/AvroParquetSourceSpec.scala) { #init-source }
 
 Java
 : @@snip (/avroparquet/src/test/java/docs/javadsl/Examples.java) { #init-source }
 
-#Flow Initiation
+#Sink Initiation
+Sometimes it might be useful to use Parquet file as akka stream Sink. For an instance, if you need to store data on 
+Parquet files on HDFS (or any other distributed file system) and perform map-reduce jobs on it further. 
+For this we first of all need to create `AvroParquetWriter` instance which accepts `GenericRecord`.
+ 
 Scala
-: @@snip (/avroparquet/src/test/scala/akka/stream/alpakka/avroparquet/scaladsl/AvroParquetFlowSpec.scala) { #init-flow }
+: @@snip (/avroparquet/src/test/scala/docs/scaladsl//AvroParquetSinkSpec.scala) { #init-writer } 
+
+Java
+: @@snip (/avroparquet/src/test/java/docs/javadsl/AvroParquetSinkTest.java) { #init-writer }
+
+After it, you can create Sink which accepts instance of `AvroParquetWriter` as parameter. 
+ 
+Scala
+: @@snip (/avroparquet/src/test/scala/docs/scaladsl//AvroParquetSinkSpec.scala) { #init-sink }
+
+Java
+: @@snip (/avroparquet/src/test/java/docs/javadsl/AvroParquetSinkTest.java) { #init-sink }
+
+#Flow Initiation
+
+It might be useful to use ParquetWriter as the streams flow stage, which accepts Parquet `GenericRecord`, writes it to
+Parquet file, and returns the same `GenericRecords`. Such Flow stage can be easily created by creating `AvroParquetFlow`
+instance and providing `AvroParquetWriter` instance as parameter.
+
+Scala
+: @@snip (/avroparquet/src/test/scala/docs/scaladsl/AvroParquetFlowSpec.scala) { #init-flow }
 This is all preparation that we are going to need.
 
 Java

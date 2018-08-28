@@ -2,9 +2,11 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.avroparquet.scaladsl
+package docs.scaladsl
+
 import java.util.concurrent.TimeUnit
 
+import akka.stream.alpakka.avroparquet.scaladsl.AvroParquetFlow
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
 import org.apache.avro.generic.GenericRecord
@@ -29,7 +31,6 @@ class AvroParquetFlowSpec extends Specification with AbstractAvroParquet {
 
       val source = Source.fromIterator(() => docs.iterator)
 
-      //#init-flow
       val file = folder + "/test.parquet"
 
       val conf = new Configuration()
@@ -38,6 +39,7 @@ class AvroParquetFlowSpec extends Specification with AbstractAvroParquet {
       val writer: ParquetWriter[GenericRecord] =
         AvroParquetWriter.builder[GenericRecord](new Path(file)).withConf(conf).withSchema(schema).build()
 
+      //#init-flow
       val flow: Flow[GenericRecord, GenericRecord, NotUsed] = AvroParquetFlow(writer)
 
       val result = source

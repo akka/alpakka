@@ -2,12 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.avroparquet.javadsl;
+package docs.javadsl;
 
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.avroparquet.javadsl.AvroParquetSink;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.google.common.collect.Lists;
@@ -25,6 +26,7 @@ import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -58,7 +60,7 @@ public class AvroParquetSinkTest {
 
   @Test
   public void createNewParquetFile() throws InterruptedException, IOException {
-    // #init-sink
+    // #init-writer
     Configuration conf = new Configuration();
     conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true);
     ParquetWriter<GenericRecord> writer =
@@ -66,7 +68,9 @@ public class AvroParquetSinkTest {
             .withConf(conf)
             .withSchema(schema)
             .build();
+    // #init-writer
 
+    // #init-sink
     Sink<GenericRecord, CompletionStage<Done>> sink = AvroParquetSink.create(writer);
     // #init-sink
 

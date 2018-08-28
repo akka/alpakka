@@ -2,9 +2,11 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.avroparquet.scaladsl
+package docs.scaladsl
+
 import java.util.concurrent.TimeUnit
 
+import akka.stream.alpakka.avroparquet.scaladsl.{AvroParquetSink, AvroParquetSource}
 import akka.stream.scaladsl.{Keep, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import akka.{Done, NotUsed}
@@ -26,13 +28,16 @@ class AvroParquetSourceSpec extends Specification with AbstractAvroParquet with 
 
     "read from parquet file" in {
 
-      //#init-source
+      //#init-reader
       val file = folder + "/test.parquet"
+
       val conf = new Configuration()
       conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true)
       val reader: ParquetReader[GenericRecord] =
         AvroParquetReader.builder[GenericRecord](HadoopInputFile.fromPath(new Path(file), conf)).withConf(conf).build()
+      //#init-reader
 
+      //#init-source
       val source: Source[GenericRecord, NotUsed] = AvroParquetSource(reader)
       //#init-source
 
