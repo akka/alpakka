@@ -2,12 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.unixdomainsocket.javadsl;
+package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Framing;
 import akka.stream.javadsl.FramingTruncation;
@@ -53,7 +54,10 @@ public class UnixDomainSocketTest {
 
   @Test
   public void aUnixDomainSocketShouldReceiveWhatIsSent() throws Exception {
-    File file = Files.createTempFile("aUnixDomainSocketShouldReceiveWhatIsSent1", ".sock").toFile();
+    // #binding
+    java.io.File file = // ...
+        // #binding
+        Files.createTempFile("aUnixDomainSocketShouldReceiveWhatIsSent1", ".sock").toFile();
     Assert.assertTrue(file.delete());
     file.deleteOnExit();
 
