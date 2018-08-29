@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.unixdomainsocket.scaladsl
+package docs.scaladsl
 
 import java.io.{File, IOException}
 import java.nio.file.Files
@@ -10,14 +10,15 @@ import java.nio.file.Files
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.unixdomainsocket.scaladsl.UnixDomainSocket
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.testkit._
 import akka.util.ByteString
 import jnr.unixsocket.UnixSocketAddress
 import org.scalatest._
 
+import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration._
-import scala.concurrent.Promise
 
 class UnixDomainSocketSpec
     extends TestKit(ActorSystem("UnixDomainSocketSpec"))
@@ -32,19 +33,22 @@ class UnixDomainSocketSpec
 
   "A Unix Domain Socket" should {
     "receive what is sent" in {
-      val file = Files.createTempFile("UnixDomainSocketSpec1", ".sock").toFile
+      //#binding
+      val file: java.io.File = // ...
+        //#binding
+        Files.createTempFile("UnixDomainSocketSpec1", ".sock").toFile
       file.delete()
       file.deleteOnExit()
 
       //#binding
-      val binding =
+      val binding: Future[UnixDomainSocket.ServerBinding] =
         UnixDomainSocket().bindAndHandle(Flow.fromFunction(identity), file)
       //#binding
 
       //#outgoingConnection
       binding.flatMap { connection =>
         val sendBytes = ByteString("Hello")
-        val result =
+        val result: Future[ByteString] =
           Source
             .single(sendBytes)
             .via(UnixDomainSocket().outgoingConnection(file))
