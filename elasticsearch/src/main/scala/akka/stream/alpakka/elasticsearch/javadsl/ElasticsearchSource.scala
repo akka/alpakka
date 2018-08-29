@@ -10,8 +10,9 @@ import akka.stream.javadsl.Source
 import org.elasticsearch.client.RestClient
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.{ArrayNode, NumericNode}
-
 import java.util.{Map => JMap}
+
+import akka.stream.alpakka.elasticsearch.impl
 
 import scala.collection.JavaConverters._
 
@@ -42,7 +43,7 @@ object ElasticsearchSource {
              client: RestClient,
              objectMapper: ObjectMapper): Source[OutgoingMessage[java.util.Map[String, Object]], NotUsed] =
     Source.fromGraph(
-      new ElasticsearchSourceStage(
+      new impl.ElasticsearchSourceStage(
         indexName,
         Option(typeName),
         Map("query" -> query),
@@ -69,7 +70,7 @@ object ElasticsearchSource {
              client: RestClient,
              objectMapper: ObjectMapper): Source[OutgoingMessage[java.util.Map[String, Object]], NotUsed] =
     Source.fromGraph(
-      new ElasticsearchSourceStage(
+      new impl.ElasticsearchSourceStage(
         indexName,
         Option(typeName),
         searchParams.asScala.toMap,
@@ -103,7 +104,7 @@ object ElasticsearchSource {
                clazz: Class[T],
                objectMapper: ObjectMapper): Source[OutgoingMessage[T], NotUsed] =
     Source.fromGraph(
-      new ElasticsearchSourceStage(
+      new impl.ElasticsearchSourceStage(
         indexName,
         Option(typeName),
         Map("query" -> query),
@@ -131,7 +132,7 @@ object ElasticsearchSource {
                clazz: Class[T],
                objectMapper: ObjectMapper): Source[OutgoingMessage[T], NotUsed] =
     Source.fromGraph(
-      new ElasticsearchSourceStage(
+      new impl.ElasticsearchSourceStage(
         indexName,
         Option(typeName),
         searchParams.asScala.toMap,

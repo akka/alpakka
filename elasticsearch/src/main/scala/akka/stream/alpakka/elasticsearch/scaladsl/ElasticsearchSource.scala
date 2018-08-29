@@ -6,6 +6,7 @@ package akka.stream.alpakka.elasticsearch.scaladsl
 
 import akka.NotUsed
 import akka.stream.alpakka.elasticsearch._
+import akka.stream.alpakka.elasticsearch.impl
 import akka.stream.scaladsl.Source
 import org.elasticsearch.client.RestClient
 import spray.json._
@@ -79,7 +80,7 @@ object ElasticsearchSource {
       implicit client: RestClient
   ): Source[OutgoingMessage[JsObject], NotUsed] =
     Source.fromGraph(
-      new ElasticsearchSourceStage(
+      new impl.ElasticsearchSourceStage(
         indexName,
         typeName,
         searchParams,
@@ -128,12 +129,12 @@ object ElasticsearchSource {
       reader: JsonReader[T]
   ): Source[OutgoingMessage[T], NotUsed] =
     Source.fromGraph(
-      new ElasticsearchSourceStage(indexName,
-                                   typeName,
-                                   searchParams,
-                                   client,
-                                   settings,
-                                   new SprayJsonReader[T]()(reader))
+      new impl.ElasticsearchSourceStage(indexName,
+                                        typeName,
+                                        searchParams,
+                                        client,
+                                        settings,
+                                        new SprayJsonReader[T]()(reader))
     )
 
   private class SprayJsonReader[T](implicit reader: JsonReader[T]) extends MessageReader[T] {

@@ -2,127 +2,35 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.elasticsearch
+package akka.stream.alpakka.elasticsearch.impl
 
 import java.nio.charset.StandardCharsets
 
-import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
-import akka.stream.stage._
-import org.apache.http.entity.StringEntity
-import org.elasticsearch.client.{Response, ResponseListener, RestClient}
-
-import scala.collection.mutable
-import scala.collection.JavaConverters._
-import spray.json._
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import ElasticsearchFlowStage._
 import akka.NotUsed
+import akka.annotation.InternalApi
+import akka.stream.alpakka.elasticsearch._
+import akka.stream.alpakka.elasticsearch.impl.ElasticsearchFlowStage._
+import akka.stream.stage._
+import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
+import org.apache.http.entity.StringEntity
 import org.apache.http.message.BasicHeader
 import org.apache.http.util.EntityUtils
+import org.elasticsearch.client.{Response, ResponseListener, RestClient}
+import spray.json._
 
-object IncomingIndexMessage {
-  // Apply method to use when not using passThrough
-  def apply[T](source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Index, None, Some(source))
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.concurrent.Future
 
-  // Apply method to use when not using passThrough
-  def apply[T](id: String, source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Index, Some(id), Some(source))
-
-  // Java-api - without passThrough
-  def create[T](source: T): IncomingMessage[T, NotUsed] =
-    IncomingIndexMessage(source)
-
-  // Java-api - without passThrough
-  def create[T](id: String, source: T): IncomingMessage[T, NotUsed] =
-    IncomingIndexMessage(id, source)
-}
-
-object IncomingUpdateMessage {
-  // Apply method to use when not using passThrough
-  def apply[T](id: String, source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Update, Some(id), Some(source))
-
-  // Java-api - without passThrough
-  def create[T](id: String, source: T): IncomingMessage[T, NotUsed] =
-    IncomingUpdateMessage(id, source)
-}
-
-object IncomingUpsertMessage {
-  // Apply method to use when not using passThrough
-  def apply[T](id: String, source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Upsert, Some(id), Some(source))
-
-  // Java-api - without passThrough
-  def create[T](id: String, source: T): IncomingMessage[T, NotUsed] =
-    IncomingUpsertMessage(id, source)
-}
-
-object IncomingDeleteMessage {
-  // Apply method to use when not using passThrough
-  def apply[T](id: String): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Delete, Some(id), None)
-
-  // Java-api - without passThrough
-  def create[T](id: String): IncomingMessage[T, NotUsed] =
-    IncomingDeleteMessage(id)
-}
-
-case class IncomingMessage[T, C] private (
-    operation: Operation,
-    id: Option[String],
-    source: Option[T],
-    passThrough: C = NotUsed,
-    version: Option[Long] = None,
-    indexName: Option[String] = None,
-    customMetadata: Map[String, String] = Map.empty
-) {
-  def withPassThrough[P](passThrough: P): IncomingMessage[T, P] =
-    this.copy(passThrough = passThrough)
-
-  def withVersion(version: Long): IncomingMessage[T, C] =
-    this.copy(version = Option(version))
-
-  def withIndexName(indexName: String): IncomingMessage[T, C] =
-    this.copy(indexName = Option(indexName))
-
-  /**
-   * Scala API: define custom metadata for this message. Fields should
-   * have the full metadata field name as key (including the "_" prefix if there is one)
-   */
-  def withCustomMetadata(metadata: Map[String, String]): IncomingMessage[T, C] =
-    this.copy(customMetadata = metadata)
-
-  /**
-   * Java API: define custom metadata for this message. Fields should
-   * have the full metadata field name as key (including the "_" prefix if there is one)
-   */
-  def withCustomMetadata(metadata: java.util.Map[String, String]): IncomingMessage[T, C] =
-    this.copy(customMetadata = metadata.asScala.toMap)
-
-}
-
-sealed trait Operation
-final object Index extends Operation
-final object Update extends Operation
-final object Upsert extends Operation
-final object Delete extends Operation
-
-case class IncomingMessageResult[T2, C2](message: IncomingMessage[T2, C2], error: Option[String]) {
-  val success = error.isEmpty
-}
-
-trait MessageWriter[T] {
-  def convert(message: T): String
-}
-
-class ElasticsearchFlowStage[T, C](
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[elasticsearch] final class ElasticsearchFlowStage[T, C](
     indexName: String,
     typeName: String,
     client: RestClient,
-    settings: ElasticsearchSinkSettings,
+    settings: ElasticsearchWriteSettings,
     writer: MessageWriter[T]
 ) extends GraphStage[FlowShape[IncomingMessage[T, C], Future[Seq[IncomingMessageResult[T, C]]]]] {
 
@@ -164,7 +72,7 @@ class ElasticsearchFlowStage[T, C](
             s"Received error from elastic. (re)tryCount: $retryCount maxTries: ${settings.maxRetry}. Error: ${exception.toString}"
           )
           failedMessages = messages
-          scheduleOnce(NotUsed, settings.retryInterval.millis)
+          scheduleOnce(NotUsed, settings.retryInterval)
         }
       }
 
@@ -207,7 +115,7 @@ class ElasticsearchFlowStage[T, C](
         // and it can break commit-logic when using Kafka
         retryCount = retryCount + 1
         failedMessages = failedMsgs.map(_.message) // These are the messages we're going to retry
-        scheduleOnce(NotUsed, settings.retryInterval.millis)
+        scheduleOnce(NotUsed, settings.retryInterval)
 
         val successMsgs = messageResults.filter(_.error.isEmpty)
         if (successMsgs.nonEmpty) {
@@ -292,9 +200,7 @@ class ElasticsearchFlowStage[T, C](
           }
           .mkString("", "\n", "\n")
 
-        // TODO better logging of the json before pushing it
-
-        log.debug("Posting data to elastic search: {}", json)
+        log.debug("Posting data to Elasticsearch: {}", json)
 
         client.performRequestAsync(
           "POST",
@@ -362,7 +268,11 @@ class ElasticsearchFlowStage[T, C](
     }
 }
 
-object ElasticsearchFlowStage {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[elasticsearch] object ElasticsearchFlowStage {
 
   private sealed trait State
   private case object Idle extends State

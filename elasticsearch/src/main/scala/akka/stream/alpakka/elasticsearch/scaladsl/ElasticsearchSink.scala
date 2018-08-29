@@ -22,7 +22,7 @@ object ElasticsearchSink {
    */
   def create[T](indexName: String,
                 typeName: String,
-                settings: ElasticsearchSinkSettings = ElasticsearchSinkSettings.Default)(
+                settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings.Default)(
       implicit client: RestClient,
       writer: JsonWriter[T]
   ): Sink[IncomingMessage[T, NotUsed], Future[Done]] =

@@ -23,7 +23,7 @@ object ElasticsearchSink {
   def create[T](
       indexName: String,
       typeName: String,
-      settings: ElasticsearchSinkSettings,
+      settings: ElasticsearchWriteSettings,
       client: RestClient,
       objectMapper: ObjectMapper
   ): akka.stream.javadsl.Sink[IncomingMessage[T, NotUsed], CompletionStage[Done]] =

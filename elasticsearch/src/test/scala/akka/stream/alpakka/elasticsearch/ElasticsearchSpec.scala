@@ -16,6 +16,7 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 import scala.collection.JavaConverters._
 import org.apache.http.message.BasicHeader
 
@@ -102,11 +103,15 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   private def documentation: Unit = {
     //#source-settings
-    val sourceSettings = ElasticsearchSourceSettings(bufferSize = 10)
+    val sourceSettings = ElasticsearchSourceSettings().withBufferSize(10)
     //#source-settings
     //#sink-settings
     val sinkSettings =
-      ElasticsearchSinkSettings(bufferSize = 10, retryInterval = 5000, maxRetry = 100, retryPartialFailure = true)
+      ElasticsearchWriteSettings()
+        .withBufferSize(10)
+        .withRetryInterval(5.seconds)
+        .withMaxRetry(100)
+        .withRetryPartialFailure(true)
     //#sink-settings
   }
 
@@ -334,7 +339,10 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           ElasticsearchFlow.create(
             "sink5",
             "_doc",
-            ElasticsearchSinkSettings(maxRetry = 5, retryInterval = 100, retryPartialFailure = true)
+            ElasticsearchWriteSettings()
+              .withMaxRetry(5)
+              .withRetryInterval(100.millis)
+              .withRetryPartialFailure(true)
           )
         )
         .runWith(Sink.seq)
@@ -620,7 +628,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           ElasticsearchFlow.create[VersionTestDoc](
             indexName,
             typeName,
-            ElasticsearchSinkSettings(bufferSize = 5)
+            ElasticsearchWriteSettings().withBufferSize(5)
           )
         )
         .runWith(Sink.seq)
@@ -639,7 +647,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           indexName,
           typeName,
           """{"match_all": {}}""",
-          ElasticsearchSourceSettings(includeDocumentVersion = true)
+          ElasticsearchSourceSettings().withIncludeDocumentVersion(true)
         )
         .map { message =>
           val doc = message.source
@@ -656,7 +664,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           ElasticsearchFlow.create[VersionTestDoc](
             indexName,
             typeName,
-            ElasticsearchSinkSettings(bufferSize = 5)
+            ElasticsearchWriteSettings().withBufferSize(5)
           )
         )
         .runWith(Sink.seq)
@@ -671,7 +679,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           indexName,
           typeName,
           """{"match_all": {}}""",
-          ElasticsearchSourceSettings(includeDocumentVersion = true)
+          ElasticsearchSourceSettings().withIncludeDocumentVersion(true)
         )
         .map { message =>
           val doc = message.source
@@ -696,7 +704,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           ElasticsearchFlow.create[VersionTestDoc](
             indexName,
             typeName,
-            ElasticsearchSinkSettings(bufferSize = 5)
+            ElasticsearchWriteSettings().withBufferSize(5)
           )
         )
         .runWith(Sink.seq)
@@ -725,7 +733,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           ElasticsearchFlow.create[Book](
             indexName,
             typeName,
-            ElasticsearchSinkSettings(bufferSize = 5, versionType = Some("external"))
+            ElasticsearchWriteSettings().withBufferSize(5).withVersionType("external")
           )
         )
         .runWith(Sink.seq)
@@ -741,7 +749,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           indexName,
           typeName,
           """{"match_all": {}}""",
-          ElasticsearchSourceSettings(includeDocumentVersion = true)
+          ElasticsearchSourceSettings().withIncludeDocumentVersion(true)
         )
         .runWith(Sink.head)
 
@@ -812,7 +820,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           indexName = "source",
           typeName = None,
           query = """{"match_all": {}}""",
-          settings = ElasticsearchSourceSettings(bufferSize = 5)
+          settings = ElasticsearchSourceSettings().withBufferSize(5)
         )
         .map(_.source.title)
         .runWith(Sink.seq)
@@ -858,7 +866,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           ElasticsearchFlow.create[TestDoc](
             indexName,
             typeName,
-            ElasticsearchSinkSettings(bufferSize = 5)
+            ElasticsearchWriteSettings().withBufferSize(5)
           )
         )
         .runWith(Sink.seq)

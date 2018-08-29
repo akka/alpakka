@@ -2,35 +2,32 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.elasticsearch
+package akka.stream.alpakka.elasticsearch.impl
 
 import java.io.ByteArrayOutputStream
 
-import akka.stream.{Attributes, Outlet, SourceShape}
+import akka.annotation.InternalApi
+import akka.stream.alpakka.elasticsearch.{ElasticsearchSourceSettings, MessageReader, OutgoingMessage, ScrollResponse}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, StageLogging}
+import akka.stream.{Attributes, Outlet, SourceShape}
 import org.apache.http.entity.StringEntity
-import org.elasticsearch.client.{Response, ResponseListener, RestClient}
-import spray.json._
-import DefaultJsonProtocol._
 import org.apache.http.message.BasicHeader
+import org.elasticsearch.client.{Response, ResponseListener, RestClient}
+import spray.json.DefaultJsonProtocol._
+import spray.json._
 
 import scala.collection.JavaConverters._
 
-final case class OutgoingMessage[T](id: String, source: T, version: Option[Long])
-
-case class ScrollResponse[T](error: Option[String], result: Option[ScrollResult[T]])
-case class ScrollResult[T](scrollId: String, messages: Seq[OutgoingMessage[T]])
-
-trait MessageReader[T] {
-  def convert(json: String): ScrollResponse[T]
-}
-
-final class ElasticsearchSourceStage[T](indexName: String,
-                                        typeName: Option[String],
-                                        searchParams: Map[String, String],
-                                        client: RestClient,
-                                        settings: ElasticsearchSourceSettings,
-                                        reader: MessageReader[T])
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[elasticsearch] final class ElasticsearchSourceStage[T](indexName: String,
+                                                               typeName: Option[String],
+                                                               searchParams: Map[String, String],
+                                                               client: RestClient,
+                                                               settings: ElasticsearchSourceSettings,
+                                                               reader: MessageReader[T])
     extends GraphStage[SourceShape[OutgoingMessage[T]]] {
 
   val out: Outlet[OutgoingMessage[T]] = Outlet("ElasticsearchSource.out")
@@ -41,14 +38,18 @@ final class ElasticsearchSourceStage[T](indexName: String,
 
 }
 
-sealed class ElasticsearchSourceLogic[T](indexName: String,
-                                         typeName: Option[String],
-                                         searchParams: Map[String, String],
-                                         client: RestClient,
-                                         settings: ElasticsearchSourceSettings,
-                                         out: Outlet[OutgoingMessage[T]],
-                                         shape: SourceShape[OutgoingMessage[T]],
-                                         reader: MessageReader[T])
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String,
+                                                               typeName: Option[String],
+                                                               searchParams: Map[String, String],
+                                                               client: RestClient,
+                                                               settings: ElasticsearchSourceSettings,
+                                                               out: Outlet[OutgoingMessage[T]],
+                                                               shape: SourceShape[OutgoingMessage[T]],
+                                                               reader: MessageReader[T])
     extends GraphStageLogic(shape)
     with ResponseListener
     with OutHandler
