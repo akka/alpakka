@@ -831,35 +831,42 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       result.futureValue shouldEqual in
     }
 
-    "fail on the first failing send" in {
+    "fail fast on the first failing send" in {
       val factory = mock[ConnectionFactory]
       val connection = mock[Connection]
       val session = mock[Session]
       val producer = mock[MessageProducer]
       val textMessage = mock[TextMessage]
+      val textMessage3 = mock[TextMessage]
+      val textMessage4 = mock[TextMessage]
 
       when(factory.createConnection()).thenReturn(connection)
       when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
       when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
       when(session.createTextMessage(anyString())).thenReturn(textMessage)
+      when(session.createTextMessage("3")).thenReturn(textMessage3)
+      when(session.createTextMessage("4")).thenReturn(textMessage4)
 
-      val okay = new Answer[Unit] {
-        override def answer(invocation: InvocationOnMock): Unit = ()
+      val failOnFourthAndDelayThirdItem = new Answer[Unit] {
+        override def answer(invocation: InvocationOnMock): Unit =
+          invocation.getArgument[Message](0) match {
+            case `textMessage3` =>
+              Thread.sleep(5000)
+            case `textMessage4` =>
+              Thread.sleep(500)
+              throw new RuntimeException("Mocked send failure")
+            case _ => ()
+          }
       }
-      val error = new Answer[Unit] {
-        override def answer(invocation: InvocationOnMock): Unit = throw new RuntimeException("failure")
-      }
-
-      when(producer.send(any[Message], anyInt(), anyInt(), anyLong()))
-        .thenAnswer(okay)
-        .thenAnswer(okay)
-        .thenAnswer(error)
+      when(producer.send(any[Message], anyInt(), anyInt(), anyLong())).thenAnswer(failOnFourthAndDelayThirdItem)
 
       val in = (1 to 10).map(i => JmsTextMessage(i.toString))
       val done = new JmsTextMessage("done")
       val jmsFlow = JmsProducer.flow[JmsTextMessage](JmsProducerSettings(factory).withQueue("test").withSessionCount(8))
       val result = Source(in).via(jmsFlow).recover { case _ => done }.toMat(Sink.seq)(Keep.right).run()
 
+      // expect send failure on no 4. to cause immediate stream failure (after no. 1 and 2),
+      // even though no 3. is still in-flight.
       result.futureValue shouldEqual in.take(2) :+ done
     }
   }
