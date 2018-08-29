@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import static junit.framework.TestCase.assertEquals;
 
-//#init-writer
+// #init-writer
 import org.apache.parquet.hadoop.ParquetWriter;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
@@ -34,8 +34,7 @@ import org.apache.avro.generic.GenericRecordBuilder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
-//#init-writer
-
+// #init-writer
 
 public class AvroParquetSinkTest {
 
@@ -62,7 +61,7 @@ public class AvroParquetSinkTest {
 
   @Test
   public void createNewParquetFile() throws InterruptedException, IOException {
-    //#init-writer
+    // #init-writer
     Configuration conf = new Configuration();
     conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true);
     ParquetWriter<GenericRecord> writer =
@@ -71,11 +70,11 @@ public class AvroParquetSinkTest {
             .withSchema(schema)
             .build();
 
-    //#init-writer
+    // #init-writer
 
-    //#init-sink
+    // #init-sink
     Sink<GenericRecord, CompletionStage<Done>> sink = AvroParquetSink.create(writer);
-    //#init-sink
+    // #init-sink
 
     Source.from(records).runWith(sink, materializer);
 
@@ -106,13 +105,13 @@ public class AvroParquetSinkTest {
     system = null;
     materializer = null;
     File index = new File(folder);
+    index.deleteOnExit();
     String[] entries = index.list();
     if (entries != null) {
       for (String s : entries) {
         File currentFile = new File(index.getPath(), s);
-        currentFile.delete();
+        currentFile.deleteOnExit();
       }
     }
-    index.delete();
   }
 }
