@@ -90,13 +90,7 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
       case _ => throw new IllegalArgumentException("Destination is missing")
     }
 
-    val sessionCount = jmsSettings match {
-      case settings: JmsConsumerSettings => settings.sessionCount
-      case settings: JmsProducerSettings => settings.sessionCount
-      case _ => 1
-    }
-
-    0 until sessionCount map { _ =>
+    0 until jmsSettings.sessionCount map { _ =>
       createSession(connection, createDestination)
     }
   }

@@ -30,6 +30,7 @@ sealed trait JmsSettings {
   def destination: Option[Destination]
   def credentials: Option[Credentials]
   def acknowledgeMode: Option[AcknowledgeMode]
+  def sessionCount: Int
 }
 
 sealed trait Destination {
@@ -116,6 +117,7 @@ final case class JmsBrowseSettings(connectionFactory: ConnectionFactory,
                                    selector: Option[String] = None,
                                    acknowledgeMode: Option[AcknowledgeMode] = None)
     extends JmsSettings {
+  override val sessionCount = 1
   def withCredential(credentials: Credentials): JmsBrowseSettings = copy(credentials = Some(credentials))
   def withQueue(name: String): JmsBrowseSettings = copy(destination = Some(Queue(name)))
   def withDestination(destination: Destination): JmsBrowseSettings = copy(destination = Some(destination))
