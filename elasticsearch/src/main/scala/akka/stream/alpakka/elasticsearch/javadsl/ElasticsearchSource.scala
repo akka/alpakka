@@ -22,18 +22,18 @@ import scala.collection.JavaConverters._
 object ElasticsearchSource {
 
   /**
-   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s of [[java.util.Map]].
+   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of [[java.util.Map]].
    * Using default objectMapper
    */
   def create(indexName: String,
              typeName: String,
              query: String,
              settings: ElasticsearchSourceSettings,
-             client: RestClient): Source[OutgoingMessage[java.util.Map[String, Object]], NotUsed] =
+             client: RestClient): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     create(indexName, typeName, query, settings, client, new ObjectMapper())
 
   /**
-   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s of [[java.util.Map]].
+   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of [[java.util.Map]].
    * Using custom objectMapper
    */
   def create(indexName: String,
@@ -41,7 +41,7 @@ object ElasticsearchSource {
              query: String,
              settings: ElasticsearchSourceSettings,
              client: RestClient,
-             objectMapper: ObjectMapper): Source[OutgoingMessage[java.util.Map[String, Object]], NotUsed] =
+             objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     Source.fromGraph(
       new impl.ElasticsearchSourceStage(
         indexName,
@@ -54,7 +54,7 @@ object ElasticsearchSource {
     )
 
   /**
-   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s of [[java.util.Map]].
+   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of [[java.util.Map]].
    * Using custom objectMapper.
    *
    * Example of searchParams-usage:
@@ -68,7 +68,7 @@ object ElasticsearchSource {
              searchParams: JMap[String, String],
              settings: ElasticsearchSourceSettings,
              client: RestClient,
-             objectMapper: ObjectMapper): Source[OutgoingMessage[java.util.Map[String, Object]], NotUsed] =
+             objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     Source.fromGraph(
       new impl.ElasticsearchSourceStage(
         indexName,
@@ -81,7 +81,7 @@ object ElasticsearchSource {
     )
 
   /**
-   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s of type `T`.
+   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`.
    * Using default objectMapper
    */
   def typed[T](indexName: String,
@@ -89,11 +89,11 @@ object ElasticsearchSource {
                query: String,
                settings: ElasticsearchSourceSettings,
                client: RestClient,
-               clazz: Class[T]): Source[OutgoingMessage[T], NotUsed] =
+               clazz: Class[T]): Source[ReadResult[T], NotUsed] =
     typed[T](indexName, typeName, query, settings, client, clazz, new ObjectMapper())
 
   /**
-   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s of type `T`.
+   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`.
    * Using custom objectMapper
    */
   def typed[T](indexName: String,
@@ -102,7 +102,7 @@ object ElasticsearchSource {
                settings: ElasticsearchSourceSettings,
                client: RestClient,
                clazz: Class[T],
-               objectMapper: ObjectMapper): Source[OutgoingMessage[T], NotUsed] =
+               objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] =
     Source.fromGraph(
       new impl.ElasticsearchSourceStage(
         indexName,
@@ -115,7 +115,7 @@ object ElasticsearchSource {
     )
 
   /**
-   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[OutgoingMessage]]s of type `T`.
+   * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`.
    * Using custom objectMapper
    *
    * Example of searchParams-usage:
@@ -130,7 +130,7 @@ object ElasticsearchSource {
                settings: ElasticsearchSourceSettings,
                client: RestClient,
                clazz: Class[T],
-               objectMapper: ObjectMapper): Source[OutgoingMessage[T], NotUsed] =
+               objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] =
     Source.fromGraph(
       new impl.ElasticsearchSourceStage(
         indexName,
@@ -142,14 +142,14 @@ object ElasticsearchSource {
       )
     )
 
-  private class JacksonReader[T](mapper: ObjectMapper, clazz: Class[T]) extends MessageReader[T] {
+  private final class JacksonReader[T](mapper: ObjectMapper, clazz: Class[T]) extends impl.MessageReader[T] {
 
-    override def convert(json: String): ScrollResponse[T] = {
+    override def convert(json: String): impl.ScrollResponse[T] = {
 
       val jsonTree = mapper.readTree(json)
 
       if (jsonTree.has("error")) {
-        ScrollResponse(Some(jsonTree.get("error").asText()), None)
+        impl.ScrollResponse(Some(jsonTree.get("error").asText()), None)
       } else {
         val scrollId = jsonTree.get("_scroll_id").asText()
         val hits = jsonTree.get("hits").get("hits").asInstanceOf[ArrayNode]
@@ -161,9 +161,9 @@ object ElasticsearchSource {
             case _ => None
           }
 
-          OutgoingMessage[T](id, mapper.treeToValue(source, clazz), version)
+          ReadResult[T](id, mapper.treeToValue(source, clazz), version)
         }
-        ScrollResponse(None, Some(ScrollResult(scrollId, messages)))
+        impl.ScrollResponse(None, Some(impl.ScrollResult(scrollId, messages)))
       }
     }
   }

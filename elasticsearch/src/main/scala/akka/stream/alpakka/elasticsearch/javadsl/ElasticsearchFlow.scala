@@ -21,7 +21,7 @@ import akka.stream.alpakka.elasticsearch.impl
 object ElasticsearchFlow {
 
   /**
-   * Creates a [[akka.stream.javadsl.Flow]] for type `T` from [[IncomingMessage]] to lists of [[IncomingMessageResult]].
+   * Creates a [[akka.stream.javadsl.Flow]] for type `T` from [[WriteMessage]] to lists of [[WriteResult]].
    */
   def create[T](
       indexName: String,
@@ -29,7 +29,7 @@ object ElasticsearchFlow {
       settings: ElasticsearchWriteSettings,
       client: RestClient,
       objectMapper: ObjectMapper
-  ): akka.stream.javadsl.Flow[IncomingMessage[T, NotUsed], JavaList[IncomingMessageResult[T, NotUsed]], NotUsed] =
+  ): akka.stream.javadsl.Flow[WriteMessage[T, NotUsed], JavaList[WriteResult[T, NotUsed]], NotUsed] =
     Flow
       .fromGraph(
         new impl.ElasticsearchFlowStage[T, NotUsed](indexName,
@@ -43,7 +43,7 @@ object ElasticsearchFlow {
       .asJava
 
   /**
-   * Creates a [[akka.stream.javadsl.Flow]] for type `T` from [[IncomingMessage]] to lists of [[IncomingMessageResult]]
+   * Creates a [[akka.stream.javadsl.Flow]] for type `T` from [[WriteMessage]] to lists of [[WriteResult]]
    * with `passThrough` of type `C`.
    */
   def createWithPassThrough[T, C](
@@ -52,7 +52,7 @@ object ElasticsearchFlow {
       settings: ElasticsearchWriteSettings,
       client: RestClient,
       objectMapper: ObjectMapper
-  ): akka.stream.javadsl.Flow[IncomingMessage[T, C], JavaList[IncomingMessageResult[T, C]], NotUsed] =
+  ): akka.stream.javadsl.Flow[WriteMessage[T, C], JavaList[WriteResult[T, C]], NotUsed] =
     Flow
       .fromGraph(
         new impl.ElasticsearchFlowStage[T, C](indexName, typeName, client, settings, new JacksonWriter[T](objectMapper))

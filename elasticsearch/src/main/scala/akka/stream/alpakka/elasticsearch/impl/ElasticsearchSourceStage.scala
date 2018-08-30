@@ -7,7 +7,7 @@ package akka.stream.alpakka.elasticsearch.impl
 import java.io.ByteArrayOutputStream
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.elasticsearch.{ElasticsearchSourceSettings, MessageReader, OutgoingMessage, ScrollResponse}
+import akka.stream.alpakka.elasticsearch.{ElasticsearchSourceSettings, ReadResult}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, StageLogging}
 import akka.stream.{Attributes, Outlet, SourceShape}
 import org.apache.http.entity.StringEntity
@@ -22,16 +22,36 @@ import scala.collection.JavaConverters._
  * INTERNAL API
  */
 @InternalApi
+private[elasticsearch] case class ScrollResponse[T](error: Option[String], result: Option[ScrollResult[T]])
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[elasticsearch] case class ScrollResult[T](scrollId: String, messages: Seq[ReadResult[T]])
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[elasticsearch] trait MessageReader[T] {
+  def convert(json: String): ScrollResponse[T]
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[elasticsearch] final class ElasticsearchSourceStage[T](indexName: String,
                                                                typeName: Option[String],
                                                                searchParams: Map[String, String],
                                                                client: RestClient,
                                                                settings: ElasticsearchSourceSettings,
                                                                reader: MessageReader[T])
-    extends GraphStage[SourceShape[OutgoingMessage[T]]] {
+    extends GraphStage[SourceShape[ReadResult[T]]] {
 
-  val out: Outlet[OutgoingMessage[T]] = Outlet("ElasticsearchSource.out")
-  override val shape: SourceShape[OutgoingMessage[T]] = SourceShape(out)
+  val out: Outlet[ReadResult[T]] = Outlet("ElasticsearchSource.out")
+  override val shape: SourceShape[ReadResult[T]] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new ElasticsearchSourceLogic[T](indexName, typeName, searchParams, client, settings, out, shape, reader)
@@ -47,8 +67,8 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
                                                                searchParams: Map[String, String],
                                                                client: RestClient,
                                                                settings: ElasticsearchSourceSettings,
-                                                               out: Outlet[OutgoingMessage[T]],
-                                                               shape: SourceShape[OutgoingMessage[T]],
+                                                               out: Outlet[ReadResult[T]],
+                                                               shape: SourceShape[ReadResult[T]],
                                                                reader: MessageReader[T])
     extends GraphStageLogic(shape)
     with ResponseListener

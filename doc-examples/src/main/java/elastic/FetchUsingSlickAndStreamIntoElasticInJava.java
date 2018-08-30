@@ -11,7 +11,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 
 import akka.stream.alpakka.elasticsearch.ElasticsearchWriteSettings;
-import akka.stream.alpakka.elasticsearch.IncomingIndexMessage;
+import akka.stream.alpakka.elasticsearch.WriteIndexMessage;
 import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSink;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
@@ -89,7 +89,7 @@ public class FetchUsingSlickAndStreamIntoElasticInJava {
                 "SELECT * FROM MOVIE",
                 (SlickRow row) ->
                     new Movie(row.nextInt(), row.nextString(), row.nextString(), row.nextDouble()))
-            .map(movie -> IncomingIndexMessage.create(String.valueOf(movie.id), movie)) // (8)
+            .map(movie -> WriteIndexMessage.create(String.valueOf(movie.id), movie)) // (8)
             .runWith(
                 ElasticsearchSink.create( // (9)
                     "movie",
