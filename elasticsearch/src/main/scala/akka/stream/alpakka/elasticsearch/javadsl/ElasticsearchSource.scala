@@ -161,7 +161,7 @@ object ElasticsearchSource {
             case _ => None
           }
 
-          ReadResult[T](id, mapper.treeToValue(source, clazz), version)
+          new ReadResult[T](id, mapper.treeToValue(source, clazz), version)
         }
         impl.ScrollResponse(None, Some(impl.ScrollResult(scrollId, messages)))
       }

@@ -7,15 +7,12 @@ package elastic
 // format: off
 // #sample
   import akka.Done
-
-  import akka.stream.alpakka.elasticsearch.WriteIndexMessage
+  import akka.stream.alpakka.elasticsearch.{WriteIndexMessage, WriteMessage}
   import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSink
   import org.apache.http.HttpHost
   import org.elasticsearch.client.RestClient
-
   import akka.stream.alpakka.slick.javadsl.SlickSession
   import akka.stream.alpakka.slick.scaladsl.Slick
-
   import spray.json.DefaultJsonProtocol._
   import spray.json.JsonFormat
 
@@ -65,7 +62,7 @@ object FetchUsingSlickAndStreamIntoElastic extends ActorSystemAvailable with App
       .map {                                                                            // (7)
         case (id, genre, title, gross) => Movie(id, genre, title, gross)
       }
-      .map(movie => WriteIndexMessage(movie.id.toString, movie))                     // (8)
+      .map(movie => WriteMessage.createIndexMessage(movie.id.toString, movie))                     // (8)
       .runWith(ElasticsearchSink.create[Movie]("movie", "_doc"))                        // (9)
 
   done.onComplete {

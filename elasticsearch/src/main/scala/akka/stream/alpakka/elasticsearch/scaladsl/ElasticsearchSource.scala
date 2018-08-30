@@ -154,7 +154,7 @@ object ElasticsearchSource {
             val source = doc.fields("_source").asJsObject
             // Maybe we got the _version-property
             val version: Option[Long] = doc.fields.get("_version").map(_.asInstanceOf[JsNumber].value.toLong)
-            ReadResult(id, source.convertTo[T], version)
+            new ReadResult(id, source.convertTo[T], version)
           }
           impl.ScrollResponse(None, Some(impl.ScrollResult(scrollId, messages)))
         }

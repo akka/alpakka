@@ -4,11 +4,19 @@
 
 package akka.stream.alpakka.elasticsearch
 
-import akka.annotation.{ApiMayChange, InternalApi}
+import akka.annotation.InternalApi
 
 import scala.compat.java8.OptionConverters._
 
-final class ReadResult[T] private (val id: String, val source: T, val version: Option[Long]) {
+/**
+ * Stream element type emitted by Elasticsearch sources.
+ *
+ * The constructor is INTERNAL API, but you may construct instances for testing by using
+ * [[akka.stream.alpakka.elasticsearch.testkit.MessageFactory]].
+ */
+final class ReadResult[T] @InternalApi private[elasticsearch] (val id: String,
+                                                               val source: T,
+                                                               val version: Option[Long]) {
 
   /** Java API */
   def getId: String = id
@@ -20,7 +28,7 @@ final class ReadResult[T] private (val id: String, val source: T, val version: O
   def getVersion: java.util.Optional[Long] = version.asJava
 
   override def toString =
-    s"""ReadResult(id=$id,source=$source,version=$version)"""
+    s"""ReadResult(id=$id,source=$source,version=${version.getOrElse("")})"""
 
   override def equals(other: Any): Boolean = other match {
     case that: ReadResult[_] =>
@@ -38,37 +46,4 @@ final class ReadResult[T] private (val id: String, val source: T, val version: O
         // TODO include source: AnyVal in hashcode
         java.util.Objects.hash(id, version)
     }
-}
-
-object ReadResult {
-
-  /**
-   * Scala API
-   * For use with testing.
-   */
-  @ApiMayChange
-  def apply[T](
-      id: String,
-      source: T,
-      version: Option[Long]
-  ): ReadResult[T] = new ReadResult(
-    id,
-    source,
-    version
-  )
-
-  /**
-   * Java API
-   * For use with testing.
-   */
-  @ApiMayChange
-  def create[T](
-      id: String,
-      source: T,
-      version: java.util.Optional[Long]
-  ): ReadResult[T] = new ReadResult(
-    id,
-    source,
-    version.asScala
-  )
 }

@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.stream.alpakka.elasticsearch._
+import akka.stream.alpakka.elasticsearch.Operation._
 import akka.stream.alpakka.elasticsearch.impl.ElasticsearchFlowStage._
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
@@ -94,7 +95,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
             }
             val res = item.asJsObject.fields(command).asJsObject
             val error: Option[String] = res.fields.get("error").map(_.toString())
-            WriteResult(message, error)
+            new WriteResult(message, error)
         }
 
         val failedMsgs = messageResults.filterNot(_.error.isEmpty)
