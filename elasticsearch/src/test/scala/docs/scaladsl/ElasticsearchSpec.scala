@@ -2,24 +2,24 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.elasticsearch
+package docs.scaladsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.elasticsearch.scaladsl._
 import akka.stream.alpakka.elasticsearch.testkit.MessageFactory
+import akka.stream.alpakka.elasticsearch.{ElasticsearchSourceSettings, ElasticsearchWriteSettings, ReadResult, WriteMessage}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import org.apache.http.entity.StringEntity
+import org.apache.http.message.BasicHeader
 import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration._
 import scala.collection.JavaConverters._
-import org.apache.http.message.BasicHeader
+import scala.concurrent.Await
+import scala.concurrent.duration.{Duration, _}
 
 class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
@@ -27,11 +27,11 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   //#init-mat
   implicit val system = ActorSystem()
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer: Materializer = ActorMaterializer()
   //#init-mat
   //#init-client
-  import org.elasticsearch.client.RestClient
   import org.apache.http.HttpHost
+  import org.elasticsearch.client.RestClient
 
   implicit val client: RestClient = RestClient.builder(new HttpHost("localhost", 9201)).build()
   //#init-client
