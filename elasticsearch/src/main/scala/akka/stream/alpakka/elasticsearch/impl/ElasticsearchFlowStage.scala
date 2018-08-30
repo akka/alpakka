@@ -6,10 +6,9 @@ package akka.stream.alpakka.elasticsearch.impl
 
 import java.nio.charset.StandardCharsets
 
-import akka.NotUsed
 import akka.annotation.InternalApi
-import akka.stream.alpakka.elasticsearch._
 import akka.stream.alpakka.elasticsearch.Operation._
+import akka.stream.alpakka.elasticsearch._
 import akka.stream.alpakka.elasticsearch.impl.ElasticsearchFlowStage._
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
@@ -19,7 +18,6 @@ import org.apache.http.util.EntityUtils
 import org.elasticsearch.client.{Response, ResponseListener, RestClient}
 import spray.json._
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.Future
 
@@ -64,16 +62,20 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
 
       private def handleFailure(args: (Seq[WriteMessage[T, C]], Throwable)): Unit = {
         val (messages, exception) = args
-        if (retryCount >= settings.maxRetry) {
-          log.warning(s"Received error from elastic. Giving up after $retryCount tries. Error: ${exception.toString}")
+        if (settings.retryLogic.shouldRetry(retryCount, List(exception.toString))) {
+          log.error("Received error from elastic. Giving up after {} tries. {}, Error: {}",
+                    retryCount,
+                    settings.retryLogic,
+                    exception)
           failStage(exception)
         } else {
+          log.warning("Received error from elastic. Try number {}. {}, Error: {}",
+                      retryCount,
+                      settings.retryLogic,
+                      exception)
           retryCount = retryCount + 1
-          log.warning(
-            s"Received error from elastic. (re)tryCount: $retryCount maxTries: ${settings.maxRetry}. Error: ${exception.toString}"
-          )
           failedMessages = messages
-          scheduleOnce(NotUsed, settings.retryInterval)
+          scheduleOnce(RetrySend, settings.retryLogic.nextRetry(retryCount))
         }
       }
 
@@ -88,11 +90,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
         val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
         val messageResults: Seq[WriteResult[T, C]] = items.elements.zip(messages).map {
           case (item, message) =>
-            val command = message.operation match {
-              case Index => "index"
-              case Update | Upsert => "update"
-              case Delete => "delete"
-            }
+            val command = message.operation.command
             val res = item.asJsObject.fields(command).asJsObject
             val error: Option[String] = res.fields.get("error").map(_.toString())
             new WriteResult(message, error)
@@ -100,7 +98,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
 
         val failedMsgs = messageResults.filterNot(_.error.isEmpty)
 
-        if (failedMsgs.nonEmpty && settings.retryPartialFailure && retryCount < settings.maxRetry) {
+        if (failedMsgs.nonEmpty && settings.retryLogic.shouldRetry(retryCount, failedMsgs.map(_.error.get).toList)) {
           retryPartialFailedMessages(messageResults, failedMsgs)
         } else {
           forwardAllResults(messageResults)
@@ -116,7 +114,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
         // and it can break commit-logic when using Kafka
         retryCount = retryCount + 1
         failedMessages = failedMsgs.map(_.message) // These are the messages we're going to retry
-        scheduleOnce(NotUsed, settings.retryInterval)
+        scheduleOnce(RetrySend, settings.retryLogic.nextRetry(retryCount))
 
         val successMsgs = messageResults.filter(_.error.isEmpty)
         if (successMsgs.nonEmpty) {
@@ -206,7 +204,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
         client.performRequestAsync(
           "POST",
           "/_bulk",
-          Map[String, String]().asJava,
+          java.util.Collections.emptyMap[String, String](),
           new StringEntity(json, StandardCharsets.UTF_8),
           new ResponseListener() {
             override def onFailure(exception: Exception): Unit =
@@ -274,6 +272,8 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
  */
 @InternalApi
 private[elasticsearch] object ElasticsearchFlowStage {
+
+  private object RetrySend
 
   private sealed trait State
   private case object Idle extends State

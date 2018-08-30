@@ -14,17 +14,17 @@ import scala.compat.java8.OptionConverters._
  * INTERNAL API
  */
 @InternalApi
-private[elasticsearch] sealed trait Operation
+private[elasticsearch] sealed abstract class Operation(val command: String)
 
 /**
  * INTERNAL API
  */
 @InternalApi
 private[elasticsearch] object Operation {
-  object Index extends Operation
-  object Update extends Operation
-  object Upsert extends Operation
-  object Delete extends Operation
+  object Index extends Operation("index")
+  object Update extends Operation("update")
+  object Upsert extends Operation("update")
+  object Delete extends Operation("delete")
 }
 
 final class WriteMessage[T, PT] private (val operation: Operation,

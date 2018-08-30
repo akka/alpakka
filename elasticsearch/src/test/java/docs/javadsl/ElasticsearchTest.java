@@ -113,12 +113,11 @@ public class ElasticsearchTest {
         ElasticsearchSourceSettings.create().withBufferSize(10);
     // #source-settings
     // #sink-settings
-    ElasticsearchWriteSettings sinkSettings =
+    ElasticsearchWriteSettings settings =
         ElasticsearchWriteSettings.create()
             .withBufferSize(10)
-            .withRetryInterval(Duration.ofSeconds(5))
-            .withMaxRetry(100)
-            .withRetryPartialFailure(true);
+            .withVersionType("internal")
+            .withRetryLogic(RetryAtFixedRate.create(5, Duration.ofSeconds(1)));
     // #sink-settings
   }
 
@@ -408,7 +407,7 @@ public class ElasticsearchTest {
             ElasticsearchFlow.create(
                 indexName,
                 typeName,
-                ElasticsearchWriteSettings.create().withBufferSize(5).withMaxRetry(0),
+                ElasticsearchWriteSettings.create().withBufferSize(5),
                 client,
                 new ObjectMapper()))
         .runWith(Sink.seq(), materializer)
@@ -440,7 +439,7 @@ public class ElasticsearchTest {
             ElasticsearchFlow.create(
                 indexName,
                 typeName,
-                ElasticsearchWriteSettings.create().withBufferSize(5).withMaxRetry(0),
+                ElasticsearchWriteSettings.create().withBufferSize(5),
                 client,
                 new ObjectMapper()))
         .runWith(Sink.seq(), materializer)
@@ -457,7 +456,7 @@ public class ElasticsearchTest {
                 ElasticsearchFlow.create(
                     indexName,
                     typeName,
-                    ElasticsearchWriteSettings.create().withBufferSize(5).withMaxRetry(0),
+                    ElasticsearchWriteSettings.create().withBufferSize(5),
                     client,
                     new ObjectMapper()))
             .runWith(Sink.seq(), materializer)
@@ -485,10 +484,7 @@ public class ElasticsearchTest {
             ElasticsearchFlow.create(
                 indexName,
                 typeName,
-                ElasticsearchWriteSettings.create()
-                    .withBufferSize(5)
-                    .withMaxRetry(0)
-                    .withVersionType("external"),
+                ElasticsearchWriteSettings.create().withBufferSize(5).withVersionType("external"),
                 client,
                 new ObjectMapper()))
         .runWith(Sink.seq(), materializer)
@@ -520,6 +516,7 @@ public class ElasticsearchTest {
     public String a;
     public String b;
     public String c;
+
     // #custom-search-params
     public TestDoc() {}
 
@@ -552,7 +549,7 @@ public class ElasticsearchTest {
             ElasticsearchFlow.create(
                 indexName,
                 typeName,
-                ElasticsearchWriteSettings.create().withBufferSize(5).withMaxRetry(0),
+                ElasticsearchWriteSettings.create().withBufferSize(5),
                 client,
                 new ObjectMapper()))
         .runWith(Sink.seq(), materializer)

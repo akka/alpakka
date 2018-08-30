@@ -9,12 +9,7 @@ import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.elasticsearch.scaladsl._
 import akka.stream.alpakka.elasticsearch.testkit.MessageFactory
-import akka.stream.alpakka.elasticsearch.{
-  ElasticsearchSourceSettings,
-  ElasticsearchWriteSettings,
-  ReadResult,
-  WriteMessage
-}
+import akka.stream.alpakka.elasticsearch._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import org.apache.http.entity.StringEntity
@@ -115,9 +110,8 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     val sinkSettings =
       ElasticsearchWriteSettings()
         .withBufferSize(10)
-        .withRetryInterval(5.seconds)
-        .withMaxRetry(100)
-        .withRetryPartialFailure(true)
+        .withVersionType("internal")
+        .withRetryLogic(RetryAtFixedRate(maxRetries = 5, retryInterval = 1.second))
     //#sink-settings
   }
 
@@ -346,9 +340,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
             "sink5",
             "_doc",
             ElasticsearchWriteSettings()
-              .withMaxRetry(5)
-              .withRetryInterval(100.millis)
-              .withRetryPartialFailure(true)
+              .withRetryLogic(RetryAtFixedRate(5, 1.second))
           )
         )
         .runWith(Sink.seq)

@@ -83,7 +83,7 @@ Scala
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #multiple-operations }
 
-### Configuration
+### Source configuration
 
 We can configure the source by `ElasticsearchSourceSettings`.
 
@@ -100,6 +100,8 @@ Java
 | includeDocumentVersion | false   | Tell Elasticsearch to return the documents `_version` property with the search results. See [Version](http://nocf-www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html) and [Optimistic Concurrenct Control](https://www.elastic.co/guide/en/elasticsearch/guide/current/optimistic-concurrency-control.html) to know about this property. |
 
 
+### Sink and flow configuration
+
 Sinks and flows are configured with `ElasticsearchWriteSettings`.
 
 Scala
@@ -112,10 +114,22 @@ Java
 | Parameter           | Default | Description                                                                                            |
 | ------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
 | bufferSize          | 10      | `ElasticsearchSink` puts messages by one bulk request per messages of this buffer size.                |
-| retryInterval       | 5000    | When a request is failed, `ElasticsearchSink` retries that request after this interval (milliseconds). |
-| maxRetry            | 100     | `ElasticsearchSink` give up and fails the stage if it gets this number of consective failures.         | 
-| retryPartialFailure | true    | A bulk request might fails partially for some reason. If this parameter is true, then `ElasticsearchSink` retries to request these failed messages. Otherwise, failed messages are discarded (or pushed to downstream if you use `ElasticsearchFlow` instead of the sink). |
 | versionType         | None    | If set, `ElasticsearchSink` uses the chosen versionType to index documents. See [Version types](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types) for accepted settings. |
+| retryLogic | No retries | See below |
+
+
+A bulk request might fail partially for some reason. To retry failed writes to Elasticsearch, a `RetryLogic` can be specified. The provided implementation is `RetryAtFixedRate`.
+
+@@@ warning
+If using retries, you will receive messages out of order downstream in cases where elastic returns an error one some of the documents in a bulk request.
+@@@
+
+
+| Parameter           | Description     |
+|---------------------|-----------------|
+| maxRetries          | The stage fails, if it gets this number of consecutive failures. | 
+| retryInterval       | Failing writes are retried after this duration. |
+
 
 
 ## Elasticsearch as Flow
