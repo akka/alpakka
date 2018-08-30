@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import org.elasticsearch.client.RestClient
 
 import scala.collection.JavaConverters._
-import java.util.{List => JavaList}
 
 import akka.stream.alpakka.elasticsearch.impl
 
@@ -29,7 +28,7 @@ object ElasticsearchFlow {
       settings: ElasticsearchWriteSettings,
       client: RestClient,
       objectMapper: ObjectMapper
-  ): akka.stream.javadsl.Flow[WriteMessage[T, NotUsed], JavaList[WriteResult[T, NotUsed]], NotUsed] =
+  ): akka.stream.javadsl.Flow[WriteMessage[T, NotUsed], java.util.List[WriteResult[T, NotUsed]], NotUsed] =
     Flow
       .fromGraph(
         new impl.ElasticsearchFlowStage[T, NotUsed](indexName,
@@ -52,7 +51,7 @@ object ElasticsearchFlow {
       settings: ElasticsearchWriteSettings,
       client: RestClient,
       objectMapper: ObjectMapper
-  ): akka.stream.javadsl.Flow[WriteMessage[T, C], JavaList[WriteResult[T, C]], NotUsed] =
+  ): akka.stream.javadsl.Flow[WriteMessage[T, C], java.util.List[WriteResult[T, C]], NotUsed] =
     Flow
       .fromGraph(
         new impl.ElasticsearchFlowStage[T, C](indexName, typeName, client, settings, new JacksonWriter[T](objectMapper))
