@@ -5,7 +5,7 @@
 package akka.stream.alpakka.jms.scaladsl
 
 import java.nio.charset.Charset
-import java.util.concurrent.{LinkedBlockingQueue, ThreadLocalRandom, TimeUnit}
+import java.util.concurrent.{CountDownLatch, LinkedBlockingQueue, ThreadLocalRandom, TimeUnit}
 
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
@@ -565,6 +565,7 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
 
       val url: String = ctx.url
       val connectionFactory = new CachedConnectionFactory(url)
+      val brokerStop = new CountDownLatch(1)
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
         JmsProducerSettings(connectionFactory).withQueue("numbers")
@@ -575,12 +576,14 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
           n =>
             Future {
               Thread.sleep(500)
+              brokerStop.await()
               JmsTextMessage(n.toString)
           }
         )
         .runWith(jmsSink)
 
       ctx.broker.stop()
+      brokerStop.countDown()
 
       completionFuture.failed.futureValue shouldBe a[JMSException]
       // connection was not yet initialized before broker stop
@@ -836,38 +839,42 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       val connection = mock[Connection]
       val session = mock[Session]
       val producer = mock[MessageProducer]
-      val textMessage = mock[TextMessage]
-      val textMessage3 = mock[TextMessage]
-      val textMessage4 = mock[TextMessage]
+      val errorLatch = new CountDownLatch(3)
 
       when(factory.createConnection()).thenReturn(connection)
       when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
       when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
-      when(session.createTextMessage(anyString())).thenReturn(textMessage)
-      when(session.createTextMessage("3")).thenReturn(textMessage3)
-      when(session.createTextMessage("4")).thenReturn(textMessage4)
 
-      val failOnFourthAndDelayThirdItem = new Answer[Unit] {
-        override def answer(invocation: InvocationOnMock): Unit =
-          invocation.getArgument[Message](0) match {
-            case `textMessage3` =>
-              Thread.sleep(5000)
-            case `textMessage4` =>
-              Thread.sleep(500)
-              throw new RuntimeException("Mocked send failure")
+      val messages = (1 to 10).map(i => mock[TextMessage] -> i).toMap
+      messages.foreach {
+        case (msg, i) => when(session.createTextMessage(i.toString)).thenReturn(msg)
+      }
+
+      val failOnFifthAndDelayFourthItem = new Answer[Unit] {
+        override def answer(invocation: InvocationOnMock): Unit = {
+          val msgNo = messages(invocation.getArgument[TextMessage](0))
+          msgNo match {
+            case 1 | 2 | 3 =>
+              errorLatch.countDown() // first three sends work...
+            case 4 =>
+              Thread.sleep(5000) // this one gets delayed...
+            case 5 =>
+              errorLatch.await()
+              throw new RuntimeException("Mocked send failure") // this one fails.
             case _ => ()
           }
+        }
       }
-      when(producer.send(any[Message], anyInt(), anyInt(), anyLong())).thenAnswer(failOnFourthAndDelayThirdItem)
+      when(producer.send(any[Message], anyInt(), anyInt(), anyLong())).thenAnswer(failOnFifthAndDelayFourthItem)
 
       val in = (1 to 10).map(i => JmsTextMessage(i.toString))
       val done = new JmsTextMessage("done")
       val jmsFlow = JmsProducer.flow[JmsTextMessage](JmsProducerSettings(factory).withQueue("test").withSessionCount(8))
       val result = Source(in).via(jmsFlow).recover { case _ => done }.toMat(Sink.seq)(Keep.right).run()
 
-      // expect send failure on no 4. to cause immediate stream failure (after no. 1 and 2),
-      // even though no 3. is still in-flight.
-      result.futureValue shouldEqual in.take(2) :+ done
+      // expect send failure on no 5. to cause immediate stream failure (after no. 1, 2 and 3),
+      // even though no 4. is still in-flight.
+      result.futureValue shouldEqual in.take(3) :+ done
     }
   }
 }
