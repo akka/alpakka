@@ -9,7 +9,12 @@ import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.elasticsearch.scaladsl._
 import akka.stream.alpakka.elasticsearch.testkit.MessageFactory
-import akka.stream.alpakka.elasticsearch.{ElasticsearchSourceSettings, ElasticsearchWriteSettings, ReadResult, WriteMessage}
+import akka.stream.alpakka.elasticsearch.{
+  ElasticsearchSourceSettings,
+  ElasticsearchWriteSettings,
+  ReadResult,
+  WriteMessage
+}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import org.apache.http.entity.StringEntity
