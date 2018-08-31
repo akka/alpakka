@@ -11,13 +11,9 @@ package docs.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.reference.Authentication;
-import akka.stream.alpakka.reference.ReferenceReadMessage;
-import akka.stream.alpakka.reference.ReferenceWriteMessage;
-import akka.stream.alpakka.reference.SourceSettings;
+import akka.stream.alpakka.reference.*;
 import akka.stream.alpakka.reference.javadsl.Reference;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
@@ -69,28 +65,28 @@ public class ReferenceTest {
     // #source
     final SourceSettings settings = SourceSettings.create(clientId);
 
-    final Source<ReferenceReadMessage, CompletionStage<Done>> source = Reference.source(settings);
+    final Source<ReferenceReadResult, CompletionStage<Done>> source = Reference.source(settings);
     // #source
   }
 
   @Test
   public void flowCompilationTest() {
     // #flow
-    final Flow<ReferenceWriteMessage, ReferenceWriteMessage, NotUsed> flow = Reference.flow();
+    final Flow<ReferenceWriteMessage, ReferenceWriteResult, NotUsed> flow = Reference.flow();
     // #flow
 
     final Executor ex = Executors.newCachedThreadPool();
-    final Flow<ReferenceWriteMessage, ReferenceWriteMessage, NotUsed> flow2 =
+    final Flow<ReferenceWriteMessage, ReferenceWriteResult, NotUsed> flow2 =
         Reference.flowAsyncMapped(ex);
   }
 
   @Test
   public void testSource() throws Exception {
-    final Source<ReferenceReadMessage, CompletionStage<Done>> source =
+    final Source<ReferenceReadResult, CompletionStage<Done>> source =
         Reference.source(SourceSettings.create(clientId));
 
-    final CompletionStage<ReferenceReadMessage> stage = source.runWith(Sink.head(), mat);
-    final ReferenceReadMessage msg = stage.toCompletableFuture().get();
+    final CompletionStage<ReferenceReadResult> stage = source.runWith(Sink.head(), mat);
+    final ReferenceReadResult msg = stage.toCompletableFuture().get();
 
     Assert.assertEquals(Collections.singletonList(ByteString.fromString("one")), msg.getData());
 
@@ -102,7 +98,7 @@ public class ReferenceTest {
 
   @Test
   public void testFlow() throws Exception {
-    final Flow<ReferenceWriteMessage, ReferenceWriteMessage, NotUsed> flow = Reference.flow();
+    final Flow<ReferenceWriteMessage, ReferenceWriteResult, NotUsed> flow = Reference.flow();
 
     Map<String, Long> metrics =
         new HashMap<String, Long>() {
@@ -125,12 +121,15 @@ public class ReferenceTest {
                             ByteString.fromString("three"),
                             ByteString.fromString("four")))));
 
-    final CompletionStage<List<ReferenceWriteMessage>> stage =
+    final CompletionStage<List<ReferenceWriteResult>> stage =
         source.via(flow).runWith(Sink.seq(), mat);
-    final List<ReferenceWriteMessage> result = stage.toCompletableFuture().get();
+    final List<ReferenceWriteResult> result = stage.toCompletableFuture().get();
 
     final List<ByteString> bytes =
-        result.stream().flatMap(m -> m.getData().stream()).collect(Collectors.toList());
+        result
+            .stream()
+            .flatMap(m -> m.getMessage().getData().stream())
+            .collect(Collectors.toList());
 
     Assert.assertEquals(
         Arrays.asList(
