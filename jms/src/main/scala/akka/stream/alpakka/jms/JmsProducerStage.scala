@@ -51,7 +51,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
       protected def createSession(connection: Connection, createDestination: Session => jms.Destination): JmsSession = {
         val session =
           connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode)
-        new JmsSession(connection, session, createDestination(session))
+        new JmsSession(connection, session, createDestination(session), settings.destination.get)
       }
 
       override def preStart(): Unit = {
