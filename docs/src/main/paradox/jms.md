@@ -44,7 +44,7 @@ Gradle
 
 ## Usage
 
-The JMS message model supports several types of message body (see @javadoc[javax.jms.Message](javax.jms.Message)) and Alpakka currently supports messages with a body containing a @javadoc[String](java.lang.String), 
+The JMS message model supports several types of message body (see @javadoc[javax.jms.Message](javax.jms.Message)) and Alpakka currently supports messages with a body containing a @javadoc[String](java.lang.String),
 a @javadoc[Serializable](java.io.Serializable) object, a @javadoc[Map](java.util.Map) or a byte array.
 
 First define a @javadoc[javax.jms.ConnectionFactory](javax.jms.ConnectionFactory) depending on the implementation you're using. Here we're using Active MQ.
@@ -85,7 +85,7 @@ Java
 
 ### Sending byte messages to a JMS provider
 
-Create a sink, that accepts and forwards @scaladoc[JmsByteMessage](akka.stream.alpakka.jms.JmsByteMessage$)s to the JMS provider. 
+Create a sink, that accepts and forwards @scaladoc[JmsByteMessage](akka.stream.alpakka.jms.JmsByteMessage$)s to the JMS provider.
 
 Scala
 : @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-bytearray-sink }
@@ -162,7 +162,7 @@ Java
 : @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-messages-with-properties }
 
 ### Sending messages with header to a JMS provider
-For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set also jms headers. 
+For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set also jms headers.
 
 Scala
 : @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-headers }
@@ -401,7 +401,7 @@ Java
 *  Using multiple sessions increases throughput, especially if a acknowledging message by message is desired.
 *  Messages may arrive out of order if `sessionCount` is larger than 1.
 *  Message-by-message acknowledgement can be achieved by setting `bufferSize` to 0, thus disabling buffering. The outstanding messages before backpressure will be the `sessionCount`.
-*  The default `AcknowledgeMode` is `ClientAcknowledge` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsConsumerSettings` when creating the stream. 
+*  The default `AcknowledgeMode` is `ClientAcknowledge` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsConsumerSettings` when creating the stream.
 
 ### Transactionally receiving @javadoc[javax.jms.Message](javax.jms.Message)s from a JMS provider
 
@@ -430,8 +430,8 @@ Java
 *  Higher throughput is achieved by increasing the `sessionCount`.
 *  Messages will arrive out of order if `sessionCount` is larger than 1.
 *  Buffering is not supported in transaction mode. The `bufferSize` is ignored.
-*  The default `AcknowledgeMode` is `SessionTransacted` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsConsumerSettings` when creating the stream. 
- 
+*  The default `AcknowledgeMode` is `SessionTransacted` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsConsumerSettings` when creating the stream.
+
 ### Browsing messages from a JMS provider
 
 The browse source will stream the messages in a queue without consuming them.
@@ -460,7 +460,6 @@ Java
 *  The JMS API does not require the content of an enumeration to be a static snapshot of queue content. Whether these changes are visible or not depends on the JMS provider.
 *  A message must not be returned by a QueueBrowser before its delivery time has been reached.
 
-
 ### Using Topic with an JMS provider
 
 You can use JMS topic in a very similar way.
@@ -488,6 +487,26 @@ Such sink and source can be started the same way as in the previous example.
 * Explicit acknowledgement sources and transactional sources work with topics the same way they work with queues.
 * **DO NOT** set the `sessionCount` greater than 1 for topics. Doing so will result in duplicate messages being delivered. Each topic message is delivered to each JMS session and all the messages feed to the same `Source`. JMS 2.0 created shared consumers to solve this problem and multiple sessions without duplication may be supported in the future.
 
+### Using a durable Topic subscription with a JMS provider
+
+Using a durable topic subscription works mostly like a normal topic source.
+
+You need to specify a client ID for the connection factory you use to create the consumer with, however:
+
+Scala
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-connection-factory-with-client-id }
+
+Java
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-connection-factory-with-client-id }
+
+In addition, use `withDurableTopic` and specify a name for the durable subscriber:
+
+Scala
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-durable-topic-source }
+
+Java
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-durable-topic-source }
+
 ### Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
@@ -503,7 +522,7 @@ Java
     sbt
     > jms/testOnly *.JmsConnectorsTest
     ```
-    
+
 ### Stopping a JMS Source
 
 All JMS sources materialize to a `KillSwitch` to allow safely stopping consumption without message loss for transactional and acknowledged messages, and with minimal message loss for the simple JMS source.
@@ -587,7 +606,7 @@ Java
         .withQueue(testQueueName)
     );
 
-    // Option2: create Source using custom factory 
+    // Option2: create Source using custom factory
     private Function1<Session, Destination> createMqQueue(String destinationName) {
         return (session) -> {
             ...
@@ -665,7 +684,7 @@ Java
         .withTopic(testTopicName)
     );
 
-    // Option2: create Source using custom factory 
+    // Option2: create Source using custom factory
     private Function1<Session, Destination> createMqTopic(String destinationName) {
         return (session) -> {
             ...

@@ -877,4 +877,36 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       result.futureValue shouldEqual in.take(3) :+ done
     }
   }
+
+  "publish and subscribe with a durable subscription" in withServer() { ctx =>
+    val producerConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+    //#create-connection-factory-with-client-id
+    val consumerConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+    consumerConnectionFactory.setClientID(getClass.getSimpleName)
+    //#create-connection-factory-with-client-id
+
+    val jmsTopicSink: Sink[String, Future[Done]] = JmsProducer.textSink(
+      JmsProducerSettings(producerConnectionFactory).withTopic("topic")
+    )
+
+    val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
+
+    //#create-durable-topic-source
+    val jmsTopicSource = JmsConsumer.textSource(
+      JmsConsumerSettings(consumerConnectionFactory)
+        .withDurableTopic("topic", "durable-test")
+    )
+    //#create-durable-topic-source
+
+    //#run-durable-topic-source
+    val result = jmsTopicSource.take(in.size).runWith(Sink.seq)
+    //#run-durable-topic-source
+
+    // We wait a little to be sure that the source is connected
+    Thread.sleep(500)
+
+    Source(in).runWith(jmsTopicSink)
+
+    result.futureValue shouldEqual in
+  }
 }

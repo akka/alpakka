@@ -40,6 +40,9 @@ sealed trait Destination {
 final case class Topic(override val name: String) extends Destination {
   override val create: (jms.Session) => jms.Destination = session => session.createTopic(name)
 }
+final case class DurableTopic(name: String, subscriberName: String) extends Destination {
+  override val create: (jms.Session) => jms.Destination = session => session.createTopic(name)
+}
 final case class Queue(override val name: String) extends Destination {
   override val create: (jms.Session) => jms.Destination = session => session.createQueue(name)
 }
@@ -67,13 +70,16 @@ final case class JmsConsumerSettings(connectionFactory: ConnectionFactory,
                                      sessionCount: Int = 1,
                                      bufferSize: Int = 100,
                                      selector: Option[String] = None,
-                                     acknowledgeMode: Option[AcknowledgeMode] = None)
+                                     acknowledgeMode: Option[AcknowledgeMode] = None,
+                                     durableName: Option[String] = None)
     extends JmsSettings {
   def withCredential(credentials: Credentials): JmsConsumerSettings = copy(credentials = Some(credentials))
   def withSessionCount(count: Int): JmsConsumerSettings = copy(sessionCount = count)
   def withBufferSize(size: Int): JmsConsumerSettings = copy(bufferSize = size)
   def withQueue(name: String): JmsConsumerSettings = copy(destination = Some(Queue(name)))
   def withTopic(name: String): JmsConsumerSettings = copy(destination = Some(Topic(name)))
+  def withDurableTopic(name: String, subscriberName: String) =
+    copy(destination = Some(DurableTopic(name, subscriberName)))
   def withDestination(destination: Destination): JmsConsumerSettings = copy(destination = Some(destination))
   def withSelector(selector: String): JmsConsumerSettings = copy(selector = Some(selector))
   def withAcknowledgeMode(acknowledgeMode: AcknowledgeMode): JmsConsumerSettings =
