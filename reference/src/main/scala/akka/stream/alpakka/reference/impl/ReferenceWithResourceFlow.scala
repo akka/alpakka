@@ -6,7 +6,7 @@ package akka.stream.alpakka.reference.impl
 
 import akka.annotation.InternalApi
 import akka.event.Logging
-import akka.stream.alpakka.reference.{ReferenceWriteMessage, Resource}
+import akka.stream.alpakka.reference.{ReferenceWriteMessage, ReferenceWriteResult, Resource}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 
@@ -19,7 +19,7 @@ import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
  */
 @InternalApi private[reference] final class ReferenceWithResourceFlowStageLogic(
     val resource: Resource,
-    val shape: FlowShape[ReferenceWriteMessage, ReferenceWriteMessage]
+    val shape: FlowShape[ReferenceWriteMessage, ReferenceWriteResult]
 ) extends GraphStageLogic(shape) {
 
   private def in = shape.in
@@ -33,8 +33,10 @@ import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
   setHandler(
     in,
     new InHandler {
-      override def onPush(): Unit =
-        push(out, grab(in))
+      override def onPush(): Unit = {
+        val writeMessage = grab(in)
+        push(out, new ReferenceWriteResult(writeMessage, writeMessage.metrics, 200))
+      }
     }
   )
 
@@ -52,14 +54,14 @@ import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
  * INTERNAL API
  */
 @InternalApi private[reference] final class ReferenceWithResourceFlow(resource: Resource)
-    extends GraphStage[FlowShape[ReferenceWriteMessage, ReferenceWriteMessage]] {
+    extends GraphStage[FlowShape[ReferenceWriteMessage, ReferenceWriteResult]] {
   val in: Inlet[ReferenceWriteMessage] = Inlet(Logging.simpleName(this) + ".in")
-  val out: Outlet[ReferenceWriteMessage] = Outlet(Logging.simpleName(this) + ".out")
+  val out: Outlet[ReferenceWriteResult] = Outlet(Logging.simpleName(this) + ".out")
 
   override def initialAttributes: Attributes =
     Attributes.name(Logging.simpleName(this))
 
-  override val shape: FlowShape[ReferenceWriteMessage, ReferenceWriteMessage] = FlowShape(in, out)
+  override val shape: FlowShape[ReferenceWriteMessage, ReferenceWriteResult] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new ReferenceWithResourceFlowStageLogic(resource, shape)

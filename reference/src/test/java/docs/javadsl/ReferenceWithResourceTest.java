@@ -9,6 +9,7 @@ import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.reference.ReferenceWriteMessage;
+import akka.stream.alpakka.reference.ReferenceWriteResult;
 import akka.stream.alpakka.reference.Resource;
 import akka.stream.alpakka.reference.ResourceExt;
 import akka.stream.alpakka.reference.javadsl.ReferenceWithExternalResource;
@@ -40,7 +41,7 @@ public class ReferenceWithResourceTest {
 
   @Test
   public void useGlobalResource() {
-    final Flow<ReferenceWriteMessage, ReferenceWriteMessage, NotUsed> flow =
+    final Flow<ReferenceWriteMessage, ReferenceWriteResult, NotUsed> flow =
         ReferenceWithResource.flow(sys);
 
     Source.single(ReferenceWriteMessage.create()).via(flow).to(Sink.seq()).run(mat);
@@ -49,7 +50,7 @@ public class ReferenceWithResourceTest {
   @Test
   public void useExternalResource() {
     final Resource resource = ResourceExt.get(sys).resource();
-    final Flow<ReferenceWriteMessage, ReferenceWriteMessage, NotUsed> flow =
+    final Flow<ReferenceWriteMessage, ReferenceWriteResult, NotUsed> flow =
         ReferenceWithExternalResource.flow(resource);
 
     Source.single(ReferenceWriteMessage.create()).via(flow).to(Sink.seq()).run(mat);
