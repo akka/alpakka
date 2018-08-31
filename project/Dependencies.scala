@@ -189,7 +189,8 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "javax.jms" % "jms" % "1.1" % Provided, // CDDL + GPLv2
       "org.apache.activemq" % "activemq-broker" % "5.15.4" % Test, // ApacheV2
-      "org.apache.activemq" % "activemq-client" % "5.15.4" % Test // ApacheV2
+      "org.apache.activemq" % "activemq-client" % "5.15.4" % Test, // ApacheV2
+      "org.mockito" % "mockito-core" % "2.21.0" % Test // MIT
     ),
     resolvers += ("jboss" at "https://repository.jboss.org/nexus/content/groups/public")
   )

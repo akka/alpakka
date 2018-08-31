@@ -30,6 +30,7 @@ sealed trait JmsSettings {
   def destination: Option[Destination]
   def credentials: Option[Credentials]
   def acknowledgeMode: Option[AcknowledgeMode]
+  def sessionCount: Int
 }
 
 sealed trait Destination {
@@ -88,10 +89,12 @@ object JmsProducerSettings {
 final case class JmsProducerSettings(connectionFactory: ConnectionFactory,
                                      destination: Option[Destination] = None,
                                      credentials: Option[Credentials] = None,
+                                     sessionCount: Int = 1,
                                      timeToLive: Option[Duration] = None,
                                      acknowledgeMode: Option[AcknowledgeMode] = None)
     extends JmsSettings {
   def withCredential(credentials: Credentials): JmsProducerSettings = copy(credentials = Some(credentials))
+  def withSessionCount(count: Int): JmsProducerSettings = copy(sessionCount = count)
   def withQueue(name: String): JmsProducerSettings = copy(destination = Some(Queue(name)))
   def withTopic(name: String): JmsProducerSettings = copy(destination = Some(Topic(name)))
   def withDestination(destination: Destination): JmsProducerSettings = copy(destination = Some(destination))
@@ -114,6 +117,7 @@ final case class JmsBrowseSettings(connectionFactory: ConnectionFactory,
                                    selector: Option[String] = None,
                                    acknowledgeMode: Option[AcknowledgeMode] = None)
     extends JmsSettings {
+  override val sessionCount = 1
   def withCredential(credentials: Credentials): JmsBrowseSettings = copy(credentials = Some(credentials))
   def withQueue(name: String): JmsBrowseSettings = copy(destination = Some(Queue(name)))
   def withDestination(destination: Destination): JmsBrowseSettings = copy(destination = Some(destination))
