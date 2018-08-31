@@ -33,18 +33,19 @@ private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings)
 
       private val backpressure = new Semaphore(bufferSize)
 
-      private[jms] def createSession(connection: Connection, createDestination: Session => javax.jms.Destination) = {
+      protected def createSession(connection: Connection,
+                                  createDestination: Session => javax.jms.Destination): JmsSession = {
         val session =
           connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode)
         new JmsSession(connection, session, createDestination(session))
       }
 
-      private[jms] def pushMessage(msg: Message): Unit = {
+      protected def pushMessage(msg: Message): Unit = {
         push(out, msg)
         backpressure.release()
       }
 
-      override private[jms] def onSessionOpened(jmsSession: JmsSession): Unit =
+      override protected def onSessionOpened(jmsSession: JmsSession): Unit =
         jmsSession
           .createConsumer(settings.selector)
           .onComplete {
@@ -76,15 +77,16 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings)
     val logic = new SourceStageLogic[AckEnvelope](shape, out, settings, inheritedAttributes) {
       private val maxPendingAck = settings.bufferSize
 
-      private[jms] def createSession(connection: Connection, createDestination: Session => javax.jms.Destination) = {
+      protected def createSession(connection: Connection,
+                                  createDestination: Session => javax.jms.Destination): JmsAckSession = {
         val session =
           connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.ClientAcknowledge).mode)
         new JmsAckSession(connection, session, createDestination(session), settings.bufferSize)
       }
 
-      private[jms] def pushMessage(msg: AckEnvelope): Unit = push(out, msg)
+      protected def pushMessage(msg: AckEnvelope): Unit = push(out, msg)
 
-      override private[jms] def onSessionOpened(jmsSession: JmsSession): Unit =
+      override protected def onSessionOpened(jmsSession: JmsSession): Unit =
         jmsSession match {
           case session: JmsAckSession =>
             session.createConsumer(settings.selector).onComplete {
@@ -153,15 +155,15 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, KillSwitch) = {
     val logic = new SourceStageLogic[TxEnvelope](shape, out, settings, inheritedAttributes) {
-      private[jms] def createSession(connection: Connection, createDestination: Session => javax.jms.Destination) = {
+      protected def createSession(connection: Connection, createDestination: Session => javax.jms.Destination) = {
         val session =
           connection.createSession(true, settings.acknowledgeMode.getOrElse(AcknowledgeMode.SessionTransacted).mode)
         new JmsTxSession(connection, session, createDestination(session))
       }
 
-      private[jms] def pushMessage(msg: TxEnvelope): Unit = push(out, msg)
+      protected def pushMessage(msg: TxEnvelope): Unit = push(out, msg)
 
-      override private[jms] def onSessionOpened(jmsSession: JmsSession): Unit =
+      override protected def onSessionOpened(jmsSession: JmsSession): Unit =
         jmsSession match {
           case session: JmsTxSession =>
             session.createConsumer(settings.selector).onComplete {
@@ -207,7 +209,7 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
     with JmsConnector
     with StageLogging {
 
-  override private[jms] def jmsSettings = settings
+  override protected def jmsSettings: JmsConsumerSettings = settings
   private val queue = mutable.Queue[T]()
   private val stopping = new AtomicBoolean(false)
   private var stopped = false
@@ -222,20 +224,11 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
     failStage(ex)
   }
 
-  private[jms] def getDispatcher =
-    attributes.get[ActorAttributes.Dispatcher](
-      ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
-    ) match {
-      case ActorAttributes.Dispatcher("") =>
-        ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
-      case d => d
-    }
-
   private[jms] val handleError = getAsyncCallback[Throwable] { e =>
     fail(out, e)
   }
 
-  override def preStart(): Unit = initSessionAsync(getDispatcher)
+  override def preStart(): Unit = initSessionAsync(executionContext(attributes))
 
   private[jms] val handleMessage = getAsyncCallback[T] { msg =>
     if (isAvailable(out)) {
@@ -250,7 +243,7 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
     }
   }
 
-  private[jms] def pushMessage(msg: T): Unit
+  protected def pushMessage(msg: T): Unit
 
   setHandler(out, new OutHandler {
     override def onPull(): Unit = {
