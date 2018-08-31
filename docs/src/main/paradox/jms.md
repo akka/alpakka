@@ -192,6 +192,24 @@ Scala
 Java
 : @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-flow-producer }
 
+### Configuring the Producer
+
+Scala
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsSettingsSpec.scala) { #producer-settings }
+
+Java
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsSettingsTest.java) { #producer-settings }
+
+The producer can be configured with the following settings.
+
+* `connectionFactory` (mandatory) the factory to use for creating Jms connections.
+* `destination` (mandatory) the destination (queue or topic) to send Jms messgages to.
+* `credentials` (optional) username and password to use for authentication to the Jms broker .
+* `sessionCount` (defaults to 1) the number of parallel sessions to use for sending Jms messages. Increasing the 
+  number of parallel sessions increases throughput at the cost of message ordering. While the messages may arrive
+  out of order at the Jms broker, the producer flow outputs messages in the order they are received.
+* `timeToLive`  (optional) the time messages should be kept on the Jms broker. This setting can be overridden on 
+  individual messages. If not set, messages will never expire.
 
 ## Receiving messages from a JMS provider
 

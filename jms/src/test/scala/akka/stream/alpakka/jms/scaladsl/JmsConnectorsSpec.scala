@@ -5,17 +5,21 @@
 package akka.stream.alpakka.jms.scaladsl
 
 import java.nio.charset.Charset
-import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
-import javax.jms
-import javax.jms.{DeliveryMode, JMSException, Message, Session, TextMessage}
+import java.util.concurrent.{CountDownLatch, LinkedBlockingQueue, ThreadLocalRandom, TimeUnit}
 
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.{KillSwitch, KillSwitches, ThrottleMode}
 import akka.{Done, NotUsed}
-import org.apache.activemq.ActiveMQConnectionFactory
-import org.apache.activemq.ActiveMQSession
+import javax.jms._
 import org.apache.activemq.command.ActiveMQQueue
+import org.apache.activemq.{ActiveMQConnectionFactory, ActiveMQSession}
+import org.mockito.ArgumentMatchers._
+import org.mockito.Mockito._
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
+import org.scalatest.mockito.MockitoSugar
+
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
@@ -23,10 +27,9 @@ import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
-
 final case class DummyObject(payload: String)
 
-class JmsConnectorsSpec extends JmsSpec {
+class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
 
   override implicit val patienceConfig = PatienceConfig(2.minutes)
 
@@ -562,6 +565,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       val url: String = ctx.url
       val connectionFactory = new CachedConnectionFactory(url)
+      val brokerStop = new CountDownLatch(1)
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
         JmsProducerSettings(connectionFactory).withQueue("numbers")
@@ -572,12 +576,14 @@ class JmsConnectorsSpec extends JmsSpec {
           n =>
             Future {
               Thread.sleep(500)
+              brokerStop.await()
               JmsTextMessage(n.toString)
           }
         )
         .runWith(jmsSink)
 
       ctx.broker.stop()
+      brokerStop.countDown()
 
       completionFuture.failed.futureValue shouldBe a[JMSException]
       // connection was not yet initialized before broker stop
@@ -781,6 +787,94 @@ class JmsConnectorsSpec extends JmsSpec {
       //#run-flow-producer
 
       result.futureValue should ===(input)
+    }
+
+    "publish and consume strings through a queue with multiple sessions" in withServer() { ctx =>
+      val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      val jmsSink: Sink[String, Future[Done]] = JmsProducer.textSink(
+        JmsProducerSettings(connectionFactory).withQueue("test").withSessionCount(5)
+      )
+
+      val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
+      val sinkOut = Source(in).runWith(jmsSink)
+
+      val jmsSource: Source[String, KillSwitch] = JmsConsumer.textSource(
+        JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(10).withQueue("test")
+      )
+
+      val result = jmsSource.take(in.size).runWith(Sink.seq)
+
+      result.futureValue should contain allElementsOf in
+    }
+
+    "produce elements in order" in {
+      val factory = mock[ConnectionFactory]
+      val connection = mock[Connection]
+      val session = mock[Session]
+      val producer = mock[MessageProducer]
+      val textMessage = mock[TextMessage]
+
+      val delayedSend = new Answer[Unit] {
+        override def answer(invocation: InvocationOnMock): Unit =
+          Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
+      }
+
+      when(factory.createConnection()).thenReturn(connection)
+      when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
+      when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
+      when(session.createTextMessage(anyString())).thenReturn(textMessage)
+      when(producer.send(any[Message], anyInt(), anyInt(), anyLong())).thenAnswer(delayedSend)
+
+      val in = (1 to 50).map(i => JmsTextMessage(i.toString))
+      val jmsFlow = JmsProducer.flow[JmsTextMessage](JmsProducerSettings(factory).withQueue("test").withSessionCount(8))
+
+      val result = Source(in).via(jmsFlow).toMat(Sink.seq)(Keep.right).run()
+
+      result.futureValue shouldEqual in
+    }
+
+    "fail fast on the first failing send" in {
+      val factory = mock[ConnectionFactory]
+      val connection = mock[Connection]
+      val session = mock[Session]
+      val producer = mock[MessageProducer]
+      val errorLatch = new CountDownLatch(3)
+
+      when(factory.createConnection()).thenReturn(connection)
+      when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
+      when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
+
+      val messages = (1 to 10).map(i => mock[TextMessage] -> i).toMap
+      messages.foreach {
+        case (msg, i) => when(session.createTextMessage(i.toString)).thenReturn(msg)
+      }
+
+      val failOnFifthAndDelayFourthItem = new Answer[Unit] {
+        override def answer(invocation: InvocationOnMock): Unit = {
+          val msgNo = messages(invocation.getArgument[TextMessage](0))
+          msgNo match {
+            case 1 | 2 | 3 =>
+              errorLatch.countDown() // first three sends work...
+            case 4 =>
+              Thread.sleep(5000) // this one gets delayed...
+            case 5 =>
+              errorLatch.await()
+              throw new RuntimeException("Mocked send failure") // this one fails.
+            case _ => ()
+          }
+        }
+      }
+      when(producer.send(any[Message], anyInt(), anyInt(), anyLong())).thenAnswer(failOnFifthAndDelayFourthItem)
+
+      val in = (1 to 10).map(i => JmsTextMessage(i.toString))
+      val done = new JmsTextMessage("done")
+      val jmsFlow = JmsProducer.flow[JmsTextMessage](JmsProducerSettings(factory).withQueue("test").withSessionCount(8))
+      val result = Source(in).via(jmsFlow).recover { case _ => done }.toMat(Sink.seq)(Keep.right).run()
+
+      // expect send failure on no 5. to cause immediate stream failure (after no. 1, 2 and 3),
+      // even though no 4. is still in-flight.
+      result.futureValue shouldEqual in.take(3) :+ done
     }
   }
 }
