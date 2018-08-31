@@ -22,7 +22,6 @@ import scala.concurrent.duration._
 import playground.elastic.ElasticsearchMock
 import playground.{ActorSystemAvailable, ElasticSearchEmbedded}
 
-
 object FetchUsingSlickAndStreamIntoElastic extends ActorSystemAvailable with App {
 
   val runner = ElasticSearchEmbedded.startElasticInstance()
