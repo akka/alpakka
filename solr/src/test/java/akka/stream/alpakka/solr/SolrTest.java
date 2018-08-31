@@ -40,9 +40,7 @@ import scala.concurrent.duration.FiniteDuration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -62,10 +60,17 @@ public class SolrTest {
   public static class Book {
     public String title;
 
+    public String comment;
+
     public Book() {}
 
     public Book(String title) {
       this.title = title;
+    }
+
+    public Book(String title, String comment) {
+      this.title = title;
+      this.comment = comment;
     }
   }
 
@@ -73,13 +78,14 @@ public class SolrTest {
       book -> {
         SolrInputDocument doc = new SolrInputDocument();
         doc.setField("title", book.title);
+        doc.setField("comment", book.comment);
         return doc;
       };
 
   Function<Tuple, Book> tupleToBook =
       tuple -> {
         String title = tuple.getString("title");
-        return new Book(title);
+        return new Book(title, tuple.getString("comment"));
       };
   // #define-class
 
@@ -97,7 +103,7 @@ public class SolrTest {
                 tuple -> {
                   Book book = tupleToBook.apply(tuple);
                   SolrInputDocument doc = bookToDoc.apply(book);
-                  return IncomingMessage.create(doc);
+                  return IncomingUpdateMessage.create(doc);
                 })
             .runWith(
                 SolrSink.document("collection2", settings, cluster.getSolrClient()), materializer);
@@ -151,7 +157,7 @@ public class SolrTest {
             .map(
                 tuple -> {
                   String title = tuple.getString("title");
-                  return IncomingMessage.create(new BookBean(title));
+                  return IncomingUpdateMessage.create(new BookBean(title));
                 })
             .runWith(
                 SolrSink.bean("collection3", settings, cluster.getSolrClient(), BookBean.class),
@@ -192,7 +198,7 @@ public class SolrTest {
     SolrUpdateSettings settings = SolrUpdateSettings.create().withCommitWithin(5);
     CompletionStage<Done> f1 =
         SolrSource.fromTupleStream(stream)
-            .map(tuple -> IncomingMessage.create(tupleToBook.apply(tuple)))
+            .map(tuple -> IncomingUpdateMessage.create(tupleToBook.apply(tuple)))
             .runWith(
                 SolrSink.typed(
                     "collection4", settings, bookToDoc, cluster.getSolrClient(), Book.class),
@@ -233,7 +239,7 @@ public class SolrTest {
     SolrUpdateSettings settings = SolrUpdateSettings.create().withCommitWithin(5);
     CompletionStage<Done> f1 =
         SolrSource.fromTupleStream(stream)
-            .map(tuple -> IncomingMessage.create(tupleToBook.apply(tuple)))
+            .map(tuple -> IncomingUpdateMessage.create(tupleToBook.apply(tuple)))
             .via(
                 SolrFlow.typed(
                     "collection5", settings, bookToDoc, cluster.getSolrClient(), Book.class))
@@ -288,7 +294,7 @@ public class SolrTest {
             kafkaMessage -> {
               Book book = kafkaMessage.book;
               // Transform message so that we can write to elastic
-              return IncomingMessage.create(book, kafkaMessage.offset);
+              return IncomingUpdateMessage.create(book, kafkaMessage.offset);
             })
         .via(
             SolrFlow.typedWithPassThrough(
@@ -343,7 +349,7 @@ public class SolrTest {
                 tuple -> {
                   Book book = tupleToBook.apply(tuple);
                   SolrInputDocument doc = bookToDoc.apply(book);
-                  return IncomingMessage.create(doc);
+                  return IncomingUpdateMessage.create(doc);
                 })
             .runWith(
                 SolrSink.document("collection7", settings, cluster.getSolrClient()), materializer);
@@ -355,7 +361,7 @@ public class SolrTest {
 
     CompletionStage<Done> res2 =
         SolrSource.fromTupleStream(stream2)
-            .map(t -> IncomingMessage.create(tupleToBook.apply(t).title))
+            .map(t -> IncomingDeleteMessage.create(tupleToBook.apply(t).title))
             .runWith(
                 SolrSink.delete("collection7", settings, cluster.getSolrClient()), materializer);
 
@@ -371,6 +377,72 @@ public class SolrTest {
     List<String> result = new ArrayList<>(res3.toCompletableFuture().get());
 
     List<String> expect = Arrays.asList();
+
+    assertEquals(expect, result);
+  }
+
+  @Test
+  public void atomicUpdateDocuments() throws Exception {
+    // Copy collection1 to collection2 through document stream
+    createCollection("collection8"); // create a new collection
+    TupleStream stream = getTupleStream("collection1");
+
+    // #run-document
+    SolrUpdateSettings settings = SolrUpdateSettings.create().withCommitWithin(5);
+    CompletionStage<Done> f1 =
+        SolrSource.fromTupleStream(stream)
+            .map(
+                tuple -> {
+                  Book book = new Book(tupleToBook.apply(tuple).title, "Written by good authors.");
+                  SolrInputDocument doc = bookToDoc.apply(book);
+                  return IncomingUpdateMessage.create(doc);
+                })
+            .runWith(
+                SolrSink.document("collection8", settings, cluster.getSolrClient()), materializer);
+    // #run-document
+
+    f1.toCompletableFuture().get();
+
+    TupleStream stream2 = getTupleStream("collection8");
+
+    CompletionStage<Done> res2 =
+        SolrSource.fromTupleStream(stream2)
+            .map(
+                t -> {
+                  Map<String, Object> m = new HashMap<>();
+                  m.put("set", (t.fields.get("comment") + " It's is a good book!!!"));
+                  return IncomingAtomicUpdateMessage.create(
+                      "title", t.fields.get("title").toString(), "comment", m);
+                })
+            .runWith(
+                SolrSink.update("collection8", settings, cluster.getSolrClient()), materializer);
+
+    res2.toCompletableFuture().get();
+
+    cluster.getSolrClient().commit("collection8");
+
+    TupleStream stream3 = getTupleStream("collection8");
+
+    CompletionStage<List<String>> res3 =
+        SolrSource.fromTupleStream(stream3)
+            .map(
+                t -> {
+                  Book b = tupleToBook.apply(t);
+                  return b.title + ". " + b.comment;
+                })
+            .runWith(Sink.seq(), materializer);
+
+    List<String> result = new ArrayList<>(res3.toCompletableFuture().get());
+
+    List<String> expect =
+        Arrays.asList(
+            "Akka Concurrency. Written by good authors. It's is a good book!!!",
+            "Akka in Action. Written by good authors. It's is a good book!!!",
+            "Effective Akka. Written by good authors. It's is a good book!!!",
+            "Learning Scala. Written by good authors. It's is a good book!!!",
+            "Programming in Scala. Written by good authors. It's is a good book!!!",
+            "Scala Puzzlers. Written by good authors. It's is a good book!!!",
+            "Scala for Spark in Production. Written by good authors. It's is a good book!!!");
 
     assertEquals(expect, result);
   }
@@ -475,7 +547,7 @@ public class SolrTest {
     streamContext.setSolrClientCache(solrClientCache);
 
     String expressionStr =
-        String.format("search(%s, q=*:*, fl=\"title\", sort=\"title asc\")", collection);
+        String.format("search(%s, q=*:*, fl=\"title,comment\", sort=\"title asc\")", collection);
     StreamExpression expression = StreamExpressionParser.parse(expressionStr);
     TupleStream stream = new CloudSolrStream(expression, factory);
     stream.setStreamContext(streamContext);

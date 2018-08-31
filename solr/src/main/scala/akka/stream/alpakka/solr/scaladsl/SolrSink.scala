@@ -56,4 +56,14 @@ object SolrSink {
     SolrFlow
       .delete(collection, settings)
       .toMat(Sink.ignore)(Keep.right)
+
+  /**
+   * Scala API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing ids to update.
+   */
+  def update[T](collection: String, settings: SolrUpdateSettings)(
+      implicit client: SolrClient
+  ): Sink[IncomingMessage[NotUsed, NotUsed], Future[Done]] =
+    SolrFlow
+      .update(collection, settings)
+      .toMat(Sink.ignore)(Keep.right)
 }

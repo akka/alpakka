@@ -40,17 +40,18 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
   //#init-client
   //#define-class
-  case class Book(title: String)
+  case class Book(title: String, comment: String = "")
 
   val bookToDoc: Book => SolrInputDocument = { b =>
     val doc = new SolrInputDocument
     doc.setField("title", b.title)
+    doc.setField("comment", b.comment)
     doc
   }
 
   val tupleToBook: Tuple => Book = { t =>
     val title = t.getString("title")
-    Book(title)
+    Book(title, t.getString("comment"))
   }
   //#define-class
 
@@ -66,7 +67,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
           val doc: SolrInputDocument = bookToDoc(book)
-          IncomingMessage(doc)
+          IncomingUpdateMessage(doc)
         }
         .runWith(
           SolrSink.document(
@@ -118,7 +119,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .fromTupleStream(ts = stream)
         .map { tuple: Tuple =>
           val title = tuple.getString("title")
-          IncomingMessage(BookBean(title))
+          IncomingUpdateMessage(BookBean(title))
         }
         .runWith(
           SolrSink.bean[BookBean](
@@ -163,7 +164,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .fromTupleStream(ts = stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
-          IncomingMessage(book)
+          IncomingUpdateMessage(book)
         }
         .runWith(
           SolrSink
@@ -210,7 +211,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .fromTupleStream(ts = stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
-          IncomingMessage(book)
+          IncomingUpdateMessage(book)
         }
         .via(
           SolrFlow
@@ -279,7 +280,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
           println("title: " + book.title)
 
           // Transform message so that we can write to solr
-          IncomingMessage(Update, None, Some(book), kafkaMessage.offset)
+          IncomingUpdateMessage(book, kafkaMessage.offset)
         }
         .via( // write to Solr
           SolrFlow.typedWithPassThrough[Book, KafkaOffset](
@@ -330,7 +331,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
           val doc: SolrInputDocument = bookToDoc(book)
-          IncomingMessage(doc)
+          IncomingUpdateMessage(doc)
         }
         .runWith(
           SolrSink.document(
@@ -349,7 +350,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val f2 = SolrSource
         .fromTupleStream(ts = stream2)
         .map { tuple: Tuple =>
-          IncomingMessage(tuple.fields.get("title").toString)
+          IncomingDeleteMessage(tuple.fields.get("title").toString)
         }
         .runWith(
           SolrSink.delete(
@@ -378,6 +379,76 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
   }
 
+  "Un-typed Solr connector" should {
+    "consume and update atomically documents" in {
+      // Copy collection1 to collection2 through document stream
+      createCollection("collection8") //create a new collection
+      val stream = getTupleStream("collection1")
+
+      //#run-document
+      val f1 = SolrSource
+        .fromTupleStream(ts = stream)
+        .map { tuple: Tuple =>
+          val book: Book = tupleToBook(tuple).copy(comment = "Written by good authors.")
+          val doc: SolrInputDocument = bookToDoc(book)
+          IncomingUpdateMessage(doc)
+        }
+        .runWith(
+          SolrSink.document(
+            collection = "collection8",
+            settings = SolrUpdateSettings(commitWithin = 5)
+          )(cluster.getSolrClient)
+        )
+      //#run-document
+
+      Await.result(f1, Duration.Inf)
+
+      val stream2 = getTupleStream("collection8")
+
+      val f2 = SolrSource
+        .fromTupleStream(ts = stream2)
+        .map { tuple: Tuple =>
+          IncomingAtomicUpdateMessage("title",
+                                      tuple.fields.get("title").toString,
+                                      "comment",
+                                      Map("set" -> (tuple.fields.get("comment") + " It's is a good book!!!")))
+        }
+        .runWith(
+          SolrSink.update(
+            collection = "collection8",
+            settings = SolrUpdateSettings()
+          )(cluster.getSolrClient)
+        )
+      //#run-document
+
+      Await.result(f2, Duration.Inf)
+
+      cluster.getSolrClient.commit("collection8")
+
+      val stream3 = getTupleStream("collection8")
+
+      val res2 = SolrSource
+        .fromTupleStream(ts = stream3)
+        .map(tupleToBook)
+        .map { b =>
+          b.title + ". " + b.comment
+        }
+        .runWith(Sink.seq)
+
+      val result = Await.result(res2, Duration.Inf)
+
+      result shouldEqual Seq(
+        "Akka Concurrency. Written by good authors. It's is a good book!!!",
+        "Akka in Action. Written by good authors. It's is a good book!!!",
+        "Effective Akka. Written by good authors. It's is a good book!!!",
+        "Learning Scala. Written by good authors. It's is a good book!!!",
+        "Programming in Scala. Written by good authors. It's is a good book!!!",
+        "Scala Puzzlers. Written by good authors. It's is a good book!!!",
+        "Scala for Spark in Production. Written by good authors. It's is a good book!!!"
+      )
+    }
+
+  }
   override def beforeAll(): Unit = {
     setupCluster()
     new UpdateRequest()
@@ -439,7 +510,8 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
     val streamContext = new StreamContext()
     streamContext.setSolrClientCache(solrClientCache)
 
-    val expression = StreamExpressionParser.parse(s"""search($collection, q=*:*, fl="title", sort="title asc")""")
+    val expression =
+      StreamExpressionParser.parse(s"""search($collection, q=*:*, fl="title,comment", sort="title asc")""")
     val stream: TupleStream = new CloudSolrStream(expression, factory)
     stream.setStreamContext(streamContext)
     //#tuple-stream

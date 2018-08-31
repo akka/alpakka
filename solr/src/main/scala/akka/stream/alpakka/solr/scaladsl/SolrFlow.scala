@@ -92,6 +92,25 @@ object SolrFlow {
       .mapAsync(1)(identity)
 
   /**
+   * Scala API: creates a [[SolrFlowStage]] for message to atomically update from [[IncomingMessage]] to sequences
+   * of [[IncomingMessageResult]].
+   */
+  def update(collection: String,
+             settings: SolrUpdateSettings)(implicit client: SolrClient): Flow[IncomingMessage[NotUsed, NotUsed], Seq[
+    IncomingMessageResult[NotUsed, NotUsed]
+  ], NotUsed] =
+    Flow
+      .fromGraph(
+        new SolrFlowStage[NotUsed, NotUsed](
+          collection,
+          client,
+          settings,
+          None
+        )
+      )
+      .mapAsync(1)(identity)
+
+  /**
    * Scala API: creates a [[SolrFlowStage]] for [[SolrInputDocument]] from [[IncomingMessage]]
    * to lists of [[IncomingMessageResult]] with `passThrough` of type `C`.
    */
@@ -157,6 +176,26 @@ object SolrFlow {
    * of [[IncomingMessageResult]] with `passThrough` of type `C`.
    */
   def deleteWithPassThrough[C](collection: String, settings: SolrUpdateSettings)(
+      implicit client: SolrClient
+  ): Flow[IncomingMessage[NotUsed, C], Seq[
+    IncomingMessageResult[NotUsed, C]
+  ], NotUsed] =
+    Flow
+      .fromGraph(
+        new SolrFlowStage[NotUsed, C](
+          collection,
+          client,
+          settings,
+          None
+        )
+      )
+      .mapAsync(1)(identity)
+
+  /**
+   * Scala API: creates a [[SolrFlowStage]] for message to atomically update from [[IncomingMessage]] to sequences
+   * of [[IncomingMessageResult]] with `passThrough` of type `C`.
+   */
+  def updateWithPassThrough[C](collection: String, settings: SolrUpdateSettings)(
       implicit client: SolrClient
   ): Flow[IncomingMessage[NotUsed, C], Seq[
     IncomingMessageResult[NotUsed, C]

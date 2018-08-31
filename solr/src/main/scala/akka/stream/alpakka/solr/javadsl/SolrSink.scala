@@ -71,4 +71,17 @@ object SolrSink {
       .delete(collection, settings, client)
       .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[NotUsed, NotUsed]]],
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
+
+  /**
+   * Java API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing [[SolrInputDocument]].
+   */
+  def update(
+      collection: String,
+      settings: SolrUpdateSettings,
+      client: SolrClient
+  ): javadsl.Sink[IncomingMessage[NotUsed, NotUsed], CompletionStage[Done]] =
+    SolrFlow
+      .update(collection, settings, client)
+      .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[NotUsed, NotUsed]]],
+             javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 }
