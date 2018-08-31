@@ -632,6 +632,43 @@ public class JmsConnectorsTest {
   }
 
   @Test
+  public void publishAndConsumeDurableTopic() throws Exception {
+    withServer(
+        ctx -> {
+          ConnectionFactory producerConnectionFactory = new ActiveMQConnectionFactory(ctx.url);
+          // #create-connection-factory-with-client-id
+          ConnectionFactory consumerConnectionFactory = new ActiveMQConnectionFactory(ctx.url);
+          ((ActiveMQConnectionFactory) consumerConnectionFactory)
+              .setClientID(getClass().getSimpleName());
+          // #create-connection-factory-with-client-id
+
+          List<String> in = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
+
+          Sink<String, CompletionStage<Done>> jmsTopicSink =
+              JmsProducer.textSink(
+                  JmsProducerSettings.create(producerConnectionFactory).withTopic("topic"));
+
+          // #create-durable-topic-source
+          Source<String, KillSwitch> jmsTopicSource =
+              JmsConsumer.textSource(
+                  JmsConsumerSettings.create(consumerConnectionFactory)
+                      .withDurableTopic("topic", "durable-test"));
+          // #create-durable-topic-source
+
+          // #run-durable-topic-source
+          CompletionStage<List<String>> result =
+              jmsTopicSource.take(in.size()).runWith(Sink.seq(), materializer);
+          // #run-durable-topic-source
+
+          Thread.sleep(500);
+
+          Source.from(in).runWith(jmsTopicSink, materializer);
+
+          assertEquals(in, result.toCompletableFuture().get(5, TimeUnit.SECONDS));
+        });
+  }
+
+  @Test
   public void producerFlow() throws Exception {
     withServer(
         ctx -> {
