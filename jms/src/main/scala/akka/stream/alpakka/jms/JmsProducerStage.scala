@@ -10,8 +10,6 @@ import akka.stream.alpakka.jms.JmsProducerStage._
 import akka.stream.impl.{Buffer, ReactiveStreamsCompliance}
 import akka.stream.stage._
 import akka.util.OptionVal
-import javax.jms
-import javax.jms.{Connection, Session}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
@@ -29,7 +27,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
     ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher")
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with JmsConnector {
+    new GraphStageLogic(shape) with JmsProducerConnector {
 
       /*
        * NOTE: the following code is heavily inspired by akka.stream.impl.fusing.MapAsync
@@ -47,12 +45,6 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
       private val inFlightMessagesWithProducer: Buffer[Holder[A]] = Buffer(settings.sessionCount, settings.sessionCount)
 
       protected def jmsSettings: JmsProducerSettings = settings
-
-      protected def createSession(connection: Connection, createDestination: Session => jms.Destination): JmsSession = {
-        val session =
-          connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode)
-        new JmsSession(connection, session, createDestination(session), settings.destination.get)
-      }
 
       override def preStart(): Unit = {
         jmsSessions = openSessions()

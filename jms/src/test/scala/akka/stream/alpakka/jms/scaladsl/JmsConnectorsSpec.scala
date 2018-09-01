@@ -31,7 +31,7 @@ final case class DummyObject(payload: String)
 
 class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
 
-  override implicit val patienceConfig = PatienceConfig(2.minutes)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(2.minutes)
 
   "The JMS Connectors" should {
     "publish and consume strings through a queue" in withServer() { ctx =>
@@ -787,6 +787,73 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       //#run-flow-producer
 
       result.futureValue should ===(input)
+    }
+
+    "accept message-defined destinations in directed flow" in withServer() { ctx =>
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      //#create-directed-flow-producer
+      val directedFlowSink: Flow[JmsDirectedMessage, JmsDirectedMessage, NotUsed] =
+        JmsProducer.directedMessageFlow(
+          JmsProducerSettings(connectionFactory) // no destination configured
+        )
+      //#create-directed-flow-producer
+
+      //#run-directed-flow-producer
+      val input = (1 to 100).map { i =>
+        val queueName = if (i % 2 == 0) "even" else "odd"
+        JmsTextMessage(i.toString).toQueue(queueName)
+      }
+      Source(input)
+        .via(directedFlowSink)
+        .runWith(Sink.ignore)
+      //#run-directed-flow-producer
+
+      val jmsEvenSource: Source[String, KillSwitch] = JmsConsumer.textSource(
+        JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("even")
+      )
+      val jmsOddSource: Source[String, KillSwitch] = JmsConsumer.textSource(
+        JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("odd")
+      )
+
+      jmsEvenSource.take(input.size / 2).map(_.toInt).runWith(Sink.seq).futureValue shouldBe (2 to 100 by 2)
+      jmsOddSource.take(input.size / 2).map(_.toInt).runWith(Sink.seq).futureValue shouldBe (1 to 99 by 2)
+    }
+
+    "ignore message destination in regular flow" in withServer() { ctx =>
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+      val jmsSink: Sink[JmsDirectedMessage, Future[Done]] = JmsProducer
+        .flow(JmsProducerSettings(connectionFactory).withQueue("test"))
+        .toMat(Sink.ignore)(Keep.right)
+
+      val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
+      val input = in.map(c => JmsTextMessage(c).toQueue("doesNotExist"))
+
+      Source(input).runWith(jmsSink)
+
+      val jmsSource: Source[String, KillSwitch] = JmsConsumer.textSource(
+        JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("test")
+      )
+
+      val result = jmsSource.take(in.size).runWith(Sink.seq)
+
+      result.futureValue shouldEqual in
+    }
+
+    "fail if message destination is not defined when using regular flow" in {
+      val connectionFactory = new ActiveMQConnectionFactory("localhost:1234")
+
+      an[IllegalArgumentException] shouldBe thrownBy {
+        JmsProducer.flow(JmsProducerSettings(connectionFactory))
+      }
+    }
+
+    "fail if message destination is defined when using a directed message flow" in {
+      val connectionFactory = new ActiveMQConnectionFactory("localhost:1234")
+
+      an[IllegalArgumentException] shouldBe thrownBy {
+        JmsProducer.directedMessageFlow(JmsProducerSettings(connectionFactory).withQueue("test"))
+      }
     }
 
     "publish and consume strings through a queue with multiple sessions" in withServer() { ctx =>
