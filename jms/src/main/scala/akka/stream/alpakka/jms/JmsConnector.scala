@@ -150,7 +150,7 @@ private[jms] class JmsMessageProducer(jmsProducer: MessageProducer, jmsSession: 
     }
 
   private[jms] def populateMessageProperties(message: javax.jms.Message, jmsMessage: JmsMessage): Unit =
-    jmsMessage.properties().foreach {
+    jmsMessage.properties.foreach {
       case (key, v) =>
         v match {
           case v: String => message.setStringProperty(key, v)
