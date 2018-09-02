@@ -4,20 +4,15 @@
 
 package akka.stream.alpakka.jms
 
-import java.util
-import java.util.Collections
 import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.ConcurrentHashMap
 
 import akka.stream.alpakka.jms.JmsMessageProducer.{DestinationMode, MessageDefinedDestination}
-import javax.jms
-import javax.jms._
-import akka.stream.{ActorAttributes, ActorMaterializer, Attributes}
+import akka.stream.alpakka.jms.impl.SoftReferenceCache
 import akka.stream.stage.{AsyncCallback, GraphStageLogic}
+import akka.stream.{ActorAttributes, ActorMaterializer, Attributes}
+import javax.jms
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.ref.SoftReference
-import scala.collection.JavaConverters._
 
 /**
  * Internal API
@@ -26,7 +21,7 @@ private[jms] trait JmsConnector[S <: JmsSession] { this: GraphStageLogic =>
 
   implicit protected var ec: ExecutionContext = _
 
-  protected var jmsConnection: Option[Connection] = None
+  protected var jmsConnection: Option[jms.Connection] = None
 
   protected var jmsSessions = Seq.empty[S]
 
@@ -36,7 +31,7 @@ private[jms] trait JmsConnector[S <: JmsSession] { this: GraphStageLogic =>
 
   protected val fail: AsyncCallback[Throwable] = getAsyncCallback[Throwable](e => failStage(e))
 
-  private val onConnection: AsyncCallback[Connection] = getAsyncCallback[Connection] { c =>
+  private val onConnection: AsyncCallback[jms.Connection] = getAsyncCallback[jms.Connection] { c =>
     jmsConnection = Some(c)
   }
 
@@ -74,14 +69,14 @@ private[jms] trait JmsConnector[S <: JmsSession] { this: GraphStageLogic =>
 
   def openSessions(): Seq[S]
 
-  def openConnection(): Connection = {
+  def openConnection(): jms.Connection = {
     val factory = jmsSettings.connectionFactory
     val connection = jmsSettings.credentials match {
       case Some(Credentials(username, password)) => factory.createConnection(username, password)
       case _ => factory.createConnection()
     }
-    connection.setExceptionListener(new ExceptionListener {
-      override def onException(exception: JMSException): Unit =
+    connection.setExceptionListener(new jms.ExceptionListener {
+      override def onException(exception: jms.JMSException): Unit =
         fail.invoke(exception)
     })
     onConnection.invoke(connection)
@@ -91,7 +86,7 @@ private[jms] trait JmsConnector[S <: JmsSession] { this: GraphStageLogic =>
 
 private[jms] trait JmsConsumerConnector extends JmsConnector[JmsConsumerSession] { this: GraphStageLogic =>
 
-  protected def createSession(connection: Connection,
+  protected def createSession(connection: jms.Connection,
                               createDestination: jms.Session => jms.Destination): JmsConsumerSession
 
   def openSessions(): Seq[JmsConsumerSession] = {
@@ -141,18 +136,14 @@ private[jms] object JmsMessageProducer {
 
 }
 
-private[jms] class JmsMessageProducer(jmsProducer: MessageProducer,
+private[jms] class JmsMessageProducer(jmsProducer: jms.MessageProducer,
                                       jmsSession: JmsProducerSession,
                                       mode: DestinationMode) {
 
-  // Using a synchronized map (and not ConcurrentHashMap) for the cache since:
-  // - we run on our on execution context and cannot piggy-back on Akka's synchronization
-  // - we run send()s with one thread at a time, so there will be no lock contention.
-  private val destinationCache =
-    Collections.synchronizedMap(new util.HashMap[Destination, SoftReference[jms.Destination]]()).asScala
+  private val destinationCache = new SoftReferenceCache[Destination, jms.Destination]()
 
   def send(elem: JmsMessage): Unit = {
-    val message: Message = createMessage(elem)
+    val message: jms.Message = createMessage(elem)
     populateMessageProperties(message, elem)
 
     val (sendHeaders, headersBeforeSend: Set[JmsHeader]) = elem.headers.partition(_.usedDuringSend)
@@ -172,24 +163,16 @@ private[jms] class JmsMessageProducer(jmsProducer: MessageProducer,
 
     elem match {
       case directed: JmsDirectedMessage if mode == MessageDefinedDestination =>
-        val jmsDestination = lookup(directed.destination)
-        jmsProducer.send(jmsDestination, message, deliveryMode, priority, timeToLive)
+        jmsProducer.send(lookup(directed.destination), message, deliveryMode, priority, timeToLive)
       case _ =>
         jmsProducer.send(message, deliveryMode, priority, timeToLive)
     }
   }
 
-  def lookup(destination: Destination): jms.Destination =
-    destinationCache.get(destination) match {
-      case Some(SoftReference(jmsDestination)) =>
-        jmsDestination
-      case _ =>
-        val jmsDestination = destination.create(jmsSession.session)
-        destinationCache.put(destination, SoftReference(jmsDestination))
-        jmsDestination
-    }
+  private def lookup(destination: Destination) =
+    destinationCache.lookup(destination, destination.create(jmsSession.session))
 
-  private[jms] def createMessage(element: JmsMessage): Message =
+  private[jms] def createMessage(element: JmsMessage): jms.Message =
     element match {
 
       case textMessage: JmsAbstractTextMessage => jmsSession.session.createTextMessage(textMessage.body)
