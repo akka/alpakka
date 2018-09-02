@@ -55,19 +55,14 @@ private[jms] trait JmsConnector[S <: JmsSession] { this: GraphStageLogic =>
     }
   }
 
-  protected def initSessionAsync(executionContext: ExecutionContext): Future[Unit] = {
+  protected def initSessionAsync(executionContext: ExecutionContext): Unit = {
     ec = executionContext
-    val future = Future {
-      val sessions = openSessions()
-      sessions foreach { session =>
-        onSession.invoke(session)
-      }
-    }
-    future.failed.foreach(e => fail.invoke(e))
-    future
+    val sessions: Seq[Future[S]] = openSessions()
+    sessions.foreach(_.foreach(onSession.invoke))
+    Future.sequence(sessions).failed.foreach(fail.invoke)
   }
 
-  def openSessions(): Seq[S]
+  def openSessions(): Seq[Future[S]]
 
   def openConnection(): jms.Connection = {
     val factory = jmsSettings.connectionFactory
@@ -89,7 +84,7 @@ private[jms] trait JmsConsumerConnector extends JmsConnector[JmsConsumerSession]
   protected def createSession(connection: jms.Connection,
                               createDestination: jms.Session => jms.Destination): JmsConsumerSession
 
-  def openSessions(): Seq[JmsConsumerSession] = {
+  def openSessions(): Seq[Future[JmsConsumerSession]] = {
     val connection = openConnection()
     connection.start()
 
@@ -99,22 +94,23 @@ private[jms] trait JmsConsumerConnector extends JmsConnector[JmsConsumerSession]
     }
 
     for (_ <- 0 until jmsSettings.sessionCount)
-      yield createSession(connection, createDestination)
+      yield Future(createSession(connection, createDestination))
   }
 }
 
 private[jms] trait JmsProducerConnector extends JmsConnector[JmsProducerSession] { this: GraphStageLogic =>
 
-  def openSessions(): Seq[JmsProducerSession] = {
+  def openSessions(): Seq[Future[JmsProducerSession]] = {
     val connection = openConnection()
 
     val maybeDestinationFactory = jmsSettings.destination.map(_.create)
 
     for (_ <- 0 until jmsSettings.sessionCount)
-      yield {
-        val session = connection.createSession(false, AcknowledgeMode.AutoAcknowledge.mode)
-        new JmsProducerSession(connection, session, maybeDestinationFactory.map(_.apply(session)))
-      }
+      yield
+        Future {
+          val session = connection.createSession(false, AcknowledgeMode.AutoAcknowledge.mode)
+          new JmsProducerSession(connection, session, maybeDestinationFactory.map(_.apply(session)))
+        }
   }
 }
 
