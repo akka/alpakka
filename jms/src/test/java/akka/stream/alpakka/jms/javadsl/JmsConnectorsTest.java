@@ -690,8 +690,8 @@ public class JmsConnectorsTest {
         });
   }
 
-    @Test
-    public void directedProducerFlow() throws Exception {
+  @Test
+  public void directedProducerFlow() throws Exception {
     withServer(
         ctx -> {
           ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
@@ -711,22 +711,28 @@ public class JmsConnectorsTest {
           Source.from(input).via(flowSink).runWith(Sink.seq(), materializer);
           // #run-directed-flow-producer
 
-          CompletionStage<List<Integer>> even = JmsConsumer.textSource(
-            JmsConsumerSettings.create(connectionFactory).withBufferSize(10).withQueue("even"))
-            .take(5)
-            .map(Integer::parseInt)
-            .runWith(Sink.seq(), materializer);
+          CompletionStage<List<Integer>> even =
+              JmsConsumer.textSource(
+                      JmsConsumerSettings.create(connectionFactory)
+                          .withBufferSize(10)
+                          .withQueue("even"))
+                  .take(5)
+                  .map(Integer::parseInt)
+                  .runWith(Sink.seq(), materializer);
 
-          CompletionStage<List<Integer>> odd = JmsConsumer.textSource(
-            JmsConsumerSettings.create(connectionFactory).withBufferSize(10).withQueue("odd"))
-            .take(5)
-            .map(Integer::parseInt)
-            .runWith(Sink.seq(), materializer);
+          CompletionStage<List<Integer>> odd =
+              JmsConsumer.textSource(
+                      JmsConsumerSettings.create(connectionFactory)
+                          .withBufferSize(10)
+                          .withQueue("odd"))
+                  .take(5)
+                  .map(Integer::parseInt)
+                  .runWith(Sink.seq(), materializer);
 
           assertEquals(Arrays.asList(1, 3, 5, 7, 9), odd.toCompletableFuture().get());
           assertEquals(Arrays.asList(2, 4, 6, 8, 10), even.toCompletableFuture().get());
         });
-    }
+  }
 
   private static ActorSystem system;
   private static Materializer materializer;

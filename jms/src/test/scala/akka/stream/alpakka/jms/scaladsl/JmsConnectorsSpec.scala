@@ -804,9 +804,7 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
         val queueName = if (i % 2 == 0) "even" else "odd"
         JmsTextMessage(i.toString).toQueue(queueName)
       }
-      Source(input)
-        .via(directedFlowSink)
-        .runWith(Sink.ignore)
+      Source(input).via(directedFlowSink).runWith(Sink.ignore)
       //#run-directed-flow-producer
 
       val jmsEvenSource: Source[String, KillSwitch] = JmsConsumer.textSource(

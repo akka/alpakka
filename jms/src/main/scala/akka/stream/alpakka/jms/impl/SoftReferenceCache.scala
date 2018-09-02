@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.jms.impl
 import akka.annotation.InternalApi
 
@@ -10,7 +14,7 @@ import scala.ref.SoftReference
  * Thread. Other synchronization tasks are not necessary.
  *
  * Use in other places is not recommended.
- * see [[akka.stream.alpakka.jms.JmsMessageProducer#send(akka.stream.alpakka.jms.JmsMessage)]]
+ * see [[akka.stream.alpakka.jms.JmsMessageProducer]]
  *
  * @tparam K cache key type
  * @tparam V cache value type
@@ -33,13 +37,12 @@ import scala.ref.SoftReference
             update(key, default, lfence)
         }
 
-      case miss =>
-        update(key, default, lfence)
+      case miss => update(key, default, lfence)
     }
   }
 
   private def update(key: K, value: V, lfence: Long): V = {
-    cache.put(key, SoftReference(value))
+    cache.put(key, new SoftReference(value))
     memoryFenceGenerator = lfence + 1 // force a sfence (write memory barrier) after update(s).
     value
   }

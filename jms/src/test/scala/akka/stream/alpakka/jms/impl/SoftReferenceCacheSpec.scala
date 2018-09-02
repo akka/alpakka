@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.jms.impl
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
