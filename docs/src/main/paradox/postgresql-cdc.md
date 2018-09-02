@@ -1,4 +1,4 @@
-# Lightweight "Change Data Capture" for PostgreSQL
+# PostgreSQL CDC
 
 This provides an Akka Stream Source that can stream changes from a PostgreSQL database. Here, by
 "change", we mean database events such as: RowDeleted(..), RowInserted(..), RowUpdated(..). A
