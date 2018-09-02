@@ -50,7 +50,9 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
 
       override protected def onSessionOpened(jmsSession: JmsProducerSession): Unit = {
         jmsProducers.enqueue(JmsMessageProducer(jmsSession, settings))
-        pullIfNeeded()
+        if (isAvailable(out)) {
+          pullIfNeeded()
+        }
       }
 
       setHandler(out, new OutHandler {
