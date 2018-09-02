@@ -25,17 +25,23 @@ import scala.ref.SoftReference
   def lookup(key: K, default: => V): V = {
     val lfence = memoryFenceGenerator // force a lfence (read memory barrier)
     cache.get(key) match {
-      case Some(SoftReference(value)) => value
+      case Some(ref) =>
+        ref.get match {
+          case Some(value) => value
+          case None =>
+            purgeCache() // facing a garbage collected soft reference, purge other entries.
+            update(key, default, lfence)
+        }
 
       case miss =>
-        val value = default
-        if (miss.isDefined) {
-          purgeCache() // facing a garbage collected soft reference, purge other entries.
-        }
-        cache.put(key, SoftReference(value))
-        memoryFenceGenerator = lfence + 1 // force a sfence (write memory barrier) after update(s).
-        value
+        update(key, default, lfence)
     }
+  }
+
+  private def update(key: K, value: V, lfence: Long): V = {
+    cache.put(key, SoftReference(value))
+    memoryFenceGenerator = lfence + 1 // force a sfence (write memory barrier) after update(s).
+    value
   }
 
   private def purgeCache(): Unit =
