@@ -88,7 +88,7 @@ public class KuduStageTest {
     // #create-settings
 
     // #sink
-    final Sink<Person, CompletionStage<Done>> sink = KuduTableStage.sink(tableSettings);
+    final Sink<Person, CompletionStage<Done>> sink = KuduTable.sink(tableSettings);
     CompletionStage<Done> o =
         Source.from(Arrays.asList(100, 101, 102, 103, 104))
             .map((i) -> new Person(i, String.format("name %d", i)))
@@ -106,7 +106,7 @@ public class KuduStageTest {
             setupKuduClient(), "tablenameFlow", schema, createTableOptions, kuduConverter);
 
     // #flow
-    Flow<Person, Person, NotUsed> flow = KuduTableStage.flow(tableSettings);
+    Flow<Person, Person, NotUsed> flow = KuduTable.flow(tableSettings);
     Pair<NotUsed, CompletionStage<List<Person>>> run =
         Source.from(Arrays.asList(200, 201, 202, 203, 204))
             .map((i) -> new Person(i, String.format("name_%d", i)))
