@@ -2,12 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.postgresqlcdc
+package akka.stream.alpakka.postgresqlcdc.impl
 
 import java.time._
 
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
+import akka.stream.alpakka.postgresqlcdc._
 import fastparse.all._
 
 import scala.collection.mutable.ArrayBuffer
