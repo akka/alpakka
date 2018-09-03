@@ -78,7 +78,7 @@ object EventSource {
    * @param initialLastEventId initial value for Last-Evend-ID header, `None` by default
    * @param retryDelay delay for retrying after completion, `0` by default
    * @param unmarshaller converts event-stream responses to a Source of `ServerSentEvent`s.
-   * @param mat implicit Materializer`, needed to obtain server-sent events
+   * @param mat implicit `Materializer`, needed to obtain server-sent events
    * @return continuous source of server-sent events
    */
   def apply(uri: Uri,
