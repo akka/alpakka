@@ -17,24 +17,20 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import org.apache.kudu.ColumnSchema;
-import org.apache.kudu.client.PartialRow;
 import org.apache.kudu.Schema;
 import org.apache.kudu.Type;
-import org.apache.kudu.client.*;
-
+import org.apache.kudu.client.CreateTableOptions;
+import org.apache.kudu.client.KuduClient;
+import org.apache.kudu.client.PartialRow;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 public class KuduStageTest {
@@ -53,7 +49,7 @@ public class KuduStageTest {
     system = ActorSystem.create();
     materializer = ActorMaterializer.create(system);
     // #create-converter
-    List<ColumnSchema> columns = new ArrayList(2);
+    List<ColumnSchema> columns = new ArrayList<>(2);
     columns.add(new ColumnSchema.ColumnSchemaBuilder("key", Type.INT32).key(true).build());
     columns.add(new ColumnSchema.ColumnSchemaBuilder("value", Type.STRING).build());
     schema = new Schema(columns);
@@ -83,7 +79,7 @@ public class KuduStageTest {
   // #create-converter
 
   @Test
-  public void sink() throws ExecutionException, InterruptedException, TimeoutException {
+  public void sink() throws Exception {
 
     // #create-settings
     KuduTableSettings<Person> tableSettings =
@@ -92,18 +88,18 @@ public class KuduStageTest {
     // #create-settings
 
     // #sink
-    final Sink<Person, Future<Done>> sink = KuduTableStage.sink(tableSettings);
-    Future<Done> o =
+    final Sink<Person, CompletionStage<Done>> sink = KuduTableStage.sink(tableSettings);
+    CompletionStage<Done> o =
         Source.from(Arrays.asList(100, 101, 102, 103, 104))
             .map((i) -> new Person(i, String.format("name %d", i)))
             .runWith(sink, materializer);
     // #sink
 
-    Await.ready(o, Duration.Inf());
+    o.toCompletableFuture().get(5, TimeUnit.SECONDS);
   }
 
   @Test
-  public void flow() throws ExecutionException, InterruptedException {
+  public void flow() throws Exception {
 
     KuduTableSettings<Person> tableSettings =
         KuduTableSettings.create(
@@ -119,7 +115,7 @@ public class KuduStageTest {
             .run(materializer);
     // #flow
 
-    run.second().toCompletableFuture().get();
+    run.second().toCompletableFuture().get(5, TimeUnit.SECONDS);
   }
 }
 

@@ -14,7 +14,7 @@ import scala.concurrent.Future
 object KuduTableStage {
 
   def sink[A](settings: KuduTableSettings[A]): Sink[A, Future[Done]] =
-    Flow[A].via(flow(settings)).toMat(Sink.ignore)(Keep.right)
+    flow(settings).toMat(Sink.ignore)(Keep.right)
 
   def flow[A](settings: KuduTableSettings[A]): Flow[A, A, NotUsed] =
     Flow.fromGraph(new KuduFlowStage[A](settings))

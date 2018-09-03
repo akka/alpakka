@@ -9,22 +9,22 @@ import org.apache.kudu.client._
 import org.apache.kudu.Schema
 import org.apache.kudu.client.KuduTable
 
-private[internal] trait KuduCapabilities {
+/**
+ * INTERNAL API
+ */
+private trait KuduCapabilities {
   this: StageLogging =>
 
-  private[internal] def getOrCreateTable(kuduClient: KuduClient,
-                                         tableName: String,
-                                         schema: Schema,
-                                         createTableOptions: CreateTableOptions): KuduTable = {
-    val table =
-      if (kuduClient.tableExists(tableName))
-        kuduClient.openTable(tableName)
-      else {
-        kuduClient.createTable(tableName, schema, createTableOptions)
-        log.info(s"Table $tableName created with columns: $schema.")
-        kuduClient.openTable(tableName)
-      }
-    table
-  }
+  protected def getOrCreateTable(kuduClient: KuduClient,
+                                 tableName: String,
+                                 schema: Schema,
+                                 createTableOptions: CreateTableOptions): KuduTable =
+    if (kuduClient.tableExists(tableName))
+      kuduClient.openTable(tableName)
+    else {
+      kuduClient.createTable(tableName, schema, createTableOptions)
+      log.info("Table {} created with columns: {}.", tableName, schema)
+      kuduClient.openTable(tableName)
+    }
 
 }
