@@ -50,6 +50,9 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
 
       override protected def onSessionOpened(jmsSession: JmsProducerSession): Unit = {
         jmsProducers.enqueue(JmsMessageProducer(jmsSession, settings))
+        // startup situation: while producer pool was empty, the out port might have pulled. If so, pull from in port.
+        // Note that a message might be already in-flight; that's fine since this stage pre-fetches message from
+        // upstream anyway to increase throughput once the stream is started.
         if (isAvailable(out)) {
           pullIfNeeded()
         }
@@ -65,26 +68,24 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
 
           override def onUpstreamFinish(): Unit = if (inFlightMessagesWithProducer.isEmpty) completeStage()
 
-          override def onPush(): Unit = if (jmsProducers.nonEmpty) grabAndSend()
+          override def onPush(): Unit = {
+            val elem: A = grab(in)
+            // fetch a jms producer from the pool, and create a holder object to capture the in-flight message.
+            val jmsProducer = jmsProducers.dequeue()
+            val holder = new Holder(NotYetThere, futureCB, jmsProducer)
+            inFlightMessagesWithProducer.enqueue(holder)
+
+            // send the element asynchronously, notifying the holder of (successful or failed) completion.
+            Future {
+              jmsProducer.send(elem)
+              elem
+            }.onComplete(holder)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+
+            // immediately ask for the next element if producers are available.
+            pullIfNeeded()
+          }
         }
       )
-
-      private def grabAndSend(): Unit = {
-        val elem: A = grab(in)
-        // fetch a jms producer from the pool, and create a holder object to capture the in-flight message.
-        val jmsProducer = jmsProducers.dequeue()
-        val holder = new Holder(NotYetThere, futureCB, jmsProducer)
-        inFlightMessagesWithProducer.enqueue(holder)
-
-        // send the element asynchronously, notifying the holder of (successful or failed) completion.
-        Future {
-          jmsProducer.send(elem)
-          elem
-        }.onComplete(holder)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
-
-        // immediately ask for the next element if producers are available.
-        pullIfNeeded()
-      }
 
       override def postStop(): Unit = {
         jmsSessions.foreach(_.closeSession())
