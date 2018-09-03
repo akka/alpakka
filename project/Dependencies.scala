@@ -209,10 +209,11 @@ object Dependencies {
     )
   )
 
+  val KuduVersion = "1.7.1"
   val Kudu = Seq(
     libraryDependencies ++= Seq(
-      "org.apache.kudu" % "kudu-client-tools" % "1.7.1", // ApacheV2
-      "org.apache.kudu" % "kudu-client" % "1.7.1" % Test // ApacheV2
+      "org.apache.kudu" % "kudu-client-tools" % KuduVersion, // ApacheV2
+      "org.apache.kudu" % "kudu-client" % KuduVersion % Test // ApacheV2
     )
   )
 
