@@ -6,6 +6,7 @@ package akka.stream.alpakka.mqtt.scaladsl
 
 import akka.Done
 import akka.stream.alpakka.mqtt._
+import akka.stream.alpakka.mqtt.impl.MqttFlowStage
 import akka.stream.scaladsl.Flow
 
 import scala.concurrent.Future

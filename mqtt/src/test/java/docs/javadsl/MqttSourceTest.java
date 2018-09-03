@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.mqtt.javadsl;
+package docs.javadsl;
 
 import akka.Done;
 import akka.actor.ActorSystem;
@@ -15,6 +15,9 @@ import akka.stream.alpakka.mqtt.MqttConnectionSettings;
 import akka.stream.alpakka.mqtt.MqttMessage;
 import akka.stream.alpakka.mqtt.MqttQoS;
 import akka.stream.alpakka.mqtt.MqttSourceSettings;
+import akka.stream.alpakka.mqtt.javadsl.MqttCommittableMessage;
+import akka.stream.alpakka.mqtt.javadsl.MqttSink;
+import akka.stream.alpakka.mqtt.javadsl.MqttSource;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -199,7 +202,7 @@ public class MqttSourceTest {
 
     final Integer bufferSize = 8;
     final Source<MqttMessage, CompletionStage<Done>> mqttSource =
-        MqttSource.create(settings, bufferSize);
+        MqttSource.atMostOnce(settings, bufferSize);
     // #create-source
 
     // #run-source

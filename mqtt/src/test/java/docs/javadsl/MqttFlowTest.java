@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.mqtt.javadsl;
+package docs.javadsl;
 
 import akka.Done;
 import akka.actor.ActorSystem;
@@ -13,6 +13,7 @@ import akka.stream.alpakka.mqtt.MqttConnectionSettings;
 import akka.stream.alpakka.mqtt.MqttMessage;
 import akka.stream.alpakka.mqtt.MqttQoS;
 import akka.stream.alpakka.mqtt.MqttSourceSettings;
+import akka.stream.alpakka.mqtt.javadsl.MqttFlow;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;

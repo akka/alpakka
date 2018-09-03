@@ -2,16 +2,18 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.mqtt
+package akka.stream.alpakka.mqtt.impl
 
 import java.util.Properties
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
+import akka.annotation.InternalApi
 import akka.stream._
-import akka.stream.stage._
+import akka.stream.alpakka.mqtt._
 import akka.stream.alpakka.mqtt.scaladsl.MqttCommittableMessage
+import akka.stream.stage._
 import akka.util.ByteString
 import org.eclipse.paho.client.mqttv3.{
   IMqttActionListener,
@@ -30,6 +32,25 @@ import scala.concurrent.{Future, Promise}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
+import scala.language.implicitConversions
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[mqtt] object MqttConnectorLogic {
+
+  implicit def funcToMqttActionListener(func: Try[IMqttToken] => Unit): IMqttActionListener = new IMqttActionListener {
+    def onSuccess(token: IMqttToken) = func(Success(token))
+    def onFailure(token: IMqttToken, ex: Throwable) = func(Failure(ex))
+  }
+
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
                                         bufferSize: Int,
                                         qos: MqttQoS,

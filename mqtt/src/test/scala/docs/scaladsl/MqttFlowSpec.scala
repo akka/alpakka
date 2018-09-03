@@ -2,10 +2,11 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.mqtt.scaladsl
+package docs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.alpakka.mqtt.scaladsl.MqttFlow
 import akka.stream.alpakka.mqtt.{MqttConnectionSettings, MqttMessage, MqttQoS, MqttSourceSettings}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.testkit.TestKit
@@ -27,7 +28,7 @@ class MqttFlowSpec
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
-  implicit val mat = ActorMaterializer()
+  implicit val mat: Materializer = ActorMaterializer()
   val connectionSettings = MqttConnectionSettings(
     "tcp://localhost:1883",
     "test-client",
