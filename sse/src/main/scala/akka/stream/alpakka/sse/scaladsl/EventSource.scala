@@ -17,6 +17,7 @@ import akka.http.scaladsl.model.sse.ServerSentEvent.heartbeat
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling
+
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
@@ -76,16 +77,18 @@ object EventSource {
    * @param send function to send a HTTP request
    * @param initialLastEventId initial value for Last-Evend-ID header, `None` by default
    * @param retryDelay delay for retrying after completion, `0` by default
-   * @param mat implicit `Materializer`, needed to obtain server-sent events
+   * @param unmarshaller converts event-stream responses to a Source of `ServerSentEvent`s.
+   * @param mat implicit Materializer`, needed to obtain server-sent events
    * @return continuous source of server-sent events
    */
   def apply(uri: Uri,
             send: HttpRequest => Future[HttpResponse],
             initialLastEventId: Option[String] = None,
-            retryDelay: FiniteDuration = Duration.Zero)(
+            retryDelay: FiniteDuration = Duration.Zero,
+            unmarshaller: EventStreamUnmarshalling = EventStreamUnmarshalling)(
       implicit mat: Materializer
   ): EventSource = {
-    import EventStreamUnmarshalling._
+    import unmarshaller._
     import mat.executionContext
 
     val continuousEvents = {
