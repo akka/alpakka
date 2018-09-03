@@ -35,7 +35,7 @@ class TestScalaDsl extends FunSuite with Matchers with BeforeAndAfterAll {
     val changeDataCaptureSettings = PgCdcSourceSettings()
       .withCreateSlotOnStart(false)
       .withMaxItems(256)
-      .withPollInterval(7 seconds)
+      .withPollInterval(7.seconds)
       .withMode(Modes.Peek)
       .withColumnsToIgnore(Map("images" → List("binary"), "user_personal_information" → List("*")))
     // ignore the binary column in the images table and ignore the user_personal_information table
@@ -52,7 +52,7 @@ class TestScalaDsl extends FunSuite with Matchers with BeforeAndAfterAll {
 
     val ackSinkSettings = PgCdcAckSinkSettings()
       .withMaxItems(16)
-      .withMaxItemsWait(7 seconds)
+      .withMaxItemsWait(7.seconds)
 
     //#AckSinkSettings
 

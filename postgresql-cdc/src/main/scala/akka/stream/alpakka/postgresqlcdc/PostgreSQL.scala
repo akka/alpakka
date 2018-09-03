@@ -17,6 +17,23 @@ import scala.util.Try
  */
 @InternalApi private[postgresqlcdc] object PostgreSQL {
 
+  /** Represents a row in the table we get from PostgreSQL when we query
+   * SELECT * FROM pg_logical_slot_get_changes(..)
+   */
+  case class SlotChange(transactionId: Long, location: String, data: String)
+
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[postgresqlcdc] trait PostgreSQL {
+
+  import PostgreSQL._
+
+  val conn: Connection
+  def log: LoggingAdapter
+
   def getConnection(connectionString: String): Connection = {
     val driver = "org.postgresql.Driver"
     Class.forName(driver)
@@ -24,7 +41,7 @@ import scala.util.Try
   }
 
   /** Checks that the slot exists */
-  def checkSlotExists(slotName: String, plugin: Plugin)(implicit conn: Connection, log: LoggingAdapter): Boolean = {
+  def checkSlotExists(slotName: String, plugin: Plugin): Boolean = {
 
     val getReplicationSlots = conn.prepareStatement(
       "SELECT * FROM pg_replication_slots WHERE slot_name = ?"
@@ -55,7 +72,7 @@ import scala.util.Try
 
   }
 
-  def createSlot(slotName: String, plugin: Plugin)(implicit conn: Connection, log: LoggingAdapter): Unit = {
+  def createSlot(slotName: String, plugin: Plugin): Unit = {
     log.info("setting up logical replication slot {}", slotName)
     val stmt = conn.prepareStatement(s"SELECT * FROM pg_create_logical_replication_slot(?, ?)")
     stmt.setString(1, slotName)
@@ -63,14 +80,14 @@ import scala.util.Try
     stmt.execute()
   }
 
-  def dropSlot(slotName: String)(implicit conn: Connection, log: LoggingAdapter): Unit = {
+  def dropSlot(slotName: String): Unit = {
     log.info("dropping logical replication slot {}", slotName)
     val stmt = conn.prepareStatement(s"SELECT * FROM pg_drop_logical_replication_slot(?)")
     stmt.setString(1, slotName)
     stmt.execute()
   }
 
-  def buildGetSlotChangesStatement(slotName: String, maxItems: Int)(implicit conn: Connection): PreparedStatement = {
+  def buildGetSlotChangesStatement(slotName: String, maxItems: Int): PreparedStatement = {
     val statement: PreparedStatement =
       conn.prepareStatement("SELECT * FROM pg_logical_slot_get_changes(?, NULL, ?, 'include-timestamp', 'on')")
     statement.setString(1, slotName)
@@ -78,7 +95,7 @@ import scala.util.Try
     statement
   }
 
-  def buildPeekSlotChangesStatement(slotName: String, maxItems: Int)(implicit conn: Connection): PreparedStatement = {
+  def buildPeekSlotChangesStatement(slotName: String, maxItems: Int): PreparedStatement = {
     val statement: PreparedStatement =
       conn.prepareStatement("SELECT * FROM pg_logical_slot_peek_changes(?, NULL, ?, 'include-timestamp', 'on')")
     statement.setString(1, slotName)
@@ -86,7 +103,7 @@ import scala.util.Try
     statement
   }
 
-  def flush(slotName: String, upToLogSeqNum: String)(implicit conn: Connection): Unit = {
+  def flush(slotName: String, upToLogSeqNum: String): Unit = {
     val statement: PreparedStatement =
       conn.prepareStatement("SELECT 1 FROM pg_logical_slot_get_changes(?,?, NULL)")
     statement.setString(1, slotName)
@@ -95,7 +112,7 @@ import scala.util.Try
     statement.close()
   }
 
-  def pullChanges(mode: Mode, slotName: String, maxItems: Int)(implicit conn: Connection): List[SlotChange] = {
+  def pullChanges(mode: Mode, slotName: String, maxItems: Int): List[SlotChange] = {
     val pullChangesStatement = mode match {
       case Modes.Get ⇒ buildGetSlotChangesStatement(slotName, maxItems)
       case Modes.Peek ⇒ buildPeekSlotChangesStatement(slotName, maxItems)
@@ -112,10 +129,5 @@ import scala.util.Try
     pullChangesStatement.close()
     result.toList
   }
-
-  /** Represents a row in the table we get from PostgreSQL when we query
-   * SELECT * FROM pg_logical_slot_get_changes(..)
-   */
-  case class SlotChange(transactionId: Long, location: String, data: String)
 
 }

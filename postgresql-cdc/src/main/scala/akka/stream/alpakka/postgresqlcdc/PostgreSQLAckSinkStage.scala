@@ -36,14 +36,13 @@ import scala.util.control.NonFatal
                                                                          val settings: PgCdcAckSinkSettings,
                                                                          val shape: SinkShape[AckLogSeqNum])
     extends TimerGraphStageLogic(shape)
-    with StageLogging {
-
-  import PostgreSQL._
+    with StageLogging
+    with PostgreSQL {
 
   private var items: List[String] = List.empty[String] // LSNs of un-acked items (cannot grow > settings.maxItems)
   // note that these have to be received in order (i.e. can't use mapAsyncUnordered before this)
 
-  private implicit lazy val conn: Connection = getConnection(instance.jdbcConnectionString)
+  val conn: Connection = getConnection(instance.jdbcConnectionString)
 
   private def in: Inlet[AckLogSeqNum] = shape.in
 

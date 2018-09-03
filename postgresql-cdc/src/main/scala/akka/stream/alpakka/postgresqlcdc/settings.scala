@@ -167,7 +167,7 @@ object PostgreSQLInstance {
 }
 
 final class PgCdcAckSinkSettings private (val maxItems: Int = 16,
-                                          val maxItemsWait: FiniteDuration = 3000 milliseconds) {
+                                          val maxItemsWait: FiniteDuration = 3000.milliseconds) {
 
   def withMaxItemsWait(maxItemsWait: FiniteDuration): PgCdcAckSinkSettings =
     copy(maxItemsWait = maxItemsWait)

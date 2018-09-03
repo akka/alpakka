@@ -8,7 +8,6 @@ import java.time._
 
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
-import akka.stream.alpakka.postgresqlcdc.PostgreSQL.SlotChange
 import fastparse.all._
 
 import scala.collection.mutable.ArrayBuffer
@@ -17,6 +16,8 @@ import scala.collection.mutable.ArrayBuffer
  * INTERNAL API
  */
 @InternalApi private[postgresqlcdc] object TestDecodingPlugin {
+
+  import PostgreSQL._
 
   /*
 

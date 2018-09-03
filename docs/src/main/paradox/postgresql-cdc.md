@@ -25,18 +25,15 @@ transaction id. A @scaladoc[Change](akka.stream.alpakka.postgresqlcdc.Change) ca
 
 ## Artifacts
 
+Note that the PostgreSQL JDBC driver is not included in the main JAR.
+
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-postgresql-cdc_$scalaBinaryVersion$
   version=$version$
-}
-
-Note that the PostgreSQL JDBC driver is not included in the main JAR.
-
-@@dependency [sbt,Maven,Gradle] {
-  group=org.postgresql
-  artifact=postgresql
-  version=42.2.1
+  group2=org.postgresql
+  artifact2=postgresql
+  version2=42.2.1
 }
 
 ### Reported Issues
@@ -127,7 +124,7 @@ We configure the Ack sink using @scaladoc[PostgreSQLInstance](akka.stream.alpakk
 
 ### Ack Sink Usage
 
-You want to map these database change events (i.e. RowInserted) to real domain events
+You want to map these database change events (i.e. RowInserted) to domain events
 (i.e. UserRegistered - aiming to adopt a Domain Driven Design approach) and publish the domain events to a queue (e.g, AWS SQS)
 and use the Ack Sink to acknowledge consumption.
 
@@ -148,5 +145,9 @@ index added, change of column type etc.).
 
 ## Important Note
 
-* Remember to drop the slot after you are done using it.
-
+@@@ warning
+Remember to drop the slot when you decide you no longer need the change data capture pipeline
+```
+SELECT * FROM pg_drop_replication_slot('name')
+```
+@@@

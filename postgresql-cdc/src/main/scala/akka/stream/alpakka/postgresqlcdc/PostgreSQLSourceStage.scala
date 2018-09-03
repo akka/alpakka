@@ -7,7 +7,6 @@ package akka.stream.alpakka.postgresqlcdc
 import java.sql.Connection
 
 import akka.annotation.InternalApi
-import akka.event.LoggingAdapter
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.stage._
 import akka.stream.{Attributes, Outlet, SourceShape}
@@ -40,15 +39,12 @@ import scala.collection.mutable
                                                                            val settings: PgCdcSourceSettings,
                                                                            val shape: SourceShape[ChangeSet])
     extends TimerGraphStageLogic(shape)
-    with StageLogging {
-
-  import PostgreSQL._
+    with StageLogging
+    with PostgreSQL {
 
   private val buffer = new mutable.Queue[ChangeSet]()
 
-  private implicit lazy val conn: Connection = getConnection(instance.jdbcConnectionString)
-
-  private implicit lazy val logging: LoggingAdapter = log // bring log into implicit scope
+  lazy val conn: Connection = getConnection(instance.jdbcConnectionString)
 
   override def onTimer(timerKey: Any): Unit =
     retrieveChanges()
@@ -58,7 +54,7 @@ import scala.collection.mutable
     val result: List[ChangeSet] = {
       val slotChanges = pullChanges(settings.mode, instance.slotName, settings.maxItems)
       settings.plugin match {
-        case Plugins.TestDecoding ⇒ TestDecodingPlugin.transformSlotChanges(slotChanges, settings.columnsToIgnore)
+        case Plugins.TestDecoding ⇒ TestDecodingPlugin.transformSlotChanges(slotChanges, settings.columnsToIgnore)(log)
         // leaving room for other plugin implementations
       }
     }
