@@ -17,7 +17,7 @@ import scala.collection.mutable.ArrayBuffer
  */
 @InternalApi private[postgresqlcdc] object TestDecodingPlugin {
 
-  import PostgreSQL._
+  import akka.stream.alpakka.postgresqlcdc.impl.PostgreSQL._
 
   /*
 

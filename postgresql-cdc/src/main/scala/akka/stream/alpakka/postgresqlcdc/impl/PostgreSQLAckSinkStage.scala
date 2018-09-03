@@ -2,14 +2,16 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.postgresqlcdc
+package akka.stream.alpakka.postgresqlcdc.impl
 
 import java.sql.Connection
 
 import akka.annotation.InternalApi
 import akka.stream._
-import akka.stream.stage._
+import akka.stream.alpakka.postgresqlcdc.{AckLogSeqNum, PgCdcAckSinkSettings, PostgreSQLInstance}
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
+import akka.stream.stage._
+
 import scala.util.control.NonFatal
 
 /**

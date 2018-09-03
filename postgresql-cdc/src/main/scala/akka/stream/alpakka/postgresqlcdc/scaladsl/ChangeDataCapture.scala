@@ -6,6 +6,7 @@ package akka.stream.alpakka.postgresqlcdc.scaladsl
 
 import akka.NotUsed
 import akka.stream.alpakka.postgresqlcdc._
+import akka.stream.alpakka.postgresqlcdc.impl.{PostgreSQLAckSinkStage, PostgreSQLSourceStage}
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 
