@@ -8,39 +8,40 @@ Apache Kudu is a free and open source column-oriented data store of the Apache H
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Akudu)
 
-# Usage
+## Configuration
 
 Build a converter and a tableSetting.
 
 Converter will map the domain object to Kudu row.
 
-scala
-:   @@snip [snip](/kudu/src/test/scala/akka/stream/alpakka/kudu/scaladsl/KuduStageSpec.scala) { #create-converter }
+Scala
+:   @@snip [snip](/kudu/src/test/scala/docs/scaladsl/KuduTableSpec.scala) { #create-converter }
 
-java
-:   @@snip [snip](/kudu/src/test/java/akka/stream/alpakka/kudu/javadsl/KuduStageTest.java) { #create-converter }
+Java
+:   @@snip [snip](/kudu/src/test/java/docs/javadsl/KuduTableTest.java) { #create-converter }
 
-Table will be created on demand.
+The table will be created on demand.
 
-scala
-:   @@snip [snip](/kudu/src/test/scala/akka/stream/alpakka/kudu/scaladsl/KuduStageSpec.scala) { #create-settings }
+Scala
+:   @@snip [snip](/kudu/src/test/scala/docs/scaladsl/KuduTableSpec.scala) { #create-settings }
 
-java
-:   @@snip [snip](/kudu/src/test/java/akka/stream/alpakka/kudu/javadsl/KuduStageTest.java) { #create-settings }
-
-### Flow usage
-
-scala
-: @@snip [snip](/kudu/src/test/scala/akka/stream/alpakka/kudu/scaladsl/KuduStageSpec.scala) { #flow }
-
-java
-: @@snip [snip](/kudu/src/test/java/akka/stream/alpakka/kudu/javadsl/KuduStageTest.java) { #flow }
+Java
+:   @@snip [snip](/kudu/src/test/java/docs/javadsl/KuduTableTest.java) { #create-settings }
 
 
-### Sink usage
+## Writing to Kudu in Flow
 
-scala
-: @@snip [snip](/kudu/src/test/scala/akka/stream/alpakka/kudu/scaladsl/KuduStageSpec.scala) { #sink }
+Scala
+: @@snip [snip](/kudu/src/test/scala/docs/scaladsl/KuduTableSpec.scala) { #flow }
 
-java
-: @@snip [snip](/kudu/src/test/java/akka/stream/alpakka/kudu/javadsl/KuduStageTest.java) { #sink }
+Java
+: @@snip [snip](/kudu/src/test/java/docs/javadsl/KuduTableTest.java) { #flow }
+
+
+## Writing to Kudu with a Sink
+
+Scala
+: @@snip [snip](/kudu/src/test/scala/docs/scaladsl/KuduTableSpec.scala) { #sink }
+
+Java
+: @@snip [snip](/kudu/src/test/java/docs/javadsl/KuduTableTest.java) { #sink }

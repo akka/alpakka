@@ -2,16 +2,17 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.kudu.scaladsl
+package docs.scaladsl
 
 import java.util
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.kudu.KuduTableSettings
+import akka.stream.alpakka.kudu.scaladsl.KuduTable
 import akka.stream.scaladsl.{Sink, Source}
-import org.apache.kudu.{ColumnSchema, Schema, Type}
+import akka.stream.{ActorMaterializer, Materializer}
 import org.apache.kudu.client.{CreateTableOptions, KuduClient, PartialRow}
+import org.apache.kudu.{ColumnSchema, Schema, Type}
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.concurrent.Await
@@ -19,7 +20,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
-class KuduStageSpec extends WordSpec with Matchers {
+class KuduTableSpec extends WordSpec with Matchers {
 
   val kuduMasterAddress = "localhost:7051"
 

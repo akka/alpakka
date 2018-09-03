@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.kudu.javadsl;
+package docs.javadsl;
 
 import akka.Done;
 import akka.NotUsed;
@@ -11,6 +11,7 @@ import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.kudu.KuduTableSettings;
+import akka.stream.alpakka.kudu.javadsl.KuduTable;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -34,7 +35,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-public class KuduStageTest {
+public class KuduTableTest {
   private static final String kuduMasterAddresses = "127.0.0.1:7051";
 
   private static ActorSystem system;
