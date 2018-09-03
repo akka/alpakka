@@ -789,22 +789,20 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       result.futureValue should ===(input)
     }
 
-    "accept message-defined destinations in directed flow" in withServer() { ctx =>
+    "accept message-defined destinations" in withServer() { ctx =>
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
-      //#create-directed-flow-producer
-      val directedFlowSink: Flow[JmsDirectedMessage, JmsDirectedMessage, NotUsed] =
-        JmsProducer.directedMessageFlow(
-          JmsProducerSettings(connectionFactory) // no destination configured
-        )
-      //#create-directed-flow-producer
-
       //#run-directed-flow-producer
+      val flowSink: Flow[JmsMessage, JmsMessage, NotUsed] =
+        JmsProducer.flow(
+          JmsProducerSettings(connectionFactory).withQueue("test")
+        )
+
       val input = (1 to 100).map { i =>
         val queueName = if (i % 2 == 0) "even" else "odd"
         JmsTextMessage(i.toString).toQueue(queueName)
       }
-      Source(input).via(directedFlowSink).runWith(Sink.ignore)
+      Source(input).via(flowSink).runWith(Sink.ignore)
       //#run-directed-flow-producer
 
       val jmsEvenSource: Source[String, KillSwitch] = JmsConsumer.textSource(
@@ -818,39 +816,11 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       jmsOddSource.take(input.size / 2).map(_.toInt).runWith(Sink.seq).futureValue shouldBe (1 to 99 by 2)
     }
 
-    "ignore message destination in regular flow" in withServer() { ctx =>
-      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
-      val jmsSink: Sink[JmsDirectedMessage, Future[Done]] = JmsProducer
-        .flow(JmsProducerSettings(connectionFactory).withQueue("test"))
-        .toMat(Sink.ignore)(Keep.right)
-
-      val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
-      val input = in.map(c => JmsTextMessage(c).toQueue("doesNotExist"))
-
-      Source(input).runWith(jmsSink)
-
-      val jmsSource: Source[String, KillSwitch] = JmsConsumer.textSource(
-        JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("test")
-      )
-
-      val result = jmsSource.take(in.size).runWith(Sink.seq)
-
-      result.futureValue shouldEqual in
-    }
-
-    "fail if message destination is not defined when using regular flow" in {
+    "fail if message destination is not defined" in {
       val connectionFactory = new ActiveMQConnectionFactory("localhost:1234")
 
       an[IllegalArgumentException] shouldBe thrownBy {
         JmsProducer.flow(JmsProducerSettings(connectionFactory))
-      }
-    }
-
-    "fail if message destination is defined when using a directed message flow" in {
-      val connectionFactory = new ActiveMQConnectionFactory("localhost:1234")
-
-      an[IllegalArgumentException] shouldBe thrownBy {
-        JmsProducer.directedMessageFlow(JmsProducerSettings(connectionFactory).withQueue("test"))
       }
     }
 
@@ -917,7 +887,7 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
 
       val failOnFifthAndDelayFourthItem = new Answer[Unit] {
         override def answer(invocation: InvocationOnMock): Unit = {
-          val msgNo = messages(invocation.getArgument[TextMessage](0))
+          val msgNo = messages(invocation.getArgument[TextMessage](1))
           msgNo match {
             case 1 | 2 | 3 =>
               errorLatch.countDown() // first three sends work...
@@ -930,7 +900,8 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
           }
         }
       }
-      when(producer.send(any[Message], anyInt(), anyInt(), anyLong())).thenAnswer(failOnFifthAndDelayFourthItem)
+      when(producer.send(any[javax.jms.Destination], any[Message], anyInt(), anyInt(), anyLong()))
+        .thenAnswer(failOnFifthAndDelayFourthItem)
 
       val in = (1 to 10).map(i => JmsTextMessage(i.toString))
       val done = new JmsTextMessage("done")

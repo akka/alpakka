@@ -22,14 +22,14 @@ case class NullMessageProperty(propertyName: String, message: JmsMessage)
     )
     with NonRetriableJmsException
 
-case class UnsupportedMapMessageEntryType(entryName: String, entryValue: Any, message: JmsAbstractMapMessage)
+case class UnsupportedMapMessageEntryType(entryName: String, entryValue: Any, message: JmsMapMessage)
     extends Exception(
       s"Jms MapMessage entry '$entryName' has unknown type '${entryValue.getClass.getName}'. " +
       "Only primitive types, String, and Byte array are supported as entry values."
     )
     with NonRetriableJmsException
 
-case class NullMapMessageEntry(entryName: String, message: JmsAbstractMapMessage)
+case class NullMapMessageEntry(entryName: String, message: JmsMapMessage)
     extends Exception(
       s"null value was given for Jms MapMessage entry '$entryName'."
     )

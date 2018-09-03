@@ -696,13 +696,11 @@ public class JmsConnectorsTest {
         ctx -> {
           ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
-          // #create-directed-flow-producer
-          Flow<JmsDirectedTextMessage, JmsDirectedTextMessage, NotUsed> flowSink =
-              JmsProducer.directedMessageFlow(JmsProducerSettings.create(connectionFactory));
-          // #create-directed-flow-producer
-
           // #run-directed-flow-producer
-          List<JmsDirectedTextMessage> input = new ArrayList<>();
+          Flow<JmsTextMessage, JmsTextMessage, NotUsed> flowSink =
+              JmsProducer.flow(JmsProducerSettings.create(connectionFactory).withQueue("test"));
+
+          List<JmsTextMessage> input = new ArrayList<>();
           for (Integer n : Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)) {
             String queueName = (n % 2 == 0) ? "even" : "odd";
             input.add(JmsTextMessage.create(n.toString()).toQueue(queueName));

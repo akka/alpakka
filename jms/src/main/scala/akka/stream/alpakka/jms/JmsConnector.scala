@@ -6,13 +6,13 @@ package akka.stream.alpakka.jms
 
 import java.util.concurrent.ArrayBlockingQueue
 
-import akka.stream.alpakka.jms.JmsMessageProducer.{DestinationMode, MessageDefinedDestination}
 import akka.stream.alpakka.jms.impl.SoftReferenceCache
 import akka.stream.stage.{AsyncCallback, GraphStageLogic}
 import akka.stream.{ActorAttributes, ActorMaterializer, Attributes}
 import javax.jms
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 /**
  * Internal API
@@ -103,38 +103,33 @@ private[jms] trait JmsProducerConnector extends JmsConnector[JmsProducerSession]
   def openSessions(): Seq[Future[JmsProducerSession]] = {
     val connection = openConnection()
 
-    val maybeDestinationFactory = jmsSettings.destination.map(_.create)
+    val createDestination = jmsSettings.destination match {
+      case Some(destination) => destination.create
+      case _ => throw new IllegalArgumentException("Destination is missing")
+    }
 
     for (_ <- 0 until jmsSettings.sessionCount)
       yield
         Future {
           val session = connection.createSession(false, AcknowledgeMode.AutoAcknowledge.mode)
-          new JmsProducerSession(connection, session, maybeDestinationFactory.map(_.apply(session)))
+          new JmsProducerSession(connection, session, createDestination(session))
         }
   }
 }
 
 private[jms] object JmsMessageProducer {
   def apply(jmsSession: JmsProducerSession, settings: JmsProducerSettings): JmsMessageProducer = {
-    val producer = jmsSession.session.createProducer(jmsSession.jmsDestination.orNull)
+    val producer = jmsSession.session.createProducer(null)
     if (settings.timeToLive.nonEmpty) {
       producer.setTimeToLive(settings.timeToLive.get.toMillis)
     }
-    new JmsMessageProducer(producer, jmsSession, destinationMode(settings))
+    new JmsMessageProducer(producer, jmsSession)
   }
-
-  def destinationMode(settings: JmsProducerSettings): DestinationMode =
-    if (settings.destination.isDefined) ProducerDefinedDestination else MessageDefinedDestination
-
-  sealed trait DestinationMode
-  object ProducerDefinedDestination extends DestinationMode
-  object MessageDefinedDestination extends DestinationMode
-
 }
 
-private[jms] class JmsMessageProducer(jmsProducer: jms.MessageProducer,
-                                      jmsSession: JmsProducerSession,
-                                      mode: DestinationMode) {
+private[jms] class JmsMessageProducer(jmsProducer: jms.MessageProducer, jmsSession: JmsProducerSession) {
+
+  private val defaultDestination = jmsSession.jmsDestination
 
   private val destinationCache = new SoftReferenceCache[Destination, jms.Destination]()
 
@@ -157,33 +152,32 @@ private[jms] class JmsMessageProducer(jmsProducer: jms.MessageProducer,
       .collectFirst { case x: JmsTimeToLive => x.timeInMillis }
       .getOrElse(jmsProducer.getTimeToLive)
 
-    elem match {
-      case directed: JmsDirectedMessage if mode == MessageDefinedDestination =>
-        jmsProducer.send(lookup(directed.destination), message, deliveryMode, priority, timeToLive)
-      case _ =>
-        jmsProducer.send(message, deliveryMode, priority, timeToLive)
+    elem.destination match {
+      case Some(messageDestination) =>
+        jmsProducer.send(lookup(messageDestination), message, deliveryMode, priority, timeToLive)
+      case None =>
+        jmsProducer.send(defaultDestination, message, deliveryMode, priority, timeToLive)
     }
   }
 
-  private def lookup(destination: Destination) =
-    destinationCache.lookup(destination, destination.create(jmsSession.session))
+  private def lookup(dest: Destination) = destinationCache.lookup(dest, dest.create(jmsSession.session))
 
   private[jms] def createMessage(element: JmsMessage): jms.Message =
     element match {
 
-      case textMessage: JmsAbstractTextMessage => jmsSession.session.createTextMessage(textMessage.body)
+      case textMessage: JmsTextMessage => jmsSession.session.createTextMessage(textMessage.body)
 
-      case byteMessage: JmsAbstractByteMessage =>
+      case byteMessage: JmsByteMessage =>
         val newMessage = jmsSession.session.createBytesMessage()
         newMessage.writeBytes(byteMessage.bytes)
         newMessage
 
-      case mapMessage: JmsAbstractMapMessage =>
+      case mapMessage: JmsMapMessage =>
         val newMessage = jmsSession.session.createMapMessage()
         populateMapMessage(newMessage, mapMessage)
         newMessage
 
-      case objectMessage: JmsAbstractObjectMessage => jmsSession.session.createObjectMessage(objectMessage.serializable)
+      case objectMessage: JmsObjectMessage => jmsSession.session.createObjectMessage(objectMessage.serializable)
 
     }
 
@@ -203,7 +197,7 @@ private[jms] class JmsMessageProducer(jmsProducer: jms.MessageProducer,
         }
     }
 
-  private def populateMapMessage(message: javax.jms.MapMessage, jmsMessage: JmsAbstractMapMessage): Unit =
+  private def populateMapMessage(message: javax.jms.MapMessage, jmsMessage: JmsMapMessage): Unit =
     jmsMessage.body.foreach {
       case (key, v) =>
         v match {
@@ -245,7 +239,7 @@ private[jms] trait JmsSession {
 
 private[jms] class JmsProducerSession(val connection: jms.Connection,
                                       val session: jms.Session,
-                                      val jmsDestination: Option[jms.Destination])
+                                      val jmsDestination: jms.Destination)
     extends JmsSession
 
 private[jms] class JmsConsumerSession(val connection: jms.Connection,

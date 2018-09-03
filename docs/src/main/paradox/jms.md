@@ -194,16 +194,7 @@ Java
 
 ### Sending messages with per-message destinations
 
-The producer supports also a message flow that allows to set per-message destinations. In the flow settings that
-are passed in, it is not allowed to provide a queue or topic:
-
-Scala
-: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-directed-flow-producer }
-
-Java
-: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-directed-flow-producer }
-
-The destination can then be defined per message:
+It is also possible to define message destinations per message:
 
 Scala
 : @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-directed-flow-producer }
@@ -211,6 +202,7 @@ Scala
 Java
 : @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-directed-flow-producer }
 
+When no destination is defined on the message, the destination given in the producer settings is used.
 
 ### Configuring the Producer
 

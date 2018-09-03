@@ -21,14 +21,6 @@ object JmsProducer {
   }
 
   /**
-   * Scala API: Creates an [[JmsProducer]] for [[JmsDirectedMessage]]s
-   */
-  def directedMessageFlow[T <: JmsDirectedMessage](settings: JmsProducerSettings): Flow[T, T, NotUsed] = {
-    require(settings.destination.isEmpty, "Producer destination must be undefined in directed producer flow")
-    Flow.fromGraph(new JmsProducerStage(settings))
-  }
-
-  /**
    * Scala API: Creates an [[JmsProducer]] for [[JmsMessage]]s
    */
   def apply(settings: JmsProducerSettings): Sink[JmsMessage, Future[Done]] =

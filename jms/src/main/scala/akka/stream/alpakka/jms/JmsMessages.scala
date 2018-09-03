@@ -111,6 +111,8 @@ sealed trait JmsMessage {
 
   def headers: Set[JmsHeader]
 
+  def destination: Option[Destination]
+
   /**
    * Java API: adds a Jms header e.g. JMSType to [[JmsMessage]]
    */
@@ -121,73 +123,20 @@ sealed trait JmsMessage {
    */
   def withProperty(name: String, value: Any): JmsMessage
 
-  def toQueue(name: String): JmsDirectedMessage
+  def toQueue(name: String): JmsMessage
 
-  def toTopic(name: String): JmsDirectedMessage
+  def toTopic(name: String): JmsMessage
 
-  def to(destination: Destination): JmsDirectedMessage
-}
-
-sealed trait JmsDirectedMessage extends JmsMessage {
-
-  val destination: Destination
+  def to(destination: Destination): JmsMessage
 
   def withoutDestination: JmsMessage
 }
 
-sealed abstract class JmsAbstractByteMessage extends JmsMessage {
-
-  def bytes: Array[Byte]
-
-  def toQueue(name: String): JmsDirectedByteMessage = to(Queue(name))
-
-  def toTopic(name: String): JmsDirectedByteMessage = to(Topic(name))
-
-  def to(destination: Destination): JmsDirectedByteMessage =
-    JmsDirectedByteMessage(bytes, destination, headers, properties)
-}
-
-sealed abstract class JmsAbstractMapMessage extends JmsMessage {
-
-  def body: Map[String, Any]
-
-  def toQueue(name: String): JmsDirectedMapMessage = to(Queue(name))
-
-  def toTopic(name: String): JmsDirectedMapMessage = to(Topic(name))
-
-  def to(destination: Destination): JmsDirectedMapMessage =
-    JmsDirectedMapMessage(body, destination, headers, properties)
-}
-
-sealed abstract class JmsAbstractTextMessage extends JmsMessage {
-
-  def body: String
-
-  def toQueue(name: String): JmsDirectedTextMessage = to(Queue(name))
-
-  def toTopic(name: String): JmsDirectedTextMessage = to(Topic(name))
-
-  def to(destination: Destination): JmsDirectedTextMessage =
-    JmsDirectedTextMessage(body, destination, headers, properties)
-}
-
-sealed abstract class JmsAbstractObjectMessage extends JmsMessage {
-
-  def serializable: java.io.Serializable
-
-  def toQueue(name: String): JmsDirectedObjectMessage = to(Queue(name))
-
-  def toTopic(name: String): JmsDirectedObjectMessage = to(Topic(name))
-
-  def to(destination: Destination): JmsDirectedObjectMessage =
-    JmsDirectedObjectMessage(serializable, destination, headers, properties)
-
-}
-
 final case class JmsByteMessage(bytes: Array[Byte],
                                 headers: Set[JmsHeader] = Set.empty,
-                                properties: Map[String, Any] = Map.empty)
-    extends JmsAbstractByteMessage {
+                                properties: Map[String, Any] = Map.empty,
+                                destination: Option[Destination] = None)
+    extends JmsMessage {
 
   /**
    * Java API: adds a Jms header e.g. JMSType to [[JmsByteMessage]]
@@ -198,26 +147,14 @@ final case class JmsByteMessage(bytes: Array[Byte],
    * Java API: adds JMSProperty to [[JmsByteMessage]]
    */
   def withProperty(name: String, value: Any): JmsByteMessage = copy(properties = properties + (name -> value))
-}
 
-final case class JmsDirectedByteMessage(bytes: Array[Byte],
-                                        destination: Destination,
-                                        headers: Set[JmsHeader] = Set.empty,
-                                        properties: Map[String, Any] = Map.empty)
-    extends JmsAbstractByteMessage
-    with JmsDirectedMessage {
+  def toQueue(name: String): JmsByteMessage = to(Queue(name))
 
-  /**
-   * Java API: adds a Jms header e.g. JMSType to [[JmsByteMessage]]
-   */
-  def withHeader(jmsHeader: JmsHeader): JmsDirectedByteMessage = copy(headers = headers + jmsHeader)
+  def toTopic(name: String): JmsByteMessage = to(Topic(name))
 
-  /**
-   * Java API: adds JMSProperty to [[JmsByteMessage]]
-   */
-  def withProperty(name: String, value: Any): JmsDirectedByteMessage = copy(properties = properties + (name -> value))
+  def to(destination: Destination): JmsByteMessage = copy(destination = Some(destination))
 
-  def withoutDestination: JmsByteMessage = JmsByteMessage(bytes, headers, properties)
+  def withoutDestination: JmsByteMessage = copy(destination = None)
 }
 
 object JmsByteMessage {
@@ -248,8 +185,9 @@ object JmsByteMessage {
 
 final case class JmsMapMessage(body: Map[String, Any],
                                headers: Set[JmsHeader] = Set.empty,
-                               properties: Map[String, Any] = Map.empty)
-    extends JmsAbstractMapMessage {
+                               properties: Map[String, Any] = Map.empty,
+                               destination: Option[Destination] = None)
+    extends JmsMessage {
 
   /**
    * Java API: adds a Jms header e.g. JMSType to [[JmsMapMessage]]
@@ -261,26 +199,13 @@ final case class JmsMapMessage(body: Map[String, Any],
    */
   def withProperty(name: String, value: Any): JmsMapMessage = copy(properties = properties + (name -> value))
 
-}
+  def toQueue(name: String): JmsMapMessage = to(Queue(name))
 
-final case class JmsDirectedMapMessage(body: Map[String, Any],
-                                       destination: Destination,
-                                       headers: Set[JmsHeader] = Set.empty,
-                                       properties: Map[String, Any] = Map.empty)
-    extends JmsAbstractMapMessage
-    with JmsDirectedMessage {
+  def toTopic(name: String): JmsMapMessage = to(Topic(name))
 
-  /**
-   * Java API: adds a Jms header e.g. JMSType to [[JmsMapMessage]]
-   */
-  def withHeader(jmsHeader: JmsHeader): JmsDirectedMapMessage = copy(headers = headers + jmsHeader)
+  def to(destination: Destination): JmsMapMessage = copy(destination = Some(destination))
 
-  /**
-   * Java API: adds JMSProperty to [[JmsMapMessage]]
-   */
-  def withProperty(name: String, value: Any): JmsDirectedMapMessage = copy(properties = properties + (name -> value))
-
-  def withoutDestination: JmsMapMessage = JmsMapMessage(body, headers, properties)
+  def withoutDestination: JmsMapMessage = copy(destination = None)
 }
 
 object JmsMapMessage {
@@ -312,8 +237,9 @@ object JmsMapMessage {
 
 final case class JmsTextMessage(body: String,
                                 headers: Set[JmsHeader] = Set.empty,
-                                properties: Map[String, Any] = Map.empty)
-    extends JmsAbstractTextMessage {
+                                properties: Map[String, Any] = Map.empty,
+                                destination: Option[Destination] = None)
+    extends JmsMessage {
 
   /**
    * Java API: adds a Jms header e.g. JMSType to [[JmsTextMessage]]
@@ -330,26 +256,14 @@ final case class JmsTextMessage(body: String,
    */
   @deprecated("Unclear method name, use withProperty instead", "0.15")
   def add(name: String, value: Any): JmsTextMessage = withProperty(name, value)
-}
 
-final case class JmsDirectedTextMessage(body: String,
-                                        destination: Destination,
-                                        headers: Set[JmsHeader] = Set.empty,
-                                        properties: Map[String, Any] = Map.empty)
-    extends JmsAbstractTextMessage
-    with JmsDirectedMessage {
+  def toQueue(name: String): JmsTextMessage = to(Queue(name))
 
-  /**
-   * Java API: adds a Jms header e.g. JMSType to [[JmsDirectedTextMessage]]
-   */
-  def withHeader(jmsHeader: JmsHeader): JmsDirectedTextMessage = copy(headers = headers + jmsHeader)
+  def toTopic(name: String): JmsTextMessage = to(Topic(name))
 
-  /**
-   * Java API: adds JMSProperty to [[JmsDirectedTextMessage]]
-   */
-  def withProperty(name: String, value: Any): JmsDirectedTextMessage = copy(properties = properties + (name -> value))
+  def to(destination: Destination): JmsTextMessage = copy(destination = Some(destination))
 
-  def withoutDestination: JmsTextMessage = JmsTextMessage(body, headers, properties)
+  def withoutDestination: JmsTextMessage = copy(destination = None)
 }
 
 object JmsTextMessage {
@@ -380,8 +294,9 @@ object JmsTextMessage {
 
 final case class JmsObjectMessage(serializable: java.io.Serializable,
                                   headers: Set[JmsHeader] = Set.empty,
-                                  properties: Map[String, Any] = Map.empty)
-    extends JmsAbstractObjectMessage {
+                                  properties: Map[String, Any] = Map.empty,
+                                  destination: Option[Destination] = None)
+    extends JmsMessage {
 
   /**
    * Java API: adds a Jms header e.g. JMSType to [[JmsObjectMessage]]
@@ -392,26 +307,14 @@ final case class JmsObjectMessage(serializable: java.io.Serializable,
    * Java API: adds JMSProperty to [[JmsObjectMessage]]
    */
   def withProperty(name: String, value: Any): JmsObjectMessage = copy(properties = properties + (name -> value))
-}
 
-final case class JmsDirectedObjectMessage(serializable: java.io.Serializable,
-                                          destination: Destination,
-                                          headers: Set[JmsHeader] = Set.empty,
-                                          properties: Map[String, Any] = Map.empty)
-    extends JmsAbstractObjectMessage
-    with JmsDirectedMessage {
+  def toQueue(name: String): JmsObjectMessage = to(Queue(name))
 
-  /**
-   * Java API: adds a Jms header e.g. JMSType to [[JmsDirectedObjectMessage]]
-   */
-  def withHeader(jmsHeader: JmsHeader): JmsDirectedObjectMessage = copy(headers = headers + jmsHeader)
+  def toTopic(name: String): JmsObjectMessage = to(Topic(name))
 
-  /**
-   * Java API: adds JMSProperty to [[JmsDirectedObjectMessage]]
-   */
-  def withProperty(name: String, value: Any): JmsDirectedObjectMessage = copy(properties = properties + (name -> value))
+  def to(destination: Destination): JmsObjectMessage = copy(destination = Some(destination))
 
-  def withoutDestination: JmsObjectMessage = JmsObjectMessage(serializable, headers, properties)
+  def withoutDestination: JmsObjectMessage = copy(destination = None)
 }
 
 object JmsObjectMessage {

@@ -6,9 +6,9 @@ package akka.stream.alpakka.jms.javadsl
 
 import java.util.concurrent.CompletionStage
 
-import akka.{Done, NotUsed}
-import akka.stream.alpakka.jms.{JmsDirectedMessage, JmsMessage, JmsProducerSettings}
+import akka.stream.alpakka.jms.{JmsMessage, JmsProducerSettings}
 import akka.stream.scaladsl.{Flow, Keep}
+import akka.{Done, NotUsed}
 
 import scala.collection.JavaConversions
 import scala.compat.java8.FutureConverters
@@ -22,14 +22,6 @@ object JmsProducer {
       settings: JmsProducerSettings
   ): akka.stream.javadsl.Flow[R, R, NotUsed] =
     akka.stream.alpakka.jms.scaladsl.JmsProducer.flow(settings).asJava
-
-  /**
-   * Java API: Creates an [[JmsProducer]] for [[JmsDirectedMessage]]s
-   */
-  def directedMessageFlow[R <: JmsDirectedMessage](
-      settings: JmsProducerSettings
-  ): akka.stream.javadsl.Flow[R, R, NotUsed] =
-    akka.stream.alpakka.jms.scaladsl.JmsProducer.directedMessageFlow(settings).asJava
 
   /**
    * Java API: Creates an [[JmsProducer]] for [[JmsMessage]]s
