@@ -40,12 +40,12 @@ object CsvToMap {
   /**
    * A flow translating incoming [[scala.List]] of [[akka.util.ByteString]] to a map of String keys and values using the given headers
    * as keys.
-   * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]], defaults to UTF-8
+   * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]]
    * @param headers column names to be used as map keys
    */
   def withHeadersAsStrings(
       charset: Charset,
       headers: String*
   ): Flow[List[ByteString], Map[String, String], NotUsed] =
-    Flow.fromGraph(new CsvToMapAsStringsStage(Some(headers.toList), StandardCharsets.UTF_8))
+    Flow.fromGraph(new CsvToMapAsStringsStage(Some(headers.toList), charset))
 }
