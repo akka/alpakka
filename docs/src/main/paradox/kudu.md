@@ -1,8 +1,8 @@
 # Apache Kudu
 
-A flow and a composite sink to write element in [Kudu](http://kudu.apache.org).
+The Alpakka Kudu connector supports writing to [Apache Kudu](http://kudu.apache.org) tables.
 
-Apache Kudu is a free and open source column-oriented data store of the Apache Hadoop ecosystem.
+Apache Kudu is a free and open source column-oriented data store in the Apache Hadoop ecosystem.
 
 ### Reported issues
 
@@ -10,26 +10,23 @@ Apache Kudu is a free and open source column-oriented data store of the Apache H
 
 ## Configuration
 
-Build a converter and a tableSetting.
+To connect to Kudu
 
-Converter will map the domain object to Kudu row.
+1. Create a Kudu client and manage its life-cycle
+1. Describe the Kudu `Schema` (@javadoc[API](org.apache.kudu.Schema))
+1. Define a converter function to map your data type to a `PartialRow` (@javadoc[API](org.apache.kudu.client.PartialRow))
+1. Specify Kudu `CreateTableOptions` (@javadoc[API](org.apache.kudu.client.CreateTableOptions))
+1. Set up Alpakka's `KuduTableSettings` (@scaladoc[API](akka.stream.alpakka.kudu.KuduTableSettings)).
+
 
 Scala
-:   @@snip [snip](/kudu/src/test/scala/docs/scaladsl/KuduTableSpec.scala) { #create-converter }
+:   @@snip [snip](/kudu/src/test/scala/docs/scaladsl/KuduTableSpec.scala) { #configure }
 
 Java
-:   @@snip [snip](/kudu/src/test/java/docs/javadsl/KuduTableTest.java) { #create-converter }
-
-The table will be created on demand.
-
-Scala
-:   @@snip [snip](/kudu/src/test/scala/docs/scaladsl/KuduTableSpec.scala) { #create-settings }
-
-Java
-:   @@snip [snip](/kudu/src/test/java/docs/javadsl/KuduTableTest.java) { #create-settings }
+:   @@snip [snip](/kudu/src/test/java/docs/javadsl/KuduTableTest.java) { #configure }
 
 
-## Writing to Kudu in Flow
+## Writing to Kudu in a Flow
 
 Scala
 : @@snip [snip](/kudu/src/test/scala/docs/scaladsl/KuduTableSpec.scala) { #flow }

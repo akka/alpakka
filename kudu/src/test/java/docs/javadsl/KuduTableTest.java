@@ -27,9 +27,11 @@ import org.apache.kudu.client.PartialRow;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -41,23 +43,17 @@ public class KuduTableTest {
   private static ActorSystem system;
   private static Materializer materializer;
   private static Schema schema;
-  private static CreateTableOptions createTableOptions;
 
   private static KuduClient kuduClient;
+  private static KuduTableSettings<Person> tableSettings;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create();
     materializer = ActorMaterializer.create(system);
 
-    // #create-converter
-    List<ColumnSchema> columns = new ArrayList<>(2);
-    columns.add(new ColumnSchema.ColumnSchemaBuilder("key", Type.INT32).key(true).build());
-    columns.add(new ColumnSchema.ColumnSchemaBuilder("value", Type.STRING).build());
-    schema = new Schema(columns);
-    // #create-converter
-
-    // #create-settings
+    // #configure
+    // Kudu Client
     kuduClient = new KuduClient.KuduClientBuilder(kuduMasterAddresses).build();
     system.registerOnTermination(
         () -> {
@@ -68,11 +64,31 @@ public class KuduTableTest {
           }
         });
 
-    List<String> rangeKeys = new ArrayList<>();
-    rangeKeys.add("key");
-    createTableOptions =
+    // Kudu Schema
+    List<ColumnSchema> columns = new ArrayList<>(2);
+    columns.add(new ColumnSchema.ColumnSchemaBuilder("key", Type.INT32).key(true).build());
+    columns.add(new ColumnSchema.ColumnSchemaBuilder("value", Type.STRING).build());
+    schema = new Schema(columns);
+
+    // Converter function
+    Function<Person, PartialRow> kuduConverter =
+        person -> {
+          PartialRow partialRow = schema.newPartialRow();
+          partialRow.addInt(0, person.id);
+          partialRow.addString(1, person.name);
+          return partialRow;
+        };
+
+    // Kudu table options
+    List<String> rangeKeys = Collections.singletonList("key");
+    CreateTableOptions createTableOptions =
         new CreateTableOptions().setNumReplicas(1).setRangePartitionColumns(rangeKeys);
-    // #create-settings
+
+    // Alpakka settings
+    KuduTableSettings<Person> tableSettings =
+        KuduTableSettings.create("tablenameSink", schema, createTableOptions, kuduConverter);
+    // #configure
+    KuduTableTest.tableSettings = tableSettings;
   }
 
   @AfterClass
@@ -80,52 +96,34 @@ public class KuduTableTest {
     TestKit.shutdownActorSystem(system);
   }
 
-  // #create-converter
-  Function<Person, PartialRow> kuduConverter =
-      person -> {
-        PartialRow partialRow = schema.newPartialRow();
-        partialRow.addInt(0, person.id);
-        partialRow.addString(1, person.name);
-        return partialRow;
-      };
-  // #create-converter
-
   @Test
   public void sink() throws Exception {
-
-    // #create-settings
-    KuduTableSettings<Person> tableSettings =
-        KuduTableSettings.create("tablenameSink", schema, createTableOptions, kuduConverter);
-    // #create-settings
-
     // #sink
-    final Sink<Person, CompletionStage<Done>> sink = KuduTable.sink(tableSettings, kuduClient);
+    final Sink<Person, CompletionStage<Done>> sink =
+        KuduTable.sink(tableSettings.withTableName("Sink"), kuduClient);
+
     CompletionStage<Done> o =
         Source.from(Arrays.asList(100, 101, 102, 103, 104))
             .map((i) -> new Person(i, String.format("name %d", i)))
             .runWith(sink, materializer);
     // #sink
-
-    o.toCompletableFuture().get(5, TimeUnit.SECONDS);
+    assertEquals(Done.getInstance(), o.toCompletableFuture().get(5, TimeUnit.SECONDS));
   }
 
   @Test
   public void flow() throws Exception {
-
-    KuduTableSettings<Person> tableSettings =
-        KuduTableSettings.create("tablenameFlow", schema, createTableOptions, kuduConverter);
-
     // #flow
-    Flow<Person, Person, NotUsed> flow = KuduTable.flow(tableSettings, kuduClient);
-    Pair<NotUsed, CompletionStage<List<Person>>> run =
+    Flow<Person, Person, NotUsed> flow =
+        KuduTable.flow(tableSettings.withTableName("Flow"), kuduClient);
+
+    CompletionStage<List<Person>> run =
         Source.from(Arrays.asList(200, 201, 202, 203, 204))
             .map((i) -> new Person(i, String.format("name_%d", i)))
             .via(flow)
-            .toMat(Sink.seq(), Keep.both())
+            .toMat(Sink.seq(), Keep.right())
             .run(materializer);
     // #flow
-
-    run.second().toCompletableFuture().get(5, TimeUnit.SECONDS);
+    assertEquals(5, run.toCompletableFuture().get(5, TimeUnit.SECONDS).size());
   }
 }
 
