@@ -7,7 +7,7 @@ package akka.stream.alpakka.kudu.scaladsl
 import java.util
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.kudu.KuduTableSettings
 import akka.stream.scaladsl.{Sink, Source}
 import org.apache.kudu.{ColumnSchema, Schema, Type}
@@ -20,6 +20,8 @@ import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
 class KuduStageSpec extends WordSpec with Matchers {
+
+  val kuduMasterAddress = "localhost:7051"
 
   //#create-converter
   case class Person(id: Int, name: String)
@@ -48,11 +50,14 @@ class KuduStageSpec extends WordSpec with Matchers {
 
     "sinks in kudu" in {
       implicit val actorSystem = ActorSystem("reactiveStreams")
-      implicit val materilizer = ActorMaterializer()
+      implicit val materializer: Materializer = ActorMaterializer()
 
       //#create-settings
-      val kuduClient = new KuduClient.KuduClientBuilder("localhost:7051").build
-      val kuduTableSettings = KuduTableSettings(kuduClient, "test", schema, createTableOptions, kuduConverter)
+      implicit val kuduClient = new KuduClient.KuduClientBuilder(kuduMasterAddress).build
+      actorSystem.registerOnTermination(kuduClient.shutdown())
+
+      val kuduTableSettings = KuduTableSettings("test", schema, createTableOptions, kuduConverter)
+
       //#create-settings
 
       //#sink
@@ -73,8 +78,10 @@ class KuduStageSpec extends WordSpec with Matchers {
       implicit val actorSystem = ActorSystem("reactiveStreams")
       implicit val materilizer = ActorMaterializer()
 
-      val kuduClient = new KuduClient.KuduClientBuilder("localhost:7051").build
-      val kuduTableSettings = KuduTableSettings(kuduClient, "test", schema, createTableOptions, kuduConverter)
+      implicit val kuduClient = new KuduClient.KuduClientBuilder(kuduMasterAddress).build
+      actorSystem.registerOnTermination(kuduClient.shutdown())
+
+      val kuduTableSettings = KuduTableSettings("test", schema, createTableOptions, kuduConverter)
 
       //#flow
       val flow = KuduTable.flow[Person](kuduTableSettings)

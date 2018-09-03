@@ -10,7 +10,7 @@ import akka.stream.alpakka.kudu.KuduTableSettings
 import akka.stream.stage._
 import org.apache.kudu.Schema
 import org.apache.kudu.Type._
-import org.apache.kudu.client.{KuduTable, PartialRow}
+import org.apache.kudu.client.{KuduClient, KuduTable, PartialRow}
 
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
@@ -19,7 +19,8 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 @InternalApi
-private[kudu] class KuduFlowStage[A](settings: KuduTableSettings[A]) extends GraphStage[FlowShape[A, A]] {
+private[kudu] class KuduFlowStage[A](settings: KuduTableSettings[A], kuduClient: KuduClient)
+    extends GraphStage[FlowShape[A, A]] {
 
   override protected def initialAttributes: Attributes =
     Attributes.name("KuduFLow").and(ActorAttributes.IODispatcher)
@@ -53,9 +54,9 @@ private[kudu] class KuduFlowStage[A](settings: KuduTableSettings[A]) extends Gra
       override protected def logSource = classOf[KuduFlowStage[A]]
 
       lazy val table: KuduTable =
-        getOrCreateTable(settings.kuduClient, settings.tableName, settings.schema, settings.createTableOptions)
+        getOrCreateTable(kuduClient, settings.tableName, settings.schema, settings.createTableOptions)
 
-      val session = settings.kuduClient.newSession()
+      val session = kuduClient.newSession()
 
       setHandlers(in, out, this)
 
@@ -77,12 +78,6 @@ private[kudu] class KuduFlowStage[A](settings: KuduTableSettings[A]) extends Gra
           log.debug("session closed")
         } catch {
           case NonFatal(ex) => log.error(ex, "Problem occurred during producer session close")
-        }
-        try {
-          settings.kuduClient.shutdown()
-          log.debug("client connection closed")
-        } catch {
-          case NonFatal(ex) => log.error(ex, "Problem occurred during producer connection close")
         }
       }
     }
