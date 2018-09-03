@@ -5,19 +5,12 @@
 package akka.stream.alpakka.mqtt
 
 import javax.net.ssl.{HostnameVerifier, SSLSocketFactory}
-
-import akka.Done
-import akka.util.ByteString
-import org.eclipse.paho.client.mqttv3.{IMqttActionListener, IMqttToken, MqttClientPersistence, MqttConnectOptions}
+import org.eclipse.paho.client.mqttv3.{MqttClientPersistence, MqttConnectOptions}
 
 import scala.annotation.varargs
-import scala.concurrent.Promise
-import scala.concurrent.duration._
-import scala.collection.immutable.Seq
-import scala.collection.immutable.Map
-import scala.language.implicitConversions
-import scala.util._
 import scala.collection.JavaConverters._
+import scala.collection.immutable.{Map, Seq}
+import scala.concurrent.duration._
 
 sealed abstract class MqttQoS {
   def byteValue: Byte
@@ -43,17 +36,17 @@ object MqttQoS {
   /**
    * Java API
    */
-  def atMostOnce = AtMostOnce
+  def atMostOnce: MqttQoS = AtMostOnce
 
   /**
    * Java API
    */
-  def atLeastOnce = AtLeastOnce
+  def atLeastOnce: MqttQoS = AtLeastOnce
 
   /**
    * Java API
    */
-  def exactlyOnce = ExactlyOnce
+  def exactlyOnce: MqttQoS = ExactlyOnce
 }
 
 /**
@@ -112,10 +105,6 @@ final case class MqttConnectionSettings(
   def withWill(will: MqttMessage): MqttConnectionSettings =
     copy(will = Some(will))
 
-  @deprecated("use a normal message instead of a will", "0.16")
-  def withWill(will: Will): MqttConnectionSettings =
-    copy(will = Some(MqttMessage(will.message.topic, will.message.payload, Some(will.qos), will.retained)))
-
   def withClientId(clientId: String): MqttConnectionSettings =
     copy(clientId = clientId)
 
@@ -157,50 +146,4 @@ object MqttConnectionSettings {
    */
   def create(broker: String, clientId: String, persistence: MqttClientPersistence) =
     MqttConnectionSettings(broker, clientId, persistence)
-}
-
-final case class MqttMessage(topic: String, payload: ByteString, qos: Option[MqttQoS] = None, retained: Boolean = false)
-
-@deprecated("use a normal message instead of a will", "0.16")
-final case class Will(message: MqttMessage, qos: MqttQoS, retained: Boolean)
-
-final case class CommitCallbackArguments(messageId: Int, qos: MqttQoS, promise: Promise[Done])
-
-object MqttMessage {
-
-  /**
-   * Java API: create  [[MqttMessage]]
-   */
-  def create(topic: String, payload: ByteString) =
-    MqttMessage(topic, payload)
-
-  /**
-   * Java API: create  [[MqttMessage]]
-   */
-  def create(topic: String, payload: ByteString, qos: MqttQoS) =
-    MqttMessage(topic, payload, Some(qos))
-
-  /**
-   * Java API: create  [[MqttMessage]]
-   */
-  def create(topic: String, payload: ByteString, retained: Boolean) =
-    MqttMessage(topic, payload, retained = retained)
-
-  /**
-   * Java API: create  [[MqttMessage]]
-   */
-  def create(topic: String, payload: ByteString, qos: MqttQoS, retained: Boolean) =
-    MqttMessage(topic, payload, Some(qos), retained = retained)
-}
-
-/**
- *  Internal API
- */
-private[mqtt] object MqttConnectorLogic {
-
-  implicit def funcToMqttActionListener(func: Try[IMqttToken] => Unit): IMqttActionListener = new IMqttActionListener {
-    def onSuccess(token: IMqttToken) = func(Success(token))
-    def onFailure(token: IMqttToken, ex: Throwable) = func(Failure(ex))
-  }
-
 }

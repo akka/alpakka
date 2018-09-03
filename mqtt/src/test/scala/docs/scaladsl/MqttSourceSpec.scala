@@ -2,12 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.mqtt.scaladsl
+package docs.scaladsl
 
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.alpakka.mqtt._
+import akka.stream.alpakka.mqtt.scaladsl.{MqttCommittableMessage, MqttSink, MqttSource}
 import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestKit
@@ -19,8 +20,8 @@ import org.scalatest.concurrent.ScalaFutures
 import org.slf4j.LoggerFactory
 
 import scala.collection.immutable.Seq
-import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 
 class MqttSourceSpec
     extends TestKit(ActorSystem("MqttSourceSpec"))
@@ -35,7 +36,7 @@ class MqttSourceSpec
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
-  implicit val mat = ActorMaterializer()
+  implicit val mat: Materializer = ActorMaterializer()
 
   //#create-connection-settings
   val connectionSettings = MqttConnectionSettings(

@@ -2,19 +2,20 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.mqtt.scaladsl
+package docs.scaladsl
 
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.mqtt.scaladsl.{MqttSink, MqttSource}
 import akka.stream.alpakka.mqtt.{MqttSourceSettings, _}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import org.eclipse.paho.client.mqttv3.{MqttException, MqttSecurityException}
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
-import org.scalatest.concurrent.ScalaFutures
+import org.eclipse.paho.client.mqttv3.{MqttException, MqttSecurityException}
 import org.scalatest._
+import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
