@@ -8,14 +8,10 @@ import scala.concurrent.duration.{FiniteDuration, _}
 
 //#solr-update-settings
 final case class SolrUpdateSettings(
-    bufferSize: Int = 10,
     retryInterval: FiniteDuration = 5000.millis,
     maxRetry: Int = 100,
     commitWithin: Int = -1
 ) {
-  def withBufferSize(bufferSize: Int): SolrUpdateSettings =
-    copy(bufferSize = bufferSize)
-
   def withRetryInterval(retryInterval: FiniteDuration): SolrUpdateSettings =
     copy(retryInterval = retryInterval)
 

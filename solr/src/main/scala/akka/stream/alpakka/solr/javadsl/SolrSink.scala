@@ -14,18 +14,20 @@ import akka.{Done, NotUsed}
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.common.SolrInputDocument
 
+import java.util.{List => JavaList}
+
 object SolrSink {
 
   /**
    * Java API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing [[SolrInputDocument]].
    */
-  def document(
+  def documents(
       collection: String,
       settings: SolrUpdateSettings,
       client: SolrClient
-  ): javadsl.Sink[IncomingMessage[SolrInputDocument, NotUsed], CompletionStage[Done]] =
+  ): javadsl.Sink[JavaList[IncomingMessage[SolrInputDocument, NotUsed]], CompletionStage[Done]] =
     SolrFlow
-      .document(collection, settings, client)
+      .documents(collection, settings, client)
       .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[SolrInputDocument, NotUsed]]],
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
@@ -33,14 +35,14 @@ object SolrSink {
    * Java API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing type `T`
    * with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
    */
-  def bean[T](
+  def beans[T](
       collection: String,
       settings: SolrUpdateSettings,
       client: SolrClient,
       clazz: Class[T]
-  ): Sink[IncomingMessage[T, NotUsed], CompletionStage[Done]] =
+  ): Sink[JavaList[IncomingMessage[T, NotUsed]], CompletionStage[Done]] =
     SolrFlow
-      .bean[T](collection, settings, client, clazz)
+      .beans[T](collection, settings, client, clazz)
       .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[T, NotUsed]]],
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
@@ -53,7 +55,7 @@ object SolrSink {
       binder: Function[T, SolrInputDocument],
       client: SolrClient,
       clazz: Class[T]
-  ): javadsl.Sink[IncomingMessage[T, NotUsed], CompletionStage[Done]] =
+  ): javadsl.Sink[JavaList[IncomingMessage[T, NotUsed]], CompletionStage[Done]] =
     SolrFlow
       .typed[T](collection, settings, binder, client, clazz)
       .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[T, NotUsed]]],
@@ -62,26 +64,26 @@ object SolrSink {
   /**
    * Java API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing [[SolrInputDocument]].
    */
-  def delete(
+  def deletes(
       collection: String,
       settings: SolrUpdateSettings,
       client: SolrClient
-  ): javadsl.Sink[IncomingMessage[NotUsed, NotUsed], CompletionStage[Done]] =
+  ): javadsl.Sink[JavaList[IncomingMessage[NotUsed, NotUsed]], CompletionStage[Done]] =
     SolrFlow
-      .delete(collection, settings, client)
+      .deletes(collection, settings, client)
       .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[NotUsed, NotUsed]]],
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
    * Java API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing [[SolrInputDocument]].
    */
-  def update(
+  def updates(
       collection: String,
       settings: SolrUpdateSettings,
       client: SolrClient
-  ): javadsl.Sink[IncomingMessage[NotUsed, NotUsed], CompletionStage[Done]] =
+  ): javadsl.Sink[JavaList[IncomingMessage[NotUsed, NotUsed]], CompletionStage[Done]] =
     SolrFlow
-      .update(collection, settings, client)
+      .updates(collection, settings, client)
       .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[NotUsed, NotUsed]]],
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 }

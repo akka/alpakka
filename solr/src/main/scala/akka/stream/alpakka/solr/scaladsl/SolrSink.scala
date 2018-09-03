@@ -17,22 +17,22 @@ object SolrSink {
   /**
    * Scala API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing [[SolrInputDocument]].
    */
-  def document[T](collection: String, settings: SolrUpdateSettings)(
+  def documents[T](collection: String, settings: SolrUpdateSettings)(
       implicit client: SolrClient
-  ): Sink[IncomingMessage[SolrInputDocument, NotUsed], Future[Done]] =
+  ): Sink[Seq[IncomingMessage[SolrInputDocument, NotUsed]], Future[Done]] =
     SolrFlow
-      .document(collection, settings)
+      .documents(collection, settings)
       .toMat(Sink.ignore)(Keep.right)
 
   /**
    * Scala API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing type `T`
    * with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
    */
-  def bean[T](collection: String, settings: SolrUpdateSettings)(
+  def beans[T](collection: String, settings: SolrUpdateSettings)(
       implicit client: SolrClient
-  ): Sink[IncomingMessage[T, NotUsed], Future[Done]] =
+  ): Sink[Seq[IncomingMessage[T, NotUsed]], Future[Done]] =
     SolrFlow
-      .bean[T](collection, settings)
+      .beans[T](collection, settings)
       .toMat(Sink.ignore)(Keep.right)
 
   /**
@@ -42,7 +42,7 @@ object SolrSink {
       collection: String,
       settings: SolrUpdateSettings,
       binder: T => SolrInputDocument
-  )(implicit client: SolrClient): Sink[IncomingMessage[T, NotUsed], Future[Done]] =
+  )(implicit client: SolrClient): Sink[Seq[IncomingMessage[T, NotUsed]], Future[Done]] =
     SolrFlow
       .typed[T](collection, settings, binder)
       .toMat(Sink.ignore)(Keep.right)
@@ -50,20 +50,20 @@ object SolrSink {
   /**
    * Scala API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing ids to delete.
    */
-  def delete[T](collection: String, settings: SolrUpdateSettings)(
+  def deletes[T](collection: String, settings: SolrUpdateSettings)(
       implicit client: SolrClient
-  ): Sink[IncomingMessage[NotUsed, NotUsed], Future[Done]] =
+  ): Sink[Seq[IncomingMessage[NotUsed, NotUsed]], Future[Done]] =
     SolrFlow
-      .delete(collection, settings)
+      .deletes(collection, settings)
       .toMat(Sink.ignore)(Keep.right)
 
   /**
    * Scala API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing ids to update.
    */
-  def update[T](collection: String, settings: SolrUpdateSettings)(
+  def updates[T](collection: String, settings: SolrUpdateSettings)(
       implicit client: SolrClient
-  ): Sink[IncomingMessage[NotUsed, NotUsed], Future[Done]] =
+  ): Sink[Seq[IncomingMessage[NotUsed, NotUsed]], Future[Done]] =
     SolrFlow
-      .update(collection, settings)
+      .updates(collection, settings)
       .toMat(Sink.ignore)(Keep.right)
 }

@@ -8,7 +8,6 @@ import java.net.{ConnectException, SocketException}
 
 import akka.NotUsed
 
-import scala.concurrent.{blocking, ExecutionContext, Future}
 import akka.stream.alpakka.solr.SolrFlowStage.{Finished, Idle, Sending}
 import akka.stream.stage._
 import akka.stream._
@@ -17,8 +16,7 @@ import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.client.solrj.response.UpdateResponse
 import org.apache.solr.common.{SolrException, SolrInputDocument}
 
-import scala.collection.mutable
-import scala.util.{Failure, Success}
+import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.collection.JavaConverters._
 
@@ -151,11 +149,14 @@ private[solr] final class SolrFlowStage[T, C](
     client: SolrClient,
     settings: SolrUpdateSettings,
     messageBinder: Option[T => SolrInputDocument]
-) extends GraphStage[FlowShape[IncomingMessage[T, C], Future[Seq[IncomingMessageResult[T, C]]]]] {
+) extends GraphStage[FlowShape[Seq[IncomingMessage[T, C]], Seq[IncomingMessageResult[T, C]]]] {
 
-  private val in = Inlet[IncomingMessage[T, C]]("messages")
-  private val out = Outlet[Future[Seq[IncomingMessageResult[T, C]]]]("result")
+  private val in = Inlet[Seq[IncomingMessage[T, C]]]("messages")
+  private val out = Outlet[Seq[IncomingMessageResult[T, C]]]("result")
   override val shape = FlowShape(in, out)
+
+  override protected def initialAttributes: Attributes =
+    super.initialAttributes and Attributes(ActorAttributes.IODispatcher)
 
   override def createLogic(inheritedAttributes: Attributes): SolrFlowLogic[T, C] =
     new SolrFlowLogic[T, C](collection, client, in, out, shape, settings, messageBinder)
@@ -177,9 +178,9 @@ private object SolrFlowStage {
 private[solr] final class SolrFlowLogic[T, C](
     collection: String,
     client: SolrClient,
-    in: Inlet[IncomingMessage[T, C]],
-    out: Outlet[Future[Seq[IncomingMessageResult[T, C]]]],
-    shape: FlowShape[IncomingMessage[T, C], Future[Seq[IncomingMessageResult[T, C]]]],
+    in: Inlet[Seq[IncomingMessage[T, C]]],
+    out: Outlet[Seq[IncomingMessageResult[T, C]]],
+    shape: FlowShape[Seq[IncomingMessage[T, C]], Seq[IncomingMessageResult[T, C]]],
     settings: SolrUpdateSettings,
     messageBinder: Option[T => SolrInputDocument]
 ) extends TimerGraphStageLogic(shape)
@@ -188,13 +189,8 @@ private[solr] final class SolrFlowLogic[T, C](
     with StageLogging {
 
   private var state: SolrFlowState = Idle
-  private val queue = new mutable.Queue[IncomingMessage[T, C]]()
   private var failedMessages: Seq[IncomingMessage[T, C]] = Nil
   private var retryCount: Int = 0
-  private val failureHandler = getAsyncCallback[(Seq[IncomingMessage[T, C]], Throwable)](handleFailure)
-  private val responseHandler = getAsyncCallback[(Seq[IncomingMessage[T, C]], Int)](handleResponse)
-
-  implicit private var dispatcher: ExecutionContext = _
 
   setHandlers(in, out, this)
 
@@ -202,15 +198,12 @@ private[solr] final class SolrFlowLogic[T, C](
     tryPull()
 
   override def onPush(): Unit = {
-    queue.enqueue(grab(in))
+    val messagesIn = grab(in)
 
     state match {
       case Idle => {
         state = Sending
-        val messages = (1 to settings.bufferSize).flatMap { _ =>
-          queue.dequeueFirst(_ => true)
-        }
-        sendBulkToSolr(messages)
+        sendBulkToSolr(messagesIn)
       }
       case _ => ()
     }
@@ -218,10 +211,8 @@ private[solr] final class SolrFlowLogic[T, C](
     tryPull()
   }
 
-  override def preStart(): Unit = {
-    dispatcher = materializer.asInstanceOf[ActorMaterializer].system.dispatchers.lookup(getDispatcher.dispatcher)
+  override def preStart(): Unit =
     pull(in)
-  }
 
   override def onTimer(timerKey: Any): Unit = {
     sendBulkToSolr(failedMessages)
@@ -238,7 +229,7 @@ private[solr] final class SolrFlowLogic[T, C](
   }
 
   private def tryPull(): Unit =
-    if (queue.size < settings.bufferSize && !isClosed(in) && !hasBeenPulled(in)) {
+    if (!isClosed(in) && !hasBeenPulled(in)) {
       pull(in)
     }
 
@@ -263,47 +254,23 @@ private[solr] final class SolrFlowLogic[T, C](
     retryCount = 0
     val result = messages.map(m => IncomingMessageResult(m.idOpt, m.sourceOpt, m.passThrough, status))
 
-    emit(out, Future.successful(result))
+    emit(out, result)
 
-    val nextMessages = (1 to settings.bufferSize).flatMap { _ =>
-      queue.dequeueFirst(_ => true)
-    }
-
-    if (nextMessages.isEmpty) {
-      state match {
-        case Finished => handleSuccess()
-        case _ => state = Idle
-      }
-    } else {
-      if (log.isDebugEnabled) {
-        log.debug(s"Remains ${nextMessages.size} to send")
-      }
-      sendBulkToSolr(nextMessages)
+    state match {
+      case Finished => handleSuccess()
+      case _ => state = Idle
     }
   }
 
   private def handleSuccess(): Unit =
     completeStage()
 
-  private[solr] def getDispatcher =
-    attributes.get[ActorAttributes.Dispatcher](
-      ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
-    ) match {
-      case ActorAttributes.Dispatcher("") =>
-        ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
-      case d => d
-    }
-
-  private def fUpdateBulkToSolr(messages: Seq[IncomingMessage[T, C]]): Future[UpdateResponse] = {
+  private def updateBulkToSolr(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
     val docs = messages.map(message => messageBinder.get(message.sourceOpt.get))
-    Future {
-      blocking {
-        client.add(collection, docs.asJava, settings.commitWithin)
-      }
-    }
+    client.add(collection, docs.asJava, settings.commitWithin)
   }
 
-  private def fAtomicUpdateBulkToSolr(messages: Seq[IncomingMessage[T, C]]): Future[UpdateResponse] = {
+  private def atomicUpdateBulkToSolr(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
     val docs = messages.map { message =>
       val doc = new SolrInputDocument()
       doc.addField(message.idFieldOpt.get, message.idOpt.get)
@@ -315,14 +282,10 @@ private[solr] final class SolrFlowLogic[T, C](
       }
       doc
     }
-    Future {
-      blocking {
-        client.add(collection, docs.asJava, settings.commitWithin)
-      }
-    }
+    client.add(collection, docs.asJava, settings.commitWithin)
   }
 
-  private def fDeleteBulkToSolr(messages: Seq[IncomingMessage[T, C]]): Future[UpdateResponse] = {
+  private def deleteBulkToSolr(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
     val docsIds = messages
       .filter { message =>
         message.operation == Delete && message.idOpt.isDefined
@@ -331,16 +294,13 @@ private[solr] final class SolrFlowLogic[T, C](
         message.idOpt.get
       }
     if (log.isDebugEnabled) log.debug(s"Delete the ids $docsIds")
-    Future {
-      blocking {
-        client.deleteById(collection, docsIds.asJava, settings.commitWithin)
-      }
-    }
+    client.deleteById(collection, docsIds.asJava, settings.commitWithin)
   }
 
   private def sendBulkToSolr(messages: Seq[IncomingMessage[T, C]]): Unit = {
 
-    def asyncSend(toSend: Seq[IncomingMessage[T, C]]): Future[UpdateResponse] = {
+    @tailrec
+    def send(toSend: Seq[IncomingMessage[T, C]]): UpdateResponse = {
       val operation = toSend.head.operation
       //Just take a subset of this operation
       val current = toSend.takeWhile { m =>
@@ -348,37 +308,35 @@ private[solr] final class SolrFlowLogic[T, C](
       }
       //send this subset
       val response = operation match {
-        case Update => fUpdateBulkToSolr(current)
-        case AtomicUpdate => fAtomicUpdateBulkToSolr(current)
-        case Delete => fDeleteBulkToSolr(current)
+        case Update => updateBulkToSolr(current)
+        case AtomicUpdate => atomicUpdateBulkToSolr(current)
+        case Delete => deleteBulkToSolr(current)
       }
       //Now take the remaining
       val remaining = toSend.dropWhile(m => m.operation == operation)
       if (remaining.nonEmpty) {
-        response.flatMap { _ =>
-          asyncSend(remaining) //Important: Not really recursive, because the future breaks the recursion
-        }
+        send(remaining) //Important: Not really recursive, because the future breaks the recursion
       } else {
         response
       }
     }
 
-    val fBulkResult = asyncSend(messages)
-    fBulkResult.onComplete {
-      case Success(response) => responseHandler.invoke((messages, response.getStatus))
-      case Failure(exception) =>
-        log.error(exception, "Unable to send messages to SolR")
+    try {
+      val response = send(messages)
+      handleResponse((messages, response.getStatus))
+    } catch {
+      case exception: Throwable =>
         exception match {
           case NonFatal(exc) =>
             val rootCause = SolrException.getRootCause(exc)
             if (shouldRetry(rootCause)) {
-              failureHandler.invoke((messages, exception))
+              handleFailure((messages, exception))
             } else {
               val status = exc match {
                 case e: SolrException => e.code()
                 case _ => -1
               }
-              responseHandler.invoke((messages, status))
+              handleResponse((messages, status))
             }
         }
     }
