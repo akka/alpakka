@@ -56,7 +56,7 @@ class KuduStageSpec extends WordSpec with Matchers {
       //#create-settings
 
       //#sink
-      val sink = KuduTableStage.sink[Person](kuduTableSettings)
+      val sink = KuduTable.sink[Person](kuduTableSettings)
 
       val f = Source(1 to 10).map(i => Person(i, s"zozo_$i")).runWith(sink)
       //#sink
@@ -77,7 +77,7 @@ class KuduStageSpec extends WordSpec with Matchers {
       val kuduTableSettings = KuduTableSettings(kuduClient, "test", schema, createTableOptions, kuduConverter)
 
       //#flow
-      val flow = KuduTableStage.flow[Person](kuduTableSettings)
+      val flow = KuduTable.flow[Person](kuduTableSettings)
 
       val f = Source(11 to 20).map(i => Person(i, s"zozo_$i")).via(flow).runWith(Sink.fold(0)((a, d) => a + d.id))
       //#flow

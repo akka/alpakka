@@ -5,13 +5,13 @@
 package akka.stream.alpakka.kudu.scaladsl
 
 import akka.stream.alpakka.kudu.KuduTableSettings
-import akka.stream.alpakka.kudu.internal.KuduFlowStage
+import akka.stream.alpakka.kudu.impl.KuduFlowStage
 import akka.stream.scaladsl.{Flow, Keep, Sink}
 import akka.{Done, NotUsed}
 
 import scala.concurrent.Future
 
-object KuduTableStage {
+object KuduTable {
 
   def sink[A](settings: KuduTableSettings[A]): Sink[A, Future[Done]] =
     flow(settings).toMat(Sink.ignore)(Keep.right)
