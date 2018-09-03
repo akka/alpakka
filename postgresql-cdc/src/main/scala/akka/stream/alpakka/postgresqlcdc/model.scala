@@ -73,23 +73,19 @@ final class RowInserted private (val schemaName: String,
   def copy(data: Map[String, String]): RowInserted =
     new RowInserted(schemaName, tableName, commitLogSeqNum, transactionId, data, schema)
 
-  // auto-generated
   override def equals(other: Any): Boolean = other match {
     case that: RowInserted ⇒
-      schemaName == that.schemaName &&
-      tableName == that.tableName &&
-      commitLogSeqNum == that.commitLogSeqNum &&
-      transactionId == that.transactionId &&
-      data == that.data &&
-      schema == that.schema
+      java.util.Objects.equals(this.schemaName, that.schemaName) &&
+      java.util.Objects.equals(this.tableName, that.tableName) &&
+      java.util.Objects.equals(this.commitLogSeqNum, that.commitLogSeqNum) &&
+      java.util.Objects.equals(this.transactionId, that.transactionId) &&
+      java.util.Objects.equals(this.data, that.data) &&
+      java.util.Objects.equals(this.schema, that.schema)
     case _ ⇒ false
   }
 
-  // auto-generated
-  override def hashCode(): Int = {
-    val state = Seq(schemaName, tableName, commitLogSeqNum, transactionId, data, schema)
-    state.map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
-  }
+  override def hashCode(): Int =
+    java.util.Objects.hash(schemaName, tableName, commitLogSeqNum, Long.box(transactionId), data, schema)
 
   // auto-generated
   override def toString =
@@ -139,25 +135,28 @@ final class RowUpdated private (val schemaName: String,
   def copy(dataNew: Map[String, String], dataOld: Map[String, String]): RowUpdated =
     new RowUpdated(schemaName, tableName, commitLogSeqNum, transactionId, dataNew, dataOld, schemaNew, schemaOld)
 
-  // auto-generated
   override def equals(other: Any): Boolean = other match {
     case that: RowUpdated ⇒
-      schemaName == that.schemaName &&
-      tableName == that.tableName &&
-      commitLogSeqNum == that.commitLogSeqNum &&
-      transactionId == that.transactionId &&
-      dataNew == that.dataNew &&
-      dataOld == that.dataOld &&
-      schemaNew == that.schemaNew &&
-      schemaOld == that.schemaOld
+      java.util.Objects.equals(this.schemaName, that.schemaName) &&
+      java.util.Objects.equals(this.tableName, that.tableName) &&
+      java.util.Objects.equals(this.commitLogSeqNum, that.commitLogSeqNum) &&
+      java.util.Objects.equals(this.transactionId, that.transactionId) &&
+      java.util.Objects.equals(this.dataNew, that.dataNew) &&
+      java.util.Objects.equals(this.dataOld, that.dataOld) &&
+      java.util.Objects.equals(this.schemaNew, that.schemaNew) &&
+      java.util.Objects.equals(this.schemaOld, that.schemaOld)
     case _ ⇒ false
   }
 
-  // auto-generated
-  override def hashCode(): Int = {
-    val state = Seq(schemaName, tableName, commitLogSeqNum, transactionId, dataNew, dataOld, schemaNew, schemaOld)
-    state.map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
-  }
+  override def hashCode(): Int =
+    java.util.Objects.hash(schemaName,
+                           tableName,
+                           commitLogSeqNum,
+                           Long.box(transactionId),
+                           dataNew,
+                           dataOld,
+                           schemaNew,
+                           schemaOld)
 
   // auto-generated
   override def toString =
@@ -196,23 +195,19 @@ final class RowDeleted private (val schemaName: String,
   def copy(data: Map[String, String]): RowDeleted =
     new RowDeleted(schemaName, tableName, commitLogSeqNum, transactionId, data, schema)
 
-  // auto-generated
   override def equals(other: Any): Boolean = other match {
     case that: RowDeleted ⇒
-      schemaName == that.schemaName &&
-      tableName == that.tableName &&
-      commitLogSeqNum == that.commitLogSeqNum &&
-      transactionId == that.transactionId &&
-      data == that.data &&
-      schema == that.schema
+      java.util.Objects.equals(this.schemaName, that.schemaName) &&
+      java.util.Objects.equals(this.tableName, that.tableName) &&
+      java.util.Objects.equals(this.commitLogSeqNum, that.commitLogSeqNum) &&
+      java.util.Objects.equals(this.transactionId, that.transactionId) &&
+      java.util.Objects.equals(this.data, that.data) &&
+      java.util.Objects.equals(this.schema, that.schema)
     case _ ⇒ false
   }
 
-  // auto-generated
-  override def hashCode(): Int = {
-    val state = Seq(schemaName, tableName, commitLogSeqNum, transactionId, data, schema)
-    state.map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
-  }
+  override def hashCode(): Int =
+    java.util.Objects.hash(schemaName, tableName, commitLogSeqNum, Long.box(transactionId), data, schema)
 
   // auto-generated
   override def toString =
@@ -255,21 +250,17 @@ final class ChangeSet private (val transactionId: Long,
    */
   def getCommitLogSeqNum: String = commitLogSeqNum
 
-  // auto-generated
   override def equals(other: Any): Boolean = other match {
     case that: ChangeSet ⇒
-      transactionId == that.transactionId &&
-      commitLogSeqNum == that.commitLogSeqNum &&
-      instant == that.instant &&
-      changes == that.changes
+      java.util.Objects.equals(this.transactionId, that.transactionId) &&
+      java.util.Objects.equals(this.commitLogSeqNum, that.commitLogSeqNum) &&
+      java.util.Objects.equals(this.instant, that.instant) &&
+      java.util.Objects.equals(this.changes, that.changes)
     case _ ⇒ false
   }
 
-  // auto-generated
-  override def hashCode(): Int = {
-    val state = Seq(transactionId, commitLogSeqNum, instant, changes)
-    state.map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
-  }
+  override def hashCode(): Int =
+    java.util.Objects.hash(Long.box(transactionId), commitLogSeqNum, instant, changes)
 
   // auto-generated
   override def toString =

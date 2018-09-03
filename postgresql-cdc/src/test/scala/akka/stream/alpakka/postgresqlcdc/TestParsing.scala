@@ -6,7 +6,8 @@ package akka.stream.alpakka.postgresqlcdc
 
 import java.time.{LocalDate, LocalTime, ZoneId}
 
-import akka.stream.alpakka.postgresqlcdc.TestDecodingPlugin._
+import akka.stream.alpakka.postgresqlcdc.impl.TestDecodingPlugin
+import akka.stream.alpakka.postgresqlcdc.impl.TestDecodingPlugin._
 import fastparse.core.Parsed
 import fastparse.core.Parsed.Success
 import org.scalatest.{FunSuite, Matchers}

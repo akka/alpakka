@@ -273,13 +273,13 @@ object FakeDb {
   }
 
   def setUpLogicalDecodingSlot(slotName: String)(implicit conn: Connection): Unit = {
-    val stmt = conn.prepareStatement(s"SELECT * FROM pg_create_logical_replication_slot('${slotName}','test_decoding')")
+    val stmt = conn.prepareStatement(s"SELECT * FROM pg_create_logical_replication_slot('$slotName','test_decoding')")
     stmt.execute()
     stmt.close()
   }
 
   def dropLogicalDecodingSlot(slotName: String)(implicit conn: Connection): Unit = {
-    val stmt = conn.prepareStatement(s"SELECT * FROM pg_drop_replication_slot('${slotName}')")
+    val stmt = conn.prepareStatement(s"SELECT * FROM pg_drop_replication_slot('$slotName')")
     stmt.execute()
     stmt.close()
   }

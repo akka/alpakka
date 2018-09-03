@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.postgresqlcdc
 
+import java.sql.Connection
+
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.stream.alpakka.postgresqlcdc.scaladsl.ChangeDataCapture
@@ -12,14 +14,13 @@ import akka.stream.{ActorMaterializer, Attributes}
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 class TestScalaDsl extends FunSuite with Matchers with BeforeAndAfterAll {
 
   override def afterAll(): Unit = {
     import FakeDb._
     val connectionString = "jdbc:postgresql://localhost:5435/pgdb?user=pguser&password=pguser"
-    implicit val con = getConnection(connectionString)
+    implicit val con: Connection = getConnection(connectionString)
     dropLogicalDecodingSlot("slot_name")
     con.close()
   }
@@ -62,8 +63,8 @@ class TestScalaDsl extends FunSuite with Matchers with BeforeAndAfterAll {
 
     //#GetExample
 
-    implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
+    implicit val system: ActorSystem = ActorSystem()
+    implicit val materializer: ActorMaterializer = ActorMaterializer()
 
     val connectionString = "jdbc:postgresql://localhost/pgdb?user=pguser&password=pguser"
     val slotName = "slot_name"
@@ -83,8 +84,8 @@ class TestScalaDsl extends FunSuite with Matchers with BeforeAndAfterAll {
 
     //#PeekExample
 
-    implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
+    implicit val system: ActorSystem = ActorSystem()
+    implicit val materializer: ActorMaterializer = ActorMaterializer()
 
     // Define your domain event
     case class UserRegistered(id: String)
