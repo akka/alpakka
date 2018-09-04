@@ -6,7 +6,7 @@ package akka.stream.alpakka.mqtt.scaladsl
 
 import akka.Done
 import akka.stream.alpakka.mqtt._
-import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.{Keep, Sink}
 
 import scala.concurrent.Future
 
@@ -20,11 +20,13 @@ object MqttSink {
   /**
    * Create a sink sending messages to MQTT.
    *
+   * The materialized value completes on stream completion.
+   *
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
   def apply(connectionSettings: MqttConnectionSettings, defaultQos: MqttQoS): Sink[MqttMessage, Future[Done]] =
     MqttFlow
       .atMostOnce(MqttSourceSettings(connectionSettings, Map.empty), 0, defaultQos)
-      .to(Sink.ignore)
+      .toMat(Sink.ignore)(Keep.right)
 
 }

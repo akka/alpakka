@@ -36,7 +36,8 @@ import scala.util.{Failure, Success, Try}
  * INTERNAL API
  */
 @InternalApi
-private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
+private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettings,
+                                        subscriptions: Map[String, MqttQoS],
                                         bufferSize: Int,
                                         defaultQoS: MqttQoS,
                                         manualAcks: Boolean = false)
@@ -66,7 +67,7 @@ private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
       private val onConnect =
         getAsyncCallback[IMqttAsyncClient]((client: IMqttAsyncClient) => {
           if (manualAcks) client.setManualAcks(true)
-          val (topics, qoses) = sourceSettings.subscriptions.unzip
+          val (topics, qoses) = subscriptions.unzip
           if (topics.nonEmpty) {
             client.subscribe(topics.toArray,
                              qoses.map(_.byteValue.toInt).toArray,
@@ -113,7 +114,6 @@ private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
           }
         )
 
-      val connectionSettings: MqttConnectionSettings = sourceSettings.connectionSettings
       val mqttClient = new MqttAsyncClient(
         connectionSettings.broker,
         connectionSettings.clientId,
