@@ -44,31 +44,29 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
     extends GraphStageWithMaterializedValue[FlowShape[MqttMessage, MqttCommittableMessage], Future[Done]] {
   import MqttFlowStage._
 
-  private val in = Inlet[MqttMessage](s"MqttFlow.in")
-  private val out = Outlet[MqttCommittableMessage](s"MqttFlow.out")
+  private val in = Inlet[MqttMessage]("MqttFlow.in")
+  private val out = Outlet[MqttCommittableMessage]("MqttFlow.out")
   override val shape: Shape = FlowShape(in, out)
   override protected def initialAttributes: Attributes = Attributes.name("MqttFlow")
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val subscriptionPromise = Promise[Done]
-    val logic = new GraphStageLogic(shape) {
-      private val backpressure = new Semaphore(bufferSize)
+    val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
+      private val backpressurePahoClient = new Semaphore(bufferSize)
       private var pendingMsg = Option.empty[MqttMessage]
       private val queue = mutable.Queue[MqttCommittableMessage]()
       private val unackedMessages = new AtomicInteger()
 
-      private val onSubscribe = getAsyncCallback[Try[IMqttToken]] { conn =>
-        subscriptionPromise.complete(conn.map { _ =>
-          Done
-        })
+      private val onSubscribe: AsyncCallback[Try[IMqttToken]] = getAsyncCallback[Try[IMqttToken]] { conn =>
+        subscriptionPromise.complete(conn.map(_ => Done))
         pull(in)
       }
 
-      private val onConnect =
+      private val onConnect: AsyncCallback[IMqttAsyncClient] =
         getAsyncCallback[IMqttAsyncClient]((client: IMqttAsyncClient) => {
           if (manualAcks) client.setManualAcks(true)
-          val (topics, qoses) = subscriptions.unzip
-          if (topics.nonEmpty) {
+          if (subscriptions.nonEmpty) {
+            val (topics, qoses) = subscriptions.unzip
             client.subscribe(topics.toArray,
                              qoses.map(_.byteValue.toInt).toArray,
                              (),
@@ -79,29 +77,31 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
           }
         })
 
-      private val onConnectionLost = getAsyncCallback[Throwable](onFailure)
+      private val onConnectionLost: AsyncCallback[Throwable] = getAsyncCallback[Throwable](failStageWith)
 
-      private def onMessage(message: MqttCommittableMessage): Unit = {
-        backpressure.acquire()
-        onMessageAsyncCallback.invoke(message)
-      }
-
-      private val onMessageAsyncCallback = getAsyncCallback[MqttCommittableMessage] { message =>
-        if (isAvailable(out)) {
-          pushMessage(message)
-        } else if (queue.size + 1 > bufferSize) {
-          onFailure(new RuntimeException(s"Reached maximum buffer size $bufferSize"))
-        } else {
-          queue.enqueue(message)
+      private val onMessageAsyncCallback: AsyncCallback[MqttCommittableMessage] =
+        getAsyncCallback[MqttCommittableMessage] { message =>
+          if (isAvailable(out)) {
+            pushDownstream(message)
+          } else if (queue.size + 1 > bufferSize) {
+            failStageWith(new RuntimeException(s"Reached maximum buffer size $bufferSize"))
+          } else {
+            queue.enqueue(message)
+          }
         }
-      }
 
-      private val onPublished = getAsyncCallback[Try[IMqttToken]] {
+      private val onPublished: AsyncCallback[Try[IMqttToken]] = getAsyncCallback[Try[IMqttToken]] {
         case Success(_) => if (!hasBeenPulled(in)) pull(in)
-        case Failure(ex) => onFailure(ex)
+        case Failure(ex) => failStageWith(ex)
       }
 
-      private val commitCallback =
+      private val mqttClient = new MqttAsyncClient(
+        connectionSettings.broker,
+        connectionSettings.clientId,
+        connectionSettings.persistence
+      )
+
+      private val commitCallback: AsyncCallback[CommitCallbackArguments] =
         getAsyncCallback[CommitCallbackArguments](
           (args: CommitCallbackArguments) =>
             try {
@@ -114,22 +114,10 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
           }
         )
 
-      val mqttClient = new MqttAsyncClient(
-        connectionSettings.broker,
-        connectionSettings.clientId,
-        connectionSettings.persistence
-      )
-
-      private def publishMsg(msg: MqttMessage) = {
-        val pahoMsg = new PahoMqttMessage(msg.payload.toArray)
-        pahoMsg.setQos(msg.qos.getOrElse(defaultQoS).byteValue)
-        pahoMsg.setRetained(msg.retained)
-        mqttClient.publish(msg.topic, pahoMsg, msg, asActionListener(onPublished.invoke))
-      }
-
       mqttClient.setCallback(new MqttCallbackExtended {
-        override def messageArrived(topic: String, pahoMessage: PahoMqttMessage): Unit =
-          onMessage(new MqttCommittableMessage {
+        override def messageArrived(topic: String, pahoMessage: PahoMqttMessage): Unit = {
+          backpressurePahoClient.acquire()
+          val message = new MqttCommittableMessage {
             override val message = MqttMessage(topic, ByteString(pahoMessage.getPayload))
 
             override def commit(): Future[Done] = {
@@ -142,120 +130,89 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
               commitCallback.invoke(CommitCallbackArguments(pahoMessage.getId, qos, promise))
               promise.future
             }
-          })
+          }
+          onMessageAsyncCallback.invoke(message)
+        }
 
         override def deliveryComplete(token: IMqttDeliveryToken): Unit = ()
 
         override def connectionLost(cause: Throwable): Unit =
-          if (!connectOptions.isAutomaticReconnect) onConnectionLost.invoke(cause)
+          if (!connectionSettings.automaticReconnect) onConnectionLost.invoke(cause)
 
         override def connectComplete(reconnect: Boolean, serverURI: String): Unit = {
           pendingMsg.foreach { msg =>
-            publishMsg(msg)
+            publishToMqtt(msg)
             pendingMsg = None
           }
           if (reconnect && !hasBeenPulled(in)) pull(in)
         }
       })
 
-      val connectOptions: MqttConnectOptions = {
-        val options = new MqttConnectOptions
-        connectionSettings.auth.foreach {
-          case (user, password) =>
-            options.setUserName(user)
-            options.setPassword(password.toCharArray)
+      // InHandler
+      override def onPush(): Unit = {
+        val msg = grab(in)
+        try {
+          publishToMqtt(msg)
+        } catch {
+          case _: MqttException if connectionSettings.automaticReconnect => pendingMsg = Some(msg)
+          case NonFatal(e) => throw e
         }
-        connectionSettings.socketFactory.foreach { socketFactory =>
-          options.setSocketFactory(socketFactory)
-        }
-        connectionSettings.will.foreach { will =>
-          options.setWill(
-            will.topic,
-            will.payload.toArray,
-            will.qos.getOrElse(MqttQoS.atLeastOnce).byteValue.toInt,
-            will.retained
-          )
-        }
-        options.setCleanSession(connectionSettings.cleanSession)
-        options.setAutomaticReconnect(connectionSettings.automaticReconnect)
-        options.setKeepAliveInterval(connectionSettings.keepAliveInterval.toSeconds.toInt)
-        options.setConnectionTimeout(connectionSettings.connectionTimeout.toSeconds.toInt)
-        options.setMaxInflight(connectionSettings.maxInFlight)
-        options.setMqttVersion(connectionSettings.mqttVersion)
-        if (connectionSettings.serverUris.nonEmpty) {
-          options.setServerURIs(connectionSettings.serverUris.toArray)
-        }
-        connectionSettings.sslHostnameVerifier.foreach { sslHostnameVerifier =>
-          options.setSSLHostnameVerifier(sslHostnameVerifier)
-        }
-        if (connectionSettings.sslProperties.nonEmpty) {
-          val properties = new Properties()
-          connectionSettings.sslProperties foreach { case (key, value) => properties.setProperty(key, value) }
-          options.setSSLProperties(properties)
-        }
-        options
       }
 
-      setHandler(
-        in,
-        new InHandler {
-          override def onPush(): Unit = {
-            val msg = grab(in)
-            try {
-              publishMsg(msg)
-            } catch {
-              case _: MqttException if connectOptions.isAutomaticReconnect => pendingMsg = Some(msg)
-              case NonFatal(e) => throw e
-            }
-          }
+      override def onUpstreamFinish(): Unit = {
+        setKeepGoing(true)
+        if (queue.isEmpty && unackedMessages.get() == 0) super.onUpstreamFinish()
+      }
 
-          override def onUpstreamFinish(): Unit = {
-            setKeepGoing(true)
-            if (queue.isEmpty && unackedMessages.get() == 0) super.onUpstreamFinish()
-          }
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        setKeepGoing(true)
+        if (queue.isEmpty && unackedMessages.get() == 0) super.onUpstreamFailure(ex)
+      }
 
-          override def onUpstreamFailure(ex: Throwable): Unit = {
-            setKeepGoing(true)
-            if (queue.isEmpty && unackedMessages.get() == 0) super.onUpstreamFailure(ex)
-          }
+      // OutHandler
+      override def onPull(): Unit =
+        if (queue.nonEmpty) {
+          pushDownstream(queue.dequeue())
+          if (unackedMessages.get() == 0 && isClosed(in)) completeStage()
         }
-      )
 
-      setHandler(
-        out,
-        new OutHandler {
-          override def onPull(): Unit =
-            if (queue.nonEmpty) {
-              pushMessage(queue.dequeue())
-              if (unackedMessages.get() == 0 && isClosed(in)) completeStage()
-            }
+      override def onDownstreamFinish(): Unit = {
+        setKeepGoing(true)
+        if (unackedMessages.get() == 0) super.onDownstreamFinish()
+      }
 
-          override def onDownstreamFinish(): Unit = {
-            setKeepGoing(true)
-            if (unackedMessages.get() == 0) super.onDownstreamFinish()
-          }
-        }
-      )
+      setHandlers(in, out, this)
 
-      private def pushMessage(message: MqttCommittableMessage): Unit = {
+      private def publishToMqtt(msg: MqttMessage): Unit = {
+        val pahoMsg = new PahoMqttMessage(msg.payload.toArray)
+        pahoMsg.setQos(msg.qos.getOrElse(defaultQoS).byteValue)
+        pahoMsg.setRetained(msg.retained)
+        mqttClient.publish(msg.topic, pahoMsg, msg, asActionListener(onPublished.invoke))
+      }
+
+      private def pushDownstream(message: MqttCommittableMessage): Unit = {
         push(out, message)
-        backpressure.release()
+        backpressurePahoClient.release()
         if (manualAcks) unackedMessages.incrementAndGet()
       }
 
-      private def onFailure(ex: Throwable): Unit = {
+      private def failStageWith(ex: Throwable): Unit = {
         subscriptionPromise.tryFailure(ex)
         failStage(ex)
       }
 
       override def preStart(): Unit =
         try {
-          mqttClient.connect(connectOptions, (), asActionListener {
-            case Success(v) => onConnect.invoke(v.getClient)
-            case Failure(ex) => onConnectionLost.invoke(ex)
-          })
+          mqttClient.connect(
+            asConnectOptions(connectionSettings),
+            (),
+            new IMqttActionListener {
+              override def onSuccess(v: IMqttToken): Unit = onConnect.invoke(v.getClient)
+              override def onFailure(asyncActionToken: IMqttToken, ex: Throwable): Unit = onConnectionLost.invoke(ex)
+            }
+          )
         } catch {
-          case e: Throwable => onFailure(e)
+          case e: Throwable => failStageWith(e)
         }
 
       override def postStop(): Unit = {
@@ -303,6 +260,40 @@ object MqttFlowStage {
   private val SuccessfullyDone = Success(Done)
 
   final private case class CommitCallbackArguments(messageId: Int, qos: MqttQoS, promise: Promise[Done])
+
+  def asConnectOptions(connectionSettings: MqttConnectionSettings): MqttConnectOptions = {
+    val options = new MqttConnectOptions
+    connectionSettings.auth.foreach {
+      case (user, password) =>
+        options.setUserName(user)
+        options.setPassword(password.toCharArray)
+    }
+    connectionSettings.socketFactory.foreach(options.setSocketFactory)
+    connectionSettings.will.foreach { will =>
+      options.setWill(
+        will.topic,
+        will.payload.toArray,
+        will.qos.getOrElse(MqttQoS.atLeastOnce).byteValue.toInt,
+        will.retained
+      )
+    }
+    options.setCleanSession(connectionSettings.cleanSession)
+    options.setAutomaticReconnect(connectionSettings.automaticReconnect)
+    options.setKeepAliveInterval(connectionSettings.keepAliveInterval.toSeconds.toInt)
+    options.setConnectionTimeout(connectionSettings.connectionTimeout.toSeconds.toInt)
+    options.setMaxInflight(connectionSettings.maxInFlight)
+    options.setMqttVersion(connectionSettings.mqttVersion)
+    if (connectionSettings.serverUris.nonEmpty) {
+      options.setServerURIs(connectionSettings.serverUris.toArray)
+    }
+    connectionSettings.sslHostnameVerifier.foreach(options.setSSLHostnameVerifier)
+    if (connectionSettings.sslProperties.nonEmpty) {
+      val properties = new Properties()
+      connectionSettings.sslProperties.foreach { case (key, value) => properties.setProperty(key, value) }
+      options.setSSLProperties(properties)
+    }
+    options
+  }
 
   def asActionListener(func: Try[IMqttToken] => Unit): IMqttActionListener = new IMqttActionListener {
     def onSuccess(token: IMqttToken): Unit = func(Success(token))
