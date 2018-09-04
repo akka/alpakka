@@ -45,7 +45,7 @@ class MqttFlowSpec
   "mqtt flow" should {
     "establish a bidirectional connection and subscribe to a topic" in {
       //#create-flow
-      val mqttFlow = MqttFlow(settings, 8, MqttQoS.atLeastOnce)
+      val mqttFlow = MqttFlow.atMostOnce(settings, 8, MqttQoS.atLeastOnce)
       //#create-flow
 
       val source = Source.maybe[MqttMessage]

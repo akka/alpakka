@@ -11,11 +11,23 @@ import scala.concurrent.Future
 
 /**
  * Scala API
- * Message and handle to commit message arrival to MQTT.
+ *
+ * MQTT Message and a handle to commit message reception to MQTT.
  */
 trait MqttCommittableMessage {
+
+  /**
+   * The message received from MQTT.
+   */
   val message: MqttMessage
+
   @deprecated("use commit instead", "0.21")
   def messageArrivedComplete(): Future[Done] = commit()
+
+  /**
+   * Signals `messageArrivedComplete` to MQTT.
+   *
+   * @return a future indicating, if the commit reached MQTT
+   */
   def commit(): Future[Done]
 }

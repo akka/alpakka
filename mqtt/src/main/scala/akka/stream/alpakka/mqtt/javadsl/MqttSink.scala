@@ -8,15 +8,20 @@ import java.util.concurrent.CompletionStage
 
 import akka.Done
 import akka.stream.alpakka.mqtt.{MqttConnectionSettings, MqttMessage, MqttQoS, MqttSourceSettings}
+import akka.stream.javadsl.Sink
 
+/**
+ * Java API
+ *
+ * MQTT sink factory.
+ */
 object MqttSink {
 
   /**
-   * Java API: create an [[MqttSink]] for a provided QoS.
+   * Create a sink sending messages to MQTT.
    */
-  def create(connectionSettings: MqttConnectionSettings,
-             qos: MqttQoS): akka.stream.javadsl.Sink[MqttMessage, CompletionStage[Done]] =
+  def create(connectionSettings: MqttConnectionSettings, qos: MqttQoS): Sink[MqttMessage, CompletionStage[Done]] =
     MqttFlow
-      .create(MqttSourceSettings(connectionSettings), 0, qos)
-      .to(akka.stream.scaladsl.Sink.ignore)
+      .atMostOnce(MqttSourceSettings(connectionSettings), bufferSize = 0, qos)
+      .to(Sink.ignore[MqttMessage])
 }
