@@ -381,12 +381,12 @@ public class SolrTest {
         SolrSource.fromTupleStream(stream2)
             .map(
                 t -> {
-                  List<IncomingMessage<NotUsed, NotUsed>> list = new ArrayList<>();
+                  List<IncomingMessage<SolrInputDocument, NotUsed>> list = new ArrayList<>();
                   list.add(IncomingDeleteMessage.create(tupleToBook.apply(t).title));
                   return list;
                 })
             .runWith(
-                SolrSink.deletes("collection7", settings, cluster.getSolrClient()), materializer);
+                SolrSink.documents("collection7", settings, cluster.getSolrClient()), materializer);
 
     res2.toCompletableFuture().get();
 
@@ -436,14 +436,14 @@ public class SolrTest {
                 t -> {
                   Map<String, Object> m = new HashMap<>();
                   m.put("set", (t.fields.get("comment") + " It's is a good book!!!"));
-                  List<IncomingMessage<NotUsed, NotUsed>> list = new ArrayList<>();
+                  List<IncomingMessage<SolrInputDocument, NotUsed>> list = new ArrayList<>();
                   list.add(
                       IncomingAtomicUpdateMessage.create(
                           "title", t.fields.get("title").toString(), "comment", m));
                   return list;
                 })
             .runWith(
-                SolrSink.updates("collection8", settings, cluster.getSolrClient()), materializer);
+                SolrSink.documents("collection8", settings, cluster.getSolrClient()), materializer);
 
     res2.toCompletableFuture().get();
 

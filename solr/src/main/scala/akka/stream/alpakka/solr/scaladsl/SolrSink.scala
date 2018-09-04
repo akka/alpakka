@@ -47,23 +47,4 @@ object SolrSink {
       .typed[T](collection, settings, binder)
       .toMat(Sink.ignore)(Keep.right)
 
-  /**
-   * Scala API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing ids to delete.
-   */
-  def deletes[T](collection: String, settings: SolrUpdateSettings)(
-      implicit client: SolrClient
-  ): Sink[Seq[IncomingMessage[NotUsed, NotUsed]], Future[Done]] =
-    SolrFlow
-      .deletes(collection, settings)
-      .toMat(Sink.ignore)(Keep.right)
-
-  /**
-   * Scala API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing ids to update.
-   */
-  def updates[T](collection: String, settings: SolrUpdateSettings)(
-      implicit client: SolrClient
-  ): Sink[Seq[IncomingMessage[NotUsed, NotUsed]], Future[Done]] =
-    SolrFlow
-      .updates(collection, settings)
-      .toMat(Sink.ignore)(Keep.right)
 }

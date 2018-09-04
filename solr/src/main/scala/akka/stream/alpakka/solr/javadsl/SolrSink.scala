@@ -13,7 +13,6 @@ import akka.stream.javadsl.Sink
 import akka.{Done, NotUsed}
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.common.SolrInputDocument
-
 import java.util.{List => JavaList}
 
 object SolrSink {
@@ -59,31 +58,5 @@ object SolrSink {
     SolrFlow
       .typed[T](collection, settings, binder, client, clazz)
       .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[T, NotUsed]]],
-             javadsl.Keep.right[NotUsed, CompletionStage[Done]])
-
-  /**
-   * Java API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing [[SolrInputDocument]].
-   */
-  def deletes(
-      collection: String,
-      settings: SolrUpdateSettings,
-      client: SolrClient
-  ): javadsl.Sink[JavaList[IncomingMessage[NotUsed, NotUsed]], CompletionStage[Done]] =
-    SolrFlow
-      .deletes(collection, settings, client)
-      .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[NotUsed, NotUsed]]],
-             javadsl.Keep.right[NotUsed, CompletionStage[Done]])
-
-  /**
-   * Java API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing [[SolrInputDocument]].
-   */
-  def updates(
-      collection: String,
-      settings: SolrUpdateSettings,
-      client: SolrClient
-  ): javadsl.Sink[JavaList[IncomingMessage[NotUsed, NotUsed]], CompletionStage[Done]] =
-    SolrFlow
-      .updates(collection, settings, client)
-      .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[NotUsed, NotUsed]]],
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 }

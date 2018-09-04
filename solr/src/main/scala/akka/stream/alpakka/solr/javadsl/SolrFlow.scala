@@ -82,46 +82,6 @@ object SolrFlow {
       .asJava
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for document to delete
-   * from [[IncomingMessage]] to sequences of [[IncomingMessageResult]].
-   */
-  def deletes(
-      collection: String,
-      settings: SolrUpdateSettings,
-      client: SolrClient
-  ): javadsl.Flow[JavaList[IncomingMessage[NotUsed, NotUsed]], JavaList[IncomingMessageResult[NotUsed, NotUsed]], NotUsed] =
-    Flow
-      .fromFunction[JavaList[IncomingMessage[NotUsed, NotUsed]], Seq[IncomingMessage[NotUsed, NotUsed]]](
-        _.asScala.toSeq
-      )
-      .via(
-        ScalaSolrFlow
-          .deletes(collection, settings)(client)
-      )
-      .map(_.asJava)
-      .asJava
-
-  /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for document to atomically update
-   * from [[IncomingMessage]] to sequences of [[IncomingMessageResult]].
-   */
-  def updates(
-      collection: String,
-      settings: SolrUpdateSettings,
-      client: SolrClient
-  ): javadsl.Flow[JavaList[IncomingMessage[NotUsed, NotUsed]], JavaList[IncomingMessageResult[NotUsed, NotUsed]], NotUsed] =
-    Flow
-      .fromFunction[JavaList[IncomingMessage[NotUsed, NotUsed]], Seq[IncomingMessage[NotUsed, NotUsed]]](
-        _.asScala.toSeq
-      )
-      .via(
-        ScalaSolrFlow
-          .updates(collection, settings)(client)
-      )
-      .map(_.asJava)
-      .asJava
-
-  /**
    * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for [[SolrInputDocument]] from [[IncomingMessage]]
    * to lists of [[IncomingMessageResult]] with `passThrough` of type `C`.
    */
@@ -182,39 +142,4 @@ object SolrFlow {
       .map(_.asJava)
       .asJava
 
-  /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for document to delete
-   * from [[IncomingMessage]] to sequences of [[IncomingMessageResult]] with `passThrough` of type `C`.
-   */
-  def deleteWithPassThrough[C](
-      collection: String,
-      settings: SolrUpdateSettings,
-      client: SolrClient
-  ): javadsl.Flow[JavaList[IncomingMessage[NotUsed, C]], JavaList[IncomingMessageResult[NotUsed, C]], NotUsed] =
-    Flow
-      .fromFunction[JavaList[IncomingMessage[NotUsed, C]], Seq[IncomingMessage[NotUsed, C]]](_.asScala.toSeq)
-      .via(
-        ScalaSolrFlow
-          .deletesWithPassThrough[C](collection, settings)(client)
-      )
-      .map(_.asJava)
-      .asJava
-
-  /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for document to atomically update
-   * from [[IncomingMessage]] to sequences of [[IncomingMessageResult]] with `passThrough` of type `C`.
-   */
-  def updateWithPassThrough[C](
-      collection: String,
-      settings: SolrUpdateSettings,
-      client: SolrClient
-  ): javadsl.Flow[JavaList[IncomingMessage[NotUsed, C]], JavaList[IncomingMessageResult[NotUsed, C]], NotUsed] =
-    Flow
-      .fromFunction[JavaList[IncomingMessage[NotUsed, C]], Seq[IncomingMessage[NotUsed, C]]](_.asScala.toSeq)
-      .via(
-        ScalaSolrFlow
-          .updatesWithPassThrough[C](collection, settings)(client)
-      )
-      .map(_.asJava)
-      .asJava
 }

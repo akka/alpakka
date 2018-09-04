@@ -7,7 +7,6 @@ package akka.stream.alpakka.solr
 import java.net.{ConnectException, SocketException}
 
 import akka.NotUsed
-
 import akka.stream.alpakka.solr.SolrFlowStage.{Finished, Idle, Sending}
 import akka.stream.stage._
 import akka.stream._
@@ -25,51 +24,51 @@ private object IncomingMessage {
   def apply[T](source: T): IncomingMessage[T, NotUsed] =
     IncomingMessage(Update, None, None, Option(source), Map.empty, NotUsed)
 
-  def apply(id: String): IncomingMessage[NotUsed, NotUsed] =
+  def apply[T](id: String): IncomingMessage[T, NotUsed] =
     IncomingMessage(Delete, None, Option(id), None, Map.empty, NotUsed)
 
-  def apply(idField: String, id: String, field: String, updates: Map[String, Any]): IncomingMessage[NotUsed, NotUsed] =
+  def apply[T](idField: String, id: String, field: String, updates: Map[String, Any]): IncomingMessage[T, NotUsed] =
     IncomingMessage(AtomicUpdate, Option(idField), Option(id), None, Map(field -> updates), NotUsed)
 
   // Apply methods to use with passThrough
   def apply[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
     IncomingMessage(Update, None, None, Option(source), Map.empty, passThrough)
 
-  def apply[C](id: String, passThrough: C): IncomingMessage[NotUsed, C] =
+  def apply[T, C](id: String, passThrough: C): IncomingMessage[T, C] =
     IncomingMessage(Delete, None, Option(id), None, Map.empty, passThrough)
 
-  def apply[C](idField: String,
-               id: String,
-               field: String,
-               updates: Map[String, Any],
-               passThrough: C): IncomingMessage[NotUsed, C] =
+  def apply[T, C](idField: String,
+                  id: String,
+                  field: String,
+                  updates: Map[String, Any],
+                  passThrough: C): IncomingMessage[T, C] =
     IncomingMessage(AtomicUpdate, Option(idField), Option(id), None, Map(field -> updates), passThrough)
 
   // Java-api - without passThrough
   def create[T](source: T): IncomingMessage[T, NotUsed] =
     IncomingMessage(source)
 
-  def create(id: String): IncomingMessage[NotUsed, NotUsed] =
+  def create[T](id: String): IncomingMessage[T, NotUsed] =
     IncomingMessage(id)
 
-  def create(idField: String,
-             id: String,
-             field: String,
-             updates: java.util.Map[String, Object]): IncomingMessage[NotUsed, NotUsed] =
+  def create[T](idField: String,
+                id: String,
+                field: String,
+                updates: java.util.Map[String, Object]): IncomingMessage[T, NotUsed] =
     IncomingMessage(idField, id, field, updates.asScala.toMap)
 
   // Java-api - with passThrough
   def create[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
     IncomingMessage(source, passThrough)
 
-  def create[C](id: String, passThrough: C): IncomingMessage[NotUsed, C] =
+  def create[T, C](id: String, passThrough: C): IncomingMessage[T, C] =
     IncomingMessage(id, passThrough)
 
-  def create[C](idField: String,
-                id: String,
-                field: String,
-                updates: java.util.Map[String, Object],
-                passThrough: C): IncomingMessage[NotUsed, C] =
+  def create[T, C](idField: String,
+                   id: String,
+                   field: String,
+                   updates: java.util.Map[String, Object],
+                   passThrough: C): IncomingMessage[T, C] =
     IncomingMessage(idField, id, field, updates.asScala.toMap, passThrough)
 
 }
@@ -94,44 +93,44 @@ object IncomingUpdateMessage {
 
 object IncomingDeleteMessage {
   // Apply method to use when not using passThrough
-  def apply(id: String): IncomingMessage[NotUsed, NotUsed] =
+  def apply[T](id: String): IncomingMessage[T, NotUsed] =
     IncomingMessage(id)
 
-  def apply[C](id: String, passThrough: C): IncomingMessage[NotUsed, C] =
+  def apply[T, C](id: String, passThrough: C): IncomingMessage[T, C] =
     IncomingMessage(id, passThrough)
 
   // Java-api - without passThrough
-  def create(id: String): IncomingMessage[NotUsed, NotUsed] =
+  def create[T](id: String): IncomingMessage[T, NotUsed] =
     IncomingDeleteMessage(id)
 
-  def create[C](id: String, passThrough: C): IncomingMessage[NotUsed, C] =
+  def create[T, C](id: String, passThrough: C): IncomingMessage[T, C] =
     IncomingDeleteMessage(id, passThrough)
 }
 
 object IncomingAtomicUpdateMessage {
   // Apply method to use when not using passThrough
-  def apply(idField: String, id: String, field: String, updates: Map[String, Any]): IncomingMessage[NotUsed, NotUsed] =
+  def apply[T](idField: String, id: String, field: String, updates: Map[String, Any]): IncomingMessage[T, NotUsed] =
     IncomingMessage(idField, id, field, updates)
 
-  def apply[C](idField: String,
-               id: String,
-               field: String,
-               updates: Map[String, Any],
-               passThrough: C): IncomingMessage[NotUsed, C] =
+  def apply[T, C](idField: String,
+                  id: String,
+                  field: String,
+                  updates: Map[String, Any],
+                  passThrough: C): IncomingMessage[T, C] =
     IncomingMessage(idField, id, field, updates, passThrough)
 
   // Java-api - without passThrough
-  def create(idField: String,
-             id: String,
-             field: String,
-             updates: java.util.Map[String, Object]): IncomingMessage[NotUsed, NotUsed] =
-    IncomingAtomicUpdateMessage(idField, id, field, updates.asScala.toMap)
-
-  def create[C](idField: String,
+  def create[T](idField: String,
                 id: String,
                 field: String,
-                updates: java.util.Map[String, Object],
-                passThrough: C): IncomingMessage[NotUsed, C] =
+                updates: java.util.Map[String, Object]): IncomingMessage[T, NotUsed] =
+    IncomingAtomicUpdateMessage(idField, id, field, updates.asScala.toMap)
+
+  def create[T, C](idField: String,
+                   id: String,
+                   field: String,
+                   updates: java.util.Map[String, Object],
+                   passThrough: C): IncomingMessage[T, C] =
     IncomingAtomicUpdateMessage(idField, id, field, updates.asScala.toMap, passThrough)
 }
 
@@ -266,7 +265,16 @@ private[solr] final class SolrFlowLogic[T, C](
     completeStage()
 
   private def updateBulkToSolr(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
-    val docs = messages.map(message => messageBinder.get(message.sourceOpt.get))
+    val binder = messageBinder.get
+    val docs = messages
+      .map(
+        message =>
+          message.sourceOpt.map { source: T =>
+            binder(source)
+        }
+      )
+      .flatten
+    if (log.isDebugEnabled) log.debug(s"Upsert $docs")
     client.add(collection, docs.asJava, settings.commitWithin)
   }
 
@@ -282,6 +290,7 @@ private[solr] final class SolrFlowLogic[T, C](
       }
       doc
     }
+    if (log.isDebugEnabled) log.debug(s"Update atomically $docs")
     client.add(collection, docs.asJava, settings.commitWithin)
   }
 
@@ -326,6 +335,7 @@ private[solr] final class SolrFlowLogic[T, C](
       handleResponse((messages, response.getStatus))
     } catch {
       case exception: Throwable =>
+        log.error(exception, s"Unable to treat messages $messages")
         exception match {
           case NonFatal(exc) =>
             val rootCause = SolrException.getRootCause(exc)
