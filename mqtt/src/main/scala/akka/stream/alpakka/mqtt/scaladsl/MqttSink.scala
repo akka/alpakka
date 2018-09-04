@@ -26,7 +26,7 @@ object MqttSink {
    */
   def apply(connectionSettings: MqttConnectionSettings, defaultQos: MqttQoS): Sink[MqttMessage, Future[Done]] =
     MqttFlow
-      .atMostOnce(MqttSourceSettings(connectionSettings, Map.empty), 0, defaultQos)
+      .atMostOnce(connectionSettings, MqttSubscriptions.empty, 0, defaultQos)
       .toMat(Sink.ignore)(Keep.right)
 
 }

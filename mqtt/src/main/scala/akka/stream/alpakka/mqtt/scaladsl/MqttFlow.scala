@@ -29,7 +29,10 @@ object MqttFlow {
   def apply(sourceSettings: MqttSourceSettings,
             bufferSize: Int,
             defaultQos: MqttQoS): Flow[MqttMessage, MqttMessage, Future[Done]] =
-    atMostOnce(sourceSettings, bufferSize, defaultQos)
+    atMostOnce(sourceSettings.connectionSettings,
+               MqttSubscriptions(sourceSettings.subscriptions),
+               bufferSize,
+               defaultQos)
 
   /**
    * Create a flow to send messages to MQTT AND subscribe to MQTT messages (without a commit handle).
@@ -38,6 +41,7 @@ object MqttFlow {
    *
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
+  @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
   def atMostOnce(sourceSettings: MqttSourceSettings,
                  bufferSize: Int,
                  defaultQos: MqttQoS): Flow[MqttMessage, MqttMessage, Future[Done]] =
@@ -48,12 +52,30 @@ object MqttFlow {
       .map(_.message)
 
   /**
+   * Create a flow to send messages to MQTT AND subscribe to MQTT messages (without a commit handle).
+   *
+   * The materialized value completes on successful connection to the MQTT broker.
+   *
+   * @param defaultQos Quality of service level applied for messages not specifying a message specific value
+   */
+  def atMostOnce(connectionSettings: MqttConnectionSettings,
+                 subscriptions: MqttSubscriptions,
+                 bufferSize: Int,
+                 defaultQos: MqttQoS): Flow[MqttMessage, MqttMessage, Future[Done]] =
+    Flow
+      .fromGraph(
+        new MqttFlowStage(connectionSettings, subscriptions.subscriptions, bufferSize, defaultQos)
+      )
+      .map(_.message)
+
+  /**
    * Create a flow to send messages to MQTT AND subscribe to MQTT messages with a commit handle to acknowledge message reception.
    *
    * The materialized value completes on successful connection to the MQTT broker.
    *
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
+  @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
   def atLeastOnce(sourceSettings: MqttSourceSettings,
                   bufferSize: Int,
                   defaultQos: MqttQoS): Flow[MqttMessage, MqttCommittableMessage, Future[Done]] =
@@ -63,5 +85,20 @@ object MqttFlow {
                         bufferSize,
                         defaultQos,
                         manualAcks = true)
+    )
+
+  /**
+   * Create a flow to send messages to MQTT AND subscribe to MQTT messages with a commit handle to acknowledge message reception.
+   *
+   * The materialized value completes on successful connection to the MQTT broker.
+   *
+   * @param defaultQos Quality of service level applied for messages not specifying a message specific value
+   */
+  def atLeastOnce(connectionSettings: MqttConnectionSettings,
+                  subscriptions: MqttSubscriptions,
+                  bufferSize: Int,
+                  defaultQos: MqttQoS): Flow[MqttMessage, MqttCommittableMessage, Future[Done]] =
+    Flow.fromGraph(
+      new MqttFlowStage(connectionSettings, subscriptions.subscriptions, bufferSize, defaultQos, manualAcks = true)
     )
 }

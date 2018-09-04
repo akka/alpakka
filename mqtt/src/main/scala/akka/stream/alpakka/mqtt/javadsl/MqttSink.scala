@@ -7,7 +7,7 @@ package akka.stream.alpakka.mqtt.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.Done
-import akka.stream.alpakka.mqtt.{MqttConnectionSettings, MqttMessage, MqttQoS, MqttSourceSettings}
+import akka.stream.alpakka.mqtt._
 import akka.stream.javadsl.{Keep, Sink}
 
 /**
@@ -27,6 +27,6 @@ object MqttSink {
   def create(connectionSettings: MqttConnectionSettings,
              defaultQos: MqttQoS): Sink[MqttMessage, CompletionStage[Done]] =
     MqttFlow
-      .atMostOnce(MqttSourceSettings(connectionSettings), bufferSize = 0, defaultQos)
+      .atMostOnce(connectionSettings, MqttSubscriptions.empty, bufferSize = 0, defaultQos)
       .toMat(Sink.ignore[MqttMessage], Keep.right[CompletionStage[Done], CompletionStage[Done]])
 }
