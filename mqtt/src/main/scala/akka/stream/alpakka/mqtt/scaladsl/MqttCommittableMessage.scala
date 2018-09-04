@@ -9,7 +9,13 @@ import akka.stream.alpakka.mqtt.MqttMessage
 
 import scala.concurrent.Future
 
+/**
+ * Scala API
+ * Message and handle to commit message arrival to MQTT.
+ */
 trait MqttCommittableMessage {
   val message: MqttMessage
-  def messageArrivedComplete(): Future[Done]
+  @deprecated("use commit instead", "0.21")
+  def messageArrivedComplete(): Future[Done] = commit()
+  def commit(): Future[Done]
 }

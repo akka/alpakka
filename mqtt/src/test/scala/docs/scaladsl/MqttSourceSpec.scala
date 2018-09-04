@@ -102,7 +102,7 @@ class MqttSourceSpec
 
       //#run-source-with-manualacks
       val result = mqttSource
-        .mapAsync(1)(cm => cm.messageArrivedComplete().map(_ => cm.message))
+        .mapAsync(1)(cm => cm.commit().map(_ => cm.message))
         .take(input.size)
         .runWith(Sink.seq)
       //#run-source-with-manualacks
@@ -126,7 +126,7 @@ class MqttSourceSpec
       Source(input).map(item => MqttMessage(topic, ByteString(item))).runWith(mqttSink).futureValue shouldBe Done
 
       unackedResult.futureValue.map(cm => {
-        noException should be thrownBy cm.messageArrivedComplete().futureValue
+        noException should be thrownBy cm.commit().futureValue
       })
     }
 

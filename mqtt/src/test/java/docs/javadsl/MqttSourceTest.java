@@ -115,7 +115,7 @@ public class MqttSourceTest {
     // #run-source-with-manualacks
     final CompletionStage<List<MqttMessage>> result =
         mqttSource
-            .mapAsync(1, cm -> cm.messageArrivedComplete().thenApply(unused2 -> cm.message()))
+            .mapAsync(1, cm -> cm.commit().thenApply(unused2 -> cm.message()))
             .take(input.size())
             .runWith(Sink.seq(), materializer);
     // #run-source-with-manualacks
@@ -172,7 +172,7 @@ public class MqttSourceTest {
         .forEach(
             m -> {
               try {
-                m.messageArrivedComplete().toCompletableFuture().get(3, TimeUnit.SECONDS);
+                m.commit().toCompletableFuture().get(3, TimeUnit.SECONDS);
               } catch (Exception e) {
                 assertEquals("Error acking message manually", false, true);
               }

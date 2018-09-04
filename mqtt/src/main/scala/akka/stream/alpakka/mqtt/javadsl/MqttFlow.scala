@@ -37,7 +37,7 @@ object MqttFlow {
     import scala.compat.java8.FutureConverters._
     akka.stream.alpakka.mqtt.scaladsl.MqttFlow
       .atLeastOnce(settings, bufferSize, qos)
-      .map(cm => cm.asJava)
+      .map(MqttCommittableMessage.toJava)
       .mapMaterializedValue(_.toJava)
       .asJava
   }
