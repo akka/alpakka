@@ -32,21 +32,6 @@ import scala.concurrent.{Future, Promise}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
-import scala.language.implicitConversions
-
-/**
- * INTERNAL API
- */
-@InternalApi
-private[mqtt] object MqttConnectorLogic {
-
-  implicit def funcToMqttActionListener(func: Try[IMqttToken] => Unit): IMqttActionListener = new IMqttActionListener {
-    def onSuccess(token: IMqttToken) = func(Success(token))
-    def onFailure(token: IMqttToken, ex: Throwable) = func(Failure(ex))
-  }
-
-}
-
 /**
  * INTERNAL API
  */
@@ -56,7 +41,7 @@ private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
                                         qos: MqttQoS,
                                         manualAcks: Boolean = false)
     extends GraphStageWithMaterializedValue[FlowShape[MqttMessage, MqttCommittableMessage], Future[Done]] {
-  import MqttConnectorLogic._
+  import MqttFlowStage._
 
   private val in = Inlet[MqttMessage](s"MqttFlow.in")
   private val out = Outlet[MqttCommittableMessage](s"MqttFlow.out")
@@ -83,7 +68,10 @@ private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
           if (manualAcks) client.setManualAcks(true)
           val (topics, qoses) = sourceSettings.subscriptions.unzip
           if (topics.nonEmpty) {
-            client.subscribe(topics.toArray, qoses.map(_.byteValue.toInt).toArray, (), onSubscribe.invoke _)
+            client.subscribe(topics.toArray,
+                             qoses.map(_.byteValue.toInt).toArray,
+                             (),
+                             asActionListener(onSubscribe.invoke))
           } else {
             subscriptionPromise.complete(Success(Done))
             pull(in)
@@ -136,7 +124,7 @@ private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
         val pahoMsg = new PahoMqttMessage(msg.payload.toArray)
         pahoMsg.setQos(msg.qos.getOrElse(qos).byteValue)
         pahoMsg.setRetained(msg.retained)
-        mqttClient.publish(msg.topic, pahoMsg, msg, onPublished.invoke _)
+        mqttClient.publish(msg.topic, pahoMsg, msg, asActionListener(onPublished.invoke))
       }
 
       mqttClient.setCallback(new MqttCallbackExtended {
@@ -144,12 +132,12 @@ private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
           onMessage(new MqttCommittableMessage {
             override val message = MqttMessage(topic, ByteString(pahoMessage.getPayload))
 
-            override def messageArrivedComplete(): Future[Done] = {
+            override def commit(): Future[Done] = {
               val promise = Promise[Done]()
               val qos = pahoMessage.getQos match {
-                case 0 => MqttQoS.atMostOnce
-                case 1 => MqttQoS.atLeastOnce
-                case 2 => MqttQoS.exactlyOnce
+                case 0 => MqttQoS.AtMostOnce
+                case 1 => MqttQoS.AtLeastOnce
+                case 2 => MqttQoS.ExactlyOnce
               }
               commitCallback.invoke(CommitCallbackArguments(pahoMessage.getId, qos, promise))
               promise.future
@@ -262,15 +250,10 @@ private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
 
       override def preStart(): Unit =
         try {
-          mqttClient.connect(
-            connectOptions,
-            (),
-            (token: Try[IMqttToken]) =>
-              token match {
-                case Success(v) => onConnect.invoke(v.getClient)
-                case Failure(ex) => onConnectionLost.invoke(ex)
-            }
-          )
+          mqttClient.connect(connectOptions, (), asActionListener {
+            case Success(v) => onConnect.invoke(v.getClient)
+            case Failure(ex) => onConnectionLost.invoke(ex)
+          })
         } catch {
           case e: Throwable => onFailure(e)
         }
@@ -309,5 +292,18 @@ private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
       }
     }
     (logic, subscriptionPromise.future)
+  }
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+object MqttFlowStage {
+  final private case class CommitCallbackArguments(messageId: Int, qos: MqttQoS, promise: Promise[Done])
+
+  def asActionListener(func: Try[IMqttToken] => Unit): IMqttActionListener = new IMqttActionListener {
+    def onSuccess(token: IMqttToken): Unit = func(Success(token))
+    def onFailure(token: IMqttToken, ex: Throwable): Unit = func(Failure(ex))
   }
 }

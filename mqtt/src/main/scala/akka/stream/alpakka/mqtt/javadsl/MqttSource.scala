@@ -26,7 +26,7 @@ object MqttSource {
     import scala.compat.java8.FutureConverters._
     scaladsl.MqttSource
       .atLeastOnce(settings, bufferSize)
-      .map(cm => cm.asJava)
+      .map(MqttCommittableMessage.toJava)
       .mapMaterializedValue(_.toJava)
       .asJava
   }
