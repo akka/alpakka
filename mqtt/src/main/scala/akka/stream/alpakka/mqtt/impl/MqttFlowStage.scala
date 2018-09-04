@@ -67,10 +67,7 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
           if (manualAcks) client.setManualAcks(true)
           if (subscriptions.nonEmpty) {
             val (topics, qoses) = subscriptions.unzip
-            client.subscribe(topics.toArray,
-                             qoses.map(_.byteValue.toInt).toArray,
-                             (),
-                             asActionListener(onSubscribe.invoke))
+            client.subscribe(topics.toArray, qoses.map(_.value).toArray, (), asActionListener(onSubscribe.invoke))
           } else {
             subscriptionPromise.complete(SuccessfullyDone)
             pull(in)
@@ -105,7 +102,7 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
         getAsyncCallback[CommitCallbackArguments](
           (args: CommitCallbackArguments) =>
             try {
-              mqttClient.messageArrivedComplete(args.messageId, args.qos.byteValue.toInt)
+              mqttClient.messageArrivedComplete(args.messageId, args.qos.value)
               if (unackedMessages.decrementAndGet() == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty)))
                 completeStage()
               args.promise.complete(SuccessfullyDone)
@@ -185,7 +182,7 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
 
       private def publishToMqtt(msg: MqttMessage): Unit = {
         val pahoMsg = new PahoMqttMessage(msg.payload.toArray)
-        pahoMsg.setQos(msg.qos.getOrElse(defaultQoS).byteValue)
+        pahoMsg.setQos(msg.qos.getOrElse(defaultQoS).value)
         pahoMsg.setRetained(msg.retained)
         mqttClient.publish(msg.topic, pahoMsg, msg, asActionListener(onPublished.invoke))
       }
@@ -273,7 +270,7 @@ object MqttFlowStage {
       options.setWill(
         will.topic,
         will.payload.toArray,
-        will.qos.getOrElse(MqttQoS.atLeastOnce).byteValue.toInt,
+        will.qos.getOrElse(MqttQoS.atLeastOnce).value,
         will.retained
       )
     }
