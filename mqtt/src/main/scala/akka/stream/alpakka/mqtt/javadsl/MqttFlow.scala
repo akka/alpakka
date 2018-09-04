@@ -22,36 +22,41 @@ object MqttFlow {
   /**
    * Create a flow to send messages to MQTT AND subscribe to MQTT messages (without a commit handle).
    *
+   * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    * @deprecated use atMostOnce() instead
    */
   @deprecated("use atMostOnce instead", "0.21")
   @java.lang.Deprecated
   def create(sourceSettings: MqttSourceSettings,
              bufferSize: Int,
-             qos: MqttQoS): Flow[MqttMessage, MqttMessage, CompletionStage[Done]] =
-    atMostOnce(sourceSettings, bufferSize, qos)
+             defaultQos: MqttQoS): Flow[MqttMessage, MqttMessage, CompletionStage[Done]] =
+    atMostOnce(sourceSettings, bufferSize, defaultQos)
 
   /**
    * Create a flow to send messages to MQTT AND subscribe to MQTT messages (without a commit handle).
+   *
+   * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
   def atMostOnce(settings: MqttSourceSettings,
                  bufferSize: Int,
-                 qos: MqttQoS): Flow[MqttMessage, MqttMessage, CompletionStage[Done]] =
+                 defaultQos: MqttQoS): Flow[MqttMessage, MqttMessage, CompletionStage[Done]] =
     scaladsl.MqttFlow
-      .atMostOnce(settings, bufferSize, qos)
+      .atMostOnce(settings, bufferSize, defaultQos)
       .mapMaterializedValue(_.toJava)
       .asJava
 
   /**
    * Create a flow to send messages to MQTT AND subscribe to MQTT messages with a commit handle to acknowledge message reception.
+   *
+   * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
   def atLeastOnce(
       settings: MqttSourceSettings,
       bufferSize: Int,
-      qos: MqttQoS
+      defaultQos: MqttQoS
   ): Flow[MqttMessage, MqttCommittableMessage, CompletionStage[Done]] =
     scaladsl.MqttFlow
-      .atLeastOnce(settings, bufferSize, qos)
+      .atLeastOnce(settings, bufferSize, defaultQos)
       .map(MqttCommittableMessage.toJava)
       .mapMaterializedValue(_.toJava)
       .asJava

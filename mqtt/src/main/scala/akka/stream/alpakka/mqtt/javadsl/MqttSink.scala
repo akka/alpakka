@@ -19,9 +19,12 @@ object MqttSink {
 
   /**
    * Create a sink sending messages to MQTT.
+   *
+   * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
-  def create(connectionSettings: MqttConnectionSettings, qos: MqttQoS): Sink[MqttMessage, CompletionStage[Done]] =
+  def create(connectionSettings: MqttConnectionSettings,
+             defaultQos: MqttQoS): Sink[MqttMessage, CompletionStage[Done]] =
     MqttFlow
-      .atMostOnce(MqttSourceSettings(connectionSettings), bufferSize = 0, qos)
+      .atMostOnce(MqttSourceSettings(connectionSettings), bufferSize = 0, defaultQos)
       .to(Sink.ignore[MqttMessage])
 }
