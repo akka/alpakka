@@ -86,10 +86,10 @@ class MqttSourceSpec
       val sourceConnectionSettings = connectionSettings
         .withClientId(clientId = "source-spec/source1")
         .withCleanSession(false)
-      val mqttSourceSettings = MqttSourceSettings(sourceConnectionSettings, Map(topic -> MqttQoS.AtLeastOnce))
+      val subscriptions = MqttSubscriptions(topic, MqttQoS.AtLeastOnce)
 
       val mqttSource: Source[MqttCommittableMessage, Future[Done]] =
-        MqttSource.atLeastOnce(mqttSourceSettings, 8)
+        MqttSource.atLeastOnce(sourceConnectionSettings, subscriptions, 8)
       //#create-source-with-manualacks
 
       val (subscribed, unackedResult) = mqttSource.take(input.size).toMat(Sink.seq)(Keep.both).run()
@@ -115,8 +115,8 @@ class MqttSourceSpec
 
       //#create-source-with-manualacks
       val connectionSettings = sourceSettings.withCleanSession(false)
-      val mqttSourceSettings = MqttSourceSettings(connectionSettings, Map(topic -> MqttQoS.AtLeastOnce))
-      val mqttSource = MqttSource.atLeastOnce(mqttSourceSettings, 8)
+      val subscriptions = MqttSubscriptions(topic, MqttQoS.AtLeastOnce)
+      val mqttSource = MqttSource.atLeastOnce(connectionSettings, subscriptions, 8)
       //#create-source-with-manualacks
 
       val (subscribed, unackedResult) = mqttSource.take(input.size).toMat(Sink.seq)(Keep.both).run()
@@ -133,9 +133,9 @@ class MqttSourceSpec
     "receive a message from a topic" in {
       val msg = MqttMessage(topic1, ByteString("ohi"))
 
-      val settings = MqttSourceSettings(sourceSettings, Map(topic1 -> MqttQoS.AtLeastOnce))
+      val subscriptions = MqttSubscriptions(topic1, MqttQoS.AtLeastOnce)
       val (subscribed, result) = MqttSource
-        .atMostOnce(settings, 8)
+        .atMostOnce(sourceSettings, subscriptions, 8)
         .toMat(Sink.head)(Keep.both)
         .run()
 
@@ -157,12 +157,10 @@ class MqttSourceSpec
         )
 
       //#create-source
-      val settings = MqttSourceSettings(
-        sourceSettings,
-        Map(topic1 -> MqttQoS.AtLeastOnce, topic2 -> MqttQoS.AtLeastOnce)
-      )
+      val subscriptions = MqttSubscriptions(Map(topic1 -> MqttQoS.AtLeastOnce, topic2 -> MqttQoS.AtLeastOnce))
 
-      val mqttSource = MqttSource.atMostOnce(settings, bufferSize = 8)
+      val mqttSource: Source[MqttMessage, Future[Done]] =
+        MqttSource.atMostOnce(sourceSettings, subscriptions, bufferSize = 8)
       //#create-source
 
       //#run-source
@@ -183,9 +181,8 @@ class MqttSourceSpec
     "connection should fail to wrong broker" in {
       val wrongConnectionSettings = connectionSettings.withBroker("tcp://localhost:1884")
 
-      val mqttSettings = MqttSourceSettings(wrongConnectionSettings, Map(topic1 -> MqttQoS.atLeastOnce))
       val (subscribed, _) = MqttSource
-        .atMostOnce(mqttSettings, 8)
+        .atMostOnce(wrongConnectionSettings, MqttSubscriptions(topic1, MqttQoS.atLeastOnce), 8)
         .toMat(Sink.head)(Keep.both)
         .run()
 
@@ -194,11 +191,11 @@ class MqttSourceSpec
 
     "fail connection when not providing the requested credentials" in {
       val secureTopic = "source-spec/secure-topic1"
-      val settings =
-        MqttSourceSettings(sourceSettings.withAuth("username1", "bad_password"),
-                           Map(secureTopic -> MqttQoS.AtLeastOnce))
-
-      val first = MqttSource.atMostOnce(settings, 8).runWith(Sink.head)
+      val first = MqttSource
+        .atMostOnce(sourceSettings.withAuth("username1", "bad_password"),
+                    MqttSubscriptions(secureTopic, MqttQoS.AtLeastOnce),
+                    8)
+        .runWith(Sink.head)
 
       whenReady(first.failed) {
         case e: MqttException => e.getMessage should be("Not authorized to connect")
@@ -210,11 +207,10 @@ class MqttSourceSpec
       val secureTopic = "source-spec/secure-topic2"
       val msg = MqttMessage(secureTopic, ByteString("ohi"))
 
-      val settings = MqttSourceSettings(sourceSettings
-                                          .withAuth("username1", "password1"),
-                                        Map(secureTopic -> MqttQoS.AtLeastOnce))
       val (subscribed, result) = MqttSource
-        .atMostOnce(settings, 8)
+        .atMostOnce(sourceSettings.withAuth("username1", "password1"),
+                    MqttSubscriptions(secureTopic, MqttQoS.AtLeastOnce),
+                    8)
         .toMat(Sink.head)(Keep.both)
         .run()
 
@@ -230,9 +226,8 @@ class MqttSourceSpec
       val messages = (1 until bufferSize + overflow)
         .map(i => s"ohi_$i")
 
-      val settings = MqttSourceSettings(sourceSettings, Map(topic1 -> MqttQoS.AtLeastOnce))
       val (subscribed, result) = MqttSource
-        .atMostOnce(settings, bufferSize)
+        .atMostOnce(sourceSettings, MqttSubscriptions(topic1, MqttQoS.AtLeastOnce), bufferSize)
         .take(messages.size)
         .toMat(Sink.seq)(Keep.both)
         .run()
@@ -251,9 +246,8 @@ class MqttSourceSpec
       val messages = (1 until bufferSize + overflow)
         .map(i => s"ohi_$i")
 
-      val settings = MqttSourceSettings(sourceSettings, Map(topic1 -> MqttQoS.AtLeastOnce))
       val (subscribed, result) = MqttSource
-        .atMostOnce(settings, bufferSize)
+        .atMostOnce(sourceSettings, MqttSubscriptions(topic1, MqttQoS.AtLeastOnce), bufferSize)
         .take(messages.size)
         .toMat(Sink.seq)(Keep.both)
         .run()
@@ -267,19 +261,18 @@ class MqttSourceSpec
     }
 
     "support multiple materialization" in {
-      val settings = MqttSourceSettings(sourceSettings, Map(topic1 -> MqttQoS.AtLeastOnce))
-      val source = MqttSource.atMostOnce(settings, 8)
+      val source = MqttSource.atMostOnce(sourceSettings, MqttSubscriptions(topic1, MqttQoS.AtLeastOnce), 8)
 
       val (subscribed, elem) = source.toMat(Sink.head)(Keep.both).run()
 
       Await.ready(subscribed, timeout)
-      Source.single(MqttMessage(topic1, ByteString("ohi"))).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
+      Source.single(MqttMessage(topic1, ByteString("ohi"))).runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
       elem.futureValue shouldBe MqttMessage(topic1, ByteString("ohi"))
 
       val (subscribed2, elem2) = source.toMat(Sink.head)(Keep.both).run()
 
       Await.ready(subscribed2, timeout)
-      Source.single(MqttMessage(topic1, ByteString("ohi"))).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
+      Source.single(MqttMessage(topic1, ByteString("ohi"))).runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
       elem2.futureValue shouldBe MqttMessage(topic1, ByteString("ohi"))
     }
 
@@ -301,15 +294,17 @@ class MqttSourceSpec
       }
       Await.ready(proxyBinding, timeout)
 
-      val settings1 = MqttSourceSettings(
-        sourceSettings
-          .withAutomaticReconnect(true)
-          .withCleanSession(false)
-          .withBroker(s"tcp://localhost:$proxyPort"),
-        Map(topic1 -> MqttQoS.AtLeastOnce)
-      )
-
-      val (subscribed, probe) = MqttSource.atMostOnce(settings1, 8).toMat(TestSink.probe)(Keep.both).run()
+      val (subscribed, probe) = MqttSource
+        .atMostOnce(
+          sourceSettings
+            .withAutomaticReconnect(true)
+            .withCleanSession(false)
+            .withBroker(s"tcp://localhost:$proxyPort"),
+          MqttSubscriptions(topic1, MqttQoS.AtLeastOnce),
+          8
+        )
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
 
       // Ensure that the connection made it all the way to the server by waiting until it receives a message
       Await.ready(subscribed, timeout)
@@ -366,16 +361,16 @@ class MqttSourceSpec
       }
       Await.ready(proxyBinding, timeout)
 
-      val settings1 = MqttSourceSettings(
-        sourceSettings
-          .withClientId("source-spec/testator")
-          .withBroker(s"tcp://localhost:$proxyPort")
-          .withWill(lastWill),
-        Map(topic1 -> MqttQoS.AtLeastOnce)
-      )
       val source1 = wrapWithRestart(
         MqttSource
-          .atMostOnce(settings1, 8)
+          .atMostOnce(
+            sourceSettings
+              .withClientId("source-spec/testator")
+              .withBroker(s"tcp://localhost:$proxyPort")
+              .withWill(lastWill),
+            MqttSubscriptions(topic1, MqttQoS.AtLeastOnce),
+            8
+          )
       )
 
       val (subscribed, probe) = source1.toMat(TestSink.probe)(Keep.both).run()
@@ -393,9 +388,9 @@ class MqttSourceSpec
       // Kill the proxy, producing an unexpected disconnection of the client
       Await.result(proxyKs, timeout).shutdown()
 
-      val settings2 =
-        MqttSourceSettings(sourceSettings.withClientId("source-spec/executor"), Map(willTopic -> MqttQoS.AtLeastOnce))
-      val source2 = MqttSource.atMostOnce(settings2, 8)
+      val source2 = MqttSource.atMostOnce(sourceSettings.withClientId("source-spec/executor"),
+                                          MqttSubscriptions(willTopic, MqttQoS.AtLeastOnce),
+                                          8)
 
       val elem = source2.runWith(Sink.head)
       elem.futureValue shouldBe MqttMessage(willTopic, ByteString("ohi"))

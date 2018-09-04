@@ -9,10 +9,7 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.mqtt.MqttConnectionSettings;
-import akka.stream.alpakka.mqtt.MqttMessage;
-import akka.stream.alpakka.mqtt.MqttQoS;
-import akka.stream.alpakka.mqtt.MqttSourceSettings;
+import akka.stream.alpakka.mqtt.*;
 import akka.stream.alpakka.mqtt.javadsl.MqttFlow;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
@@ -60,14 +57,12 @@ public class MqttFlowTest {
         MqttConnectionSettings.create(
             "tcp://localhost:1883", "test-java-client", new MemoryPersistence());
 
-    @SuppressWarnings("unchecked")
-    final MqttSourceSettings settings =
-        MqttSourceSettings.create(connectionSettings.withClientId("flow-test/flow"))
-            .withSubscriptions(Pair.create("flow-test/topic", MqttQoS.atMostOnce()));
+    final MqttSubscriptions subscriptions =
+        MqttSubscriptions.create("flow-test/topic", MqttQoS.atMostOnce());
 
     // #create-flow
     final Flow<MqttMessage, MqttMessage, CompletionStage<Done>> mqttFlow =
-        MqttFlow.atMostOnce(settings, 8, MqttQoS.atLeastOnce());
+        MqttFlow.atMostOnce(connectionSettings, subscriptions, 8, MqttQoS.atLeastOnce());
     // #create-flow
 
     final Source<MqttMessage, CompletableFuture<Optional<MqttMessage>>> source = Source.maybe();

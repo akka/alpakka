@@ -11,10 +11,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.KillSwitches;
 import akka.stream.Materializer;
 import akka.stream.UniqueKillSwitch;
-import akka.stream.alpakka.mqtt.MqttConnectionSettings;
-import akka.stream.alpakka.mqtt.MqttMessage;
-import akka.stream.alpakka.mqtt.MqttQoS;
-import akka.stream.alpakka.mqtt.MqttSourceSettings;
+import akka.stream.alpakka.mqtt.*;
 import akka.stream.alpakka.mqtt.javadsl.MqttCommittableMessage;
 import akka.stream.alpakka.mqtt.javadsl.MqttSink;
 import akka.stream.alpakka.mqtt.javadsl.MqttSource;
@@ -83,12 +80,9 @@ public class MqttSourceTest {
 
     // #create-source-with-manualacks
     MqttConnectionSettings connectionSettings = sourceSettings.withCleanSession(false);
-    @SuppressWarnings("unchecked")
-    MqttSourceSettings mqttSourceSettings =
-        MqttSourceSettings.create(connectionSettings)
-            .withSubscriptions(Pair.create(topic, MqttQoS.atLeastOnce()));
+    MqttSubscriptions subscriptions = MqttSubscriptions.create(topic, MqttQoS.atLeastOnce());
     final Source<MqttCommittableMessage, CompletionStage<Done>> mqttSource =
-        MqttSource.atLeastOnce(mqttSourceSettings, 8);
+        MqttSource.atLeastOnce(connectionSettings, subscriptions, 8);
     // #create-source-with-manualacks
 
     final Pair<CompletionStage<Done>, CompletionStage<List<MqttCommittableMessage>>> unackedResult =
@@ -147,12 +141,9 @@ public class MqttSourceTest {
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
 
     MqttConnectionSettings connectionSettings = sourceSettings.withCleanSession(false);
-    @SuppressWarnings("unchecked")
-    MqttSourceSettings mqttSourceSettings =
-        MqttSourceSettings.create(connectionSettings)
-            .withSubscriptions(Pair.create(topic, MqttQoS.atLeastOnce()));
+    MqttSubscriptions subscriptions = MqttSubscriptions.create(topic, MqttQoS.atLeastOnce());
     final Source<MqttCommittableMessage, CompletionStage<Done>> mqttSource =
-        MqttSource.atLeastOnce(mqttSourceSettings, 8);
+        MqttSource.atLeastOnce(connectionSettings, subscriptions, 8);
 
     final Pair<CompletionStage<Done>, CompletionStage<List<MqttCommittableMessage>>> unackedResult =
         mqttSource.take(input.size()).toMat(Sink.seq(), Keep.both()).run(materializer);
@@ -192,17 +183,15 @@ public class MqttSourceTest {
 
     final Integer messageCount = 7;
 
-    @SuppressWarnings("unchecked")
     // #create-source
-    final MqttSourceSettings settings =
-        MqttSourceSettings.create(connectionSettings.withClientId("source-test/source"))
-            .withSubscriptions(
-                Pair.create(topic1, MqttQoS.atMostOnce()),
-                Pair.create(topic2, MqttQoS.atMostOnce()));
+    final MqttSubscriptions subscriptions =
+        MqttSubscriptions.create(topic1, MqttQoS.atMostOnce())
+            .addSubscription(topic2, MqttQoS.atMostOnce());
 
     final Integer bufferSize = 8;
     final Source<MqttMessage, CompletionStage<Done>> mqttSource =
-        MqttSource.atMostOnce(settings, bufferSize);
+        MqttSource.atMostOnce(
+            connectionSettings.withClientId("source-test/source"), subscriptions, bufferSize);
     // #create-source
 
     // #run-source
@@ -283,16 +272,15 @@ public class MqttSourceTest {
 
     result1.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
 
-    @SuppressWarnings("unchecked")
-    MqttSourceSettings settings1 =
-        MqttSourceSettings.create(
-                sourceSettings
-                    .withClientId("source-test/testator")
-                    .withBroker("tcp://localhost:" + String.valueOf(proxyPort))
-                    .withWill(lastWill))
-            .withSubscriptions(Pair.create(topic1, MqttQoS.atLeastOnce()));
+    MqttConnectionSettings settings1 =
+        sourceSettings
+            .withClientId("source-test/testator")
+            .withBroker("tcp://localhost:" + String.valueOf(proxyPort))
+            .withWill(lastWill);
+    MqttSubscriptions subscriptions = MqttSubscriptions.create(topic1, MqttQoS.atLeastOnce());
 
-    Source<MqttMessage, CompletionStage<Done>> source1 = MqttSource.atMostOnce(settings1, 8);
+    Source<MqttMessage, CompletionStage<Done>> source1 =
+        MqttSource.atMostOnce(settings1, subscriptions, 8);
 
     Pair<CompletionStage<Done>, TestSubscriber.Probe<MqttMessage>> result2 =
         source1.toMat(TestSink.probe(system), Keep.both()).run(materializer);
@@ -306,11 +294,10 @@ public class MqttSourceTest {
     // Kill the proxy, producing an unexpected disconnection of the client
     proxyKs.toCompletableFuture().get(5, TimeUnit.SECONDS).shutdown();
 
-    @SuppressWarnings("unchecked")
-    MqttSourceSettings settings2 =
-        MqttSourceSettings.create(sourceSettings.withClientId("source-test/executor"))
-            .withSubscriptions(Pair.create(willTopic, MqttQoS.atLeastOnce()));
-    Source<MqttMessage, CompletionStage<Done>> source2 = MqttSource.atMostOnce(settings2, 8);
+    MqttConnectionSettings settings2 = sourceSettings.withClientId("source-test/executor");
+    MqttSubscriptions subscriptions2 = MqttSubscriptions.create(willTopic, MqttQoS.atLeastOnce());
+    Source<MqttMessage, CompletionStage<Done>> source2 =
+        MqttSource.atMostOnce(settings2, subscriptions2, 8);
 
     CompletionStage<MqttMessage> elem = source2.runWith(Sink.head(), materializer);
     assertEquals(

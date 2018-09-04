@@ -50,6 +50,50 @@ object MqttQoS {
 }
 
 /**
+ * The mapping topics to subscribe to and the requested Quality of Service ([[MqttQoS]]).
+ */
+final class MqttSubscriptions private (
+    val subscriptions: Map[String, MqttQoS]
+) {
+  def withSubscriptions(subscriptions: Map[String, MqttQoS]): MqttSubscriptions =
+    new MqttSubscriptions(subscriptions)
+
+  def withSubscriptions(subscriptions: java.util.List[akka.japi.Pair[String, MqttQoS]]): MqttSubscriptions =
+    new MqttSubscriptions(subscriptions.asScala.map(_.toScala).toMap)
+
+  def addSubscription(topic: String, qos: MqttQoS): MqttSubscriptions =
+    new MqttSubscriptions(this.subscriptions.updated(topic, qos))
+}
+
+/**
+ * The mapping topics to subscribe to and the requested Quality of Service ([[MqttQoS]]).
+ */
+object MqttSubscriptions {
+  val empty = new MqttSubscriptions(Map.empty)
+
+  /** Scala API */
+  def apply(subscriptions: Map[String, MqttQoS]): MqttSubscriptions =
+    new MqttSubscriptions(subscriptions)
+
+  /** Scala API */
+  def apply(topic: String, qos: MqttQoS): MqttSubscriptions =
+    new MqttSubscriptions(Map(topic -> qos))
+
+  /** Scala API */
+  def apply(subscription: (String, MqttQoS)): MqttSubscriptions =
+    new MqttSubscriptions(Map(subscription))
+
+  /** Java API */
+  def create(subscriptions: java.util.List[akka.japi.Pair[String, MqttQoS]]): MqttSubscriptions =
+    new MqttSubscriptions(subscriptions.asScala.map(_.toScala).toMap)
+
+  /** Java API */
+  def create(topic: String, qos: MqttQoS): MqttSubscriptions =
+    new MqttSubscriptions(Map(topic -> qos))
+
+}
+
+/**
  * @param subscriptions the mapping between a topic name and a [[MqttQoS]].
  */
 final case class MqttSourceSettings(
