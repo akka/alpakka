@@ -22,6 +22,8 @@ object MqttFlow {
   /**
    * Create a flow to send messages to MQTT AND subscribe to MQTT messages (without a commit handle).
    *
+   * The materialized value completes on successful connection to the MQTT broker.
+   *
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    * @deprecated use atMostOnce() instead
    */
@@ -35,6 +37,8 @@ object MqttFlow {
   /**
    * Create a flow to send messages to MQTT AND subscribe to MQTT messages (without a commit handle).
    *
+   * The materialized value completes on successful connection to the MQTT broker.
+   *
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
   def atMostOnce(settings: MqttSourceSettings,
@@ -47,6 +51,8 @@ object MqttFlow {
 
   /**
    * Create a flow to send messages to MQTT AND subscribe to MQTT messages with a commit handle to acknowledge message reception.
+   *
+   * The materialized value completes on successful connection to the MQTT broker.
    *
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */

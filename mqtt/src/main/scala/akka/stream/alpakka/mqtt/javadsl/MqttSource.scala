@@ -21,6 +21,8 @@ object MqttSource {
 
   /**
    * Create a source subscribing to MQTT messages (without a commit handle).
+   *
+   * The materialized value completes on successful connection to the MQTT broker.
    */
   def atMostOnce(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessage, CompletionStage[Done]] =
     scaladsl.MqttSource
@@ -30,6 +32,8 @@ object MqttSource {
 
   /**
    * Create a source subscribing to MQTT messages with a commit handle to acknowledge message reception.
+   *
+   * The materialized value completes on successful connection to the MQTT broker.
    */
   def atLeastOnce(settings: MqttSourceSettings,
                   bufferSize: Int): Source[MqttCommittableMessage, CompletionStage[Done]] =
