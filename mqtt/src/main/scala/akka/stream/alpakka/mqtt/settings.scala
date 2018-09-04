@@ -13,7 +13,7 @@ import scala.collection.immutable.Map
 import scala.concurrent.duration.{FiniteDuration, _}
 
 sealed abstract class MqttQoS {
-  def byteValue: Byte
+  def value: Int
 }
 
 /**
@@ -22,15 +22,15 @@ sealed abstract class MqttQoS {
  */
 object MqttQoS {
   object AtMostOnce extends MqttQoS {
-    val byteValue: Byte = 0
+    val value: Int = 0
   }
 
   object AtLeastOnce extends MqttQoS {
-    val byteValue: Byte = 1
+    val value: Int = 1
   }
 
   object ExactlyOnce extends MqttQoS {
-    val byteValue: Byte = 2
+    val value: Int = 2
   }
 
   /**
