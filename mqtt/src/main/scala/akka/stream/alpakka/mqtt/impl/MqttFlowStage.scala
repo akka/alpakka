@@ -38,7 +38,7 @@ import scala.util.{Failure, Success, Try}
 @InternalApi
 private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
                                         bufferSize: Int,
-                                        qos: MqttQoS,
+                                        defaultQoS: MqttQoS,
                                         manualAcks: Boolean = false)
     extends GraphStageWithMaterializedValue[FlowShape[MqttMessage, MqttCommittableMessage], Future[Done]] {
   import MqttFlowStage._
@@ -122,7 +122,7 @@ private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
 
       private def publishMsg(msg: MqttMessage) = {
         val pahoMsg = new PahoMqttMessage(msg.payload.toArray)
-        pahoMsg.setQos(msg.qos.getOrElse(qos).byteValue)
+        pahoMsg.setQos(msg.qos.getOrElse(defaultQoS).byteValue)
         pahoMsg.setRetained(msg.retained)
         mqttClient.publish(msg.topic, pahoMsg, msg, asActionListener(onPublished.invoke))
       }

@@ -30,7 +30,7 @@ object MqttSource {
   def atMostOnce(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessage, Future[Done]] =
     Source.maybe
       .viaMat(
-        MqttFlow.atMostOnce(settings, bufferSize, qos = MqttQoS.AtLeastOnce)
+        MqttFlow.atMostOnce(settings, bufferSize, defaultQos = MqttQoS.AtLeastOnce)
       )(Keep.right)
 
   /**
@@ -38,7 +38,7 @@ object MqttSource {
    */
   def atLeastOnce(settings: MqttSourceSettings, bufferSize: Int): Source[MqttCommittableMessage, Future[Done]] =
     Source.maybe.viaMat(
-      MqttFlow.atLeastOnce(settings, bufferSize, qos = MqttQoS.AtLeastOnce)
+      MqttFlow.atLeastOnce(settings, bufferSize, defaultQos = MqttQoS.AtLeastOnce)
     )(Keep.right)
 
 }
