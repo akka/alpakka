@@ -67,7 +67,7 @@ public class MqttFlowTest {
 
     // #create-flow
     final Flow<MqttMessage, MqttMessage, CompletionStage<Done>> mqttFlow =
-        MqttFlow.create(settings, 8, MqttQoS.atLeastOnce());
+        MqttFlow.atMostOnce(settings, 8, MqttQoS.atLeastOnce());
     // #create-flow
 
     final Source<MqttMessage, CompletableFuture<Optional<MqttMessage>>> source = Source.maybe();
