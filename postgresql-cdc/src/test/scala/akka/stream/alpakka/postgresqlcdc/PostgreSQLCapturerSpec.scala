@@ -19,9 +19,8 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
     with WordSpecLike
     with ImplicitSender
     with Matchers
-    with BeforeAndAfterAll {
-
-  import FakeDb._
+    with BeforeAndAfterAll
+    with FakeDb {
 
   private val log = Logging(system, classOf[PostgreSQLCapturerSpec])
 
@@ -30,7 +29,7 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
 
   private implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  private implicit val conn: Connection = getConnection(connectionString)
+  val conn: Connection = getConnection(connectionString)
 
   private val postgreSQLInstance = PostgreSQLInstance(connectionString, slotName = "scalatest")
 

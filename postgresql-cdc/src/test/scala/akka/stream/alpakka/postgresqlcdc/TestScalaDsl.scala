@@ -4,8 +4,6 @@
 
 package akka.stream.alpakka.postgresqlcdc
 
-import java.sql.Connection
-
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.stream.alpakka.postgresqlcdc.scaladsl.ChangeDataCapture
@@ -16,14 +14,6 @@ import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
 import scala.concurrent.duration._
 
 class TestScalaDsl extends FunSuite with Matchers with BeforeAndAfterAll {
-
-  override def afterAll(): Unit = {
-    import FakeDb._
-    val connectionString = "jdbc:postgresql://localhost:5435/pgdb?user=pguser&password=pguser"
-    implicit val con: Connection = getConnection(connectionString)
-    dropLogicalDecodingSlot("slot_name")
-    con.close()
-  }
 
   ignore("SourceSettings snippet for docs") {
 

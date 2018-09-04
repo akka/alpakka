@@ -32,21 +32,25 @@ public class TestJavaDsl {
 
   private static ActorSystem system;
   private static Materializer materializer;
-  private static Connection connection;
 
   private static final String connectionString =
       "jdbc:postgresql://localhost:5435/pgdb2?user=pguser&password=pguser";
+
+  private static FakeDb fakeDb =
+      new FakeDb() {
+        @Override
+        public Connection conn() {
+          return getConnection(connectionString);
+        }
+      };
 
   @BeforeClass
   public static void setup() throws Exception {
     system = ActorSystem.create();
     materializer = ActorMaterializer.create(system);
-    String driver = "org.postgresql.Driver";
-    Class.forName(driver).newInstance();
-    connection = FakeDb.getConnection(connectionString);
     // set the logical replication slot
-    FakeDb.setUpLogicalDecodingSlot("junit", connection);
-    FakeDb.createCustomersTable(connection);
+    fakeDb.setUpLogicalDecodingSlot("junit");
+    fakeDb.createCustomersTable();
   }
 
   @AfterClass
@@ -54,10 +58,10 @@ public class TestJavaDsl {
     TestKit.shutdownActorSystem(system);
     system = null;
     materializer = null;
-    FakeDb.dropTableCustomers(connection);
+    fakeDb.dropTableCustomers();
     // drop the logical replication slot
-    FakeDb.dropLogicalDecodingSlot("junit", connection);
-    connection.close();
+    fakeDb.dropLogicalDecodingSlot("junit");
+    fakeDb.conn().close();
   }
 
   // for documentation
@@ -185,11 +189,11 @@ public class TestJavaDsl {
   @Test
   public void testIt() {
     // some inserts
-    FakeDb.insertCustomer(0, "John", "Lennon", "john.lennon@akka.io", new ArrayList(), connection);
+    fakeDb.insertCustomer(0, "John", "Lennon", "john.lennon@akka.io", new ArrayList());
     // some updates
-    FakeDb.updateCustomerEmail(0, "john.lennon@thebeatles.com", connection);
+    fakeDb.updateCustomerEmail(0, "john.lennon@thebeatles.com");
     // some deletes
-    FakeDb.deleteCustomers(connection);
+    fakeDb.deleteCustomers();
 
     final PostgreSQLInstance postgreSQLInstance =
         PostgreSQLInstance.create(connectionString, "junit");
