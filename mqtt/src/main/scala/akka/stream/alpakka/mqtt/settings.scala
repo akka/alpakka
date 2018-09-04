@@ -18,19 +18,19 @@ sealed abstract class MqttQoS {
 
 /**
  * Quality of Service constants as defined in
- * https://www.eclipse.org/paho/files/mqttdoc/Cclient/qos.html
+ * See http://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttMessage.html#setQos-int-
  */
 object MqttQoS {
   object AtMostOnce extends MqttQoS {
-    def byteValue: Byte = 0
+    val byteValue: Byte = 0
   }
 
   object AtLeastOnce extends MqttQoS {
-    def byteValue: Byte = 1
+    val byteValue: Byte = 1
   }
 
   object ExactlyOnce extends MqttQoS {
-    def byteValue: Byte = 2
+    val byteValue: Byte = 2
   }
 
   /**
