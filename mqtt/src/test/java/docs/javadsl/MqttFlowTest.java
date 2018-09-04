@@ -33,6 +33,8 @@ public class MqttFlowTest {
   private static ActorSystem system;
   private static Materializer materializer;
 
+  private static final int bufferSize = 8;
+
   private static Pair<ActorSystem, Materializer> setupMaterializer() {
     final ActorSystem system = ActorSystem.create("MqttFlowTest");
     final Materializer materializer = ActorMaterializer.create(system);
@@ -57,12 +59,13 @@ public class MqttFlowTest {
         MqttConnectionSettings.create(
             "tcp://localhost:1883", "test-java-client", new MemoryPersistence());
 
-    final MqttSubscriptions subscriptions =
-        MqttSubscriptions.create("flow-test/topic", MqttQoS.atMostOnce());
-
     // #create-flow
     final Flow<MqttMessage, MqttMessage, CompletionStage<Done>> mqttFlow =
-        MqttFlow.atMostOnce(connectionSettings, subscriptions, 8, MqttQoS.atLeastOnce());
+        MqttFlow.atMostOnce(
+            connectionSettings,
+            MqttSubscriptions.create("flow-test/topic", MqttQoS.atMostOnce()),
+            bufferSize,
+            MqttQoS.atLeastOnce());
     // #create-flow
 
     final Source<MqttMessage, CompletableFuture<Optional<MqttMessage>>> source = Source.maybe();
@@ -71,17 +74,18 @@ public class MqttFlowTest {
     final Pair<
             Pair<CompletableFuture<Optional<MqttMessage>>, CompletionStage<Done>>,
             CompletionStage<List<MqttMessage>>>
-        result =
+        materialized =
             source.viaMat(mqttFlow, Keep.both()).toMat(Sink.seq(), Keep.both()).run(materializer);
+
+    CompletableFuture<Optional<MqttMessage>> mqttMessagePromise = materialized.first().first();
+    CompletionStage<Done> subscribedToMqtt = materialized.first().second();
+    CompletionStage<List<MqttMessage>> streamResult = materialized.second();
     // #run-flow
 
-    result
-        .first()
-        .second()
-        .thenAccept(
-            a -> {
-              result.first().first().complete(Optional.empty());
-              assertFalse(result.second().toCompletableFuture().isCompletedExceptionally());
-            });
+    subscribedToMqtt.thenAccept(
+        a -> {
+          mqttMessagePromise.complete(Optional.empty());
+          assertFalse(streamResult.toCompletableFuture().isCompletedExceptionally());
+        });
   }
 }
