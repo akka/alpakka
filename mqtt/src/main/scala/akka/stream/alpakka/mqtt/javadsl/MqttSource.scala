@@ -5,29 +5,37 @@
 package akka.stream.alpakka.mqtt.javadsl
 
 import java.util.concurrent.CompletionStage
-import akka.stream.alpakka.mqtt.scaladsl
 
 import akka.Done
-import akka.stream.alpakka.mqtt.{MqttMessage, MqttSourceSettings}
+import akka.stream.alpakka.mqtt.{scaladsl, MqttMessage, MqttSourceSettings}
+import akka.stream.javadsl.Source
 
+import scala.compat.java8.FutureConverters._
+
+/**
+ * Java API
+ *
+ * MQTT source factory.
+ */
 object MqttSource {
 
-  def atMostOnce(settings: MqttSourceSettings,
-                 bufferSize: Int): akka.stream.javadsl.Source[MqttMessage, CompletionStage[Done]] = {
-    import scala.compat.java8.FutureConverters._
+  /**
+   * Create a source subscribing to MQTT messages (without a commit handle).
+   */
+  def atMostOnce(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessage, CompletionStage[Done]] =
     scaladsl.MqttSource
       .atMostOnce(settings, bufferSize)
       .mapMaterializedValue(_.toJava)
       .asJava
-  }
 
+  /**
+   * Create a source subscribing to MQTT messages with a commit handle to acknowledge message reception.
+   */
   def atLeastOnce(settings: MqttSourceSettings,
-                  bufferSize: Int): akka.stream.javadsl.Source[MqttCommittableMessage, CompletionStage[Done]] = {
-    import scala.compat.java8.FutureConverters._
+                  bufferSize: Int): Source[MqttCommittableMessage, CompletionStage[Done]] =
     scaladsl.MqttSource
       .atLeastOnce(settings, bufferSize)
       .map(MqttCommittableMessage.toJava)
       .mapMaterializedValue(_.toJava)
       .asJava
-  }
 }

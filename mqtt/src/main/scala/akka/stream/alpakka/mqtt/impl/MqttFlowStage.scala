@@ -73,7 +73,7 @@ private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
                              (),
                              asActionListener(onSubscribe.invoke))
           } else {
-            subscriptionPromise.complete(Success(Done))
+            subscriptionPromise.complete(SuccessfullyDone)
             pull(in)
           }
         })
@@ -107,7 +107,7 @@ private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
               mqttClient.messageArrivedComplete(args.messageId, args.qos.byteValue.toInt)
               if (unackedMessages.decrementAndGet() == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty)))
                 completeStage()
-              args.promise.complete(Try(Done))
+              args.promise.complete(SuccessfullyDone)
             } catch {
               case e: Throwable => args.promise.failure(e)
           }
@@ -300,6 +300,8 @@ private[mqtt] final class MqttFlowStage(sourceSettings: MqttSourceSettings,
  */
 @InternalApi
 object MqttFlowStage {
+  private val SuccessfullyDone = Success(Done)
+
   final private case class CommitCallbackArguments(messageId: Int, qos: MqttQoS, promise: Promise[Done])
 
   def asActionListener(func: Try[IMqttToken] => Unit): IMqttActionListener = new IMqttActionListener {
