@@ -4,7 +4,7 @@
 
 package docs.scaladsl
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.alpakka.mqtt._
@@ -40,9 +40,9 @@ class MqttSourceSpec
 
   //#create-connection-settings
   val connectionSettings = MqttConnectionSettings(
-    "tcp://localhost:1883",
-    "test-scala-client",
-    new MemoryPersistence
+    "tcp://localhost:1883", // (1)
+    "test-scala-client", // (2)
+    new MemoryPersistence // (3)
   )
   //#create-connection-settings
 
@@ -83,13 +83,14 @@ class MqttSourceSpec
       val input = Vector("one", "two", "three", "four", "five")
 
       //#create-source-with-manualacks
-      val sourceConnectionSettings = connectionSettings
-        .withClientId(clientId = "source-spec/source1")
-        .withCleanSession(false)
-      val subscriptions = MqttSubscriptions(topic, MqttQoS.AtLeastOnce)
-
       val mqttSource: Source[MqttCommittableMessage, Future[Done]] =
-        MqttSource.atLeastOnce(sourceConnectionSettings, subscriptions, 8)
+        MqttSource.atLeastOnce(
+          connectionSettings
+            .withClientId(clientId = "source-spec/source1")
+            .withCleanSession(false),
+          MqttSubscriptions(topic, MqttQoS.AtLeastOnce),
+          bufferSize = 8
+        )
       //#create-source-with-manualacks
 
       val (subscribed, unackedResult) = mqttSource.take(input.size).toMat(Sink.seq)(Keep.both).run()
@@ -100,9 +101,12 @@ class MqttSourceSpec
 
       unackedResult.futureValue.map(message => message.message.payload.utf8String) should equal(input)
 
+      val businessLogic: Flow[MqttCommittableMessage, MqttCommittableMessage, NotUsed] = Flow[MqttCommittableMessage]
+
       //#run-source-with-manualacks
       val result = mqttSource
-        .mapAsync(1)(cm => cm.commit().map(_ => cm.message))
+        .via(businessLogic)
+        .mapAsync(1)(committableMessage => committableMessage.commit().map(_ => committableMessage.message))
         .take(input.size)
         .runWith(Sink.seq)
       //#run-source-with-manualacks
@@ -113,11 +117,9 @@ class MqttSourceSpec
       val topic = "source-spec/pendingacks"
       val input = Vector("one", "two", "three", "four", "five")
 
-      //#create-source-with-manualacks
       val connectionSettings = sourceSettings.withCleanSession(false)
       val subscriptions = MqttSubscriptions(topic, MqttQoS.AtLeastOnce)
       val mqttSource = MqttSource.atLeastOnce(connectionSettings, subscriptions, 8)
-      //#create-source-with-manualacks
 
       val (subscribed, unackedResult) = mqttSource.take(input.size).toMat(Sink.seq)(Keep.both).run()
       val mqttSink = MqttSink(sinkSettings, MqttQoS.AtLeastOnce)
@@ -157,25 +159,27 @@ class MqttSourceSpec
         )
 
       //#create-source
-      val subscriptions = MqttSubscriptions(Map(topic1 -> MqttQoS.AtLeastOnce, topic2 -> MqttQoS.AtLeastOnce))
-
       val mqttSource: Source[MqttMessage, Future[Done]] =
-        MqttSource.atMostOnce(sourceSettings, subscriptions, bufferSize = 8)
-      //#create-source
+        MqttSource.atMostOnce(
+          connectionSettings.withClientId(clientId = "source-spec/source"),
+          MqttSubscriptions(Map(topic1 -> MqttQoS.AtLeastOnce, topic2 -> MqttQoS.AtLeastOnce)),
+          bufferSize = 8
+        )
 
-      //#run-source
-      val (subscribed, result) = mqttSource
+      val (subscribed, streamResult) = mqttSource
         .take(messages.size)
         .toMat(Sink.seq)(Keep.both)
         .run()
-      //#run-source
+      //#create-source
 
       Await.ready(subscribed, timeout)
       //#run-sink
-      Source(messages).runWith(MqttSink(connectionSettings, MqttQoS.AtLeastOnce))
+      val sink: Sink[MqttMessage, Future[Done]] =
+        MqttSink(connectionSettings, MqttQoS.AtLeastOnce)
+      Source(messages).runWith(sink)
       //#run-sink
 
-      result.futureValue shouldBe messages
+      streamResult.futureValue shouldBe messages
     }
 
     "connection should fail to wrong broker" in {

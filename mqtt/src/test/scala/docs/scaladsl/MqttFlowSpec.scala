@@ -4,17 +4,18 @@
 
 package docs.scaladsl
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.mqtt.scaladsl.MqttFlow
 import akka.stream.alpakka.mqtt._
-import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.testkit.TestKit
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 class MqttFlowSpec
@@ -35,17 +36,19 @@ class MqttFlowSpec
     new MemoryPersistence
   )
 
-  val topic = "flow-spec/topic"
-
-  val subscriptions = MqttSubscriptions(topic, MqttQoS.atLeastOnce)
-
   override def afterAll() = TestKit.shutdownActorSystem(system)
 
   "mqtt flow" should {
     "establish a bidirectional connection and subscribe to a topic" in {
+      val topic = "flow-spec/topic"
       //#create-flow
-      val mqttFlow =
-        MqttFlow.atMostOnce(connectionSettings.withClientId("flow-spec/flow"), subscriptions, 8, MqttQoS.atLeastOnce)
+      val mqttFlow: Flow[MqttMessage, MqttMessage, Future[Done]] =
+        MqttFlow.atMostOnce(
+          connectionSettings.withClientId("flow-spec/flow"),
+          MqttSubscriptions(topic, MqttQoS.AtLeastOnce),
+          bufferSize = 8,
+          MqttQoS.AtLeastOnce
+        )
       //#create-flow
 
       val source = Source.maybe[MqttMessage]
