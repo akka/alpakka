@@ -348,7 +348,9 @@ class MqttSourceSpec
       val msg = MqttMessage(topic1, ByteString("ohi"))
 
       //#will-message
-      val lastWill = MqttMessage(willTopic, ByteString("ohi"), Some(MqttQoS.AtLeastOnce), retained = true)
+      val lastWill = MqttMessage(willTopic, ByteString("ohi"))
+        .withQos(MqttQoS.AtLeastOnce)
+        .withRetained(true)
       //#will-message
 
       // Create a proxy on an available port so it can be shut down

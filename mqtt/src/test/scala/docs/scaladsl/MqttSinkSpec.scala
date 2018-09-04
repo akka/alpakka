@@ -6,7 +6,7 @@ package docs.scaladsl
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.mqtt.scaladsl.{MqttSink, MqttSource}
 import akka.stream.alpakka.mqtt.{MqttSourceSettings, _}
 import akka.stream.scaladsl.{Keep, Sink, Source}
@@ -31,7 +31,7 @@ class MqttSinkSpec
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
-  implicit val mat = ActorMaterializer()
+  implicit val mat: Materializer = ActorMaterializer()
   val connectionSettings = MqttConnectionSettings(
     "tcp://localhost:1883",
     "test-client",
@@ -116,7 +116,7 @@ class MqttSinkSpec
     }
 
     "received retained message on new client" in {
-      val msg = MqttMessage(topic, ByteString("ohi"), Some(MqttQoS.atLeastOnce), retained = true)
+      val msg = MqttMessage(topic, ByteString("ohi")).withQos(MqttQoS.atLeastOnce).withRetained(true)
 
       val messageSent = Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
 

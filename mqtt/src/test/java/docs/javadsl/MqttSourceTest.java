@@ -256,7 +256,9 @@ public class MqttSourceTest {
 
     // #will-message
     MqttMessage lastWill =
-        MqttMessage.create(willTopic, ByteString.fromString("ohi"), MqttQoS.atLeastOnce(), true);
+        MqttMessage.create(willTopic, ByteString.fromString("ohi"))
+            .withQos(MqttQoS.atLeastOnce())
+            .withRetained(true);
     // #will-message
 
     // Create a proxy to RabbitMQ so it can be shutdown
