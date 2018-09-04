@@ -38,7 +38,7 @@ class MqttFlowSpec
   val topic = "flow-spec/topic"
 
   val settings =
-    MqttSourceSettings(connectionSettings.withClientId(clientId = "flow-spec/flow"), Map(topic -> MqttQoS.atLeastOnce))
+    MqttSourceSettings(connectionSettings.withClientId("flow-spec/flow"), Map(topic -> MqttQoS.atLeastOnce))
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
 
