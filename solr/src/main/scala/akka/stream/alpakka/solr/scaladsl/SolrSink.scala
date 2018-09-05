@@ -16,6 +16,42 @@ object SolrSink {
 
   /**
    * Scala API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing [[SolrInputDocument]].
+   * @deprecated ("use the method documents to batch operation")
+   */
+  def document[T](collection: String, settings: SolrUpdateSettings)(
+      implicit client: SolrClient
+  ): Sink[IncomingMessage[SolrInputDocument, NotUsed], Future[Done]] =
+    SolrFlow
+      .document(collection, settings)
+      .toMat(Sink.ignore)(Keep.right)
+
+  /**
+   * Scala API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing type `T`
+   * with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
+   * @deprecated ("use the method beans to batch operation")
+   */
+  def bean[T](collection: String, settings: SolrUpdateSettings)(
+      implicit client: SolrClient
+  ): Sink[IncomingMessage[T, NotUsed], Future[Done]] =
+    SolrFlow
+      .bean[T](collection, settings)
+      .toMat(Sink.ignore)(Keep.right)
+
+  /**
+   * Scala API: creates a [[SolrFlow] to Solr for sequence of [[IncomingMessage]] containing type `T` with `binder` of type 'T'.
+   * @deprecated ("use the method typeds to batch operation")
+   */
+  def typed[T](
+      collection: String,
+      settings: SolrUpdateSettings,
+      binder: T => SolrInputDocument
+  )(implicit client: SolrClient): Sink[IncomingMessage[T, NotUsed], Future[Done]] =
+    SolrFlow
+      .typed[T](collection, settings, binder)
+      .toMat(Sink.ignore)(Keep.right)
+
+  /**
+   * Scala API: creates a [[SolrFlow] to Solr for sequence of [[IncomingMessage]] containing [[SolrInputDocument]].
    */
   def documents[T](collection: String, settings: SolrUpdateSettings)(
       implicit client: SolrClient
@@ -25,7 +61,7 @@ object SolrSink {
       .toMat(Sink.ignore)(Keep.right)
 
   /**
-   * Scala API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing type `T`
+   * Scala API: creates a [[SolrFlow] to Solr for sequence of [[IncomingMessage]] containing type `T`
    * with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
    */
   def beans[T](collection: String, settings: SolrUpdateSettings)(
@@ -36,15 +72,15 @@ object SolrSink {
       .toMat(Sink.ignore)(Keep.right)
 
   /**
-   * Scala API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing type `T` with `binder` of type 'T'.
+   * Scala API: creates a [[SolrFlow] to Solr for sequence of [[IncomingMessage]] containing type `T` with `binder` of type 'T'.
    */
-  def typed[T](
+  def typeds[T](
       collection: String,
       settings: SolrUpdateSettings,
       binder: T => SolrInputDocument
   )(implicit client: SolrClient): Sink[Seq[IncomingMessage[T, NotUsed]], Future[Done]] =
     SolrFlow
-      .typed[T](collection, settings, binder)
+      .typeds[T](collection, settings, binder)
       .toMat(Sink.ignore)(Keep.right)
 
 }

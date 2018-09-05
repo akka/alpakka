@@ -14,11 +14,9 @@ import akka.stream.alpakka.solr.javadsl.SolrSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -104,7 +102,7 @@ public class SolrTest {
                   Book book = tupleToBook.apply(tuple);
                   SolrInputDocument doc = bookToDoc.apply(book);
                   List<IncomingMessage<SolrInputDocument, NotUsed>> list = new ArrayList<>();
-                  list.add(IncomingUpdateMessage.create(doc));
+                  list.add(IncomingUpsertMessage.create(doc));
                   return list;
                 })
             .runWith(
@@ -160,7 +158,7 @@ public class SolrTest {
                 tuple -> {
                   String title = tuple.getString("title");
                   List<IncomingMessage<BookBean, NotUsed>> list = new ArrayList<>();
-                  list.add(IncomingUpdateMessage.create(new BookBean(title)));
+                  list.add(IncomingUpsertMessage.create(new BookBean(title)));
                   return list;
                 })
             .runWith(
@@ -205,11 +203,11 @@ public class SolrTest {
             .map(
                 tuple -> {
                   List<IncomingMessage<Book, NotUsed>> list = new ArrayList<>();
-                  list.add(IncomingUpdateMessage.create(tupleToBook.apply(tuple)));
+                  list.add(IncomingUpsertMessage.create(tupleToBook.apply(tuple)));
                   return list;
                 })
             .runWith(
-                SolrSink.typed(
+                SolrSink.typeds(
                     "collection4", settings, bookToDoc, cluster.getSolrClient(), Book.class),
                 materializer);
     // #run-typed
@@ -251,11 +249,11 @@ public class SolrTest {
             .map(
                 tuple -> {
                   List<IncomingMessage<Book, NotUsed>> list = new ArrayList<>();
-                  list.add(IncomingUpdateMessage.create(tupleToBook.apply(tuple)));
+                  list.add(IncomingUpsertMessage.create(tupleToBook.apply(tuple)));
                   return list;
                 })
             .via(
-                SolrFlow.typed(
+                SolrFlow.typeds(
                     "collection5", settings, bookToDoc, cluster.getSolrClient(), Book.class))
             .runWith(Sink.ignore(), materializer);
     // #run-flow
@@ -309,11 +307,11 @@ public class SolrTest {
               Book book = kafkaMessage.book;
               // Transform message so that we can write to elastic
               List<IncomingMessage<Book, KafkaOffset>> list = new ArrayList<>();
-              list.add(IncomingUpdateMessage.create(book, kafkaMessage.offset));
+              list.add(IncomingUpsertMessage.create(book, kafkaMessage.offset));
               return list;
             })
         .via(
-            SolrFlow.typedWithPassThrough(
+            SolrFlow.typedsWithPassThrough(
                 "collection6", settings, bookToDoc, cluster.getSolrClient(), Book.class))
         .map(
             messageResults -> {
@@ -366,7 +364,7 @@ public class SolrTest {
                   Book book = tupleToBook.apply(tuple);
                   SolrInputDocument doc = bookToDoc.apply(book);
                   List<IncomingMessage<SolrInputDocument, NotUsed>> list = new ArrayList<>();
-                  list.add(IncomingUpdateMessage.create(doc));
+                  list.add(IncomingUpsertMessage.create(doc));
                   return list;
                 })
             .runWith(
@@ -419,7 +417,7 @@ public class SolrTest {
                   Book book = new Book(tupleToBook.apply(tuple).title, "Written by good authors.");
                   SolrInputDocument doc = bookToDoc.apply(book);
                   List<IncomingMessage<SolrInputDocument, NotUsed>> list = new ArrayList<>();
-                  list.add(IncomingUpdateMessage.create(doc));
+                  list.add(IncomingUpsertMessage.create(doc));
                   return list;
                 })
             .runWith(

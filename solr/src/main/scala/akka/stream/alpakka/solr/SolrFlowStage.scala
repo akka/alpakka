@@ -19,10 +19,13 @@ import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.collection.JavaConverters._
 
-private object IncomingMessage {
+@deprecated(
+  "you should use a specific incoming message case class: IncomingUpsertMessage/IncomingDeleteMessage/IncomingAtomicUpdateMessage"
+)
+object IncomingMessage {
   // Apply methods to use when not using passThrough
   def apply[T](source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Update, None, None, Option(source), Map.empty, NotUsed)
+    IncomingMessage(Upsert, None, None, Option(source), Map.empty, NotUsed)
 
   def apply[T](id: String): IncomingMessage[T, NotUsed] =
     IncomingMessage(Delete, None, Option(id), None, Map.empty, NotUsed)
@@ -32,7 +35,7 @@ private object IncomingMessage {
 
   // Apply methods to use with passThrough
   def apply[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(Update, None, None, Option(source), Map.empty, passThrough)
+    IncomingMessage(Upsert, None, None, Option(source), Map.empty, passThrough)
 
   def apply[T, C](id: String, passThrough: C): IncomingMessage[T, C] =
     IncomingMessage(Delete, None, Option(id), None, Map.empty, passThrough)
@@ -73,7 +76,7 @@ private object IncomingMessage {
 
 }
 
-object IncomingUpdateMessage {
+object IncomingUpsertMessage {
   // Apply method to use when not using passThrough
   def apply[T](source: T): IncomingMessage[T, NotUsed] =
     IncomingMessage(source)
@@ -84,11 +87,11 @@ object IncomingUpdateMessage {
 
   // Java-api - without passThrough
   def create[T](source: T): IncomingMessage[T, NotUsed] =
-    IncomingUpdateMessage(source)
+    IncomingUpsertMessage(source)
 
   // Java-api - without passThrough
   def create[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
-    IncomingUpdateMessage(source, passThrough)
+    IncomingUpsertMessage(source, passThrough)
 }
 
 object IncomingDeleteMessage {
@@ -147,7 +150,7 @@ private[solr] final class SolrFlowStage[T, C](
     collection: String,
     client: SolrClient,
     settings: SolrUpdateSettings,
-    messageBinder: Option[T => SolrInputDocument]
+    messageBinder: T => SolrInputDocument
 ) extends GraphStage[FlowShape[Seq[IncomingMessage[T, C]], Seq[IncomingMessageResult[T, C]]]] {
 
   private val in = Inlet[Seq[IncomingMessage[T, C]]]("messages")
@@ -162,7 +165,7 @@ private[solr] final class SolrFlowStage[T, C](
 }
 
 sealed trait Operation
-final object Update extends Operation
+final object Upsert extends Operation
 final object Delete extends Operation
 final object AtomicUpdate extends Operation
 
@@ -181,7 +184,7 @@ private[solr] final class SolrFlowLogic[T, C](
     out: Outlet[Seq[IncomingMessageResult[T, C]]],
     shape: FlowShape[Seq[IncomingMessage[T, C]], Seq[IncomingMessageResult[T, C]]],
     settings: SolrUpdateSettings,
-    messageBinder: Option[T => SolrInputDocument]
+    messageBinder: T => SolrInputDocument
 ) extends TimerGraphStageLogic(shape)
     with OutHandler
     with InHandler
@@ -265,12 +268,11 @@ private[solr] final class SolrFlowLogic[T, C](
     completeStage()
 
   private def updateBulkToSolr(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
-    val binder = messageBinder.get
     val docs = messages
       .map(
         message =>
           message.sourceOpt.map { source: T =>
-            binder(source)
+            messageBinder(source)
         }
       )
       .flatten
@@ -317,7 +319,7 @@ private[solr] final class SolrFlowLogic[T, C](
       }
       //send this subset
       val response = operation match {
-        case Update => updateBulkToSolr(current)
+        case Upsert => updateBulkToSolr(current)
         case AtomicUpdate => atomicUpdateBulkToSolr(current)
         case Delete => deleteBulkToSolr(current)
       }
@@ -331,7 +333,7 @@ private[solr] final class SolrFlowLogic[T, C](
     }
 
     try {
-      val response = send(messages)
+      val response = if (messages.nonEmpty) send(messages) else new UpdateResponse
       handleResponse((messages, response.getStatus))
     } catch {
       case exception: Throwable =>
