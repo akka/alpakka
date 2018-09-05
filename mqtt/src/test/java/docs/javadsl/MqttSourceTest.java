@@ -26,6 +26,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.net.ssl.SSLContext;
+
+import static org.hamcrest.CoreMatchers.*;
+
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -36,6 +41,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class MqttSourceTest {
 
@@ -60,6 +66,31 @@ public class MqttSourceTest {
   @AfterClass
   public static void teardown() {
     TestKit.shutdownActorSystem(system);
+  }
+
+  @Test
+  public void connectionSettings() {
+    // #create-connection-settings
+    MqttConnectionSettings connectionSettings =
+        MqttConnectionSettings.create(
+            "tcp://localhost:1883", // (1)
+            "test-java-client", // (2)
+            new MemoryPersistence() // (3)
+            );
+    // #create-connection-settings
+    assertThat(connectionSettings.toString(), containsString("tcp://localhost:1883"));
+  }
+
+  @Test
+  public void connectionSettingsForSsl() throws Exception {
+    // #ssl-settings
+    MqttConnectionSettings connectionSettings =
+        MqttConnectionSettings.create("ssl://localhost:1885", "ssl-client", new MemoryPersistence())
+            .withAuth("mqttUser", "mqttPassword")
+            .withSocketFactory(SSLContext.getDefault().getSocketFactory());
+    // #ssl-settings
+    assertThat(connectionSettings.toString(), containsString("ssl://localhost:1885"));
+    assertThat(connectionSettings.toString(), containsString("auth(username)=Some(mqttUser)"));
   }
 
   @Test
@@ -181,14 +212,9 @@ public class MqttSourceTest {
     final String topic1 = "source-test/topic1";
     final String topic2 = "source-test/topic2";
 
-    // #create-connection-settings
     MqttConnectionSettings connectionSettings =
         MqttConnectionSettings.create(
-            "tcp://localhost:1883", // (1)
-            "test-java-client", // (2)
-            new MemoryPersistence() // (3)
-            );
-    // #create-connection-settings
+            "tcp://localhost:1883", "test-java-client", new MemoryPersistence());
 
     final Integer messageCount = 7;
 

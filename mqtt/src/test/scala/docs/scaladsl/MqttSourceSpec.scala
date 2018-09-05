@@ -13,6 +13,7 @@ import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestKit
 import akka.util.ByteString
+import javax.net.ssl.SSLContext
 import org.eclipse.paho.client.mqttv3.MqttException
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.scalatest._
@@ -38,13 +39,11 @@ class MqttSourceSpec
 
   implicit val mat: Materializer = ActorMaterializer()
 
-  //#create-connection-settings
   val connectionSettings = MqttConnectionSettings(
     "tcp://localhost:1883", // (1)
     "test-scala-client", // (2)
     new MemoryPersistence // (3)
   )
-  //#create-connection-settings
 
   val topic1 = "source-spec/topic1"
 
@@ -73,6 +72,32 @@ class MqttSourceSpec
           }
       }
       .mapMaterializedValue(_ => subscribed.future)
+  }
+
+  "MQTT connection settings" should {
+    "accept standard things" in {
+      //#create-connection-settings
+      val connectionSettings = MqttConnectionSettings(
+        "tcp://localhost:1883", // (1)
+        "test-scala-client", // (2)
+        new MemoryPersistence // (3)
+      )
+      //#create-connection-settings
+      connectionSettings.toString should include("tcp://localhost:1883")
+    }
+
+    "allow SSL" in {
+      //#ssl-settings
+      val connectionSettings = MqttConnectionSettings(
+        "ssl://localhost:1885",
+        "ssl-client",
+        new MemoryPersistence
+      ).withAuth("mqttUser", "mqttPassword")
+        .withSocketFactory(SSLContext.getDefault.getSocketFactory)
+      //#ssl-settings
+      connectionSettings.toString should include("ssl://localhost:1885")
+      connectionSettings.toString should include("auth(username)=Some(mqttUser)")
+    }
   }
 
   "mqtt source" should {
