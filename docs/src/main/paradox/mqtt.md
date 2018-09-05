@@ -50,6 +50,9 @@ Note that the following examples do not provide any connection management and ar
 
 Then let's create a source that connects to the MQTT server and receives messages from the subscribed topics.
 
+The `bufferSize` sets the maximum number of messages read from MQTT before back-pressure applies.
+
+
 Scala
 : @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #create-source }
 
@@ -64,6 +67,8 @@ MQTT `atMostOnce` automatically acknowledges messages back to the server when th
 
 The `atLeastOnce` source allow users to acknowledge the messages anywhere downstream.
 Please note that for manual acks to work `CleanSession` should be set to false and `MqttQoS` should be `AtLeastOnce`.
+
+The `bufferSize` sets the maximum number of messages read from MQTT before back-pressure applies.
 
 Scala
 : @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #create-source-with-manualacks }
@@ -101,9 +106,11 @@ Java
 : @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttSourceTest.java) { #will-message }
 
 
-## Publish and subscribe
+## Publish and subscribe in a single flow
 
 It is also possible to connect to the MQTT server in bidirectional fashion, using a single underlying connection (and client ID). To do that create an MQTT flow that combines the functionalities of an MQTT source and an MQTT sink.
+
+The `bufferSize` sets the maximum number of messages read from MQTT before back-pressure applies.
 
 Scala
 : @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttFlowSpec.scala) { #create-flow }

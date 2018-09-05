@@ -23,6 +23,7 @@ object MqttFlow {
    *
    * The materialized value completes on successful connection to the MQTT broker.
    *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
   @deprecated("use atMostOnce instead", "0.21")
@@ -39,6 +40,7 @@ object MqttFlow {
    *
    * The materialized value completes on successful connection to the MQTT broker.
    *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
   @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
@@ -56,6 +58,7 @@ object MqttFlow {
    *
    * The materialized value completes on successful connection to the MQTT broker.
    *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
   def atMostOnce(connectionSettings: MqttConnectionSettings,
@@ -73,6 +76,7 @@ object MqttFlow {
    *
    * The materialized value completes on successful connection to the MQTT broker.
    *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
   @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
@@ -92,6 +96,7 @@ object MqttFlow {
    *
    * The materialized value completes on successful connection to the MQTT broker.
    *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
   def atLeastOnce(connectionSettings: MqttConnectionSettings,
