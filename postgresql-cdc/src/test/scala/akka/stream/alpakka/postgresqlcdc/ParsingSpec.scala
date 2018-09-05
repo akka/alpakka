@@ -14,7 +14,7 @@ import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.Map
 
-class TestParsing extends FunSuite with Matchers {
+class ParsingSpec extends FunSuite with Matchers {
 
   test("parsing double quoted string") {
 

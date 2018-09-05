@@ -401,10 +401,10 @@ abstract class PostgreSQLCapturerSpec(postgreSQLPortNumber: Int)
 // 5434 - PostgreSQL 9.6
 // 5435 - PostgreSQL 10.4
 
-class ChangeDataCapturePostgreSQL94 extends PostgreSQLCapturerSpec(5432)
+class PostgreSQL94CapturerSpec extends PostgreSQLCapturerSpec(5432)
 
-class ChangeDataCapturePostgreSQL95 extends PostgreSQLCapturerSpec(5433)
+class PostgreSQL95CapturerSpec extends PostgreSQLCapturerSpec(5433)
 
-class ChangeDataCapturePostgreSQL96 extends PostgreSQLCapturerSpec(5434)
+class PostgreSQL96CapturerSpec extends PostgreSQLCapturerSpec(5434)
 
-class ChangeDataCapturePostgreSQL104 extends PostgreSQLCapturerSpec(5435)
+class PostgreSQL104CapturerSpec extends PostgreSQLCapturerSpec(5435)

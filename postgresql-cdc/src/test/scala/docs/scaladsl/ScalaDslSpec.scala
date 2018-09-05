@@ -14,7 +14,7 @@ import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
 
 import scala.concurrent.duration._
 
-class TestScalaDsl extends FunSuite with Matchers with BeforeAndAfterAll {
+class ScalaDslSpec extends FunSuite with Matchers with BeforeAndAfterAll {
 
   ignore("SourceSettings snippet for docs") {
 

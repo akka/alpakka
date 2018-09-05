@@ -85,10 +85,10 @@ Example source settings:
 
 
 Scala
-: @@snip ($alpakka$/postgresql-cdc/src/test/scala/akka/stream/alpakka/postgresqlcdc/TestScalaDsl.scala) { #SourceSettings }
+: @@snip (/postgresql-cdc/src/test/scala/docs/scaladsl/TestScalaDsl.scala) { #SourceSettings }
 
 Java
-: @@snip ($alpakka$/postgresql-cdc/src/test/java/akka/stream/alpakka/postgresqlcdc/TestJavaDsl.java) { #SourceSettings }
+: @@snip (/postgresql-cdc/src/test/java/docs/javadsl/TestJavaDsl.java) { #SourceSettings }
 
 
 
@@ -97,10 +97,10 @@ Java
 Without further ado, a minimalist example:
 
 Scala
-: @@snip ($alpakka$/postgresql-cdc/src/test/scala/akka/stream/alpakka/postgresqlcdc/TestScalaDsl.scala) { #GetExample }
+: @@snip (/postgresql-cdc/src/test/scala/docs/scaladsl/TestScalaDsl.scala) { #GetExample }
 
 Java
-: @@snip ($alpakka$/postgresql-cdc/src/test/java/akka/stream/alpakka/postgresqlcdc/TestJavaDsl.java) { #GetExample }
+: @@snip (/postgresql-cdc/src/test/java/docs/javadsl/TestJavaDsl.java) { #GetExample }
 
 
 ### Ack Sink Settings
@@ -129,10 +129,10 @@ You want to map these database change events (i.e. RowInserted) to domain events
 and use the Ack Sink to acknowledge consumption.
 
 Scala
-: @@snip ($alpakka$/postgresql-cdc/src/test/scala/akka/stream/alpakka/postgresqlcdc/TestScalaDsl.scala) { #PeekExample }
+: @@snip (/postgresql-cdc/src/test/scala/docs/scaladsl/TestScalaDsl.scala) { #PeekExample }
 
 Java
-: @@snip ($alpakka$/postgresql-cdc/src/test/java/akka/stream/alpakka/postgresqlcdc/TestJavaDsl.java) { #PeekExample }
+: @@snip (/postgresql-cdc/src/test/java/docs/javadsl/TestJavaDsl.java) { #PeekExample }
 
 
 ## Limitations
