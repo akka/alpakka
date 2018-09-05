@@ -24,6 +24,7 @@ object MqttFlow {
    *
    * The materialized value completes on successful connection to the MQTT broker.
    *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    * @deprecated use atMostOnce() instead
    */
@@ -42,6 +43,7 @@ object MqttFlow {
    *
    * The materialized value completes on successful connection to the MQTT broker.
    *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    * @deprecated use atMostOnce() instead
    */
@@ -57,6 +59,7 @@ object MqttFlow {
    *
    * The materialized value completes on successful connection to the MQTT broker.
    *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
   def atMostOnce(settings: MqttConnectionSettings,
@@ -73,6 +76,7 @@ object MqttFlow {
    *
    * The materialized value completes on successful connection to the MQTT broker.
    *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    * @deprecated use atLeastOnce with MqttConnectionSettings and MqttSubscriptions instead
    */
@@ -90,6 +94,7 @@ object MqttFlow {
    *
    * The materialized value completes on successful connection to the MQTT broker.
    *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
   def atLeastOnce(

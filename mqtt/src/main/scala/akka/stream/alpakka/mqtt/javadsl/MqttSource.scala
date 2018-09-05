@@ -24,6 +24,7 @@ object MqttSource {
    *
    * The materialized value completes on successful connection to the MQTT broker.
    *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
    * @deprecated use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead
    */
   @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
@@ -35,6 +36,8 @@ object MqttSource {
    * Create a source subscribing to MQTT messages (without a commit handle).
    *
    * The materialized value completes on successful connection to the MQTT broker.
+   *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
    */
   def atMostOnce(settings: MqttConnectionSettings,
                  subscriptions: MqttSubscriptions,
@@ -49,6 +52,7 @@ object MqttSource {
    *
    * The materialized value completes on successful connection to the MQTT broker.
    *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
    * @deprecated use atLeastOnce with MqttConnectionSettings and MqttSubscriptions instead
    */
   @deprecated("use atLeastOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
@@ -61,6 +65,8 @@ object MqttSource {
    * Create a source subscribing to MQTT messages with a commit handle to acknowledge message reception.
    *
    * The materialized value completes on successful connection to the MQTT broker.
+   *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
    */
   def atLeastOnce(settings: MqttConnectionSettings,
                   subscriptions: MqttSubscriptions,
