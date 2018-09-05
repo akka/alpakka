@@ -12,7 +12,6 @@ import akka.stream.{ActorAttributes, ActorMaterializer, Attributes}
 import javax.jms
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 /**
  * Internal API
@@ -58,8 +57,11 @@ private[jms] trait JmsConnector[S <: JmsSession] { this: GraphStageLogic =>
   protected def initSessionAsync(executionContext: ExecutionContext): Unit = {
     ec = executionContext
     val sessions: Seq[Future[S]] = openSessions()
-    sessions.foreach(_.foreach(onSession.invoke))
-    Future.sequence(sessions).failed.foreach(fail.invoke)
+    val allSessions = Future.sequence(sessions)
+    allSessions.failed.foreach(fail.invoke)
+    // wait for all sessions to successfully initialize before invoking the onSession callback.
+    // reduces flakiness (start, consume, then crash) at the cost of increased latency of startup.
+    allSessions.foreach(_.foreach(onSession.invoke))
   }
 
   def openSessions(): Seq[Future[S]]
@@ -100,6 +102,12 @@ private[jms] trait JmsConsumerConnector extends JmsConnector[JmsConsumerSession]
 
 private[jms] trait JmsProducerConnector extends JmsConnector[JmsProducerSession] { this: GraphStageLogic =>
 
+  private def createSession(connection: jms.Connection,
+                            createDestination: jms.Session => jms.Destination): JmsProducerSession = {
+    val session = connection.createSession(false, AcknowledgeMode.AutoAcknowledge.mode)
+    new JmsProducerSession(connection, session, createDestination(session))
+  }
+
   def openSessions(): Seq[Future[JmsProducerSession]] = {
     val connection = openConnection()
 
@@ -109,11 +117,7 @@ private[jms] trait JmsProducerConnector extends JmsConnector[JmsProducerSession]
     }
 
     for (_ <- 0 until jmsSettings.sessionCount)
-      yield
-        Future {
-          val session = connection.createSession(false, AcknowledgeMode.AutoAcknowledge.mode)
-          new JmsProducerSession(connection, session, createDestination(session))
-        }
+      yield Future(createSession(connection, createDestination))
   }
 }
 
@@ -222,7 +226,7 @@ private[jms] class JmsMessageProducer(jmsProducer: jms.MessageProducer, jmsSessi
     }
 }
 
-private[jms] trait JmsSession {
+private[jms] sealed trait JmsSession {
 
   def connection: jms.Connection
 
