@@ -85,7 +85,7 @@ Example source settings:
 
 
 Scala
-: @@snip (/postgresql-cdc/src/test/scala/docs/scaladsl/TestScalaDsl.scala) { #SourceSettings }
+: @@snip (/postgresql-cdc/src/test/scala/docs/scaladsl/ScalaDslSpec.scala) { #SourceSettings }
 
 Java
 : @@snip (/postgresql-cdc/src/test/java/docs/javadsl/TestJavaDsl.java) { #SourceSettings }
@@ -97,7 +97,7 @@ Java
 Without further ado, a minimalist example:
 
 Scala
-: @@snip (/postgresql-cdc/src/test/scala/docs/scaladsl/TestScalaDsl.scala) { #GetExample }
+: @@snip (/postgresql-cdc/src/test/scala/docs/scaladsl/ScalaDslSpec.scala) { #GetExample }
 
 Java
 : @@snip (/postgresql-cdc/src/test/java/docs/javadsl/TestJavaDsl.java) { #GetExample }
@@ -129,7 +129,7 @@ You want to map these database change events (i.e. RowInserted) to domain events
 and use the Ack Sink to acknowledge consumption.
 
 Scala
-: @@snip (/postgresql-cdc/src/test/scala/docs/scaladsl/TestScalaDsl.scala) { #PeekExample }
+: @@snip (/postgresql-cdc/src/test/scala/docs/scaladsl/ScalaDslSpec.scala) { #PeekExample }
 
 Java
 : @@snip (/postgresql-cdc/src/test/java/docs/javadsl/TestJavaDsl.java) { #PeekExample }
