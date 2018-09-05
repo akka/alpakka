@@ -6,8 +6,8 @@ package akka.stream.alpakka.jms
 
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
-import javax.jms._
 
+import javax.jms._
 import akka.Done
 import akka.stream._
 import akka.stream.stage._
@@ -15,7 +15,7 @@ import akka.util.OptionVal
 
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future, TimeoutException}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
@@ -162,32 +162,29 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings)
       protected def createSession(connection: Connection, createDestination: Session => javax.jms.Destination) = {
         val session =
           connection.createSession(true, settings.acknowledgeMode.getOrElse(AcknowledgeMode.SessionTransacted).mode)
-        new JmsTxSession(connection, session, createDestination(session), settings.destination.get)
+        new JmsSession(connection, session, createDestination(session), settings.destination.get)
       }
 
       protected def pushMessage(msg: TxEnvelope): Unit = push(out, msg)
 
       override protected def onSessionOpened(jmsSession: JmsSession): Unit =
         jmsSession match {
-          case session: JmsTxSession =>
+          case session: JmsSession =>
             session.createConsumer(settings.selector).onComplete {
               case Success(consumer) =>
                 consumer.setMessageListener(new MessageListener {
 
-                  var listenerStopped = false
-
                   def onMessage(message: Message): Unit =
-                    if (!listenerStopped)
-                      try {
-                        val envelope = TxEnvelope(message, session)
-                        handleMessage.invoke(envelope)
-                        val action = session.commitQueue.take()
-                        action(envelope)
-                      } catch {
-                        case _: StopMessageListenerException => listenerStopped = true // Tombstone.
-                        case e: IllegalArgumentException => handleError.invoke(e) // Invalid envelope. Fail the stage.
-                        case e: JMSException => handleError.invoke(e)
-                      }
+                    try {
+                      val envelope = TxEnvelope(message, session)
+                      handleMessage.invoke(envelope)
+                      val action = Await.result(envelope.commitFuture, settings.ackTimeout)
+                      action()
+                    } catch {
+                      case _: TimeoutException => session.session.rollback()
+                      case e: IllegalArgumentException => handleError.invoke(e) // Invalid envelope. Fail the stage.
+                      case e: JMSException => handleError.invoke(e)
+                    }
                 })
               case Failure(e) =>
                 fail.invoke(e)

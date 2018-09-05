@@ -5,12 +5,12 @@
 package akka.stream.alpakka.jms.scaladsl
 
 import java.util.concurrent.{ConcurrentHashMap, LinkedBlockingQueue, TimeUnit}
-import javax.jms.{JMSException, TextMessage}
 
+import javax.jms.{JMSException, TextMessage}
 import akka.Done
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import akka.stream.{KillSwitch, KillSwitches, ThrottleMode}
+import akka.stream._
 import org.apache.activemq.ActiveMQConnectionFactory
 import org.scalatest.Inspectors._
 
@@ -366,6 +366,182 @@ class JmsTxConnectorsSpec extends JmsSpec {
       // Ensure we break the stream while reading, not all input should have been read.
       resultQueue.size should be < numsIn.size
       resultTry shouldBe Failure(ex)
+
+      val killSwitch2 = jmsSource
+        .to(
+          Sink.foreach { env =>
+            resultQueue.add(env.message.asInstanceOf[TextMessage].getText)
+            env.commit()
+          }
+        )
+        .run()
+
+      val resultList = new mutable.ArrayBuffer[String](numsIn.size)
+
+      @tailrec
+      def keepPolling(): Unit =
+        Option(resultQueue.poll(2, TimeUnit.SECONDS)) match {
+          case Some(entry) =>
+            resultList += entry
+            keepPolling()
+          case None =>
+        }
+
+      keepPolling()
+
+      killSwitch2.shutdown()
+
+      // messages might get delivered more than once, use set to ignore duplicates
+      resultList.toSet should contain theSameElementsAs numsIn.map(_.toString)
+    }
+
+    "ensure no message loss or starvation when exceptions occur in a stream missing commits" in withServer() { ctx =>
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
+        JmsProducerSettings(connectionFactory).withQueue("numbers")
+      )
+
+      val (publishKillSwitch, publishedData) = Source
+        .unfold(1)(n => Some(n + 1 -> n))
+        .throttle(15, 1.second, 2, ThrottleMode.shaping) // Higher than consumption rate.
+        .viaMat(KillSwitches.single)(Keep.right)
+        .alsoTo(Flow[Int].map(n => JmsTextMessage(n.toString).withProperty("Number", n)).to(jmsSink))
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      val jmsSource: Source[TxEnvelope, KillSwitch] = JmsConsumer.txSource(
+        JmsConsumerSettings(connectionFactory)
+          .withSessionCount(5)
+          .withQueue("numbers")
+          .withAckTimeout(10.millis)
+      )
+
+      val resultQueue = new LinkedBlockingQueue[String]()
+
+      val r = new java.util.Random
+
+      val thisDecider: Supervision.Decider = {
+        case ex =>
+          Supervision.resume
+      }
+
+      val (killSwitch, streamDone) = jmsSource
+        .throttle(10, 1.second, 2, ThrottleMode.shaping)
+        .map { env =>
+          val text = env.message.asInstanceOf[TextMessage].getText
+          if (r.nextInt(3) <= 1) throw new IllegalStateException(s"Test Exception on $text")
+          resultQueue.add(text)
+          env.commit()
+          1
+        }
+        .recover {
+          case _: Throwable => 1
+        }
+        .withAttributes(ActorAttributes.supervisionStrategy(thisDecider))
+        .toMat(Sink.ignore)(Keep.both)
+        .run()
+
+      // Need to wait for the stream to have started and running for sometime.
+      Thread.sleep(3000)
+
+      killSwitch.shutdown()
+
+      streamDone.futureValue shouldBe Done
+
+      // Keep publishing for another 2 seconds to make sure we killed the consumption mid-stream.
+      Thread.sleep(2000)
+
+      publishKillSwitch.shutdown()
+      val numsIn = publishedData.futureValue
+
+      // Ensure we break the stream while reading, not all input should have been read.
+      resultQueue.size should be < numsIn.size
+
+      val killSwitch2 = jmsSource
+        .to(
+          Sink.foreach { env =>
+            resultQueue.add(env.message.asInstanceOf[TextMessage].getText)
+            env.commit()
+          }
+        )
+        .run()
+
+      val resultList = new mutable.ArrayBuffer[String](numsIn.size)
+
+      @tailrec
+      def keepPolling(): Unit =
+        Option(resultQueue.poll(2, TimeUnit.SECONDS)) match {
+          case Some(entry) =>
+            resultList += entry
+            keepPolling()
+          case None =>
+        }
+
+      keepPolling()
+
+      killSwitch2.shutdown()
+
+      // messages might get delivered more than once, use set to ignore duplicates
+      resultList.toSet should contain theSameElementsAs numsIn.map(_.toString)
+    }
+
+    "ensure no message loss or starvation when timeouts occur in a stream processing" in withServer() { ctx =>
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
+        JmsProducerSettings(connectionFactory).withQueue("numbers")
+      )
+
+      val (publishKillSwitch, publishedData) = Source
+        .unfold(1)(n => Some(n + 1 -> n))
+        .throttle(15, 1.second, 2, ThrottleMode.shaping) // Higher than consumption rate.
+        .viaMat(KillSwitches.single)(Keep.right)
+        .alsoTo(Flow[Int].map(n => JmsTextMessage(n.toString).withProperty("Number", n)).to(jmsSink))
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      val jmsSource: Source[TxEnvelope, KillSwitch] = JmsConsumer.txSource(
+        JmsConsumerSettings(connectionFactory)
+          .withSessionCount(5)
+          .withQueue("numbers")
+          .withAckTimeout(10.millis)
+      )
+
+      val resultQueue = new LinkedBlockingQueue[String]()
+
+      val r = new java.util.Random
+
+      val (killSwitch, streamDone) = jmsSource
+        .throttle(10, 1.second, 2, ThrottleMode.shaping)
+        .toMat(
+          Sink.foreach { env =>
+            val text = env.message.asInstanceOf[TextMessage].getText
+            if (r.nextInt(3) <= 1) {
+              // Artifially timing out this message
+              Thread.sleep(20)
+            }
+            resultQueue.add(text)
+            env.commit()
+          }
+        )(Keep.both)
+        .run()
+
+      // Need to wait for the stream to have started and running for sometime.
+      Thread.sleep(3000)
+
+      killSwitch.shutdown()
+
+      streamDone.futureValue shouldBe Done
+
+      // Keep publishing for another 2 seconds to make sure we killed the consumption mid-stream.
+      Thread.sleep(2000)
+
+      publishKillSwitch.shutdown()
+      val numsIn = publishedData.futureValue
+
+      // Ensure we break the stream while reading, not all input should have been read.
+      resultQueue.size should be < numsIn.size
 
       val killSwitch2 = jmsSource
         .to(

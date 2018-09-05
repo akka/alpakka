@@ -4,10 +4,13 @@
 
 package akka.stream.alpakka.jms
 
-import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
+
 import javax.jms
 import javax.jms.{ConnectionFactory, Message}
+
+import scala.concurrent.{Future, Promise}
+import scala.concurrent.duration._
 
 case class AckEnvelope private[jms] (message: Message, private val jmsSession: JmsAckSession) {
 
@@ -16,13 +19,15 @@ case class AckEnvelope private[jms] (message: Message, private val jmsSession: J
   def acknowledge(): Unit = if (processed.compareAndSet(false, true)) jmsSession.ack(message)
 }
 
-case class TxEnvelope private[jms] (message: Message, private val jmsSession: JmsTxSession) {
+case class TxEnvelope private[jms] (message: Message, private val jmsSession: JmsSession) {
 
-  val processed = new AtomicBoolean(false)
+  private[this] val commitPromise = Promise[() => Unit]
 
-  def commit(): Unit = if (processed.compareAndSet(false, true)) jmsSession.commit(this)
+  private[jms] val commitFuture: Future[() => Unit] = commitPromise.future
 
-  def rollback(): Unit = if (processed.compareAndSet(false, true)) jmsSession.rollback(this)
+  def commit(): Unit = commitPromise.success(jmsSession.session.commit _)
+
+  def rollback(): Unit = commitPromise.success(jmsSession.session.rollback _)
 }
 
 sealed trait JmsSettings {
@@ -71,6 +76,7 @@ final case class JmsConsumerSettings(connectionFactory: ConnectionFactory,
                                      bufferSize: Int = 100,
                                      selector: Option[String] = None,
                                      acknowledgeMode: Option[AcknowledgeMode] = None,
+                                     ackTimeout: Duration = Duration.Inf,
                                      durableName: Option[String] = None)
     extends JmsSettings {
   def withCredential(credentials: Credentials): JmsConsumerSettings = copy(credentials = Some(credentials))
@@ -84,6 +90,9 @@ final case class JmsConsumerSettings(connectionFactory: ConnectionFactory,
   def withSelector(selector: String): JmsConsumerSettings = copy(selector = Some(selector))
   def withAcknowledgeMode(acknowledgeMode: AcknowledgeMode): JmsConsumerSettings =
     copy(acknowledgeMode = Option(acknowledgeMode))
+  def withAckTimeout(timeout: Duration): JmsConsumerSettings = copy(ackTimeout = timeout)
+  def withAckTimeout(timeout: Long, unit: TimeUnit): JmsConsumerSettings =
+    copy(ackTimeout = Duration(timeout, unit))
 }
 
 object JmsProducerSettings {
@@ -105,6 +114,10 @@ final case class JmsProducerSettings(connectionFactory: ConnectionFactory,
   def withTopic(name: String): JmsProducerSettings = copy(destination = Some(Topic(name)))
   def withDestination(destination: Destination): JmsProducerSettings = copy(destination = Some(destination))
   def withTimeToLive(ttl: Duration): JmsProducerSettings = copy(timeToLive = Some(ttl))
+  def withTimeToLive(timeout: Long, unit: TimeUnit): JmsProducerSettings =
+    copy(timeToLive = Some(Duration(timeout, unit)))
+  def withTimeToLive(ttl: java.time.Duration): JmsProducerSettings =
+    copy(timeToLive = Some(Duration(ttl.toNanos, NANOSECONDS)))
   def withAcknowledgeMode(acknowledgeMode: AcknowledgeMode): JmsProducerSettings =
     copy(acknowledgeMode = Option(acknowledgeMode))
 }
