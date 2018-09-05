@@ -22,12 +22,12 @@ The Alpakka MQTT connector provides an Akka Stream source, sink and flow to conn
   version=$version$
 }
 
-## Setup
+## Settings
 
 The required `MqttConnectionSettings` (@scaladoc[API](akka.stream.alpakka.mqtt.MqttConnectionSettings$)) settings to connect to an MQTT server are 
 
 1. the MQTT broker address
-2. a unique ID for the client
+1. a unique ID for the client (setting it to the empty string should let the MQTT broker assign it, but not all do; you might want to generate it)
 1. the MQTT client persistence to use (eg. @javadoc[MemoryPersistence](org.eclipse.paho.client.mqttv3.persist.MemoryPersistence)) which allows to control reliability guarantees 
 
 Scala
@@ -42,6 +42,16 @@ Most settings are passed on to Paho's `MqttConnectOptions` (@javadoc[API](org.ec
 Note that the following examples do not provide any connection management and are designed to get you going quickly. Consider empty client IDs to auto-generate unique identifiers and the use of [delayed stream restarts](https://doc.akka.io/docs/akka/current/stream/stream-error.html?language=scala#delayed-restarts-with-a-backoff-stage). The underlying Paho library's auto-reconnect feature [does not handle initial connections by design](https://github.com/eclipse/paho.mqtt.golang/issues/77).
 @@@
 
+
+### Configure encrypted connections
+
+To connect with transport-level security configure the address as `ssl://`, set authentication details and pass in a socket factory.
+
+Scala
+: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #ssl-settings }
+
+Java
+: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttSourceTest.java) { #ssl-settings }
 
 
 ## Reading from MQTT
