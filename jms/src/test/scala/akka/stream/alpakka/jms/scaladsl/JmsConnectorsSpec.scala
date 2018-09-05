@@ -340,12 +340,18 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       result.futureValue shouldEqual in
     }
 
-    "disconnection should fail the stage" in withServer() { ctx =>
+    "disconnection should fail the stage after exhausting retries" in withServer() { ctx =>
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
-      val result = JmsConsumer(JmsConsumerSettings(connectionFactory).withQueue("test")).runWith(Sink.seq)
+      val result = JmsConsumer(
+        JmsConsumerSettings(connectionFactory)
+          .withQueue("test")
+          .withConnectionRetrySettings(ConnectionRetrySettings(maxRetries = 3))
+      ).runWith(Sink.seq)
       Thread.sleep(500)
       ctx.broker.stop()
-      result.failed.futureValue shouldBe an[JMSException]
+      val ex = result.failed.futureValue
+      ex shouldBe a[ConnectionRetryException]
+      ex.getCause shouldBe a[JMSException]
     }
 
     "publish and consume elements through a topic with custom topic creator" in withServer() { ctx =>
@@ -568,7 +574,9 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       val brokerStop = new CountDownLatch(1)
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
-        JmsProducerSettings(connectionFactory).withQueue("numbers")
+        JmsProducerSettings(connectionFactory)
+          .withQueue("numbers")
+          .withConnectionRetrySettings(ConnectionRetrySettings(maxRetries = 2))
       )
 
       val completionFuture: Future[Done] = Source(0 to 10)
@@ -585,7 +593,10 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       ctx.broker.stop()
       brokerStop.countDown()
 
-      completionFuture.failed.futureValue shouldBe a[JMSException]
+      val exception = completionFuture.failed.futureValue
+      exception shouldBe a[ConnectionRetryException]
+      exception.getCause shouldBe a[JMSException]
+
       // connection was not yet initialized before broker stop
       connectionFactory.cachedConnection shouldBe null
     }
@@ -732,6 +743,24 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       resultList.size should be > (numsIn.size / 2)
       resultList.size should be < numsIn.size
       resultList.size shouldBe resultList.toSet.size // no duplicates
+    }
+
+    "only fail after maxBackoff retry" in withServer() { ctx =>
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+      ctx.broker.stop()
+      val startTime = System.currentTimeMillis
+      val result = JmsConsumer(
+        JmsConsumerSettings(connectionFactory)
+          .withConnectionRetrySettings(ConnectionRetrySettings(maxRetries = 4))
+          .withQueue("test")
+      ).runWith(Sink.seq)
+
+      val ex = result.failed.futureValue
+      val endTime = System.currentTimeMillis
+
+      (endTime - startTime) shouldBe >(100L + 400L + 900L + 1600L)
+      ex shouldBe a[ConnectionRetryException]
+      ex.getCause shouldBe a[JMSException]
     }
 
     "browse" in withServer() { ctx =>

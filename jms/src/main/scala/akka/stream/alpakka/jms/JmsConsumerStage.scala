@@ -6,12 +6,12 @@ package akka.stream.alpakka.jms
 
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
-import javax.jms._
 
 import akka.Done
 import akka.stream._
 import akka.stream.stage._
 import akka.util.OptionVal
+import javax.jms._
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -228,11 +228,34 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
     failStage(ex)
   }
 
+  protected def onSessionOpened(jmsSession: JmsSession): Unit
+
+  private val onSession = getAsyncCallback[JmsSession] { session =>
+    jmsSessions :+= session
+    onSessionOpened(session)
+  }
+
   private[jms] val handleError = getAsyncCallback[Throwable] { e =>
     fail(out, e)
   }
 
-  override def preStart(): Unit = initSessionAsync(executionContext(attributes))
+  private[jms] def initConsumption(): Future[Seq[JmsSession]] = {
+    val sessionsFuture = createConnectionAndSessions(onConnectionFailure = _ => initConsumption())
+    sessionsFuture.foreach { sessions =>
+      sessions.foreach { session =>
+        onSession.invoke(session)
+      }
+    }
+    sessionsFuture.onFailure {
+      case e: Exception => fail.invoke(e)
+    }
+    sessionsFuture
+  }
+
+  override def preStart(): Unit = {
+    ec = executionContext(attributes)
+    initConsumption()
+  }
 
   private[jms] val handleMessage = getAsyncCallback[T] { msg =>
     if (isAvailable(out)) {

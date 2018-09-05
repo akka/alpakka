@@ -13,7 +13,7 @@ import akka.util.OptionVal
 import javax.jms
 import javax.jms.{Connection, Session}
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
 import scala.util.control.{NoStackTrace, NonFatal}
 
@@ -55,9 +55,10 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
       }
 
       override def preStart(): Unit = {
-        jmsSessions = openSessions()
-        jmsSessions.foreach(jmsSession => jmsProducers.enqueue(JmsMessageProducer(jmsSession, settings)))
         ec = executionContext(inheritedAttributes)
+        val sessionsFuture = createConnectionAndSessions(onConnectionFailure = e => fail.invoke(e))
+        jmsSessions = Await.result(sessionsFuture, settings.connectionRetrySettings.maxWaitTime)
+        jmsSessions.foreach(jmsSession => jmsProducers.enqueue(JmsMessageProducer(jmsSession, settings)))
       }
 
       setHandler(out, new OutHandler {
