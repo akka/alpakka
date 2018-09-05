@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.postgresqlcdc;
+package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
@@ -10,6 +10,7 @@ import akka.event.Logging;
 import akka.stream.ActorMaterializer;
 import akka.stream.Attributes;
 import akka.stream.Materializer;
+import akka.stream.alpakka.postgresqlcdc.*;
 import akka.stream.alpakka.postgresqlcdc.javadsl.ChangeDataCapture;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
