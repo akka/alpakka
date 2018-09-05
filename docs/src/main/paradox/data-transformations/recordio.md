@@ -39,17 +39,17 @@ factory method for a `Flow[ByteString, ByteString, _]` which parses out RecordIO
 For instance, given the sample input:
 
 Scala
-: @@snip ($alpakka$/simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala) { #test-data }
+: @@snip [snip](/simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala) { #test-data }
 
 Running it through the RecordIO framing flow:
 
 Scala
-: @@snip ($alpakka$/simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala) { #run-via-scanner }
+: @@snip [snip](/simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala) { #run-via-scanner }
 
 We obtain:
 
 Scala
-: @@snip ($alpakka$/simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala) { #result }
+: @@snip [snip](/simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala) { #result }
 
 ### Running the example code
 

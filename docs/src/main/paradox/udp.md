@@ -22,20 +22,20 @@ Datagrams can be sent to remote destinations by using a `Udp.sendFlow` or `Udp.s
 @scaladoc[Udp](akka.stream.alpakka.udp.scaladsl.Udp$) factory object.
 
 Scala
-: @@snip ($alpakka$/udp/src/test/scala/docs/scaladsl/UdpSpec.scala) { #send-datagrams }
+: @@snip [snip](/udp/src/test/scala/docs/scaladsl/UdpSpec.scala) { #send-datagrams }
 
 Java
-: @@snip ($alpakka$/udp/src/test/java/docs/javadsl/UdpTest.java) { #send-datagrams }
+: @@snip [snip](/udp/src/test/java/docs/javadsl/UdpTest.java) { #send-datagrams }
 
 ### Receiving
 
 First create an address which will be used to bind and listen for incoming datagrams.
 
 Scala
-: @@snip ($alpakka$/udp/src/test/scala/docs/scaladsl/UdpSpec.scala) { #bind-address }
+: @@snip [snip](/udp/src/test/scala/docs/scaladsl/UdpSpec.scala) { #bind-address }
 
 Java
-: @@snip ($alpakka$/udp/src/test/java/docs/javadsl/UdpTest.java) { #bind-address }
+: @@snip [snip](/udp/src/test/java/docs/javadsl/UdpTest.java) { #bind-address }
 
 A Flow created from `Udp.bindFlow` will bind to the given address. All datagrams coming from the network
 to the bound address will be sent downstream. Datagrams received from the upstream will be sent to their
@@ -45,10 +45,10 @@ The flow materializes to the @scala[`Future[InetSocketAddress]`]@java[`Completio
 will eventually hold the address the flow was finally bound to.
 
 Scala
-: @@snip ($alpakka$/udp/src/test/scala/docs/scaladsl/UdpSpec.scala) { #bind-flow }
+: @@snip [snip](/udp/src/test/scala/docs/scaladsl/UdpSpec.scala) { #bind-flow }
 
 Java
-: @@snip ($alpakka$/udp/src/test/java/docs/javadsl/UdpTest.java) { #bind-flow }
+: @@snip [snip](/udp/src/test/java/docs/javadsl/UdpTest.java) { #bind-flow }
 
 ### Running the example code
 

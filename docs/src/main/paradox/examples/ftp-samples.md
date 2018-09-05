@@ -21,10 +21,10 @@
 - collect all filenames with results into a sequence (6)
 
 Scala
-: @@snip ($alpakka$/doc-examples/src/main/scala/ftpsamples/FtpToFile.scala) { #sample }
+: @@snip [snip](/doc-examples/src/main/scala/ftpsamples/FtpToFile.scala) { #sample }
 
 Java
-: @@snip ($alpakka$/doc-examples/src/main/java/ftpsamples/FtpToFileExample.java) { #sample }
+: @@snip [snip](/doc-examples/src/main/java/ftpsamples/FtpToFileExample.java) { #sample }
 
 ### Running the example code
 

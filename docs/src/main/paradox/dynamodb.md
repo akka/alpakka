@@ -22,55 +22,55 @@ provided by the [DynamoDB Java SDK](http://docs.aws.amazon.com/sdk-for-java/v1/d
 If you wish to use static credentials they can be defined in the config
 
 Define Static Credentials in Config
-: @@snip ($alpakka$/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/DynamoSettingsSpec.scala) { #static-creds }
+: @@snip [snip](/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/DynamoSettingsSpec.scala) { #static-creds }
 
 Alternatively any type of `AWSCredentialsProvider` can be provided programmatically via the default @scaladoc[DynamoSettings](akka.stream.alpakka.dynamodb.impl.DynamoSettings) 
 constructor
 
 Supply Credentials Provider to Constructor
-: @@snip ($alpakka$/dynamodb/src/main/scala/akka/stream/alpakka/dynamodb/impl/DynamoSettings.scala) { #init-settings } 
+: @@snip [snip](/dynamodb/src/main/scala/akka/stream/alpakka/dynamodb/impl/DynamoSettings.scala) { #init-settings } 
 
 Before you can construct the client, you need an @scaladoc[ActorSystem](akka.actor.ActorSystem), 
 @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer), and @scaladoc[ExecutionContext](scala.concurrent.ExecutionContext).
 
 Scala
-: @@snip ($alpakka$/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #init-client }
+: @@snip [snip](/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #init-client }
 
 Java
-: @@snip ($alpakka$/dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #init-client }
+: @@snip [snip](/dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #init-client }
 
 You can then create the client with a settings object.
 
 Scala
-: @@snip ($alpakka$/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #client-construct }
+: @@snip [snip](/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #client-construct }
 
 Java
-: @@snip ($alpakka$/dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #client-construct }
+: @@snip [snip](/dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #client-construct }
 
 We can now send requests to DynamoDB across the connection.
 
 Scala
-: @@snip ($alpakka$/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #simple-request }
+: @@snip [snip](/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #simple-request }
 
 Java
-: @@snip ($alpakka$/dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #simple-request }
+: @@snip [snip](/dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #simple-request }
 
 You can also use a Flow to execute your DynamoDB call:
 
 Scala
-: @@snip ($alpakka$/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #flow }
+: @@snip [snip](/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #flow }
 
 Java
-: @@snip ($alpakka$/dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #flow }
+: @@snip [snip](/dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #flow }
 
 Some DynamoDB operations, such as Query and Scan, are paginated by nature.
 You can get a stream of all result pages:
 
 Scala
-: @@snip ($alpakka$/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #paginated }
+: @@snip [snip](/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/ExampleSpec.scala) { #paginated }
 
 Java
-: @@snip ($alpakka$/dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #paginated }
+: @@snip [snip](/dynamodb/src/test/java/akka/stream/alpakka/dynamodb/ExampleTest.java) { #paginated }
 
 ### Running the example code
 

@@ -139,13 +139,19 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     mock404s()
 
-    val result = s3Client
+    val (s3Strm, objMtdF) = s3Client
       .download("nonexisting_bucket", "nonexisting_file.xml")
-      ._1
+    val result = s3Strm
       .map(_.utf8String)
       .runWith(Sink.head)
 
     whenReady(result.failed) { e =>
+      e shouldBe a[S3Exception]
+      e.asInstanceOf[S3Exception].code should equal("NoSuchKey")
+    }
+
+    whenReady(objMtdF.failed) { e =>
+      e.printStackTrace()
       e shouldBe a[S3Exception]
       e.asInstanceOf[S3Exception].code should equal("NoSuchKey")
     }

@@ -13,6 +13,7 @@ import akka.util.ByteString
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Promise}
+import scala.collection.immutable
 
 /**
  * Needs a local running AMQP server on the default port with no password.
@@ -30,7 +31,7 @@ class AmqpDocsSpec extends AmqpSpec {
       // use a list of host/port pairs where one is normally invalid, but
       // it should still work as expected,
       val connectionProvider =
-        AmqpDetailsConnectionProvider(List(("invalid", 5673))).withHostsAndPorts(("localhost", 5672))
+        AmqpDetailsConnectionProvider("invalid", 5673).withHostsAndPorts(immutable.Seq("localhost" -> 5672))
 
       //#queue-declaration
       val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
@@ -41,13 +42,13 @@ class AmqpDocsSpec extends AmqpSpec {
       val amqpSink = AmqpSink.simple(
         AmqpSinkSettings(connectionProvider)
           .withRoutingKey(queueName)
-          .withDeclarations(queueDeclaration)
+          .withDeclaration(queueDeclaration)
       )
       //#create-sink
 
       //#create-source
       val amqpSource = AmqpSource.atMostOnceSource(
-        NamedQueueSourceSettings(connectionProvider, queueName).withDeclarations(queueDeclaration),
+        NamedQueueSourceSettings(connectionProvider, queueName).withDeclaration(queueDeclaration),
         bufferSize = 10
       )
       //#create-source
@@ -71,7 +72,7 @@ class AmqpDocsSpec extends AmqpSpec {
 
       //#create-rpc-flow
       val amqpRpcFlow = AmqpRpcFlow.simple(
-        AmqpSinkSettings(connectionProvider).withRoutingKey(queueName).withDeclarations(queueDeclaration)
+        AmqpSinkSettings(connectionProvider).withRoutingKey(queueName).withDeclaration(queueDeclaration)
       )
       //#create-rpc-flow
 
@@ -95,7 +96,7 @@ class AmqpDocsSpec extends AmqpSpec {
       )
 
       amqpSource
-        .map(b => OutgoingMessage(b.bytes.concat(ByteString("a")), false, false, Some(b.properties)))
+        .map(b => OutgoingMessage(b.bytes.concat(ByteString("a")), false, false).withProperties(b.properties))
         .runWith(amqpSink)
 
       probe.request(5).expectNextUnorderedN(input.map(s => ByteString(s.concat("a")))).expectComplete()
@@ -115,7 +116,7 @@ class AmqpDocsSpec extends AmqpSpec {
       val amqpSink = AmqpSink.simple(
         AmqpSinkSettings(connectionProvider)
           .withExchange(exchangeName)
-          .withDeclarations(exchangeDeclaration)
+          .withDeclaration(exchangeDeclaration)
       )
       //#create-exchange-sink
 
@@ -130,7 +131,7 @@ class AmqpDocsSpec extends AmqpSpec {
                 TemporaryQueueSourceSettings(
                   connectionProvider,
                   exchangeName
-                ).withDeclarations(exchangeDeclaration),
+                ).withDeclaration(exchangeDeclaration),
                 bufferSize = 1
               )
               .map(msg => (fanoutBranch, msg.bytes.utf8String))
@@ -161,12 +162,12 @@ class AmqpDocsSpec extends AmqpSpec {
       val amqpSink = AmqpSink.simple(
         AmqpSinkSettings(connectionProvider)
           .withRoutingKey(queueName)
-          .withDeclarations(queueDeclaration)
+          .withDeclaration(queueDeclaration)
       )
 
       //#create-source-withoutautoack
       val amqpSource = AmqpSource.committableSource(
-        NamedQueueSourceSettings(connectionProvider, queueName).withDeclarations(queueDeclaration),
+        NamedQueueSourceSettings(connectionProvider, queueName).withDeclaration(queueDeclaration),
         bufferSize = 10
       )
       //#create-source-withoutautoack
@@ -192,14 +193,14 @@ class AmqpDocsSpec extends AmqpSpec {
       val amqpSink = AmqpSink.simple(
         AmqpSinkSettings(connectionProvider)
           .withRoutingKey(queueName)
-          .withDeclarations(queueDeclaration)
+          .withDeclaration(queueDeclaration)
       )
 
       val input = Vector("one", "two", "three", "four", "five")
       Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
 
       val amqpSource = AmqpSource.committableSource(
-        NamedQueueSourceSettings(connectionProvider, queueName).withDeclarations(queueDeclaration),
+        NamedQueueSourceSettings(connectionProvider, queueName).withDeclaration(queueDeclaration),
         bufferSize = 10
       )
 

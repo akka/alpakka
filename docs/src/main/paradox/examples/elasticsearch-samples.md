@@ -16,10 +16,10 @@ and mount closing it on shutdown of the Actor System (1)
 - Close the Elastic client upon completion of indexing the data (10)
 
 Scala
-: @@snip ($alpakka$/doc-examples/src/main/scala/elastic/FetchUsingSlickAndStreamIntoElastic.scala) { #sample }
+: @@snip [snip](/doc-examples/src/main/scala/elastic/FetchUsingSlickAndStreamIntoElastic.scala) { #sample }
 
 Java
-: @@snip ($alpakka$/doc-examples/src/main/java/elastic/FetchUsingSlickAndStreamIntoElasticInJava.java) { #sample }
+: @@snip [snip](/doc-examples/src/main/java/elastic/FetchUsingSlickAndStreamIntoElasticInJava.java) { #sample }
 
 ### Running the example code
 

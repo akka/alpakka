@@ -118,7 +118,7 @@ Use `private`, `private[connector]` and `final` extensively to limit the API sur
 | `akka.stream.alpakka.connector.javadsl`  | Java-only part of the API, normally factories for Sources, Flows and Sinks
 | `akka.stream.alpakka.connector.scaladsl` | Scala-only part of the API, normally factories for Sources, Flows and Sinks
 | `akka.stream.alpakka.connector`          | Shared API, eg. settings classes
-| `akka.stream.alpakka.connector.impl`     | Implementation in separate package
+| `akka.stream.alpakka.connector.impl`     | Internal implementation in separate package
 
 ### Graph stage checklist
 
@@ -131,6 +131,20 @@ Use `private`, `private[connector]` and `final` extensively to limit the API sur
 * Make sure the code is thread-safe; if in doubt, please ask!
 * No Blocking At Any Time -- in other words, avoid blocking whenever possible and replace it with asynchronous 
 programming (async callbacks, stage actors)
+
+### Use of blocking APIs
+
+Many technologies come with client libraries that only support blocking calls. Akka Stream stages that use blocking APIs should preferably be run on Akka's `IODispatcher`. (In rare cases you might want to allow the users to configure another dispatcher to run the blocking operations on.)
+
+To select Akka's `IODispatcher` for a stage use
+```$scala
+override protected def initialAttributes: Attributes = Attributes(ActorAttributes.IODispatcher)
+```
+
+When the `IODispatcher` is selected, you do NOT need to wrap the blocking calls in `Future`s or `blocking`.
+
+(Issue [akka/akka#25540](https://github.com/akka/akka/issues/25540) requests better support for selecting the correct execution context.)
+
 
 ### Keep the code DRY
 
@@ -157,7 +171,7 @@ Please ensure that you limit the amount of resources used by the containers.
 
 ## Documentation
 
-> Reference connector [paradox documentation](docs/src/main/paradox/refernece.md)
+> Reference connector [paradox documentation](docs/src/main/paradox/reference.md)
 
 Using [Paradox](https://github.com/lightbend/paradox) syntax (which is very close to markdown), create or complement
 the documentation in the `docs` module.

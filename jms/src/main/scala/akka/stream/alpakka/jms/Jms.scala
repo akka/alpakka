@@ -30,6 +30,7 @@ sealed trait JmsSettings {
   def destination: Option[Destination]
   def credentials: Option[Credentials]
   def acknowledgeMode: Option[AcknowledgeMode]
+  def sessionCount: Int
 }
 
 sealed trait Destination {
@@ -37,6 +38,9 @@ sealed trait Destination {
   val create: (jms.Session) => jms.Destination
 }
 final case class Topic(override val name: String) extends Destination {
+  override val create: (jms.Session) => jms.Destination = session => session.createTopic(name)
+}
+final case class DurableTopic(name: String, subscriberName: String) extends Destination {
   override val create: (jms.Session) => jms.Destination = session => session.createTopic(name)
 }
 final case class Queue(override val name: String) extends Destination {
@@ -66,13 +70,16 @@ final case class JmsConsumerSettings(connectionFactory: ConnectionFactory,
                                      sessionCount: Int = 1,
                                      bufferSize: Int = 100,
                                      selector: Option[String] = None,
-                                     acknowledgeMode: Option[AcknowledgeMode] = None)
+                                     acknowledgeMode: Option[AcknowledgeMode] = None,
+                                     durableName: Option[String] = None)
     extends JmsSettings {
   def withCredential(credentials: Credentials): JmsConsumerSettings = copy(credentials = Some(credentials))
   def withSessionCount(count: Int): JmsConsumerSettings = copy(sessionCount = count)
   def withBufferSize(size: Int): JmsConsumerSettings = copy(bufferSize = size)
   def withQueue(name: String): JmsConsumerSettings = copy(destination = Some(Queue(name)))
   def withTopic(name: String): JmsConsumerSettings = copy(destination = Some(Topic(name)))
+  def withDurableTopic(name: String, subscriberName: String) =
+    copy(destination = Some(DurableTopic(name, subscriberName)))
   def withDestination(destination: Destination): JmsConsumerSettings = copy(destination = Some(destination))
   def withSelector(selector: String): JmsConsumerSettings = copy(selector = Some(selector))
   def withAcknowledgeMode(acknowledgeMode: AcknowledgeMode): JmsConsumerSettings =
@@ -88,10 +95,12 @@ object JmsProducerSettings {
 final case class JmsProducerSettings(connectionFactory: ConnectionFactory,
                                      destination: Option[Destination] = None,
                                      credentials: Option[Credentials] = None,
+                                     sessionCount: Int = 1,
                                      timeToLive: Option[Duration] = None,
                                      acknowledgeMode: Option[AcknowledgeMode] = None)
     extends JmsSettings {
   def withCredential(credentials: Credentials): JmsProducerSettings = copy(credentials = Some(credentials))
+  def withSessionCount(count: Int): JmsProducerSettings = copy(sessionCount = count)
   def withQueue(name: String): JmsProducerSettings = copy(destination = Some(Queue(name)))
   def withTopic(name: String): JmsProducerSettings = copy(destination = Some(Topic(name)))
   def withDestination(destination: Destination): JmsProducerSettings = copy(destination = Some(destination))
@@ -114,6 +123,7 @@ final case class JmsBrowseSettings(connectionFactory: ConnectionFactory,
                                    selector: Option[String] = None,
                                    acknowledgeMode: Option[AcknowledgeMode] = None)
     extends JmsSettings {
+  override val sessionCount = 1
   def withCredential(credentials: Credentials): JmsBrowseSettings = copy(credentials = Some(credentials))
   def withQueue(name: String): JmsBrowseSettings = copy(destination = Some(Queue(name)))
   def withDestination(destination: Destination): JmsBrowseSettings = copy(destination = Some(destination))

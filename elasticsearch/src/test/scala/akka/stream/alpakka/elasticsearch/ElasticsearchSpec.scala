@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.elasticsearch
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.elasticsearch.scaladsl._
@@ -80,7 +81,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       Map[String, String]().asJava,
       new StringEntity(s"""{
            |  "mappings": {
-           |    "book": {
+           |    "_doc": {
            |      "dynamic": "strict",
            |      "properties": {
            |        "title": { "type": "text"}
@@ -94,7 +95,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   private def register(indexName: String, title: String): Unit =
     client.performRequest("POST",
-                          s"$indexName/book",
+                          s"$indexName/_doc",
                           Map[String, String]().asJava,
                           new StringEntity(s"""{"title": "$title"}"""),
                           new BasicHeader("Content-Type", "application/json"))
@@ -111,22 +112,22 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   "Un-typed Elasticsearch connector" should {
     "consume and publish Json documents" in {
-      // Copy source/book to sink2/book through typed stream
+      // Copy source/_doc to sink2/_doc through typed stream
       //#run-jsobject
       val f1 = ElasticsearchSource
         .create(
           indexName = "source",
-          typeName = "book",
+          typeName = "_doc",
           query = """{"match_all": {}}"""
         )
         .map { message: OutgoingMessage[spray.json.JsObject] =>
           val book: Book = jsonReader[Book].read(message.source)
-          IncomingMessage(Some(message.id), book)
+          IncomingIndexMessage(message.id, book)
         }
         .runWith(
           ElasticsearchSink.create[Book](
             indexName = "sink2",
-            typeName = "book"
+            typeName = "_doc"
           )
         )
       //#run-jsobject
@@ -135,11 +136,11 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       flush("sink2")
 
-      // Assert docs in sink2/book
+      // Assert docs in sink2/_doc
       val f2 = ElasticsearchSource
         .typed[Book](
           "sink2",
-          "book",
+          "_doc",
           """{"match_all": {}}"""
         )
         .map { message =>
@@ -163,21 +164,21 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   "Typed Elasticsearch connector" should {
     "consume and publish documents as specific type" in {
-      // Copy source/book to sink2/book through typed stream
+      // Copy source/_doc to sink2/_doc through typed stream
       //#run-typed
       val f1 = ElasticsearchSource
         .typed[Book](
           indexName = "source",
-          typeName = "book",
+          typeName = "_doc",
           query = """{"match_all": {}}"""
         )
         .map { message: OutgoingMessage[Book] =>
-          IncomingMessage(Some(message.id), message.source)
+          IncomingIndexMessage(message.id, message.source)
         }
         .runWith(
           ElasticsearchSink.create[Book](
             indexName = "sink2",
-            typeName = "book"
+            typeName = "_doc"
           )
         )
       //#run-typed
@@ -186,11 +187,11 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       flush("sink2")
 
-      // Assert docs in sink2/book
+      // Assert docs in sink2/_doc
       val f2 = ElasticsearchSource
         .typed[Book](
           "sink2",
-          "book",
+          "_doc",
           """{"match_all": {}}"""
         )
         .map { message =>
@@ -214,21 +215,21 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   "ElasticsearchFlow" should {
     "store documents and pass failed documents to downstream" in {
-      // Copy source/book to sink3/book through typed stream
+      // Copy source/_doc to sink3/_doc through typed stream
       //#run-flow
       val f1 = ElasticsearchSource
         .typed[Book](
           indexName = "source",
-          typeName = "book",
+          typeName = "_doc",
           query = """{"match_all": {}}"""
         )
         .map { message: OutgoingMessage[Book] =>
-          IncomingMessage(Some(message.id), message.source)
+          IncomingIndexMessage(message.id, message.source)
         }
         .via(
           ElasticsearchFlow.create[Book](
             indexName = "sink3",
-            typeName = "book"
+            typeName = "_doc"
           )
         )
         .runWith(Sink.seq)
@@ -240,11 +241,11 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       // Assert no errors
       assert(result1.forall(!_.exists(_.success == false)))
 
-      // Assert docs in sink3/book
+      // Assert docs in sink3/_doc
       val f2 = ElasticsearchSource
         .typed[Book](
           "sink3",
-          "book",
+          "_doc",
           """{"match_all": {}}"""
         )
         .map { message =>
@@ -277,12 +278,12 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val f1 = Source(books.zipWithIndex.toVector)
         .map {
           case (book: String, index: Int) =>
-            IncomingMessage(Some(index.toString), Book(book))
+            IncomingIndexMessage(index.toString, Book(book))
         }
         .via(
           ElasticsearchFlow.create[Book](
             "sink4",
-            "book"
+            "_doc"
           )
         )
         .runWith(Sink.seq)
@@ -293,11 +294,11 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       // Assert no error
       assert(result1.forall(!_.exists(_.success == false)))
 
-      // Assert docs in sink4/book
+      // Assert docs in sink4/_doc
       val f2 = ElasticsearchSource
         .typed[Book](
           "sink4",
-          "book",
+          "_doc",
           """{"match_all": {}}"""
         )
         .map { message =>
@@ -326,13 +327,13 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         ).zipWithIndex.toVector
       ).map {
           case (book: JsObject, index: Int) =>
-            IncomingMessage(Some(index.toString), book)
+            IncomingIndexMessage(index.toString, book)
           case _ => ??? // Keep the compiler from complaining
         }
         .via(
           ElasticsearchFlow.create(
             "sink5",
-            "book",
+            "_doc",
             ElasticsearchSinkSettings(maxRetry = 5, retryInterval = 100, retryPartialFailure = true)
           )
         )
@@ -345,11 +346,10 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       // Assert retired documents
       assert(
         result1.flatten.filter(!_.success).toList == Seq(
-          IncomingMessageResult[JsValue](
-            Map("subject" -> "Akka Concurrency").toJson,
-            false,
+          IncomingMessageResult[JsValue, NotUsed](
+            IncomingIndexMessage("1", Map("subject" -> "Akka Concurrency").toJson),
             Some(
-              """{"type":"strict_dynamic_mapping_exception","reason":"mapping set to strict, dynamic introduction of [subject] within [book] is not allowed"}"""
+              """{"type":"strict_dynamic_mapping_exception","reason":"mapping set to strict, dynamic introduction of [subject] within [_doc] is not allowed"}"""
             )
           )
         )
@@ -360,11 +360,11 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       flush("sink5")
 
-      // Assert docs in sink5/book
+      // Assert docs in sink5/_doc
       val f2 = ElasticsearchSource
         .typed[Book](
           "sink5",
-          "book",
+          "_doc",
           """{"match_all": {}}"""
         )
         .map { message =>
@@ -409,19 +409,19 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           println("title: " + book.title)
 
           // Transform message so that we can write to elastic
-          IncomingMessage(Some(id), book, kafkaMessage.offset)
+          IncomingIndexMessage(id, book).withPassThrough(kafkaMessage.offset)
         }
         .via( // write to elastic
           ElasticsearchFlow.createWithPassThrough[Book, KafkaOffset](
             indexName = "sink6",
-            typeName = "book"
+            typeName = "_doc"
           )
         )
         .map { messageResults =>
           messageResults.foreach { result =>
             if (!result.success) throw new Exception("Failed to write message to elastic")
             // Commit to kafka
-            commitToKakfa(result.passThrough)
+            commitToKakfa(result.message.passThrough)
           }
         }
         .runWith(Sink.seq)
@@ -437,7 +437,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val f2 = ElasticsearchSource
         .typed[Book](
           indexName = "sink6",
-          typeName = "book",
+          typeName = "_doc",
           """{"match_all": {}}"""
         )
         .map { message =>
@@ -459,21 +459,18 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         ("00003", Book("Book 3"))
       )
 
-      // Create new documents in sink7/book using the upsert method
-      //#run-flow
+      // Create new documents in sink7/_doc using the upsert method
       val f1 = Source(books)
         .map { book: (String, Book) =>
-          IncomingMessage(Some(book._1), book._2)
+          IncomingUpsertMessage(id = book._1, source = book._2)
         }
         .via(
           ElasticsearchFlow.create[Book](
             "sink7",
-            "book",
-            ElasticsearchSinkSettings(bufferSize = 5, docAsUpsert = true)
+            "_doc"
           )
         )
         .runWith(Sink.seq)
-      //#run-flow
 
       val result1 = Await.result(f1, Duration.Inf)
       flush("sink7")
@@ -497,21 +494,18 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
          ))
       )
 
-      // Update sink7/book with the second dataset
-      //#run-flow
+      // Update sink7/_doc with the second dataset
       val f2 = Source(updatedBooks)
         .map { book: (String, JsObject) =>
-          IncomingMessage(Some(book._1), book._2)
+          IncomingUpsertMessage(id = book._1, source = book._2)
         }
         .via(
           ElasticsearchFlow.create[JsObject](
             "sink7",
-            "book",
-            ElasticsearchSinkSettings(bufferSize = 5, docAsUpsert = true)
+            "_doc"
           )
         )
         .runWith(Sink.seq)
-      //#run-flow
 
       val result2 = Await.result(f2, Duration.Inf)
       flush("sink7")
@@ -519,10 +513,10 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       // Assert no errors
       assert(result2.forall(!_.exists(_.success == false)))
 
-      // Assert docs in sink7/book
+      // Assert docs in sink7/_doc
       val f3 = ElasticsearchSource(
         "sink7",
-        "book",
+        "_doc",
         """{"match_all": {}}""",
         ElasticsearchSourceSettings.Default
       ).map { message =>
@@ -550,6 +544,58 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
+  "ElasticsearchFlow" should {
+    "handle multiple types of operations correctly" in {
+      //#multiple-operations
+      // Create, update, upsert and delete documents in sink8/_doc
+      val requests = List[IncomingMessage[Book, NotUsed]](
+        IncomingIndexMessage(id = "00001", source = Book("Book 1")),
+        IncomingUpsertMessage(id = "00002", source = Book("Book 2")),
+        IncomingUpsertMessage(id = "00003", source = Book("Book 3")),
+        IncomingUpdateMessage(id = "00004", source = Book("Book 4")),
+        IncomingDeleteMessage(id = "00002")
+      )
+
+      val f1 = Source(requests)
+        .via(
+          ElasticsearchFlow.create[Book](
+            "sink8",
+            "_doc"
+          )
+        )
+        .runWith(Sink.seq)
+      //#multiple-operations
+
+      val result1 = Await.result(f1, Duration.Inf)
+      flush("sink8")
+
+      // Assert no errors except a missing document for a update request
+      val error = result1.flatMap(_.flatMap(_.error))
+      error.length shouldEqual 1
+      error(0).parseJson.asJsObject.fields("reason").asInstanceOf[JsString].value shouldEqual
+      "[_doc][00004]: document missing"
+
+      // Assert docs in sink8/_doc
+      val f3 = ElasticsearchSource(
+        "sink8",
+        "_doc",
+        """{"match_all": {}}""",
+        ElasticsearchSourceSettings.Default
+      ).map { message =>
+          message.source
+        }
+        .runWith(Sink.seq)
+
+      val result3 = Await.result(f3, Duration.Inf)
+
+      // Docs should contain both columns
+      result3.sortBy(_.fields("title").compactPrint) shouldEqual Seq(
+        JsObject("title" -> JsString("Book 1")),
+        JsObject("title" -> JsString("Book 3"))
+      )
+    }
+  }
+
   "ElasticsearchSource" should {
     "read and write document-version if configured to do so" in {
 
@@ -557,7 +603,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       implicit val formatVersionTestDoc: JsonFormat[VersionTestDoc] = jsonFormat3(VersionTestDoc)
 
       val indexName = "version-test-scala"
-      val typeName = "VersionTestDoc"
+      val typeName = "_doc"
 
       val docs = List(
         VersionTestDoc("1", "a", 0),
@@ -568,7 +614,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       // insert new documents
       val f1 = Source(docs)
         .map { doc =>
-          IncomingMessage(Some(doc.id), doc)
+          IncomingIndexMessage(doc.id, doc)
         }
         .via(
           ElasticsearchFlow.create[VersionTestDoc](
@@ -604,7 +650,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
           val newDoc = doc.copy(value = doc.value + 1)
 
-          IncomingMessage(Some(newDoc.id), newDoc, version)
+          IncomingIndexMessage(newDoc.id, newDoc).withVersion(version)
         }
         .via(
           ElasticsearchFlow.create[VersionTestDoc](
@@ -644,7 +690,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         .single(VersionTestDoc("1", "a", 2))
         .map { doc =>
           val oldVersion = 1
-          IncomingMessage(Some(doc.id), doc, oldVersion)
+          IncomingIndexMessage(doc.id, doc).withVersion(oldVersion)
         }
         .via(
           ElasticsearchFlow.create[VersionTestDoc](
@@ -663,17 +709,17 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     "allow read and write using configured version type" in {
 
       val indexName = "book-test-version-type"
-      val typeName = "book"
+      val typeName = "_doc"
 
       val book = Book("A sample title")
-      val docId = Some("1")
+      val docId = "1"
       val externalVersion = 5L
 
       // Insert new document using external version
       val f1 = Source
         .single(book)
         .map { doc =>
-          IncomingMessage(docId, doc, externalVersion)
+          IncomingIndexMessage(docId, doc).withVersion(externalVersion)
         }
         .via(
           ElasticsearchFlow.create[Book](
@@ -706,7 +752,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   "Elasticsearch connector" should {
     "Should use indexName supplied in message if present" in {
-      // Copy source/book to sink2/book through typed stream
+      // Copy source/_doc to sink2/_doc through typed stream
 
       //#custom-index-name-example
       val customIndexName = "custom-index"
@@ -714,17 +760,17 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val f1 = ElasticsearchSource
         .typed[Book](
           indexName = "source",
-          typeName = "book",
+          typeName = "_doc",
           query = """{"match_all": {}}"""
         )
         .map { message: OutgoingMessage[Book] =>
-          IncomingMessage(Some(message.id), message.source)
+          IncomingIndexMessage(message.id, message.source)
             .withIndexName(customIndexName) // Setting the index-name to use for this document
         }
         .runWith(
           ElasticsearchSink.create[Book](
             indexName = "this-is-not-the-index-we-are-using",
-            typeName = "book"
+            typeName = "_doc"
           )
         )
       //#custom-index-name-example
@@ -733,11 +779,11 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       flush(customIndexName)
 
-      // Assert docs in sink2/book
+      // Assert docs in custom-index/_doc
       val f2 = ElasticsearchSource
         .typed[Book](
           customIndexName,
-          "book",
+          "_doc",
           """{"match_all": {}}"""
         )
         .map { message =>
@@ -795,7 +841,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       implicit val formatVersionTestDoc: JsonFormat[TestDoc] = jsonFormat4(TestDoc)
 
       val indexName = "custom-search-params-test-scala"
-      val typeName = "TestDoc"
+      val typeName = "_doc"
 
       val docs = List(
         TestDoc("1", "a1", Some("b1"), "c1"),
@@ -806,7 +852,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       // insert new documents
       val f1 = Source(docs)
         .map { doc =>
-          IncomingMessage(Some(doc.id), doc)
+          IncomingIndexMessage(doc.id, doc)
         }
         .via(
           ElasticsearchFlow.create[TestDoc](
@@ -845,6 +891,14 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       assert(result3.toList.sortBy(_.id) == docs.map(_.copy(b = None)))
 
     }
+  }
+
+  def compileOnlySample(): Unit = {
+    val doc = "dummy-doc"
+    //#custom-metadata-example
+    val msg = IncomingIndexMessage(doc)
+      .withCustomMetadata(Map("pipeline" -> "myPipeline"))
+    //#custom-metadata-example
   }
 
 }

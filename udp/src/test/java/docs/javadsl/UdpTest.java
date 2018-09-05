@@ -49,14 +49,17 @@ public class UdpTest {
 
     // #bind-flow
     final Flow<Datagram, Datagram, CompletionStage<InetSocketAddress>> bindFlow =
-      Udp.bindFlow(bindToLocal, system);
+        Udp.bindFlow(bindToLocal, system);
     // #bind-flow
 
-    final Pair<Pair<TestPublisher.Probe<Datagram>, CompletionStage<InetSocketAddress>>, TestSubscriber.Probe<Datagram>> materialized =
-      TestSource.<Datagram>probe(system)
-        .viaMat(bindFlow, Keep.both())
-        .toMat(TestSink.probe(system), Keep.both())
-        .run(materializer);
+    final Pair<
+            Pair<TestPublisher.Probe<Datagram>, CompletionStage<InetSocketAddress>>,
+            TestSubscriber.Probe<Datagram>>
+        materialized =
+            TestSource.<Datagram>probe(system)
+                .viaMat(bindFlow, Keep.both())
+                .toMat(TestSink.probe(system), Keep.both())
+                .run(materializer);
 
     {
       // #send-datagrams

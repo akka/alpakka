@@ -32,10 +32,10 @@ The flow fails with an @javadoc[UnmappableCharacterException](java.nio.charset.U
 if a character is not representable in the targeted character set.
 
 Scala
-: @@snip ($alpakka$/text/src/test/scala/docs/scaladsl/CharsetCodingFlowsDoc.scala) { #transcoding }
+: @@snip [snip](/text/src/test/scala/docs/scaladsl/CharsetCodingFlowsDoc.scala) { #transcoding }
 
 Java
-: @@snip ($alpakka$/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java) { #transcoding }
+: @@snip [snip](/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java) { #transcoding }
 
 ## Text encoding
 
@@ -46,10 +46,10 @@ The flow fails with an @javadoc[UnmappableCharacterException](java.nio.charset.U
 if a character is not representable in the targeted character set.
 
 Scala
-: @@snip ($alpakka$/text/src/test/scala/docs/scaladsl/CharsetCodingFlowsDoc.scala) { #encoding }
+: @@snip [snip](/text/src/test/scala/docs/scaladsl/CharsetCodingFlowsDoc.scala) { #encoding }
 
 Java
-: @@snip ($alpakka$/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java) { #encoding }
+: @@snip [snip](/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java) { #encoding }
 
 ## Text decoding
 
@@ -57,7 +57,7 @@ The text decoding flow converts incoming ByteStrings to Strings using the given
 character encoding. 
 
 Scala
-: @@snip ($alpakka$/text/src/test/scala/docs/scaladsl/CharsetCodingFlowsDoc.scala) { #decoding }
+: @@snip [snip](/text/src/test/scala/docs/scaladsl/CharsetCodingFlowsDoc.scala) { #decoding }
 
 Java
-: @@snip ($alpakka$/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java) { #decoding }
+: @@snip [snip](/text/src/test/java/docs/javadsl/CharsetCodingFlowsDoc.java) { #decoding }

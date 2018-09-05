@@ -26,7 +26,7 @@ object AmqpRpcFlow {
    */
   def simple(settings: AmqpSinkSettings, repliesPerMessage: Int = 1): Flow[ByteString, ByteString, Future[String]] =
     Flow[ByteString]
-      .map(bytes => OutgoingMessage(bytes, false, false, None))
+      .map(bytes => OutgoingMessage(bytes, false, false))
       .viaMat(atMostOnceFlow(settings, 1, repliesPerMessage))(Keep.right)
       .map(_.bytes)
 

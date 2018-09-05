@@ -48,20 +48,20 @@ It is recommended to shut the client instance down on Actor system termination.
 @@@
 
 Scala
-: @@snip ($alpakka$/kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #init-client }
+: @@snip [snip](/kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #init-client }
 
 Java
-: @@snip ($alpakka$/kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #init-client }
+: @@snip [snip](/kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #init-client }
 
 ### Kinesis as Source
 
 The `KinesisSource` creates one `GraphStage` per shard. Reading from a shard requires an instance of `ShardSettings`.
 
 Scala
-: @@snip ($alpakka$/kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #source-settings }
+: @@snip [snip](/kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #source-settings }
 
 Java
-: @@snip ($alpakka$/kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #source-settings }
+: @@snip [snip](/kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #source-settings }
 
 You have the choice of reading from a single shard, or reading from multiple shards. In the case of multiple shards the results of running a separate `GraphStage` for each shard will be merged together.
 
@@ -72,18 +72,18 @@ The `GraphStage` associated with a shard will remain open until the graph is sto
 For a single shard you simply provide the settings for a single shard.
 
 Scala
-: @@snip ($alpakka$/kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #source-single }
+: @@snip [snip](/kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #source-single }
 
 Java
-: @@snip ($alpakka$/kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #source-single }
+: @@snip [snip](/kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #source-single }
 
 You can merge multiple shards by providing a list settings.
 
 Scala
-: @@snip ($alpakka$/kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #source-list }
+: @@snip [snip](/kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #source-list }
 
 Java
-: @@snip ($alpakka$/kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #source-list }
+: @@snip [snip](/kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #source-list }
 
 The constructed `Source` will return [Record](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_Record.html)
 objects by calling [GetRecords](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetRecords.html) at the specified interval and according to the downstream demand.
@@ -101,13 +101,15 @@ Batching has a drawback: message order cannot be guaranteed, as some records wit
 More information can be found [here](http://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-sdk.html#kinesis-using-sdk-java-putrecords) and [here](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html).
 @@@
 
+In order to correlate the results with the original message, an optional user context object of arbitrary type can be associated with every message and will be returned with the corresponding result. This allows keeping track of which messages have been successfully sent to Kinesis even if the message order gets mixed up.
+
 Publishing to a Kinesis stream requires an instance of `KinesisFlowSettings`, although a default instance with sane values and a method that returns settings based on the stream shard number are also available:
 
 Scala
-: @@snip ($alpakka$/kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #flow-settings }
+: @@snip [snip](/kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #flow-settings }
 
 Java
-: @@snip ($alpakka$/kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #flow-settings }
+: @@snip [snip](/kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #flow-settings }
 
 @@@ warning
 Note that throughput settings `maxRecordsPerSecond` and `maxBytesPerSecond` are vital to minimize server errors (like `ProvisionedThroughputExceededException`) and retries, and thus achieve a higher publication rate.
@@ -116,10 +118,10 @@ Note that throughput settings `maxRecordsPerSecond` and `maxBytesPerSecond` are 
 The Flow/Sink can now be created.
 
 Scala
-: @@snip ($alpakka$/kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #flow-sink }
+: @@snip [snip](/kinesis/src/test/scala/akka/stream/alpakka/kinesis/scaladsl/Examples.scala) { #flow-sink }
 
 Java
-: @@snip ($alpakka$/kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #flow-sink }
+: @@snip [snip](/kinesis/src/test/java/akka/stream/alpakka/kinesis/javadsl/Examples.java) { #flow-sink }
 
 ## Kinesis Firehose Streams
 
@@ -134,10 +136,10 @@ It is recommended to shut the client instance down on Actor system termination.
 @@@
 
 Scala
-: @@snip ($alpakka$/kinesis/src/test/scala/akka/stream/alpakka/kinesisfirehose/scaladsl/Examples.scala) { #init-client }
+: @@snip [snip](/kinesis/src/test/scala/akka/stream/alpakka/kinesisfirehose/scaladsl/Examples.scala) { #init-client }
 
 Java
-: @@snip ($alpakka$/kinesis/src/test/java/akka/stream/alpakka/kinesisfirehose/javadsl/Examples.java) { #init-client }
+: @@snip [snip](/kinesis/src/test/java/akka/stream/alpakka/kinesisfirehose/javadsl/Examples.java) { #init-client }
 
 ### Kinesis Put via Flow or as Sink
 
@@ -155,10 +157,10 @@ More information can be found [here](https://docs.aws.amazon.com/firehose/latest
 Publishing to a Kinesis Firehose stream requires an instance of `KinesisFirehoseFlowSettings`, although a default instance with sane values is available:
 
 Scala
-: @@snip ($alpakka$/kinesis/src/test/scala/akka/stream/alpakka/kinesisfirehose/scaladsl/Examples.scala) { #flow-settings }
+: @@snip [snip](/kinesis/src/test/scala/akka/stream/alpakka/kinesisfirehose/scaladsl/Examples.scala) { #flow-settings }
 
 Java
-: @@snip ($alpakka$/kinesis/src/test/java/akka/stream/alpakka/kinesisfirehose/javadsl/Examples.java) { #flow-settings }
+: @@snip [snip](/kinesis/src/test/java/akka/stream/alpakka/kinesisfirehose/javadsl/Examples.java) { #flow-settings }
 
 @@@ warning
 Note that throughput settings `maxRecordsPerSecond` and `maxBytesPerSecond` are vital to minimize server errors (like `ProvisionedThroughputExceededException`) and retries, and thus achieve a higher publication rate.
@@ -167,7 +169,7 @@ Note that throughput settings `maxRecordsPerSecond` and `maxBytesPerSecond` are 
 The Flow/Sink can now be created.
 
 Scala
-: @@snip ($alpakka$/kinesis/src/test/scala/akka/stream/alpakka/kinesisfirehose/scaladsl/Examples.scala) { #flow-sink }
+: @@snip [snip](/kinesis/src/test/scala/akka/stream/alpakka/kinesisfirehose/scaladsl/Examples.scala) { #flow-sink }
 
 Java
-: @@snip ($alpakka$/kinesis/src/test/java/akka/stream/alpakka/kinesisfirehose/javadsl/Examples.java) { #flow-sink }
+: @@snip [snip](/kinesis/src/test/java/akka/stream/alpakka/kinesisfirehose/javadsl/Examples.java) { #flow-sink }

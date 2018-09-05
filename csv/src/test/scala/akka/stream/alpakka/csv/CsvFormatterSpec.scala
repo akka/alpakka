@@ -6,6 +6,7 @@ package akka.stream.alpakka.csv
 
 import java.nio.charset.StandardCharsets
 
+import akka.stream.alpakka.csv.impl.CsvFormatter
 import akka.stream.alpakka.csv.scaladsl.CsvQuotingStyle
 import org.scalatest.{Matchers, WordSpec}
 
