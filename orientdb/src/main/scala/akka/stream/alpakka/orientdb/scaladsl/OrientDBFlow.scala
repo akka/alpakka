@@ -28,7 +28,6 @@ object OrientDBFlow {
           None
         )
       )
-      .mapAsync(1)(identity)
 
   /**
    * Creates a [[akka.stream.scaladsl.Flow]]
@@ -47,5 +46,4 @@ object OrientDBFlow {
           None
         )
       )
-      .mapAsync(1)(identity)
 }

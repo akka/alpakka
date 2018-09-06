@@ -17,7 +17,7 @@ import com.orientechnologies.orient.core.record.impl.ODocument
 import com.orientechnologies.orient.core.tx.OTransaction
 
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.collection.immutable.Seq
 
 /**
  * INTERNAL API
@@ -28,10 +28,10 @@ private[orientdb] class OrientDBFlowStage[T, C, R](
     settings: OrientDBUpdateSettings,
     pusher: Seq[OIncomingMessage[T, C]] => R,
     clazz: Option[Class[T]]
-) extends GraphStage[FlowShape[OIncomingMessage[T, C], Future[R]]] {
+) extends GraphStage[FlowShape[OIncomingMessage[T, C], R]] {
 
   private val in = Inlet[OIncomingMessage[T, C]]("messages")
-  private val out = Outlet[Future[R]]("failed")
+  private val out = Outlet[R]("failed")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -104,7 +104,7 @@ private[orientdb] class OrientDBFlowStage[T, C, R](
           sendOSQLBulkInsertRequest(nextMessages)
         }
 
-        push(out, Future.successful(pusher(failedMessages)))
+        push(out, pusher(failedMessages))
       }
 
       private def sendOSQLBulkInsertRequest(messages: Seq[OIncomingMessage[T, C]]): Unit =
@@ -148,7 +148,7 @@ private[orientdb] class OrientDBFlowStage[T, C, R](
             if (faultyMessages.nonEmpty) {
               responseHandler.invoke((faultyMessages, Some("Records are invalid OrientDB Records")))
             } else {
-              emit(out, Future.successful(pusher(successfulMessages)))
+              emit(out, pusher(successfulMessages))
               responseHandler.invoke((Seq(), None))
             }
           } else {
@@ -172,7 +172,7 @@ private[orientdb] class OrientDBFlowStage[T, C, R](
             if (faultyMessages.nonEmpty) {
               responseHandler.invoke((faultyMessages, Some("Records are invalid OrientDB Records")))
             } else {
-              emit(out, Future.successful(pusher(successfulMessages)))
+              emit(out, pusher(successfulMessages))
               responseHandler.invoke((Seq(), None))
             }
           }

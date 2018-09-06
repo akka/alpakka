@@ -31,7 +31,6 @@ object OrientDBFlow {
           None
         )
       )
-      .mapAsync(1)(identity)
       .asJava
 
   /**
@@ -49,7 +48,6 @@ object OrientDBFlow {
                                                                                         _.asJava,
                                                                                         clazz)
       )
-      .mapAsync(1)(identity)
       .asJava
 
   /**
@@ -69,6 +67,5 @@ object OrientDBFlow {
           None
         )
       )
-      .mapAsync(1)(identity)
       .asJava
 }
