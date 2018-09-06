@@ -16,9 +16,9 @@ import scala.compat.java8.FutureConverters._
 /**
  * Java API
  *
- * MQTT Message and a handle to commit message reception to MQTT.
+ * MQTT Message and a handle to acknowledge message reception to MQTT.
  */
-sealed trait MqttCommittableMessage {
+sealed trait MqttMessageWithAck {
 
   /**
    * The message received from MQTT.
@@ -28,25 +28,25 @@ sealed trait MqttCommittableMessage {
   /**
    * @deprecated use commit instead, since 0.21
    */
-  @deprecated("use commit instead", "0.21")
+  @deprecated("use ack() instead", "0.21")
   @java.lang.Deprecated
-  def messageArrivedComplete(): CompletionStage[Done] = commit()
+  def messageArrivedComplete(): CompletionStage[Done] = ack()
 
   /**
    * Signals `messageArrivedComplete` to MQTT.
    *
-   * @return completion indicating, if the commit reached MQTT
+   * @return completion indicating, if the acknowledge reached MQTT
    */
-  def commit(): CompletionStage[Done]
+  def ack(): CompletionStage[Done]
 }
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private[javadsl] object MqttCommittableMessage {
-  def toJava(cm: scaladsl.MqttCommittableMessage): MqttCommittableMessage = new MqttCommittableMessage {
+private[javadsl] object MqttMessageWithAck {
+  def toJava(cm: scaladsl.MqttMessageWithAck): MqttMessageWithAck = new MqttMessageWithAck {
     override val message: MqttMessage = cm.message
-    override def commit(): CompletionStage[Done] = cm.commit().toJava
+    override def ack(): CompletionStage[Done] = cm.ack().toJava
   }
 }

@@ -12,22 +12,22 @@ import scala.concurrent.Future
 /**
  * Scala API
  *
- * MQTT Message and a handle to commit message reception to MQTT.
+ * MQTT Message and a handle to acknowledge message reception to MQTT.
  */
-trait MqttCommittableMessage {
+trait MqttMessageWithAck {
 
   /**
    * The message received from MQTT.
    */
   val message: MqttMessage
 
-  @deprecated("use commit instead", "0.21")
-  def messageArrivedComplete(): Future[Done] = commit()
+  @deprecated("use ack() instead", "0.21")
+  def messageArrivedComplete(): Future[Done] = ack()
 
   /**
    * Signals `messageArrivedComplete` to MQTT.
    *
-   * @return a future indicating, if the commit reached MQTT
+   * @return a future indicating, if the acknowledge reached MQTT
    */
-  def commit(): Future[Done]
+  def ack(): Future[Done]
 }

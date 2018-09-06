@@ -82,7 +82,7 @@ object MqttFlow {
   @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
   def atLeastOnce(sourceSettings: MqttSourceSettings,
                   bufferSize: Int,
-                  defaultQos: MqttQoS): Flow[MqttMessage, MqttCommittableMessage, Future[Done]] =
+                  defaultQos: MqttQoS): Flow[MqttMessage, MqttMessageWithAck, Future[Done]] =
     Flow.fromGraph(
       new MqttFlowStage(sourceSettings.connectionSettings,
                         sourceSettings.subscriptions,
@@ -102,7 +102,7 @@ object MqttFlow {
   def atLeastOnce(connectionSettings: MqttConnectionSettings,
                   subscriptions: MqttSubscriptions,
                   bufferSize: Int,
-                  defaultQos: MqttQoS): Flow[MqttMessage, MqttCommittableMessage, Future[Done]] =
+                  defaultQos: MqttQoS): Flow[MqttMessage, MqttMessageWithAck, Future[Done]] =
     Flow.fromGraph(
       new MqttFlowStage(connectionSettings, subscriptions.subscriptions, bufferSize, defaultQos, manualAcks = true)
     )

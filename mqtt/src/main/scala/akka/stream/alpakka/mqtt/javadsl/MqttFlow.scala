@@ -86,7 +86,7 @@ object MqttFlow {
       settings: MqttSourceSettings,
       bufferSize: Int,
       defaultQos: MqttQoS
-  ): Flow[MqttMessage, MqttCommittableMessage, CompletionStage[Done]] =
+  ): Flow[MqttMessage, MqttMessageWithAck, CompletionStage[Done]] =
     atLeastOnce(settings.connectionSettings, MqttSubscriptions(settings.subscriptions), bufferSize, defaultQos)
 
   /**
@@ -102,10 +102,10 @@ object MqttFlow {
       subscriptions: MqttSubscriptions,
       bufferSize: Int,
       defaultQos: MqttQoS
-  ): Flow[MqttMessage, MqttCommittableMessage, CompletionStage[Done]] =
+  ): Flow[MqttMessage, MqttMessageWithAck, CompletionStage[Done]] =
     scaladsl.MqttFlow
       .atLeastOnce(settings, subscriptions, bufferSize, defaultQos)
-      .map(MqttCommittableMessage.toJava)
+      .map(MqttMessageWithAck.toJava)
       .mapMaterializedValue(_.toJava)
       .asJava
 }

@@ -87,7 +87,7 @@ Java
 : @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttSourceTest.java) { #create-source-with-manualacks }
 
 
-The `atLeastOnce` source returns @scala[@scaladoc[MqttCommittableMessage](akka.stream.alpakka.mqtt.scaladsl.MqttCommittableMessage)]@java[@scaladoc[MqttCommittableMessage](akka.stream.alpakka.mqtt.javadsl.MqttCommittableMessage)] so you can acknowledge them by calling `commit()`.
+The `atLeastOnce` source returns @scala[@scaladoc[MqttMessageWithAck](akka.stream.alpakka.mqtt.scaladsl.MqttMessageWithAck)]@java[@scaladoc[MqttMessageWithAck](akka.stream.alpakka.mqtt.javadsl.MqttMessageWithAck)] so you can acknowledge them by calling `ack()`.
 
 Scala
 : @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #run-source-with-manualacks }

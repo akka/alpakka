@@ -8,7 +8,7 @@ import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.alpakka.mqtt._
-import akka.stream.alpakka.mqtt.scaladsl.{MqttCommittableMessage, MqttSink, MqttSource}
+import akka.stream.alpakka.mqtt.scaladsl.{MqttMessageWithAck, MqttSink, MqttSource}
 import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestKit
@@ -108,7 +108,7 @@ class MqttSourceSpec
       val input = Vector("one", "two", "three", "four", "five")
 
       //#create-source-with-manualacks
-      val mqttSource: Source[MqttCommittableMessage, Future[Done]] =
+      val mqttSource: Source[MqttMessageWithAck, Future[Done]] =
         MqttSource.atLeastOnce(
           connectionSettings
             .withClientId(clientId = "source-spec/source1")
@@ -126,12 +126,12 @@ class MqttSourceSpec
 
       unackedResult.futureValue.map(message => message.message.payload.utf8String) should equal(input)
 
-      val businessLogic: Flow[MqttCommittableMessage, MqttCommittableMessage, NotUsed] = Flow[MqttCommittableMessage]
+      val businessLogic: Flow[MqttMessageWithAck, MqttMessageWithAck, NotUsed] = Flow[MqttMessageWithAck]
 
       //#run-source-with-manualacks
       val result = mqttSource
         .via(businessLogic)
-        .mapAsync(1)(committableMessage => committableMessage.commit().map(_ => committableMessage.message))
+        .mapAsync(1)(messageWithAck => messageWithAck.ack().map(_ => messageWithAck.message))
         .take(input.size)
         .runWith(Sink.seq)
       //#run-source-with-manualacks
@@ -152,8 +152,8 @@ class MqttSourceSpec
       Await.ready(subscribed, timeout)
       Source(input).map(item => MqttMessage(topic, ByteString(item))).runWith(mqttSink).futureValue shouldBe Done
 
-      unackedResult.futureValue.map(cm => {
-        noException should be thrownBy cm.commit().futureValue
+      unackedResult.futureValue.map(msg => {
+        noException should be thrownBy msg.ack().futureValue
       })
     }
 
