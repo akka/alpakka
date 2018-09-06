@@ -87,11 +87,11 @@ object IncomingUpsertMessage {
 
   // Java-api - without passThrough
   def create[T](source: T): IncomingMessage[T, NotUsed] =
-    IncomingUpsertMessage(source)
+    IncomingUpsertMessage[T](source)
 
   // Java-api - without passThrough
   def create[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
-    IncomingUpsertMessage(source, passThrough)
+    IncomingUpsertMessage[T, C](source, passThrough)
 }
 
 object IncomingDeleteMessage {
@@ -104,10 +104,10 @@ object IncomingDeleteMessage {
 
   // Java-api - without passThrough
   def create[T](id: String): IncomingMessage[T, NotUsed] =
-    IncomingDeleteMessage(id)
+    IncomingDeleteMessage[T](id)
 
   def create[T, C](id: String, passThrough: C): IncomingMessage[T, C] =
-    IncomingDeleteMessage(id, passThrough)
+    IncomingDeleteMessage[T, C](id, passThrough)
 }
 
 object IncomingAtomicUpdateMessage {
@@ -127,14 +127,14 @@ object IncomingAtomicUpdateMessage {
                 id: String,
                 field: String,
                 updates: java.util.Map[String, Object]): IncomingMessage[T, NotUsed] =
-    IncomingAtomicUpdateMessage(idField, id, field, updates.asScala.toMap)
+    IncomingAtomicUpdateMessage[T](idField, id, field, updates.asScala.toMap)
 
   def create[T, C](idField: String,
                    id: String,
                    field: String,
                    updates: java.util.Map[String, Object],
                    passThrough: C): IncomingMessage[T, C] =
-    IncomingAtomicUpdateMessage(idField, id, field, updates.asScala.toMap, passThrough)
+    IncomingAtomicUpdateMessage[T, C](idField, id, field, updates.asScala.toMap, passThrough)
 }
 
 final case class IncomingMessage[T, C](operation: Operation,

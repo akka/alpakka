@@ -5,6 +5,7 @@
 package akka.stream.alpakka.solr
 
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -68,8 +69,9 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
           val doc: SolrInputDocument = bookToDoc(book)
-          Seq(IncomingUpsertMessage(doc))
+          IncomingUpsertMessage(doc)
         }
+        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
           SolrSink.documents(
             collection = "collection2",
@@ -122,8 +124,9 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .fromTupleStream(ts = stream)
         .map { tuple: Tuple =>
           val title = tuple.getString("title")
-          Seq(IncomingUpsertMessage(BookBean(title)))
+          IncomingUpsertMessage(BookBean(title))
         }
+        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
           SolrSink.beans[BookBean](
             collection = "collection3",
@@ -169,8 +172,9 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .fromTupleStream(ts = stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
-          Seq(IncomingUpsertMessage(book))
+          IncomingUpsertMessage(book)
         }
+        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
           SolrSink
             .typeds[Book](
@@ -218,8 +222,9 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .fromTupleStream(ts = stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
-          Seq(IncomingUpsertMessage(book))
+          IncomingUpsertMessage(book)
         }
+        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .via(
           SolrFlow
             .typeds[Book](
@@ -289,8 +294,9 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
           println("title: " + book.title)
 
           // Transform message so that we can write to solr
-          Seq(IncomingUpsertMessage(book, kafkaMessage.offset))
+          IncomingUpsertMessage(book, kafkaMessage.offset)
         }
+        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .via( // write to Solr
           SolrFlow.typedsWithPassThrough[Book, KafkaOffset](
             collection = "collection6",
@@ -340,8 +346,9 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
           val doc: SolrInputDocument = bookToDoc(book)
-          Seq(IncomingUpsertMessage(doc))
+          IncomingUpsertMessage(doc)
         }
+        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
           SolrSink.documents(
             collection = "collection7",
@@ -359,8 +366,9 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val f2 = SolrSource
         .fromTupleStream(ts = stream2)
         .map { tuple: Tuple =>
-          Seq[IncomingMessage[SolrInputDocument, NotUsed]](IncomingDeleteMessage(tuple.fields.get("title").toString))
+          IncomingDeleteMessage[SolrInputDocument](tuple.fields.get("title").toString)
         }
+        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
           SolrSink.documents(
             collection = "collection7",
@@ -400,8 +408,9 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple).copy(comment = "Written by good authors.")
           val doc: SolrInputDocument = bookToDoc(book)
-          Seq(IncomingUpsertMessage(doc))
+          IncomingUpsertMessage(doc)
         }
+        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
           SolrSink.documents(
             collection = "collection8",
@@ -419,13 +428,14 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val f2 = SolrSource
         .fromTupleStream(ts = stream2)
         .map { tuple: Tuple =>
-          Seq[IncomingMessage[SolrInputDocument, NotUsed]](
-            IncomingAtomicUpdateMessage("title",
-                                        tuple.fields.get("title").toString,
-                                        "comment",
-                                        Map("set" -> (tuple.fields.get("comment") + " It's is a good book!!!")))
+          IncomingAtomicUpdateMessage[SolrInputDocument](
+            "title",
+            tuple.fields.get("title").toString,
+            "comment",
+            Map("set" -> (tuple.fields.get("comment") + " It's is a good book!!!"))
           )
         }
+        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
           SolrSink.documents(
             collection = "collection8",
@@ -474,8 +484,9 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .fromTupleStream(ts = stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
-          Seq(IncomingUpsertMessage(book))
+          IncomingUpsertMessage(book)
         }
+        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
           SolrSink.typeds[Book](
             collection = "collection9",
@@ -494,8 +505,9 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val f2 = SolrSource
         .fromTupleStream(ts = stream2)
         .map { tuple: Tuple =>
-          Seq[IncomingMessage[Book, NotUsed]](IncomingDeleteMessage(tuple.fields.get("title").toString))
+          IncomingDeleteMessage[Book](tuple.fields.get("title").toString)
         }
+        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
           SolrSink.typeds[Book](
             collection = "collection9",
@@ -535,8 +547,9 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .fromTupleStream(ts = stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple).copy(comment = "Written by good authors.")
-          Seq(IncomingUpsertMessage(book))
+          IncomingUpsertMessage(book)
         }
+        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
           SolrSink.typeds[Book](
             collection = "collection10",
@@ -555,13 +568,12 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val f2 = SolrSource
         .fromTupleStream(ts = stream2)
         .map { tuple: Tuple =>
-          Seq[IncomingMessage[Book, NotUsed]](
-            IncomingAtomicUpdateMessage("title",
-                                        tuple.fields.get("title").toString,
-                                        "comment",
-                                        Map("set" -> (tuple.fields.get("comment") + " It's is a good book!!!")))
-          )
+          IncomingAtomicUpdateMessage[Book]("title",
+                                            tuple.fields.get("title").toString,
+                                            "comment",
+                                            Map("set" -> (tuple.fields.get("comment") + " It's is a good book!!!")))
         }
+        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
           SolrSink.typeds[Book](
             collection = "collection10",
