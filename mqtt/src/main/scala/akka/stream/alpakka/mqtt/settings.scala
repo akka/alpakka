@@ -95,7 +95,10 @@ object MqttSubscriptions {
 
 /**
  * @param subscriptions the mapping between a topic name and a [[MqttQoS]].
+ * @deprecated use MqttConnectionSettings and MqttSubscriptions instead
  */
+@deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+@java.lang.Deprecated
 final case class MqttSourceSettings(
     connectionSettings: MqttConnectionSettings,
     subscriptions: Map[String, MqttQoS] = Map.empty
@@ -109,7 +112,11 @@ object MqttSourceSettings {
 
   /**
    * Java API: create [[MqttSourceSettings]].
+   *
+   * @deprecated use MqttConnectionSettings and MqttSubscriptions instead
    */
+  @deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+  @java.lang.Deprecated
   def create(connectionSettings: MqttConnectionSettings) =
     MqttSourceSettings(connectionSettings)
 }
