@@ -2,21 +2,26 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.firebase.fcm.javadsl;
+package docs.javadsl;
 
 // #imports
+
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
-import akka.stream.alpakka.google.firebase.fcm.FcmFlowModels;
+import akka.stream.alpakka.google.firebase.fcm.FcmFlowConfig;
 import akka.stream.alpakka.google.firebase.fcm.FcmNotification;
 import akka.stream.alpakka.google.firebase.fcm.FcmNotificationModels;
+import akka.stream.alpakka.google.firebase.fcm.FcmResponse;
+import akka.stream.alpakka.google.firebase.fcm.javadsl.GoogleFcmFlow;
+import akka.stream.alpakka.google.firebase.fcm.javadsl.GoogleFcmSink;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-// #imports
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+
+// #imports
 
 public class Examples {
 
@@ -39,8 +44,7 @@ public class Examples {
             + "-----END RSA PRIVATE KEY-----";
     String clientEmail = "test-XXX@test-XXXXX.iam.gserviceaccount.com";
     String projectId = "test-XXXXX";
-    FcmFlowModels.FcmFlowConfig fcmConfig =
-        new FcmFlowModels.FcmFlowConfig(clientEmail, privateKey, projectId, false, 100);
+    FcmFlowConfig fcmConfig = new FcmFlowConfig(clientEmail, privateKey, projectId, false, 100);
     // #init-credentials
 
     // #simple-send
@@ -52,14 +56,14 @@ public class Examples {
     // #simple-send
 
     // #asFlow-send
-    CompletionStage<List<FcmFlowModels.FcmResponse>> result1 =
+    CompletionStage<List<FcmResponse>> result1 =
         Source.single(notification)
             .via(GoogleFcmFlow.send(fcmConfig, system, materializer))
             .runWith(Sink.seq(), materializer);
     // #asFlow-send
 
     // #withData-send
-    CompletionStage<List<Pair<FcmFlowModels.FcmResponse, String>>> result2 =
+    CompletionStage<List<Pair<FcmResponse, String>>> result2 =
         Source.single(new Pair<FcmNotification, String>(notification, "superData"))
             .via(GoogleFcmFlow.sendWithPassThrough(fcmConfig, system, materializer))
             .runWith(Sink.seq(), materializer);

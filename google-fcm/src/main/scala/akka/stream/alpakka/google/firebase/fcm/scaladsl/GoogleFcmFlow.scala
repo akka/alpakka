@@ -8,9 +8,9 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.Materializer
-import akka.stream.alpakka.google.firebase.fcm.FcmFlowModels.{FcmFlowConfig, FcmResponse}
-import akka.stream.alpakka.google.firebase.fcm.impl.FcmSender
-import akka.stream.alpakka.google.firebase.fcm.{FcmFlowModels, FcmNotification}
+import akka.stream.alpakka.google.firebase.fcm.{FcmFlowConfig, FcmResponse}
+import akka.stream.alpakka.google.firebase.fcm.impl.{FcmFlows, FcmSender}
+import akka.stream.alpakka.google.firebase.fcm.FcmNotification
 import akka.stream.scaladsl.Flow
 
 object GoogleFcmFlow {
@@ -19,10 +19,10 @@ object GoogleFcmFlow {
       conf: FcmFlowConfig
   )(implicit materializer: Materializer,
     actorSystem: ActorSystem): Flow[(FcmNotification, T), (FcmResponse, T), NotUsed] =
-    FcmFlowModels.fcmWithData[T](conf, Http(), new FcmSender)
+    FcmFlows.fcmWithData[T](conf, Http(), new FcmSender)
 
   def send(conf: FcmFlowConfig)(implicit materializer: Materializer,
                                 actorSystem: ActorSystem): Flow[FcmNotification, FcmResponse, NotUsed] =
-    FcmFlowModels.fcm(conf, Http(), new FcmSender)
+    FcmFlows.fcm(conf, Http(), new FcmSender)
 
 }
