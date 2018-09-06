@@ -7,6 +7,9 @@
         </encoder>
     </appender>
 
+    <logger name="akka" level="info"/>
+    <logger name="akka.stream.alpakka" level="debug"/>
+
     <root level="debug">
         <appender-ref ref="FILE" />
     </root>

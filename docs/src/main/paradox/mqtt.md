@@ -137,6 +137,12 @@ Scala
 Java
 : @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttFlowTest.java) { #run-flow }
 
+
+## Capturing MQTT client logging
+
+The Paho library uses its own logging adapter and contains a default implementation to use `java.util.logging`. See [Paho/Log and Debug](https://wiki.eclipse.org/Paho/Log_and_Debug_in_the_Java_client).
+
+
 ## Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
