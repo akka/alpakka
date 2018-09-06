@@ -12,61 +12,101 @@ import scala.collection.immutable
 import scala.collection.immutable.Map
 import scala.concurrent.duration.{FiniteDuration, _}
 
+/**
+ * Quality of Service constants as defined in
+ *[[http://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttMessage.html#setQos-int-]]
+ */
 sealed abstract class MqttQoS {
   def value: Int
 }
 
 /**
  * Quality of Service constants as defined in
- * See http://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttMessage.html#setQos-int-
+ * [[http://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttMessage.html#setQos-int-]]
  */
 object MqttQoS {
+
+  /**
+   * Quality of Service 0 - indicates that a message should be delivered at most once (zero or one times). The message
+   * will not be persisted to disk, and will not be acknowledged across the network. This QoS is the fastest, but should
+   * only be used for messages which are not valuable.
+   */
   object AtMostOnce extends MqttQoS {
     val value: Int = 0
   }
 
+  /**
+   * Quality of Service 1 - indicates that a message should be delivered at least once (one or more times). The message
+   * can only be delivered safely if it can be persisted, so the application must supply a means of persistence using
+   * [[MqttConnectionSettings]]. If a persistence mechanism is not specified, the message will not be delivered in the
+   * event of a client failure. The message will be acknowledged across the network.
+   */
   object AtLeastOnce extends MqttQoS {
     val value: Int = 1
   }
 
+  /**
+   * Quality of Service 2 - indicates that a message should be delivered once. The message will be persisted to disk,
+   * and will be subject to a two-phase acknowledgement across the network. The message can only be delivered safely
+   * if it can be persisted, so the application must supply a means of persistence using [[MqttConnectionSettings]].
+   * If a persistence mechanism is not specified, the message will not be delivered in the event of a client failure.
+   */
   object ExactlyOnce extends MqttQoS {
     val value: Int = 2
   }
 
   /**
    * Java API
+   *
+   * Quality of Service 0 - indicates that a message should be delivered at most once (zero or one times). The message
+   * will not be persisted to disk, and will not be acknowledged across the network. This QoS is the fastest, but should
+   * only be used for messages which are not valuable.
    */
   def atMostOnce: MqttQoS = AtMostOnce
 
   /**
    * Java API
+   *
+   * Quality of Service 1 - indicates that a message should be delivered at least once (one or more times). The message
+   * can only be delivered safely if it can be persisted, so the application must supply a means of persistence using
+   * [[MqttConnectionSettings]]. If a persistence mechanism is not specified, the message will not be delivered in the
+   * event of a client failure. The message will be acknowledged across the network.
    */
   def atLeastOnce: MqttQoS = AtLeastOnce
 
   /**
    * Java API
+   *
+   * Quality of Service 2 - indicates that a message should be delivered once. The message will be persisted to disk,
+   * and will be subject to a two-phase acknowledgement across the network. The message can only be delivered safely
+   * if it can be persisted, so the application must supply a means of persistence using [[MqttConnectionSettings]].
+   * If a persistence mechanism is not specified, the message will not be delivered in the event of a client failure.
    */
   def exactlyOnce: MqttQoS = ExactlyOnce
 }
 
 /**
- * The mapping topics to subscribe to and the requested Quality of Service ([[MqttQoS]]).
+ * The mapping of topics to subscribe to and the requested Quality of Service ([[MqttQoS]]) per topic.
  */
 final class MqttSubscriptions private (
     val subscriptions: Map[String, MqttQoS]
 ) {
+
+  /** Scala API */
   def withSubscriptions(subscriptions: Map[String, MqttQoS]): MqttSubscriptions =
     new MqttSubscriptions(subscriptions)
 
+  /** Java API */
   def withSubscriptions(subscriptions: java.util.List[akka.japi.Pair[String, MqttQoS]]): MqttSubscriptions =
     new MqttSubscriptions(subscriptions.asScala.map(_.toScala).toMap)
 
+  /** Add this subscription to the map of subscriptions configured already. */
   def addSubscription(topic: String, qos: MqttQoS): MqttSubscriptions =
     new MqttSubscriptions(this.subscriptions.updated(topic, qos))
 }
 
 /**
- * The mapping topics to subscribe to and the requested Quality of Service ([[MqttQoS]]).
+ * The mapping of topics to subscribe to and the requested Quality of Service ([[MqttQoS]]) per topic.
  */
 object MqttSubscriptions {
   val empty = new MqttSubscriptions(Map.empty)
@@ -108,6 +148,11 @@ final case class MqttSourceSettings(
     copy(subscriptions = subscriptions.map(_.toScala).toMap)
 }
 
+/**
+ * @deprecated use MqttConnectionSettings and MqttSubscriptions instead
+ */
+@deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+@java.lang.Deprecated
 object MqttSourceSettings {
 
   /**
@@ -124,7 +169,7 @@ object MqttSourceSettings {
 /**
  * Connection settings passed to the underlying Paho client.
  *
- * @see https://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttConnectOptions.html
+ * See [[https://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttConnectOptions.html]]
  */
 final class MqttConnectionSettings private (val broker: String,
                                             val clientId: String,
@@ -291,7 +336,7 @@ final class MqttConnectionSettings private (val broker: String,
 /**
  * Factory for connection settings passed to the underlying Paho client.
  *
- * @see https://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttConnectOptions.html
+ * See [[https://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttConnectOptions.html]]
  */
 object MqttConnectionSettings {
 
