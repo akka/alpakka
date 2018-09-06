@@ -51,21 +51,25 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val subscriptionPromise = Promise[Done]
-    val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
+    val logic = new GraphStageLogic(shape) with StageLogging with InHandler with OutHandler {
       private val backpressurePahoClient = new Semaphore(bufferSize)
       private var pendingMsg = Option.empty[MqttMessage]
       private val queue = mutable.Queue[MqttCommittableMessage]()
       private val unackedMessages = new AtomicInteger()
 
       private val onSubscribe: AsyncCallback[Try[IMqttToken]] = getAsyncCallback[Try[IMqttToken]] { conn =>
-        subscriptionPromise.complete(conn.map(_ => Done))
+        subscriptionPromise.complete(conn.map(_ => {
+          log.debug("subscription established")
+          Done
+        }))
         pull(in)
       }
 
       private val onConnect: AsyncCallback[IMqttAsyncClient] =
         getAsyncCallback[IMqttAsyncClient]((client: IMqttAsyncClient) => {
-          if (manualAcks) client.setManualAcks(true)
+          log.debug("connected")
           if (subscriptions.nonEmpty) {
+            if (manualAcks) client.setManualAcks(true)
             val (topics, qoses) = subscriptions.unzip
             client.subscribe(topics.toArray, qoses.map(_.value).toArray, (), asActionListener(onSubscribe.invoke))
           } else {
@@ -134,7 +138,12 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
         override def deliveryComplete(token: IMqttDeliveryToken): Unit = ()
 
         override def connectionLost(cause: Throwable): Unit =
-          if (!connectionSettings.automaticReconnect) onConnectionLost.invoke(cause)
+          if (!connectionSettings.automaticReconnect) {
+            log.info("connection lost (you might want to enable `automaticReconnect` in `MqttConnectionSettings`)")
+            onConnectionLost.invoke(cause)
+          } else {
+            log.info("connection lost, trying to reconnect")
+          }
 
         override def connectComplete(reconnect: Boolean, serverURI: String): Unit = {
           pendingMsg.foreach { msg =>
@@ -220,6 +229,7 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
             )
 
         try {
+          log.debug("stage stopped, disconnecting")
           mqttClient.disconnect(
             connectionSettings.disconnectQuiesceTimeout.toMillis,
             null,
