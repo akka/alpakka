@@ -56,7 +56,7 @@ object MqttMessage {
   /** Scala API */
   def apply(
       topic: String,
-      payload: akka.util.ByteString,
+      payload: akka.util.ByteString
   ): MqttMessage = new MqttMessage(
     topic,
     payload,
@@ -67,7 +67,7 @@ object MqttMessage {
   /** Java API */
   def create(
       topic: String,
-      payload: akka.util.ByteString,
+      payload: akka.util.ByteString
   ): MqttMessage = new MqttMessage(
     topic,
     payload,
