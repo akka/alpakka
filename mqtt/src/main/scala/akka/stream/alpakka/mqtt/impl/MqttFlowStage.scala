@@ -12,7 +12,7 @@ import akka.Done
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.alpakka.mqtt._
-import akka.stream.alpakka.mqtt.scaladsl.MqttCommittableMessage
+import akka.stream.alpakka.mqtt.scaladsl.MqttMessageWithAck
 import akka.stream.stage._
 import akka.util.ByteString
 import org.eclipse.paho.client.mqttv3.{
@@ -41,11 +41,11 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
                                         bufferSize: Int,
                                         defaultQoS: MqttQoS,
                                         manualAcks: Boolean = false)
-    extends GraphStageWithMaterializedValue[FlowShape[MqttMessage, MqttCommittableMessage], Future[Done]] {
+    extends GraphStageWithMaterializedValue[FlowShape[MqttMessage, MqttMessageWithAck], Future[Done]] {
   import MqttFlowStage._
 
   private val in = Inlet[MqttMessage]("MqttFlow.in")
-  private val out = Outlet[MqttCommittableMessage]("MqttFlow.out")
+  private val out = Outlet[MqttMessageWithAck]("MqttFlow.out")
   override val shape: Shape = FlowShape(in, out)
   override protected def initialAttributes: Attributes = Attributes.name("MqttFlow")
 
@@ -54,7 +54,7 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
     val logic = new GraphStageLogic(shape) with StageLogging with InHandler with OutHandler {
       private val backpressurePahoClient = new Semaphore(bufferSize)
       private var pendingMsg = Option.empty[MqttMessage]
-      private val queue = mutable.Queue[MqttCommittableMessage]()
+      private val queue = mutable.Queue[MqttMessageWithAck]()
       private val unackedMessages = new AtomicInteger()
 
       private val onSubscribe: AsyncCallback[Try[IMqttToken]] = getAsyncCallback[Try[IMqttToken]] { conn =>
@@ -80,8 +80,8 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
 
       private val onConnectionLost: AsyncCallback[Throwable] = getAsyncCallback[Throwable](failStageWith)
 
-      private val onMessageAsyncCallback: AsyncCallback[MqttCommittableMessage] =
-        getAsyncCallback[MqttCommittableMessage] { message =>
+      private val onMessageAsyncCallback: AsyncCallback[MqttMessageWithAck] =
+        getAsyncCallback[MqttMessageWithAck] { message =>
           if (isAvailable(out)) {
             pushDownstream(message)
           } else if (queue.size + 1 > bufferSize) {
@@ -118,10 +118,10 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
       mqttClient.setCallback(new MqttCallbackExtended {
         override def messageArrived(topic: String, pahoMessage: PahoMqttMessage): Unit = {
           backpressurePahoClient.acquire()
-          val message = new MqttCommittableMessage {
-            override val message = MqttMessage(topic, ByteString(pahoMessage.getPayload))
+          val message = new MqttMessageWithAck {
+            override val message = MqttMessage(topic, ByteString.fromArrayUnsafe(pahoMessage.getPayload))
 
-            override def commit(): Future[Done] = {
+            override def ack(): Future[Done] = {
               val promise = Promise[Done]()
               val qos = pahoMessage.getQos match {
                 case 0 => MqttQoS.AtMostOnce
@@ -196,7 +196,7 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
         mqttClient.publish(msg.topic, pahoMsg, msg, asActionListener(onPublished.invoke))
       }
 
-      private def pushDownstream(message: MqttCommittableMessage): Unit = {
+      private def pushDownstream(message: MqttMessageWithAck): Unit = {
         push(out, message)
         backpressurePahoClient.release()
         if (manualAcks) unackedMessages.incrementAndGet()

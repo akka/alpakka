@@ -57,8 +57,7 @@ object MqttSource {
    */
   @deprecated("use atLeastOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
   @java.lang.Deprecated
-  def atLeastOnce(settings: MqttSourceSettings,
-                  bufferSize: Int): Source[MqttCommittableMessage, CompletionStage[Done]] =
+  def atLeastOnce(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessageWithAck, CompletionStage[Done]] =
     atLeastOnce(settings.connectionSettings, MqttSubscriptions(settings.subscriptions), bufferSize)
 
   /**
@@ -70,10 +69,10 @@ object MqttSource {
    */
   def atLeastOnce(settings: MqttConnectionSettings,
                   subscriptions: MqttSubscriptions,
-                  bufferSize: Int): Source[MqttCommittableMessage, CompletionStage[Done]] =
+                  bufferSize: Int): Source[MqttMessageWithAck, CompletionStage[Done]] =
     scaladsl.MqttSource
       .atLeastOnce(settings, subscriptions, bufferSize)
-      .map(MqttCommittableMessage.toJava)
+      .map(MqttMessageWithAck.toJava)
       .mapMaterializedValue(_.toJava)
       .asJava
 }

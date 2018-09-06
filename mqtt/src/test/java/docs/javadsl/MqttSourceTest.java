@@ -13,7 +13,7 @@ import akka.stream.KillSwitches;
 import akka.stream.Materializer;
 import akka.stream.UniqueKillSwitch;
 import akka.stream.alpakka.mqtt.*;
-import akka.stream.alpakka.mqtt.javadsl.MqttCommittableMessage;
+import akka.stream.alpakka.mqtt.javadsl.MqttMessageWithAck;
 import akka.stream.alpakka.mqtt.javadsl.MqttSink;
 import akka.stream.alpakka.mqtt.javadsl.MqttSource;
 import akka.stream.javadsl.*;
@@ -30,7 +30,6 @@ import javax.net.ssl.SSLContext;
 
 import static org.hamcrest.CoreMatchers.*;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -105,7 +104,7 @@ public class MqttSourceTest {
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
 
     // #create-source-with-manualacks
-    Source<MqttCommittableMessage, CompletionStage<Done>> mqttSource =
+    Source<MqttMessageWithAck, CompletionStage<Done>> mqttSource =
         MqttSource.atLeastOnce(
             connectionSettings
                 .withClientId("source-test/source-withoutAutoAck")
@@ -114,7 +113,7 @@ public class MqttSourceTest {
             bufferSize);
     // #create-source-with-manualacks
 
-    final Pair<CompletionStage<Done>, CompletionStage<List<MqttCommittableMessage>>> unackedResult =
+    final Pair<CompletionStage<Done>, CompletionStage<List<MqttMessageWithAck>>> unackedResult =
         mqttSource.take(input.size()).toMat(Sink.seq(), Keep.both()).run(materializer);
 
     unackedResult.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -137,7 +136,7 @@ public class MqttSourceTest {
             .map(m -> m.message().payload().utf8String())
             .collect(Collectors.toList()));
 
-    Flow<MqttCommittableMessage, MqttCommittableMessage, NotUsed> businessLogic = Flow.create();
+    Flow<MqttMessageWithAck, MqttMessageWithAck, NotUsed> businessLogic = Flow.create();
 
     // #run-source-with-manualacks
     final CompletionStage<List<MqttMessage>> result =
@@ -145,8 +144,8 @@ public class MqttSourceTest {
             .via(businessLogic)
             .mapAsync(
                 1,
-                committableMessage ->
-                    committableMessage.commit().thenApply(unused2 -> committableMessage.message()))
+                messageWithAck ->
+                    messageWithAck.ack().thenApply(unused2 -> messageWithAck.message()))
             .take(input.size())
             .runWith(Sink.seq(), materializer);
     // #run-source-with-manualacks
@@ -179,10 +178,10 @@ public class MqttSourceTest {
 
     MqttConnectionSettings connectionSettings = sourceSettings.withCleanSession(false);
     MqttSubscriptions subscriptions = MqttSubscriptions.create(topic, MqttQoS.atLeastOnce());
-    final Source<MqttCommittableMessage, CompletionStage<Done>> mqttSource =
+    final Source<MqttMessageWithAck, CompletionStage<Done>> mqttSource =
         MqttSource.atLeastOnce(connectionSettings, subscriptions, bufferSize);
 
-    final Pair<CompletionStage<Done>, CompletionStage<List<MqttCommittableMessage>>> unackedResult =
+    final Pair<CompletionStage<Done>, CompletionStage<List<MqttMessageWithAck>>> unackedResult =
         mqttSource.take(input.size()).toMat(Sink.seq(), Keep.both()).run(materializer);
 
     unackedResult.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -200,7 +199,7 @@ public class MqttSourceTest {
         .forEach(
             m -> {
               try {
-                m.commit().toCompletableFuture().get(3, TimeUnit.SECONDS);
+                m.ack().toCompletableFuture().get(3, TimeUnit.SECONDS);
               } catch (Exception e) {
                 assertEquals("Error acking message manually", false, true);
               }
