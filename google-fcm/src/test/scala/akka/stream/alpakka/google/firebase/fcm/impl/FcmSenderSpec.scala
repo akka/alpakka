@@ -11,7 +11,7 @@ import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.google.firebase.fcm.{FcmErrorResponse, FcmSend, FcmSuccessResponse}
+import akka.stream.alpakka.google.firebase.fcm.{FcmErrorResponse, FcmSuccessResponse}
 import akka.stream.alpakka.google.firebase.fcm.FcmNotification
 import akka.testkit.TestKit
 import org.mockito.ArgumentCaptor

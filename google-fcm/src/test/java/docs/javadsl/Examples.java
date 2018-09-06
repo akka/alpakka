@@ -44,7 +44,7 @@ public class Examples {
             + "-----END RSA PRIVATE KEY-----";
     String clientEmail = "test-XXX@test-XXXXX.iam.gserviceaccount.com";
     String projectId = "test-XXXXX";
-    FcmFlowConfig fcmConfig = new FcmFlowConfig(clientEmail, privateKey, projectId, false, 100);
+    FcmFlowConfig fcmConfig = FcmFlowConfig.create(clientEmail, privateKey, projectId);
     // #init-credentials
 
     // #simple-send

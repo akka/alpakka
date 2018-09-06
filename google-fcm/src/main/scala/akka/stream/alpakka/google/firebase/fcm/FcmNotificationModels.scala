@@ -70,7 +70,6 @@ object FcmNotificationModels {
     def apply(builder: ConditionBuilder): Condition =
       Condition(builder.toConditionText)
   }
-
 }
 
 case class FcmNotification(
@@ -96,7 +95,8 @@ case class FcmNotification(
     case Topic(t) => this.copy(token = None, topic = Option(t), condition = None)
     case Condition(t) => this.copy(token = None, topic = None, condition = Option(t))
   }
-  def isSendable = (token.isDefined ^ topic.isDefined ^ condition.isDefined) && !(token.isDefined && topic.isDefined)
+  def isSendable: Boolean =
+    (token.isDefined ^ topic.isDefined ^ condition.isDefined) && !(token.isDefined && topic.isDefined)
 }
 
 object FcmNotification {
@@ -110,6 +110,11 @@ object FcmNotification {
 }
 
 sealed trait FcmResponse
-case class FcmSuccessResponse(name: String) extends FcmResponse
-case class FcmErrorResponse(rawError: String) extends FcmResponse
-case class FcmSend(validate_only: Boolean, message: FcmNotification)
+
+final case class FcmSuccessResponse(name: String) extends FcmResponse {
+  def getName: String = name
+}
+
+final case class FcmErrorResponse(rawError: String) extends FcmResponse {
+  def getRawError: String = rawError
+}
