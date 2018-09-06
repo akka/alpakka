@@ -431,8 +431,8 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
           IncomingAtomicUpdateMessage[SolrInputDocument](
             "title",
             tuple.fields.get("title").toString,
-            "comment",
-            Map("set" -> (tuple.fields.get("comment") + " It's is a good book!!!"))
+            tuple.fields.get("title").toString,
+            Map("comment" -> Map("set" -> (tuple.fields.get("comment") + " It's is a good book!!!")))
           )
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
@@ -568,10 +568,12 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val f2 = SolrSource
         .fromTupleStream(ts = stream2)
         .map { tuple: Tuple =>
-          IncomingAtomicUpdateMessage[Book]("title",
-                                            tuple.fields.get("title").toString,
-                                            "comment",
-                                            Map("set" -> (tuple.fields.get("comment") + " It's is a good book!!!")))
+          IncomingAtomicUpdateMessage[Book](
+            "title",
+            tuple.fields.get("title").toString,
+            tuple.fields.get("title").toString,
+            Map("comment" -> Map("set" -> (tuple.fields.get("comment") + " It's is a good book!!!")))
+          )
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
@@ -656,6 +658,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
     cluster.getSolrClient.getClusterStateProvider
       .asInstanceOf[ZkClientClusterStateProvider]
       .uploadConfig(confDir.toPath, "conf")
+    cluster.getSolrClient.setIdField("title")
 
     createCollection("collection1")
 

@@ -416,11 +416,12 @@ public class SolrTest {
         SolrSource.fromTupleStream(stream2)
             .map(
                 t -> {
-                  Map<String, Object> m = new HashMap<>();
-                  m.put("set", (t.fields.get("comment") + " It's is a good book!!!"));
-
+                  Map<String, Map<String, Object>> m1 = new HashMap<>();
+                  Map<String, Object> m2 = new HashMap<>();
+                  m2.put("set", (t.fields.get("comment") + " It's is a good book!!!"));
+                  m1.put("comment", m2);
                   return IncomingAtomicUpdateMessage.<SolrInputDocument>create(
-                      "title", t.fields.get("title").toString(), "comment", m);
+                      "title", t.fields.get("title").toString(), "comment", m1);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
@@ -538,6 +539,7 @@ public class SolrTest {
     ((ZkClientClusterStateProvider) cluster.getSolrClient().getClusterStateProvider())
         .uploadConfig(confDir.toPath(), "conf");
 
+    cluster.getSolrClient().setIdField("title");
     createCollection("collection1");
 
     assertTrue(

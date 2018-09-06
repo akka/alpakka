@@ -12,6 +12,7 @@ import akka.stream.stage._
 import akka.stream._
 import org.apache.http.NoHttpResponseException
 import org.apache.solr.client.solrj.SolrClient
+import org.apache.solr.client.solrj.impl.CloudSolrClient
 import org.apache.solr.client.solrj.response.UpdateResponse
 import org.apache.solr.common.{SolrException, SolrInputDocument}
 
@@ -25,27 +26,36 @@ import scala.collection.JavaConverters._
 object IncomingMessage {
   // Apply methods to use when not using passThrough
   def apply[T](source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Upsert, None, None, Option(source), Map.empty, NotUsed)
+    IncomingMessage(Upsert, None, None, None, Option(source), Map.empty, NotUsed)
 
   def apply[T](id: String): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Delete, None, Option(id), None, Map.empty, NotUsed)
+    IncomingMessage(Delete, None, Option(id), None, None, Map.empty, NotUsed)
 
-  def apply[T](idField: String, id: String, field: String, updates: Map[String, Any]): IncomingMessage[T, NotUsed] =
-    IncomingMessage(AtomicUpdate, Option(idField), Option(id), None, Map(field -> updates), NotUsed)
+  def apply[T](idField: String,
+               idValue: String,
+               routingFieldValue: String,
+               updates: Map[String, Map[String, Any]]): IncomingMessage[T, NotUsed] =
+    IncomingMessage(AtomicUpdate, Option(idField), Option(idValue), Some(routingFieldValue), None, updates, NotUsed)
 
   // Apply methods to use with passThrough
   def apply[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(Upsert, None, None, Option(source), Map.empty, passThrough)
+    IncomingMessage(Upsert, None, None, None, Option(source), Map.empty, passThrough)
 
   def apply[T, C](id: String, passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(Delete, None, Option(id), None, Map.empty, passThrough)
+    IncomingMessage(Delete, None, Option(id), None, None, Map.empty, passThrough)
 
   def apply[T, C](idField: String,
-                  id: String,
-                  field: String,
-                  updates: Map[String, Any],
+                  idValue: String,
+                  routingFieldValue: String,
+                  updates: Map[String, Map[String, Any]],
                   passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(AtomicUpdate, Option(idField), Option(id), None, Map(field -> updates), passThrough)
+    IncomingMessage(AtomicUpdate,
+                    Option(idField),
+                    Option(idValue),
+                    Option(routingFieldValue),
+                    None,
+                    updates,
+                    passThrough)
 
   // Java-api - without passThrough
   def create[T](source: T): IncomingMessage[T, NotUsed] =
@@ -55,10 +65,10 @@ object IncomingMessage {
     IncomingMessage(id)
 
   def create[T](idField: String,
-                id: String,
-                field: String,
-                updates: java.util.Map[String, Object]): IncomingMessage[T, NotUsed] =
-    IncomingMessage(idField, id, field, updates.asScala.toMap)
+                idValue: String,
+                routingFieldValue: String,
+                updates: java.util.Map[String, Map[String, Object]]): IncomingMessage[T, NotUsed] =
+    IncomingMessage(idField, idValue, routingFieldValue, updates.asScala.toMap)
 
   // Java-api - with passThrough
   def create[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
@@ -68,12 +78,17 @@ object IncomingMessage {
     IncomingMessage(id, passThrough)
 
   def create[T, C](idField: String,
-                   id: String,
-                   field: String,
-                   updates: java.util.Map[String, Object],
+                   idValue: String,
+                   routingFieldValue: String,
+                   updates: java.util.Map[String, Map[String, Object]],
                    passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(idField, id, field, updates.asScala.toMap, passThrough)
+    IncomingMessage(idField, idValue, routingFieldValue, updates.asScala.toMap, passThrough)
 
+  def asScalaUpdates(jupdates: java.util.Map[String, java.util.Map[String, Object]]): Map[String, Map[String, Any]] =
+    jupdates.asScala.map {
+      case (k, v: java.util.Map[String, Object]) =>
+        (k, v.asScala.toMap)
+    }.toMap
 }
 
 object IncomingUpsertMessage {
@@ -112,39 +127,53 @@ object IncomingDeleteMessage {
 
 object IncomingAtomicUpdateMessage {
   // Apply method to use when not using passThrough
-  def apply[T](idField: String, id: String, field: String, updates: Map[String, Any]): IncomingMessage[T, NotUsed] =
-    IncomingMessage(idField, id, field, updates)
+  def apply[T](idField: String,
+               idValue: String,
+               routingFieldValue: String,
+               updates: Map[String, Map[String, Any]]): IncomingMessage[T, NotUsed] =
+    IncomingMessage(idField, idValue, routingFieldValue, updates)
 
   def apply[T, C](idField: String,
-                  id: String,
-                  field: String,
-                  updates: Map[String, Any],
+                  idValue: String,
+                  routingFieldValue: String,
+                  updates: Map[String, Map[String, Any]],
                   passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(idField, id, field, updates, passThrough)
+    IncomingMessage(idField, idValue, routingFieldValue, updates, passThrough)
 
   // Java-api - without passThrough
   def create[T](idField: String,
-                id: String,
-                field: String,
-                updates: java.util.Map[String, Object]): IncomingMessage[T, NotUsed] =
-    IncomingAtomicUpdateMessage[T](idField, id, field, updates.asScala.toMap)
+                idValue: String,
+                routingFieldValue: String,
+                updates: java.util.Map[String, java.util.Map[String, Object]]): IncomingMessage[T, NotUsed] =
+    IncomingAtomicUpdateMessage[T](idField, idValue, routingFieldValue, IncomingMessage.asScalaUpdates(updates))
 
   def create[T, C](idField: String,
-                   id: String,
-                   field: String,
-                   updates: java.util.Map[String, Object],
+                   idValue: String,
+                   routingFieldValue: String,
+                   updates: java.util.Map[String, java.util.Map[String, Object]],
                    passThrough: C): IncomingMessage[T, C] =
-    IncomingAtomicUpdateMessage[T, C](idField, id, field, updates.asScala.toMap, passThrough)
+    IncomingAtomicUpdateMessage[T, C](idField,
+                                      idValue,
+                                      routingFieldValue,
+                                      IncomingMessage.asScalaUpdates(updates),
+                                      passThrough)
 }
 
 final case class IncomingMessage[T, C](operation: Operation,
                                        idFieldOpt: Option[String],
-                                       idOpt: Option[String],
+                                       idFieldValueOpt: Option[String],
+                                       routingFieldValueOpt: Option[String],
                                        sourceOpt: Option[T],
-                                       updates: Map[String, Any],
-                                       passThrough: C = NotUsed)
+                                       updates: Map[String, Map[String, Any]],
+                                       passThrough: C = NotUsed) {}
 
-final case class IncomingMessageResult[T, C](id: Option[String], sourceOpt: Option[T], passThrough: C, status: Int)
+final case class IncomingMessageResult[T, C](idFieldOpt: Option[String],
+                                             idFieldValueOpt: Option[String],
+                                             routingFieldValueOpt: Option[String],
+                                             sourceOpt: Option[T],
+                                             updates: Map[String, Map[String, Any]],
+                                             passThrough: C,
+                                             status: Int)
 
 private[solr] final class SolrFlowStage[T, C](
     collection: String,
@@ -254,7 +283,16 @@ private[solr] final class SolrFlowLogic[T, C](
     val (messages, status) = args
     log.debug(s"Handle the response with $status")
     retryCount = 0
-    val result = messages.map(m => IncomingMessageResult(m.idOpt, m.sourceOpt, m.passThrough, status))
+    val result = messages.map(
+      m =>
+        IncomingMessageResult(m.idFieldOpt,
+                              m.idFieldValueOpt,
+                              m.routingFieldValueOpt,
+                              m.sourceOpt,
+                              m.updates,
+                              m.passThrough,
+                              status)
+    )
 
     emit(out, result)
 
@@ -283,7 +321,18 @@ private[solr] final class SolrFlowLogic[T, C](
   private def atomicUpdateBulkToSolr(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
     val docs = messages.map { message =>
       val doc = new SolrInputDocument()
-      doc.addField(message.idFieldOpt.get, message.idOpt.get)
+      if (message.idFieldOpt.isEmpty || message.idFieldValueOpt.isEmpty) {
+        throw new IllegalArgumentException("idfield name and idfield value should be set")
+      }
+
+      doc.addField(message.idFieldOpt.get, message.idFieldValueOpt.get)
+      if (client.isInstanceOf[CloudSolrClient]) {
+        if (message.routingFieldValueOpt.isEmpty)
+          throw new IllegalArgumentException("routing field value should be set")
+        val routerField = client.asInstanceOf[CloudSolrClient].getIdField
+        if (routerField != message.idFieldOpt.get)
+          doc.addField(routerField, message.routingFieldValueOpt.get)
+      }
       message.updates.foreach {
         case (field, updates) => {
           val jMap = updates.asInstanceOf[Map[String, Any]].asJava
@@ -299,10 +348,10 @@ private[solr] final class SolrFlowLogic[T, C](
   private def deleteBulkToSolr(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
     val docsIds = messages
       .filter { message =>
-        message.operation == Delete && message.idOpt.isDefined
+        message.operation == Delete && message.idFieldValueOpt.isDefined
       }
       .map { message =>
-        message.idOpt.get
+        message.idFieldValueOpt.get
       }
     if (log.isDebugEnabled) log.debug(s"Delete the ids $docsIds")
     client.deleteById(collection, docsIds.asJava, settings.commitWithin)
