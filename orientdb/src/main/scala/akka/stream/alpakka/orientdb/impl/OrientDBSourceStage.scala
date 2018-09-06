@@ -133,10 +133,10 @@ private[orientdb] sealed class OrientDBSourceLogic[T](className: String,
     reader.convert(res) match {
       case OSQLResponse(Some(error), _) =>
         failStage(new IllegalStateException(error))
-      case OSQLResponse(None, Some(result)) if result.records.isEmpty =>
+      case OSQLResponse(None, result) if result.isEmpty =>
         completeStage()
-      case OSQLResponse(_, Some(result)) =>
-        emitMultiple(out, result.records.toIterator)
+      case OSQLResponse(_, result) =>
+        emitMultiple(out, result.toIterator)
     }
 
   setHandler(out, this)

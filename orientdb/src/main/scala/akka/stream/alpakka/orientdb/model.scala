@@ -24,5 +24,4 @@ final case class OIncomingMessage[T, C](oDocument: T, passThrough: C)
 
 final case class OOutgoingMessage[T](oDocument: T)
 
-case class OSQLResponse[T](error: Option[String], result: Option[OSQLResult[T]])
-case class OSQLResult[T](records: Seq[OOutgoingMessage[T]])
+case class OSQLResponse[T](error: Option[String], result: Seq[OOutgoingMessage[T]])
