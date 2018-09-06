@@ -5,12 +5,18 @@
 package akka.stream.alpakka.google.firebase.fcm.impl
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.stream.alpakka.google.firebase.fcm.{FcmErrorResponse, FcmResponse, FcmSend, FcmSuccessResponse}
+import akka.stream.alpakka.google.firebase.fcm.{FcmErrorResponse, FcmResponse, FcmSuccessResponse}
 import akka.annotation.InternalApi
 import akka.stream.alpakka.google.firebase.fcm.FcmNotification
 import akka.stream.alpakka.google.firebase.fcm.FcmNotificationModels._
 import akka.stream.alpakka.google.firebase.fcm.impl.GoogleTokenApi.OAuthResponse
 import spray.json._
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[fcm] case class FcmSend(validate_only: Boolean, message: FcmNotification)
 
 /**
  * INTERNAL API

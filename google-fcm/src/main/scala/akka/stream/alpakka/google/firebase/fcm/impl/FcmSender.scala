@@ -9,7 +9,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import akka.stream.alpakka.google.firebase.fcm.{FcmErrorResponse, FcmResponse, FcmSend, FcmSuccessResponse}
+import akka.stream.alpakka.google.firebase.fcm.{FcmErrorResponse, FcmResponse, FcmSuccessResponse}
 import akka.annotation.InternalApi
 import spray.json._
 

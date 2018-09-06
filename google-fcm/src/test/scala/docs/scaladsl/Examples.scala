@@ -36,7 +36,7 @@ class Examples {
       |-----END RSA PRIVATE KEY-----""".stripMargin
   val clientEmail = "test-XXX@test-XXXXX.iam.gserviceaccount.com"
   val projectId = "test-XXXXX"
-  val fcmConfig = FcmFlowConfig(clientEmail, privateKey, projectId, isTest = false, maxConcurentConnections = 100)
+  val fcmConfig = FcmFlowConfig(clientEmail, privateKey, projectId)
   //#init-credentials
 
   //#simple-send
