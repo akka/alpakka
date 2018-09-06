@@ -17,30 +17,30 @@ import com.orientechnologies.orient.core.record.impl.ODocument
 import com.orientechnologies.orient.core.tx.OTransaction
 
 import scala.collection.mutable
-import scala.collection.immutable.Seq
+import scala.collection.immutable
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private[orientdb] class OrientDBFlowStage[T, C, R](
+private[orientdb] class OrientDBFlowStage[T, C](
     className: String,
     settings: OrientDBUpdateSettings,
-    pusher: Seq[OIncomingMessage[T, C]] => R,
     clazz: Option[Class[T]]
-) extends GraphStage[FlowShape[OIncomingMessage[T, C], R]] {
+) extends GraphStage[FlowShape[OIncomingMessage[T, C], immutable.Seq[OIncomingMessage[T, C]]]] {
 
   private val in = Inlet[OIncomingMessage[T, C]]("messages")
-  private val out = Outlet[R]("failed")
+  private val out = Outlet[immutable.Seq[OIncomingMessage[T, C]]]("failed")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
       private val queue = new mutable.Queue[OIncomingMessage[T, C]]()
-      private val failureHandler = getAsyncCallback[(Seq[OIncomingMessage[T, C]], Throwable)](handleFailure)
-      private val responseHandler = getAsyncCallback[(Seq[OIncomingMessage[T, C]], Option[String])](handleResponse)
-      private var failedMessages: Seq[OIncomingMessage[T, C]] = Nil
+      private val failureHandler = getAsyncCallback[(immutable.Seq[OIncomingMessage[T, C]], Throwable)](handleFailure)
+      private val responseHandler =
+        getAsyncCallback[(immutable.Seq[OIncomingMessage[T, C]], Option[String])](handleResponse)
+      private var failedMessages: immutable.Seq[OIncomingMessage[T, C]] = Nil
       private var retryCount: Int = 0
 
       private var client: ODatabaseDocumentTx = _
@@ -67,7 +67,7 @@ private[orientdb] class OrientDBFlowStage[T, C, R](
         failedMessages = Nil
       }
 
-      private def handleFailure(args: (Seq[OIncomingMessage[T, C]], Throwable)): Unit = {
+      private def handleFailure(args: (immutable.Seq[OIncomingMessage[T, C]], Throwable)): Unit = {
         val (messages, exception) = args
         if (retryCount >= settings.maxRetry) {
           failStage(exception)
@@ -81,7 +81,7 @@ private[orientdb] class OrientDBFlowStage[T, C, R](
       private def handleSuccess(): Unit =
         completeStage()
 
-      private def handleResponse(args: (Seq[OIncomingMessage[T, C]], Option[String])): Unit = {
+      private def handleResponse(args: (immutable.Seq[OIncomingMessage[T, C]], Option[String])): Unit = {
         retryCount = 0
         val (messages, error) = args
 
@@ -104,10 +104,10 @@ private[orientdb] class OrientDBFlowStage[T, C, R](
           sendOSQLBulkInsertRequest(nextMessages)
         }
 
-        push(out, pusher(failedMessages))
+        push(out, failedMessages)
       }
 
-      private def sendOSQLBulkInsertRequest(messages: Seq[OIncomingMessage[T, C]]): Unit =
+      private def sendOSQLBulkInsertRequest(messages: immutable.Seq[OIncomingMessage[T, C]]): Unit =
         try {
           ODatabaseRecordThreadLocal.instance().set(client)
           if (clazz.isEmpty) {
@@ -148,8 +148,8 @@ private[orientdb] class OrientDBFlowStage[T, C, R](
             if (faultyMessages.nonEmpty) {
               responseHandler.invoke((faultyMessages, Some("Records are invalid OrientDB Records")))
             } else {
-              emit(out, pusher(successfulMessages))
-              responseHandler.invoke((Seq(), None))
+              emit(out, successfulMessages)
+              responseHandler.invoke((immutable.Seq.empty, None))
             }
           } else {
             client.setDatabaseOwner(oObjectClient)
@@ -172,8 +172,8 @@ private[orientdb] class OrientDBFlowStage[T, C, R](
             if (faultyMessages.nonEmpty) {
               responseHandler.invoke((faultyMessages, Some("Records are invalid OrientDB Records")))
             } else {
-              emit(out, pusher(successfulMessages))
-              responseHandler.invoke((Seq(), None))
+              emit(out, successfulMessages)
+              responseHandler.invoke((immutable.Seq.empty, None))
             }
           }
         } catch {

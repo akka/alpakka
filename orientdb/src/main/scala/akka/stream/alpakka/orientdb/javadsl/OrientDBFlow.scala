@@ -24,13 +24,13 @@ object OrientDBFlow {
   ): Flow[OIncomingMessage[ODocument, NotUsed], java.util.List[OIncomingMessage[ODocument, NotUsed]], NotUsed] =
     akka.stream.scaladsl.Flow
       .fromGraph(
-        new OrientDBFlowStage[ODocument, NotUsed, java.util.List[OIncomingMessage[ODocument, NotUsed]]](
+        new OrientDBFlowStage[ODocument, NotUsed](
           className,
           settings,
-          _.asJava,
           None
         )
       )
+      .map(_.asJava)
       .asJava
 
   /**
@@ -43,11 +43,9 @@ object OrientDBFlow {
   ): Flow[OIncomingMessage[T, NotUsed], java.util.List[OIncomingMessage[T, NotUsed]], NotUsed] =
     akka.stream.scaladsl.Flow
       .fromGraph(
-        new OrientDBFlowStage[T, NotUsed, java.util.List[OIncomingMessage[T, NotUsed]]](className,
-                                                                                        settings,
-                                                                                        _.asJava,
-                                                                                        clazz)
+        new OrientDBFlowStage[T, NotUsed](className, settings, clazz)
       )
+      .map(_.asJava)
       .asJava
 
   /**
@@ -60,12 +58,12 @@ object OrientDBFlow {
   ): Flow[OIncomingMessage[ODocument, C], java.util.List[OIncomingMessage[ODocument, C]], NotUsed] =
     akka.stream.scaladsl.Flow
       .fromGraph(
-        new OrientDBFlowStage[ODocument, C, java.util.List[OIncomingMessage[ODocument, C]]](
+        new OrientDBFlowStage[ODocument, C](
           className,
           settings,
-          _.asJava,
           None
         )
       )
+      .map(_.asJava)
       .asJava
 }
