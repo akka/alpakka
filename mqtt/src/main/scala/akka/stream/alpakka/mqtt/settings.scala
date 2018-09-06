@@ -370,7 +370,7 @@ object MqttConnectionSettings {
   def create(
       broker: String,
       clientId: String,
-      persistence: org.eclipse.paho.client.mqttv3.MqttClientPersistence,
+      persistence: org.eclipse.paho.client.mqttv3.MqttClientPersistence
   ): MqttConnectionSettings = apply(
     broker,
     clientId,
