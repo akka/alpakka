@@ -2,15 +2,15 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.firebase.fcm.scaladsl
+package docs.scaladsl
 
 //#imports
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.alpakka.google.firebase.fcm.FcmFlowModels.FcmFlowConfig
-import akka.stream.alpakka.google.firebase.fcm.{FcmFlowModels, FcmNotification}
 import akka.stream.alpakka.google.firebase.fcm.FcmNotificationModels._
+import akka.stream.alpakka.google.firebase.fcm.scaladsl.{GoogleFcmFlow, GoogleFcmSink}
+import akka.stream.alpakka.google.firebase.fcm.{FcmFlowConfig, FcmNotification, _}
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{ActorMaterializer, Materializer}
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -20,7 +20,7 @@ class Examples {
 
   //#init-mat
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
+  implicit val mat: Materializer = ActorMaterializer()
   //#init-mat
 
   //#init-credentials
@@ -45,12 +45,12 @@ class Examples {
   //#simple-send
 
   //#asFlow-send
-  val result1: Future[immutable.Seq[FcmFlowModels.FcmResponse]] =
+  val result1: Future[immutable.Seq[FcmResponse]] =
     Source.single(notification).via(GoogleFcmFlow.send(fcmConfig)).runWith(Sink.seq)
   //#asFlow-send
 
   //#withData-send
-  val result2: Future[immutable.Seq[(FcmFlowModels.FcmResponse, String)]] =
+  val result2: Future[immutable.Seq[(FcmResponse, String)]] =
     Source.single((notification, "superData")).via(GoogleFcmFlow.sendWithPassThrough(fcmConfig)).runWith(Sink.seq)
   //#withData-send
 

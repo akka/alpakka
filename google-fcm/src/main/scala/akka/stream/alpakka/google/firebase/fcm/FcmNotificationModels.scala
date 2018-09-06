@@ -108,3 +108,8 @@ object FcmNotification {
     empty.withBasicNotification(title, body).withTarget(target)
   def basic(title: String, body: String, target: NotificationTarget) = FcmNotification(title, body, target)
 }
+
+sealed trait FcmResponse
+case class FcmSuccessResponse(name: String) extends FcmResponse
+case class FcmErrorResponse(rawError: String) extends FcmResponse
+case class FcmSend(validate_only: Boolean, message: FcmNotification)
