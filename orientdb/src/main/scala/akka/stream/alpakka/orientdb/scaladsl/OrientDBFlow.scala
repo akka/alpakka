@@ -6,6 +6,7 @@ package akka.stream.alpakka.orientdb.scaladsl
 
 import akka.NotUsed
 import akka.stream.alpakka.orientdb._
+import akka.stream.alpakka.orientdb.impl.OrientDBFlowStage
 import akka.stream.scaladsl.Flow
 import com.orientechnologies.orient.core.record.impl.ODocument
 

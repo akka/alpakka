@@ -2,11 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.orientdb
+package akka.stream.alpakka.orientdb.impl
 
 import akka.NotUsed
-import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
+import akka.annotation.InternalApi
+import akka.stream.alpakka.orientdb.{OIncomingMessage, OrientDBUpdateSettings}
 import akka.stream.stage._
+import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.orientechnologies.orient.`object`.db.OObjectDatabaseTx
 import com.orientechnologies.orient.core.db.ODatabaseRecordThreadLocal
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx
@@ -17,22 +19,10 @@ import com.orientechnologies.orient.core.tx.OTransaction
 import scala.collection.mutable
 import scala.concurrent.Future
 
-object OIncomingMessage {
-  // Apply method to use when not using passThrough
-  def apply[T](oDocument: T): OIncomingMessage[T, NotUsed] =
-    OIncomingMessage(oDocument, NotUsed)
-
-  // Java-api - without passThrough
-  def create[T](oDocument: T): OIncomingMessage[T, NotUsed] =
-    OIncomingMessage(oDocument, NotUsed)
-
-  // Java-api - with passThrough
-  def create[T, C](oDocument: T, passThrough: C) =
-    OIncomingMessage(oDocument, passThrough)
-}
-
-final case class OIncomingMessage[T, C](oDocument: T, passThrough: C)
-
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[orientdb] class OrientDBFlowStage[T, C, R](
     className: String,
     settings: OrientDBUpdateSettings,

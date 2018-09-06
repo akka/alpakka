@@ -10,7 +10,8 @@ import akka.stream.javadsl.Flow
 import com.orientechnologies.orient.core.record.impl.ODocument
 
 import scala.collection.JavaConverters._
-import java.util.{List => JavaList}
+
+import akka.stream.alpakka.orientdb.impl.OrientDBFlowStage
 
 object OrientDBFlow {
 
@@ -20,10 +21,10 @@ object OrientDBFlow {
   def create(
       className: String,
       settings: OrientDBUpdateSettings
-  ): Flow[OIncomingMessage[ODocument, NotUsed], JavaList[OIncomingMessage[ODocument, NotUsed]], NotUsed] =
+  ): Flow[OIncomingMessage[ODocument, NotUsed], java.util.List[OIncomingMessage[ODocument, NotUsed]], NotUsed] =
     akka.stream.scaladsl.Flow
       .fromGraph(
-        new OrientDBFlowStage[ODocument, NotUsed, JavaList[OIncomingMessage[ODocument, NotUsed]]](
+        new OrientDBFlowStage[ODocument, NotUsed, java.util.List[OIncomingMessage[ODocument, NotUsed]]](
           className,
           settings,
           _.asJava,
@@ -40,10 +41,13 @@ object OrientDBFlow {
       className: String,
       settings: OrientDBUpdateSettings,
       clazz: Option[Class[T]]
-  ): Flow[OIncomingMessage[T, NotUsed], JavaList[OIncomingMessage[T, NotUsed]], NotUsed] =
+  ): Flow[OIncomingMessage[T, NotUsed], java.util.List[OIncomingMessage[T, NotUsed]], NotUsed] =
     akka.stream.scaladsl.Flow
       .fromGraph(
-        new OrientDBFlowStage[T, NotUsed, JavaList[OIncomingMessage[T, NotUsed]]](className, settings, _.asJava, clazz)
+        new OrientDBFlowStage[T, NotUsed, java.util.List[OIncomingMessage[T, NotUsed]]](className,
+                                                                                        settings,
+                                                                                        _.asJava,
+                                                                                        clazz)
       )
       .mapAsync(1)(identity)
       .asJava
@@ -55,10 +59,10 @@ object OrientDBFlow {
   def createWithPassThrough[C](
       className: String,
       settings: OrientDBUpdateSettings
-  ): Flow[OIncomingMessage[ODocument, C], JavaList[OIncomingMessage[ODocument, C]], NotUsed] =
+  ): Flow[OIncomingMessage[ODocument, C], java.util.List[OIncomingMessage[ODocument, C]], NotUsed] =
     akka.stream.scaladsl.Flow
       .fromGraph(
-        new OrientDBFlowStage[ODocument, C, JavaList[OIncomingMessage[ODocument, C]]](
+        new OrientDBFlowStage[ODocument, C, java.util.List[OIncomingMessage[ODocument, C]]](
           className,
           settings,
           _.asJava,

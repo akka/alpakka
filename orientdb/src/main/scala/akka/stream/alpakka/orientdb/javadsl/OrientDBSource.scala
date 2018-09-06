@@ -6,6 +6,7 @@ package akka.stream.alpakka.orientdb.javadsl
 
 import akka.NotUsed
 import akka.stream.alpakka.orientdb._
+import akka.stream.alpakka.orientdb.impl.{MessageReader, OrientDBSourceStage}
 import akka.stream.javadsl.Source
 import com.orientechnologies.orient.core.record.impl.ODocument
 
