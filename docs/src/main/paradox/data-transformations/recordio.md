@@ -1,7 +1,7 @@
 # RecordIO Framing
 
 The codec parses a ByteString stream in the
-[RecordIO format](http://mesos.apache.org/documentation/latest/scheduler-http-api/#recordio-response-format) into distinct frames.
+[RecordIO format](http://mesos.apache.org/documentation/latest/recordio/) used by Apache Mesos into distinct frames.
 
 For instance, the response body:
 ```
@@ -33,23 +33,23 @@ is parsed into frames:
 
 ## Usage
 
-The helper object @scaladoc[RecordIOFraming](akka.stream.alpakka.recordio.scaladsl.RecordIOFraming$) provides a `scanner`
-factory method for a `Flow[ByteString, ByteString, _]` which parses out RecordIO frames.
-
-For instance, given the sample input:
+The flow factory `RecordIOFraming` (@scala[@scaladoc[API](akka.stream.alpakka.recordio.scaladsl.RecordIOFraming$)]@java[@scaladoc[API](akka.stream.alpakka.recordio.javadsl.RecordIOFraming$)]) provides a `scanner`
+factory method for a @scala[`Flow[ByteString, ByteString, _]`]@java[`Flow<ByteString, ByteString, ?>`] which parses out RecordIO frames.
 
 Scala
-: @@snip [snip](/simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala) { #test-data }
+: @@snip [snip](/simple-codecs/src/test/scala/docs/scaladsl/RecordIOFramingSpec.scala) { #run-via-scanner }
 
-Running it through the RecordIO framing flow:
-
-Scala
-: @@snip [snip](/simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala) { #run-via-scanner }
+Java
+: @@snip [snip](/simple-codecs/src/test/java/docs/javadsl/RecordIOFramingTest.java) { #run-via-scanner }
 
 We obtain:
 
 Scala
-: @@snip [snip](/simple-codecs/src/test/scala/akka/stream/alpakka/recordio/RecordIOFramingSpec.scala) { #result }
+: @@snip [snip](/simple-codecs/src/test/scala/docs/scaladsl/RecordIOFramingSpec.scala) { #result }
+
+Java
+: @@snip [snip](/simple-codecs/src/test/java/docs/javadsl/RecordIOFramingTest.java) { #result }
+
 
 ### Running the example code
 

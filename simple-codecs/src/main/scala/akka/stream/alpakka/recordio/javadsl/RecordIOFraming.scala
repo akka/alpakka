@@ -5,10 +5,15 @@
 package akka.stream.alpakka.recordio.javadsl
 
 import akka.NotUsed
+import akka.stream.alpakka.recordio.impl.RecordIOFramingStage
 import akka.stream.javadsl.Flow
 import akka.util.ByteString
 
-// Provides a JSON framing flow that can separate records from an incoming RecordIO-formatted [[ByteString]] stream.
+/**
+ * Java API
+ *
+ * Provides a flow that can separate records from an incoming RecordIO-formatted [[akka.util.ByteString]] stream.
+ */
 object RecordIOFraming {
 
   /**
@@ -24,6 +29,8 @@ object RecordIOFraming {
    *
    * @param maxRecordLength The maximum record length allowed. If a record is indicated to be longer, this Flow will fail the stream.
    */
-  def scanner(maxRecordLength: Int = Int.MaxValue): Flow[ByteString, ByteString, NotUsed] =
-    akka.stream.alpakka.recordio.scaladsl.RecordIOFraming.scanner(maxRecordLength).asJava
+  def scanner(maxRecordLength: Int): Flow[ByteString, ByteString, NotUsed] =
+    Flow.fromGraph(new RecordIOFramingStage(maxRecordLength)).named("recordIOFraming")
+
+  def scanner(): Flow[ByteString, ByteString, NotUsed] = scanner(10 * 1024)
 }
