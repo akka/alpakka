@@ -373,7 +373,6 @@ private class UpsertSingleFlowSnippet {
   val bucket: Bucket = ???
   implicit val system: ActorSystem = ActorSystem()
   implicit val mat: ActorMaterializer = ActorMaterializer()
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   //#init-SingleFlow
   import akka.stream.scaladsl.Source
