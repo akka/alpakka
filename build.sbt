@@ -80,6 +80,10 @@ lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", "azure.storag
 
 lazy val cassandra = alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
 
+lazy val couchbase =
+  alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase, parallelExecution in Test := false)
+
+
 lazy val csv = alpakkaProject("csv", "csv", Dependencies.Csv)
 
 lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB)
