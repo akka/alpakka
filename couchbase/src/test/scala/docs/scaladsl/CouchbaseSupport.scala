@@ -10,7 +10,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.couchbase.scaladsl.{CouchbaseFlow, CouchbaseSink}
+import akka.stream.alpakka.couchbase.scaladsl.{CouchbaseFlow, CouchbaseSink, CouchbaseSource}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
 import com.couchbase.client.deps.io.netty.buffer.Unpooled
@@ -215,8 +215,6 @@ private class CBSourceSingleSnippet {
   //#init-sourceSingle
   import akka.NotUsed
   import com.couchbase.client.java.document.JsonDocument
-  import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSource
-
   val bucket: Bucket = ???
 
   val id: String = ???
@@ -232,7 +230,6 @@ private class CBSourceBulkSnippet {
   //#init-sourceBulk
   import akka.NotUsed
   import com.couchbase.client.java.document.JsonDocument
-  import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSource
   //#init-sourceBulk
 
   val bucket: Bucket = ???
@@ -251,7 +248,6 @@ private class CBN1QLQuerySnippet {
   implicit val mat: ActorMaterializer = ActorMaterializer()
 
   //#init-sourcen1ql
-  import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSource
   import com.couchbase.client.java.query.{AsyncN1qlQueryRow, N1qlParams, N1qlQuery}
   //#init-sourcen1ql
 
@@ -274,8 +270,6 @@ private class UpsertSingleSinkSnippet {
   //#init-SingleSink
   import akka.stream.scaladsl.Source
   import com.couchbase.client.java.document.JsonDocument
-  import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSink
-
   val document: JsonDocument = ???
   val source: Source[JsonDocument, NotUsed] = Source.single(document)
   source.runWith(CouchbaseSink.upsertSingle(2, bucket))
@@ -293,8 +287,6 @@ private class UsertBulkSinkSnippet {
   //#init-BulkSink
   import akka.stream.scaladsl.Source
   import com.couchbase.client.java.document.JsonDocument
-  import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSink
-
   val documents: Seq[JsonDocument] = ???
 
   val source: Source[JsonDocument, NotUsed] = Source.fromIterator(() => documents.iterator)
@@ -312,8 +304,6 @@ private class DeleteSingleSinkSnippet {
   //#delete-SingleSink
   import akka.stream.scaladsl.Source
   import akka.NotUsed
-  import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSink
-
   val documentId: String = ???
   val source: Source[String, NotUsed] = Source.single(documentId)
   source.runWith(CouchbaseSink.deleteOne(2, bucket))
@@ -330,7 +320,6 @@ private class DeleteBulkSinkSnippet {
 
   //#delete-BulkSink
   import akka.stream.scaladsl.Source
-  import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSink
   import akka.NotUsed
 
   val documentIds: Seq[String] = ???

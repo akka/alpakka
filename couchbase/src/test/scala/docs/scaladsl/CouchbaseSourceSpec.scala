@@ -23,7 +23,6 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
 class CouchbaseSourceSpec extends Specification with BeforeAfterAll with CouchbaseSupport with Matchers {
-  private val log = LoggerFactory.getLogger(classOf[CouchbaseSourceSpec])
 
   sequential
 
