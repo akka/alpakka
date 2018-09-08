@@ -37,6 +37,9 @@ jobs:
       - CMD=+cassandra/testChanged
     - env: CMD=+csv/testChanged
     - env:
+      - PRE_CMD="docker-compose up -d couchbase"
+      - CMD=+couchbase/testChanged
+    - env:
       - PRE_CMD="docker-compose up -d dynamodb"
       - CMD=+dynamodb/testChanged
     - env: CMD=+elasticsearch/testChanged
