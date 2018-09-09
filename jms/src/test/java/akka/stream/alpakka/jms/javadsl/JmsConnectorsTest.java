@@ -778,6 +778,62 @@ public class JmsConnectorsTest {
         });
   }
 
+  @Test
+  public void passThroughMessageEnvelopes() throws Exception {
+    withServer(
+        ctx -> {
+          ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+          Flow<
+                  JmsProducerEnvelope<JmsTextMessage, String>,
+                  JmsProducerEnvelope<JmsTextMessage, String>,
+                  NotUsed>
+              jmsProducer =
+                  JmsProducer.flexiFlow(
+                      JmsProducerSettings.create(connectionFactory).withQueue("test"));
+
+          List<String> data = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
+          List<JmsProducerEnvelope<JmsTextMessage, String>> input = new ArrayList<>();
+          for (String s : data) {
+            input.add(JmsProducerEnvelope.message(JmsTextMessage.create(s), s));
+          }
+
+          CompletionStage<List<String>> result =
+              Source.from(input)
+                  .via(jmsProducer)
+                  .map(JmsProducerEnvelope::passThrough)
+                  .runWith(Sink.seq(), materializer);
+          assertEquals(data, result.toCompletableFuture().get());
+        });
+  }
+
+  @Test
+  public void passThroughEmptyMessageEnvelopes() throws Exception {
+    withServer(
+        ctx -> {
+          ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+          Flow<
+                  JmsProducerEnvelope<JmsTextMessage, String>,
+                  JmsProducerEnvelope<JmsTextMessage, String>,
+                  NotUsed>
+              jmsProducer =
+                  JmsProducer.flexiFlow(
+                      JmsProducerSettings.create(connectionFactory).withQueue("test"));
+
+          List<String> data = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
+          List<JmsProducerEnvelope<JmsTextMessage, String>> input = new ArrayList<>();
+          for (String s : data) {
+            input.add(JmsProducerEnvelope.passThroughMessage(s));
+          }
+
+          CompletionStage<List<String>> result =
+              Source.from(input)
+                  .via(jmsProducer)
+                  .map(JmsProducerEnvelope::passThrough)
+                  .runWith(Sink.seq(), materializer);
+          assertEquals(data, result.toCompletableFuture().get());
+        });
+  }
+
   private static ActorSystem system;
   private static Materializer materializer;
 
