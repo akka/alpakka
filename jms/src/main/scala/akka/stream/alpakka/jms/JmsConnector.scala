@@ -56,7 +56,7 @@ private[jms] trait JmsConnector { this: GraphStageLogic =>
 
   private def startConnection()(implicit system: ActorSystem): Future[jms.Connection] = {
     val factory = jmsSettings.connectionFactory
-    val connectionRef: AtomicReference[Option[jms.Connection]] = new AtomicReference(None)
+    val connectionRef = new AtomicReference[Option[jms.Connection]](None)
 
     // status is also the decision point between the two futures below which one will win.
     val status = new AtomicReference[ConnectionStatus](Connecting)

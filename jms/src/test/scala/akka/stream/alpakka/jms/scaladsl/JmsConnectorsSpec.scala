@@ -905,6 +905,142 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       // even though no 4. is still in-flight.
       result.futureValue shouldEqual in.take(3) :+ done
     }
+
+    val mockMessages = (0 until 10).map(_.toString)
+
+    val mockMessageGenerator = new Answer[Unit]() {
+      override def answer(invocation: InvocationOnMock): Unit = {
+        val listener = invocation.getArgument[MessageListener](0)
+        mockMessages.foreach { s =>
+          val message = mock[TextMessage]
+          when(message.getText).thenReturn(s)
+          listener.onMessage(message)
+        }
+      }
+    }
+
+    "reconnect when timing out establishing a connection" in {
+      val factory = mock[ConnectionFactory]
+      val connection = mock[Connection]
+      val session = mock[Session]
+      val consumer = mock[MessageConsumer]
+      @volatile var connectCount = 0
+      val connectTimeout = 2.seconds
+      val connectDelay = 10.seconds
+
+      when(factory.createConnection()).thenAnswer { _ =>
+        connectCount += 1
+        if (connectCount == 1) Thread.sleep(connectDelay.toMillis) // Cause a connect timeout
+        connection
+      }
+
+      when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
+      when(session.createConsumer(any[javax.jms.Destination])).thenReturn(consumer)
+      when(consumer.setMessageListener(any[MessageListener])).thenAnswer(mockMessageGenerator)
+
+      val jmsSource = JmsConsumer.textSource(
+        JmsConsumerSettings(factory)
+          .withBufferSize(10)
+          .withQueue("test")
+          .withConnectionRetrySettings(ConnectionRetrySettings(connectTimeout))
+      )
+
+      val startTime = System.nanoTime
+      val resultFuture = jmsSource.take(10).runWith(Sink.seq)
+      val result = resultFuture.futureValue
+      val timeTaken = Duration.fromNanos(System.nanoTime - startTime)
+
+      result should contain theSameElementsAs mockMessages
+      connectCount shouldBe 2
+      timeTaken should be > connectTimeout
+      timeTaken should be < connectDelay
+    }
+
+    "reconnect when timing out starting a connection" in {
+      val factory = mock[ConnectionFactory]
+      val connection = mock[Connection]
+      val session = mock[Session]
+      val consumer = mock[MessageConsumer]
+      @volatile var connectStartCount = 0
+      val connectTimeout = 2.seconds
+      val connectStartDelay = 10.seconds
+
+      when(factory.createConnection()).thenReturn(connection)
+
+      when(connection.start()).thenAnswer { _ =>
+        connectStartCount += 1
+        if (connectStartCount == 1) Thread.sleep(connectStartDelay.toMillis) // first connection start to cause timeout
+      }
+
+      when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
+      when(session.createConsumer(any[javax.jms.Destination])).thenReturn(consumer)
+      when(consumer.setMessageListener(any[MessageListener])).thenAnswer(mockMessageGenerator)
+
+      val jmsSource = JmsConsumer.textSource(
+        JmsConsumerSettings(factory)
+          .withBufferSize(10)
+          .withQueue("test")
+          .withConnectionRetrySettings(ConnectionRetrySettings(connectTimeout))
+      )
+
+      val startTime = System.nanoTime
+      val resultFuture = jmsSource.take(10).runWith(Sink.seq)
+      val result = resultFuture.futureValue
+      val timeTaken = Duration.fromNanos(System.nanoTime - startTime)
+
+      result should contain theSameElementsAs mockMessages
+      connectStartCount shouldBe 2
+      timeTaken should be > connectTimeout
+      timeTaken should be < connectStartDelay
+    }
+
+    "reconnect when runtime connection exception occurs" in {
+      val factory = mock[ConnectionFactory]
+      val connection = mock[Connection]
+      val session = mock[Session]
+      val consumer = mock[MessageConsumer]
+      @volatile var connectCount = 0
+      @volatile var exceptionListener: Option[ExceptionListener] = None
+      val messageGroups = mockMessages.grouped(3)
+
+      when(factory.createConnection()).thenAnswer { _ =>
+        connectCount += 1
+        connection
+      }
+
+      when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
+
+      when(connection.setExceptionListener(any[ExceptionListener])).thenAnswer { invocation =>
+        exceptionListener = Option(invocation.getArgument(0))
+      }
+
+      when(session.createConsumer(any[javax.jms.Destination])).thenReturn(consumer)
+
+      when(consumer.setMessageListener(any[MessageListener])).thenAnswer { invocation =>
+        val listener = invocation.getArgument[MessageListener](0)
+        val thisMessageGroup = messageGroups.next()
+        thisMessageGroup.foreach { s =>
+          val message = mock[TextMessage]
+          when(message.getText).thenReturn(s)
+          listener.onMessage(message)
+        }
+        exceptionListener.foreach(_.onException(new JMSException("Mock: causing an exception while consuming")))
+      }
+
+      val jmsSource = JmsConsumer.textSource(
+        JmsConsumerSettings(factory)
+          .withBufferSize(10)
+          .withQueue("test")
+      )
+
+      val resultFuture = jmsSource.take(mockMessages.size).runWith(Sink.seq)
+
+      resultFuture.futureValue should contain theSameElementsAs mockMessages
+
+      // Connects 1 time at start, 3 times each 3 messages, and 1 time at end.
+      // Due to buffering, it will finish re-connecting before stream finishes.
+      connectCount shouldBe 5
+    }
   }
 
   "publish and subscribe with a durable subscription" in withServer() { ctx =>
