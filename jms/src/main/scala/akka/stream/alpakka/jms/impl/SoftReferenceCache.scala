@@ -12,9 +12,7 @@ import scala.ref.SoftReference
 
   private val cache = mutable.HashMap[K, SoftReference[V]]()
 
-  private val lock = new AnyRef
-
-  def lookup(key: K, default: => V): V = lock.synchronized {
+  def lookup(key: K, default: => V): V =
     cache.get(key) match {
       case Some(ref) =>
         ref.get match {
@@ -26,7 +24,6 @@ import scala.ref.SoftReference
 
       case None => update(key, default)
     }
-  }
 
   private def update(key: K, value: V): V = {
     cache.put(key, new SoftReference(value))
