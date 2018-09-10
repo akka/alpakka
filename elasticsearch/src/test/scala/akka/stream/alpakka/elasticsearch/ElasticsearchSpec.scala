@@ -399,7 +399,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       var committedOffsets = List[KafkaOffset]()
 
-      def commitToKakfa(offset: KafkaOffset): Unit =
+      def commitToKafka(offset: KafkaOffset): Unit =
         committedOffsets = committedOffsets :+ offset
 
       val f1 = Source(messagesFromKafka) // Assume we get this from Kafka
@@ -421,7 +421,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           messageResults.foreach { result =>
             if (!result.success) throw new Exception("Failed to write message to elastic")
             // Commit to kafka
-            commitToKakfa(result.message.passThrough)
+            commitToKafka(result.message.passThrough)
           }
         }
         .runWith(Sink.seq)

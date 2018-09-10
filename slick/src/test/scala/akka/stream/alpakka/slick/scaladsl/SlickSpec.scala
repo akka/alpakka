@@ -241,7 +241,7 @@ class SlickSpec extends WordSpec with ScalaFutures with BeforeAndAfterEach with 
 
       var committedOffsets = List[KafkaOffset]()
 
-      def commitToKakfa(offset: KafkaOffset): Future[Done] = {
+      def commitToKafka(offset: KafkaOffset): Future[Done] = {
         committedOffsets = committedOffsets :+ offset
         Future.successful(Done)
       }
@@ -255,7 +255,7 @@ class SlickSpec extends WordSpec with ScalaFutures with BeforeAndAfterEach with 
         .mapAsync(1) { kafkaMessage =>
           if (kafkaMessage.msg == 0) throw new Exception("Failed to write message to db")
           // Commit to kafka
-          commitToKakfa(kafkaMessage.offset)
+          commitToKafka(kafkaMessage.offset)
         }
         .runWith(Sink.seq)
 
