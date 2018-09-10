@@ -928,11 +928,13 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       val connectTimeout = 2.seconds
       val connectDelay = 10.seconds
 
-      when(factory.createConnection()).thenAnswer { _ =>
-        connectCount += 1
-        if (connectCount == 1) Thread.sleep(connectDelay.toMillis) // Cause a connect timeout
-        connection
-      }
+      when(factory.createConnection()).thenAnswer(new Answer[Connection]() {
+        override def answer(invocation: InvocationOnMock): Connection = {
+          connectCount += 1
+          if (connectCount == 1) Thread.sleep(connectDelay.toMillis) // Cause a connect timeout
+          connection
+        }
+      })
 
       when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
       when(session.createConsumer(any[javax.jms.Destination])).thenReturn(consumer)
@@ -967,10 +969,12 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
 
       when(factory.createConnection()).thenReturn(connection)
 
-      when(connection.start()).thenAnswer { _ =>
-        connectStartCount += 1
-        if (connectStartCount == 1) Thread.sleep(connectStartDelay.toMillis) // first connection start to cause timeout
-      }
+      when(connection.start()).thenAnswer(new Answer[Unit]() {
+        override def answer(invocation: InvocationOnMock): Unit = {
+          connectStartCount += 1
+          if (connectStartCount == 1) Thread.sleep(connectStartDelay.toMillis) // first connection start to timeout
+        }
+      })
 
       when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
       when(session.createConsumer(any[javax.jms.Destination])).thenReturn(consumer)
@@ -1003,29 +1007,34 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       @volatile var exceptionListener: Option[ExceptionListener] = None
       val messageGroups = mockMessages.grouped(3)
 
-      when(factory.createConnection()).thenAnswer { _ =>
-        connectCount += 1
-        connection
-      }
+      when(factory.createConnection()).thenAnswer(new Answer[Connection]() {
+        override def answer(invocation: InvocationOnMock): Connection = {
+          connectCount += 1
+          connection
+        }
+      })
 
       when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
 
-      when(connection.setExceptionListener(any[ExceptionListener])).thenAnswer { invocation =>
-        exceptionListener = Option(invocation.getArgument(0))
-      }
+      when(connection.setExceptionListener(any[ExceptionListener])).thenAnswer(new Answer[Unit]() {
+        override def answer(invocation: InvocationOnMock): Unit =
+          exceptionListener = Option(invocation.getArgument(0))
+      })
 
       when(session.createConsumer(any[javax.jms.Destination])).thenReturn(consumer)
 
-      when(consumer.setMessageListener(any[MessageListener])).thenAnswer { invocation =>
-        val listener = invocation.getArgument[MessageListener](0)
-        val thisMessageGroup = messageGroups.next()
-        thisMessageGroup.foreach { s =>
-          val message = mock[TextMessage]
-          when(message.getText).thenReturn(s)
-          listener.onMessage(message)
+      when(consumer.setMessageListener(any[MessageListener])).thenAnswer(new Answer[Unit]() {
+        override def answer(invocation: InvocationOnMock): Unit = {
+          val listener = invocation.getArgument[MessageListener](0)
+          val thisMessageGroup = messageGroups.next()
+          thisMessageGroup.foreach { s =>
+            val message = mock[TextMessage]
+            when(message.getText).thenReturn(s)
+            listener.onMessage(message)
+          }
+          exceptionListener.foreach(_.onException(new JMSException("Mock: causing an exception while consuming")))
         }
-        exceptionListener.foreach(_.onException(new JMSException("Mock: causing an exception while consuming")))
-      }
+      })
 
       val jmsSource = JmsConsumer.textSource(
         JmsConsumerSettings(factory)
