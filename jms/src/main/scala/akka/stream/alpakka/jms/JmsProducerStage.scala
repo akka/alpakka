@@ -10,6 +10,8 @@ import akka.stream.alpakka.jms.JmsProducerStage._
 import akka.stream.impl.{Buffer, ReactiveStreamsCompliance}
 import akka.stream.stage._
 import akka.util.OptionVal
+import javax.jms
+import javax.jms.{Connection, Session}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
@@ -27,7 +29,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
     ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher")
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with JmsProducerConnector {
+    new GraphStageLogic(shape) with JmsConnector {
 
       /*
        * NOTE: the following code is heavily inspired by akka.stream.impl.fusing.MapAsync
@@ -46,16 +48,16 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
 
       protected def jmsSettings: JmsProducerSettings = settings
 
-      override def preStart(): Unit = initSessionAsync(executionContext(inheritedAttributes))
+      protected def createSession(connection: Connection, createDestination: Session => jms.Destination): JmsSession = {
+        val session =
+          connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode)
+        new JmsSession(connection, session, createDestination(session), settings.destination.get)
+      }
 
-      override protected def onSessionOpened(jmsSession: JmsProducerSession): Unit = {
-        jmsProducers.enqueue(JmsMessageProducer(jmsSession, settings))
-        // startup situation: while producer pool was empty, the out port might have pulled. If so, pull from in port.
-        // Note that a message might be already in-flight; that's fine since this stage pre-fetches message from
-        // upstream anyway to increase throughput once the stream is started.
-        if (isAvailable(out)) {
-          pullIfNeeded()
-        }
+      override def preStart(): Unit = {
+        jmsSessions = openSessions()
+        jmsSessions.foreach(jmsSession => jmsProducers.enqueue(JmsMessageProducer(jmsSession, settings)))
+        ec = executionContext(inheritedAttributes)
       }
 
       setHandler(out, new OutHandler {

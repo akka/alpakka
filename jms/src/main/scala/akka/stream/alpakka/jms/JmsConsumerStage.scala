@@ -34,10 +34,10 @@ private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings)
       private val backpressure = new Semaphore(bufferSize)
 
       protected def createSession(connection: Connection,
-                                  createDestination: Session => javax.jms.Destination): JmsConsumerSession = {
+                                  createDestination: Session => javax.jms.Destination): JmsSession = {
         val session =
           connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode)
-        new JmsConsumerSession(connection, session, createDestination(session), settings.destination.get)
+        new JmsSession(connection, session, createDestination(session), settings.destination.get)
       }
 
       protected def pushMessage(msg: Message): Unit = {
@@ -45,7 +45,7 @@ private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings)
         backpressure.release()
       }
 
-      override protected def onSessionOpened(jmsSession: JmsConsumerSession): Unit =
+      override protected def onSessionOpened(jmsSession: JmsSession): Unit =
         jmsSession
           .createConsumer(settings.selector)
           .onComplete {
@@ -90,7 +90,7 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings)
 
       protected def pushMessage(msg: AckEnvelope): Unit = push(out, msg)
 
-      override protected def onSessionOpened(jmsSession: JmsConsumerSession): Unit =
+      override protected def onSessionOpened(jmsSession: JmsSession): Unit =
         jmsSession match {
           case session: JmsAckSession =>
             session.createConsumer(settings.selector).onComplete {
@@ -167,7 +167,7 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings)
 
       protected def pushMessage(msg: TxEnvelope): Unit = push(out, msg)
 
-      override protected def onSessionOpened(jmsSession: JmsConsumerSession): Unit =
+      override protected def onSessionOpened(jmsSession: JmsSession): Unit =
         jmsSession match {
           case session: JmsTxSession =>
             session.createConsumer(settings.selector).onComplete {
@@ -210,7 +210,7 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
                                    settings: JmsConsumerSettings,
                                    attributes: Attributes)
     extends GraphStageLogic(shape)
-    with JmsConsumerConnector
+    with JmsConnector
     with StageLogging {
 
   override protected def jmsSettings: JmsConsumerSettings = settings

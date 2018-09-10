@@ -8,6 +8,11 @@ services:
     image: rabbitmq:3
     ports:
       - "5672:5672"
+  couchbase:
+    image: couchbase:community-5.1.1
+    ports:
+      - 8091-8094:8091-8094
+      - 11210:11210
   cassandra:
     image: cassandra:3.0.15
     ports:
