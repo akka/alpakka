@@ -13,7 +13,7 @@ import spray.json.JsonWriter
 import scala.concurrent.Future
 
 /**
- * Java API to create Elasticsearch sinks.
+ * Scala API to create Elasticsearch sinks.
  */
 object ElasticsearchSink {
 
