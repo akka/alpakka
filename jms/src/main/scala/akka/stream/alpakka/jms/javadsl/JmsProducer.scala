@@ -6,9 +6,9 @@ package akka.stream.alpakka.jms.javadsl
 
 import java.util.concurrent.CompletionStage
 
-import akka.{Done, NotUsed}
-import akka.stream.alpakka.jms.{JmsMessage, JmsProducerSettings, JmsProducerStage}
+import akka.stream.alpakka.jms.{JmsMessage, JmsProducerSettings}
 import akka.stream.scaladsl.{Flow, Keep}
+import akka.{Done, NotUsed}
 
 import scala.collection.JavaConversions
 import scala.compat.java8.FutureConverters
