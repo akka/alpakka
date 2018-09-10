@@ -15,8 +15,10 @@ object JmsProducer {
   /**
    * Scala API: Creates an [[JmsProducer]] for [[JmsMessage]]s
    */
-  def flow[T <: JmsMessage](settings: JmsProducerSettings): Flow[T, T, NotUsed] =
+  def flow[T <: JmsMessage](settings: JmsProducerSettings): Flow[T, T, NotUsed] = {
+    require(settings.destination.isDefined, "Producer destination must be defined in producer flow")
     Flow.fromGraph(new JmsProducerStage(settings))
+  }
 
   /**
    * Scala API: Creates an [[JmsProducer]] for [[JmsMessage]]s
