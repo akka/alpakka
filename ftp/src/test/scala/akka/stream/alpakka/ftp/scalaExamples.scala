@@ -17,14 +17,12 @@ object scalaExamples {
     import java.net.InetAddress
 
     val settings = FtpSettings(
-      InetAddress.getByName("localhost"),
-      credentials = AnonFtpCredentials,
-      binary = true,
-      passiveMode = true,
-      configureConnection = (ftpClient: FTPClient) => {
+      InetAddress.getByName("localhost")
+    ).withBinary(true)
+      .withPassiveMode(true)
+      .withConfigureConnection((ftpClient: FTPClient) => {
         ftpClient.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.out), true))
-      }
-    )
+      })
     //#create-settings
   }
 

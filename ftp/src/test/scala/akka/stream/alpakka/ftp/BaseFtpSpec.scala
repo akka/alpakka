@@ -16,12 +16,10 @@ import java.net.InetAddress
 trait BaseFtpSpec extends PlainFtpSupportImpl with BaseSpec {
 
   val settings = FtpSettings(
-    InetAddress.getByName("localhost"),
-    getPort,
-    AnonFtpCredentials,
-    binary = true,
-    passiveMode = true
-  )
+    InetAddress.getByName("localhost")
+  ).withPort(getPort)
+    .withBinary(true)
+    .withPassiveMode(true)
 
   protected def listFiles(basePath: String): Source[FtpFile, NotUsed] =
     Ftp.ls(basePath, settings)

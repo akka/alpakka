@@ -4,11 +4,12 @@
 
 package akka.stream.alpakka.ftp.impl
 
+import java.net.InetAddress
+
 import akka.stream.alpakka.ftp.FtpCredentials.{AnonFtpCredentials, NonAnonFtpCredentials}
-import akka.stream.alpakka.ftp.{FtpFile, FtpFileSettings, FtpSettings, FtpsSettings, RemoteFileSettings, SftpSettings}
+import akka.stream.alpakka.ftp._
 import net.schmizz.sshj.SSHClient
 import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
-import java.net.InetAddress
 
 private[ftp] trait FtpSourceFactory[FtpClient] { self =>
 
@@ -118,7 +119,7 @@ private[ftp] trait SftpSource extends FtpSourceFactory[SSHClient] {
   protected final val sFtpIOSourceName = "sFtpIOSource"
   protected final val sFtpIOSinkName = "sFtpIOSink"
   def sshClient(): SSHClient = new SSHClient()
-  protected val ftpClient: () => SSHClient = sshClient
+  protected val ftpClient: () => SSHClient = () => sshClient()
   protected val ftpBrowserSourceName: String = sFtpBrowserSourceName
   protected val ftpIOSourceName: String = sFtpIOSourceName
   protected val ftpIOSinkName: String = sFtpIOSinkName
@@ -131,8 +132,8 @@ private[ftp] trait FtpDefaultSettings {
       password: Option[String]
   ): FtpSettings =
     FtpSettings(
-      InetAddress.getByName(hostname),
-      FtpSettings.DefaultFtpPort,
+      InetAddress.getByName(hostname)
+    ).withCredentials(
       if (username.isDefined)
         NonAnonFtpCredentials(username.get, password.getOrElse(""))
       else
@@ -147,8 +148,8 @@ private[ftp] trait FtpsDefaultSettings {
       password: Option[String]
   ): FtpsSettings =
     FtpsSettings(
-      InetAddress.getByName(hostname),
-      FtpsSettings.DefaultFtpsPort,
+      InetAddress.getByName(hostname)
+    ).withCredentials(
       if (username.isDefined)
         NonAnonFtpCredentials(username.get, password.getOrElse(""))
       else
@@ -163,8 +164,8 @@ private[ftp] trait SftpDefaultSettings {
       password: Option[String]
   ): SftpSettings =
     SftpSettings(
-      InetAddress.getByName(hostname),
-      SftpSettings.DefaultSftpPort,
+      InetAddress.getByName(hostname)
+    ).withCredentials(
       if (username.isDefined)
         NonAnonFtpCredentials(username.get, password.getOrElse(""))
       else

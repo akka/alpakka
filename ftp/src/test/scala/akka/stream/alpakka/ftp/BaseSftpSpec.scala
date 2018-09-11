@@ -17,13 +17,9 @@ trait BaseSftpSpec extends SftpSupportImpl with BaseSpec {
 
   //#create-settings
   val settings = SftpSettings(
-    InetAddress.getByName("localhost"),
-    getPort,
-    AnonFtpCredentials,
-    strictHostKeyChecking = false,
-    knownHosts = None,
-    sftpIdentity = None
-  )
+    InetAddress.getByName("localhost")
+  ).withPort(getPort)
+    .withStrictHostKeyChecking(false)
   //#create-settings
 
   protected def listFiles(basePath: String): Source[FtpFile, NotUsed] =
