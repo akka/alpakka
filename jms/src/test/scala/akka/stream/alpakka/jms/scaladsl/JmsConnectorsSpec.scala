@@ -943,7 +943,7 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
         case _ => Supervision.Stop
       }
       val jmsFlow = JmsProducer
-        .flow[JmsTextMessage](JmsProducerSettings(factory).withQueue(s"test-$i").withSessionCount(1))
+        .flow[JmsTextMessage](JmsProducerSettings(factory).withQueue("test").withSessionCount(2))
         .withAttributes(ActorAttributes.supervisionStrategy(decider))
 
       val in = (1 to 10).map(i => JmsTextMessage(i.toString))
