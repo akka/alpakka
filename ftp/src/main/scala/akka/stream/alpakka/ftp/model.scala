@@ -132,7 +132,7 @@ object FtpSettings {
 
   /** Java API */
   def create(
-      host: java.net.InetAddress,
+      host: java.net.InetAddress
   ): FtpSettings = apply(
     host
   )
@@ -219,7 +219,7 @@ object FtpsSettings {
 
   /** Java API */
   def create(
-      host: java.net.InetAddress,
+      host: java.net.InetAddress
   ): FtpsSettings = apply(
     host
   )
