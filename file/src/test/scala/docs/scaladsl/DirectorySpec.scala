@@ -62,7 +62,7 @@ class DirectorySpec
 
       val files: Source[Path, NotUsed] = Directory.walk(root)
 
-      val files: Source[Path, NotUsed] = Directory.walk(root, maxDepth = Some(1), List(FileVisitOption.FOLLOW_LINKS))
+      val files2: Source[Path, NotUsed] = Directory.walk(root, maxDepth = Some(1), List(FileVisitOption.FOLLOW_LINKS))
       // #walk
 
       val result = files.runWith(Sink.seq).futureValue
