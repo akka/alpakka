@@ -2,17 +2,17 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.json
+package akka.stream.alpakka.json.impl
 
 import akka.annotation.InternalApi
-
-import scala.collection.immutable.Queue
-import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream._
+import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.util.ByteString
 import org.jsfr.json.exception.JsonSurfingException
 import org.jsfr.json.path.JsonPath
 import org.jsfr.json.{JsonPathListener, JsonSurferJackson, ParsingContext}
+
+import scala.collection.immutable.Queue
 
 /**
  * Internal API
