@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.dynamodb.impl
+package akka.stream.alpakka.dynamodb
 
 import akka.actor.ActorSystem
 import com.amazonaws.auth._
@@ -58,7 +58,7 @@ case class DynamoSettings(region: String,
                           parallelism: Int,
                           credentialsProvider: AWSCredentialsProvider)
 // #init-settings
-    extends ClientSettings {
+    extends AwsClientSettings {
   require(host.nonEmpty, "A host name must be provided.")
   require(port > -1, "A port number must be provided.")
 }

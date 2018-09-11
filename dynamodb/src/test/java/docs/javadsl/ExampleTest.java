@@ -2,13 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.dynamodb;
+package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
-import akka.stream.alpakka.dynamodb.impl.DynamoSettings;
+import akka.stream.alpakka.dynamodb.DynamoSettings;
 import akka.stream.alpakka.dynamodb.javadsl.DynamoClient;
 import akka.stream.javadsl.Source;
 import com.amazonaws.services.dynamodbv2.model.*;

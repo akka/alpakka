@@ -5,7 +5,6 @@
 package akka.stream.alpakka.dynamodb
 
 import akka.actor.ActorSystem
-import akka.stream.alpakka.dynamodb.impl.DynamoSettings
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{Matchers, WordSpecLike}

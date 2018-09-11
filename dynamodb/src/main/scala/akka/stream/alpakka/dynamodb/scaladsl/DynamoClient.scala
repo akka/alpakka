@@ -7,8 +7,8 @@ package akka.stream.alpakka.dynamodb.scaladsl
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import akka.stream.alpakka.dynamodb.{AwsOp, AwsPagedOp}
-import akka.stream.alpakka.dynamodb.impl.{DynamoClientImpl, DynamoSettings, Paginator}
+import akka.stream.alpakka.dynamodb.{AwsOp, AwsPagedOp, DynamoSettings}
+import akka.stream.alpakka.dynamodb.impl.{DynamoClientImpl, Paginator}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 
 import scala.concurrent.Future

@@ -6,7 +6,6 @@ package akka.stream.alpakka.dynamodb
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.dynamodb.impl.DynamoSettings
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoClient
 import akka.testkit.TestKit
 import org.scalatest.{AsyncWordSpecLike, BeforeAndAfterAll, Matchers}
