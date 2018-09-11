@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.file.scaladsl
+package docs.scaladsl
 
 import java.nio.channels.NonWritableChannelException
 import java.nio.file._
@@ -31,6 +31,8 @@ object LogRotatorSinkSpec {
     import system.dispatcher
 
     // #size
+    import akka.stream.alpakka.file.scaladsl.LogRotatorSink
+
     val fileSizeRotationFunction = () => {
       val max = 10 * 1024 * 1024
       var size: Long = max
@@ -106,6 +108,8 @@ class LogRotatorSinkSpec
     with WordSpecLike
     with Matchers
     with BeforeAndAfterAll {
+
+  import akka.stream.alpakka.file.scaladsl.LogRotatorSink
 
   override protected def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)

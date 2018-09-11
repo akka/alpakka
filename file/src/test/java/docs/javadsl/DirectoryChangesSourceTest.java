@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.file.javadsl;
+package docs.javadsl;
 
 import akka.Done;
 import akka.NotUsed;
@@ -11,6 +11,9 @@ import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.file.DirectoryChange;
+// #minimal-sample
+import akka.stream.alpakka.file.javadsl.DirectoryChangesSource;
+// #minimal-sample
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestSubscriber;
@@ -141,6 +144,7 @@ public class DirectoryChangesSourceTest {
     final Materializer materializer = ActorMaterializer.create(system);
 
     // #minimal-sample
+
     final FileSystem fs = FileSystems.getDefault();
     final FiniteDuration pollingInterval = FiniteDuration.create(1, TimeUnit.SECONDS);
     final int maxBufferSize = 1000;
