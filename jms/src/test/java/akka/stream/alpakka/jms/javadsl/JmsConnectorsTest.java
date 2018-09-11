@@ -700,6 +700,48 @@ public class JmsConnectorsTest {
   }
 
   @Test
+  public void directedProducerFlow() throws Exception {
+    withServer(
+        ctx -> {
+          ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+          // #run-directed-flow-producer
+          Flow<JmsTextMessage, JmsTextMessage, NotUsed> flowSink =
+              JmsProducer.flow(JmsProducerSettings.create(connectionFactory).withQueue("test"));
+
+          List<JmsTextMessage> input = new ArrayList<>();
+          for (Integer n : Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)) {
+            String queueName = (n % 2 == 0) ? "even" : "odd";
+            input.add(JmsTextMessage.create(n.toString()).toQueue(queueName));
+          }
+
+          Source.from(input).via(flowSink).runWith(Sink.seq(), materializer);
+          // #run-directed-flow-producer
+
+          CompletionStage<List<Integer>> even =
+              JmsConsumer.textSource(
+                      JmsConsumerSettings.create(connectionFactory)
+                          .withBufferSize(10)
+                          .withQueue("even"))
+                  .take(5)
+                  .map(Integer::parseInt)
+                  .runWith(Sink.seq(), materializer);
+
+          CompletionStage<List<Integer>> odd =
+              JmsConsumer.textSource(
+                      JmsConsumerSettings.create(connectionFactory)
+                          .withBufferSize(10)
+                          .withQueue("odd"))
+                  .take(5)
+                  .map(Integer::parseInt)
+                  .runWith(Sink.seq(), materializer);
+
+          assertEquals(Arrays.asList(1, 3, 5, 7, 9), odd.toCompletableFuture().get());
+          assertEquals(Arrays.asList(2, 4, 6, 8, 10), even.toCompletableFuture().get());
+        });
+  }
+
+  @Test
   public void failAfterRetry() throws Exception {
     withServer(
         ctx -> {

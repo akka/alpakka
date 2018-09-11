@@ -38,18 +38,18 @@ sealed trait JmsSettings {
 
 sealed trait Destination {
   val name: String
-  val create: (jms.Session) => jms.Destination
+  val create: jms.Session => jms.Destination
 }
 final case class Topic(override val name: String) extends Destination {
-  override val create: (jms.Session) => jms.Destination = session => session.createTopic(name)
+  override val create: jms.Session => jms.Destination = session => session.createTopic(name)
 }
 final case class DurableTopic(name: String, subscriberName: String) extends Destination {
-  override val create: (jms.Session) => jms.Destination = session => session.createTopic(name)
+  override val create: jms.Session => jms.Destination = session => session.createTopic(name)
 }
 final case class Queue(override val name: String) extends Destination {
-  override val create: (jms.Session) => jms.Destination = session => session.createQueue(name)
+  override val create: jms.Session => jms.Destination = session => session.createQueue(name)
 }
-final case class CustomDestination(override val name: String, override val create: (jms.Session) => jms.Destination)
+final case class CustomDestination(override val name: String, override val create: jms.Session => jms.Destination)
     extends Destination
 
 final class AcknowledgeMode(val mode: Int)
@@ -122,7 +122,7 @@ final case class JmsConsumerSettings(connectionFactory: ConnectionFactory,
   def withBufferSize(size: Int): JmsConsumerSettings = copy(bufferSize = size)
   def withQueue(name: String): JmsConsumerSettings = copy(destination = Some(Queue(name)))
   def withTopic(name: String): JmsConsumerSettings = copy(destination = Some(Topic(name)))
-  def withDurableTopic(name: String, subscriberName: String) =
+  def withDurableTopic(name: String, subscriberName: String): JmsConsumerSettings =
     copy(destination = Some(DurableTopic(name, subscriberName)))
   def withDestination(destination: Destination): JmsConsumerSettings = copy(destination = Some(destination))
   def withSelector(selector: String): JmsConsumerSettings = copy(selector = Some(selector))

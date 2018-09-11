@@ -204,7 +204,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       var committedOffsets = List[KafkaOffset]()
 
-      def commitToKakfa(offset: KafkaOffset): Unit =
+      def commitToKafka(offset: KafkaOffset): Unit =
         committedOffsets = committedOffsets :+ offset
 
       val f1 = Source(messagesFromKafka)
@@ -223,7 +223,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         )
         .map { messages: Seq[OIncomingMessage[ODocument, KafkaOffset]] =>
           messages.foreach { message =>
-            commitToKakfa(message.passThrough)
+            commitToKafka(message.passThrough)
           }
         }
         .runWith(Sink.seq)

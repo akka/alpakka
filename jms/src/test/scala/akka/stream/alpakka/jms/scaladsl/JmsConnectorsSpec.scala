@@ -31,7 +31,7 @@ final case class DummyObject(payload: String)
 
 class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
 
-  override implicit val patienceConfig = PatienceConfig(2.minutes)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(2.minutes)
 
   "The JMS Connectors" should {
     "publish and consume strings through a queue" in withServer() { ctx =>
@@ -558,12 +558,19 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
         JmsProducerSettings(connectionFactory).withQueue("numbers")
       )
 
-      val completionFuture: Future[Done] = Source
-        .failed[JmsTextMessage](new RuntimeException("Simulated error"))
+      val msgsIn = (1 to 10).toList.map { n =>
+        JmsTextMessage(n.toString)
+      }
+
+      val completionFuture: Future[Done] = Source(msgsIn)
+        .map { msg =>
+          if (msg.body.toInt > 5) throw new RuntimeException("Simulated error") else msg
+        }
         .runWith(jmsSink)
-      completionFuture.failed.futureValue shouldBe an[RuntimeException]
+
+      completionFuture.failed.futureValue shouldBe a[RuntimeException]
       // make sure connection was closed
-      connectionFactory.cachedConnection.isClosed shouldBe true
+      connectionFactory.cachedConnection shouldBe 'closed
     }
 
     "sink disconnect exceptional completion" in withServer() { ctx =>
@@ -818,6 +825,41 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       result.futureValue should ===(input)
     }
 
+    "accept message-defined destinations" in withServer() { ctx =>
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      //#run-directed-flow-producer
+      val flowSink: Flow[JmsMessage, JmsMessage, NotUsed] =
+        JmsProducer.flow(
+          JmsProducerSettings(connectionFactory).withQueue("test")
+        )
+
+      val input = (1 to 100).map { i =>
+        val queueName = if (i % 2 == 0) "even" else "odd"
+        JmsTextMessage(i.toString).toQueue(queueName)
+      }
+      Source(input).via(flowSink).runWith(Sink.ignore)
+      //#run-directed-flow-producer
+
+      val jmsEvenSource: Source[String, KillSwitch] = JmsConsumer.textSource(
+        JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("even")
+      )
+      val jmsOddSource: Source[String, KillSwitch] = JmsConsumer.textSource(
+        JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("odd")
+      )
+
+      jmsEvenSource.take(input.size / 2).map(_.toInt).runWith(Sink.seq).futureValue shouldBe (2 to 100 by 2)
+      jmsOddSource.take(input.size / 2).map(_.toInt).runWith(Sink.seq).futureValue shouldBe (1 to 99 by 2)
+    }
+
+    "fail if message destination is not defined" in {
+      val connectionFactory = new ActiveMQConnectionFactory("localhost:1234")
+
+      an[IllegalArgumentException] shouldBe thrownBy {
+        JmsProducer.flow(JmsProducerSettings(connectionFactory))
+      }
+    }
+
     "publish and consume strings through a queue with multiple sessions" in withServer() { ctx =>
       val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
@@ -881,7 +923,7 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
 
       val failOnFifthAndDelayFourthItem = new Answer[Unit] {
         override def answer(invocation: InvocationOnMock): Unit = {
-          val msgNo = messages(invocation.getArgument[TextMessage](0))
+          val msgNo = messages(invocation.getArgument[TextMessage](1))
           msgNo match {
             case 1 | 2 | 3 =>
               errorLatch.countDown() // first three sends work...
@@ -894,7 +936,8 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
           }
         }
       }
-      when(producer.send(any[Message], anyInt(), anyInt(), anyLong())).thenAnswer(failOnFifthAndDelayFourthItem)
+      when(producer.send(any[javax.jms.Destination], any[Message], anyInt(), anyInt(), anyLong()))
+        .thenAnswer(failOnFifthAndDelayFourthItem)
 
       val in = (1 to 10).map(i => JmsTextMessage(i.toString))
       val done = new JmsTextMessage("done")
@@ -1018,7 +1061,7 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
 
       when(connection.setExceptionListener(any[ExceptionListener])).thenAnswer(new Answer[Unit]() {
         override def answer(invocation: InvocationOnMock): Unit =
-          exceptionListener = Option(invocation.getArgument(0))
+          exceptionListener = Option(invocation.getArgument[ExceptionListener](0))
       })
 
       when(session.createConsumer(any[javax.jms.Destination])).thenReturn(consumer)
