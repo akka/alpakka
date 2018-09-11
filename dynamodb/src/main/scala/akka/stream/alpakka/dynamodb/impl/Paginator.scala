@@ -5,12 +5,17 @@
 package akka.stream.alpakka.dynamodb.impl
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.stream.SourceShape
 import akka.stream.alpakka.dynamodb.{AwsOp, AwsPagedOp}
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Source}
 import com.amazonaws.{AmazonWebServiceResult, ResponseMetadata}
 
-object Paginator {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[dynamodb] object Paginator {
 
   def source(flow: Flow[AwsOp, AmazonWebServiceResult[ResponseMetadata], NotUsed],
              op: AwsPagedOp): Source[op.B, NotUsed] = {

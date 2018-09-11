@@ -9,14 +9,14 @@ import java.util.concurrent.CompletionStage
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.{javadsl, Materializer}
-import akka.stream.alpakka.dynamodb.{AwsOp, AwsPagedOp}
-import akka.stream.alpakka.dynamodb.impl.{DynamoClientImpl, DynamoSettings, Paginator}
+import akka.stream.alpakka.dynamodb.{AwsOp, AwsPagedOp, DynamoSettings}
+import akka.stream.alpakka.dynamodb.impl.{DynamoClientImpl, Paginator}
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits
 import akka.stream.javadsl.Flow
 import akka.stream.scaladsl.{Sink, Source}
 import com.amazonaws.services.dynamodbv2.model._
-import scala.compat.java8.FutureConverters._
 
+import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContextExecutor
 
 object DynamoClient {

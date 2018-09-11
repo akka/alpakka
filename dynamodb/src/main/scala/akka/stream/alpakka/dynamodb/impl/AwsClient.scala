@@ -9,21 +9,26 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import akka.http.scaladsl.Http.HostConnectionPool
 import akka.http.scaladsl.model.{ContentType, HttpEntity, _}
-import akka.stream.alpakka.dynamodb.AwsOp
 import akka.stream.alpakka.dynamodb.impl.AwsClient.{AwsConnect, AwsRequestMetadata}
+import akka.stream.alpakka.dynamodb.{AwsClientSettings, AwsOp}
 import akka.stream.scaladsl.Flow
 import akka.stream.{ActorAttributes, Materializer, Supervision}
-import com.amazonaws.auth.{AWS4Signer, DefaultAWSCredentialsProviderChain}
+import com.amazonaws.auth.AWS4Signer
 import com.amazonaws.http.{HttpMethodName, HttpResponseHandler, HttpResponse => AWSHttpResponse}
 import com.amazonaws.{DefaultRequest, HttpMethod => _, _}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
 import scala.language.implicitConversions
+import scala.util.{Failure, Success, Try}
 
-private[alpakka] object AwsClient {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[dynamodb] object AwsClient {
 
   case class AwsRequestMetadata(id: Long, op: AwsOp)
 
@@ -32,7 +37,11 @@ private[alpakka] object AwsClient {
 
 }
 
-private[alpakka] trait AwsClient[S <: ClientSettings] {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
 
   protected implicit def system: ActorSystem
 

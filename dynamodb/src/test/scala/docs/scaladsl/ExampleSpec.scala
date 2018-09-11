@@ -2,20 +2,20 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.dynamodb
+package docs.scaladsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.alpakka.dynamodb.impl.DynamoSettings
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.dynamodb.scaladsl._
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.alpakka.dynamodb.{AwsOp, DynamoSettings}
+import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import com.amazonaws.services.dynamodbv2.model._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike with Matchers with BeforeAndAfterAll {
 
@@ -31,8 +31,8 @@ class ExampleSpec extends TestKit(ActorSystem("ExampleSpec")) with WordSpecLike 
     "provide a simple usage example" in {
 
       //#init-client
-      implicit val system = ActorSystem()
-      implicit val materializer = ActorMaterializer()
+      implicit val system: ActorSystem = ActorSystem()
+      implicit val materializer: Materializer = ActorMaterializer()
       //#init-client
 
       //#client-construct
