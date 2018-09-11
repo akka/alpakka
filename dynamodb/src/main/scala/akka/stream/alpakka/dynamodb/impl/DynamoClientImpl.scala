@@ -37,7 +37,7 @@ private[dynamodb] class DynamoClientImpl(
     val poolSettings = ConnectionPoolSettings(system)
       .withMaxConnections(settings.parallelism)
       .withMaxOpenRequests(settings.parallelism)
-    if (settings.port == 443)
+    if (settings.tls)
       Http().cachedHostConnectionPoolHttps[AwsRequestMetadata](settings.host, settings = poolSettings)
     else
       Http().cachedHostConnectionPool[AwsRequestMetadata](settings.host, settings.port, settings = poolSettings)
