@@ -2,14 +2,12 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.slick.scaladsl
+package docs.scaladsl
 
 import akka.Done
-
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.slick.scaladsl.{Slick, SlickSession}
 import akka.stream.scaladsl._
 import akka.testkit.TestKit
 import org.scalatest._
@@ -17,6 +15,9 @@ import org.scalatest.concurrent.ScalaFutures
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
 import slick.jdbc.{GetResult, JdbcProfile}
+
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 /**
  * This unit test is run using a local H2 database using

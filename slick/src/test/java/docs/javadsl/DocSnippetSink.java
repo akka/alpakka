@@ -2,12 +2,10 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package example;
+package docs.javadsl;
 
-// #flow-example
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -19,12 +17,13 @@ import akka.stream.Materializer;
 import akka.stream.javadsl.*;
 import akka.stream.alpakka.slick.javadsl.*;
 
-public class DocSnippetFlow {
+public class DocSnippetSink {
   public static void main(String[] args) throws Exception {
     final ActorSystem system = ActorSystem.create();
     final Materializer materializer = ActorMaterializer.create(system);
 
     final SlickSession session = SlickSession.forConfig("slick-h2");
+    system.registerOnTermination(session::close);
 
     final List<User> users =
         IntStream.range(0, 42)
@@ -32,10 +31,11 @@ public class DocSnippetFlow {
             .map((i) -> new User(i, "Name" + i))
             .collect(Collectors.toList());
 
+    // #sink-example
     final CompletionStage<Done> done =
         Source.from(users)
-            .via(
-                Slick.<User>flow(
+            .runWith(
+                Slick.<User>sink(
                     session,
                     // add an optional second argument to specify the parallism factor (int)
                     (user) ->
@@ -43,15 +43,13 @@ public class DocSnippetFlow {
                             + user.id
                             + ", '"
                             + user.name
-                            + "')"))
-            .log("nr-of-updated-rows")
-            .runWith(Sink.ignore(), materializer);
+                            + "')"),
+                materializer);
+    // #sink-example
 
     done.whenComplete(
         (value, exception) -> {
-          session.close();
           system.terminate();
         });
   }
 }
-// #flow-example
