@@ -6,11 +6,16 @@ package akka.stream.alpakka.ftp.impl
 
 import java.net.InetAddress
 
+import akka.annotation.InternalApi
 import akka.stream.alpakka.ftp.FtpCredentials.{AnonFtpCredentials, NonAnonFtpCredentials}
 import akka.stream.alpakka.ftp._
 import net.schmizz.sshj.SSHClient
 import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait FtpSourceFactory[FtpClient] { self =>
 
   type S <: RemoteFileSettings
@@ -94,6 +99,10 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
   ): S
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait FtpSource extends FtpSourceFactory[FTPClient] {
   protected final val FtpBrowserSourceName = "FtpBrowserSource"
   protected final val FtpIOSourceName = "FtpIOSource"
@@ -104,6 +113,10 @@ private[ftp] trait FtpSource extends FtpSourceFactory[FTPClient] {
   protected val ftpIOSinkName: String = FtpIOSinkName
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait FtpsSource extends FtpSourceFactory[FTPSClient] {
   protected final val FtpsBrowserSourceName = "FtpsBrowserSource"
   protected final val FtpsIOSourceName = "FtpsIOSource"
@@ -114,6 +127,10 @@ private[ftp] trait FtpsSource extends FtpSourceFactory[FTPSClient] {
   protected val ftpIOSinkName: String = FtpsIOSinkName
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait SftpSource extends FtpSourceFactory[SSHClient] {
   protected final val sFtpBrowserSourceName = "sFtpBrowserSource"
   protected final val sFtpIOSourceName = "sFtpIOSource"
@@ -125,6 +142,10 @@ private[ftp] trait SftpSource extends FtpSourceFactory[SSHClient] {
   protected val ftpIOSinkName: String = sFtpIOSinkName
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait FtpDefaultSettings {
   protected def defaultSettings(
       hostname: String,
@@ -141,6 +162,10 @@ private[ftp] trait FtpDefaultSettings {
     )
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait FtpsDefaultSettings {
   protected def defaultSettings(
       hostname: String,
@@ -157,6 +182,10 @@ private[ftp] trait FtpsDefaultSettings {
     )
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait SftpDefaultSettings {
   protected def defaultSettings(
       hostname: String,
@@ -173,16 +202,28 @@ private[ftp] trait SftpDefaultSettings {
     )
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait FtpSourceParams extends FtpSource with FtpDefaultSettings {
   type S = FtpSettings
   protected[this] val ftpLike: FtpLike[FTPClient, S] = FtpLike.ftpLikeInstance
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait FtpsSourceParams extends FtpsSource with FtpsDefaultSettings {
   type S = FtpsSettings
   protected[this] val ftpLike: FtpLike[FTPSClient, S] = FtpLike.ftpsLikeInstance
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait SftpSourceParams extends SftpSource with SftpDefaultSettings {
   type S = SftpSettings
   protected[this] val ftpLike: FtpLike[SSHClient, S] = FtpLike.sFtpLikeInstance

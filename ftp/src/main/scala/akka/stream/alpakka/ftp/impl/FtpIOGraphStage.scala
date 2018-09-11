@@ -14,8 +14,14 @@ import akka.util.ByteString.ByteString1C
 import scala.concurrent.{Future, Promise}
 import java.io.{IOException, InputStream, OutputStream}
 
+import akka.annotation.InternalApi
+
 import scala.util.control.NonFatal
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait FtpIOGraphStage[FtpClient, S <: RemoteFileSettings, Sh <: Shape]
     extends GraphStageWithMaterializedValue[Sh, Future[IOResult]] {
 
@@ -35,6 +41,10 @@ private[ftp] trait FtpIOGraphStage[FtpClient, S <: RemoteFileSettings, Sh <: Sha
   override def shape: Sh
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait FtpIOSourceStage[FtpClient, S <: RemoteFileSettings]
     extends FtpIOGraphStage[FtpClient, S, SourceShape[ByteString]] {
 
@@ -126,6 +136,10 @@ private[ftp] trait FtpIOSourceStage[FtpClient, S <: RemoteFileSettings]
 
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
     extends FtpIOGraphStage[FtpClient, S, SinkShape[ByteString]] {
 
@@ -210,6 +224,10 @@ private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
 
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait FtpMoveSink[FtpClient, S <: RemoteFileSettings]
     extends GraphStageWithMaterializedValue[SinkShape[FtpFile], Future[IOResult]] {
   val connectionSettings: S
@@ -250,6 +268,10 @@ private[ftp] trait FtpMoveSink[FtpClient, S <: RemoteFileSettings]
   }
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait FtpRemoveSink[FtpClient, S <: RemoteFileSettings]
     extends GraphStageWithMaterializedValue[SinkShape[FtpFile], Future[IOResult]] {
   val connectionSettings: S

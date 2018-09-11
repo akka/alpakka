@@ -8,12 +8,17 @@ import java.io.{IOException, InputStream, OutputStream}
 import java.nio.file.Paths
 import java.nio.file.attribute.PosixFilePermission
 
+import akka.annotation.InternalApi
 import akka.stream.alpakka.ftp.FtpFile
 import org.apache.commons.net.ftp.{FTPClient, FTPFile}
 
 import scala.collection.immutable
 import scala.util.Try
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait CommonFtpOperations {
   type Handler = FTPClient
 
