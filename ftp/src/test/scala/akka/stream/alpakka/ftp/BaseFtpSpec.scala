@@ -7,7 +7,6 @@ package akka.stream.alpakka.ftp
 import akka.NotUsed
 import akka.stream.IOResult
 import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.alpakka.ftp.FtpCredentials.AnonFtpCredentials
 import akka.stream.alpakka.ftp.scaladsl.Ftp
 import akka.util.ByteString
 import scala.concurrent.Future

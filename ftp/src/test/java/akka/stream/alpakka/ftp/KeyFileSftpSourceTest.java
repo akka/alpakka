@@ -49,7 +49,6 @@ public class KeyFileSftpSourceTest extends SftpSupportImpl implements CommonFtpS
   }
 
   private SftpSettings settings() throws Exception {
-    // #create-settings
     final SftpSettings settings =
         SftpSettings.create(InetAddress.getByName("localhost"))
             .withPort(getPort())
@@ -60,7 +59,6 @@ public class KeyFileSftpSourceTest extends SftpSupportImpl implements CommonFtpS
             .withSftpIdentity(
                 SftpIdentity.createFileSftpIdentity(
                     getClientPrivateKeyFile().getPath(), CLIENT_PRIVATE_KEY_PASSPHRASE));
-    // #create-settings
     return settings;
   }
 }

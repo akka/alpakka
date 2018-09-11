@@ -50,7 +50,6 @@ public class StrictHostCheckingSftpSourceTest extends SftpSupportImpl
   }
 
   private SftpSettings settings() throws Exception {
-    // #create-settings
     final SftpSettings settings =
         SftpSettings.create(InetAddress.getByName("localhost"))
             .withPort(getPort())
@@ -62,7 +61,6 @@ public class StrictHostCheckingSftpSourceTest extends SftpSupportImpl
             .withSftpIdentity(
                 SftpIdentity.createFileSftpIdentity(
                     getClientPrivateKeyFile().getPath(), CLIENT_PRIVATE_KEY_PASSPHRASE));
-    // #create-settings
     return settings;
   }
 }

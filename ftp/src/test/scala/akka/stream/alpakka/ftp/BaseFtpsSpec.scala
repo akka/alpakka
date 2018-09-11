@@ -3,24 +3,23 @@
  */
 
 package akka.stream.alpakka.ftp
+import java.net.InetAddress
 
 import akka.NotUsed
-import akka.stream.alpakka.ftp.scaladsl.Ftps
 import akka.stream.IOResult
+import akka.stream.alpakka.ftp.scaladsl.Ftps
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
+
 import scala.concurrent.Future
-import java.net.InetAddress
 
 trait BaseFtpsSpec extends FtpsSupportImpl with BaseSpec {
 
-  //#create-settings
   val settings = FtpsSettings(
     InetAddress.getByName("localhost")
   ).withPort(getPort)
     .withBinary(true)
     .withPassiveMode(true)
-  //#create-settings
 
   protected def listFiles(basePath: String): Source[FtpFile, NotUsed] =
     Ftps.ls(basePath, settings)

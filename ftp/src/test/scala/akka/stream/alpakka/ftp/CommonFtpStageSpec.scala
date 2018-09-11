@@ -11,11 +11,13 @@ import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
 import org.scalatest.time.{Millis, Seconds, Span}
+
 import scala.concurrent.duration._
 import scala.util.Random
 import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.{Files, Paths}
 import java.net.InetAddress
+
 import org.scalatest.concurrent.Eventually
 
 final class FtpStageSpec extends BaseFtpSpec with CommonFtpStageSpec
