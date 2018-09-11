@@ -112,10 +112,10 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
           pullIfNeeded()
         } else if (isAvailable(out)) {
           val holder = inFlightMessagesWithProducer.dequeue()
+          jmsProducers.enqueue(holder.jmsProducer) // put back jms producer to the pool.
           holder.elem match {
             case Success(elem) =>
               push(out, elem)
-              jmsProducers.enqueue(holder.jmsProducer) // put back jms producer to the pool.
               pullIfNeeded() // Ask for the next element.
 
             case Failure(NonFatal(ex)) => handleFailure(ex, holder)
