@@ -4,7 +4,6 @@
 
 package docs.javadsl;
 
-import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
@@ -24,16 +23,15 @@ import com.google.common.jimfs.WatchServiceConfiguration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -67,7 +65,7 @@ public class DirectoryChangesSourceTest {
   public void sourceShouldEmitOnDirectoryChanges() throws Exception {
     final TestSubscriber.Probe<Pair<Path, DirectoryChange>> probe = TestSubscriber.probe(system);
 
-    DirectoryChangesSource.create(testDir, FiniteDuration.create(250, TimeUnit.MILLISECONDS), 200)
+    DirectoryChangesSource.create(testDir, Duration.ofMillis(250), 200)
         .runWith(Sink.fromSubscriber(probe), materializer);
 
     probe.request(1);
@@ -100,8 +98,7 @@ public class DirectoryChangesSourceTest {
 
     final int numberOfChanges = 50;
 
-    DirectoryChangesSource.create(
-            testDir, FiniteDuration.create(250, TimeUnit.MILLISECONDS), numberOfChanges * 2)
+    DirectoryChangesSource.create(testDir, Duration.ofMillis(250), numberOfChanges * 2)
         .runWith(Sink.fromSubscriber(probe), materializer);
 
     probe.request(numberOfChanges);
@@ -131,7 +128,7 @@ public class DirectoryChangesSourceTest {
 
   @After
   public void tearDown() throws Exception {
-    TestKit.shutdownActorSystem(system, Duration.create("20 seconds"), true);
+    TestKit.shutdownActorSystem(system, FiniteDuration.apply(3, TimeUnit.SECONDS), true);
     fs.close();
   }
 
@@ -146,7 +143,7 @@ public class DirectoryChangesSourceTest {
     // #minimal-sample
 
     final FileSystem fs = FileSystems.getDefault();
-    final FiniteDuration pollingInterval = FiniteDuration.create(1, TimeUnit.SECONDS);
+    final Duration pollingInterval = Duration.ofSeconds(1);
     final int maxBufferSize = 1000;
     final Source<Pair<Path, DirectoryChange>, NotUsed> changes =
         DirectoryChangesSource.create(fs.getPath(path), pollingInterval, maxBufferSize);

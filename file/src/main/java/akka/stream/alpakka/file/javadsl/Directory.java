@@ -7,9 +7,6 @@ package akka.stream.alpakka.file.javadsl;
 import akka.NotUsed;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
-import scala.None;
-import scala.None$;
-import scala.collection.immutable.Nil$;
 
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
