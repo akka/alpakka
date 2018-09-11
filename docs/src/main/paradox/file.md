@@ -36,10 +36,10 @@ lines and emits those.
 In this sample we simply tail the lines of a file and print them to standard out:
 
 Scala
-: @@snip [snip](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/FileTailSourceSpec.scala) { #simple-lines }
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/FileTailSourceSpec.scala) { #simple-lines }
 
 Java
-: @@snip [snip](/file/src/test/java/akka/stream/alpakka/file/javadsl/FileTailSourceTest.java) { #simple-lines }
+: @@snip [snip](/file/src/test/java/docs/javadsl/FileTailSourceTest.java) { #simple-lines }
 
 ## Listing directory contents
 
@@ -47,19 +47,19 @@ Java
 directly in a given directory:
 
 Scala
-: @@snip [snip](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/DirectorySpec.scala) { #ls }
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/DirectorySpec.scala) { #ls }
 
 Java
-: @@snip [snip](/file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryTest.java) { #ls }
+: @@snip [snip](/file/src/test/java/docs/javadsl/DirectoryTest.java) { #ls }
 
 `Directory.walk(path)` traverses all subdirectories and lists
 files and directories depth first:
 
 Scala
-: @@snip [snip](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/DirectorySpec.scala) { #walk }
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/DirectorySpec.scala) { #walk }
 
 Java
-: @@snip [snip](/file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryTest.java) { #walk }
+: @@snip [snip](/file/src/test/java/docs/javadsl/DirectoryTest.java) { #walk }
 
 ## Listening to changes in a directory
 
@@ -70,10 +70,10 @@ describing what kind of change it was.
 In this sample we simply print each change to the directory to standard output:
 
 Scala
-: @@snip [snip](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/DirectoryChangesSourceSpec.scala) { #minimal-sample }
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/DirectoryChangesSourceSpec.scala) { #minimal-sample }
 
 Java
-: @@snip [snip](/file/src/test/java/akka/stream/alpakka/file/javadsl/DirectoryChangesSourceTest.java) { #minimal-sample }
+: @@snip [snip](/file/src/test/java/docs/javadsl/DirectoryChangesSourceTest.java) { #minimal-sample }
 
 ## Rotating the file to stream into 
 
@@ -89,26 +89,26 @@ This sink will takes a function as parameter which returns a
 A small snippet for the usage
 
 Scala
-: @@snip [snip](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #sample }
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/LogRotatorSinkSpec.scala) { #sample }
 
 Java
-: @@snip [snip](/file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #sample }
+: @@snip [snip](/file/src/test/java/docs/javadsl/LogRotatorSinkTest.java) { #sample }
 
 ### Example: size-based rotation
 
 Scala
-: @@snip [snip](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #size }
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/LogRotatorSinkSpec.scala) { #size }
 
 Java
-: @@snip [snip](/file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #size }
+: @@snip [snip](/file/src/test/java/docs/javadsl/LogRotatorSinkTest.java) { #size }
 
 ### Example: time-based rotation
 
 Scala
-: @@snip [snip](/file/src/test/scala/akka/stream/alpakka/file/scaladsl/LogRotatorSinkSpec.scala) { #time }
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/LogRotatorSinkSpec.scala) { #time }
 
 Java
-: @@snip [snip](/file/src/test/java/akka/stream/alpakka/file/javadsl/LogRotatorSinkTest.java) { #time }
+: @@snip [snip](/file/src/test/java/docs/javadsl/LogRotatorSinkTest.java) { #time }
 
 ### Running the example code
 
@@ -138,11 +138,11 @@ Java
     sbt
 
     // tail source
-    > file/Test/runMain akka.stream.alpakka.file.javadsl.FileTailSourceTest /some/path/toa/file
+    > file/Test/runMain docs.javadsl.FileTailSourceTest /some/path/toa/file
 
     // or directory changes
-    > file/Test/runMain akka.stream.alpakka.file.javadsl.DirectoryChangesSourceTest /some/directory/path
+    > file/Test/runMain docs.javadsl.DirectoryChangesSourceTest /some/directory/path
 
     // File rotator
-    > file/Test/runMain akka.stream.alpakka.file.javadsl.LogRotatorSinkTest
+    > file/Test/runMain docs.javadsl.LogRotatorSinkTest
     ```
