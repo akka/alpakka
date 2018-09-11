@@ -14,30 +14,26 @@ The AWS DynamoDB connector provides a flow for streaming DynamoDB requests. For 
   version=$version$
 }
 
-## Usage
+## Setup
 
 This connector will uses the [default credential provider chain](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html) 
 provided by the [DynamoDB Java SDK](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/basics.html) to retrieve credentials.
 
 If you wish to use static credentials they can be defined in the config
 
-Define Static Credentials in Config
+Define Static Credentials in `application.conf`
 : @@snip [snip](/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/DynamoSettingsSpec.scala) { #static-creds }
 
-Alternatively any type of `AWSCredentialsProvider` can be provided programmatically via the default @scaladoc[DynamoSettings](akka.stream.alpakka.dynamodb.DynamoSettings) 
-constructor
-
-Supply Credentials Provider to Constructor
-: @@snip [snip](/dynamodb/src/main/scala/akka/stream/alpakka/dynamodb/DynamoSettings.scala) { #init-settings } 
-
-Before you can construct the client, you need an @scaladoc[ActorSystem](akka.actor.ActorSystem), 
-@scaladoc[ActorMaterializer](akka.stream.ActorMaterializer), and @scaladoc[ExecutionContext](scala.concurrent.ExecutionContext).
+You may attach any type of `AWSCredentialsProvider` programmatically via the `withCredentialsProvider` method in @scaladoc[DynamoSettings](akka.stream.alpakka.dynamodb.DynamoSettings$).
 
 Scala
-: @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/ExampleSpec.scala) { #init-client }
+: @@snip [snip](/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/DynamoSettingsSpec.scala) { #credentials-provider } 
 
 Java
-: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #init-client }
+: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #credentials-provider } 
+
+
+Before you can construct the client, you need an @scaladoc[ActorSystem](akka.actor.ActorSystem), and @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
 
 You can then create the client with a settings object.
 
@@ -46,6 +42,9 @@ Scala
 
 Java
 : @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #client-construct }
+
+
+## Usage
 
 We can now send requests to DynamoDB across the connection.
 
