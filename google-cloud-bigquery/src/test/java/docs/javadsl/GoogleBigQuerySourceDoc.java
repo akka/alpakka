@@ -9,16 +9,15 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.scaladsl.model.HttpRequest;
 import akka.stream.ActorMaterializer;
-import akka.stream.alpakka.google.cloud.bigquery.BigQueryCommunicationHelper;
 import akka.stream.alpakka.google.cloud.bigquery.BigQueryFlowModels;
-import akka.stream.alpakka.google.cloud.bigquery.impl.client.TableDataQueryJsonProtocol;
-import akka.stream.alpakka.google.cloud.bigquery.impl.client.TableListQueryJsonProtocol;
+import akka.stream.alpakka.google.cloud.bigquery.client.BigQueryCommunicationHelper;
+import akka.stream.alpakka.google.cloud.bigquery.client.TableDataQueryJsonProtocol;
+import akka.stream.alpakka.google.cloud.bigquery.client.TableListQueryJsonProtocol;
 import akka.stream.alpakka.google.cloud.bigquery.javadsl.GoogleBigQuerySource;
 import akka.stream.javadsl.Source;
 import spray.json.JsObject;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 // #imports
 
@@ -42,15 +41,15 @@ public class GoogleBigQuerySourceDoc {
 
     // #list-tables-and-fields
     CompletionStage<List<TableListQueryJsonProtocol.QueryTableModel>> tables =
-        GoogleBigQuerySource.listTables(config, materializer, system);
+        GoogleBigQuerySource.listTables(config, system, materializer);
     CompletionStage<List<TableDataQueryJsonProtocol.Field>> fields =
-        GoogleBigQuerySource.listFields("myTable", config, materializer, system);
+        GoogleBigQuerySource.listFields("myTable", config, system, materializer);
     // #list-tables-and-fields
 
     // #csv-style
     Source<List<String>, NotUsed> userCsvLikeStream =
         GoogleBigQuerySource.runQueryCsvStyle(
-            "SELECT uid, name FROM bigQueryDatasetName.myTable", config, materializer, system);
+            "SELECT uid, name FROM bigQueryDatasetName.myTable", config, system, materializer);
     // #csv-style
   }
 
@@ -65,14 +64,9 @@ public class GoogleBigQuerySourceDoc {
     }
   }
 
-  static Optional<User> userFromJson(JsObject object) {
-    try {
-      return Optional.of(
-          new User(
-              object.fields().apply("uid").toString(), object.fields().apply("name").toString()));
-    } catch (Throwable ex) {
-      return Optional.empty();
-    }
+  static User userFromJson(JsObject object) {
+    return new User(
+        object.fields().apply("uid").toString(), object.fields().apply("name").toString());
   }
 
   private static Source<User, NotUsed> example2() {
@@ -89,8 +83,8 @@ public class GoogleBigQuerySourceDoc {
         "SELECT uid, name FROM bigQueryDatasetName.myTable",
         GoogleBigQuerySourceDoc::userFromJson,
         config,
-        materializer,
-        system);
+        system,
+        materializer);
   }
   // #run-query
 
@@ -107,16 +101,11 @@ public class GoogleBigQuerySourceDoc {
     }
   }
 
-  static Optional<DryRunResponse> dryRunResponseFromJson(JsObject object) {
-    try {
-      return Optional.of(
-          new DryRunResponse(
-              object.fields().apply("totalBytesProcessed").toString(),
-              object.fields().apply("jobComplete").toString(),
-              object.fields().apply("cacheHit").toString()));
-    } catch (Throwable ex) {
-      return Optional.empty();
-    }
+  static DryRunResponse dryRunResponseFromJson(JsObject object) {
+    return new DryRunResponse(
+        object.fields().apply("totalBytesProcessed").toString(),
+        object.fields().apply("jobComplete").toString(),
+        object.fields().apply("cacheHit").toString());
   }
 
   private static Source<DryRunResponse, NotUsed> example3() {
@@ -138,8 +127,8 @@ public class GoogleBigQuerySourceDoc {
         request,
         GoogleBigQuerySourceDoc::dryRunResponseFromJson,
         config.session(),
-        materializer,
-        system);
+        system,
+        materializer);
   }
   // #dry-run
 }

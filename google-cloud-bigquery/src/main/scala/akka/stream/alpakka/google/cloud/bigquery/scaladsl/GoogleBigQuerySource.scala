@@ -9,9 +9,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.stream.Materializer
-import akka.stream.alpakka.google.cloud.bigquery.BigQueryCommunicationHelper
 import akka.stream.alpakka.google.cloud.bigquery.BigQueryFlowModels.BigQueryProjectConfig
-import akka.stream.alpakka.google.cloud.bigquery.impl.client._
+import akka.stream.alpakka.google.cloud.bigquery.client._
 import akka.stream.alpakka.google.cloud.bigquery.impl.util.ConcatWithHeaders
 import akka.stream.alpakka.google.cloud.bigquery.impl.{BigQueryStreamSource, GoogleSession, GoogleTokenApi}
 import akka.stream.scaladsl.{Sink, Source}
@@ -21,22 +20,19 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object GoogleBigQuerySource {
 
-  def createSession(clientEmail: String, privateKey: String)(implicit actorSystem: ActorSystem): GoogleSession =
-    new GoogleSession(clientEmail, privateKey, new GoogleTokenApi(Http()))
-
   def createProjectConfig(clientEmail: String, privateKey: String, projectId: String, dataset: String)(
       implicit actorSystem: ActorSystem
   ): BigQueryProjectConfig = {
-    val session = createSession(clientEmail, privateKey)
+    val session = new GoogleSession(clientEmail, privateKey, new GoogleTokenApi(Http()))
     new BigQueryProjectConfig(projectId, dataset, session)
   }
 
   def raw[T](httpRequest: HttpRequest,
-             parserFn: JsObject => Option[T],
+             parserFn: JsObject => T,
              googleSession: GoogleSession)(implicit mat: Materializer, actorSystem: ActorSystem): Source[T, NotUsed] =
     BigQueryStreamSource[T](httpRequest, parserFn, googleSession, Http())
 
-  def runQuery[T](query: String, parserFn: JsObject => Option[T], projectConfig: BigQueryProjectConfig)(
+  def runQuery[T](query: String, parserFn: JsObject => T, projectConfig: BigQueryProjectConfig)(
       implicit mat: Materializer,
       actorSystem: ActorSystem
   ): Source[T, NotUsed] = {
@@ -73,7 +69,7 @@ object GoogleBigQuerySource {
       projectConfig.session
     )
 
-  private def runMetaQuery[T](url: String, parser: JsObject => Option[Seq[T]], session: GoogleSession)(
+  private def runMetaQuery[T](url: String, parser: JsObject => Seq[T], session: GoogleSession)(
       implicit mat: Materializer,
       actorSystem: ActorSystem,
       executionContext: ExecutionContext
