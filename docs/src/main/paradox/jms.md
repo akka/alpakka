@@ -151,7 +151,7 @@ Java
 : @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-object-sink }
 
 
-### Sending  messages with properties to a JMS provider
+### Sending messages with properties to a JMS provider
 
 For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set jms properties.
 
@@ -217,6 +217,7 @@ The producer can be configured with the following settings.
 * `connectionFactory` (mandatory) the factory to use for creating Jms connections.
 * `destination` (mandatory) the destination (queue or topic) to send Jms messgages to.
 * `credentials` (optional) username and password to use for authentication to the Jms broker .
+* `connectionRetrySettings` (optional) retry characteristics if the connection failed to be established or taking a long time. Please see default values under [Connection Retries](#connection-retries). Note that producers cannot re-establish the connection if it fails mid-stream at this time.
 * `sessionCount` (defaults to 1) the number of parallel sessions to use for sending Jms messages. Increasing the 
   number of parallel sessions increases throughput at the cost of message ordering. While the messages may arrive
   out of order at the Jms broker, the producer flow outputs messages in the order they are received.
@@ -540,6 +541,35 @@ Java
 All JMS sources materialize to a `KillSwitch` to allow safely stopping consumption without message loss for transactional and acknowledged messages, and with minimal message loss for the simple JMS source.
 
 To stop consumption safely, call `shutdown()` on the `KillSwitch` that is the materialized value of the source. To abruptly abort consumption (without concerns for message loss), call `abort(Throwable)` on the `KillSwitch`.
+
+## Connection Retries
+
+When a connection to a broker cannot be established and errors out, or is timing out being established or started, the connection can be retried. All JMS publishers, consumers, and browsers are configured with a connection retry settings as follows:
+
+Setting        | Description                              | Default Value
+---------------|------------------------------------------|--------------
+connectTimeout | Time allowed to establish and start a connection   | 10 s
+initialRetry   | Wait time before retrying the first time | 100 ms
+backoffFactor  | Back-off factor for subsequent retries   | 2.0
+maxBackoff     | Maximum back-off time allowed, after which all retries will happen after this delay | 1 minute
+maxRetries     | Maximim number of retries allowed (negative value is infinite) | 10
+
+The retry time is calculated by:
+
+*initialRetry \* retryNumber<sup>backoffFactor</sup>*
+
+With the default settings, we'll see retries after 100ms, 400ms, 900ms pauses, until the pauses reach 1 minute and will stay with 1 minute intervals for any subsequent retries.
+
+Consumers and browsers try to reconnect with the same retry characteristics if a connection fails mid-stream. Publishers do not reconnect at this point in time.
+
+All JMS settings support setting the `connectionRetrySettings` field using `.withConnectionRetrySettings(retrySettings)` on the given settings. The followings show how to create the `ConnectionRetrySettings`:
+
+Scala
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsSettingsSpec.scala) { #retry-settings-case-class }
+
+Java
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsSettingsTest.java) { #retry-settings }
+
 
 ## Using IBM MQ
 

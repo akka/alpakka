@@ -141,7 +141,7 @@ final case class JmsProducerSettings(connectionFactory: ConnectionFactory,
                                      destination: Option[Destination] = None,
                                      credentials: Option[Credentials] = None,
                                      sessionCount: Int = 1,
-                                     timeToLive: Option[java.time.Duration] = None,
+                                     timeToLive: Option[Duration] = None,
                                      acknowledgeMode: Option[AcknowledgeMode] = None)
     extends JmsSettings {
   def withCredential(credentials: Credentials): JmsProducerSettings = copy(credentials = Some(credentials))
@@ -151,7 +151,10 @@ final case class JmsProducerSettings(connectionFactory: ConnectionFactory,
   def withQueue(name: String): JmsProducerSettings = copy(destination = Some(Queue(name)))
   def withTopic(name: String): JmsProducerSettings = copy(destination = Some(Topic(name)))
   def withDestination(destination: Destination): JmsProducerSettings = copy(destination = Some(destination))
-  def withTimeToLive(ttl: java.time.Duration): JmsProducerSettings = copy(timeToLive = Some(ttl))
+  def withTimeToLive(ttl: java.time.Duration): JmsProducerSettings =
+    copy(timeToLive = Some(Duration.fromNanos(ttl.toNanos)))
+  def withTimeToLive(ttl: Duration): JmsProducerSettings = copy(timeToLive = Some(ttl))
+  def withTimeToLive(ttl: Long, unit: TimeUnit): JmsProducerSettings = copy(timeToLive = Some(Duration(ttl, unit)))
   def withAcknowledgeMode(acknowledgeMode: AcknowledgeMode): JmsProducerSettings =
     copy(acknowledgeMode = Option(acknowledgeMode))
 }
