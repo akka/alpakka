@@ -6,7 +6,7 @@ package akka.stream.alpakka.google.cloud.bigquery.impl.sendrequest
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.google.cloud.bigquery.impl.GoogleSession
 import akka.stream.alpakka.google.cloud.bigquery.impl.sendrequest.EnrichRequestWithOauth.TokenErrorException
 import akka.stream.scaladsl.{Sink, Source}
@@ -26,11 +26,10 @@ class EnrichRequestWithOauthSpec
     with BeforeAndAfterAll
     with MockitoSugar {
 
-  override def afterAll {
+  override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
-  }
 
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer: Materializer = ActorMaterializer()
   implicit val timeout = Timeout(1.second)
 
   import system.dispatcher
