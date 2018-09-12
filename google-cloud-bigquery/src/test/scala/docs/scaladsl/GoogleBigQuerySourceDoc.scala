@@ -11,16 +11,16 @@ package docs.scaladsl
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.google.cloud.bigquery.client.BigQueryCommunicationHelper
 import akka.stream.scaladsl.Source
 import spray.json.JsonFormat
 
 import scala.concurrent.Future
-import akka.stream.alpakka.google.cloud.bigquery.impl.client.TableDataQueryJsonProtocol.Field
-import akka.stream.alpakka.google.cloud.bigquery.impl.client.TableListQueryJsonProtocol.QueryTableModel
+import akka.stream.alpakka.google.cloud.bigquery.client.TableDataQueryJsonProtocol.Field
+import akka.stream.alpakka.google.cloud.bigquery.client.TableListQueryJsonProtocol.QueryTableModel
 import spray.json.DefaultJsonProtocol._
 import spray.json.JsObject
-import scala.util.Try
-import akka.stream.alpakka.google.cloud.bigquery.BigQueryCommunicationHelper
+
 import akka.stream.alpakka.google.cloud.bigquery.scaladsl.GoogleBigQuerySource
 //#imports
 
@@ -53,7 +53,7 @@ class GoogleBigQuerySourceDoc {
   case class User(uid: String, name: String)
   implicit val userFormatter = jsonFormat2(User)
 
-  def parserFn(result: JsObject): Option[User] = Try(result.convertTo[User]).toOption
+  def parserFn(result: JsObject): User = result.convertTo[User]
   val userStream: Source[User, NotUsed] =
     GoogleBigQuerySource.runQuery("SELECT uid, name FROM bigQueryDatasetName.myTable", parserFn, config)
   //#run-query
@@ -62,7 +62,7 @@ class GoogleBigQuerySourceDoc {
   case class DryRunResponse(totalBytesProcessed: String, jobComplete: Boolean, cacheHit: Boolean)
   implicit val dryRunFormat: JsonFormat[DryRunResponse] = jsonFormat3(DryRunResponse)
 
-  def dryRunParser(result: JsObject): Option[DryRunResponse] = Try(result.convertTo[DryRunResponse]).toOption
+  def dryRunParser(result: JsObject): DryRunResponse = result.convertTo[DryRunResponse]
 
   val request = BigQueryCommunicationHelper.createQueryRequest("SELECT uid, name FROM bigQueryDatasetName.myTable",
                                                                config.projectId,
