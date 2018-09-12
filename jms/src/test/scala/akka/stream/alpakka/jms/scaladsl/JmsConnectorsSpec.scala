@@ -9,7 +9,7 @@ import java.util.concurrent.{CountDownLatch, LinkedBlockingQueue, ThreadLocalRan
 
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import akka.stream.{KillSwitch, KillSwitches, ThrottleMode}
+import akka.stream._
 import akka.{Done, NotUsed}
 import javax.jms._
 import org.apache.activemq.command.ActiveMQQueue
@@ -251,11 +251,13 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
 
     "publish and consume JMS text messages through a queue with custom queue creator " in withServer() { ctx =>
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
       // custom queue creator generating a queue other than the name specified
       def createQueue(destinationName: String): Session => javax.jms.Queue = { (session: Session) =>
         val amqSession = session.asInstanceOf[ActiveMQSession]
         amqSession.createQueue(s"my-$destinationName")
       }
+
       def createQueu2(destinationName: String): Session => javax.jms.Queue = { (session: Session) =>
         val amqSession = session.asInstanceOf[ActiveMQSession]
         amqSession.createQueue(s"my-$destinationName")
@@ -1092,6 +1094,45 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       // Connects 1 time at start, 3 times each 3 messages, and 1 time at end.
       // Due to buffering, it will finish re-connecting before stream finishes.
       connectCount shouldBe 5
+    }
+
+    "put back JmsProducer to the pool when send fails" in {
+      val factory = mock[ConnectionFactory]
+      val connection = mock[Connection]
+      val session = mock[Session]
+      val producer = mock[MessageProducer]
+
+      when(factory.createConnection()).thenReturn(connection)
+      when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
+      when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
+
+      val messages = (1 to 10).map(i => mock[TextMessage] -> i).toMap
+      messages.foreach {
+        case (msg, i) => when(session.createTextMessage(i.toString)).thenReturn(msg)
+      }
+
+      val failOnEvenCount = new Answer[Unit] {
+        override def answer(invocation: InvocationOnMock): Unit = {
+          val msgNo = messages(invocation.getArgument[TextMessage](1))
+          if (msgNo % 2 == 0) throw new RuntimeException("Mocked send failure")
+        }
+      }
+
+      when(producer.send(any[javax.jms.Destination], any[Message], anyInt(), anyInt(), anyLong()))
+        .thenAnswer(failOnEvenCount)
+
+      val decider: Supervision.Decider = {
+        case _: RuntimeException => Supervision.Resume
+        case _ => Supervision.Stop
+      }
+      val jmsFlow = JmsProducer
+        .flow[JmsTextMessage](JmsProducerSettings(factory).withQueue("test").withSessionCount(2))
+        .withAttributes(ActorAttributes.supervisionStrategy(decider))
+
+      val in = (1 to 10).map(i => JmsTextMessage(i.toString))
+      val result = Source(in).via(jmsFlow).toMat(Sink.seq)(Keep.right).run()
+
+      result.futureValue.map(_.body.toInt) shouldEqual Seq(1, 3, 5, 7, 9)
     }
   }
 
