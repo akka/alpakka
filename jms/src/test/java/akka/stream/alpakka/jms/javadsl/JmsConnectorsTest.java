@@ -780,16 +780,11 @@ public class JmsConnectorsTest {
 
   @Test
   public void passThroughMessageEnvelopes() throws Exception {
-    withServer(
-        ctx -> {
-          ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
-          Flow<
-                  JmsProducerEnvelope<JmsTextMessage, String>,
-                  JmsProducerEnvelope<JmsTextMessage, String>,
-                  NotUsed>
-              jmsProducer =
-                  JmsProducer.flexiFlow(
-                      JmsProducerSettings.create(connectionFactory).withQueue("test"));
+      withServer(
+          ctx -> {
+              ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+              Flow<JmsProducerEnvelope<JmsTextMessage, String>, JmsProducerEnvelope<JmsTextMessage, String>, NotUsed> jmsProducer =
+                      JmsProducer.flexiFlow(JmsProducerSettings.create(connectionFactory).withQueue("test"));
 
           List<String> data = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
           List<JmsProducerEnvelope<JmsTextMessage, String>> input = new ArrayList<>();
@@ -802,6 +797,7 @@ public class JmsConnectorsTest {
                   .via(jmsProducer)
                   .map(JmsProducerEnvelope::passThrough)
                   .runWith(Sink.seq(), materializer);
+          // #run-flexi-flow-producer
           assertEquals(data, result.toCompletableFuture().get());
         });
   }
@@ -811,6 +807,7 @@ public class JmsConnectorsTest {
     withServer(
         ctx -> {
           ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+          // #run-flexi-flow-pass-through-producer
           Flow<
                   JmsProducerEnvelope<JmsTextMessage, String>,
                   JmsProducerEnvelope<JmsTextMessage, String>,
@@ -830,6 +827,8 @@ public class JmsConnectorsTest {
                   .via(jmsProducer)
                   .map(JmsProducerEnvelope::passThrough)
                   .runWith(Sink.seq(), materializer);
+          // #run-flexi-flow-pass-through-producer
+
           assertEquals(data, result.toCompletableFuture().get());
         });
   }

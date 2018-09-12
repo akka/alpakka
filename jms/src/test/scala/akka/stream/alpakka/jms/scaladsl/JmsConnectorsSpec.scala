@@ -1129,34 +1129,36 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
 
     "pass through message envelopes" in withServer() { ctx =>
       val producerConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      //#run-flexi-flow-producer
       val jmsProducer = JmsProducer.flexiFlow[JmsTextMessage, String](
         JmsProducerSettings(producerConnectionFactory).withQueue("topic")
       )
 
-      val in =
-        List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k").map(
-          t => JmsProducerEnvelope.Message(JmsTextMessage(t), t)
-        )
+      val data = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
+      val in = data.map(t => JmsProducerEnvelope.Message(JmsTextMessage(t), t))
 
-      val result = Source(in).via(jmsProducer).runWith(Sink.seq)
+      val result = Source(in).via(jmsProducer).map(_.passThrough).runWith(Sink.seq)
+      //#run-flexi-flow-producer
 
-      result.futureValue shouldEqual in
+      result.futureValue shouldEqual data
     }
 
     "pass through empty envelopes" in withServer() { ctx =>
       val producerConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      //#run-flexi-flow-pass-through-producer
       val jmsProducer = JmsProducer.flexiFlow[JmsTextMessage, String](
         JmsProducerSettings(producerConnectionFactory).withQueue("topic")
       )
 
-      val in =
-        List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k").map(
-          t => JmsProducerEnvelope.PassThroughMessage(t)
-        )
+      val data = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
+      val in = data.map(t => JmsProducerEnvelope.PassThroughMessage(t))
 
-      val result = Source(in).via(jmsProducer).runWith(Sink.seq)
+      val result = Source(in).via(jmsProducer).map(_.passThrough).runWith(Sink.seq)
+      //#run-flexi-flow-pass-through-producer
 
-      result.futureValue shouldEqual in
+      result.futureValue shouldEqual data
     }
   }
 
