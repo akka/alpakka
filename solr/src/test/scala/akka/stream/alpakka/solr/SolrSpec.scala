@@ -271,7 +271,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
       var committedOffsets = List[KafkaOffset]()
 
-      def commitToKakfa(offset: KafkaOffset): Unit =
+      def commitToKafka(offset: KafkaOffset): Unit =
         committedOffsets = committedOffsets :+ offset
 
       val res1 = Source(messagesFromKafka)
@@ -294,7 +294,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
             if (result.status != 0)
               throw new Exception("Failed to write message to Solr")
             // Commit to kafka
-            commitToKakfa(result.passThrough)
+            commitToKafka(result.passThrough)
           }
         }
         .runWith(Sink.ignore)

@@ -10,8 +10,6 @@ import akka.stream.alpakka.jms.JmsProducerStage._
 import akka.stream.impl.{Buffer, ReactiveStreamsCompliance}
 import akka.stream.stage._
 import akka.util.OptionVal
-import javax.jms
-import javax.jms.{Connection, Session}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
@@ -29,7 +27,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
     ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher")
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with JmsConnector {
+    new GraphStageLogic(shape) with JmsProducerConnector {
 
       /*
        * NOTE: the following code is heavily inspired by akka.stream.impl.fusing.MapAsync
@@ -48,16 +46,16 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
 
       protected def jmsSettings: JmsProducerSettings = settings
 
-      protected def createSession(connection: Connection, createDestination: Session => jms.Destination): JmsSession = {
-        val session =
-          connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode)
-        new JmsSession(connection, session, createDestination(session), settings.destination.get)
-      }
+      override def preStart(): Unit = initSessionAsync(executionContext(inheritedAttributes))
 
-      override def preStart(): Unit = {
-        jmsSessions = openSessions()
-        jmsSessions.foreach(jmsSession => jmsProducers.enqueue(JmsMessageProducer(jmsSession, settings)))
-        ec = executionContext(inheritedAttributes)
+      override protected def onSessionOpened(jmsSession: JmsProducerSession): Unit = {
+        jmsProducers.enqueue(JmsMessageProducer(jmsSession, settings))
+        // startup situation: while producer pool was empty, the out port might have pulled. If so, pull from in port.
+        // Note that a message might be already in-flight; that's fine since this stage pre-fetches message from
+        // upstream anyway to increase throughput once the stream is started.
+        if (isAvailable(out)) {
+          pullIfNeeded()
+        }
       }
 
       setHandler(out, new OutHandler {
@@ -114,10 +112,10 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
           pullIfNeeded()
         } else if (isAvailable(out)) {
           val holder = inFlightMessagesWithProducer.dequeue()
+          jmsProducers.enqueue(holder.jmsProducer) // put back jms producer to the pool.
           holder.elem match {
             case Success(elem) =>
               push(out, elem)
-              jmsProducers.enqueue(holder.jmsProducer) // put back jms producer to the pool.
               pullIfNeeded() // Ask for the next element.
 
             case Failure(NonFatal(ex)) => handleFailure(ex, holder)
