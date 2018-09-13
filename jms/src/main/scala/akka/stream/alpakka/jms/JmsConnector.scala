@@ -25,7 +25,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
 
   implicit protected var ec: ExecutionContext = _
 
-  protected var jmsConnection: Option[jms.Connection] = None
+  @volatile protected var jmsConnection: Option[jms.Connection] = None
 
   protected var jmsSessions = Seq.empty[S]
 
@@ -34,10 +34,6 @@ private[jms] trait JmsConnector[S <: JmsSession] {
   protected def onSessionOpened(jmsSession: S): Unit = {}
 
   protected val fail: AsyncCallback[Throwable] = getAsyncCallback[Throwable](e => failStage(e))
-
-  private val onConnection: AsyncCallback[jms.Connection] = getAsyncCallback[jms.Connection] { c =>
-    jmsConnection = Some(c)
-  }
 
   private val onSession: AsyncCallback[S] = getAsyncCallback[S] { session =>
     jmsSessions :+= session
@@ -147,6 +143,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
                                              onConnectionFailure: jms.JMSException => Unit): Future[jms.Connection] = {
     implicit val system: ActorSystem = ActorMaterializerHelper.downcast(materializer).system
     openConnectionWithRetry(startConnection).map { connection =>
+      jmsConnection = Some(connection)
       connection.setExceptionListener(new jms.ExceptionListener {
         override def onException(ex: jms.JMSException) = {
           try {
@@ -159,7 +156,6 @@ private[jms] trait JmsConnector[S <: JmsSession] {
           onConnectionFailure(ex)
         }
       })
-      onConnection.invoke(connection)
       connection
     }
   }
