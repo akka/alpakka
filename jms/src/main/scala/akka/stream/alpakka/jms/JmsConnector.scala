@@ -8,6 +8,7 @@ import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.ActorSystem
+import akka.dispatch.ExecutionContexts
 import akka.pattern.after
 import akka.stream.alpakka.jms.impl.SoftReferenceCache
 import akka.stream.stage.{AsyncCallback, GraphStageLogic}
@@ -25,7 +26,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
 
   implicit protected var ec: ExecutionContext = _
 
-  @volatile protected var jmsConnection: Option[jms.Connection] = None
+  @volatile protected var jmsConnection: Future[jms.Connection] = _
 
   protected var jmsSessions = Seq.empty[S]
 
@@ -110,7 +111,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
         }
     }
 
-    Future.firstCompletedOf(Iterator(connectionFuture, timeoutFuture))
+    Future.firstCompletedOf(Iterator(connectionFuture, timeoutFuture))(ExecutionContexts.sameThreadExecutionContext)
   }
 
   private def openConnectionWithRetry(startConnection: Boolean, n: Int = 0, maxed: Boolean = false)(
@@ -137,13 +138,12 @@ private[jms] trait JmsConnector[S <: JmsSession] {
             }
           }
         }
-    }
+    }(ExecutionContexts.sameThreadExecutionContext)
 
   private[jms] def openRecoverableConnection(startConnection: Boolean,
                                              onConnectionFailure: jms.JMSException => Unit): Future[jms.Connection] = {
     implicit val system: ActorSystem = ActorMaterializerHelper.downcast(materializer).system
-    openConnectionWithRetry(startConnection).map { connection =>
-      jmsConnection = Some(connection)
+    jmsConnection = openConnectionWithRetry(startConnection).map { connection =>
       connection.setExceptionListener(new jms.ExceptionListener {
         override def onException(ex: jms.JMSException) = {
           try {
@@ -157,7 +157,8 @@ private[jms] trait JmsConnector[S <: JmsSession] {
         }
       })
       connection
-    }
+    }(ExecutionContexts.sameThreadExecutionContext)
+    jmsConnection
   }
 }
 
@@ -177,8 +178,7 @@ private[jms] trait JmsConsumerConnector extends JmsConnector[JmsConsumerSession]
         for (_ <- 0 until jmsSettings.sessionCount)
           yield Future(createSession(connection, createDestination))
       Future.sequence(sessionFutures)
-    }
-
+    }(ExecutionContexts.sameThreadExecutionContext)
 }
 
 private[jms] trait JmsProducerConnector extends JmsConnector[JmsProducerSession] { this: GraphStageLogic =>
@@ -200,7 +200,7 @@ private[jms] trait JmsProducerConnector extends JmsConnector[JmsProducerSession]
         for (_ <- 0 until jmsSettings.sessionCount)
           yield Future(createSession(connection, createDestination))
       Future.sequence(sessionFutures)
-    }
+    }(ExecutionContexts.sameThreadExecutionContext)
 }
 
 private[jms] object JmsMessageProducer {

@@ -547,7 +547,7 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       val completionFuture: Future[Done] = Source(msgsIn).runWith(jmsSink)
       completionFuture.futureValue shouldBe Done
       // make sure connection was closed
-      connectionFactory.cachedConnection.isClosed shouldBe true
+      connectionFactory.cachedConnection shouldBe 'closed
     }
 
     "sink exceptional completion" in withServer() { ctx =>
@@ -558,19 +558,13 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
         JmsProducerSettings(connectionFactory).withQueue("numbers")
       )
 
-      val msgsIn = (1 to 10).toList.map { n =>
-        JmsTextMessage(n.toString)
-      }
-
-      val completionFuture: Future[Done] = Source(msgsIn)
-        .map { msg =>
-          if (msg.body.toInt > 5) throw new RuntimeException("Simulated error") else msg
-        }
+      val completionFuture: Future[Done] = Source
+        .failed[JmsTextMessage](new RuntimeException("Simulated error"))
         .runWith(jmsSink)
 
       completionFuture.failed.futureValue shouldBe a[RuntimeException]
       // make sure connection was closed
-      connectionFactory.cachedConnection shouldBe 'closed
+      eventually { connectionFactory.cachedConnection shouldBe 'closed }
     }
 
     "sink disconnect exceptional completion" in withServer() { ctx =>

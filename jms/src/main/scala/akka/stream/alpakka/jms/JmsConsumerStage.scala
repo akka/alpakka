@@ -269,16 +269,18 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
       Future
         .sequence(closeSessionFutures)
         .onComplete { _ =>
-          try {
-            jmsConnection.foreach(_.close())
-          } catch {
-            case NonFatal(e) => log.error(e, "Error closing JMS connection {}", jmsConnection)
-          } finally {
-            // By this time, after stopping connection, closing sessions, all async message submissions to this
-            // stage should have been invoked. We invoke markStopped as the last item so it gets delivered after
-            // all JMS messages are delivered. This will allow the stage to complete after all pending messages
-            // are delivered, thus preventing message loss due to premature stage completion.
-            markStopped.invoke(Done)
+          jmsConnection.foreach { connection =>
+            try {
+              connection.close()
+            } catch {
+              case NonFatal(e) => log.error(e, "Error closing JMS connection {}", connection)
+            } finally {
+              // By this time, after stopping connection, closing sessions, all async message submissions to this
+              // stage should have been invoked. We invoke markStopped as the last item so it gets delivered after
+              // all JMS messages are delivered. This will allow the stage to complete after all pending messages
+              // are delivered, thus preventing message loss due to premature stage completion.
+              markStopped.invoke(Done)
+            }
           }
         }
     }
@@ -293,12 +295,15 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
       Future
         .sequence(abortSessionFutures)
         .onComplete { _ =>
-          try {
-            jmsConnection.foreach(_.close())
-            log.info("JMS connection {} closed", jmsConnection)
-            markAborted.invoke(ex)
-          } catch {
-            case NonFatal(e) => log.error(e, "Error closing JMS connection {}", jmsConnection)
+          jmsConnection.foreach { connection =>
+            try {
+              connection.close()
+              log.info("JMS connection {} closed", jmsConnection)
+            } catch {
+              case NonFatal(e) => log.error(e, "Error closing JMS connection {}", jmsConnection)
+            } finally {
+              markAborted.invoke(ex)
+            }
           }
         }
     }
