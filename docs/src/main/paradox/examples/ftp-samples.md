@@ -4,11 +4,11 @@
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-file_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-file_$scala.binary.version$
+  version=$project.version$
   group2=com.lightbend.akka
-  artifact2=akka-stream-alpakka-ftp_$scalaBinaryVersion$
-  version2=$version$
+  artifact2=akka-stream-alpakka-ftp_$scala.binary.version$
+  version2=$project.version$
 }
 
 ### Example: Copy all files from an FTP server to local files

@@ -10,8 +10,8 @@ The google cloud pub/sub connector provides a way to connect to google clouds ma
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-google-cloud-pub-sub_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-google-cloud-pub-sub_$scala.binary.version$
+  version=$project.version$
 }
 
 ## Usage

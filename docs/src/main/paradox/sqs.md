@@ -13,8 +13,8 @@ For more information about AWS SQS please visit the [official documentation](htt
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-sqs_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-sqs_$scala.binary.version$
+  version=$project.version$
 }
 
 ## Setup
