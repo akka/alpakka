@@ -104,8 +104,12 @@ private[jms] trait JmsConnector[S <: JmsSession] {
       if (status.compareAndSet(Connecting, TimedOut)) {
         connectionRef.get.foreach(_.close())
         connectionRef.set(None)
-        Future.failed(new TimeoutException(s"Timed out after $connectTimeout trying to establish connection. " +
-          "Please see ConnectionRetrySettings.connectTimeout"))
+        Future.failed(
+          new TimeoutException(
+            s"Timed out after $connectTimeout trying to establish connection. " +
+            "Please see ConnectionRetrySettings.connectTimeout"
+          )
+        )
       } else
         connectionRef.get match {
           case Some(connection) => Future.successful(connection)
