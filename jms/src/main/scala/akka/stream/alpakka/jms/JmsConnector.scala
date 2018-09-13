@@ -96,14 +96,16 @@ private[jms] trait JmsConnector[S <: JmsSession] {
       } else connection
     }
 
-    val timeoutFuture = after(jmsSettings.connectionRetrySettings.connectTimeout, system.scheduler) {
+    val connectTimeout = jmsSettings.connectionRetrySettings.connectTimeout
+    val timeoutFuture = after(connectTimeout, system.scheduler) {
       // Even if the timer goes off, the connection may already be good. We use the
       // status field and an atomic compareAndSet to see whether we should indeed time out, or just return
       // the connection. In this case it does not matter which future returns. Both will have the right answer.
       if (status.compareAndSet(Connecting, TimedOut)) {
         connectionRef.get.foreach(_.close())
         connectionRef.set(None)
-        Future.failed(new TimeoutException("Timed out trying to establish connection"))
+        Future.failed(new TimeoutException(s"Timed out after $connectTimeout trying to establish connection. " +
+          "Please see ConnectionRetrySettings.connectTimeout"))
       } else
         connectionRef.get match {
           case Some(connection) => Future.successful(connection)
