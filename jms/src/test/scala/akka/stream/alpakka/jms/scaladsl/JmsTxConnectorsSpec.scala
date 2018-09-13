@@ -66,7 +66,10 @@ class JmsTxConnectorsSpec extends JmsSpec {
 
       //#create-jms-source
       val jmsSource: Source[TxEnvelope, KillSwitch] = JmsConsumer.txSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(5).withQueue("numbers")
+        JmsConsumerSettings(connectionFactory)
+          .withSessionCount(5)
+          .withAckTimeout(1.second)
+          .withQueue("numbers")
       )
       //#create-jms-source
 

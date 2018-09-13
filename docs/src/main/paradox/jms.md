@@ -427,7 +427,7 @@ Java
 
 The `sessionCount` parameter controls the number of JMS sessions to run in parallel.
 
-The `bufferSize` parameter controls the maximum number of messages each JMS session will prefetch and awaiting acknowledgement before applying backpressure.
+The `ackTimeout` parameter controls the maximum time given to a message to be committed or rolled back. If the message times out it will automatically be rolled back. This is to prevent stream from starvation if the application fails to commit or rollback a message, or if the message errors out and the stream is resumed by a `decider`.
 
 Run the source and specify the amount of messages to take:
 
