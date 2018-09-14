@@ -7,6 +7,7 @@ package akka.stream.alpakka.jms.scaladsl
 import akka.{Done, NotUsed}
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Flow, Keep, Sink}
+import akka.stream.alpakka.jms.JmsProducerMessage.Envelope
 
 import scala.concurrent.Future
 
@@ -18,15 +19,18 @@ object JmsProducer {
   def flow[T <: JmsMessage](settings: JmsProducerSettings): Flow[T, T, NotUsed] = {
     require(settings.destination.isDefined, "Producer destination must be defined in producer flow")
     Flow[T]
-      .map(m => JmsProducerEnvelope.Message(m, NotUsed))
+      .map(m => JmsProducerMessage.Message(m, NotUsed))
       .via(Flow.fromGraph(new JmsProducerStage(settings)))
-      .collectType[JmsProducerEnvelope.Message[T, NotUsed]]
+      .collectType[JmsProducerMessage.Message[T, NotUsed]]
       .map(_.message)
   }
 
+  /**
+   * Scala API: Creates an [[JmsProducer]] for [[Envelope]]s
+   */
   def flexiFlow[T <: JmsMessage, PassThrough](
       settings: JmsProducerSettings
-  ): Flow[JmsProducerEnvelope[T, PassThrough], JmsProducerEnvelope[T, PassThrough], NotUsed] = {
+  ): Flow[Envelope[T, PassThrough], Envelope[T, PassThrough], NotUsed] = {
     require(settings.destination.isDefined, "Producer destination must be defined in producer flow")
     Flow.fromGraph(new JmsProducerStage(settings))
   }

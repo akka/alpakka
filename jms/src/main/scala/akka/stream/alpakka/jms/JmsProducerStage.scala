@@ -7,7 +7,7 @@ package akka.stream.alpakka.jms
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
 import akka.stream.alpakka.jms.JmsProducerStage._
-import akka.stream.alpakka.jms.JmsProducerEnvelope.{Message, PassThroughMessage}
+import akka.stream.alpakka.jms.JmsProducerMessage._
 import akka.stream.impl.{Buffer, ReactiveStreamsCompliance}
 import akka.stream.stage._
 import akka.util.OptionVal
@@ -17,13 +17,13 @@ import scala.util.control.{NoStackTrace, NonFatal}
 import scala.util.{Failure, Success, Try}
 
 private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings: JmsProducerSettings)
-    extends GraphStage[FlowShape[JmsProducerEnvelope[A, PassThrough], JmsProducerEnvelope[A, PassThrough]]] {
+    extends GraphStage[FlowShape[Envelope[A, PassThrough], Envelope[A, PassThrough]]] {
 
-  private type Envelope = JmsProducerEnvelope[A, PassThrough]
-  private val in = Inlet[Envelope]("JmsProducer.in")
-  private val out = Outlet[Envelope]("JmsProducer.out")
+  private type E = Envelope[A, PassThrough]
+  private val in = Inlet[E]("JmsProducer.in")
+  private val out = Outlet[E]("JmsProducer.out")
 
-  override def shape: FlowShape[Envelope, Envelope] = FlowShape.of(in, out)
+  override def shape: FlowShape[E, E] = FlowShape.of(in, out)
 
   override protected def initialAttributes: Attributes =
     ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher")
@@ -44,7 +44,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
       private val jmsProducers: Buffer[JmsMessageProducer] = Buffer(settings.sessionCount, settings.sessionCount)
 
       // in-flight messages with the producers that were used to send them.
-      private val inFlightMessagesWithProducer: Buffer[Holder[Envelope]] =
+      private val inFlightMessagesWithProducer: Buffer[Holder[E]] =
         Buffer(settings.sessionCount, settings.sessionCount)
 
       protected def jmsSettings: JmsProducerSettings = settings
@@ -75,12 +75,12 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
           override def onUpstreamFinish(): Unit = if (inFlightMessagesWithProducer.isEmpty) completeStage()
 
           override def onPush(): Unit = {
-            val elem: Envelope = grab(in)
+            val elem: E = grab(in)
             elem match {
               case m: Message[_, _] =>
                 // fetch a jms producer from the pool, and create a holder object to capture the in-flight message.
                 val jmsProducer = jmsProducers.dequeue()
-                val holder = new Holder[Envelope](NotYetThere, futureCB, Some(jmsProducer))
+                val holder = new Holder[E](NotYetThere, futureCB, Some(jmsProducer))
                 inFlightMessagesWithProducer.enqueue(holder)
 
                 // send the element asynchronously, notifying the holder of (successful or failed) completion.
@@ -89,7 +89,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
                   elem
                 }.onComplete(holder)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
               case p: PassThroughMessage[_, _] =>
-                val holder = new Holder[Envelope](NotYetThere, futureCB, None)
+                val holder = new Holder[E](NotYetThere, futureCB, None)
                 inFlightMessagesWithProducer.enqueue(holder)
                 holder(Success(elem))
             }
@@ -105,7 +105,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
         jmsConnection.foreach(_.close)
       }
 
-      private val futureCB = getAsyncCallback[Holder[Envelope]](
+      private val futureCB = getAsyncCallback[Holder[E]](
         holder =>
           holder.elem match {
             case Success(_) => pushNextIfPossible() // on success, try to push out the new element.
@@ -138,7 +138,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
           }
         }
 
-      private def handleFailure(ex: Throwable, holder: Holder[Envelope]): Unit =
+      private def handleFailure(ex: Throwable, holder: Holder[E]): Unit =
         holder.supervisionDirectiveFor(decider, ex) match {
           case Supervision.Stop => failStage(ex) // fail only if supervision asks for it.
           case _ => pushNextIfPossible()

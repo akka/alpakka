@@ -1136,7 +1136,7 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       )
 
       val data = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
-      val in = data.map(t => JmsProducerEnvelope.Message(JmsTextMessage(t), t))
+      val in = data.map(t => JmsProducerMessage.Message(JmsTextMessage(t), t))
 
       val result = Source(in).via(jmsProducer).map(_.passThrough).runWith(Sink.seq)
       //#run-flexi-flow-producer
@@ -1153,7 +1153,7 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       )
 
       val data = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
-      val in = data.map(t => JmsProducerEnvelope.PassThroughMessage(t))
+      val in = data.map(t => JmsProducerMessage.PassThroughMessage(t))
 
       val result = Source(in).via(jmsProducer).map(_.passThrough).runWith(Sink.seq)
       //#run-flexi-flow-pass-through-producer

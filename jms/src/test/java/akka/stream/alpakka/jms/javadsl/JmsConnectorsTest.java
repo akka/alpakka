@@ -11,6 +11,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.KillSwitch;
 import akka.stream.Materializer;
 import akka.stream.alpakka.jms.*;
+import akka.stream.alpakka.jms.JmsProducerMessage.*;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -780,22 +781,25 @@ public class JmsConnectorsTest {
 
   @Test
   public void passThroughMessageEnvelopes() throws Exception {
-      withServer(
-          ctx -> {
-              ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
-              Flow<JmsProducerEnvelope<JmsTextMessage, String>, JmsProducerEnvelope<JmsTextMessage, String>, NotUsed> jmsProducer =
-                      JmsProducer.flexiFlow(JmsProducerSettings.create(connectionFactory).withQueue("test"));
+    withServer(
+        ctx -> {
+          ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+          // #run-flexi-flow-producer
+          Flow<Envelope<JmsTextMessage, String>, Envelope<JmsTextMessage, String>, NotUsed>
+              jmsProducer =
+                  JmsProducer.flexiFlow(
+                      JmsProducerSettings.create(connectionFactory).withQueue("test"));
 
           List<String> data = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
-          List<JmsProducerEnvelope<JmsTextMessage, String>> input = new ArrayList<>();
+          List<Envelope<JmsTextMessage, String>> input = new ArrayList<>();
           for (String s : data) {
-            input.add(JmsProducerEnvelope.message(JmsTextMessage.create(s), s));
+            input.add(JmsProducerMessage.message(JmsTextMessage.create(s), s));
           }
 
           CompletionStage<List<String>> result =
               Source.from(input)
                   .via(jmsProducer)
-                  .map(JmsProducerEnvelope::passThrough)
+                  .map(Envelope::passThrough)
                   .runWith(Sink.seq(), materializer);
           // #run-flexi-flow-producer
           assertEquals(data, result.toCompletableFuture().get());
@@ -808,24 +812,21 @@ public class JmsConnectorsTest {
         ctx -> {
           ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
           // #run-flexi-flow-pass-through-producer
-          Flow<
-                  JmsProducerEnvelope<JmsTextMessage, String>,
-                  JmsProducerEnvelope<JmsTextMessage, String>,
-                  NotUsed>
+          Flow<Envelope<JmsTextMessage, String>, Envelope<JmsTextMessage, String>, NotUsed>
               jmsProducer =
                   JmsProducer.flexiFlow(
                       JmsProducerSettings.create(connectionFactory).withQueue("test"));
 
           List<String> data = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
-          List<JmsProducerEnvelope<JmsTextMessage, String>> input = new ArrayList<>();
+          List<Envelope<JmsTextMessage, String>> input = new ArrayList<>();
           for (String s : data) {
-            input.add(JmsProducerEnvelope.passThroughMessage(s));
+            input.add(JmsProducerMessage.passThroughMessage(s));
           }
 
           CompletionStage<List<String>> result =
               Source.from(input)
                   .via(jmsProducer)
-                  .map(JmsProducerEnvelope::passThrough)
+                  .map(Envelope::passThrough)
                   .runWith(Sink.seq(), materializer);
           // #run-flexi-flow-pass-through-producer
 
