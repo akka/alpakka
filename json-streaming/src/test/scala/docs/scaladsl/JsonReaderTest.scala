@@ -2,13 +2,12 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.json
+package docs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.Materializer
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.json.scaladsl.JsonReader
+import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import org.jsfr.json.compiler.JsonPathCompiler
 import org.jsfr.json.exception.JsonSurfingException
