@@ -12,8 +12,8 @@ the sources and sinks for files already included in core Akka Streams
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-file_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-file_$scala.binary.version$
+  version=$project.version$
 }
 
 ## Writing to and reading from files

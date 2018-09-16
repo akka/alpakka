@@ -61,8 +61,8 @@ even: only the `doc` inside each element of the array.
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-json-streaming_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-json-streaming_$scala.binary.version$
+  version=$project.version$
 }
 
 ### Example

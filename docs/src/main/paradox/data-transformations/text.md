@@ -18,8 +18,8 @@ parser does only support UTF-8.
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-text_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-text_$scala.binary.version$
+  version=$project.version$
 }
 
 

@@ -12,8 +12,8 @@ For more information about Hadoop, please visit the [Hadoop documentation](https
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-hdfs_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-hdfs_$scala.binary.version$
+  version=$project.version$
 }
 
 ## Specifying a Hadoop Version

@@ -10,8 +10,8 @@ The Slick connector provides Scala and Java DSLs to create a `Source` to stream 
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-slick_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-slick_$scala.binary.version$
+  version=$project.version$
 }
 
 You will also need to add the JDBC driver(s) for the specific relational database(s) to your project. Most of those database have drivers that are not available from public repositories so unfortunately some manual steps will probably be required. The Slick documentation has @extref[information on where to download the drivers](slick:supported-databases.html).

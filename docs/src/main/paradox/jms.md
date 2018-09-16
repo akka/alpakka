@@ -11,7 +11,7 @@ The JMS connector provides Akka Stream sources and sinks to connect to JMS provi
 sbt
 :   @@@vars
     ```scala
-    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-jms" % "$version$"
+    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-jms" % "$project.version$"
     libraryDependencies += "javax.jms" % "jms" % "1.1"
     ```
     @@@
@@ -21,8 +21,8 @@ Maven
     ```xml
     <dependency>
       <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-jms_$scalaBinaryVersion$</artifactId>
-      <version>$version$</version>
+      <artifactId>akka-stream-alpakka-jms_$scala.binary.version$</artifactId>
+      <version>$project.version$</version>
     </dependency>
     <dependency>
       <groupId>javax.jms</groupId>
@@ -36,7 +36,7 @@ Gradle
 :   @@@vars
     ```gradle
     dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-jms_$scalaBinaryVersion$", version: "$version$"
+      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-jms_$scala.binary.version$", version: "$project.version$"
       compile group: 'javax.jms', name: 'jms', version: '1.1'
     }
     ```

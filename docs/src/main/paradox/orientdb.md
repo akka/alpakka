@@ -8,8 +8,8 @@ For more information about OrientDB please visit the [official documentation](ht
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-orientdb_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-orientdb_$scala.binary.version$
+  version=$project.version$
 }
 
 ## Usage
