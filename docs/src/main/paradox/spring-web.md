@@ -18,8 +18,8 @@ This Alpakka module makes it possible to directly return a `Source` in your Spri
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-spring-web_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-spring-web_$scala.binary.version$
+  version=$project.version$
 }
 
 ## Usage

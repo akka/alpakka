@@ -22,8 +22,8 @@ Please read more about it in the [ReactiveMongo documentation](http://reactivemo
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-mongodb_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-mongodb_$scala.binary.version$
+  version=$project.version$
 }
 
 ## Usage

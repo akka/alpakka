@@ -13,8 +13,8 @@ The FTP connector provides Akka Stream sources to connect to FTP, FTPs and SFTP 
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-ftp_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-ftp_$scala.binary.version$
+  version=$project.version$
 }
 
 ## Usage

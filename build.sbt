@@ -203,11 +203,8 @@ lazy val docs = project
     publish / skip := true,
     paradoxTheme := Some(builtinParadoxTheme("generic")),
     paradoxProperties ++= Map(
-      "version" -> version.value,
-      "scalaVersion" -> scalaVersion.value,
-      "scalaBinaryVersion" -> scalaBinaryVersion.value,
-      "akkaVersion" -> Dependencies.AkkaVersion,
-      "akkaHttpVersion" -> Dependencies.AkkaHttpVersion,
+      "akka.version" -> Dependencies.AkkaVersion,
+      "akka-http.version" -> Dependencies.AkkaHttpVersion,
       "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.AkkaVersion}/%s",
       "extref.akka-http-docs.base_url" -> s"http://doc.akka.io/docs/akka-http/${Dependencies.AkkaHttpVersion}/%s",
       "extref.java-api.base_url" -> "https://docs.oracle.com/javase/8/docs/api/index.html?%s.html",

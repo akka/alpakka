@@ -14,8 +14,8 @@ queue and set other queue as subscribers. More information about that could be f
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-ironmq_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-ironmq_$scala.binary.version$
+  version=$project.version$
 }
 
 ## Usage
