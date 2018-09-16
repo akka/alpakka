@@ -34,3 +34,5 @@ case class NullMapMessageEntry(entryName: String, message: JmsMapMessage)
       s"null value was given for Jms MapMessage entry '$entryName'."
     )
     with NonRetriableJmsException
+
+case class ConnectionRetryException(message: String, cause: Throwable) extends Exception(message, cause)

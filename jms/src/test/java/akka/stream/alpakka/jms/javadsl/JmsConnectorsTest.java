@@ -771,10 +771,10 @@ public class JmsConnectorsTest {
           Throwable exception = tryResult.failed().get();
           assertTrue(
               "Did not fail with a ConnectionRetryException",
-              ConnectionRetryException.class.isAssignableFrom(exception.getClass()));
+              exception instanceof ConnectionRetryException);
           assertTrue(
               "Cause of failure is not a JMSException",
-              JMSException.class.isAssignableFrom(exception.getCause().getClass()));
+              exception.getCause() instanceof JMSException);
         });
   }
 

@@ -85,19 +85,7 @@ final case class ConnectionRetrySettings(connectTimeout: FiniteDuration = 10.sec
   /** Hypothetical retry time, not accounting for maxBackoff. */
   def waitTime(retryNumber: Int): FiniteDuration =
     (initialRetry * Math.pow(retryNumber, backoffFactor)).asInstanceOf[FiniteDuration]
-
-  /** Max possible time it will take to timeout, including connection timeouts and the wait time between retries.  */
-  def maxWaitTime: Duration =
-    if (maxRetries < 0) Duration.Inf
-    else {
-      val totalWaitTime = (0 to maxRetries).map(connectTimeout + waitTime(_)).reduce(_ + _)
-      val totalTimeout = connectTimeout * (maxRetries + 1)
-      totalTimeout + totalWaitTime
-    }
-
 }
-
-case class ConnectionRetryException(message: String, cause: Throwable) extends Exception(message, cause)
 
 object JmsConsumerSettings {
 
