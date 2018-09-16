@@ -20,7 +20,7 @@ object DirectoryChangesSource {
   }
 
   /**
-   * Scala API: Watch directory and emit changes as a stream of tuples containing the path and type of change.
+   * Watch directory and emit changes as a stream of tuples containing the path and type of change.
    *
    * @param directoryPath Directory to watch
    * @param pollInterval  Interval between polls to the JDK watch service when a push comes in and there was no changes, if
@@ -31,7 +31,7 @@ object DirectoryChangesSource {
             pollInterval: FiniteDuration,
             maxBufferSize: Int): Source[(Path, DirectoryChange), NotUsed] =
     Source.fromGraph(
-      new akka.stream.alpakka.file.javadsl.DirectoryChangesSource(directoryPath, pollInterval, maxBufferSize, tupler)
+      new akka.stream.alpakka.file.impl.DirectoryChangesSource(directoryPath, pollInterval, maxBufferSize, tupler)
     )
 
 }

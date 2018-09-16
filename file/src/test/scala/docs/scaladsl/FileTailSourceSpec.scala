@@ -2,13 +2,11 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.file.scaladsl
-
+package docs.scaladsl
 import java.nio.file.FileSystems
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.alpakka.file.scaladsl
 import akka.stream.scaladsl.Source
 import akka.stream.{ActorMaterializer, Materializer}
 
@@ -25,8 +23,10 @@ object FileTailSourceSpec {
     implicit val materializer: Materializer = ActorMaterializer()
 
     // #simple-lines
+    import akka.stream.alpakka.file.scaladsl.FileTailSource
+
     val fs = FileSystems.getDefault
-    val lines: Source[String, NotUsed] = scaladsl.FileTailSource.lines(
+    val lines: Source[String, NotUsed] = FileTailSource.lines(
       path = fs.getPath(path),
       maxLineSize = 8192,
       pollingInterval = 250.millis
