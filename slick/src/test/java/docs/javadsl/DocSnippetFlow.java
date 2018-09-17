@@ -32,12 +32,14 @@ public class DocSnippetFlow {
             .map((i) -> new User(i, "Name" + i))
             .collect(Collectors.toList());
 
+    int parallelism = 1;
+
     final CompletionStage<Done> done =
         Source.from(users)
             .via(
                 Slick.<User>flow(
                     session,
-                    // add an optional second argument to specify the parallism facsltor (int)
+                    parallelism,
                     (user) ->
                         "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES ("
                             + user.id
