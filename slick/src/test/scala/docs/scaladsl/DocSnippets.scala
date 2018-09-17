@@ -2,31 +2,27 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package example
-
-//#important-imports
-import akka.stream.scaladsl._
-import akka.stream.alpakka.slick.scaladsl._
-//#important-imports
-
-//#source-example
-import scala.concurrent.Future
+package docs.scaladsl
 
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-
-import akka.stream.scaladsl._
+//#important-imports
 import akka.stream.alpakka.slick.scaladsl._
-
+import akka.stream.scaladsl._
 import slick.jdbc.GetResult
+//#important-imports
+
+import scala.concurrent.Future
 
 object SlickSourceWithPlainSQLQueryExample extends App {
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
   implicit val ec = system.dispatcher
 
+  //#source-example
   implicit val session = SlickSession.forConfig("slick-h2")
+  system.registerOnTermination(session.close())
 
   // The example domain
   case class User(id: Int, name: String)
@@ -48,31 +44,22 @@ object SlickSourceWithPlainSQLQueryExample extends App {
       .source(sql"SELECT ID, NAME FROM ALPAKKA_SLICK_SCALADSL_TEST_USERS".as[User])
       .log("user")
       .runWith(Sink.ignore)
+  //#source-example
 
   done.onComplete {
     case _ =>
-      session.close()
       system.terminate()
   }
 }
-//#source-example
-
-//#source-with-typed-query
-import scala.concurrent.Future
-
-import akka.Done
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-
-import akka.stream.scaladsl._
-import akka.stream.alpakka.slick.scaladsl._
 
 object SlickSourceWithTypedQueryExample extends App {
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
   implicit val ec = system.dispatcher
 
+  //#source-with-typed-query
   implicit val session = SlickSession.forConfig("slick-h2")
+  system.registerOnTermination(session.close())
 
   // This import brings everything you need into scope
   import session.profile.api._
@@ -90,31 +77,22 @@ object SlickSourceWithTypedQueryExample extends App {
       .source(TableQuery[Users].result)
       .log("user")
       .runWith(Sink.ignore)
+  //#source-with-typed-query
 
   done.onComplete {
     case _ =>
-      session.close()
       system.terminate()
   }
 }
-//#source-with-typed-query
-
-//#sink-example
-import scala.concurrent.Future
-
-import akka.Done
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-
-import akka.stream.scaladsl._
-import akka.stream.alpakka.slick.scaladsl._
 
 object SlickSinkExample extends App {
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
   implicit val ec = system.dispatcher
 
+  //#sink-example
   implicit val session = SlickSession.forConfig("slick-h2")
+  system.registerOnTermination(session.close())
 
   // The example domain
   case class User(id: Int, name: String)
@@ -132,31 +110,22 @@ object SlickSinkExample extends App {
         // add an optional first argument to specify the parallism factor (Int)
         Slick.sink(user => sqlu"INSERT INTO ALPAKKA_SLICK_SCALADSL_TEST_USERS VALUES(${user.id}, ${user.name})")
       )
+  //#sink-example
 
   done.onComplete {
     case _ =>
-      session.close()
       system.terminate()
   }
 }
-//#sink-example
-
-//#flow-example
-import scala.concurrent.Future
-
-import akka.Done
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-
-import akka.stream.scaladsl._
-import akka.stream.alpakka.slick.scaladsl._
 
 object SlickFlowExample extends App {
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
   implicit val ec = system.dispatcher
 
+  //#flow-example
   implicit val session = SlickSession.forConfig("slick-h2")
+  system.registerOnTermination(session.close())
 
   // The example domain
   case class User(id: Int, name: String)
@@ -176,24 +145,10 @@ object SlickFlowExample extends App {
       )
       .log("nr-of-updated-rows")
       .runWith(Sink.ignore)
+  //#flow-example
 
-  done.onComplete {
-    case _ =>
-      session.close()
-      system.terminate()
-  }
+  done.onComplete(_ => system.terminate())
 }
-//#flow-example
-
-//#flowWithPassThrough-example
-import scala.concurrent.Future
-
-import akka.Done
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-
-import akka.stream.scaladsl._
-import akka.stream.alpakka.slick.scaladsl._
 
 // We're going to pretend we got messages from kafka.
 // After we've written them to a db with Slick, we want
@@ -213,7 +168,9 @@ object SlickFlowWithPassThroughExample extends App {
   implicit val mat = ActorMaterializer()
   implicit val ec = system.dispatcher
 
+  //#flowWithPassThrough-example
   implicit val session = SlickSession.forConfig("slick-h2")
+  system.registerOnTermination(session.close())
 
   // The example domain
   case class User(id: Int, name: String)
@@ -241,15 +198,13 @@ object SlickFlowWithPassThroughExample extends App {
       )
       .log("nr-of-updated-rows")
       .mapAsync(1) { // in correct order
-        kafkaMessage =>
-          kafkaMessage.offset.commit // commit kafka messages
+        kafkaMessage => kafkaMessage.offset.commit // commit kafka messages
       }
       .runWith(Sink.ignore)
+  //#flowWithPassThrough-example
 
   done.onComplete {
     case _ =>
-      session.close()
       system.terminate()
   }
 }
-//#flowWithPassThrough-example

@@ -2,12 +2,10 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package example;
+package docs.javadsl;
 
-// #sink-example
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -25,6 +23,7 @@ public class DocSnippetSink {
     final Materializer materializer = ActorMaterializer.create(system);
 
     final SlickSession session = SlickSession.forConfig("slick-h2");
+    system.registerOnTermination(session::close);
 
     final List<User> users =
         IntStream.range(0, 42)
@@ -32,6 +31,7 @@ public class DocSnippetSink {
             .map((i) -> new User(i, "Name" + i))
             .collect(Collectors.toList());
 
+    // #sink-example
     final CompletionStage<Done> done =
         Source.from(users)
             .runWith(
@@ -45,12 +45,11 @@ public class DocSnippetSink {
                             + user.name
                             + "')"),
                 materializer);
+    // #sink-example
 
     done.whenComplete(
         (value, exception) -> {
-          session.close();
           system.terminate();
         });
   }
 }
-// #sink-example
