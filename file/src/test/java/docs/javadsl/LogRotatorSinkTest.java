@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.file.javadsl;
+package docs.javadsl;
 
 import akka.Done;
 import akka.actor.ActorSystem;
@@ -10,6 +10,7 @@ import akka.japi.function.Creator;
 import akka.japi.function.Function;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.file.javadsl.LogRotatorSink;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;

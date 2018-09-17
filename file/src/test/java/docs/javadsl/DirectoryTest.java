@@ -2,12 +2,18 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.file.javadsl;
+package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+// #walk
+// #ls
+import akka.stream.alpakka.file.javadsl.Directory;
+// #ls
+import java.nio.file.FileVisitOption;
+// #walk
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.TestKit;
@@ -20,7 +26,6 @@ import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.nio.file.FileSystem;
-import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -50,6 +55,7 @@ public class DirectoryTest {
     final Path file2 = Files.createFile(dir.resolve("file2"));
 
     // #ls
+
     final Source<Path, NotUsed> source = Directory.ls(dir);
     // #ls
 
@@ -74,6 +80,7 @@ public class DirectoryTest {
     Files.createFile(file2);
 
     // #walk
+
     final Source<Path, NotUsed> source = Directory.walk(root);
     // #walk
 
@@ -96,6 +103,7 @@ public class DirectoryTest {
     Files.createFile(file2);
 
     // #walk
+
     final Source<Path, NotUsed> source = Directory.walk(root, 1, FileVisitOption.FOLLOW_LINKS);
     // #walk
 

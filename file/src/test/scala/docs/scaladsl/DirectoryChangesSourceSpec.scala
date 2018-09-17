@@ -2,8 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.file.scaladsl
-
+package docs.scaladsl
 import java.nio.file.FileSystems
 
 import akka.actor.ActorSystem
@@ -20,6 +19,8 @@ object DirectoryChangesSourceSpec {
     implicit val materializer = ActorMaterializer()
 
     // #minimal-sample
+    import akka.stream.alpakka.file.scaladsl.DirectoryChangesSource
+
     val fs = FileSystems.getDefault
     val changes = DirectoryChangesSource(fs.getPath(path), pollInterval = 1.second, maxBufferSize = 1000)
     changes.runForeach {

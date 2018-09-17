@@ -61,8 +61,8 @@ even: only the `doc` inside each element of the array.
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-json-streaming_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-json-streaming_$scala.binary.version$
+  version=$project.version$
 }
 
 ### Example
@@ -76,7 +76,7 @@ To define which parts of the structure you want to stream the module supports
 To extract the information needed, run a stream through the `JsonReader.select` flow.
 
 Scala
-: @@snip [snip](/json-streaming/src/test/scala/akka/stream/alpakka/json/JsonReaderTest.scala) { #usage }
+: @@snip [snip](/json-streaming/src/test/scala/docs/scaladsl/JsonReaderTest.scala) { #usage }
 
 Java
-: @@snip [snip](/json-streaming/src/test/java/akka/stream/alpakka/json/JsonReaderUsageTest.java) { #usage }
+: @@snip [snip](/json-streaming/src/test/java/docs/javadsl/JsonReaderUsageTest.java) { #usage }

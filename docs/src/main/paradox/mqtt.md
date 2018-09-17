@@ -10,8 +10,8 @@ The MQTT connector provides an Akka Stream source, sink and flow to connect to M
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-mqtt_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-mqtt_$scala.binary.version$
+  version=$project.version$
 }
 
 ## Setup

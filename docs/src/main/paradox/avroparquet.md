@@ -8,8 +8,8 @@ For more information about Apache Parquet please visit the [official documentati
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-avroparquet_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-avroparquet_$scala.binary.version$
+  version=$project.version$
 }
 
 #Usage

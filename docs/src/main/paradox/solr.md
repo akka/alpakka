@@ -12,8 +12,8 @@ For more information about Solr please visit the [Solr documentation](http://luc
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-solr_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-solr_$scala.binary.version$
+  version=$project.version$
 }
 
 ## Set up client

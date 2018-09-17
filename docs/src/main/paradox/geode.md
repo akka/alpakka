@@ -14,8 +14,8 @@ Basically it can store data as key, value. Key and value must be serialized, mor
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-geode_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-geode_$scala.binary.version$
+  version=$project.version$
 }
 
 #Usage

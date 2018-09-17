@@ -12,6 +12,8 @@ import javax.jms.{ConnectionFactory, Message}
 import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration._
 
+import scala.concurrent.duration._
+
 case class AckEnvelope private[jms] (message: Message, private val jmsSession: JmsAckSession) {
 
   val processed = new AtomicBoolean(false)
@@ -32,6 +34,7 @@ case class TxEnvelope private[jms] (message: Message, private val jmsSession: Jm
 
 sealed trait JmsSettings {
   def connectionFactory: ConnectionFactory
+  def connectionRetrySettings: ConnectionRetrySettings
   def destination: Option[Destination]
   def credentials: Option[Credentials]
   def acknowledgeMode: Option[AcknowledgeMode]
@@ -63,6 +66,32 @@ object AcknowledgeMode {
   val SessionTransacted: AcknowledgeMode = new AcknowledgeMode(jms.Session.SESSION_TRANSACTED)
 }
 
+object ConnectionRetrySettings {
+  def create(): ConnectionRetrySettings = ConnectionRetrySettings()
+}
+
+final case class ConnectionRetrySettings(connectTimeout: FiniteDuration = 10.seconds,
+                                         initialRetry: FiniteDuration = 100.millis,
+                                         backoffFactor: Double = 2,
+                                         maxBackoff: FiniteDuration = 1.minute,
+                                         maxRetries: Int = 10) {
+  def withConnectTimeout(timeout: FiniteDuration): ConnectionRetrySettings = copy(connectTimeout = timeout)
+  def withConnectTimeout(timeout: Long, unit: TimeUnit): ConnectionRetrySettings =
+    copy(connectTimeout = Duration(timeout, unit))
+  def withInitialRetry(delay: FiniteDuration): ConnectionRetrySettings = copy(initialRetry = delay)
+  def withInitialRetry(delay: Long, unit: TimeUnit): ConnectionRetrySettings =
+    copy(initialRetry = Duration(delay, unit))
+  def withBackoffFactor(backoffFactor: Double): ConnectionRetrySettings = copy(backoffFactor = backoffFactor)
+  def withMaxBackoff(maxBackoff: FiniteDuration): ConnectionRetrySettings = copy(maxBackoff = maxBackoff)
+  def withMaxBackoff(maxBackoff: Long, unit: TimeUnit): ConnectionRetrySettings =
+    copy(maxBackoff = Duration(maxBackoff, unit))
+  def withMaxRetries(maxRetries: Int): ConnectionRetrySettings = copy(maxRetries = maxRetries)
+
+  /** Hypothetical retry time, not accounting for maxBackoff. */
+  def waitTime(retryNumber: Int): FiniteDuration =
+    (initialRetry * Math.pow(retryNumber, backoffFactor)).asInstanceOf[FiniteDuration]
+}
+
 object JmsConsumerSettings {
 
   def create(connectionFactory: ConnectionFactory) = JmsConsumerSettings(connectionFactory)
@@ -70,6 +99,7 @@ object JmsConsumerSettings {
 }
 
 final case class JmsConsumerSettings(connectionFactory: ConnectionFactory,
+                                     connectionRetrySettings: ConnectionRetrySettings = ConnectionRetrySettings(),
                                      destination: Option[Destination] = None,
                                      credentials: Option[Credentials] = None,
                                      sessionCount: Int = 1,
@@ -80,6 +110,8 @@ final case class JmsConsumerSettings(connectionFactory: ConnectionFactory,
                                      durableName: Option[String] = None)
     extends JmsSettings {
   def withCredential(credentials: Credentials): JmsConsumerSettings = copy(credentials = Some(credentials))
+  def withConnectionRetrySettings(settings: ConnectionRetrySettings): JmsConsumerSettings =
+    copy(connectionRetrySettings = settings)
   def withSessionCount(count: Int): JmsConsumerSettings = copy(sessionCount = count)
   def withBufferSize(size: Int): JmsConsumerSettings = copy(bufferSize = size)
   def withQueue(name: String): JmsConsumerSettings = copy(destination = Some(Queue(name)))
@@ -102,6 +134,7 @@ object JmsProducerSettings {
 }
 
 final case class JmsProducerSettings(connectionFactory: ConnectionFactory,
+                                     connectionRetrySettings: ConnectionRetrySettings = ConnectionRetrySettings(),
                                      destination: Option[Destination] = None,
                                      credentials: Option[Credentials] = None,
                                      sessionCount: Int = 1,
@@ -109,15 +142,16 @@ final case class JmsProducerSettings(connectionFactory: ConnectionFactory,
                                      acknowledgeMode: Option[AcknowledgeMode] = None)
     extends JmsSettings {
   def withCredential(credentials: Credentials): JmsProducerSettings = copy(credentials = Some(credentials))
+  def withConnectionRetrySettings(settings: ConnectionRetrySettings): JmsProducerSettings =
+    copy(connectionRetrySettings = settings)
   def withSessionCount(count: Int): JmsProducerSettings = copy(sessionCount = count)
   def withQueue(name: String): JmsProducerSettings = copy(destination = Some(Queue(name)))
   def withTopic(name: String): JmsProducerSettings = copy(destination = Some(Topic(name)))
   def withDestination(destination: Destination): JmsProducerSettings = copy(destination = Some(destination))
-  def withTimeToLive(ttl: Duration): JmsProducerSettings = copy(timeToLive = Some(ttl))
-  def withTimeToLive(timeout: Long, unit: TimeUnit): JmsProducerSettings =
-    copy(timeToLive = Some(Duration(timeout, unit)))
   def withTimeToLive(ttl: java.time.Duration): JmsProducerSettings =
-    copy(timeToLive = Some(Duration(ttl.toNanos, NANOSECONDS)))
+    copy(timeToLive = Some(Duration.fromNanos(ttl.toNanos)))
+  def withTimeToLive(ttl: Duration): JmsProducerSettings = copy(timeToLive = Some(ttl))
+  def withTimeToLive(ttl: Long, unit: TimeUnit): JmsProducerSettings = copy(timeToLive = Some(Duration(ttl, unit)))
   def withAcknowledgeMode(acknowledgeMode: AcknowledgeMode): JmsProducerSettings =
     copy(acknowledgeMode = Option(acknowledgeMode))
 }
@@ -131,6 +165,7 @@ object JmsBrowseSettings {
 }
 
 final case class JmsBrowseSettings(connectionFactory: ConnectionFactory,
+                                   connectionRetrySettings: ConnectionRetrySettings = ConnectionRetrySettings(),
                                    destination: Option[Destination] = None,
                                    credentials: Option[Credentials] = None,
                                    selector: Option[String] = None,
@@ -138,6 +173,8 @@ final case class JmsBrowseSettings(connectionFactory: ConnectionFactory,
     extends JmsSettings {
   override val sessionCount = 1
   def withCredential(credentials: Credentials): JmsBrowseSettings = copy(credentials = Some(credentials))
+  def withConnectionRetrySettings(settings: ConnectionRetrySettings): JmsBrowseSettings =
+    copy(connectionRetrySettings = settings)
   def withQueue(name: String): JmsBrowseSettings = copy(destination = Some(Queue(name)))
   def withDestination(destination: Destination): JmsBrowseSettings = copy(destination = Some(destination))
   def withSelector(selector: String): JmsBrowseSettings = copy(selector = Some(selector))

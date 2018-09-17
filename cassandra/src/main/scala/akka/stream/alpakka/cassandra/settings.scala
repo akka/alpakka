@@ -4,12 +4,16 @@
 
 package akka.stream.alpakka.cassandra
 
-import java.time.{Duration => JavaDuration}
-
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
 
+import akka.util.JavaDurationConverters._
+
 final class CassandraBatchSettings private (val maxGroupSize: Int, val maxGroupWait: FiniteDuration) {
+  require(
+    maxGroupSize > 0,
+    s"Invalid value for maxGroupSize: $maxGroupSize. It should be > 0."
+  )
 
   def withMaxGroupSize(maxGroupSize: Int): CassandraBatchSettings =
     copy(maxGroupSize = maxGroupSize)
@@ -17,8 +21,8 @@ final class CassandraBatchSettings private (val maxGroupSize: Int, val maxGroupW
   def withMaxGroupWait(maxGroupWait: FiniteDuration): CassandraBatchSettings =
     copy(maxGroupWait = maxGroupWait)
 
-  def withMaxGroupWait(maxGroupWait: JavaDuration): CassandraBatchSettings =
-    copy(maxGroupWait = Duration.fromNanos(maxGroupWait.toNanos))
+  def withMaxGroupWait(maxGroupWait: java.time.Duration): CassandraBatchSettings =
+    copy(maxGroupWait = maxGroupWait.asScala)
 
   private def copy(maxGroupSize: Int = maxGroupSize, maxGroupWait: FiniteDuration = maxGroupWait) =
     new CassandraBatchSettings(maxGroupSize, maxGroupWait)
@@ -29,25 +33,21 @@ final class CassandraBatchSettings private (val maxGroupSize: Int, val maxGroupW
 
 object CassandraBatchSettings {
 
-  def apply(maxGroupSize: Int, maxGroupWait: FiniteDuration): CassandraBatchSettings = {
-    require(
-      maxGroupSize > 0,
-      s"Invalid value for maxGroupSize: $maxGroupSize. It should be > 0."
-    )
-
+  def apply(maxGroupSize: Int, maxGroupWait: FiniteDuration): CassandraBatchSettings =
     new CassandraBatchSettings(maxGroupSize, maxGroupWait)
-  }
 
   /**
    * Java API
    */
-  def create(maxGroupSize: Int, maxGroupWait: FiniteDuration): CassandraBatchSettings =
-    CassandraBatchSettings(maxGroupSize, maxGroupWait)
+  def create(maxGroupSize: Int, maxGroupWait: java.time.Duration): CassandraBatchSettings =
+    CassandraBatchSettings(maxGroupSize, maxGroupWait.asScala)
 
-  def apply(): CassandraBatchSettings = CassandraBatchSettings(50, 500.millis)
+  val default = new CassandraBatchSettings(50, 500.millis)
+
+  def apply(): CassandraBatchSettings = default
 
   /**
    * Java API
    */
-  def create(): CassandraBatchSettings = CassandraBatchSettings()
+  def create(): CassandraBatchSettings = default
 }

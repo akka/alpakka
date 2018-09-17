@@ -13,8 +13,8 @@ For more information about AWS Lambda please visit the [AWS lambda documentation
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-awslambda_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-awslambda_$scala.binary.version$
+  version=$project.version$
 }
 
 ## Usage

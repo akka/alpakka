@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.file.scaladsl
+package docs.scaladsl
 
 import java.nio.file.{Files, Path}
 
@@ -35,6 +35,8 @@ class DirectorySpec
       }
 
       // #ls
+      import akka.stream.alpakka.file.scaladsl.Directory
+
       val source: Source[Path, NotUsed] = Directory.ls(dir)
       // #ls
 
@@ -55,7 +57,12 @@ class DirectorySpec
       Files.createFile(file2)
 
       // #walk
+      import akka.stream.alpakka.file.scaladsl.Directory
+      import java.nio.file.FileVisitOption
+
       val files: Source[Path, NotUsed] = Directory.walk(root)
+
+      val files2: Source[Path, NotUsed] = Directory.walk(root, maxDepth = Some(1), List(FileVisitOption.FOLLOW_LINKS))
       // #walk
 
       val result = files.runWith(Sink.seq).futureValue

@@ -10,8 +10,8 @@ The UDP connector provides Akka Stream flows that allow to send and receive UDP 
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-udp_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-udp_$scala.binary.version$
+  version=$project.version$
 }
 
 ## Usage
