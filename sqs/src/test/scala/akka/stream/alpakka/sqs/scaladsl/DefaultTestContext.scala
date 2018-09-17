@@ -7,6 +7,7 @@ package akka.stream.alpakka.sqs.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import com.amazonaws.services.sqs.AmazonSQSAsync
+import com.amazonaws.services.sqs.model.CreateQueueRequest
 import org.elasticmq.rest.sqs.{SQSLimits, SQSRestServer, SQSRestServerBuilder}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite, Tag}
@@ -32,6 +33,12 @@ trait DefaultTestContext extends BeforeAndAfterAll with BeforeAndAfterEach with 
   def sqsClient = createAsyncClient(sqsEndpoint)
 
   def randomQueueUrl(): String = sqsClient.createQueue(s"queue-${Random.nextInt}").getQueueUrl
+
+  val fifoQueueRequest = new CreateQueueRequest(s"queue-${Random.nextInt}.fifo")
+    .addAttributesEntry("FifoQueue", "true")
+    .addAttributesEntry("ContentBasedDeduplication", "true")
+
+  def randomFifoQueueUrl(): String = sqsClient.createQueue(fifoQueueRequest).getQueueUrl
 
   override protected def beforeEach(): Unit =
     sqsServer = SQSRestServerBuilder.withActorSystem(system).withSQSLimits(SQSLimits.Relaxed).withDynamicPort().start()
@@ -62,5 +69,4 @@ trait DefaultTestContext extends BeforeAndAfterAll with BeforeAndAfterEach with 
     //#init-client
     awsSqsClient
   }
-
 }

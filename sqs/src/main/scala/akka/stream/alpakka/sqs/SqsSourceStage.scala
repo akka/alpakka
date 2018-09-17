@@ -75,7 +75,7 @@ final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings)(implic
         currentRequests = currentRequests - 1
         maxCurrentConcurrency = if (result.getMessages.isEmpty) 1 else maxConcurrency
 
-        val receivedMessages = result.getMessages.asScala.reverse
+        val receivedMessages = result.getMessages.asScala
         receivedMessages.foreach(buffer.offer)
 
         if (receivedMessages.isEmpty && settings.closeOnEmptyReceive) {
