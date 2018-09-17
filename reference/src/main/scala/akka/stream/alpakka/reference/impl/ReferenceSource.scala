@@ -8,7 +8,7 @@ import akka.Done
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream._
-import akka.stream.alpakka.reference.{ReferenceReadMessage, SourceSettings}
+import akka.stream.alpakka.reference.{ReferenceReadResult, SourceSettings}
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, OutHandler}
 import akka.util.ByteString
 
@@ -26,7 +26,7 @@ import scala.util.Success
 @InternalApi private[reference] final class ReferenceSourceStageLogic(
     val settings: SourceSettings,
     val startupPromise: Promise[Done],
-    val shape: SourceShape[ReferenceReadMessage]
+    val shape: SourceShape[ReferenceReadResult]
 ) extends GraphStageLogic(shape) {
 
   private def out = shape.out
@@ -40,9 +40,7 @@ import scala.util.Success
   setHandler(out, new OutHandler {
     override def onPull(): Unit = push(
       out,
-      ReferenceReadMessage()
-        .withData(immutable.Seq(ByteString("one")))
-        .withBytesRead(Success(100))
+      new ReferenceReadResult(immutable.Seq(ByteString("one")), Success(100))
     )
   })
 
@@ -56,13 +54,13 @@ import scala.util.Success
  * INTERNAL API
  */
 @InternalApi private[reference] final class ReferenceSource(settings: SourceSettings)
-    extends GraphStageWithMaterializedValue[SourceShape[ReferenceReadMessage], Future[Done]] {
-  val out: Outlet[ReferenceReadMessage] = Outlet(Logging.simpleName(this) + ".out")
+    extends GraphStageWithMaterializedValue[SourceShape[ReferenceReadResult], Future[Done]] {
+  val out: Outlet[ReferenceReadResult] = Outlet(Logging.simpleName(this) + ".out")
 
   override def initialAttributes: Attributes =
     Attributes.name(Logging.simpleName(this))
 
-  override val shape: SourceShape[ReferenceReadMessage] = SourceShape(out)
+  override val shape: SourceShape[ReferenceReadResult] = SourceShape(out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     // materialized value created as a new instance on every materialization
