@@ -2,19 +2,23 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.recordio
+package docs.scaladsl
 
+import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
+//#run-via-scanner
 import akka.stream.alpakka.recordio.scaladsl.RecordIOFraming
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+//#run-via-scanner
 import akka.stream.scaladsl.Framing.FramingException
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 
 import scala.collection.immutable.Seq
+import scala.concurrent.Future
 
 class RecordIOFramingSpec(_system: ActorSystem)
     extends TestKit(_system)
@@ -26,9 +30,10 @@ class RecordIOFramingSpec(_system: ActorSystem)
 
   override protected def afterAll(): Unit = shutdown()
 
-  implicit val mat = ActorMaterializer()
+  implicit val mat: Materializer = ActorMaterializer()
 
-  //#test-data
+  //#run-via-scanner
+
   val FirstRecordData =
     """{"type": "SUBSCRIBED","subscribed": {"framework_id": {"value":"12220-3440-12532-2345"},"heartbeat_interval_seconds":15.0}"""
   val SecondRecordData = """{"type":"HEARTBEAT"}"""
@@ -36,22 +41,27 @@ class RecordIOFramingSpec(_system: ActorSystem)
   val FirstRecordWithPrefix = s"121\n$FirstRecordData"
   val SecondRecordWithPrefix = s"20\n$SecondRecordData"
 
-  val basicSource = Source.single(ByteString(FirstRecordWithPrefix + SecondRecordWithPrefix))
-  //#test-data
+  val basicSource: Source[ByteString, NotUsed] =
+    Source.single(ByteString(FirstRecordWithPrefix + SecondRecordWithPrefix))
 
-  val stringSeqSink = (Flow[ByteString] map (_.utf8String) toMat Sink.seq)(Keep.right)
+  //#run-via-scanner
+
+  val stringSeqSink = Flow[ByteString].map(_.utf8String).toMat(Sink.seq)(Keep.right)
 
   "RecordIO framing" should "parse a series of records" in {
     // When
     //#run-via-scanner
-    val result = basicSource via
-    RecordIOFraming.scanner() runWith
-    Sink.seq
+    val result: Future[Seq[ByteString]] = basicSource
+      .via(RecordIOFraming.scanner())
+      .runWith(Sink.seq)
     //#run-via-scanner
 
     // Then
     //#result
-    result.futureValue shouldBe Seq(ByteString(FirstRecordData), ByteString(SecondRecordData))
+    val byteStrings = result.futureValue
+
+    byteStrings(0) shouldBe ByteString(FirstRecordData)
+    byteStrings(1) shouldBe ByteString(SecondRecordData)
     //#result
   }
 
