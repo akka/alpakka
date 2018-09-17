@@ -1,46 +1,44 @@
 # Apache Kudu
 
-A flow and a composite sink to write element in [Kudu](http://kudu.apache.org).
+The Alpakka Kudu connector supports writing to [Apache Kudu](http://kudu.apache.org) tables.
 
-Apache Kudu is a free and open source column-oriented data store of the Apache Hadoop ecosystem.
+Apache Kudu is a free and open source column-oriented data store in the Apache Hadoop ecosystem.
 
 ### Reported issues
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Akudu)
 
-# Usage
+## Configuration
 
-Build a converter and a tableSetting.
+To connect to Kudu
 
-Converter will map the domain object to Kudu row.
-
-scala
-:   @@snip [snip](/kudu/src/test/scala/akka/stream/alpakka/kudu/scaladsl/KuduStageSpec.scala) { #create-converter }
-
-java
-:   @@snip [snip](/kudu/src/test/java/akka/stream/alpakka/kudu/javadsl/KuduStageTest.java) { #create-converter }
-
-Table will be created on demand.
-
-scala
-:   @@snip [snip](/kudu/src/test/scala/akka/stream/alpakka/kudu/scaladsl/KuduStageSpec.scala) { #create-settings }
-
-java
-:   @@snip [snip](/kudu/src/test/java/akka/stream/alpakka/kudu/javadsl/KuduStageTest.java) { #create-settings }
-
-### Flow usage
-
-scala
-: @@snip [snip](/kudu/src/test/scala/akka/stream/alpakka/kudu/scaladsl/KuduStageSpec.scala) { #flow }
-
-java
-: @@snip [snip](/kudu/src/test/java/akka/stream/alpakka/kudu/javadsl/KuduStageTest.java) { #flow }
+1. Create a Kudu client and manage its life-cycle
+1. Describe the Kudu `Schema` (@javadoc[API](org.apache.kudu.Schema))
+1. Define a converter function to map your data type to a `PartialRow` (@javadoc[API](org.apache.kudu.client.PartialRow))
+1. Specify Kudu `CreateTableOptions` (@javadoc[API](org.apache.kudu.client.CreateTableOptions))
+1. Set up Alpakka's `KuduTableSettings` (@scaladoc[API](akka.stream.alpakka.kudu.KuduTableSettings)).
 
 
-### Sink usage
+Scala
+:   @@snip [snip](/kudu/src/test/scala/docs/scaladsl/KuduTableSpec.scala) { #configure }
 
-scala
-: @@snip [snip](/kudu/src/test/scala/akka/stream/alpakka/kudu/scaladsl/KuduStageSpec.scala) { #sink }
+Java
+:   @@snip [snip](/kudu/src/test/java/docs/javadsl/KuduTableTest.java) { #configure }
 
-java
-: @@snip [snip](/kudu/src/test/java/akka/stream/alpakka/kudu/javadsl/KuduStageTest.java) { #sink }
+
+## Writing to Kudu in a Flow
+
+Scala
+: @@snip [snip](/kudu/src/test/scala/docs/scaladsl/KuduTableSpec.scala) { #flow }
+
+Java
+: @@snip [snip](/kudu/src/test/java/docs/javadsl/KuduTableTest.java) { #flow }
+
+
+## Writing to Kudu with a Sink
+
+Scala
+: @@snip [snip](/kudu/src/test/scala/docs/scaladsl/KuduTableSpec.scala) { #sink }
+
+Java
+: @@snip [snip](/kudu/src/test/java/docs/javadsl/KuduTableTest.java) { #sink }
