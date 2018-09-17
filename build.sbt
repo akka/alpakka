@@ -214,6 +214,7 @@ lazy val docs = project
       "extref.slick.base_url" -> s"https://slick.lightbend.com/doc/${Dependencies.SlickVersion}/%s",
       "javadoc.base_url" -> "https://docs.oracle.com/javase/8/docs/api/",
       "javadoc.javax.jms.base_url" -> "https://docs.oracle.com/javaee/7/api/",
+      "javadoc.org.apache.kudu.base_url" -> s"https://kudu.apache.org/releases/${Dependencies.KuduVersion}/apidocs/",
       "javadoc.akka.base_url" -> s"http://doc.akka.io/japi/akka/${Dependencies.AkkaVersion}/",
       "javadoc.akka.http.base_url" -> s"http://doc.akka.io/japi/akka-http/${Dependencies.AkkaHttpVersion}/",
       "javadoc.org.apache.hadoop.base_url" -> s"https://hadoop.apache.org/docs/r${Dependencies.HadoopVersion}/api/",

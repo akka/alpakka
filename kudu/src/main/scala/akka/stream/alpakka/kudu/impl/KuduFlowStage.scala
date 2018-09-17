@@ -2,30 +2,36 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.kudu.internal
+package akka.stream.alpakka.kudu.impl
 
+import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.alpakka.kudu.KuduTableSettings
 import akka.stream.stage._
-import org.apache.kudu.Type._
 import org.apache.kudu.Schema
-import org.apache.kudu.client.{KuduTable, PartialRow}
+import org.apache.kudu.Type._
+import org.apache.kudu.client.{KuduClient, KuduTable, PartialRow}
 
+import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
 
-private[kudu] class KuduFlowStage[A](settings: KuduTableSettings[A]) extends GraphStage[FlowShape[A, A]] {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[kudu] class KuduFlowStage[A](settings: KuduTableSettings[A], kuduClient: KuduClient)
+    extends GraphStage[FlowShape[A, A]] {
 
   override protected def initialAttributes: Attributes =
-    Attributes.name("KuduFLow").and(ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher"))
+    Attributes.name("KuduFLow").and(ActorAttributes.IODispatcher)
 
   private val in = Inlet[A]("messages")
   private val out = Outlet[A]("result")
 
   override val shape = FlowShape(in, out)
 
-  def copyToInsertRow(insertPartialRow: PartialRow, partialRow: PartialRow, schema: Schema): Unit = {
-    import scala.collection.JavaConversions._
-    schema.getColumns.foreach { cSch =>
+  def copyToInsertRow(insertPartialRow: PartialRow, partialRow: PartialRow, schema: Schema): Unit =
+    schema.getColumns.asScala.foreach { cSch =>
       val columnName = cSch.getName
       val kuduType = cSch.getType
       kuduType match {
@@ -41,50 +47,37 @@ private[kudu] class KuduFlowStage[A](settings: KuduTableSettings[A]) extends Gra
         case _ => throw new UnsupportedOperationException(s"Unknown type ${kuduType}")
       }
     }
-  }
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with StageLogging with KuduCapabilities {
+    new GraphStageLogic(shape) with StageLogging with KuduCapabilities with OutHandler with InHandler {
 
       override protected def logSource = classOf[KuduFlowStage[A]]
 
       lazy val table: KuduTable =
-        getOrCreateTable(settings.kuduClient, settings.tableName, settings.schema, settings.createTableOptions)
+        getOrCreateTable(kuduClient, settings.tableName, settings.schema, settings.createTableOptions)
 
-      val session = settings.kuduClient.newSession()
+      val session = kuduClient.newSession()
 
-      setHandler(out, new OutHandler {
-        override def onPull() =
-          pull(in)
-      })
+      setHandlers(in, out, this)
 
-      setHandler(
-        in,
-        new InHandler {
-          override def onPush() = {
-            val msg = grab(in)
-            val insert = table.newUpsert()
-            val partialRow = insert.getRow()
-            copyToInsertRow(partialRow, settings.converter(msg), table.getSchema)
-            session.apply(insert)
-            push(out, msg)
-          }
-        }
-      )
+      override def onPull(): Unit = pull(in)
 
-      override def postStop() = {
+      override def onPush(): Unit = {
+        val msg = grab(in)
+        val insert = table.newUpsert()
+        val partialRow = insert.getRow()
+        copyToInsertRow(partialRow, settings.converter(msg), table.getSchema)
+        session.apply(insert)
+        push(out, msg)
+      }
+
+      override def postStop(): Unit = {
         log.debug("Stage completed")
         try {
           session.close()
           log.debug("session closed")
         } catch {
           case NonFatal(ex) => log.error(ex, "Problem occurred during producer session close")
-        }
-        try {
-          settings.kuduClient.shutdown()
-          log.debug("client connection closed")
-        } catch {
-          case NonFatal(ex) => log.error(ex, "Problem occurred during producer connection close")
         }
       }
     }
