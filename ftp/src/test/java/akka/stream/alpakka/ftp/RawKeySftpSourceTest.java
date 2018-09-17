@@ -55,8 +55,7 @@ public class RawKeySftpSourceTest extends SftpSupportImpl implements CommonFtpSt
         SftpSettings.create(InetAddress.getByName("localhost"))
             .withPort(getPort())
             .withCredentials(
-                new FtpCredentials.NonAnonFtpCredentials(
-                    "different user and password", "will fail password auth"))
+                FtpCredentials.create("different user and password", "will fail password auth"))
             .withStrictHostKeyChecking(false) // strictHostKeyChecking
             .withSftpIdentity(
                 SftpIdentity.createRawSftpIdentity(

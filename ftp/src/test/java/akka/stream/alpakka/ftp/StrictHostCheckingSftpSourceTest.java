@@ -54,8 +54,7 @@ public class StrictHostCheckingSftpSourceTest extends SftpSupportImpl
         SftpSettings.create(InetAddress.getByName("localhost"))
             .withPort(getPort())
             .withCredentials(
-                new FtpCredentials.NonAnonFtpCredentials(
-                    "different user and password", "will fail password auth"))
+                FtpCredentials.create("different user and password", "will fail password auth"))
             .withStrictHostKeyChecking(true) // strictHostKeyChecking
             .withKnownHosts(getKnownHostsFile().getPath())
             .withSftpIdentity(

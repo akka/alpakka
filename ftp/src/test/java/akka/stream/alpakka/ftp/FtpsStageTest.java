@@ -72,7 +72,7 @@ public class FtpsStageTest extends FtpsSupportImpl implements CommonFtpStageTest
     final FtpsSettings settings =
         FtpsSettings.create(InetAddress.getByName("localhost"))
             .withPort(getPort())
-            .withCredentials(FtpCredentials.createAnonCredentials())
+            .withCredentials(FtpCredentials.anonymous())
             .withBinary(false)
             .withPassiveMode(false);
     return settings;

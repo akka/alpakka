@@ -7,7 +7,7 @@ package akka.stream.alpakka.ftp.impl
 import java.net.InetAddress
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.ftp.FtpCredentials.{AnonFtpCredentials, NonAnonFtpCredentials}
+import akka.stream.alpakka.ftp.FtpCredentials
 import akka.stream.alpakka.ftp._
 import net.schmizz.sshj.SSHClient
 import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
@@ -156,9 +156,9 @@ private[ftp] trait FtpDefaultSettings {
       InetAddress.getByName(hostname)
     ).withCredentials(
       if (username.isDefined)
-        NonAnonFtpCredentials(username.get, password.getOrElse(""))
+        FtpCredentials.create(username.get, password.getOrElse(""))
       else
-        AnonFtpCredentials
+        FtpCredentials.anonymous
     )
 }
 
@@ -176,9 +176,9 @@ private[ftp] trait FtpsDefaultSettings {
       InetAddress.getByName(hostname)
     ).withCredentials(
       if (username.isDefined)
-        NonAnonFtpCredentials(username.get, password.getOrElse(""))
+        FtpCredentials.create(username.get, password.getOrElse(""))
       else
-        AnonFtpCredentials
+        FtpCredentials.anonymous
     )
 }
 
@@ -196,9 +196,9 @@ private[ftp] trait SftpDefaultSettings {
       InetAddress.getByName(hostname)
     ).withCredentials(
       if (username.isDefined)
-        NonAnonFtpCredentials(username.get, password.getOrElse(""))
+        FtpCredentials.create(username.get, password.getOrElse(""))
       else
-        AnonFtpCredentials
+        FtpCredentials.anonymous
     )
 }
 

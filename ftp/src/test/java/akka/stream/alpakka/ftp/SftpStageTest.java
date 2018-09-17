@@ -68,7 +68,7 @@ public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest
     final SftpSettings settings =
         SftpSettings.create(InetAddress.getByName("localhost"))
             .withPort(getPort())
-            .withCredentials(FtpCredentials.createAnonCredentials())
+            .withCredentials(FtpCredentials.anonymous())
             .withStrictHostKeyChecking(false);
     return settings;
   }

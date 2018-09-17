@@ -4,7 +4,6 @@
 
 package akka.stream.alpakka.ftp
 
-import akka.stream.alpakka.ftp.FtpCredentials.AnonFtpCredentials
 import java.net.InetAddress
 import java.nio.file.attribute.PosixFilePermission
 
@@ -124,7 +123,7 @@ object FtpSettings {
   ): FtpSettings = new FtpSettings(
     host,
     port = DefaultFtpPort,
-    credentials = AnonFtpCredentials,
+    credentials = FtpCredentials.AnonFtpCredentials,
     binary = false,
     passiveMode = false,
     configureConnection = _ => ()
@@ -211,7 +210,7 @@ object FtpsSettings {
   ): FtpsSettings = new FtpsSettings(
     host,
     DefaultFtpsPort,
-    AnonFtpCredentials,
+    FtpCredentials.AnonFtpCredentials,
     binary = false,
     passiveMode = false,
     configureConnection = _ => ()
@@ -286,7 +285,7 @@ object SftpSettings {
   ): SftpSettings = new SftpSettings(
     host,
     DefaultSftpPort,
-    AnonFtpCredentials,
+    FtpCredentials.AnonFtpCredentials,
     strictHostKeyChecking = true,
     knownHosts = None,
     sftpIdentity = None
@@ -314,8 +313,7 @@ sealed abstract class FtpCredentials {
 object FtpCredentials {
   final val Anonymous = "anonymous"
 
-  /** Java API */
-  def createAnonCredentials(): FtpCredentials = AnonFtpCredentials
+  val anonymous: FtpCredentials = AnonFtpCredentials
 
   /**
    * Anonymous credentials
@@ -323,6 +321,8 @@ object FtpCredentials {
   case object AnonFtpCredentials extends FtpCredentials {
     val username: String = Anonymous
     val password: String = Anonymous
+
+    override def toString = "FtpCredentials(anonymous)"
   }
 
   /**
@@ -331,7 +331,14 @@ object FtpCredentials {
    * @param username the username
    * @param password the password
    */
-  final case class NonAnonFtpCredentials(username: String, password: String) extends FtpCredentials
+  final class NonAnonFtpCredentials @InternalApi private[FtpCredentials] (val username: String, val password: String)
+      extends FtpCredentials {
+    override def toString = s"FtpCredentials(username=$username,password.nonEmpty=${password.nonEmpty})"
+  }
+
+  /** Create username/password credentials. */
+  def create(username: String, password: String): FtpCredentials =
+    new NonAnonFtpCredentials(username, password)
 }
 
 /**
@@ -432,7 +439,7 @@ final class RawKeySftpIdentity @InternalApi private[ftp] (
   override def toString: String =
     "RawKeySftpIdentity(" +
     s"privateKey(length)=${privateKey.length}," +
-    s"privateKeyFilePassphrase=${privateKeyFilePassphrase.isDefined}," +
+    s"privateKeyFilePassphrase.isDefined=${privateKeyFilePassphrase.isDefined}," +
     s"publicKey=${publicKey.isDefined})"
 }
 

@@ -25,7 +25,7 @@ public class FtpSettingsExample {
 
           FtpSettings.create(InetAddress.getByName("localhost"))
               .withPort(FtpSettings.DefaultFtpPort())
-              .withCredentials(FtpCredentials.createAnonCredentials())
+              .withCredentials(FtpCredentials.anonymous())
               .withBinary(false)
               .withPassiveMode(false)
               .withConfigureConnectionConsumer(

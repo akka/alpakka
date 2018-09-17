@@ -5,7 +5,6 @@
 package akka.stream.alpakka.ftp
 
 import akka.stream.IOResult
-import akka.stream.alpakka.ftp.FtpCredentials.NonAnonFtpCredentials
 import akka.stream.alpakka.ftp.SftpSupportImpl.{CLIENT_PRIVATE_KEY_PASSPHRASE => ClientPrivateKeyPassphrase}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
@@ -31,7 +30,7 @@ final class RawKeySftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
   override val settings = SftpSettings(
     InetAddress.getByName("localhost")
   ).withPort(getPort)
-    .withCredentials(NonAnonFtpCredentials("different user and password", "will fail password auth"))
+    .withCredentials(FtpCredentials.create("different user and password", "will fail password auth"))
     .withStrictHostKeyChecking(false)
     .withSftpIdentity(
       SftpIdentity.createRawSftpIdentity(
@@ -45,7 +44,7 @@ final class KeyFileSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
   override val settings = SftpSettings(
     InetAddress.getByName("localhost")
   ).withPort(getPort)
-    .withCredentials(NonAnonFtpCredentials("different user and password", "will fail password auth"))
+    .withCredentials(FtpCredentials.create("different user and password", "will fail password auth"))
     .withStrictHostKeyChecking(false)
     .withSftpIdentity(
       SftpIdentity.createFileSftpIdentity(getClientPrivateKeyFile.getPath, ClientPrivateKeyPassphrase)
@@ -56,7 +55,7 @@ final class StrictHostCheckingSftpSourceSpec extends BaseSftpSpec with CommonFtp
   override val settings = SftpSettings(
     InetAddress.getByName("localhost")
   ).withPort(getPort)
-    .withCredentials(NonAnonFtpCredentials("different user and password", "will fail password auth"))
+    .withCredentials(FtpCredentials.create("different user and password", "will fail password auth"))
     .withStrictHostKeyChecking(true)
     .withKnownHosts(getKnownHostsFile.getPath)
     .withSftpIdentity(
