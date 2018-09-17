@@ -6,9 +6,9 @@ package docs.scaladsl
 
 import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.reference.scaladsl.Reference
-import akka.stream.alpakka.reference.{Authentication, ReferenceReadMessage, ReferenceWriteMessage, SourceSettings}
+import akka.stream.alpakka.reference._
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
@@ -24,7 +24,7 @@ import scala.concurrent.Future
 class ReferenceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures with Matchers {
 
   implicit val sys = ActorSystem("ReferenceSpec")
-  implicit val mat = ActorMaterializer()
+  implicit val mat: Materializer = ActorMaterializer()
 
   final val ClientId = "test-client-id"
 
@@ -51,19 +51,19 @@ class ReferenceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
       // #source
       val settings: SourceSettings = SourceSettings(ClientId)
 
-      val source: Source[ReferenceReadMessage, Future[Done]] =
+      val source: Source[ReferenceReadResult, Future[Done]] =
         Reference.source(settings)
       // #source
     }
 
     "compile flow" in {
       // #flow
-      val flow: Flow[ReferenceWriteMessage, ReferenceWriteMessage, NotUsed] =
+      val flow: Flow[ReferenceWriteMessage, ReferenceWriteResult, NotUsed] =
         Reference.flow()
       // #flow
 
       implicit val ec = scala.concurrent.ExecutionContext.global
-      val flow2: Flow[ReferenceWriteMessage, ReferenceWriteMessage, NotUsed] =
+      val flow2: Flow[ReferenceWriteMessage, ReferenceWriteResult, NotUsed] =
         Reference.flow()
     }
 
@@ -100,7 +100,7 @@ class ReferenceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
 
       val result = source.via(flow).runWith(Sink.seq).futureValue
 
-      result.flatMap(_.data) should contain theSameElementsAs Seq(
+      result.flatMap(_.message.data) should contain theSameElementsAs Seq(
         "one",
         "two",
         "three",
