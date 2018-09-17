@@ -6,12 +6,12 @@ package akka.stream.alpakka.jms
 
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
-import javax.jms._
 
 import akka.Done
 import akka.stream._
 import akka.stream.stage._
 import akka.util.OptionVal
+import javax.jms._
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -208,7 +208,7 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings)
 abstract class SourceStageLogic[T](shape: SourceShape[T],
                                    out: Outlet[T],
                                    settings: JmsConsumerSettings,
-                                   attributes: Attributes)
+                                   inheritedAttributes: Attributes)
     extends GraphStageLogic(shape)
     with JmsConsumerConnector
     with StageLogging {
@@ -232,7 +232,10 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
     fail(out, e)
   }
 
-  override def preStart(): Unit = initSessionAsync(executionContext(attributes))
+  override def preStart(): Unit = {
+    ec = executionContext(inheritedAttributes)
+    initSessionAsync()
+  }
 
   private[jms] val handleMessage = getAsyncCallback[T] { msg =>
     if (isAvailable(out)) {
@@ -266,16 +269,18 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
       Future
         .sequence(closeSessionFutures)
         .onComplete { _ =>
-          try {
-            jmsConnection.foreach(_.close())
-          } catch {
-            case NonFatal(e) => log.error(e, "Error closing JMS connection {}", jmsConnection)
-          } finally {
-            // By this time, after stopping connection, closing sessions, all async message submissions to this
-            // stage should have been invoked. We invoke markStopped as the last item so it gets delivered after
-            // all JMS messages are delivered. This will allow the stage to complete after all pending messages
-            // are delivered, thus preventing message loss due to premature stage completion.
-            markStopped.invoke(Done)
+          jmsConnection.foreach { connection =>
+            try {
+              connection.close()
+            } catch {
+              case NonFatal(e) => log.error(e, "Error closing JMS connection {}", connection)
+            } finally {
+              // By this time, after stopping connection, closing sessions, all async message submissions to this
+              // stage should have been invoked. We invoke markStopped as the last item so it gets delivered after
+              // all JMS messages are delivered. This will allow the stage to complete after all pending messages
+              // are delivered, thus preventing message loss due to premature stage completion.
+              markStopped.invoke(Done)
+            }
           }
         }
     }
@@ -290,12 +295,15 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
       Future
         .sequence(abortSessionFutures)
         .onComplete { _ =>
-          try {
-            jmsConnection.foreach(_.close())
-            log.info("JMS connection {} closed", jmsConnection)
-            markAborted.invoke(ex)
-          } catch {
-            case NonFatal(e) => log.error(e, "Error closing JMS connection {}", jmsConnection)
+          jmsConnection.foreach { connection =>
+            try {
+              connection.close()
+              log.info("JMS connection {} closed", jmsConnection)
+            } catch {
+              case NonFatal(e) => log.error(e, "Error closing JMS connection {}", jmsConnection)
+            } finally {
+              markAborted.invoke(ex)
+            }
           }
         }
     }

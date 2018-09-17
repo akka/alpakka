@@ -12,8 +12,8 @@ import akka.stream.stage._
 import akka.util.OptionVal
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
 import scala.util.control.{NoStackTrace, NonFatal}
+import scala.util.{Failure, Success, Try}
 
 private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducerSettings)
     extends GraphStage[FlowShape[A, A]] {
@@ -46,7 +46,10 @@ private[jms] final class JmsProducerStage[A <: JmsMessage](settings: JmsProducer
 
       protected def jmsSettings: JmsProducerSettings = settings
 
-      override def preStart(): Unit = initSessionAsync(executionContext(inheritedAttributes))
+      override def preStart(): Unit = {
+        ec = executionContext(inheritedAttributes)
+        initSessionAsync(withReconnect = false)
+      }
 
       override protected def onSessionOpened(jmsSession: JmsProducerSession): Unit = {
         jmsProducers.enqueue(JmsMessageProducer(jmsSession, settings))

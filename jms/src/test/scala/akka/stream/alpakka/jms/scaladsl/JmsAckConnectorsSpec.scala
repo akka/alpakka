@@ -149,7 +149,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
       result.futureValue should contain theSameElementsAs in
     }
 
-    "disconnection should fail the stage" in withServer() { ctx =>
+    "disconnection should fail the stage after exhausting retries" in withServer() { ctx =>
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
       val result = JmsConsumer
         .ackSource(
@@ -157,11 +157,14 @@ class JmsAckConnectorsSpec extends JmsSpec {
             .withSessionCount(5)
             .withBufferSize(0)
             .withQueue("test")
+            .withConnectionRetrySettings(ConnectionRetrySettings(maxRetries = 3))
         )
         .runWith(Sink.seq)
       Thread.sleep(500)
       ctx.broker.stop()
-      result.failed.futureValue shouldBe an[JMSException]
+      val ex = result.failed.futureValue
+      ex shouldBe a[ConnectionRetryException]
+      ex.getCause shouldBe a[JMSException]
     }
 
     "publish and consume elements through a topic " in withServer() { ctx =>
