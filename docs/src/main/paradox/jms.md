@@ -217,7 +217,9 @@ Java
 : @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-flexi-flow-producer }
 
 There are two implementations: One envelope type containing a messages to send to Jms, and one
-envelope type containing only values to pass through:
+envelope type containing only values to pass through. This allows messages to flow without producing any new messages 
+to Jms. This is primarily useful when committing offsets back to Kakfa, or when acknowledging Jms messages after sending
+the outcome of processing them back to Jms.
 
 Scala
 : @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-flexi-flow-pass-through-producer }

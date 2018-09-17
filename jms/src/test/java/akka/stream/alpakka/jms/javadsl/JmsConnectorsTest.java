@@ -7,12 +7,14 @@ package akka.stream.alpakka.jms.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.KillSwitch;
 import akka.stream.Materializer;
 import akka.stream.alpakka.jms.*;
 import akka.stream.alpakka.jms.JmsProducerMessage.*;
 import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
@@ -811,6 +813,15 @@ public class JmsConnectorsTest {
     withServer(
         ctx -> {
           ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+          Pair<KillSwitch, CompletionStage<List<String>>> switchAndItems =
+              JmsConsumer.textSource(
+                      JmsConsumerSettings.create(connectionFactory)
+                          .withBufferSize(10)
+                          .withQueue("test"))
+                  .toMat(Sink.seq(), Keep.both())
+                  .run(materializer);
+
           // #run-flexi-flow-pass-through-producer
           Flow<Envelope<JmsTextMessage, String>, Envelope<JmsTextMessage, String>, NotUsed>
               jmsProducer =
@@ -831,6 +842,11 @@ public class JmsConnectorsTest {
           // #run-flexi-flow-pass-through-producer
 
           assertEquals(data, result.toCompletableFuture().get());
+
+          Thread.sleep(500);
+
+          switchAndItems.first().shutdown();
+          assertTrue(switchAndItems.second().toCompletableFuture().get().isEmpty());
         });
   }
 

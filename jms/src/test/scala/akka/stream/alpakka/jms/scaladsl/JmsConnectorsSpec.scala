@@ -1128,11 +1128,11 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
     }
 
     "pass through message envelopes" in withServer() { ctx =>
-      val producerConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       //#run-flexi-flow-producer
       val jmsProducer = JmsProducer.flexiFlow[JmsTextMessage, String](
-        JmsProducerSettings(producerConnectionFactory).withQueue("topic")
+        JmsProducerSettings(connectionFactory).withQueue("test")
       )
 
       val data = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
@@ -1142,14 +1142,31 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       //#run-flexi-flow-producer
 
       result.futureValue shouldEqual data
+
+      val sentData =
+        JmsConsumer
+          .textSource(JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("test"))
+          .take(data.size)
+          .runWith(Sink.seq)
+
+      sentData.futureValue shouldEqual data
     }
 
-    "pass through empty envelopes" in withServer() { ctx =>
-      val producerConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+    "pass through empty envelopes" in {
+      val connectionFactory = mock[ConnectionFactory]
+      val connection = mock[Connection]
+      val session = mock[Session]
+      val producer = mock[MessageProducer]
+      val message = mock[TextMessage]
+
+      when(connectionFactory.createConnection()).thenReturn(connection)
+      when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
+      when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
+      when(session.createTextMessage(any[String])).thenReturn(message)
 
       //#run-flexi-flow-pass-through-producer
       val jmsProducer = JmsProducer.flexiFlow[JmsTextMessage, String](
-        JmsProducerSettings(producerConnectionFactory).withQueue("topic")
+        JmsProducerSettings(connectionFactory).withQueue("topic")
       )
 
       val data = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
@@ -1159,6 +1176,9 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       //#run-flexi-flow-pass-through-producer
 
       result.futureValue shouldEqual data
+
+      verify(session, never()).createTextMessage(any[String])
+      verify(producer, never()).send(any[javax.jms.Destination], any[Message], any[Int], any[Int], any[Long])
     }
   }
 
