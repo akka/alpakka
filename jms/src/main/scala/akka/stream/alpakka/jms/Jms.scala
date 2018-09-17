@@ -9,10 +9,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.jms
 import javax.jms.{ConnectionFactory, Message}
 
+import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise}
-import scala.concurrent.duration._
-
-import scala.concurrent.duration._
 
 case class AckEnvelope private[jms] (message: Message, private val jmsSession: JmsAckSession) {
 
@@ -106,7 +104,7 @@ final case class JmsConsumerSettings(connectionFactory: ConnectionFactory,
                                      bufferSize: Int = 100,
                                      selector: Option[String] = None,
                                      acknowledgeMode: Option[AcknowledgeMode] = None,
-                                     ackTimeout: Duration = Duration.Inf,
+                                     ackTimeout: Duration = 1.second,
                                      durableName: Option[String] = None)
     extends JmsSettings {
   def withCredential(credentials: Credentials): JmsConsumerSettings = copy(credentials = Some(credentials))

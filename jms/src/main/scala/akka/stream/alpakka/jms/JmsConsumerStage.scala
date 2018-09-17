@@ -7,7 +7,6 @@ package akka.stream.alpakka.jms
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
 
-import javax.jms._
 import akka.Done
 import akka.stream._
 import akka.stream.stage._
