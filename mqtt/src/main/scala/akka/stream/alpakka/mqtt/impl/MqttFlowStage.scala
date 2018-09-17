@@ -263,7 +263,7 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
  * INTERNAL API
  */
 @InternalApi
-object MqttFlowStage {
+private[mqtt] object MqttFlowStage {
   private val SuccessfullyDone = Success(Done)
 
   final private case class CommitCallbackArguments(messageId: Int, qos: MqttQoS, promise: Promise[Done])

@@ -11,18 +11,6 @@ final class MqttMessage private (val topic: String,
                                  val qos: Option[MqttQoS],
                                  val retained: Boolean) {
 
-  /** Java API */
-  def getTopic: String = topic
-
-  /** Java API */
-  def getPayload: akka.util.ByteString = payload
-
-  /** Java API */
-  def getQos: java.util.Optional[MqttQoS] = qos.asJava
-
-  /** Java API */
-  def isRetained: Boolean = retained
-
   def withTopic(value: String): MqttMessage = copy(topic = value)
   def withPayload(value: akka.util.ByteString): MqttMessage = copy(payload = value)
   def withPayload(value: Array[Byte]): MqttMessage = copy(payload = akka.util.ByteString(value))
