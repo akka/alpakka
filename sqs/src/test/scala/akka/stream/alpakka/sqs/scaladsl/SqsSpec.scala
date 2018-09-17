@@ -192,7 +192,7 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     val queue = randomFifoQueueUrl()
     implicit val awsSqsClient = sqsClient
 
-    for (i <- 0 until 10) yield {
+    for (i <- 0 until 10) {
       val msg = s"Message - $i"
       awsSqsClient.sendMessage(new SendMessageRequest(queue, msg).withMessageGroupId("group1"))
     }
