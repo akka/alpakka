@@ -22,10 +22,8 @@ final class DynamoSettings private (
 
   def withRegion(value: String): DynamoSettings = copy(region = value)
   def withHost(value: String): DynamoSettings = copy(host = value)
-  def withPort(value: Int): DynamoSettings =
-    if (value == 443) {
-      copy(port = value, tls = true)
-    } else copy(port = value)
+  def withPort(value: Int): DynamoSettings = copy(port = value)
+  def withPortOverTls(value: Int): DynamoSettings = copy(port = value, tls = true)
   def withTls(value: Boolean): DynamoSettings =
     if (value == tls) this else copy(tls = value)
   def withParallelism(value: Int): DynamoSettings = copy(parallelism = value)
@@ -68,9 +66,7 @@ object DynamoSettings {
     val region = c.getString("region")
     val host = c.getString("host")
     val port = c.getInt("port")
-    val tls =
-      if (c.hasPath("tls")) c.getBoolean("tls")
-      else port == 443
+    val tls = c.getBoolean("tls")
     val parallelism = c.getInt("parallelism")
     val awsCredentialsProvider = {
       if (c.hasPath("credentials.access-key-id") &&

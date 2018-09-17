@@ -54,6 +54,7 @@ class DynamoSettingsSpec extends WordSpecLike with Matchers {
           |region = "eu-west-1"
           |host = "localhost"
           |port = 443
+          |tls = true
           |parallelism = 32
           |credentials {
           |  access-key-id = "dummy-access-key"
@@ -72,6 +73,7 @@ class DynamoSettingsSpec extends WordSpecLike with Matchers {
             region = "eu-west-1"
             host = "localhost"
             port = 443
+            tls = true
             parallelism = 32
             credentials {
               access-key-id = "dummy-access-key"
