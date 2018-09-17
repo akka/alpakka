@@ -6,7 +6,6 @@ package akka.stream.alpakka.dynamodb
 
 import akka.actor.ActorSystem
 import akka.stream._
-import akka.stream.alpakka.dynamodb.impl.DynamoSettings
 import akka.stream.alpakka.dynamodb.scaladsl._
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit
