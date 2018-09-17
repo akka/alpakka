@@ -2,31 +2,28 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package example;
+package docs.javadsl;
 
 // #important-imports
 import akka.stream.javadsl.*;
 import akka.stream.alpakka.slick.javadsl.*;
 // #important-imports
 
-// #source-example
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 
-import akka.stream.javadsl.*;
-import akka.stream.alpakka.slick.javadsl.*;
-
 public class DocSnippetSource {
   public static void main(String[] args) throws Exception {
     final ActorSystem system = ActorSystem.create();
     final Materializer materializer = ActorMaterializer.create(system);
 
+    // #source-example
     final SlickSession session = SlickSession.forConfig("slick-h2");
+    system.registerOnTermination(session::close);
 
     final CompletionStage<Done> done =
         Slick.source(
@@ -35,12 +32,11 @@ public class DocSnippetSource {
                 (SlickRow row) -> new User(row.nextInt(), row.nextString()))
             .log("user")
             .runWith(Sink.ignore(), materializer);
+    // #source-example
 
     done.whenComplete(
         (value, exception) -> {
-          session.close();
           system.terminate();
         });
   }
 }
-// #source-example

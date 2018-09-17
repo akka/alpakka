@@ -2,15 +2,15 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.slick.javadsl;
-
-// #flowWithPassThrough-example
+package docs.javadsl;
 
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.slick.javadsl.Slick;
+import akka.stream.alpakka.slick.javadsl.SlickSession;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 
@@ -58,6 +58,7 @@ public class DocSnippetFlowWithPassThrough {
     final Materializer materializer = ActorMaterializer.create(system);
 
     final SlickSession session = SlickSession.forConfig("slick-h2");
+    system.registerOnTermination(session::close);
 
     final List<User> users =
         IntStream.range(0, 42)
@@ -71,6 +72,7 @@ public class DocSnippetFlowWithPassThrough {
             .map(user -> new KafkaMessage<>(user, new CommittableOffset(users.indexOf(user))))
             .collect(Collectors.toList());
 
+    // #flowWithPassThrough-example
     final CompletionStage<Done> done =
         Source.from(messagesFromKafka)
             .via(
@@ -87,7 +89,7 @@ public class DocSnippetFlowWithPassThrough {
                     (kafkaMessage, insertCount) ->
                         kafkaMessage.map(
                             user ->
-                                new Pair(
+                                Pair.create(
                                     user,
                                     insertCount)) // allows to keep the kafka message offset so it
                     // can be committed in a next stage
@@ -98,12 +100,11 @@ public class DocSnippetFlowWithPassThrough {
                 kafkaMessage ->
                     kafkaMessage.offset.commit()) // in correct order, commit Kafka message
             .runWith(Sink.ignore(), materializer);
+    // #flowWithPassThrough-example
 
     done.whenComplete(
         (value, exception) -> {
-          session.close();
           system.terminate();
         });
   }
 }
-// #flowWithPassThrough-example
