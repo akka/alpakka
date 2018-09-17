@@ -11,6 +11,9 @@ blog by Sidharth Khattri, May 2018
 
 [Alpakka (Akka Streams) vs Apache Camel: who wins?](http://www.thedevpiece.com/alpakka-akka-streams-vs-apache-camel-who-wins/) Blog by Gabriel Francisco, May 2018 
 
+[Alpakka – a new world of Connectors for Reactive Enterprise Integration](https://www.youtube.com/watch?v=EcNZ2mJZmCk)
+presentation by Jan Pustelnik, Actyx, ReactSphere Kraków, April 2018
+
 [Revitalizing Enterprise Integration with Reactive Streams](https://info.lightbend.com/webinar-revitalizing-enterprise-integration-with-reactive-streams-recording.html)
 Webinar by Viktor Klang, Lightbend, March 2018
 
