@@ -61,10 +61,13 @@ private[jms] trait JmsConnector[S <: JmsSession] {
   case object TimedOut extends ConnectionStatus
 
   protected def initSessionAsync(withReconnect: Boolean = true): Unit = {
-    val allSessions =
-      if (withReconnect) openSessions(onConnectionFailure = _ => initSessionAsync())
-      else openSessions(onConnectionFailure = fail.invoke)
-    allSessions.failed.foreach(fail.invoke)
+
+    def failureHandler(ex: Throwable) =
+      if (withReconnect && ex.isInstanceOf[jms.JMSException]) initSessionAsync()
+      else fail.invoke(ex)
+
+    val allSessions = openSessions(failureHandler)
+    allSessions.failed.foreach(failureHandler)
     // wait for all sessions to successfully initialize before invoking the onSession callback.
     // reduces flakiness (start, consume, then crash) at the cost of increased latency of startup.
     allSessions.foreach(_.foreach(onSession.invoke))
