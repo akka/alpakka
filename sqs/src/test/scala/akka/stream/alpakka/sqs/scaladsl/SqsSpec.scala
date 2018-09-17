@@ -188,6 +188,26 @@ class SqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     probe.cancel()
   }
 
+  it should "pull messages from a fifo queue following the same production order" taggedAs Integration in {
+    val queue = randomFifoQueueUrl()
+    implicit val awsSqsClient = sqsClient
+
+    for (i <- 0 until 10) {
+      val msg = s"Message - $i"
+      awsSqsClient.sendMessage(new SendMessageRequest(queue, msg).withMessageGroupId("group1"))
+    }
+
+    val probe = SqsSource(queue, sqsSourceSettings)
+      .runWith(TestSink.probe[Message])
+
+    for (i <- 0 until 10) {
+      val result = probe.requestNext()
+      result.getBody shouldBe s"Message - $i"
+    }
+
+    probe.cancel()
+  }
+
   it should "publish batch of messages and pull them" taggedAs Integration in {
     val queue = randomQueueUrl()
     implicit val awsSqsClient = sqsClient
