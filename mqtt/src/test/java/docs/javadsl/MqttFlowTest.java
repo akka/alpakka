@@ -2,17 +2,15 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.mqtt.javadsl;
+package docs.javadsl;
 
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.mqtt.MqttConnectionSettings;
-import akka.stream.alpakka.mqtt.MqttMessage;
-import akka.stream.alpakka.mqtt.MqttQoS;
-import akka.stream.alpakka.mqtt.MqttSourceSettings;
+import akka.stream.alpakka.mqtt.*;
+import akka.stream.alpakka.mqtt.javadsl.MqttFlow;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -34,6 +32,8 @@ public class MqttFlowTest {
 
   private static ActorSystem system;
   private static Materializer materializer;
+
+  private static final int bufferSize = 8;
 
   private static Pair<ActorSystem, Materializer> setupMaterializer() {
     final ActorSystem system = ActorSystem.create("MqttFlowTest");
@@ -59,14 +59,13 @@ public class MqttFlowTest {
         MqttConnectionSettings.create(
             "tcp://localhost:1883", "test-java-client", new MemoryPersistence());
 
-    @SuppressWarnings("unchecked")
-    final MqttSourceSettings settings =
-        MqttSourceSettings.create(connectionSettings.withClientId("flow-test/flow"))
-            .withSubscriptions(Pair.create("flow-test/topic", MqttQoS.atMostOnce()));
-
     // #create-flow
     final Flow<MqttMessage, MqttMessage, CompletionStage<Done>> mqttFlow =
-        MqttFlow.create(settings, 8, MqttQoS.atLeastOnce());
+        MqttFlow.atMostOnce(
+            connectionSettings,
+            MqttSubscriptions.create("flow-test/topic", MqttQoS.atMostOnce()),
+            bufferSize,
+            MqttQoS.atLeastOnce());
     // #create-flow
 
     final Source<MqttMessage, CompletableFuture<Optional<MqttMessage>>> source = Source.maybe();
@@ -75,17 +74,18 @@ public class MqttFlowTest {
     final Pair<
             Pair<CompletableFuture<Optional<MqttMessage>>, CompletionStage<Done>>,
             CompletionStage<List<MqttMessage>>>
-        result =
+        materialized =
             source.viaMat(mqttFlow, Keep.both()).toMat(Sink.seq(), Keep.both()).run(materializer);
+
+    CompletableFuture<Optional<MqttMessage>> mqttMessagePromise = materialized.first().first();
+    CompletionStage<Done> subscribedToMqtt = materialized.first().second();
+    CompletionStage<List<MqttMessage>> streamResult = materialized.second();
     // #run-flow
 
-    result
-        .first()
-        .second()
-        .thenAccept(
-            a -> {
-              result.first().first().complete(Optional.empty());
-              assertFalse(result.second().toCompletableFuture().isCompletedExceptionally());
-            });
+    subscribedToMqtt.thenAccept(
+        a -> {
+          mqttMessagePromise.complete(Optional.empty());
+          assertFalse(streamResult.toCompletableFuture().isCompletedExceptionally());
+        });
   }
 }

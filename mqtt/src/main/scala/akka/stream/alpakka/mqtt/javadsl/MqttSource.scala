@@ -7,31 +7,72 @@ package akka.stream.alpakka.mqtt.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.Done
-import akka.stream.alpakka.mqtt.{MqttMessage, MqttSourceSettings}
+import akka.stream.alpakka.mqtt._
+import akka.stream.javadsl.Source
 
+import scala.compat.java8.FutureConverters._
+
+/**
+ * Java API
+ *
+ * MQTT source factory.
+ */
 object MqttSource {
 
   /**
-   * Java API: create an [[MqttSource]] with a provided bufferSize.
+   * Create a source subscribing to MQTT messages (without a commit handle).
+   *
+   * The materialized value completes on successful connection to the MQTT broker.
+   *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
+   * @deprecated use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead
    */
-  @deprecated("use atMostOnce instead", "0.15")
-  def create(settings: MqttSourceSettings,
-             bufferSize: Int): akka.stream.javadsl.Source[MqttMessage, CompletionStage[Done]] =
-    atMostOnce(settings, bufferSize)
+  @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+  @java.lang.Deprecated
+  def atMostOnce(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessage, CompletionStage[Done]] =
+    atMostOnce(settings.connectionSettings, MqttSubscriptions(settings.subscriptions), bufferSize)
 
-  def atMostOnce(settings: MqttSourceSettings,
-                 bufferSize: Int): akka.stream.javadsl.Source[MqttMessage, CompletionStage[Done]] = {
-    import scala.compat.java8.FutureConverters._
-    akka.stream.alpakka.mqtt.scaladsl.MqttSource.atMostOnce(settings, bufferSize).mapMaterializedValue(_.toJava).asJava
-  }
-
-  def atLeastOnce(settings: MqttSourceSettings,
-                  bufferSize: Int): akka.stream.javadsl.Source[MqttCommittableMessage, CompletionStage[Done]] = {
-    import scala.compat.java8.FutureConverters._
-    akka.stream.alpakka.mqtt.scaladsl.MqttSource
-      .atLeastOnce(settings, bufferSize)
-      .map(cm => cm.asJava)
+  /**
+   * Create a source subscribing to MQTT messages (without a commit handle).
+   *
+   * The materialized value completes on successful connection to the MQTT broker.
+   *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
+   */
+  def atMostOnce(settings: MqttConnectionSettings,
+                 subscriptions: MqttSubscriptions,
+                 bufferSize: Int): Source[MqttMessage, CompletionStage[Done]] =
+    scaladsl.MqttSource
+      .atMostOnce(settings, subscriptions, bufferSize)
       .mapMaterializedValue(_.toJava)
       .asJava
-  }
+
+  /**
+   * Create a source subscribing to MQTT messages with a commit handle to acknowledge message reception.
+   *
+   * The materialized value completes on successful connection to the MQTT broker.
+   *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
+   * @deprecated use atLeastOnce with MqttConnectionSettings and MqttSubscriptions instead
+   */
+  @deprecated("use atLeastOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+  @java.lang.Deprecated
+  def atLeastOnce(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessageWithAck, CompletionStage[Done]] =
+    atLeastOnce(settings.connectionSettings, MqttSubscriptions(settings.subscriptions), bufferSize)
+
+  /**
+   * Create a source subscribing to MQTT messages with a commit handle to acknowledge message reception.
+   *
+   * The materialized value completes on successful connection to the MQTT broker.
+   *
+   * @param bufferSize max number of messages read from MQTT before back-pressure applies
+   */
+  def atLeastOnce(settings: MqttConnectionSettings,
+                  subscriptions: MqttSubscriptions,
+                  bufferSize: Int): Source[MqttMessageWithAck, CompletionStage[Done]] =
+    scaladsl.MqttSource
+      .atLeastOnce(settings, subscriptions, bufferSize)
+      .map(MqttMessageWithAck.toJava)
+      .mapMaterializedValue(_.toJava)
+      .asJava
 }

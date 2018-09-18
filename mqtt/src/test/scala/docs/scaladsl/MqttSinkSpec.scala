@@ -2,19 +2,21 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.mqtt.scaladsl
+package docs.scaladsl
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.alpakka.mqtt.{MqttSourceSettings, _}
+import akka.stream.alpakka.mqtt
+import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.alpakka.mqtt.scaladsl.{MqttSink, MqttSource}
+import akka.stream.alpakka.mqtt._
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import org.eclipse.paho.client.mqttv3.{MqttException, MqttSecurityException}
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
-import org.scalatest.concurrent.ScalaFutures
+import org.eclipse.paho.client.mqttv3.{MqttException, MqttSecurityException}
 import org.scalatest._
+import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -30,7 +32,7 @@ class MqttSinkSpec
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
-  implicit val mat = ActorMaterializer()
+  implicit val mat: Materializer = ActorMaterializer()
   val connectionSettings = MqttConnectionSettings(
     "tcp://localhost:1883",
     "test-client",
@@ -41,7 +43,6 @@ class MqttSinkSpec
   val topic2 = "sink-spec/topic2"
   val secureTopic = "sink-spec/secure-topic1"
 
-  val sourceSettings = connectionSettings.withClientId(clientId = "sink-spec/source")
   val sinkSettings = connectionSettings.withClientId(clientId = "sink-spec/sink")
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
@@ -50,9 +51,10 @@ class MqttSinkSpec
     "send one message to a topic" in {
       val msg = MqttMessage(topic, ByteString("ohi"))
 
-      val mqttSettings = MqttSourceSettings(sourceSettings, Map(topic -> MqttQoS.atLeastOnce))
       val (subscribed, message) = MqttSource
-        .atMostOnce(mqttSettings, 8)
+        .atMostOnce(connectionSettings.withClientId(clientId = "sink-spec/source"),
+                    MqttSubscriptions(topic, MqttQoS.AtLeastOnce),
+                    8)
         .toMat(Sink.head)(Keep.both)
         .run()
 
@@ -68,7 +70,9 @@ class MqttSinkSpec
 
       val (subscribed, messagesFuture) =
         MqttSource
-          .atMostOnce(MqttSourceSettings(sourceSettings, Map(topic2 -> MqttQoS.atLeastOnce)), 8)
+          .atMostOnce(connectionSettings.withClientId(clientId = "sink-spec/source"),
+                      mqtt.MqttSubscriptions(topic2, MqttQoS.atLeastOnce),
+                      8)
           .take(numOfMessages)
           .toMat(Sink.seq)(Keep.both)
           .run()
@@ -115,18 +119,17 @@ class MqttSinkSpec
     }
 
     "received retained message on new client" in {
-      val msg = MqttMessage(topic, ByteString("ohi"), Some(MqttQoS.atLeastOnce), retained = true)
+      val msg = MqttMessage(topic, ByteString("ohi")).withQos(MqttQoS.atLeastOnce).withRetained(true)
 
       val messageSent = Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.atLeastOnce))
 
       Await.ready(messageSent, 3.seconds)
 
-      val retainedSinkSettings = sourceSettings
-        .withClientId("source-spec/retained")
-
       val messageFuture =
         MqttSource
-          .atMostOnce(MqttSourceSettings(retainedSinkSettings, Map(topic -> MqttQoS.atLeastOnce)), 8)
+          .atMostOnce(connectionSettings.withClientId("source-spec/retained"),
+                      mqtt.MqttSubscriptions(topic, MqttQoS.atLeastOnce),
+                      8)
           .runWith(Sink.head)
 
       val message = messageFuture.futureValue
