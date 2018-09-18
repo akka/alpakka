@@ -204,6 +204,29 @@ Java
 
 When no destination is defined on the message, the destination given in the producer settings is used.
 
+### Passing context through the producer
+
+In some use cases, it is useful to pass through context information when producing (e.g. for acknowledging or committing
+messages after sending to Jms). For this, the `JmsProducer.flexiFlow` accepts implementations of `JmsProducerEnvelope`,
+which it will pass through.
+
+Scala
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-flexi-flow-producer }
+
+Java
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-flexi-flow-producer }
+
+There are two implementations: One envelope type containing a messages to send to Jms, and one
+envelope type containing only values to pass through. This allows messages to flow without producing any new messages 
+to Jms. This is primarily useful when committing offsets back to Kakfa, or when acknowledging Jms messages after sending
+the outcome of processing them back to Jms.
+
+Scala
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-flexi-flow-pass-through-producer }
+
+Java
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-flexi-flow-pass-through-producer }
+
 ### Configuring the Producer
 
 Scala
