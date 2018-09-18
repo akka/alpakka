@@ -4,29 +4,23 @@
 
 package elastic
 
-// format: off
 // #sample
-  import akka.Done
+import akka.Done
+import akka.stream.alpakka.elasticsearch.WriteMessage._
+import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSink
+import org.apache.http.HttpHost
+import org.elasticsearch.client.RestClient
+import akka.stream.alpakka.slick.javadsl.SlickSession
+import akka.stream.alpakka.slick.scaladsl.Slick
+import spray.json.DefaultJsonProtocol._
+import spray.json.JsonFormat
 
-  import akka.stream.alpakka.elasticsearch.IncomingIndexMessage
-  import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSink
-  import org.apache.http.HttpHost
-  import org.elasticsearch.client.RestClient
-
-  import akka.stream.alpakka.slick.javadsl.SlickSession
-  import akka.stream.alpakka.slick.scaladsl.Slick
-
-  import spray.json.DefaultJsonProtocol._
-  import spray.json.JsonFormat
-
-  import scala.concurrent.Future
-  import scala.concurrent.duration._
+import scala.concurrent.Future
+import scala.concurrent.duration._
 // #sample
-// format: off
 
 import playground.elastic.ElasticsearchMock
 import playground.{ActorSystemAvailable, ElasticSearchEmbedded}
-
 
 object FetchUsingSlickAndStreamIntoElastic extends ActorSystemAvailable with App {
 
@@ -65,7 +59,7 @@ object FetchUsingSlickAndStreamIntoElastic extends ActorSystemAvailable with App
       .map {                                                                            // (7)
         case (id, genre, title, gross) => Movie(id, genre, title, gross)
       }
-      .map(movie => IncomingIndexMessage(movie.id.toString, movie))                     // (8)
+      .map(movie => createIndexMessage(movie.id.toString, movie))                       // (8)
       .runWith(ElasticsearchSink.create[Movie]("movie", "_doc"))                        // (9)
 
   done.onComplete {
