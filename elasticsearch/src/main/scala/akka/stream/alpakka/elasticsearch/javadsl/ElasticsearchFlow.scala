@@ -11,7 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import org.elasticsearch.client.RestClient
 
 import scala.collection.JavaConverters._
-import java.util.{List => JavaList}
+
+import akka.stream.alpakka.elasticsearch.impl
 
 /**
  * Java API to create Elasticsearch flows.
@@ -19,47 +20,47 @@ import java.util.{List => JavaList}
 object ElasticsearchFlow {
 
   /**
-   * Creates a [[akka.stream.javadsl.Flow]] for type `T` from [[IncomingMessage]] to lists of [[IncomingMessageResult]].
+   * Creates a [[akka.stream.javadsl.Flow]] for type `T` from [[WriteMessage]] to lists of [[WriteResult]].
    */
   def create[T](
       indexName: String,
       typeName: String,
-      settings: ElasticsearchSinkSettings,
+      settings: ElasticsearchWriteSettings,
       client: RestClient,
       objectMapper: ObjectMapper
-  ): akka.stream.javadsl.Flow[IncomingMessage[T, NotUsed], JavaList[IncomingMessageResult[T, NotUsed]], NotUsed] =
+  ): akka.stream.javadsl.Flow[WriteMessage[T, NotUsed], java.util.List[WriteResult[T, NotUsed]], NotUsed] =
     Flow
       .fromGraph(
-        new ElasticsearchFlowStage[T, NotUsed](indexName,
-                                               typeName,
-                                               client,
-                                               settings,
-                                               new JacksonWriter[T](objectMapper))
+        new impl.ElasticsearchFlowStage[T, NotUsed](indexName,
+                                                    typeName,
+                                                    client,
+                                                    settings,
+                                                    new JacksonWriter[T](objectMapper))
       )
       .mapAsync(1)(identity)
       .map(x => x.asJava)
       .asJava
 
   /**
-   * Creates a [[akka.stream.javadsl.Flow]] for type `T` from [[IncomingMessage]] to lists of [[IncomingMessageResult]]
+   * Creates a [[akka.stream.javadsl.Flow]] for type `T` from [[WriteMessage]] to lists of [[WriteResult]]
    * with `passThrough` of type `C`.
    */
   def createWithPassThrough[T, C](
       indexName: String,
       typeName: String,
-      settings: ElasticsearchSinkSettings,
+      settings: ElasticsearchWriteSettings,
       client: RestClient,
       objectMapper: ObjectMapper
-  ): akka.stream.javadsl.Flow[IncomingMessage[T, C], JavaList[IncomingMessageResult[T, C]], NotUsed] =
+  ): akka.stream.javadsl.Flow[WriteMessage[T, C], java.util.List[WriteResult[T, C]], NotUsed] =
     Flow
       .fromGraph(
-        new ElasticsearchFlowStage[T, C](indexName, typeName, client, settings, new JacksonWriter[T](objectMapper))
+        new impl.ElasticsearchFlowStage[T, C](indexName, typeName, client, settings, new JacksonWriter[T](objectMapper))
       )
       .mapAsync(1)(identity)
       .map(x => x.asJava)
       .asJava
 
-  private class JacksonWriter[T](mapper: ObjectMapper) extends MessageWriter[T] {
+  private final class JacksonWriter[T](mapper: ObjectMapper) extends MessageWriter[T] {
 
     override def convert(message: T): String =
       mapper.writeValueAsString(message)

@@ -2,142 +2,49 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.elasticsearch
+package akka.stream.alpakka.elasticsearch.impl
 
 import java.nio.charset.StandardCharsets
 
-import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
+import akka.annotation.InternalApi
+import akka.stream.alpakka.elasticsearch.Operation._
+import akka.stream.alpakka.elasticsearch._
+import akka.stream.alpakka.elasticsearch.impl.ElasticsearchFlowStage._
 import akka.stream.stage._
+import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import org.apache.http.entity.StringEntity
-import org.elasticsearch.client.{Response, ResponseListener, RestClient}
-
-import scala.collection.mutable
-import scala.collection.JavaConverters._
-import spray.json._
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import ElasticsearchFlowStage._
-import akka.NotUsed
 import org.apache.http.message.BasicHeader
 import org.apache.http.util.EntityUtils
+import org.elasticsearch.client.{Response, ResponseListener, RestClient}
+import spray.json._
 
-object IncomingIndexMessage {
-  // Apply method to use when not using passThrough
-  def apply[T](source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Index, None, Some(source))
+import scala.collection.mutable
+import scala.concurrent.Future
 
-  // Apply method to use when not using passThrough
-  def apply[T](id: String, source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Index, Some(id), Some(source))
-
-  // Java-api - without passThrough
-  def create[T](source: T): IncomingMessage[T, NotUsed] =
-    IncomingIndexMessage(source)
-
-  // Java-api - without passThrough
-  def create[T](id: String, source: T): IncomingMessage[T, NotUsed] =
-    IncomingIndexMessage(id, source)
-}
-
-object IncomingUpdateMessage {
-  // Apply method to use when not using passThrough
-  def apply[T](id: String, source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Update, Some(id), Some(source))
-
-  // Java-api - without passThrough
-  def create[T](id: String, source: T): IncomingMessage[T, NotUsed] =
-    IncomingUpdateMessage(id, source)
-}
-
-object IncomingUpsertMessage {
-  // Apply method to use when not using passThrough
-  def apply[T](id: String, source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Upsert, Some(id), Some(source))
-
-  // Java-api - without passThrough
-  def create[T](id: String, source: T): IncomingMessage[T, NotUsed] =
-    IncomingUpsertMessage(id, source)
-}
-
-object IncomingDeleteMessage {
-  // Apply method to use when not using passThrough
-  def apply[T](id: String): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Delete, Some(id), None)
-
-  // Java-api - without passThrough
-  def create[T](id: String): IncomingMessage[T, NotUsed] =
-    IncomingDeleteMessage(id)
-}
-
-case class IncomingMessage[T, C] private (
-    operation: Operation,
-    id: Option[String],
-    source: Option[T],
-    passThrough: C = NotUsed,
-    version: Option[Long] = None,
-    indexName: Option[String] = None,
-    customMetadata: Map[String, String] = Map.empty
-) {
-  def withPassThrough[P](passThrough: P): IncomingMessage[T, P] =
-    this.copy(passThrough = passThrough)
-
-  def withVersion(version: Long): IncomingMessage[T, C] =
-    this.copy(version = Option(version))
-
-  def withIndexName(indexName: String): IncomingMessage[T, C] =
-    this.copy(indexName = Option(indexName))
-
-  /**
-   * Scala API: define custom metadata for this message. Fields should
-   * have the full metadata field name as key (including the "_" prefix if there is one)
-   */
-  def withCustomMetadata(metadata: Map[String, String]): IncomingMessage[T, C] =
-    this.copy(customMetadata = metadata)
-
-  /**
-   * Java API: define custom metadata for this message. Fields should
-   * have the full metadata field name as key (including the "_" prefix if there is one)
-   */
-  def withCustomMetadata(metadata: java.util.Map[String, String]): IncomingMessage[T, C] =
-    this.copy(customMetadata = metadata.asScala.toMap)
-
-}
-
-sealed trait Operation
-final object Index extends Operation
-final object Update extends Operation
-final object Upsert extends Operation
-final object Delete extends Operation
-
-case class IncomingMessageResult[T2, C2](message: IncomingMessage[T2, C2], error: Option[String]) {
-  val success = error.isEmpty
-}
-
-trait MessageWriter[T] {
-  def convert(message: T): String
-}
-
-class ElasticsearchFlowStage[T, C](
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[elasticsearch] final class ElasticsearchFlowStage[T, C](
     indexName: String,
     typeName: String,
     client: RestClient,
-    settings: ElasticsearchSinkSettings,
+    settings: ElasticsearchWriteSettings,
     writer: MessageWriter[T]
-) extends GraphStage[FlowShape[IncomingMessage[T, C], Future[Seq[IncomingMessageResult[T, C]]]]] {
+) extends GraphStage[FlowShape[WriteMessage[T, C], Future[Seq[WriteResult[T, C]]]]] {
 
-  private val in = Inlet[IncomingMessage[T, C]]("messages")
-  private val out = Outlet[Future[Seq[IncomingMessageResult[T, C]]]]("result")
+  private val in = Inlet[WriteMessage[T, C]]("messages")
+  private val out = Outlet[Future[Seq[WriteResult[T, C]]]]("result")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
       private var state: State = Idle
-      private val queue = new mutable.Queue[IncomingMessage[T, C]]()
-      private val failureHandler = getAsyncCallback[(Seq[IncomingMessage[T, C]], Throwable)](handleFailure)
-      private val responseHandler = getAsyncCallback[(Seq[IncomingMessage[T, C]], Response)](handleResponse)
-      private var failedMessages: Seq[IncomingMessage[T, C]] = Nil
+      private val queue = new mutable.Queue[WriteMessage[T, C]]()
+      private val failureHandler = getAsyncCallback[(Seq[WriteMessage[T, C]], Throwable)](handleFailure)
+      private val responseHandler = getAsyncCallback[(Seq[WriteMessage[T, C]], Response)](handleResponse)
+      private var failedMessages: Seq[WriteMessage[T, C]] = Nil
       private var retryCount: Int = 0
 
       override def preStart(): Unit =
@@ -153,45 +60,45 @@ class ElasticsearchFlowStage[T, C](
         failedMessages = Nil
       }
 
-      private def handleFailure(args: (Seq[IncomingMessage[T, C]], Throwable)): Unit = {
+      private def handleFailure(args: (Seq[WriteMessage[T, C]], Throwable)): Unit = {
         val (messages, exception) = args
-        if (retryCount >= settings.maxRetry) {
-          log.warning(s"Received error from elastic. Giving up after $retryCount tries. Error: ${exception.toString}")
+        if (settings.retryLogic.shouldRetry(retryCount, List(exception.toString))) {
+          log.error("Received error from elastic. Giving up after {} tries. {}, Error: {}",
+                    retryCount,
+                    settings.retryLogic,
+                    exception)
           failStage(exception)
         } else {
+          log.warning("Received error from elastic. Try number {}. {}, Error: {}",
+                      retryCount,
+                      settings.retryLogic,
+                      exception)
           retryCount = retryCount + 1
-          log.warning(
-            s"Received error from elastic. (re)tryCount: $retryCount maxTries: ${settings.maxRetry}. Error: ${exception.toString}"
-          )
           failedMessages = messages
-          scheduleOnce(NotUsed, settings.retryInterval.millis)
+          scheduleOnce(RetrySend, settings.retryLogic.nextRetry(retryCount))
         }
       }
 
       private def handleSuccess(): Unit =
         completeStage()
 
-      private def handleResponse(args: (Seq[IncomingMessage[T, C]], Response)): Unit = {
+      private def handleResponse(args: (Seq[WriteMessage[T, C]], Response)): Unit = {
         val (messages, response) = args
         val responseJson = EntityUtils.toString(response.getEntity).parseJson
 
         // If some commands in bulk request failed, pass failed messages to follows.
         val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
-        val messageResults: Seq[IncomingMessageResult[T, C]] = items.elements.zip(messages).map {
+        val messageResults: Seq[WriteResult[T, C]] = items.elements.zip(messages).map {
           case (item, message) =>
-            val command = message.operation match {
-              case Index => "index"
-              case Update | Upsert => "update"
-              case Delete => "delete"
-            }
+            val command = message.operation.command
             val res = item.asJsObject.fields(command).asJsObject
             val error: Option[String] = res.fields.get("error").map(_.toString())
-            IncomingMessageResult(message, error)
+            new WriteResult(message, error)
         }
 
         val failedMsgs = messageResults.filterNot(_.error.isEmpty)
 
-        if (failedMsgs.nonEmpty && settings.retryPartialFailure && retryCount < settings.maxRetry) {
+        if (failedMsgs.nonEmpty && settings.retryLogic.shouldRetry(retryCount, failedMsgs.map(_.error.get).toList)) {
           retryPartialFailedMessages(messageResults, failedMsgs)
         } else {
           forwardAllResults(messageResults)
@@ -199,15 +106,15 @@ class ElasticsearchFlowStage[T, C](
       }
 
       private def retryPartialFailedMessages(
-          messageResults: Seq[IncomingMessageResult[T, C]],
-          failedMsgs: Seq[IncomingMessageResult[T, C]]
+          messageResults: Seq[WriteResult[T, C]],
+          failedMsgs: Seq[WriteResult[T, C]]
       ): Unit = {
         // Retry partial failed messages
         // NOTE: When we partially return message like this, message will arrive out of order downstream
         // and it can break commit-logic when using Kafka
         retryCount = retryCount + 1
         failedMessages = failedMsgs.map(_.message) // These are the messages we're going to retry
-        scheduleOnce(NotUsed, settings.retryInterval.millis)
+        scheduleOnce(RetrySend, settings.retryLogic.nextRetry(retryCount))
 
         val successMsgs = messageResults.filter(_.error.isEmpty)
         if (successMsgs.nonEmpty) {
@@ -216,7 +123,7 @@ class ElasticsearchFlowStage[T, C](
         }
       }
 
-      private def forwardAllResults(messageResults: Seq[IncomingMessageResult[T, C]]): Unit = {
+      private def forwardAllResults(messageResults: Seq[WriteResult[T, C]]): Unit = {
         retryCount = 0 // Clear retryCount
 
         // Push result
@@ -237,7 +144,7 @@ class ElasticsearchFlowStage[T, C](
         }
       }
 
-      private def sendBulkUpdateRequest(messages: Seq[IncomingMessage[T, C]]): Unit = {
+      private def sendBulkUpdateRequest(messages: Seq[WriteMessage[T, C]]): Unit = {
         val json = messages
           .map { message =>
             val indexNameToUse: String = message.indexName.getOrElse(indexName)
@@ -292,14 +199,12 @@ class ElasticsearchFlowStage[T, C](
           }
           .mkString("", "\n", "\n")
 
-        // TODO better logging of the json before pushing it
-
-        log.debug("Posting data to elastic search: {}", json)
+        log.debug("Posting data to Elasticsearch: {}", json)
 
         client.performRequestAsync(
           "POST",
           "/_bulk",
-          Map[String, String]().asJava,
+          java.util.Collections.emptyMap[String, String](),
           new StringEntity(json, StandardCharsets.UTF_8),
           new ResponseListener() {
             override def onFailure(exception: Exception): Unit =
@@ -311,7 +216,7 @@ class ElasticsearchFlowStage[T, C](
         )
       }
 
-      private def messageToJsonString(message: IncomingMessage[T, C]): String =
+      private def messageToJsonString(message: WriteMessage[T, C]): String =
         message.operation match {
           case Index =>
             "\n" + writer.convert(message.source.get)
@@ -362,7 +267,13 @@ class ElasticsearchFlowStage[T, C](
     }
 }
 
-object ElasticsearchFlowStage {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[elasticsearch] object ElasticsearchFlowStage {
+
+  private object RetrySend
 
   private sealed trait State
   private case object Idle extends State
