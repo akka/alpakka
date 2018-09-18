@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.ftp.examples;
+package docs.javadsl;
 
 // #create-settings
 import akka.stream.alpakka.ftp.FtpCredentials;
@@ -25,7 +25,7 @@ public class FtpSettingsExample {
 
           FtpSettings.create(InetAddress.getByName("localhost"))
               .withPort(FtpSettings.DefaultFtpPort())
-              .withCredentials(FtpCredentials.createAnonCredentials())
+              .withCredentials(FtpCredentials.anonymous())
               .withBinary(false)
               .withPassiveMode(false)
               .withConfigureConnectionConsumer(
