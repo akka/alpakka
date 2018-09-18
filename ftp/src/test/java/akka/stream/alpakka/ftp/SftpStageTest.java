@@ -65,13 +65,11 @@ public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest
   }
 
   private SftpSettings settings() throws Exception {
-    // #create-settings
     final SftpSettings settings =
         SftpSettings.create(InetAddress.getByName("localhost"))
             .withPort(getPort())
-            .withCredentials(FtpCredentials.createAnonCredentials())
+            .withCredentials(FtpCredentials.anonymous())
             .withStrictHostKeyChecking(false);
-    // #create-settings
     return settings;
   }
 }

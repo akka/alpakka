@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.ftp.examples;
+package docs.javadsl;
 
 // #retrieving
 import akka.stream.IOResult;

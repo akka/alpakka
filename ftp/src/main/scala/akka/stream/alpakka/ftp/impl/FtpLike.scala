@@ -12,6 +12,12 @@ import scala.collection.immutable
 import scala.util.Try
 import java.io.{InputStream, OutputStream}
 
+import akka.annotation.InternalApi
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
 protected[ftp] trait FtpLike[FtpClient, S <: RemoteFileSettings] {
 
   type Handler
@@ -33,6 +39,10 @@ protected[ftp] trait FtpLike[FtpClient, S <: RemoteFileSettings] {
   def remove(path: String, handler: Handler): Unit
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 object FtpLike {
   // type class instances
   implicit val ftpLikeInstance = new FtpLike[FTPClient, FtpSettings] with FtpOperations

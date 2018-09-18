@@ -2,37 +2,35 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.ftp
+package docs.scaladsl
+import akka.stream.alpakka.ftp.{FtpFile, FtpSettings}
 
 object scalaExamples {
 
   // settings
   object settings {
     //#create-settings
-    import akka.stream.alpakka.ftp.FtpSettings
-    import akka.stream.alpakka.ftp.FtpCredentials.AnonFtpCredentials
-    import org.apache.commons.net.PrintCommandListener
-    import org.apache.commons.net.ftp.FTPClient
     import java.io.PrintWriter
     import java.net.InetAddress
 
+    import akka.stream.alpakka.ftp.FtpSettings
+    import org.apache.commons.net.PrintCommandListener
+    import org.apache.commons.net.ftp.FTPClient
+
     val settings = FtpSettings(
-      InetAddress.getByName("localhost"),
-      credentials = AnonFtpCredentials,
-      binary = true,
-      passiveMode = true,
-      configureConnection = (ftpClient: FTPClient) => {
+      InetAddress.getByName("localhost")
+    ).withBinary(true)
+      .withPassiveMode(true)
+      .withConfigureConnection((ftpClient: FTPClient) => {
         ftpClient.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.out), true))
-      }
-    )
+      })
     //#create-settings
   }
 
   object sshConfigure {
     //#configure-custom-ssh-client
     import akka.stream.alpakka.ftp.scaladsl.{Sftp, SftpApi}
-    import net.schmizz.sshj.DefaultConfig
-    import net.schmizz.sshj.SSHClient
+    import net.schmizz.sshj.{DefaultConfig, SSHClient}
 
     val sshClient: SSHClient = new SSHClient(new DefaultConfig)
     val configuredClient: SftpApi = Sftp(sshClient)
@@ -57,6 +55,7 @@ object scalaExamples {
     import akka.stream.alpakka.ftp.scaladsl.Ftp
     import akka.stream.scaladsl.Source
     import akka.util.ByteString
+
     import scala.concurrent.Future
 
     def retrieveFromPath(path: String, settings: FtpSettings): Source[ByteString, Future[IOResult]] =
@@ -71,6 +70,7 @@ object scalaExamples {
     import akka.stream.alpakka.ftp.scaladsl.Ftp
     import akka.stream.scaladsl.Sink
     import akka.util.ByteString
+
     import scala.concurrent.Future
 
     def storeToPath(path: String, settings: FtpSettings, append: Boolean): Sink[ByteString, Future[IOResult]] =
@@ -83,6 +83,7 @@ object scalaExamples {
     import akka.stream.IOResult
     import akka.stream.alpakka.ftp.scaladsl.Ftp
     import akka.stream.scaladsl.Sink
+
     import scala.concurrent.Future
 
     def remove(settings: FtpSettings): Sink[FtpFile, Future[IOResult]] =
@@ -95,6 +96,7 @@ object scalaExamples {
     import akka.stream.IOResult
     import akka.stream.alpakka.ftp.scaladsl.Ftp
     import akka.stream.scaladsl.Sink
+
     import scala.concurrent.Future
 
     def move(destinationPath: FtpFile => String, settings: FtpSettings): Sink[FtpFile, Future[IOResult]] =
@@ -104,11 +106,11 @@ object scalaExamples {
 
   object processAndMove {
     //#processAndMove
+    import java.nio.file.Files
+
     import akka.NotUsed
     import akka.stream.alpakka.ftp.scaladsl.Ftp
-    import akka.stream.scaladsl.FileIO
-    import akka.stream.scaladsl.RunnableGraph
-    import java.nio.file.Files
+    import akka.stream.scaladsl.{FileIO, RunnableGraph}
 
     def processAndMove(sourcePath: String,
                        destinationPath: FtpFile => String,

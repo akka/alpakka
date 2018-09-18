@@ -37,7 +37,7 @@ abstract class SftpSupportImpl extends FtpBaseSupport {
   private File clientPrivateKeyFile;
   private File knownHostsFile;
 
-  SftpSupportImpl() {
+  protected SftpSupportImpl() {
     keyPairProviderFile = new File(getClass().getResource("/hostkey.pem").getPath());
     clientPrivateKeyFile = new File(getClass().getResource("/id_rsa").getPath());
     knownHostsFile = new File(getClass().getResource("/known_hosts").getPath());

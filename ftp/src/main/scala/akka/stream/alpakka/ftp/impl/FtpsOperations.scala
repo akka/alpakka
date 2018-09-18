@@ -4,11 +4,16 @@
 
 package akka.stream.alpakka.ftp.impl
 
+import akka.annotation.InternalApi
 import akka.stream.alpakka.ftp.FtpsSettings
 import org.apache.commons.net.ftp.{FTP, FTPSClient}
 
 import scala.util.Try
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait FtpsOperations extends CommonFtpOperations { _: FtpLike[FTPSClient, FtpsSettings] =>
 
   def connect(connectionSettings: FtpsSettings)(implicit ftpClient: FTPSClient): Try[Handler] = Try {
