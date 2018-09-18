@@ -2,11 +2,12 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.orientdb
+package docs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.orientdb.scaladsl._
+import akka.stream.alpakka.orientdb.{OIncomingMessage, OOutgoingMessage, OrientDBSourceSettings, OrientDBUpdateSettings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import com.orientechnologies.orient.client.remote.OServerAdmin
@@ -21,8 +22,8 @@ import scala.concurrent.duration._
 class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   //#init-mat
-  implicit val system = ActorSystem()
-  implicit val materializer = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem()
+  implicit val materializer: Materializer = ActorMaterializer()
   //#init-mat
 
   //#init-settings
