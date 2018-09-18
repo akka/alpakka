@@ -7,6 +7,7 @@ package akka.stream.alpakka.jms.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.stream.alpakka.jms.{JmsMessage, JmsProducerSettings}
+import akka.stream.alpakka.jms.JmsProducerMessage._
 import akka.stream.scaladsl.{Flow, Keep}
 import akka.{Done, NotUsed}
 
@@ -22,6 +23,14 @@ object JmsProducer {
       settings: JmsProducerSettings
   ): akka.stream.javadsl.Flow[R, R, NotUsed] =
     akka.stream.alpakka.jms.scaladsl.JmsProducer.flow(settings).asJava
+
+  /**
+   * Java API: Creates an [[JmsProducer]] for [[Envelope]]s
+   */
+  def flexiFlow[R <: JmsMessage, PassThrough](
+      settings: JmsProducerSettings
+  ): akka.stream.javadsl.Flow[Envelope[R, PassThrough], Envelope[R, PassThrough], NotUsed] =
+    akka.stream.alpakka.jms.scaladsl.JmsProducer.flexiFlow[R, PassThrough](settings).asJava
 
   /**
    * Java API: Creates an [[JmsProducer]] for [[JmsMessage]]s

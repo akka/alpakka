@@ -7,11 +7,14 @@ package akka.stream.alpakka.jms.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.KillSwitch;
 import akka.stream.Materializer;
 import akka.stream.alpakka.jms.*;
+import akka.stream.alpakka.jms.JmsProducerMessage.*;
 import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
@@ -775,6 +778,75 @@ public class JmsConnectorsTest {
           assertTrue(
               "Cause of failure is not a JMSException",
               exception.getCause() instanceof JMSException);
+        });
+  }
+
+  @Test
+  public void passThroughMessageEnvelopes() throws Exception {
+    withServer(
+        ctx -> {
+          ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+          // #run-flexi-flow-producer
+          Flow<Envelope<JmsTextMessage, String>, Envelope<JmsTextMessage, String>, NotUsed>
+              jmsProducer =
+                  JmsProducer.flexiFlow(
+                      JmsProducerSettings.create(connectionFactory).withQueue("test"));
+
+          List<String> data = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
+          List<Envelope<JmsTextMessage, String>> input = new ArrayList<>();
+          for (String s : data) {
+            input.add(JmsProducerMessage.message(JmsTextMessage.create(s), s));
+          }
+
+          CompletionStage<List<String>> result =
+              Source.from(input)
+                  .via(jmsProducer)
+                  .map(Envelope::passThrough)
+                  .runWith(Sink.seq(), materializer);
+          // #run-flexi-flow-producer
+          assertEquals(data, result.toCompletableFuture().get());
+        });
+  }
+
+  @Test
+  public void passThroughEmptyMessageEnvelopes() throws Exception {
+    withServer(
+        ctx -> {
+          ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+          Pair<KillSwitch, CompletionStage<List<String>>> switchAndItems =
+              JmsConsumer.textSource(
+                      JmsConsumerSettings.create(connectionFactory)
+                          .withBufferSize(10)
+                          .withQueue("test"))
+                  .toMat(Sink.seq(), Keep.both())
+                  .run(materializer);
+
+          // #run-flexi-flow-pass-through-producer
+          Flow<Envelope<JmsTextMessage, String>, Envelope<JmsTextMessage, String>, NotUsed>
+              jmsProducer =
+                  JmsProducer.flexiFlow(
+                      JmsProducerSettings.create(connectionFactory).withQueue("test"));
+
+          List<String> data = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
+          List<Envelope<JmsTextMessage, String>> input = new ArrayList<>();
+          for (String s : data) {
+            input.add(JmsProducerMessage.passThroughMessage(s));
+          }
+
+          CompletionStage<List<String>> result =
+              Source.from(input)
+                  .via(jmsProducer)
+                  .map(Envelope::passThrough)
+                  .runWith(Sink.seq(), materializer);
+          // #run-flexi-flow-pass-through-producer
+
+          assertEquals(data, result.toCompletableFuture().get());
+
+          Thread.sleep(500);
+
+          switchAndItems.first().shutdown();
+          assertTrue(switchAndItems.second().toCompletableFuture().get().isEmpty());
         });
   }
 

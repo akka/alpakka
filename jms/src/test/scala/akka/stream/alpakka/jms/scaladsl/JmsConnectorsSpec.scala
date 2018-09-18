@@ -1126,6 +1126,60 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       // Due to buffering, it will finish re-connecting before stream finishes.
       connectCount shouldBe 5
     }
+
+    "pass through message envelopes" in withServer() { ctx =>
+      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      //#run-flexi-flow-producer
+      val jmsProducer = JmsProducer.flexiFlow[JmsTextMessage, String](
+        JmsProducerSettings(connectionFactory).withQueue("test")
+      )
+
+      val data = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
+      val in = data.map(t => JmsProducerMessage.Message(JmsTextMessage(t), t))
+
+      val result = Source(in).via(jmsProducer).map(_.passThrough).runWith(Sink.seq)
+      //#run-flexi-flow-producer
+
+      result.futureValue shouldEqual data
+
+      val sentData =
+        JmsConsumer
+          .textSource(JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("test"))
+          .take(data.size)
+          .runWith(Sink.seq)
+
+      sentData.futureValue shouldEqual data
+    }
+
+    "pass through empty envelopes" in {
+      val connectionFactory = mock[ConnectionFactory]
+      val connection = mock[Connection]
+      val session = mock[Session]
+      val producer = mock[MessageProducer]
+      val message = mock[TextMessage]
+
+      when(connectionFactory.createConnection()).thenReturn(connection)
+      when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
+      when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
+      when(session.createTextMessage(any[String])).thenReturn(message)
+
+      //#run-flexi-flow-pass-through-producer
+      val jmsProducer = JmsProducer.flexiFlow[JmsTextMessage, String](
+        JmsProducerSettings(connectionFactory).withQueue("topic")
+      )
+
+      val data = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
+      val in = data.map(t => JmsProducerMessage.PassThroughMessage(t))
+
+      val result = Source(in).via(jmsProducer).map(_.passThrough).runWith(Sink.seq)
+      //#run-flexi-flow-pass-through-producer
+
+      result.futureValue shouldEqual data
+
+      verify(session, never()).createTextMessage(any[String])
+      verify(producer, never()).send(any[javax.jms.Destination], any[Message], any[Int], any[Int], any[Long])
+    }
   }
 
   "publish and subscribe with a durable subscription" in withServer() { ctx =>
