@@ -19,12 +19,6 @@ final class ReadResult[T] @InternalApi private[elasticsearch] (val id: String,
                                                                val version: Option[Long]) {
 
   /** Java API */
-  def getId: String = id
-
-  /** Java API */
-  def getSource: T = source
-
-  /** Java API */
   def getVersion: java.util.Optional[Long] = version.asJava
 
   override def toString =

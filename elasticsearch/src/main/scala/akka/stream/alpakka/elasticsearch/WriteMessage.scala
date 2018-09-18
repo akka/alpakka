@@ -132,13 +132,7 @@ final class WriteResult[T2, C2] @InternalApi private[elasticsearch] (val message
   val success: Boolean = error.isEmpty
 
   /** Java API */
-  def getMessage: WriteMessage[T2, C2] = message
-
-  /** Java API */
   def getError: java.util.Optional[String] = error.asJava
-
-  /** Java API */
-  def isSuccess: Boolean = error.isEmpty
 
   override def toString =
     s"""WriteResult(message=$message,error=$error)"""
