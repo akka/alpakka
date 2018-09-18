@@ -6,8 +6,10 @@ package akka.stream.alpakka.orientdb.scaladsl
 
 import akka.NotUsed
 import akka.stream.alpakka.orientdb._
+import akka.stream.alpakka.orientdb.impl.{MessageReader, OrientDBSourceStage}
 import akka.stream.scaladsl.Source
 import com.orientechnologies.orient.core.record.impl.ODocument
+import scala.collection.immutable
 
 object OrientDBSource {
 
@@ -30,9 +32,9 @@ object OrientDBSource {
 
     override def convert(oDocs: List[T]): OSQLResponse[T] =
       try {
-        OSQLResponse(None, Some(OSQLResult(oDocs.map(OOutgoingMessage(_)))))
+        OSQLResponse(None, oDocs.map(OOutgoingMessage(_)))
       } catch {
-        case exception: Exception => OSQLResponse(Some(exception.toString), None)
+        case exception: Exception => OSQLResponse(Some(exception.toString), immutable.Seq.empty)
       }
   }
 }

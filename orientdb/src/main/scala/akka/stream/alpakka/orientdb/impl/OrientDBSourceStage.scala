@@ -2,8 +2,10 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.orientdb
+package akka.stream.alpakka.orientdb.impl
 
+import akka.annotation.InternalApi
+import akka.stream.alpakka.orientdb.{OOutgoingMessage, OSQLResponse, OrientDBSourceSettings}
 import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import com.orientechnologies.orient.`object`.db.OObjectDatabaseTx
@@ -14,15 +16,18 @@ import com.orientechnologies.orient.core.sql.query.{OSQLNonBlockingQuery, OSQLSy
 
 import scala.collection.JavaConverters._
 
-final case class OOutgoingMessage[T](oDocument: T)
-
-case class OSQLResponse[T](error: Option[String], result: Option[OSQLResult[T]])
-case class OSQLResult[T](records: Seq[OOutgoingMessage[T]])
-
-trait MessageReader[T] {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[orientdb] trait MessageReader[T] {
   def convert(oDocs: List[T]): OSQLResponse[T]
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[orientdb] final class OrientDBSourceStage[T](className: String,
                                                      query: Option[String],
                                                      settings: OrientDBSourceSettings,
@@ -128,10 +133,10 @@ private[orientdb] sealed class OrientDBSourceLogic[T](className: String,
     reader.convert(res) match {
       case OSQLResponse(Some(error), _) =>
         failStage(new IllegalStateException(error))
-      case OSQLResponse(None, Some(result)) if result.records.isEmpty =>
+      case OSQLResponse(None, result) if result.isEmpty =>
         completeStage()
-      case OSQLResponse(_, Some(result)) =>
-        emitMultiple(out, result.records.toIterator)
+      case OSQLResponse(_, result) =>
+        emitMultiple(out, result.toIterator)
     }
 
   setHandler(out, this)

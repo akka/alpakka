@@ -6,8 +6,10 @@ package akka.stream.alpakka.orientdb.scaladsl
 
 import akka.NotUsed
 import akka.stream.alpakka.orientdb._
+import akka.stream.alpakka.orientdb.impl.OrientDBFlowStage
 import akka.stream.scaladsl.Flow
 import com.orientechnologies.orient.core.record.impl.ODocument
+import scala.collection.immutable
 
 object OrientDBFlow {
 
@@ -17,17 +19,15 @@ object OrientDBFlow {
   def create(
       className: String,
       settings: OrientDBUpdateSettings
-  ): Flow[OIncomingMessage[ODocument, NotUsed], Seq[OIncomingMessage[ODocument, NotUsed]], NotUsed] =
+  ): Flow[OIncomingMessage[ODocument, NotUsed], immutable.Seq[OIncomingMessage[ODocument, NotUsed]], NotUsed] =
     Flow
       .fromGraph(
-        new OrientDBFlowStage[ODocument, NotUsed, Seq[OIncomingMessage[ODocument, NotUsed]]](
+        new OrientDBFlowStage[ODocument, NotUsed](
           className,
           settings,
-          identity,
           None
         )
       )
-      .mapAsync(1)(identity)
 
   /**
    * Creates a [[akka.stream.scaladsl.Flow]]
@@ -36,15 +36,13 @@ object OrientDBFlow {
   def createWithPassThrough[C](
       className: String,
       settings: OrientDBUpdateSettings
-  ): Flow[OIncomingMessage[ODocument, C], Seq[OIncomingMessage[ODocument, C]], NotUsed] =
+  ): Flow[OIncomingMessage[ODocument, C], immutable.Seq[OIncomingMessage[ODocument, C]], NotUsed] =
     Flow
       .fromGraph(
-        new OrientDBFlowStage[ODocument, C, Seq[OIncomingMessage[ODocument, C]]](
+        new OrientDBFlowStage[ODocument, C](
           className,
           settings,
-          identity,
           None
         )
       )
-      .mapAsync(1)(identity)
 }

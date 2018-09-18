@@ -2,12 +2,15 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.orientdb;
+package docs.javadsl;
 
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.alpakka.orientdb.OIncomingMessage;
+import akka.stream.alpakka.orientdb.OrientDBSourceSettings;
+import akka.stream.alpakka.orientdb.OrientDBUpdateSettings;
 import akka.stream.alpakka.orientdb.javadsl.OrientDBFlow;
 import akka.stream.alpakka.orientdb.javadsl.OrientDBSink;
 import akka.stream.alpakka.orientdb.javadsl.OrientDBSource;
