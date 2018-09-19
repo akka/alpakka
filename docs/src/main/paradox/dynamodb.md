@@ -16,7 +16,7 @@ The AWS DynamoDB connector provides a flow for streaming DynamoDB requests. For 
 
 ## Setup
 
-This connector will uses the [default credential provider chain](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html) 
+This connector uses the [default credential provider chain](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html) 
 provided by the [DynamoDB Java SDK](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/basics.html) to retrieve credentials.
 
 If you wish to use static credentials they can be defined in the config
