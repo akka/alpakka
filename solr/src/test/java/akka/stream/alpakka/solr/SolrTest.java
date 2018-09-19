@@ -364,12 +364,17 @@ public class SolrTest {
 
     TupleStream stream2 = getTupleStream("collection7");
 
+    //#delete-documents
     CompletionStage<Done> res2 =
         SolrSource.fromTupleStream(stream2)
-            .map(t -> IncomingDeleteMessage.<SolrInputDocument>create(tupleToBook.apply(t).title))
+            .map(
+                t ->
+                    IncomingDeleteMessageByIds.<SolrInputDocument>create(
+                        tupleToBook.apply(t).title))
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
                 SolrSink.documents("collection7", settings, cluster.getSolrClient()), materializer);
+    //#delete-documents
 
     res2.toCompletableFuture().get();
 
@@ -412,6 +417,7 @@ public class SolrTest {
 
     TupleStream stream2 = getTupleStream("collection8");
 
+    //#update-atomically-documents
     CompletionStage<Done> res2 =
         SolrSource.fromTupleStream(stream2)
             .map(
@@ -426,6 +432,7 @@ public class SolrTest {
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
                 SolrSink.documents("collection8", settings, cluster.getSolrClient()), materializer);
+    //#update-atomically-documents
 
     res2.toCompletableFuture().get();
 
@@ -453,6 +460,59 @@ public class SolrTest {
             "Programming in Scala. Written by good authors. It's is a good book!!!",
             "Scala Puzzlers. Written by good authors. It's is a good book!!!",
             "Scala for Spark in Production. Written by good authors. It's is a good book!!!");
+
+    assertEquals(expect, result);
+  }
+
+  @Test
+  public void deleteDocumentsByQuery() throws Exception {
+    // Copy collection1 to collection2 through document stream
+    createCollection("collection9"); // create a new collection
+    TupleStream stream = getTupleStream("collection1");
+
+    // #run-document
+    SolrUpdateSettings settings = SolrUpdateSettings.create().withCommitWithin(5);
+    CompletionStage<Done> f1 =
+        SolrSource.fromTupleStream(stream)
+            .map(
+                tuple -> {
+                  Book book = tupleToBook.apply(tuple);
+                  SolrInputDocument doc = bookToDoc.apply(book);
+                  return IncomingUpsertMessage.create(doc);
+                })
+            .groupedWithin(5, Duration.ofMillis(10))
+            .runWith(
+                SolrSink.documents("collection9", settings, cluster.getSolrClient()), materializer);
+    // #run-document
+
+    f1.toCompletableFuture().get();
+
+    TupleStream stream2 = getTupleStream("collection9");
+
+    //#delete-documents-query
+    CompletionStage<Done> res2 =
+        SolrSource.fromTupleStream(stream2)
+            .map(
+                t ->
+                    IncomingDeleteMessageByQuery.<SolrInputDocument>create(
+                        "title:\"" + t.fields.get("title").toString() + "\""))
+            .groupedWithin(5, Duration.ofMillis(10))
+            .runWith(
+                SolrSink.documents("collection9", settings, cluster.getSolrClient()), materializer);
+    //#delete-documents-query
+
+    res2.toCompletableFuture().get();
+
+    TupleStream stream3 = getTupleStream("collection9");
+
+    CompletionStage<List<String>> res3 =
+        SolrSource.fromTupleStream(stream3)
+            .map(t -> tupleToBook.apply(t).title)
+            .runWith(Sink.seq(), materializer);
+
+    List<String> result = new ArrayList<>(res3.toCompletableFuture().get());
+
+    List<String> expect = Arrays.asList();
 
     assertEquals(expect, result);
   }

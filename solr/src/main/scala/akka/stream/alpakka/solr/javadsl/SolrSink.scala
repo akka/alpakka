@@ -18,8 +18,8 @@ import java.util.{List => JavaList}
 object SolrSink {
 
   /**
-   * Java API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing [[SolrInputDocument]].
-   * @deprecated ("use the method documents to batch operation")
+   * Java API: creates a [[SolrFlow]] to Solr for [[IncomingMessage]] containing [[SolrInputDocument]].
+   * @deprecated ("use the method documents to batch operation","0.21")
    */
   def document(
       collection: String,
@@ -32,9 +32,9 @@ object SolrSink {
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Java API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing type `T`
+   * Java API: creates a [[SolrFlow]] to Solr for [[IncomingMessage]] containing type `T`
    * with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
-   * @deprecated ("use the method beans to batch operation")
+   * @deprecated ("use the method beans to batch operation","0.21")
    */
   def bean[T](
       collection: String,
@@ -48,8 +48,8 @@ object SolrSink {
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Java API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing type `T` with `binder` of type 'T'.
-   * @deprecated ("use the method typeds to batch operation")
+   * Java API: creates a [[SolrFlow]] to Solr for [[IncomingMessage]] containing type `T` with `binder` of type 'T'.
+   * @deprecated ("use the method typeds to batch operation","0.21")
    */
   def typed[T](
       collection: String,
@@ -64,7 +64,7 @@ object SolrSink {
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Java API: creates a [[SolrFlow] to Solr for sequence of [[IncomingMessage]] containing [[SolrInputDocument]].
+   * Java API: creates a [[SolrFlow]] to Solr for sequence of [[IncomingMessage]] containing [[SolrInputDocument]].
    */
   def documents(
       collection: String,
@@ -77,7 +77,7 @@ object SolrSink {
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Java API: creates a [[SolrFlow] to Solr for sequence of [[IncomingMessage]] containing type `T`
+   * Java API: creates a [[SolrFlow]] to Solr for sequence of [[IncomingMessage]] containing type `T`
    * with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
    */
   def beans[T](
@@ -92,7 +92,7 @@ object SolrSink {
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Java API: creates a [[SolrFlow] to Solr for sequence of [[IncomingMessage]] containing type `T` with `binder` of type 'T'.
+   * Java API: creates a [[SolrFlow]] to Solr for sequence of [[IncomingMessage]] containing type `T` with `binder` of type 'T'.
    */
   def typeds[T](
       collection: String,

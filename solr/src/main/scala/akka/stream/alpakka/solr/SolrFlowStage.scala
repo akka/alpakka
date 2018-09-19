@@ -21,28 +21,36 @@ import scala.util.control.NonFatal
 import scala.collection.JavaConverters._
 
 @deprecated(
-  "you should use a specific incoming message case class: IncomingUpsertMessage/IncomingDeleteMessage/IncomingAtomicUpdateMessage"
+  "you should use a specific incoming message case class: IncomingUpsertMessage/IncomingDeleteMessageByIds/IncomingDeleteMessageByQuery/IncomingAtomicUpdateMessage",
+  "0.21"
 )
 object IncomingMessage {
   // Apply methods to use when not using passThrough
   def apply[T](source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Upsert, None, None, None, Option(source), Map.empty, NotUsed)
+    IncomingMessage(Upsert, None, None, None, None, Option(source), Map.empty, NotUsed)
 
   def apply[T](id: String): IncomingMessage[T, NotUsed] =
-    IncomingMessage(Delete, None, Option(id), None, None, Map.empty, NotUsed)
+    IncomingMessage(DeleteByIds, None, Option(id), None, None, None, Map.empty, NotUsed)
 
   def apply[T](idField: String,
                idValue: String,
                routingFieldValue: String,
                updates: Map[String, Map[String, Any]]): IncomingMessage[T, NotUsed] =
-    IncomingMessage(AtomicUpdate, Option(idField), Option(idValue), Some(routingFieldValue), None, updates, NotUsed)
+    IncomingMessage(AtomicUpdate,
+                    Option(idField),
+                    Option(idValue),
+                    Some(routingFieldValue),
+                    None,
+                    None,
+                    updates,
+                    NotUsed)
 
   // Apply methods to use with passThrough
   def apply[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(Upsert, None, None, None, Option(source), Map.empty, passThrough)
+    IncomingMessage(Upsert, None, None, None, None, Option(source), Map.empty, passThrough)
 
   def apply[T, C](id: String, passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(Delete, None, Option(id), None, None, Map.empty, passThrough)
+    IncomingMessage(DeleteByIds, None, Option(id), None, None, None, Map.empty, passThrough)
 
   def apply[T, C](idField: String,
                   idValue: String,
@@ -53,6 +61,7 @@ object IncomingMessage {
                     Option(idField),
                     Option(idValue),
                     Option(routingFieldValue),
+                    None,
                     None,
                     updates,
                     passThrough)
@@ -109,7 +118,7 @@ object IncomingUpsertMessage {
     IncomingUpsertMessage[T, C](source, passThrough)
 }
 
-object IncomingDeleteMessage {
+object IncomingDeleteMessageByIds {
   // Apply method to use when not using passThrough
   def apply[T](id: String): IncomingMessage[T, NotUsed] =
     IncomingMessage(id)
@@ -119,10 +128,26 @@ object IncomingDeleteMessage {
 
   // Java-api - without passThrough
   def create[T](id: String): IncomingMessage[T, NotUsed] =
-    IncomingDeleteMessage[T](id)
+    IncomingDeleteMessageByIds[T](id)
 
   def create[T, C](id: String, passThrough: C): IncomingMessage[T, C] =
-    IncomingDeleteMessage[T, C](id, passThrough)
+    IncomingDeleteMessageByIds[T, C](id, passThrough)
+}
+
+object IncomingDeleteMessageByQuery {
+  // Apply method to use when not using passThrough
+  def apply[T](query: String): IncomingMessage[T, NotUsed] =
+    IncomingMessage(DeleteByQuery, None, None, None, Some(query), None, Map.empty, NotUsed)
+
+  def apply[T, C](query: String, passThrough: C): IncomingMessage[T, C] =
+    IncomingMessage(DeleteByQuery, None, None, None, Some(query), None, Map.empty, passThrough)
+
+  // Java-api - without passThrough
+  def create[T](query: String): IncomingMessage[T, NotUsed] =
+    IncomingDeleteMessageByQuery[T](query)
+
+  def create[T, C](query: String, passThrough: C): IncomingMessage[T, C] =
+    IncomingDeleteMessageByQuery[T, C](query, passThrough)
 }
 
 object IncomingAtomicUpdateMessage {
@@ -163,6 +188,7 @@ final case class IncomingMessage[T, C](operation: Operation,
                                        idFieldOpt: Option[String],
                                        idFieldValueOpt: Option[String],
                                        routingFieldValueOpt: Option[String],
+                                       queryOpt: Option[String],
                                        sourceOpt: Option[T],
                                        updates: Map[String, Map[String, Any]],
                                        passThrough: C = NotUsed) {}
@@ -170,6 +196,7 @@ final case class IncomingMessage[T, C](operation: Operation,
 final case class IncomingMessageResult[T, C](idFieldOpt: Option[String],
                                              idFieldValueOpt: Option[String],
                                              routingFieldValueOpt: Option[String],
+                                             queryOpt: Option[String],
                                              sourceOpt: Option[T],
                                              updates: Map[String, Map[String, Any]],
                                              passThrough: C,
@@ -195,7 +222,8 @@ private[solr] final class SolrFlowStage[T, C](
 
 sealed trait Operation
 final object Upsert extends Operation
-final object Delete extends Operation
+final object DeleteByIds extends Operation
+final object DeleteByQuery extends Operation
 final object AtomicUpdate extends Operation
 
 private sealed trait SolrFlowState
@@ -288,6 +316,7 @@ private[solr] final class SolrFlowLogic[T, C](
         IncomingMessageResult(m.idFieldOpt,
                               m.idFieldValueOpt,
                               m.routingFieldValueOpt,
+                              m.queryOpt,
                               m.sourceOpt,
                               m.updates,
                               m.passThrough,
@@ -345,16 +374,25 @@ private[solr] final class SolrFlowLogic[T, C](
     client.add(collection, docs.asJava, settings.commitWithin)
   }
 
-  private def deleteBulkToSolr(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
+  private def deleteBulkToSolrByIds(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
     val docsIds = messages
       .filter { message =>
-        message.operation == Delete && message.idFieldValueOpt.isDefined
+        message.operation == DeleteByIds && message.idFieldValueOpt.isDefined
       }
       .map { message =>
         message.idFieldValueOpt.get
       }
     if (log.isDebugEnabled) log.debug(s"Delete the ids $docsIds")
     client.deleteById(collection, docsIds.asJava, settings.commitWithin)
+  }
+
+  private def deleteEachByQuery(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
+    val responses = messages.map { message =>
+      val query = message.queryOpt.get
+      if (log.isDebugEnabled) log.debug(s"Delete by the query $query")
+      client.deleteByQuery(collection, query, settings.commitWithin)
+    }
+    responses.filter(r => r.getStatus != 0).headOption.getOrElse(responses.head)
   }
 
   private def sendBulkToSolr(messages: Seq[IncomingMessage[T, C]]): Unit = {
@@ -370,7 +408,8 @@ private[solr] final class SolrFlowLogic[T, C](
       val response = operation match {
         case Upsert => updateBulkToSolr(current)
         case AtomicUpdate => atomicUpdateBulkToSolr(current)
-        case Delete => deleteBulkToSolr(current)
+        case DeleteByIds => deleteBulkToSolrByIds(current)
+        case DeleteByQuery => deleteEachByQuery(current)
       }
       //Now take the remaining
       val remaining = toSend.dropWhile(m => m.operation == operation)

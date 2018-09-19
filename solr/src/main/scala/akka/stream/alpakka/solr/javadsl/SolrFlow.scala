@@ -22,7 +22,7 @@ object SolrFlow {
   /**
    * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for [[SolrInputDocument]]
    * from [[IncomingMessage]] to sequences of [[IncomingMessageResult]].
-   * @deprecated ("use the method documents to batch operation")
+   * @deprecated ("use the method documents to batch operation","0.21")
    */
   def document(
       collection: String,
@@ -64,7 +64,7 @@ object SolrFlow {
   /**
    * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
    * of [[IncomingMessageResult]] with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
-   * @deprecated ("use the method beans to batch operation")
+   * @deprecated ("use the method beans to batch operation","0.21")
    */
   def bean[T](
       collection: String,
@@ -101,7 +101,7 @@ object SolrFlow {
   /**
    * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
    * of [[IncomingMessageResult]] with `binder` of type 'T'.
-   * @deprecated ("use the method typeds to batch operation")
+   * @deprecated ("use the method typeds to batch operation","0.21")
    */
   def typed[T](
       collection: String,
@@ -140,7 +140,7 @@ object SolrFlow {
   /**
    * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for [[SolrInputDocument]]
    * from [[IncomingMessage]] to sequences of [[IncomingMessageResult]] with `passThrough` of type `C`.
-   * @deprecated ("use the method documentsWithPassThrough to batch operation")
+   * @deprecated ("use the method documentsWithPassThrough to batch operation","0.21")
    */
   def documentWithPassThrough[C](
       collection: String,
@@ -178,7 +178,7 @@ object SolrFlow {
   /**
    * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
    * of [[IncomingMessageResult]] with `passThrough` of type `C` and [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
-   * @deprecated ("use the method beansWithPassThrough to batch operation")
+   * @deprecated ("use the method beansWithPassThrough to batch operation","0.21")
    */
   def beanWithPassThrough[T, C](
       collection: String,
@@ -216,7 +216,7 @@ object SolrFlow {
   /**
    * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
    * of [[IncomingMessageResult]] with `binder` of type 'T'.
-   * @deprecated ("use the method typedsWithPassThrough to batch operation")
+   * @deprecated ("use the method typedsWithPassThrough to batch operation","0.21")
    */
   def typedWithPassThrough[T, C](
       collection: String,
