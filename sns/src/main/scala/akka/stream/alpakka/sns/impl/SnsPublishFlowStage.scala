@@ -2,15 +2,20 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.sns
+package akka.stream.alpakka.sns.impl
 
+import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.stage._
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sns.AmazonSNSAsync
 import com.amazonaws.services.sns.model.{PublishRequest, PublishResult}
 
-private[akka] final class SnsPublishFlowStage(topicArn: String, snsClient: AmazonSNSAsync)
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[sns] final class SnsPublishFlowStage(topicArn: String, snsClient: AmazonSNSAsync)
     extends GraphStage[FlowShape[PublishRequest, PublishResult]] {
 
   private val in = Inlet[PublishRequest]("SnsPublishFlow.in")
