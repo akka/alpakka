@@ -203,6 +203,7 @@ lazy val docs = project
     publish / skip := true,
     paradoxTheme := Some(builtinParadoxTheme("generic")),
     paradoxProperties ++= Map(
+      "project.url" -> "https://developer.lightbend.com/docs/alpakka/current/",
       "akka.version" -> Dependencies.AkkaVersion,
       "akka-http.version" -> Dependencies.AkkaHttpVersion,
       "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.AkkaVersion}/%s",
