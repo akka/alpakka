@@ -225,7 +225,8 @@ lazy val docs = project
       "scaladoc.akka.http.base_url" -> s"https://doc.akka.io/api/akka-http/${Dependencies.AkkaHttpVersion}/",
       "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}"
     ),
-    paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
+    resolvers += Resolver.jcenterRepo,
+    paradoxGroups := Map("Language" -> Seq("Java", "Scala")),
     paradoxLocalApiKey := "scaladoc.akka.stream.alpakka.base_url",
     paradoxLocalApiDir := (alpakka / Compile / sbtunidoc.BaseUnidocPlugin.autoImport.unidoc).value.head,
   )

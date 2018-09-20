@@ -1,8 +1,6 @@
 # Alpakka Documentation
 
-Welcome to the home of the Alpakka initiative, which harbours various Akka Streams connectors, integration patterns,
-and data transformations for integration use cases. Here you can find documentation of the components that are
-part of this project as well as links to components that are maintained by other projects.
+The [Alpakka project](https://developer.lightbend.com/docs/alpakka/current/) is an open source initiative to implement stream-aware and reactive integration pipelines for Java and Scala. It is built on top of [Akka Streams](https://doc.akka.io/docs/akka/current/stream/index.html), and has been designed from the ground up to understand streaming natively and provide a DSL for reactive and stream-oriented programming, with built-in support for backpressure. Akka Streams is a [Reactive Streams](https://www.reactive-streams.org/) and JDK 9+ [java.util.concurrent.Flow](https://docs.oracle.com/javase/10/docs/api/java/util/concurrent/Flow.html)-compliant implementation and therefore [fully interoperable](https://doc.akka.io/docs/akka/current/general/stream/stream-design.html#interoperation-with-other-reactive-streams-implementations) with other implementations.
 
 @@toc { depth=2 }
 
