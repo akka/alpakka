@@ -196,12 +196,11 @@ lazy val unixdomainsocket = alpakkaProject(
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
 
 lazy val docs = project
-  .enablePlugins(ParadoxPlugin)
+  .enablePlugins(AkkaParadoxPlugin)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .settings(
     name := "Alpakka",
     publish / skip := true,
-    paradoxTheme := Some(builtinParadoxTheme("generic")),
     paradoxProperties ++= Map(
       "project.url" -> "https://developer.lightbend.com/docs/alpakka/current/",
       "akka.version" -> Dependencies.AkkaVersion,
@@ -226,7 +225,8 @@ lazy val docs = project
       "scaladoc.akka.http.base_url" -> s"https://doc.akka.io/api/akka-http/${Dependencies.AkkaHttpVersion}/",
       "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}"
     ),
-    paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
+    resolvers += Resolver.jcenterRepo,
+    paradoxGroups := Map("Language" -> Seq("Java", "Scala")),
     paradoxLocalApiKey := "scaladoc.akka.stream.alpakka.base_url",
     paradoxLocalApiDir := (alpakka / Compile / sbtunidoc.BaseUnidocPlugin.autoImport.unidoc).value.head,
   )
