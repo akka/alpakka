@@ -34,6 +34,15 @@ Scala
 Java
 : @@snip [snip](/xml/src/test/java/docs/javadsl/XmlParsingTest.java) { #parser-usage }
 
+To make sense of the parser events, `statefulMapConcat` may be used to aggregate consecutive events and emit the relevant data. For more complex uses, a state machine will be required.
+
+Scala
+: @@snip [snip](/xml/src/test/scala/docs/scaladsl/XmlProcessingSpec.scala) { #parser-to-data }
+
+Java
+: @@snip [snip](/xml/src/test/java/docs/javadsl/XmlParsingTest.java) { #parser-to-data }
+
+
 ## XML writing
 
 XML processing pipeline ends with an @scaladoc[XmlWriting.writer](akka.stream.alpakka.xml.scaladsl.XmlWriting$) flow which writes a stream of XML parser events to @scaladoc[ByteString](akka.util.ByteString)s.

@@ -7,7 +7,13 @@ package docs.javadsl;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.xml.*;
+import akka.stream.alpakka.xml.Characters;
+import akka.stream.alpakka.xml.EndDocument;
+import akka.stream.alpakka.xml.EndElement;
+import akka.stream.alpakka.xml.ParseEvent;
+import akka.stream.alpakka.xml.StartDocument;
+import akka.stream.alpakka.xml.StartElement;
+import akka.stream.alpakka.xml.TextEvent;
 import akka.stream.alpakka.xml.javadsl.XmlParsing;
 import akka.stream.javadsl.*;
 import akka.testkit.javadsl.TestKit;
@@ -69,6 +75,49 @@ public class XmlParsingTest {
             })
         .toCompletableFuture()
         .get(5, TimeUnit.SECONDS);
+  }
+
+  @Test
+  public void parseAndReadEvents() throws Exception {
+    // #parser-to-data
+    ByteString doc = ByteString.fromString("<doc><elem>elem1</elem><elem>elem2</elem></doc>");
+    CompletionStage<List<String>> stage =
+        Source.single(doc)
+            .via(XmlParsing.parser())
+            .statefulMapConcat(
+                () -> {
+                  // state
+                  final StringBuilder textBuffer = new StringBuilder();
+                  // aggregation function
+                  return parseEvent -> {
+                    switch (parseEvent.marker()) {
+                      case XMLStartElement:
+                        textBuffer.delete(0, textBuffer.length());
+                        return Collections.emptyList();
+                      case XMLEndElement:
+                        EndElement s = (EndElement) parseEvent;
+                        switch (s.localName()) {
+                          case "elem":
+                            String text = textBuffer.toString();
+                            return Collections.singleton(text);
+                          default:
+                            return Collections.emptyList();
+                        }
+                      case XMLCharacters:
+                      case XMLCData:
+                        TextEvent t = (TextEvent) parseEvent;
+                        textBuffer.append(t.text());
+                        return Collections.emptyList();
+                      default:
+                        return Collections.emptyList();
+                    }
+                  };
+                })
+            .runWith(Sink.seq(), materializer);
+
+    List<String> list = stage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+    assertThat(list, hasItems("elem1", "elem2"));
+    // #parser-to-data
   }
 
   @Test
