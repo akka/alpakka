@@ -2,6 +2,8 @@
 
 **Apache Camel endpoints** can be integrated into Akka Stream applications with the Streamz library.
 
+## External library
+
 This library is not maintained in the Alpakka repository.
 Learn more about it at
 
