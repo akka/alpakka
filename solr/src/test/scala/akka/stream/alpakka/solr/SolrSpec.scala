@@ -747,7 +747,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
     import akka.stream.alpakka.solr.SolrUpdateSettings
 
     val settings =
-      SolrUpdateSettings(retryInterval = 5000.millis, maxRetry = 100, commitWithin = -1)
+      SolrUpdateSettings(commitWithin = -1)
     //#solr-update-settings
   }
 }

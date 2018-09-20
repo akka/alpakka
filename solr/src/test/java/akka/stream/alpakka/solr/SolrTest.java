@@ -632,11 +632,7 @@ public class SolrTest {
     Source<Tuple, NotUsed> source = SolrSource.fromTupleStream(stream);
     // #define-source
     // #solr-update-settings
-    SolrUpdateSettings settings =
-        SolrUpdateSettings.create()
-            .withRetryInterval(FiniteDuration.create(5000, TimeUnit.MILLISECONDS))
-            .withMaxRetry(100)
-            .withCommitWithin(-1);
+    SolrUpdateSettings settings = SolrUpdateSettings.create().withCommitWithin(-1);
     // #solr-update-settings
   }
 }
