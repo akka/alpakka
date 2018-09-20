@@ -6,6 +6,8 @@ package akka.stream.alpakka.xml
 
 import java.util.Optional
 
+import akka.stream.alpakka.ParseEventMarker
+
 import scala.collection.JavaConverters._
 import scala.collection.immutable.DefaultMap
 import scala.compat.java8.OptionConverters._
@@ -13,12 +15,18 @@ import scala.compat.java8.OptionConverters._
 /**
  * XML parsing events emitted by the parser flow. These roughly correspond to Java XMLEvent types.
  */
-sealed trait ParseEvent
+sealed trait ParseEvent {
+
+  /** Java API: allows to use switch statement to match parse events */
+  def marker: ParseEventMarker
+}
 sealed trait TextEvent extends ParseEvent {
   def text: String
 }
 
 case object StartDocument extends ParseEvent {
+
+  val marker = ParseEventMarker.XMLStartDocument
 
   /**
    * Java API
@@ -27,6 +35,8 @@ case object StartDocument extends ParseEvent {
 }
 
 case object EndDocument extends ParseEvent {
+
+  val marker = ParseEventMarker.XMLEndDocument
 
   /**
    * Java API
@@ -42,7 +52,11 @@ private class MapOverTraversable[A, K, V](source: Traversable[A], fKey: A => K, 
 
 }
 
-final case class Namespace(uri: String, prefix: Option[String] = None)
+final case class Namespace(uri: String, prefix: Option[String] = None) {
+
+  /** Java API */
+  def getPrefix(): java.util.Optional[String] = prefix.asJava
+}
 
 object Namespace {
 
@@ -54,7 +68,18 @@ object Namespace {
 
 }
 
-final case class Attribute(name: String, value: String, prefix: Option[String] = None, namespace: Option[String] = None)
+final case class Attribute(name: String,
+                           value: String,
+                           prefix: Option[String] = None,
+                           namespace: Option[String] = None) {
+
+  /** Java API */
+  def getPrefix(): java.util.Optional[String] = prefix.asJava
+
+  /** Java API */
+  def getNamespace(): java.util.Optional[String] = namespace.asJava
+}
+
 object Attribute {
 
   /**
@@ -75,10 +100,26 @@ final case class StartElement(localName: String,
                               namespace: Option[String] = None,
                               namespaceCtx: List[Namespace] = List.empty[Namespace])
     extends ParseEvent {
+
+  val marker = ParseEventMarker.XMLStartElement
+
   val attributes: Map[String, String] =
     new MapOverTraversable[Attribute, String, String](attributesList, _.name, _.value)
 
+  /** Java API */
+  def getAttributes(): java.util.Map[String, String] = attributes.asJava
+
+  /** Java API */
+  def getPrefix(): java.util.Optional[String] = prefix.asJava
+
+  /** Java API */
+  def getNamespace(): java.util.Optional[String] = namespace.asJava
+
+  /** Java API */
+  def getNamespaceCtx(): java.util.List[Namespace] = namespaceCtx.asJava
+
   def findAttribute(name: String): Option[Attribute] = attributesList.find(_.name == name)
+
 }
 
 object StartElement {
@@ -133,7 +174,11 @@ object StartElement {
   def create(localName: String, attributes: java.util.Map[String, String]): StartElement =
     StartElement(localName, attributes.asScala.toMap)
 }
-final case class EndElement(localName: String) extends ParseEvent
+
+final case class EndElement(localName: String) extends ParseEvent {
+  val marker = ParseEventMarker.XMLEndElement
+}
+
 object EndElement {
 
   /**
@@ -142,7 +187,11 @@ object EndElement {
   def create(localName: String) =
     EndElement(localName)
 }
-final case class Characters(text: String) extends TextEvent
+
+final case class Characters(text: String) extends TextEvent {
+  val marker = ParseEventMarker.XMLCharacters
+}
+
 object Characters {
 
   /**
@@ -151,7 +200,18 @@ object Characters {
   def create(text: String) =
     Characters(text)
 }
-final case class ProcessingInstruction(target: Option[String], data: Option[String]) extends ParseEvent
+
+final case class ProcessingInstruction(target: Option[String], data: Option[String]) extends ParseEvent {
+
+  val marker = ParseEventMarker.XMLProcessingInstruction
+
+  /** Java API */
+  def getTarget(): java.util.Optional[String] = target.asJava
+
+  /** Java API */
+  def getData(): java.util.Optional[String] = data.asJava
+}
+
 object ProcessingInstruction {
 
   /**
@@ -160,7 +220,11 @@ object ProcessingInstruction {
   def create(target: Optional[String], data: Optional[String]) =
     ProcessingInstruction(target.asScala, data.asScala)
 }
-final case class Comment(text: String) extends ParseEvent
+
+final case class Comment(text: String) extends ParseEvent {
+  val marker = ParseEventMarker.XMLComment
+}
+
 object Comment {
 
   /**
@@ -169,7 +233,11 @@ object Comment {
   def create(text: String) =
     Comment(text)
 }
-final case class CData(text: String) extends TextEvent
+
+final case class CData(text: String) extends TextEvent {
+  val marker = ParseEventMarker.XMLCData
+}
+
 object CData {
 
   /**
