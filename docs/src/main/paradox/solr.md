@@ -118,9 +118,7 @@ Java
 
 
 | Parameter           | Default | Description                                                                                            |
-| ------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| retryInterval       | 5000    | When a request is failed, `SolrSink` retries that request after this interval (milliseconds). |
-| maxRetry            | 100     | `SolrSink` give up and fails the stage if it gets this number of consective failures.         | 
+| ------------------- | ------- | ------------------------------------------------------------------------------------------------------ | 
 | commitWithin        | -1      | Max time (in ms) before a commit will happen, -1 for manual committing |
 
 ### Update atomically documents

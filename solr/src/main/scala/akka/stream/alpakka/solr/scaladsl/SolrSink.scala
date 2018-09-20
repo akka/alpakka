@@ -28,7 +28,7 @@ object SolrSink {
   /**
    * Scala API: creates a [[SolrFlow]] to Solr for [[IncomingMessage]] containing type `T`
    * with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
-   * @deprecated ("use the method beans to batch operation","0.21")
+   * @deprecated ("use the method beans to batch operation","0.20")
    */
   def bean[T](collection: String, settings: SolrUpdateSettings)(
       implicit client: SolrClient
@@ -39,7 +39,7 @@ object SolrSink {
 
   /**
    * Scala API: creates a [[SolrFlow]] to Solr for sequence of [[IncomingMessage]] containing type `T` with `binder` of type 'T'.
-   * @deprecated ("use the method typeds to batch operation","0.21")
+   * @deprecated ("use the method typeds to batch operation","0.20")
    */
   def typed[T](
       collection: String,

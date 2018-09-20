@@ -4,25 +4,20 @@
 
 package akka.stream.alpakka.solr
 
-import java.net.{ConnectException, SocketException}
-
 import akka.NotUsed
-import akka.stream.alpakka.solr.SolrFlowStage.{Finished, Idle, Sending}
 import akka.stream.stage._
 import akka.stream._
-import org.apache.http.NoHttpResponseException
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.client.solrj.impl.CloudSolrClient
 import org.apache.solr.client.solrj.response.UpdateResponse
-import org.apache.solr.common.{SolrException, SolrInputDocument}
+import org.apache.solr.common.SolrInputDocument
 
 import scala.annotation.tailrec
-import scala.util.control.NonFatal
 import scala.collection.JavaConverters._
 
 @deprecated(
   "you should use a specific incoming message case class: IncomingUpsertMessage/IncomingDeleteMessageByIds/IncomingDeleteMessageByQuery/IncomingAtomicUpdateMessage",
-  "0.21"
+  "0.20"
 )
 object IncomingMessage {
   // Apply methods to use when not using passThrough
@@ -226,14 +221,6 @@ final object DeleteByIds extends Operation
 final object DeleteByQuery extends Operation
 final object AtomicUpdate extends Operation
 
-private sealed trait SolrFlowState
-
-private object SolrFlowStage {
-  case object Idle extends SolrFlowState
-  case object Sending extends SolrFlowState
-  case object Finished extends SolrFlowState
-}
-
 private[solr] final class SolrFlowLogic[T, C](
     collection: String,
     client: SolrClient,
@@ -242,14 +229,10 @@ private[solr] final class SolrFlowLogic[T, C](
     shape: FlowShape[Seq[IncomingMessage[T, C]], Seq[IncomingMessageResult[T, C]]],
     settings: SolrUpdateSettings,
     messageBinder: T => SolrInputDocument
-) extends TimerGraphStageLogic(shape)
+) extends GraphStageLogic(shape)
     with OutHandler
     with InHandler
     with StageLogging {
-
-  private var state: SolrFlowState = Idle
-  private var failedMessages: Seq[IncomingMessage[T, C]] = Nil
-  private var retryCount: Int = 0
 
   setHandlers(in, out, this)
 
@@ -259,13 +242,7 @@ private[solr] final class SolrFlowLogic[T, C](
   override def onPush(): Unit = {
     val messagesIn = grab(in)
 
-    state match {
-      case Idle => {
-        state = Sending
-        sendBulkToSolr(messagesIn)
-      }
-      case _ => ()
-    }
+    sendBulkToSolr(messagesIn)
 
     tryPull()
   }
@@ -273,44 +250,24 @@ private[solr] final class SolrFlowLogic[T, C](
   override def preStart(): Unit =
     pull(in)
 
-  override def onTimer(timerKey: Any): Unit = {
-    sendBulkToSolr(failedMessages)
-    failedMessages = Nil
-  }
-
   override def onUpstreamFailure(ex: Throwable): Unit =
-    failStage(ex)
+    handleFailure(ex)
 
-  override def onUpstreamFinish(): Unit = state match {
-    case Idle => handleSuccess()
-    case Sending => state = Finished
-    case Finished => ()
-  }
+  override def onUpstreamFinish(): Unit = handleSuccess
 
   private def tryPull(): Unit =
     if (!isClosed(in) && !hasBeenPulled(in)) {
       pull(in)
     }
 
-  private def handleFailure(args: (Seq[IncomingMessage[T, C]], Throwable)): Unit = {
-    val (messages, exc) = args
-    if (retryCount >= settings.maxRetry) {
-      log.warning(s"Received error from solr. Giving up after $retryCount tries. Error: ${exc.toString}")
-      failStage(exc)
-    } else {
-      retryCount = retryCount + 1
-      log.warning(
-        s"Received error from solr. (re)tryCount: $retryCount maxTries: ${settings.maxRetry}. Error: ${exc.toString}"
-      )
-      failedMessages = messages
-      scheduleOnce(NotUsed, settings.retryInterval)
-    }
+  private def handleFailure(exc: Throwable): Unit = {
+    log.warning(s"Received error from solr. Error: ${exc.toString}")
+    failStage(exc)
   }
 
   private def handleResponse(args: (Seq[IncomingMessage[T, C]], Int)): Unit = {
     val (messages, status) = args
     log.debug(s"Handle the response with $status")
-    retryCount = 0
     val result = messages.map(
       m =>
         IncomingMessageResult(m.idFieldOpt,
@@ -324,11 +281,6 @@ private[solr] final class SolrFlowLogic[T, C](
     )
 
     emit(out, result)
-
-    state match {
-      case Finished => handleSuccess()
-      case _ => state = Idle
-    }
   }
 
   private def handleSuccess(): Unit =
@@ -420,33 +372,7 @@ private[solr] final class SolrFlowLogic[T, C](
       }
     }
 
-    try {
-      val response = if (messages.nonEmpty) send(messages) else new UpdateResponse
-      handleResponse((messages, response.getStatus))
-    } catch {
-      case exception: Throwable =>
-        log.error(exception, s"Unable to treat messages $messages")
-        exception match {
-          case NonFatal(exc) =>
-            val rootCause = SolrException.getRootCause(exc)
-            if (shouldRetry(rootCause)) {
-              handleFailure((messages, exception))
-            } else {
-              val status = exc match {
-                case e: SolrException => e.code()
-                case _ => -1
-              }
-              handleResponse((messages, status))
-            }
-        }
-    }
+    val response = if (messages.nonEmpty) send(messages) else new UpdateResponse
+    handleResponse((messages, response.getStatus))
   }
-
-  private def shouldRetry(cause: Throwable): Boolean =
-    cause match {
-      case _: ConnectException => true
-      case _: NoHttpResponseException => true
-      case _: SocketException => true
-      case _ => false
-    }
 }

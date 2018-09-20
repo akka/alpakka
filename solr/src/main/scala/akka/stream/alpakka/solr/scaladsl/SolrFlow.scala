@@ -15,7 +15,7 @@ object SolrFlow {
   /**
    * Scala API: creates a [[SolrFlowStage]] for [[SolrInputDocument]] from [[IncomingMessage]] to sequences
    * of [[IncomingMessageResult]].
-   * @deprecated ("use the method documents to batch operation","0.21")
+   * @deprecated ("use the method documents to batch operation","0.20")
    */
   def document(
       collection: String,
@@ -54,7 +54,7 @@ object SolrFlow {
   /**
    * Scala API: creates a [[SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequence
    * of [[IncomingMessageResult]] with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
-   * @deprecated ("use the method beans to batch operation","0.21")
+   * @deprecated ("use the method beans to batch operation","0.20")
    */
   def bean[T](
       collection: String,
@@ -93,7 +93,7 @@ object SolrFlow {
   /**
    * Scala API: creates a [[SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequence
    * of [[IncomingMessageResult]] with `binder` of type 'T'.
-   * @deprecated ("use the method typeds to batch operation","0.21")
+   * @deprecated ("use the method typeds to batch operation","0.20")
    */
   def typed[T](
       collection: String,
@@ -134,7 +134,7 @@ object SolrFlow {
   /**
    * Scala API: creates a [[SolrFlowStage]] for [[SolrInputDocument]] from [[IncomingMessage]] to sequences
    * of [[IncomingMessageResult]] with `passThrough` of type `C`.
-   * @deprecated ("use the method documentsWithPassThrough to batch operation","0.21")
+   * @deprecated ("use the method documentsWithPassThrough to batch operation","0.20")
    */
   def documentWithPassThrough[C](
       collection: String,
@@ -174,7 +174,7 @@ object SolrFlow {
    * Scala API: creates a [[SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequence
    * of [[IncomingMessageResult]] with `passThrough` of type `C`
    * with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
-   * @deprecated ("use the method beansWithPassThrough to batch operation","0.21")
+   * @deprecated ("use the method beansWithPassThrough to batch operation","0.20")
    */
   def beanWithPassThrough[T, C](
       collection: String,
@@ -212,7 +212,7 @@ object SolrFlow {
   /**
    * Scala API: creates a [[SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequence
    * of [[IncomingMessageResult]] with `passThrough` of type `C` and `binder` of type 'T'.
-   * @deprecated ("use the method typedsWithPassThrough to batch operation","0.21")
+   * @deprecated ("use the method typedsWithPassThrough to batch operation","0.20")
    */
   def typedWithPassThrough[T, C](
       collection: String,

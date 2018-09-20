@@ -430,7 +430,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
             "title",
             tuple.fields.get("title").toString,
             tuple.fields.get("title").toString,
-            Map("comment" -> Map("set" -> (tuple.fields.get("comment") + " It's is a good book!!!")))
+            Map("comment" -> Map("set" -> (tuple.fields.get("comment") + " It is a good book!!!")))
           )
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
@@ -459,13 +459,13 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val result = Await.result(res2, Duration.Inf)
 
       result shouldEqual Seq(
-        "Akka Concurrency. Written by good authors. It's is a good book!!!",
-        "Akka in Action. Written by good authors. It's is a good book!!!",
-        "Effective Akka. Written by good authors. It's is a good book!!!",
-        "Learning Scala. Written by good authors. It's is a good book!!!",
-        "Programming in Scala. Written by good authors. It's is a good book!!!",
-        "Scala Puzzlers. Written by good authors. It's is a good book!!!",
-        "Scala for Spark in Production. Written by good authors. It's is a good book!!!"
+        "Akka Concurrency. Written by good authors. It is a good book!!!",
+        "Akka in Action. Written by good authors. It is a good book!!!",
+        "Effective Akka. Written by good authors. It is a good book!!!",
+        "Learning Scala. Written by good authors. It is a good book!!!",
+        "Programming in Scala. Written by good authors. It is a good book!!!",
+        "Scala Puzzlers. Written by good authors. It is a good book!!!",
+        "Scala for Spark in Production. Written by good authors. It is a good book!!!"
       )
     }
 
@@ -565,7 +565,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
             "title",
             tuple.fields.get("title").toString,
             tuple.fields.get("title").toString,
-            Map("comment" -> Map("set" -> (tuple.fields.get("comment") + " It's is a good book!!!")))
+            Map("comment" -> Map("set" -> (tuple.fields.get("comment") + " It is a good book!!!")))
           )
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
@@ -594,13 +594,13 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val result = Await.result(res2, Duration.Inf)
 
       result shouldEqual Seq(
-        "Akka Concurrency. Written by good authors. It's is a good book!!!",
-        "Akka in Action. Written by good authors. It's is a good book!!!",
-        "Effective Akka. Written by good authors. It's is a good book!!!",
-        "Learning Scala. Written by good authors. It's is a good book!!!",
-        "Programming in Scala. Written by good authors. It's is a good book!!!",
-        "Scala Puzzlers. Written by good authors. It's is a good book!!!",
-        "Scala for Spark in Production. Written by good authors. It's is a good book!!!"
+        "Akka Concurrency. Written by good authors. It is a good book!!!",
+        "Akka in Action. Written by good authors. It is a good book!!!",
+        "Effective Akka. Written by good authors. It is a good book!!!",
+        "Learning Scala. Written by good authors. It is a good book!!!",
+        "Programming in Scala. Written by good authors. It is a good book!!!",
+        "Scala Puzzlers. Written by good authors. It is a good book!!!",
+        "Scala for Spark in Production. Written by good authors. It is a good book!!!"
       )
     }
 

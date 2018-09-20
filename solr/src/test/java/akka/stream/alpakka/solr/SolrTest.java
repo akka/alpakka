@@ -364,7 +364,7 @@ public class SolrTest {
 
     TupleStream stream2 = getTupleStream("collection7");
 
-    //#delete-documents
+    // #delete-documents
     CompletionStage<Done> res2 =
         SolrSource.fromTupleStream(stream2)
             .map(
@@ -374,7 +374,7 @@ public class SolrTest {
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
                 SolrSink.documents("collection7", settings, cluster.getSolrClient()), materializer);
-    //#delete-documents
+    // #delete-documents
 
     res2.toCompletableFuture().get();
 
@@ -417,7 +417,7 @@ public class SolrTest {
 
     TupleStream stream2 = getTupleStream("collection8");
 
-    //#update-atomically-documents
+    // #update-atomically-documents
     CompletionStage<Done> res2 =
         SolrSource.fromTupleStream(stream2)
             .map(
@@ -432,7 +432,7 @@ public class SolrTest {
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
                 SolrSink.documents("collection8", settings, cluster.getSolrClient()), materializer);
-    //#update-atomically-documents
+    // #update-atomically-documents
 
     res2.toCompletableFuture().get();
 
@@ -489,7 +489,7 @@ public class SolrTest {
 
     TupleStream stream2 = getTupleStream("collection9");
 
-    //#delete-documents-query
+    // #delete-documents-query
     CompletionStage<Done> res2 =
         SolrSource.fromTupleStream(stream2)
             .map(
@@ -499,7 +499,7 @@ public class SolrTest {
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
                 SolrSink.documents("collection9", settings, cluster.getSolrClient()), materializer);
-    //#delete-documents-query
+    // #delete-documents-query
 
     res2.toCompletableFuture().get();
 
