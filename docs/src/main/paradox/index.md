@@ -1,41 +1,55 @@
-# Alpakka
+# Alpakka Documentation
 
 Welcome to the home of the Alpakka initiative, which harbours various Akka Streams connectors, integration patterns,
 and data transformations for integration use cases. Here you can find documentation of the components that are
 part of this project as well as links to components that are maintained by other projects.
 
-If you'd like to know what integrations with Alpakka look like, have a look at our 
-@ref[self-contained examples](examples/index.md) section.
-
-There are a few blog posts and presentations about Alpakka out there, we've @ref[collected some](other-docs/webinars-presentations-articles.md).
-
-The code in this documentation is compiled against
-
-* Alpakka $project.version$ ([Github](https://github.com/akka/alpakka), [API docs](https://developer.lightbend.com/docs/api/alpakka/current/akka/stream/alpakka/index.html))
-* Scala $scala.binary.version$ (also available for Scala 2.11)
-* Akka Streams $akka.version$ (@extref[Docs](akka-docs:stream/index.html), [Github](https://github.com/akka/akka))
-* Akka Http $akka-http.version$ (@extref[Docs Scala](akka-http-docs:scala.html), @extref[Docs Java](akka-http-docs:java.html), [Github](https://github.com/akka/akka-http))
-
-Release notes are found at [Github releases](https://github.com/akka/alpakka/releases).
-
-If you want to try out a connector that has not yet been released, give @ref[snapshots](other-docs/snapshots.md) a spin which are published after every merged PR.
-
-## Contributing
-
-Please feel free to contribute to Alpakka by reporting issues you identify, or by suggesting changes to the code. Please refer to our [contributing instructions](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md) and our [contributor advice](https://github.com/akka/alpakka/blob/master/contributor-advice.md) to learn how it can be done. The target structure for Alpakka connectors is illustrated by the @ref[Reference connector](reference.md).
-
-We want Akka and Alpakka to strive in a welcoming and open atmosphere and expect all contributors to respect our [code of conduct](https://github.com/akka/alpakka/blob/master/CODE_OF_CONDUCT.md).
-
-
-@@ toc { .main depth=2 }
+@@toc { depth=2 }
 
 @@@ index
 
-* [Connectors](connectors.md)
-* [External stream components](external-components.md) (hosted separately)
-* [Self-contained examples](examples/index.md)
-* [Other documentation resources](other-docs/index.md)
-* [Integration Patterns](patterns.md)
+* [overview](overview.md)
 * [Data Transformations](data-transformations/index.md)
+* [AMQP](amqp.md)
+* [Apache Camel](external/apache-camel.md)
+* [Apache Cassandra](cassandra.md)
+* [Apache Geode](geode.md)
+* [Apache Kafka](kafka.md)
+* [Apache Kudu](kudu.md)
+* [Apache Solr](solr.md)
+* [Avro Parquet](avroparquet.md)
+* [AWS DynamoDB](dynamodb.md)
+* [AWS Kinesis](kinesis.md)
+* [AWS Lambda](awslambda.md)
+* [AWS S3](s3.md)
+* [AWS SNS](sns.md)
+* [AWS SQS](sqs.md)
+* [Azure Event Hubs](external/azure-event-hubs.md)
+* [Azure IoT Hub](external/azure-iot-hub.md)
+* [Azure Storage Queue](azure-storage-queue.md)
+* [Couchbase](external/couchbase.md)
+* [Elasticsearch](elasticsearch.md)
+* [Eventuate](external/eventuate.md)
+* [File](file.md)
+* [FS2](external/fs2.md)
+* [FTP](ftp.md)
+* [Google Cloud Pub/Sub](google-cloud-pub-sub.md)
+* [Google Firebase Cloud Messaging](google-fcm.md)
+* [gRPC](external/grpc.md)
+* [Hadoop Distributed File System](hdfs.md)
+* [HBase](hbase.md)
+* [HTTP](external/http.md)
+* [IronMQ](ironmq.md)
+* [JMS](jms.md)
+* [MongoDB](mongodb.md)
+* [MQTT](mqtt.md)
+* [OrientDB](orientdb.md)
+* [Pulsar](external/pulsar.md)
+* [Server-sent Events (SSE)](sse.md)
+* [Slick (JDBC)](slick.md)
+* [Spring Web](spring-web.md)
+* [TCP](external/tcp.md)
+* [UDP](udp.md)
+* [Unix Domain Sockets](unix-domain-socket.md)
 
 @@@

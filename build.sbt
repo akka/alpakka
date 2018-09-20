@@ -196,12 +196,11 @@ lazy val unixdomainsocket = alpakkaProject(
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
 
 lazy val docs = project
-  .enablePlugins(ParadoxPlugin)
+  .enablePlugins(AkkaParadoxPlugin)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .settings(
     name := "Alpakka",
     publish / skip := true,
-    paradoxTheme := Some(builtinParadoxTheme("generic")),
     paradoxProperties ++= Map(
       "project.url" -> "https://developer.lightbend.com/docs/alpakka/current/",
       "akka.version" -> Dependencies.AkkaVersion,
