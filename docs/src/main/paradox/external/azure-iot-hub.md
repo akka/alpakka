@@ -8,6 +8,9 @@ Azure IoT Hub is a service used to connect thousands to millions of devices to t
 The library can be used both in Java and Scala, providing a fluent DSL for both programming
 languages, similarly to the approach used by Akka.
 
+
+## External library
+
 This library is not maintained in the Alpakka repository.
 Learn more about it at [GitHub Azure/toketi-iothubreact](https://github.com/Azure/toketi-iothubreact).
 
