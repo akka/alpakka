@@ -384,28 +384,3 @@ private[jms] class JmsAckSession(override val connection: jms.Connection,
     session.close()
   }
 }
-
-private[jms] class JmsTxSession(override val connection: jms.Connection,
-                                override val session: jms.Session,
-                                override val jmsDestination: jms.Destination,
-                                override val settingsDestination: Destination)
-    extends JmsConsumerSession(connection, session, jmsDestination, settingsDestination) {
-
-  private[jms] val commitQueue = new ArrayBlockingQueue[TxEnvelope => Unit](1)
-
-  def commit(commitEnv: TxEnvelope): Unit = commitQueue.put { srcEnv =>
-    require(srcEnv == commitEnv, s"Source envelope mismatch on commit. Source: $srcEnv Commit: $commitEnv")
-    session.commit()
-  }
-
-  def rollback(commitEnv: TxEnvelope): Unit = commitQueue.put { srcEnv =>
-    require(srcEnv == commitEnv, s"Source envelope mismatch on rollback. Source: $srcEnv Commit: $commitEnv")
-    session.rollback()
-  }
-
-  override def abortSession(): Unit = {
-    // On abort, tombstone the onMessage loop to stop processing messages even if more messages are delivered.
-    commitQueue.put(_ => throw StopMessageListenerException())
-    session.close()
-  }
-}
