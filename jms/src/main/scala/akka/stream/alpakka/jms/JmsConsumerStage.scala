@@ -7,26 +7,32 @@ package akka.stream.alpakka.jms
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
 
-import akka.Done
 import akka.stream._
+import akka.stream.alpakka.jms.JmsConnector.{JmsConnectorState, JmsConnectorStopping}
+import akka.stream.alpakka.jms.impl.JmsConsumerMatValue
+import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.util.OptionVal
+import akka.{Done, NotUsed}
 import javax.jms._
 
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.concurrent.{Await, Future, TimeoutException}
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
 
 private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings, destination: Destination)
-    extends GraphStageWithMaterializedValue[SourceShape[Message], KillSwitch] {
+    extends GraphStageWithMaterializedValue[SourceShape[Message], JmsConsumerMatValue] {
 
   private val out = Outlet[Message]("JmsConsumer.out")
 
+  override protected def initialAttributes: Attributes = Attributes.name("JmsConsumer")
+
   override def shape: SourceShape[Message] = SourceShape[Message](out)
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, KillSwitch) = {
+  override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes
+  ): (GraphStageLogic, JmsConsumerMatValue) = {
     val logic = new SourceStageLogic[Message](shape, out, settings, destination, inheritedAttributes) {
 
       private val bufferSize = (settings.bufferSize + 1) * settings.sessionCount
@@ -48,31 +54,33 @@ private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings, destina
       override protected def onSessionOpened(jmsSession: JmsConsumerSession): Unit =
         jmsSession
           .createConsumer(settings.selector)
-          .onComplete {
-            case Success(consumer) =>
-              consumer.setMessageListener(new MessageListener {
-                def onMessage(message: Message): Unit = {
-                  backpressure.acquire()
-                  handleMessage.invoke(message)
-                }
-              })
-            case Failure(e) =>
-              fail.invoke(e)
+          .map { consumer =>
+            consumer.setMessageListener(new MessageListener {
+              def onMessage(message: Message): Unit = {
+                backpressure.acquire()
+                handleMessage.invoke(message)
+              }
+            })
           }
+          .onComplete(sessionOpenedCB.invoke)
     }
 
-    (logic, logic.killSwitch)
+    (logic, logic.consumerControl)
   }
 }
 
 final class JmsAckSourceStage(settings: JmsConsumerSettings, destination: Destination)
-    extends GraphStageWithMaterializedValue[SourceShape[AckEnvelope], KillSwitch] {
+    extends GraphStageWithMaterializedValue[SourceShape[AckEnvelope], JmsConsumerMatValue] {
 
   private val out = Outlet[AckEnvelope]("JmsSource.out")
 
+  override protected def initialAttributes: Attributes = Attributes.name("JmsAckConsumer")
+
   override def shape: SourceShape[AckEnvelope] = SourceShape[AckEnvelope](out)
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, KillSwitch) = {
+  override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes
+  ): (GraphStageLogic, JmsConsumerMatValue) = {
 
     val logic = new SourceStageLogic[AckEnvelope](shape, out, settings, destination, inheritedAttributes) {
       private val maxPendingAck = settings.bufferSize
@@ -89,8 +97,9 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings, destination: Destin
       override protected def onSessionOpened(jmsSession: JmsConsumerSession): Unit =
         jmsSession match {
           case session: JmsAckSession =>
-            session.createConsumer(settings.selector).onComplete {
-              case Success(consumer) =>
+            session
+              .createConsumer(settings.selector)
+              .map { consumer =>
                 consumer.setMessageListener(new MessageListener {
 
                   var listenerStopped = false
@@ -130,9 +139,8 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings, destination: Destin
                       }
                   }
                 })
-              case Failure(e) =>
-                fail.invoke(e)
-            }
+              }
+              .onComplete(sessionOpenedCB.invoke)
 
           case _ =>
             throw new IllegalArgumentException(
@@ -142,18 +150,22 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings, destination: Destin
         }
     }
 
-    (logic, logic.killSwitch)
+    (logic, logic.consumerControl)
   }
 }
 
 final class JmsTxSourceStage(settings: JmsConsumerSettings, destination: Destination)
-    extends GraphStageWithMaterializedValue[SourceShape[TxEnvelope], KillSwitch] {
+    extends GraphStageWithMaterializedValue[SourceShape[TxEnvelope], JmsConsumerMatValue] {
 
   private val out = Outlet[TxEnvelope]("JmsSource.out")
 
   override def shape: SourceShape[TxEnvelope] = SourceShape[TxEnvelope](out)
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, KillSwitch) = {
+  override protected def initialAttributes: Attributes = Attributes.name("JmsTxConsumer")
+
+  override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes
+  ): (GraphStageLogic, JmsConsumerMatValue) = {
     val logic = new SourceStageLogic[TxEnvelope](shape, out, settings, destination, inheritedAttributes) {
       protected def createSession(connection: Connection, createDestination: Session => javax.jms.Destination) = {
         val session =
@@ -166,8 +178,9 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings, destination: Destina
       override protected def onSessionOpened(jmsSession: JmsConsumerSession): Unit =
         jmsSession match {
           case session: JmsSession =>
-            session.createConsumer(settings.selector).onComplete {
-              case Success(consumer) =>
+            session
+              .createConsumer(settings.selector)
+              .map { consumer =>
                 consumer.setMessageListener(new MessageListener {
 
                   def onMessage(message: Message): Unit =
@@ -182,9 +195,8 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings, destination: Destina
                       case e: JMSException => handleError.invoke(e)
                     }
                 })
-              case Failure(e) =>
-                fail.invoke(e)
-            }
+              }
+              .onComplete(sessionOpenedCB.invoke)
 
           case _ =>
             throw new IllegalArgumentException(
@@ -194,7 +206,7 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings, destination: Destina
         }
     }
 
-    (logic, logic.killSwitch)
+    (logic, logic.consumerControl)
   }
 }
 
@@ -203,7 +215,7 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
                                    settings: JmsConsumerSettings,
                                    val destination: Destination,
                                    inheritedAttributes: Attributes)
-    extends GraphStageLogic(shape)
+    extends TimerGraphStageLogic(shape)
     with JmsConsumerConnector
     with StageLogging {
 
@@ -214,11 +226,13 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
 
   private val markStopped = getAsyncCallback[Done.type] { _ =>
     stopped = true
+    connectionStatus.set(JmsConnectorStopping)
     if (queue.isEmpty) completeStage()
   }
 
   private val markAborted = getAsyncCallback[Throwable] { ex =>
     stopped = true
+    connectionStatus.set(JmsConnectorStopping)
     failStage(ex)
   }
 
@@ -227,6 +241,7 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
   }
 
   override def preStart(): Unit = {
+    super.preStart()
     ec = executionContext(inheritedAttributes)
     initSessionAsync()
   }
@@ -263,7 +278,8 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
       Future
         .sequence(closeSessionFutures)
         .onComplete { _ =>
-          jmsConnection.foreach { connection =>
+          val status = updateState(JmsConnectorStopping)
+          JmsConnector.connection(status).foreach { connection =>
             try {
               connection.close()
             } catch {
@@ -289,12 +305,13 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
       Future
         .sequence(abortSessionFutures)
         .onComplete { _ =>
-          jmsConnection.foreach { connection =>
+          val status = updateState(JmsConnectorStopping)
+          JmsConnector.connection(status).foreach { connection =>
             try {
               connection.close()
-              log.info("JMS connection {} closed", jmsConnection)
+              log.info("JMS connection {} closed", connection)
             } catch {
-              case NonFatal(e) => log.error(e, "Error closing JMS connection {}", jmsConnection)
+              case NonFatal(e) => log.error(e, "Error closing JMS connection {}", connection)
             } finally {
               markAborted.invoke(ex)
             }
@@ -302,9 +319,11 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
         }
     }
 
-  private[jms] def killSwitch = new KillSwitch {
+  private[jms] def consumerControl = new JmsConsumerMatValue {
     override def shutdown(): Unit = stopSessions()
     override def abort(ex: Throwable): Unit = abortSessions(ex)
+    override def connected: Source[JmsConnectorState, NotUsed] =
+      Source.fromFuture(connectionStatusSource).flatMapConcat(identity)
   }
 
   override def postStop(): Unit = {

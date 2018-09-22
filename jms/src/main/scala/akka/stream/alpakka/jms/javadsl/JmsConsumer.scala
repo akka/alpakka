@@ -5,10 +5,11 @@
 package akka.stream.alpakka.jms.javadsl
 
 import javax.jms.Message
-
 import akka.NotUsed
 import akka.stream.KillSwitch
 import akka.stream.alpakka.jms._
+import akka.stream.javadsl.Source
+
 import scala.collection.JavaConverters._
 
 object JmsConsumer {
@@ -16,8 +17,8 @@ object JmsConsumer {
   /**
    * Java API: Creates an [[JmsConsumer]] for [[javax.jms.Message]]
    */
-  def create(settings: JmsConsumerSettings): akka.stream.javadsl.Source[Message, KillSwitch] =
-    akka.stream.alpakka.jms.scaladsl.JmsConsumer.apply(settings).asJava
+  def create(settings: JmsConsumerSettings): akka.stream.javadsl.Source[Message, JmsConsumerControl] =
+    akka.stream.alpakka.jms.scaladsl.JmsConsumer.apply(settings).mapMaterializedValue(toConsumerControl).asJava
 
   /**
    * Java API: Creates an [[JmsConsumer]] for texts
@@ -72,4 +73,13 @@ object JmsConsumer {
    */
   def browse(settings: JmsBrowseSettings): akka.stream.javadsl.Source[Message, NotUsed] =
     akka.stream.alpakka.jms.scaladsl.JmsConsumer.browse(settings).asJava
+
+  private def toConsumerControl(scalaControl: scaladsl.JmsConsumerControl) = new JmsConsumerControl {
+
+    override def connected(): Source[JmsConnectorState, NotUsed] = transformConnected(scalaControl.connection)
+
+    override def shutdown(): Unit = scalaControl.shutdown()
+
+    override def abort(ex: Throwable): Unit = scalaControl.abort(ex)
+  }
 }

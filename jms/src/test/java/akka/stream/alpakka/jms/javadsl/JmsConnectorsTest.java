@@ -268,7 +268,7 @@ public class JmsConnectorsTest {
           // #run-jms-sink
 
           // #create-jms-source
-          Source<Message, KillSwitch> jmsSource =
+          Source<Message, JmsConsumerControl> jmsSource =
               JmsConsumer.create(
                   JmsConsumerSettings.create(connectionFactory)
                       .withQueue("test")
@@ -324,7 +324,7 @@ public class JmsConnectorsTest {
 
           Source.from(msgsIn).runWith(jmsSink, materializer);
 
-          Source<Message, KillSwitch> jmsSource =
+          Source<Message, JmsConsumerControl> jmsSource =
               JmsConsumer.create(
                   JmsConsumerSettings.create(connectionFactory)
                       .withQueue("test")
@@ -371,7 +371,7 @@ public class JmsConnectorsTest {
           Source.from(msgsIn).runWith(jmsSink, materializer);
 
           // #create-jms-source-with-selector
-          Source<Message, KillSwitch> jmsSource =
+          Source<Message, JmsConsumerControl> jmsSource =
               JmsConsumer.create(
                   JmsConsumerSettings.create(connectionFactory)
                       .withQueue("test")
@@ -487,7 +487,7 @@ public class JmsConnectorsTest {
           Source.from(msgsIn).runWith(jmsSink, materializer);
 
           // #create-jms-source-client-ack
-          Source<Message, KillSwitch> jmsSource =
+          Source<Message, JmsConsumerControl> jmsSource =
               JmsConsumer.create(
                   JmsConsumerSettings.create(connectionFactory)
                       .withQueue("test")
@@ -523,7 +523,11 @@ public class JmsConnectorsTest {
           ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(JmsProducerSettings.create(connectionFactory).withQueue("test"));
+              JmsProducer.create(
+                  JmsProducerSettings.create(connectionFactory)
+                      .withQueue("test")
+                      .withConnectionRetrySettings(
+                          ConnectionRetrySettings.create().withMaxRetries(0)));
 
           List<JmsTextMessage> msgsIn = createTestMessageList();
 
@@ -791,7 +795,10 @@ public class JmsConnectorsTest {
         ctx -> {
           ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
           // #run-flexi-flow-producer
-          Flow<Envelope<JmsTextMessage, String>, Envelope<JmsTextMessage, String>, NotUsed>
+          Flow<
+                  Envelope<JmsTextMessage, String>,
+                  Envelope<JmsTextMessage, String>,
+                  JmsProducerStatus>
               jmsProducer =
                   JmsProducer.flexiFlow(
                       JmsProducerSettings.create(connectionFactory).withQueue("test"));
@@ -827,7 +834,10 @@ public class JmsConnectorsTest {
                   .run(materializer);
 
           // #run-flexi-flow-pass-through-producer
-          Flow<Envelope<JmsTextMessage, String>, Envelope<JmsTextMessage, String>, NotUsed>
+          Flow<
+                  Envelope<JmsTextMessage, String>,
+                  Envelope<JmsTextMessage, String>,
+                  JmsProducerStatus>
               jmsProducer =
                   JmsProducer.flexiFlow(
                       JmsProducerSettings.create(connectionFactory).withQueue("test"));

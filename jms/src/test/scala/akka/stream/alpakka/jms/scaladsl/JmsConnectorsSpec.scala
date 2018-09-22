@@ -550,7 +550,9 @@ class JmsConnectorsSpec extends JmsSpec {
       val connectionFactory = new CachedConnectionFactory(url)
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
-        JmsProducerSettings(connectionFactory).withQueue("numbers")
+        JmsProducerSettings(connectionFactory)
+          .withQueue("numbers")
+          .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(0))
       )
 
       val completionFuture: Future[Done] = Source
@@ -562,12 +564,11 @@ class JmsConnectorsSpec extends JmsSpec {
       eventually { connectionFactory.cachedConnection shouldBe 'closed }
     }
 
-    "sink disconnect exceptional completion" in withServer() { ctx =>
+    "producer disconnect exceptional completion" in withServer() { ctx =>
       import system.dispatcher
 
       val url: String = ctx.url
       val connectionFactory = new CachedConnectionFactory(url)
-      val brokerStop = new CountDownLatch(1)
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
         JmsProducerSettings(connectionFactory)
@@ -579,22 +580,26 @@ class JmsConnectorsSpec extends JmsSpec {
         .mapAsync(1)(
           n =>
             Future {
-              Thread.sleep(500)
-              brokerStop.await()
+              Thread.sleep(100)
               JmsTextMessage(n.toString)
           }
         )
         .runWith(jmsSink)
 
       ctx.broker.stop()
-      brokerStop.countDown()
 
       val exception = completionFuture.failed.futureValue
       exception shouldBe a[ConnectionRetryException]
       exception.getCause shouldBe a[JMSException]
 
-      // connection was not yet initialized before broker stop
-      connectionFactory.cachedConnection shouldBe null
+      // connection should be either
+      // - not yet initialized before broker stop, or
+      // - closed on broker stop (if preStart came first).
+      if (connectionFactory.cachedConnection != null) {
+        connectionFactory.cachedConnection shouldBe 'closed
+      }
+
+      ctx.broker.start(true)
     }
 
     "ensure no message loss when stopping a stream" in withServer() { ctx =>
