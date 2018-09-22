@@ -249,6 +249,12 @@ object Dependencies {
     )
   )
 
+  val MqttStreaming = Seq(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion // ApacheV2
+    )
+  )
+
   val OrientDB = Seq(
     libraryDependencies ++= Seq(
       "com.orientechnologies" % "orientdb-graphdb" % "3.0.4", // ApacheV2
