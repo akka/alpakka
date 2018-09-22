@@ -69,7 +69,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
         if (isAvailable(out)) pullIfNeeded()
       }
 
-      override protected def connectionFailed(ex: Throwable): Unit = ex match {
+      override def connectionFailed(ex: Throwable): Unit = ex match {
         case _: jms.JMSException =>
           jmsSessions = Seq.empty
           jmsProducers.clear()
@@ -117,7 +117,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
 
       private def sendWithRetries(send: SendAttempt[E]): Unit = {
         import send._
-        val eventualSend = if (jmsProducers.nonEmpty) {
+        if (jmsProducers.nonEmpty) {
           val jmsProducer: JmsMessageProducer = jmsProducers.dequeue()
           Future(jmsProducer.send(message.message)).andThen {
             case tried => sendCompletedCB.invoke((send, tried, jmsProducer))
