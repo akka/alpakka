@@ -10,9 +10,8 @@ import akka.stream.{ActorAttributes, Attributes, Outlet, SourceShape}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import java.util.{Enumeration => JEnumeration}
 
-private[jms] final class JmsBrowseStage(settings: JmsBrowseSettings) extends GraphStage[SourceShape[Message]] {
-  private val queue = settings.destination.getOrElse { throw new IllegalArgumentException("Destination is missing") }
-
+private[jms] final class JmsBrowseStage(settings: JmsBrowseSettings, queue: Destination)
+    extends GraphStage[SourceShape[Message]] {
   private val out = Outlet[Message]("JmsBrowseStage.out")
   val shape = SourceShape(out)
 

@@ -154,7 +154,9 @@ final case class JmsProducerSettings(connectionFactory: ConnectionFactory,
     copy(acknowledgeMode = Option(acknowledgeMode))
 }
 
-final case class Credentials(username: String, password: String)
+final case class Credentials(username: String, password: String) {
+  override def toString = s"Credentials($username,${"*" * password.length})"
+}
 
 object JmsBrowseSettings {
 

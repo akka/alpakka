@@ -30,6 +30,8 @@ private[jms] trait JmsConnector[S <: JmsSession] {
 
   protected var jmsSessions = Seq.empty[S]
 
+  protected def destination: Destination
+
   protected def jmsSettings: JmsSettings
 
   protected def onSessionOpened(jmsSession: S): Unit = {}
@@ -178,14 +180,9 @@ private[jms] trait JmsConsumerConnector extends JmsConnector[JmsConsumerSession]
 
   override def openSessions(onConnectionFailure: jms.JMSException => Unit): Future[Seq[JmsConsumerSession]] =
     openRecoverableConnection(startConnection = true, onConnectionFailure).flatMap { connection =>
-      val createDestination = jmsSettings.destination match {
-        case Some(destination) => destination.create
-        case _ => throw new IllegalArgumentException("Destination is missing")
-      }
-
       val sessionFutures =
         for (_ <- 0 until jmsSettings.sessionCount)
-          yield Future(createSession(connection, createDestination))
+          yield Future(createSession(connection, destination.create))
       Future.sequence(sessionFutures)
     }(ExecutionContexts.sameThreadExecutionContext)
 }
@@ -200,14 +197,9 @@ private[jms] trait JmsProducerConnector extends JmsConnector[JmsProducerSession]
 
   def openSessions(onConnectionFailure: jms.JMSException => Unit): Future[Seq[JmsProducerSession]] =
     openRecoverableConnection(startConnection = false, onConnectionFailure).flatMap { connection =>
-      val createDestination = jmsSettings.destination match {
-        case Some(destination) => destination.create
-        case _ => throw new IllegalArgumentException("Destination is missing")
-      }
-
       val sessionFutures =
         for (_ <- 0 until jmsSettings.sessionCount)
-          yield Future(createSession(connection, createDestination))
+          yield Future(createSession(connection, destination.create))
       Future.sequence(sessionFutures)
     }(ExecutionContexts.sameThreadExecutionContext)
 }

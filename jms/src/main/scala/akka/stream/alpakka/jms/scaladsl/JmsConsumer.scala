@@ -5,21 +5,22 @@
 package akka.stream.alpakka.jms.scaladsl
 
 import javax.jms._
-
 import akka.NotUsed
 import akka.stream.KillSwitch
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.Source
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 object JmsConsumer {
 
   /**
    * Scala API: Creates an [[JmsConsumer]] for [[javax.jms.Message]] instances
    */
-  def apply(settings: JmsConsumerSettings): Source[Message, KillSwitch] =
-    Source.fromGraph(new JmsConsumerStage(settings))
+  def apply(settings: JmsConsumerSettings): Source[Message, KillSwitch] = {
+    require(settings.destination.isDefined, noConsumerDestination(settings))
+    Source.fromGraph(new JmsConsumerStage(settings, settings.destination.get))
+  }
 
   /**
    * Scala API: Creates an [[JmsConsumer]] for texts
@@ -34,7 +35,7 @@ object JmsConsumer {
     apply(settings).map { msg =>
       val mapMessage = msg.asInstanceOf[MapMessage]
 
-      mapMessage.getMapNames.foldLeft(Map[String, Any]()) { (result, key) =>
+      mapMessage.getMapNames.asScala.foldLeft(Map[String, Any]()) { (result, key) =>
         val keyAsString = key.toString
         val value = mapMessage.getObject(keyAsString)
         result.+(keyAsString -> value)
@@ -65,8 +66,10 @@ object JmsConsumer {
    * @param settings The settings for the ack source.
    * @return Source for JMS messages in an AckEnvelope.
    */
-  def ackSource(settings: JmsConsumerSettings): Source[AckEnvelope, KillSwitch] =
-    Source.fromGraph(new JmsAckSourceStage(settings))
+  def ackSource(settings: JmsConsumerSettings): Source[AckEnvelope, KillSwitch] = {
+    require(settings.destination.isDefined, noConsumerDestination(settings))
+    Source.fromGraph(new JmsAckSourceStage(settings, settings.destination.get))
+  }
 
   /**
    * Scala API: Creates a [[JmsConsumer]] of envelopes containing messages. It requires explicit
@@ -75,12 +78,26 @@ object JmsConsumer {
    * @param settings The settings for the tx source
    * @return Source of the JMS messages in a TxEnvelope
    */
-  def txSource(settings: JmsConsumerSettings): Source[TxEnvelope, KillSwitch] =
-    Source.fromGraph(new JmsTxSourceStage(settings))
+  def txSource(settings: JmsConsumerSettings): Source[TxEnvelope, KillSwitch] = {
+    require(settings.destination.isDefined, noConsumerDestination(settings))
+    Source.fromGraph(new JmsTxSourceStage(settings, settings.destination.get))
+  }
 
   /**
    * Scala API: Creates a [[JmsConsumer]] for browsing messages non-destructively
    */
-  def browse(settings: JmsBrowseSettings): Source[Message, NotUsed] =
-    Source.fromGraph(new JmsBrowseStage(settings))
+  def browse(settings: JmsBrowseSettings): Source[Message, NotUsed] = {
+    require(settings.destination.isDefined, noBrowseDestination(settings))
+    Source.fromGraph(new JmsBrowseStage(settings, settings.destination.get))
+  }
+
+  private def noConsumerDestination(settings: JmsConsumerSettings) =
+    s"""Unable to create JmsConsumer: its needs a destination to read messages from, but none was provided in
+       |$settings
+       |Please use withQueue, withTopic or withDestination to specify a destination.""".stripMargin
+
+  private def noBrowseDestination(settings: JmsBrowseSettings) =
+    s"""Unable to create JmsConsumer browser: its needs a destination to read messages from, but none was provided in
+       |$settings
+       |Please use withQueue or withDestination to specify a destination.""".stripMargin
 }

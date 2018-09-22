@@ -16,8 +16,9 @@ import scala.concurrent.Future
 import scala.util.control.{NoStackTrace, NonFatal}
 import scala.util.{Failure, Success, Try}
 
-private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings: JmsProducerSettings)
-    extends GraphStage[FlowShape[Envelope[A, PassThrough], Envelope[A, PassThrough]]] {
+private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings: JmsProducerSettings,
+                                                                        destination: Destination)
+    extends GraphStage[FlowShape[Envelope[A, PassThrough], Envelope[A, PassThrough]]] { stage =>
 
   private type E = Envelope[A, PassThrough]
   private val in = Inlet[E]("JmsProducer.in")
@@ -47,7 +48,8 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
       private val inFlightMessagesWithProducer: Buffer[Holder[E]] =
         Buffer(settings.sessionCount, settings.sessionCount)
 
-      protected def jmsSettings: JmsProducerSettings = settings
+      protected val destination = stage.destination
+      protected val jmsSettings: JmsProducerSettings = settings
 
       override def preStart(): Unit = {
         ec = executionContext(inheritedAttributes)

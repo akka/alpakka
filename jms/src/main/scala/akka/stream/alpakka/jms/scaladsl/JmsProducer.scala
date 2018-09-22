@@ -17,10 +17,10 @@ object JmsProducer {
    * Scala API: Creates an [[JmsProducer]] for [[JmsMessage]]s
    */
   def flow[T <: JmsMessage](settings: JmsProducerSettings): Flow[T, T, NotUsed] = {
-    require(settings.destination.isDefined, "Producer destination must be defined in producer flow")
+    require(settings.destination.isDefined, noProducerDestination(settings))
     Flow[T]
       .map(m => JmsProducerMessage.Message(m, NotUsed))
-      .via(Flow.fromGraph(new JmsProducerStage(settings)))
+      .via(Flow.fromGraph(new JmsProducerStage(settings, settings.destination.get)))
       .collectType[JmsProducerMessage.Message[T, NotUsed]]
       .map(_.message)
   }
@@ -31,8 +31,8 @@ object JmsProducer {
   def flexiFlow[T <: JmsMessage, PassThrough](
       settings: JmsProducerSettings
   ): Flow[Envelope[T, PassThrough], Envelope[T, PassThrough], NotUsed] = {
-    require(settings.destination.isDefined, "Producer destination must be defined in producer flow")
-    Flow.fromGraph(new JmsProducerStage(settings))
+    require(settings.destination.isDefined, noProducerDestination(settings))
+    Flow.fromGraph(new JmsProducerStage(settings, settings.destination.get))
   }
 
   /**
@@ -65,4 +65,8 @@ object JmsProducer {
   def objectSink(settings: JmsProducerSettings): Sink[java.io.Serializable, Future[Done]] =
     Flow.fromFunction((s: java.io.Serializable) => JmsObjectMessage(s)).toMat(apply(settings))(Keep.right)
 
+  private def noProducerDestination(settings: JmsProducerSettings) =
+    s"""Unable to create JmsProducer: it  needs a default destination to send messages to, but none was provided in
+      |$settings
+      |Please use withQueue, withTopic or withDestination to specify a destination.""".stripMargin
 }
