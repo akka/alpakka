@@ -53,7 +53,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
 
       override def preStart(): Unit = {
         ec = executionContext(inheritedAttributes)
-        initSessionAsync(withReconnect = false)
+        initSessionAsync()
       }
 
       override protected def onSessionOpened(jmsSession: JmsProducerSession): Unit = {

@@ -62,11 +62,12 @@ private[jms] trait JmsConnector[S <: JmsSession] {
   case object Connected extends ConnectionStatus
   case object TimedOut extends ConnectionStatus
 
-  protected def initSessionAsync(withReconnect: Boolean = true): Unit = {
+  protected def initSessionAsync(): Unit = {
 
-    def failureHandler(ex: Throwable) =
-      if (withReconnect && ex.isInstanceOf[jms.JMSException]) initSessionAsync()
-      else fail.invoke(ex)
+    def failureHandler(ex: Throwable): Unit = ex match {
+      case _: jms.JMSException => initSessionAsync()
+      case _ => fail.invoke(ex)
+    }
 
     val allSessions = openSessions(failureHandler)
     allSessions.failed.foreach(failureHandler)
@@ -125,7 +126,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     Future.firstCompletedOf(Iterator(connectionFuture, timeoutFuture))(ExecutionContexts.sameThreadExecutionContext)
   }
 
-  private def openConnectionWithRetry(startConnection: Boolean, n: Int = 0, maxed: Boolean = false)(
+  private def openConnectionWithRetry(startConnection: Boolean, n: Int = 0)(
       implicit system: ActorSystem
   ): Future[jms.Connection] =
     openConnection(startConnection).recoverWith {
@@ -138,15 +139,9 @@ private[jms] trait JmsConnector[S <: JmsSession] {
           if (maxRetries == 0) Future.failed(t)
           else Future.failed(ConnectionRetryException(s"Could not establish connection after $n retries.", t))
         } else {
-          val delay = if (maxed) maxBackoff else waitTime(nextN)
-          if (delay >= maxBackoff) {
-            after(maxBackoff, system.scheduler) {
-              openConnectionWithRetry(startConnection, nextN, maxed = true)
-            }
-          } else {
-            after(delay, system.scheduler) {
-              openConnectionWithRetry(startConnection, nextN)
-            }
+          val delay = waitTime(nextN).min(maxBackoff)
+          after(delay, system.scheduler) {
+            openConnectionWithRetry(startConnection, nextN)
           }
         }
     }(ExecutionContexts.sameThreadExecutionContext)
@@ -156,7 +151,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     implicit val system: ActorSystem = ActorMaterializerHelper.downcast(materializer).system
     jmsConnection = openConnectionWithRetry(startConnection).map { connection =>
       connection.setExceptionListener(new jms.ExceptionListener {
-        override def onException(ex: jms.JMSException) = {
+        override def onException(ex: jms.JMSException): Unit = {
           try {
             connection.close() // best effort closing the connection.
           } catch {
