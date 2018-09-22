@@ -68,7 +68,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
   protected def initSessionAsync(): Unit = {
 
     val allSessions = openSessions()
-    allSessions.failed.foreach(connectionFailedCB.invoke)
+    allSessions.failed.foreach(fail.invoke)
     // wait for all sessions to successfully initialize before invoking the onSession callback.
     // reduces flakiness (start, consume, then crash) at the cost of increased latency of startup.
     allSessions.foreach(_.foreach(onSession.invoke))
