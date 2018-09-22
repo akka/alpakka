@@ -1108,7 +1108,9 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
             when(message.getText).thenReturn(s)
             listener.onMessage(message)
           }
-          exceptionListener.foreach(_.onException(new JMSException("Mock: causing an exception while consuming")))
+          if (messageGroups.hasNext) {
+            exceptionListener.foreach(_.onException(new JMSException("Mock: causing an exception while consuming")))
+          }
         }
       })
 
@@ -1122,9 +1124,8 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
 
       resultFuture.futureValue should contain theSameElementsAs mockMessages
 
-      // Connects 1 time at start, 3 times each 3 messages, and 1 time at end.
-      // Due to buffering, it will finish re-connecting before stream finishes.
-      connectCount shouldBe 5
+      // Connects 1 time at start and 3 times each 3 messages.
+      connectCount shouldBe 4
     }
 
     "pass through message envelopes" in withServer() { ctx =>
@@ -1179,6 +1180,49 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
 
       verify(session, never()).createTextMessage(any[String])
       verify(producer, never()).send(any[javax.jms.Destination], any[Message], any[Int], any[Int], any[Long])
+    }
+
+    "retry sending on network failures" in withServer() { ctx =>
+      val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      val jms = JmsProducer.flow[JmsMapMessage](
+        JmsProducerSettings(connectionFactory)
+          .withQueue("test")
+          .withSessionCount(3)
+          .withConnectionRetrySettings(
+            ConnectionRetrySettings()
+              .withConnectTimeout(100.millis)
+              .withInitialRetry(50.millis)
+              .withMaxBackoff(50.millis)
+              .withInfiniteRetries()
+          )
+          .withSendRetrySettings(
+            SendRetrySettings().withInitialRetry(10.millis).withMaxBackoff(10.millis).withInfiniteRetries()
+          )
+      )
+
+      val (cancellable, result) = Source
+        .tick(50.millis, 50.millis, "")
+        .zipWithIndex
+        .map(e => JmsMapMessage(Map("time" -> System.currentTimeMillis(), "index" -> e._2)))
+        .via(jms)
+        .map(_.body)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      Thread.sleep(500)
+      ctx.broker.stop()
+      Thread.sleep(500)
+      ctx.broker.start(true)
+      val restartTime = System.currentTimeMillis()
+      Thread.sleep(500)
+      cancellable.cancel()
+
+      val resultList = result.futureValue
+      def index(m: Map[String, Any]) = m("index").asInstanceOf[Long]
+      def time(m: Map[String, Any]) = m("time").asInstanceOf[Long]
+      resultList.filter(b => time(b) > restartTime) shouldNot be(empty)
+      resultList.sliding(2).forall(pair => index(pair.head) + 1 == index(pair.last)) shouldBe true
     }
   }
 
