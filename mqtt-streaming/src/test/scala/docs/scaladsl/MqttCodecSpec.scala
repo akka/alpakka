@@ -338,5 +338,27 @@ class MqttCodecSpec extends WordSpec with Matchers {
     "underflow when decoding sub ack packets" in {
       ByteString.empty.iterator.decodeSubAck(0) shouldBe Left(MqttCodec.BufferUnderflow)
     }
+
+    "encode/decode unsubscribe packets" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val packet = Unsubscribe("some-head-topic")
+      val bytes = packet.encode(bsb).result()
+      bytes.size shouldBe 21
+      bytes.iterator.decodeControlPacket(MaxPacketSize) shouldBe Right(packet)
+    }
+
+    "bad unsubscribe message when decoding unsubscribe packets given no topics" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val packet = Unsubscribe(PacketId(1), List.empty)
+      val bytes = packet.encode(bsb).result()
+      bytes.iterator
+        .decodeControlPacket(MaxPacketSize) shouldBe Left(
+        BadUnsubscribeMessage(PacketId(1), List.empty)
+      )
+    }
+
+    "underflow when decoding unsubscribe packets" in {
+      ByteString.empty.iterator.decodeUnsubscribe(0) shouldBe Left(MqttCodec.BufferUnderflow)
+    }
   }
 }

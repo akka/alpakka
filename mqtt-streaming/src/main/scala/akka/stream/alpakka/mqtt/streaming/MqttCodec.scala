@@ -45,6 +45,7 @@ object ControlPacketFlags {
   val ReservedGeneral = ControlPacketFlags(0)
   val ReservedPubRel = ControlPacketFlags(1 << 1)
   val ReservedSubscribe = ControlPacketFlags(1 << 1)
+  val ReservedUnsubscribe = ControlPacketFlags(1 << 1)
   val DUP = ControlPacketFlags(1 << 3)
   val QoSAtMostOnceDelivery = ControlPacketFlags(0)
   val QoSAtLeastOnceDelivery = ControlPacketFlags(1 << 1)
@@ -230,7 +231,22 @@ final case class Subscribe(packetId: PacketId, topicFilters: Seq[(String, Contro
  * 3.9 SUBACK – Subscribe acknowledgement
  */
 final case class SubAck(packetId: PacketId, returnCodes: Seq[ControlPacketFlags])
-    extends ControlPacket(ControlPacketType.SUBACK, ControlPacketFlags.ReservedSubscribe)
+    extends ControlPacket(ControlPacketType.SUBACK, ControlPacketFlags.ReservedGeneral)
+
+object Unsubscribe {
+
+  /**
+   *  A convenience for unsubscribing from a single topic with at-most-once semantics
+   */
+  def apply(topicFilter: String): Unsubscribe =
+    Unsubscribe(PacketId(0), List(topicFilter))
+}
+
+/**
+ * 3.10 UNSUBSCRIBE – Unsubscribe from topics
+ */
+final case class Unsubscribe(packetId: PacketId, topicFilters: Seq[String])
+    extends ControlPacket(ControlPacketType.UNSUBSCRIBE, ControlPacketFlags.ReservedUnsubscribe)
 
 /**
  * Provides functions to decode bytes to various MQTT types and vice-versa.
@@ -313,6 +329,12 @@ object MqttCodec {
    * Something is wrong with the subscribe ack message
    */
   final case class BadSubAckMessage(packetId: PacketId, returnCodes: Seq[ControlPacketFlags]) extends DecodeError
+
+  /**
+   * Something is wrong with the unsubscribe message
+   */
+  final case class BadUnsubscribeMessage(packetId: PacketId, topicFilters: Seq[Either[DecodeError, String]])
+      extends DecodeError
 
   // 1.5.3 UTF-8 encoded strings
   implicit class MqttString(val v: String) extends AnyVal {
@@ -446,6 +468,20 @@ object MqttCodec {
     }
   }
 
+  // 3.10 UNSUBSCRIBE – Unsubscribe from topics
+  implicit class MqttUnsubscribe(val v: Unsubscribe) extends AnyVal {
+    def encode(bsb: ByteStringBuilder): ByteStringBuilder = {
+      val packetBsb = ByteString.newBuilder
+      // Variable header
+      packetBsb.putShort(v.packetId.underlying.toShort)
+      // Payload
+      v.topicFilters.foreach(_.encode(packetBsb))
+      // Fixed header
+      (v: ControlPacket).encode(bsb, packetBsb.length)
+      bsb.append(packetBsb.result())
+    }
+  }
+
   implicit class MqttByteIterator(val v: ByteIterator) extends AnyVal {
 
     // 1.5.3 UTF-8 encoded strings
@@ -488,8 +524,10 @@ object MqttCodec {
               v.decodePubComp()
             case (ControlPacketType.SUBSCRIBE, ControlPacketFlags.ReservedSubscribe) =>
               v.decodeSubscribe(l)
-            case (ControlPacketType.SUBACK, ControlPacketFlags.ReservedSubscribe) =>
+            case (ControlPacketType.SUBACK, ControlPacketFlags.ReservedGeneral) =>
               v.decodeSubAck(l)
+            case (ControlPacketType.UNSUBSCRIBE, ControlPacketFlags.ReservedUnsubscribe) =>
+              v.decodeUnsubscribe(l)
             case (packetType, flags) =>
               Left(UnknownPacketType(packetType, flags))
           }
@@ -678,6 +716,40 @@ object MqttCodec {
           Right(SubAck(packetId, returnCodes))
         } else {
           Left(BadSubAckMessage(packetId, returnCodes))
+        }
+      } catch {
+        case _: NoSuchElementException => Left(BufferUnderflow)
+      }
+
+    // 3.10 UNSUBSCRIBE – Unsubscribe from topics
+    def decodeUnsubscribe(l: Int): Either[DecodeError, Unsubscribe] =
+      try {
+        val packetLen = v.len
+        val packetId = PacketId(v.getShort & 0xffff)
+        @tailrec
+        def decodeTopicFilters(
+            remainingLen: Int,
+            topicFilters: Seq[Either[DecodeError, String]]
+        ): Seq[Either[DecodeError, String]] =
+          if (remainingLen > 0) {
+            val packetLenAtTopicFilter = v.len
+            val topicFilter = v.decodeString()
+            decodeTopicFilters(remainingLen - (packetLenAtTopicFilter - v.len), topicFilters :+ topicFilter)
+          } else {
+            topicFilters
+          }
+        val topicFilters = decodeTopicFilters(l - (packetLen - v.len), List.empty)
+        val topicFiltersValid = topicFilters.nonEmpty && topicFilters.foldLeft(true) {
+          case (true, Right(_)) => true
+          case _ => false
+        }
+        if (topicFiltersValid) {
+          Right(Unsubscribe(packetId, topicFilters.flatMap {
+            case Right(tfs) => List(tfs)
+            case _ => List.empty
+          }))
+        } else {
+          Left(BadUnsubscribeMessage(packetId, topicFilters))
         }
       } catch {
         case _: NoSuchElementException => Left(BufferUnderflow)
