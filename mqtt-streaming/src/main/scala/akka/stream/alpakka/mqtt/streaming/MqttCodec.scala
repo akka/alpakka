@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
 import akka.stream.alpakka.mqtt.streaming.Connect.ProtocolLevel
-import akka.util.{ByteIterator, ByteStringBuilder}
+import akka.util.{ByteIterator, ByteString, ByteStringBuilder}
 
 import scala.concurrent.duration._
 
@@ -16,22 +16,22 @@ import scala.concurrent.duration._
  * 2.2.1 MQTT Control Packet type
  */
 object ControlPacketType {
-  private[streaming] val Reserved1 = ControlPacketType(0)
-  private[streaming] val CONNECT = ControlPacketType(1)
-  private[streaming] val CONNACK = ControlPacketType(2)
-  private[streaming] val PUBLISH = ControlPacketType(3)
-  private[streaming] val PUBACK = ControlPacketType(4)
-  private[streaming] val PUBREC = ControlPacketType(5)
-  private[streaming] val PUBREL = ControlPacketType(6)
-  private[streaming] val PUBCOMP = ControlPacketType(7)
-  private[streaming] val SUBSCRIBE = ControlPacketType(8)
-  private[streaming] val SUBACK = ControlPacketType(9)
-  private[streaming] val UNSUBSCRIBE = ControlPacketType(10)
-  private[streaming] val UNSUBACK = ControlPacketType(11)
-  private[streaming] val PINGREQ = ControlPacketType(12)
-  private[streaming] val PINGRESP = ControlPacketType(13)
-  private[streaming] val DISCONNECT = ControlPacketType(14)
-  private[streaming] val Reserved2 = ControlPacketType(15)
+  val Reserved1 = ControlPacketType(0)
+  val CONNECT = ControlPacketType(1)
+  val CONNACK = ControlPacketType(2)
+  val PUBLISH = ControlPacketType(3)
+  val PUBACK = ControlPacketType(4)
+  val PUBREC = ControlPacketType(5)
+  val PUBREL = ControlPacketType(6)
+  val PUBCOMP = ControlPacketType(7)
+  val SUBSCRIBE = ControlPacketType(8)
+  val SUBACK = ControlPacketType(9)
+  val UNSUBSCRIBE = ControlPacketType(10)
+  val UNSUBACK = ControlPacketType(11)
+  val PINGREQ = ControlPacketType(12)
+  val PINGRESP = ControlPacketType(13)
+  val DISCONNECT = ControlPacketType(14)
+  val Reserved2 = ControlPacketType(15)
 }
 final case class ControlPacketType(underlying: Int) extends AnyVal
 
@@ -39,7 +39,7 @@ final case class ControlPacketType(underlying: Int) extends AnyVal
  * 2.2.2 Flags
  */
 object ControlPacketFlags {
-  private[streaming] val Reserved = ControlPacketFlags(0x0)
+  val Reserved = ControlPacketFlags(0x0)
 
 }
 final case class ControlPacketFlags(underlying: Int) extends AnyVal
@@ -47,36 +47,34 @@ final case class ControlPacketFlags(underlying: Int) extends AnyVal
 /**
  * 2 MQTT Control Packet format
  */
-sealed abstract class ControlPacket(val packetType: ControlPacketType, val flags: ControlPacketFlags) {
-  // 2.2 Fixed header
-  def remainingLength: Int
-}
+sealed abstract class ControlPacket(val packetType: ControlPacketType, val flags: ControlPacketFlags)
 
-case object Reserved1 extends ControlPacket(ControlPacketType.Reserved1, ControlPacketFlags.Reserved) {
-  override def remainingLength: Int =
-    0
-}
+case object Reserved1 extends ControlPacket(ControlPacketType.Reserved1, ControlPacketFlags.Reserved)
 
-case object Reserved2 extends ControlPacket(ControlPacketType.Reserved2, ControlPacketFlags.Reserved) {
-  override def remainingLength: Int =
-    0
-}
+case object Reserved2 extends ControlPacket(ControlPacketType.Reserved2, ControlPacketFlags.Reserved)
 
 object ConnectFlags {
-  private[streaming] val None = ConnectFlags(0)
-  private[streaming] val Reserved = ConnectFlags(0)
-  private[streaming] val CleanSession = ConnectFlags(1 << 1)
-  private[streaming] val WillFlag = ConnectFlags(1 << 2)
-  private[streaming] val WillQoS = ConnectFlags(2 << 3)
-  private[streaming] val WillRetain = ConnectFlags(1 << 5)
-  private[streaming] val PasswordFlag = ConnectFlags(1 << 6)
-  private[streaming] val UsernameFlag = ConnectFlags(1 << 7)
+  val None = ConnectFlags(0)
+  val Reserved = ConnectFlags(1)
+  val CleanSession = ConnectFlags(1 << 1)
+  val WillFlag = ConnectFlags(1 << 2)
+  val WillQoS = ConnectFlags(3 << 3)
+  val WillRetain = ConnectFlags(1 << 5)
+  val PasswordFlag = ConnectFlags(1 << 6)
+  val UsernameFlag = ConnectFlags(1 << 7)
 }
 
 /**
  * 3.1.2.3 Connect Flags
  */
-final case class ConnectFlags(underlying: Int) extends AnyVal
+final case class ConnectFlags(underlying: Int) extends AnyVal {
+
+  /**
+   * Convenience bitwise OR
+   */
+  def |(rhs: ConnectFlags): ConnectFlags =
+    ConnectFlags(underlying | rhs.underlying)
+}
 
 object Connect {
   type ProtocolName = String
@@ -94,9 +92,7 @@ object Connect {
       Mqtt,
       v311,
       clientId,
-      ConnectFlags(
-        extraConnectFlags.underlying | ConnectFlags.UsernameFlag.underlying | ConnectFlags.PasswordFlag.underlying
-      ),
+      extraConnectFlags | ConnectFlags.UsernameFlag | ConnectFlags.PasswordFlag,
       60.seconds,
       None,
       None,
@@ -117,21 +113,7 @@ case class Connect(protocolName: Connect.ProtocolName,
                    willMessage: Option[String],
                    username: Option[String],
                    password: Option[String])
-    extends ControlPacket(ControlPacketType.CONNECT, ControlPacketFlags.Reserved) {
-
-  import Connect._
-
-  override def remainingLength: Int =
-    (2 + Mqtt.length) +
-    1 +
-    1 +
-    2 +
-    (2 + clientId.length) +
-    (2 + willTopic.fold(0)(_.length)) +
-    (2 + willMessage.fold(0)(_.length)) +
-    (2 + username.fold(0)(_.length)) +
-    (2 + password.fold(0)(_.length))
-}
+    extends ControlPacket(ControlPacketType.CONNECT, ControlPacketFlags.Reserved)
 
 /**
  * Provides functions to decode bytes to various MQTT types and vice-versa.
@@ -177,6 +159,7 @@ object MqttCodec {
                                      willMessage: Option[Either[MqttCodec.DecodeStatus, String]],
                                      username: Option[Either[MqttCodec.DecodeStatus, String]],
                                      password: Option[Either[MqttCodec.DecodeStatus, String]])
+      extends DecodeStatus(isError = true)
 
   // 1.5.3 UTF-8 encoded strings
   implicit class MqttString(val v: String) extends AnyVal {
@@ -190,27 +173,28 @@ object MqttCodec {
   // 2 MQTT Control Packet format
   implicit class MqttControlPacket(val v: ControlPacket) extends AnyVal {
 
-    def encode(bsb: ByteStringBuilder): ByteStringBuilder =
-      bsb.putByte((v.packetType.underlying << 4 | v.flags.underlying).toByte).putByte(v.remainingLength.toByte)
+    def encode(bsb: ByteStringBuilder, remainingLength: Int): ByteStringBuilder =
+      bsb.putByte((v.packetType.underlying << 4 | v.flags.underlying).toByte).putByte(remainingLength.toByte)
   }
 
   // 3.1 CONNECT – Client requests a connection to a Server
   implicit class MqttConnect(val v: Connect) extends AnyVal {
     def encode(bsb: ByteStringBuilder): ByteStringBuilder = {
-      // Fixed header
-      v.encode(bsb)
+      val packetBsb = ByteString.newBuilder
       // Variable header
-      Connect.Mqtt.encode(bsb)
-      bsb.putByte(Connect.v311.toByte)
-      bsb.putByte(v.flags.underlying.toByte)
-      bsb.putShort(v.keepAlive.toSeconds.toShort)
+      Connect.Mqtt.encode(packetBsb)
+      packetBsb.putByte(Connect.v311.toByte)
+      packetBsb.putByte(v.connectFlags.underlying.toByte)
+      packetBsb.putShort(v.keepAlive.toSeconds.toShort)
       // Payload
-      v.clientId.encode(bsb)
-      v.willTopic.foreach(_.encode(bsb))
-      v.willMessage.foreach(_.encode(bsb))
-      v.username.foreach(_.encode(bsb))
-      v.password.foreach(_.encode(bsb))
-      bsb
+      v.clientId.encode(packetBsb)
+      v.willTopic.foreach(_.encode(packetBsb))
+      v.willMessage.foreach(_.encode(packetBsb))
+      v.username.foreach(_.encode(packetBsb))
+      v.password.foreach(_.encode(packetBsb))
+      // Fixed header
+      (v: ControlPacket).encode(bsb, packetBsb.length)
+      bsb.append(packetBsb.result())
     }
   }
 
@@ -260,7 +244,7 @@ object MqttCodec {
         (protocolName, protocolLevel) match {
           case (Right(Connect.Mqtt), Connect.v311) =>
             val connectFlags = ConnectFlags(v.getByte & 0xff)
-            if ((connectFlags.underlying & 0x01) == 0) {
+            if ((connectFlags.underlying & ConnectFlags.Reserved.underlying) == 0) {
               val keepAlive = FiniteDuration(v.getShort & 0xffff, TimeUnit.SECONDS)
               val clientId = v.decodeString()
               val willTopic =
@@ -279,23 +263,15 @@ object MqttCodec {
                 if ((connectFlags.underlying & ConnectFlags.PasswordFlag.underlying) == ConnectFlags.PasswordFlag.underlying)
                   Some(v.decodeString())
                 else None
-              if (clientId.isRight && willTopic.fold(true)(_.isRight) && willMessage.fold(true)(_.isRight) && username
-                    .fold(true)(_.isRight) && password.fold(true)(_.isRight)) {
-                Right(
-                  Connect(
-                    Connect.Mqtt,
-                    Connect.v311,
-                    clientId.getOrElse(""),
-                    connectFlags,
-                    keepAlive,
-                    willTopic.map(_.getOrElse("")),
-                    willMessage.map(_.getOrElse("")),
-                    username.map(_.getOrElse("")),
-                    password.map(_.getOrElse(""))
-                  )
-                )
-              } else {
-                Left(BadConnectMessage(clientId, willTopic, willMessage, username, password))
+              (clientId,
+               willTopic.flatMap(x => x.toOption),
+               willMessage.flatMap(x => x.toOption),
+               username.flatMap(x => x.toOption),
+               password.flatMap(x => x.toOption)) match {
+                case (Right(ci), wt, wm, un, pw) =>
+                  Right(Connect(Connect.Mqtt, Connect.v311, ci, connectFlags, keepAlive, wt, wm, un, pw))
+                case _ =>
+                  Left(BadConnectMessage(clientId, willTopic, willMessage, username, password))
               }
             } else {
               Left(ConnectFlagReservedSet)
@@ -303,7 +279,6 @@ object MqttCodec {
           case (pn, pl) =>
             Left(UnknownConnectProtocol(pn, pl))
         }
-        Left(BufferUnderflow)
       } else {
         Left(BufferUnderflow)
       }
