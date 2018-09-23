@@ -39,10 +39,24 @@ final case class ControlPacketType(underlying: Int) extends AnyVal
  * 2.2.2 Flags
  */
 object ControlPacketFlags {
-  val Reserved = ControlPacketFlags(0x0)
-
+  val None = ControlPacketFlags(0)
+  val Reserved = ControlPacketFlags(0)
+  val DUP = ControlPacketFlags(1 << 3)
+  val QoSAtMostOnceDelivery = ControlPacketFlags(0)
+  val QoSAtLeastOnceDelivery = ControlPacketFlags(1 << 1)
+  val QoSExactlyOnceDelivery = ControlPacketFlags(2 << 1)
+  val QoSReserved = ControlPacketFlags(3 << 1)
+  val RETAIN = ControlPacketFlags(1)
 }
-final case class ControlPacketFlags(underlying: Int) extends AnyVal
+
+final case class ControlPacketFlags(underlying: Int) extends AnyVal {
+
+  /**
+   * Convenience bitwise OR
+   */
+  def |(rhs: ControlPacketFlags): ControlPacketFlags =
+    ControlPacketFlags(underlying | rhs.underlying)
+}
 
 /**
  * 2 MQTT Control Packet format
@@ -63,6 +77,11 @@ object ConnectFlags {
   val PasswordFlag = ConnectFlags(1 << 6)
   val UsernameFlag = ConnectFlags(1 << 7)
 }
+
+/**
+ * 2.3.1 Packet Identifier
+ */
+final case class PacketId(underlying: Int) extends AnyVal
 
 /**
  * 3.1.2.3 Connect Flags
@@ -145,6 +164,24 @@ final case class ConnAckReturnCode(underlying: Int) extends AnyVal
 final case class ConnAck(connectAckFlags: ConnAckFlags, returnCode: ConnAckReturnCode)
     extends ControlPacket(ControlPacketType.CONNACK, ControlPacketFlags.Reserved)
 
+object Publish {
+
+  /**
+   * Conveniently create a publish message with at most once delivery
+   */
+  def apply(topicName: String, payload: ByteString): Publish =
+    Publish(ControlPacketFlags.None, topicName, None, payload)
+}
+
+/**
+ * 3.3 PUBLISH – Publish message
+ */
+final case class Publish(override val flags: ControlPacketFlags,
+                         topicName: String,
+                         packetId: Option[PacketId],
+                         payload: ByteString)
+    extends ControlPacket(ControlPacketType.PUBLISH, flags)
+
 /**
  * Provides functions to decode bytes to various MQTT types and vice-versa.
  * Performed in accordance with http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
@@ -165,13 +202,13 @@ object MqttCodec {
   final case object BufferUnderflow extends DecodeStatus(isError = true)
 
   /**
-   *  Cannot determine the type/flags combination of the control packet
+   * Cannot determine the type/flags combination of the control packet
    */
   final case class UnknownPacketType(packetType: ControlPacketType, flags: ControlPacketFlags)
       extends DecodeStatus(isError = true)
 
   /**
-   *  Cannot determine the protocol name/level combination of the connect
+   * Cannot determine the protocol name/level combination of the connect
    */
   final case class UnknownConnectProtocol(protocolName: Either[DecodeStatus, String], protocolLevel: ProtocolLevel)
       extends DecodeStatus(isError = true)
@@ -182,7 +219,7 @@ object MqttCodec {
   final case object ConnectFlagReservedSet extends DecodeStatus(isError = true)
 
   /**
-   *  Something is wrong with the connect message
+   * Something is wrong with the connect message
    */
   final case class BadConnectMessage(clientId: Either[MqttCodec.DecodeStatus, String],
                                      willTopic: Option[Either[MqttCodec.DecodeStatus, String]],
@@ -192,9 +229,22 @@ object MqttCodec {
       extends DecodeStatus(isError = true)
 
   /**
+   * A reserved QoS was specified
+   */
+  case object InvalidQoS extends DecodeStatus(isError = true)
+
+  /**
    * Bits 1  to 7 are set with the Connect Ack flags
    */
   case object ConnectAckFlagReservedBitsSet extends DecodeStatus(isError = true)
+
+  /**
+   * Something is wrong with the publish message
+   */
+  case class BadPublishMessage(topicName: Either[DecodeStatus, String],
+                               packetId: Option[ProtocolLevel],
+                               payload: ByteString)
+      extends DecodeStatus(isError = true)
 
   // 1.5.3 UTF-8 encoded strings
   implicit class MqttString(val v: String) extends AnyVal {
@@ -243,6 +293,21 @@ object MqttCodec {
     }
   }
 
+  // 3.3 PUBLISH – Publish message
+  implicit class MqttPublish(val v: Publish) extends AnyVal {
+    def encode(bsb: ByteStringBuilder): ByteStringBuilder = {
+      val packetBsb = ByteString.newBuilder
+      // Variable header
+      v.topicName.encode(packetBsb)
+      v.packetId.foreach(pi => packetBsb.putShort(pi.underlying.toShort))
+      // Payload
+      packetBsb.append(v.payload)
+      // Fixed header
+      (v: ControlPacket).encode(bsb, packetBsb.length)
+      bsb.append(packetBsb.result())
+    }
+  }
+
   implicit class MqttByteIterator(val v: ByteIterator) extends AnyVal {
 
     // 1.5.3 UTF-8 encoded strings
@@ -276,6 +341,8 @@ object MqttCodec {
             v.decodeConnect(l)
           case (ControlPacketType.CONNACK, ControlPacketFlags.Reserved) =>
             v.decodeConnectAck(l)
+          case (ControlPacketType.PUBLISH, flags) =>
+            v.decodePublish(l, flags)
           case (packetType, flags) =>
             Left(UnknownPacketType(packetType, flags))
         }
@@ -311,11 +378,11 @@ object MqttCodec {
                   Some(v.decodeString())
                 else None
               (clientId,
-               willTopic.flatMap(x => x.toOption),
-               willMessage.flatMap(x => x.toOption),
-               username.flatMap(x => x.toOption),
-               password.flatMap(x => x.toOption)) match {
-                case (Right(ci), wt, wm, un, pw) =>
+               willTopic.fold[Either[DecodeStatus, Option[String]]](Right(None))(_.map(Some.apply)),
+               willMessage.fold[Either[DecodeStatus, Option[String]]](Right(None))(_.map(Some.apply)),
+               username.fold[Either[DecodeStatus, Option[String]]](Right(None))(_.map(Some.apply)),
+               password.fold[Either[DecodeStatus, Option[String]]](Right(None))(_.map(Some.apply))) match {
+                case (Right(ci), Right(wt), Right(wm), Right(un), Right(pw)) =>
                   Right(Connect(Connect.Mqtt, Connect.v311, ci, connectFlags, keepAlive, wt, wm, un, pw))
                 case _ =>
                   Left(BadConnectMessage(clientId, willTopic, willMessage, username, password))
@@ -339,6 +406,30 @@ object MqttCodec {
           Right(ConnAck(ConnAckFlags(connectAckFlags), ConnAckReturnCode(resultCode)))
         } else {
           Left(ConnectAckFlagReservedBitsSet)
+        }
+      } else {
+        Left(BufferUnderflow)
+      }
+
+    // 3.3 PUBLISH – Publish message
+    def decodePublish(l: Int, flags: ControlPacketFlags): Either[DecodeStatus, Publish] =
+      if (v.len >= l) {
+        if ((flags.underlying & ControlPacketFlags.QoSReserved.underlying) != ControlPacketFlags.QoSReserved.underlying) {
+          val packetLen = v.len
+          val topicName = v.decodeString()
+          val packetId =
+            if ((flags.underlying & (ControlPacketFlags.QoSAtLeastOnceDelivery | ControlPacketFlags.QoSExactlyOnceDelivery).underlying) > 0)
+              Some(v.getShort & 0xffff)
+            else None
+          val payload = v.getByteString(l - (packetLen - v.len))
+          (topicName, packetId, payload) match {
+            case (Right(tn), pi, p) =>
+              Right(Publish(flags, tn, pi.map(PacketId.apply), p))
+            case _ =>
+              Left(BadPublishMessage(topicName, packetId, payload))
+          }
+        } else {
+          Left(InvalidQoS)
         }
       } else {
         Left(BufferUnderflow)

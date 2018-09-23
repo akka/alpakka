@@ -98,7 +98,7 @@ class MqttCodecSpec extends WordSpec with Matchers {
     "bad connect message when decoding connect control packets" in {
       val bsb = ByteString.newBuilder
         .putByte((ControlPacketType.CONNECT.underlying << 4).toByte)
-        .putByte(20)
+        .putByte(26)
       Connect.Mqtt.encode(bsb)
       bsb.putByte(Connect.v311.toByte)
       bsb.putByte(ConnectFlags.WillFlag.underlying.toByte)
@@ -134,6 +134,47 @@ class MqttCodecSpec extends WordSpec with Matchers {
         .result()
         .iterator
         .decodeControlPacket() shouldBe Left(MqttCodec.ConnectAckFlagReservedBitsSet)
+    }
+
+    "encode/decode publish packets" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val packet = Publish(
+        ControlPacketFlags.RETAIN | ControlPacketFlags.QoSAtLeastOnceDelivery | ControlPacketFlags.DUP,
+        "some-topic-name",
+        Some(PacketId(1)),
+        ByteString("some-payload")
+      )
+      val bytes = packet.encode(bsb).result()
+      bytes.size shouldBe 33
+      (bytes ++ ByteString("ignore")).iterator.decodeControlPacket() shouldBe Right(packet)
+    }
+
+    "encode/decode publish packets with at most once QoS" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val packet = Publish("some-topic-name", ByteString("some-payload"))
+      val bytes = packet.encode(bsb).result()
+      bytes.size shouldBe 31
+      (bytes ++ ByteString("ignore")).iterator.decodeControlPacket() shouldBe Right(packet)
+    }
+
+    "invalid QoS when decoding publish packets" in {
+      val bsb = ByteString.newBuilder
+        .putByte((ControlPacketType.PUBLISH.underlying << 4 | ControlPacketFlags.QoSReserved.underlying).toByte)
+        .putByte(0)
+      bsb
+        .result()
+        .iterator
+        .decodeControlPacket() shouldBe Left(MqttCodec.InvalidQoS)
+    }
+
+    "bad publish message when decoding publish packets" in {
+      val bsb = ByteString.newBuilder
+        .putByte((ControlPacketType.PUBLISH.underlying << 4).toByte)
+        .putByte(0)
+      bsb
+        .result()
+        .iterator
+        .decodeControlPacket() shouldBe Left(BadPublishMessage(Left(BufferUnderflow), None, ByteString.empty))
     }
   }
 }
