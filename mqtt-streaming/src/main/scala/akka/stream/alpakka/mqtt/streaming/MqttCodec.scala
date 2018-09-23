@@ -41,7 +41,7 @@ final case class ControlPacketType(underlying: Int) extends AnyVal
  */
 object ControlPacketFlags {
   val None = ControlPacketFlags(0)
-  val Reserved = ControlPacketFlags(0)
+  val ReservedGeneral = ControlPacketFlags(0)
   val ReservedPubRel = ControlPacketFlags(1 << 1)
   val DUP = ControlPacketFlags(1 << 3)
   val QoSAtMostOnceDelivery = ControlPacketFlags(0)
@@ -65,9 +65,9 @@ final case class ControlPacketFlags(underlying: Int) extends AnyVal {
  */
 sealed abstract class ControlPacket(val packetType: ControlPacketType, val flags: ControlPacketFlags)
 
-case object Reserved1 extends ControlPacket(ControlPacketType.Reserved1, ControlPacketFlags.Reserved)
+case object Reserved1 extends ControlPacket(ControlPacketType.Reserved1, ControlPacketFlags.ReservedGeneral)
 
-case object Reserved2 extends ControlPacket(ControlPacketType.Reserved2, ControlPacketFlags.Reserved)
+case object Reserved2 extends ControlPacket(ControlPacketType.Reserved2, ControlPacketFlags.ReservedGeneral)
 
 object ConnectFlags {
   val None = ConnectFlags(0)
@@ -134,7 +134,7 @@ final case class Connect(protocolName: Connect.ProtocolName,
                          willMessage: Option[String],
                          username: Option[String],
                          password: Option[String])
-    extends ControlPacket(ControlPacketType.CONNECT, ControlPacketFlags.Reserved)
+    extends ControlPacket(ControlPacketType.CONNECT, ControlPacketFlags.ReservedGeneral)
 
 object ConnAckFlags {
   val None = ConnAckFlags(0)
@@ -164,7 +164,7 @@ final case class ConnAckReturnCode(underlying: Int) extends AnyVal
  * 3.2 CONNACK – Acknowledge connection request
  */
 final case class ConnAck(connectAckFlags: ConnAckFlags, returnCode: ConnAckReturnCode)
-    extends ControlPacket(ControlPacketType.CONNACK, ControlPacketFlags.Reserved)
+    extends ControlPacket(ControlPacketType.CONNACK, ControlPacketFlags.ReservedGeneral)
 
 object Publish {
 
@@ -187,18 +187,26 @@ final case class Publish(override val flags: ControlPacketFlags,
 /**
  * 3.4 PUBACK – Publish acknowledgement
  */
-final case class PubAck(packetId: PacketId) extends ControlPacket(ControlPacketType.PUBACK, ControlPacketFlags.Reserved)
+final case class PubAck(packetId: PacketId)
+    extends ControlPacket(ControlPacketType.PUBACK, ControlPacketFlags.ReservedGeneral)
 
 /**
  * 3.5 PUBREC – Publish received (QoS 2 publish received, part 1)
  */
-final case class PubRec(packetId: PacketId) extends ControlPacket(ControlPacketType.PUBREC, ControlPacketFlags.Reserved)
+final case class PubRec(packetId: PacketId)
+    extends ControlPacket(ControlPacketType.PUBREC, ControlPacketFlags.ReservedGeneral)
 
 /**
  * 3.6 PUBREL – Publish release (QoS 2 publish received, part 2)
  */
 final case class PubRel(packetId: PacketId)
     extends ControlPacket(ControlPacketType.PUBREL, ControlPacketFlags.ReservedPubRel)
+
+/**
+ * 3.7 PUBCOMP – Publish complete (QoS 2 publish received, part 3)
+ */
+final case class PubComp(packetId: PacketId)
+    extends ControlPacket(ControlPacketType.PUBCOMP, ControlPacketFlags.ReservedGeneral)
 
 /**
  * Provides functions to decode bytes to various MQTT types and vice-versa.
@@ -353,6 +361,15 @@ object MqttCodec {
     }
   }
 
+  // 3.7 PUBCOMP – Publish complete (QoS 2 publish received, part 3)
+  implicit class MqttPubComp(val v: PubComp) extends AnyVal {
+    def encode(bsb: ByteStringBuilder): ByteStringBuilder = {
+      (v: ControlPacket).encode(bsb, 2)
+      bsb.putShort(v.packetId.underlying.toShort)
+      bsb
+    }
+  }
+
   implicit class MqttByteIterator(val v: ByteIterator) extends AnyVal {
 
     // 1.5.3 UTF-8 encoded strings
@@ -374,22 +391,24 @@ object MqttCodec {
         val l3 = if ((l2 & 0x80) == 0x80) v.getByte & 0xff else 0
         val l = (l3 << 24) | (l2 << 16) | (l1 << 8) | l0
         (ControlPacketType(b >> 4), ControlPacketFlags(b & 0xf)) match {
-          case (ControlPacketType.Reserved1, ControlPacketFlags.Reserved) =>
+          case (ControlPacketType.Reserved1, ControlPacketFlags.ReservedGeneral) =>
             Right(Reserved1)
-          case (ControlPacketType.Reserved2, ControlPacketFlags.Reserved) =>
+          case (ControlPacketType.Reserved2, ControlPacketFlags.ReservedGeneral) =>
             Right(Reserved2)
-          case (ControlPacketType.CONNECT, ControlPacketFlags.Reserved) =>
+          case (ControlPacketType.CONNECT, ControlPacketFlags.ReservedGeneral) =>
             v.decodeConnect()
-          case (ControlPacketType.CONNACK, ControlPacketFlags.Reserved) =>
+          case (ControlPacketType.CONNACK, ControlPacketFlags.ReservedGeneral) =>
             v.decodeConnAck()
           case (ControlPacketType.PUBLISH, flags) =>
             v.decodePublish(l, flags)
-          case (ControlPacketType.PUBACK, ControlPacketFlags.Reserved) =>
+          case (ControlPacketType.PUBACK, ControlPacketFlags.ReservedGeneral) =>
             v.decodePubAck()
-          case (ControlPacketType.PUBREC, ControlPacketFlags.Reserved) =>
+          case (ControlPacketType.PUBREC, ControlPacketFlags.ReservedGeneral) =>
             v.decodePubRec()
           case (ControlPacketType.PUBREL, ControlPacketFlags.ReservedPubRel) =>
             v.decodePubRel()
+          case (ControlPacketType.PUBCOMP, ControlPacketFlags.ReservedGeneral) =>
+            v.decodePubComp()
           case (packetType, flags) =>
             Left(UnknownPacketType(packetType, flags))
         }
@@ -505,6 +524,15 @@ object MqttCodec {
       try {
         val packetId = v.getShort & 0xffff
         Right(PubRel(PacketId(packetId)))
+      } catch {
+        case _: NoSuchElementException => Left(BufferUnderflow)
+      }
+
+    // 3.7 PUBCOMP – Publish complete (QoS 2 publish received, part 3)
+    def decodePubComp(): Either[DecodeStatus, PubComp] =
+      try {
+        val packetId = v.getShort & 0xffff
+        Right(PubComp(PacketId(packetId)))
       } catch {
         case _: NoSuchElementException => Left(BufferUnderflow)
       }
