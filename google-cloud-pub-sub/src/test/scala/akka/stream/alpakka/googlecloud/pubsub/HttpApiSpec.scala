@@ -253,6 +253,45 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
     result.futureValue shouldBe (())
   }
 
+  it should "return exception with the meaningful error message in case of not successful publish response" in {
+    val publishMessage =
+      PubSubMessage(
+        messageId = "1",
+        data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)),
+        attributes = Some(Map("row_id" -> "7")),
+        publishTime = Some(Instant.parse("2014-10-02T15:01:23.045123456Z"))
+      )
+
+    val publishRequest = PublishRequest(Seq(publishMessage))
+
+    val expectedPublishRequest =
+      """{"messages":[{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1","attributes":{"row_id":"7"},"publishTime":"2014-10-02T15:01:23.045123456Z"}]}"""
+
+    mock.register(
+      WireMock
+        .post(
+          urlEqualTo(s"/v1/projects/${TestCredentials.projectId}/topics/topic1:publish")
+        )
+        .withRequestBody(WireMock.equalTo(expectedPublishRequest))
+        .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
+        .willReturn(
+          aResponse()
+            .withStatus(404)
+            .withBody("{}")
+            .withHeader("Content-Type", "application/json")
+        )
+    )
+
+    val result =
+      TestHttpApi.publish(TestCredentials.projectId,
+                          "topic1",
+                          Some(accessToken),
+                          TestCredentials.apiKey,
+                          publishRequest)
+
+    assertThrows[RuntimeException] { result.futureValue }
+  }
+
   private val httpApi = HttpApi
   if (httpApi.PubSubEmulatorHost.isDefined) it should "honor emulator host variables" in {
     val emulatorVar = sys.props
