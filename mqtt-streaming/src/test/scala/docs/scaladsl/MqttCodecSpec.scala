@@ -185,6 +185,15 @@ class MqttCodecSpec extends WordSpec with Matchers {
         .decodeControlPacket() shouldBe Left(BadPublishMessage(Left(BufferUnderflow), None, ByteString.empty))
     }
 
+    "underflow when decoding publish packets" in {
+      val bsb = ByteString.newBuilder
+      "some-topic".encode(bsb)
+      bsb
+        .result()
+        .iterator
+        .decodePublish(0, ControlPacketFlags.QoSAtLeastOnceDelivery) shouldBe Left(MqttCodec.BufferUnderflow)
+    }
+
     "encode/decode publish ack packets" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
       val packet = PubAck(PacketId(1))
@@ -231,6 +240,38 @@ class MqttCodecSpec extends WordSpec with Matchers {
 
     "underflow when decoding publish comp packets" in {
       ByteString.empty.iterator.decodePubComp() shouldBe Left(MqttCodec.BufferUnderflow)
+    }
+
+    "encode/decode subscribe packets" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val packet = Subscribe(PacketId(1),
+                             "some-head-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery,
+                             List("some-tail-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery))
+      val bytes = packet.encode(bsb).result()
+      bytes.size shouldBe 40
+      bytes.iterator.decodeControlPacket() shouldBe Right(packet)
+    }
+
+    "encode/decode subscribe packets with at most once QoS" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val packet = Subscribe("some-head-topic")
+      val bytes = packet.encode(bsb).result()
+      bytes.size shouldBe 22
+      bytes.iterator.decodeControlPacket() shouldBe Right(packet)
+    }
+
+    "bad subscribe message when decoding subscribe packets" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val packet = Subscribe(PacketId(1),
+                             "some-head-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery,
+                             List("some-tail-topic" -> ControlPacketFlags.QoSReserved))
+      val bytes = packet.encode(bsb).result()
+      bytes.iterator
+        .decodeControlPacket() shouldBe Left(
+        BadSubscribeMessage(PacketId(1),
+                            (Right("some-head-topic"), ControlPacketFlags.QoSExactlyOnceDelivery),
+                            List((Right("some-tail-topic"), ControlPacketFlags.QoSReserved)))
+      )
     }
   }
 }
