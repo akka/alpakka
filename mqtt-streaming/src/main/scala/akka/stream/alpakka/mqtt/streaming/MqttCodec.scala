@@ -104,16 +104,46 @@ object Connect {
 /**
  * 3.1 CONNECT – Client requests a connection to a Server
  */
-case class Connect(protocolName: Connect.ProtocolName,
-                   protocolLevel: Connect.ProtocolLevel,
-                   clientId: String,
-                   connectFlags: ConnectFlags,
-                   keepAlive: FiniteDuration,
-                   willTopic: Option[String],
-                   willMessage: Option[String],
-                   username: Option[String],
-                   password: Option[String])
+final case class Connect(protocolName: Connect.ProtocolName,
+                         protocolLevel: Connect.ProtocolLevel,
+                         clientId: String,
+                         connectFlags: ConnectFlags,
+                         keepAlive: FiniteDuration,
+                         willTopic: Option[String],
+                         willMessage: Option[String],
+                         username: Option[String],
+                         password: Option[String])
     extends ControlPacket(ControlPacketType.CONNECT, ControlPacketFlags.Reserved)
+
+object ConnAckFlags {
+  val None = ConnAckFlags(0)
+  val SessionPresent = ConnAckFlags(1)
+}
+
+/**
+ * 3.2.2.1 Connect Acknowledge Flags
+ */
+final case class ConnAckFlags(underlying: Int) extends AnyVal
+
+object ConnAckReturnCode {
+  val ConnectionAccepted = ConnAckReturnCode(0)
+  val ConnectionRefusedUnacceptableProtocolVersion = ConnAckReturnCode(1)
+  val ConnectionRefusedIdentifierRejected = ConnAckReturnCode(2)
+  val ConnectionRefusedServerUnavailable = ConnAckReturnCode(3)
+  val ConnectionRefusedBadUsernameOrPassword = ConnAckReturnCode(4)
+  val ConnectionRefusedNotAuthorized = ConnAckReturnCode(5)
+}
+
+/**
+ * 3.2.2.3 Connect Return code
+ */
+final case class ConnAckReturnCode(underlying: Int) extends AnyVal
+
+/**
+ * 3.2 CONNACK – Acknowledge connection request
+ */
+final case class ConnAck(connectAckFlags: ConnAckFlags, returnCode: ConnAckReturnCode)
+    extends ControlPacket(ControlPacketType.CONNACK, ControlPacketFlags.Reserved)
 
 /**
  * Provides functions to decode bytes to various MQTT types and vice-versa.
@@ -161,6 +191,11 @@ object MqttCodec {
                                      password: Option[Either[MqttCodec.DecodeStatus, String]])
       extends DecodeStatus(isError = true)
 
+  /**
+   * Bits 1  to 7 are set with the Connect Ack flags
+   */
+  case object ConnectAckFlagReservedBitsSet extends DecodeStatus(isError = true)
+
   // 1.5.3 UTF-8 encoded strings
   implicit class MqttString(val v: String) extends AnyVal {
 
@@ -198,6 +233,16 @@ object MqttCodec {
     }
   }
 
+  // 3.2 CONNACK – Acknowledge connection request
+  implicit class MqttConnAck(val v: ConnAck) extends AnyVal {
+    def encode(bsb: ByteStringBuilder): ByteStringBuilder = {
+      (v: ControlPacket).encode(bsb, 2)
+      bsb.putByte(v.connectAckFlags.underlying.toByte)
+      bsb.putByte(v.returnCode.underlying.toByte)
+      bsb
+    }
+  }
+
   implicit class MqttByteIterator(val v: ByteIterator) extends AnyVal {
 
     // 1.5.3 UTF-8 encoded strings
@@ -229,6 +274,8 @@ object MqttCodec {
             Right(Reserved2)
           case (ControlPacketType.CONNECT, ControlPacketFlags.Reserved) =>
             v.decodeConnect(l)
+          case (ControlPacketType.CONNACK, ControlPacketFlags.Reserved) =>
+            v.decodeConnectAck(l)
           case (packetType, flags) =>
             Left(UnknownPacketType(packetType, flags))
         }
@@ -278,6 +325,20 @@ object MqttCodec {
             }
           case (pn, pl) =>
             Left(UnknownConnectProtocol(pn, pl))
+        }
+      } else {
+        Left(BufferUnderflow)
+      }
+
+    // 3.2 CONNACK – Acknowledge connection request
+    def decodeConnectAck(l: Int): Either[DecodeStatus, ConnAck] =
+      if (v.len >= l) {
+        val connectAckFlags = v.getByte & 0xff
+        if ((connectAckFlags & 0xfe) == 0) {
+          val resultCode = v.getByte & 0xff
+          Right(ConnAck(ConnAckFlags(connectAckFlags), ConnAckReturnCode(resultCode)))
+        } else {
+          Left(ConnectAckFlagReservedBitsSet)
         }
       } else {
         Left(BufferUnderflow)

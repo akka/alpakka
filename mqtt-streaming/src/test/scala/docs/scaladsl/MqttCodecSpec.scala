@@ -115,5 +115,25 @@ class MqttCodecSpec extends WordSpec with Matchers {
                                     None)
       )
     }
+
+    "encode/decode connect control ack packets" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val packet = ConnAck(ConnAckFlags.SessionPresent, ConnAckReturnCode.ConnectionAccepted)
+      val bytes = packet.encode(bsb).result()
+      bytes.size shouldBe 4
+      (bytes ++ ByteString("ignore")).iterator.decodeControlPacket() shouldBe Right(packet)
+    }
+
+    "reserved bits set when decoding connect control ack packets" in {
+      val bsb = ByteString.newBuilder
+        .putByte((ControlPacketType.CONNACK.underlying << 4).toByte)
+        .putByte(2)
+      bsb.putByte(2)
+      bsb.putByte(0)
+      bsb
+        .result()
+        .iterator
+        .decodeControlPacket() shouldBe Left(MqttCodec.ConnectAckFlagReservedBitsSet)
+    }
   }
 }
