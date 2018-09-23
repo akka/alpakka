@@ -252,6 +252,13 @@ object MqttCodec {
   final case class UnknownPacketType(packetType: ControlPacketType, flags: ControlPacketFlags) extends DecodeError
 
   /**
+   * A message has been received that exceeds the maximum we have chosen--which is
+   * typically much less than what the spec permits. The reported sizes do not
+   * include the fixed header size of 2 bytes.
+   */
+  case class InvalidPacketSize(packetSize: Int, maxPacketSize: Int) extends DecodeError
+
+  /**
    * Cannot determine the protocol name/level combination of the connect
    */
   final case class UnknownConnectProtocol(protocolName: Either[DecodeError, String], protocolLevel: ProtocolLevel)
@@ -427,7 +434,7 @@ object MqttCodec {
       }
 
     // 2 MQTT Control Packet format
-    def decodeControlPacket(): Either[DecodeError, ControlPacket] =
+    def decodeControlPacket(maxPacketSize: Int): Either[DecodeError, ControlPacket] =
       try {
         val b = v.getByte & 0xff
         val l0 = v.getByte & 0xff
@@ -435,29 +442,33 @@ object MqttCodec {
         val l2 = if ((l1 & 0x80) == 0x80) v.getByte & 0xff else 0
         val l3 = if ((l2 & 0x80) == 0x80) v.getByte & 0xff else 0
         val l = (l3 << 24) | (l2 << 16) | (l1 << 8) | l0
-        (ControlPacketType(b >> 4), ControlPacketFlags(b & 0xf)) match {
-          case (ControlPacketType.Reserved1, ControlPacketFlags.ReservedGeneral) =>
-            Right(Reserved1)
-          case (ControlPacketType.Reserved2, ControlPacketFlags.ReservedGeneral) =>
-            Right(Reserved2)
-          case (ControlPacketType.CONNECT, ControlPacketFlags.ReservedGeneral) =>
-            v.decodeConnect()
-          case (ControlPacketType.CONNACK, ControlPacketFlags.ReservedGeneral) =>
-            v.decodeConnAck()
-          case (ControlPacketType.PUBLISH, flags) =>
-            v.decodePublish(l, flags)
-          case (ControlPacketType.PUBACK, ControlPacketFlags.ReservedGeneral) =>
-            v.decodePubAck()
-          case (ControlPacketType.PUBREC, ControlPacketFlags.ReservedGeneral) =>
-            v.decodePubRec()
-          case (ControlPacketType.PUBREL, ControlPacketFlags.ReservedPubRel) =>
-            v.decodePubRel()
-          case (ControlPacketType.PUBCOMP, ControlPacketFlags.ReservedGeneral) =>
-            v.decodePubComp()
-          case (ControlPacketType.SUBSCRIBE, ControlPacketFlags.ReservedSubscribe) =>
-            v.decodeSubscribe(l)
-          case (packetType, flags) =>
-            Left(UnknownPacketType(packetType, flags))
+        if (l <= maxPacketSize) {
+          (ControlPacketType(b >> 4), ControlPacketFlags(b & 0xf)) match {
+            case (ControlPacketType.Reserved1, ControlPacketFlags.ReservedGeneral) =>
+              Right(Reserved1)
+            case (ControlPacketType.Reserved2, ControlPacketFlags.ReservedGeneral) =>
+              Right(Reserved2)
+            case (ControlPacketType.CONNECT, ControlPacketFlags.ReservedGeneral) =>
+              v.decodeConnect()
+            case (ControlPacketType.CONNACK, ControlPacketFlags.ReservedGeneral) =>
+              v.decodeConnAck()
+            case (ControlPacketType.PUBLISH, flags) =>
+              v.decodePublish(l, flags)
+            case (ControlPacketType.PUBACK, ControlPacketFlags.ReservedGeneral) =>
+              v.decodePubAck()
+            case (ControlPacketType.PUBREC, ControlPacketFlags.ReservedGeneral) =>
+              v.decodePubRec()
+            case (ControlPacketType.PUBREL, ControlPacketFlags.ReservedPubRel) =>
+              v.decodePubRel()
+            case (ControlPacketType.PUBCOMP, ControlPacketFlags.ReservedGeneral) =>
+              v.decodePubComp()
+            case (ControlPacketType.SUBSCRIBE, ControlPacketFlags.ReservedSubscribe) =>
+              v.decodeSubscribe(l)
+            case (packetType, flags) =>
+              Left(UnknownPacketType(packetType, flags))
+          }
+        } else {
+          Left(InvalidPacketSize(l, maxPacketSize))
         }
       } catch {
         case _: NoSuchElementException => Left(BufferUnderflow)
