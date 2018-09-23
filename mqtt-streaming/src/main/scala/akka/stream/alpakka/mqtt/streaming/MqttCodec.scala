@@ -50,6 +50,7 @@ object ControlPacketFlags {
   val QoSAtLeastOnceDelivery = ControlPacketFlags(1 << 1)
   val QoSExactlyOnceDelivery = ControlPacketFlags(2 << 1)
   val QoSReserved = ControlPacketFlags(3 << 1)
+  val QoSFailure = ControlPacketFlags(1 << 7)
   val RETAIN = ControlPacketFlags(1)
 }
 
@@ -216,16 +217,20 @@ object Subscribe {
    *  A convenience for subscribing to a single topic with at-most-once semantics
    */
   def apply(topicFilter: String): Subscribe =
-    Subscribe(PacketId(0), topicFilter -> ControlPacketFlags.QoSAtMostOnceDelivery, List.empty)
+    Subscribe(PacketId(0), List(topicFilter -> ControlPacketFlags.QoSAtMostOnceDelivery))
 }
 
 /**
  * 3.8 SUBSCRIBE - Subscribe to topics
  */
-final case class Subscribe(packetId: PacketId,
-                           headTopicFilter: (String, ControlPacketFlags),
-                           tailTopicFilters: Seq[(String, ControlPacketFlags)])
+final case class Subscribe(packetId: PacketId, topicFilters: Seq[(String, ControlPacketFlags)])
     extends ControlPacket(ControlPacketType.SUBSCRIBE, ControlPacketFlags.ReservedSubscribe)
+
+/**
+ * 3.9 SUBACK – Subscribe acknowledgement
+ */
+final case class SubAck(packetId: PacketId, returnCodes: Seq[ControlPacketFlags])
+    extends ControlPacket(ControlPacketType.SUBACK, ControlPacketFlags.ReservedSubscribe)
 
 /**
  * Provides functions to decode bytes to various MQTT types and vice-versa.
@@ -256,7 +261,7 @@ object MqttCodec {
    * typically much less than what the spec permits. The reported sizes do not
    * include the fixed header size of 2 bytes.
    */
-  case class InvalidPacketSize(packetSize: Int, maxPacketSize: Int) extends DecodeError
+  final case class InvalidPacketSize(packetSize: Int, maxPacketSize: Int) extends DecodeError
 
   /**
    * Cannot determine the protocol name/level combination of the connect
@@ -285,23 +290,29 @@ object MqttCodec {
   case object InvalidQoS extends DecodeError
 
   /**
-   * Bits 1  to 7 are set with the Connect Ack flags
+   * Bits 1 to 7 are set with the Connect Ack flags
    */
   case object ConnectAckFlagReservedBitsSet extends DecodeError
 
   /**
    * Something is wrong with the publish message
    */
-  case class BadPublishMessage(topicName: Either[DecodeError, String], packetId: Option[PacketId], payload: ByteString)
+  final case class BadPublishMessage(topicName: Either[DecodeError, String],
+                                     packetId: Option[PacketId],
+                                     payload: ByteString)
       extends DecodeError
 
   /**
-   *  Something is wrong with the subscribe message
+   * Something is wrong with the subscribe message
    */
-  case class BadSubscribeMessage(packetId: PacketId,
-                                 headTopicFilter: (Either[DecodeError, String], ControlPacketFlags),
-                                 tailTopicFilters: Seq[(Either[DecodeError, String], ControlPacketFlags)])
+  final case class BadSubscribeMessage(packetId: PacketId,
+                                       topicFilters: Seq[(Either[DecodeError, String], ControlPacketFlags)])
       extends DecodeError
+
+  /**
+   * Something is wrong with the subscribe ack message
+   */
+  final case class BadSubAckMessage(packetId: PacketId, returnCodes: Seq[ControlPacketFlags]) extends DecodeError
 
   // 1.5.3 UTF-8 encoded strings
   implicit class MqttString(val v: String) extends AnyVal {
@@ -408,13 +419,26 @@ object MqttCodec {
       // Variable header
       packetBsb.putShort(v.packetId.underlying.toShort)
       // Payload
-      val (headTopicFilter, headTopicFilterFlags) = v.headTopicFilter
-      headTopicFilter.encode(packetBsb)
-      packetBsb.putByte(headTopicFilterFlags.underlying.toByte)
-      v.tailTopicFilters.foreach {
+      v.topicFilters.foreach {
         case (topicFilter, topicFilterFlags) =>
           topicFilter.encode(packetBsb)
           packetBsb.putByte(topicFilterFlags.underlying.toByte)
+      }
+      // Fixed header
+      (v: ControlPacket).encode(bsb, packetBsb.length)
+      bsb.append(packetBsb.result())
+    }
+  }
+
+  // 3.9 SUBACK – Subscribe acknowledgement
+  implicit class MqttSubAck(val v: SubAck) extends AnyVal {
+    def encode(bsb: ByteStringBuilder): ByteStringBuilder = {
+      val packetBsb = ByteString.newBuilder
+      // Variable header
+      packetBsb.putShort(v.packetId.underlying.toShort)
+      // Payload
+      v.returnCodes.foreach { returnCode =>
+        packetBsb.putByte(returnCode.underlying.toByte)
       }
       // Fixed header
       (v: ControlPacket).encode(bsb, packetBsb.length)
@@ -464,6 +488,8 @@ object MqttCodec {
               v.decodePubComp()
             case (ControlPacketType.SUBSCRIBE, ControlPacketFlags.ReservedSubscribe) =>
               v.decodeSubscribe(l)
+            case (ControlPacketType.SUBACK, ControlPacketFlags.ReservedSubscribe) =>
+              v.decodeSubAck(l)
             case (packetType, flags) =>
               Left(UnknownPacketType(packetType, flags))
           }
@@ -600,32 +626,58 @@ object MqttCodec {
       try {
         val packetLen = v.len
         val packetId = PacketId(v.getShort & 0xffff)
-        val headTopicFilter = v.decodeString() -> ControlPacketFlags(v.getByte & 0xff)
         @tailrec
-        def decodeTailTopicFilters(
+        def decodeTopicFilters(
             remainingLen: Int,
-            tailTopicFilters: Seq[(Either[DecodeError, String], ControlPacketFlags)]
+            topicFilters: Seq[(Either[DecodeError, String], ControlPacketFlags)]
         ): Seq[(Either[DecodeError, String], ControlPacketFlags)] =
           if (remainingLen > 0) {
             val packetLenAtTopicFilter = v.len
             val topicFilter = (v.decodeString(), ControlPacketFlags(v.getByte & 0xff))
-            decodeTailTopicFilters(remainingLen - (packetLenAtTopicFilter - v.len), tailTopicFilters :+ topicFilter)
+            decodeTopicFilters(remainingLen - (packetLenAtTopicFilter - v.len), topicFilters :+ topicFilter)
           } else {
-            tailTopicFilters
+            topicFilters
           }
-        val tailTopicFilters = decodeTailTopicFilters(l - (packetLen - v.len), List.empty)
-        val topicFiltersValid = (headTopicFilter +: tailTopicFilters).foldLeft(true) {
+        val topicFilters = decodeTopicFilters(l - (packetLen - v.len), List.empty)
+        val topicFiltersValid = topicFilters.nonEmpty && topicFilters.foldLeft(true) {
           case (true, (Right(_), tff)) if tff.underlying < ControlPacketFlags.QoSReserved.underlying => true
           case _ => false
         }
-        (headTopicFilter, tailTopicFilters) match {
-          case ((Right(htfs), htff), ttfs) if topicFiltersValid =>
-            Right(Subscribe(packetId, htfs -> htff, ttfs.flatMap {
-              case (Right(tfs), tff) => List(tfs -> tff)
-              case _ => List.empty
-            }))
-          case _ =>
-            Left(BadSubscribeMessage(packetId, headTopicFilter, tailTopicFilters))
+        if (topicFiltersValid) {
+          Right(Subscribe(packetId, topicFilters.flatMap {
+            case (Right(tfs), tff) => List(tfs -> tff)
+            case _ => List.empty
+          }))
+        } else {
+          Left(BadSubscribeMessage(packetId, topicFilters))
+        }
+      } catch {
+        case _: NoSuchElementException => Left(BufferUnderflow)
+      }
+
+    // 3.9 SUBACK – Subscribe acknowledgement
+    def decodeSubAck(l: Int): Either[DecodeError, SubAck] =
+      try {
+        val packetLen = v.len
+        val packetId = PacketId(v.getShort & 0xffff)
+        @tailrec
+        def decodeReturnCodes(remainingLen: Int, returnCodes: Seq[ControlPacketFlags]): Seq[ControlPacketFlags] =
+          if (remainingLen > 0) {
+            val packetLenAtTopicFilter = v.len
+            val returnCode = ControlPacketFlags(v.getByte & 0xff)
+            decodeReturnCodes(remainingLen - (packetLenAtTopicFilter - v.len), returnCodes :+ returnCode)
+          } else {
+            returnCodes
+          }
+        val returnCodes = decodeReturnCodes(l - (packetLen - v.len), List.empty)
+        val returnCodesValid = returnCodes.nonEmpty && returnCodes.foldLeft(true) {
+          case (true, rc) if rc.underlying < ControlPacketFlags.QoSReserved.underlying => true
+          case _ => false
+        }
+        if (returnCodesValid) {
+          Right(SubAck(packetId, returnCodes))
+        } else {
+          Left(BadSubAckMessage(packetId, returnCodes))
         }
       } catch {
         case _: NoSuchElementException => Left(BufferUnderflow)

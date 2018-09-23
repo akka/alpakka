@@ -263,8 +263,8 @@ class MqttCodecSpec extends WordSpec with Matchers {
     "encode/decode subscribe packets" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
       val packet = Subscribe(PacketId(1),
-                             "some-head-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery,
-                             List("some-tail-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery))
+                             List("some-head-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery,
+                                  "some-tail-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery))
       val bytes = packet.encode(bsb).result()
       bytes.size shouldBe 40
       bytes.iterator.decodeControlPacket(MaxPacketSize) shouldBe Right(packet)
@@ -278,18 +278,65 @@ class MqttCodecSpec extends WordSpec with Matchers {
       bytes.iterator.decodeControlPacket(MaxPacketSize) shouldBe Right(packet)
     }
 
-    "bad subscribe message when decoding subscribe packets" in {
+    "bad subscribe message when decoding subscribe packets given bad QoS" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
       val packet = Subscribe(PacketId(1),
-                             "some-head-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery,
-                             List("some-tail-topic" -> ControlPacketFlags.QoSReserved))
+                             List("some-head-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery,
+                                  "some-tail-topic" -> ControlPacketFlags.QoSReserved))
       val bytes = packet.encode(bsb).result()
       bytes.iterator
         .decodeControlPacket(MaxPacketSize) shouldBe Left(
         BadSubscribeMessage(PacketId(1),
-                            (Right("some-head-topic"), ControlPacketFlags.QoSExactlyOnceDelivery),
-                            List((Right("some-tail-topic"), ControlPacketFlags.QoSReserved)))
+                            List(Right("some-head-topic") -> ControlPacketFlags.QoSExactlyOnceDelivery,
+                                 Right("some-tail-topic") -> ControlPacketFlags.QoSReserved))
       )
+    }
+
+    "bad subscribe message when decoding subscribe packets given no topics" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val packet = Subscribe(PacketId(1), List.empty)
+      val bytes = packet.encode(bsb).result()
+      bytes.iterator
+        .decodeControlPacket(MaxPacketSize) shouldBe Left(
+        BadSubscribeMessage(PacketId(1), List.empty)
+      )
+    }
+
+    "underflow when decoding subscribe packets" in {
+      ByteString.empty.iterator.decodeSubscribe(0) shouldBe Left(MqttCodec.BufferUnderflow)
+    }
+
+    "encode/decode sub ack packets" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val packet =
+        SubAck(PacketId(1), List(ControlPacketFlags.QoSExactlyOnceDelivery, ControlPacketFlags.QoSExactlyOnceDelivery))
+      val bytes = packet.encode(bsb).result()
+      bytes.size shouldBe 6
+      bytes.iterator.decodeControlPacket(MaxPacketSize) shouldBe Right(packet)
+    }
+
+    "bad sub ack message when decoding sub ack packets given failure QoS" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val packet = SubAck(PacketId(1), List(ControlPacketFlags.QoSExactlyOnceDelivery, ControlPacketFlags.QoSFailure))
+      val bytes = packet.encode(bsb).result()
+      bytes.iterator
+        .decodeControlPacket(MaxPacketSize) shouldBe Left(
+        BadSubAckMessage(PacketId(1), List(ControlPacketFlags.QoSExactlyOnceDelivery, ControlPacketFlags.QoSFailure))
+      )
+    }
+
+    "bad sub ack message when decoding sub ack packets given no topics" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val packet = SubAck(PacketId(1), List.empty)
+      val bytes = packet.encode(bsb).result()
+      bytes.iterator
+        .decodeControlPacket(MaxPacketSize) shouldBe Left(
+        BadSubAckMessage(PacketId(1), List.empty)
+      )
+    }
+
+    "underflow when decoding sub ack packets" in {
+      ByteString.empty.iterator.decodeSubAck(0) shouldBe Left(MqttCodec.BufferUnderflow)
     }
   }
 }
