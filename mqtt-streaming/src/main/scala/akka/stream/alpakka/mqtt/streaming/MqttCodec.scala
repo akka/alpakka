@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit
 import akka.stream.alpakka.mqtt.streaming.Connect.ProtocolLevel
 import akka.util.{ByteIterator, ByteString, ByteStringBuilder}
 
+import scala.annotation.tailrec
 import scala.concurrent.duration._
 
 /**
@@ -43,6 +44,7 @@ object ControlPacketFlags {
   val None = ControlPacketFlags(0)
   val ReservedGeneral = ControlPacketFlags(0)
   val ReservedPubRel = ControlPacketFlags(1 << 1)
+  val ReservedSubscribe = ControlPacketFlags(1 << 1)
   val DUP = ControlPacketFlags(1 << 3)
   val QoSAtMostOnceDelivery = ControlPacketFlags(0)
   val QoSAtLeastOnceDelivery = ControlPacketFlags(1 << 1)
@@ -208,6 +210,23 @@ final case class PubRel(packetId: PacketId)
 final case class PubComp(packetId: PacketId)
     extends ControlPacket(ControlPacketType.PUBCOMP, ControlPacketFlags.ReservedGeneral)
 
+object Subscribe {
+
+  /**
+   *  A convenience for subscribing to a single topic with at-most-once semantics
+   */
+  def apply(topicFilter: String): Subscribe =
+    Subscribe(PacketId(0), topicFilter -> ControlPacketFlags.QoSAtMostOnceDelivery, List.empty)
+}
+
+/**
+ * 3.8 SUBSCRIBE - Subscribe to topics
+ */
+final case class Subscribe(packetId: PacketId,
+                           headTopicFilter: (String, ControlPacketFlags),
+                           tailTopicFilters: Seq[(String, ControlPacketFlags)])
+    extends ControlPacket(ControlPacketType.SUBSCRIBE, ControlPacketFlags.ReservedSubscribe)
+
 /**
  * Provides functions to decode bytes to various MQTT types and vice-versa.
  * Performed in accordance with http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
@@ -220,57 +239,62 @@ object MqttCodec {
   /**
    * Returned by decoding when no decoding can be performed
    */
-  sealed abstract class DecodeStatus(val isError: Boolean)
+  sealed abstract class DecodeError
 
   /**
    * Not enough bytes in the byte iterator
    */
-  final case object BufferUnderflow extends DecodeStatus(isError = true)
+  final case object BufferUnderflow extends DecodeError
 
   /**
    * Cannot determine the type/flags combination of the control packet
    */
-  final case class UnknownPacketType(packetType: ControlPacketType, flags: ControlPacketFlags)
-      extends DecodeStatus(isError = true)
+  final case class UnknownPacketType(packetType: ControlPacketType, flags: ControlPacketFlags) extends DecodeError
 
   /**
    * Cannot determine the protocol name/level combination of the connect
    */
-  final case class UnknownConnectProtocol(protocolName: Either[DecodeStatus, String], protocolLevel: ProtocolLevel)
-      extends DecodeStatus(isError = true)
+  final case class UnknownConnectProtocol(protocolName: Either[DecodeError, String], protocolLevel: ProtocolLevel)
+      extends DecodeError
 
   /**
    * Bit 0 of the connect flag was set - which it should not be as it is reserved.
    */
-  final case object ConnectFlagReservedSet extends DecodeStatus(isError = true)
+  final case object ConnectFlagReservedSet extends DecodeError
 
   /**
    * Something is wrong with the connect message
    */
-  final case class BadConnectMessage(clientId: Either[MqttCodec.DecodeStatus, String],
-                                     willTopic: Option[Either[MqttCodec.DecodeStatus, String]],
-                                     willMessage: Option[Either[MqttCodec.DecodeStatus, String]],
-                                     username: Option[Either[MqttCodec.DecodeStatus, String]],
-                                     password: Option[Either[MqttCodec.DecodeStatus, String]])
-      extends DecodeStatus(isError = true)
+  final case class BadConnectMessage(clientId: Either[MqttCodec.DecodeError, String],
+                                     willTopic: Option[Either[MqttCodec.DecodeError, String]],
+                                     willMessage: Option[Either[MqttCodec.DecodeError, String]],
+                                     username: Option[Either[MqttCodec.DecodeError, String]],
+                                     password: Option[Either[MqttCodec.DecodeError, String]])
+      extends DecodeError
 
   /**
    * A reserved QoS was specified
    */
-  case object InvalidQoS extends DecodeStatus(isError = true)
+  case object InvalidQoS extends DecodeError
 
   /**
    * Bits 1  to 7 are set with the Connect Ack flags
    */
-  case object ConnectAckFlagReservedBitsSet extends DecodeStatus(isError = true)
+  case object ConnectAckFlagReservedBitsSet extends DecodeError
 
   /**
    * Something is wrong with the publish message
    */
-  case class BadPublishMessage(topicName: Either[DecodeStatus, String],
-                               packetId: Option[ProtocolLevel],
-                               payload: ByteString)
-      extends DecodeStatus(isError = true)
+  case class BadPublishMessage(topicName: Either[DecodeError, String], packetId: Option[PacketId], payload: ByteString)
+      extends DecodeError
+
+  /**
+   *  Something is wrong with the subscribe message
+   */
+  case class BadSubscribeMessage(packetId: PacketId,
+                                 headTopicFilter: (Either[DecodeError, String], ControlPacketFlags),
+                                 tailTopicFilters: Seq[(Either[DecodeError, String], ControlPacketFlags)])
+      extends DecodeError
 
   // 1.5.3 UTF-8 encoded strings
   implicit class MqttString(val v: String) extends AnyVal {
@@ -370,10 +394,31 @@ object MqttCodec {
     }
   }
 
+  // 3.8 SUBSCRIBE - Subscribe to topics
+  implicit class MqttSubscribe(val v: Subscribe) extends AnyVal {
+    def encode(bsb: ByteStringBuilder): ByteStringBuilder = {
+      val packetBsb = ByteString.newBuilder
+      // Variable header
+      packetBsb.putShort(v.packetId.underlying.toShort)
+      // Payload
+      val (headTopicFilter, headTopicFilterFlags) = v.headTopicFilter
+      headTopicFilter.encode(packetBsb)
+      packetBsb.putByte(headTopicFilterFlags.underlying.toByte)
+      v.tailTopicFilters.foreach {
+        case (topicFilter, topicFilterFlags) =>
+          topicFilter.encode(packetBsb)
+          packetBsb.putByte(topicFilterFlags.underlying.toByte)
+      }
+      // Fixed header
+      (v: ControlPacket).encode(bsb, packetBsb.length)
+      bsb.append(packetBsb.result())
+    }
+  }
+
   implicit class MqttByteIterator(val v: ByteIterator) extends AnyVal {
 
     // 1.5.3 UTF-8 encoded strings
-    def decodeString(): Either[DecodeStatus, String] =
+    def decodeString(): Either[DecodeError, String] =
       try {
         val length = v.getShort & 0xffff
         Right(v.getByteString(length).utf8String)
@@ -382,7 +427,7 @@ object MqttCodec {
       }
 
     // 2 MQTT Control Packet format
-    def decodeControlPacket(): Either[DecodeStatus, ControlPacket] =
+    def decodeControlPacket(): Either[DecodeError, ControlPacket] =
       try {
         val b = v.getByte & 0xff
         val l0 = v.getByte & 0xff
@@ -409,6 +454,8 @@ object MqttCodec {
             v.decodePubRel()
           case (ControlPacketType.PUBCOMP, ControlPacketFlags.ReservedGeneral) =>
             v.decodePubComp()
+          case (ControlPacketType.SUBSCRIBE, ControlPacketFlags.ReservedSubscribe) =>
+            v.decodeSubscribe(l)
           case (packetType, flags) =>
             Left(UnknownPacketType(packetType, flags))
         }
@@ -417,7 +464,7 @@ object MqttCodec {
       }
 
     // 3.1 CONNECT – Client requests a connection to a Server
-    def decodeConnect(): Either[DecodeStatus, Connect] =
+    def decodeConnect(): Either[DecodeError, Connect] =
       try {
         val protocolName = v.decodeString()
         val protocolLevel = v.getByte & 0xff
@@ -444,10 +491,10 @@ object MqttCodec {
                   Some(v.decodeString())
                 else None
               (clientId,
-               willTopic.fold[Either[DecodeStatus, Option[String]]](Right(None))(_.map(Some.apply)),
-               willMessage.fold[Either[DecodeStatus, Option[String]]](Right(None))(_.map(Some.apply)),
-               username.fold[Either[DecodeStatus, Option[String]]](Right(None))(_.map(Some.apply)),
-               password.fold[Either[DecodeStatus, Option[String]]](Right(None))(_.map(Some.apply))) match {
+               willTopic.fold[Either[DecodeError, Option[String]]](Right(None))(_.map(Some.apply)),
+               willMessage.fold[Either[DecodeError, Option[String]]](Right(None))(_.map(Some.apply)),
+               username.fold[Either[DecodeError, Option[String]]](Right(None))(_.map(Some.apply)),
+               password.fold[Either[DecodeError, Option[String]]](Right(None))(_.map(Some.apply))) match {
                 case (Right(ci), Right(wt), Right(wm), Right(un), Right(pw)) =>
                   Right(Connect(Connect.Mqtt, Connect.v311, ci, connectFlags, keepAlive, wt, wm, un, pw))
                 case _ =>
@@ -464,7 +511,7 @@ object MqttCodec {
       }
 
     // 3.2 CONNACK – Acknowledge connection request
-    def decodeConnAck(): Either[DecodeStatus, ConnAck] =
+    def decodeConnAck(): Either[DecodeError, ConnAck] =
       try {
         val connectAckFlags = v.getByte & 0xff
         if ((connectAckFlags & 0xfe) == 0) {
@@ -478,19 +525,19 @@ object MqttCodec {
       }
 
     // 3.3 PUBLISH – Publish message
-    def decodePublish(l: Int, flags: ControlPacketFlags): Either[DecodeStatus, Publish] =
+    def decodePublish(l: Int, flags: ControlPacketFlags): Either[DecodeError, Publish] =
       try {
         if ((flags.underlying & ControlPacketFlags.QoSReserved.underlying) != ControlPacketFlags.QoSReserved.underlying) {
           val packetLen = v.len
           val topicName = v.decodeString()
           val packetId =
             if ((flags.underlying & (ControlPacketFlags.QoSAtLeastOnceDelivery | ControlPacketFlags.QoSExactlyOnceDelivery).underlying) > 0)
-              Some(v.getShort & 0xffff)
+              Some(PacketId(v.getShort & 0xffff))
             else None
           val payload = v.getByteString(l - (packetLen - v.len))
           (topicName, packetId, payload) match {
             case (Right(tn), pi, p) =>
-              Right(Publish(flags, tn, pi.map(PacketId.apply), p))
+              Right(Publish(flags, tn, pi, p))
             case _ =>
               Left(BadPublishMessage(topicName, packetId, payload))
           }
@@ -502,37 +549,73 @@ object MqttCodec {
       }
 
     // 3.4 PUBACK – Publish acknowledgement
-    def decodePubAck(): Either[DecodeStatus, PubAck] =
+    def decodePubAck(): Either[DecodeError, PubAck] =
       try {
-        val packetId = v.getShort & 0xffff
-        Right(PubAck(PacketId(packetId)))
+        val packetId = PacketId(v.getShort & 0xffff)
+        Right(PubAck(packetId))
       } catch {
         case _: NoSuchElementException => Left(BufferUnderflow)
       }
 
     // 3.5 PUBREC – Publish received (QoS 2 publish received, part 1)
-    def decodePubRec(): Either[DecodeStatus, PubRec] =
+    def decodePubRec(): Either[DecodeError, PubRec] =
       try {
-        val packetId = v.getShort & 0xffff
-        Right(PubRec(PacketId(packetId)))
+        val packetId = PacketId(v.getShort & 0xffff)
+        Right(PubRec(packetId))
       } catch {
         case _: NoSuchElementException => Left(BufferUnderflow)
       }
 
     // 3.6 PUBREL – Publish release (QoS 2 publish received, part 2)
-    def decodePubRel(): Either[DecodeStatus, PubRel] =
+    def decodePubRel(): Either[DecodeError, PubRel] =
       try {
-        val packetId = v.getShort & 0xffff
-        Right(PubRel(PacketId(packetId)))
+        val packetId = PacketId(v.getShort & 0xffff)
+        Right(PubRel(packetId))
       } catch {
         case _: NoSuchElementException => Left(BufferUnderflow)
       }
 
     // 3.7 PUBCOMP – Publish complete (QoS 2 publish received, part 3)
-    def decodePubComp(): Either[DecodeStatus, PubComp] =
+    def decodePubComp(): Either[DecodeError, PubComp] =
       try {
-        val packetId = v.getShort & 0xffff
-        Right(PubComp(PacketId(packetId)))
+        val packetId = PacketId(v.getShort & 0xffff)
+        Right(PubComp(packetId))
+      } catch {
+        case _: NoSuchElementException => Left(BufferUnderflow)
+      }
+
+    // 3.8 SUBSCRIBE - Subscribe to topics
+    def decodeSubscribe(l: Int): Either[DecodeError, Subscribe] =
+      try {
+        val packetLen = v.len
+        val packetId = PacketId(v.getShort & 0xffff)
+        val headTopicFilter = v.decodeString() -> ControlPacketFlags(v.getByte & 0xff)
+        @tailrec
+        def decodeTailTopicFilters(
+            remainingLen: Int,
+            tailTopicFilters: Seq[(Either[DecodeError, String], ControlPacketFlags)]
+        ): Seq[(Either[DecodeError, String], ControlPacketFlags)] =
+          if (remainingLen > 0) {
+            val packetLenAtTopicFilter = v.len
+            val topicFilter = (v.decodeString(), ControlPacketFlags(v.getByte & 0xff))
+            decodeTailTopicFilters(remainingLen - (packetLenAtTopicFilter - v.len), tailTopicFilters :+ topicFilter)
+          } else {
+            tailTopicFilters
+          }
+        val tailTopicFilters = decodeTailTopicFilters(l - (packetLen - v.len), List.empty)
+        val topicFiltersValid = (headTopicFilter +: tailTopicFilters).foldLeft(true) {
+          case (true, (Right(_), tff)) if tff.underlying < ControlPacketFlags.QoSReserved.underlying => true
+          case _ => false
+        }
+        (headTopicFilter, tailTopicFilters) match {
+          case ((Right(htfs), htff), ttfs) if topicFiltersValid =>
+            Right(Subscribe(packetId, htfs -> htff, ttfs.flatMap {
+              case (Right(tfs), tff) => List(tfs -> tff)
+              case _ => List.empty
+            }))
+          case _ =>
+            Left(BadSubscribeMessage(packetId, headTopicFilter, tailTopicFilters))
+        }
       } catch {
         case _: NoSuchElementException => Left(BufferUnderflow)
       }
