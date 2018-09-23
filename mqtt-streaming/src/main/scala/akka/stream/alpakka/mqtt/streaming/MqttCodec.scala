@@ -42,6 +42,7 @@ final case class ControlPacketType(underlying: Int) extends AnyVal
 object ControlPacketFlags {
   val None = ControlPacketFlags(0)
   val Reserved = ControlPacketFlags(0)
+  val ReservedPubRel = ControlPacketFlags(1 << 1)
   val DUP = ControlPacketFlags(1 << 3)
   val QoSAtMostOnceDelivery = ControlPacketFlags(0)
   val QoSAtLeastOnceDelivery = ControlPacketFlags(1 << 1)
@@ -194,6 +195,12 @@ final case class PubAck(packetId: PacketId) extends ControlPacket(ControlPacketT
 final case class PubRec(packetId: PacketId) extends ControlPacket(ControlPacketType.PUBREC, ControlPacketFlags.Reserved)
 
 /**
+ * 3.6 PUBREL – Publish release (QoS 2 publish received, part 2)
+ */
+final case class PubRel(packetId: PacketId)
+    extends ControlPacket(ControlPacketType.PUBREL, ControlPacketFlags.ReservedPubRel)
+
+/**
  * Provides functions to decode bytes to various MQTT types and vice-versa.
  * Performed in accordance with http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  * with section numbers referenced accordingly.
@@ -337,6 +344,15 @@ object MqttCodec {
     }
   }
 
+  // 3.6 PUBREL – Publish release (QoS 2 publish received, part 2)
+  implicit class MqttPubRel(val v: PubRel) extends AnyVal {
+    def encode(bsb: ByteStringBuilder): ByteStringBuilder = {
+      (v: ControlPacket).encode(bsb, 2)
+      bsb.putShort(v.packetId.underlying.toShort)
+      bsb
+    }
+  }
+
   implicit class MqttByteIterator(val v: ByteIterator) extends AnyVal {
 
     // 1.5.3 UTF-8 encoded strings
@@ -372,6 +388,8 @@ object MqttCodec {
             v.decodePubAck()
           case (ControlPacketType.PUBREC, ControlPacketFlags.Reserved) =>
             v.decodePubRec()
+          case (ControlPacketType.PUBREL, ControlPacketFlags.ReservedPubRel) =>
+            v.decodePubRel()
           case (packetType, flags) =>
             Left(UnknownPacketType(packetType, flags))
         }
@@ -478,6 +496,15 @@ object MqttCodec {
       try {
         val packetId = v.getShort & 0xffff
         Right(PubRec(PacketId(packetId)))
+      } catch {
+        case _: NoSuchElementException => Left(BufferUnderflow)
+      }
+
+    // 3.6 PUBREL – Publish release (QoS 2 publish received, part 2)
+    def decodePubRel(): Either[DecodeStatus, PubRel] =
+      try {
+        val packetId = v.getShort & 0xffff
+        Right(PubRel(PacketId(packetId)))
       } catch {
         case _: NoSuchElementException => Left(BufferUnderflow)
       }

@@ -208,5 +208,17 @@ class MqttCodecSpec extends WordSpec with Matchers {
     "underflow when decoding publish rec packets" in {
       ByteString.empty.iterator.decodePubRec() shouldBe Left(MqttCodec.BufferUnderflow)
     }
+
+    "encode/decode publish rel packets" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val packet = PubRel(PacketId(1))
+      val bytes = packet.encode(bsb).result()
+      bytes.size shouldBe 4
+      bytes.iterator.decodeControlPacket() shouldBe Right(packet)
+    }
+
+    "underflow when decoding publish rel packets" in {
+      ByteString.empty.iterator.decodePubRel() shouldBe Left(MqttCodec.BufferUnderflow)
+    }
   }
 }
