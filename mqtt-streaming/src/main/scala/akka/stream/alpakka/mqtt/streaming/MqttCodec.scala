@@ -189,6 +189,11 @@ final case class Publish(override val flags: ControlPacketFlags,
 final case class PubAck(packetId: PacketId) extends ControlPacket(ControlPacketType.PUBACK, ControlPacketFlags.Reserved)
 
 /**
+ * 3.5 PUBREC – Publish received (QoS 2 publish received, part 1)
+ */
+final case class PubRec(packetId: PacketId) extends ControlPacket(ControlPacketType.PUBREC, ControlPacketFlags.Reserved)
+
+/**
  * Provides functions to decode bytes to various MQTT types and vice-versa.
  * Performed in accordance with http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  * with section numbers referenced accordingly.
@@ -323,6 +328,15 @@ object MqttCodec {
     }
   }
 
+  // 3.5 PUBREC – Publish received (QoS 2 publish received, part 1)
+  implicit class MqttPubRec(val v: PubRec) extends AnyVal {
+    def encode(bsb: ByteStringBuilder): ByteStringBuilder = {
+      (v: ControlPacket).encode(bsb, 2)
+      bsb.putShort(v.packetId.underlying.toShort)
+      bsb
+    }
+  }
+
   implicit class MqttByteIterator(val v: ByteIterator) extends AnyVal {
 
     // 1.5.3 UTF-8 encoded strings
@@ -356,6 +370,8 @@ object MqttCodec {
             v.decodePublish(l, flags)
           case (ControlPacketType.PUBACK, ControlPacketFlags.Reserved) =>
             v.decodePubAck()
+          case (ControlPacketType.PUBREC, ControlPacketFlags.Reserved) =>
+            v.decodePubRec()
           case (packetType, flags) =>
             Left(UnknownPacketType(packetType, flags))
         }
@@ -453,6 +469,15 @@ object MqttCodec {
       try {
         val packetId = v.getShort & 0xffff
         Right(PubAck(PacketId(packetId)))
+      } catch {
+        case _: NoSuchElementException => Left(BufferUnderflow)
+      }
+
+    // 3.5 PUBREC – Publish received (QoS 2 publish received, part 1)
+    def decodePubRec(): Either[DecodeStatus, PubRec] =
+      try {
+        val packetId = v.getShort & 0xffff
+        Right(PubRec(PacketId(packetId)))
       } catch {
         case _: NoSuchElementException => Left(BufferUnderflow)
       }
