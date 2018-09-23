@@ -256,6 +256,21 @@ final case class UnsubAck(packetId: PacketId)
     extends ControlPacket(ControlPacketType.UNSUBACK, ControlPacketFlags.ReservedUnsubAck)
 
 /**
+ * 3.12 PINGREQ – PING request
+ */
+case object PingReq extends ControlPacket(ControlPacketType.PINGREQ, ControlPacketFlags.ReservedGeneral)
+
+/**
+ * 3.13 PINGRESP – PING response
+ */
+case object PingResp extends ControlPacket(ControlPacketType.PINGRESP, ControlPacketFlags.ReservedGeneral)
+
+/**
+ * 3.14 DISCONNECT – Disconnect notification
+ */
+case object Disconnect extends ControlPacket(ControlPacketType.DISCONNECT, ControlPacketFlags.ReservedGeneral)
+
+/**
  * Provides functions to decode bytes to various MQTT types and vice-versa.
  * Performed in accordance with http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  * with section numbers referenced accordingly.
@@ -498,6 +513,24 @@ object MqttCodec {
     }
   }
 
+  // 3.12 PINGREQ – PING request
+  implicit class MqttPingReq(val v: PingReq.type) extends AnyVal {
+    def encode(bsb: ByteStringBuilder): ByteStringBuilder =
+      (v: ControlPacket).encode(bsb, 0)
+  }
+
+  // 3.13 PINGRESP – PING response
+  implicit class MqttPingResp(val v: PingResp.type) extends AnyVal {
+    def encode(bsb: ByteStringBuilder): ByteStringBuilder =
+      (v: ControlPacket).encode(bsb, 0)
+  }
+
+  // 3.14 DISCONNECT – Disconnect notification
+  implicit class MqttDisconnect(val v: Disconnect.type) extends AnyVal {
+    def encode(bsb: ByteStringBuilder): ByteStringBuilder =
+      (v: ControlPacket).encode(bsb, 0)
+  }
+
   implicit class MqttByteIterator(val v: ByteIterator) extends AnyVal {
 
     // 1.5.3 UTF-8 encoded strings
@@ -546,6 +579,12 @@ object MqttCodec {
               v.decodeUnsubscribe(l)
             case (ControlPacketType.UNSUBACK, ControlPacketFlags.ReservedUnsubAck) =>
               v.decodeUnsubAck()
+            case (ControlPacketType.PINGREQ, ControlPacketFlags.ReservedGeneral) =>
+              Right(PingReq)
+            case (ControlPacketType.PINGRESP, ControlPacketFlags.ReservedGeneral) =>
+              Right(PingResp)
+            case (ControlPacketType.DISCONNECT, ControlPacketFlags.ReservedGeneral) =>
+              Right(Disconnect)
             case (packetType, flags) =>
               Left(UnknownPacketType(packetType, flags))
           }
