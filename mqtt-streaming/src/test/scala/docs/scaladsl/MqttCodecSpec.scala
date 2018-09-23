@@ -21,7 +21,7 @@ class MqttCodecSpec extends WordSpec with Matchers {
       val bsb: ByteStringBuilder = ByteString.newBuilder
       val bytes = "hi".encode(bsb).result()
       bytes.iterator.getShort shouldBe 2
-      (bytes ++ ByteString("ignore")).iterator.decodeString() shouldBe Right("hi")
+      bytes.iterator.decodeString() shouldBe Right("hi")
     }
 
     "underflow when decoding strings" in {
@@ -32,14 +32,14 @@ class MqttCodecSpec extends WordSpec with Matchers {
       val bsb: ByteStringBuilder = ByteString.newBuilder
       val bytes = Reserved1.encode(bsb, 0).result()
       bytes.size shouldBe 2
-      (bytes ++ ByteString("ignore")).iterator.decodeControlPacket() shouldBe Right(Reserved1)
+      bytes.iterator.decodeControlPacket() shouldBe Right(Reserved1)
     }
 
     "encode/decode reserved2 control packets" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
       val bytes = Reserved2.encode(bsb, 0).result()
       bytes.size shouldBe 2
-      (bytes ++ ByteString("ignore")).iterator.decodeControlPacket() shouldBe Right(Reserved2)
+      bytes.iterator.decodeControlPacket() shouldBe Right(Reserved2)
     }
 
     "underflow when decoding control packets" in {
@@ -67,7 +67,7 @@ class MqttCodecSpec extends WordSpec with Matchers {
       )
       val bytes = packet.encode(bsb).result()
       bytes.size shouldBe 94
-      (bytes ++ ByteString("ignore")).iterator.decodeControlPacket() shouldBe Right(packet)
+      bytes.iterator.decodeControlPacket() shouldBe Right(packet)
     }
 
     "unknown protocol name/level when decoding connect control packets" in {
@@ -116,15 +116,19 @@ class MqttCodecSpec extends WordSpec with Matchers {
       )
     }
 
-    "encode/decode connect control ack packets" in {
+    "underflow when decoding connect packets" in {
+      ByteString.empty.iterator.decodeConnect() shouldBe Left(MqttCodec.BufferUnderflow)
+    }
+
+    "encode/decode connect ack packets" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
       val packet = ConnAck(ConnAckFlags.SessionPresent, ConnAckReturnCode.ConnectionAccepted)
       val bytes = packet.encode(bsb).result()
       bytes.size shouldBe 4
-      (bytes ++ ByteString("ignore")).iterator.decodeControlPacket() shouldBe Right(packet)
+      bytes.iterator.decodeControlPacket() shouldBe Right(packet)
     }
 
-    "reserved bits set when decoding connect control ack packets" in {
+    "reserved bits set when decoding connect ack packets" in {
       val bsb = ByteString.newBuilder
         .putByte((ControlPacketType.CONNACK.underlying << 4).toByte)
         .putByte(2)
@@ -133,7 +137,11 @@ class MqttCodecSpec extends WordSpec with Matchers {
       bsb
         .result()
         .iterator
-        .decodeControlPacket() shouldBe Left(MqttCodec.ConnectAckFlagReservedBitsSet)
+        .decodeConnAck() shouldBe Left(MqttCodec.ConnectAckFlagReservedBitsSet)
+    }
+
+    "underflow when decoding connect ack packets" in {
+      ByteString.empty.iterator.decodeConnAck() shouldBe Left(MqttCodec.BufferUnderflow)
     }
 
     "encode/decode publish packets" in {
@@ -146,7 +154,7 @@ class MqttCodecSpec extends WordSpec with Matchers {
       )
       val bytes = packet.encode(bsb).result()
       bytes.size shouldBe 33
-      (bytes ++ ByteString("ignore")).iterator.decodeControlPacket() shouldBe Right(packet)
+      bytes.iterator.decodeControlPacket() shouldBe Right(packet)
     }
 
     "encode/decode publish packets with at most once QoS" in {
@@ -154,7 +162,7 @@ class MqttCodecSpec extends WordSpec with Matchers {
       val packet = Publish("some-topic-name", ByteString("some-payload"))
       val bytes = packet.encode(bsb).result()
       bytes.size shouldBe 31
-      (bytes ++ ByteString("ignore")).iterator.decodeControlPacket() shouldBe Right(packet)
+      bytes.iterator.decodeControlPacket() shouldBe Right(packet)
     }
 
     "invalid QoS when decoding publish packets" in {
@@ -175,6 +183,18 @@ class MqttCodecSpec extends WordSpec with Matchers {
         .result()
         .iterator
         .decodeControlPacket() shouldBe Left(BadPublishMessage(Left(BufferUnderflow), None, ByteString.empty))
+    }
+
+    "encode/decode publish ack packets" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val packet = PubAck(PacketId(1))
+      val bytes = packet.encode(bsb).result()
+      bytes.size shouldBe 4
+      bytes.iterator.decodeControlPacket() shouldBe Right(packet)
+    }
+
+    "underflow when decoding publish ack packets" in {
+      ByteString.empty.iterator.decodePubAck() shouldBe Left(MqttCodec.BufferUnderflow)
     }
   }
 }

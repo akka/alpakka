@@ -5,6 +5,7 @@
 package akka.stream.alpakka.mqtt.streaming
 import java.nio.ByteOrder
 import java.nio.charset.StandardCharsets
+import java.util.NoSuchElementException
 import java.util.concurrent.TimeUnit
 
 import akka.stream.alpakka.mqtt.streaming.Connect.ProtocolLevel
@@ -183,6 +184,11 @@ final case class Publish(override val flags: ControlPacketFlags,
     extends ControlPacket(ControlPacketType.PUBLISH, flags)
 
 /**
+ * 3.4 PUBACK – Publish acknowledgement
+ */
+final case class PubAck(packetId: PacketId) extends ControlPacket(ControlPacketType.PUBACK, ControlPacketFlags.Reserved)
+
+/**
  * Provides functions to decode bytes to various MQTT types and vice-versa.
  * Performed in accordance with http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  * with section numbers referenced accordingly.
@@ -308,24 +314,29 @@ object MqttCodec {
     }
   }
 
+  // 3.4 PUBACK – Publish acknowledgement
+  implicit class MqttPubAck(val v: PubAck) extends AnyVal {
+    def encode(bsb: ByteStringBuilder): ByteStringBuilder = {
+      (v: ControlPacket).encode(bsb, 2)
+      bsb.putShort(v.packetId.underlying.toShort)
+      bsb
+    }
+  }
+
   implicit class MqttByteIterator(val v: ByteIterator) extends AnyVal {
 
     // 1.5.3 UTF-8 encoded strings
     def decodeString(): Either[DecodeStatus, String] =
-      if (v.len >= 2) {
+      try {
         val length = v.getShort & 0xffff
-        if (v.len >= length) {
-          Right(v.getByteString(length).utf8String)
-        } else {
-          Left(BufferUnderflow)
-        }
-      } else {
-        Left(BufferUnderflow)
+        Right(v.getByteString(length).utf8String)
+      } catch {
+        case _: NoSuchElementException => Left(BufferUnderflow)
       }
 
     // 2 MQTT Control Packet format
     def decodeControlPacket(): Either[DecodeStatus, ControlPacket] =
-      if (v.len >= 2) {
+      try {
         val b = v.getByte & 0xff
         val l0 = v.getByte & 0xff
         val l1 = if ((l0 & 0x80) == 0x80) v.getByte & 0xff else 0
@@ -338,21 +349,23 @@ object MqttCodec {
           case (ControlPacketType.Reserved2, ControlPacketFlags.Reserved) =>
             Right(Reserved2)
           case (ControlPacketType.CONNECT, ControlPacketFlags.Reserved) =>
-            v.decodeConnect(l)
+            v.decodeConnect()
           case (ControlPacketType.CONNACK, ControlPacketFlags.Reserved) =>
-            v.decodeConnectAck(l)
+            v.decodeConnAck()
           case (ControlPacketType.PUBLISH, flags) =>
             v.decodePublish(l, flags)
+          case (ControlPacketType.PUBACK, ControlPacketFlags.Reserved) =>
+            v.decodePubAck()
           case (packetType, flags) =>
             Left(UnknownPacketType(packetType, flags))
         }
-      } else {
-        Left(BufferUnderflow)
+      } catch {
+        case _: NoSuchElementException => Left(BufferUnderflow)
       }
 
     // 3.1 CONNECT – Client requests a connection to a Server
-    def decodeConnect(l: Int): Either[DecodeStatus, Connect] =
-      if (v.len >= l) {
+    def decodeConnect(): Either[DecodeStatus, Connect] =
+      try {
         val protocolName = v.decodeString()
         val protocolLevel = v.getByte & 0xff
         (protocolName, protocolLevel) match {
@@ -393,13 +406,13 @@ object MqttCodec {
           case (pn, pl) =>
             Left(UnknownConnectProtocol(pn, pl))
         }
-      } else {
-        Left(BufferUnderflow)
+      } catch {
+        case _: NoSuchElementException => Left(BufferUnderflow)
       }
 
     // 3.2 CONNACK – Acknowledge connection request
-    def decodeConnectAck(l: Int): Either[DecodeStatus, ConnAck] =
-      if (v.len >= l) {
+    def decodeConnAck(): Either[DecodeStatus, ConnAck] =
+      try {
         val connectAckFlags = v.getByte & 0xff
         if ((connectAckFlags & 0xfe) == 0) {
           val resultCode = v.getByte & 0xff
@@ -407,13 +420,13 @@ object MqttCodec {
         } else {
           Left(ConnectAckFlagReservedBitsSet)
         }
-      } else {
-        Left(BufferUnderflow)
+      } catch {
+        case _: NoSuchElementException => Left(BufferUnderflow)
       }
 
     // 3.3 PUBLISH – Publish message
     def decodePublish(l: Int, flags: ControlPacketFlags): Either[DecodeStatus, Publish] =
-      if (v.len >= l) {
+      try {
         if ((flags.underlying & ControlPacketFlags.QoSReserved.underlying) != ControlPacketFlags.QoSReserved.underlying) {
           val packetLen = v.len
           val topicName = v.decodeString()
@@ -431,8 +444,17 @@ object MqttCodec {
         } else {
           Left(InvalidQoS)
         }
-      } else {
-        Left(BufferUnderflow)
+      } catch {
+        case _: NoSuchElementException => Left(BufferUnderflow)
+      }
+
+    // 3.4 PUBACK – Publish acknowledgement
+    def decodePubAck(): Either[DecodeStatus, PubAck] =
+      try {
+        val packetId = v.getShort & 0xffff
+        Right(PubAck(PacketId(packetId)))
+      } catch {
+        case _: NoSuchElementException => Left(BufferUnderflow)
       }
   }
 }
