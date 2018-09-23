@@ -86,18 +86,17 @@ final case class ConnectionRetrySettings(connectTimeout: FiniteDuration = 10.sec
   def withMaxRetries(maxRetries: Int): ConnectionRetrySettings = copy(maxRetries = maxRetries)
   def withInfiniteRetries(): ConnectionRetrySettings = withMaxRetries(-1)
 
-  /** Hypothetical retry time, not accounting for maxBackoff. */
   def waitTime(retryNumber: Int): FiniteDuration =
-    (initialRetry * Math.pow(retryNumber, backoffFactor)).asInstanceOf[FiniteDuration]
+    (initialRetry * Math.pow(retryNumber, backoffFactor)).asInstanceOf[FiniteDuration].min(maxBackoff)
 }
 
 object SendRetrySettings {
   def create(): SendRetrySettings = SendRetrySettings()
 }
 
-final case class SendRetrySettings(initialRetry: FiniteDuration = 50.millis,
-                                   backoffFactor: Double = 2,
-                                   maxBackoff: FiniteDuration = 10.seconds,
+final case class SendRetrySettings(initialRetry: FiniteDuration = 20.millis,
+                                   backoffFactor: Double = 1.5,
+                                   maxBackoff: FiniteDuration = 500.millis,
                                    maxRetries: Int = 10) {
   def withInitialRetry(delay: FiniteDuration): SendRetrySettings = copy(initialRetry = delay)
   def withInitialRetry(delay: Long, unit: TimeUnit): SendRetrySettings =
@@ -109,9 +108,8 @@ final case class SendRetrySettings(initialRetry: FiniteDuration = 50.millis,
   def withMaxRetries(maxRetries: Int): SendRetrySettings = copy(maxRetries = maxRetries)
   def withInfiniteRetries(): SendRetrySettings = withMaxRetries(-1)
 
-  /** Hypothetical retry time, not accounting for maxBackoff. */
   def waitTime(retryNumber: Int): FiniteDuration =
-    (initialRetry * Math.pow(retryNumber, backoffFactor)).asInstanceOf[FiniteDuration]
+    (initialRetry * Math.pow(retryNumber, backoffFactor)).asInstanceOf[FiniteDuration].min(maxBackoff)
 }
 
 object JmsConsumerSettings {

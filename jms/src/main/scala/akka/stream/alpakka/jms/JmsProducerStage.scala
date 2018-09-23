@@ -119,23 +119,23 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
         import send._
         if (jmsProducers.nonEmpty) {
           val jmsProducer: JmsMessageProducer = jmsProducers.dequeue()
-          Future(jmsProducer.send(message.message)).andThen {
+          Future(jmsProducer.send(envelope.message)).andThen {
             case tried => sendCompletedCB.invoke((send, tried, jmsProducer))
           }
         } else {
-          nextTryOrFail(new RuntimeException("JmsProducer is not connected, skipping send attempt"), send)
+          nextTryOrFail(send, RetrySkippedOnMissingConnection)
         }
       }
 
-      def nextTryOrFail(ex: Throwable, send: SendAttempt[E]): Unit = {
+      def nextTryOrFail(send: SendAttempt[E], ex: Throwable): Unit = {
         import settings.sendRetrySettings._
         import send._
-        if (maxRetries < 0 || attempt + 1 < maxRetries) {
+        if (maxRetries < 0 || attempt + 1 <= maxRetries) {
           val nextAttempt = attempt + 1
-          val delay = waitTime(nextAttempt).min(maxBackoff)
-          scheduleOnce(send.copy(attempt = nextAttempt), delay)
+          scheduleOnce(send.copy(attempt = nextAttempt), waitTime(nextAttempt))
         } else {
           holder(Failure(ex))
+          handleFailure(ex, holder)
         }
       }
 
@@ -150,10 +150,10 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
 
         outcome match {
           case Success(_) =>
-            holder(Success(message))
+            holder(Success(envelope))
             pushNextIfPossible()
           case Failure(t: JMSException) =>
-            nextTryOrFail(t, send)
+            nextTryOrFail(send, t)
           case Failure(t) =>
             holder(Failure(t))
             handleFailure(t, holder)
@@ -224,5 +224,5 @@ private[jms] object JmsProducerStage {
     override def apply(t: Try[A]): Unit = elem = t
   }
 
-  case class SendAttempt[E](message: Message[JmsMessage, _] with E, holder: Holder[E], attempt: Int = 0)
+  case class SendAttempt[E](envelope: Message[JmsMessage, _] with E, holder: Holder[E], attempt: Int = 0)
 }

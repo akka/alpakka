@@ -5,6 +5,7 @@
 package akka.stream.alpakka.jms.scaladsl
 
 import java.nio.charset.Charset
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{CountDownLatch, LinkedBlockingQueue, ThreadLocalRandom, TimeUnit}
 
 import akka.stream.alpakka.jms._
@@ -874,6 +875,7 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
     }
 
     "produce elements in order" in {
+      val delays = new AtomicInteger()
       val factory = mock[ConnectionFactory]
       val connection = mock[Connection]
       val session = mock[Session]
@@ -881,15 +883,18 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       val textMessage = mock[TextMessage]
 
       val delayedSend = new Answer[Unit] {
-        override def answer(invocation: InvocationOnMock): Unit =
+        override def answer(invocation: InvocationOnMock): Unit = {
+          delays.incrementAndGet()
           Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
+        }
       }
 
       when(factory.createConnection()).thenReturn(connection)
       when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
       when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
       when(session.createTextMessage(anyString())).thenReturn(textMessage)
-      when(producer.send(any[Message], anyInt(), anyInt(), anyLong())).thenAnswer(delayedSend)
+      when(producer.send(any[javax.jms.Destination], any[Message], anyInt(), anyInt(), anyLong()))
+        .thenAnswer(delayedSend)
 
       val in = (1 to 50).map(i => JmsTextMessage(i.toString))
       val jmsFlow = JmsProducer.flow[JmsTextMessage](JmsProducerSettings(factory).withQueue("test").withSessionCount(8))
@@ -897,6 +902,7 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       val result = Source(in).via(jmsFlow).toMat(Sink.seq)(Keep.right).run()
 
       result.futureValue shouldEqual in
+      delays.get() shouldBe 50
     }
 
     "fail fast on the first failing send" in {
@@ -1201,6 +1207,62 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
           )
       )
 
+      val (queue, result) = Source
+        .queue[Int](10, OverflowStrategies.Backpressure)
+        .zipWithIndex
+        .map(e => JmsMapMessage(Map("time" -> System.currentTimeMillis(), "index" -> e._2)))
+        .via(jms)
+        .map(_.body)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      val sentResult = JmsConsumer
+        .mapSource(JmsConsumerSettings(connectionFactory).withBufferSize(1).withQueue("test"))
+        .take(20)
+        .runWith(Sink.seq)
+
+      for (_ <- 1 to 10) queue.offer(1) // 10 before the crash
+      Thread.sleep(500)
+      ctx.broker.stop() // crash.
+
+      Thread.sleep(1000)
+      ctx.broker.start(true) // recover.
+      val restartTime = System.currentTimeMillis()
+      for (_ <- 1 to 10) queue.offer(1) // 10 after the crash
+      queue.complete()
+
+      val resultList = result.futureValue
+      def index(m: Map[String, Any]) = m("index").asInstanceOf[Long]
+      def time(m: Map[String, Any]) = m("time").asInstanceOf[Long]
+
+      resultList.size shouldBe 20
+      resultList.filter(b => time(b) > restartTime) shouldNot be(empty)
+      resultList.sliding(2).forall(pair => index(pair.head) + 1 == index(pair.last)) shouldBe true
+
+      val sentList = sentResult.futureValue
+      sentList.size shouldBe 20
+      // all produced elements should have been sent to the consumer.
+      resultList.forall { produced =>
+        sentList.exists(consumed => index(consumed) == index(produced))
+      } shouldBe true
+    }
+
+    "fail sending only after max retries" in withServer() { ctx =>
+      val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      val jms = JmsProducer.flow[JmsMapMessage](
+        JmsProducerSettings(connectionFactory)
+          .withQueue("test")
+          .withConnectionRetrySettings(ConnectionRetrySettings().withInfiniteRetries())
+          .withSendRetrySettings(
+            SendRetrySettings()
+              .withInitialRetry(100.millis)
+              .withMaxBackoff(600.millis)
+              .withBackoffFactor(2)
+              .withMaxRetries(3)
+          )
+      )
+
       val (cancellable, result) = Source
         .tick(50.millis, 50.millis, "")
         .zipWithIndex
@@ -1211,18 +1273,130 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
         .run()
 
       Thread.sleep(500)
+      val crashTime = System.currentTimeMillis()
       ctx.broker.stop()
-      Thread.sleep(500)
-      ctx.broker.start(true)
-      val restartTime = System.currentTimeMillis()
-      Thread.sleep(500)
-      cancellable.cancel()
+      val failure = result.failed.futureValue
+      val failureTime = System.currentTimeMillis()
 
-      val resultList = result.futureValue
-      def index(m: Map[String, Any]) = m("index").asInstanceOf[Long]
-      def time(m: Map[String, Any]) = m("time").asInstanceOf[Long]
-      resultList.filter(b => time(b) > restartTime) shouldNot be(empty)
-      resultList.sliding(2).forall(pair => index(pair.head) + 1 == index(pair.last)) shouldBe true
+      val expectedDelay = 100L + 400L + 600L
+      failureTime - crashTime shouldBe >(expectedDelay)
+      failure shouldBe RetrySkippedOnMissingConnection
+    }
+
+    "fail immediately on non-recoverable errors" in withServer() { ctx =>
+      val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      val jms = JmsProducer.flow[JmsMapMessage](
+        JmsProducerSettings(connectionFactory)
+          .withQueue("test")
+          .withSendRetrySettings(SendRetrySettings().withInfiniteRetries())
+      )
+
+      val result = Source(
+        List(JmsMapMessage(Map("body" -> "1")), JmsMapMessage(Map("body" -> this)), JmsMapMessage(Map("body" -> "3")))
+      ).via(jms)
+        .map(_.body("body").toString)
+        .runWith(Sink.seq)
+
+      val failure = result.failed.futureValue
+      failure shouldBe a[UnsupportedMapMessageEntryType]
+    }
+
+    "invoke supervisor when send fails" in withServer() { ctx =>
+      val deciderCalls = new AtomicInteger()
+      val decider: Supervision.Decider = { ex =>
+        deciderCalls.incrementAndGet()
+        Supervision.Resume
+      }
+      val settings = ActorMaterializerSettings(system).withSupervisionStrategy(decider)
+      val materializer = ActorMaterializer(settings)(system)
+
+      val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      val jms = JmsProducer.flow[JmsMapMessage](
+        JmsProducerSettings(connectionFactory)
+          .withQueue("test")
+          .withSendRetrySettings(SendRetrySettings().withInfiniteRetries())
+      )
+
+      // second element is a wrong map message.
+      val result = Source(
+        List(JmsMapMessage(Map("body" -> "1")), JmsMapMessage(Map("body" -> this)), JmsMapMessage(Map("body" -> "3")))
+      ).via(jms)
+        .map(_.body("body").toString)
+        .runWith(Sink.seq)(materializer)
+
+      // check that second element was skipped.
+      val list = result.futureValue
+      list shouldBe List("1", "3")
+
+      deciderCalls.get shouldBe 1
+    }
+
+    "retry send as often as configured" in {
+      val sendAttempts = new AtomicInteger()
+      val connectionFactory = mock[ConnectionFactory]
+      val connection = mock[Connection]
+      val session = mock[Session]
+      val producer = mock[MessageProducer]
+      val message = mock[TextMessage]
+
+      when(connectionFactory.createConnection()).thenReturn(connection)
+      when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
+      when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
+      when(session.createTextMessage(any[String])).thenReturn(message)
+
+      when(producer.send(any[javax.jms.Destination], any[Message], anyInt(), anyInt(), anyLong()))
+        .thenAnswer(new Answer[Unit]() {
+          override def answer(invocation: InvocationOnMock): Unit = {
+            sendAttempts.incrementAndGet()
+            throw new JMSException("send error")
+          }
+        })
+
+      val jms = JmsProducer.textSink(
+        JmsProducerSettings(connectionFactory)
+          .withQueue("test")
+          .withSendRetrySettings(
+            SendRetrySettings().withInitialRetry(10.millis).withMaxBackoff(10.millis).withMaxRetries(5)
+          )
+      )
+
+      val result = Source(List("one")).runWith(jms)
+
+      result.failed.futureValue shouldBe a[JMSException]
+      sendAttempts.get() shouldBe 6
+    }
+
+    "fail send on first attempt if retry is disabled" in {
+      val sendAttempts = new AtomicInteger()
+      val connectionFactory = mock[ConnectionFactory]
+      val connection = mock[Connection]
+      val session = mock[Session]
+      val producer = mock[MessageProducer]
+      val message = mock[TextMessage]
+
+      when(connectionFactory.createConnection()).thenReturn(connection)
+      when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
+      when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
+      when(session.createTextMessage(any[String])).thenReturn(message)
+
+      when(producer.send(any[javax.jms.Destination], any[Message], anyInt(), anyInt(), anyLong()))
+        .thenAnswer(new Answer[Unit]() {
+          override def answer(invocation: InvocationOnMock): Unit =
+            if (sendAttempts.incrementAndGet() == 1) throw new JMSException("send error")
+        })
+
+      val jms = JmsProducer.textSink(
+        JmsProducerSettings(connectionFactory)
+          .withQueue("test")
+          .withSendRetrySettings(SendRetrySettings().withMaxRetries(0))
+      )
+
+      val result = Source(List("one")).runWith(jms)
+
+      result.failed.futureValue shouldBe a[JMSException]
+      sendAttempts.get() shouldBe 1
     }
   }
 

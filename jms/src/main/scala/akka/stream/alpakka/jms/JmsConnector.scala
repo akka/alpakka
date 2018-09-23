@@ -138,8 +138,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
           if (maxRetries == 0) Future.failed(t)
           else Future.failed(ConnectionRetryException(s"Could not establish connection after $n retries.", t))
         } else {
-          val delay = waitTime(nextN).min(maxBackoff)
-          after(delay, system.scheduler) {
+          after(waitTime(nextN), system.scheduler) {
             openConnectionWithRetry(startConnection, nextN)
           }
         }

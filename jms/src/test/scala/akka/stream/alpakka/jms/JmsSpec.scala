@@ -20,12 +20,8 @@ abstract class JmsSpec
     with Eventually {
 
   implicit val system = ActorSystem(this.getClass.getSimpleName)
-  val decider: Supervision.Decider = {
-    case ex =>
-      println("An error occurred in the stream.  Calling Supervision.Stop inside the decider!")
-      ex.printStackTrace(System.err)
-      Supervision.Stop
-  }
+
+  val decider: Supervision.Decider = ex => Supervision.Stop
 
   val settings = ActorMaterializerSettings(system).withSupervisionStrategy(decider)
 
