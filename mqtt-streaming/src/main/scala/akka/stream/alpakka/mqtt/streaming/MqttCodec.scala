@@ -46,6 +46,7 @@ object ControlPacketFlags {
   val ReservedPubRel = ControlPacketFlags(1 << 1)
   val ReservedSubscribe = ControlPacketFlags(1 << 1)
   val ReservedUnsubscribe = ControlPacketFlags(1 << 1)
+  val ReservedUnsubAck = ControlPacketFlags(1 << 1)
   val DUP = ControlPacketFlags(1 << 3)
   val QoSAtMostOnceDelivery = ControlPacketFlags(0)
   val QoSAtLeastOnceDelivery = ControlPacketFlags(1 << 1)
@@ -247,6 +248,12 @@ object Unsubscribe {
  */
 final case class Unsubscribe(packetId: PacketId, topicFilters: Seq[String])
     extends ControlPacket(ControlPacketType.UNSUBSCRIBE, ControlPacketFlags.ReservedUnsubscribe)
+
+/**
+ * 3.11 UNSUBACK – Unsubscribe acknowledgement
+ */
+final case class UnsubAck(packetId: PacketId)
+    extends ControlPacket(ControlPacketType.UNSUBACK, ControlPacketFlags.ReservedUnsubAck)
 
 /**
  * Provides functions to decode bytes to various MQTT types and vice-versa.
@@ -482,6 +489,15 @@ object MqttCodec {
     }
   }
 
+  // 3.11 UNSUBACK – Unsubscribe acknowledgement
+  implicit class MqttUnsubAck(val v: UnsubAck) extends AnyVal {
+    def encode(bsb: ByteStringBuilder): ByteStringBuilder = {
+      (v: ControlPacket).encode(bsb, 2)
+      bsb.putShort(v.packetId.underlying.toShort)
+      bsb
+    }
+  }
+
   implicit class MqttByteIterator(val v: ByteIterator) extends AnyVal {
 
     // 1.5.3 UTF-8 encoded strings
@@ -528,6 +544,8 @@ object MqttCodec {
               v.decodeSubAck(l)
             case (ControlPacketType.UNSUBSCRIBE, ControlPacketFlags.ReservedUnsubscribe) =>
               v.decodeUnsubscribe(l)
+            case (ControlPacketType.UNSUBACK, ControlPacketFlags.ReservedUnsubAck) =>
+              v.decodeUnsubAck()
             case (packetType, flags) =>
               Left(UnknownPacketType(packetType, flags))
           }
@@ -751,6 +769,15 @@ object MqttCodec {
         } else {
           Left(BadUnsubscribeMessage(packetId, topicFilters))
         }
+      } catch {
+        case _: NoSuchElementException => Left(BufferUnderflow)
+      }
+
+    // 3.11 UNSUBACK – Unsubscribe acknowledgement
+    def decodeUnsubAck(): Either[DecodeError, UnsubAck] =
+      try {
+        val packetId = PacketId(v.getShort & 0xffff)
+        Right(UnsubAck(packetId))
       } catch {
         case _: NoSuchElementException => Left(BufferUnderflow)
       }
