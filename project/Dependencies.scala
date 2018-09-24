@@ -74,7 +74,7 @@ object Dependencies {
       "com.h2database" % "h2" % "1.4.197", // Eclipse Public License 1.0
       "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.3.1", // ApacheV2
       "org.codelibs" % "elasticsearch-cluster-runner" % "6.3.1.0", // ApacheV2
-      "io.netty" % "netty-all" % "4.1.27.Final", // ApacheV2
+      "io.netty" % "netty-all" % "4.1.29.Final", // ApacheV2
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.6",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.6",
       "org.slf4j" % "log4j-over-slf4j" % "1.7.25",
