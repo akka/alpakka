@@ -3,3 +3,29 @@
  */
 
 package akka.stream.alpakka.mqtt.streaming
+
+object SessionFlowSettings {
+
+  /**
+   * Factory method for Scala.
+   */
+  def apply(maxPacketSize: Int): SessionFlowSettings =
+    new SessionFlowSettings(maxPacketSize)
+
+  /**
+   * Java API
+   *
+   * Factory method for Java.
+   */
+  def create(maxPacketSize: Int): SessionFlowSettings =
+    SessionFlowSettings(maxPacketSize)
+}
+
+final class SessionFlowSettings private (val maxPacketSize: Int) {
+  def withMaxPacketSize(maxPacketSize: Int): SessionFlowSettings = copy(maxPacketSize = maxPacketSize)
+
+  private def copy(maxPacketSize: Int = maxPacketSize) = new SessionFlowSettings(maxPacketSize)
+
+  override def toString: String =
+    s"SessionFlowSettings(maxPacketSize=$maxPacketSize)"
+}

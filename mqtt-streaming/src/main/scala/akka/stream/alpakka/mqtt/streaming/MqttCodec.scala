@@ -110,6 +110,12 @@ object Connect {
   val v311: ProtocolLevel = 4
 
   /**
+   * Conveniently create a connect object without credentials.
+   */
+  def apply(clientId: String, connectFlags: ConnectFlags): Connect =
+    new Connect(Mqtt, v311, clientId, connectFlags, 60.seconds, None, None, None, None)
+
+  /**
    * Conveniently create a connect object with credentials. This function will also set the
    * corresponding username and password flags.
    */
