@@ -57,6 +57,12 @@ The JSON reading module offers a flow, which allows to stream specific parts of 
 In this particular example, only the `rows` array is interesting for the application, more specifically
 even: only the `doc` inside each element of the array.
 
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Ajson-streaming)
+
+
 ### Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
