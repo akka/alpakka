@@ -10,7 +10,6 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.dynamodb.scaladsl._
-import akka.stream.alpakka.dynamodb.{AwsOp, DynamoClient, DynamoSettings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import com.amazonaws.services.dynamodbv2.model._
@@ -28,7 +27,6 @@ class ExampleSpec
     with ScalaFutures {
 
   implicit val materializer: Materializer = ActorMaterializer()
-  implicit val dynamoClient: DynamoClient = DynamoClient(DynamoSettings(system))
 
   override def beforeAll() = {
     System.setProperty("aws.accessKeyId", "someKeyId")
@@ -41,18 +39,10 @@ class ExampleSpec
 
     "provide a simple usage example" in {
 
-      //#client-construct
-      implicit val system: ActorSystem = ActorSystem()
-      implicit val materializer: Materializer = ActorMaterializer()
-
-      val settings = DynamoSettings(system)
-      val dynamoClient = DynamoClient(settings)
-      //#client-construct
-
       //##simple-request
       import DynamoImplicits._
       val listTablesResult: Future[ListTablesResult] =
-        DynamoDbExternal.single(new ListTablesRequest())(dynamoClient)
+        DynamoDb.single(new ListTablesRequest())
       //##simple-request
 
       Await.result(listTablesResult, 5.seconds)
@@ -64,15 +54,13 @@ class ExampleSpec
     "allow multiple requests - explicit types" in {
       import DynamoImplicits._
       val source = Source
-        .single[AwsOp](new CreateTableRequest().withTableName("testTable"))
-        .via(DynamoDbExternal.flow)
-        .map(_.asInstanceOf[CreateTableResult]) // <-- this is not very intuitive
-        .map[AwsOp]( // <-- this is required to trigger the following implicit conversion, which takes some time to find out as well
+        .single[CreateTable](new CreateTableRequest().withTableName("testTable"))
+        .via(DynamoDb.flow)
+        .map[DescribeTable](
           result => new DescribeTableRequest().withTableName(result.getTableDescription.getTableName)
         )
-        .via(DynamoDbExternal.flow)
-        .map(_.asInstanceOf[DescribeTableResult])
-        .map(result => result.getTable.getItemCount)
+        .via(DynamoDb.flow)
+        .map(_.getTable.getItemCount)
       val streamCompletion = source.runWith(Sink.seq)
       streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
     }
@@ -81,9 +69,8 @@ class ExampleSpec
       //##flow
       import DynamoImplicits._
       val source: Source[String, NotUsed] = Source
-        .single(new CreateTableRequest().withTableName("testTable"))
-        .map(_.toOp) // converts to corresponding AwsOp
-        .via(DynamoDbExternal.flow)
+        .single[CreateTable](new CreateTableRequest().withTableName("testTable"))
+        .via(DynamoDb.flow)
         .map(_.getTableDescription.getTableArn)
       //##flow
       val streamCompletion = source.runWith(Sink.seq)
@@ -92,12 +79,11 @@ class ExampleSpec
 
     "allow multiple requests - single source" in {
       import DynamoImplicits._
-      val source: Source[lang.Long, NotUsed] = DynamoDbExternal
+      val source: Source[lang.Long, NotUsed] = DynamoDb
         .source(new CreateTableRequest().withTableName("testTable")) // creating a source from a single req is common enough to warrant a utility function
-        .map(result => new DescribeTableRequest().withTableName(result.getTableDescription.getTableName))
-        .map(_.toOp)
-        .via(DynamoDbExternal.flow)
-        .map(result => result.getTable.getItemCount)
+        .map[DescribeTable](result => new DescribeTableRequest().withTableName(result.getTableDescription.getTableName))
+        .via(DynamoDb.flow)
+        .map(_.getTable.getItemCount)
       val streamCompletion = source.runWith(Sink.seq)
       streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
     }
@@ -107,7 +93,7 @@ class ExampleSpec
 
       //##paginated
       val scanPages: Source[ScanResult, NotUsed] =
-        DynamoDbExternal.source(new ScanRequest().withTableName("testTable"))
+        DynamoDb.source(new ScanRequest().withTableName("testTable"))
       //##paginated
       val streamCompletion = scanPages.runWith(Sink.seq)
       streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
