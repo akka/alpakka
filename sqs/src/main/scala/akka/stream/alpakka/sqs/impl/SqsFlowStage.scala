@@ -2,10 +2,11 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.sqs
+package akka.stream.alpakka.sqs.impl
 
 import akka.Done
-import akka.stream.alpakka.sqs.scaladsl.Result
+import akka.annotation.InternalApi
+import akka.stream.alpakka.sqs.SqsPublishResult
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
@@ -15,11 +16,14 @@ import com.amazonaws.services.sqs.model.{SendMessageRequest, SendMessageResult}
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
-private[sqs] final class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
-    extends GraphStage[FlowShape[SendMessageRequest, Future[Result]]] {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[sqs] final class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
+    extends GraphStage[FlowShape[SendMessageRequest, Future[SqsPublishResult]]] {
 
   private val in = Inlet[SendMessageRequest]("messages")
-  private val out = Outlet[Future[Result]]("result")
+  private val out = Outlet[Future[SqsPublishResult]]("result")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -83,7 +87,7 @@ private[sqs] final class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsyn
           override def onPush() = {
             inFlight += 1
             val msg = grab(in).withQueueUrl(queueUrl)
-            val responsePromise = Promise[Result]
+            val responsePromise = Promise[SqsPublishResult]
 
             val handler = new AsyncHandler[SendMessageRequest, SendMessageResult] {
 
@@ -93,7 +97,7 @@ private[sqs] final class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsyn
               }
 
               override def onSuccess(request: SendMessageRequest, result: SendMessageResult): Unit = {
-                responsePromise.success(Result(result, msg.getMessageBody))
+                responsePromise.success(SqsPublishResult(result, msg.getMessageBody))
                 sendCallback.invoke(result)
               }
             }

@@ -2,9 +2,10 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.sqs
+package akka.stream.alpakka.sqs.impl
 
-import akka.stream.alpakka.sqs.scaladsl.AckResult
+import akka.annotation.InternalApi
+import akka.stream.alpakka.sqs.{MessageAction, SqsAckResult}
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
@@ -14,11 +15,14 @@ import com.amazonaws.services.sqs.model._
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
-private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
-    extends GraphStage[FlowShape[MessageActionPair, Future[AckResult]]] {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
+    extends GraphStage[FlowShape[MessageAction, Future[SqsAckResult]]] {
 
-  private val in = Inlet[MessageActionPair]("messages")
-  private val out = Outlet[Future[AckResult]]("result")
+  private val in = Inlet[MessageAction]("messages")
+  private val out = Outlet[Future[SqsAckResult]]("result")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -91,10 +95,11 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
 
           override def onPush() = {
             inFlight += 1
-            val (message, action) = grab(in)
-            val responsePromise = Promise[AckResult]
+            val action = grab(in)
+            val message = action.message
+            val responsePromise = Promise[SqsAckResult]
             action match {
-              case MessageAction.Delete =>
+              case _: MessageAction.Delete =>
                 val handler = new AsyncHandler[DeleteMessageRequest, DeleteMessageResult] {
 
                   override def onError(exception: Exception): Unit = {
@@ -103,7 +108,7 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
                   }
 
                   override def onSuccess(request: DeleteMessageRequest, result: DeleteMessageResult): Unit = {
-                    responsePromise.success(AckResult(Some(result), message.getBody))
+                    responsePromise.success(SqsAckResult(Some(result), message.getBody))
                     deleteCallback.invoke(request)
                   }
                 }
@@ -112,7 +117,7 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
                   handler
                 )
 
-              case MessageAction.ChangeMessageVisibility(visibilityTimeout) =>
+              case change: MessageAction.ChangeMessageVisibility =>
                 val handler = new AsyncHandler[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult] {
 
                   override def onError(exception: Exception): Unit = {
@@ -122,18 +127,18 @@ private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSA
 
                   override def onSuccess(request: ChangeMessageVisibilityRequest,
                                          result: ChangeMessageVisibilityResult): Unit = {
-                    responsePromise.success(AckResult(Some(result), message.getBody))
+                    responsePromise.success(SqsAckResult(Some(result), message.getBody))
                     changeVisibilityCallback.invoke(request)
                   }
                 }
                 sqsClient
                   .changeMessageVisibilityAsync(
-                    new ChangeMessageVisibilityRequest(queueUrl, message.getReceiptHandle, visibilityTimeout),
+                    new ChangeMessageVisibilityRequest(queueUrl, message.getReceiptHandle, change.visibilityTimeout),
                     handler
                   )
 
-              case MessageAction.Ignore =>
-                responsePromise.success(AckResult(None, message.getBody))
+              case _: MessageAction.Ignore =>
+                responsePromise.success(SqsAckResult(None, message.getBody))
             }
             push(out, responsePromise.future)
           }
