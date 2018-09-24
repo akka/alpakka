@@ -1,6 +1,8 @@
 language: scala
 sudo: false
-jdk: oraclejdk8
+jdk:
+  - oraclejdk8
+  - openjdk11
 
 services:
   - docker
