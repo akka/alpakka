@@ -218,8 +218,8 @@ object Subscribe {
   /**
    *  A convenience for subscribing to a single topic with at-most-once semantics
    */
-  def apply(topicFilter: String): Subscribe =
-    Subscribe(PacketId(0), List(topicFilter -> ControlPacketFlags.QoSAtMostOnceDelivery))
+  def apply(packetId: PacketId, topicFilter: String): Subscribe =
+    Subscribe(packetId, List(topicFilter -> ControlPacketFlags.QoSAtMostOnceDelivery))
 }
 
 /**
@@ -239,8 +239,8 @@ object Unsubscribe {
   /**
    *  A convenience for unsubscribing from a single topic with at-most-once semantics
    */
-  def apply(topicFilter: String): Unsubscribe =
-    Unsubscribe(PacketId(0), List(topicFilter))
+  def apply(packetId: PacketId, topicFilter: String): Unsubscribe =
+    Unsubscribe(packetId, List(topicFilter))
 }
 
 /**

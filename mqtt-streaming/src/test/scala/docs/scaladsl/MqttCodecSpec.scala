@@ -272,7 +272,7 @@ class MqttCodecSpec extends WordSpec with Matchers {
 
     "encode/decode subscribe packets with at most once QoS" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
-      val packet = Subscribe("some-head-topic")
+      val packet = Subscribe(PacketId(0), "some-head-topic")
       val bytes = packet.encode(bsb).result()
       bytes.size shouldBe 22
       bytes.iterator.decodeControlPacket(MaxPacketSize) shouldBe Right(packet)
@@ -341,7 +341,7 @@ class MqttCodecSpec extends WordSpec with Matchers {
 
     "encode/decode unsubscribe packets" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
-      val packet = Unsubscribe("some-head-topic")
+      val packet = Unsubscribe(PacketId(0), "some-head-topic")
       val bytes = packet.encode(bsb).result()
       bytes.size shouldBe 21
       bytes.iterator.decodeControlPacket(MaxPacketSize) shouldBe Right(packet)
