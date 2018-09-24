@@ -12,7 +12,16 @@ import akka.stream.alpakka.dynamodb._
 import akka.stream.javadsl.{Flow, Source}
 import com.amazonaws.services.dynamodbv2.model._
 
+/**
+ * A factory of operations that use managed DynamoClient.
+ */
 object DynamoDb {
+
+  /**
+   * Create a Flow that emits a response for every request.
+   *
+   * @param sys actor system that will be used to resolved managed DynamoClient
+   */
   def flow[Op <: AwsOp](sys: ActorSystem): Flow[Op, Op#B, NotUsed] =
     DynamoDbExternal.flow(DynamoClientExt(sys).dynamoClient)
 

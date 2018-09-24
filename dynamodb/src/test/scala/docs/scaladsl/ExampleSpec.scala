@@ -46,9 +46,6 @@ class ExampleSpec
       //##simple-request
 
       Await.result(listTablesResult, 5.seconds)
-
-      TestKit.shutdownActorSystem(system)
-
     }
 
     "allow multiple requests - explicit types" in {

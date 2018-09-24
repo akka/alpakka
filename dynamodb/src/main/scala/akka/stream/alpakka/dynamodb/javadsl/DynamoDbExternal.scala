@@ -15,7 +15,16 @@ import com.amazonaws.services.dynamodbv2.model._
 
 import scala.compat.java8.FutureConverters._
 
+/**
+ * A factory of operations that use provided DynamoClient.
+ */
 object DynamoDbExternal {
+
+  /**
+   * Create a Flow that emits a response for every request.
+   *
+   * @param client DynamoClient instance that will be used to send the request
+   */
   def flow[Op <: AwsOp](client: DynamoClient): Flow[Op, Op#B, NotUsed] =
     scaladsl.DynamoDbExternal.flow(client).asJava
 
