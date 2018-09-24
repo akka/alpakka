@@ -8,21 +8,38 @@ import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.dynamodb.impl.DynamoClientImpl
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits
 
-final class DynamoClient(settings: DynamoSettings)(implicit system: ActorSystem, val materializer: Materializer) {
+/**
+ * Holds an instance of `DynamoClientImpl`. This is usually created and managed by an extension,
+ * but could be manually managed by a user as well.
+ */
+final class DynamoClient private (settings: DynamoSettings)(implicit system: ActorSystem,
+                                                            val materializer: Materializer) {
   final val underlying = new DynamoClientImpl(settings, DynamoImplicits.errorResponseHandler)
 }
 
 object DynamoClient {
+
+  /**
+   * Create [[DynamoClient]] from [[DynamoSettings]].
+   */
   def apply(settings: DynamoSettings)(implicit system: ActorSystem, materializer: Materializer): DynamoClient =
     new DynamoClient(settings)
 
+  /**
+   * Java API
+   *
+   * Create [[DynamoClient]] from [[DynamoSettings]].
+   */
   def create(settings: DynamoSettings, system: ActorSystem, materializer: Materializer): DynamoClient =
     DynamoClient(settings)(system, materializer)
 }
 
+/**
+ * Manages one [[DynamoClient]] per `ActorSystem`.
+ */
 final class DynamoClientExt private (sys: ExtendedActorSystem) extends Extension {
   private[this] val systemMaterializer = ActorMaterializer()(sys)
-  implicit val dynamoClient = new DynamoClient(DynamoSettings(sys))(sys, systemMaterializer)
+  implicit val dynamoClient = DynamoClient(DynamoSettings(sys))(sys, systemMaterializer)
 }
 
 object DynamoClientExt extends ExtensionId[DynamoClientExt] with ExtensionIdProvider {
