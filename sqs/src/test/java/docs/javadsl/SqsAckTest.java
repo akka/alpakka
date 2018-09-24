@@ -2,25 +2,22 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.sqs.javadsl;
+package docs.javadsl;
 
 import akka.Done;
-import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.alpakka.sqs.MessageAction;
-import akka.stream.alpakka.sqs.scaladsl.AckResult;
+import akka.stream.alpakka.sqs.*;
+import akka.stream.alpakka.sqs.javadsl.BaseSqsTest;
+import akka.stream.alpakka.sqs.javadsl.SqsAckFlow;
+import akka.stream.alpakka.sqs.javadsl.SqsAckSink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
-import akka.testkit.javadsl.TestKit;
 import com.amazonaws.handlers.AsyncHandler;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.model.*;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.Option;
-import scala.Tuple2;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -31,7 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.assertEquals;
 
-public class SqsAckSinkTest extends BaseSqsTest {
+public class SqsAckTest extends BaseSqsTest {
 
   @Test
   public void testAcknowledge() throws Exception {
@@ -48,14 +45,42 @@ public class SqsAckSinkTest extends BaseSqsTest {
             });
 
     // #ack
-    Tuple2<Message, MessageAction> pair =
-        new Tuple2<>(new Message().withBody("test"), MessageAction.delete());
+    MessageAction action = MessageAction.delete(new Message().withBody("test"));
     CompletionStage<Done> done =
-        Source.single(pair).runWith(SqsAckSink.create(queueUrl, awsClient), materializer);
+        Source.single(action)
+            .runWith(SqsAckSink.create(queueUrl, SqsAckSettings.create(), awsClient), materializer);
     // #ack
 
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
     verify(awsClient).deleteMessageAsync(any(DeleteMessageRequest.class), any());
+  }
+
+  @Test
+  public void constructAckSettings() {
+    // #SqsAckSettings
+    SqsAckSettings sinkSettings = SqsAckSettings.create().withMaxInFlight(10);
+    // #SqsAckSettings
+    assertEquals(10, sinkSettings.maxInFlight());
+  }
+
+  @Test
+  public void constructAckBatchSettings() {
+    // #SqsAckBatchSettings
+    SqsAckBatchSettings flowSettings = SqsAckBatchSettings.create().withConcurrentRequests(1);
+    // #SqsAckBatchSettings
+    assertEquals(1, flowSettings.concurrentRequests());
+  }
+
+  @Test
+  public void constructAckGroupedSettings() {
+    // #SqsAckGroupedSettings
+    SqsAckGroupedSettings flowSettings =
+        SqsAckGroupedSettings.create()
+            .withMaxBatchSize(10)
+            .withMaxBatchWait(Duration.ofMillis(500))
+            .withConcurrentRequests(1);
+    // #SqsAckGroupedSettings
+    assertEquals(10, flowSettings.maxBatchSize());
   }
 
   @Test
@@ -73,11 +98,10 @@ public class SqsAckSinkTest extends BaseSqsTest {
             });
 
     // #flow-ack
-    Tuple2<Message, MessageAction> pair =
-        new Tuple2<>(new Message().withBody("test-ack-flow"), MessageAction.delete());
+    MessageAction action = MessageAction.delete(new Message().withBody("test-ack-flow"));
     CompletionStage<Done> done =
-        Source.single(pair)
-            .via(SqsAckFlow.create(queueUrl, awsClient))
+        Source.single(action)
+            .via(SqsAckFlow.create(queueUrl, SqsAckSettings.create(), awsClient))
             .runWith(Sink.ignore(), materializer);
     // #flow-ack
 
@@ -101,10 +125,11 @@ public class SqsAckSinkTest extends BaseSqsTest {
             });
 
     // #requeue
-    Tuple2<Message, MessageAction> pair =
-        new Tuple2<>(new Message().withBody("test"), MessageAction.changeMessageVisibility(12));
+    MessageAction action =
+        MessageAction.changeMessageVisibility(new Message().withBody("test"), 12);
     CompletionStage<Done> done =
-        Source.single(pair).runWith(SqsAckSink.create(queueUrl, awsClient), materializer);
+        Source.single(action)
+            .runWith(SqsAckSink.create(queueUrl, SqsAckSettings.create(), awsClient), materializer);
     // #requeue
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
@@ -118,14 +143,13 @@ public class SqsAckSinkTest extends BaseSqsTest {
     AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
 
     // #ignore
-    Tuple2<Message, MessageAction> pair =
-        new Tuple2<>(new Message().withBody("test"), MessageAction.ignore());
-    CompletionStage<AckResult> stage =
-        Source.single(pair)
-            .via(SqsAckFlow.create(queueUrl, awsClient))
+    MessageAction action = MessageAction.ignore(new Message().withBody("test"));
+    CompletionStage<SqsAckResult> stage =
+        Source.single(action)
+            .via(SqsAckFlow.create(queueUrl, SqsAckSettings.create(), awsClient))
             .runWith(Sink.head(), materializer);
     // #ignore
-    AckResult result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    SqsAckResult result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
     assertEquals(Option.empty(), result.metadata());
     assertEquals("test", result.message());
@@ -146,13 +170,13 @@ public class SqsAckSinkTest extends BaseSqsTest {
             });
 
     // #batch-ack
-    List<Tuple2<Message, MessageAction>> messages = new ArrayList<>();
+    List<MessageAction> messages = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
-      messages.add(new Tuple2<>(new Message().withBody("test"), MessageAction.delete()));
+      messages.add(MessageAction.delete(new Message().withBody("test")));
     }
     CompletionStage<Done> done =
         Source.fromIterator(() -> messages.iterator())
-            .via(SqsAckFlow.grouped(queueUrl, awsClient))
+            .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.create(), awsClient))
             .runWith(Sink.ignore(), materializer);
     // #batch-ack
 
@@ -178,14 +202,13 @@ public class SqsAckSinkTest extends BaseSqsTest {
             });
 
     // #batch-requeue
-    List<Tuple2<Message, MessageAction>> messages = new ArrayList<>();
+    List<MessageAction> messages = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
-      messages.add(
-          new Tuple2<>(new Message().withBody("test"), MessageAction.changeMessageVisibility(5)));
+      messages.add(MessageAction.changeMessageVisibility(new Message().withBody("test"), 5));
     }
     CompletionStage<Done> done =
         Source.fromIterator(() -> messages.iterator())
-            .via(SqsAckFlow.grouped(queueUrl, awsClient))
+            .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.create(), awsClient))
             .runWith(Sink.ignore(), materializer);
     // #batch-requeue
 
@@ -200,16 +223,16 @@ public class SqsAckSinkTest extends BaseSqsTest {
     AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
 
     // #batch-ignore
-    List<Tuple2<Message, MessageAction>> messages = new ArrayList<>();
+    List<MessageAction> messages = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
-      messages.add(new Tuple2<>(new Message().withBody("test"), MessageAction.ignore()));
+      messages.add(MessageAction.ignore(new Message().withBody("test")));
     }
-    CompletionStage<List<AckResult>> stage =
+    CompletionStage<List<SqsAckResult>> stage =
         Source.fromIterator(() -> messages.iterator())
-            .via(SqsAckFlow.grouped(queueUrl, awsClient))
+            .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.create(), awsClient))
             .runWith(Sink.seq(), materializer);
     // #batch-ignore
-    List<AckResult> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    List<SqsAckResult> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
     assertEquals(10, result.size());
     for (int i = 0; i < 10; i++) {

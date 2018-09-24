@@ -2,10 +2,12 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.sqs
+package akka.stream.alpakka.sqs.impl
 
 import java.util
 
+import akka.annotation.InternalApi
+import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import akka.stream.{Attributes, Outlet, SourceShape}
 import com.amazonaws.handlers.AsyncHandler
@@ -14,8 +16,12 @@ import com.amazonaws.services.sqs.model.{Message, ReceiveMessageRequest, Receive
 
 import scala.collection.JavaConverters._
 
-final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings)(implicit sqsClient: AmazonSQSAsync)
-    extends GraphStage[SourceShape[Message]] {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[sqs] final class SqsSourceStage(queueUrl: String, settings: SqsSourceSettings)(
+    implicit sqsClient: AmazonSQSAsync
+) extends GraphStage[SourceShape[Message]] {
 
   val out: Outlet[Message] = Outlet("SqsSource.out")
   override val shape: SourceShape[Message] = SourceShape(out)

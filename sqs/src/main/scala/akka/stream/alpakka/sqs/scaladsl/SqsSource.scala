@@ -5,7 +5,8 @@
 package akka.stream.alpakka.sqs.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.sqs.{SqsSourceSettings, SqsSourceStage}
+import akka.stream.alpakka.sqs.SqsSourceSettings
+import akka.stream.alpakka.sqs.impl.SqsSourceStage
 import akka.stream.scaladsl.Source
 import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model.Message
@@ -16,7 +17,7 @@ import com.amazonaws.services.sqs.model.Message
 object SqsSource {
 
   /**
-   * Creates a source for a SQS queue.
+   * Create a source for a SQS queue.
    */
   def apply(queueUrl: String, settings: SqsSourceSettings = SqsSourceSettings.Defaults)(
       implicit sqs: AmazonSQSAsync
