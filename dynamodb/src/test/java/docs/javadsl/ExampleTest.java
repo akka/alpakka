@@ -8,8 +8,9 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.dynamodb.DynamoClient;
 import akka.stream.alpakka.dynamodb.DynamoSettings;
-import akka.stream.alpakka.dynamodb.javadsl.DynamoClient;
+import akka.stream.alpakka.dynamodb.javadsl.DynamoDb;
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits.CreateTable;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -40,18 +41,11 @@ public class ExampleTest {
     System.setProperty("aws.accessKeyId", "someKeyId");
     System.setProperty("aws.secretKey", "someSecretKey");
 
-    // #client-construct
     final ActorSystem system = ActorSystem.create();
     final Materializer materializer = ActorMaterializer.create(system);
 
-    final DynamoSettings settings = DynamoSettings.create(system);
-    final DynamoClient dynamoClient = DynamoClient.create(settings, system, materializer);
-    // #client-construct
-
     ExampleTest.system = system;
     ExampleTest.materializer = materializer;
-    ExampleTest.settings = settings;
-    ExampleTest.dynamoClient = dynamoClient;
   }
 
   @AfterClass
@@ -76,7 +70,7 @@ public class ExampleTest {
   public void listTables() throws Exception {
     // #simple-request
     final CompletionStage<ListTablesResult> listTablesResultFuture =
-        dynamoClient.listTables(new ListTablesRequest());
+        DynamoDb.listTables(new ListTablesRequest(), system);
     // #simple-request
     ListTablesResult result = listTablesResultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS);
     assertNotNull(result.getTableNames());
@@ -87,7 +81,7 @@ public class ExampleTest {
     // #flow
     Source<String, NotUsed> tableArnSource =
         Source.single(new CreateTable(new CreateTableRequest().withTableName("testTable")))
-            .via(dynamoClient.flow())
+            .via(DynamoDb.flow(system))
             .map(result -> (CreateTableResult) result)
             .map(result -> result.getTableDescription().getTableArn());
     // #flow
@@ -106,7 +100,7 @@ public class ExampleTest {
   public void paginated() throws Exception {
     // #paginated
     Source<ScanResult, NotUsed> scanPages =
-        dynamoClient.scanAll(new ScanRequest().withTableName("testTable"));
+        DynamoDb.scanAll(new ScanRequest().withTableName("testTable"), system);
     // #paginated
     CompletionStage<List<ScanResult>> streamCompletion =
         scanPages.runWith(Sink.seq(), materializer);
