@@ -6,13 +6,18 @@ package akka.stream.alpakka.jms
 
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
-import akka.testkit.TestKit
+import akka.testkit.{SocketUtil, TestKit}
 import org.apache.activemq.broker.BrokerService
 import org.scalatest._
-import org.scalatest.concurrent.ScalaFutures
-import akka.testkit.SocketUtil
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
 
-abstract class JmsSpec extends WordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach with ScalaFutures {
+abstract class JmsSpec
+    extends WordSpec
+    with Matchers
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach
+    with ScalaFutures
+    with Eventually {
 
   implicit val system = ActorSystem(this.getClass.getSimpleName)
   val decider: Supervision.Decider = {

@@ -5,17 +5,18 @@
 package akka.stream.alpakka.ftp
 
 import akka.stream.IOResult
-import akka.stream.alpakka.ftp.FtpCredentials.NonAnonFtpCredentials
 import akka.stream.alpakka.ftp.SftpSupportImpl.{CLIENT_PRIVATE_KEY_PASSPHRASE => ClientPrivateKeyPassphrase}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
 import org.scalatest.time.{Millis, Seconds, Span}
+
 import scala.concurrent.duration._
 import scala.util.Random
 import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.{Files, Paths}
 import java.net.InetAddress
+
 import org.scalatest.concurrent.Eventually
 
 final class FtpStageSpec extends BaseFtpSpec with CommonFtpStageSpec
@@ -27,44 +28,39 @@ final class FtpsStageSpec extends BaseFtpsSpec with CommonFtpStageSpec {
 
 final class RawKeySftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
   override val settings = SftpSettings(
-    InetAddress.getByName("localhost"),
-    getPort,
-    NonAnonFtpCredentials("different user and password", "will fail password auth"),
-    strictHostKeyChecking = false,
-    knownHosts = None,
-    Some(
-      RawKeySftpIdentity(
+    InetAddress.getByName("localhost")
+  ).withPort(getPort)
+    .withCredentials(FtpCredentials.create("different user and password", "will fail password auth"))
+    .withStrictHostKeyChecking(false)
+    .withSftpIdentity(
+      SftpIdentity.createRawSftpIdentity(
         Files.readAllBytes(Paths.get(getClientPrivateKeyFile.getPath)),
-        privateKeyFilePassphrase = Some(ClientPrivateKeyPassphrase)
+        ClientPrivateKeyPassphrase
       )
     )
-  )
 }
 
 final class KeyFileSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
   override val settings = SftpSettings(
-    InetAddress.getByName("localhost"),
-    getPort,
-    NonAnonFtpCredentials("different user and password", "will fail password auth"),
-    strictHostKeyChecking = false,
-    knownHosts = None,
-    Some(
-      KeyFileSftpIdentity(getClientPrivateKeyFile.getPath, Some(ClientPrivateKeyPassphrase))
+    InetAddress.getByName("localhost")
+  ).withPort(getPort)
+    .withCredentials(FtpCredentials.create("different user and password", "will fail password auth"))
+    .withStrictHostKeyChecking(false)
+    .withSftpIdentity(
+      SftpIdentity.createFileSftpIdentity(getClientPrivateKeyFile.getPath, ClientPrivateKeyPassphrase)
     )
-  )
 }
 
 final class StrictHostCheckingSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
   override val settings = SftpSettings(
-    InetAddress.getByName("localhost"),
-    getPort,
-    NonAnonFtpCredentials("different user and password", "will fail password auth"),
-    strictHostKeyChecking = true,
-    knownHosts = Some(getKnownHostsFile.getPath),
-    Some(
-      KeyFileSftpIdentity(getClientPrivateKeyFile.getPath, Some(ClientPrivateKeyPassphrase))
+    InetAddress.getByName("localhost")
+  ).withPort(getPort)
+    .withCredentials(FtpCredentials.create("different user and password", "will fail password auth"))
+    .withStrictHostKeyChecking(true)
+    .withKnownHosts(getKnownHostsFile.getPath)
+    .withSftpIdentity(
+      SftpIdentity.createFileSftpIdentity(getClientPrivateKeyFile.getPath, ClientPrivateKeyPassphrase)
     )
-  )
 }
 
 trait CommonFtpStageSpec extends BaseSpec with Eventually {

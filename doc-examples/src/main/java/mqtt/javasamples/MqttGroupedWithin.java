@@ -9,10 +9,7 @@ import akka.actor.ActorSystem;
 import akka.japi.Creator;
 import akka.japi.Pair;
 import akka.stream.*;
-import akka.stream.alpakka.mqtt.MqttConnectionSettings;
-import akka.stream.alpakka.mqtt.MqttMessage;
-import akka.stream.alpakka.mqtt.MqttQoS;
-import akka.stream.alpakka.mqtt.MqttSourceSettings;
+import akka.stream.alpakka.mqtt.*;
 import akka.stream.alpakka.mqtt.javadsl.MqttSink;
 import akka.stream.alpakka.mqtt.javadsl.MqttSource;
 import akka.stream.javadsl.*;
@@ -117,14 +114,13 @@ public class MqttGroupedWithin {
 
     final String topic = "coffee/level";
 
-    @SuppressWarnings("unchecked")
-    MqttSourceSettings sourceSettings =
-        MqttSourceSettings.create(connectionSettings.withClientId("coffee-control"))
-            .withSubscriptions(Pair.create(topic, MqttQoS.atLeastOnce())); // (2)
+    MqttSubscriptions subscriptions = MqttSubscriptions.create(topic, MqttQoS.atLeastOnce()); // (2)
 
     Source<MqttMessage, CompletionStage<Done>> restartingMqttSource =
         wrapWithAsRestartSource( // (3)
-            () -> MqttSource.atMostOnce(sourceSettings, 8));
+            () ->
+                MqttSource.atMostOnce(
+                    connectionSettings.withClientId("coffee-control"), subscriptions, 8));
 
     Pair<Pair<CompletionStage<Done>, UniqueKillSwitch>, CompletionStage<Done>> completions =
         restartingMqttSource

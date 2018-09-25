@@ -6,16 +6,16 @@ package akka.stream.alpakka.jms
 
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
-import javax.jms._
 
 import akka.Done
 import akka.stream._
 import akka.stream.stage._
 import akka.util.OptionVal
+import javax.jms._
 
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future, TimeoutException}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
@@ -33,18 +33,19 @@ private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings)
 
       private val backpressure = new Semaphore(bufferSize)
 
-      private[jms] def createSession(connection: Connection, createDestination: Session => javax.jms.Destination) = {
+      protected def createSession(connection: Connection,
+                                  createDestination: Session => javax.jms.Destination): JmsConsumerSession = {
         val session =
           connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode)
-        new JmsSession(connection, session, createDestination(session))
+        new JmsConsumerSession(connection, session, createDestination(session), settings.destination.get)
       }
 
-      private[jms] def pushMessage(msg: Message): Unit = {
+      protected def pushMessage(msg: Message): Unit = {
         push(out, msg)
         backpressure.release()
       }
 
-      override private[jms] def onSessionOpened(jmsSession: JmsSession): Unit =
+      override protected def onSessionOpened(jmsSession: JmsConsumerSession): Unit =
         jmsSession
           .createConsumer(settings.selector)
           .onComplete {
@@ -76,15 +77,20 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings)
     val logic = new SourceStageLogic[AckEnvelope](shape, out, settings, inheritedAttributes) {
       private val maxPendingAck = settings.bufferSize
 
-      private[jms] def createSession(connection: Connection, createDestination: Session => javax.jms.Destination) = {
+      protected def createSession(connection: Connection,
+                                  createDestination: Session => javax.jms.Destination): JmsAckSession = {
         val session =
           connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.ClientAcknowledge).mode)
-        new JmsAckSession(connection, session, createDestination(session), settings.bufferSize)
+        new JmsAckSession(connection,
+                          session,
+                          createDestination(session),
+                          settings.destination.get,
+                          settings.bufferSize)
       }
 
-      private[jms] def pushMessage(msg: AckEnvelope): Unit = push(out, msg)
+      protected def pushMessage(msg: AckEnvelope): Unit = push(out, msg)
 
-      override private[jms] def onSessionOpened(jmsSession: JmsSession): Unit =
+      override protected def onSessionOpened(jmsSession: JmsConsumerSession): Unit =
         jmsSession match {
           case session: JmsAckSession =>
             session.createConsumer(settings.selector).onComplete {
@@ -153,35 +159,32 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, KillSwitch) = {
     val logic = new SourceStageLogic[TxEnvelope](shape, out, settings, inheritedAttributes) {
-      private[jms] def createSession(connection: Connection, createDestination: Session => javax.jms.Destination) = {
+      protected def createSession(connection: Connection, createDestination: Session => javax.jms.Destination) = {
         val session =
           connection.createSession(true, settings.acknowledgeMode.getOrElse(AcknowledgeMode.SessionTransacted).mode)
-        new JmsTxSession(connection, session, createDestination(session))
+        new JmsConsumerSession(connection, session, createDestination(session), settings.destination.get)
       }
 
-      private[jms] def pushMessage(msg: TxEnvelope): Unit = push(out, msg)
+      protected def pushMessage(msg: TxEnvelope): Unit = push(out, msg)
 
-      override private[jms] def onSessionOpened(jmsSession: JmsSession): Unit =
+      override protected def onSessionOpened(jmsSession: JmsConsumerSession): Unit =
         jmsSession match {
-          case session: JmsTxSession =>
+          case session: JmsSession =>
             session.createConsumer(settings.selector).onComplete {
               case Success(consumer) =>
                 consumer.setMessageListener(new MessageListener {
 
-                  var listenerStopped = false
-
                   def onMessage(message: Message): Unit =
-                    if (!listenerStopped)
-                      try {
-                        val envelope = TxEnvelope(message, session)
-                        handleMessage.invoke(envelope)
-                        val action = session.commitQueue.take()
-                        action(envelope)
-                      } catch {
-                        case _: StopMessageListenerException => listenerStopped = true // Tombstone.
-                        case e: IllegalArgumentException => handleError.invoke(e) // Invalid envelope. Fail the stage.
-                        case e: JMSException => handleError.invoke(e)
-                      }
+                    try {
+                      val envelope = TxEnvelope(message, session)
+                      handleMessage.invoke(envelope)
+                      val action = Await.result(envelope.commitFuture, settings.ackTimeout)
+                      action()
+                    } catch {
+                      case _: TimeoutException => session.session.rollback()
+                      case e: IllegalArgumentException => handleError.invoke(e) // Invalid envelope. Fail the stage.
+                      case e: JMSException => handleError.invoke(e)
+                    }
                 })
               case Failure(e) =>
                 fail.invoke(e)
@@ -202,12 +205,12 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings)
 abstract class SourceStageLogic[T](shape: SourceShape[T],
                                    out: Outlet[T],
                                    settings: JmsConsumerSettings,
-                                   attributes: Attributes)
+                                   inheritedAttributes: Attributes)
     extends GraphStageLogic(shape)
-    with JmsConnector
+    with JmsConsumerConnector
     with StageLogging {
 
-  override private[jms] def jmsSettings = settings
+  override protected def jmsSettings: JmsConsumerSettings = settings
   private val queue = mutable.Queue[T]()
   private val stopping = new AtomicBoolean(false)
   private var stopped = false
@@ -222,20 +225,14 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
     failStage(ex)
   }
 
-  private[jms] def getDispatcher =
-    attributes.get[ActorAttributes.Dispatcher](
-      ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
-    ) match {
-      case ActorAttributes.Dispatcher("") =>
-        ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
-      case d => d
-    }
-
   private[jms] val handleError = getAsyncCallback[Throwable] { e =>
     fail(out, e)
   }
 
-  override def preStart(): Unit = initSessionAsync(getDispatcher)
+  override def preStart(): Unit = {
+    ec = executionContext(inheritedAttributes)
+    initSessionAsync()
+  }
 
   private[jms] val handleMessage = getAsyncCallback[T] { msg =>
     if (isAvailable(out)) {
@@ -250,7 +247,7 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
     }
   }
 
-  private[jms] def pushMessage(msg: T): Unit
+  protected def pushMessage(msg: T): Unit
 
   setHandler(out, new OutHandler {
     override def onPull(): Unit = {
@@ -269,16 +266,18 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
       Future
         .sequence(closeSessionFutures)
         .onComplete { _ =>
-          try {
-            jmsConnection.foreach(_.close())
-          } catch {
-            case NonFatal(e) => log.error(e, "Error closing JMS connection {}", jmsConnection)
-          } finally {
-            // By this time, after stopping connection, closing sessions, all async message submissions to this
-            // stage should have been invoked. We invoke markStopped as the last item so it gets delivered after
-            // all JMS messages are delivered. This will allow the stage to complete after all pending messages
-            // are delivered, thus preventing message loss due to premature stage completion.
-            markStopped.invoke(Done)
+          jmsConnection.foreach { connection =>
+            try {
+              connection.close()
+            } catch {
+              case NonFatal(e) => log.error(e, "Error closing JMS connection {}", connection)
+            } finally {
+              // By this time, after stopping connection, closing sessions, all async message submissions to this
+              // stage should have been invoked. We invoke markStopped as the last item so it gets delivered after
+              // all JMS messages are delivered. This will allow the stage to complete after all pending messages
+              // are delivered, thus preventing message loss due to premature stage completion.
+              markStopped.invoke(Done)
+            }
           }
         }
     }
@@ -293,12 +292,15 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
       Future
         .sequence(abortSessionFutures)
         .onComplete { _ =>
-          try {
-            jmsConnection.foreach(_.close())
-            log.info("JMS connection {} closed", jmsConnection)
-            markAborted.invoke(ex)
-          } catch {
-            case NonFatal(e) => log.error(e, "Error closing JMS connection {}", jmsConnection)
+          jmsConnection.foreach { connection =>
+            try {
+              connection.close()
+              log.info("JMS connection {} closed", jmsConnection)
+            } catch {
+              case NonFatal(e) => log.error(e, "Error closing JMS connection {}", jmsConnection)
+            } finally {
+              markAborted.invoke(ex)
+            }
           }
         }
     }

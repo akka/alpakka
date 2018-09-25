@@ -7,11 +7,11 @@ object Dependencies {
 
   val AkkaVersion = sys.env.get("AKKA_SERIES") match {
     case Some("2.4") => sys.error("Akka 2.4 is not supported anymore")
-    case _ => "2.5.13"
+    case _ => "2.5.16"
   }
 
-  val AwsSdkVersion = "1.11.371"
-  val AkkaHttpVersion = "10.1.3"
+  val AwsSdkVersion = "1.11.414"
+  val AkkaHttpVersion = "10.1.5"
 
   val Common = Seq(
     // These libraries are added to all modules via the `Common` AutoPlugin
@@ -74,7 +74,7 @@ object Dependencies {
       "com.h2database" % "h2" % "1.4.197", // Eclipse Public License 1.0
       "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.3.1", // ApacheV2
       "org.codelibs" % "elasticsearch-cluster-runner" % "6.3.1.0", // ApacheV2
-      "io.netty" % "netty-all" % "4.1.27.Final", // ApacheV2
+      "io.netty" % "netty-all" % "4.1.29.Final", // ApacheV2
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.6",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.6",
       "org.slf4j" % "log4j-over-slf4j" % "1.7.25",
@@ -102,6 +102,16 @@ object Dependencies {
   val File = Seq(
     libraryDependencies ++= Seq(
       "com.google.jimfs" % "jimfs" % "1.1" % Test // ApacheV2
+    )
+  )
+
+  val AvroParquet = Seq(
+    libraryDependencies ++= Seq(
+      "org.apache.parquet" % "parquet-avro" % "1.10.0", //Apache2
+      "org.apache.hadoop" % "hadoop-client" % "3.1.0" % Test, //Apache2
+      "org.apache.hadoop" % "hadoop-common" % "2.2.0" % Test, //Apache2
+      "org.specs2" %% "specs2-core" % "4.3.2" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
+      "junit" % "junit" % "4.12" % Test // Eclipse Public License 1.0
     )
   )
 
@@ -189,7 +199,8 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "javax.jms" % "jms" % "1.1" % Provided, // CDDL + GPLv2
       "org.apache.activemq" % "activemq-broker" % "5.15.4" % Test, // ApacheV2
-      "org.apache.activemq" % "activemq-client" % "5.15.4" % Test // ApacheV2
+      "org.apache.activemq" % "activemq-client" % "5.15.4" % Test, // ApacheV2
+      "org.mockito" % "mockito-core" % "2.21.0" % Test // MIT
     ),
     resolvers += ("jboss" at "https://repository.jboss.org/nexus/content/groups/public")
   )
@@ -208,16 +219,17 @@ object Dependencies {
     )
   )
 
+  val KuduVersion = "1.7.1"
   val Kudu = Seq(
     libraryDependencies ++= Seq(
-      "org.apache.kudu" % "kudu-client-tools" % "1.7.1", // ApacheV2
-      "org.apache.kudu" % "kudu-client" % "1.7.1" % Test // ApacheV2
+      "org.apache.kudu" % "kudu-client-tools" % KuduVersion, // ApacheV2
+      "org.apache.kudu" % "kudu-client" % KuduVersion % Test // ApacheV2
     )
   )
 
   val MongoDb = Seq(
     libraryDependencies ++= Seq(
-      "org.mongodb.scala" %% "mongo-scala-driver" % "2.4.0" // ApacheV2
+      "org.mongodb.scala" %% "mongo-scala-driver" % "2.4.2" // ApacheV2
     )
   )
 
@@ -301,7 +313,7 @@ object Dependencies {
   val Sqs = Seq(
     libraryDependencies ++= Seq(
       "com.amazonaws" % "aws-java-sdk-sqs" % AwsSdkVersion, // ApacheV2
-      "org.elasticmq" %% "elasticmq-rest-sqs" % "0.14.1" % Test excludeAll (
+      "org.elasticmq" %% "elasticmq-rest-sqs" % "0.14.5" % Test excludeAll (
         // elasticmq-rest-sqs depends on Akka 2.5, exclude it, so we can choose Akka version
         ExclusionRule(organization = "com.typesafe.akka") //
       ), // ApacheV2

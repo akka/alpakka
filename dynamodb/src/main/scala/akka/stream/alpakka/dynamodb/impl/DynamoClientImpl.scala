@@ -5,18 +5,24 @@
 package akka.stream.alpakka.dynamodb.impl
 
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.MediaType.NotCompressible
 import akka.http.scaladsl.model.{ContentType, MediaType}
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.Materializer
+import akka.stream.alpakka.dynamodb.DynamoSettings
 import akka.stream.alpakka.dynamodb.impl.AwsClient.{AwsConnect, AwsRequestMetadata}
 import com.amazonaws.AmazonServiceException
 import com.amazonaws.http.HttpResponseHandler
 
 import scala.concurrent.ExecutionContextExecutor
 
-class DynamoClientImpl(
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[dynamodb] class DynamoClientImpl(
     val settings: DynamoSettings,
     val errorResponseHandler: HttpResponseHandler[AmazonServiceException]
 )(implicit protected val system: ActorSystem, implicit protected val materializer: Materializer)
@@ -31,7 +37,7 @@ class DynamoClientImpl(
     val poolSettings = ConnectionPoolSettings(system)
       .withMaxConnections(settings.parallelism)
       .withMaxOpenRequests(settings.parallelism)
-    if (settings.port == 443)
+    if (settings.tls)
       Http().cachedHostConnectionPoolHttps[AwsRequestMetadata](settings.host, settings = poolSettings)
     else
       Http().cachedHostConnectionPool[AwsRequestMetadata](settings.host, settings.port, settings = poolSettings)

@@ -4,31 +4,24 @@
 
 package akka.stream.alpakka.reference
 
-// rename Java imports if the name clashes with the Scala name
-import java.lang.{Long => JavaLong}
-import java.util.{List => JavaList, Map => JavaMap}
-
+import akka.annotation.InternalApi
 import akka.util.ByteString
 
-import scala.annotation.varargs
 import scala.collection.immutable
 import scala.collection.JavaConverters._
-import akka.japi.Pair
 
 import scala.util.{Failure, Success, Try}
 
 /**
  * Use "Read" in message data types to signify that the message was read from outside.
+ *
+ * The constructor is INTERNAL API, but you may construct instances for testing by using
+ * [[akka.stream.alpakka.reference.testkit.MessageFactory]].
  */
-final class ReferenceReadMessage private (
+final class ReferenceReadResult @InternalApi private[reference] (
     val data: immutable.Seq[ByteString] = immutable.Seq.empty,
     val bytesRead: Try[Int] = Success(0)
 ) {
-  def withData(data: immutable.Seq[ByteString]): ReferenceReadMessage =
-    copy(data = data)
-
-  def withBytesRead(bytesRead: Try[Int]): ReferenceReadMessage =
-    copy(bytesRead = bytesRead)
 
   /**
    * Java API
@@ -36,7 +29,7 @@ final class ReferenceReadMessage private (
    * If the model class is meant to be also consumed from the user API,
    * but the attribute class is Scala specific, create getter for Java API.
    */
-  def getData(): JavaList[ByteString] =
+  def getData(): java.util.List[ByteString] =
     data.asJava
 
   /**
@@ -62,17 +55,8 @@ final class ReferenceReadMessage private (
     case Failure(ex) => ex
   }
 
-  private def copy(data: immutable.Seq[ByteString] = data, bytesRead: Try[Int] = bytesRead) =
-    new ReferenceReadMessage(data, bytesRead)
-
   override def toString: String =
     s"ReferenceReadMessage(data=$data, bytesRead=$bytesRead)"
-}
-
-object ReferenceReadMessage {
-  def apply(): ReferenceReadMessage = new ReferenceReadMessage()
-
-  def create(): ReferenceReadMessage = ReferenceReadMessage()
 }
 
 /**
@@ -94,7 +78,7 @@ final class ReferenceWriteMessage private (
    * When settings class has an attribute of Scala collection type,
    * create a setter that takes a corresponding Java collection type.
    */
-  def withData(data: JavaList[ByteString]): ReferenceWriteMessage =
+  def withData(data: java.util.List[ByteString]): ReferenceWriteMessage =
     copy(data = data.asScala.toIndexedSeq)
 
   /**
@@ -103,7 +87,7 @@ final class ReferenceWriteMessage private (
    * When settings class has an attribute of Scala Long class,
    * Java setter needs to take Java Long class and convert to Scala Long.
    */
-  def withMetrics(metrics: JavaMap[String, JavaLong]): ReferenceWriteMessage =
+  def withMetrics(metrics: java.util.Map[String, java.lang.Long]): ReferenceWriteMessage =
     copy(metrics = metrics.asScala.mapValues(Long.unbox).toMap)
 
   /**
@@ -112,7 +96,7 @@ final class ReferenceWriteMessage private (
    * If the model class is meant to be also consumed from the user API,
    * but the attribute class is Scala specific, create getter for Java API.
    */
-  def getData(): JavaList[ByteString] =
+  def getData(): java.util.List[ByteString] =
     data.asJava
 
   /**
@@ -120,8 +104,8 @@ final class ReferenceWriteMessage private (
    *
    * Java getter needs to return Java Long classes which is converted from Scala Long.
    */
-  def getMetrics(): JavaMap[String, JavaLong] =
-    metrics.mapValues(JavaLong.valueOf).asJava
+  def getMetrics(): java.util.Map[String, java.lang.Long] =
+    metrics.mapValues(java.lang.Long.valueOf).asJava
 
   private def copy(data: immutable.Seq[ByteString] = data, metrics: Map[String, Long] = metrics) =
     new ReferenceWriteMessage(data, metrics)
@@ -134,4 +118,45 @@ object ReferenceWriteMessage {
   def apply(): ReferenceWriteMessage = new ReferenceWriteMessage()
 
   def create(): ReferenceWriteMessage = ReferenceWriteMessage()
+}
+
+/**
+ * The result returned by the flow for each [[ReferenceWriteMessage]].
+ *
+ * As this class is not meant to be instantiated outside of this connector
+ * the constructor is marked as INTERNAL API.
+ *
+ * The constructor is INTERNAL API, but you may construct instances for testing by using
+ * [[akka.stream.alpakka.reference.testkit.MessageFactory]].
+ */
+final class ReferenceWriteResult @InternalApi private[reference] (val message: ReferenceWriteMessage,
+                                                                  val metrics: Map[String, Long],
+                                                                  val status: Int) {
+
+  /** Java API */
+  def getMessage: ReferenceWriteMessage = message
+
+  /**
+   * Java API
+   *
+   * Java getter needs to return Java Long classes which is converted from Scala Long.
+   */
+  def getMetrics(): java.util.Map[String, java.lang.Long] =
+    metrics.mapValues(java.lang.Long.valueOf).asJava
+
+  /** Java API */
+  def getStatus: Int = status
+
+  override def toString =
+    s"""ReferenceWriteResult(message=$message,status=$status)"""
+
+  override def equals(other: Any): Boolean = other match {
+    case that: ReferenceWriteResult =>
+      java.util.Objects.equals(this.message, that.message) &&
+      java.util.Objects.equals(this.status, that.status)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    java.util.Objects.hash(message, Int.box(status))
 }

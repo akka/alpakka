@@ -123,6 +123,7 @@ public class JmsTxConnectorsTest {
               JmsConsumer.txSource(
                   JmsConsumerSettings.create(connectionFactory)
                       .withSessionCount(5)
+                      .withAckTimeout(1, TimeUnit.SECONDS)
                       .withQueue("test"));
           // #create-jms-source
 

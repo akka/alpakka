@@ -26,8 +26,8 @@ Lines are separated by either Line Feed (`\n` = ASCII 10) or Carriage Return and
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-csv_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-csv_$scala.binary.version$
+  version=$project.version$
 }
 
 ## CSV parsing

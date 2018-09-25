@@ -4,13 +4,18 @@
 
 package akka.stream.alpakka.dynamodb.impl
 
+import akka.annotation.InternalApi
 import com.amazonaws.AmazonServiceException
 import com.amazonaws.http.HttpResponseHandler
 import com.amazonaws.protocol.json._
 import com.amazonaws.services.dynamodbv2.model._
 import com.amazonaws.services.dynamodbv2.model.transform._
 
-private[alpakka] trait DynamoProtocol {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[dynamodb] trait DynamoProtocol {
 
   val meta = new JsonOperationMetadata().withPayloadJson(true)
 

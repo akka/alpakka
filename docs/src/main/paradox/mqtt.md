@@ -1,6 +1,14 @@
 # MQTT
 
-The MQTT connector provides an Akka Stream source, sink and flow to connect to MQTT servers. It is based on [Eclipse Paho](https://www.eclipse.org/paho/clients/java/). 
+@@@ note { title="MQTT" }
+
+MQTT stands for MQ Telemetry Transport. It is a publish/subscribe, extremely simple and lightweight messaging protocol, designed for constrained devices and low-bandwidth, high-latency or unreliable networks. The design principles are to minimise network bandwidth and device resource requirements whilst also attempting to ensure reliability and some degree of assurance of delivery. These principles also turn out to make the protocol ideal of the emerging “machine-to-machine” (M2M) or “Internet of Things” world of connected devices, and for mobile applications where bandwidth and battery power are at a premium.  
+
+Further information on [mqtt.org](https://mqtt.org/).
+
+@@@ 
+
+The Alpakka MQTT connector provides an Akka Stream source, sink and flow to connect to MQTT brokers. It is based on the [Eclipse Paho Java client](https://www.eclipse.org/paho/clients/java/).
 
 ### Reported issues
 
@@ -10,107 +18,132 @@ The MQTT connector provides an Akka Stream source, sink and flow to connect to M
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-mqtt_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-mqtt_$scala.binary.version$
+  version=$project.version$
 }
 
-## Setup
+## Settings
+
+The required `MqttConnectionSettings` (@scaladoc[API](akka.stream.alpakka.mqtt.MqttConnectionSettings$)) settings to connect to an MQTT server are 
+
+1. the MQTT broker address
+1. a unique ID for the client (setting it to the empty string should let the MQTT broker assign it, but not all do; you might want to generate it)
+1. the MQTT client persistence to use (eg. @javadoc[MemoryPersistence](org.eclipse.paho.client.mqttv3.persist.MemoryPersistence)) which allows to control reliability guarantees 
+
+Scala
+: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #create-connection-settings }
+
+Java
+: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttSourceTest.java) { #create-connection-settings }
+
+Most settings are passed on to Paho's `MqttConnectOptions` (@javadoc[API](org.eclipse.paho.client.mqttv3.MqttConnectOptions)) and documented there. 
 
 @@@ warning { title='Use delayed stream restarts' }
 Note that the following examples do not provide any connection management and are designed to get you going quickly. Consider empty client IDs to auto-generate unique identifiers and the use of [delayed stream restarts](https://doc.akka.io/docs/akka/current/stream/stream-error.html?language=scala#delayed-restarts-with-a-backoff-stage). The underlying Paho library's auto-reconnect feature [does not handle initial connections by design](https://github.com/eclipse/paho.mqtt.golang/issues/77).
 @@@
 
-First we need to define various settings, that are required when connecting to an MQTT server.
+
+### Configure encrypted connections
+
+To connect with transport-level security configure the address as `ssl://`, set authentication details and pass in a socket factory.
 
 Scala
-: @@snip [snip](/mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttSourceSpec.scala) { #create-connection-settings }
+: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #ssl-settings }
 
 Java
-: @@snip [snip](/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #create-connection-settings }
-
-Here we used @scaladoc[MqttConnectionSettings](akka.stream.alpakka.mqtt.MqttConnectionSettings$) factory to set the address of the server, client ID, which needs to be unique for every client, and client persistence implementation (@extref[MemoryPersistence](paho-api:org/eclipse/paho/client/mqttv3/persist/MemoryPersistence)) which allows to control reliability guarantees.
-
-Most settings are passed on to Paho's @extref[MqttConnectOptions](paho-api:org/eclipse/paho/client/mqttv3/MqttConnectOptions) and documented there. 
+: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttSourceTest.java) { #ssl-settings }
 
 
 ## Reading from MQTT
 
-Then let's create a source that is going to connect to the MQTT server upon materialization and receive messages that are sent to the subscribed topics.
+### At most once
+
+Then let's create a source that connects to the MQTT server and receives messages from the subscribed topics.
+
+The `bufferSize` sets the maximum number of messages read from MQTT before back-pressure applies.
+
 
 Scala
-: @@snip [snip](/mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttSourceSpec.scala) { #create-source }
+: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #create-source }
 
 Java
-: @@snip [snip](/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #create-source }
+: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttSourceTest.java) { #create-source }
 
+This source has a materialized value (@scala[@scaladoc[Future[Done]](scala.concurrent.Future)]@java[@javadoc[CompletionStage&lt;Done&gt;](java.util.concurrent.CompletionStage)]) which is completed when the subscription to the MQTT broker has been established.
 
-And finally run the source.
+MQTT `atMostOnce` automatically acknowledges messages back to the server when they are passed downstream. 
 
-Scala
-: @@snip [snip](/mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttSourceSpec.scala) { #run-source }
+### At least once
 
-Java
-: @@snip [snip](/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #run-source }
-
-This source has a materialized value (@scaladoc[Future](scala.concurrent.Future) in Scala API and @extref[CompletionStage](java-api:java/util/concurrent/CompletionStage) in Java API) which is completed when the subscription to the MQTT broker has been completed.
-
-MQTT automatically acknowledges messages back to the server once they are passed downstream. The `atLeastOnce` source allow users to acknowledge the messages anywhere downstream.
+The `atLeastOnce` source allow users to acknowledge the messages anywhere downstream.
 Please note that for manual acks to work `CleanSession` should be set to false and `MqttQoS` should be `AtLeastOnce`.
 
-Scala
-: @@snip [snip](/mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttSourceSpec.scala) { #create-source-with-manualacks }
-
-Java
-: @@snip [snip](/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #create-source-with-manualacks }
-
-
-The `atLeastOnce` source returns @scaladoc[MqttCommittableMessage](akka.stream.alpakka.mqtt.scaladsl.MqttCommittableMessage) so you can acknowledge them by calling `messageArrivedComplete`.
+The `bufferSize` sets the maximum number of messages read from MQTT before back-pressure applies.
 
 Scala
-: @@snip [snip](/mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttSourceSpec.scala) { #run-source-with-manualacks }
+: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #create-source-with-manualacks }
 
 Java
-: @@snip [snip](/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #run-source-with-manualacks }
+: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttSourceTest.java) { #create-source-with-manualacks }
+
+
+The `atLeastOnce` source returns @scala[@scaladoc[MqttMessageWithAck](akka.stream.alpakka.mqtt.scaladsl.MqttMessageWithAck)]@java[@scaladoc[MqttMessageWithAck](akka.stream.alpakka.mqtt.javadsl.MqttMessageWithAck)] so you can acknowledge them by calling `ack()`.
+
+Scala
+: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #run-source-with-manualacks }
+
+Java
+: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttSourceTest.java) { #run-source-with-manualacks }
 
 
 ## Publishing to MQTT
 
-To publish messages to the MQTT server create a sink and run it.
+To publish messages to the MQTT server create a sink be specifying `MqttConnectionSettings` ([API](akka.stream.alpakka.mqtt.MqttConnectionSettings$)) and a default Quality of Service-level.
 
 Scala
-: @@snip [snip](/mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttSourceSpec.scala) { #run-sink }
+: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #run-sink }
 
 Java
-: @@snip [snip](/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #run-sink }
+: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttSourceTest.java) { #run-sink }
 
 
-The QoS and the retained flag can be configured on a per-message basis.
+The Quality of Service-level and the retained flag can be configured on a per-message basis.
 
 Scala
-: @@snip [snip](/mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttSourceSpec.scala) { #will-message }
+: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #will-message }
 
 Java
-: @@snip [snip](/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttSourceTest.java) { #will-message }
+: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttSourceTest.java) { #will-message }
 
+
+## Publish and subscribe in a single flow
 
 It is also possible to connect to the MQTT server in bidirectional fashion, using a single underlying connection (and client ID). To do that create an MQTT flow that combines the functionalities of an MQTT source and an MQTT sink.
 
+The `bufferSize` sets the maximum number of messages read from MQTT before back-pressure applies.
+
 Scala
-: @@snip [snip](/mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttFlowSpec.scala) { #create-flow }
+: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttFlowSpec.scala) { #create-flow }
 
 Java
-: @@snip [snip](/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttFlowTest.java) { #create-flow }
+: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttFlowTest.java) { #create-flow }
 
 
 Run the flow by connecting a source of messages to be published and a sink for received messages.
 
 Scala
-: @@snip [snip](/mqtt/src/test/scala/akka/stream/alpakka/mqtt/scaladsl/MqttFlowSpec.scala) { #run-flow }
+: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttFlowSpec.scala) { #run-flow }
 
 Java
-: @@snip [snip](/mqtt/src/test/java/akka/stream/alpakka/mqtt/javadsl/MqttFlowTest.java) { #run-flow }
+: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttFlowTest.java) { #run-flow }
 
-### Running the example code
+
+## Capturing MQTT client logging
+
+The Paho library uses its own logging adapter and contains a default implementation to use `java.util.logging`. See [Paho/Log and Debug](https://wiki.eclipse.org/Paho/Log_and_Debug_in_the_Java_client).
+
+
+## Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
 

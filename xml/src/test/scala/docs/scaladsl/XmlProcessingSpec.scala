@@ -10,15 +10,17 @@ import akka.stream.alpakka.xml.scaladsl.XmlParsing
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
 import scala.collection.immutable
-import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
-class XmlProcessingSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+class XmlProcessingSpec extends WordSpec with Matchers with ScalaFutures with BeforeAndAfterAll {
   implicit val system: ActorSystem = ActorSystem("Test")
   implicit val mat: Materializer = ActorMaterializer()
+  implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = 2.seconds, interval = 50.millis)
 
   // #parser
   val parse = Flow[String]
@@ -35,8 +37,7 @@ class XmlProcessingSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val resultFuture = Source.single(doc).runWith(parse)
       // #parser-usage
 
-      val result = Await.result(resultFuture, 3.seconds)
-      result should ===(
+      resultFuture.futureValue should ===(
         List(
           StartDocument,
           StartElement("doc"),
@@ -50,6 +51,40 @@ class XmlProcessingSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           EndDocument
         )
       )
+    }
+
+    "properly parse simple XML and read it" in {
+      // #parser-to-data
+      val doc = ByteString("<doc><elem>elem1</elem><elem>elem2</elem></doc>")
+      val result: Future[immutable.Seq[String]] = Source
+        .single(doc)
+        .via(XmlParsing.parser)
+        .statefulMapConcat(() => {
+          // state
+          val textBuffer = StringBuilder.newBuilder
+          // aggregation function
+          parseEvent =>
+            parseEvent match {
+              case s: StartElement =>
+                textBuffer.clear()
+                immutable.Seq.empty
+              case s: EndElement if s.localName == "elem" =>
+                val text = textBuffer.toString
+                immutable.Seq(text)
+              case t: TextEvent =>
+                textBuffer.append(t.text)
+                immutable.Seq.empty
+              case _ =>
+                immutable.Seq.empty
+            }
+        })
+        .runWith(Sink.seq)
+
+      result.futureValue should contain inOrderOnly (
+        "elem1",
+        "elem2"
+      )
+      // #parser-to-data
     }
 
     "properly process a comment" in {

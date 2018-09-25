@@ -5,7 +5,7 @@
 package akka.stream.alpakka.json.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.json.JsonStreamReader
+import akka.stream.alpakka.json.impl.JsonStreamReader
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import org.jsfr.json.compiler.JsonPathCompiler

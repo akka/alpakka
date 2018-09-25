@@ -8,6 +8,7 @@ package impl
 import java.io.{File, IOException, InputStream, OutputStream}
 import java.nio.file.attribute.PosixFilePermission
 
+import akka.annotation.InternalApi
 import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.sftp.{OpenMode, RemoteResourceInfo, SFTPClient}
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier
@@ -19,6 +20,10 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.util.Try
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
 
   type Handler = SFTPClient

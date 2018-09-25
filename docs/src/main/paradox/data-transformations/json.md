@@ -57,12 +57,18 @@ The JSON reading module offers a flow, which allows to stream specific parts of 
 In this particular example, only the `rows` array is interesting for the application, more specifically
 even: only the `doc` inside each element of the array.
 
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Ajson-streaming)
+
+
 ### Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-json-streaming_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-json-streaming_$scala.binary.version$
+  version=$project.version$
 }
 
 ### Example
@@ -76,7 +82,7 @@ To define which parts of the structure you want to stream the module supports
 To extract the information needed, run a stream through the `JsonReader.select` flow.
 
 Scala
-: @@snip [snip](/json-streaming/src/test/scala/akka/stream/alpakka/json/JsonReaderTest.scala) { #usage }
+: @@snip [snip](/json-streaming/src/test/scala/docs/scaladsl/JsonReaderTest.scala) { #usage }
 
 Java
-: @@snip [snip](/json-streaming/src/test/java/akka/stream/alpakka/json/JsonReaderUsageTest.java) { #usage }
+: @@snip [snip](/json-streaming/src/test/java/docs/javadsl/JsonReaderUsageTest.java) { #usage }

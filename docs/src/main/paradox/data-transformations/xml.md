@@ -12,8 +12,8 @@ XML parsing module offers Flows for parsing, processing and writing XML document
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-xml_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-xml_$scala.binary.version$
+  version=$project.version$
 }
 
 ## XML parsing
@@ -33,6 +33,15 @@ Scala
 
 Java
 : @@snip [snip](/xml/src/test/java/docs/javadsl/XmlParsingTest.java) { #parser-usage }
+
+To make sense of the parser events, `statefulMapConcat` may be used to aggregate consecutive events and emit the relevant data. For more complex uses, a state machine will be required.
+
+Scala
+: @@snip [snip](/xml/src/test/scala/docs/scaladsl/XmlProcessingSpec.scala) { #parser-to-data }
+
+Java
+: @@snip [snip](/xml/src/test/java/docs/javadsl/XmlParsingTest.java) { #parser-to-data }
+
 
 ## XML writing
 

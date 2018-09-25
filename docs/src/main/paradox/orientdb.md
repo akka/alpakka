@@ -1,15 +1,27 @@
 # OrientDB
 
-The OrientDB connector provides Akka Stream sources and sinks for OrientDB.
+@@@ note { title="OrientDB" }
 
-For more information about OrientDB please visit the [official documentation](http://orientdb.com/orientdb/).
+OrientDB is a multi-model database, supporting graph, document, key/value, and object models, but the relationships are managed as in graph databases with direct connections between records. It supports schema-less, schema-full and schema-mixed modes. It has a strong security profiling system based on users and roles and supports querying with Gremlin along with SQL extended for graph traversal.
+
+For more information about OrientDB please visit the [official documentation](http://orientdb.com/orientdb/), more details are available in [the OrientDB manual](http://orientdb.com/docs/3.0.x/).
+
+@@@
+
+The Alpakka OrientDB connector provides Akka Stream sources and sinks for OrientDB.
+
+
+### Reported issues
+
+[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aorientdb)
+
 
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-orientdb_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-orientdb_$scala.binary.version$
+  version=$project.version$
 }
 
 ## Usage
@@ -17,18 +29,18 @@ For more information about OrientDB please visit the [official documentation](ht
 Sources, Flows and Sinks provided by this connector need dbUrl & credentials to access to OrientDB.
 
 Scala
-: @@snip [snip](/orientdb/src/test/scala/akka/stream/alpakka/orientdb/OrientDBSpec.scala) { #init-settings }
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #init-settings }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/akka/stream/alpakka/orientdb/OrientDBTest.java) { #init-settings }
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #init-settings }
 
 We will also need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
 
 Scala
-: @@snip [snip](/orientdb/src/test/scala/akka/stream/alpakka/orientdb/OrientDBSpec.scala) { #init-mat }
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #init-mat }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/akka/stream/alpakka/orientdb/OrientDBTest.java) { #init-mat }
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #init-mat }
 
 This is all preparation that we are going to need.
 
@@ -40,10 +52,10 @@ from or to OrientDB by providing the `ODatabaseDocumentTx` to the
 @scaladoc[OrientDBSink](akka.stream.alpakka.orientdb.scaladsl.OrientDBSink$).
 
 Scala
-: @@snip [snip](/orientdb/src/test/scala/akka/stream/alpakka/orientdb/OrientDBSpec.scala) { #run-odocument }
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #run-odocument }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/akka/stream/alpakka/orientdb/OrientDBTest.java) { #run-odocument }
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #run-odocument }
 
 
 ## Typed messages
@@ -51,13 +63,13 @@ Java
 Also, it's possible to stream messages which contains any classes. 
 
 Java
-: @@snip [snip](/orientdb/src/test/java/akka/stream/alpakka/orientdb/OrientDBTest.java) { #define-class }
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #define-class }
 
 
 Use `OrientDBSource.typed` and `OrientDBSink.typed` to create source and sink instead.
 
 Java
-: @@snip [snip](/orientdb/src/test/java/akka/stream/alpakka/orientdb/OrientDBTest.java) { #run-typed }
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #run-typed }
 
 
 ## Configuration
@@ -98,20 +110,20 @@ Scala (sink)
 You can also build flow stages. The API is similar to creating Sinks.
 
 Scala (flow)
-: @@snip [snip](/orientdb/src/test/scala/akka/stream/alpakka/orientdb/OrientDBSpec.scala) { #run-flow }
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #run-flow }
 
 Java (flow)
-: @@snip [snip](/orientdb/src/test/java/akka/stream/alpakka/orientdb/OrientDBTest.java) { #run-flow }
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #run-flow }
 
 ### Passing data through OrientDBFlow
 
 When streaming documents from Kafka, you might want to commit to Kafka **AFTER** the document has been written to OrientDB.
 
 Scala
-: @@snip [snip](/orientdb/src/test/scala/akka/stream/alpakka/orientdb/OrientDBSpec.scala) { #kafka-example }
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #kafka-example }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/akka/stream/alpakka/orientdb/OrientDBTest.java) { #kafka-example } 
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #kafka-example } 
 
 ## Running the example code
 

@@ -34,7 +34,7 @@ object FtpToFile extends ActorSystemAvailable with App {
   ftpFileSystem.putFileOnFtp("/home/anonymous", "hello2.txt")
 
   // #sample
-  val ftpSettings = FtpSettings(InetAddress.getByName("localhost"), port)
+  val ftpSettings = FtpSettings(InetAddress.getByName("localhost")).withPort(port)
 
   // #sample
 

@@ -11,7 +11,7 @@ The JMS connector provides Akka Stream sources and sinks to connect to JMS provi
 sbt
 :   @@@vars
     ```scala
-    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-jms" % "$version$"
+    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-jms" % "$project.version$"
     libraryDependencies += "javax.jms" % "jms" % "1.1"
     ```
     @@@
@@ -21,8 +21,8 @@ Maven
     ```xml
     <dependency>
       <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-jms_$scalaBinaryVersion$</artifactId>
-      <version>$version$</version>
+      <artifactId>akka-stream-alpakka-jms_$scala.binary.version$</artifactId>
+      <version>$project.version$</version>
     </dependency>
     <dependency>
       <groupId>javax.jms</groupId>
@@ -36,7 +36,7 @@ Gradle
 :   @@@vars
     ```gradle
     dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-jms_$scalaBinaryVersion$", version: "$version$"
+      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-jms_$scala.binary.version$", version: "$project.version$"
       compile group: 'javax.jms', name: 'jms', version: '1.1'
     }
     ```
@@ -44,7 +44,7 @@ Gradle
 
 ## Usage
 
-The JMS message model supports several types of message body (see @javadoc[javax.jms.Message](javax.jms.Message)) and Alpakka currently supports messages with a body containing a @javadoc[String](java.lang.String), 
+The JMS message model supports several types of message body (see @javadoc[javax.jms.Message](javax.jms.Message)) and Alpakka currently supports messages with a body containing a @javadoc[String](java.lang.String),
 a @javadoc[Serializable](java.io.Serializable) object, a @javadoc[Map](java.util.Map) or a byte array.
 
 First define a @javadoc[javax.jms.ConnectionFactory](javax.jms.ConnectionFactory) depending on the implementation you're using. Here we're using Active MQ.
@@ -85,7 +85,7 @@ Java
 
 ### Sending byte messages to a JMS provider
 
-Create a sink, that accepts and forwards @scaladoc[JmsByteMessage](akka.stream.alpakka.jms.JmsByteMessage$)s to the JMS provider. 
+Create a sink, that accepts and forwards @scaladoc[JmsByteMessage](akka.stream.alpakka.jms.JmsByteMessage$)s to the JMS provider.
 
 Scala
 : @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-bytearray-sink }
@@ -151,7 +151,7 @@ Java
 : @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-object-sink }
 
 
-### Sending  messages with properties to a JMS provider
+### Sending messages with properties to a JMS provider
 
 For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set jms properties.
 
@@ -162,7 +162,7 @@ Java
 : @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-messages-with-properties }
 
 ### Sending messages with header to a JMS provider
-For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set also jms headers. 
+For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set also jms headers.
 
 Scala
 : @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-headers }
@@ -192,6 +192,60 @@ Scala
 Java
 : @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-flow-producer }
 
+### Sending messages with per-message destinations
+
+It is also possible to define message destinations per message:
+
+Scala
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-directed-flow-producer }
+
+Java
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-directed-flow-producer }
+
+When no destination is defined on the message, the destination given in the producer settings is used.
+
+### Passing context through the producer
+
+In some use cases, it is useful to pass through context information when producing (e.g. for acknowledging or committing
+messages after sending to Jms). For this, the `JmsProducer.flexiFlow` accepts implementations of `JmsProducerEnvelope`,
+which it will pass through.
+
+Scala
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-flexi-flow-producer }
+
+Java
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-flexi-flow-producer }
+
+There are two implementations: One envelope type containing a messages to send to Jms, and one
+envelope type containing only values to pass through. This allows messages to flow without producing any new messages 
+to Jms. This is primarily useful when committing offsets back to Kakfa, or when acknowledging Jms messages after sending
+the outcome of processing them back to Jms.
+
+Scala
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #run-flexi-flow-pass-through-producer }
+
+Java
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #run-flexi-flow-pass-through-producer }
+
+### Configuring the Producer
+
+Scala
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsSettingsSpec.scala) { #producer-settings }
+
+Java
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsSettingsTest.java) { #producer-settings }
+
+The producer can be configured with the following settings.
+
+* `connectionFactory` (mandatory) the factory to use for creating Jms connections.
+* `destination` (mandatory) the destination (queue or topic) to send Jms messgages to.
+* `credentials` (optional) username and password to use for authentication to the Jms broker .
+* `connectionRetrySettings` (optional) retry characteristics if the connection failed to be established or taking a long time. Please see default values under [Connection Retries](#connection-retries). Note that producers cannot re-establish the connection if it fails mid-stream at this time.
+* `sessionCount` (defaults to 1) the number of parallel sessions to use for sending Jms messages. Increasing the 
+  number of parallel sessions increases throughput at the cost of message ordering. While the messages may arrive
+  out of order at the Jms broker, the producer flow outputs messages in the order they are received.
+* `timeToLive`  (optional) the time messages should be kept on the Jms broker. This setting can be overridden on 
+  individual messages. If not set, messages will never expire.
 
 ## Receiving messages from a JMS provider
 
@@ -383,7 +437,7 @@ Java
 *  Using multiple sessions increases throughput, especially if a acknowledging message by message is desired.
 *  Messages may arrive out of order if `sessionCount` is larger than 1.
 *  Message-by-message acknowledgement can be achieved by setting `bufferSize` to 0, thus disabling buffering. The outstanding messages before backpressure will be the `sessionCount`.
-*  The default `AcknowledgeMode` is `ClientAcknowledge` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsConsumerSettings` when creating the stream. 
+*  The default `AcknowledgeMode` is `ClientAcknowledge` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsConsumerSettings` when creating the stream.
 
 ### Transactionally receiving @javadoc[javax.jms.Message](javax.jms.Message)s from a JMS provider
 
@@ -397,7 +451,7 @@ Java
 
 The `sessionCount` parameter controls the number of JMS sessions to run in parallel.
 
-The `bufferSize` parameter controls the maximum number of messages each JMS session will prefetch and awaiting acknowledgement before applying backpressure.
+The `ackTimeout` parameter controls the maximum time given to a message to be committed or rolled back. If the message times out it will automatically be rolled back. This is to prevent stream from starvation if the application fails to commit or rollback a message, or if the message errors out and the stream is resumed by a `decider`.
 
 Run the source and specify the amount of messages to take:
 
@@ -412,8 +466,8 @@ Java
 *  Higher throughput is achieved by increasing the `sessionCount`.
 *  Messages will arrive out of order if `sessionCount` is larger than 1.
 *  Buffering is not supported in transaction mode. The `bufferSize` is ignored.
-*  The default `AcknowledgeMode` is `SessionTransacted` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsConsumerSettings` when creating the stream. 
- 
+*  The default `AcknowledgeMode` is `SessionTransacted` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsConsumerSettings` when creating the stream.
+
 ### Browsing messages from a JMS provider
 
 The browse source will stream the messages in a queue without consuming them.
@@ -442,7 +496,6 @@ Java
 *  The JMS API does not require the content of an enumeration to be a static snapshot of queue content. Whether these changes are visible or not depends on the JMS provider.
 *  A message must not be returned by a QueueBrowser before its delivery time has been reached.
 
-
 ### Using Topic with an JMS provider
 
 You can use JMS topic in a very similar way.
@@ -470,6 +523,26 @@ Such sink and source can be started the same way as in the previous example.
 * Explicit acknowledgement sources and transactional sources work with topics the same way they work with queues.
 * **DO NOT** set the `sessionCount` greater than 1 for topics. Doing so will result in duplicate messages being delivered. Each topic message is delivered to each JMS session and all the messages feed to the same `Source`. JMS 2.0 created shared consumers to solve this problem and multiple sessions without duplication may be supported in the future.
 
+### Using a durable Topic subscription with a JMS provider
+
+Using a durable topic subscription works mostly like a normal topic source.
+
+You need to specify a client ID for the connection factory you use to create the consumer with, however:
+
+Scala
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-connection-factory-with-client-id }
+
+Java
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-connection-factory-with-client-id }
+
+In addition, use `withDurableTopic` and specify a name for the durable subscriber:
+
+Scala
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsConnectorsSpec.scala) { #create-durable-topic-source }
+
+Java
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsConnectorsTest.java) { #create-durable-topic-source }
+
 ### Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
@@ -485,12 +558,41 @@ Java
     sbt
     > jms/testOnly *.JmsConnectorsTest
     ```
-    
+
 ### Stopping a JMS Source
 
 All JMS sources materialize to a `KillSwitch` to allow safely stopping consumption without message loss for transactional and acknowledged messages, and with minimal message loss for the simple JMS source.
 
 To stop consumption safely, call `shutdown()` on the `KillSwitch` that is the materialized value of the source. To abruptly abort consumption (without concerns for message loss), call `abort(Throwable)` on the `KillSwitch`.
+
+## Connection Retries
+
+When a connection to a broker cannot be established and errors out, or is timing out being established or started, the connection can be retried. All JMS publishers, consumers, and browsers are configured with a connection retry settings as follows:
+
+Setting        | Description                              | Default Value
+---------------|------------------------------------------|--------------
+connectTimeout | Time allowed to establish and start a connection   | 10 s
+initialRetry   | Wait time before retrying the first time | 100 ms
+backoffFactor  | Back-off factor for subsequent retries   | 2.0
+maxBackoff     | Maximum back-off time allowed, after which all retries will happen after this delay | 1 minute
+maxRetries     | Maximim number of retries allowed (negative value is infinite) | 10
+
+The retry time is calculated by:
+
+*initialRetry \* retryNumber<sup>backoffFactor</sup>*
+
+With the default settings, we'll see retries after 100ms, 400ms, 900ms pauses, until the pauses reach 1 minute and will stay with 1 minute intervals for any subsequent retries.
+
+Consumers and browsers try to reconnect with the same retry characteristics if a connection fails mid-stream. Publishers do not reconnect at this point in time.
+
+All JMS settings support setting the `connectionRetrySettings` field using `.withConnectionRetrySettings(retrySettings)` on the given settings. The followings show how to create the `ConnectionRetrySettings`:
+
+Scala
+: @@snip [snip](/jms/src/test/scala/akka/stream/alpakka/jms/scaladsl/JmsSettingsSpec.scala) { #retry-settings-case-class }
+
+Java
+: @@snip [snip](/jms/src/test/java/akka/stream/alpakka/jms/javadsl/JmsSettingsTest.java) { #retry-settings }
+
 
 ## Using IBM MQ
 
@@ -569,7 +671,7 @@ Java
         .withQueue(testQueueName)
     );
 
-    // Option2: create Source using custom factory 
+    // Option2: create Source using custom factory
     private Function1<Session, Destination> createMqQueue(String destinationName) {
         return (session) -> {
             ...
@@ -647,7 +749,7 @@ Java
         .withTopic(testTopicName)
     );
 
-    // Option2: create Source using custom factory 
+    // Option2: create Source using custom factory
     private Function1<Session, Destination> createMqTopic(String destinationName) {
         return (session) -> {
             ...
