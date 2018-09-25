@@ -68,6 +68,27 @@ class MqttCodecSpec extends WordSpec with Matchers {
       )
     }
 
+    "accept the max remaining length when decoding remaining length" in {
+      ByteString.newBuilder
+        .putByte(0xff.toByte)
+        .putByte(0xff.toByte)
+        .putByte(0xff.toByte)
+        .putByte(0x7f.toByte)
+        .result()
+        .iterator
+        .decodeRemainingLength() shouldBe Right(Int.MaxValue)
+    }
+
+    "underflow when decoding remaining length" in {
+      ByteString.newBuilder
+        .putByte(0x80.toByte)
+        .putByte(0x80.toByte)
+        .putByte(0x80.toByte)
+        .result()
+        .iterator
+        .decodeRemainingLength() shouldBe Left(MqttCodec.BufferUnderflow)
+    }
+
     "encode/decode connect control packets" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
       val packet = Connect(
@@ -163,21 +184,21 @@ class MqttCodecSpec extends WordSpec with Matchers {
     "encode/decode publish packets" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
       val packet = Publish(
-        ControlPacketFlags.RETAIN | ControlPacketFlags.QoSAtLeastOnceDelivery | ControlPacketFlags.DUP,
+        ControlPacketFlags.RETAIN | ControlPacketFlags.QoSAtMostOnceDelivery | ControlPacketFlags.DUP,
         "some-topic-name",
-        Some(PacketId(1)),
+        None,
         ByteString("some-payload")
       )
       val bytes = packet.encode(bsb).result()
-      bytes.size shouldBe 33
+      bytes.size shouldBe 31
       bytes.iterator.decodeControlPacket(MaxPacketSize) shouldBe Right(packet)
     }
 
-    "encode/decode publish packets with at most once QoS" in {
+    "encode/decode publish packets with at least once QoS" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
-      val packet = Publish("some-topic-name", ByteString("some-payload"))
+      val packet = Publish("some-topic-name", PacketId(0), ByteString("some-payload"))
       val bytes = packet.encode(bsb).result()
-      bytes.size shouldBe 31
+      bytes.size shouldBe 33
       bytes.iterator.decodeControlPacket(MaxPacketSize) shouldBe Right(packet)
     }
 
@@ -270,7 +291,7 @@ class MqttCodecSpec extends WordSpec with Matchers {
       bytes.iterator.decodeControlPacket(MaxPacketSize) shouldBe Right(packet)
     }
 
-    "encode/decode subscribe packets with at most once QoS" in {
+    "encode/decode subscribe packets with at least once QoS" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
       val packet = Subscribe(PacketId(0), "some-head-topic")
       val bytes = packet.encode(bsb).result()

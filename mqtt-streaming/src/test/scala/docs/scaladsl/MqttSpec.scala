@@ -34,6 +34,7 @@ class MqttSpec
       import MqttCodec._
 
       val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
 
       val connect = Connect("some-client-id", ConnectFlags.None)
       val subscribe = Subscribe(PacketId(0), "some-topic")
@@ -43,7 +44,7 @@ class MqttSpec
           .via(
             Mqtt
               .sessionFlow(settings)
-              .join(Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString]))
+              .join(pipeToServer)
           )
           .runWith(Sink.collection)
 
@@ -52,12 +53,10 @@ class MqttSpec
       val connAckBytes = connAck.encode(ByteString.newBuilder).result()
 
       val subscribeBytes = subscribe.encode(ByteString.newBuilder).result()
-      val subAck = SubAck(PacketId(0), List(ControlPacketFlags.QoSAtMostOnceDelivery))
+      val subAck = SubAck(PacketId(0), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
       val subAckBytes = subAck.encode(ByteString.newBuilder).result()
 
-      val publishTopic = "some-topic"
-      val publishPayload = ByteString("some-payload")
-      val publish = Publish(publishTopic, publishPayload)
+      val publish = Publish("some-topic", PacketId(0), ByteString("some-payload"))
       val publishBytes = publish.encode(ByteString.newBuilder).result()
 
       server.expectMsg(connectBytes)
