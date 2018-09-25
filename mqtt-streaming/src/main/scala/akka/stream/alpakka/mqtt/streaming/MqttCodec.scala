@@ -16,6 +16,7 @@ import scala.concurrent.duration._
 
 /**
  * 2.2.1 MQTT Control Packet type
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 object ControlPacketType {
   val Reserved1 = ControlPacketType(0)
@@ -39,6 +40,7 @@ final case class ControlPacketType(underlying: Int) extends AnyVal
 
 /**
  * 2.2.2 Flags
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 object ControlPacketFlags {
   val None = ControlPacketFlags(0)
@@ -73,6 +75,7 @@ final case class ControlPacketFlags(underlying: Int) extends AnyVal {
 
 /**
  * 2 MQTT Control Packet format
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 sealed abstract class ControlPacket(val packetType: ControlPacketType, val flags: ControlPacketFlags)
 
@@ -82,6 +85,7 @@ case object Reserved2 extends ControlPacket(ControlPacketType.Reserved2, Control
 
 /**
  * 2.3.1 Packet Identifier
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class PacketId(underlying: Int) extends AnyVal
 
@@ -98,6 +102,7 @@ object ConnectFlags {
 
 /**
  * 3.1.2.3 Connect Flags
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class ConnectFlags(underlying: Int) extends AnyVal {
 
@@ -115,7 +120,6 @@ final case class ConnectFlags(underlying: Int) extends AnyVal {
 }
 
 object Connect {
-  // FIXME value classes
   type ProtocolName = String
   val Mqtt: ProtocolName = "MQTT"
 
@@ -148,6 +152,7 @@ object Connect {
 
 /**
  * 3.1 CONNECT – Client requests a connection to a Server
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class Connect(protocolName: Connect.ProtocolName,
                          protocolLevel: Connect.ProtocolLevel,
@@ -167,6 +172,7 @@ object ConnAckFlags {
 
 /**
  * 3.2.2.1 Connect Acknowledge Flags
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class ConnAckFlags(underlying: Int) extends AnyVal
 
@@ -181,6 +187,7 @@ object ConnAckReturnCode {
 
 /**
  * 3.2.2.3 Connect Return code
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class ConnAckReturnCode(underlying: Int) extends AnyVal {
 
@@ -199,6 +206,7 @@ final case class ConnAckReturnCode(underlying: Int) extends AnyVal {
 
 /**
  * 3.2 CONNACK – Acknowledge connection request
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class ConnAck(connectAckFlags: ConnAckFlags, returnCode: ConnAckReturnCode)
     extends ControlPacket(ControlPacketType.CONNACK, ControlPacketFlags.ReservedGeneral)
@@ -214,6 +222,7 @@ object Publish {
 
 /**
  * 3.3 PUBLISH – Publish message
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class Publish(override val flags: ControlPacketFlags,
                          topicName: String,
@@ -223,24 +232,28 @@ final case class Publish(override val flags: ControlPacketFlags,
 
 /**
  * 3.4 PUBACK – Publish acknowledgement
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class PubAck(packetId: PacketId)
     extends ControlPacket(ControlPacketType.PUBACK, ControlPacketFlags.ReservedGeneral)
 
 /**
  * 3.5 PUBREC – Publish received (QoS 2 publish received, part 1)
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class PubRec(packetId: PacketId)
     extends ControlPacket(ControlPacketType.PUBREC, ControlPacketFlags.ReservedGeneral)
 
 /**
  * 3.6 PUBREL – Publish release (QoS 2 publish received, part 2)
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class PubRel(packetId: PacketId)
     extends ControlPacket(ControlPacketType.PUBREL, ControlPacketFlags.ReservedPubRel)
 
 /**
  * 3.7 PUBCOMP – Publish complete (QoS 2 publish received, part 3)
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class PubComp(packetId: PacketId)
     extends ControlPacket(ControlPacketType.PUBCOMP, ControlPacketFlags.ReservedGeneral)
@@ -256,12 +269,14 @@ object Subscribe {
 
 /**
  * 3.8 SUBSCRIBE - Subscribe to topics
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class Subscribe(packetId: PacketId, topicFilters: Seq[(String, ControlPacketFlags)])
     extends ControlPacket(ControlPacketType.SUBSCRIBE, ControlPacketFlags.ReservedSubscribe)
 
 /**
  * 3.9 SUBACK – Subscribe acknowledgement
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class SubAck(packetId: PacketId, returnCodes: Seq[ControlPacketFlags])
     extends ControlPacket(ControlPacketType.SUBACK, ControlPacketFlags.ReservedGeneral)
@@ -277,28 +292,33 @@ object Unsubscribe {
 
 /**
  * 3.10 UNSUBSCRIBE – Unsubscribe from topics
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class Unsubscribe(packetId: PacketId, topicFilters: Seq[String])
     extends ControlPacket(ControlPacketType.UNSUBSCRIBE, ControlPacketFlags.ReservedUnsubscribe)
 
 /**
  * 3.11 UNSUBACK – Unsubscribe acknowledgement
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class UnsubAck(packetId: PacketId)
     extends ControlPacket(ControlPacketType.UNSUBACK, ControlPacketFlags.ReservedUnsubAck)
 
 /**
  * 3.12 PINGREQ – PING request
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 case object PingReq extends ControlPacket(ControlPacketType.PINGREQ, ControlPacketFlags.ReservedGeneral)
 
 /**
  * 3.13 PINGRESP – PING response
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 case object PingResp extends ControlPacket(ControlPacketType.PINGRESP, ControlPacketFlags.ReservedGeneral)
 
 /**
  * 3.14 DISCONNECT – Disconnect notification
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 case object Disconnect extends ControlPacket(ControlPacketType.DISCONNECT, ControlPacketFlags.ReservedGeneral)
 

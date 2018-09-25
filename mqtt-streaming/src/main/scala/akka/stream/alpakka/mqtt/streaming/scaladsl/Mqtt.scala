@@ -5,11 +5,10 @@
 package akka.stream.alpakka.mqtt.streaming
 package scaladsl
 
-import java.nio.ByteOrder
-
 import akka.NotUsed
 import akka.stream.alpakka.mqtt.streaming.MqttCodec.DecodeError
-import akka.stream.scaladsl.{BidiFlow, Flow, Framing}
+import akka.stream.alpakka.mqtt.streaming.impl.MqttFrameStage
+import akka.stream.scaladsl.{BidiFlow, Flow}
 import akka.util.ByteString
 
 object Mqtt {
@@ -49,7 +48,7 @@ object Mqtt {
           case cp: Reserved2.type => cp.encode(ByteString.newBuilder, 0).result()
         },
         Flow[ByteString]
-          .via(Framing.lengthField(1, 1, settings.maxPacketSize, ByteOrder.LITTLE_ENDIAN)) // FIXME - we will need our own framing stage as MQTT lengths are dependent on their high bit being set
+          .via(new MqttFrameStage(settings.maxPacketSize))
           .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
       )
   }
