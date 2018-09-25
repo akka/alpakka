@@ -38,7 +38,7 @@ While in real life this solution if overkill for such a simple problem (you can 
 # PassThrough
 
 Use PassThroughFlow when you have a message that should be used in a 
-flow that trasform it but you want to maintain the original message for
+flow that transform it but you want to maintain the original message for
 another following flow.
 For example when consuming messages from Kafka (CommittableMessage), 
 the message can be used inside a flow (transform it, save it inside a database, ...)
@@ -53,6 +53,7 @@ If you want to execute first Flow1 and then Flow2 you need a way to
 maintain/passthrough message `A`. 
 
 ```
+// format:off
                     a=>transform=>a1
                    /                 \
                   /                   \
@@ -60,6 +61,7 @@ a=>(a, a)=>unzip -                     zip=>(a1, a)=> a
                   \                   /
                    \                 /
                     --------a--------
+// format:on
 ```
 
 Scala
@@ -69,7 +71,16 @@ Scala
 : @@snip [snip](/doc-examples/src/test/scala/akka/stream/alpakka/eip/scaladsl/PassThroughExamples.scala) { #PassThroughSimple }
 
 
-This pattern is useful when integrating Alpakka connectors together. Here an example with kafka:
+This pattern is useful when integrating Alpakka connectors together. Here an example with Kafka:
 
 Scala
 : @@snip [snip](/doc-examples/src/test/scala/akka/stream/alpakka/eip/scaladsl/PassThroughExamples.scala) { #passThroughKafkaFlow }
+
+
+You can choose the output by using the last parameter:
+
+- `Keep.right`: to only output the original message
+- `Keep.both`: to output both as a `Tuple`
+- `Keep.left`/`Keep.none`: are not very useful in this use case, there isn't a pass-through ...
+
+Or potentially write you own output function given the original message and the transformed message.

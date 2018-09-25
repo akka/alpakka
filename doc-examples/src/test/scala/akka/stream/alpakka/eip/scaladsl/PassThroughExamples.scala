@@ -24,31 +24,47 @@ class PassThroughExamples extends WordSpec with BeforeAndAfterAll with Matchers 
   implicit val mat = ActorMaterializer()
 
   "PassThroughFlow" should {
-    " transform message but the original message is maintained " in {
+    " original message is maintained " in {
 
       //#PassThroughSimple
       //Sample Source
       val source = Source(List(1, 2, 3))
 
-      // Int to Unit
-      val printerFlow =
+      // Pass through this flow maintained the original message
+      val passThroughMe =
         Flow[Int]
-          .map(println)
-
-      // Int to Int
-      val plus10Flow =
-        Flow[Int]
-          .map(_ + 10)
+          .map(_ * 10)
 
       val ret = source
-        .via(PassThroughFlow(printerFlow))
-        .via(plus10Flow)
+        .via(PassThroughFlow(passThroughMe, Keep.right))
         .runWith(Sink.seq)
 
       //Verify results
 
-      ret.futureValue should be(Vector(11, 12, 13))
+      ret.futureValue should be(Vector(1, 2, 3))
       //#PassThroughSimple
+
+    }
+
+    " original message and pass through flow output are returned " in {
+
+      //#PassThroughTuple
+      //Sample Source
+      val source = Source(List(1, 2, 3))
+
+      // Pass through this flow maintained the original message
+      val passThroughMe =
+        Flow[Int]
+          .map(_ * 10)
+
+      val ret = source
+        .via(PassThroughFlow(passThroughMe))
+        .runWith(Sink.seq)
+
+      //Verify results
+
+      ret.futureValue should be(Vector((10, 1), (20, 2), (30, 3)))
+      //#PassThroughTuple
 
     }
   }
@@ -58,13 +74,18 @@ class PassThroughExamples extends WordSpec with BeforeAndAfterAll with Matchers 
 
 //#PassThrough
 object PassThroughFlow {
-  def apply[A, T](processingFlow: Flow[A, T, NotUsed]): Graph[FlowShape[A, A], NotUsed] =
+  def apply[A, T](processingFlow: Flow[A, T, NotUsed]): Graph[FlowShape[A, (T, A)], NotUsed] =
+    apply[A, T, (T, A)](processingFlow, Keep.both)
+
+  def apply[A, T, O](processingFlow: Flow[A, T, NotUsed], output: (T, A) => O): Graph[FlowShape[A, O], NotUsed] =
     Flow.fromGraph(GraphDSL.create() { implicit builder =>
       {
         import GraphDSL.Implicits._
 
+        Merge
+
         val tuplerizer = builder.add(Flow[A].map(x => (x, x)))
-        val detuplerizer = builder.add(Flow[(T, A)].map(_._2))
+        val detuplerizer = builder.add(Flow[(T, A)].map(x => output(x._1, x._2)))
 
         val unzip = builder.add(Unzip[A, A]())
         val zip = builder.add(Zip[T, A]())
@@ -86,17 +107,16 @@ object PassThroughFlowKafkaCommitExample {
   implicit val system = ActorSystem("Test")
   implicit val mat = ActorMaterializer()
 
-  def dummy: Unit = {
+  def dummy(): Unit = {
     // #passThroughKafkaFlow
     val writeFlow = Flow[ConsumerMessage.CommittableMessage[String, Array[Byte]]].map(_ => ???)
 
     val consumerSettings =
       ConsumerSettings(system, new StringDeserializer, new ByteArrayDeserializer)
 
-    val control =
       Consumer
         .committableSource(consumerSettings, Subscriptions.topics("topic1"))
-        .via(PassThroughFlow(writeFlow))
+        .via(PassThroughFlow(writeFlow, Keep.right))
         .map(_.committableOffset)
         .groupedWithin(10, 5.seconds)
         .map(CommittableOffsetBatch(_))
