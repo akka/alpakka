@@ -6,7 +6,6 @@ package akka.stream.alpakka.mqtt.streaming
 package scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.mqtt.streaming.MqttCodec.DecodeError
 import akka.stream.alpakka.mqtt.streaming.impl.MqttFrameStage
 import akka.stream.scaladsl.{BidiFlow, Flow}
 import akka.util.ByteString
@@ -24,7 +23,7 @@ object Mqtt {
    */
   def sessionFlow(
       settings: SessionFlowSettings
-  ): BidiFlow[ControlPacket, ByteString, ByteString, Either[DecodeError, ControlPacket], NotUsed] = {
+  ): BidiFlow[ControlPacket, ByteString, ByteString, Either[MqttCodec.DecodeError, ControlPacket], NotUsed] = {
     // TODO: Have the input and output flows pass through an actor that maintains session state (probably an FSM)
     import MqttCodec._
     BidiFlow

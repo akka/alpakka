@@ -133,6 +133,14 @@ object Connect {
     new Connect(Mqtt, v311, clientId, connectFlags, 60.seconds, None, None, None, None)
 
   /**
+   * Java API
+   *
+   * Conveniently create a connect object without credentials.
+   */
+  def create(clientId: String, connectFlags: ConnectFlags): Connect =
+    Connect(clientId, connectFlags)
+
+  /**
    * Conveniently create a connect object with credentials. This function will also set the
    * corresponding username and password flags.
    */
@@ -148,6 +156,16 @@ object Connect {
       Some(username),
       Some(password)
     )
+
+  /**
+   * Java API
+   *
+   * Conveniently create a connect object with credentials. This function will also set the
+   * corresponding username and password flags.
+   */
+  def create(clientId: String, extraConnectFlags: ConnectFlags, username: String, password: String): Connect =
+    Connect(clientId, extraConnectFlags, username, password)
+
 }
 
 /**
@@ -265,6 +283,14 @@ object Subscribe {
    */
   def apply(packetId: PacketId, topicFilter: String): Subscribe =
     Subscribe(packetId, List(topicFilter -> ControlPacketFlags.QoSAtLeastOnceDelivery))
+
+  /**
+   * Java API
+   *
+   * A convenience for subscribing to a single topic with at-least-once semantics
+   */
+  def create(packetId: PacketId, topicFilter: String): Subscribe =
+    Subscribe(packetId, topicFilter)
 }
 
 /**
@@ -288,6 +314,14 @@ object Unsubscribe {
    */
   def apply(packetId: PacketId, topicFilter: String): Unsubscribe =
     Unsubscribe(packetId, List(topicFilter))
+
+  /**
+   * JAVA API
+   *
+   *  A convenience for unsubscribing from a single topic
+   */
+  def create(packetId: PacketId, topicFilter: String): Unsubscribe =
+    Unsubscribe(packetId, topicFilter)
 }
 
 /**
