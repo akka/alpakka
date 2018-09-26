@@ -46,7 +46,7 @@ import scala.collection.immutable
 
 /*
  * Handles the framing of MQTT streams given that a length byte starts at an offset of 1 and
- * can then continue to be specified given the setting of a high byte, up to a maximum of
+ * can then continue to be specified given the setting of a high bit, up to a maximum of
  * 4 bytes.
  *
  * 2.2.3 Remaining Length

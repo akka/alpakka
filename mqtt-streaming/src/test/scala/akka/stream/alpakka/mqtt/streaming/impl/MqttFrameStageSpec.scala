@@ -60,7 +60,7 @@ class MqttFrameStageSpec
 
     "frame a packet where its length bytes are split" in {
       val bytes0 = ByteString.newBuilder.putByte(0).putByte(0x80.toByte).result()
-      val bytes1 = ByteString.newBuilder.putByte(0).putBytes(Array.ofDim(0x80)).result()
+      val bytes1 = ByteString.newBuilder.putByte(1).putBytes(Array.ofDim(0x80)).result()
 
       val (pub, sub) =
         TestSource

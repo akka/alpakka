@@ -68,15 +68,36 @@ class MqttCodecSpec extends WordSpec with Matchers {
       )
     }
 
-    "accept the max remaining length when decoding remaining length" in {
-      ByteString.newBuilder
-        .putByte(0xff.toByte)
-        .putByte(0xff.toByte)
-        .putByte(0xff.toByte)
-        .putByte(0x7f.toByte)
-        .result()
-        .iterator
-        .decodeRemainingLength() shouldBe Right(Int.MaxValue)
+    "encode/decode one byte remaining length" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val remainingLength = 64
+      val bytes = remainingLength.encode(bsb).result()
+      bytes.size shouldBe 1
+      bytes.iterator.decodeRemainingLength() shouldBe Right(remainingLength)
+    }
+
+    "encode/decode two byte remaining length" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val remainingLength = 321
+      val bytes = remainingLength.encode(bsb).result()
+      bytes.size shouldBe 2
+      bytes.iterator.decodeRemainingLength() shouldBe Right(remainingLength)
+    }
+
+    "encode/decode three byte remaining length" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val remainingLength = 16384
+      val bytes = remainingLength.encode(bsb).result()
+      bytes.size shouldBe 3
+      bytes.iterator.decodeRemainingLength() shouldBe Right(remainingLength)
+    }
+
+    "encode/decode four byte remaining length" in {
+      val bsb: ByteStringBuilder = ByteString.newBuilder
+      val remainingLength = 2097152
+      val bytes = remainingLength.encode(bsb).result()
+      bytes.size shouldBe 4
+      bytes.iterator.decodeRemainingLength() shouldBe Right(remainingLength)
     }
 
     "underflow when decoding remaining length" in {

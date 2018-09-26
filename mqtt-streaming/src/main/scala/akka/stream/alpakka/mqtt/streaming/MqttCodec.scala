@@ -508,8 +508,26 @@ object MqttCodec {
   // 2 MQTT Control Packet format
   implicit class MqttControlPacket(val v: ControlPacket) extends AnyVal {
 
-    def encode(bsb: ByteStringBuilder, remainingLength: Int): ByteStringBuilder =
-      bsb.putByte((v.packetType.underlying << 4 | v.flags.underlying).toByte).putByte(remainingLength.toByte)
+    def encode(bsb: ByteStringBuilder, remainingLength: Int): ByteStringBuilder = {
+      bsb.putByte((v.packetType.underlying << 4 | v.flags.underlying).toByte)
+      remainingLength.encode(bsb)
+    }
+  }
+
+  // 2.2.3 Remaining Length
+  implicit class MqttRemainingLength(val v: Int) extends AnyVal {
+
+    def encode(bsb: ByteStringBuilder): ByteStringBuilder = {
+      val b0 = v
+      val b1 = v >> 7
+      val b2 = v >> 14
+      val b3 = v >> 21
+      bsb.putByte(((b0 & 0x7f) | (if (b1 > 0) 0x80 else 0x00)).toByte)
+      if (b1 > 0) bsb.putByte(((b1 & 0x7f) | (if (b2 > 0) 0x80 else 0x00)).toByte)
+      if (b2 > 0) bsb.putByte(((b2 & 0x7f) | (if (b3 > 0) 0x80 else 0x00)).toByte)
+      if (b3 > 0) bsb.putByte(b3.toByte)
+      bsb
+    }
   }
 
   // 3.1 CONNECT – Client requests a connection to a Server
@@ -737,7 +755,7 @@ object MqttCodec {
         val l1 = if ((l0 & 0x80) == 0x80) v.getByte & 0xff else 0
         val l2 = if ((l1 & 0x80) == 0x80) v.getByte & 0xff else 0
         val l3 = if ((l2 & 0x80) == 0x80) v.getByte & 0xff else 0
-        val l = (l3 << 24) | (l2 << 16) | (l1 << 8) | l0
+        val l = ((l3 & 0x7f) << 21) | ((l2 & 0x7f) << 14) | ((l1 & 0x7f) << 7) | (l0 & 0x7f)
         Right(l)
       } catch {
         case _: NoSuchElementException => Left(BufferUnderflow)
