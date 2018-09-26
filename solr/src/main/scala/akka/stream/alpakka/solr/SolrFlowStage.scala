@@ -4,79 +4,235 @@
 
 package akka.stream.alpakka.solr
 
-import java.net.{ConnectException, SocketException}
-
 import akka.NotUsed
-import akka.stream.alpakka.solr.SolrFlowStage.{Finished, Idle, Sending}
-import akka.stream.stage.{GraphStage, InHandler, OutHandler, TimerGraphStageLogic}
-import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
-import org.apache.http.NoHttpResponseException
+import akka.stream.stage._
+import akka.stream._
 import org.apache.solr.client.solrj.SolrClient
-import org.apache.solr.common.{SolrException, SolrInputDocument}
+import org.apache.solr.client.solrj.impl.CloudSolrClient
+import org.apache.solr.client.solrj.response.UpdateResponse
+import org.apache.solr.common.SolrInputDocument
 
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.concurrent.Future
-import scala.util.control.NonFatal
 
+@deprecated(
+  "you should use a specific incoming message case class: IncomingUpsertMessage/IncomingDeleteMessageByIds/IncomingDeleteMessageByQuery/IncomingAtomicUpdateMessage",
+  "0.20"
+)
 object IncomingMessage {
-  // Apply method to use when not using passThrough
+  // Apply methods to use when not using passThrough
   def apply[T](source: T): IncomingMessage[T, NotUsed] =
-    IncomingMessage(source, NotUsed)
+    IncomingMessage(Upsert, None, None, None, None, Option(source), Map.empty, NotUsed)
+
+  def apply[T](id: String): IncomingMessage[T, NotUsed] =
+    IncomingMessage(DeleteByIds, None, Option(id), None, None, None, Map.empty, NotUsed)
+
+  def apply[T](idField: String,
+               idValue: String,
+               routingFieldValue: String,
+               updates: Map[String, Map[String, Any]]): IncomingMessage[T, NotUsed] =
+    IncomingMessage(AtomicUpdate,
+                    Option(idField),
+                    Option(idValue),
+                    Some(routingFieldValue),
+                    None,
+                    None,
+                    updates,
+                    NotUsed)
+
+  // Apply methods to use with passThrough
+  def apply[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
+    IncomingMessage(Upsert, None, None, None, None, Option(source), Map.empty, passThrough)
+
+  def apply[T, C](id: String, passThrough: C): IncomingMessage[T, C] =
+    IncomingMessage(DeleteByIds, None, Option(id), None, None, None, Map.empty, passThrough)
+
+  def apply[T, C](idField: String,
+                  idValue: String,
+                  routingFieldValue: String,
+                  updates: Map[String, Map[String, Any]],
+                  passThrough: C): IncomingMessage[T, C] =
+    IncomingMessage(AtomicUpdate,
+                    Option(idField),
+                    Option(idValue),
+                    Option(routingFieldValue),
+                    None,
+                    None,
+                    updates,
+                    passThrough)
 
   // Java-api - without passThrough
   def create[T](source: T): IncomingMessage[T, NotUsed] =
     IncomingMessage(source)
 
+  def create[T](id: String): IncomingMessage[T, NotUsed] =
+    IncomingMessage(id)
+
+  def create[T](idField: String,
+                idValue: String,
+                routingFieldValue: String,
+                updates: java.util.Map[String, Map[String, Object]]): IncomingMessage[T, NotUsed] =
+    IncomingMessage(idField, idValue, routingFieldValue, updates.asScala.toMap)
+
   // Java-api - with passThrough
   def create[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
     IncomingMessage(source, passThrough)
 
+  def create[T, C](id: String, passThrough: C): IncomingMessage[T, C] =
+    IncomingMessage(id, passThrough)
+
+  def create[T, C](idField: String,
+                   idValue: String,
+                   routingFieldValue: String,
+                   updates: java.util.Map[String, Map[String, Object]],
+                   passThrough: C): IncomingMessage[T, C] =
+    IncomingMessage(idField, idValue, routingFieldValue, updates.asScala.toMap, passThrough)
+
+  def asScalaUpdates(jupdates: java.util.Map[String, java.util.Map[String, Object]]): Map[String, Map[String, Any]] =
+    jupdates.asScala.map {
+      case (k, v: java.util.Map[String, Object]) =>
+        (k, v.asScala.toMap)
+    }.toMap
 }
 
-final case class IncomingMessage[T, C](source: T, passThrough: C)
+object IncomingUpsertMessage {
+  // Apply method to use when not using passThrough
+  def apply[T](source: T): IncomingMessage[T, NotUsed] =
+    IncomingMessage(source)
 
-final case class IncomingMessageResult[T, C](source: T, passThrough: C, status: Int)
+  // Apply method to use when not using passThrough
+  def apply[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
+    IncomingMessage(source, passThrough)
+
+  // Java-api - without passThrough
+  def create[T](source: T): IncomingMessage[T, NotUsed] =
+    IncomingUpsertMessage[T](source)
+
+  // Java-api - without passThrough
+  def create[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
+    IncomingUpsertMessage[T, C](source, passThrough)
+}
+
+object IncomingDeleteMessageByIds {
+  // Apply method to use when not using passThrough
+  def apply[T](id: String): IncomingMessage[T, NotUsed] =
+    IncomingMessage(id)
+
+  def apply[T, C](id: String, passThrough: C): IncomingMessage[T, C] =
+    IncomingMessage(id, passThrough)
+
+  // Java-api - without passThrough
+  def create[T](id: String): IncomingMessage[T, NotUsed] =
+    IncomingDeleteMessageByIds[T](id)
+
+  def create[T, C](id: String, passThrough: C): IncomingMessage[T, C] =
+    IncomingDeleteMessageByIds[T, C](id, passThrough)
+}
+
+object IncomingDeleteMessageByQuery {
+  // Apply method to use when not using passThrough
+  def apply[T](query: String): IncomingMessage[T, NotUsed] =
+    IncomingMessage(DeleteByQuery, None, None, None, Some(query), None, Map.empty, NotUsed)
+
+  def apply[T, C](query: String, passThrough: C): IncomingMessage[T, C] =
+    IncomingMessage(DeleteByQuery, None, None, None, Some(query), None, Map.empty, passThrough)
+
+  // Java-api - without passThrough
+  def create[T](query: String): IncomingMessage[T, NotUsed] =
+    IncomingDeleteMessageByQuery[T](query)
+
+  def create[T, C](query: String, passThrough: C): IncomingMessage[T, C] =
+    IncomingDeleteMessageByQuery[T, C](query, passThrough)
+}
+
+object IncomingAtomicUpdateMessage {
+  // Apply method to use when not using passThrough
+  def apply[T](idField: String,
+               idValue: String,
+               routingFieldValue: String,
+               updates: Map[String, Map[String, Any]]): IncomingMessage[T, NotUsed] =
+    IncomingMessage(idField, idValue, routingFieldValue, updates)
+
+  def apply[T, C](idField: String,
+                  idValue: String,
+                  routingFieldValue: String,
+                  updates: Map[String, Map[String, Any]],
+                  passThrough: C): IncomingMessage[T, C] =
+    IncomingMessage(idField, idValue, routingFieldValue, updates, passThrough)
+
+  // Java-api - without passThrough
+  def create[T](idField: String,
+                idValue: String,
+                routingFieldValue: String,
+                updates: java.util.Map[String, java.util.Map[String, Object]]): IncomingMessage[T, NotUsed] =
+    IncomingAtomicUpdateMessage[T](idField, idValue, routingFieldValue, IncomingMessage.asScalaUpdates(updates))
+
+  def create[T, C](idField: String,
+                   idValue: String,
+                   routingFieldValue: String,
+                   updates: java.util.Map[String, java.util.Map[String, Object]],
+                   passThrough: C): IncomingMessage[T, C] =
+    IncomingAtomicUpdateMessage[T, C](idField,
+                                      idValue,
+                                      routingFieldValue,
+                                      IncomingMessage.asScalaUpdates(updates),
+                                      passThrough)
+}
+
+final case class IncomingMessage[T, C](operation: Operation,
+                                       idFieldOpt: Option[String],
+                                       idFieldValueOpt: Option[String],
+                                       routingFieldValueOpt: Option[String],
+                                       queryOpt: Option[String],
+                                       sourceOpt: Option[T],
+                                       updates: Map[String, Map[String, Any]],
+                                       passThrough: C = NotUsed) {}
+
+final case class IncomingMessageResult[T, C](idFieldOpt: Option[String],
+                                             idFieldValueOpt: Option[String],
+                                             routingFieldValueOpt: Option[String],
+                                             queryOpt: Option[String],
+                                             sourceOpt: Option[T],
+                                             updates: Map[String, Map[String, Any]],
+                                             passThrough: C,
+                                             status: Int)
 
 private[solr] final class SolrFlowStage[T, C](
     collection: String,
     client: SolrClient,
     settings: SolrUpdateSettings,
     messageBinder: T => SolrInputDocument
-) extends GraphStage[FlowShape[IncomingMessage[T, C], Future[Seq[IncomingMessageResult[T, C]]]]] {
+) extends GraphStage[FlowShape[Seq[IncomingMessage[T, C]], Seq[IncomingMessageResult[T, C]]]] {
 
-  private val in = Inlet[IncomingMessage[T, C]]("messages")
-  private val out = Outlet[Future[Seq[IncomingMessageResult[T, C]]]]("result")
+  private val in = Inlet[Seq[IncomingMessage[T, C]]]("messages")
+  private val out = Outlet[Seq[IncomingMessageResult[T, C]]]("result")
   override val shape = FlowShape(in, out)
+
+  override protected def initialAttributes: Attributes =
+    super.initialAttributes and Attributes(ActorAttributes.IODispatcher)
 
   override def createLogic(inheritedAttributes: Attributes): SolrFlowLogic[T, C] =
     new SolrFlowLogic[T, C](collection, client, in, out, shape, settings, messageBinder)
 }
 
-private sealed trait SolrFlowState
-
-private object SolrFlowStage {
-  case object Idle extends SolrFlowState
-  case object Sending extends SolrFlowState
-  case object Finished extends SolrFlowState
-}
+sealed trait Operation
+final object Upsert extends Operation
+final object DeleteByIds extends Operation
+final object DeleteByQuery extends Operation
+final object AtomicUpdate extends Operation
 
 private[solr] final class SolrFlowLogic[T, C](
     collection: String,
     client: SolrClient,
-    in: Inlet[IncomingMessage[T, C]],
-    out: Outlet[Future[Seq[IncomingMessageResult[T, C]]]],
-    shape: FlowShape[IncomingMessage[T, C], Future[Seq[IncomingMessageResult[T, C]]]],
+    in: Inlet[Seq[IncomingMessage[T, C]]],
+    out: Outlet[Seq[IncomingMessageResult[T, C]]],
+    shape: FlowShape[Seq[IncomingMessage[T, C]], Seq[IncomingMessageResult[T, C]]],
     settings: SolrUpdateSettings,
     messageBinder: T => SolrInputDocument
-) extends TimerGraphStageLogic(shape)
+) extends GraphStageLogic(shape)
     with OutHandler
-    with InHandler {
-
-  private var state: SolrFlowState = Idle
-  private val queue = new mutable.Queue[IncomingMessage[T, C]]()
-  private var failedMessages: Seq[IncomingMessage[T, C]] = Nil
-  private var retryCount: Int = 0
+    with InHandler
+    with StageLogging {
 
   setHandlers(in, out, this)
 
@@ -84,17 +240,9 @@ private[solr] final class SolrFlowLogic[T, C](
     tryPull()
 
   override def onPush(): Unit = {
-    queue.enqueue(grab(in))
-    state match {
-      case Idle => {
-        state = Sending
-        val messages = (1 to settings.bufferSize).flatMap { _ =>
-          queue.dequeueFirst(_ => true)
-        }
-        sendBulkToSolr(messages)
-      }
-      case _ => ()
-    }
+    val messagesIn = grab(in)
+
+    sendBulkToSolr(messagesIn)
 
     tryPull()
   }
@@ -102,81 +250,124 @@ private[solr] final class SolrFlowLogic[T, C](
   override def preStart(): Unit =
     pull(in)
 
-  override def onTimer(timerKey: Any): Unit = {
-    sendBulkToSolr(failedMessages)
-    failedMessages = Nil
-  }
-
   override def onUpstreamFailure(ex: Throwable): Unit =
-    failStage(ex)
+    handleFailure(ex)
 
-  override def onUpstreamFinish(): Unit = state match {
-    case Idle => handleSuccess()
-    case Sending => state = Finished
-    case Finished => ()
-  }
+  override def onUpstreamFinish(): Unit = handleSuccess
 
   private def tryPull(): Unit =
-    if (queue.size < settings.bufferSize && !isClosed(in) && !hasBeenPulled(in)) {
+    if (!isClosed(in) && !hasBeenPulled(in)) {
       pull(in)
     }
 
-  private def handleFailure(messages: Seq[IncomingMessage[T, C]], exc: Throwable): Unit =
-    if (retryCount >= settings.maxRetry) {
-      failStage(exc)
-    } else {
-      retryCount = retryCount + 1
-      failedMessages = messages
-      scheduleOnce(NotUsed, settings.retryInterval)
-    }
+  private def handleFailure(exc: Throwable): Unit = {
+    log.warning(s"Received error from solr. Error: ${exc.toString}")
+    failStage(exc)
+  }
 
-  private def handleResponse(messages: Seq[IncomingMessage[T, C]], status: Int): Unit = {
-    retryCount = 0
-    val result = messages.map(m => IncomingMessageResult(m.source, m.passThrough, status))
+  private def handleResponse(args: (Seq[IncomingMessage[T, C]], Int)): Unit = {
+    val (messages, status) = args
+    log.debug(s"Handle the response with $status")
+    val result = messages.map(
+      m =>
+        IncomingMessageResult(m.idFieldOpt,
+                              m.idFieldValueOpt,
+                              m.routingFieldValueOpt,
+                              m.queryOpt,
+                              m.sourceOpt,
+                              m.updates,
+                              m.passThrough,
+                              status)
+    )
 
-    emit(out, Future.successful(result))
-
-    val nextMessages = (1 to settings.bufferSize).flatMap { _ =>
-      queue.dequeueFirst(_ => true)
-    }
-
-    if (nextMessages.isEmpty) {
-      state match {
-        case Finished => handleSuccess()
-        case _ => state = Idle
-      }
-    } else {
-      sendBulkToSolr(nextMessages)
-    }
+    emit(out, result)
   }
 
   private def handleSuccess(): Unit =
     completeStage()
 
-  private def sendBulkToSolr(messages: Seq[IncomingMessage[T, C]]): Unit =
-    try {
-      val docs = messages.map(message => messageBinder(message.source))
-      val response = client.add(collection, docs.asJava, settings.commitWithin)
-      handleResponse(messages, response.getStatus)
-    } catch {
-      case NonFatal(exc) =>
-        val rootCause = SolrException.getRootCause(exc)
-        if (shouldRetry(rootCause)) {
-          handleFailure(messages, exc)
-        } else {
-          val status = exc match {
-            case e: SolrException => e.code()
-            case _ => -1
-          }
-          handleResponse(messages, status)
+  private def updateBulkToSolr(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
+    val docs = messages.flatMap(_.sourceOpt.map(messageBinder))
+
+    if (log.isDebugEnabled) log.debug(s"Upsert $docs")
+    client.add(collection, docs.asJava, settings.commitWithin)
+  }
+
+  private def atomicUpdateBulkToSolr(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
+    val docs = messages.map { message =>
+      val doc = new SolrInputDocument()
+      if (message.idFieldOpt.isEmpty || message.idFieldValueOpt.isEmpty) {
+        throw new IllegalArgumentException("idfield name and idfield value should be set")
+      }
+
+      doc.addField(message.idFieldOpt.get, message.idFieldValueOpt.get)
+      client match {
+        case csc: CloudSolrClient =>
+          if (message.routingFieldValueOpt.isEmpty)
+            throw new IllegalArgumentException("routing field value should be set")
+          val routerField = csc.getIdField
+          if (routerField != message.idFieldOpt.get)
+            doc.addField(routerField, message.routingFieldValueOpt.get)
+        case _ =>
+      }
+
+      message.updates.foreach {
+        case (field, updates) => {
+          val jMap = updates.asInstanceOf[Map[String, Any]].asJava
+          doc.addField(field, jMap)
         }
+      }
+      doc
+    }
+    if (log.isDebugEnabled) log.debug(s"Update atomically $docs")
+    client.add(collection, docs.asJava, settings.commitWithin)
+  }
+
+  private def deleteBulkToSolrByIds(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
+    val docsIds = messages
+      .filter { message =>
+        message.operation == DeleteByIds && message.idFieldValueOpt.isDefined
+      }
+      .map { message =>
+        message.idFieldValueOpt.get
+      }
+    if (log.isDebugEnabled) log.debug(s"Delete the ids $docsIds")
+    client.deleteById(collection, docsIds.asJava, settings.commitWithin)
+  }
+
+  private def deleteEachByQuery(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
+    val responses = messages.map { message =>
+      val query = message.queryOpt.get
+      if (log.isDebugEnabled) log.debug(s"Delete by the query $query")
+      client.deleteByQuery(collection, query, settings.commitWithin)
+    }
+    responses.find(_.getStatus != 0).getOrElse(responses.head)
+  }
+
+  private def sendBulkToSolr(messages: Seq[IncomingMessage[T, C]]): Unit = {
+
+    @tailrec
+    def send(toSend: Seq[IncomingMessage[T, C]]): UpdateResponse = {
+      val operation = toSend.head.operation
+      //Just take a subset of this operation
+      val (current, remaining) = toSend.partition { m =>
+        m.operation == operation
+      }
+      //send this subset
+      val response = operation match {
+        case Upsert => updateBulkToSolr(current)
+        case AtomicUpdate => atomicUpdateBulkToSolr(current)
+        case DeleteByIds => deleteBulkToSolrByIds(current)
+        case DeleteByQuery => deleteEachByQuery(current)
+      }
+      if (remaining.nonEmpty) {
+        send(remaining)
+      } else {
+        response
+      }
     }
 
-  private def shouldRetry(cause: Throwable): Boolean =
-    cause match {
-      case _: ConnectException => true
-      case _: NoHttpResponseException => true
-      case _: SocketException => true
-      case _ => false
-    }
+    val response = if (messages.nonEmpty) send(messages) else new UpdateResponse
+    handleResponse((messages, response.getStatus))
+  }
 }
