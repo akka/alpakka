@@ -613,7 +613,7 @@ connect to the MQ server over TCP/IP or natively through JNI (when the client an
 Scala
 :   &#9;
 
-    ```scala
+```scala
     import com.ibm.mq.jms.MQQueueConnectionFactory
     import com.ibm.msg.client.wmq.common.CommonConstants
 
@@ -643,12 +643,12 @@ Scala
       JmsConsumerSettings(queueConnectionFactory)
         .withDestination(CustomDestination(TestQueueName, createMqQueue(TestQueueName)))
     )
-    ```
+```
 
 Java
 :   &#9;
 
-    ```java
+```java
     import com.ibm.mq.jms.MQQueueConnectionFactory;
     import com.ibm.msg.client.wmq.common.CommonConstants;
 
@@ -683,7 +683,7 @@ Java
         .create(queueConnectionFactory)
         .withDestination(new CustomDestination(testQueueName,createMqQueue(testQueueName)))
     );
-    ```
+```
 
 ### Create a JmsProducer to an IBM MQ Topic
 The IBM MQ docker container sets up a `dev/` topic, which is used in the example below.
@@ -691,7 +691,7 @@ The IBM MQ docker container sets up a `dev/` topic, which is used in the example
 Scala
 :   &#9;
 
-    ```scala
+```scala
     import com.ibm.mq.jms.MQTopicConnectionFactory
     import com.ibm.msg.client.wmq.common.CommonConstants
 
@@ -721,12 +721,11 @@ Scala
       JmsProducerSettings(topicConnectionFactory)
         .withDestination(CustomDestination(TestTopicName, createMqTopic(TestTopicName)))
     )    
-    ```
+```
 
 Java
 :   &#9;
-
-    ```java
+```java
     import com.ibm.mq.jms.MQTopicConnectionFactory;
     import com.ibm.msg.client.wmq.common.CommonConstants;
 
@@ -761,4 +760,4 @@ Java
         .create(queueConnectionFactory)
         .withDestination(new CustomDestination(testTopicName, createMqTopic(testTopicName)))
     );    
-    ```
+  ```
