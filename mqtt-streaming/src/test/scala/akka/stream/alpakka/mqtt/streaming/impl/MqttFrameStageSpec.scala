@@ -6,8 +6,9 @@ package akka.stream.alpakka.mqtt.streaming
 package impl
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Keep, Source}
 import akka.stream.testkit.javadsl.TestSink
+import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import akka.util.ByteString
@@ -54,6 +55,28 @@ class MqttFrameStageSpec
         .runWith(TestSink.probe(system))
         .request(2)
         .expectNext(bytes, bytes)
+        .expectComplete()
+    }
+
+    "frame a packet where its length bytes are split" in {
+      val bytes0 = ByteString.newBuilder.putByte(0).putByte(0x80.toByte).result()
+      val bytes1 = ByteString.newBuilder.putByte(0).putBytes(Array.ofDim(0x80)).result()
+
+      val (pub, sub) =
+        TestSource
+          .probe(system)
+          .via(new MqttFrameStage(MaxPacketSize * 2))
+          .toMat(TestSink.probe(system))(Keep.both)
+          .run()
+
+      pub.sendNext(bytes0)
+
+      sub.request(1)
+
+      pub.sendNext(bytes1).sendComplete()
+
+      sub
+        .expectNext(bytes0 ++ bytes1)
         .expectComplete()
     }
 
