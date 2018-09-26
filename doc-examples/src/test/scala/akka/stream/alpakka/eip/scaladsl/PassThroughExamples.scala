@@ -26,11 +26,11 @@ class PassThroughExamples extends WordSpec with BeforeAndAfterAll with Matchers 
   "PassThroughFlow" should {
     " original message is maintained " in {
 
-      //#PassThroughSimple
+      //#PassThroughWithKeep
       //Sample Source
       val source = Source(List(1, 2, 3))
 
-      // Pass through this flow maintained the original message
+      // Pass through this flow maintaining the original message
       val passThroughMe =
         Flow[Int]
           .map(_ * 10)
@@ -40,9 +40,8 @@ class PassThroughExamples extends WordSpec with BeforeAndAfterAll with Matchers 
         .runWith(Sink.seq)
 
       //Verify results
-
       ret.futureValue should be(Vector(1, 2, 3))
-      //#PassThroughSimple
+      //#PassThroughWithKeep
 
     }
 
@@ -52,7 +51,7 @@ class PassThroughExamples extends WordSpec with BeforeAndAfterAll with Matchers 
       //Sample Source
       val source = Source(List(1, 2, 3))
 
-      // Pass through this flow maintained the original message
+      // Pass through this flow maintaining the original message
       val passThroughMe =
         Flow[Int]
           .map(_ * 10)
@@ -62,7 +61,6 @@ class PassThroughExamples extends WordSpec with BeforeAndAfterAll with Matchers 
         .runWith(Sink.seq)
 
       //Verify results
-
       ret.futureValue should be(Vector((10, 1), (20, 2), (30, 3)))
       //#PassThroughTuple
 
@@ -84,20 +82,17 @@ object PassThroughFlow {
 
         Merge
 
-        val tuplerizer = builder.add(Flow[A].map(x => (x, x)))
+        val broadcast = builder.add(Broadcast[A](2))
+        val zip = builder.add(Zip[T, A]())
         val detuplerizer = builder.add(Flow[(T, A)].map(x => output(x._1, x._2)))
 
-        val unzip = builder.add(Unzip[A, A]())
-        val zip = builder.add(Zip[T, A]())
+        // format: off
+        broadcast.out(0) ~> processingFlow ~> zip.in0
+        broadcast.out(1)         ~>           zip.in1
+                                              zip.out ~> detuplerizer
+        // format: on
 
-        val passThroughFlow = Flow[A].map(identity)
-
-        tuplerizer ~> unzip.in
-        unzip.out0 ~> processingFlow ~> zip.in0
-        unzip.out1 ~> passThroughFlow ~> zip.in1
-        zip.out ~> detuplerizer
-
-        FlowShape(tuplerizer.in, detuplerizer.out)
+        FlowShape(broadcast.in, detuplerizer.out)
       }
     })
 }
@@ -114,16 +109,16 @@ object PassThroughFlowKafkaCommitExample {
     val consumerSettings =
       ConsumerSettings(system, new StringDeserializer, new ByteArrayDeserializer)
 
-      Consumer
-        .committableSource(consumerSettings, Subscriptions.topics("topic1"))
-        .via(PassThroughFlow(writeFlow, Keep.right))
-        .map(_.committableOffset)
-        .groupedWithin(10, 5.seconds)
-        .map(CommittableOffsetBatch(_))
-        .mapAsync(3)(_.commitScaladsl())
-        .toMat(Sink.ignore)(Keep.both)
-        .mapMaterializedValue(DrainingControl.apply)
-        .run()
+    Consumer
+      .committableSource(consumerSettings, Subscriptions.topics("topic1"))
+      .via(PassThroughFlow(writeFlow, Keep.right))
+      .map(_.committableOffset)
+      .groupedWithin(10, 5.seconds)
+      .map(CommittableOffsetBatch(_))
+      .mapAsync(3)(_.commitScaladsl())
+      .toMat(Sink.ignore)(Keep.both)
+      .mapMaterializedValue(DrainingControl.apply)
+      .run()
     // #passThroughKafkaFlow
   }
 }
