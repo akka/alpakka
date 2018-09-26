@@ -19,43 +19,44 @@ class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike w
   implicit val ec = system.dispatcher
 
   val settings = DynamoSettings(system)
-  val client = DynamoClient(settings)
 
   override def beforeAll() = {
     System.setProperty("aws.accessKeyId", "someKeyId")
     System.setProperty("aws.secretKey", "someSecretKey")
   }
 
-  "DynamoDB Client" should {
+  "DynamoDB with external client" should {
 
     import DynamoImplicits._
     import ItemSpecOps._
 
+    implicit val client = DynamoClient(settings)
+
     "1) list zero tables" in {
-      client.single(listTablesRequest).map(_.getTableNames.asScala.count(_ == tableName) shouldBe 0)
+      DynamoDbExternal.single(listTablesRequest).map(_.getTableNames.asScala.count(_ == tableName) shouldBe 0)
     }
 
     "2) create a table" in {
-      client.single(createTableRequest).map(_.getTableDescription.getTableStatus shouldBe "ACTIVE")
+      DynamoDbExternal.single(createTableRequest).map(_.getTableDescription.getTableStatus shouldBe "ACTIVE")
     }
 
     "3) find a new table" in {
-      client.single(listTablesRequest).map(_.getTableNames.asScala.count(_ == tableName) shouldBe 1)
+      DynamoDbExternal.single(listTablesRequest).map(_.getTableNames.asScala.count(_ == tableName) shouldBe 1)
     }
 
     "4) put an item and read it back" in {
-      client
+      DynamoDbExternal
         .single(test4PutItemRequest)
-        .flatMap(_ => client.single(getItemRequest))
+        .flatMap(_ => DynamoDbExternal.single(getItemRequest))
         .map(_.getItem.get("data").getS shouldEqual "test4data")
     }
 
     "5) put two items in a batch" in {
-      client.single(batchWriteItemRequest).map(_.getUnprocessedItems.size() shouldEqual 0)
+      DynamoDbExternal.single(batchWriteItemRequest).map(_.getUnprocessedItems.size() shouldEqual 0)
     }
 
     "6) query two items with page size equal to 1" in {
-      client
+      DynamoDbExternal
         .source(queryItemsRequest)
         .filterNot(_.getItems.isEmpty)
         .map(_.getItems)
@@ -71,13 +72,16 @@ class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike w
     }
 
     "7) delete an item" in {
-      client.single(deleteItemRequest).flatMap(_ => client.single(getItemRequest)).map(_.getItem() shouldEqual null)
+      DynamoDbExternal
+        .single(deleteItemRequest)
+        .flatMap(_ => DynamoDbExternal.single(getItemRequest))
+        .map(_.getItem() shouldEqual null)
     }
 
     "8) delete table" in {
-      client
+      DynamoDbExternal
         .single(deleteTableRequest)
-        .flatMap(_ => client.single(listTablesRequest))
+        .flatMap(_ => DynamoDbExternal.single(listTablesRequest))
         .map(_.getTableNames.asScala.count(_ == tableName) shouldEqual 0)
     }
 
