@@ -47,7 +47,9 @@ object Common extends AutoPlugin {
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
     // -a Show stack traces and exception class name for AssertionErrors.
-    testOptions in Test += Tests.Argument(TestFrameworks.JUnit, "-a"),
+    // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
+    // -q Suppress stdout for successful tests.
+    testOptions in Test += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-q"),
     // By default scalatest futures time out in 150 ms, dilate that to 600ms.
     // This should not impact the total test time as we don't expect to hit this
     // timeout.
