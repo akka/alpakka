@@ -127,46 +127,21 @@ object Connect {
   type ProtocolLevel = Int
   val v311: ProtocolLevel = 4
 
+  val DefaultConnectTimeout: FiniteDuration =
+    60.seconds
+
   /**
    * Conveniently create a connect object without credentials.
    */
   def apply(clientId: String, connectFlags: ConnectFlags): Connect =
-    new Connect(Mqtt, v311, clientId, connectFlags, 60.seconds, None, None, None, None)
-
-  /**
-   * Java API
-   *
-   * Conveniently create a connect object without credentials.
-   */
-  def create(clientId: String, connectFlags: ConnectFlags): Connect =
-    Connect(clientId, connectFlags)
+    new Connect(clientId, connectFlags)
 
   /**
    * Conveniently create a connect object with credentials. This function will also set the
    * corresponding username and password flags.
    */
   def apply(clientId: String, extraConnectFlags: ConnectFlags, username: String, password: String): Connect =
-    new Connect(
-      Mqtt,
-      v311,
-      clientId,
-      extraConnectFlags | ConnectFlags.UsernameFlag | ConnectFlags.PasswordFlag,
-      60.seconds,
-      None,
-      None,
-      Some(username),
-      Some(password)
-    )
-
-  /**
-   * Java API
-   *
-   * Conveniently create a connect object with credentials. This function will also set the
-   * corresponding username and password flags.
-   */
-  def create(clientId: String, extraConnectFlags: ConnectFlags, username: String, password: String): Connect =
-    Connect(clientId, extraConnectFlags, username, password)
-
+    new Connect(clientId, extraConnectFlags, username, password)
 }
 
 /**
@@ -182,7 +157,31 @@ final case class Connect(protocolName: Connect.ProtocolName,
                          willMessage: Option[String],
                          username: Option[String],
                          password: Option[String])
-    extends ControlPacket(ControlPacketType.CONNECT, ControlPacketFlags.ReservedGeneral)
+    extends ControlPacket(ControlPacketType.CONNECT, ControlPacketFlags.ReservedGeneral) {
+
+  /**
+   * Conveniently create a connect object without credentials.
+   */
+  def this(clientId: String, connectFlags: ConnectFlags) =
+    this(Connect.Mqtt, Connect.v311, clientId, connectFlags, Connect.DefaultConnectTimeout, None, None, None, None)
+
+  /**
+   * Conveniently create a connect object with credentials. This function will also set the
+   * corresponding username and password flags.
+   */
+  def this(clientId: String, extraConnectFlags: ConnectFlags, username: String, password: String) =
+    this(
+      Connect.Mqtt,
+      Connect.v311,
+      clientId,
+      extraConnectFlags | ConnectFlags.UsernameFlag | ConnectFlags.PasswordFlag,
+      Connect.DefaultConnectTimeout,
+      None,
+      None,
+      Some(username),
+      Some(password)
+    )
+}
 
 object ConnAckFlags {
   val None = ConnAckFlags(0)
@@ -236,15 +235,7 @@ object Publish {
    * Conveniently create a publish message with at least once delivery
    */
   def apply(topicName: String, packetId: PacketId, payload: ByteString): Publish =
-    Publish(ControlPacketFlags.QoSAtLeastOnceDelivery, topicName, Some(packetId), payload)
-
-  /**
-   * JAVA API
-   *
-   * Conveniently create a publish message with at least once delivery
-   */
-  def create(topicName: String, packetId: PacketId, payload: ByteString): Publish =
-    Publish(topicName, packetId, payload)
+    new Publish(topicName, packetId, payload)
 }
 
 /**
@@ -255,7 +246,14 @@ final case class Publish(override val flags: ControlPacketFlags,
                          topicName: String,
                          packetId: Option[PacketId],
                          payload: ByteString)
-    extends ControlPacket(ControlPacketType.PUBLISH, flags)
+    extends ControlPacket(ControlPacketType.PUBLISH, flags) {
+
+  /**
+   * Conveniently create a publish message with at least once delivery
+   */
+  def this(topicName: String, packetId: PacketId, payload: ByteString) =
+    this(ControlPacketFlags.QoSAtLeastOnceDelivery, topicName, Some(packetId), payload)
+}
 
 /**
  * 3.4 PUBACK – Publish acknowledgement
@@ -291,15 +289,7 @@ object Subscribe {
    *  A convenience for subscribing to a single topic with at-least-once semantics
    */
   def apply(packetId: PacketId, topicFilter: String): Subscribe =
-    Subscribe(packetId, List(topicFilter -> ControlPacketFlags.QoSAtLeastOnceDelivery))
-
-  /**
-   * Java API
-   *
-   * A convenience for subscribing to a single topic with at-least-once semantics
-   */
-  def create(packetId: PacketId, topicFilter: String): Subscribe =
-    Subscribe(packetId, topicFilter)
+    new Subscribe(packetId, topicFilter)
 }
 
 /**
@@ -307,7 +297,23 @@ object Subscribe {
  * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class Subscribe(packetId: PacketId, topicFilters: Seq[(String, ControlPacketFlags)])
-    extends ControlPacket(ControlPacketType.SUBSCRIBE, ControlPacketFlags.ReservedSubscribe)
+    extends ControlPacket(ControlPacketType.SUBSCRIBE, ControlPacketFlags.ReservedSubscribe) {
+
+  /**
+   * A convenience for subscribing to a single topic with at-least-once semantics
+   */
+  def this(packetId: PacketId, topicFilter: String) =
+    this(packetId, List(topicFilter -> ControlPacketFlags.QoSAtLeastOnceDelivery))
+
+  /**
+   * JAVA API
+   *
+   * 3.8 SUBSCRIBE - Subscribe to topics
+   * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
+   */
+  def this(packetId: PacketId, topicFilters: java.util.List[(String, Integer)]) =
+    this(packetId, topicFilters.asScala.map(v => v._1 -> ControlPacketFlags(v._2)))
+}
 
 /**
  * 3.9 SUBACK – Subscribe acknowledgement
@@ -329,18 +335,10 @@ final case class SubAck(packetId: PacketId, returnCodes: Seq[ControlPacketFlags]
 object Unsubscribe {
 
   /**
-   *  A convenience for unsubscribing from a single topic
+   * A convenience for unsubscribing from a single topic
    */
   def apply(packetId: PacketId, topicFilter: String): Unsubscribe =
-    Unsubscribe(packetId, List(topicFilter))
-
-  /**
-   * JAVA API
-   *
-   *  A convenience for unsubscribing from a single topic
-   */
-  def create(packetId: PacketId, topicFilter: String): Unsubscribe =
-    Unsubscribe(packetId, topicFilter)
+    new Unsubscribe(packetId, topicFilter)
 }
 
 /**
@@ -348,7 +346,23 @@ object Unsubscribe {
  * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class Unsubscribe(packetId: PacketId, topicFilters: Seq[String])
-    extends ControlPacket(ControlPacketType.UNSUBSCRIBE, ControlPacketFlags.ReservedUnsubscribe)
+    extends ControlPacket(ControlPacketType.UNSUBSCRIBE, ControlPacketFlags.ReservedUnsubscribe) {
+
+  /**
+   * A convenience for unsubscribing from a single topic
+   */
+  def this(packetId: PacketId, topicFilter: String) =
+    this(packetId, List(topicFilter))
+
+  /**
+   * JAVA API
+   *
+   * 3.10 UNSUBSCRIBE – Unsubscribe from topics
+   * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
+   */
+  def this(packetId: PacketId, topicFilters: java.util.List[String]) =
+    this(packetId, topicFilters.asScala)
+}
 
 /**
  * 3.11 UNSUBACK – Unsubscribe acknowledgement

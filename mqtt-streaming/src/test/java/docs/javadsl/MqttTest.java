@@ -79,8 +79,8 @@ public class MqttTest {
                             Patterns.ask(server.ref(), msg, timeout)
                                 .mapTo(classTag(ByteString.class))));
 
-        Connect connect = Connect.create("some-client-id", ConnectFlags.None());
-        Subscribe subscribe = Subscribe.create(0, "some-topic");
+        Connect connect = new Connect("some-client-id", ConnectFlags.None());
+        Subscribe subscribe = new Subscribe(0, "some-topic");
 
         CompletionStage<List<MqttCodec.ControlPacketResult>> result =
             Source.from(Stream.<ControlPacket>of(connect, subscribe).collect(Collectors.toList()))
@@ -101,7 +101,7 @@ public class MqttTest {
         ByteString subAckBytes =
             new MqttCodec.MqttSubAck(subAck).encode(ByteString.createBuilder()).result();
 
-        Publish publish = Publish.create("some-topic", 0, ByteString.fromString("some-payload"));
+        Publish publish = new Publish("some-topic", 0, ByteString.fromString("some-payload"));
         ByteString publishBytes =
             new MqttCodec.MqttPublish(publish).encode(ByteString.createBuilder()).result();
 
