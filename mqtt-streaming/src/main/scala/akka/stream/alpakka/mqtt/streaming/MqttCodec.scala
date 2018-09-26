@@ -5,7 +5,7 @@
 package akka.stream.alpakka.mqtt.streaming
 import java.nio.ByteOrder
 import java.nio.charset.StandardCharsets
-import java.util.NoSuchElementException
+import java.util.{NoSuchElementException, Optional}
 import java.util.concurrent.TimeUnit
 
 import akka.stream.alpakka.mqtt.streaming.Connect.ProtocolLevel
@@ -13,6 +13,7 @@ import akka.util.{ByteIterator, ByteString, ByteStringBuilder}
 
 import scala.annotation.tailrec
 import scala.concurrent.duration._
+import scala.collection.JavaConverters._
 
 /**
  * 2.2.1 MQTT Control Packet type
@@ -236,6 +237,14 @@ object Publish {
    */
   def apply(topicName: String, packetId: PacketId, payload: ByteString): Publish =
     Publish(ControlPacketFlags.QoSAtLeastOnceDelivery, topicName, Some(packetId), payload)
+
+  /**
+   * JAVA API
+   *
+   * Conveniently create a publish message with at least once delivery
+   */
+  def create(topicName: String, packetId: PacketId, payload: ByteString): Publish =
+    Publish(topicName, packetId, payload)
 }
 
 /**
@@ -305,7 +314,17 @@ final case class Subscribe(packetId: PacketId, topicFilters: Seq[(String, Contro
  * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class SubAck(packetId: PacketId, returnCodes: Seq[ControlPacketFlags])
-    extends ControlPacket(ControlPacketType.SUBACK, ControlPacketFlags.ReservedGeneral)
+    extends ControlPacket(ControlPacketType.SUBACK, ControlPacketFlags.ReservedGeneral) {
+
+  /**
+   * JAVA API
+   *
+   * 3.9 SUBACK – Subscribe acknowledgement
+   * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
+   */
+  def this(packetId: PacketId, returnCodes: java.util.List[Integer]) =
+    this(packetId, returnCodes.asScala.map(v => ControlPacketFlags(v)))
+}
 
 object Unsubscribe {
 
@@ -443,6 +462,25 @@ object MqttCodec {
    */
   final case class BadUnsubscribeMessage(packetId: PacketId, topicFilters: Seq[Either[DecodeError, String]])
       extends DecodeError
+
+  /**
+   * JAVA API
+   *
+   * Conveniently wraps [[Either[DecodeError, ControlPacket]] as [[Either]] is horrid in Java.
+   */
+  final case class ControlPacketResult(v: Either[DecodeError, ControlPacket]) {
+    def getControlPacket: Optional[ControlPacket] =
+      v match {
+        case Right(cp) => Optional.of(cp)
+        case Left(_) => Optional.empty()
+      }
+
+    def getControlPacketError: Optional[DecodeError] =
+      v match {
+        case Right(_) => Optional.empty()
+        case Left(de) => Optional.of(de)
+      }
+  }
 
   // 1.5.3 UTF-8 encoded strings
   implicit class MqttString(val v: String) extends AnyVal {

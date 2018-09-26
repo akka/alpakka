@@ -5,7 +5,9 @@
 package akka.stream.alpakka.mqtt.streaming
 package javadsl
 import akka.NotUsed
+import akka.stream.alpakka.mqtt.streaming.MqttCodec.{ControlPacketResult, DecodeError}
 import akka.stream.javadsl.BidiFlow
+import akka.stream.scaladsl.{BidiFlow => ScalaBidiFlow}
 import akka.util.ByteString
 
 object Mqtt {
@@ -21,6 +23,12 @@ object Mqtt {
    */
   def sessionFlow(
       settings: SessionFlowSettings
-  ): BidiFlow[ControlPacket, ByteString, ByteString, Either[MqttCodec.DecodeError, ControlPacket], NotUsed] =
-    scaladsl.Mqtt.sessionFlow(settings).asJava
+  ): BidiFlow[ControlPacket, ByteString, ByteString, ControlPacketResult, NotUsed] =
+    ScalaBidiFlow
+      .fromFunctions[ControlPacket, ControlPacket, Either[DecodeError, ControlPacket], ControlPacketResult](
+        identity,
+        ControlPacketResult.apply
+      )
+      .atop(scaladsl.Mqtt.sessionFlow(settings))
+      .asJava
 }
