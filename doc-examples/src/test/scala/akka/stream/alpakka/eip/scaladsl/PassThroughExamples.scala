@@ -80,19 +80,15 @@ object PassThroughFlow {
       {
         import GraphDSL.Implicits._
 
-        Merge
-
         val broadcast = builder.add(Broadcast[A](2))
-        val zip = builder.add(Zip[T, A]())
-        val detuplerizer = builder.add(Flow[(T, A)].map(x => output(x._1, x._2)))
+        val zip = builder.add(ZipWith[T, A, O]((left, right) => output(left, right)))
 
         // format: off
         broadcast.out(0) ~> processingFlow ~> zip.in0
         broadcast.out(1)         ~>           zip.in1
-                                              zip.out ~> detuplerizer
         // format: on
 
-        FlowShape(broadcast.in, detuplerizer.out)
+        FlowShape(broadcast.in, zip.out)
       }
     })
 }
