@@ -287,14 +287,8 @@ private[solr] final class SolrFlowLogic[T, C](
     completeStage()
 
   private def updateBulkToSolr(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
-    val docs = messages
-      .map(
-        message =>
-          message.sourceOpt.map { source: T =>
-            messageBinder(source)
-        }
-      )
-      .flatten
+    val docs = messages.flatMap(_.sourceOpt.map(messageBinder))
+
     if (log.isDebugEnabled) log.debug(s"Upsert $docs")
     client.add(collection, docs.asJava, settings.commitWithin)
   }
@@ -307,13 +301,16 @@ private[solr] final class SolrFlowLogic[T, C](
       }
 
       doc.addField(message.idFieldOpt.get, message.idFieldValueOpt.get)
-      if (client.isInstanceOf[CloudSolrClient]) {
-        if (message.routingFieldValueOpt.isEmpty)
-          throw new IllegalArgumentException("routing field value should be set")
-        val routerField = client.asInstanceOf[CloudSolrClient].getIdField
-        if (routerField != message.idFieldOpt.get)
-          doc.addField(routerField, message.routingFieldValueOpt.get)
+      client match {
+        case csc: CloudSolrClient =>
+          if (message.routingFieldValueOpt.isEmpty)
+            throw new IllegalArgumentException("routing field value should be set")
+          val routerField = csc.getIdField
+          if (routerField != message.idFieldOpt.get)
+            doc.addField(routerField, message.routingFieldValueOpt.get)
+        case _ =>
       }
+
       message.updates.foreach {
         case (field, updates) => {
           val jMap = updates.asInstanceOf[Map[String, Any]].asJava
@@ -344,7 +341,7 @@ private[solr] final class SolrFlowLogic[T, C](
       if (log.isDebugEnabled) log.debug(s"Delete by the query $query")
       client.deleteByQuery(collection, query, settings.commitWithin)
     }
-    responses.filter(r => r.getStatus != 0).headOption.getOrElse(responses.head)
+    responses.find(_.getStatus != 0).getOrElse(responses.head)
   }
 
   private def sendBulkToSolr(messages: Seq[IncomingMessage[T, C]]): Unit = {
@@ -353,7 +350,7 @@ private[solr] final class SolrFlowLogic[T, C](
     def send(toSend: Seq[IncomingMessage[T, C]]): UpdateResponse = {
       val operation = toSend.head.operation
       //Just take a subset of this operation
-      val current = toSend.takeWhile { m =>
+      val (current, remaining) = toSend.partition { m =>
         m.operation == operation
       }
       //send this subset
@@ -363,10 +360,8 @@ private[solr] final class SolrFlowLogic[T, C](
         case DeleteByIds => deleteBulkToSolrByIds(current)
         case DeleteByQuery => deleteEachByQuery(current)
       }
-      //Now take the remaining
-      val remaining = toSend.dropWhile(m => m.operation == operation)
       if (remaining.nonEmpty) {
-        send(remaining) //Important: Not really recursive, because the future breaks the recursion
+        send(remaining)
       } else {
         response
       }
