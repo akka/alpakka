@@ -6,4 +6,4 @@ This adapter provides an Akka Streams interface for **Eventuate Event logs**. It
 ## External library
 
 This library is not maintained in the Alpakka repository.
-Learn more about it at [RedBull Media House's Eventuate](rbmhtechnology.github.io/eventuate/adapters/stream.html).
+Learn more about it at [RedBull Media House's Eventuate](https://rbmhtechnology.github.io/eventuate/adapters/stream.html).
