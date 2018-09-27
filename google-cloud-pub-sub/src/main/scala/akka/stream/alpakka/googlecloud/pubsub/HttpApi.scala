@@ -128,9 +128,13 @@ private trait HttpApi {
     for {
       request <- Marshal((HttpMethods.POST, url, request)).to[HttpRequest]
       response <- doRequest(request, maybeAccessToken)
-      publishResponse <- Unmarshal(response.entity).to[PublishResponse]
-    } yield publishResponse.messageIds
-  }
+    } yield {
+      response.status match {
+        case StatusCodes.OK => Unmarshal(response.entity).to[PublishResponse].map(_.messageIds)
+        case _ => throw new RuntimeException(s"Unexpected publish response. Code: [${response.status}]")
+      }
+    }
+  }.flatMap(identity)(materializer.executionContext)
 
   def getAccessToken(clientEmail: String, privateKey: PrivateKey, when: Instant)(
       implicit as: ActorSystem,
