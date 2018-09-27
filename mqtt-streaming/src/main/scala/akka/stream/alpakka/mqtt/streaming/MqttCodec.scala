@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets
 import java.util.{NoSuchElementException, Optional}
 import java.util.concurrent.TimeUnit
 
+import akka.annotation.InternalApi
 import akka.stream.alpakka.mqtt.streaming.Connect.ProtocolLevel
 import akka.util.{ByteIterator, ByteString, ByteStringBuilder}
 
@@ -232,27 +233,41 @@ final case class ConnAck(connectAckFlags: ConnAckFlags, returnCode: ConnAckRetur
 object Publish {
 
   /**
+   * 3.3 PUBLISH – Publish message
+   * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
+   */
+  def apply(flags: ControlPacketFlags, topicName: String, payload: ByteString): Publish =
+    new Publish(flags, topicName, payload)
+
+  /**
    * Conveniently create a publish message with at least once delivery
    */
-  def apply(topicName: String, packetId: PacketId, payload: ByteString): Publish =
-    new Publish(topicName, packetId, payload)
+  def apply(topicName: String, payload: ByteString): Publish =
+    new Publish(topicName, payload)
 }
 
 /**
  * 3.3 PUBLISH – Publish message
  * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
-final case class Publish(override val flags: ControlPacketFlags,
-                         topicName: String,
-                         packetId: Option[PacketId],
-                         payload: ByteString)
+final case class Publish @InternalApi private[streaming] (override val flags: ControlPacketFlags,
+                                                          topicName: String,
+                                                          packetId: Option[PacketId],
+                                                          payload: ByteString)
     extends ControlPacket(ControlPacketType.PUBLISH, flags) {
+
+  /**
+   * 3.3 PUBLISH – Publish message
+   * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
+   */
+  def this(flags: ControlPacketFlags, topicName: String, payload: ByteString) =
+    this(flags, topicName, None, payload)
 
   /**
    * Conveniently create a publish message with at least once delivery
    */
-  def this(topicName: String, packetId: PacketId, payload: ByteString) =
-    this(ControlPacketFlags.QoSAtLeastOnceDelivery, topicName, Some(packetId), payload)
+  def this(topicName: String, payload: ByteString) =
+    this(ControlPacketFlags.QoSAtLeastOnceDelivery, topicName, Some(PacketId(0)), payload)
 }
 
 /**
@@ -286,24 +301,33 @@ final case class PubComp(packetId: PacketId)
 object Subscribe {
 
   /**
+   * 3.8 SUBSCRIBE - Subscribe to topics
+   * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
+   */
+  def apply(topicFilters: Seq[(String, ControlPacketFlags)]): Subscribe =
+    new Subscribe(topicFilters)
+
+  /**
    *  A convenience for subscribing to a single topic with at-least-once semantics
    */
-  def apply(packetId: PacketId, topicFilter: String): Subscribe =
-    new Subscribe(packetId, topicFilter)
+  def apply(topicFilter: String): Subscribe =
+    new Subscribe(topicFilter)
 }
 
 /**
  * 3.8 SUBSCRIBE - Subscribe to topics
  * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
-final case class Subscribe(packetId: PacketId, topicFilters: Seq[(String, ControlPacketFlags)])
+final case class Subscribe @InternalApi private[streaming] (packetId: PacketId,
+                                                            topicFilters: Seq[(String, ControlPacketFlags)])
     extends ControlPacket(ControlPacketType.SUBSCRIBE, ControlPacketFlags.ReservedSubscribe) {
 
   /**
-   * A convenience for subscribing to a single topic with at-least-once semantics
+   * 3.8 SUBSCRIBE - Subscribe to topics
+   * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
    */
-  def this(packetId: PacketId, topicFilter: String) =
-    this(packetId, List(topicFilter -> ControlPacketFlags.QoSAtLeastOnceDelivery))
+  def this(topicFilters: Seq[(String, ControlPacketFlags)]) =
+    this(PacketId(0), topicFilters)
 
   /**
    * JAVA API
@@ -311,8 +335,14 @@ final case class Subscribe(packetId: PacketId, topicFilters: Seq[(String, Contro
    * 3.8 SUBSCRIBE - Subscribe to topics
    * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
    */
-  def this(packetId: PacketId, topicFilters: java.util.List[(String, Integer)]) =
-    this(packetId, topicFilters.asScala.map(v => v._1 -> ControlPacketFlags(v._2)))
+  def this(topicFilters: java.util.List[(String, Integer)]) =
+    this(PacketId(0), topicFilters.asScala.map(v => v._1 -> ControlPacketFlags(v._2)))
+
+  /**
+   * A convenience for subscribing to a single topic with at-least-once semantics
+   */
+  def this(topicFilter: String) =
+    this(PacketId(0), List(topicFilter -> ControlPacketFlags.QoSAtLeastOnceDelivery))
 }
 
 /**
@@ -335,24 +365,32 @@ final case class SubAck(packetId: PacketId, returnCodes: Seq[ControlPacketFlags]
 object Unsubscribe {
 
   /**
+   * 3.10 UNSUBSCRIBE – Unsubscribe from topics
+   * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
+   */
+  def apply(topicFilters: Seq[String]): Unsubscribe =
+    new Unsubscribe(topicFilters)
+
+  /**
    * A convenience for unsubscribing from a single topic
    */
-  def apply(packetId: PacketId, topicFilter: String): Unsubscribe =
-    new Unsubscribe(packetId, topicFilter)
+  def apply(topicFilter: String): Unsubscribe =
+    new Unsubscribe(topicFilter)
 }
 
 /**
  * 3.10 UNSUBSCRIBE – Unsubscribe from topics
  * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
-final case class Unsubscribe(packetId: PacketId, topicFilters: Seq[String])
+final case class Unsubscribe @InternalApi private[streaming] (packetId: PacketId, topicFilters: Seq[String])
     extends ControlPacket(ControlPacketType.UNSUBSCRIBE, ControlPacketFlags.ReservedUnsubscribe) {
 
   /**
-   * A convenience for unsubscribing from a single topic
+   * 3.10 UNSUBSCRIBE – Unsubscribe from topics
+   * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
    */
-  def this(packetId: PacketId, topicFilter: String) =
-    this(packetId, List(topicFilter))
+  def this(topicFilters: Seq[String]) =
+    this(PacketId(0), topicFilters)
 
   /**
    * JAVA API
@@ -360,8 +398,14 @@ final case class Unsubscribe(packetId: PacketId, topicFilters: Seq[String])
    * 3.10 UNSUBSCRIBE – Unsubscribe from topics
    * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
    */
-  def this(packetId: PacketId, topicFilters: java.util.List[String]) =
-    this(packetId, topicFilters.asScala)
+  def this(topicFilters: java.util.List[String]) =
+    this(PacketId(0), topicFilters.asScala)
+
+  /**
+   * A convenience for unsubscribing from a single topic
+   */
+  def this(topicFilter: String) =
+    this(PacketId(0), List(topicFilter))
 }
 
 /**
@@ -563,11 +607,11 @@ object MqttCodec {
 
   // 3.3 PUBLISH – Publish message
   implicit class MqttPublish(val v: Publish) extends AnyVal {
-    def encode(bsb: ByteStringBuilder): ByteStringBuilder = {
+    def encode(bsb: ByteStringBuilder, packetId: Option[PacketId]): ByteStringBuilder = {
       val packetBsb = ByteString.newBuilder
       // Variable header
       v.topicName.encode(packetBsb)
-      v.packetId.foreach(pi => packetBsb.putShort(pi.underlying.toShort))
+      packetId.foreach(pi => packetBsb.putShort(pi.underlying.toShort))
       // Payload
       packetBsb.append(v.payload)
       // Fixed header
@@ -614,10 +658,10 @@ object MqttCodec {
 
   // 3.8 SUBSCRIBE - Subscribe to topics
   implicit class MqttSubscribe(val v: Subscribe) extends AnyVal {
-    def encode(bsb: ByteStringBuilder): ByteStringBuilder = {
+    def encode(bsb: ByteStringBuilder, packetId: PacketId): ByteStringBuilder = {
       val packetBsb = ByteString.newBuilder
       // Variable header
-      packetBsb.putShort(v.packetId.underlying.toShort)
+      packetBsb.putShort(packetId.underlying.toShort)
       // Payload
       v.topicFilters.foreach {
         case (topicFilter, topicFilterFlags) =>
@@ -648,10 +692,10 @@ object MqttCodec {
 
   // 3.10 UNSUBSCRIBE – Unsubscribe from topics
   implicit class MqttUnsubscribe(val v: Unsubscribe) extends AnyVal {
-    def encode(bsb: ByteStringBuilder): ByteStringBuilder = {
+    def encode(bsb: ByteStringBuilder, packetId: PacketId): ByteStringBuilder = {
       val packetBsb = ByteString.newBuilder
       // Variable header
-      packetBsb.putShort(v.packetId.underlying.toShort)
+      packetBsb.putShort(packetId.underlying.toShort)
       // Payload
       v.topicFilters.foreach(_.encode(packetBsb))
       // Fixed header
@@ -755,7 +799,7 @@ object MqttCodec {
         val l1 = if ((l0 & 0x80) == 0x80) v.getByte & 0xff else 0
         val l2 = if ((l1 & 0x80) == 0x80) v.getByte & 0xff else 0
         val l3 = if ((l2 & 0x80) == 0x80) v.getByte & 0xff else 0
-        val l = ((l3 & 0x7f) << 21) | ((l2 & 0x7f) << 14) | ((l1 & 0x7f) << 7) | (l0 & 0x7f)
+        val l = (l3 << 21) | ((l2 & 0x7f) << 14) | ((l1 & 0x7f) << 7) | (l0 & 0x7f)
         Right(l)
       } catch {
         case _: NoSuchElementException => Left(BufferUnderflow)

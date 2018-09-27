@@ -207,18 +207,17 @@ class MqttCodecSpec extends WordSpec with Matchers {
       val packet = Publish(
         ControlPacketFlags.RETAIN | ControlPacketFlags.QoSAtMostOnceDelivery | ControlPacketFlags.DUP,
         "some-topic-name",
-        None,
         ByteString("some-payload")
       )
-      val bytes = packet.encode(bsb).result()
+      val bytes = packet.encode(bsb, None).result()
       bytes.size shouldBe 31
       bytes.iterator.decodeControlPacket(MaxPacketSize) shouldBe Right(packet)
     }
 
     "encode/decode publish packets with at least once QoS" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
-      val packet = Publish("some-topic-name", PacketId(0), ByteString("some-payload"))
-      val bytes = packet.encode(bsb).result()
+      val packet = Publish("some-topic-name", ByteString("some-payload"))
+      val bytes = packet.encode(bsb, Some(PacketId(0))).result()
       bytes.size shouldBe 33
       bytes.iterator.decodeControlPacket(MaxPacketSize) shouldBe Right(packet)
     }
@@ -304,28 +303,30 @@ class MqttCodecSpec extends WordSpec with Matchers {
 
     "encode/decode subscribe packets" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
-      val packet = Subscribe(PacketId(1),
-                             List("some-head-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery,
-                                  "some-tail-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery))
-      val bytes = packet.encode(bsb).result()
+      val packet = Subscribe(
+        List("some-head-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery,
+             "some-tail-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery)
+      )
+      val bytes = packet.encode(bsb, PacketId(0)).result()
       bytes.size shouldBe 40
       bytes.iterator.decodeControlPacket(MaxPacketSize) shouldBe Right(packet)
     }
 
     "encode/decode subscribe packets with at least once QoS" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
-      val packet = Subscribe(PacketId(0), "some-head-topic")
-      val bytes = packet.encode(bsb).result()
+      val packet = Subscribe("some-head-topic")
+      val bytes = packet.encode(bsb, PacketId(0)).result()
       bytes.size shouldBe 22
       bytes.iterator.decodeControlPacket(MaxPacketSize) shouldBe Right(packet)
     }
 
     "bad subscribe message when decoding subscribe packets given bad QoS" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
-      val packet = Subscribe(PacketId(1),
-                             List("some-head-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery,
-                                  "some-tail-topic" -> ControlPacketFlags.QoSReserved))
-      val bytes = packet.encode(bsb).result()
+      val packet = Subscribe(
+        List("some-head-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery,
+             "some-tail-topic" -> ControlPacketFlags.QoSReserved)
+      )
+      val bytes = packet.encode(bsb, PacketId(1)).result()
       bytes.iterator
         .decodeControlPacket(MaxPacketSize) shouldBe Left(
         BadSubscribeMessage(PacketId(1),
@@ -336,8 +337,8 @@ class MqttCodecSpec extends WordSpec with Matchers {
 
     "bad subscribe message when decoding subscribe packets given no topics" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
-      val packet = Subscribe(PacketId(1), List.empty)
-      val bytes = packet.encode(bsb).result()
+      val packet = Subscribe(List.empty)
+      val bytes = packet.encode(bsb, PacketId(1)).result()
       bytes.iterator
         .decodeControlPacket(MaxPacketSize) shouldBe Left(
         BadSubscribeMessage(PacketId(1), List.empty)
@@ -383,16 +384,16 @@ class MqttCodecSpec extends WordSpec with Matchers {
 
     "encode/decode unsubscribe packets" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
-      val packet = Unsubscribe(PacketId(0), "some-head-topic")
-      val bytes = packet.encode(bsb).result()
+      val packet = Unsubscribe("some-head-topic")
+      val bytes = packet.encode(bsb, PacketId(0)).result()
       bytes.size shouldBe 21
       bytes.iterator.decodeControlPacket(MaxPacketSize) shouldBe Right(packet)
     }
 
     "bad unsubscribe message when decoding unsubscribe packets given no topics" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
-      val packet = Unsubscribe(PacketId(1), List.empty)
-      val bytes = packet.encode(bsb).result()
+      val packet = Unsubscribe(List.empty)
+      val bytes = packet.encode(bsb, PacketId(1)).result()
       bytes.iterator
         .decodeControlPacket(MaxPacketSize) shouldBe Left(
         BadUnsubscribeMessage(PacketId(1), List.empty)

@@ -24,6 +24,7 @@ import akka.stream.alpakka.mqtt.streaming.ConnectFlags;
 import akka.stream.alpakka.mqtt.streaming.ControlPacket;
 import akka.stream.alpakka.mqtt.streaming.ControlPacketFlags;
 import akka.stream.alpakka.mqtt.streaming.MqttCodec;
+import akka.stream.alpakka.mqtt.streaming.PacketId;
 import akka.stream.alpakka.mqtt.streaming.Publish;
 import akka.stream.alpakka.mqtt.streaming.SessionFlowSettings;
 import akka.stream.alpakka.mqtt.streaming.SubAck;
@@ -40,6 +41,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.compat.java8.FutureConverters;
+import scala.compat.java8.OptionConverters;
 
 import java.util.List;
 import java.util.Optional;
@@ -80,7 +82,7 @@ public class MqttTest {
                                 .mapTo(classTag(ByteString.class))));
 
         Connect connect = new Connect("some-client-id", ConnectFlags.None());
-        Subscribe subscribe = new Subscribe(0, "some-topic");
+        Subscribe subscribe = new Subscribe("some-topic");
 
         CompletionStage<List<MqttCodec.ControlPacketResult>> result =
             Source.from(Stream.<ControlPacket>of(connect, subscribe).collect(Collectors.toList()))
@@ -94,16 +96,20 @@ public class MqttTest {
             new MqttCodec.MqttConnAck(connAck).encode(ByteString.createBuilder()).result();
 
         ByteString subscribeBytes =
-            new MqttCodec.MqttSubscribe(subscribe).encode(ByteString.createBuilder()).result();
+            new MqttCodec.MqttSubscribe(subscribe).encode(ByteString.createBuilder(), 0).result();
         List<Integer> collect =
             Stream.of(ControlPacketFlags.QoSAtLeastOnceDelivery()).collect(Collectors.toList());
         SubAck subAck = new SubAck(0, collect);
         ByteString subAckBytes =
             new MqttCodec.MqttSubAck(subAck).encode(ByteString.createBuilder()).result();
 
-        Publish publish = new Publish("some-topic", 0, ByteString.fromString("some-payload"));
+        Publish publish = new Publish("some-topic", ByteString.fromString("some-payload"));
         ByteString publishBytes =
-            new MqttCodec.MqttPublish(publish).encode(ByteString.createBuilder()).result();
+            new MqttCodec.MqttPublish(publish)
+                .encode(
+                    ByteString.createBuilder(),
+                    OptionConverters.toScala(Optional.of(new PacketId(0))))
+                .result();
 
         server.expectMsg(connectBytes);
         server.reply(connAckBytes);

@@ -37,7 +37,7 @@ class MqttSpec
       val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
 
       val connect = Connect("some-client-id", ConnectFlags.None)
-      val subscribe = Subscribe(PacketId(0), "some-topic")
+      val subscribe = Subscribe("some-topic")
 
       val result =
         Source(List(connect, subscribe))
@@ -52,12 +52,12 @@ class MqttSpec
       val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
       val connAckBytes = connAck.encode(ByteString.newBuilder).result()
 
-      val subscribeBytes = subscribe.encode(ByteString.newBuilder).result()
+      val subscribeBytes = subscribe.encode(ByteString.newBuilder, PacketId(0)).result()
       val subAck = SubAck(PacketId(0), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
       val subAckBytes = subAck.encode(ByteString.newBuilder).result()
 
-      val publish = Publish("some-topic", PacketId(0), ByteString("some-payload"))
-      val publishBytes = publish.encode(ByteString.newBuilder).result()
+      val publish = Publish("some-topic", ByteString("some-payload"))
+      val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(0))).result()
 
       server.expectMsg(connectBytes)
       server.reply(connAckBytes)
