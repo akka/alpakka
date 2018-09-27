@@ -17,7 +17,7 @@ The code in this documentation is compiled against
 * Akka Streams $akka.version$ (@extref[Docs](akka-docs:stream/index.html), [Github](https://github.com/akka/akka))
 * Akka Http $akka-http.version$ (@extref[Docs Scala](akka-http-docs:scala.html), @extref[Docs Java](akka-http-docs:java.html), [Github](https://github.com/akka/akka-http))
 
-Release notes are found at [Github releases](https://github.com/akka/alpakka/releases).
+Release notes are found at @ref:[Release Notes](release-notes/index.md).
 
 If you want to try out a connector that has not yet been released, give @ref[snapshots](other-docs/snapshots.md) a spin which are published after every merged PR.
 
@@ -42,5 +42,6 @@ We want Akka and Alpakka to strive in a welcoming and open atmosphere and expect
 * [Self-contained examples](examples/index.md)
 * [Other documentation resources](other-docs/index.md)
 * [Integration Patterns](patterns.md)
+* [Release notes](release-notes/index.md)
 
 @@@
