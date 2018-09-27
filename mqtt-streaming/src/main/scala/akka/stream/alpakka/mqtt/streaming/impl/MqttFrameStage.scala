@@ -18,7 +18,7 @@ import scala.collection.immutable
   def frames(
       maxPacketSize: Int,
       bytesReceived: ByteString,
-      bytesToEmit: List[ByteString]
+      bytesToEmit: Vector[ByteString]
   ): Either[IllegalStateException, (immutable.Iterable[ByteString], ByteString)] = {
     import MqttCodec._
 
@@ -74,7 +74,7 @@ import scala.collection.immutable
             val bytes = grab(in)
             bytesReceived = bytesReceived ++ bytes
 
-            frames(maxPacketSize, bytesReceived, List.empty) match {
+            frames(maxPacketSize, bytesReceived, Vector.empty) match {
               case Right((framed, remaining)) =>
                 emitMultiple(out, framed)
                 bytesReceived = remaining

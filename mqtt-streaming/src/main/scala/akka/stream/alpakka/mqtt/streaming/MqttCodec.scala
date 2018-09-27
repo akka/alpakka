@@ -927,8 +927,8 @@ object MqttCodec {
         @tailrec
         def decodeTopicFilters(
             remainingLen: Int,
-            topicFilters: Seq[(Either[DecodeError, String], ControlPacketFlags)]
-        ): Seq[(Either[DecodeError, String], ControlPacketFlags)] =
+            topicFilters: Vector[(Either[DecodeError, String], ControlPacketFlags)]
+        ): Vector[(Either[DecodeError, String], ControlPacketFlags)] =
           if (remainingLen > 0) {
             val packetLenAtTopicFilter = v.len
             val topicFilter = (v.decodeString(), ControlPacketFlags(v.getByte & 0xff))
@@ -936,7 +936,7 @@ object MqttCodec {
           } else {
             topicFilters
           }
-        val topicFilters = decodeTopicFilters(l - (packetLen - v.len), List.empty)
+        val topicFilters = decodeTopicFilters(l - (packetLen - v.len), Vector.empty)
         val topicFiltersValid = topicFilters.nonEmpty && topicFilters.foldLeft(true) {
           case (true, (Right(_), tff)) if tff.underlying < ControlPacketFlags.QoSReserved.underlying => true
           case _ => false
@@ -959,7 +959,7 @@ object MqttCodec {
         val packetLen = v.len
         val packetId = PacketId(v.getShort & 0xffff)
         @tailrec
-        def decodeReturnCodes(remainingLen: Int, returnCodes: Seq[ControlPacketFlags]): Seq[ControlPacketFlags] =
+        def decodeReturnCodes(remainingLen: Int, returnCodes: Vector[ControlPacketFlags]): Vector[ControlPacketFlags] =
           if (remainingLen > 0) {
             val packetLenAtTopicFilter = v.len
             val returnCode = ControlPacketFlags(v.getByte & 0xff)
@@ -967,7 +967,7 @@ object MqttCodec {
           } else {
             returnCodes
           }
-        val returnCodes = decodeReturnCodes(l - (packetLen - v.len), List.empty)
+        val returnCodes = decodeReturnCodes(l - (packetLen - v.len), Vector.empty)
         val returnCodesValid = returnCodes.nonEmpty && returnCodes.foldLeft(true) {
           case (true, rc) if rc.underlying < ControlPacketFlags.QoSReserved.underlying => true
           case _ => false
@@ -989,8 +989,8 @@ object MqttCodec {
         @tailrec
         def decodeTopicFilters(
             remainingLen: Int,
-            topicFilters: Seq[Either[DecodeError, String]]
-        ): Seq[Either[DecodeError, String]] =
+            topicFilters: Vector[Either[DecodeError, String]]
+        ): Vector[Either[DecodeError, String]] =
           if (remainingLen > 0) {
             val packetLenAtTopicFilter = v.len
             val topicFilter = v.decodeString()
@@ -998,7 +998,7 @@ object MqttCodec {
           } else {
             topicFilters
           }
-        val topicFilters = decodeTopicFilters(l - (packetLen - v.len), List.empty)
+        val topicFilters = decodeTopicFilters(l - (packetLen - v.len), Vector.empty)
         val topicFiltersValid = topicFilters.nonEmpty && topicFilters.foldLeft(true) {
           case (true, Right(_)) => true
           case _ => false
