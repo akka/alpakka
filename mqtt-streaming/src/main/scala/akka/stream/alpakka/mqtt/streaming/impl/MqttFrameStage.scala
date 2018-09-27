@@ -65,11 +65,11 @@ import scala.collection.immutable
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
 
-      private var bytesReceived = ByteString.empty
-
       setHandler(
         in,
         new InHandler {
+          private var bytesReceived = ByteString.empty
+
           override def onPush(): Unit = {
             val bytes = grab(in)
             bytesReceived = bytesReceived ++ bytes
