@@ -69,6 +69,12 @@ final case class ControlPacketFlags(underlying: Int) extends AnyVal {
     ControlPacketFlags(underlying | rhs.underlying)
 
   /**
+   * Convenience bitwise AND
+   */
+  def &(rhs: ControlPacketFlags): ControlPacketFlags =
+    ControlPacketFlags(underlying & rhs.underlying)
+
+  /**
    * Convenience for testing bits - returns true if all passed in are set
    */
   def contains(bits: ControlPacketFlags): Boolean =
@@ -113,6 +119,12 @@ final case class ConnectFlags(underlying: Int) extends AnyVal {
    */
   def |(rhs: ConnectFlags): ConnectFlags =
     ConnectFlags(underlying | rhs.underlying)
+
+  /**
+   * Convenience bitwise AND
+   */
+  def &(rhs: ConnectFlags): ConnectFlags =
+    ConnectFlags(underlying & rhs.underlying)
 
   /**
    * Convenience for testing bits - returns true if all passed in are set
@@ -215,6 +227,12 @@ final case class ConnAckReturnCode(underlying: Int) extends AnyVal {
    */
   def |(rhs: ConnAckReturnCode): ConnAckReturnCode =
     ConnAckReturnCode(underlying | rhs.underlying)
+
+  /**
+   * Convenience bitwise AND
+   */
+  def &(rhs: ConnAckReturnCode): ConnAckReturnCode =
+    ConnAckReturnCode(underlying & rhs.underlying)
 
   /**
    * Convenience for testing bits - returns true if all passed in are set
