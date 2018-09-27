@@ -149,6 +149,16 @@ object Dependencies {
     )
   )
 
+  val GooglePubSubGrpc = Seq(
+    libraryDependencies ++= Seq(
+      "com.google.api.grpc" % "grpc-google-cloud-pubsub-v1" % "0.12.0" % "protobuf", // ApacheV2
+      "io.grpc" % "grpc-auth" % "1.14.0", // ApacheV2
+      "com.google.auth" % "google-auth-library-oauth2-http" % "0.10.0" // BSD 3-clause
+    )
+  )
+
+  val GooglePubSubGrpcAlpnAgent = "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.7"
+
   val GoogleFcm = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,

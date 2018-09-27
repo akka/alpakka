@@ -1,6 +1,12 @@
 # Google Cloud Pub/Sub
 
-The google cloud pub/sub connector provides a way to connect to google clouds managed pub/sub https://cloud.google.com/pubsub/.
+@@@ note
+Google Cloud Pub/Sub provides many-to-many, asynchronous messaging that decouples senders and receivers.
+
+Further information at the official [Google Cloud documentation website](https://cloud.google.com/pubsub/docs/overview).
+@@@
+
+This connector communicates to Pub/Sub via HTTP requests (i.e. https://pubsub.googleapis.com). For a connector that uses gRPC for the communication, take a look at the alternative @ref[Alpakka Google Cloud Pub/Sub gRPC](google-cloud-pub-sub-grpc.md) connector.
 
 ### Reported issues
 
