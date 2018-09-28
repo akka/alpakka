@@ -25,11 +25,7 @@ object Mqtt {
   def clientSessionFlow(
       settings: SessionFlowSettings
   ): BidiFlow[Command[_], ByteString, ByteString, EventResult, NotUsed] =
-    ScalaBidiFlow
-      .fromFunctions[Command[_], Command[_], Either[DecodeError, Event[_]], EventResult](
-        identity,
-        EventResult.apply
-      )
+    inputOutputConverter
       .atop(scaladsl.Mqtt.clientSessionFlow(settings))
       .asJava
 
@@ -45,11 +41,17 @@ object Mqtt {
   def serverSessionFlow(
       settings: SessionFlowSettings
   ): BidiFlow[Command[_], ByteString, ByteString, EventResult, NotUsed] =
+    inputOutputConverter
+      .atop(scaladsl.Mqtt.serverSessionFlow(settings))
+      .asJava
+
+  /*
+   * Converts Java inputs to Scala, and vice-versa.
+   */
+  private val inputOutputConverter =
     ScalaBidiFlow
       .fromFunctions[Command[_], Command[_], Either[DecodeError, Event[_]], EventResult](
         identity,
         EventResult.apply
       )
-      .atop(scaladsl.Mqtt.serverSessionFlow(settings))
-      .asJava
 }
