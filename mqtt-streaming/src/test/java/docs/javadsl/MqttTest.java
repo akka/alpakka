@@ -24,7 +24,7 @@ import akka.stream.alpakka.mqtt.streaming.Connect;
 import akka.stream.alpakka.mqtt.streaming.ConnectFlags;
 import akka.stream.alpakka.mqtt.streaming.ControlPacketFlags;
 import akka.stream.alpakka.mqtt.streaming.Event;
-import akka.stream.alpakka.mqtt.streaming.EventResult;
+import akka.stream.alpakka.mqtt.streaming.DecodeErrorOrEvent;
 import akka.stream.alpakka.mqtt.streaming.MqttCodec;
 import akka.stream.alpakka.mqtt.streaming.PacketId;
 import akka.stream.alpakka.mqtt.streaming.Publish;
@@ -86,7 +86,7 @@ public class MqttTest {
         Connect connect = new Connect("some-client-id", ConnectFlags.None());
         Subscribe subscribe = new Subscribe("some-topic");
 
-        CompletionStage<List<EventResult>> result =
+        CompletionStage<List<DecodeErrorOrEvent>> result =
             Source.from(
                     Stream.<Command<?>>of(new Command(connect), new Command(subscribe))
                         .collect(Collectors.toList()))
@@ -123,7 +123,8 @@ public class MqttTest {
 
         assertEquals(
             result
-                .thenApply(e -> e.stream().map(EventResult::getEvent).collect(Collectors.toList()))
+                .thenApply(
+                    e -> e.stream().map(DecodeErrorOrEvent::getEvent).collect(Collectors.toList()))
                 .toCompletableFuture()
                 .get(timeout.duration().toSeconds(), TimeUnit.SECONDS),
             Stream.of(

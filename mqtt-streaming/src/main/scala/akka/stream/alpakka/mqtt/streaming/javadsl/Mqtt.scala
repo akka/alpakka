@@ -24,7 +24,7 @@ object Mqtt {
    */
   def clientSessionFlow(
       settings: SessionFlowSettings
-  ): BidiFlow[Command[_], ByteString, ByteString, EventResult, NotUsed] =
+  ): BidiFlow[Command[_], ByteString, ByteString, DecodeErrorOrEvent, NotUsed] =
     inputOutputConverter
       .atop(scaladsl.Mqtt.clientSessionFlow(settings))
       .asJava
@@ -40,7 +40,7 @@ object Mqtt {
    */
   def serverSessionFlow(
       settings: SessionFlowSettings
-  ): BidiFlow[Command[_], ByteString, ByteString, EventResult, NotUsed] =
+  ): BidiFlow[Command[_], ByteString, ByteString, DecodeErrorOrEvent, NotUsed] =
     inputOutputConverter
       .atop(scaladsl.Mqtt.serverSessionFlow(settings))
       .asJava
@@ -50,8 +50,8 @@ object Mqtt {
    */
   private val inputOutputConverter =
     ScalaBidiFlow
-      .fromFunctions[Command[_], Command[_], Either[DecodeError, Event[_]], EventResult](
+      .fromFunctions[Command[_], Command[_], Either[DecodeError, Event[_]], DecodeErrorOrEvent](
         identity,
-        EventResult.apply
+        DecodeErrorOrEvent.apply
       )
 }

@@ -543,17 +543,17 @@ object MqttCodec {
   /**
    * JAVA API
    */
-  final case class ControlPacketResult(v: Either[DecodeError, ControlPacket]) {
+  final case class DecodeErrorOrControlPacket(v: Either[DecodeError, ControlPacket]) {
+    def getDecodeError: Optional[DecodeError] =
+      v match {
+        case Right(_) => Optional.empty()
+        case Left(de) => Optional.of(de)
+      }
+
     def getControlPacket: Optional[ControlPacket] =
       v match {
         case Right(cp) => Optional.of(cp)
         case Left(_) => Optional.empty()
-      }
-
-    def getControlPacketError: Optional[DecodeError] =
-      v match {
-        case Right(_) => Optional.empty()
-        case Left(de) => Optional.of(de)
       }
   }
 
@@ -1130,6 +1130,8 @@ object Event {
 final case class Event[A](event: ControlPacket, carry: Option[A]) {
 
   /**
+   * JAVA API
+   *
    * Receive an event from a MQTT session with optional data to carry through
    * infrom ay related event.
    * @param event The event to receive
@@ -1158,16 +1160,16 @@ final case class Event[A](event: ControlPacket, carry: Option[A]) {
 /**
  * JAVA API
  */
-final case class EventResult(v: Either[MqttCodec.DecodeError, Event[_]]) {
+final case class DecodeErrorOrEvent(v: Either[MqttCodec.DecodeError, Event[_]]) {
+  def getDecodeError: Optional[MqttCodec.DecodeError] =
+    v match {
+      case Right(_) => Optional.empty()
+      case Left(de) => Optional.of(de)
+    }
+
   def getEvent: Optional[Event[_]] =
     v match {
       case Right(e) => Optional.of(e)
       case Left(_) => Optional.empty()
-    }
-
-  def getEventError: Optional[MqttCodec.DecodeError] =
-    v match {
-      case Right(_) => Optional.empty()
-      case Left(de) => Optional.of(de)
     }
 }
