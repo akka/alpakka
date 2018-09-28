@@ -69,14 +69,10 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
         if (isAvailable(out)) pullIfNeeded()
       }
 
-      override def connectionFailed(ex: Throwable): Unit = ex match {
-        case _: jms.JMSException =>
-          jmsSessions = Seq.empty
-          jmsProducers.clear()
-          currentJmsProducerEpoch += 1
-          initSessionAsync()
-        case _ =>
-          failStage(ex)
+      override def connectionFailed(ex: Throwable): Unit = {
+        jmsProducers.clear()
+        currentJmsProducerEpoch += 1
+        super.connectionFailed(ex)
       }
 
       setHandler(out, new OutHandler {

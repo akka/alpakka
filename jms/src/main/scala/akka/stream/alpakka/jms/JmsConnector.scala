@@ -41,6 +41,17 @@ private[jms] trait JmsConnector[S <: JmsSession] {
 
   private val connectionFailedCB: AsyncCallback[Throwable] = getAsyncCallback[Throwable](e => connectionFailed(e))
 
+  def connectionFailed(ex: Throwable): Unit = {
+    jmsConnection = Future.failed(ex)
+    ex match {
+      case _: jms.JMSException =>
+        jmsSessions = Seq.empty
+        initSessionAsync()
+      case _ =>
+        failStage(ex)
+    }
+  }
+
   private val onSession: AsyncCallback[S] = getAsyncCallback[S] { session =>
     jmsSessions :+= session
     onSessionOpened(session)
@@ -73,8 +84,6 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     // reduces flakiness (start, consume, then crash) at the cost of increased latency of startup.
     allSessions.foreach(_.foreach(onSession.invoke))
   }
-
-  def connectionFailed(ex: Throwable): Unit
 
   def openSessions(): Future[Seq[S]]
 
@@ -171,14 +180,6 @@ private[jms] trait JmsConsumerConnector extends JmsConnector[JmsConsumerSession]
           yield Future(createSession(connection, destination.create))
       Future.sequence(sessionFutures)
     }(ExecutionContexts.sameThreadExecutionContext)
-
-  override def connectionFailed(ex: Throwable): Unit = ex match {
-    case _: jms.JMSException =>
-      jmsSessions = Seq.empty
-      initSessionAsync()
-    case _ =>
-      failStage(ex)
-  }
 }
 
 private[jms] trait JmsProducerConnector extends JmsConnector[JmsProducerSession] { this: GraphStageLogic =>
