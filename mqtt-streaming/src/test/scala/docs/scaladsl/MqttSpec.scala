@@ -6,7 +6,7 @@ package docs.scaladsl
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.stream.alpakka.mqtt.streaming._
-import akka.stream.alpakka.mqtt.streaming.scaladsl.Mqtt
+import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, Mqtt}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit._
@@ -26,7 +26,8 @@ class MqttSpec
   implicit val mat: Materializer = ActorMaterializer()
   implicit val timeout: Timeout = Timeout(3.seconds.dilated)
 
-  val settings = SessionFlowSettings(100)
+  val settings = MqttSessionSettings(100)
+  val session = ActorMqttClientSession(settings)
 
   "MQTT connector" should {
 
@@ -43,7 +44,7 @@ class MqttSpec
         Source(List(Command(connect), Command(subscribe)))
           .via(
             Mqtt
-              .clientSessionFlow(settings)
+              .clientSessionFlow(session)
               .join(pipeToServer)
           )
           .runWith(Sink.collection)

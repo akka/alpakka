@@ -28,9 +28,10 @@ import akka.stream.alpakka.mqtt.streaming.DecodeErrorOrEvent;
 import akka.stream.alpakka.mqtt.streaming.MqttCodec;
 import akka.stream.alpakka.mqtt.streaming.PacketId;
 import akka.stream.alpakka.mqtt.streaming.Publish;
-import akka.stream.alpakka.mqtt.streaming.SessionFlowSettings;
+import akka.stream.alpakka.mqtt.streaming.MqttSessionSettings;
 import akka.stream.alpakka.mqtt.streaming.SubAck;
 import akka.stream.alpakka.mqtt.streaming.Subscribe;
+import akka.stream.alpakka.mqtt.streaming.javadsl.ActorMqttClientSession;
 import akka.stream.alpakka.mqtt.streaming.javadsl.Mqtt;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
@@ -60,7 +61,8 @@ public class MqttTest {
 
   private Timeout timeout = new Timeout(3, TimeUnit.SECONDS);
 
-  private SessionFlowSettings settings = SessionFlowSettings.create(100);
+  private MqttSessionSettings settings = MqttSessionSettings.create(100);
+  private ActorMqttClientSession session = new ActorMqttClientSession(settings);
 
   @BeforeClass
   public static void setUpBeforeClass() {
@@ -90,7 +92,7 @@ public class MqttTest {
             Source.from(
                     Stream.<Command<?>>of(new Command(connect), new Command(subscribe))
                         .collect(Collectors.toList()))
-                .via(Mqtt.clientSessionFlow(settings).join(pipeToServer))
+                .via(Mqtt.clientSessionFlow(session).join(pipeToServer))
                 .runWith(Sink.seq(), mat);
 
         ByteString connectBytes =

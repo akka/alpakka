@@ -19,14 +19,14 @@ object Mqtt {
    * [[ByteString]] payloads and independently produces [[ByteString]] payloads e.g.
    * an MQTT server.
    *
-   * @param settings settings for the session
+   * @param session the client session to use
    * @return the bidirectional flow
    */
   def clientSessionFlow(
-      settings: SessionFlowSettings
+      session: MqttClientSession
   ): BidiFlow[Command[_], ByteString, ByteString, DecodeErrorOrEvent, NotUsed] =
     inputOutputConverter
-      .atop(scaladsl.Mqtt.clientSessionFlow(settings))
+      .atop(scaladsl.Mqtt.clientSessionFlow(session.underlying))
       .asJava
 
   /**
@@ -35,14 +35,14 @@ object Mqtt {
    * [[ByteString]] payloads and independently produces [[ByteString]] payloads e.g.
    * an MQTT server.
    *
-   * @param settings settings for the session
+   * @param session the server session to use
    * @return the bidirectional flow
    */
   def serverSessionFlow(
-      settings: SessionFlowSettings
+      session: MqttServerSession
   ): BidiFlow[Command[_], ByteString, ByteString, DecodeErrorOrEvent, NotUsed] =
     inputOutputConverter
-      .atop(scaladsl.Mqtt.serverSessionFlow(settings))
+      .atop(scaladsl.Mqtt.serverSessionFlow(session.underlying))
       .asJava
 
   /*
