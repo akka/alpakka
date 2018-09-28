@@ -16,13 +16,15 @@ import static org.junit.Assert.assertEquals;
 import akka.pattern.Patterns;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.mqtt.streaming.Command;
 import akka.stream.alpakka.mqtt.streaming.ConnAck;
 import akka.stream.alpakka.mqtt.streaming.ConnAckFlags;
 import akka.stream.alpakka.mqtt.streaming.ConnAckReturnCode;
 import akka.stream.alpakka.mqtt.streaming.Connect;
 import akka.stream.alpakka.mqtt.streaming.ConnectFlags;
-import akka.stream.alpakka.mqtt.streaming.ControlPacket;
 import akka.stream.alpakka.mqtt.streaming.ControlPacketFlags;
+import akka.stream.alpakka.mqtt.streaming.Event;
+import akka.stream.alpakka.mqtt.streaming.EventResult;
 import akka.stream.alpakka.mqtt.streaming.MqttCodec;
 import akka.stream.alpakka.mqtt.streaming.PacketId;
 import akka.stream.alpakka.mqtt.streaming.Publish;
@@ -67,7 +69,7 @@ public class MqttTest {
   }
 
   @Test
-  public void flowThroughASession()
+  public void flowThroughAClientSession()
       throws InterruptedException, ExecutionException, TimeoutException {
     new TestKit(sys) {
       {
@@ -84,9 +86,11 @@ public class MqttTest {
         Connect connect = new Connect("some-client-id", ConnectFlags.None());
         Subscribe subscribe = new Subscribe("some-topic");
 
-        CompletionStage<List<MqttCodec.ControlPacketResult>> result =
-            Source.from(Stream.<ControlPacket>of(connect, subscribe).collect(Collectors.toList()))
-                .via(Mqtt.sessionFlow(settings).join(pipeToServer))
+        CompletionStage<List<EventResult>> result =
+            Source.from(
+                    Stream.<Command<?>>of(new Command(connect), new Command(subscribe))
+                        .collect(Collectors.toList()))
+                .via(Mqtt.clientSessionFlow(settings).join(pipeToServer))
                 .runWith(Sink.seq(), mat);
 
         ByteString connectBytes =
@@ -119,14 +123,13 @@ public class MqttTest {
 
         assertEquals(
             result
-                .thenApply(
-                    e ->
-                        e.stream()
-                            .map(MqttCodec.ControlPacketResult::getControlPacket)
-                            .collect(Collectors.toList()))
+                .thenApply(e -> e.stream().map(EventResult::getEvent).collect(Collectors.toList()))
                 .toCompletableFuture()
                 .get(timeout.duration().toSeconds(), TimeUnit.SECONDS),
-            Stream.of(Optional.of(connAck), Optional.of(subAck), Optional.of(publish))
+            Stream.of(
+                    Optional.of(new Event(connAck)),
+                    Optional.of(new Event(subAck)),
+                    Optional.of(new Event(publish)))
                 .collect(Collectors.toList()));
       }
     };

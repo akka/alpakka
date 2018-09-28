@@ -30,7 +30,7 @@ class MqttSpec
 
   "MQTT connector" should {
 
-    "flow through a session" in {
+    "flow through a client session" in {
       import MqttCodec._
 
       val server = TestProbe()
@@ -40,10 +40,10 @@ class MqttSpec
       val subscribe = Subscribe("some-topic")
 
       val result =
-        Source(List(connect, subscribe))
+        Source(List(Command(connect), Command(subscribe)))
           .via(
             Mqtt
-              .sessionFlow(settings)
+              .clientSessionFlow(settings)
               .join(pipeToServer)
           )
           .runWith(Sink.collection)
@@ -65,7 +65,7 @@ class MqttSpec
       server.expectMsg(subscribeBytes)
       server.reply(subAckBytes ++ publishBytes)
 
-      result.futureValue shouldBe List(Right(connAck), Right(subAck), Right(publish))
+      result.futureValue shouldBe List(Right(Event(connAck)), Right(Event(subAck)), Right(Event(publish)))
     }
   }
 

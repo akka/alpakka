@@ -13,7 +13,7 @@ import akka.util.ByteString
 object Mqtt {
 
   /**
-   * Create a bidirectional flow that maintains session state with an MQTT endpoint.
+   * Create a bidirectional flow that maintains client session state with an MQTT endpoint.
    * The bidirectional flow can be joined with an endpoint flow that receives
    * [[ByteString]] payloads and independently produces [[ByteString]] payloads e.g.
    * an MQTT server.
@@ -21,34 +21,62 @@ object Mqtt {
    * @param settings settings for the session
    * @return the bidirectional flow
    */
-  def sessionFlow(
+  def clientSessionFlow(
       settings: SessionFlowSettings
-  ): BidiFlow[ControlPacket, ByteString, ByteString, Either[MqttCodec.DecodeError, ControlPacket], NotUsed] = {
+  ): BidiFlow[Command[_], ByteString, ByteString, Either[MqttCodec.DecodeError, Event[_]], NotUsed] = {
     // TODO: Have the input and output flows pass through an actor that maintains session state (probably an FSM)
     import MqttCodec._
     BidiFlow
       .fromFlows(
-        Flow[ControlPacket].map {
-          case cp: Connect => cp.encode(ByteString.newBuilder).result()
-          case cp: ConnAck => cp.encode(ByteString.newBuilder).result()
-          case cp: Publish => cp.encode(ByteString.newBuilder, cp.packetId).result()
-          case cp: PubAck => cp.encode(ByteString.newBuilder).result()
-          case cp: PubRec => cp.encode(ByteString.newBuilder).result()
-          case cp: PubRel => cp.encode(ByteString.newBuilder).result()
-          case cp: PubComp => cp.encode(ByteString.newBuilder).result()
-          case cp: Subscribe => cp.encode(ByteString.newBuilder, cp.packetId).result()
-          case cp: SubAck => cp.encode(ByteString.newBuilder).result()
-          case cp: Unsubscribe => cp.encode(ByteString.newBuilder, cp.packetId).result()
-          case cp: UnsubAck => cp.encode(ByteString.newBuilder).result()
-          case cp: PingReq.type => cp.encode(ByteString.newBuilder).result()
-          case cp: PingResp.type => cp.encode(ByteString.newBuilder).result()
-          case cp: Disconnect.type => cp.encode(ByteString.newBuilder).result()
-          case cp: Reserved1.type => cp.encode(ByteString.newBuilder, 0).result()
-          case cp: Reserved2.type => cp.encode(ByteString.newBuilder, 0).result()
+        Flow[Command[_]].map {
+          case Command(cp: Connect, _) => cp.encode(ByteString.newBuilder).result()
+          case Command(cp: Publish, _) => cp.encode(ByteString.newBuilder, cp.packetId).result()
+          case Command(cp: PubRec, _) => cp.encode(ByteString.newBuilder).result()
+          case Command(cp: PubRel, _) => cp.encode(ByteString.newBuilder).result()
+          case Command(cp: PubComp, _) => cp.encode(ByteString.newBuilder).result()
+          case Command(cp: Subscribe, _) => cp.encode(ByteString.newBuilder, cp.packetId).result()
+          case Command(cp: Unsubscribe, _) => cp.encode(ByteString.newBuilder, cp.packetId).result()
+          case Command(cp: PingReq.type, _) => cp.encode(ByteString.newBuilder).result()
+          case Command(cp: Disconnect.type, _) => cp.encode(ByteString.newBuilder).result()
+          case c: Command[_] => throw new IllegalStateException(c + " is not a client command")
         },
         Flow[ByteString]
           .via(new MqttFrameStage(settings.maxPacketSize))
-          .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
+          .map(_.iterator.decodeControlPacket(settings.maxPacketSize).map(Event(_, None)))
+      )
+  }
+
+  /**
+   * Create a bidirectional flow that maintains server session state with an MQTT endpoint.
+   * The bidirectional flow can be joined with an endpoint flow that receives
+   * [[ByteString]] payloads and independently produces [[ByteString]] payloads e.g.
+   * an MQTT server.
+   *
+   * @param settings settings for the session
+   * @return the bidirectional flow
+   */
+  def serverSessionFlow(
+      settings: SessionFlowSettings
+  ): BidiFlow[Command[_], ByteString, ByteString, Either[MqttCodec.DecodeError, Event[_]], NotUsed] = {
+    // TODO: Have the input and output flows pass through an actor that maintains session state (probably an FSM)
+    import MqttCodec._
+    BidiFlow
+      .fromFlows(
+        Flow[Command[_]].map {
+          case Command(cp: ConnAck, _) => cp.encode(ByteString.newBuilder).result()
+          case Command(cp: Publish, _) => cp.encode(ByteString.newBuilder, cp.packetId).result()
+          case Command(cp: PubAck, _) => cp.encode(ByteString.newBuilder).result()
+          case Command(cp: PubRec, _) => cp.encode(ByteString.newBuilder).result()
+          case Command(cp: PubRel, _) => cp.encode(ByteString.newBuilder).result()
+          case Command(cp: PubComp, _) => cp.encode(ByteString.newBuilder).result()
+          case Command(cp: SubAck, _) => cp.encode(ByteString.newBuilder).result()
+          case Command(cp: UnsubAck, _) => cp.encode(ByteString.newBuilder).result()
+          case Command(cp: PingResp.type, _) => cp.encode(ByteString.newBuilder).result()
+          case c: Command[_] => throw new IllegalStateException(c + " is not a server command")
+        },
+        Flow[ByteString]
+          .via(new MqttFrameStage(settings.maxPacketSize))
+          .map(_.iterator.decodeControlPacket(settings.maxPacketSize).map(Event(_, None)))
       )
   }
 }

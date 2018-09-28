@@ -15,6 +15,7 @@ import akka.util.{ByteIterator, ByteString, ByteStringBuilder}
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.collection.JavaConverters._
+import scala.compat.java8.OptionConverters._
 
 /**
  * 2.2.1 MQTT Control Packet type
@@ -541,8 +542,6 @@ object MqttCodec {
 
   /**
    * JAVA API
-   *
-   * Conveniently wraps [[Either[DecodeError, ControlPacket]] as [[Either]] is horrid in Java.
    */
   final case class ControlPacketResult(v: Either[DecodeError, ControlPacket]) {
     def getControlPacket: Optional[ControlPacket] =
@@ -1042,4 +1041,133 @@ object MqttCodec {
         case _: NoSuchElementException => Left(BufferUnderflow)
       }
   }
+}
+
+object Command {
+
+  /**
+   * Send a command to an MQTT session
+   * @param command The command to send
+   */
+  def apply(command: ControlPacket): Command[Nothing] =
+    new Command(command)
+
+  /**
+   * Send a command to an MQTT session with data to carry through into
+   * any related event.
+   * @param command The command to send
+   * @param carry The data to carry through
+   * @tparam A The type of data to carry through
+   */
+  def apply[A](command: ControlPacket, carry: A): Command[A] =
+    new Command(command, carry)
+}
+
+/**
+ * Send a command to an MQTT session with optional data to carry through
+ * into any related event.
+ * @param command The command to send
+ * @param carry The data to carry though
+ * @tparam A The type of data to carry through
+ */
+final case class Command[A](command: ControlPacket, carry: Option[A]) {
+
+  /**
+   * JAVA API
+   *
+   * Send a command to an MQTT session with optional data to carry through
+   * into any related event.
+   * @param command The command to send
+   * @param carry The data to carry though
+   */
+  def this(command: ControlPacket, carry: Optional[A]) =
+    this(command, carry.asScala)
+
+  /**
+   * Send a command to an MQTT session
+   * @param command The command to send
+   */
+  def this(command: ControlPacket) =
+    this(command, None)
+
+  /**
+   * Send a command to an MQTT session with data to carry through into
+   * any related event.
+   * @param command The command to send
+   * @param carry The data to carry through
+   */
+  def this(command: ControlPacket, carry: A) =
+    this(command, Some(carry))
+}
+
+object Event {
+
+  /**
+   * Receive an event from a MQTT session
+   * @param event The event to receive
+   */
+  def apply(event: ControlPacket): Event[Nothing] =
+    new Event(event)
+
+  /**
+   * Receive an event from a MQTT session with data to carry through into
+   * any related event.
+   * @param event The event to receive
+   * @param carry The data to carry through
+   * @tparam A The type of data to carry through
+   */
+  def apply[A](event: ControlPacket, carry: A): Event[A] =
+    new Event(event, carry)
+}
+
+/**
+ * Receive an event from a MQTT session with optional data to carry through
+ * infrom ay related event.
+ * @param event The event to receive
+ * @param carry The data to carry though
+ * @tparam A The type of data to carry through
+ */
+final case class Event[A](event: ControlPacket, carry: Option[A]) {
+
+  /**
+   * Receive an event from a MQTT session with optional data to carry through
+   * infrom ay related event.
+   * @param event The event to receive
+   * @param carry The data to carry though
+   */
+  def this(event: ControlPacket, carry: Optional[A]) =
+    this(event, carry.asScala)
+
+  /**
+   * Receive an event from a MQTT session
+   * @param event The event to receive
+   */
+  def this(event: ControlPacket) =
+    this(event, None)
+
+  /**
+   * Receive an event from a MQTT session with data to carry through into
+   * any related event.
+   * @param event The event to receive
+   * @param carry The data to carry through
+   */
+  def this(event: ControlPacket, carry: A) =
+    this(event, Some(carry))
+}
+
+/**
+ * JAVA API
+ */
+final case class EventResult(v: Either[MqttCodec.DecodeError, Event[_]]) {
+  def getEvent: Optional[Event[_]] =
+    v match {
+      case Right(e) => Optional.of(e)
+      case Left(_) => Optional.empty()
+    }
+
+  def getEventError: Optional[MqttCodec.DecodeError] =
+    v match {
+      case Right(_) => Optional.empty()
+      case Left(de) => Optional.of(de)
+    }
 }
