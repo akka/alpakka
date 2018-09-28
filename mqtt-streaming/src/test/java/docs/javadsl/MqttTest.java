@@ -56,26 +56,30 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class MqttTest {
-  private static ActorSystem sys;
+  private static ActorSystem system;
   private static Materializer mat;
 
-  private Timeout timeout = new Timeout(3, TimeUnit.SECONDS);
+  private static Timeout timeout;
 
-  private MqttSessionSettings settings = MqttSessionSettings.create(100);
-  private ActorMqttClientSession session = new ActorMqttClientSession(settings);
+  private static ActorMqttClientSession session;
 
   @BeforeClass
   public static void setUpBeforeClass() {
-    sys = ActorSystem.create("MqttTestJava");
-    mat = ActorMaterializer.create(sys);
+    system = ActorSystem.create("MqttTestJava");
+    mat = ActorMaterializer.create(system);
+
+    timeout = new Timeout(3, TimeUnit.SECONDS);
+
+    MqttSessionSettings settings = MqttSessionSettings.create(100);
+    session = new ActorMqttClientSession(settings, system);
   }
 
   @Test
   public void flowThroughAClientSession()
       throws InterruptedException, ExecutionException, TimeoutException {
-    new TestKit(sys) {
+    new TestKit(system) {
       {
-        TestProbe server = new TestProbe(sys);
+        TestProbe server = new TestProbe(system);
         Flow<ByteString, ByteString, NotUsed> pipeToServer =
             Flow.of(ByteString.class)
                 .mapAsync(
@@ -140,6 +144,6 @@ public class MqttTest {
 
   @AfterClass
   public static void tearDownAfterClass() {
-    TestKit.shutdownActorSystem(sys);
+    TestKit.shutdownActorSystem(system);
   }
 }

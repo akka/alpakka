@@ -11,7 +11,7 @@ import akka.annotation.InternalApi
 
 import scala.concurrent.duration._
 
-@InternalApi private[streaming] object MqttClient {
+@InternalApi private[streaming] object ClientConnector {
 
   private val receiveConnAckTimeout = 3.seconds // FIXME: Should be a setting
 
@@ -29,41 +29,35 @@ import scala.concurrent.duration._
 
   // State handling
 
-  def Disconnected(data: Unitialized.type): Behavior[Event] = Behaviors.receiveMessage {
+  def disconnected(data: Unitialized.type): Behavior[Event] = Behaviors.receiveMessagePartial {
     case ConnectReceivedLocally(connect) =>
-      ServerConnect(ConnectReceived(connect))
-    case _ =>
-      Behaviors.unhandled
+      serverConnect(ConnectReceived(connect))
   }
 
-  def ServerConnect(data: ConnectReceived): Behavior[Event] = Behaviors.withTimers { timer =>
+  def serverConnect(data: ConnectReceived): Behavior[Event] = Behaviors.withTimers { timer =>
     forwardConnectToRemote(data)
     timer.startSingleTimer("receive-connack", ReceiveConnAckTimeout, receiveConnAckTimeout)
     Behaviors.receiveMessagePartial {
       case ConnAckReceivedFromRemote(connAck) if connAck.returnCode.contains(ConnAckReturnCode.ConnectionAccepted) =>
-        ServerConnected(ConnAckReceived(data.connect, connAck))
+        serverConnected(ConnAckReceived(data.connect, connAck))
       case _: ConnAckReceivedFromRemote =>
-        Disconnected(Unitialized)
+        disconnected(Unitialized)
       case ReceiveConnAckTimeout =>
-        Disconnected(Unitialized)
-      case _ =>
-        Behaviors.unhandled
+        disconnected(Unitialized)
     }
   }
 
-  def ServerConnected(data: ConnAckReceived): Behavior[Event] = {
+  def serverConnected(data: ConnAckReceived): Behavior[Event] = {
     forwardConnAckToLocal(data)
     if (data.connect.connectFlags.contains(ConnectFlags.CleanSession)) cleanSession()
     Behaviors.receiveMessagePartial {
       case LostConnection =>
-        Disconnected(Unitialized)
+        disconnected(Unitialized)
       case DisconnectReceivedLocally =>
         forwardDisconnectToRemote()
         cleanSession()
-        Disconnected(Unitialized)
+        disconnected(Unitialized)
       // TODO: UnsubscribedReceivedLocally, SubscribeReceivedLocally, PublishReceivedFromRemote, PubRelReceivedFromRemote, PubAckReceivedLocally, PubRecReceivedLocally, PubCompReceivedLocally, PublishReceivedLocally, PubRecReceivedLocally, PubCompReceivedLocally, PubAckReceivedFromRemote, PubRelReceivedFromRemote
-      case _ =>
-        Behaviors.unhandled
     }
   }
 

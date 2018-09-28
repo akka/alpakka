@@ -4,11 +4,13 @@
 
 package akka.stream.alpakka.mqtt.streaming.scaladsl
 
-import akka.NotUsed
+import akka.{Done, NotUsed, actor => untyped}
 import akka.stream.alpakka.mqtt.streaming._
-import akka.stream.alpakka.mqtt.streaming.impl.MqttFrameStage
+import akka.stream.alpakka.mqtt.streaming.impl.{ClientConnector, MqttFrameStage}
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
+
+import scala.concurrent.Future
 
 object MqttSession {
 
@@ -28,6 +30,12 @@ abstract class MqttSession {
   import MqttSession._
 
   /**
+   * Stop the session
+   * @return [[Done]] when complete
+   */
+  def stop(): Future[Done]
+
+  /**
    * @return a flow for commands to be sent to the session
    */
   private[streaming] def commandFlow: CommandFlow
@@ -45,7 +53,7 @@ abstract class MqttSession {
 abstract class MqttClientSession extends MqttSession
 
 object ActorMqttClientSession {
-  def apply(settings: MqttSessionSettings): ActorMqttClientSession =
+  def apply(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem): ActorMqttClientSession =
     new ActorMqttClientSession(settings)
 }
 
@@ -53,11 +61,16 @@ object ActorMqttClientSession {
  * Provides an actor implementation of a client session
  * @param settings session settings
  */
-final class ActorMqttClientSession(settings: MqttSessionSettings) extends MqttClientSession {
-  //private val actor: ActorRef = ???
+final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem)
+    extends MqttClientSession {
+  import akka.actor.typed.scaladsl.adapter._
+  private val clientConnector =
+    system.spawn(ClientConnector.disconnected(ClientConnector.Unitialized), "client-connector")
 
   import MqttCodec._
   import MqttSession._
+
+  override def stop(): Future[Done] = ???
 
   override def commandFlow: CommandFlow =
     Flow[Command[_]].map {
@@ -86,7 +99,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings) extends MqttCl
 abstract class MqttServerSession extends MqttSession
 
 object ActorMqttServerSession {
-  def apply(settings: MqttSessionSettings): ActorMqttServerSession =
+  def apply(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem): ActorMqttServerSession =
     new ActorMqttServerSession(settings)
 }
 
@@ -94,11 +107,14 @@ object ActorMqttServerSession {
  * Provides an actor implementation of a server session
  * @param settings session settings
  */
-final class ActorMqttServerSession(settings: MqttSessionSettings) extends MqttServerSession {
+final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem)
+    extends MqttServerSession {
   //private val actor: ActorRef = ???
 
   import MqttCodec._
   import MqttSession._
+
+  override def stop(): Future[Done] = ???
 
   override def commandFlow: CommandFlow =
     Flow[Command[_]].map {
