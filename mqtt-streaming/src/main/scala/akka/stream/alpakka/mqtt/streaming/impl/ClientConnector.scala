@@ -17,6 +17,8 @@ import akka.util.ByteString
  */
 @InternalApi private[streaming] object ClientConnector {
 
+  type ConnectData = Option[_]
+
   /*
    * Construct with the starting state
    */
@@ -27,15 +29,17 @@ import akka.util.ByteString
 
   sealed abstract class Data(val settings: MqttSessionSettings)
   final case class Uninitialized(override val settings: MqttSessionSettings) extends Data(settings)
-  final case class ConnectReceived(connect: Connect, connectData: Option[_], override val settings: MqttSessionSettings)
+  final case class ConnectReceived(connect: Connect,
+                                   connectData: ConnectData,
+                                   override val settings: MqttSessionSettings)
       extends Data(settings)
   final case class ConnAckReceived(connect: Connect, connAck: ConnAck, override val settings: MqttSessionSettings)
       extends Data(settings)
 
   sealed abstract class Event
-  final case class ConnectReceivedLocally(connect: Connect, connectData: Option[_], remote: ActorRef[ByteString])
+  final case class ConnectReceivedLocally(connect: Connect, connectData: ConnectData, remote: ActorRef[ByteString])
       extends Event
-  final case class ConnAckReceivedFromRemote(connAck: ConnAck, local: ActorRef[(ConnAck, Option[_])]) extends Event
+  final case class ConnAckReceivedFromRemote(connAck: ConnAck, local: ActorRef[(ConnAck, ConnectData)]) extends Event
   case object ReceiveConnAckTimeout extends Event
   case object LostConnection extends Event
   case object DisconnectReceivedLocally extends Event
@@ -81,7 +85,7 @@ import akka.util.ByteString
   def forwardConnectToRemote(connect: Connect, remote: ActorRef[ByteString]): Unit =
     remote ! connect.encode(ByteString.newBuilder).result()
 
-  def forwardConnAckToLocal(connAck: ConnAck, connectData: Option[_], local: ActorRef[(ConnAck, Option[_])]): Unit =
+  def forwardConnAckToLocal(connAck: ConnAck, connectData: ConnectData, local: ActorRef[(ConnAck, ConnectData)]): Unit =
     local ! ((connAck, connectData))
 
   def forwardDisconnectToRemote(): Unit = ???
