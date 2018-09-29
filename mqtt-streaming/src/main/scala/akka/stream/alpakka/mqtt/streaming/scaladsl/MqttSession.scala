@@ -2,13 +2,16 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.mqtt.streaming.scaladsl
+package akka.stream.alpakka.mqtt.streaming
+package scaladsl
 
+import akka.actor.Scheduler
 import akka.{Done, NotUsed, actor => untyped}
-import akka.stream.alpakka.mqtt.streaming._
+import akka.actor.typed.scaladsl.adapter._
+import akka.actor.typed.scaladsl.AskPattern._
 import akka.stream.alpakka.mqtt.streaming.impl.{ClientConnector, MqttFrameStage}
 import akka.stream.scaladsl.Flow
-import akka.util.ByteString
+import akka.util.{ByteString, Timeout}
 
 import scala.concurrent.Future
 
@@ -64,32 +67,44 @@ object ActorMqttClientSession {
 final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem)
     extends MqttClientSession {
 
-  import akka.actor.typed.scaladsl.adapter._
   private val clientConnector = system.spawn(ClientConnector(settings), "client-connector")
 
   import MqttCodec._
   import MqttSession._
 
+  implicit private val actorMqttSessionTimeout: Timeout = settings.actorMqttSessionTimeout
+  implicit private val scheduler: Scheduler = system.scheduler
+
   override def disconnect(): Future[Done] = ???
 
   override def commandFlow: CommandFlow =
-    Flow[Command[_]].map {
-      case Command(cp: Connect, _) => cp.encode(ByteString.newBuilder).result()
-      case Command(cp: Publish, _) => cp.encode(ByteString.newBuilder, cp.packetId).result()
-      case Command(cp: PubRec, _) => cp.encode(ByteString.newBuilder).result()
-      case Command(cp: PubRel, _) => cp.encode(ByteString.newBuilder).result()
-      case Command(cp: PubComp, _) => cp.encode(ByteString.newBuilder).result()
-      case Command(cp: Subscribe, _) => cp.encode(ByteString.newBuilder, cp.packetId).result()
-      case Command(cp: Unsubscribe, _) => cp.encode(ByteString.newBuilder, cp.packetId).result()
-      case Command(cp: PingReq.type, _) => cp.encode(ByteString.newBuilder).result()
-      case Command(cp: Disconnect.type, _) => cp.encode(ByteString.newBuilder).result()
+    Flow[Command[_]].mapAsync(1) {
+      case Command(cp: Connect, carry) =>
+        clientConnector ? (replyTo => ClientConnector.ConnectReceivedLocally(cp, carry, replyTo))
+      // TODO: Forward the following messages on as per the above ask pattern
+      case Command(cp: Publish, _) => Future.successful(cp.encode(ByteString.newBuilder, cp.packetId).result())
+      case Command(cp: PubRec, _) => Future.successful(cp.encode(ByteString.newBuilder).result())
+      case Command(cp: PubRel, _) => Future.successful(cp.encode(ByteString.newBuilder).result())
+      case Command(cp: PubComp, _) => Future.successful(cp.encode(ByteString.newBuilder).result())
+      case Command(cp: Subscribe, _) => Future.successful(cp.encode(ByteString.newBuilder, cp.packetId).result())
+      case Command(cp: Unsubscribe, _) => Future.successful(cp.encode(ByteString.newBuilder, cp.packetId).result())
+      case Command(cp: PingReq.type, _) => Future.successful(cp.encode(ByteString.newBuilder).result())
+      case Command(cp: Disconnect.type, _) => Future.successful(cp.encode(ByteString.newBuilder).result())
       case c: Command[_] => throw new IllegalStateException(c + " is not a client command")
     }
 
   override def eventFlow: EventFlow =
     Flow[ByteString]
       .via(new MqttFrameStage(settings.maxPacketSize))
-      .map(_.iterator.decodeControlPacket(settings.maxPacketSize).map(Event(_, None)))
+      .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
+      .mapAsync(1) {
+        case Right(connAck: ConnAck) =>
+          import system.dispatcher
+          (clientConnector ? (ClientConnector.ConnAckReceivedFromRemote(connAck, _)): Future[(ConnAck, Option[_])])
+            .map { case (_, carry) => Right[DecodeError, Event[_]](Event(connAck, carry)) }
+        case Right(cp) => Future.successful(Right[DecodeError, Event[_]](Event(cp)))
+        case Left(de) => Future.successful(Left(de))
+      }
 
 }
 

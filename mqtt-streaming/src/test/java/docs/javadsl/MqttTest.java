@@ -71,10 +71,10 @@ public class MqttTest {
     mat = ActorMaterializer.create(system);
 
     timeout = new Timeout(3, TimeUnit.SECONDS);
+    Duration timeoutDuration = Duration.of(timeout.duration().toSeconds(), ChronoUnit.SECONDS);
 
     MqttSessionSettings settings =
-        MqttSessionSettings.create(
-            100, Duration.of(timeout.duration().toSeconds(), ChronoUnit.SECONDS));
+        MqttSessionSettings.create(100, timeoutDuration, timeoutDuration);
     session = new ActorMqttClientSession(settings, system);
   }
 
