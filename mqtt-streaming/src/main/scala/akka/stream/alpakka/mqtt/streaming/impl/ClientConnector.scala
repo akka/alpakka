@@ -9,16 +9,26 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 
-import scala.concurrent.duration._
-
+/*
+ * A client connector is a Finite State Machine that manages MQTT client
+ * session state. A client connects to a server, subscribes/unsubscribes
+ * from topics to receive publications on and publishes to its own topics.
+ */
 @InternalApi private[streaming] object ClientConnector {
 
-  private val receiveConnAckTimeout = 3.seconds // FIXME: Should be a setting
+  /*
+   * Construct with the starting state
+   */
+  def apply(settings: MqttSessionSettings): Behavior[Event] =
+    disconnected(Uninitialized(settings))
 
-  sealed trait Data
-  case object Unitialized extends Data
-  final case class ConnectReceived(connect: Connect) extends Data
-  final case class ConnAckReceived(connect: Connect, connAck: ConnAck) extends Data
+  // Our FSM data and events
+
+  sealed abstract class Data(val settings: MqttSessionSettings)
+  final case class Uninitialized(override val settings: MqttSessionSettings) extends Data(settings)
+  final case class ConnectReceived(connect: Connect, override val settings: MqttSessionSettings) extends Data(settings)
+  final case class ConnAckReceived(connect: Connect, connAck: ConnAck, override val settings: MqttSessionSettings)
+      extends Data(settings)
 
   sealed trait Event
   final case class ConnectReceivedLocally(connect: Connect) extends Event
@@ -27,23 +37,23 @@ import scala.concurrent.duration._
   case object LostConnection extends Event
   case object DisconnectReceivedLocally extends Event
 
-  // State handling
+  // State event handling
 
-  def disconnected(data: Unitialized.type): Behavior[Event] = Behaviors.receiveMessagePartial {
+  def disconnected(data: Uninitialized): Behavior[Event] = Behaviors.receiveMessagePartial {
     case ConnectReceivedLocally(connect) =>
-      serverConnect(ConnectReceived(connect))
+      serverConnect(ConnectReceived(connect, data.settings))
   }
 
   def serverConnect(data: ConnectReceived): Behavior[Event] = Behaviors.withTimers { timer =>
     forwardConnectToRemote(data)
-    timer.startSingleTimer("receive-connack", ReceiveConnAckTimeout, receiveConnAckTimeout)
+    timer.startSingleTimer("receive-connack", ReceiveConnAckTimeout, data.settings.receiveConnAckTimeout)
     Behaviors.receiveMessagePartial {
       case ConnAckReceivedFromRemote(connAck) if connAck.returnCode.contains(ConnAckReturnCode.ConnectionAccepted) =>
-        serverConnected(ConnAckReceived(data.connect, connAck))
+        serverConnected(ConnAckReceived(data.connect, connAck, data.settings))
       case _: ConnAckReceivedFromRemote =>
-        disconnected(Unitialized)
+        disconnected(Uninitialized(data.settings))
       case ReceiveConnAckTimeout =>
-        disconnected(Unitialized)
+        disconnected(Uninitialized(data.settings))
     }
   }
 
@@ -52,11 +62,11 @@ import scala.concurrent.duration._
     if (data.connect.connectFlags.contains(ConnectFlags.CleanSession)) cleanSession()
     Behaviors.receiveMessagePartial {
       case LostConnection =>
-        disconnected(Unitialized)
+        disconnected(Uninitialized(data.settings))
       case DisconnectReceivedLocally =>
         forwardDisconnectToRemote()
         cleanSession()
-        disconnected(Unitialized)
+        disconnected(Uninitialized(data.settings))
       // TODO: UnsubscribedReceivedLocally, SubscribeReceivedLocally, PublishReceivedFromRemote, PubRelReceivedFromRemote, PubAckReceivedLocally, PubRecReceivedLocally, PubCompReceivedLocally, PublishReceivedLocally, PubRecReceivedLocally, PubCompReceivedLocally, PubAckReceivedFromRemote, PubRelReceivedFromRemote
     }
   }

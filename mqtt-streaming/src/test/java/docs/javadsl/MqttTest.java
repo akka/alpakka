@@ -46,6 +46,8 @@ import org.junit.Test;
 import scala.compat.java8.FutureConverters;
 import scala.compat.java8.OptionConverters;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -70,7 +72,9 @@ public class MqttTest {
 
     timeout = new Timeout(3, TimeUnit.SECONDS);
 
-    MqttSessionSettings settings = MqttSessionSettings.create(100);
+    MqttSessionSettings settings =
+        MqttSessionSettings.create(
+            100, Duration.of(timeout.duration().toSeconds(), ChronoUnit.SECONDS));
     session = new ActorMqttClientSession(settings, system);
   }
 

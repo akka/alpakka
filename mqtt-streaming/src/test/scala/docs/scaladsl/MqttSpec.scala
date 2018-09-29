@@ -26,7 +26,7 @@ class MqttSpec
   implicit val mat: Materializer = ActorMaterializer()
   implicit val timeout: Timeout = Timeout(3.seconds.dilated)
 
-  val settings = MqttSessionSettings(100)
+  val settings = MqttSessionSettings(100, timeout.duration)
   val session = ActorMqttClientSession(settings)
 
   "MQTT connector" should {

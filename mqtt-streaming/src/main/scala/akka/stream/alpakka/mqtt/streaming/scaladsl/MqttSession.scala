@@ -30,10 +30,10 @@ abstract class MqttSession {
   import MqttSession._
 
   /**
-   * Stop the session
+   * Disconnect the session gracefully
    * @return [[Done]] when complete
    */
-  def stop(): Future[Done]
+  def disconnect(): Future[Done]
 
   /**
    * @return a flow for commands to be sent to the session
@@ -63,14 +63,14 @@ object ActorMqttClientSession {
  */
 final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem)
     extends MqttClientSession {
+
   import akka.actor.typed.scaladsl.adapter._
-  private val clientConnector =
-    system.spawn(ClientConnector.disconnected(ClientConnector.Unitialized), "client-connector")
+  private val clientConnector = system.spawn(ClientConnector(settings), "client-connector")
 
   import MqttCodec._
   import MqttSession._
 
-  override def stop(): Future[Done] = ???
+  override def disconnect(): Future[Done] = ???
 
   override def commandFlow: CommandFlow =
     Flow[Command[_]].map {
@@ -109,12 +109,13 @@ object ActorMqttServerSession {
  */
 final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem)
     extends MqttServerSession {
+
   //private val actor: ActorRef = ???
 
   import MqttCodec._
   import MqttSession._
 
-  override def stop(): Future[Done] = ???
+  override def disconnect(): Future[Done] = ???
 
   override def commandFlow: CommandFlow =
     Flow[Command[_]].map {

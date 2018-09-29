@@ -26,10 +26,10 @@ import scala.compat.java8.FutureConverters._
 abstract class MqttSession {
 
   /**
-   * Stop the session
+   * Disconnect the session gracefully
    * @return [[Done]] when complete
    */
-  def stop(): CompletionStage[Done]
+  def disconnect(): CompletionStage[Done]
 }
 
 /**
@@ -38,8 +38,8 @@ abstract class MqttSession {
 abstract class MqttClientSession extends MqttSession {
   protected[javadsl] val underlying: ScalaMqttClientSession
 
-  override def stop(): CompletionStage[Done] =
-    underlying.stop().toJava
+  override def disconnect(): CompletionStage[Done] =
+    underlying.disconnect().toJava
 }
 
 /**
@@ -58,8 +58,8 @@ final class ActorMqttClientSession(settings: MqttSessionSettings, system: ActorS
 abstract class MqttServerSession extends MqttSession {
   protected[javadsl] val underlying: ScalaMqttServerSession
 
-  override def stop(): CompletionStage[Done] =
-    underlying.stop().toJava
+  override def disconnect(): CompletionStage[Done] =
+    underlying.disconnect().toJava
 }
 
 /**
