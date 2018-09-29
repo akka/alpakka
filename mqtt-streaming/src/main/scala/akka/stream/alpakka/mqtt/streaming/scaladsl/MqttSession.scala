@@ -67,8 +67,6 @@ object ActorMqttClientSession {
 final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem)
     extends MqttClientSession {
 
-  type ConnectCarry = Option[_]
-
   private val clientConnector = system.spawn(ClientConnector(settings), "client-connector")
 
   import MqttCodec._
@@ -102,7 +100,8 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
       .mapAsync(1) {
         case Right(connAck: ConnAck) =>
           import system.dispatcher
-          (clientConnector ? (ClientConnector.ConnAckReceivedFromRemote(connAck, _)): Future[(ConnAck, ConnectCarry)])
+          (clientConnector ? (ClientConnector
+            .ConnAckReceivedFromRemote(connAck, _)): Future[(ConnAck, ClientConnector.ConnectData)])
             .map { case (_, carry) => Right[DecodeError, Event[_]](Event(connAck, carry)) }
         case Right(cp) => Future.successful(Right[DecodeError, Event[_]](Event(cp)))
         case Left(de) => Future.successful(Left(de))
