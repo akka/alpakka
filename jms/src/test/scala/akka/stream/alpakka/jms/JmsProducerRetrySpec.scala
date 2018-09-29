@@ -69,7 +69,7 @@ class JmsProducerRetrySpec extends JmsSpec {
       def time(m: Map[String, Any]) = m("time").asInstanceOf[Long]
 
       resultList.size shouldBe 20
-      resultList.filter(b => time(b) > restartTime) shouldNot be(empty)
+      resultList.filter(b => time(b) >= restartTime) shouldNot be(empty)
       resultList.sliding(2).forall(pair => index(pair.head) + 1 == index(pair.last)) shouldBe true
 
       val sentList = sentResult.futureValue
