@@ -8,7 +8,6 @@ package impl
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.util.ByteString
 
 /*
  * A client connector is a Finite State Machine that manages MQTT client
@@ -25,7 +24,7 @@ import akka.util.ByteString
   def apply(settings: MqttSessionSettings): Behavior[Event] =
     disconnected(Uninitialized(settings))
 
-  // Our FSM data and events
+  // Our FSM data, FSM events and commands emitted by the FSM
 
   sealed abstract class Data(val settings: MqttSessionSettings)
   final case class Uninitialized(override val settings: MqttSessionSettings) extends Data(settings)
@@ -37,18 +36,25 @@ import akka.util.ByteString
       extends Data(settings)
 
   sealed abstract class Event
-  final case class ConnectReceivedLocally(connect: Connect, connectData: ConnectData, remote: ActorRef[ByteString])
+  final case class ConnectReceivedLocally(connect: Connect,
+                                          connectData: ConnectData,
+                                          remote: ActorRef[ForwardConnect.type])
       extends Event
-  final case class ConnAckReceivedFromRemote(connAck: ConnAck, local: ActorRef[(ConnAck, ConnectData)]) extends Event
+  final case class ConnAckReceivedFromRemote(connAck: ConnAck, local: ActorRef[ForwardConnAck]) extends Event
   case object ReceiveConnAckTimeout extends Event
   case object ConnectionLost extends Event
-  case object DisconnectReceivedLocally extends Event
+  final case class DisconnectReceivedLocally(remote: ActorRef[ForwardDisconnect.type]) extends Event
+
+  sealed abstract class Command
+  case object ForwardConnect extends Command
+  final case class ForwardConnAck(connectData: ConnectData) extends Command
+  case object ForwardDisconnect extends Command
 
   // State event handling
 
   def disconnected(data: Uninitialized): Behavior[Event] = Behaviors.receiveMessagePartial {
     case ConnectReceivedLocally(connect, connectData, remote) =>
-      forwardConnectToRemote(connect, remote)
+      remote ! ForwardConnect
       serverConnect(ConnectReceived(connect, connectData, data.settings))
   }
 
@@ -57,11 +63,11 @@ import akka.util.ByteString
     Behaviors.receiveMessagePartial {
       case ConnAckReceivedFromRemote(connAck, local)
           if connAck.returnCode.contains(ConnAckReturnCode.ConnectionAccepted) =>
-        forwardConnAckToLocal(connAck, data.connectData, local)
+        local ! ForwardConnAck(data.connectData)
         if (data.connect.connectFlags.contains(ConnectFlags.CleanSession)) cleanSession()
         serverConnected(ConnAckReceived(data.connect, connAck, data.settings))
-      case ConnAckReceivedFromRemote(connAck, local) =>
-        forwardConnAckToLocal(connAck, data.connectData, local)
+      case ConnAckReceivedFromRemote(_, local) =>
+        local ! ForwardConnAck(data.connectData)
         disconnected(Uninitialized(data.settings))
       case ReceiveConnAckTimeout =>
         disconnected(Uninitialized(data.settings))
@@ -71,24 +77,14 @@ import akka.util.ByteString
   def serverConnected(data: ConnAckReceived): Behavior[Event] = Behaviors.receiveMessagePartial {
     case ConnectionLost =>
       disconnected(Uninitialized(data.settings))
-    case DisconnectReceivedLocally =>
-      forwardDisconnectToRemote()
+    case DisconnectReceivedLocally(remote) =>
+      remote ! ForwardDisconnect
       cleanSession()
       disconnected(Uninitialized(data.settings))
     // TODO: UnsubscribedReceivedLocally, SubscribeReceivedLocally, PublishReceivedFromRemote, PubRelReceivedFromRemote, PubAckReceivedLocally, PubRecReceivedLocally, PubCompReceivedLocally, PublishReceivedLocally, PubRecReceivedLocally, PubCompReceivedLocally, PubAckReceivedFromRemote, PubRelReceivedFromRemote
   }
 
   // Actions
-
-  import MqttCodec._
-
-  def forwardConnectToRemote(connect: Connect, remote: ActorRef[ByteString]): Unit =
-    remote ! connect.encode(ByteString.newBuilder).result()
-
-  def forwardConnAckToLocal(connAck: ConnAck, connectData: ConnectData, local: ActorRef[(ConnAck, ConnectData)]): Unit =
-    local ! ((connAck, connectData))
-
-  def forwardDisconnectToRemote(): Unit = ???
 
   def cleanSession(): Unit = ???
 }

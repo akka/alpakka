@@ -75,13 +75,17 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
   implicit private val actorMqttSessionTimeout: Timeout = settings.actorMqttSessionTimeout
   implicit private val scheduler: Scheduler = system.scheduler
 
+  import system.dispatcher
+
   override def disconnect(): Future[Done] = ???
 
   override def commandFlow: CommandFlow =
     Flow[Command[_]]
       .mapAsync(1) {
         case Command(cp: Connect, carry) =>
-          clientConnector ? (replyTo => ClientConnector.ConnectReceivedLocally(cp, carry, replyTo))
+          (clientConnector ? (replyTo => ClientConnector.ConnectReceivedLocally(cp, carry, replyTo)): Future[
+            ClientConnector.ForwardConnect.type
+          ]).map(_ => cp.encode(ByteString.newBuilder).result())
         // TODO: Forward the following messages on as per the above ask pattern
         case Command(cp: Publish, _) => Future.successful(cp.encode(ByteString.newBuilder, cp.packetId).result())
         case Command(cp: PubRec, _) => Future.successful(cp.encode(ByteString.newBuilder).result())
@@ -90,7 +94,10 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
         case Command(cp: Subscribe, _) => Future.successful(cp.encode(ByteString.newBuilder, cp.packetId).result())
         case Command(cp: Unsubscribe, _) => Future.successful(cp.encode(ByteString.newBuilder, cp.packetId).result())
         case Command(cp: PingReq.type, _) => Future.successful(cp.encode(ByteString.newBuilder).result())
-        case Command(cp: Disconnect.type, _) => Future.successful(cp.encode(ByteString.newBuilder).result())
+        case Command(cp: Disconnect.type, carry) =>
+          (clientConnector ? (replyTo => ClientConnector.DisconnectReceivedLocally(replyTo)): Future[
+            ClientConnector.ForwardDisconnect.type
+          ]).map(_ => cp.encode(ByteString.newBuilder).result())
         case c: Command[_] => throw new IllegalStateException(c + " is not a client command")
       }
 
@@ -102,8 +109,10 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
         case Right(connAck: ConnAck) =>
           import system.dispatcher
           (clientConnector ? (ClientConnector
-            .ConnAckReceivedFromRemote(connAck, _)): Future[(ConnAck, ClientConnector.ConnectData)])
-            .map { case (_, carry) => Right[DecodeError, Event[_]](Event(connAck, carry)) }
+            .ConnAckReceivedFromRemote(connAck, _)): Future[ClientConnector.ForwardConnAck])
+            .map {
+              case ClientConnector.ForwardConnAck(carry) => Right[DecodeError, Event[_]](Event(connAck, carry))
+            }
         // TODO: Forward the following messages on as per the above ask pattern
         case Right(cp) => Future.successful(Right[DecodeError, Event[_]](Event(cp)))
         case Left(de) => Future.successful(Left(de))
