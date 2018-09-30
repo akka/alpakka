@@ -41,7 +41,7 @@ import akka.util.ByteString
       extends Event
   final case class ConnAckReceivedFromRemote(connAck: ConnAck, local: ActorRef[(ConnAck, ConnectData)]) extends Event
   case object ReceiveConnAckTimeout extends Event
-  case object LostConnection extends Event
+  case object ConnectionLost extends Event
   case object DisconnectReceivedLocally extends Event
 
   // State event handling
@@ -69,7 +69,7 @@ import akka.util.ByteString
   }
 
   def serverConnected(data: ConnAckReceived): Behavior[Event] = Behaviors.receiveMessagePartial {
-    case LostConnection =>
+    case ConnectionLost =>
       disconnected(Uninitialized(data.settings))
     case DisconnectReceivedLocally =>
       forwardDisconnectToRemote()
