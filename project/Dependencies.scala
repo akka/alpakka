@@ -7,7 +7,7 @@ object Dependencies {
 
   val AkkaVersion = sys.env.get("AKKA_SERIES") match {
     case Some("2.4") => sys.error("Akka 2.4 is not supported anymore")
-    case _ => "2.5.16"
+    case _ => "2.5.17"
   }
 
   val AwsSdkVersion = "1.11.414"
@@ -251,7 +251,8 @@ object Dependencies {
 
   val MqttStreaming = Seq(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion // ApacheV2
+      "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion, // ApacheV2
+      "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion // ApacheV2
     )
   )
 
