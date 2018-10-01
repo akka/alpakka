@@ -39,22 +39,23 @@ class MqttSpec
       val server = TestProbe()
       val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
 
-      val connect = Connect("some-client-id", ConnectFlags.None)
-      val subscribe = Subscribe("some-topic")
-
-      val result =
-        Source(List(Command(connect), Command(subscribe)))
+      val (client, result) =
+        Source
+          .queue(1, OverflowStrategy.fail)
           .via(
             Mqtt
               .clientSessionFlow(session)
               .join(pipeToServer)
           )
-          .runWith(Sink.collection)
+          .toMat(Sink.collection)(Keep.both)
+          .run
 
+      val connect = Connect("some-client-id", ConnectFlags.None)
       val connectBytes = connect.encode(ByteString.newBuilder).result()
       val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
       val connAckBytes = connAck.encode(ByteString.newBuilder).result()
 
+      val subscribe = Subscribe("some-topic")
       val subscribeBytes = subscribe.encode(ByteString.newBuilder, PacketId(0)).result()
       val subAck = SubAck(PacketId(0), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
       val subAckBytes = subAck.encode(ByteString.newBuilder).result()
@@ -62,11 +63,22 @@ class MqttSpec
       val publish = Publish("some-topic", ByteString("some-payload"))
       val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(0))).result()
 
+      client.offer(Command(connect))
+
       server.expectMsg(connectBytes)
       server.reply(connAckBytes)
 
+      client.offer(Command(subscribe))
+
       server.expectMsg(subscribeBytes)
-      server.reply(subAckBytes ++ publishBytes)
+      server.reply(subAckBytes)
+
+      client.offer(Command(publish))
+
+      server.expectMsg(publishBytes)
+      server.reply(publishBytes) // FIXME: Should be pubAckBytes - once handled by the session
+
+      client.complete()
 
       result.futureValue shouldBe List(Right(Event(connAck)), Right(Event(subAck)), Right(Event(publish)))
     }
@@ -109,7 +121,7 @@ class MqttSpec
       val connect = Connect("some-client-id", ConnectFlags.None)
       val disconnect = Disconnect
 
-      val queue = Source
+      val client = Source
         .queue(1, OverflowStrategy.fail)
         .via(
           Mqtt
@@ -125,12 +137,12 @@ class MqttSpec
 
       val disconnectBytes = disconnect.encode(ByteString.newBuilder).result()
 
-      queue.offer(Command(connect))
+      client.offer(Command(connect))
 
       server.expectMsg(connectBytes)
       server.reply(connAckBytes)
 
-      queue.offer(Command(disconnect))
+      client.offer(Command(disconnect))
 
       server.expectMsg(disconnectBytes)
     }

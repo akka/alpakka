@@ -13,9 +13,11 @@ import akka.actor.ActorSystem;
 import static akka.japi.Util.classTag;
 import static org.junit.Assert.assertEquals;
 
+import akka.japi.Pair;
 import akka.pattern.Patterns;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.OverflowStrategy;
 import akka.stream.alpakka.mqtt.streaming.Command;
 import akka.stream.alpakka.mqtt.streaming.ConnAck;
 import akka.stream.alpakka.mqtt.streaming.ConnAckFlags;
@@ -34,8 +36,10 @@ import akka.stream.alpakka.mqtt.streaming.Subscribe;
 import akka.stream.alpakka.mqtt.streaming.javadsl.ActorMqttClientSession;
 import akka.stream.alpakka.mqtt.streaming.javadsl.Mqtt;
 import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import akka.stream.javadsl.SourceQueueWithComplete;
 import akka.testkit.TestProbe;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
@@ -93,15 +97,17 @@ public class MqttTest {
                             Patterns.ask(server.ref(), msg, timeout)
                                 .mapTo(classTag(ByteString.class))));
 
-        Connect connect = new Connect("some-client-id", ConnectFlags.None());
-        Subscribe subscribe = new Subscribe("some-topic");
+        Pair<SourceQueueWithComplete<Command<?>>, CompletionStage<List<DecodeErrorOrEvent>>>
+            resultPair =
+                Source.<Command<?>>queue(1, OverflowStrategy.fail())
+                    .via(Mqtt.clientSessionFlow(session).join(pipeToServer))
+                    .toMat(Sink.seq(), Keep.both())
+                    .run(mat);
 
-        CompletionStage<List<DecodeErrorOrEvent>> result =
-            Source.from(
-                    Stream.<Command<?>>of(new Command(connect), new Command(subscribe))
-                        .collect(Collectors.toList()))
-                .via(Mqtt.clientSessionFlow(session).join(pipeToServer))
-                .runWith(Sink.seq(), mat);
+        SourceQueueWithComplete<Command<?>> client = resultPair.first();
+        CompletionStage<List<DecodeErrorOrEvent>> result = resultPair.second();
+
+        Connect connect = new Connect("some-client-id", ConnectFlags.None());
 
         ByteString connectBytes =
             new MqttCodec.MqttConnect(connect).encode(ByteString.createBuilder()).result();
@@ -109,6 +115,7 @@ public class MqttTest {
         ByteString connAckBytes =
             new MqttCodec.MqttConnAck(connAck).encode(ByteString.createBuilder()).result();
 
+        Subscribe subscribe = new Subscribe("some-topic");
         ByteString subscribeBytes =
             new MqttCodec.MqttSubscribe(subscribe).encode(ByteString.createBuilder(), 0).result();
         List<Integer> collect =
@@ -125,11 +132,23 @@ public class MqttTest {
                     OptionConverters.toScala(Optional.of(new PacketId(0))))
                 .result();
 
+        client.offer(new Command(connect));
+
         server.expectMsg(connectBytes);
         server.reply(connAckBytes);
 
+        client.offer(new Command(subscribe));
+
         server.expectMsg(subscribeBytes);
-        server.reply(subAckBytes.concat(publishBytes));
+        server.reply(subAckBytes);
+
+        client.offer(new Command(publish));
+
+        server.expectMsg(publishBytes);
+
+        server.reply(publishBytes); // FIXME: Should be pubAckBytes - once handled by the session
+
+        client.complete();
 
         assertEquals(
             result
