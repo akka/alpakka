@@ -11,7 +11,7 @@ import akka.actor.Scheduler
 import akka.{Done, NotUsed, actor => untyped}
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.stream.alpakka.mqtt.streaming.impl.{ClientConnector, MqttFrameStage}
+import akka.stream.alpakka.mqtt.streaming.impl.{ClientConnector, MqttFrameStage, PacketIdAllocator, Subscriber}
 import akka.stream.scaladsl.Flow
 import akka.util.{ByteString, Timeout}
 
@@ -61,7 +61,7 @@ object ActorMqttClientSession {
   def apply(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem): ActorMqttClientSession =
     new ActorMqttClientSession(settings)
 
-  private[scaladsl] val clientSessionId = new AtomicLong
+  private[scaladsl] val clientSessionCounter = new AtomicLong
 }
 
 /**
@@ -73,8 +73,11 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
 
   import ActorMqttClientSession._
 
+  private val clientSessionId = clientSessionCounter.getAndIncrement()
+  private val packetIdAllocator =
+    system.spawn(PacketIdAllocator(), "client-packet-id-allocator-" + clientSessionId)
   private val clientConnector =
-    system.spawn(ClientConnector(settings), "client-connector-" + clientSessionId.getAndIncrement())
+    system.spawn(ClientConnector(packetIdAllocator, settings), "client-connector-" + clientSessionId)
 
   import MqttCodec._
   import MqttSession._
@@ -98,7 +101,10 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
         case Command(cp: PubRec, _) => Future.successful(cp.encode(ByteString.newBuilder).result())
         case Command(cp: PubRel, _) => Future.successful(cp.encode(ByteString.newBuilder).result())
         case Command(cp: PubComp, _) => Future.successful(cp.encode(ByteString.newBuilder).result())
-        case Command(cp: Subscribe, _) => Future.successful(cp.encode(ByteString.newBuilder, cp.packetId).result())
+        case Command(cp: Subscribe, carry) =>
+          (clientConnector ? (replyTo => ClientConnector.SubscribeReceivedLocally(cp, carry, replyTo)): Future[
+            Subscriber.ForwardSubscribe
+          ]).map(command => cp.encode(ByteString.newBuilder, command.packetId).result())
         case Command(cp: Unsubscribe, _) => Future.successful(cp.encode(ByteString.newBuilder, cp.packetId).result())
         case Command(cp: PingReq.type, _) => Future.successful(cp.encode(ByteString.newBuilder).result())
         case Command(cp: Disconnect.type, _) =>
@@ -119,11 +125,16 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
       .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
       .mapAsync(1) {
         case Right(connAck: ConnAck) =>
-          import system.dispatcher
           (clientConnector ? (ClientConnector
             .ConnAckReceivedFromRemote(connAck, _)): Future[ClientConnector.ForwardConnAck])
             .map {
               case ClientConnector.ForwardConnAck(carry) => Right[DecodeError, Event[_]](Event(connAck, carry))
+            }
+        case Right(subAck: SubAck) =>
+          (clientConnector ? (ClientConnector
+            .SubAckReceivedFromRemote(subAck, _)): Future[Subscriber.ForwardSubAck])
+            .map {
+              case Subscriber.ForwardSubAck(carry) => Right[DecodeError, Event[_]](Event(subAck, carry))
             }
         // TODO: Forward the following messages on as per the above ask pattern
         case Right(cp) => Future.successful(Right[DecodeError, Event[_]](Event(cp)))

@@ -27,7 +27,7 @@ class MqttSpec
   implicit val timeout: Timeout = Timeout(3.seconds.dilated)
   val timeoutDuration: FiniteDuration = timeout.duration
 
-  val settings = MqttSessionSettings(100, timeoutDuration, timeoutDuration)
+  val settings = MqttSessionSettings(100, timeoutDuration, timeoutDuration, timeoutDuration)
 
   import MqttCodec._
 
@@ -56,8 +56,8 @@ class MqttSpec
       val connAckBytes = connAck.encode(ByteString.newBuilder).result()
 
       val subscribe = Subscribe("some-topic")
-      val subscribeBytes = subscribe.encode(ByteString.newBuilder, PacketId(0)).result()
-      val subAck = SubAck(PacketId(0), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
+      val subscribeBytes = subscribe.encode(ByteString.newBuilder, PacketId(1)).result()
+      val subAck = SubAck(PacketId(1), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
       val subAckBytes = subAck.encode(ByteString.newBuilder).result()
 
       val publish = Publish("some-topic", ByteString("some-payload"))

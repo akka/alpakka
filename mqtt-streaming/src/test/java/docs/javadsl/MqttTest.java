@@ -78,7 +78,7 @@ public class MqttTest {
     Duration timeoutDuration = Duration.of(timeout.duration().toSeconds(), ChronoUnit.SECONDS);
 
     MqttSessionSettings settings =
-        MqttSessionSettings.create(100, timeoutDuration, timeoutDuration);
+        MqttSessionSettings.create(100, timeoutDuration, timeoutDuration, timeoutDuration);
     session = new ActorMqttClientSession(settings, system);
   }
 
@@ -117,10 +117,10 @@ public class MqttTest {
 
         Subscribe subscribe = new Subscribe("some-topic");
         ByteString subscribeBytes =
-            new MqttCodec.MqttSubscribe(subscribe).encode(ByteString.createBuilder(), 0).result();
+            new MqttCodec.MqttSubscribe(subscribe).encode(ByteString.createBuilder(), 1).result();
         List<Integer> collect =
             Stream.of(ControlPacketFlags.QoSAtLeastOnceDelivery()).collect(Collectors.toList());
-        SubAck subAck = new SubAck(0, collect);
+        SubAck subAck = new SubAck(1, collect);
         ByteString subAckBytes =
             new MqttCodec.MqttSubAck(subAck).encode(ByteString.createBuilder()).result();
 

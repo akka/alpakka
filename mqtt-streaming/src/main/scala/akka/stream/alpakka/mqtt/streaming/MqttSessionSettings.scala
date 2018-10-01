@@ -15,8 +15,9 @@ object MqttSessionSettings {
    */
   def apply(maxPacketSize: Int,
             actorMqttSessionTimeout: FiniteDuration,
-            receiveConnAckTimeout: FiniteDuration): MqttSessionSettings =
-    new MqttSessionSettings(maxPacketSize, actorMqttSessionTimeout, receiveConnAckTimeout)
+            receiveConnAckTimeout: FiniteDuration,
+            receiveSubAckTimeout: FiniteDuration): MqttSessionSettings =
+    new MqttSessionSettings(maxPacketSize, actorMqttSessionTimeout, receiveConnAckTimeout, receiveSubAckTimeout)
 
   /**
    * Java API
@@ -25,17 +26,20 @@ object MqttSessionSettings {
    */
   def create(maxPacketSize: Int,
              actorMqttSessionTimeout: Duration,
-             receiveConnAckTimeout: Duration): MqttSessionSettings =
+             receiveConnAckTimeout: Duration,
+             receiveSubAckTimeout: Duration): MqttSessionSettings =
     MqttSessionSettings(
       maxPacketSize,
       FiniteDuration(actorMqttSessionTimeout.toMillis, TimeUnit.MILLISECONDS),
-      FiniteDuration(receiveConnAckTimeout.toMillis, TimeUnit.MILLISECONDS)
+      FiniteDuration(receiveConnAckTimeout.toMillis, TimeUnit.MILLISECONDS),
+      FiniteDuration(receiveSubAckTimeout.toMillis, TimeUnit.MILLISECONDS)
     )
 }
 
 final class MqttSessionSettings private (val maxPacketSize: Int,
                                          val actorMqttSessionTimeout: FiniteDuration,
-                                         val receiveConnAckTimeout: FiniteDuration) {
+                                         val receiveConnAckTimeout: FiniteDuration,
+                                         val receiveSubAckTimeout: FiniteDuration) {
 
   require(maxPacketSize >= 0 && maxPacketSize <= 0xffff,
           s"maxPacketSize of $maxPacketSize must be positive and less than ${0xffff}")
@@ -50,9 +54,10 @@ final class MqttSessionSettings private (val maxPacketSize: Int,
 
   private def copy(maxPacketSize: Int = maxPacketSize,
                    actorMqttSessionTimeout: FiniteDuration = actorMqttSessionTimeout,
-                   receiveConnAckTimeout: FiniteDuration = receiveConnAckTimeout) =
-    new MqttSessionSettings(maxPacketSize, actorMqttSessionTimeout, receiveConnAckTimeout)
+                   receiveConnAckTimeout: FiniteDuration = receiveConnAckTimeout,
+                   receiveSubAckTimeout: FiniteDuration = receiveSubAckTimeout) =
+    new MqttSessionSettings(maxPacketSize, actorMqttSessionTimeout, receiveConnAckTimeout, receiveSubAckTimeout)
 
   override def toString: String =
-    s"MqttSessionSettings(maxPacketSize=$maxPacketSize,actorMqttSessionTimeout=$actorMqttSessionTimeout,receiveConnAckTimeout=$receiveConnAckTimeout)"
+    s"MqttSessionSettings(maxPacketSize=$maxPacketSize,actorMqttSessionTimeout=$actorMqttSessionTimeout,receiveConnAckTimeout=$receiveConnAckTimeout,receiveSubAckTimeout=$receiveSubAckTimeout)"
 }
