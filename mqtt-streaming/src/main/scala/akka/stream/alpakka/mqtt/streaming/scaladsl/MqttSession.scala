@@ -5,6 +5,8 @@
 package akka.stream.alpakka.mqtt.streaming
 package scaladsl
 
+import java.util.concurrent.atomic.AtomicLong
+
 import akka.actor.Scheduler
 import akka.{Done, NotUsed, actor => untyped}
 import akka.actor.typed.scaladsl.adapter._
@@ -33,10 +35,10 @@ abstract class MqttSession {
   import MqttSession._
 
   /**
-   * Disconnect the session gracefully
+   * Shutdown the session gracefully
    * @return [[Done]] when complete
    */
-  def disconnect(): Future[Done]
+  def shutdown(): Future[Done]
 
   /**
    * @return a flow for commands to be sent to the session
@@ -58,6 +60,8 @@ abstract class MqttClientSession extends MqttSession
 object ActorMqttClientSession {
   def apply(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem): ActorMqttClientSession =
     new ActorMqttClientSession(settings)
+
+  private[scaladsl] val clientSessionId = new AtomicLong
 }
 
 /**
@@ -67,7 +71,10 @@ object ActorMqttClientSession {
 final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem)
     extends MqttClientSession {
 
-  private val clientConnector = system.spawn(ClientConnector(settings), "client-connector")
+  import ActorMqttClientSession._
+
+  private val clientConnector =
+    system.spawn(ClientConnector(settings), "client-connector-" + clientSessionId.getAndIncrement())
 
   import MqttCodec._
   import MqttSession._
@@ -77,7 +84,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
 
   import system.dispatcher
 
-  override def disconnect(): Future[Done] = ???
+  override def shutdown(): Future[Done] = ???
 
   override def commandFlow: CommandFlow =
     Flow[Command[_]]
@@ -94,7 +101,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
         case Command(cp: Subscribe, _) => Future.successful(cp.encode(ByteString.newBuilder, cp.packetId).result())
         case Command(cp: Unsubscribe, _) => Future.successful(cp.encode(ByteString.newBuilder, cp.packetId).result())
         case Command(cp: PingReq.type, _) => Future.successful(cp.encode(ByteString.newBuilder).result())
-        case Command(cp: Disconnect.type, carry) =>
+        case Command(cp: Disconnect.type, _) =>
           (clientConnector ? (replyTo => ClientConnector.DisconnectReceivedLocally(replyTo)): Future[
             ClientConnector.ForwardDisconnect.type
           ]).map(_ => cp.encode(ByteString.newBuilder).result())
@@ -142,7 +149,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit syste
   import MqttCodec._
   import MqttSession._
 
-  override def disconnect(): Future[Done] = ???
+  override def shutdown(): Future[Done] = ???
 
   override def commandFlow: CommandFlow =
     Flow[Command[_]].map {
