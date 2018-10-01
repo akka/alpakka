@@ -107,6 +107,11 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
           ]).map(_ => cp.encode(ByteString.newBuilder).result())
         case c: Command[_] => throw new IllegalStateException(c + " is not a client command")
       }
+      .watchTermination() {
+        case (_, terminated) =>
+          terminated.foreach(_ => clientConnector ! ClientConnector.ConnectionLost)
+          NotUsed
+      }
 
   override def eventFlow: EventFlow =
     Flow[ByteString]
@@ -124,7 +129,11 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
         case Right(cp) => Future.successful(Right[DecodeError, Event[_]](Event(cp)))
         case Left(de) => Future.successful(Left(de))
       }
-
+      .watchTermination() {
+        case (_, terminated) =>
+          terminated.foreach(_ => clientConnector ! ClientConnector.ConnectionLost)
+          NotUsed
+      }
 }
 
 /**
