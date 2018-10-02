@@ -136,6 +136,12 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
             .map {
               case Subscriber.ForwardSubAck(carry) => Right[DecodeError, Event[_]](Event(subAck, carry))
             }
+        case Right(publish: Publish) =>
+          (clientConnector ? (ClientConnector
+            .PublishReceivedFromRemote(publish, _)): Future[Subscriber.ForwardPublish.type])
+            .map {
+              case Subscriber.ForwardPublish => Right[DecodeError, Event[_]](Event(publish))
+            }
         // TODO: Forward the following messages on as per the above ask pattern
         case Right(cp) => Future.successful(Right[DecodeError, Event[_]](Event(cp)))
         case Left(de) => Future.successful(Left(de))

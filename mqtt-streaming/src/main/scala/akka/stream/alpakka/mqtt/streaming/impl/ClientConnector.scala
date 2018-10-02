@@ -60,6 +60,8 @@ import scala.util.{Failure, Success}
                                             remote: ActorRef[Subscriber.ForwardSubscribe])
       extends Event
   final case class SubAckReceivedFromRemote(subAck: SubAck, local: ActorRef[Subscriber.ForwardSubAck]) extends Event
+  final case class PublishReceivedFromRemote(publish: Publish, local: ActorRef[Subscriber.ForwardPublish.type])
+      extends Event
 
   sealed abstract class Command
   case object ForwardConnect extends Command
@@ -117,7 +119,13 @@ import scala.util.{Failure, Success}
           child.upcast ! Subscriber.SubAckReceivedFromRemote(subAck, local)
       }
       Behaviors.same
-    // TODO: UnsubscribedReceivedLocally, SubscribeReceivedLocally, PublishReceivedFromRemote, PubRelReceivedFromRemote, PubAckReceivedLocally, PubRecReceivedLocally, PubCompReceivedLocally, PublishReceivedLocally, PubRecReceivedLocally, PubCompReceivedLocally, PubAckReceivedFromRemote, PubRelReceivedFromRemote
+    case (context, PublishReceivedFromRemote(publish, local)) =>
+      context.children.foreach {
+        case child if child.path.name.startsWith(SubscriberNamePrefix) =>
+          child.upcast ! Subscriber.PublishReceivedFromRemote(publish, local)
+      }
+      Behaviors.same
+    // TODO: UnsubscribedReceivedLocally, SubscribeReceivedLocally, PubRelReceivedFromRemote, PubAckReceivedLocally, PubRecReceivedLocally, PubCompReceivedLocally, PublishReceivedLocally, PubRecReceivedLocally, PubCompReceivedLocally, PubAckReceivedFromRemote, PubRelReceivedFromRemote
   }
 
   // Actions
@@ -167,12 +175,12 @@ import scala.util.{Failure, Success}
   final case object UnacquiredPacketId extends Event
   final case class SubAckReceivedFromRemote(subAck: SubAck, local: ActorRef[ForwardSubAck]) extends Event
   case object ReceiveSubAckTimeout extends Event
-  final case class PublishReceivedFromRemote(publish: Publish, local: ActorRef[ForwardPublish]) extends Event
+  final case class PublishReceivedFromRemote(publish: Publish, local: ActorRef[ForwardPublish.type]) extends Event
 
   sealed abstract class Command
   final case class ForwardSubscribe(packetId: PacketId) extends Command
   final case class ForwardSubAck(connectData: SubscribeData) extends Command
-  final case class ForwardPublish(publish: Publish) extends Command
+  case object ForwardPublish extends Command
 
   // State event handling
 
@@ -213,10 +221,13 @@ import scala.util.{Failure, Success}
 
   def serverSubscribed(data: ServerSubscribed): Behavior[Event] = Behaviors.receiveMessagePartial {
     case PublishReceivedFromRemote(publish, local) if matchTopicFilter(data.topicFilterName, publish.topicName) =>
+      if (publish.flags.contains(ControlPacketFlags.QoSAtMostOnceDelivery)) {
+        local ! ForwardPublish
+      } // TODO: Implement other QoS levels
       Behaviors.same
   }
 
-  // Actions
+  //
 
   /*
    * 4.7 Topic Names and Topic Filters

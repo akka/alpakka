@@ -3,6 +3,7 @@
  */
 
 package docs.scaladsl
+
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.stream.alpakka.mqtt.streaming._
@@ -62,6 +63,8 @@ class MqttSpec
 
       val publish = Publish("some-topic", ByteString("some-payload"))
       val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(0))).result()
+      val pubAck = PubAck(PacketId(0))
+      val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
 
       client.offer(Command(connect))
 
@@ -76,11 +79,11 @@ class MqttSpec
       client.offer(Command(publish))
 
       server.expectMsg(publishBytes)
-      server.reply(publishBytes) // FIXME: Should be pubAckBytes - once handled by the session
+      server.reply(pubAckBytes)
 
       client.complete()
 
-      result.futureValue shouldBe List(Right(Event(connAck)), Right(Event(subAck)), Right(Event(publish)))
+      result.futureValue shouldBe List(Right(Event(connAck)), Right(Event(subAck)), Right(Event(pubAck)))
     }
 
     "Connect and carry through an object to ConnAck" in {
@@ -187,6 +190,52 @@ class MqttSpec
       client.offer(Command(subscribe))
 
       server.expectNoMessage(1.second.dilated)
+    }
+
+    "receive a QoS 0 publication from a subscribed topic" in {
+      val session = ActorMqttClientSession(settings)
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+
+      val (client, result) = Source
+        .queue(1, OverflowStrategy.fail)
+        .via(
+          Mqtt
+            .clientSessionFlow(session)
+            .join(pipeToServer)
+        )
+        .collect {
+          case Right(Event(cp: Publish, None)) => cp
+        }
+        .toMat(Sink.head)(Keep.both)
+        .run
+
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val subscribe = Subscribe("some-topic")
+      val subscribeBytes = subscribe.encode(ByteString.newBuilder, PacketId(1)).result()
+      val subAck = SubAck(PacketId(1), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
+      val subAckBytes = subAck.encode(ByteString.newBuilder).result()
+
+      val publish = Publish(ControlPacketFlags.QoSAtMostOnceDelivery, "some-topic", ByteString("some-payload"))
+      val publishBytes = publish.encode(ByteString.newBuilder, None).result()
+
+      client.offer(Command(connect))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      client.offer(Command(subscribe))
+
+      server.expectMsg(subscribeBytes)
+      server.reply(subAckBytes ++ publishBytes)
+
+      result.futureValue shouldBe publish
     }
   }
 

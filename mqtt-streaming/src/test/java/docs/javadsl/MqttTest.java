@@ -29,6 +29,7 @@ import akka.stream.alpakka.mqtt.streaming.Event;
 import akka.stream.alpakka.mqtt.streaming.DecodeErrorOrEvent;
 import akka.stream.alpakka.mqtt.streaming.MqttCodec;
 import akka.stream.alpakka.mqtt.streaming.PacketId;
+import akka.stream.alpakka.mqtt.streaming.PubAck;
 import akka.stream.alpakka.mqtt.streaming.Publish;
 import akka.stream.alpakka.mqtt.streaming.MqttSessionSettings;
 import akka.stream.alpakka.mqtt.streaming.SubAck;
@@ -131,6 +132,9 @@ public class MqttTest {
                     ByteString.createBuilder(),
                     OptionConverters.toScala(Optional.of(new PacketId(0))))
                 .result();
+        PubAck pubAck = new PubAck(0);
+        ByteString pubAckBytes =
+            new MqttCodec.MqttPubAck(pubAck).encode(ByteString.createBuilder()).result();
 
         client.offer(new Command(connect));
 
@@ -145,8 +149,7 @@ public class MqttTest {
         client.offer(new Command(publish));
 
         server.expectMsg(publishBytes);
-
-        server.reply(publishBytes); // FIXME: Should be pubAckBytes - once handled by the session
+        server.reply(pubAckBytes);
 
         client.complete();
 
@@ -159,7 +162,7 @@ public class MqttTest {
             Stream.of(
                     Optional.of(new Event(connAck)),
                     Optional.of(new Event(subAck)),
-                    Optional.of(new Event(publish)))
+                    Optional.of(new Event(pubAck)))
                 .collect(Collectors.toList()));
       }
     };
