@@ -90,10 +90,10 @@ public class ReferenceTest {
 
     Assert.assertEquals(Collections.singletonList(ByteString.fromString("one")), msg.getData());
 
-    final Integer expected = 100;
+    final OptionalInt expected = OptionalInt.of(100);
     Assert.assertEquals(expected, msg.getBytesRead());
 
-    Assert.assertNull(msg.getBytesReadFailure());
+    Assert.assertEquals(Optional.empty(), msg.getBytesReadFailure());
   }
 
   @Test
