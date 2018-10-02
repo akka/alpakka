@@ -48,4 +48,30 @@ class ClientConnectorSpec extends WordSpec with Matchers with BeforeAndAfterAll 
       replyTo.expectMessage(PacketIdAllocator.Acquired(PacketId(1)))
     }
   }
+
+  "subscriber" should {
+    "match topic filters" in {
+      Subscriber.matchTopicFilter("sport/tennis/player1", "sport/tennis/player1") shouldBe true
+
+      Subscriber.matchTopicFilter("sport/tennis/player1/#", "sport/tennis/player1") shouldBe true
+      Subscriber.matchTopicFilter("sport/tennis/player1/#", "sport/tennis/player1/ranking") shouldBe true
+      Subscriber.matchTopicFilter("sport/tennis/player1/#", "sport/tennis/player1/score/wimbledon") shouldBe true
+
+      Subscriber.matchTopicFilter("sport/#", "sport") shouldBe true
+      Subscriber.matchTopicFilter("#", "sport") shouldBe true
+      Subscriber.matchTopicFilter("sport/tennis/#", "sport/tennis") shouldBe true
+      Subscriber.matchTopicFilter("sport/tennis#", "sport/tennis") shouldBe false
+      Subscriber.matchTopicFilter("sport/tennis/#/ranking", "sport/tennis/player1/ranking") shouldBe false
+
+      Subscriber.matchTopicFilter("sport/tennis/+", "sport/tennis/player1") shouldBe true
+      Subscriber.matchTopicFilter("sport/tennis/+", "sport/tennis/player1/tranking") shouldBe false
+
+      Subscriber.matchTopicFilter("sport/+", "sport") shouldBe false
+      Subscriber.matchTopicFilter("sport/+", "sport/") shouldBe true
+
+      Subscriber.matchTopicFilter("+", "sport") shouldBe true
+      Subscriber.matchTopicFilter("+/tennis/#", "sport/tennis") shouldBe true
+      Subscriber.matchTopicFilter("sport+", "sport") shouldBe false
+    }
+  }
 }

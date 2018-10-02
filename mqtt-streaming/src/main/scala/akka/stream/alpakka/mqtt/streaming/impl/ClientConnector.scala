@@ -10,6 +10,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.util.Timeout
 
+import scala.annotation.tailrec
 import scala.util.{Failure, Success}
 
 /*
@@ -100,11 +101,12 @@ import scala.util.{Failure, Success}
       disconnected(Uninitialized(data.packetIdAllocator, data.settings))
     case (context, SubscribeReceivedLocally(subscribe, subscribeData, remote)) =>
       subscribe.topicFilters.foreach { topicFilter =>
-        val (topicName, _) = topicFilter
-        val subscriberName = SubscriberNamePrefix + topicName
+        val (topicFilterName, _) = topicFilter
+        val subscriberName = SubscriberNamePrefix + topicFilterName
         context.child(subscriberName) match {
           case None =>
-            context.spawn(Subscriber(subscribeData, remote, data.packetIdAllocator, data.settings), subscriberName)
+            context.spawn(Subscriber(topicFilterName, subscribeData, remote, data.packetIdAllocator, data.settings),
+                          subscriberName)
           case _: Some[_] => // Ignored for existing subscriptions
         }
       }
@@ -135,36 +137,42 @@ import scala.util.{Failure, Success}
   /*
    * Construct with the starting state
    */
-  def apply(subscribeData: SubscribeData,
+  def apply(topicFilterName: String,
+            subscribeData: SubscribeData,
             remote: ActorRef[ForwardSubscribe],
             packetIdAllocator: ActorRef[PacketIdAllocator.Request],
             settings: MqttSessionSettings): Behavior[Event] =
-    prepareServerSubscribe(Start(subscribeData, remote, packetIdAllocator, settings))
+    prepareServerSubscribe(Start(topicFilterName, subscribeData, remote, packetIdAllocator, settings))
 
   // Our FSM data, FSM events and commands emitted by the FSM
 
-  sealed abstract class Data(val settings: MqttSessionSettings)
-  final case class Start(subscribeData: SubscribeData,
+  sealed abstract class Data(val topicFilterName: String, val settings: MqttSessionSettings)
+  final case class Start(override val topicFilterName: String,
+                         subscribeData: SubscribeData,
                          remote: ActorRef[ForwardSubscribe],
                          packetIdAllocator: ActorRef[PacketIdAllocator.Request],
                          override val settings: MqttSessionSettings)
-      extends Data(settings)
-  final case class ServerSubscribe(packetId: PacketId,
+      extends Data(topicFilterName, settings)
+  final case class ServerSubscribe(override val topicFilterName: String,
+                                   packetId: PacketId,
                                    subscribeData: SubscribeData,
                                    packetIdAllocator: ActorRef[PacketIdAllocator.Request],
                                    override val settings: MqttSessionSettings)
-      extends Data(settings)
-  final case class ServerSubscribed(override val settings: MqttSessionSettings) extends Data(settings)
+      extends Data(topicFilterName, settings)
+  final case class ServerSubscribed(override val topicFilterName: String, override val settings: MqttSessionSettings)
+      extends Data(topicFilterName, settings)
 
   sealed abstract class Event
   final case class AcquiredPacketId(packetId: PacketId) extends Event
   final case object UnacquiredPacketId extends Event
   final case class SubAckReceivedFromRemote(subAck: SubAck, local: ActorRef[ForwardSubAck]) extends Event
   case object ReceiveSubAckTimeout extends Event
+  final case class PublishReceivedFromRemote(publish: Publish, local: ActorRef[ForwardPublish]) extends Event
 
   sealed abstract class Command
-  case class ForwardSubscribe(packetId: PacketId) extends Command
+  final case class ForwardSubscribe(packetId: PacketId) extends Command
   final case class ForwardSubAck(connectData: SubscribeData) extends Command
+  final case class ForwardPublish(publish: Publish) extends Command
 
   // State event handling
 
@@ -179,7 +187,9 @@ import scala.util.{Failure, Success}
     Behaviors.receiveMessagePartial {
       case AcquiredPacketId(packetId) =>
         data.remote ! ForwardSubscribe(packetId)
-        serverSubscribe(ServerSubscribe(packetId, data.subscribeData, data.packetIdAllocator, data.settings))
+        serverSubscribe(
+          ServerSubscribe(data.topicFilterName, packetId, data.subscribeData, data.packetIdAllocator, data.settings)
+        )
       case UnacquiredPacketId =>
         Behaviors.stopped
     }
@@ -192,7 +202,7 @@ import scala.util.{Failure, Success}
       case SubAckReceivedFromRemote(subAck, local) if subAck.packetId == data.packetId =>
         local ! ForwardSubAck(data.subscribeData)
         data.packetIdAllocator ! PacketIdAllocator.Release(data.packetId)
-        serverSubscribed(ServerSubscribed(data.settings))
+        serverSubscribed(ServerSubscribed(data.topicFilterName, data.settings))
       case _: SubAckReceivedFromRemote =>
         Behaviors.same // Ignore sub acks not destined for us
       case ReceiveSubAckTimeout =>
@@ -201,7 +211,49 @@ import scala.util.{Failure, Success}
     }
   }
 
-  def serverSubscribed(data: ServerSubscribed): Behavior[Event] = Behaviors.same // TODO: This is where I'm up to.
+  def serverSubscribed(data: ServerSubscribed): Behavior[Event] = Behaviors.receiveMessagePartial {
+    case PublishReceivedFromRemote(publish, local) if matchTopicFilter(data.topicFilterName, publish.topicName) =>
+      Behaviors.same
+  }
+
+  // Actions
+
+  /*
+   * 4.7 Topic Names and Topic Filters
+   * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
+   *
+   * Inspired by https://github.com/eclipse/paho.mqtt.java/blob/master/org.eclipse.paho.client.mqttv3/src/main/java/org/eclipse/paho/client/mqttv3/MqttTopic.java#L240
+   */
+  def matchTopicFilter(topicFilterName: String, topicName: String): Boolean = {
+    @tailrec
+    def matchStrings(tfn: String, tn: String): Boolean =
+      if (tfn == "/+" && tn == "/") {
+        true
+      } else if (tfn.nonEmpty && tn.nonEmpty) {
+        val tfnHead = tfn.charAt(0)
+        val tnHead = tn.charAt(0)
+        if (tfnHead == '/' && tnHead != '/') {
+          false
+        } else if (tfnHead == '/' && tnHead == '/' && tn.length == 1) {
+          matchStrings(tfn, tn.tail)
+        } else if (tfnHead != '+' && tfnHead != '#' && tfnHead != tnHead) {
+          false
+        } else if (tfnHead == '+') {
+          matchStrings(tfn.tail, tn.tail.dropWhile(_ != '/'))
+        } else if (tfnHead == '#') {
+          matchStrings(tfn.tail, "")
+        } else {
+          matchStrings(tfn.tail, tn.tail)
+        }
+      } else if (tfn.isEmpty && tn.isEmpty) {
+        true
+      } else if (tfn == "/#" && tn.isEmpty) {
+        true
+      } else {
+        false
+      }
+    matchStrings(topicFilterName, topicName)
+  }
 }
 
 /*
