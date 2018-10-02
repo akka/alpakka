@@ -49,6 +49,26 @@ services:
     volumes:
       - ./geode/scripts/:/scripts/
     command: /scripts/geode.sh
+  gcloud-pubsub-emulator:
+    image: bigtruedata/gcloud-pubsub-emulator
+    ports:
+      - "8538:8538"
+    command: start --host-port=0.0.0.0:8538 --data-dir=/data
+  gcloud-pubsub-client:
+    image: martynas/gcloud-pubsub-client
+    links:
+      - "gcloud-pubsub-emulator"
+    environment:
+      - "PUBSUB_PROJECT_ID=alpakka"
+      - "PUBSUB_EMULATOR_HOST=gcloud-pubsub-emulator:8538"
+    entrypoint: ""
+    command: >
+      bash -c "
+        python publisher.py alpakka create simpleTopic &&
+        python subscriber.py alpakka create simpleTopic simpleSubscription
+        python publisher.py alpakka create testTopic &&
+        python subscriber.py alpakka create testTopic testSubscription
+      "
   ironauth:
     image: iron/auth
     ports:

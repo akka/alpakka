@@ -198,7 +198,8 @@ object SlickFlowWithPassThroughExample extends App {
       )
       .log("nr-of-updated-rows")
       .mapAsync(1) { // in correct order
-        kafkaMessage => kafkaMessage.offset.commit // commit kafka messages
+        kafkaMessage =>
+          kafkaMessage.offset.commit // commit kafka messages
       }
       .runWith(Sink.ignore)
   //#flowWithPassThrough-example

@@ -3,14 +3,14 @@ import Keys._
 
 object Dependencies {
 
-  val ScalaVersions = Seq("2.12.6", "2.11.12")
+  val ScalaVersions = Seq("2.12.7", "2.11.12")
 
   val AkkaVersion = sys.env.get("AKKA_SERIES") match {
     case Some("2.4") => sys.error("Akka 2.4 is not supported anymore")
     case _ => "2.5.16"
   }
 
-  val AwsSdkVersion = "1.11.371"
+  val AwsSdkVersion = "1.11.414"
   val AkkaHttpVersion = "10.1.5"
 
   val Common = Seq(
@@ -74,7 +74,7 @@ object Dependencies {
       "com.h2database" % "h2" % "1.4.197", // Eclipse Public License 1.0
       "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.3.1", // ApacheV2
       "org.codelibs" % "elasticsearch-cluster-runner" % "6.3.1.0", // ApacheV2
-      "io.netty" % "netty-all" % "4.1.27.Final", // ApacheV2
+      "io.netty" % "netty-all" % "4.1.29.Final", // ApacheV2
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.6",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.6",
       "org.slf4j" % "log4j-over-slf4j" % "1.7.25",
@@ -148,6 +148,16 @@ object Dependencies {
       "com.github.tomakehurst" % "wiremock" % "2.18.0" % Test // ApacheV2
     )
   )
+
+  val GooglePubSubGrpc = Seq(
+    libraryDependencies ++= Seq(
+      "com.google.api.grpc" % "grpc-google-cloud-pubsub-v1" % "0.12.0" % "protobuf", // ApacheV2
+      "io.grpc" % "grpc-auth" % "1.14.0", // ApacheV2
+      "com.google.auth" % "google-auth-library-oauth2-http" % "0.10.0" // BSD 3-clause
+    )
+  )
+
+  val GooglePubSubGrpcAlpnAgent = "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.7"
 
   val GoogleFcm = Seq(
     libraryDependencies ++= Seq(
@@ -229,7 +239,7 @@ object Dependencies {
 
   val MongoDb = Seq(
     libraryDependencies ++= Seq(
-      "org.mongodb.scala" %% "mongo-scala-driver" % "2.4.0" // ApacheV2
+      "org.mongodb.scala" %% "mongo-scala-driver" % "2.4.2" // ApacheV2
     )
   )
 
@@ -313,7 +323,7 @@ object Dependencies {
   val Sqs = Seq(
     libraryDependencies ++= Seq(
       "com.amazonaws" % "aws-java-sdk-sqs" % AwsSdkVersion, // ApacheV2
-      "org.elasticmq" %% "elasticmq-rest-sqs" % "0.14.1" % Test excludeAll (
+      "org.elasticmq" %% "elasticmq-rest-sqs" % "0.14.5" % Test excludeAll (
         // elasticmq-rest-sqs depends on Akka 2.5, exclude it, so we can choose Akka version
         ExclusionRule(organization = "com.typesafe.akka") //
       ), // ApacheV2

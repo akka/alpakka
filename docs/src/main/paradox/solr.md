@@ -118,11 +118,46 @@ Java
 
 
 | Parameter           | Default | Description                                                                                            |
-| ------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| bufferSize          | 10      | `SolrSink` puts messages by one bulk request per messages of this buffer size.                |
-| retryInterval       | 5000    | When a request is failed, `SolrSink` retries that request after this interval (milliseconds). |
-| maxRetry            | 100     | `SolrSink` give up and fails the stage if it gets this number of consective failures.         | 
+| ------------------- | ------- | ------------------------------------------------------------------------------------------------------ | 
 | commitWithin        | -1      | Max time (in ms) before a commit will happen, -1 for manual committing |
+
+### Update atomically documents
+
+We can update atomically documents.
+
+Scala
+: @@snip [snip](/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #update-atomically-documents }
+
+Java
+: @@snip [snip](/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #update-atomically-documents }
+
+We can use typed and bean to update atomically.
+
+### Delete documents by ids
+
+We can delete documents by ids.
+
+Scala
+: @@snip [snip](/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #delete-documents }
+
+Java
+: @@snip [snip](/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #delete-documents }
+
+We can use typed and bean to delete.
+
+### Delete documents by query
+
+We can delete documents by query.
+
+Scala
+: @@snip [snip](/solr/src/test/scala/akka/stream/alpakka/solr/SolrSpec.scala) { #delete-documents-query }
+
+Java
+: @@snip [snip](/solr/src/test/java/akka/stream/alpakka/solr/SolrTest.java) { #delete-documents-query }
+
+We can use typed and bean to delete.
+
+
 
 ## Flow Usage
 
