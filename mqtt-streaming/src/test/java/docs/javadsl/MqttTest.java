@@ -137,9 +137,9 @@ public class MqttTest {
             new MqttCodec.MqttPublish(publish)
                 .encode(
                     ByteString.createBuilder(),
-                    OptionConverters.toScala(Optional.of(new PacketId(0))))
+                    OptionConverters.toScala(Optional.of(new PacketId(1))))
                 .result();
-        PubAck pubAck = new PubAck(0);
+        PubAck pubAck = new PubAck(1);
         ByteString pubAckBytes =
             new MqttCodec.MqttPubAck(pubAck).encode(ByteString.createBuilder()).result();
 

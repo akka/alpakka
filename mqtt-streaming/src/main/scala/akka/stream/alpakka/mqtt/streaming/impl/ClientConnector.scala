@@ -68,6 +68,11 @@ import scala.util.{Failure, Success}
       extends Event
   final case class PubCompReceivedLocally(pubComp: PubComp, remote: ActorRef[Subscriber.ForwardPubComp.type])
       extends Event
+  final case class PublishReceivedLocally(publish: Publish,
+                                          publishData: Producer.PublishData,
+                                          local: ActorRef[Producer.ForwardPublish])
+      extends Event
+  final case class PubAckReceivedFromRemote(pubAck: PubAck, local: ActorRef[Producer.ForwardPubAck]) extends Event
 
   sealed abstract class Command
   case object ForwardConnect extends Command
@@ -76,6 +81,7 @@ import scala.util.{Failure, Success}
 
   // State event handling
 
+  private val ProducerNamePrefix = "producer-"
   private val SubscriberNamePrefix = "subscriber-"
 
   def disconnected(data: Uninitialized): Behavior[Event] = Behaviors.receiveMessagePartial {
@@ -120,40 +126,66 @@ import scala.util.{Failure, Success}
       }
       Behaviors.same
     // FIXME: Improve the way that messages are dispatched to child actors so they aren't broadcast - will need to key by packet id
-    case (context, SubAckReceivedFromRemote(subAck, local)) =>
+    case (context, SubAckReceivedFromRemote(pubAck, local)) =>
       context.children.foreach {
         case child if child.path.name.startsWith(SubscriberNamePrefix) =>
-          child.upcast ! Subscriber.SubAckReceivedFromRemote(subAck, local)
+          child.upcast ! Subscriber.SubAckReceivedFromRemote(pubAck, local)
+        case _ =>
       }
       Behaviors.same
     case (context, PublishReceivedFromRemote(publish, local)) =>
       context.children.foreach {
         case child if child.path.name.startsWith(SubscriberNamePrefix) =>
           child.upcast ! Subscriber.PublishReceivedFromRemote(publish, local)
+        case _ =>
       }
       Behaviors.same
     case (context, PubAckReceivedLocally(pubAck, remote)) =>
       context.children.foreach {
         case child if child.path.name.startsWith(SubscriberNamePrefix) =>
           child.upcast ! Subscriber.PubAckReceivedLocally(pubAck, remote)
+        case _ =>
       }
       Behaviors.same
     case (context, PubRecReceivedLocally(pubRec, remote)) =>
       context.children.foreach {
         case child if child.path.name.startsWith(SubscriberNamePrefix) =>
           child.upcast ! Subscriber.PubRecReceivedLocally(pubRec, remote)
+        case _ =>
       }
       Behaviors.same
     case (context, PubRelReceivedFromRemote(pubRel, local)) =>
       context.children.foreach {
         case child if child.path.name.startsWith(SubscriberNamePrefix) =>
           child.upcast ! Subscriber.PubRelReceivedFromRemote(pubRel, local)
+        case _ =>
       }
       Behaviors.same
     case (context, PubCompReceivedLocally(pubComp, remote)) =>
       context.children.foreach {
         case child if child.path.name.startsWith(SubscriberNamePrefix) =>
           child.upcast ! Subscriber.PubCompReceivedLocally(pubComp, remote)
+        case _ =>
+      }
+      Behaviors.same
+    case (_, PublishReceivedLocally(publish, _, remote))
+        if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
+      remote ! Producer.ForwardPublish(None)
+      Behaviors.same
+    case (context, PublishReceivedLocally(publish, publishData, remote)) =>
+      val producerName = ProducerNamePrefix + publish.topicName
+      context.child(producerName) match {
+        case None =>
+          context.spawn(Producer(publish.flags, publishData, remote, data.packetIdAllocator, data.settings),
+                        producerName)
+        case _: Some[_] => // Ignored for existing subscriptions
+      }
+      Behaviors.same
+    case (context, PubAckReceivedFromRemote(pubAck, local)) =>
+      context.children.foreach {
+        case child if child.path.name.startsWith(ProducerNamePrefix) =>
+          child.upcast ! Producer.PubAckReceivedFromRemote(pubAck, local)
+        case _ =>
       }
       Behaviors.same
     // TODO: UnsubscribedReceivedLocally, SubscribeReceivedLocally, PubRelReceivedFromRemote, PubAckReceivedLocally, PubRecReceivedLocally, PubCompReceivedLocally, PublishReceivedLocally, PubRecReceivedLocally, PubCompReceivedLocally, PubAckReceivedFromRemote, PubRelReceivedFromRemote
@@ -372,6 +404,89 @@ import scala.util.{Failure, Success}
 }
 
 /*
+ * A producer manages the client state in relation to publishing to a a server-side topic.
+ * A producer is created per server per topic.
+ */
+@InternalApi private[streaming] object Producer {
+
+  type PublishData = Option[_]
+
+  /*
+   * Construct with the starting state
+   */
+  def apply(flags: ControlPacketFlags,
+            publishData: PublishData,
+            remote: ActorRef[ForwardPublish],
+            packetIdAllocator: ActorRef[PacketIdAllocator.Request],
+            settings: MqttSessionSettings): Behavior[Event] =
+    preparePublish(Start(flags, publishData, remote, packetIdAllocator, settings))
+
+  // Our FSM data, FSM events and commands emitted by the FSM
+
+  sealed abstract class Data(val settings: MqttSessionSettings)
+  final case class Start(flags: ControlPacketFlags,
+                         publishData: PublishData,
+                         remote: ActorRef[ForwardPublish],
+                         packetIdAllocator: ActorRef[PacketIdAllocator.Request],
+                         override val settings: MqttSessionSettings)
+      extends Data(settings)
+  final case class PublishUnacknowledged(flags: ControlPacketFlags,
+                                         packetId: PacketId,
+                                         publishData: PublishData,
+                                         packetIdAllocator: ActorRef[PacketIdAllocator.Request],
+                                         override val settings: MqttSessionSettings)
+      extends Data(settings)
+
+  sealed abstract class Event
+  final case class AcquiredPacketId(packetId: PacketId) extends Event
+  final case object UnacquiredPacketId extends Event
+  case object ReceivePubAckRecTimeout extends Event
+  final case class PubAckReceivedFromRemote(pubAck: PubAck, local: ActorRef[ForwardPubAck]) extends Event
+
+  sealed abstract class Command
+  final case class ForwardPublish(packetId: Option[PacketId]) extends Command
+  final case class ForwardPubAck(publishData: PublishData) extends Command
+
+  // State event handling
+
+  def preparePublish(data: Start): Behavior[Event] = Behaviors.setup { context =>
+    implicit val actorMqttSessionTimeout: Timeout = data.settings.actorMqttSessionTimeout
+
+    context.ask(data.packetIdAllocator)(PacketIdAllocator.Acquire) {
+      case Success(acquired: PacketIdAllocator.Acquired) => AcquiredPacketId(acquired.packetId)
+      case Failure(_) => UnacquiredPacketId
+    }
+
+    Behaviors.receiveMessagePartial {
+      case AcquiredPacketId(packetId) =>
+        data.remote ! ForwardPublish(Some(packetId))
+        publishUnacknowledged(
+          PublishUnacknowledged(data.flags, packetId, data.publishData, data.packetIdAllocator, data.settings)
+        )
+      case UnacquiredPacketId =>
+        Behaviors.stopped
+    }
+  }
+
+  def publishUnacknowledged(data: PublishUnacknowledged): Behavior[Event] = Behaviors.withTimers { timer =>
+    timer.startSingleTimer("receive-pubackrec", ReceivePubAckRecTimeout, data.settings.receivePubAckRecTimeout)
+
+    Behaviors.receiveMessagePartial {
+      case PubAckReceivedFromRemote(pubAck, local)
+          if data.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) && pubAck.packetId == data.packetId =>
+        local ! ForwardPubAck(data.publishData)
+        data.packetIdAllocator ! PacketIdAllocator.Release(data.packetId)
+        Behaviors.stopped
+      case _: PubAckReceivedFromRemote =>
+        Behaviors.stopped // Ignore sub acks not destined for us
+      case ReceivePubAckRecTimeout =>
+        data.packetIdAllocator ! PacketIdAllocator.Release(data.packetId)
+        Behaviors.stopped
+    } // TODO: PUBREC from remote
+  }
+}
+
+/*
  * Manage packet identifiers for MQTT. Once released, they can
  * be re-used. The algorithm is optimised to return allocated
  * packet ids fast, and take the cost when releasing them as
@@ -421,5 +536,4 @@ import scala.util.{Failure, Success}
       }
       main(remainingPacketIds, revisedNextPacketId)
   }
-
 }

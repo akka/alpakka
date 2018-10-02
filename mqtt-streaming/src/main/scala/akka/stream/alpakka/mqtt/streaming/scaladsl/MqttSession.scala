@@ -11,7 +11,7 @@ import akka.actor.Scheduler
 import akka.{Done, NotUsed, actor => untyped}
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.stream.alpakka.mqtt.streaming.impl.{ClientConnector, MqttFrameStage, PacketIdAllocator, Subscriber}
+import akka.stream.alpakka.mqtt.streaming.impl._
 import akka.stream.scaladsl.Flow
 import akka.util.{ByteString, Timeout}
 
@@ -96,8 +96,10 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
           (clientConnector ? (replyTo => ClientConnector.ConnectReceivedLocally(cp, carry, replyTo)): Future[
             ClientConnector.ForwardConnect.type
           ]).map(_ => cp.encode(ByteString.newBuilder).result())
-        case Command(cp: Publish, _) =>
-          Future.successful(cp.encode(ByteString.newBuilder, cp.packetId).result()) // FIXME: To be replaced - here just for the test to work
+        case Command(cp: Publish, carry) =>
+          (clientConnector ? (replyTo => ClientConnector.PublishReceivedLocally(cp, carry, replyTo)): Future[
+            Producer.ForwardPublish
+          ]).map(command => cp.encode(ByteString.newBuilder, command.packetId).result())
         case Command(cp: PubAck, _) =>
           (clientConnector ? (replyTo => ClientConnector.PubAckReceivedLocally(cp, replyTo)): Future[
             Subscriber.ForwardPubAck.type
@@ -149,13 +151,19 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
             .map {
               case Subscriber.ForwardPublish => Right[DecodeError, Event[_]](Event(publish))
             }
+        case Right(pubAck: PubAck) =>
+          (clientConnector ? (ClientConnector
+            .PubAckReceivedFromRemote(pubAck, _)): Future[Producer.ForwardPubAck])
+            .map {
+              case Producer.ForwardPubAck(carry) => Right[DecodeError, Event[_]](Event(pubAck, carry))
+            }
         case Right(pubRel: PubRel) =>
           (clientConnector ? (ClientConnector
             .PubRelReceivedFromRemote(pubRel, _)): Future[Subscriber.ForwardPubRel.type])
             .map {
               case Subscriber.ForwardPubRel => Right[DecodeError, Event[_]](Event(pubRel))
             }
-        case Right(cp) => Future.successful(Right[DecodeError, Event[_]](Event(cp)))
+        case Right(cp) => Future.failed(new IllegalStateException(cp + " is not a client event"))
         case Left(de) => Future.successful(Left(de))
       }
       .watchTermination() {

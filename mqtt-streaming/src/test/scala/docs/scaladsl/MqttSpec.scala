@@ -56,6 +56,7 @@ class MqttSpec
               .clientSessionFlow(session)
               .join(pipeToServer)
           )
+          .take(3)
           .toMat(Sink.collection)(Keep.both)
           .run
 
@@ -70,8 +71,8 @@ class MqttSpec
       val subAckBytes = subAck.encode(ByteString.newBuilder).result()
 
       val publish = Publish("some-topic", ByteString("some-payload"))
-      val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(0))).result()
-      val pubAck = PubAck(PacketId(0))
+      val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+      val pubAck = PubAck(PacketId(1))
       val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
 
       client.offer(Command(connect))
@@ -88,8 +89,6 @@ class MqttSpec
 
       server.expectMsg(publishBytes)
       server.reply(pubAckBytes)
-
-      client.complete()
 
       result.futureValue shouldBe List(Right(Event(connAck)), Right(Event(subAck)), Right(Event(pubAck)))
     }
@@ -215,9 +214,7 @@ class MqttSpec
             .clientSessionFlow(session)
             .join(pipeToServer)
         )
-        .collect {
-          case Right(Event(cp: Publish, None)) => cp
-        }
+        .drop(2)
         .toMat(Sink.head)(Keep.both)
         .run
 
@@ -243,7 +240,7 @@ class MqttSpec
       server.expectMsg(subscribeBytes)
       server.reply(subAckBytes ++ publishBytes)
 
-      result.futureValue shouldBe publish
+      result.futureValue shouldBe Right(Event(publish))
     }
 
     "receive a QoS 1 publication from a subscribed topic and ack it" in {
@@ -327,6 +324,7 @@ class MqttSpec
           e match {
             case _: Publish => publishReceived.success(Done)
             case _: PubRel => pubRelReceived.success(Done)
+            case _ =>
           }
         }
         .toMat(Sink.ignore)(Keep.left)
@@ -372,6 +370,83 @@ class MqttSpec
       client.offer(Command(pubComp))
 
       server.expectMsg(pubCompBytes)
+    }
+
+    "publish with a QoS of 0" in {
+      val session = ActorMqttClientSession(settings)
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val client =
+        Source
+          .queue(1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .clientSessionFlow(session)
+              .join(pipeToServer)
+          )
+          .toMat(Sink.ignore)(Keep.left)
+          .run
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val publish = Publish(ControlPacketFlags.QoSAtMostOnceDelivery, "some-topic", ByteString("some-payload"))
+      val publishBytes = publish.encode(ByteString.newBuilder, None).result()
+
+      client.offer(Command(connect))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      client.offer(Command(publish))
+
+      server.expectMsg(publishBytes)
+    }
+
+    "publish and carry through an object to pubAck" in {
+      val session = ActorMqttClientSession(settings)
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val (client, result) =
+        Source
+          .queue(1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .clientSessionFlow(session)
+              .join(pipeToServer)
+          )
+          .drop(1)
+          .toMat(Sink.head)(Keep.both)
+          .run
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val publish = Publish(ControlPacketFlags.QoSAtLeastOnceDelivery, "some-topic", ByteString("some-payload"))
+      val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+      val carry = "some-carry"
+      val pubAck = PubAck(PacketId(1))
+      val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
+
+      client.offer(Command(connect))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      client.offer(Command(publish, carry))
+
+      server.expectMsg(publishBytes)
+      server.reply(pubAckBytes)
+
+      result.futureValue shouldBe Right(Event(pubAck, Some(carry)))
     }
   }
 
