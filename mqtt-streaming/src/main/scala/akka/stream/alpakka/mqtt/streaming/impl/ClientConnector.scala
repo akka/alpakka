@@ -67,6 +67,8 @@ import scala.util.{Failure, Success}
 
   // State event handling
 
+  private val SubscriberNamePrefix = "subscriber-"
+
   def disconnected(data: Uninitialized): Behavior[Event] = Behaviors.receiveMessagePartial {
     case ConnectReceivedLocally(connect, connectData, remote) =>
       remote ! ForwardConnect
@@ -99,14 +101,18 @@ import scala.util.{Failure, Success}
     case (context, SubscribeReceivedLocally(subscribe, subscribeData, remote)) =>
       subscribe.topicFilters.foreach { topicFilter =>
         val (topicName, _) = topicFilter
-        context.spawn(Subscriber(subscribeData, remote, data.packetIdAllocator, data.settings), "topic-" + topicName) // FIXME: How about existing children? getOrElse...?
+        val subscriberName = SubscriberNamePrefix + topicName
+        context.child(subscriberName) match {
+          case None =>
+            context.spawn(Subscriber(subscribeData, remote, data.packetIdAllocator, data.settings), subscriberName)
+          case _: Some[_] => // Ignored for existing subscriptions
+        }
       }
       Behaviors.same
     case (context, SubAckReceivedFromRemote(subAck, local)) =>
       context.children.foreach {
-        case child: ActorRef[Subscriber.Event] @unchecked =>
-          child ! Subscriber
-            .SubAckReceivedFromRemote(subAck, local) // FIXME: We should probably watch our own subscribers as there will be other types of child actor
+        case child if child.path.name.startsWith(SubscriberNamePrefix) =>
+          child.upcast ! Subscriber.SubAckReceivedFromRemote(subAck, local)
       }
       Behaviors.same
     // TODO: UnsubscribedReceivedLocally, SubscribeReceivedLocally, PublishReceivedFromRemote, PubRelReceivedFromRemote, PubAckReceivedLocally, PubRecReceivedLocally, PubCompReceivedLocally, PublishReceivedLocally, PubRecReceivedLocally, PubCompReceivedLocally, PubAckReceivedFromRemote, PubRelReceivedFromRemote
@@ -187,7 +193,7 @@ import scala.util.{Failure, Success}
         local ! ForwardSubAck(data.subscribeData)
         data.packetIdAllocator ! PacketIdAllocator.Release(data.packetId)
         serverSubscribed(ServerSubscribed(data.settings))
-      case SubAckReceivedFromRemote(subAck, local) =>
+      case _: SubAckReceivedFromRemote =>
         Behaviors.same // Ignore sub acks not destined for us
       case ReceiveSubAckTimeout =>
         data.packetIdAllocator ! PacketIdAllocator.Release(data.packetId)
