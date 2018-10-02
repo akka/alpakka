@@ -62,6 +62,12 @@ import scala.util.{Failure, Success}
   final case class SubAckReceivedFromRemote(subAck: SubAck, local: ActorRef[Subscriber.ForwardSubAck]) extends Event
   final case class PublishReceivedFromRemote(publish: Publish, local: ActorRef[Subscriber.ForwardPublish.type])
       extends Event
+  final case class PubAckReceivedLocally(pubAck: PubAck, remote: ActorRef[Subscriber.ForwardPubAck.type]) extends Event
+  final case class PubRecReceivedLocally(pubRec: PubRec, remote: ActorRef[Subscriber.ForwardPubRec.type]) extends Event
+  final case class PubRelReceivedFromRemote(pubRel: PubRel, local: ActorRef[Subscriber.ForwardPubRel.type])
+      extends Event
+  final case class PubCompReceivedLocally(pubComp: PubComp, remote: ActorRef[Subscriber.ForwardPubComp.type])
+      extends Event
 
   sealed abstract class Command
   case object ForwardConnect extends Command
@@ -113,6 +119,7 @@ import scala.util.{Failure, Success}
         }
       }
       Behaviors.same
+    // FIXME: Improve the way that messages are dispatched to child actors so they aren't broadcast - will need to key by packet id
     case (context, SubAckReceivedFromRemote(subAck, local)) =>
       context.children.foreach {
         case child if child.path.name.startsWith(SubscriberNamePrefix) =>
@@ -123,6 +130,30 @@ import scala.util.{Failure, Success}
       context.children.foreach {
         case child if child.path.name.startsWith(SubscriberNamePrefix) =>
           child.upcast ! Subscriber.PublishReceivedFromRemote(publish, local)
+      }
+      Behaviors.same
+    case (context, PubAckReceivedLocally(pubAck, remote)) =>
+      context.children.foreach {
+        case child if child.path.name.startsWith(SubscriberNamePrefix) =>
+          child.upcast ! Subscriber.PubAckReceivedLocally(pubAck, remote)
+      }
+      Behaviors.same
+    case (context, PubRecReceivedLocally(pubRec, remote)) =>
+      context.children.foreach {
+        case child if child.path.name.startsWith(SubscriberNamePrefix) =>
+          child.upcast ! Subscriber.PubRecReceivedLocally(pubRec, remote)
+      }
+      Behaviors.same
+    case (context, PubRelReceivedFromRemote(pubRel, local)) =>
+      context.children.foreach {
+        case child if child.path.name.startsWith(SubscriberNamePrefix) =>
+          child.upcast ! Subscriber.PubRelReceivedFromRemote(pubRel, local)
+      }
+      Behaviors.same
+    case (context, PubCompReceivedLocally(pubComp, remote)) =>
+      context.children.foreach {
+        case child if child.path.name.startsWith(SubscriberNamePrefix) =>
+          child.upcast ! Subscriber.PubCompReceivedLocally(pubComp, remote)
       }
       Behaviors.same
     // TODO: UnsubscribedReceivedLocally, SubscribeReceivedLocally, PubRelReceivedFromRemote, PubAckReceivedLocally, PubRecReceivedLocally, PubCompReceivedLocally, PublishReceivedLocally, PubRecReceivedLocally, PubCompReceivedLocally, PubAckReceivedFromRemote, PubRelReceivedFromRemote
@@ -169,6 +200,11 @@ import scala.util.{Failure, Success}
       extends Data(topicFilterName, settings)
   final case class ServerSubscribed(override val topicFilterName: String, override val settings: MqttSessionSettings)
       extends Data(topicFilterName, settings)
+  final case class ServerPublishing(packetId: PacketId,
+                                    flags: ControlPacketFlags,
+                                    override val topicFilterName: String,
+                                    override val settings: MqttSessionSettings)
+      extends Data(topicFilterName, settings)
 
   sealed abstract class Event
   final case class AcquiredPacketId(packetId: PacketId) extends Event
@@ -176,11 +212,22 @@ import scala.util.{Failure, Success}
   final case class SubAckReceivedFromRemote(subAck: SubAck, local: ActorRef[ForwardSubAck]) extends Event
   case object ReceiveSubAckTimeout extends Event
   final case class PublishReceivedFromRemote(publish: Publish, local: ActorRef[ForwardPublish.type]) extends Event
+  final case class PubAckReceivedLocally(pubAck: PubAck, remote: ActorRef[ForwardPubAck.type]) extends Event
+  final case class PubRecReceivedLocally(pubRec: PubRec, remote: ActorRef[ForwardPubRec.type]) extends Event
+  case object ReceivePubAckRecTimeout extends Event
+  final case class PubRelReceivedFromRemote(pubRel: PubRel, local: ActorRef[ForwardPubRel.type]) extends Event
+  case object ReceivePubRelTimeout extends Event
+  final case class PubCompReceivedLocally(pubComp: PubComp, remote: ActorRef[ForwardPubComp.type]) extends Event
+  case object ReceivePubCompTimeout extends Event
 
   sealed abstract class Command
   final case class ForwardSubscribe(packetId: PacketId) extends Command
   final case class ForwardSubAck(connectData: SubscribeData) extends Command
   case object ForwardPublish extends Command
+  case object ForwardPubAck extends Command
+  case object ForwardPubRec extends Command
+  case object ForwardPubRel extends Command
+  case object ForwardPubComp extends Command
 
   // State event handling
 
@@ -221,10 +268,67 @@ import scala.util.{Failure, Success}
 
   def serverSubscribed(data: ServerSubscribed): Behavior[Event] = Behaviors.receiveMessagePartial {
     case PublishReceivedFromRemote(publish, local) if matchTopicFilter(data.topicFilterName, publish.topicName) =>
-      if (publish.flags.contains(ControlPacketFlags.QoSAtMostOnceDelivery)) {
-        local ! ForwardPublish
-      } // TODO: Implement other QoS levels
+      local ! ForwardPublish
+      if ((publish.flags & ControlPacketFlags.QoSReserved).underlying == 0) {
+        Behaviors.same
+      } else {
+        publish.packetId match {
+          case Some(packetId) =>
+            serverPublishingUnacknowledged(
+              ServerPublishing(packetId, publish.flags, data.topicFilterName, data.settings)
+            )
+          case None =>
+            Behaviors.same // We can't expect an ack if we don't have a means to correlate it
+        }
+      }
+    case x =>
       Behaviors.same
+  }
+
+  def serverPublishingUnacknowledged(data: ServerPublishing): Behavior[Event] = Behaviors.withTimers { timer =>
+    timer.startSingleTimer("receive-pubackrel", ReceivePubAckRecTimeout, data.settings.receivePubAckRecTimeout)
+    Behaviors.receiveMessagePartial {
+      case PubAckReceivedLocally(pubAck, remote)
+          if data.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) && pubAck.packetId == data.packetId =>
+        remote ! ForwardPubAck
+        serverSubscribed(ServerSubscribed(data.topicFilterName, data.settings))
+      case _: PubAckReceivedLocally =>
+        Behaviors.same
+      case PubRecReceivedLocally(pubRec, remote)
+          if data.flags.contains(ControlPacketFlags.QoSExactlyOnceDelivery) && pubRec.packetId == data.packetId =>
+        remote ! ForwardPubRec
+        serverPublishingReceived(data)
+      case _: PubRecReceivedLocally =>
+        Behaviors.same
+      case ReceivePubAckRecTimeout =>
+        serverSubscribed(ServerSubscribed(data.topicFilterName, data.settings))
+    }
+  }
+
+  def serverPublishingReceived(data: ServerPublishing): Behavior[Event] = Behaviors.withTimers { timer =>
+    timer.startSingleTimer("receive-pubrel", ReceivePubRelTimeout, data.settings.receivePubRelTimeout)
+    Behaviors.receiveMessagePartial {
+      case PubRelReceivedFromRemote(pubRel, local) if pubRel.packetId == data.packetId =>
+        local ! ForwardPubRel
+        serverPublishingReleased(data)
+      case _: PubRelReceivedFromRemote =>
+        Behaviors.same
+      case ReceivePubRelTimeout =>
+        serverSubscribed(ServerSubscribed(data.topicFilterName, data.settings))
+    }
+  }
+
+  def serverPublishingReleased(data: ServerPublishing): Behavior[Event] = Behaviors.withTimers { timer =>
+    timer.startSingleTimer("receive-pubcomp", ReceivePubCompTimeout, data.settings.receivePubCompTimeout)
+    Behaviors.receiveMessagePartial {
+      case PubCompReceivedLocally(pubComp, remote) if pubComp.packetId == data.packetId =>
+        remote ! ForwardPubComp
+        serverSubscribed(ServerSubscribed(data.topicFilterName, data.settings))
+      case _: PubRelReceivedFromRemote =>
+        Behaviors.same
+      case ReceivePubRelTimeout =>
+        serverSubscribed(ServerSubscribed(data.topicFilterName, data.settings))
+    }
   }
 
   //

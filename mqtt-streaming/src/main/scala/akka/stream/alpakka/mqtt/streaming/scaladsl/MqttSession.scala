@@ -96,17 +96,24 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
           (clientConnector ? (replyTo => ClientConnector.ConnectReceivedLocally(cp, carry, replyTo)): Future[
             ClientConnector.ForwardConnect.type
           ]).map(_ => cp.encode(ByteString.newBuilder).result())
-        // TODO: Forward the following messages on as per the above ask pattern
-        case Command(cp: Publish, _) => Future.successful(cp.encode(ByteString.newBuilder, cp.packetId).result())
-        case Command(cp: PubRec, _) => Future.successful(cp.encode(ByteString.newBuilder).result())
-        case Command(cp: PubRel, _) => Future.successful(cp.encode(ByteString.newBuilder).result())
-        case Command(cp: PubComp, _) => Future.successful(cp.encode(ByteString.newBuilder).result())
+        case Command(cp: Publish, _) =>
+          Future.successful(cp.encode(ByteString.newBuilder, cp.packetId).result()) // FIXME: To be replaced - here just for the test to work
+        case Command(cp: PubAck, _) =>
+          (clientConnector ? (replyTo => ClientConnector.PubAckReceivedLocally(cp, replyTo)): Future[
+            Subscriber.ForwardPubAck.type
+          ]).map(_ => cp.encode(ByteString.newBuilder).result())
+        case Command(cp: PubRec, _) =>
+          (clientConnector ? (replyTo => ClientConnector.PubRecReceivedLocally(cp, replyTo)): Future[
+            Subscriber.ForwardPubRec.type
+          ]).map(_ => cp.encode(ByteString.newBuilder).result())
+        case Command(cp: PubComp, _) =>
+          (clientConnector ? (replyTo => ClientConnector.PubCompReceivedLocally(cp, replyTo)): Future[
+            Subscriber.ForwardPubComp.type
+          ]).map(_ => cp.encode(ByteString.newBuilder).result())
         case Command(cp: Subscribe, carry) =>
           (clientConnector ? (replyTo => ClientConnector.SubscribeReceivedLocally(cp, carry, replyTo)): Future[
             Subscriber.ForwardSubscribe
           ]).map(command => cp.encode(ByteString.newBuilder, command.packetId).result())
-        case Command(cp: Unsubscribe, _) => Future.successful(cp.encode(ByteString.newBuilder, cp.packetId).result())
-        case Command(cp: PingReq.type, _) => Future.successful(cp.encode(ByteString.newBuilder).result())
         case Command(cp: Disconnect.type, _) =>
           (clientConnector ? (replyTo => ClientConnector.DisconnectReceivedLocally(replyTo)): Future[
             ClientConnector.ForwardDisconnect.type
@@ -142,7 +149,12 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
             .map {
               case Subscriber.ForwardPublish => Right[DecodeError, Event[_]](Event(publish))
             }
-        // TODO: Forward the following messages on as per the above ask pattern
+        case Right(pubRel: PubRel) =>
+          (clientConnector ? (ClientConnector
+            .PubRelReceivedFromRemote(pubRel, _)): Future[Subscriber.ForwardPubRel.type])
+            .map {
+              case Subscriber.ForwardPubRel => Right[DecodeError, Event[_]](Event(pubRel))
+            }
         case Right(cp) => Future.successful(Right[DecodeError, Event[_]](Event(cp)))
         case Left(de) => Future.successful(Left(de))
       }
