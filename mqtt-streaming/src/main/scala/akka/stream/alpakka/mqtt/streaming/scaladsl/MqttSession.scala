@@ -74,12 +74,14 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
   import ActorMqttClientSession._
 
   private val clientSessionId = clientSessionCounter.getAndIncrement()
+  private val consumerPacketRouter =
+    system.spawn(RemotePacketRouter[Consumer.Event], "client-consumer-packet-id-allocator-" + clientSessionId)
   private val producerPacketRouter =
-    system.spawn(PacketRouter[Producer.Event], "client-producer-packet-id-allocator-" + clientSessionId)
+    system.spawn(LocalPacketRouter[Producer.Event], "client-producer-packet-id-allocator-" + clientSessionId)
   private val subscriberPacketRouter =
-    system.spawn(PacketRouter[Subscriber.Event], "client-subscriber-packet-id-allocator-" + clientSessionId)
+    system.spawn(LocalPacketRouter[Subscriber.Event], "client-subscriber-packet-id-allocator-" + clientSessionId)
   private val clientConnector =
-    system.spawn(ClientConnector(producerPacketRouter, subscriberPacketRouter, settings),
+    system.spawn(ClientConnector(consumerPacketRouter, producerPacketRouter, subscriberPacketRouter, settings),
                  "client-connector-" + clientSessionId)
 
   import MqttCodec._
@@ -104,22 +106,22 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
             Producer.ForwardPublish
           ]).map(command => cp.encode(ByteString.newBuilder, command.packetId).result())
         case Command(cp: PubAck, _) =>
-          (subscriberPacketRouter ? (
-              replyTo => PacketRouter.Route(cp.packetId, Subscriber.PubAckReceivedLocally(replyTo))
+          (consumerPacketRouter ? (
+              replyTo => RemotePacketRouter.Route(cp.packetId, Consumer.PubAckReceivedLocally(replyTo))
           ): Future[
-            Subscriber.ForwardPubAck.type
+            Consumer.ForwardPubAck.type
           ]).map(_ => cp.encode(ByteString.newBuilder).result())
         case Command(cp: PubRec, _) =>
-          (subscriberPacketRouter ? (
-              replyTo => PacketRouter.Route(cp.packetId, Subscriber.PubRecReceivedLocally(replyTo))
+          (consumerPacketRouter ? (
+              replyTo => RemotePacketRouter.Route(cp.packetId, Consumer.PubRecReceivedLocally(replyTo))
           ): Future[
-            Subscriber.ForwardPubRec.type
+            Consumer.ForwardPubRec.type
           ]).map(_ => cp.encode(ByteString.newBuilder).result())
         case Command(cp: PubComp, _) =>
-          (subscriberPacketRouter ? (
-              replyTo => PacketRouter.Route(cp.packetId, Subscriber.PubCompReceivedLocally(replyTo))
+          (consumerPacketRouter ? (
+              replyTo => RemotePacketRouter.Route(cp.packetId, Consumer.PubCompReceivedLocally(replyTo))
           ): Future[
-            Subscriber.ForwardPubComp.type
+            Consumer.ForwardPubComp.type
           ]).map(_ => cp.encode(ByteString.newBuilder).result())
         case Command(cp: Subscribe, carry) =>
           (clientConnector ? (replyTo => ClientConnector.SubscribeReceivedLocally(cp, carry, replyTo)): Future[
@@ -151,38 +153,38 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
         case Right(cp: SubAck) =>
           (subscriberPacketRouter ? (
               replyTo =>
-                PacketRouter.Route(cp.packetId,
-                                   Subscriber
-                                     .SubAckReceivedFromRemote(replyTo))
+                LocalPacketRouter.Route(cp.packetId,
+                                        Subscriber
+                                          .SubAckReceivedFromRemote(replyTo))
           ): Future[Subscriber.ForwardSubAck])
             .map {
               case Subscriber.ForwardSubAck(carry) => Right[DecodeError, Event[_]](Event(cp, carry))
             }
         case Right(cp: Publish) =>
           (clientConnector ? (ClientConnector
-            .PublishReceivedFromRemote(cp, _)): Future[Subscriber.ForwardPublish.type])
+            .PublishReceivedFromRemote(cp, _)): Future[Consumer.ForwardPublish.type])
             .map {
-              case Subscriber.ForwardPublish => Right[DecodeError, Event[_]](Event(cp))
+              case Consumer.ForwardPublish => Right[DecodeError, Event[_]](Event(cp))
             }
         case Right(cp: PubAck) =>
           (producerPacketRouter ? (
               replyTo =>
-                PacketRouter.Route(cp.packetId,
-                                   Producer
-                                     .PubAckReceivedFromRemote(replyTo))
+                LocalPacketRouter.Route(cp.packetId,
+                                        Producer
+                                          .PubAckReceivedFromRemote(replyTo))
           ): Future[Producer.ForwardPubAck])
             .map {
               case Producer.ForwardPubAck(carry) => Right[DecodeError, Event[_]](Event(cp, carry))
             }
         case Right(cp: PubRel) =>
-          (subscriberPacketRouter ? (
+          (consumerPacketRouter ? (
               replyTo =>
-                PacketRouter.Route(cp.packetId,
-                                   Subscriber
-                                     .PubRelReceivedFromRemote(replyTo))
-          ): Future[Subscriber.ForwardPubRel.type])
+                RemotePacketRouter.Route(cp.packetId,
+                                         Consumer
+                                           .PubRelReceivedFromRemote(replyTo))
+          ): Future[Consumer.ForwardPubRel.type])
             .map {
-              case Subscriber.ForwardPubRel => Right[DecodeError, Event[_]](Event(cp))
+              case Consumer.ForwardPubRel => Right[DecodeError, Event[_]](Event(cp))
             }
         case Right(cp) => Future.failed(new IllegalStateException(cp + " is not a client event"))
         case Left(de) => Future.successful(Left(de))

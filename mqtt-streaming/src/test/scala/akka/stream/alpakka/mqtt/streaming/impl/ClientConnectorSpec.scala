@@ -4,87 +4,86 @@
 
 package akka.stream.alpakka.mqtt.streaming
 package impl
+
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+
+import scala.concurrent.duration._
 
 class ClientConnectorSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   val testKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
-  "packet id router" should {
+  "local packet router" should {
     "acquire a packet id" in {
       val registrant = testKit.createTestProbe[String]()
-      val replyTo = testKit.createTestProbe[PacketRouter.Registered]()
-      val router = testKit.spawn(PacketRouter[String])
-      router ! PacketRouter.Register(registrant.ref, replyTo.ref)
-      replyTo.expectMessage(PacketRouter.Registered(PacketId(1)))
+      val replyTo = testKit.createTestProbe[LocalPacketRouter.Registered]()
+      val router = testKit.spawn(LocalPacketRouter[String])
+      router ! LocalPacketRouter.Register(registrant.ref, replyTo.ref)
+      replyTo.expectMessage(LocalPacketRouter.Registered(PacketId(1)))
     }
 
     "acquire two packet ids" in {
       val registrant = testKit.createTestProbe[String]()
-      val replyTo = testKit.createTestProbe[PacketRouter.Registered]()
-      val router = testKit.spawn(PacketRouter[String])
-      router ! PacketRouter.Register(registrant.ref, replyTo.ref)
-      router ! PacketRouter.Register(registrant.ref, replyTo.ref)
-      replyTo.expectMessage(PacketRouter.Registered(PacketId(1)))
-      replyTo.expectMessage(PacketRouter.Registered(PacketId(2)))
+      val replyTo = testKit.createTestProbe[LocalPacketRouter.Registered]()
+      val router = testKit.spawn(LocalPacketRouter[String])
+      router ! LocalPacketRouter.Register(registrant.ref, replyTo.ref)
+      router ! LocalPacketRouter.Register(registrant.ref, replyTo.ref)
+      replyTo.expectMessage(LocalPacketRouter.Registered(PacketId(1)))
+      replyTo.expectMessage(LocalPacketRouter.Registered(PacketId(2)))
     }
 
     "acquire and release consecutive packet ids" in {
       val registrant = testKit.createTestProbe[String]()
-      val replyTo = testKit.createTestProbe[PacketRouter.Registered]()
-      val router = testKit.spawn(PacketRouter[String])
+      val replyTo = testKit.createTestProbe[LocalPacketRouter.Registered]()
+      val router = testKit.spawn(LocalPacketRouter[String])
 
-      router ! PacketRouter.Register(registrant.ref, replyTo.ref)
-      router ! PacketRouter.Register(registrant.ref, replyTo.ref)
-      replyTo.expectMessage(PacketRouter.Registered(PacketId(1)))
-      replyTo.expectMessage(PacketRouter.Registered(PacketId(2)))
+      router ! LocalPacketRouter.Register(registrant.ref, replyTo.ref)
+      router ! LocalPacketRouter.Register(registrant.ref, replyTo.ref)
+      replyTo.expectMessage(LocalPacketRouter.Registered(PacketId(1)))
+      replyTo.expectMessage(LocalPacketRouter.Registered(PacketId(2)))
 
-      router ! PacketRouter.Unregister(PacketId(1))
-      router ! PacketRouter.Register(registrant.ref, replyTo.ref)
-      replyTo.expectMessage(PacketRouter.Registered(PacketId(3)))
+      router ! LocalPacketRouter.Unregister(PacketId(1))
+      router ! LocalPacketRouter.Register(registrant.ref, replyTo.ref)
+      replyTo.expectMessage(LocalPacketRouter.Registered(PacketId(3)))
 
-      router ! PacketRouter.Unregister(PacketId(2))
-      router ! PacketRouter.Unregister(PacketId(3))
-      router ! PacketRouter.Register(registrant.ref, replyTo.ref)
-      replyTo.expectMessage(PacketRouter.Registered(PacketId(1)))
+      router ! LocalPacketRouter.Unregister(PacketId(2))
+      router ! LocalPacketRouter.Unregister(PacketId(3))
+      router ! LocalPacketRouter.Register(registrant.ref, replyTo.ref)
+      replyTo.expectMessage(LocalPacketRouter.Registered(PacketId(1)))
     }
 
-    "router a packet" in {
+    "route a packet" in {
       val registrant = testKit.createTestProbe[String]()
-      val replyTo = testKit.createTestProbe[PacketRouter.Registered]()
-      val router = testKit.spawn(PacketRouter[String])
-      router ! PacketRouter.Register(registrant.ref, replyTo.ref)
-      val registered = replyTo.expectMessageType[PacketRouter.Registered]
-      router ! PacketRouter.Route(registered.packetId, "some-packet")
+      val replyTo = testKit.createTestProbe[LocalPacketRouter.Registered]()
+      val router = testKit.spawn(LocalPacketRouter[String])
+      router ! LocalPacketRouter.Register(registrant.ref, replyTo.ref)
+      val registered = replyTo.expectMessageType[LocalPacketRouter.Registered]
+      router ! LocalPacketRouter.Route(registered.packetId, "some-packet")
       registrant.expectMessage("some-packet")
     }
   }
 
-  "subscriber" should {
-    "match topic filters" in {
-      Subscriber.matchTopicFilter("sport/tennis/player1", "sport/tennis/player1") shouldBe true
+  "remote packet router" should {
 
-      Subscriber.matchTopicFilter("sport/tennis/player1/#", "sport/tennis/player1") shouldBe true
-      Subscriber.matchTopicFilter("sport/tennis/player1/#", "sport/tennis/player1/ranking") shouldBe true
-      Subscriber.matchTopicFilter("sport/tennis/player1/#", "sport/tennis/player1/score/wimbledon") shouldBe true
+    "route a packet" in {
+      val packetId = PacketId(1)
 
-      Subscriber.matchTopicFilter("sport/#", "sport") shouldBe true
-      Subscriber.matchTopicFilter("#", "sport") shouldBe true
-      Subscriber.matchTopicFilter("sport/tennis/#", "sport/tennis") shouldBe true
-      Subscriber.matchTopicFilter("sport/tennis#", "sport/tennis") shouldBe false
-      Subscriber.matchTopicFilter("sport/tennis/#/ranking", "sport/tennis/player1/ranking") shouldBe false
+      val registrant = testKit.createTestProbe[String]()
+      val replyTo = testKit.createTestProbe[RemotePacketRouter.Registered.type]()
+      val router = testKit.spawn(RemotePacketRouter[String])
 
-      Subscriber.matchTopicFilter("sport/tennis/+", "sport/tennis/player1") shouldBe true
-      Subscriber.matchTopicFilter("sport/tennis/+", "sport/tennis/player1/tranking") shouldBe false
+      router ! RemotePacketRouter.Register(registrant.ref, packetId, replyTo.ref)
+      replyTo.expectMessage(RemotePacketRouter.Registered)
 
-      Subscriber.matchTopicFilter("sport/+", "sport") shouldBe false
-      Subscriber.matchTopicFilter("sport/+", "sport/") shouldBe true
+      router ! RemotePacketRouter.Route(packetId, "some-packet")
+      registrant.expectMessage("some-packet")
 
-      Subscriber.matchTopicFilter("+", "sport") shouldBe true
-      Subscriber.matchTopicFilter("+/tennis/#", "sport/tennis") shouldBe true
-      Subscriber.matchTopicFilter("sport+", "sport") shouldBe false
+      router ! RemotePacketRouter.Unregister(packetId)
+      router ! RemotePacketRouter.Route(packetId, "some-packet")
+      registrant.expectNoMessage(1.second)
+
     }
   }
 }

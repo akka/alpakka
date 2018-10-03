@@ -157,48 +157,6 @@ class MqttSpec
       server.expectMsg(disconnectBytes)
     }
 
-    "subscribe to an existing topic" in {
-      val session = ActorMqttClientSession(settings)
-
-      val server = TestProbe()
-      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
-
-      val connect = Connect("some-client-id", ConnectFlags.None)
-
-      val client = Source
-        .queue(1, OverflowStrategy.fail)
-        .via(
-          Mqtt
-            .clientSessionFlow(session)
-            .join(pipeToServer)
-        )
-        .toMat(Sink.ignore)(Keep.left)
-        .run
-
-      val connectBytes = connect.encode(ByteString.newBuilder).result()
-      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
-      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
-
-      val subscribe = Subscribe("some-topic")
-      val subscribeBytes = subscribe.encode(ByteString.newBuilder, PacketId(1)).result()
-      val subAck = SubAck(PacketId(1), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
-      val subAckBytes = subAck.encode(ByteString.newBuilder).result()
-
-      client.offer(Command(connect))
-
-      server.expectMsg(connectBytes)
-      server.reply(connAckBytes)
-
-      client.offer(Command(subscribe))
-
-      server.expectMsg(subscribeBytes)
-      server.reply(subAckBytes)
-
-      client.offer(Command(subscribe))
-
-      server.expectNoMessage(1.second.dilated)
-    }
-
     "receive a QoS 0 publication from a subscribed topic" in {
       val session = ActorMqttClientSession(settings)
 
