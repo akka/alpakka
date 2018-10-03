@@ -2,25 +2,25 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.googlecloud.pubsub
+package akka.stream.alpakka.googlecloud.pubsub.impl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
+import akka.stream.alpakka.googlecloud.pubsub.impl.GooglePubSubSource._
+import akka.stream.alpakka.googlecloud.pubsub.{PullResponse, ReceivedMessage}
+import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import akka.stream.{Attributes, Materializer, Outlet, SourceShape}
-import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, TimerGraphStageLogic}
-
-import scala.util.{Failure, Success, Try}
-import GooglePubSubSource._
 
 import scala.collection.immutable
-import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
 
-@akka.annotation.InternalApi
-private final class GooglePubSubSource(projectId: String,
-                                       apiKey: String,
-                                       session: Session,
-                                       subscription: String,
-                                       httpApi: HttpApi)(implicit as: ActorSystem)
+@InternalApi
+private[pubsub] final class GooglePubSubSource(projectId: String,
+                                               apiKey: String,
+                                               session: GoogleSession,
+                                               subscription: String,
+                                               httpApi: PubSubApi)(implicit as: ActorSystem)
     extends GraphStage[SourceShape[ReceivedMessage]] {
 
   val out: Outlet[ReceivedMessage] = Outlet("GooglePubSubSource.out")
@@ -100,7 +100,7 @@ private final class GooglePubSubSource(projectId: String,
     }
 }
 
-@akka.annotation.InternalApi
+@InternalApi
 private object GooglePubSubSource {
   private sealed trait State
   private case object Pending extends State
