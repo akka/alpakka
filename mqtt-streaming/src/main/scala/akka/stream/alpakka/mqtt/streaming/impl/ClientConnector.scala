@@ -5,6 +5,8 @@
 package akka.stream.alpakka.mqtt.streaming
 package impl
 
+import java.nio.charset.StandardCharsets
+
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
@@ -137,10 +139,7 @@ import scala.util.{Failure, Success}
   }
 
   private def mkActorName(name: String): String =
-    name.dropWhile(!_.isLetterOrDigit).collect {
-      case c if c.isLetterOrDigit || c == '-' || c == '_' => c
-      case c if c == '.' => '_'
-    }
+    name.getBytes(StandardCharsets.UTF_8).map(_.toHexString).mkString
 
   def serverConnected(data: ConnAckReceived): Behavior[Event] = Behaviors.receivePartial {
     case (_, ConnectionLost) =>
