@@ -136,6 +136,12 @@ import scala.util.{Failure, Success}
     }
   }
 
+  private def mkActorName(name: String): String =
+    name.dropWhile(!_.isLetterOrDigit).collect {
+      case c if c.isLetterOrDigit || c == '-' || c == '_' => c
+      case c if c == '.' => '_'
+    }
+
   def serverConnected(data: ConnAckReceived): Behavior[Event] = Behaviors.receivePartial {
     case (_, ConnectionLost) =>
       disconnected(
@@ -150,7 +156,7 @@ import scala.util.{Failure, Success}
     case (context, SubscribeReceivedLocally(subscribe, subscribeData, remote)) =>
       subscribe.topicFilters.foreach { topicFilter =>
         val (topicFilterName, _) = topicFilter
-        val subscriberName = SubscriberNamePrefix + topicFilterName
+        val subscriberName = mkActorName(SubscriberNamePrefix + topicFilterName)
         context.child(subscriberName) match {
           case None =>
             context.spawn(
@@ -166,7 +172,7 @@ import scala.util.{Failure, Success}
       remote ! Consumer.ForwardPublish
       Behaviors.same
     case (context, PublishReceivedFromRemote(Publish(flags, topicName, Some(packetId), _), local)) =>
-      val consumerName = ConsumerNamePrefix + topicName + packetId.underlying
+      val consumerName = mkActorName(ConsumerNamePrefix + topicName + packetId.underlying)
       context.child(consumerName) match {
         case None =>
           context.spawn(Consumer(packetId, flags, local, data.consumerPacketRouter, data.settings), consumerName)
@@ -178,7 +184,7 @@ import scala.util.{Failure, Success}
       remote ! Producer.ForwardPublish(None)
       Behaviors.same
     case (context, PublishReceivedLocally(publish, publishData, remote)) =>
-      val producerName = ProducerNamePrefix + publish.topicName
+      val producerName = mkActorName(ProducerNamePrefix + publish.topicName)
       context.child(producerName) match {
         case None =>
           context.spawn(Producer(publish.flags, publishData, remote, data.producerPacketRouter, data.settings),
