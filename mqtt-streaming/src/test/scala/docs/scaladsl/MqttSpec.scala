@@ -32,6 +32,8 @@ class MqttSpec
 
   val settings = MqttSessionSettings(100,
                                      timeoutDuration,
+                                     1,
+                                     1,
                                      timeoutDuration,
                                      timeoutDuration,
                                      timeoutDuration,

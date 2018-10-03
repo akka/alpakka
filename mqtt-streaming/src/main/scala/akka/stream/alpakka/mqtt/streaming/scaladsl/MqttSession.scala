@@ -96,7 +96,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
 
   override def commandFlow: CommandFlow =
     Flow[Command[_]]
-      .mapAsync(1) {
+      .mapAsync(settings.commandParallelism) {
         case Command(cp: Connect, carry) =>
           (clientConnector ? (replyTo => ClientConnector.ConnectReceivedLocally(cp, carry, replyTo)): Future[
             ClientConnector.ForwardConnect.type
@@ -143,7 +143,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
     Flow[ByteString]
       .via(new MqttFrameStage(settings.maxPacketSize))
       .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
-      .mapAsync(1) {
+      .mapAsync(settings.eventParallelism) {
         case Right(cp: ConnAck) =>
           (clientConnector ? (ClientConnector
             .ConnAckReceivedFromRemote(cp, _)): Future[ClientConnector.ForwardConnAck])

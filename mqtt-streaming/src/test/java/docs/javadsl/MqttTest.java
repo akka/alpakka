@@ -82,6 +82,8 @@ public class MqttTest {
         MqttSessionSettings.create(
             100,
             timeoutDuration,
+            1,
+            1,
             timeoutDuration,
             timeoutDuration,
             timeoutDuration,
