@@ -12,40 +12,53 @@ class ClientConnectorSpec extends WordSpec with Matchers with BeforeAndAfterAll 
   val testKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
-  "packet id allocator" should {
+  "packet id router" should {
     "acquire a packet id" in {
-      val replyTo = testKit.createTestProbe[PacketIdAllocator.Acquired]()
-      val allocator = testKit.spawn(PacketIdAllocator())
-      allocator ! PacketIdAllocator.Acquire(replyTo.ref)
-      replyTo.expectMessage(PacketIdAllocator.Acquired(PacketId(1)))
+      val registrant = testKit.createTestProbe[String]()
+      val replyTo = testKit.createTestProbe[PacketRouter.Registered]()
+      val router = testKit.spawn(PacketRouter[String])
+      router ! PacketRouter.Register(registrant.ref, replyTo.ref)
+      replyTo.expectMessage(PacketRouter.Registered(PacketId(1)))
     }
 
     "acquire two packet ids" in {
-      val replyTo = testKit.createTestProbe[PacketIdAllocator.Acquired]()
-      val allocator = testKit.spawn(PacketIdAllocator())
-      allocator ! PacketIdAllocator.Acquire(replyTo.ref)
-      allocator ! PacketIdAllocator.Acquire(replyTo.ref)
-      replyTo.expectMessage(PacketIdAllocator.Acquired(PacketId(1)))
-      replyTo.expectMessage(PacketIdAllocator.Acquired(PacketId(2)))
+      val registrant = testKit.createTestProbe[String]()
+      val replyTo = testKit.createTestProbe[PacketRouter.Registered]()
+      val router = testKit.spawn(PacketRouter[String])
+      router ! PacketRouter.Register(registrant.ref, replyTo.ref)
+      router ! PacketRouter.Register(registrant.ref, replyTo.ref)
+      replyTo.expectMessage(PacketRouter.Registered(PacketId(1)))
+      replyTo.expectMessage(PacketRouter.Registered(PacketId(2)))
     }
 
     "acquire and release consecutive packet ids" in {
-      val replyTo = testKit.createTestProbe[PacketIdAllocator.Acquired]()
-      val allocator = testKit.spawn(PacketIdAllocator())
+      val registrant = testKit.createTestProbe[String]()
+      val replyTo = testKit.createTestProbe[PacketRouter.Registered]()
+      val router = testKit.spawn(PacketRouter[String])
 
-      allocator ! PacketIdAllocator.Acquire(replyTo.ref)
-      allocator ! PacketIdAllocator.Acquire(replyTo.ref)
-      replyTo.expectMessage(PacketIdAllocator.Acquired(PacketId(1)))
-      replyTo.expectMessage(PacketIdAllocator.Acquired(PacketId(2)))
+      router ! PacketRouter.Register(registrant.ref, replyTo.ref)
+      router ! PacketRouter.Register(registrant.ref, replyTo.ref)
+      replyTo.expectMessage(PacketRouter.Registered(PacketId(1)))
+      replyTo.expectMessage(PacketRouter.Registered(PacketId(2)))
 
-      allocator ! PacketIdAllocator.Release(PacketId(1))
-      allocator ! PacketIdAllocator.Acquire(replyTo.ref)
-      replyTo.expectMessage(PacketIdAllocator.Acquired(PacketId(3)))
+      router ! PacketRouter.Unregister(PacketId(1))
+      router ! PacketRouter.Register(registrant.ref, replyTo.ref)
+      replyTo.expectMessage(PacketRouter.Registered(PacketId(3)))
 
-      allocator ! PacketIdAllocator.Release(PacketId(2))
-      allocator ! PacketIdAllocator.Release(PacketId(3))
-      allocator ! PacketIdAllocator.Acquire(replyTo.ref)
-      replyTo.expectMessage(PacketIdAllocator.Acquired(PacketId(1)))
+      router ! PacketRouter.Unregister(PacketId(2))
+      router ! PacketRouter.Unregister(PacketId(3))
+      router ! PacketRouter.Register(registrant.ref, replyTo.ref)
+      replyTo.expectMessage(PacketRouter.Registered(PacketId(1)))
+    }
+
+    "router a packet" in {
+      val registrant = testKit.createTestProbe[String]()
+      val replyTo = testKit.createTestProbe[PacketRouter.Registered]()
+      val router = testKit.spawn(PacketRouter[String])
+      router ! PacketRouter.Register(registrant.ref, replyTo.ref)
+      val registered = replyTo.expectMessageType[PacketRouter.Registered]
+      router ! PacketRouter.Route(registered.packetId, "some-packet")
+      registrant.expectMessage("some-packet")
     }
   }
 
