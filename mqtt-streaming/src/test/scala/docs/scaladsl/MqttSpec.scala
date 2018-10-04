@@ -390,7 +390,7 @@ class MqttSpec
       val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
       val connAckBytes = connAck.encode(ByteString.newBuilder).result()
 
-      val publish = Publish(ControlPacketFlags.QoSAtLeastOnceDelivery, "some-topic", ByteString("some-payload"))
+      val publish = Publish("some-topic", ByteString("some-payload"))
       val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
       val carry = "some-carry"
       val pubAck = PubAck(PacketId(1))
@@ -407,6 +407,48 @@ class MqttSpec
       server.reply(pubAckBytes)
 
       result.futureValue shouldBe Right(Event(pubAck, Some(carry)))
+    }
+
+    "publish twice with a QoS of 1 so that the second is queued" in {
+      val session = ActorMqttClientSession(settings)
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val client =
+        Source
+          .queue(1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .clientSessionFlow(session)
+              .join(pipeToServer)
+          )
+          .toMat(Sink.ignore)(Keep.left)
+          .run
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val publish = Publish("some-topic", ByteString("some-payload"))
+      val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+      val pubAck = PubAck(PacketId(1))
+      val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
+
+      client.offer(Command(connect))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      client.offer(Command(publish))
+      client.offer(Command(publish))
+
+      server.expectMsg(publishBytes)
+      server.reply(pubAckBytes)
+
+      server.expectMsg(publishBytes)
+      server.reply(pubAckBytes)
     }
   }
 

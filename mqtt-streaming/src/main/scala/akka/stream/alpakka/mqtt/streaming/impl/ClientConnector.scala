@@ -53,8 +53,7 @@ import scala.util.{Failure, Success}
       override val settings: MqttSessionSettings
   ) extends Data(consumerPacketRouter, producerPacketRouter, subscriberPacketRouter, settings)
   final case class ConnAckReceived(
-      connect: Connect,
-      connAck: ConnAck,
+      pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
       override val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
       override val subscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Subscriber.Event]],
@@ -78,8 +77,9 @@ import scala.util.{Failure, Success}
       extends Event
   final case class PublishReceivedLocally(publish: Publish,
                                           publishData: Producer.PublishData,
-                                          local: ActorRef[Producer.ForwardPublish])
+                                          remote: ActorRef[Producer.ForwardPublish])
       extends Event
+  final case class ProducerFree(topicName: String) extends Event
 
   sealed abstract class Command
   case object ForwardConnect extends Command
@@ -113,8 +113,7 @@ import scala.util.{Failure, Success}
         local ! ForwardConnAck(data.connectData)
         if (data.connect.connectFlags.contains(ConnectFlags.CleanSession)) cleanSession()
         serverConnected(
-          ConnAckReceived(data.connect,
-                          connAck,
+          ConnAckReceived(Vector.empty,
                           data.consumerPacketRouter,
                           data.producerPacketRouter,
                           data.subscriberPacketRouter,
@@ -182,15 +181,42 @@ import scala.util.{Failure, Success}
         if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
       remote ! Producer.ForwardPublish(None)
       Behaviors.same
-    case (context, PublishReceivedLocally(publish, publishData, remote)) =>
+    case (context, prl @ PublishReceivedLocally(publish, publishData, remote)) =>
       val producerName = mkActorName(ProducerNamePrefix + publish.topicName)
       context.child(producerName) match {
-        case None =>
-          context.spawn(Producer(publish.flags, publishData, remote, data.producerPacketRouter, data.settings),
-                        producerName)
-        case _: Some[_] => // Ignored for existing subscriptions
+        case None if !data.pendingLocalPublications.exists(_._1 == publish.topicName) =>
+          context.watchWith(
+            context.spawn(Producer(publish.flags, publishData, remote, data.producerPacketRouter, data.settings),
+                          producerName),
+            ProducerFree(publish.topicName)
+          )
+          Behaviors.same
+        case _ =>
+          serverConnected(
+            data.copy(pendingLocalPublications = data.pendingLocalPublications :+ (publish.topicName -> prl))
+          )
       }
-      Behaviors.same
+    case (context, ProducerFree(topicName)) =>
+      val i = data.pendingLocalPublications.indexWhere(_._1 == topicName)
+      if (i >= 0) {
+        val prl = data.pendingLocalPublications(i)._2
+        val producerName = mkActorName(ProducerNamePrefix + topicName)
+        context.watchWith(
+          context.spawn(
+            Producer(prl.publish.flags, prl.publishData, prl.remote, data.producerPacketRouter, data.settings),
+            producerName
+          ),
+          ProducerFree(topicName)
+        )
+        serverConnected(
+          data.copy(
+            pendingLocalPublications =
+            data.pendingLocalPublications.take(i) ++ data.pendingLocalPublications.drop(i + 1)
+          )
+        )
+      } else {
+        Behaviors.same
+      }
   }
 
   // Actions
