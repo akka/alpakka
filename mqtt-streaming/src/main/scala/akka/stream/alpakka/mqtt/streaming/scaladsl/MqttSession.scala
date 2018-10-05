@@ -96,6 +96,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
 
   override def commandFlow: CommandFlow =
     Flow[Command[_]]
+      .watch(clientConnector.toUntyped)
       .flatMapMerge(
         settings.commandParallelism, {
           case Command(cp: Connect, carry) =>
@@ -166,6 +167,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
 
   override def eventFlow: EventFlow =
     Flow[ByteString]
+      .watch(clientConnector.toUntyped)
       .via(new MqttFrameStage(settings.maxPacketSize))
       .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
       .mapAsync(settings.eventParallelism) {

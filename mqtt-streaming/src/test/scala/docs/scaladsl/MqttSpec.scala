@@ -31,6 +31,7 @@ class MqttSpec
   val timeoutDuration: FiniteDuration = timeout.duration
 
   val settings = MqttSessionSettings(100,
+                                     100,
                                      timeoutDuration,
                                      1,
                                      1,
@@ -122,6 +123,42 @@ class MqttSpec
       server.reply(connAckBytes)
 
       result.futureValue shouldBe Right(Event(connAck, Some(carry)))
+    }
+
+    "Connect and stash any subsequent messages" in {
+      val session = ActorMqttClientSession(settings)
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+      val subscribe = Subscribe("some-topic")
+
+      val result =
+        Source(List(Command(connect), Command(subscribe)))
+          .via(
+            Mqtt
+              .clientSessionFlow(session)
+              .join(pipeToServer)
+          )
+          .drop(1)
+          .runWith(Sink.head)
+
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val subscribeBytes = subscribe.encode(ByteString.newBuilder, PacketId(1)).result()
+      val subAck = SubAck(PacketId(1), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
+      val subAckBytes = subAck.encode(ByteString.newBuilder).result()
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      server.expectMsg(subscribeBytes)
+      server.reply(subAckBytes)
+
+      result.futureValue shouldBe Right(Event(subAck))
     }
 
     "disconnect when connected" in {

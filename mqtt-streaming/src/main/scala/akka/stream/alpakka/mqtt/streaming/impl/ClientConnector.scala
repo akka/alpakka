@@ -51,6 +51,7 @@ import scala.util.{Failure, Success}
   final case class ConnectReceived(
       connect: Connect,
       connectData: ConnectData,
+      stash: Seq[Event],
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
       override val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
       override val subscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Subscriber.Event]],
@@ -102,6 +103,7 @@ import scala.util.{Failure, Success}
       serverConnect(
         ConnectReceived(connect,
                         connectData,
+                        Vector.empty,
                         data.consumerPacketRouter,
                         data.producerPacketRouter,
                         data.subscriberPacketRouter,
@@ -111,11 +113,12 @@ import scala.util.{Failure, Success}
 
   def serverConnect(data: ConnectReceived): Behavior[Event] = Behaviors.withTimers { timer =>
     timer.startSingleTimer("receive-connack", ReceiveConnAckTimeout, data.settings.receiveConnAckTimeout)
-    Behaviors.receiveMessagePartial {
-      case ConnAckReceivedFromRemote(connAck, local)
+    Behaviors.receivePartial {
+      case (context, ConnAckReceivedFromRemote(connAck, local))
           if connAck.returnCode.contains(ConnAckReturnCode.ConnectionAccepted) =>
         local ! ForwardConnAck(data.connectData)
         if (data.connect.connectFlags.contains(ConnectFlags.CleanSession)) cleanSession()
+        data.stash.foreach(context.self.tell)
         serverConnected(
           ConnAckReceived(Vector.empty,
                           data.consumerPacketRouter,
@@ -123,7 +126,7 @@ import scala.util.{Failure, Success}
                           data.subscriberPacketRouter,
                           data.settings)
         )
-      case ConnAckReceivedFromRemote(_, local) =>
+      case (_, ConnAckReceivedFromRemote(_, local)) =>
         local ! ForwardConnAck(data.connectData)
         disconnected(
           Uninitialized(data.consumerPacketRouter,
@@ -131,13 +134,17 @@ import scala.util.{Failure, Success}
                         data.subscriberPacketRouter,
                         data.settings)
         )
-      case ReceiveConnAckTimeout =>
+      case (_, ReceiveConnAckTimeout) =>
         disconnected(
           Uninitialized(data.consumerPacketRouter,
                         data.producerPacketRouter,
                         data.subscriberPacketRouter,
                         data.settings)
         )
+      case (_, e) if data.stash.size < data.settings.maxConnectStashSize =>
+        serverConnect(data.copy(stash = data.stash :+ e))
+      case (_, e) =>
+        Behaviors.stopped
     }
   }
 
