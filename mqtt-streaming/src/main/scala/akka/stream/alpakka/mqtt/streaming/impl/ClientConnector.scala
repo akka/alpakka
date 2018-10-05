@@ -183,7 +183,7 @@ import scala.util.{Failure, Success}
       Behaviors.same
     case (_, PublishReceivedLocally(publish, _, remote))
         if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
-      remote ! Source.single(Producer.ForwardPublish(None))
+      remote ! Source.single(Producer.ForwardPublish(None, dup = false))
       Behaviors.same
     case (context, prl @ PublishReceivedLocally(publish, publishData, remote)) =>
       val producerName = mkActorName(ProducerNamePrefix + publish.topicName)
@@ -362,7 +362,7 @@ import scala.util.{Failure, Success}
 
   sealed abstract class Command
   sealed abstract class ForwardPublishingCommand extends Command
-  final case class ForwardPublish(packetId: Option[PacketId]) extends ForwardPublishingCommand
+  final case class ForwardPublish(packetId: Option[PacketId], dup: Boolean) extends ForwardPublishingCommand
   final case class ForwardPubAck(publishData: PublishData) extends Command
   final case class ForwardPubRec(publishData: PublishData) extends Command
   final case class ForwardPubRel(packetId: PacketId) extends ForwardPublishingCommand
@@ -393,7 +393,7 @@ import scala.util.{Failure, Success}
     Behaviors
       .receiveMessagePartial[Event] {
         case AcquiredPacketId(packetId) =>
-          queue.offer(ForwardPublish(Some(packetId)))
+          queue.offer(ForwardPublish(Some(packetId), dup = false))
           publishUnacknowledged(
             Publishing(queue, data.flags, packetId, data.publishData, data.packetRouter, data.settings)
           )
@@ -420,7 +420,7 @@ import scala.util.{Failure, Success}
           local ! ForwardPubRec(data.publishData)
           publishAcknowledged(data)
         case ReceivePubAckRecTimeout =>
-          data.remote.offer(ForwardPublish(Some(data.packetId)))
+          data.remote.offer(ForwardPublish(Some(data.packetId), dup = true))
           publishUnacknowledged(data)
       }
       .receiveSignal {

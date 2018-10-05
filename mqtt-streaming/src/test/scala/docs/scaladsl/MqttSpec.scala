@@ -475,6 +475,8 @@ class MqttSpec
 
       val publish = Publish("some-topic", ByteString("some-payload"))
       val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+      val publishDup = publish.copy(flags = publish.flags | ControlPacketFlags.DUP)
+      val publishDupBytes = publishDup.encode(ByteString.newBuilder, Some(PacketId(1))).result()
       val pubAck = PubAck(PacketId(1))
       val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
 
@@ -487,7 +489,7 @@ class MqttSpec
 
       server.expectMsg(publishBytes)
       server.reply(connAckBytes) // It doesn't matter what the message is - our test machinery here just wants a reply
-      server.expectMsg(publishBytes)
+      server.expectMsg(publishDupBytes)
       server.reply(pubAckBytes)
     }
 

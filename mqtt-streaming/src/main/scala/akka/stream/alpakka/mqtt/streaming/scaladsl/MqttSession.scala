@@ -111,8 +111,12 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
               (clientConnector ? (replyTo => ClientConnector.PublishReceivedLocally(cp, carry, replyTo)): Future[
                 Source[Producer.ForwardPublishingCommand, NotUsed]
               ]).map(_.map {
-                case Producer.ForwardPublish(packetId) => cp.encode(ByteString.newBuilder, packetId).result()
-                case Producer.ForwardPubRel(packetId) => PubRel(packetId).encode(ByteString.newBuilder).result()
+                case Producer.ForwardPublish(packetId, dup) if !dup =>
+                  cp.encode(ByteString.newBuilder, packetId).result()
+                case Producer.ForwardPublish(packetId, _) =>
+                  cp.copy(flags = cp.flags | ControlPacketFlags.DUP).encode(ByteString.newBuilder, packetId).result()
+                case Producer.ForwardPubRel(packetId) =>
+                  PubRel(packetId).encode(ByteString.newBuilder).result()
               })
             )
           case Command(cp: PubAck, _) =>
