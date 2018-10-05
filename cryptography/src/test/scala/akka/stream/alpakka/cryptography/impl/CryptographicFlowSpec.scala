@@ -31,10 +31,8 @@ class CryptographicFlowSpec
   "Flows" can {
     "Encryption flows" should {
       "Be able to encrypt and decrypt bytestrings" in {
-//        forAll(minSuccessful(50), sizeRange(20)) { (key: SecretKey, toEncrypt: List[String]) =>
-        val toEncrypt = List("Hello crypto", "!")
-        toEncrypt.map(_.getBytes)
-        val key = KeyGenerator.getInstance("AES").generateKey()
+        forAll(minSuccessful(50), sizeRange(20)) { (key: SecretKey, toEncrypt: List[String]) =>
+          val key = KeyGenerator.getInstance("AES").generateKey()
           val src: Source[ByteString, NotUsed] = Source(toEncrypt.map(ByteString.apply))
           val encryptionCipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
           encryptionCipher.init(Cipher.ENCRYPT_MODE, key)
@@ -50,7 +48,7 @@ class CryptographicFlowSpec
           whenReady(res) { s =>
             s.utf8String shouldBe toEncrypt.mkString("")
           }
-
+        }
       }
 //
 //      "Be able to handle bytestring chunking" in {
