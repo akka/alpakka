@@ -6,23 +6,23 @@ package akka.stream.alpakka.mqtt.streaming
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 object MqttSessionSettings {
 
   /**
    * Factory method for Scala.
    */
-  def apply(maxPacketSize: Int,
-            maxConnectStashSize: Int,
-            actorMqttSessionTimeout: FiniteDuration,
-            commandParallelism: Int,
-            eventParallelism: Int,
-            receiveConnAckTimeout: FiniteDuration,
-            receivePubAckRecTimeout: FiniteDuration,
-            receivePubCompTimeout: FiniteDuration,
-            receivePubRelTimeout: FiniteDuration,
-            receiveSubAckTimeout: FiniteDuration): MqttSessionSettings =
+  def apply(maxPacketSize: Int = 100,
+            maxConnectStashSize: Int = 100,
+            actorMqttSessionTimeout: FiniteDuration = 3.seconds,
+            commandParallelism: Int = 10,
+            eventParallelism: Int = 10,
+            receiveConnAckTimeout: FiniteDuration = 30.seconds,
+            receivePubAckRecTimeout: FiniteDuration = 30.seconds,
+            receivePubCompTimeout: FiniteDuration = 30.seconds,
+            receivePubRelTimeout: FiniteDuration = 30.seconds,
+            receiveSubAckTimeout: FiniteDuration = 30.seconds): MqttSessionSettings =
     new MqttSessionSettings(
       maxPacketSize,
       maxConnectStashSize,
@@ -35,6 +35,14 @@ object MqttSessionSettings {
       receivePubRelTimeout,
       receiveSubAckTimeout
     )
+
+  /**
+   * Java API
+   *
+   * Factory method for Java.
+   */
+  def create(): MqttSessionSettings =
+    apply()
 
   /**
    * Java API

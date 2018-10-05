@@ -28,18 +28,8 @@ class MqttSpec
 
   implicit val mat: Materializer = ActorMaterializer()
   implicit val timeout: Timeout = Timeout(3.seconds.dilated)
-  val timeoutDuration: FiniteDuration = timeout.duration
 
-  val settings = MqttSessionSettings(100,
-                                     100,
-                                     timeoutDuration,
-                                     1,
-                                     1,
-                                     timeoutDuration,
-                                     timeoutDuration,
-                                     timeoutDuration,
-                                     timeoutDuration,
-                                     timeoutDuration)
+  val settings = MqttSessionSettings()
 
   import MqttCodec._
 
