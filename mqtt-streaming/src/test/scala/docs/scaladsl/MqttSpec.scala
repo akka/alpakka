@@ -450,6 +450,46 @@ class MqttSpec
       server.expectMsg(publishBytes)
       server.reply(pubAckBytes)
     }
+
+    "publish with a QoS of 1 and cause a retry given a timeout" in {
+      val session = ActorMqttClientSession(settings.withReceivePubAckRecTimeout(10.millis))
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val client =
+        Source
+          .queue(1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .clientSessionFlow(session)
+              .join(pipeToServer)
+          )
+          .toMat(Sink.ignore)(Keep.left)
+          .run
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val publish = Publish("some-topic", ByteString("some-payload"))
+      val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+      val pubAck = PubAck(PacketId(1))
+      val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
+
+      client.offer(Command(connect))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      client.offer(Command(publish))
+
+      server.expectMsg(publishBytes)
+      server.reply(connAckBytes) // It doesn't matter what the message is - our test machinery here just wants a reply
+      server.expectMsg(publishBytes)
+      server.reply(pubAckBytes)
+    }
   }
 
   override def afterAll: Unit =

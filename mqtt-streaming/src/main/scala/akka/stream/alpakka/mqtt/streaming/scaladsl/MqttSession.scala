@@ -110,7 +110,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
             Source.fromFutureSource(
               (clientConnector ? (replyTo => ClientConnector.PublishReceivedLocally(cp, carry, replyTo)): Future[
                 Source[Producer.ForwardPublish, NotUsed]
-              ]).map(source => source.map(command => cp.encode(ByteString.newBuilder, command.packetId).result()))
+              ]).map(_.map(command => cp.encode(ByteString.newBuilder, command.packetId).result()))
             )
           case Command(cp: PubAck, _) =>
             Source.fromFuture(
