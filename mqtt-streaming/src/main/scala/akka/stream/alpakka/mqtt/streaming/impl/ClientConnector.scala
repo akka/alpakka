@@ -81,7 +81,7 @@ import scala.util.{Failure, Success}
       extends Event
   final case class PublishReceivedLocally(publish: Publish,
                                           publishData: Producer.PublishData,
-                                          remote: ActorRef[Source[Producer.ForwardPublish, NotUsed]])
+                                          remote: ActorRef[Source[Producer.ForwardPublishingCommand, NotUsed]])
       extends Event
   final case class ProducerFree(topicName: String) extends Event
 
@@ -329,7 +329,7 @@ import scala.util.{Failure, Success}
    */
   def apply(flags: ControlPacketFlags,
             publishData: PublishData,
-            remote: ActorRef[Source[ForwardPublish, NotUsed]],
+            remote: ActorRef[Source[ForwardPublishingCommand, NotUsed]],
             packetRouter: ActorRef[LocalPacketRouter.Request[Event]],
             settings: MqttSessionSettings): Behavior[Event] =
     preparePublish(Start(flags, publishData, remote, packetRouter, settings))
@@ -339,16 +339,16 @@ import scala.util.{Failure, Success}
   sealed abstract class Data(val settings: MqttSessionSettings)
   final case class Start(flags: ControlPacketFlags,
                          publishData: PublishData,
-                         remote: ActorRef[Source[ForwardPublish, NotUsed]],
+                         remote: ActorRef[Source[ForwardPublishingCommand, NotUsed]],
                          packetRouter: ActorRef[LocalPacketRouter.Request[Event]],
                          override val settings: MqttSessionSettings)
       extends Data(settings)
-  final case class PublishUnacknowledged(replyQueue: SourceQueueWithComplete[ForwardPublish],
-                                         flags: ControlPacketFlags,
-                                         packetId: PacketId,
-                                         publishData: PublishData,
-                                         packetRouter: ActorRef[LocalPacketRouter.Request[Event]],
-                                         override val settings: MqttSessionSettings)
+  final case class Publishing(remote: SourceQueueWithComplete[ForwardPublishingCommand],
+                              flags: ControlPacketFlags,
+                              packetId: PacketId,
+                              publishData: PublishData,
+                              packetRouter: ActorRef[LocalPacketRouter.Request[Event]],
+                              override val settings: MqttSessionSettings)
       extends Data(settings)
 
   sealed abstract class Event
@@ -356,10 +356,17 @@ import scala.util.{Failure, Success}
   final case object UnacquiredPacketId extends Event
   case object ReceivePubAckRecTimeout extends Event
   final case class PubAckReceivedFromRemote(local: ActorRef[ForwardPubAck]) extends Event
+  final case class PubRecReceivedFromRemote(local: ActorRef[ForwardPubRec]) extends Event
+  case object ReceivePubCompTimeout extends Event
+  final case class PubCompReceivedFromRemote(local: ActorRef[ForwardPubComp]) extends Event
 
   sealed abstract class Command
-  final case class ForwardPublish(packetId: Option[PacketId]) extends Command
+  sealed abstract class ForwardPublishingCommand extends Command
+  final case class ForwardPublish(packetId: Option[PacketId]) extends ForwardPublishingCommand
   final case class ForwardPubAck(publishData: PublishData) extends Command
+  final case class ForwardPubRec(publishData: PublishData) extends Command
+  final case class ForwardPubRel(packetId: PacketId) extends ForwardPublishingCommand
+  final case class ForwardPubComp(publishData: PublishData) extends Command
 
   // State event handling
 
@@ -378,7 +385,7 @@ import scala.util.{Failure, Success}
 
     implicit val mat: Materializer = ActorMaterializer()(context.system)
     val (queue, source) = Source
-      .queue[ForwardPublish](1, OverflowStrategy.dropHead)
+      .queue[ForwardPublishingCommand](1, OverflowStrategy.dropHead)
       .toMat(BroadcastHub.sink)(Keep.both)
       .run()
     data.remote ! source
@@ -388,7 +395,7 @@ import scala.util.{Failure, Success}
         case AcquiredPacketId(packetId) =>
           queue.offer(ForwardPublish(Some(packetId)))
           publishUnacknowledged(
-            PublishUnacknowledged(queue, data.flags, packetId, data.publishData, data.packetRouter, data.settings)
+            Publishing(queue, data.flags, packetId, data.publishData, data.packetRouter, data.settings)
           )
         case UnacquiredPacketId =>
           requestPacketId()
@@ -401,7 +408,7 @@ import scala.util.{Failure, Success}
       }
   }
 
-  def publishUnacknowledged(data: PublishUnacknowledged): Behavior[Event] = Behaviors.withTimers { timer =>
+  def publishUnacknowledged(data: Publishing): Behavior[Event] = Behaviors.withTimers { timer =>
     timer.startSingleTimer("receive-pubackrec", ReceivePubAckRecTimeout, data.settings.receivePubAckRecTimeout)
 
     Behaviors
@@ -409,16 +416,41 @@ import scala.util.{Failure, Success}
         case PubAckReceivedFromRemote(local) if data.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) =>
           local ! ForwardPubAck(data.publishData)
           Behaviors.stopped
+        case PubRecReceivedFromRemote(local) if data.flags.contains(ControlPacketFlags.QoSAtMostOnceDelivery) =>
+          local ! ForwardPubRec(data.publishData)
+          publishAcknowledged(data)
         case ReceivePubAckRecTimeout =>
-          data.replyQueue.offer(ForwardPublish(Some(data.packetId)))
+          data.remote.offer(ForwardPublish(Some(data.packetId)))
           publishUnacknowledged(data)
       }
       .receiveSignal {
         case (_, PostStop) =>
           data.packetRouter ! LocalPacketRouter.Unregister(data.packetId)
-          data.replyQueue.complete()
+          data.remote.complete()
           Behaviors.same
-      } // TODO: PUBREC from remote
+      }
+  }
+
+  def publishAcknowledged(data: Publishing): Behavior[Event] = Behaviors.withTimers { timer =>
+    timer.startSingleTimer("receive-pubrel", ReceivePubCompTimeout, data.settings.receivePubCompTimeout)
+
+    data.remote.offer(ForwardPubRel(data.packetId))
+
+    Behaviors
+      .receiveMessagePartial[Event] {
+        case PubCompReceivedFromRemote(local) =>
+          local ! ForwardPubComp(data.publishData)
+          Behaviors.stopped
+        case ReceivePubCompTimeout =>
+          data.remote.offer(ForwardPubRel(data.packetId))
+          publishAcknowledged(data)
+      }
+      .receiveSignal {
+        case (_, PostStop) =>
+          data.packetRouter ! LocalPacketRouter.Unregister(data.packetId)
+          data.remote.complete()
+          Behaviors.same
+      }
   }
 }
 

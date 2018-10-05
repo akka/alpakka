@@ -490,6 +490,55 @@ class MqttSpec
       server.expectMsg(publishBytes)
       server.reply(pubAckBytes)
     }
+
+    "publish with QoS 2 and carry through an object to pubComp" in {
+      val session = ActorMqttClientSession(settings)
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val (client, result) =
+        Source
+          .queue(1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .clientSessionFlow(session)
+              .join(pipeToServer)
+          )
+          .drop(2)
+          .toMat(Sink.head)(Keep.both)
+          .run
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val publish = Publish(ControlPacketFlags.QoSExactlyOnceDelivery, "some-topic", ByteString("some-payload"))
+      val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+      val carry = "some-carry"
+      val pubRec = PubRec(PacketId(1))
+      val pubRecBytes = pubRec.encode(ByteString.newBuilder).result()
+      val pubRel = PubRel(PacketId(1))
+      val pubRelBytes = pubRel.encode(ByteString.newBuilder).result()
+      val pubComp = PubComp(PacketId(1))
+      val pubCompBytes = pubComp.encode(ByteString.newBuilder).result()
+
+      client.offer(Command(connect))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      client.offer(Command(publish, carry))
+
+      server.expectMsg(publishBytes)
+      server.reply(pubRecBytes)
+
+      server.expectMsg(pubRelBytes)
+      server.reply(pubCompBytes)
+
+      result.futureValue shouldBe Right(Event(pubComp, Some(carry)))
+    }
   }
 
   override def afterAll: Unit =
