@@ -313,7 +313,11 @@ import scala.util.{Failure, Success}
 }
 
 /*
- * A producer manages the client state in relation to publishing to a a server-side topic.
+ * A producer manages the client state in relation to publishing to a server-side topic.
+ *
+ * Producers are slightly special in that they should do all that they can to ensure that
+ * a PUBLISH message gets through. Hence, retries are indefinite.
+ *
  * A producer is created per server per topic.
  */
 @InternalApi private[streaming] object Producer {
@@ -362,12 +366,15 @@ import scala.util.{Failure, Success}
   def preparePublish(data: Start): Behavior[Event] = Behaviors.setup { context =>
     implicit val actorMqttSessionTimeout: Timeout = data.settings.actorMqttSessionTimeout
 
-    context.ask[LocalPacketRouter.Register[Event], LocalPacketRouter.Registered](data.packetRouter)(
-      replyTo => LocalPacketRouter.Register(context.self.upcast, replyTo)
-    ) {
-      case Success(acquired: LocalPacketRouter.Registered) => AcquiredPacketId(acquired.packetId)
-      case Failure(_) => UnacquiredPacketId
-    }
+    def requestPacketId(): Unit =
+      context.ask[LocalPacketRouter.Register[Event], LocalPacketRouter.Registered](data.packetRouter)(
+        replyTo => LocalPacketRouter.Register(context.self.upcast, replyTo)
+      ) {
+        case Success(acquired: LocalPacketRouter.Registered) => AcquiredPacketId(acquired.packetId)
+        case Failure(_) => UnacquiredPacketId
+      }
+
+    requestPacketId()
 
     implicit val mat: Materializer = ActorMaterializer()(context.system)
     val (queue, source) = Source
@@ -384,7 +391,8 @@ import scala.util.{Failure, Success}
             PublishUnacknowledged(queue, data.flags, packetId, data.publishData, data.packetRouter, data.settings)
           )
         case UnacquiredPacketId =>
-          Behaviors.stopped
+          requestPacketId()
+          Behaviors.same
       }
       .receiveSignal {
         case (_, PostStop) =>
@@ -402,7 +410,8 @@ import scala.util.{Failure, Success}
           local ! ForwardPubAck(data.publishData)
           Behaviors.stopped
         case ReceivePubAckRecTimeout =>
-          Behaviors.stopped
+          data.replyQueue.offer(ForwardPublish(Some(data.packetId)))
+          publishUnacknowledged(data)
       }
       .receiveSignal {
         case (_, PostStop) =>
