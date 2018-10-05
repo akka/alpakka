@@ -12,7 +12,7 @@ import akka.{Done, NotUsed, actor => untyped}
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.stream.alpakka.mqtt.streaming.impl._
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{Flow, Source}
 import akka.util.{ByteString, Timeout}
 
 import scala.concurrent.Future
@@ -96,43 +96,61 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
 
   override def commandFlow: CommandFlow =
     Flow[Command[_]]
-      .mapAsync(settings.commandParallelism) {
-        case Command(cp: Connect, carry) =>
-          (clientConnector ? (replyTo => ClientConnector.ConnectReceivedLocally(cp, carry, replyTo)): Future[
-            ClientConnector.ForwardConnect.type
-          ]).map(_ => cp.encode(ByteString.newBuilder).result())
-        case Command(cp: Publish, carry) =>
-          (clientConnector ? (replyTo => ClientConnector.PublishReceivedLocally(cp, carry, replyTo)): Future[
-            Producer.ForwardPublish
-          ]).map(command => cp.encode(ByteString.newBuilder, command.packetId).result())
-        case Command(cp: PubAck, _) =>
-          (consumerPacketRouter ? (
-              replyTo => RemotePacketRouter.Route(cp.packetId, Consumer.PubAckReceivedLocally(replyTo))
-          ): Future[
-            Consumer.ForwardPubAck.type
-          ]).map(_ => cp.encode(ByteString.newBuilder).result())
-        case Command(cp: PubRec, _) =>
-          (consumerPacketRouter ? (
-              replyTo => RemotePacketRouter.Route(cp.packetId, Consumer.PubRecReceivedLocally(replyTo))
-          ): Future[
-            Consumer.ForwardPubRec.type
-          ]).map(_ => cp.encode(ByteString.newBuilder).result())
-        case Command(cp: PubComp, _) =>
-          (consumerPacketRouter ? (
-              replyTo => RemotePacketRouter.Route(cp.packetId, Consumer.PubCompReceivedLocally(replyTo))
-          ): Future[
-            Consumer.ForwardPubComp.type
-          ]).map(_ => cp.encode(ByteString.newBuilder).result())
-        case Command(cp: Subscribe, carry) =>
-          (clientConnector ? (replyTo => ClientConnector.SubscribeReceivedLocally(cp, carry, replyTo)): Future[
-            Subscriber.ForwardSubscribe
-          ]).map(command => cp.encode(ByteString.newBuilder, command.packetId).result())
-        case Command(cp: Disconnect.type, _) =>
-          (clientConnector ? (replyTo => ClientConnector.DisconnectReceivedLocally(replyTo)): Future[
-            ClientConnector.ForwardDisconnect.type
-          ]).map(_ => cp.encode(ByteString.newBuilder).result())
-        case c: Command[_] => throw new IllegalStateException(c + " is not a client command")
-      }
+      .flatMapMerge(
+        settings.commandParallelism, {
+          case Command(cp: Connect, carry) =>
+            Source
+              .fromFuture(
+                clientConnector ? (replyTo => ClientConnector.ConnectReceivedLocally(cp, carry, replyTo)): Future[
+                  ClientConnector.ForwardConnect.type
+                ]
+              )
+              .map(_ => cp.encode(ByteString.newBuilder).result())
+          case Command(cp: Publish, carry) =>
+            Source.fromFutureSource(
+              (clientConnector ? (replyTo => ClientConnector.PublishReceivedLocally(cp, carry, replyTo)): Future[
+                Source[Producer.ForwardPublish, NotUsed]
+              ]).map(source => source.map(command => cp.encode(ByteString.newBuilder, command.packetId).result()))
+            )
+          case Command(cp: PubAck, _) =>
+            Source.fromFuture(
+              (consumerPacketRouter ? (
+                  replyTo => RemotePacketRouter.Route(cp.packetId, Consumer.PubAckReceivedLocally(replyTo))
+              ): Future[
+                Consumer.ForwardPubAck.type
+              ]).map(_ => cp.encode(ByteString.newBuilder).result())
+            )
+          case Command(cp: PubRec, _) =>
+            Source.fromFuture(
+              (consumerPacketRouter ? (
+                  replyTo => RemotePacketRouter.Route(cp.packetId, Consumer.PubRecReceivedLocally(replyTo))
+              ): Future[
+                Consumer.ForwardPubRec.type
+              ]).map(_ => cp.encode(ByteString.newBuilder).result())
+            )
+          case Command(cp: PubComp, _) =>
+            Source.fromFuture(
+              (consumerPacketRouter ? (
+                  replyTo => RemotePacketRouter.Route(cp.packetId, Consumer.PubCompReceivedLocally(replyTo))
+              ): Future[
+                Consumer.ForwardPubComp.type
+              ]).map(_ => cp.encode(ByteString.newBuilder).result())
+            )
+          case Command(cp: Subscribe, carry) =>
+            Source.fromFuture(
+              (clientConnector ? (replyTo => ClientConnector.SubscribeReceivedLocally(cp, carry, replyTo)): Future[
+                Subscriber.ForwardSubscribe
+              ]).map(command => cp.encode(ByteString.newBuilder, command.packetId).result())
+            )
+          case Command(cp: Disconnect.type, _) =>
+            Source.fromFuture(
+              (clientConnector ? (replyTo => ClientConnector.DisconnectReceivedLocally(replyTo)): Future[
+                ClientConnector.ForwardDisconnect.type
+              ]).map(_ => cp.encode(ByteString.newBuilder).result())
+            )
+          case c: Command[_] => throw new IllegalStateException(c + " is not a client command")
+        }
+      )
       .watchTermination() {
         case (_, terminated) =>
           terminated.foreach(_ => clientConnector ! ClientConnector.ConnectionLost)
