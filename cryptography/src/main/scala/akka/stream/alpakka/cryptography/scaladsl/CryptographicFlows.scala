@@ -7,11 +7,11 @@ package akka.stream.alpakka.cryptography.scaladsl
 import akka.NotUsed
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
-import akka.stream.alpakka.cryptography.impl.Flows
+import akka.stream.alpakka.cryptography.impl.CipherGraphStage
 
 import javax.crypto.Cipher
 
 object CryptographicFlows {
-  def encrypt(cipher: Cipher): Flow[ByteString, ByteString, NotUsed] =
-    Flows.encrypt(cipher)
+  def cipherFlow(cipher: Cipher): Flow[ByteString, ByteString, NotUsed] =
+    Flow.fromGraph(CipherGraphStage(cipher))
 }
