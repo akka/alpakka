@@ -32,7 +32,6 @@ class CryptographicFlowSpec
     "Encryption flows" should {
       "Be able to encrypt and decrypt bytestrings" in {
         forAll(minSuccessful(50), sizeRange(20)) { (key: SecretKey, toEncrypt: List[String]) =>
-          val key = KeyGenerator.getInstance("AES").generateKey()
           val src: Source[ByteString, NotUsed] = Source(toEncrypt.map(ByteString.apply))
           val encryptionCipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
           encryptionCipher.init(Cipher.ENCRYPT_MODE, key)
@@ -50,31 +49,6 @@ class CryptographicFlowSpec
           }
         }
       }
-//
-//      "Be able to handle bytestring chunking" in {
-//        val keyGenerator = KeyGenerator.getInstance("AES")
-//        val secretKey = keyGenerator.generateKey()
-//
-//        val byteString = ByteString("byte by byte")
-//
-//        val res = Source
-//          .single(byteString)
-//          .mapConcat(bs => bs.toArray.toList)
-//          .map(b => ByteString(b))
-//          .via(encrypt(secretKey))
-//          .runWith(Sink.fold(ByteString.empty)(_ concat _))
-//
-//        val decrypted: Future[ByteString] = res.flatMap { encrypted =>
-//          Source
-//            .single(encrypted)
-//            .via(decrypt(secretKey))
-//            .runWith(Sink.fold(ByteString.empty)(_ concat _))
-//        }
-//
-//        whenReady(decrypted) {
-//          _ shouldBe byteString
-//        }
-//      }
     }
   }
 
@@ -84,13 +58,4 @@ class CryptographicFlowSpec
       keyGenerator.generateKey()
     })
   }
-//
-//  val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
-//  keyPairGenerator.initialize(1024)
-//  implicit def arbitraryKeyPair: Arbitrary[KeyPair] = Arbitrary {
-//    Gen.resultOf((_: Unit) => {
-//      keyPairGenerator.generateKeyPair()
-//    })
-//  }
-
 }
