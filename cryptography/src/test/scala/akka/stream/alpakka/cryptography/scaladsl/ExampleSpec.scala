@@ -14,7 +14,7 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{Matchers, WordSpec}
-import CryptographicFlows._
+import akka.stream.alpakka.cryptography.impl.CryptographicFlows._
 
 import scala.concurrent.Future
 
