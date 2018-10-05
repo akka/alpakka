@@ -143,7 +143,7 @@ import scala.util.{Failure, Success}
         )
       case (_, e) if data.stash.size < data.settings.maxConnectStashSize =>
         serverConnect(data.copy(stash = data.stash :+ e))
-      case (_, e) =>
+      case _ =>
         Behaviors.stopped
     }
   }
