@@ -61,6 +61,7 @@ object RegionSettings {
 
   def apply[K, V](name: String, keyExtractor: V => K): RegionSettings[K, V] = new RegionSettings(name, keyExtractor)
 
-  def create[K, V](name: String, keyExtractor: V => K): RegionSettings[K, V] = new RegionSettings(name, keyExtractor)
+  def create[K, V](name: String, keyExtractor: V => K): RegionSettings[K, V] =
+    new RegionSettings(name, keyExtractor)
 
 }

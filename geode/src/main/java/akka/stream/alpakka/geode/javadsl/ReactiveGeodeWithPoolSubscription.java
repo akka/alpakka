@@ -13,8 +13,10 @@ import org.apache.geode.cache.client.ClientCacheFactory;
 import org.apache.geode.cache.query.CqException;
 import org.apache.geode.cache.query.CqQuery;
 import org.apache.geode.cache.query.QueryService;
-import scala.Symbol;
-import scala.concurrent.Future;
+
+import scala.compat.java8.FutureConverters;
+
+import java.util.concurrent.CompletionStage;
 
 public
 /** Reactive geode with server event subscription. Can build continuous source. */
@@ -33,12 +35,12 @@ class ReactiveGeodeWithPoolSubscription extends ReactiveGeode {
     super(settings);
   }
 
-  public <V> Source<V, Future<Done>> continuousQuery(
+  public <V> Source<V, CompletionStage<Done>> continuousQuery(
       String queryName, String query, AkkaPdxSerializer<V> serializer) {
 
     registerPDXSerializer(serializer, serializer.clazz());
-    return Source.fromGraph(
-        new GeodeContinuousSourceStage<V>(cache(), Symbol.apply(queryName), query));
+    return Source.fromGraph(new GeodeContinuousSourceStage<V>(cache(), queryName, query))
+        .mapMaterializedValue(FutureConverters::<Done>toJava);
   }
 
   public boolean closeContinuousQuery(String name) throws CqException {

@@ -13,7 +13,7 @@ import org.apache.geode.cache.client.ClientCache
 import scala.concurrent.{Future, Promise}
 
 @InternalApi
-private[geode] class GeodeContinuousSourceStage[V](cache: ClientCache, name: Symbol, sql: String)
+private[geode] class GeodeContinuousSourceStage[V](cache: ClientCache, name: String, sql: String)
     extends GraphStageWithMaterializedValue[SourceShape[V], Future[Done]] {
 
   override protected def initialAttributes: Attributes =

@@ -88,7 +88,7 @@ trait PoolSubscription extends ReactiveGeode {
 
     registerPDXSerializer(serializer, serializer.clazz)
 
-    Source.fromGraph(new GeodeContinuousSourceStage[V](cache, queryName, query))
+    Source.fromGraph(new GeodeContinuousSourceStage[V](cache, queryName.name, query))
   }
 
   /**
@@ -101,7 +101,7 @@ trait PoolSubscription extends ReactiveGeode {
 
     registerPDXSerializer(new ShapelessPdxSerializer[V](enc, dec), tag.runtimeClass)
 
-    Source.fromGraph(new GeodeContinuousSourceStage[V](cache, queryName, query))
+    Source.fromGraph(new GeodeContinuousSourceStage[V](cache, queryName.name, query))
   }
 
   def closeContinuousQuery(queryName: Symbol) =
