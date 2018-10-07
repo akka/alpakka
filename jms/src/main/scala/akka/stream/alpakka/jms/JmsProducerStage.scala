@@ -89,7 +89,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
             val elem: E = grab(in)
             elem match {
               case m: Message[_, _] =>
-                // fetch a jms producer from the pool, and create a holder object to capture the in-flight message.
+                // create a holder object to capture the in-flight message, and enqueue it to preserve message order
                 val holder = new Holder[E](NotYetThere)
                 inFlightMessages.enqueue(holder)
                 sendWithRetries(SendAttempt[E](m, holder))
