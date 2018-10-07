@@ -51,8 +51,6 @@ import org.junit.Test;
 import scala.compat.java8.FutureConverters;
 import scala.compat.java8.OptionConverters;
 
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;

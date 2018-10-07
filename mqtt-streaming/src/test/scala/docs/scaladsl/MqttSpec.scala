@@ -49,7 +49,6 @@ class MqttSpec
               .clientSessionFlow(session)
               .join(pipeToServer)
           )
-          .take(3)
           .toMat(Sink.collection)(Keep.both)
           .run
 
@@ -82,6 +81,8 @@ class MqttSpec
 
       server.expectMsg(publishBytes)
       server.reply(pubAckBytes)
+
+      client.complete()
 
       result.futureValue shouldBe List(Right(Event(connAck)), Right(Event(subAck)), Right(Event(pubAck)))
     }
@@ -567,6 +568,38 @@ class MqttSpec
       server.reply(pubCompBytes)
 
       result.futureValue shouldBe Right(Event(pubComp, Some(carry)))
+    }
+
+    "connect and send out a ping request" in {
+      val session = ActorMqttClientSession(settings)
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val client =
+        Source
+          .queue(1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .clientSessionFlow(session)
+              .join(pipeToServer)
+          )
+          .toMat(Sink.ignore)(Keep.left)
+          .run
+
+      val connect = Connect("some-client-id", ConnectFlags.None).copy(keepAlive = 10.millis)
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+      val pingReq = PingReq
+      val pingReqBytes = pingReq.encode(ByteString.newBuilder).result()
+
+      client.offer(Command(connect))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      server.expectMsg(pingReqBytes)
     }
   }
 
