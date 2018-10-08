@@ -61,6 +61,14 @@ object ActorMqttClientSession {
   def apply(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem): ActorMqttClientSession =
     new ActorMqttClientSession(settings)
 
+  /**
+   * A PINGREQ failed to receive a PINGRESP - the connection must close
+   *
+   * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
+   * 3.1.2.10 Keep Alive
+   */
+  case object PingFailed extends Exception
+
   private[scaladsl] val clientSessionCounter = new AtomicLong
 }
 
@@ -94,19 +102,29 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
 
   override def shutdown(): Future[Done] = ???
 
+  private val pingReqBytes = PingReq.encode(ByteString.newBuilder).result()
+
   override def commandFlow: CommandFlow =
     Flow[Command[_]]
       .watch(clientConnector.toUntyped)
+      .watchTermination() {
+        case (_, terminated) =>
+          terminated.foreach(_ => clientConnector ! ClientConnector.ConnectionLost)
+          NotUsed
+      }
       .flatMapMerge(
         settings.commandParallelism, {
           case Command(cp: Connect, carry) =>
-            Source
-              .fromFuture(
-                clientConnector ? (replyTo => ClientConnector.ConnectReceivedLocally(cp, carry, replyTo)): Future[
-                  ClientConnector.ForwardConnect.type
-                ]
-              )
-              .map(_ => cp.encode(ByteString.newBuilder).result())
+            Source.fromFutureSource(
+              (clientConnector ? (replyTo => ClientConnector.ConnectReceivedLocally(cp, carry, replyTo)): Future[
+                Source[ClientConnector.ForwardConnectCommand, NotUsed]
+              ]).map(_.map {
+                case ClientConnector.ForwardConnect => cp.encode(ByteString.newBuilder).result()
+                case ClientConnector.ForwardPingReq => pingReqBytes
+              }.mapError {
+                case ClientConnector.PingFailed => ActorMqttClientSession.PingFailed
+              })
+            )
           case Command(cp: Publish, carry) =>
             Source.fromFutureSource(
               (clientConnector ? (replyTo => ClientConnector.PublishReceivedLocally(cp, carry, replyTo)): Future[
@@ -159,15 +177,15 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
           case c: Command[_] => throw new IllegalStateException(c + " is not a client command")
         }
       )
+
+  override def eventFlow: EventFlow =
+    Flow[ByteString]
+      .watch(clientConnector.toUntyped)
       .watchTermination() {
         case (_, terminated) =>
           terminated.foreach(_ => clientConnector ! ClientConnector.ConnectionLost)
           NotUsed
       }
-
-  override def eventFlow: EventFlow =
-    Flow[ByteString]
-      .watch(clientConnector.toUntyped)
       .via(new MqttFrameStage(settings.maxPacketSize))
       .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
       .mapAsync(settings.eventParallelism) {
@@ -233,13 +251,13 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
             .map {
               case Producer.ForwardPubComp(carry) => Right[DecodeError, Event[_]](Event(cp, carry))
             }
+        case Right(PingResp) =>
+          (clientConnector ? ClientConnector.PingRespReceivedFromRemote: Future[ClientConnector.ForwardPingResp.type])
+            .map {
+              case ClientConnector.ForwardPingResp => Right[DecodeError, Event[_]](Event(PingResp))
+            }
         case Right(cp) => Future.failed(new IllegalStateException(cp + " is not a client event"))
         case Left(de) => Future.successful(Left(de))
-      }
-      .watchTermination() {
-        case (_, terminated) =>
-          terminated.foreach(_ => clientConnector ! ClientConnector.ConnectionLost)
-          NotUsed
       }
 }
 
