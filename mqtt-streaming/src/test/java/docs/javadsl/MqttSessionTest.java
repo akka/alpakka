@@ -60,7 +60,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class MqttTest {
+public class MqttSessionTest {
   private static ActorSystem system;
   private static Materializer mat;
 

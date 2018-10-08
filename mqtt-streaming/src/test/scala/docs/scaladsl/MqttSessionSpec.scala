@@ -19,7 +19,7 @@ import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 
-class MqttSpec
+class MqttSessionSpec
     extends TestKit(ActorSystem("mqtt-spec"))
     with WordSpecLike
     with BeforeAndAfterAll

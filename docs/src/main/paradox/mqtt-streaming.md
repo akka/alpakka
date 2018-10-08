@@ -8,7 +8,9 @@ Further information on [mqtt.org](https://mqtt.org/).
 
 @@@ 
 
-The Alpakka MQTT connector provides an Akka Stream source, sink and flow to connect to MQTT brokers. It has no dependencies other than those of Akka Streams i.e. it is entirely reactive. As such, there should be a significant performance advantage given its pure-Akka foundations.
+The Alpakka MQTT connector provides an Akka Stream flow to connect to MQTT brokers. In addition, a flow is provided so that you can implement your own MQTT server in the case where you do not wish to use a broker. MQTT is a fine protocol for directed client/server interactions, as well as having an intermediary broker.
+
+The library has no dependencies other than those of Akka Streams i.e. it is entirely reactive. As such, there should be a significant performance advantage given its pure-Akka foundations.
 
 ### Reported issues
 
@@ -22,82 +24,29 @@ The Alpakka MQTT connector provides an Akka Stream source, sink and flow to conn
   version=$project.version$
 }
 
-## Reading from MQTT
+## Flow through a client session
 
-### At most once
-
-Then let's create a source that connects to the MQTT server and receives messages from the subscribed topics.
+The following code illustrates how to establish an MQTT client session and join it with a TCP connection:
 
 Scala
-: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #create-source }
+: @@snip [snip](/mqtt-streaming/src/test/scala/docs/scaladsl/MqttFlowSpec.scala) { #create-streaming-flow }
 
 Java
-: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttSourceTest.java) { #create-source }
+: @@snip [snip](/mqtt-streaming/src/test/java/docs/javadsl/MqttFlowTest.java) { #create-streaming-flow }
 
-This source has a materialized value (@scala[@scaladoc[Future[Done]](scala.concurrent.Future)]@java[@javadoc[CompletionStage&lt;Done&gt;](java.util.concurrent.CompletionStage)]) which is completed when the subscription to the MQTT broker has been established.
+The resulting flow's type shows how `Command`s are received and `Event`s are emitted. With `Event`, they can
+be either decoded successfully or not.
 
-MQTT `atMostOnce` automatically acknowledges messages back to the server when they are passed downstream. 
-
-### At least once
-
-The `atLeastOnce` source allow users to acknowledge the messages anywhere downstream.
-Please note that for manual acks to work `CleanSession` should be set to false and `MqttQoS` should be `AtLeastOnce`.
+Run the flow by connecting a source of messages to be published via a queue:
 
 Scala
-: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #create-source-with-manualacks }
+: @@snip [snip](/mqtt-streaming/src/test/scala/docs/scaladsl/MqttFlowSpec.scala) { #run-streaming-flow }
 
 Java
-: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttSourceTest.java) { #create-source-with-manualacks }
+: @@snip [snip](/mqtt-streaming/src/test/java/docs/javadsl/MqttFlowTest.java) { #run-streaming-flow }
 
-
-The `atLeastOnce` source returns @scala[@scaladoc[MqttMessageWithAck](akka.stream.alpakka.mqtt.streaming.scaladsl.MqttMessageWithAck)]@java[@scaladoc[MqttMessageWithAck](akka.stream.alpakka.mqtt.streaming.javadsl.MqttMessageWithAck)] so you can acknowledge them by calling `ack()`.
-
-Scala
-: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #run-source-with-manualacks }
-
-Java
-: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttSourceTest.java) { #run-source-with-manualacks }
-
-
-## Publishing to MQTT
-
-To publish messages to the MQTT server create a sink by specifying `MqttConnectionSettings` ([API](akka.stream.alpakka.mqtt.streaming.MqttConnectionSettings$)) and a default Quality of Service-level.
-
-Scala
-: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #run-sink }
-
-Java
-: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttSourceTest.java) { #run-sink }
-
-
-The Quality of Service-level and the retained flag can be configured on a per-message basis.
-
-Scala
-: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #will-message }
-
-Java
-: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttSourceTest.java) { #will-message }
-
-
-## Publish and subscribe in a single flow
-
-It is also possible to connect to the MQTT server in bidirectional fashion, using a single underlying connection (and client ID). To do that create an MQTT flow that combines the functionalities of an MQTT source and an MQTT sink.
-
-Scala
-: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttFlowSpec.scala) { #create-flow }
-
-Java
-: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttFlowTest.java) { #create-flow }
-
-
-Run the flow by connecting a source of messages to be published and a sink for received messages.
-
-Scala
-: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttFlowSpec.scala) { #run-flow }
-
-Java
-: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttFlowTest.java) { #run-flow }
-
+We drop the first 3 events received as they will be ACKs to our connect, subscribe and publish. The next event
+received is the publication to the topic we also subscribed to.
 
 ## Running the example code
 
@@ -106,11 +55,11 @@ The code in this guide is part of runnable tests of this project. You are welcom
 Scala
 :   ```
     sbt
-    > mqtt-streaming/testOnly *.MqttSourceSpec
+    > mqtt-streaming/testOnly *.MqttFlowSpec
     ```
 
 Java
 :   ```
     sbt
-    > mqtt-streaming/testOnly *.MqttSourceTest
+    > mqtt-streaming/testOnly *.MqttFlowTest
     ```
