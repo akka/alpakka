@@ -10,7 +10,7 @@ import akka.pattern.ask
 import akka.stream.alpakka.mqtt.streaming._
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, Mqtt}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import akka.stream.{ActorMaterializer, Materializer, OverflowStrategy}
+import akka.stream.{ActorMaterializer, Materializer, OverflowStrategy, WatchedActorTerminatedException}
 import akka.testkit._
 import akka.util.{ByteString, Timeout}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
@@ -642,6 +642,32 @@ class MqttSpec
 
       result.failed.futureValue shouldBe ActorMqttClientSession.PingFailed
     }
+
+    "shutdown a session" in {
+      val session = ActorMqttClientSession(settings)
+      session.shutdown()
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val (client, result) =
+        Source
+          .queue(1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .clientSessionFlow(session)
+              .join(pipeToServer)
+          )
+          .toMat(Sink.ignore)(Keep.both)
+          .run
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+
+      client.offer(Command(connect))
+
+      result.failed.futureValue shouldBe a[WatchedActorTerminatedException]
+    }
+
   }
 
   override def afterAll: Unit =

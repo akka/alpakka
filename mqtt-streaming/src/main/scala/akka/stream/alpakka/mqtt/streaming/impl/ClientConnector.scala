@@ -696,7 +696,6 @@ import scala.util.{Failure, Success}
       case Register(registrant: ActorRef[A], replyTo) if nextPacketId.underlying <= MaxPacketId.underlying =>
         replyTo ! Registered(nextPacketId)
         main(registrantsByPacketId + (nextPacketId -> registrant), PacketId(nextPacketId.underlying + 1))
-      // FIXME: register packet ids that are provided
       case _: Register[A] =>
         Behaviors.same // We cannot allocate any more. This will eventually cause a timeout to occur on the requestor.
       case Unregister(packetId) =>

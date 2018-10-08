@@ -5,8 +5,6 @@
 package akka.stream.alpakka.mqtt.streaming
 package javadsl
 
-import java.util.concurrent.CompletionStage
-
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{
@@ -15,8 +13,6 @@ import akka.stream.alpakka.mqtt.streaming.scaladsl.{
   MqttClientSession => ScalaMqttClientSession,
   MqttServerSession => ScalaMqttServerSession
 }
-
-import scala.compat.java8.FutureConverters._
 
 /**
  * Represents MQTT session state for both clients or servers. Session
@@ -29,7 +25,7 @@ abstract class MqttSession {
    * Shutdown the session gracefully
    * @return [[Done]] when complete
    */
-  def shutdown(): CompletionStage[Done]
+  def shutdown(): Unit
 }
 
 /**
@@ -38,8 +34,8 @@ abstract class MqttSession {
 abstract class MqttClientSession extends MqttSession {
   protected[javadsl] val underlying: ScalaMqttClientSession
 
-  override def shutdown(): CompletionStage[Done] =
-    underlying.shutdown().toJava
+  override def shutdown(): Unit =
+    underlying.shutdown()
 }
 
 /**
@@ -58,8 +54,8 @@ final class ActorMqttClientSession(settings: MqttSessionSettings, system: ActorS
 abstract class MqttServerSession extends MqttSession {
   protected[javadsl] val underlying: ScalaMqttServerSession
 
-  override def shutdown(): CompletionStage[Done] =
-    underlying.shutdown().toJava
+  override def shutdown(): Unit =
+    underlying.shutdown()
 }
 
 /**

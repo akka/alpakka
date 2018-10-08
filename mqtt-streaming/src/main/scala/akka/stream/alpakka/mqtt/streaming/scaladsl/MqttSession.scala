@@ -38,7 +38,7 @@ abstract class MqttSession {
    * Shutdown the session gracefully
    * @return [[Done]] when complete
    */
-  def shutdown(): Future[Done]
+  def shutdown(): Unit
 
   /**
    * @return a flow for commands to be sent to the session
@@ -100,7 +100,12 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
 
   import system.dispatcher
 
-  override def shutdown(): Future[Done] = ???
+  override def shutdown(): Unit = {
+    system.stop(clientConnector.toUntyped)
+    system.stop(consumerPacketRouter.toUntyped)
+    system.stop(producerPacketRouter.toUntyped)
+    system.stop(subscriberPacketRouter.toUntyped)
+  }
 
   private val pingReqBytes = PingReq.encode(ByteString.newBuilder).result()
 
@@ -283,7 +288,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit syste
   import MqttCodec._
   import MqttSession._
 
-  override def shutdown(): Future[Done] = ???
+  override def shutdown(): Unit = ???
 
   override def commandFlow: CommandFlow =
     Flow[Command[_]].map {
