@@ -115,6 +115,9 @@ import scala.util.{Failure, Success}
   private val ProducerNamePrefix = "producer-"
   private val SubscriberNamePrefix = "subscriber-"
 
+  private def mkActorName(name: String): String =
+    name.getBytes(StandardCharsets.UTF_8).map(_.toHexString).mkString
+
   def disconnected(data: Uninitialized): Behavior[Event] = Behaviors.receivePartial {
     case (context, ConnectReceivedLocally(connect, connectData, remote)) =>
       implicit val mat: Materializer = ActorMaterializer()(context.system)
@@ -152,7 +155,8 @@ import scala.util.{Failure, Success}
         case (context, ConnAckReceivedFromRemote(connAck, local))
             if connAck.returnCode.contains(ConnAckReturnCode.ConnectionAccepted) =>
           local ! ForwardConnAck(data.connectData)
-          if (data.connect.connectFlags.contains(ConnectFlags.CleanSession)) cleanSession()
+          if (data.connect.connectFlags.contains(ConnectFlags.CleanSession))
+            context.children.foreach(context.stop)
           data.stash.foreach(context.self.tell)
           serverConnected(
             ConnAckReceived(
@@ -182,9 +186,6 @@ import scala.util.{Failure, Success}
 
   }
 
-  private def mkActorName(name: String): String =
-    name.getBytes(StandardCharsets.UTF_8).map(_.toHexString).mkString
-
   def serverConnected(data: ConnAckReceived): Behavior[Event] = Behaviors.withTimers { timer =>
     if (data.keepAlive.toMillis > 0)
       timer.startSingleTimer("send-pingreq", SendPingReqTimeout, data.keepAlive)
@@ -202,7 +203,6 @@ import scala.util.{Failure, Success}
           disconnect()
         case (_, DisconnectReceivedLocally(remote)) =>
           remote ! ForwardDisconnect
-          cleanSession()
           disconnect()
         case (context, SubscribeReceivedLocally(subscribe, subscribeData, remote)) =>
           subscribe.topicFilters.foreach { topicFilter =>
@@ -286,10 +286,6 @@ import scala.util.{Failure, Success}
           Behaviors.same
       }
   }
-
-  // Actions
-
-  def cleanSession(): Unit = {} // TODO
 }
 
 /*
