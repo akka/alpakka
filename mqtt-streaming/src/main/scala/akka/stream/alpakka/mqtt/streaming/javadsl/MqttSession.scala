@@ -5,7 +5,6 @@
 package akka.stream.alpakka.mqtt.streaming
 package javadsl
 
-import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{
   ActorMqttClientSession => ScalaActorMqttClientSession,
@@ -23,7 +22,6 @@ abstract class MqttSession {
 
   /**
    * Shutdown the session gracefully
-   * @return [[Done]] when complete
    */
   def shutdown(): Unit
 }

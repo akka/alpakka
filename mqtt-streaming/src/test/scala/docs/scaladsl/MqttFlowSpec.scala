@@ -4,7 +4,7 @@
 
 package docs.scaladsl
 
-import akka.{Done, NotUsed}
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.mqtt.streaming._
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, Mqtt}
@@ -24,7 +24,6 @@ class MqttFlowSpec
     with BeforeAndAfterAll
     with ScalaFutures {
 
-  private val timeout = 5.seconds
   private implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
   private implicit val mat: Materializer = ActorMaterializer()
@@ -65,6 +64,7 @@ class MqttFlowSpec
 
       events.futureValue match {
         case Right(Event(Publish(_, `topic`, _, bytes), _)) => bytes shouldBe ByteString("ohi")
+        case e => fail("Unexpected event: " + e)
       }
     }
   }

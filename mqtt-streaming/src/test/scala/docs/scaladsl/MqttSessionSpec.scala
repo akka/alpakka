@@ -643,6 +643,47 @@ class MqttSessionSpec
       result.failed.futureValue shouldBe ActorMqttClientSession.PingFailed
     }
 
+    "unsubscribe a client session" in {
+      val session = ActorMqttClientSession(settings)
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val (client, result) =
+        Source
+          .queue(1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .clientSessionFlow(session)
+              .join(pipeToServer)
+          )
+          .drop(1)
+          .toMat(Sink.head)(Keep.both)
+          .run
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val unsubscribe = Unsubscribe("some-topic")
+      val unsubscribeBytes = unsubscribe.encode(ByteString.newBuilder, PacketId(1)).result()
+      val unsubAck = UnsubAck(PacketId(1))
+      val unsubAckBytes = unsubAck.encode(ByteString.newBuilder).result()
+
+      client.offer(Command(connect))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      client.offer(Command(unsubscribe))
+
+      server.expectMsg(unsubscribeBytes)
+      server.reply(unsubAckBytes)
+
+      result.futureValue shouldBe Right(Event(unsubAck))
+    }
+
     "shutdown a session" in {
       val session = ActorMqttClientSession(settings)
       session.shutdown()

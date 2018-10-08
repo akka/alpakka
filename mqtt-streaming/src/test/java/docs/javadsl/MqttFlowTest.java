@@ -73,7 +73,7 @@ public class MqttFlowTest {
     MqttClientSession session = new ActorMqttClientSession(settings, system);
 
     Flow<ByteString, ByteString, CompletionStage<Tcp.OutgoingConnection>> connection =
-            Tcp.get(system).outgoingConnection("localhost", 1883);
+        Tcp.get(system).outgoingConnection("localhost", 1883);
 
     Flow<Command<?>, DecodeErrorOrEvent, NotUsed> mqttFlow =
         Mqtt.clientSessionFlow(session).join(connection);

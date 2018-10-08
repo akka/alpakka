@@ -8,7 +8,7 @@ package scaladsl
 import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.Scheduler
-import akka.{Done, NotUsed, actor => untyped}
+import akka.{NotUsed, actor => untyped}
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.stream.alpakka.mqtt.streaming.impl._
@@ -36,7 +36,6 @@ abstract class MqttSession {
 
   /**
    * Shutdown the session gracefully
-   * @return [[Done]] when complete
    */
   def shutdown(): Unit
 
@@ -88,9 +87,17 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
     system.spawn(LocalPacketRouter[Producer.Event], "client-producer-packet-id-allocator-" + clientSessionId)
   private val subscriberPacketRouter =
     system.spawn(LocalPacketRouter[Subscriber.Event], "client-subscriber-packet-id-allocator-" + clientSessionId)
+  private val unsubscriberPacketRouter =
+    system.spawn(LocalPacketRouter[Unsubscriber.Event], "client-unsubscriber-packet-id-allocator-" + clientSessionId)
   private val clientConnector =
-    system.spawn(ClientConnector(consumerPacketRouter, producerPacketRouter, subscriberPacketRouter, settings),
-                 "client-connector-" + clientSessionId)
+    system.spawn(
+      ClientConnector(consumerPacketRouter,
+                      producerPacketRouter,
+                      subscriberPacketRouter,
+                      unsubscriberPacketRouter,
+                      settings),
+      "client-connector-" + clientSessionId
+    )
 
   import MqttCodec._
   import MqttSession._
@@ -105,6 +112,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
     system.stop(consumerPacketRouter.toUntyped)
     system.stop(producerPacketRouter.toUntyped)
     system.stop(subscriberPacketRouter.toUntyped)
+    system.stop(unsubscriberPacketRouter.toUntyped)
   }
 
   private val pingReqBytes = PingReq.encode(ByteString.newBuilder).result()
@@ -173,6 +181,12 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
                 Subscriber.ForwardSubscribe
               ]).map(command => cp.encode(ByteString.newBuilder, command.packetId).result())
             )
+          case Command(cp: Unsubscribe, carry) =>
+            Source.fromFuture(
+              (clientConnector ? (replyTo => ClientConnector.UnsubscribeReceivedLocally(cp, carry, replyTo)): Future[
+                Unsubscriber.ForwardUnsubscribe
+              ]).map(command => cp.encode(ByteString.newBuilder, command.packetId).result())
+            )
           case Command(cp: Disconnect.type, _) =>
             Source.fromFuture(
               (clientConnector ? (replyTo => ClientConnector.DisconnectReceivedLocally(replyTo)): Future[
@@ -209,6 +223,16 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
           ): Future[Subscriber.ForwardSubAck])
             .map {
               case Subscriber.ForwardSubAck(carry) => Right[DecodeError, Event[_]](Event(cp, carry))
+            }
+        case Right(cp: UnsubAck) =>
+          (unsubscriberPacketRouter ? (
+              replyTo =>
+                LocalPacketRouter.Route(cp.packetId,
+                                        Unsubscriber
+                                          .UnsubAckReceivedFromRemote(replyTo))
+          ): Future[Unsubscriber.ForwardUnsubAck])
+            .map {
+              case Unsubscriber.ForwardUnsubAck(carry) => Right[DecodeError, Event[_]](Event(cp, carry))
             }
         case Right(cp: Publish) =>
           (clientConnector ? (ClientConnector
