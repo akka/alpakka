@@ -40,9 +40,9 @@ public class GeodeBaseTestCase {
 
   // #region
   protected RegionSettings<Integer, Person> personRegionSettings =
-      RegionSettings.create("persons", func(Person::getId));
+      RegionSettings.create("persons", Person::getId);
   protected RegionSettings<Integer, Animal> animalRegionSettings =
-      RegionSettings.create("animals", func(Animal::getId));
+      RegionSettings.create("animals", Animal::getId);
   // #region
 
   @BeforeClass
@@ -65,7 +65,7 @@ public class GeodeBaseTestCase {
     // #connection
     GeodeSettings settings =
         GeodeSettings.create(geodeDockerHostname, 10334)
-            .withConfiguration(func(c -> c.setPoolIdleTimeout(10)));
+            .withConfiguration(c -> c.setPoolIdleTimeout(10));
     return new ReactiveGeode(settings);
     // #connection
   }
