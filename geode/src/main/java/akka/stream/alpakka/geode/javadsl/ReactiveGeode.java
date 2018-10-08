@@ -10,7 +10,7 @@ import akka.stream.alpakka.geode.AkkaPdxSerializer;
 import akka.stream.alpakka.geode.GeodeSettings;
 import akka.stream.alpakka.geode.RegionSettings;
 import akka.stream.alpakka.geode.impl.GeodeCache;
-import akka.stream.alpakka.geode.impl.stage.GeodeContinuousSourceStage;
+
 import akka.stream.alpakka.geode.impl.stage.GeodeFiniteSourceStage;
 import akka.stream.alpakka.geode.impl.stage.GeodeFlowStage;
 import akka.stream.javadsl.Flow;
@@ -18,11 +18,8 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import org.apache.geode.cache.client.ClientCacheFactory;
-import org.apache.geode.cache.query.CqException;
-import org.apache.geode.cache.query.CqQuery;
-import org.apache.geode.cache.query.QueryService;
-import scala.Symbol;
-import scala.concurrent.Future;
+
+import scala.compat.java8.FutureConverters;
 
 import java.util.concurrent.CompletionStage;
 
@@ -41,10 +38,11 @@ public class ReactiveGeode extends GeodeCache {
     return factory.addPoolLocator(geodeSettings.hostname(), geodeSettings.port());
   }
 
-  public <V> Source<V, Future<Done>> query(String query, AkkaPdxSerializer<V> serializer) {
+  public <V> Source<V, CompletionStage<Done>> query(String query, AkkaPdxSerializer<V> serializer) {
 
     registerPDXSerializer(serializer, serializer.clazz());
-    return Source.fromGraph(new GeodeFiniteSourceStage<V>(cache(), query));
+    return Source.fromGraph(new GeodeFiniteSourceStage<V>(cache(), query))
+        .mapMaterializedValue(FutureConverters::<Done>toJava);
   }
 
   public <K, V> Flow<V, V, NotUsed> flow(
