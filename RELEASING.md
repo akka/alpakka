@@ -1,6 +1,7 @@
 ## Releasing
 
 1. Check [closed issues without a milestone](https://github.com/akka/alpakka/issues?utf8=%E2%9C%93&q=is%3Aissue%20is%3Aclosed%20no%3Amilestone) and either assign them the 'upcoming' release milestone or 'invalid'
+1. Make sure any new deprecations got the correct designated version
 1. Create a PR that adds release notes for the upcoming version and get it merged before continuing with the release. Release notes should include:
     * title and release description including notable changes
     * link to the [milestone](https://github.com/akka/alpakka/milestones) showing an overview of closed issues for this release
