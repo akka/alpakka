@@ -35,7 +35,7 @@ object MqttSource {
    *
    * @param bufferSize max number of messages read from MQTT before back-pressure applies
    */
-  @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+  @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
   def atMostOnce(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessage, Future[Done]] =
     atMostOnce(settings.connectionSettings, MqttSubscriptions(settings.subscriptions), bufferSize)
 
@@ -61,7 +61,7 @@ object MqttSource {
    *
    * @param bufferSize max number of messages read from MQTT before back-pressure applies
    */
-  @deprecated("use atLeastOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+  @deprecated("use atLeastOnce with MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
   def atLeastOnce(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessageWithAck, Future[Done]] =
     atLeastOnce(settings.connectionSettings, MqttSubscriptions(settings.subscriptions), bufferSize)
 

@@ -28,7 +28,7 @@ sealed trait MqttMessageWithAck {
   /**
    * @deprecated use commit instead, since 0.21
    */
-  @deprecated("use ack() instead", "0.21")
+  @deprecated("use ack() instead", "1.0-M1")
   @java.lang.Deprecated
   def messageArrivedComplete(): CompletionStage[Done] = ack()
 
