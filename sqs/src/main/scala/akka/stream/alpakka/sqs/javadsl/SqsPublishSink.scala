@@ -23,16 +23,16 @@ import scala.compat.java8.FutureConverters.FutureOps
 object SqsPublishSink {
 
   /**
-   * Create a sink for a SQS queue accepting Strings.
-   */
+    * creates a [[akka.stream.javadsl.Sink Sink]] that accepts strings and publishes them as messages to a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync AmazonSQSAsync]]
+    */
   def create(queueUrl: String,
              settings: SqsPublishSettings,
              sqsClient: AmazonSQSAsync): Sink[String, CompletionStage[Done]] =
     scaladsl.SqsPublishSink.apply(queueUrl, settings)(sqsClient).mapMaterializedValue(_.toJava).asJava
 
   /**
-   * Create a sink for a SQS queue accepting Strings.
-   */
+    * creates a [[akka.stream.javadsl.Sink Sink]] to publish messages to a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync AmazonSQSAsync]]
+    */
   def messageSink(queueUrl: String,
                   settings: SqsPublishSettings,
                   sqsClient: AmazonSQSAsync): Sink[SendMessageRequest, CompletionStage[Done]] =
@@ -42,20 +42,28 @@ object SqsPublishSink {
       .asJava
 
   /**
-   * Create a flow grouping and publishing `String` messages in batches to a SQS queue.
-   *
-   * @see https://doc.akka.io/docs/akka/current/stream/operators/Source-or-Flow/groupedWithin.html#groupedwithin
-   */
+    * creates a [[akka.stream.javadsl.Sink Sink]] to publish messages to SQS queues based on the message queue url using an [[com.amazonaws.services.sqs.AmazonSQSAsync AmazonSQSAsync]]
+    */
+  def messageSink(settings: SqsPublishSettings,
+                  sqsClient: AmazonSQSAsync): Sink[SendMessageRequest, CompletionStage[Done]] =
+    scaladsl.SqsPublishSink
+      .messageSink(settings)(sqsClient)
+      .mapMaterializedValue(_.toJava)
+      .asJava
+
+  /**
+    * creates a [[akka.stream.javadsl.Sink Sink]] that groups strings and publishes them as messages in batches to a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync AmazonSQSAsync]]
+    * @see https://doc.akka.io/docs/akka/current/stream/operators/Source-or-Flow/groupedWithin.html#groupedwithin
+    */
   def grouped(queueUrl: String,
               settings: SqsPublishGroupedSettings,
               sqsClient: AmazonSQSAsync): Sink[String, CompletionStage[Done]] =
     scaladsl.SqsPublishSink.grouped(queueUrl, settings)(sqsClient).mapMaterializedValue(_.toJava).asJava
 
   /**
-   * Create a flow grouping and publishing `SendMessageRequest` messages in batches to a SQS queue.
-   *
-   * @see https://doc.akka.io/docs/akka/current/stream/operators/Source-or-Flow/groupedWithin.html#groupedwithin
-   */
+    * creates a [[akka.stream.javadsl.Sink Sink]] that groups messages and publishes them in batches to a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync AmazonSQSAsync]]
+    * @see https://doc.akka.io/docs/akka/current/stream/operators/Source-or-Flow/groupedWithin.html#groupedwithin
+    */
   def groupedMessageSink(queueUrl: String,
                          settings: SqsPublishGroupedSettings,
                          sqsClient: AmazonSQSAsync): Sink[SendMessageRequest, CompletionStage[Done]] =
@@ -65,8 +73,9 @@ object SqsPublishSink {
       .asJava
 
   /**
-   * Create a sink running in batch mode for a SQS queue accepting SendMessageRequests.
-   */
+    * creates a [[akka.stream.javadsl.Sink Sink]] that accepts an iterable of strings and publish them as messages in batches to a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync AmazonSQSAsync]]
+    * @see https://doc.akka.io/docs/akka/current/stream/operators/Source-or-Flow/groupedWithin.html#groupedwithin
+    */
   def batch(queueUrl: String,
             settings: SqsPublishBatchSettings,
             sqsClient: AmazonSQSAsync): Sink[java.lang.Iterable[String], CompletionStage[Done]] =
@@ -77,8 +86,8 @@ object SqsPublishSink {
       .asJava
 
   /**
-   * Create a sink running in batch mode for a SQS queue accepting SendMessageRequests.
-   */
+    * creates a [[akka.stream.javadsl.Sink Sink]] to publish messages in batches to a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync AmazonSQSAsync]]
+    */
   def batchedMessageSink(
       queueUrl: String,
       settings: SqsPublishBatchSettings,

@@ -85,6 +85,7 @@ public class SqsPublishTest extends BaseSqsTest {
             .runWith(
                 SqsPublishSink.messageSink(queueUrl, SqsPublishSettings.create(), sqsClient),
                 materializer);
+
     // #run-send-request
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
     List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
@@ -94,14 +95,52 @@ public class SqsPublishTest extends BaseSqsTest {
   }
 
   @Test
+  public void sendMessageRequestToQueueWithQueueUrl() throws Exception {
+
+    final String queueUrl = randomQueueUrl();
+
+    // #run-send-request
+    CompletionStage<Done> done =
+            Source.single(new SendMessageRequest().withMessageBody("alpakka").withQueueUrl(queueUrl))
+                    .runWith(
+                            SqsPublishSink.messageSink(SqsPublishSettings.create(), sqsClient),
+                            materializer);
+    // #run-send-request
+    done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
+
+    assertEquals(1, messages.size());
+    assertEquals("alpakka", messages.get(0).getBody());
+  }
+
+
+  @Test
   public void sendViaFlow() throws Exception {
     final String queueUrl = randomQueueUrl();
 
     // #flow
     CompletionStage<Done> done =
-        Source.single(new SendMessageRequest(queueUrl, "alpakka-flow"))
+        Source.single(new SendMessageRequest().withMessageBody("alpakka-flow"))
             .via(SqsPublishFlow.create(queueUrl, SqsPublishSettings.create(), sqsClient))
             .runWith(Sink.ignore(), materializer);
+
+    // #flow
+    done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
+
+    assertEquals(1, messages.size());
+    assertEquals("alpakka-flow", messages.get(0).getBody());
+  }
+
+  @Test
+  public void sendViaFlowWithDynamicQueue() throws Exception {
+    final String queueUrl = randomQueueUrl();
+
+    // #flow
+    CompletionStage<Done> done =
+            Source.single(new SendMessageRequest(queueUrl, "alpakka-flow"))
+                    .via(SqsPublishFlow.create(SqsPublishSettings.create(), sqsClient))
+                    .runWith(Sink.ignore(), materializer);
     // #flow
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
     List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();

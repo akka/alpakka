@@ -22,19 +22,38 @@ import com.amazonaws.services.sqs.model.SendMessageRequest
 object SqsPublishFlow {
 
   /**
-   * Create a flow publishing `SendMessageRequest` messages to a SQS queue.
-   */
-  def apply(queueUrl: String, settings: SqsPublishSettings = SqsPublishSettings.Defaults)(
+    * creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages to a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync AmazonSQSAsync]]
+    */
+  def apply(queueUrl: String, settings: SqsPublishSettings)(
       implicit sqsClient: AmazonSQSAsync
   ): Flow[SendMessageRequest, SqsPublishResult, NotUsed] =
     Flow
-      .fromGraph(new SqsFlowStage(queueUrl, sqsClient))
+      .fromFunction((r: SendMessageRequest) => r.withQueueUrl(queueUrl))
+      .via(new SqsFlowStage(sqsClient))
       .mapAsync(settings.maxInFlight)(identity)
 
   /**
-   * Create a flow grouping and publishing `SendMessageRequest` messages in batches to a SQS queue.
-   * @see https://doc.akka.io/docs/akka/current/stream/operators/Source-or-Flow/groupedWithin.html#groupedwithin
-   */
+    * creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages to a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync AmazonSQSAsync]]
+    */
+  def apply(queueUrl: String)(
+      implicit sqsClient: AmazonSQSAsync
+  ): Flow[SendMessageRequest, SqsPublishResult, NotUsed] = apply(queueUrl, SqsPublishSettings.Defaults)
+
+  /**
+    * creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages to SQS queues based on the message queue url using an [[com.amazonaws.services.sqs.AmazonSQSAsync AmazonSQSAsync]]
+    */
+  def apply(settings: SqsPublishSettings = SqsPublishSettings.Defaults)(
+      implicit sqsClient: AmazonSQSAsync
+  ): Flow[SendMessageRequest, SqsPublishResult, NotUsed] =
+    Flow
+      .fromGraph(new SqsFlowStage(sqsClient))
+      .mapAsync(settings.maxInFlight)(identity)
+
+
+  /**
+    * creates a [[akka.stream.scaladsl.Flow Flow]] that groups messages and publishes them in batches to a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync AmazonSQSAsync]]
+    * @see https://doc.akka.io/docs/akka/current/stream/operators/Source-or-Flow/groupedWithin.html#groupedwithin
+    */
   def grouped(queueUrl: String, settings: SqsPublishGroupedSettings = SqsPublishGroupedSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
   ): Flow[SendMessageRequest, SqsPublishResult, NotUsed] =
@@ -45,8 +64,8 @@ object SqsPublishFlow {
       .mapConcat(identity)
 
   /**
-   * Create a flow publishing `SendMessageRequest` messages in batches to a SQS queue.
-   */
+    * creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages in batches to a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync AmazonSQSAsync]]
+    */
   def batch(queueUrl: String, settings: SqsPublishBatchSettings = SqsPublishBatchSettings.Defaults)(
       implicit sqsClient: AmazonSQSAsync
   ): Flow[Iterable[SendMessageRequest], List[SqsPublishResult], NotUsed] =
