@@ -137,7 +137,7 @@ object MqttSubscriptions {
  * @param subscriptions the mapping between a topic name and a [[MqttQoS]].
  * @deprecated use MqttConnectionSettings and MqttSubscriptions instead
  */
-@deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+@deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
 @java.lang.Deprecated
 final case class MqttSourceSettings(
     connectionSettings: MqttConnectionSettings,
@@ -151,7 +151,7 @@ final case class MqttSourceSettings(
 /**
  * @deprecated use MqttConnectionSettings and MqttSubscriptions instead
  */
-@deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+@deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
 @java.lang.Deprecated
 object MqttSourceSettings {
 
@@ -160,7 +160,7 @@ object MqttSourceSettings {
    *
    * @deprecated use MqttConnectionSettings and MqttSubscriptions instead
    */
-  @deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+  @deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
   @java.lang.Deprecated
   def create(connectionSettings: MqttConnectionSettings) =
     MqttSourceSettings(connectionSettings)

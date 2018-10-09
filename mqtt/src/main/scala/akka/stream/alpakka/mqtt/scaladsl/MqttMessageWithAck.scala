@@ -21,7 +21,7 @@ trait MqttMessageWithAck {
    */
   val message: MqttMessage
 
-  @deprecated("use ack() instead", "0.21")
+  @deprecated("use ack() instead", "1.0-M1")
   def messageArrivedComplete(): Future[Done] = ack()
 
   /**
