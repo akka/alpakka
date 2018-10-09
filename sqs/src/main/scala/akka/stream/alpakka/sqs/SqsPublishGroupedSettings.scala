@@ -35,7 +35,7 @@ final class SqsPublishGroupedSettings private (val maxBatchSize: Int,
    *
    * @deprecated use withMaxBatchWait(java.time.Duration) instead
    */
-  @deprecated("use withMaxBatchWait(java.time.Duration) instead", "0.21")
+  @deprecated("use withMaxBatchWait(java.time.Duration) instead", "1.0-M1")
   def withMaxBatchWait(length: Long, unit: TimeUnit): SqsPublishGroupedSettings =
     copy(maxBatchWait = FiniteDuration(length, unit))
 
