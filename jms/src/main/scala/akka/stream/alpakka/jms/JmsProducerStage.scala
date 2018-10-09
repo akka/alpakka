@@ -11,7 +11,6 @@ import akka.stream.alpakka.jms.JmsProducerMessage._
 import akka.stream.impl.Buffer
 import akka.stream.stage._
 import akka.util.OptionVal
-import javax.jms
 import javax.jms.JMSException
 
 import scala.concurrent.Future

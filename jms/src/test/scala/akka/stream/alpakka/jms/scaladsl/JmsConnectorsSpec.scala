@@ -19,7 +19,6 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.mockito.MockitoSugar
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -901,7 +900,8 @@ class JmsConnectorsSpec extends JmsSpec {
 
     "fail fast on the first failing send" in withMockedProducer { ctx =>
       import ctx._
-      val errorLatch = new CountDownLatch(3)
+      val sendLatch = new CountDownLatch(3)
+      val receiveLatch = new CountDownLatch(3)
 
       val messages = (1 to 10).map(i => mock[TextMessage] -> i).toMap
       messages.foreach {
@@ -913,11 +913,12 @@ class JmsConnectorsSpec extends JmsSpec {
           val msgNo = messages(invocation.getArgument[TextMessage](1))
           msgNo match {
             case 1 | 2 | 3 =>
-              errorLatch.countDown() // first three sends work...
+              sendLatch.countDown() // first three sends work...
             case 4 =>
-              Thread.sleep(5000) // this one gets delayed...
+              Thread.sleep(30000) // this one gets delayed...
             case 5 =>
-              errorLatch.await()
+              sendLatch.await()
+              receiveLatch.await()
               throw new RuntimeException("Mocked send failure") // this one fails.
             case _ => ()
           }
@@ -929,7 +930,12 @@ class JmsConnectorsSpec extends JmsSpec {
       val in = (1 to 10).map(i => JmsTextMessage(i.toString))
       val done = new JmsTextMessage("done")
       val jmsFlow = JmsProducer.flow[JmsTextMessage](JmsProducerSettings(factory).withQueue("test").withSessionCount(8))
-      val result = Source(in).via(jmsFlow).recover { case _ => done }.toMat(Sink.seq)(Keep.right).run()
+      val result = Source(in)
+        .via(jmsFlow)
+        .alsoTo(Sink.foreach(_ => receiveLatch.countDown()))
+        .recover { case _ => done }
+        .toMat(Sink.seq)(Keep.right)
+        .run()
 
       // expect send failure on no 5. to cause immediate stream failure (after no. 1, 2 and 3),
       // even though no 4. is still in-flight.
