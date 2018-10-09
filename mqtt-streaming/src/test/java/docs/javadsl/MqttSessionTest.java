@@ -90,7 +90,7 @@ public class MqttSessionTest {
                 .mapAsync(
                     1,
                     msg ->
-                        FutureConverters.toJava(
+                        FutureConverters.<ByteString>toJava(
                             Patterns.ask(server.ref(), msg, timeout)
                                 .mapTo(classTag(ByteString.class))));
 
@@ -126,7 +126,7 @@ public class MqttSessionTest {
             new MqttCodec.MqttPublish(publish)
                 .encode(
                     ByteString.createBuilder(),
-                    OptionConverters.toScala(Optional.of(new PacketId(1))))
+                    OptionConverters.<PacketId>toScala(Optional.of(new PacketId(1))))
                 .result();
         PubAck pubAck = new PubAck(1);
         ByteString pubAckBytes =
