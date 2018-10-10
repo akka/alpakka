@@ -48,6 +48,27 @@ Java
 We drop the first 3 events received as they will be ACKs to our connect, subscribe and publish. The next event
 received is the publication to the topic we also subscribed to.
 
+## Flow through a server session
+
+The following code illustrates how to establish an MQTT server session and join it with a TCP binding:
+
+Scala
+: @@snip [snip](/mqtt-streaming/src/test/scala/docs/scaladsl/MqttFlowSpec.scala) { #create-streaming-bind-flow }
+
+Java
+: @@snip [snip](/mqtt-streaming/src/test/java/docs/javadsl/MqttFlowTest.java) { #create-streaming-bind-flow }
+
+The resulting source's type shows how `Event`s are received and `Command`s are queued in reply. Our example
+simply acknowledges a connection, subscription and publication.
+
+Run the flow:
+
+Scala
+: @@snip [snip](/mqtt-streaming/src/test/scala/docs/scaladsl/MqttFlowSpec.scala) { #run-streaming-bind-flow }
+
+Java
+: @@snip [snip](/mqtt-streaming/src/test/java/docs/javadsl/MqttFlowTest.java) { #run-streaming-bind-flow }
+
 ## Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.

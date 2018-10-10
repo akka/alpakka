@@ -32,12 +32,17 @@ object MqttSession {
  */
 abstract class MqttSession {
 
-  import MqttSession._
-
   /**
    * Shutdown the session gracefully
    */
   def shutdown(): Unit
+}
+
+/**
+ * Represents client-only sessions
+ */
+abstract class MqttClientSession extends MqttSession {
+  import MqttSession._
 
   /**
    * @return a flow for commands to be sent to the session
@@ -48,13 +53,7 @@ abstract class MqttSession {
    * @return a flow for events to be emitted by the session
    */
   private[streaming] def eventFlow: EventFlow
-
 }
-
-/**
- * Represents client-only sessions
- */
-abstract class MqttClientSession extends MqttSession
 
 object ActorMqttClientSession {
   def apply(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem): ActorMqttClientSession =
@@ -293,11 +292,33 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
 /**
  * Represents server-only sessions
  */
-abstract class MqttServerSession extends MqttSession
+abstract class MqttServerSession extends MqttSession {
+  import MqttSession._
+
+  /**
+   * @return a flow for commands to be sent to the session in relation to a connection id
+   */
+  private[streaming] def commandFlow(connectionId: ByteString): CommandFlow
+
+  /**
+   * @return a flow for events to be emitted by the session in relation t a connection id
+   */
+  private[streaming] def eventFlow(connectionId: ByteString): EventFlow
+}
 
 object ActorMqttServerSession {
   def apply(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem): ActorMqttServerSession =
     new ActorMqttServerSession(settings)
+
+  /**
+   * A PINGREQ was not received within the required keep alive period - the connection must close
+   *
+   * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
+   * 3.1.2.10 Keep Alive
+   */
+  case object PingFailed extends Exception
+
+  private[scaladsl] val serverSessionCounter = new AtomicLong
 }
 
 /**
@@ -307,29 +328,77 @@ object ActorMqttServerSession {
 final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem)
     extends MqttServerSession {
 
-  //private val actor: ActorRef = ???
+  import ActorMqttServerSession._
+
+  private val serverSessionId = serverSessionCounter.getAndIncrement()
+
+  private val consumerPacketRouter =
+    system.spawn(RemotePacketRouter[Consumer.Event], "server-consumer-packet-id-allocator-" + serverSessionId)
+  private val producerPacketRouter =
+    system.spawn(LocalPacketRouter[Producer.Event], "server-producer-packet-id-allocator-" + serverSessionId)
+  private val serverConnector =
+    system.spawn(
+      ServerConnector(consumerPacketRouter, producerPacketRouter, settings),
+      "server-connector-" + serverSessionId
+    )
 
   import MqttCodec._
   import MqttSession._
 
-  override def shutdown(): Unit = ???
+  implicit private val actorMqttSessionTimeout: Timeout = settings.actorMqttSessionTimeout
+  implicit private val scheduler: Scheduler = system.scheduler
 
-  override def commandFlow: CommandFlow =
-    Flow[Command[_]].map {
-      case Command(cp: ConnAck, _) => cp.encode(ByteString.newBuilder).result()
-      case Command(cp: Publish, _) => cp.encode(ByteString.newBuilder, cp.packetId).result()
-      case Command(cp: PubAck, _) => cp.encode(ByteString.newBuilder).result()
-      case Command(cp: PubRec, _) => cp.encode(ByteString.newBuilder).result()
-      case Command(cp: PubRel, _) => cp.encode(ByteString.newBuilder).result()
-      case Command(cp: PubComp, _) => cp.encode(ByteString.newBuilder).result()
-      case Command(cp: SubAck, _) => cp.encode(ByteString.newBuilder).result()
-      case Command(cp: UnsubAck, _) => cp.encode(ByteString.newBuilder).result()
-      case Command(cp: PingResp.type, _) => cp.encode(ByteString.newBuilder).result()
-      case c: Command[_] => throw new IllegalStateException(c + " is not a server command")
-    }
+  import system.dispatcher
 
-  override def eventFlow: EventFlow =
+  override def shutdown(): Unit = {
+    system.stop(serverConnector.toUntyped)
+    system.stop(consumerPacketRouter.toUntyped)
+    system.stop(producerPacketRouter.toUntyped)
+  }
+
+  private val pingRespBytes = PingResp.encode(ByteString.newBuilder).result()
+
+  override def commandFlow(connectionId: ByteString): CommandFlow =
+    Flow[Command[_]]
+      .watch(serverConnector.toUntyped)
+      .watchTermination() {
+        case (_, terminated) =>
+          terminated.foreach(_ => serverConnector ! ServerConnector.ConnectionLost(connectionId))
+          NotUsed
+      }
+      .flatMapMerge(
+        settings.commandParallelism, {
+          case Command(cp: ConnAck, _) =>
+            Source.fromFutureSource(
+              (serverConnector ? (replyTo => ServerConnector.ConnAckReceivedLocally(connectionId, cp, replyTo)): Future[
+                Source[ClientConnection.ForwardConnAckCommand, NotUsed]
+              ]).map(_.map {
+                case ClientConnection.ForwardConnAck => cp.encode(ByteString.newBuilder).result()
+              }.mapError {
+                case ServerConnector.PingFailed => ActorMqttServerSession.PingFailed
+              })
+            )
+          case c: Command[_] => throw new IllegalStateException(c + " is not a server command")
+        }
+      )
+
+  override def eventFlow(connectionId: ByteString): EventFlow =
     Flow[ByteString]
+      .watch(serverConnector.toUntyped)
+      .watchTermination() {
+        case (_, terminated) =>
+          terminated.foreach(_ => serverConnector ! ServerConnector.ConnectionLost(connectionId))
+          NotUsed
+      }
       .via(new MqttFrameStage(settings.maxPacketSize))
-      .map(_.iterator.decodeControlPacket(settings.maxPacketSize).map(Event(_, None)))
+      .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
+      .mapAsync(settings.eventParallelism) {
+        case Right(cp: Connect) =>
+          (serverConnector ? (ServerConnector
+            .ConnectReceivedFromRemote(connectionId, cp, _)): Future[ClientConnection.ForwardConnect.type]).map {
+            case ClientConnection.ForwardConnect => Right[DecodeError, Event[_]](Event(cp))
+          }
+        case Right(cp) => Future.failed(new IllegalStateException(cp + " is not a server event"))
+        case Left(de) => Future.successful(Left(de))
+      }
 }

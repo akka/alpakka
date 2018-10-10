@@ -13,7 +13,7 @@ object MqttSessionSettings {
   /**
    * Factory method for Scala.
    */
-  def apply(maxPacketSize: Int = 100,
+  def apply(maxPacketSize: Int = 4096,
             maxConnectStashSize: Int = 100,
             actorMqttSessionTimeout: FiniteDuration = 3.seconds,
             commandParallelism: Int = 10,
@@ -87,6 +87,10 @@ final class MqttSessionSettings private (val maxPacketSize: Int,
                                          val receiveSubAckTimeout: FiniteDuration,
                                          val receiveUnsubAckTimeout: FiniteDuration) {
 
+  require(
+    commandParallelism >= 2,
+    s"commandParallelism of $commandParallelism must be greater than or equal to 2 to support connection replies such as pinging"
+  )
   require(maxPacketSize >= 0 && maxPacketSize <= 0xffff,
           s"maxPacketSize of $maxPacketSize must be positive and less than ${0xffff}")
 

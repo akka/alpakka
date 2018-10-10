@@ -39,10 +39,11 @@ object Mqtt {
    * @return the bidirectional flow
    */
   def serverSessionFlow(
-      session: MqttServerSession
+      session: MqttServerSession,
+      connectionId: ByteString
   ): BidiFlow[Command[_], ByteString, ByteString, DecodeErrorOrEvent, NotUsed] =
     inputOutputConverter
-      .atop(scaladsl.Mqtt.serverSessionFlow(session.underlying))
+      .atop(scaladsl.Mqtt.serverSessionFlow(session.underlying, connectionId))
       .asJava
 
   /*

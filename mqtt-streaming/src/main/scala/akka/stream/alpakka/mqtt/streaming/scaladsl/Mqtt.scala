@@ -32,10 +32,13 @@ object Mqtt {
    * an MQTT server.
    *
    * @param session the MQTT server session to use
+   * @param connectionId a identifier to distinguish the client connection so that the session
+   *                     can route the incoming requests
    * @return the bidirectional flow
    */
   def serverSessionFlow(
-      session: MqttServerSession
+      session: MqttServerSession,
+      connectionId: ByteString,
   ): BidiFlow[Command[_], ByteString, ByteString, Either[MqttCodec.DecodeError, Event[_]], NotUsed] =
-    BidiFlow.fromFlows(session.commandFlow, session.eventFlow)
+    BidiFlow.fromFlows(session.commandFlow(connectionId), session.eventFlow(connectionId))
 }

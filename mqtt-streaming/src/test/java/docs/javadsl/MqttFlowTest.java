@@ -11,31 +11,48 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.OverflowStrategy;
 import akka.stream.alpakka.mqtt.streaming.Command;
+import akka.stream.alpakka.mqtt.streaming.ConnAck;
+import akka.stream.alpakka.mqtt.streaming.ConnAckFlags;
+import akka.stream.alpakka.mqtt.streaming.ConnAckReturnCode;
 import akka.stream.alpakka.mqtt.streaming.Connect;
 import akka.stream.alpakka.mqtt.streaming.ConnectFlags;
+import akka.stream.alpakka.mqtt.streaming.ControlPacket;
+import akka.stream.alpakka.mqtt.streaming.ControlPacketFlags;
 import akka.stream.alpakka.mqtt.streaming.DecodeErrorOrEvent;
+import akka.stream.alpakka.mqtt.streaming.Event;
 import akka.stream.alpakka.mqtt.streaming.MqttSessionSettings;
+import akka.stream.alpakka.mqtt.streaming.PubAck;
 import akka.stream.alpakka.mqtt.streaming.Publish;
+import akka.stream.alpakka.mqtt.streaming.SubAck;
 import akka.stream.alpakka.mqtt.streaming.Subscribe;
 import akka.stream.alpakka.mqtt.streaming.javadsl.ActorMqttClientSession;
+import akka.stream.alpakka.mqtt.streaming.javadsl.ActorMqttServerSession;
 import akka.stream.alpakka.mqtt.streaming.javadsl.Mqtt;
 import akka.stream.alpakka.mqtt.streaming.javadsl.MqttClientSession;
+import akka.stream.alpakka.mqtt.streaming.javadsl.MqttServerSession;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SourceQueueWithComplete;
 import akka.stream.javadsl.Tcp;
+import akka.stream.javadsl.BroadcastHub;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
+import scala.Tuple2;
+import scala.collection.JavaConverters;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertTrue;
 
@@ -63,7 +80,7 @@ public class MqttFlowTest {
   }
 
   @Test
-  public void establishBidirectionalConnectionAndSubscribeToATopic()
+  public void establishClientBidirectionalConnectionAndSubscribeToATopic()
       throws InterruptedException, ExecutionException, TimeoutException {
     String clientId = "flow-spec/flow";
     String topic = "source-spec/topic1";
@@ -92,6 +109,103 @@ public class MqttFlowTest {
     commands.offer(new Command(new Subscribe(topic)));
     commands.offer(new Command(new Publish(topic, ByteString.fromString("ohi"))));
     // #run-streaming-flow
+
+    CompletionStage<DecodeErrorOrEvent> event = run.second();
+    DecodeErrorOrEvent decodeErrorOrEvent = event.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertTrue(decodeErrorOrEvent.getEvent().isPresent());
+  }
+
+  @Test
+  @Ignore
+  public void establishServerBidirectionalConnectionAndSubscribeToATopic()
+      throws InterruptedException, ExecutionException, TimeoutException {
+    String clientId = "flow-spec/flow";
+    String topic = "source-spec/topic1";
+
+    // #create-streaming-bind-flow
+    MqttSessionSettings settings = MqttSessionSettings.create();
+    MqttServerSession session = new ActorMqttServerSession(settings, system);
+
+    int maxConnections = 1;
+
+    Source<DecodeErrorOrEvent, CompletionStage<Tcp.ServerBinding>> bindSource =
+        Tcp.get(system)
+            .bind("localhost", 9883)
+            .flatMapMerge(
+                maxConnections,
+                connection -> {
+                  Flow<Command<?>, DecodeErrorOrEvent, NotUsed> mqttFlow =
+                      Mqtt.serverSessionFlow(
+                              session,
+                              ByteString.fromArray(
+                                  connection.remoteAddress().getAddress().getAddress()))
+                          .join(connection.flow());
+
+                  Pair<SourceQueueWithComplete<Command<?>>, Source<DecodeErrorOrEvent, NotUsed>>
+                      run =
+                          Source.<Command<?>>queue(1, OverflowStrategy.dropHead())
+                              .via(mqttFlow)
+                              .toMat(BroadcastHub.of(DecodeErrorOrEvent.class), Keep.both())
+                              .run(materializer);
+
+                  SourceQueueWithComplete<Command<?>> queue = run.first();
+                  Source<DecodeErrorOrEvent, NotUsed> source = run.second();
+
+                  source.runForeach(
+                      deOrE -> {
+                        if (deOrE.getEvent().isPresent()) {
+                          Event<?> event = deOrE.getEvent().get();
+                          ControlPacket cp = event.event();
+                          if (cp instanceof Connect) {
+                            queue.offer(
+                                new Command(
+                                    new ConnAck(
+                                        ConnAckFlags.None(),
+                                        ConnAckReturnCode.ConnectionAccepted())));
+                          } else if (cp instanceof Subscribe) {
+                            Subscribe subscribe = (Subscribe) cp;
+                            Collection<Tuple2<String, ControlPacketFlags>> topicFilters =
+                                JavaConverters.asJavaCollection(subscribe.topicFilters());
+                            List<Integer> flags =
+                                topicFilters
+                                    .stream()
+                                    .map(x -> x._2().underlying())
+                                    .collect(Collectors.toList());
+                            queue.offer(new Command(new SubAck(subscribe.packetId(), flags)));
+                          } else if (cp instanceof Publish) {
+                            Publish publish = (Publish) cp;
+                            int packetId = publish.packetId().get().underlying();
+                            queue.offer(new Command(new PubAck(packetId)));
+                          } // Ignore everything else
+                        }
+                      },
+                      materializer);
+
+                  return source;
+                });
+    // #create-streaming-bind-flow
+
+    // #run-streaming-bind-flow
+    bindSource.runWith(Sink.ignore(), materializer);
+    // #run-streaming-bind-flow
+
+    Flow<ByteString, ByteString, CompletionStage<Tcp.OutgoingConnection>> connection =
+        Tcp.get(system).outgoingConnection("localhost", 9883);
+
+    Flow<Command<?>, DecodeErrorOrEvent, NotUsed> mqttFlow =
+        Mqtt.clientSessionFlow(new ActorMqttClientSession(settings, system)).join(connection);
+
+    Pair<SourceQueueWithComplete<Command<?>>, CompletionStage<DecodeErrorOrEvent>> run =
+        Source.<Command<?>>queue(3, OverflowStrategy.fail())
+            .via(mqttFlow)
+            .drop(3)
+            .toMat(Sink.head(), Keep.both())
+            .run(materializer);
+
+    SourceQueueWithComplete<Command<?>> commands = run.first();
+    commands.offer(new Command(new Connect(clientId, ConnectFlags.None())));
+    commands.offer(new Command(new Subscribe(topic)));
+    commands.offer(new Command(new Publish(topic, ByteString.fromString("ohi"))));
 
     CompletionStage<DecodeErrorOrEvent> event = run.second();
     DecodeErrorOrEvent decodeErrorOrEvent = event.toCompletableFuture().get(3, TimeUnit.SECONDS);

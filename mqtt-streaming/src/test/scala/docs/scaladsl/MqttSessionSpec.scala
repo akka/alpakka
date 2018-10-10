@@ -8,8 +8,8 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.stream.alpakka.mqtt.streaming._
-import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, Mqtt}
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, ActorMqttServerSession, Mqtt}
+import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer, OverflowStrategy, WatchedActorTerminatedException}
 import akka.testkit._
 import akka.util.{ByteString, Timeout}
@@ -33,7 +33,7 @@ class MqttSessionSpec
 
   import MqttCodec._
 
-  "MQTT connector" should {
+  "MQTT client connector" should {
 
     "flow through a client session" in {
       val session = ActorMqttClientSession(settings)
@@ -709,6 +709,70 @@ class MqttSessionSpec
       result.failed.futureValue shouldBe a[WatchedActorTerminatedException]
     }
 
+  }
+
+  "MQTT server connector" should {
+
+    "flow through a server session" in {
+      val session = ActorMqttServerSession(settings)
+
+      val client = TestProbe()
+      val toClient = Sink.foreach[ByteString](bytes => client.ref ! bytes)
+      val (fromClientQueue, fromClient) = Source
+        .queue[ByteString](1, OverflowStrategy.dropHead)
+        .toMat(BroadcastHub.sink)(Keep.both)
+        .run()
+
+      val pipeToClient = Flow.fromSinkAndSource(toClient, fromClient)
+
+      val (server, result) =
+        Source
+          .queue(1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .serverSessionFlow(session, ByteString.empty)
+              .join(pipeToClient)
+          )
+          .toMat(Sink.collection)(Keep.both)
+          .run
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val subscribe = Subscribe("some-topic")
+      val subscribeBytes = subscribe.encode(ByteString.newBuilder, PacketId(1)).result()
+      val subAck = SubAck(PacketId(1), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
+      val subAckBytes = subAck.encode(ByteString.newBuilder).result()
+
+      val publish = Publish("some-topic", ByteString("some-payload"))
+      val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+      val pubAck = PubAck(PacketId(1))
+      val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
+
+      fromClientQueue.offer(connectBytes)
+
+      server.offer(Command(connAck))
+      client.expectMsg(connAckBytes)
+
+      fromClientQueue.complete()
+
+//      fromClientQueue.offer(subscribeBytes)
+//
+//      server.offer(Command(subAck))
+//      client.expectMsg(subAckBytes)
+//
+//      fromClientQueue.offer(publishBytes)
+//
+//      server.offer(Command(pubAck))
+//      client.expectMsg(pubAckBytes)
+//
+//      client.expectMsg(publishBytes)
+
+//      result.futureValue shouldBe List(Right(Event(connect)), Right(Event(subscribe)))
+      result.futureValue shouldBe List(Right(Event(connect)))
+    }
   }
 
   override def afterAll: Unit =

@@ -7,7 +7,7 @@ package akka.stream.alpakka.mqtt.streaming.impl
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
-class ServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+class ServerStateSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   val testKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()

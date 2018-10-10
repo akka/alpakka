@@ -10,7 +10,7 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
 import scala.concurrent.duration._
 
-class ClientConnectorSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   val testKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
