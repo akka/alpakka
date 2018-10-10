@@ -199,11 +199,6 @@ import scala.annotation.tailrec
           case (_, e) if data.stash.size < data.settings.maxConnectStashSize =>
             clientConnect(data.copy(stash = data.stash :+ e))
         }
-        .receiveSignal {
-          case (_, PostStop) =>
-            Behaviors.same
-        }
-
     }
   }
 

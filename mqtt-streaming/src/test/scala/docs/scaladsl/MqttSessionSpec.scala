@@ -725,33 +725,43 @@ class MqttSessionSpec
 
       val pipeToClient = Flow.fromSinkAndSource(toClient, fromClient)
 
+      val connect = Connect("some-client-id", ConnectFlags.None)
+      val connectReceived = Promise[Done]
+
+      val subscribe = Subscribe("some-topic")
+
+      val publish = Publish("some-topic", ByteString("some-payload"))
+
       val (server, result) =
         Source
-          .queue(1, OverflowStrategy.fail)
+          .queue[Command[_]](1, OverflowStrategy.fail)
           .via(
             Mqtt
               .serverSessionFlow(session, ByteString.empty)
               .join(pipeToClient)
           )
+          .wireTap(Sink.foreach[Either[DecodeError, Event[_]]] {
+            case Right(Event(`connect`, _)) => connectReceived.success(Done)
+            case _ =>
+          })
           .toMat(Sink.collection)(Keep.both)
           .run
 
-      val connect = Connect("some-client-id", ConnectFlags.None)
       val connectBytes = connect.encode(ByteString.newBuilder).result()
       val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
       val connAckBytes = connAck.encode(ByteString.newBuilder).result()
 
-      val subscribe = Subscribe("some-topic")
       val subscribeBytes = subscribe.encode(ByteString.newBuilder, PacketId(1)).result()
       val subAck = SubAck(PacketId(1), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
       val subAckBytes = subAck.encode(ByteString.newBuilder).result()
 
-      val publish = Publish("some-topic", ByteString("some-payload"))
       val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
       val pubAck = PubAck(PacketId(1))
       val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
 
       fromClientQueue.offer(connectBytes)
+
+      connectReceived.future.futureValue shouldBe Done
 
       server.offer(Command(connAck))
       client.expectMsg(connAckBytes)
@@ -770,7 +780,6 @@ class MqttSessionSpec
 //
 //      client.expectMsg(publishBytes)
 
-//      result.futureValue shouldBe List(Right(Event(connect)), Right(Event(subscribe)))
       result.futureValue shouldBe List(Right(Event(connect)))
     }
   }
