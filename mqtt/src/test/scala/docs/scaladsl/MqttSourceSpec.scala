@@ -105,7 +105,7 @@ class MqttSourceSpec
       import system.dispatcher
 
       val topic = "source-spec/manualacks"
-      val input = Vector("one", "two", "three", "four", "five")
+      val input: Seq[String] = Vector("one", "two", "three", "four", "five")
 
       //#create-source-with-manualacks
       val mqttSource: Source[MqttMessageWithAck, Future[Done]] =
@@ -421,5 +421,101 @@ class MqttSourceSpec
       val elem = source2.runWith(Sink.head)
       elem.futureValue shouldBe MqttMessage(willTopic, ByteString("ohi"))
     }
+
+    "support buffering message on disconnect" in {
+      import system.dispatcher
+
+      val bufferedTopic = "source-spec/bufferedTopic"
+
+      val bufferedSinkSettings = connectionSettings.withClientId(clientId = "source-spec/bufferedSink")
+
+      val msgOne = MqttMessage(bufferedTopic, ByteString("MsgOne"))
+
+      // Create a proxy on an available port so it can be shut down
+      val (proxyBinding, connection) = Tcp().bind("localhost", 0).toMat(Sink.head)(Keep.both).run()
+      val proxyPort = proxyBinding.futureValue.localAddress.getPort
+      val proxyKs = connection.map { c =>
+        c.handleWith(
+          Tcp()
+            .outgoingConnection("localhost", 1883)
+            .viaMat(KillSwitches.single)(Keep.right)
+        )
+      }
+      Await.ready(proxyBinding, timeout)
+
+      val (subscribed, probe) = MqttSource
+        .atMostOnce(
+          connectionSettings
+            .withClientId(clientId = "source-spec/bufferedSource")
+            .withAutomaticReconnect(true)
+            .withCleanSession(false)
+            .withOfflinePersistenceSettings(
+              MqttOfflinePersistenceSettings(
+                bufferSize = 5000
+              )
+            )
+            .withBroker(s"tcp://localhost:$proxyPort"),
+          MqttSubscriptions(bufferedTopic, MqttQoS.AtLeastOnce),
+          8
+        )
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
+
+      // Ensure that the connection made it all the way to the server by waiting until it receives a message
+      Await.ready(subscribed, timeout)
+
+      Source.single(msgOne).runWith(MqttSink(bufferedSinkSettings, MqttQoS.AtLeastOnce))
+
+      val receivedMsgOne = probe.requestNext(5.seconds)
+      println(
+        s"=======================>>>>>>>> payload [${receivedMsgOne.payload.utf8String}] topic ${receivedMsgOne.topic}"
+      )
+
+      Thread.sleep(3000)
+      receivedMsgOne shouldBe msgOne
+
+      // Kill the proxy, producing an unexpected disconnection of the client
+      Await.result(proxyKs, timeout).shutdown()
+
+      val msgTwo = MqttMessage(bufferedTopic, ByteString("MsgTwo"))
+      Source.single(msgTwo).runWith(MqttSink(bufferedSinkSettings, MqttQoS.AtLeastOnce))
+
+      // Create a proxy on an available port so it can be shut down
+      val (proxyBinding2, connection2) = Tcp().bind("localhost", 65535).toMat(Sink.head)(Keep.both).run()
+      val proxyPort2 = proxyBinding2.futureValue.localAddress.getPort
+      val proxyKs2 = connection2.map { c =>
+        c.handleWith(
+          Tcp()
+            .outgoingConnection("localhost", 1883)
+            .viaMat(KillSwitches.single)(Keep.right)
+        )
+      }
+      Await.ready(proxyBinding2, timeout)
+
+      val (subscribed2, probe2) = MqttSource
+        .atMostOnce(
+          connectionSettings
+            .withClientId(clientId = "source-spec/bufferedSource")
+            .withAutomaticReconnect(true)
+            .withCleanSession(false)
+            .withOfflinePersistenceSettings(
+              MqttOfflinePersistenceSettings(
+                bufferSize = 5000
+              )
+            )
+            .withBroker(s"tcp://localhost:$proxyPort2"),
+          MqttSubscriptions(bufferedTopic, MqttQoS.AtLeastOnce),
+          8
+        )
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
+
+      // Ensure that the connection made it all the way to the server by waiting until it receives a message
+      Await.ready(subscribed2, timeout)
+
+      probe2.requestNext(5.seconds) shouldBe msgTwo
+      Await.result(proxyKs2, timeout).shutdown()
+    }
+
   }
 }

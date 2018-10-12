@@ -269,6 +269,9 @@ final class MqttConnectionSettings private (val broker: String,
   def withSslProperties(value: java.util.Map[String, String]): MqttConnectionSettings =
     copy(sslProperties = value.asScala.toMap)
 
+  def withOfflinePersistenceSettings(value: MqttOfflinePersistenceSettings): MqttConnectionSettings =
+    copy(offlinePersistenceSettings = Option(value))
+
   /**
    * @deprecated use with [[java.time.Duration]] instead
    */

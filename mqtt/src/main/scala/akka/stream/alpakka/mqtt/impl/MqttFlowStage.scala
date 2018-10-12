@@ -109,15 +109,15 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
         disconnectedBufferOptions
       }
 
+      private val client = new MqttAsyncClient(
+        connectionSettings.broker,
+        connectionSettings.clientId,
+        connectionSettings.persistence
+      )
+
       private def mqttClient = {
 
         val maybeBufferOptions = connectionSettings.offlinePersistenceSettings.map(getPahoBufferOptions)
-
-        val client = new MqttAsyncClient(
-          connectionSettings.broker,
-          connectionSettings.clientId,
-          connectionSettings.persistence
-        )
 
         maybeBufferOptions.foreach(client.setBufferOpts)
 
