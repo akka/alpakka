@@ -729,6 +729,7 @@ class MqttSessionSpec
       val connectReceived = Promise[Done]
 
       val subscribe = Subscribe("some-topic")
+      val subscribeReceived = Promise[Done]
 
       val publish = Publish("some-topic", ByteString("some-payload"))
 
@@ -742,7 +743,8 @@ class MqttSessionSpec
           )
           .wireTap(Sink.foreach[Either[DecodeError, Event[_]]] {
             case Right(Event(`connect`, _)) => connectReceived.success(Done)
-            case _ =>
+            case Right(Event(s: Subscribe, _)) if s.topicFilters == subscribe.topicFilters =>
+              subscribeReceived.success(Done)
           })
           .toMat(Sink.collection)(Keep.both)
           .run
@@ -766,13 +768,13 @@ class MqttSessionSpec
       server.offer(Command(connAck))
       client.expectMsg(connAckBytes)
 
-      fromClientQueue.complete()
+      fromClientQueue.offer(subscribeBytes)
 
-//      fromClientQueue.offer(subscribeBytes)
-//
-//      server.offer(Command(subAck))
-//      client.expectMsg(subAckBytes)
-//
+      subscribeReceived.future.futureValue shouldBe Done
+
+      server.offer(Command(subAck))
+      client.expectMsg(subAckBytes)
+
 //      fromClientQueue.offer(publishBytes)
 //
 //      server.offer(Command(pubAck))
@@ -780,7 +782,13 @@ class MqttSessionSpec
 //
 //      client.expectMsg(publishBytes)
 
-      result.futureValue shouldBe List(Right(Event(connect)))
+      fromClientQueue.complete()
+
+      result.futureValue.apply(0) shouldBe Right(Event(connect))
+      result.futureValue.apply(1) match {
+        case Right(Event(s: Subscribe, _)) => s.topicFilters shouldBe subscribe.topicFilters
+        case x => fail("Unexpected: " + x)
+      }
     }
   }
 

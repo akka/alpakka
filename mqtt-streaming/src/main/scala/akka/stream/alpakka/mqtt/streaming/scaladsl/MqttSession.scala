@@ -236,9 +236,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
         case Right(cp: Publish) =>
           (clientConnector ? (ClientConnector
             .PublishReceivedFromRemote(cp, _)): Future[Consumer.ForwardPublish.type])
-            .map {
-              case Consumer.ForwardPublish => Right[DecodeError, Event[_]](Event(cp))
-            }
+            .map(_ => Right[DecodeError, Event[_]](Event(cp)))
         case Right(cp: PubAck) =>
           (producerPacketRouter ? (
               replyTo =>
@@ -265,10 +263,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
                 RemotePacketRouter.Route(cp.packetId,
                                          Consumer
                                            .PubRelReceivedFromRemote(replyTo))
-          ): Future[Consumer.ForwardPubRel.type])
-            .map {
-              case Consumer.ForwardPubRel => Right[DecodeError, Event[_]](Event(cp))
-            }
+          ): Future[Consumer.ForwardPubRel.type]).map(_ => Right[DecodeError, Event[_]](Event(cp)))
         case Right(cp: PubComp) =>
           (producerPacketRouter ? (
               replyTo =>
@@ -281,9 +276,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
             }
         case Right(PingResp) =>
           (clientConnector ? ClientConnector.PingRespReceivedFromRemote: Future[ClientConnector.ForwardPingResp.type])
-            .map {
-              case ClientConnector.ForwardPingResp => Right[DecodeError, Event[_]](Event(PingResp))
-            }
+            .map(_ => Right[DecodeError, Event[_]](Event(PingResp)))
         case Right(cp) => Future.failed(new IllegalStateException(cp + " is not a client event"))
         case Left(de) => Future.successful(Left(de))
       }
@@ -336,9 +329,17 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit syste
     system.spawn(RemotePacketRouter[Consumer.Event], "server-consumer-packet-id-allocator-" + serverSessionId)
   private val producerPacketRouter =
     system.spawn(LocalPacketRouter[Producer.Event], "server-producer-packet-id-allocator-" + serverSessionId)
+  private val publisherPacketRouter =
+    system.spawn(RemotePacketRouter[Publisher.Event], "server-publisher-packet-id-allocator-" + serverSessionId)
+  private val unpublisherPacketRouter =
+    system.spawn(RemotePacketRouter[Unpublisher.Event], "server-unpublisher-packet-id-allocator-" + serverSessionId)
   private val serverConnector =
     system.spawn(
-      ServerConnector(consumerPacketRouter, producerPacketRouter, settings),
+      ServerConnector(consumerPacketRouter,
+                      producerPacketRouter,
+                      publisherPacketRouter,
+                      unpublisherPacketRouter,
+                      settings),
       "server-connector-" + serverSessionId
     )
 
@@ -354,6 +355,8 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit syste
     system.stop(serverConnector.toUntyped)
     system.stop(consumerPacketRouter.toUntyped)
     system.stop(producerPacketRouter.toUntyped)
+    system.stop(publisherPacketRouter.toUntyped)
+    system.stop(unpublisherPacketRouter.toUntyped)
   }
 
   private val pingRespBytes = PingResp.encode(ByteString.newBuilder).result()
@@ -378,6 +381,18 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit syste
                 case ServerConnector.PingFailed => ActorMqttServerSession.PingFailed
               })
             )
+          case Command(cp: SubAck, _) =>
+            Source.fromFuture(
+              (publisherPacketRouter ? (
+                  replyTo => RemotePacketRouter.Route(cp.packetId, Publisher.SubAckReceivedLocally(replyTo))
+              ): Future[Publisher.ForwardSubAck.type]).map(_ => cp.encode(ByteString.newBuilder).result())
+            )
+          case Command(cp: UnsubAck, _) =>
+            Source.fromFuture(
+              (unpublisherPacketRouter ? (
+                  replyTo => RemotePacketRouter.Route(cp.packetId, Unpublisher.UnsubAckReceivedLocally(replyTo))
+              ): Future[Unpublisher.ForwardUnsubAck.type]).map(_ => cp.encode(ByteString.newBuilder).result())
+            )
           case c: Command[_] => throw new IllegalStateException(c + " is not a server command")
         }
       )
@@ -395,9 +410,16 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit syste
       .mapAsync(settings.eventParallelism) {
         case Right(cp: Connect) =>
           (serverConnector ? (ServerConnector
-            .ConnectReceivedFromRemote(connectionId, cp, _)): Future[ClientConnection.ForwardConnect.type]).map {
-            case ClientConnection.ForwardConnect => Right[DecodeError, Event[_]](Event(cp))
-          }
+            .ConnectReceivedFromRemote(connectionId, cp, _)): Future[ClientConnection.ForwardConnect.type])
+            .map(_ => Right[DecodeError, Event[_]](Event(cp)))
+        case Right(cp: Subscribe) =>
+          (serverConnector ? (ServerConnector
+            .SubscribeReceivedFromRemote(connectionId, cp, _)): Future[Publisher.ForwardSubscribe.type])
+            .map(_ => Right[DecodeError, Event[_]](Event(cp)))
+        case Right(cp: Unsubscribe) =>
+          (serverConnector ? (ServerConnector
+            .UnsubscribeReceivedFromRemote(connectionId, cp, _)): Future[Unpublisher.ForwardUnsubscribe.type])
+            .map(_ => Right[DecodeError, Event[_]](Event(cp)))
         case Right(cp) => Future.failed(new IllegalStateException(cp + " is not a server event"))
         case Left(de) => Future.successful(Left(de))
       }

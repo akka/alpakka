@@ -5,8 +5,6 @@
 package akka.stream.alpakka.mqtt.streaming
 package impl
 
-import java.nio.charset.StandardCharsets
-
 import akka.NotUsed
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
@@ -144,9 +142,6 @@ import scala.util.{Failure, Success}
   private val SubscriberNamePrefix = "subscriber-"
   private val UnsubscriberNamePrefix = "unsubscriber-"
 
-  private def mkActorName(name: String): String =
-    name.getBytes(StandardCharsets.UTF_8).map(_.toHexString).mkString
-
   def disconnected(data: Uninitialized): Behavior[Event] = Behaviors.receivePartial {
     case (context, ConnectReceivedLocally(connect, connectData, remote)) =>
       implicit val mat: Materializer = ActorMaterializer()(context.system)
@@ -247,7 +242,7 @@ import scala.util.{Failure, Success}
         case (context, SubscribeReceivedLocally(subscribe, subscribeData, remote)) =>
           subscribe.topicFilters.foreach { topicFilter =>
             val (topicFilterName, _) = topicFilter
-            val subscriberName = mkActorName(SubscriberNamePrefix + topicFilterName)
+            val subscriberName = ActorName.mkName(SubscriberNamePrefix + topicFilterName)
             context.child(subscriberName) match {
               case None =>
                 context.spawn(
@@ -260,7 +255,7 @@ import scala.util.{Failure, Success}
           serverConnected(data)
         case (context, UnsubscribeReceivedLocally(unsubscribe, unsubscribeData, remote)) =>
           unsubscribe.topicFilters.foreach { topicFilter =>
-            val unsubscriberName = mkActorName(UnsubscriberNamePrefix + topicFilter)
+            val unsubscriberName = ActorName.mkName(UnsubscriberNamePrefix + topicFilter)
             context.child(unsubscriberName) match {
               case None =>
                 context.spawn(
@@ -276,7 +271,7 @@ import scala.util.{Failure, Success}
           remote ! Consumer.ForwardPublish
           serverConnected(data)
         case (context, PublishReceivedFromRemote(Publish(flags, topicName, Some(packetId), _), local)) =>
-          val consumerName = mkActorName(ConsumerNamePrefix + topicName + packetId.underlying)
+          val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + packetId.underlying)
           context.child(consumerName) match {
             case None =>
               context.spawn(Consumer(packetId, flags, local, data.consumerPacketRouter, data.settings), consumerName)
@@ -288,7 +283,7 @@ import scala.util.{Failure, Success}
           remote ! Source.single(Producer.ForwardPublish(None, dup = false))
           serverConnected(data)
         case (context, prl @ PublishReceivedLocally(publish, publishData, remote)) =>
-          val producerName = mkActorName(ProducerNamePrefix + publish.topicName)
+          val producerName = ActorName.mkName(ProducerNamePrefix + publish.topicName)
           context.child(producerName) match {
             case None if !data.pendingLocalPublications.exists(_._1 == publish.topicName) =>
               context.watchWith(
@@ -306,7 +301,7 @@ import scala.util.{Failure, Success}
           val i = data.pendingLocalPublications.indexWhere(_._1 == topicName)
           if (i >= 0) {
             val prl = data.pendingLocalPublications(i)._2
-            val producerName = mkActorName(ProducerNamePrefix + topicName)
+            val producerName = ActorName.mkName(ProducerNamePrefix + topicName)
             context.watchWith(
               context.spawn(
                 Producer(prl.publish.flags, prl.publishData, prl.remote, data.producerPacketRouter, data.settings),
