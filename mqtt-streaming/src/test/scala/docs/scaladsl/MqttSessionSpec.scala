@@ -731,6 +731,9 @@ class MqttSessionSpec
       val subscribe = Subscribe("some-topic")
       val subscribeReceived = Promise[Done]
 
+      val unsubscribe = Unsubscribe("some-topic")
+      val unsubscribeReceived = Promise[Done]
+
       val publish = Publish("some-topic", ByteString("some-payload"))
 
       val (server, result) =
@@ -743,8 +746,10 @@ class MqttSessionSpec
           )
           .wireTap(Sink.foreach[Either[DecodeError, Event[_]]] {
             case Right(Event(`connect`, _)) => connectReceived.success(Done)
-            case Right(Event(s: Subscribe, _)) if s.topicFilters == subscribe.topicFilters =>
+            case Right(Event(cp: Subscribe, _)) if cp.topicFilters == subscribe.topicFilters =>
               subscribeReceived.success(Done)
+            case Right(Event(cp: Unsubscribe, _)) if cp.topicFilters == unsubscribe.topicFilters =>
+              unsubscribeReceived.success(Done)
           })
           .toMat(Sink.collection)(Keep.both)
           .run
@@ -760,6 +765,10 @@ class MqttSessionSpec
       val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
       val pubAck = PubAck(PacketId(1))
       val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
+
+      val unsubscribeBytes = unsubscribe.encode(ByteString.newBuilder, PacketId(1)).result()
+      val unsubAck = UnsubAck(PacketId(1))
+      val unsubAckBytes = unsubAck.encode(ByteString.newBuilder).result()
 
       fromClientQueue.offer(connectBytes)
 
@@ -781,6 +790,13 @@ class MqttSessionSpec
 //      client.expectMsg(pubAckBytes)
 //
 //      client.expectMsg(publishBytes)
+
+      fromClientQueue.offer(unsubscribeBytes)
+
+      unsubscribeReceived.future.futureValue shouldBe Done
+
+      server.offer(Command(unsubAck))
+      client.expectMsg(unsubAckBytes)
 
       fromClientQueue.complete()
 
