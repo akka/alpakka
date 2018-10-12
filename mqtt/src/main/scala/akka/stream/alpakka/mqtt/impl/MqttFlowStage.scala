@@ -31,6 +31,8 @@ import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
+import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions
+import akka.stream.alpakka.mqtt.MqttOfflinePersistenceSettings
 
 /**
  * INTERNAL API
@@ -96,11 +98,31 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
         case Failure(ex) => failStageWith(ex)
       }
 
-      private val mqttClient = new MqttAsyncClient(
-        connectionSettings.broker,
-        connectionSettings.clientId,
-        connectionSettings.persistence
-      )
+      private def getPahoBufferOptions(settings: MqttOfflinePersistenceSettings) = {
+        val disconnectedBufferOptions = new DisconnectedBufferOptions()
+
+        disconnectedBufferOptions.setBufferEnabled(true)
+        disconnectedBufferOptions.setBufferSize(settings.bufferSize)
+        disconnectedBufferOptions.setDeleteOldestMessages(settings.deleteOldestMessage)
+        disconnectedBufferOptions.setPersistBuffer(true)
+
+        disconnectedBufferOptions
+      }
+
+      private def mqttClient = {
+
+        val maybeBufferOptions = connectionSettings.offlinePersistenceSettings.map(getPahoBufferOptions)
+
+        val client = new MqttAsyncClient(
+          connectionSettings.broker,
+          connectionSettings.clientId,
+          connectionSettings.persistence
+        )
+
+        maybeBufferOptions.foreach(client.setBufferOpts)
+
+        client
+      }
 
       private val commitCallback: AsyncCallback[CommitCallbackArguments] =
         getAsyncCallback[CommitCallbackArguments](
