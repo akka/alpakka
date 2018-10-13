@@ -92,6 +92,9 @@ import scala.util.{Failure, Success}
                                                  unsubscribe: Unsubscribe,
                                                  local: ActorRef[Unpublisher.ForwardUnsubscribe.type])
       extends Event(connectionId)
+  final case class PingReqReceivedFromRemote(override val connectionId: ByteString,
+                                             local: ActorRef[ClientConnection.ForwardPingReq.type])
+      extends Event(connectionId)
   final case class DisconnectReceivedFromRemote(override val connectionId: ByteString,
                                                 local: ActorRef[ClientConnection.ForwardDisconnect.type])
       extends Event(connectionId)
@@ -142,6 +145,8 @@ import scala.util.{Failure, Success}
       forward(connectionId, data.clientConnections, ClientConnection.SubscribeReceivedFromRemote(subscribe, local))
     case (_, UnsubscribeReceivedFromRemote(connectionId, unsubscribe, local)) =>
       forward(connectionId, data.clientConnections, ClientConnection.UnsubscribeReceivedFromRemote(unsubscribe, local))
+    case (_, PingReqReceivedFromRemote(connectionId, local)) =>
+      forward(connectionId, data.clientConnections, ClientConnection.PingReqReceivedFromRemote(local))
   }
 }
 
@@ -205,6 +210,7 @@ import scala.util.{Failure, Success}
   final case class UnsubscribeReceivedFromRemote(unsubscribe: Unsubscribe,
                                                  local: ActorRef[Unpublisher.ForwardUnsubscribe.type])
       extends Event
+  final case class PingReqReceivedFromRemote(local: ActorRef[ForwardPingReq.type]) extends Event
   final case class DisconnectReceivedFromRemote(local: ActorRef[ForwardDisconnect.type]) extends Event
   case object ConnectionLost extends Event
   final case class PublisherFree(topicFilters: Seq[(String, ControlPacketFlags)]) extends Event
@@ -214,6 +220,8 @@ import scala.util.{Failure, Success}
   case object ForwardConnect extends Command
   sealed abstract class ForwardConnAckCommand
   case object ForwardConnAck extends ForwardConnAckCommand
+  case object ForwardPingReq extends Command
+  case object ForwardPingResp extends ForwardConnAckCommand
   case object ForwardDisconnect extends Command
 
   // State event handling
@@ -293,6 +301,10 @@ import scala.util.{Failure, Success}
           val unsubscribedTopicFilters =
             data.publishers.filter(publisher => topicFilters.exists(matchTopicFilter(_, publisher)))
           clientConnected(data.copy(publishers = data.publishers -- unsubscribedTopicFilters))
+        case (_, PingReqReceivedFromRemote(local)) =>
+          local ! ForwardPingReq
+          data.remote.offer(ForwardPingResp)
+          Behaviors.same // TODO: Reset ping timer and deal with not receiving a PINGREQ i.e. disconnect
       }
       .receiveSignal {
         case (_, PostStop) =>

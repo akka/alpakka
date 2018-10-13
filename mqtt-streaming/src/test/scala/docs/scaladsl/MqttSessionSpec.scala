@@ -806,6 +806,61 @@ class MqttSessionSpec
         case x => fail("Unexpected: " + x)
       }
     }
+
+    "reply to a ping request" in {
+      val session = ActorMqttServerSession(settings)
+
+      val client = TestProbe()
+      val toClient = Sink.foreach[ByteString](bytes => client.ref ! bytes)
+      val (fromClientQueue, fromClient) = Source
+        .queue[ByteString](1, OverflowStrategy.dropHead)
+        .toMat(BroadcastHub.sink)(Keep.both)
+        .run()
+
+      val pipeToClient = Flow.fromSinkAndSource(toClient, fromClient)
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+      val connectReceived = Promise[Done]
+
+      val pingReq = PingReq
+
+      val (server, result) =
+        Source
+          .queue[Command[_]](1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .serverSessionFlow(session, ByteString.empty)
+              .join(pipeToClient)
+          )
+          .wireTap(Sink.foreach[Either[DecodeError, Event[_]]] {
+            case Right(Event(`connect`, _)) => connectReceived.success(Done)
+          })
+          .toMat(Sink.collection)(Keep.both)
+          .run
+
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val pingReqBytes = pingReq.encode(ByteString.newBuilder).result()
+      val pingResp = PingResp
+      val pingRespBytes = pingResp.encode(ByteString.newBuilder).result()
+
+      fromClientQueue.offer(connectBytes)
+
+      connectReceived.future.futureValue shouldBe Done
+
+      server.offer(Command(connAck))
+      client.expectMsg(connAckBytes)
+
+      fromClientQueue.offer(pingReqBytes)
+
+      client.expectMsg(pingRespBytes)
+
+      fromClientQueue.complete()
+
+      result.futureValue shouldBe List(Right(Event(connect)), Right(Event(pingReq)))
+    }
   }
 
   override def afterAll: Unit =

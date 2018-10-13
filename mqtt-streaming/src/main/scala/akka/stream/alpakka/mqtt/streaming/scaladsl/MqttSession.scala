@@ -377,6 +377,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit syste
                 Source[ClientConnection.ForwardConnAckCommand, NotUsed]
               ]).map(_.map {
                 case ClientConnection.ForwardConnAck => cp.encode(ByteString.newBuilder).result()
+                case ClientConnection.ForwardPingResp => pingRespBytes
               }.mapError {
                 case ServerConnector.PingFailed => ActorMqttServerSession.PingFailed
               })
@@ -420,6 +421,10 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit syste
           (serverConnector ? (ServerConnector
             .UnsubscribeReceivedFromRemote(connectionId, cp, _)): Future[Unpublisher.ForwardUnsubscribe.type])
             .map(_ => Right[DecodeError, Event[_]](Event(cp)))
+        case Right(PingReq) =>
+          (serverConnector ? (ServerConnector
+            .PingReqReceivedFromRemote(connectionId, _)): Future[ClientConnection.ForwardPingReq.type])
+            .map(_ => Right[DecodeError, Event[_]](Event(PingReq)))
         case Right(cp) => Future.failed(new IllegalStateException(cp + " is not a server event"))
         case Left(de) => Future.successful(Left(de))
       }
