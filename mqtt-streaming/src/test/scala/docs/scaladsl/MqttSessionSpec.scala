@@ -861,6 +861,50 @@ class MqttSessionSpec
 
       result.futureValue shouldBe List(Right(Event(connect)), Right(Event(pingReq)))
     }
+
+    "close when no ping request received" ignore { // https://github.com/akka/akka/issues/17997#issuecomment-429670321
+      val session = ActorMqttServerSession(settings)
+
+      val client = TestProbe()
+      val toClient = Sink.foreach[ByteString](bytes => client.ref ! bytes)
+      val (fromClientQueue, fromClient) = Source
+        .queue[ByteString](1, OverflowStrategy.dropHead)
+        .toMat(BroadcastHub.sink)(Keep.both)
+        .run()
+
+      val pipeToClient = Flow.fromSinkAndSource(toClient, fromClient)
+
+      val connect = Connect("some-client-id", ConnectFlags.None).copy(keepAlive = 1.second.dilated)
+      val connectReceived = Promise[Done]
+
+      val (server, result) =
+        Source
+          .queue(1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .serverSessionFlow(session, ByteString.empty)
+              .join(pipeToClient)
+          )
+          .wireTap(Sink.foreach[Either[DecodeError, Event[_]]] {
+            case Right(Event(`connect`, _)) => connectReceived.success(Done)
+          })
+          .toMat(Sink.ignore)(Keep.both)
+          .run
+
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      fromClientQueue.offer(connectBytes)
+
+      connectReceived.future.futureValue shouldBe Done
+
+      server.offer(Command(connAck))
+      client.expectMsg(connAckBytes)
+
+      Thread.sleep(3000)
+      result.failed.futureValue shouldBe ActorMqttServerSession.PingFailed
+    }
   }
 
   override def afterAll: Unit =

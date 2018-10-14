@@ -5,6 +5,8 @@
 package akka.stream.alpakka.mqtt.streaming
 package impl
 
+import java.util.concurrent.TimeUnit
+
 import akka.NotUsed
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
@@ -15,6 +17,7 @@ import akka.stream.typed.scaladsl.ActorMaterializer
 import akka.util.{ByteString, Timeout}
 
 import scala.annotation.tailrec
+import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
 /*
@@ -118,8 +121,8 @@ import scala.util.{Failure, Success}
       context.child(clientConnectionName) match {
         case None =>
           val clientConnection = context.spawn(
-            ClientConnection(connect,
-                             local,
+            ClientConnection(local,
+                             connect.keepAlive,
                              data.consumerPacketRouter,
                              data.producerPacketRouter,
                              data.publisherPacketRouter,
@@ -156,10 +159,18 @@ import scala.util.{Failure, Success}
 @InternalApi private[streaming] object ClientConnection {
 
   /*
+   * A PINGREQ was not received within 1.5 times the keep alive so the connection will close
+   *
+   * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
+   * 3.1.2.10 Keep Alive
+   */
+  case object PingFailed extends Exception
+
+  /*
    * Construct with the starting state
    */
-  def apply(connect: Connect,
-            local: ActorRef[ForwardConnect.type],
+  def apply(local: ActorRef[ForwardConnect.type],
+            keepAlive: FiniteDuration,
             consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
             producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
             publisherPacketRouter: ActorRef[RemotePacketRouter.Request[Publisher.Event]],
@@ -168,6 +179,7 @@ import scala.util.{Failure, Success}
     clientConnect(
       ConnectReceived(local,
                       Vector.empty,
+                      keepAlive,
                       consumerPacketRouter,
                       producerPacketRouter,
                       publisherPacketRouter,
@@ -177,7 +189,8 @@ import scala.util.{Failure, Success}
 
   // Our FSM data, FSM events and commands emitted by the FSM
 
-  sealed abstract class Data(val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
+  sealed abstract class Data(val keepAlive: FiniteDuration,
+                             val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
                              val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
                              val publisherPacketRouter: ActorRef[RemotePacketRouter.Request[Publisher.Event]],
                              val unpublisherPacketRouter: ActorRef[RemotePacketRouter.Request[Unpublisher.Event]],
@@ -185,21 +198,33 @@ import scala.util.{Failure, Success}
   final case class ConnectReceived(
       local: ActorRef[ForwardConnect.type],
       stash: Seq[Event],
+      override val keepAlive: FiniteDuration,
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
       override val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
       override val publisherPacketRouter: ActorRef[RemotePacketRouter.Request[Publisher.Event]],
       override val unpublisherPacketRouter: ActorRef[RemotePacketRouter.Request[Unpublisher.Event]],
       override val settings: MqttSessionSettings
-  ) extends Data(consumerPacketRouter, producerPacketRouter, publisherPacketRouter, unpublisherPacketRouter, settings)
+  ) extends Data(keepAlive,
+                   consumerPacketRouter,
+                   producerPacketRouter,
+                   publisherPacketRouter,
+                   unpublisherPacketRouter,
+                   settings)
   final case class ConnAckReplied(
       remote: SourceQueueWithComplete[ForwardConnAckCommand],
       publishers: Set[String],
+      override val keepAlive: FiniteDuration,
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
       override val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
       override val publisherPacketRouter: ActorRef[RemotePacketRouter.Request[Publisher.Event]],
       override val unpublisherPacketRouter: ActorRef[RemotePacketRouter.Request[Unpublisher.Event]],
       override val settings: MqttSessionSettings
-  ) extends Data(consumerPacketRouter, producerPacketRouter, publisherPacketRouter, unpublisherPacketRouter, settings)
+  ) extends Data(keepAlive,
+                   consumerPacketRouter,
+                   producerPacketRouter,
+                   publisherPacketRouter,
+                   unpublisherPacketRouter,
+                   settings)
 
   sealed abstract class Event
   case object ReceiveConnAckTimeout extends Event
@@ -215,6 +240,7 @@ import scala.util.{Failure, Success}
   case object ConnectionLost extends Event
   final case class PublisherFree(topicFilters: Seq[(String, ControlPacketFlags)]) extends Event
   final case class UnpublisherFree(topicFilters: Seq[String]) extends Event
+  case object ReceivePingReqTimeout extends Event
 
   sealed abstract class Command
   case object ForwardConnect extends Command
@@ -249,13 +275,16 @@ import scala.util.{Failure, Success}
             data.stash.foreach(context.self.tell)
 
             clientConnected(
-              ConnAckReplied(queue,
-                             Set.empty,
-                             data.consumerPacketRouter,
-                             data.producerPacketRouter,
-                             data.publisherPacketRouter,
-                             data.unpublisherPacketRouter,
-                             data.settings)
+              ConnAckReplied(
+                queue,
+                Set.empty,
+                data.keepAlive,
+                data.consumerPacketRouter,
+                data.producerPacketRouter,
+                data.publisherPacketRouter,
+                data.unpublisherPacketRouter,
+                data.settings
+              )
             )
           case (_, ReceiveConnAckTimeout) =>
             Behaviors.stopped
@@ -265,7 +294,12 @@ import scala.util.{Failure, Success}
     }
   }
 
-  def clientConnected(data: ConnAckReplied): Behavior[Event] =
+  def clientConnected(data: ConnAckReplied): Behavior[Event] = Behaviors.withTimers { timer =>
+    if (data.keepAlive.toMillis > 0)
+      timer.startSingleTimer("receive-pingreq",
+                             ReceivePingReqTimeout,
+                             FiniteDuration((data.keepAlive.toMillis * 1.5).toLong, TimeUnit.MILLISECONDS))
+
     Behaviors
       .receivePartial[Event] {
         case (_, DisconnectReceivedFromRemote(local)) =>
@@ -302,15 +336,19 @@ import scala.util.{Failure, Success}
             data.publishers.filter(publisher => topicFilters.exists(matchTopicFilter(_, publisher)))
           clientConnected(data.copy(publishers = data.publishers -- unsubscribedTopicFilters))
         case (_, PingReqReceivedFromRemote(local)) =>
-          local ! ForwardPingReq
           data.remote.offer(ForwardPingResp)
-          Behaviors.same // TODO: Reset ping timer and deal with not receiving a PINGREQ i.e. disconnect
+          local ! ForwardPingReq
+          clientConnected(data)
+        case (_, ReceivePingReqTimeout) =>
+          data.remote.fail(PingFailed)
+          Behaviors.stopped
       }
       .receiveSignal {
         case (_, PostStop) =>
           data.remote.complete()
           Behaviors.same
       }
+  }
 
   //
 
