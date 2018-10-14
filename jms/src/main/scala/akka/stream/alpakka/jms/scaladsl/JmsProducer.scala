@@ -16,13 +16,14 @@ object JmsProducer {
   /**
    * Scala API: Creates an [[JmsProducer]] for [[JmsMessage]]s
    */
-  def flow[T <: JmsMessage](settings: JmsProducerSettings): Flow[T, T, NotUsed] = {
-    require(settings.destination.isDefined, noProducerDestination(settings))
-    Flow[T]
-      .map(m => JmsProducerMessage.Message(m, NotUsed))
-      .via(Flow.fromGraph(new JmsProducerStage(settings, settings.destination.get)))
-      .collectType[JmsProducerMessage.Message[T, NotUsed]]
-      .map(_.message)
+  def flow[T <: JmsMessage](settings: JmsProducerSettings): Flow[T, T, NotUsed] = settings.destination match {
+    case None => throw new IllegalArgumentException(noProducerDestination(settings))
+    case Some(destination) =>
+      Flow[T]
+        .map(m => JmsProducerMessage.Message(m, NotUsed))
+        .via(Flow.fromGraph(new JmsProducerStage(settings, destination)))
+        .collectType[JmsProducerMessage.Message[T, NotUsed]]
+        .map(_.message)
   }
 
   /**
@@ -30,9 +31,9 @@ object JmsProducer {
    */
   def flexiFlow[T <: JmsMessage, PassThrough](
       settings: JmsProducerSettings
-  ): Flow[Envelope[T, PassThrough], Envelope[T, PassThrough], NotUsed] = {
-    require(settings.destination.isDefined, noProducerDestination(settings))
-    Flow.fromGraph(new JmsProducerStage(settings, settings.destination.get))
+  ): Flow[Envelope[T, PassThrough], Envelope[T, PassThrough], NotUsed] = settings.destination match {
+    case None => throw new IllegalArgumentException(noProducerDestination(settings))
+    case Some(destination) => Flow.fromGraph(new JmsProducerStage(settings, destination))
   }
 
   /**

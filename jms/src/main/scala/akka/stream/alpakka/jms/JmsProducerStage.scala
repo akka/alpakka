@@ -134,25 +134,23 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
         }
       }
 
-      private val sendCompletedCB = getAsyncCallback[(SendAttempt[E], Try[Unit], JmsMessageProducer)] { tuple =>
-        val send = tuple._1
-        val outcome = tuple._2
-        val jmsProducer = tuple._3
-        // same epoch indicates that the producer belongs to the current alive connection.
-        if (jmsProducer.epoch == currentJmsProducerEpoch) jmsProducers.enqueue(jmsProducer)
+      private val sendCompletedCB = getAsyncCallback[(SendAttempt[E], Try[Unit], JmsMessageProducer)] {
+        case (send, outcome, jmsProducer) =>
+          // same epoch indicates that the producer belongs to the current alive connection.
+          if (jmsProducer.epoch == currentJmsProducerEpoch) jmsProducers.enqueue(jmsProducer)
 
-        import send._
+          import send._
 
-        outcome match {
-          case Success(_) =>
-            holder(Success(envelope))
-            pushNextIfPossible()
-          case Failure(t: JMSException) =>
-            nextTryOrFail(send, t)
-          case Failure(t) =>
-            holder(Failure(t))
-            handleFailure(t, holder)
-        }
+          outcome match {
+            case Success(_) =>
+              holder(Success(envelope))
+              pushNextIfPossible()
+            case Failure(t: JMSException) =>
+              nextTryOrFail(send, t)
+            case Failure(t) =>
+              holder(Failure(t))
+              handleFailure(t, holder)
+          }
       }
 
       override def postStop(): Unit = {

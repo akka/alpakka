@@ -192,7 +192,7 @@ class JmsProducerRetrySpec extends JmsSpec {
       val result = Source(List("one")).runWith(jms)
 
       result.failed.futureValue shouldBe a[JMSException]
-      sendAttempts.get() shouldBe 6
+      sendAttempts.get shouldBe 6
     }
 
     "fail send on first attempt if retry is disabled" in withMockedProducer { ctx =>
@@ -217,7 +217,7 @@ class JmsProducerRetrySpec extends JmsSpec {
       val result = Source(List("one")).runWith(jms)
 
       result.failed.futureValue shouldBe a[JMSException]
-      sendAttempts.get() shouldBe 1
+      sendAttempts.get shouldBe 1
     }
   }
 }

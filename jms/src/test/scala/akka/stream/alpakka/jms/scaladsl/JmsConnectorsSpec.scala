@@ -895,7 +895,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val result = Source(in).via(jmsFlow).toMat(Sink.seq)(Keep.right).run()
 
       result.futureValue shouldEqual in
-      delays.get() shouldBe 50
+      delays.get shouldBe 50
     }
 
     "fail fast on the first failing send" in withMockedProducer { ctx =>

@@ -39,7 +39,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
 
   protected val fail: AsyncCallback[Throwable] = getAsyncCallback[Throwable](e => failStage(e))
 
-  private val connectionFailedCB: AsyncCallback[Throwable] = getAsyncCallback[Throwable](e => connectionFailed(e))
+  private val connectionFailedCB: AsyncCallback[Throwable] = getAsyncCallback[Throwable](connectionFailed)
 
   def connectionFailed(ex: Throwable): Unit = {
     jmsConnection = Future.failed(ex)

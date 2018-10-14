@@ -17,9 +17,9 @@ object JmsConsumer {
   /**
    * Scala API: Creates an [[JmsConsumer]] for [[javax.jms.Message]] instances
    */
-  def apply(settings: JmsConsumerSettings): Source[Message, KillSwitch] = {
-    require(settings.destination.isDefined, noConsumerDestination(settings))
-    Source.fromGraph(new JmsConsumerStage(settings, settings.destination.get))
+  def apply(settings: JmsConsumerSettings): Source[Message, KillSwitch] = settings.destination match {
+    case None => throw new IllegalArgumentException(noConsumerDestination(settings))
+    case Some(destination) => Source.fromGraph(new JmsConsumerStage(settings, destination))
   }
 
   /**
@@ -66,9 +66,9 @@ object JmsConsumer {
    * @param settings The settings for the ack source.
    * @return Source for JMS messages in an AckEnvelope.
    */
-  def ackSource(settings: JmsConsumerSettings): Source[AckEnvelope, KillSwitch] = {
-    require(settings.destination.isDefined, noConsumerDestination(settings))
-    Source.fromGraph(new JmsAckSourceStage(settings, settings.destination.get))
+  def ackSource(settings: JmsConsumerSettings): Source[AckEnvelope, KillSwitch] = settings.destination match {
+    case None => throw new IllegalArgumentException(noConsumerDestination(settings))
+    case Some(destination) => Source.fromGraph(new JmsAckSourceStage(settings, destination))
   }
 
   /**
@@ -78,17 +78,17 @@ object JmsConsumer {
    * @param settings The settings for the tx source
    * @return Source of the JMS messages in a TxEnvelope
    */
-  def txSource(settings: JmsConsumerSettings): Source[TxEnvelope, KillSwitch] = {
-    require(settings.destination.isDefined, noConsumerDestination(settings))
-    Source.fromGraph(new JmsTxSourceStage(settings, settings.destination.get))
+  def txSource(settings: JmsConsumerSettings): Source[TxEnvelope, KillSwitch] = settings.destination match {
+    case None => throw new IllegalArgumentException(noConsumerDestination(settings))
+    case Some(destination) => Source.fromGraph(new JmsTxSourceStage(settings, destination))
   }
 
   /**
    * Scala API: Creates a [[JmsConsumer]] for browsing messages non-destructively
    */
-  def browse(settings: JmsBrowseSettings): Source[Message, NotUsed] = {
-    require(settings.destination.isDefined, noBrowseDestination(settings))
-    Source.fromGraph(new JmsBrowseStage(settings, settings.destination.get))
+  def browse(settings: JmsBrowseSettings): Source[Message, NotUsed] = settings.destination match {
+    case None => throw new IllegalArgumentException(noBrowseDestination(settings))
+    case Some(destination) => Source.fromGraph(new JmsBrowseStage(settings, destination))
   }
 
   private def noConsumerDestination(settings: JmsConsumerSettings) =
