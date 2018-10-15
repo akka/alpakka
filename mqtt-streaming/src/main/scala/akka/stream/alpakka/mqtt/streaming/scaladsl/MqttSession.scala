@@ -142,11 +142,9 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
               (clientConnector ? (replyTo => ClientConnector.PublishReceivedLocally(cp, carry, replyTo)): Future[
                 Source[Producer.ForwardPublishingCommand, NotUsed]
               ]).map(_.map {
-                case Producer.ForwardPublish(packetId, false) =>
-                  cp.encode(ByteString.newBuilder, packetId).result()
-                case Producer.ForwardPublish(packetId, true) =>
-                  cp.copy(flags = cp.flags | ControlPacketFlags.DUP).encode(ByteString.newBuilder, packetId).result()
-                case Producer.ForwardPubRel(packetId) =>
+                case Producer.ForwardPublish(publish, packetId) =>
+                  publish.encode(ByteString.newBuilder, packetId).result()
+                case Producer.ForwardPubRel(_, packetId) =>
                   PubRel(packetId).encode(ByteString.newBuilder).result()
               })
             )
@@ -376,8 +374,14 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit syste
               (serverConnector ? (replyTo => ServerConnector.ConnAckReceivedLocally(connectionId, cp, replyTo)): Future[
                 Source[ClientConnection.ForwardConnAckCommand, NotUsed]
               ]).map(_.map {
-                case ClientConnection.ForwardConnAck => cp.encode(ByteString.newBuilder).result()
-                case ClientConnection.ForwardPingResp => pingRespBytes
+                case ClientConnection.ForwardConnAck =>
+                  cp.encode(ByteString.newBuilder).result()
+                case ClientConnection.ForwardPingResp =>
+                  pingRespBytes
+                case ClientConnection.ForwardPublish(publish, packetId) =>
+                  publish.encode(ByteString.newBuilder, packetId).result()
+                case ClientConnection.ForwardPubRel(packetId) =>
+                  PubRel(packetId).encode(ByteString.newBuilder).result()
               }.mapError {
                 case ServerConnector.PingFailed => ActorMqttServerSession.PingFailed
               })
@@ -393,6 +397,33 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit syste
               (unpublisherPacketRouter ? (
                   replyTo => RemotePacketRouter.Route(cp.packetId, Unpublisher.UnsubAckReceivedLocally(replyTo))
               ): Future[Unpublisher.ForwardUnsubAck.type]).map(_ => cp.encode(ByteString.newBuilder).result())
+            )
+          case Command(cp: Publish, carry) =>
+            serverConnector ! ServerConnector.PublishReceivedLocally(connectionId, cp, carry)
+            Source.empty
+          case Command(cp: PubAck, _) =>
+            Source.fromFuture(
+              (consumerPacketRouter ? (
+                  replyTo => RemotePacketRouter.Route(cp.packetId, Consumer.PubAckReceivedLocally(replyTo))
+              ): Future[
+                Consumer.ForwardPubAck.type
+              ]).map(_ => cp.encode(ByteString.newBuilder).result())
+            )
+          case Command(cp: PubRec, _) =>
+            Source.fromFuture(
+              (consumerPacketRouter ? (
+                  replyTo => RemotePacketRouter.Route(cp.packetId, Consumer.PubRecReceivedLocally(replyTo))
+              ): Future[
+                Consumer.ForwardPubRec.type
+              ]).map(_ => cp.encode(ByteString.newBuilder).result())
+            )
+          case Command(cp: PubComp, _) =>
+            Source.fromFuture(
+              (consumerPacketRouter ? (
+                  replyTo => RemotePacketRouter.Route(cp.packetId, Consumer.PubCompReceivedLocally(replyTo))
+              ): Future[
+                Consumer.ForwardPubComp.type
+              ]).map(_ => cp.encode(ByteString.newBuilder).result())
             )
           case c: Command[_] => throw new IllegalStateException(c + " is not a server command")
         }
@@ -421,6 +452,47 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit syste
           (serverConnector ? (ServerConnector
             .UnsubscribeReceivedFromRemote(connectionId, cp, _)): Future[Unpublisher.ForwardUnsubscribe.type])
             .map(_ => Right[DecodeError, Event[_]](Event(cp)))
+        case Right(cp: Publish) =>
+          (serverConnector ? (ServerConnector
+            .PublishReceivedFromRemote(connectionId, cp, _)): Future[Consumer.ForwardPublish.type])
+            .map(_ => Right[DecodeError, Event[_]](Event(cp)))
+        case Right(cp: PubAck) =>
+          (producerPacketRouter ? (
+              replyTo =>
+                LocalPacketRouter.Route(cp.packetId,
+                                        Producer
+                                          .PubAckReceivedFromRemote(replyTo))
+          ): Future[Producer.ForwardPubAck])
+            .map {
+              case Producer.ForwardPubAck(carry) => Right[DecodeError, Event[_]](Event(cp, carry))
+            }
+        case Right(cp: PubRec) =>
+          (producerPacketRouter ? (
+              replyTo =>
+                LocalPacketRouter.Route(cp.packetId,
+                                        Producer
+                                          .PubRecReceivedFromRemote(replyTo))
+          ): Future[Producer.ForwardPubRec])
+            .map {
+              case Producer.ForwardPubRec(carry) => Right[DecodeError, Event[_]](Event(cp, carry))
+            }
+        case Right(cp: PubRel) =>
+          (consumerPacketRouter ? (
+              replyTo =>
+                RemotePacketRouter.Route(cp.packetId,
+                                         Consumer
+                                           .PubRelReceivedFromRemote(replyTo))
+          ): Future[Consumer.ForwardPubRel.type]).map(_ => Right[DecodeError, Event[_]](Event(cp)))
+        case Right(cp: PubComp) =>
+          (producerPacketRouter ? (
+              replyTo =>
+                LocalPacketRouter.Route(cp.packetId,
+                                        Producer
+                                          .PubCompReceivedFromRemote(replyTo))
+          ): Future[Producer.ForwardPubComp])
+            .map {
+              case Producer.ForwardPubComp(carry) => Right[DecodeError, Event[_]](Event(cp, carry))
+            }
         case Right(PingReq) =>
           (serverConnector ? (ServerConnector
             .PingReqReceivedFromRemote(connectionId, _)): Future[ClientConnection.ForwardPingReq.type])

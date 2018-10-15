@@ -9,7 +9,7 @@ import akka.actor.ActorSystem
 import akka.stream.alpakka.mqtt.streaming._
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, ActorMqttServerSession, Mqtt}
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source, Tcp}
-import akka.stream.{ActorMaterializer, Materializer, OverflowStrategy}
+import akka.stream._
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest._
@@ -70,7 +70,7 @@ class MqttFlowSpec
   }
 
   "mqtt server flow" should {
-    "receive a bidirectional connection and a subscription to a topic" ignore {
+    "receive a bidirectional connection and a subscription to a topic" in {
       val clientId = "flow-spec/flow"
       val topic = "source-spec/topic1"
 
@@ -91,7 +91,7 @@ class MqttFlowSpec
                   .join(connection.flow)
 
               val (queue, source) = Source
-                .queue[Command[_]](1, OverflowStrategy.dropHead)
+                .queue[Command[_]](2, OverflowStrategy.dropHead)
                 .via(mqttFlow)
                 .toMat(BroadcastHub.sink)(Keep.both)
                 .run()
@@ -102,8 +102,9 @@ class MqttFlowSpec
                     queue.offer(Command(ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)))
                   case Right(Event(cp: Subscribe, _)) =>
                     queue.offer(Command(SubAck(cp.packetId, cp.topicFilters.map(_._2))))
-                  case Right(Event(Publish(_, _, Some(packetId), _), _)) =>
+                  case Right(Event(publish @ Publish(_, _, Some(packetId), _), _)) =>
                     queue.offer(Command(PubAck(packetId)))
+                    queue.offer(Command(publish)) // FIXME: Either implement RETAIN handling, or defer this PUBLISH until we have a SUBSCRIBE - presently fails the test
                   case _ => // Ignore everything else
                 }
 

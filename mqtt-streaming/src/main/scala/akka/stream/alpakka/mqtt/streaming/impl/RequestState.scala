@@ -31,29 +31,29 @@ import scala.util.{Failure, Success}
   /*
    * Construct with the starting state
    */
-  def apply(flags: ControlPacketFlags,
+  def apply(publish: Publish,
             publishData: PublishData,
             remote: ActorRef[Source[ForwardPublishingCommand, NotUsed]],
             packetRouter: ActorRef[LocalPacketRouter.Request[Event]],
             settings: MqttSessionSettings): Behavior[Event] =
-    preparePublish(Start(flags, publishData, remote, packetRouter, settings))
+    preparePublish(Start(publish, publishData, remote, packetRouter, settings))
 
   // Our FSM data, FSM events and commands emitted by the FSM
 
-  sealed abstract class Data(val settings: MqttSessionSettings)
-  final case class Start(flags: ControlPacketFlags,
-                         publishData: PublishData,
+  sealed abstract class Data(val publish: Publish, val publishData: PublishData, val settings: MqttSessionSettings)
+  final case class Start(override val publish: Publish,
+                         override val publishData: PublishData,
                          remote: ActorRef[Source[ForwardPublishingCommand, NotUsed]],
                          packetRouter: ActorRef[LocalPacketRouter.Request[Event]],
                          override val settings: MqttSessionSettings)
-      extends Data(settings)
+      extends Data(publish, publishData, settings)
   final case class Publishing(remote: SourceQueueWithComplete[ForwardPublishingCommand],
-                              flags: ControlPacketFlags,
                               packetId: PacketId,
-                              publishData: PublishData,
+                              override val publish: Publish,
+                              override val publishData: PublishData,
                               packetRouter: ActorRef[LocalPacketRouter.Request[Event]],
                               override val settings: MqttSessionSettings)
-      extends Data(settings)
+      extends Data(publish, publishData, settings)
 
   sealed abstract class Event
   final case class AcquiredPacketId(packetId: PacketId) extends Event
@@ -66,10 +66,10 @@ import scala.util.{Failure, Success}
 
   sealed abstract class Command
   sealed abstract class ForwardPublishingCommand extends Command
-  final case class ForwardPublish(packetId: Option[PacketId], dup: Boolean) extends ForwardPublishingCommand
+  final case class ForwardPublish(publish: Publish, packetId: Option[PacketId]) extends ForwardPublishingCommand
   final case class ForwardPubAck(publishData: PublishData) extends Command
   final case class ForwardPubRec(publishData: PublishData) extends Command
-  final case class ForwardPubRel(packetId: PacketId) extends ForwardPublishingCommand
+  final case class ForwardPubRel(publish: Publish, packetId: PacketId) extends ForwardPublishingCommand
   final case class ForwardPubComp(publishData: PublishData) extends Command
 
   // State event handling
@@ -97,9 +97,9 @@ import scala.util.{Failure, Success}
     Behaviors
       .receiveMessagePartial[Event] {
         case AcquiredPacketId(packetId) =>
-          queue.offer(ForwardPublish(Some(packetId), dup = false))
+          queue.offer(ForwardPublish(data.publish, Some(packetId)))
           publishUnacknowledged(
-            Publishing(queue, data.flags, packetId, data.publishData, data.packetRouter, data.settings)
+            Publishing(queue, packetId, data.publish, data.publishData, data.packetRouter, data.settings)
           )
         case UnacquiredPacketId =>
           requestPacketId()
@@ -117,14 +117,17 @@ import scala.util.{Failure, Success}
 
     Behaviors
       .receiveMessagePartial[Event] {
-        case PubAckReceivedFromRemote(local) if data.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) =>
+        case PubAckReceivedFromRemote(local)
+            if data.publish.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) =>
           local ! ForwardPubAck(data.publishData)
           Behaviors.stopped
-        case PubRecReceivedFromRemote(local) if data.flags.contains(ControlPacketFlags.QoSAtMostOnceDelivery) =>
+        case PubRecReceivedFromRemote(local) if data.publish.flags.contains(ControlPacketFlags.QoSAtMostOnceDelivery) =>
           local ! ForwardPubRec(data.publishData)
           publishAcknowledged(data)
         case ReceivePubAckRecTimeout =>
-          data.remote.offer(ForwardPublish(Some(data.packetId), dup = true))
+          data.remote.offer(
+            ForwardPublish(data.publish.copy(flags = data.publish.flags | ControlPacketFlags.DUP), Some(data.packetId))
+          )
           publishUnacknowledged(data)
       }
       .receiveSignal {
@@ -138,7 +141,7 @@ import scala.util.{Failure, Success}
   def publishAcknowledged(data: Publishing): Behavior[Event] = Behaviors.withTimers { timer =>
     timer.startSingleTimer("receive-pubrel", ReceivePubCompTimeout, data.settings.receivePubCompTimeout)
 
-    data.remote.offer(ForwardPubRel(data.packetId))
+    data.remote.offer(ForwardPubRel(data.publish, data.packetId))
 
     Behaviors
       .receiveMessagePartial[Event] {
@@ -146,7 +149,7 @@ import scala.util.{Failure, Success}
           local ! ForwardPubComp(data.publishData)
           Behaviors.stopped
         case ReceivePubCompTimeout =>
-          data.remote.offer(ForwardPubRel(data.packetId))
+          data.remote.offer(ForwardPubRel(data.publish, data.packetId))
           publishAcknowledged(data)
       }
       .receiveSignal {
@@ -168,30 +171,30 @@ import scala.util.{Failure, Success}
   /*
    * Construct with the starting state
    */
-  def apply(packetId: PacketId,
-            flags: ControlPacketFlags,
+  def apply(publish: Publish,
+            packetId: PacketId,
             local: ActorRef[ForwardPublish.type],
             packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
             settings: MqttSessionSettings): Behavior[Event] =
-    prepareClientConsumption(Start(packetId, flags, local, packetRouter, settings))
+    prepareClientConsumption(Start(publish, packetId, local, packetRouter, settings))
 
   // Our FSM data, FSM events and commands emitted by the FSM
 
-  sealed abstract class Data(val packetId: PacketId,
-                             val flags: ControlPacketFlags,
+  sealed abstract class Data(val publish: Publish,
+                             val packetId: PacketId,
                              val packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
                              val settings: MqttSessionSettings)
-  final case class Start(override val packetId: PacketId,
-                         override val flags: ControlPacketFlags,
+  final case class Start(override val publish: Publish,
+                         override val packetId: PacketId,
                          local: ActorRef[ForwardPublish.type],
                          override val packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
                          override val settings: MqttSessionSettings)
-      extends Data(packetId, flags, packetRouter, settings)
-  final case class ClientConsuming(override val packetId: PacketId,
-                                   override val flags: ControlPacketFlags,
+      extends Data(publish, packetId, packetRouter, settings)
+  final case class ClientConsuming(override val publish: Publish,
+                                   override val packetId: PacketId,
                                    override val packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
                                    override val settings: MqttSessionSettings)
-      extends Data(packetId, flags, packetRouter, settings)
+      extends Data(publish, packetId, packetRouter, settings)
 
   sealed abstract class Event
   final case object RegisteredPacketId extends Event
@@ -226,7 +229,7 @@ import scala.util.{Failure, Success}
     Behaviors.receiveMessagePartial {
       case RegisteredPacketId =>
         data.local ! ForwardPublish
-        consumeUnacknowledged(ClientConsuming(data.packetId, data.flags, data.packetRouter, data.settings))
+        consumeUnacknowledged(ClientConsuming(data.publish, data.packetId, data.packetRouter, data.settings))
       case UnobtainablePacketId =>
         Behaviors.stopped
     }
@@ -236,10 +239,10 @@ import scala.util.{Failure, Success}
     timer.startSingleTimer("receive-pubackrel", ReceivePubAckRecTimeout, data.settings.receivePubAckRecTimeout)
     Behaviors
       .receiveMessagePartial[Event] {
-        case PubAckReceivedLocally(remote) if data.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) =>
+        case PubAckReceivedLocally(remote) if data.publish.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) =>
           remote ! ForwardPubAck
           Behaviors.stopped
-        case PubRecReceivedLocally(remote) if data.flags.contains(ControlPacketFlags.QoSExactlyOnceDelivery) =>
+        case PubRecReceivedLocally(remote) if data.publish.flags.contains(ControlPacketFlags.QoSExactlyOnceDelivery) =>
           remote ! ForwardPubRec
           consumeReceived(data)
         case ReceivePubAckRecTimeout =>

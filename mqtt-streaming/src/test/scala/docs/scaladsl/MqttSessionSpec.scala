@@ -735,6 +735,7 @@ class MqttSessionSpec
       val unsubscribeReceived = Promise[Done]
 
       val publish = Publish("some-topic", ByteString("some-payload"))
+      val publishReceived = Promise[Done]
 
       val (server, result) =
         Source
@@ -748,6 +749,7 @@ class MqttSessionSpec
             case Right(Event(`connect`, _)) => connectReceived.success(Done)
             case Right(Event(cp: Subscribe, _)) if cp.topicFilters == subscribe.topicFilters =>
               subscribeReceived.success(Done)
+            case Right(Event(cp: Publish, _)) if cp.topicName == publish.topicName => publishReceived.success(Done)
             case Right(Event(cp: Unsubscribe, _)) if cp.topicFilters == unsubscribe.topicFilters =>
               unsubscribeReceived.success(Done)
           })
@@ -784,12 +786,15 @@ class MqttSessionSpec
       server.offer(Command(subAck))
       client.expectMsg(subAckBytes)
 
-//      fromClientQueue.offer(publishBytes)
-//
-//      server.offer(Command(pubAck))
-//      client.expectMsg(pubAckBytes)
-//
-//      client.expectMsg(publishBytes)
+      fromClientQueue.offer(publishBytes)
+
+      publishReceived.future.futureValue shouldBe Done
+
+      server.offer(Command(pubAck))
+      client.expectMsg(pubAckBytes)
+
+      server.offer(Command(publish))
+      client.expectMsg(publishBytes)
 
       fromClientQueue.offer(unsubscribeBytes)
 

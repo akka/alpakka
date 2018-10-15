@@ -266,28 +266,28 @@ import scala.util.{Failure, Success}
             }
           }
           serverConnected(data)
-        case (_, PublishReceivedFromRemote(publish, remote))
+        case (_, PublishReceivedFromRemote(publish, local))
             if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
-          remote ! Consumer.ForwardPublish
+          local ! Consumer.ForwardPublish
           serverConnected(data)
-        case (context, PublishReceivedFromRemote(Publish(flags, topicName, Some(packetId), _), local)) =>
+        case (context, PublishReceivedFromRemote(publish @ Publish(_, topicName, Some(packetId), _), local)) =>
           val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + packetId.underlying)
           context.child(consumerName) match {
             case None =>
-              context.spawn(Consumer(packetId, flags, local, data.consumerPacketRouter, data.settings), consumerName)
+              context.spawn(Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings), consumerName)
             case _: Some[_] => // Ignored for existing consumptions
           }
           serverConnected(data)
         case (_, PublishReceivedLocally(publish, _, remote))
             if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
-          remote ! Source.single(Producer.ForwardPublish(None, dup = false))
+          remote ! Source.single(Producer.ForwardPublish(publish, None))
           serverConnected(data)
         case (context, prl @ PublishReceivedLocally(publish, publishData, remote)) =>
           val producerName = ActorName.mkName(ProducerNamePrefix + publish.topicName)
           context.child(producerName) match {
             case None if !data.pendingLocalPublications.exists(_._1 == publish.topicName) =>
               context.watchWith(
-                context.spawn(Producer(publish.flags, publishData, remote, data.producerPacketRouter, data.settings),
+                context.spawn(Producer(publish, publishData, remote, data.producerPacketRouter, data.settings),
                               producerName),
                 ProducerFree(publish.topicName)
               )
@@ -304,7 +304,7 @@ import scala.util.{Failure, Success}
             val producerName = ActorName.mkName(ProducerNamePrefix + topicName)
             context.watchWith(
               context.spawn(
-                Producer(prl.publish.flags, prl.publishData, prl.remote, data.producerPacketRouter, data.settings),
+                Producer(prl.publish, prl.publishData, prl.remote, data.producerPacketRouter, data.settings),
                 producerName
               ),
               ProducerFree(topicName)

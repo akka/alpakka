@@ -116,7 +116,6 @@ public class MqttFlowTest {
   }
 
   @Test
-  @Ignore
   public void establishServerBidirectionalConnectionAndSubscribeToATopic()
       throws InterruptedException, ExecutionException, TimeoutException {
     String clientId = "flow-spec/flow";
@@ -143,7 +142,7 @@ public class MqttFlowTest {
 
                   Pair<SourceQueueWithComplete<Command<?>>, Source<DecodeErrorOrEvent, NotUsed>>
                       run =
-                          Source.<Command<?>>queue(1, OverflowStrategy.dropHead())
+                          Source.<Command<?>>queue(2, OverflowStrategy.dropHead())
                               .via(mqttFlow)
                               .toMat(BroadcastHub.of(DecodeErrorOrEvent.class), Keep.both())
                               .run(materializer);
@@ -176,6 +175,7 @@ public class MqttFlowTest {
                             Publish publish = (Publish) cp;
                             int packetId = publish.packetId().get().underlying();
                             queue.offer(new Command(new PubAck(packetId)));
+                            queue.offer(new Command(publish));
                           } // Ignore everything else
                         }
                       },
