@@ -41,7 +41,6 @@ class MqttSinkSpec
 
   val topic = "sink-spec/topic1"
   val topic2 = "sink-spec/topic2"
-  val topic3 = "sink-spec/topic3"
   val secureTopic = "sink-spec/secure-topic1"
 
   val sinkSettings = connectionSettings.withClientId(clientId = "sink-spec/sink")
@@ -137,6 +136,5 @@ class MqttSinkSpec
       message.topic shouldBe msg.topic
       message.payload shouldBe msg.payload
     }
-
   }
 }
