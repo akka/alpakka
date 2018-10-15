@@ -4,7 +4,6 @@
 
 package docs.scaladsl
 
-import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.alpakka.mqtt._
@@ -13,6 +12,7 @@ import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestKit
 import akka.util.ByteString
+import akka.{Done, NotUsed}
 import javax.net.ssl.SSLContext
 import org.eclipse.paho.client.mqttv3.MqttException
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
@@ -97,6 +97,25 @@ class MqttSourceSpec
       //#ssl-settings
       connectionSettings.toString should include("ssl://localhost:1885")
       connectionSettings.toString should include("auth(username)=Some(mqttUser)")
+    }
+
+    "allow MQTT buffering offline support persistence" in {
+      //#OfflinePersistenceSettings
+      val bufferedConnectionSettings = MqttConnectionSettings(
+        "ssl://localhost:1885",
+        "ssl-client",
+        new MemoryPersistence
+      ).withOfflinePersistenceSettings(
+        MqttOfflinePersistenceSettings(
+          bufferSize = 1234,
+          deleteOldestMessage = true,
+          persistBuffer = false
+        )
+      )
+
+      bufferedConnectionSettings.toString should include(
+        "offlinePersistenceSettings=Some(MqttOfflinePersistenceSettings(1234,true,false))"
+      )
     }
   }
 
@@ -420,101 +439,6 @@ class MqttSourceSpec
 
       val elem = source2.runWith(Sink.head)
       elem.futureValue shouldBe MqttMessage(willTopic, ByteString("ohi"))
-    }
-
-    "support buffering message on disconnect" in {
-      import system.dispatcher
-
-      val bufferedTopic = "source-spec/bufferedTopic"
-
-      val bufferedSinkSettings = connectionSettings.withClientId(clientId = "source-spec/bufferedSink")
-
-      val msgOne = MqttMessage(bufferedTopic, ByteString("MsgOne"))
-
-      // Create a proxy on an available port so it can be shut down
-      val (proxyBinding, connection) = Tcp().bind("localhost", 0).toMat(Sink.head)(Keep.both).run()
-      val proxyPort = proxyBinding.futureValue.localAddress.getPort
-      val proxyKs = connection.map { c =>
-        c.handleWith(
-          Tcp()
-            .outgoingConnection("localhost", 1883)
-            .viaMat(KillSwitches.single)(Keep.right)
-        )
-      }
-      Await.ready(proxyBinding, timeout)
-
-      val (subscribed, probe) = MqttSource
-        .atMostOnce(
-          connectionSettings
-            .withClientId(clientId = "source-spec/bufferedSource")
-            .withAutomaticReconnect(true)
-            .withCleanSession(false)
-            .withOfflinePersistenceSettings(
-              MqttOfflinePersistenceSettings(
-                bufferSize = 5000
-              )
-            )
-            .withBroker(s"tcp://localhost:$proxyPort"),
-          MqttSubscriptions(bufferedTopic, MqttQoS.AtLeastOnce),
-          8
-        )
-        .toMat(TestSink.probe)(Keep.both)
-        .run()
-
-      // Ensure that the connection made it all the way to the server by waiting until it receives a message
-      Await.ready(subscribed, timeout)
-
-      Source.single(msgOne).runWith(MqttSink(bufferedSinkSettings, MqttQoS.AtLeastOnce))
-
-      val receivedMsgOne = probe.requestNext(5.seconds)
-      println(
-        s"=======================>>>>>>>> payload [${receivedMsgOne.payload.utf8String}] topic ${receivedMsgOne.topic}"
-      )
-
-      Thread.sleep(3000)
-      receivedMsgOne shouldBe msgOne
-
-      // Kill the proxy, producing an unexpected disconnection of the client
-      Await.result(proxyKs, timeout).shutdown()
-
-      val msgTwo = MqttMessage(bufferedTopic, ByteString("MsgTwo"))
-      Source.single(msgTwo).runWith(MqttSink(bufferedSinkSettings, MqttQoS.AtLeastOnce))
-
-      // Create a proxy on an available port so it can be shut down
-      val (proxyBinding2, connection2) = Tcp().bind("localhost", 65535).toMat(Sink.head)(Keep.both).run()
-      val proxyPort2 = proxyBinding2.futureValue.localAddress.getPort
-      val proxyKs2 = connection2.map { c =>
-        c.handleWith(
-          Tcp()
-            .outgoingConnection("localhost", 1883)
-            .viaMat(KillSwitches.single)(Keep.right)
-        )
-      }
-      Await.ready(proxyBinding2, timeout)
-
-      val (subscribed2, probe2) = MqttSource
-        .atMostOnce(
-          connectionSettings
-            .withClientId(clientId = "source-spec/bufferedSource")
-            .withAutomaticReconnect(true)
-            .withCleanSession(false)
-            .withOfflinePersistenceSettings(
-              MqttOfflinePersistenceSettings(
-                bufferSize = 5000
-              )
-            )
-            .withBroker(s"tcp://localhost:$proxyPort2"),
-          MqttSubscriptions(bufferedTopic, MqttQoS.AtLeastOnce),
-          8
-        )
-        .toMat(TestSink.probe)(Keep.both)
-        .run()
-
-      // Ensure that the connection made it all the way to the server by waiting until it receives a message
-      Await.ready(subscribed2, timeout)
-
-      probe2.requestNext(5.seconds) shouldBe msgTwo
-      Await.result(proxyKs2, timeout).shutdown()
     }
 
   }

@@ -98,13 +98,14 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
         case Failure(ex) => failStageWith(ex)
       }
 
-      private def getPahoBufferOptions(settings: MqttOfflinePersistenceSettings) = {
+      private def createPahoBufferOptions(settings: MqttOfflinePersistenceSettings): DisconnectedBufferOptions = {
+
         val disconnectedBufferOptions = new DisconnectedBufferOptions()
 
         disconnectedBufferOptions.setBufferEnabled(true)
         disconnectedBufferOptions.setBufferSize(settings.bufferSize)
         disconnectedBufferOptions.setDeleteOldestMessages(settings.deleteOldestMessage)
-        disconnectedBufferOptions.setPersistBuffer(true)
+        disconnectedBufferOptions.setPersistBuffer(settings.persistBuffer)
 
         disconnectedBufferOptions
       }
@@ -115,14 +116,14 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
         connectionSettings.persistence
       )
 
-      private def mqttClient = {
+      private def mqttClient =
+        connectionSettings.offlinePersistenceSettings match {
+          case Some(bufferOpts) =>
+            client.setBufferOpts(createPahoBufferOptions(bufferOpts))
 
-        val maybeBufferOptions = connectionSettings.offlinePersistenceSettings.map(getPahoBufferOptions)
-
-        maybeBufferOptions.foreach(client.setBufferOpts)
-
-        client
-      }
+            client
+          case _ => client
+        }
 
       private val commitCallback: AsyncCallback[CommitCallbackArguments] =
         getAsyncCallback[CommitCallbackArguments](

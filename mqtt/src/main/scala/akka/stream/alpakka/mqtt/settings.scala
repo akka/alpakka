@@ -167,8 +167,9 @@ object MqttSourceSettings {
 }
 
 final case class MqttOfflinePersistenceSettings(
-    bufferSize: Int,
-    deleteOldestMessage: Boolean = false
+    bufferSize: Int = 5000,
+    deleteOldestMessage: Boolean = false,
+    persistBuffer: Boolean = true
 )
 
 /**
