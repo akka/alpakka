@@ -166,7 +166,7 @@ object MqttSourceSettings {
     MqttSourceSettings(connectionSettings)
 }
 
-final case class MqttOfflinePersistenceSettings(
+private[mqtt] final case class MqttOfflinePersistenceSettings(
     bufferSize: Int = 5000,
     deleteOldestMessage: Boolean = false,
     persistBuffer: Boolean = true
@@ -270,8 +270,13 @@ final class MqttConnectionSettings private (val broker: String,
   def withSslProperties(value: java.util.Map[String, String]): MqttConnectionSettings =
     copy(sslProperties = value.asScala.toMap)
 
-  def withOfflinePersistenceSettings(value: MqttOfflinePersistenceSettings): MqttConnectionSettings =
-    copy(offlinePersistenceSettings = Option(value))
+  def withOfflinePersistenceSettings(bufferSize: Int = 5000,
+                                     deleteOldestMessage: Boolean = false,
+                                     persistBuffer: Boolean = true): MqttConnectionSettings =
+    copy(
+      offlinePersistenceSettings =
+        Option(MqttOfflinePersistenceSettings(bufferSize, deleteOldestMessage, persistBuffer))
+    )
 
   /**
    * @deprecated use with [[java.time.Duration]] instead

@@ -106,11 +106,9 @@ class MqttSourceSpec
         "ssl-client",
         new MemoryPersistence
       ).withOfflinePersistenceSettings(
-        MqttOfflinePersistenceSettings(
-          bufferSize = 1234,
-          deleteOldestMessage = true,
-          persistBuffer = false
-        )
+        bufferSize = 1234,
+        deleteOldestMessage = true,
+        persistBuffer = false
       )
 
       bufferedConnectionSettings.toString should include(
@@ -124,7 +122,7 @@ class MqttSourceSpec
       import system.dispatcher
 
       val topic = "source-spec/manualacks"
-      val input: Seq[String] = Vector("one", "two", "three", "four", "five")
+      val input = Vector("one", "two", "three", "four", "five")
 
       //#create-source-with-manualacks
       val mqttSource: Source[MqttMessageWithAck, Future[Done]] =
@@ -440,6 +438,5 @@ class MqttSourceSpec
       val elem = source2.runWith(Sink.head)
       elem.futureValue shouldBe MqttMessage(willTopic, ByteString("ohi"))
     }
-
   }
 }
