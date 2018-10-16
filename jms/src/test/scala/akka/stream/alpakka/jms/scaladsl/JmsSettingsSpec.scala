@@ -24,11 +24,20 @@ class JmsSettingsSpec extends JmsSpec {
       )
       //#retry-settings-case-class
 
+      //#send-retry-settings
+      val sendRetrySettings = SendRetrySettings()
+        .withInitialRetry(10.millis)
+        .withBackoffFactor(2)
+        .withMaxBackoff(1.second)
+        .withMaxRetries(60)
+      //#send-retry-settings
+
       //#producer-settings
       val settings = JmsProducerSettings(new ActiveMQConnectionFactory("broker-url"))
         .withTopic("target-topic")
         .withCredential(Credentials("username", "password"))
         .withConnectionRetrySettings(retrySettings)
+        .withSendRetrySettings(sendRetrySettings)
         .withSessionCount(10)
         .withTimeToLive(1.hour)
       //#producer-settings

@@ -84,10 +84,32 @@ final case class ConnectionRetrySettings(connectTimeout: FiniteDuration = 10.sec
   def withMaxBackoff(maxBackoff: Long, unit: TimeUnit): ConnectionRetrySettings =
     copy(maxBackoff = Duration(maxBackoff, unit))
   def withMaxRetries(maxRetries: Int): ConnectionRetrySettings = copy(maxRetries = maxRetries)
+  def withInfiniteRetries(): ConnectionRetrySettings = withMaxRetries(-1)
 
-  /** Hypothetical retry time, not accounting for maxBackoff. */
   def waitTime(retryNumber: Int): FiniteDuration =
-    (initialRetry * Math.pow(retryNumber, backoffFactor)).asInstanceOf[FiniteDuration]
+    (initialRetry * Math.pow(retryNumber, backoffFactor)).asInstanceOf[FiniteDuration].min(maxBackoff)
+}
+
+object SendRetrySettings {
+  def create(): SendRetrySettings = SendRetrySettings()
+}
+
+final case class SendRetrySettings(initialRetry: FiniteDuration = 20.millis,
+                                   backoffFactor: Double = 1.5,
+                                   maxBackoff: FiniteDuration = 500.millis,
+                                   maxRetries: Int = 10) {
+  def withInitialRetry(delay: FiniteDuration): SendRetrySettings = copy(initialRetry = delay)
+  def withInitialRetry(delay: Long, unit: TimeUnit): SendRetrySettings =
+    copy(initialRetry = Duration(delay, unit))
+  def withBackoffFactor(backoffFactor: Double): SendRetrySettings = copy(backoffFactor = backoffFactor)
+  def withMaxBackoff(maxBackoff: FiniteDuration): SendRetrySettings = copy(maxBackoff = maxBackoff)
+  def withMaxBackoff(maxBackoff: Long, unit: TimeUnit): SendRetrySettings =
+    copy(maxBackoff = Duration(maxBackoff, unit))
+  def withMaxRetries(maxRetries: Int): SendRetrySettings = copy(maxRetries = maxRetries)
+  def withInfiniteRetries(): SendRetrySettings = withMaxRetries(-1)
+
+  def waitTime(retryNumber: Int): FiniteDuration =
+    (initialRetry * Math.pow(retryNumber, backoffFactor)).asInstanceOf[FiniteDuration].min(maxBackoff)
 }
 
 object JmsConsumerSettings {
@@ -133,6 +155,7 @@ object JmsProducerSettings {
 
 final case class JmsProducerSettings(connectionFactory: ConnectionFactory,
                                      connectionRetrySettings: ConnectionRetrySettings = ConnectionRetrySettings(),
+                                     sendRetrySettings: SendRetrySettings = SendRetrySettings(),
                                      destination: Option[Destination] = None,
                                      credentials: Option[Credentials] = None,
                                      sessionCount: Int = 1,
@@ -142,6 +165,8 @@ final case class JmsProducerSettings(connectionFactory: ConnectionFactory,
   def withCredential(credentials: Credentials): JmsProducerSettings = copy(credentials = Some(credentials))
   def withConnectionRetrySettings(settings: ConnectionRetrySettings): JmsProducerSettings =
     copy(connectionRetrySettings = settings)
+  def withSendRetrySettings(settings: SendRetrySettings): JmsProducerSettings =
+    copy(sendRetrySettings = settings)
   def withSessionCount(count: Int): JmsProducerSettings = copy(sessionCount = count)
   def withQueue(name: String): JmsProducerSettings = copy(destination = Some(Queue(name)))
   def withTopic(name: String): JmsProducerSettings = copy(destination = Some(Topic(name)))
@@ -154,7 +179,9 @@ final case class JmsProducerSettings(connectionFactory: ConnectionFactory,
     copy(acknowledgeMode = Option(acknowledgeMode))
 }
 
-final case class Credentials(username: String, password: String)
+final case class Credentials(username: String, password: String) {
+  override def toString = s"Credentials($username,${"*" * password.length})"
+}
 
 object JmsBrowseSettings {
 

@@ -19,7 +19,7 @@ import scala.concurrent.{Await, Future, TimeoutException}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
-private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings)
+private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings, destination: Destination)
     extends GraphStageWithMaterializedValue[SourceShape[Message], KillSwitch] {
 
   private val out = Outlet[Message]("JmsConsumer.out")
@@ -27,7 +27,7 @@ private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings)
   override def shape: SourceShape[Message] = SourceShape[Message](out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, KillSwitch) = {
-    val logic = new SourceStageLogic[Message](shape, out, settings, inheritedAttributes) {
+    val logic = new SourceStageLogic[Message](shape, out, settings, destination, inheritedAttributes) {
 
       private val bufferSize = (settings.bufferSize + 1) * settings.sessionCount
 
@@ -37,7 +37,7 @@ private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings)
                                   createDestination: Session => javax.jms.Destination): JmsConsumerSession = {
         val session =
           connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode)
-        new JmsConsumerSession(connection, session, createDestination(session), settings.destination.get)
+        new JmsConsumerSession(connection, session, createDestination(session), destination)
       }
 
       protected def pushMessage(msg: Message): Unit = {
@@ -65,7 +65,7 @@ private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings)
   }
 }
 
-final class JmsAckSourceStage(settings: JmsConsumerSettings)
+final class JmsAckSourceStage(settings: JmsConsumerSettings, destination: Destination)
     extends GraphStageWithMaterializedValue[SourceShape[AckEnvelope], KillSwitch] {
 
   private val out = Outlet[AckEnvelope]("JmsSource.out")
@@ -74,18 +74,14 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, KillSwitch) = {
 
-    val logic = new SourceStageLogic[AckEnvelope](shape, out, settings, inheritedAttributes) {
+    val logic = new SourceStageLogic[AckEnvelope](shape, out, settings, destination, inheritedAttributes) {
       private val maxPendingAck = settings.bufferSize
 
       protected def createSession(connection: Connection,
                                   createDestination: Session => javax.jms.Destination): JmsAckSession = {
         val session =
           connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.ClientAcknowledge).mode)
-        new JmsAckSession(connection,
-                          session,
-                          createDestination(session),
-                          settings.destination.get,
-                          settings.bufferSize)
+        new JmsAckSession(connection, session, createDestination(session), destination, settings.bufferSize)
       }
 
       protected def pushMessage(msg: AckEnvelope): Unit = push(out, msg)
@@ -150,7 +146,7 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings)
   }
 }
 
-final class JmsTxSourceStage(settings: JmsConsumerSettings)
+final class JmsTxSourceStage(settings: JmsConsumerSettings, destination: Destination)
     extends GraphStageWithMaterializedValue[SourceShape[TxEnvelope], KillSwitch] {
 
   private val out = Outlet[TxEnvelope]("JmsSource.out")
@@ -158,11 +154,11 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings)
   override def shape: SourceShape[TxEnvelope] = SourceShape[TxEnvelope](out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, KillSwitch) = {
-    val logic = new SourceStageLogic[TxEnvelope](shape, out, settings, inheritedAttributes) {
+    val logic = new SourceStageLogic[TxEnvelope](shape, out, settings, destination, inheritedAttributes) {
       protected def createSession(connection: Connection, createDestination: Session => javax.jms.Destination) = {
         val session =
           connection.createSession(true, settings.acknowledgeMode.getOrElse(AcknowledgeMode.SessionTransacted).mode)
-        new JmsConsumerSession(connection, session, createDestination(session), settings.destination.get)
+        new JmsConsumerSession(connection, session, createDestination(session), destination)
       }
 
       protected def pushMessage(msg: TxEnvelope): Unit = push(out, msg)
@@ -205,6 +201,7 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings)
 abstract class SourceStageLogic[T](shape: SourceShape[T],
                                    out: Outlet[T],
                                    settings: JmsConsumerSettings,
+                                   val destination: Destination,
                                    inheritedAttributes: Attributes)
     extends GraphStageLogic(shape)
     with JmsConsumerConnector

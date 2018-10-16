@@ -564,7 +564,11 @@ public class JmsConnectorsTest {
           ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(JmsProducerSettings.create(connectionFactory).withQueue("test"));
+              JmsProducer.create(
+                  JmsProducerSettings.create(connectionFactory)
+                      .withQueue("test")
+                      .withConnectionRetrySettings(
+                          ConnectionRetrySettings.create().withMaxRetries(0)));
 
           List<JmsTextMessage> msgsIn = createTestMessageList();
 

@@ -3,6 +3,7 @@
  */
 
 package akka.stream.alpakka.jms
+import scala.util.control.NoStackTrace
 
 /**
  * Marker trait indicating that the exception thrown is persistent. The operation will always fail when retried.
@@ -36,3 +37,7 @@ case class NullMapMessageEntry(entryName: String, message: JmsMapMessage)
     with NonRetriableJmsException
 
 case class ConnectionRetryException(message: String, cause: Throwable) extends Exception(message, cause)
+
+case object RetrySkippedOnMissingConnection
+    extends Exception("JmsProducer is not connected, send attempt skipped")
+    with NoStackTrace
