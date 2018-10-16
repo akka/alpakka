@@ -251,19 +251,14 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
 
     "publish and consume JMS text messages through a queue with custom queue creator " in withServer() { ctx =>
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
-      // custom queue creator generating a queue other than the name specified
       def createQueue(destinationName: String): Session => javax.jms.Queue = { (session: Session) =>
-        val amqSession = session.asInstanceOf[ActiveMQSession]
-        amqSession.createQueue(s"my-$destinationName")
-      }
-      def createQueu2(destinationName: String): Session => javax.jms.Queue = { (session: Session) =>
         val amqSession = session.asInstanceOf[ActiveMQSession]
         amqSession.createQueue(s"my-$destinationName")
       }
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
         JmsProducerSettings(connectionFactory)
-          .withDestination(CustomDestination("custom-numbers", createQueu2("custom-numbers")))
+          .withDestination(CustomDestination("custom-numbers", createQueue("custom-numbers")))
       )
 
       val msgsIn: Seq[JmsTextMessage] = (1 to 10).toList.map { n =>
@@ -276,7 +271,7 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       val jmsSource: Source[Message, KillSwitch] = JmsConsumer(
         JmsConsumerSettings(connectionFactory)
           .withBufferSize(10)
-          .withDestination(CustomDestination("custom-numbers", createQueu2("custom-numbers")))
+          .withDestination(CustomDestination("custom-numbers", createQueue("custom-numbers")))
       )
       //#create-custom-jms-queue-source
 

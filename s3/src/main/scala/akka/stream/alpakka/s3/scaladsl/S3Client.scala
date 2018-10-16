@@ -12,7 +12,6 @@ import akka.http.scaladsl.model.headers.{`Content-Length`, `Last-Modified`, Byte
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
-import akka.stream.alpakka.s3.auth.{AWSCredentials => OldAWSCredentials}
 import akka.stream.alpakka.s3.impl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
@@ -167,13 +166,6 @@ object S3Client {
 
   def apply()(implicit system: ActorSystem, mat: Materializer): S3Client =
     new S3Client(S3Settings(system.settings.config))
-
-  @deprecated("use apply(AWSCredentialsProvider, String) factory", "0.11")
-  def apply(credentials: OldAWSCredentials, region: String)(implicit system: ActorSystem, mat: Materializer): S3Client =
-    apply(
-      new AWSStaticCredentialsProvider(credentials.toAmazonCredentials()),
-      region
-    )
 
   def apply(credentialsProvider: AWSCredentialsProvider, region: String)(implicit system: ActorSystem,
                                                                          mat: Materializer): S3Client =

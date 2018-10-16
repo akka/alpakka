@@ -251,12 +251,6 @@ final case class JmsTextMessage(body: String,
    */
   def withProperty(name: String, value: Any): JmsTextMessage = copy(properties = properties + (name -> value))
 
-  /**
-   * Java API: add property to [[JmsTextMessage]]
-   */
-  @deprecated("Unclear method name, use withProperty instead", "0.15")
-  def add(name: String, value: Any): JmsTextMessage = withProperty(name, value)
-
   def toQueue(name: String): JmsTextMessage = to(Queue(name))
 
   def toTopic(name: String): JmsTextMessage = to(Topic(name))
