@@ -91,7 +91,7 @@ class MqttFlowSpec
                   .join(connection.flow)
 
               val (queue, source) = Source
-                .queue[Command[_]](2, OverflowStrategy.dropHead)
+                .queue[Command[_]](3, OverflowStrategy.dropHead)
                 .via(mqttFlow)
                 .toMat(BroadcastHub.sink)(Keep.both)
                 .run()
@@ -104,7 +104,7 @@ class MqttFlowSpec
                     queue.offer(Command(SubAck(cp.packetId, cp.topicFilters.map(_._2))))
                   case Right(Event(publish @ Publish(_, _, Some(packetId), _), _)) =>
                     queue.offer(Command(PubAck(packetId)))
-                    queue.offer(Command(publish)) // FIXME: Either implement RETAIN handling, or defer this PUBLISH until we have a SUBSCRIBE - presently fails the test
+                    queue.offer(Command(publish)) // FIXME: This will fail periodically as the SUBACK may not have been processed yet
                   case _ => // Ignore everything else
                 }
 

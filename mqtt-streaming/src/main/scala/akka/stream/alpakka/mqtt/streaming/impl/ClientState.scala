@@ -6,7 +6,7 @@ package akka.stream.alpakka.mqtt.streaming
 package impl
 
 import akka.NotUsed
-import akka.actor.typed.{ActorRef, Behavior, PostStop}
+import akka.actor.typed.{ActorRef, Behavior, PostStop, Terminated}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy}
@@ -329,6 +329,8 @@ import scala.util.{Failure, Success}
           serverConnected(data.copy(pendingPingResp = false))
       }
       .receiveSignal {
+        case (_, _: Terminated) =>
+          Behaviors.same
         case (_, PostStop) =>
           data.remote.complete()
           Behaviors.same
@@ -344,6 +346,11 @@ import scala.util.{Failure, Success}
 @InternalApi private[streaming] object Subscriber {
 
   type SubscribeData = Option[_]
+
+  /*
+   * No ACK received - the subscription failed
+   */
+  case object SubscribeFailed extends Exception
 
   /*
    * Construct with the starting state
@@ -410,7 +417,7 @@ import scala.util.{Failure, Success}
           local ! ForwardSubAck(data.subscribeData)
           Behaviors.stopped
         case ReceiveSubAckTimeout =>
-          Behaviors.stopped
+          throw SubscribeFailed
       }
       .receiveSignal {
         case (_, PostStop) =>
@@ -425,6 +432,11 @@ import scala.util.{Failure, Success}
  * server-side topic. A unsubscriber is created per server per topic.
  */
 @InternalApi private[streaming] object Unsubscriber {
+
+  /*
+   * No ACK received - the unsubscription failed
+   */
+  case object UnsubscribeFailed extends Exception
 
   type UnsubscribeData = Option[_]
 
@@ -493,7 +505,7 @@ import scala.util.{Failure, Success}
           local ! ForwardUnsubAck(data.unsubscribeData)
           Behaviors.stopped
         case ReceiveUnsubAckTimeout =>
-          Behaviors.stopped
+          throw UnsubscribeFailed
       }
       .receiveSignal {
         case (_, PostStop) =>

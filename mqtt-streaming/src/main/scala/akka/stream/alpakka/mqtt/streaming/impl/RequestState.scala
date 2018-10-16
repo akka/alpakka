@@ -167,6 +167,10 @@ import scala.util.{Failure, Success}
  * per server per topic per packet id.
  */
 @InternalApi private[streaming] object Consumer {
+  /*
+   * No ACK received - the publication failed
+   */
+  case object ConsumeFailed extends Exception
 
   /*
    * Construct with the starting state
@@ -231,7 +235,7 @@ import scala.util.{Failure, Success}
         data.local ! ForwardPublish
         consumeUnacknowledged(ClientConsuming(data.publish, data.packetId, data.packetRouter, data.settings))
       case UnobtainablePacketId =>
-        Behaviors.stopped
+        throw ConsumeFailed
     }
   }
 
@@ -246,7 +250,7 @@ import scala.util.{Failure, Success}
           remote ! ForwardPubRec
           consumeReceived(data)
         case ReceivePubAckRecTimeout =>
-          Behaviors.stopped
+          throw ConsumeFailed
       }
       .receiveSignal {
         case (_, PostStop) =>
@@ -263,7 +267,7 @@ import scala.util.{Failure, Success}
           local ! ForwardPubRel
           consumeAcknowledged(data)
         case ReceivePubRelTimeout =>
-          Behaviors.stopped
+          throw ConsumeFailed
       }
       .receiveSignal {
         case (_, PostStop) =>
@@ -279,8 +283,8 @@ import scala.util.{Failure, Success}
         case PubCompReceivedLocally(remote) =>
           remote ! ForwardPubComp
           Behaviors.stopped
-        case ReceivePubRelTimeout =>
-          Behaviors.stopped
+        case ReceivePubCompTimeout =>
+          throw ConsumeFailed
       }
       .receiveSignal {
         case (_, PostStop) =>

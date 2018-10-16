@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior, PostStop}
+import akka.actor.typed.{ActorRef, Behavior, PostStop, Terminated}
 import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{BroadcastHub, Keep, Sink, Source, SourceQueueWithComplete}
@@ -432,9 +432,11 @@ import scala.util.{Failure, Success}
             clientConnected(data)
           case (_, ReceivePingReqTimeout) =>
             data.remote.fail(PingFailed)
-            Behaviors.stopped
+            Behaviors.stopped // FIXME: It shouldn't stop as clients should be able to reconnect with the same client id
         } // TODO: what to do about idle connections...
         .receiveSignal {
+          case (_, _: Terminated) =>
+            Behaviors.same
           case (_, PostStop) =>
             data.remote.complete()
             Behaviors.same
@@ -488,6 +490,11 @@ import scala.util.{Failure, Success}
  * per client per topic filter.
  */
 @InternalApi private[streaming] object Publisher {
+
+  /*
+   * No ACK received - the subscription failed
+   */
+  case object SubscribeFailed extends Exception
 
   /*
    * Construct with the starting state
@@ -551,7 +558,7 @@ import scala.util.{Failure, Success}
           remote ! ForwardSubAck
           Behaviors.stopped
         case ReceiveSubAckTimeout =>
-          Behaviors.stopped
+          throw SubscribeFailed
       }
       .receiveSignal {
         case (_, PostStop) =>
@@ -566,6 +573,11 @@ import scala.util.{Failure, Success}
  * server-side topic. A unpublisher is created per server per topic.
  */
 @InternalApi private[streaming] object Unpublisher {
+
+  /*
+   * No ACK received - the unsubscription failed
+   */
+  case object UnsubscribeFailed extends Exception
 
   /*
    * Construct with the starting state
@@ -629,7 +641,7 @@ import scala.util.{Failure, Success}
           remote ! ForwardUnsubAck
           Behaviors.stopped
         case ReceiveUnsubAckTimeout =>
-          Behaviors.stopped
+          throw UnsubscribeFailed
       }
       .receiveSignal {
         case (_, PostStop) =>
