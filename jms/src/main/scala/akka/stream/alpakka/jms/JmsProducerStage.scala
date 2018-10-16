@@ -127,7 +127,9 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
         import send._
         if (maxRetries < 0 || attempt + 1 <= maxRetries) {
           val nextAttempt = attempt + 1
-          scheduleOnce(send.copy(attempt = nextAttempt), waitTime(nextAttempt))
+          val delay = if (backoffMaxed) maxBackoff else waitTime(nextAttempt)
+          val backoffNowMaxed = backoffMaxed || delay == maxBackoff
+          scheduleOnce(send.copy(attempt = nextAttempt, backoffMaxed = backoffNowMaxed), delay)
         } else {
           holder(Failure(ex))
           handleFailure(ex, holder)
@@ -217,5 +219,8 @@ private[jms] object JmsProducerStage {
     override def apply(t: Try[A]): Unit = elem = t
   }
 
-  case class SendAttempt[E](envelope: Message[JmsMessage, _] with E, holder: Holder[E], attempt: Int = 0)
+  case class SendAttempt[E](envelope: Message[JmsMessage, _] with E,
+                            holder: Holder[E],
+                            attempt: Int = 0,
+                            backoffMaxed: Boolean = false)
 }

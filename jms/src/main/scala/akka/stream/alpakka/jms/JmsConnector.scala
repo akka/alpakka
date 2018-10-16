@@ -135,8 +135,9 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     Future.firstCompletedOf(Iterator(connectionFuture, timeoutFuture))(ExecutionContexts.sameThreadExecutionContext)
   }
 
-  private def openConnectionWithRetry(startConnection: Boolean,
-                                      n: Int = 0)(implicit system: ActorSystem): Future[jms.Connection] =
+  private def openConnectionWithRetry(startConnection: Boolean, n: Int = 0, backoffMaxed: Boolean = false)(
+      implicit system: ActorSystem
+  ): Future[jms.Connection] =
     openConnection(startConnection).recoverWith {
       case e: jms.JMSSecurityException => Future.failed(e)
       case NonFatal(t) =>
@@ -147,9 +148,9 @@ private[jms] trait JmsConnector[S <: JmsSession] {
           if (maxRetries == 0) Future.failed(t)
           else Future.failed(ConnectionRetryException(s"Could not establish connection after $n retries.", t))
         } else {
-          after(waitTime(nextN), system.scheduler) {
-            openConnectionWithRetry(startConnection, nextN)
-          }
+          val delay = if (backoffMaxed) maxBackoff else waitTime(nextN)
+          val backoffNowMaxed = backoffMaxed || delay == maxBackoff
+          after(delay, system.scheduler) { openConnectionWithRetry(startConnection, nextN, backoffNowMaxed) }
         }
     }(ExecutionContexts.sameThreadExecutionContext)
 
