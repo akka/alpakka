@@ -104,7 +104,7 @@ class MqttFlowSpec
                     queue.offer(Command(SubAck(cp.packetId, cp.topicFilters.map(_._2))))
                   case Right(Event(publish @ Publish(_, _, Some(packetId), _), _)) =>
                     queue.offer(Command(PubAck(packetId)))
-                    queue.offer(Command(publish)) // FIXME: This will fail periodically as the SUBACK may not have been processed yet
+                    queue.offer(Command(publish))
                   case _ => // Ignore everything else
                 }
 
