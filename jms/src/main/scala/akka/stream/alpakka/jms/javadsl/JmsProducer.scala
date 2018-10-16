@@ -11,7 +11,7 @@ import akka.stream.alpakka.jms.JmsProducerMessage._
 import akka.stream.scaladsl.{Flow, Keep}
 import akka.{Done, NotUsed}
 
-import scala.collection.JavaConversions
+import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters
 
 object JmsProducer {
@@ -73,7 +73,7 @@ object JmsProducer {
         .mapSink(settings)
         .mapMaterializedValue(FutureConverters.toJava)
     val javaToScalaConversion =
-      Flow.fromFunction((javaMap: java.util.Map[String, Any]) => JavaConversions.mapAsScalaMap(javaMap).toMap)
+      Flow.fromFunction((javaMap: java.util.Map[String, Any]) => javaMap.asScala.toMap)
     javaToScalaConversion.toMat(scalaSink)(Keep.right).asJava
   }
 

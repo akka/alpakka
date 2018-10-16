@@ -5,6 +5,7 @@
 package akka.stream.alpakka.jms.scaladsl
 
 import java.nio.charset.Charset
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{CountDownLatch, LinkedBlockingQueue, ThreadLocalRandom, TimeUnit}
 
 import akka.stream.alpakka.jms._
@@ -18,7 +19,6 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.mockito.MockitoSugar
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -29,7 +29,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 final case class DummyObject(payload: String)
 
-class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
+class JmsConnectorsSpec extends JmsSpec {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(2.minutes)
 
@@ -873,23 +873,21 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       result.futureValue should contain allElementsOf in
     }
 
-    "produce elements in order" in {
-      val factory = mock[ConnectionFactory]
-      val connection = mock[Connection]
-      val session = mock[Session]
-      val producer = mock[MessageProducer]
+    "produce elements in order" in withMockedProducer { ctx =>
+      import ctx._
+      val delays = new AtomicInteger()
       val textMessage = mock[TextMessage]
 
       val delayedSend = new Answer[Unit] {
-        override def answer(invocation: InvocationOnMock): Unit =
+        override def answer(invocation: InvocationOnMock): Unit = {
+          delays.incrementAndGet()
           Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
+        }
       }
 
-      when(factory.createConnection()).thenReturn(connection)
-      when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
-      when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
       when(session.createTextMessage(anyString())).thenReturn(textMessage)
-      when(producer.send(any[Message], anyInt(), anyInt(), anyLong())).thenAnswer(delayedSend)
+      when(producer.send(any[javax.jms.Destination], any[Message], anyInt(), anyInt(), anyLong()))
+        .thenAnswer(delayedSend)
 
       val in = (1 to 50).map(i => JmsTextMessage(i.toString))
       val jmsFlow = JmsProducer.flow[JmsTextMessage](JmsProducerSettings(factory).withQueue("test").withSessionCount(8))
@@ -897,18 +895,13 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       val result = Source(in).via(jmsFlow).toMat(Sink.seq)(Keep.right).run()
 
       result.futureValue shouldEqual in
+      delays.get shouldBe 50
     }
 
-    "fail fast on the first failing send" in {
-      val factory = mock[ConnectionFactory]
-      val connection = mock[Connection]
-      val session = mock[Session]
-      val producer = mock[MessageProducer]
-      val errorLatch = new CountDownLatch(3)
-
-      when(factory.createConnection()).thenReturn(connection)
-      when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
-      when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
+    "fail fast on the first failing send" in withMockedProducer { ctx =>
+      import ctx._
+      val sendLatch = new CountDownLatch(3)
+      val receiveLatch = new CountDownLatch(3)
 
       val messages = (1 to 10).map(i => mock[TextMessage] -> i).toMap
       messages.foreach {
@@ -920,11 +913,12 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
           val msgNo = messages(invocation.getArgument[TextMessage](1))
           msgNo match {
             case 1 | 2 | 3 =>
-              errorLatch.countDown() // first three sends work...
+              sendLatch.countDown() // first three sends work...
             case 4 =>
-              Thread.sleep(5000) // this one gets delayed...
+              Thread.sleep(30000) // this one gets delayed...
             case 5 =>
-              errorLatch.await()
+              sendLatch.await()
+              receiveLatch.await()
               throw new RuntimeException("Mocked send failure") // this one fails.
             case _ => ()
           }
@@ -936,22 +930,20 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
       val in = (1 to 10).map(i => JmsTextMessage(i.toString))
       val done = new JmsTextMessage("done")
       val jmsFlow = JmsProducer.flow[JmsTextMessage](JmsProducerSettings(factory).withQueue("test").withSessionCount(8))
-      val result = Source(in).via(jmsFlow).recover { case _ => done }.toMat(Sink.seq)(Keep.right).run()
+      val result = Source(in)
+        .via(jmsFlow)
+        .alsoTo(Sink.foreach(_ => receiveLatch.countDown()))
+        .recover { case _ => done }
+        .toMat(Sink.seq)(Keep.right)
+        .run()
 
       // expect send failure on no 5. to cause immediate stream failure (after no. 1, 2 and 3),
       // even though no 4. is still in-flight.
       result.futureValue shouldEqual in.take(3) :+ done
     }
 
-    "put back JmsProducer to the pool when send fails" in {
-      val factory = mock[ConnectionFactory]
-      val connection = mock[Connection]
-      val session = mock[Session]
-      val producer = mock[MessageProducer]
-
-      when(factory.createConnection()).thenReturn(connection)
-      when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
-      when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
+    "put back JmsProducer to the pool when send fails" in withMockedProducer { ctx =>
+      import ctx._
 
       val messages = (1 to 10).map(i => mock[TextMessage] -> i).toMap
       messages.foreach {
@@ -1108,7 +1100,9 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
             when(message.getText).thenReturn(s)
             listener.onMessage(message)
           }
-          exceptionListener.foreach(_.onException(new JMSException("Mock: causing an exception while consuming")))
+          if (messageGroups.hasNext) {
+            exceptionListener.foreach(_.onException(new JMSException("Mock: causing an exception while consuming")))
+          }
         }
       })
 
@@ -1122,9 +1116,8 @@ class JmsConnectorsSpec extends JmsSpec with MockitoSugar {
 
       resultFuture.futureValue should contain theSameElementsAs mockMessages
 
-      // Connects 1 time at start, 3 times each 3 messages, and 1 time at end.
-      // Due to buffering, it will finish re-connecting before stream finishes.
-      connectCount shouldBe 5
+      // Connects 1 time at start and 3 times each 3 messages.
+      connectCount shouldBe 4
     }
 
     "pass through message envelopes" in withServer() { ctx =>

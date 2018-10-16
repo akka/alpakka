@@ -16,6 +16,7 @@ import akka.stream.{ActorAttributes, ActorMaterializerHelper, Attributes}
 import javax.jms
 
 import scala.concurrent.{ExecutionContext, Future, TimeoutException}
+import scala.util.Try
 import scala.util.control.NonFatal
 
 /**
@@ -30,11 +31,26 @@ private[jms] trait JmsConnector[S <: JmsSession] {
 
   protected var jmsSessions = Seq.empty[S]
 
+  protected def destination: Destination
+
   protected def jmsSettings: JmsSettings
 
   protected def onSessionOpened(jmsSession: S): Unit = {}
 
   protected val fail: AsyncCallback[Throwable] = getAsyncCallback[Throwable](e => failStage(e))
+
+  private val connectionFailedCB: AsyncCallback[Throwable] = getAsyncCallback[Throwable](connectionFailed)
+
+  def connectionFailed(ex: Throwable): Unit = {
+    jmsConnection = Future.failed(ex)
+    ex match {
+      case _: jms.JMSException =>
+        jmsSessions = Seq.empty
+        initSessionAsync()
+      case _ =>
+        failStage(ex)
+    }
+  }
 
   private val onSession: AsyncCallback[S] = getAsyncCallback[S] { session =>
     jmsSessions :+= session
@@ -60,20 +76,16 @@ private[jms] trait JmsConnector[S <: JmsSession] {
   case object Connected extends ConnectionStatus
   case object TimedOut extends ConnectionStatus
 
-  protected def initSessionAsync(withReconnect: Boolean = true): Unit = {
+  protected def initSessionAsync(): Unit = {
 
-    def failureHandler(ex: Throwable) =
-      if (withReconnect && ex.isInstanceOf[jms.JMSException]) initSessionAsync()
-      else fail.invoke(ex)
-
-    val allSessions = openSessions(failureHandler)
-    allSessions.failed.foreach(failureHandler)
+    val allSessions = openSessions()
+    allSessions.failed.foreach(fail.invoke)
     // wait for all sessions to successfully initialize before invoking the onSession callback.
     // reduces flakiness (start, consume, then crash) at the cost of increased latency of startup.
     allSessions.foreach(_.foreach(onSession.invoke))
   }
 
-  def openSessions(onConnectionFailure: jms.JMSException => Unit): Future[Seq[S]]
+  def openSessions(): Future[Seq[S]]
 
   private def openConnection(startConnection: Boolean)(implicit system: ActorSystem): Future[jms.Connection] = {
     val factory = jmsSettings.connectionFactory
@@ -123,7 +135,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     Future.firstCompletedOf(Iterator(connectionFuture, timeoutFuture))(ExecutionContexts.sameThreadExecutionContext)
   }
 
-  private def openConnectionWithRetry(startConnection: Boolean, n: Int = 0, maxed: Boolean = false)(
+  private def openConnectionWithRetry(startConnection: Boolean, n: Int = 0, backoffMaxed: Boolean = false)(
       implicit system: ActorSystem
   ): Future[jms.Connection] =
     openConnection(startConnection).recoverWith {
@@ -136,33 +148,19 @@ private[jms] trait JmsConnector[S <: JmsSession] {
           if (maxRetries == 0) Future.failed(t)
           else Future.failed(ConnectionRetryException(s"Could not establish connection after $n retries.", t))
         } else {
-          val delay = if (maxed) maxBackoff else waitTime(nextN)
-          if (delay >= maxBackoff) {
-            after(maxBackoff, system.scheduler) {
-              openConnectionWithRetry(startConnection, nextN, maxed = true)
-            }
-          } else {
-            after(delay, system.scheduler) {
-              openConnectionWithRetry(startConnection, nextN)
-            }
-          }
+          val delay = if (backoffMaxed) maxBackoff else waitTime(nextN)
+          val backoffNowMaxed = backoffMaxed || delay == maxBackoff
+          after(delay, system.scheduler) { openConnectionWithRetry(startConnection, nextN, backoffNowMaxed) }
         }
     }(ExecutionContexts.sameThreadExecutionContext)
 
-  private[jms] def openRecoverableConnection(startConnection: Boolean,
-                                             onConnectionFailure: jms.JMSException => Unit): Future[jms.Connection] = {
+  private[jms] def openRecoverableConnection(startConnection: Boolean): Future[jms.Connection] = {
     implicit val system: ActorSystem = ActorMaterializerHelper.downcast(materializer).system
     jmsConnection = openConnectionWithRetry(startConnection).map { connection =>
       connection.setExceptionListener(new jms.ExceptionListener {
-        override def onException(ex: jms.JMSException) = {
-          try {
-            connection.close() // best effort closing the connection.
-          } catch {
-            case _: Throwable =>
-          }
-          jmsSessions = Seq.empty
-
-          onConnectionFailure(ex)
+        override def onException(ex: jms.JMSException): Unit = {
+          Try(connection.close()) // best effort closing the connection.
+          connectionFailedCB.invoke(ex)
         }
       })
       connection
@@ -176,16 +174,11 @@ private[jms] trait JmsConsumerConnector extends JmsConnector[JmsConsumerSession]
   protected def createSession(connection: jms.Connection,
                               createDestination: jms.Session => jms.Destination): JmsConsumerSession
 
-  override def openSessions(onConnectionFailure: jms.JMSException => Unit): Future[Seq[JmsConsumerSession]] =
-    openRecoverableConnection(startConnection = true, onConnectionFailure).flatMap { connection =>
-      val createDestination = jmsSettings.destination match {
-        case Some(destination) => destination.create
-        case _ => throw new IllegalArgumentException("Destination is missing")
-      }
-
+  override def openSessions(): Future[Seq[JmsConsumerSession]] =
+    openRecoverableConnection(startConnection = true).flatMap { connection =>
       val sessionFutures =
         for (_ <- 0 until jmsSettings.sessionCount)
-          yield Future(createSession(connection, createDestination))
+          yield Future(createSession(connection, destination.create))
       Future.sequence(sessionFutures)
     }(ExecutionContexts.sameThreadExecutionContext)
 }
@@ -198,31 +191,28 @@ private[jms] trait JmsProducerConnector extends JmsConnector[JmsProducerSession]
     new JmsProducerSession(connection, session, createDestination(session))
   }
 
-  def openSessions(onConnectionFailure: jms.JMSException => Unit): Future[Seq[JmsProducerSession]] =
-    openRecoverableConnection(startConnection = false, onConnectionFailure).flatMap { connection =>
-      val createDestination = jmsSettings.destination match {
-        case Some(destination) => destination.create
-        case _ => throw new IllegalArgumentException("Destination is missing")
-      }
-
+  def openSessions(): Future[Seq[JmsProducerSession]] =
+    openRecoverableConnection(startConnection = false).flatMap { connection =>
       val sessionFutures =
         for (_ <- 0 until jmsSettings.sessionCount)
-          yield Future(createSession(connection, createDestination))
+          yield Future(createSession(connection, destination.create))
       Future.sequence(sessionFutures)
     }(ExecutionContexts.sameThreadExecutionContext)
 }
 
 private[jms] object JmsMessageProducer {
-  def apply(jmsSession: JmsProducerSession, settings: JmsProducerSettings): JmsMessageProducer = {
+  def apply(jmsSession: JmsProducerSession, settings: JmsProducerSettings, epoch: Int): JmsMessageProducer = {
     val producer = jmsSession.session.createProducer(null)
     if (settings.timeToLive.nonEmpty) {
       producer.setTimeToLive(settings.timeToLive.get.toMillis)
     }
-    new JmsMessageProducer(producer, jmsSession)
+    new JmsMessageProducer(producer, jmsSession, epoch)
   }
 }
 
-private[jms] class JmsMessageProducer(jmsProducer: jms.MessageProducer, jmsSession: JmsProducerSession) {
+private[jms] class JmsMessageProducer(jmsProducer: jms.MessageProducer,
+                                      jmsSession: JmsProducerSession,
+                                      val epoch: Int) {
 
   private val defaultDestination = jmsSession.jmsDestination
 
@@ -247,12 +237,11 @@ private[jms] class JmsMessageProducer(jmsProducer: jms.MessageProducer, jmsSessi
       .collectFirst { case x: JmsTimeToLive => x.timeInMillis }
       .getOrElse(jmsProducer.getTimeToLive)
 
-    elem.destination match {
-      case Some(messageDestination) =>
-        jmsProducer.send(lookup(messageDestination), message, deliveryMode, priority, timeToLive)
-      case None =>
-        jmsProducer.send(defaultDestination, message, deliveryMode, priority, timeToLive)
+    val destination = elem.destination match {
+      case Some(messageDestination) => lookup(messageDestination)
+      case None => defaultDestination
     }
+    jmsProducer.send(destination, message, deliveryMode, priority, timeToLive)
   }
 
   private def lookup(dest: Destination) = destinationCache.lookup(dest, dest.create(jmsSession.session))
