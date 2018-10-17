@@ -19,7 +19,6 @@ import akka.japi.{Pair => JPair}
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.{scaladsl, S3Settings}
 import akka.stream.alpakka.s3.acl.CannedAcl
-import akka.stream.alpakka.s3.auth.{AWSCredentials => OldAWSCredentials}
 import akka.stream.alpakka.s3.impl._
 import akka.stream.javadsl.{Sink, Source}
 import akka.util.ByteString
@@ -165,14 +164,6 @@ object MultipartUploadResult {
 object S3Client {
   def create(system: ActorSystem, mat: Materializer): S3Client =
     new S3Client(S3Settings(ConfigFactory.load()), system, mat)
-
-  @deprecated("use apply(AWSCredentialsProvider, String) factory", "0.11")
-  def create(credentials: OldAWSCredentials, region: String)(implicit system: ActorSystem,
-                                                             mat: Materializer): S3Client =
-    create(
-      new AWSStaticCredentialsProvider(credentials.toAmazonCredentials()),
-      region
-    )
 
   def create(credentialsProvider: AWSCredentialsProvider, region: String)(implicit system: ActorSystem,
                                                                           mat: Materializer): S3Client =
