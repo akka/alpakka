@@ -11,8 +11,9 @@ import akka.actor.Scheduler
 import akka.{NotUsed, actor => untyped}
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.AskPattern._
+import akka.stream.{ActorMaterializer, Materializer, OverflowStrategy}
 import akka.stream.alpakka.mqtt.streaming.impl._
-import akka.stream.scaladsl.{Flow, Source}
+import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Source}
 import akka.util.{ByteString, Timeout}
 
 import scala.concurrent.Future
@@ -280,11 +281,25 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
       }
 }
 
+object MqttServerSession {
+
+  /**
+   * Used to signal that a client session has ended
+   */
+  final case class ClientSessionTerminated(clientId: String)
+}
+
 /**
  * Represents server-only sessions
  */
 abstract class MqttServerSession extends MqttSession {
   import MqttSession._
+  import MqttServerSession._
+
+  /**
+   * Used to observe client connections being terminated
+   */
+  def watchClientSessions: Source[ClientSessionTerminated, NotUsed]
 
   /**
    * @return a flow for commands to be sent to the session in relation to a connection id
@@ -319,9 +334,23 @@ object ActorMqttServerSession {
 final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem)
     extends MqttServerSession {
 
+  import MqttServerSession._
   import ActorMqttServerSession._
 
   private val serverSessionId = serverSessionCounter.getAndIncrement()
+
+  private implicit val mat: Materializer = ActorMaterializer()
+
+  private val (terminations, terminationsSource) = Source
+    .queue[ServerConnector.ClientSessionTerminated](settings.clientTerminationWatcherBufferSize,
+                                                    OverflowStrategy.dropNew)
+    .toMat(BroadcastHub.sink)(Keep.both)
+    .run()
+
+  def watchClientSessions: Source[ClientSessionTerminated, NotUsed] =
+    terminationsSource.map {
+      case ServerConnector.ClientSessionTerminated(clientId) => ClientSessionTerminated(clientId)
+    }
 
   private val consumerPacketRouter =
     system.spawn(RemotePacketRouter[Consumer.Event], "server-consumer-packet-id-allocator-" + serverSessionId)
@@ -333,7 +362,8 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit syste
     system.spawn(RemotePacketRouter[Unpublisher.Event], "server-unpublisher-packet-id-allocator-" + serverSessionId)
   private val serverConnector =
     system.spawn(
-      ServerConnector(consumerPacketRouter,
+      ServerConnector(terminations,
+                      consumerPacketRouter,
                       producerPacketRouter,
                       publisherPacketRouter,
                       unpublisherPacketRouter,
@@ -355,6 +385,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit syste
     system.stop(producerPacketRouter.toUntyped)
     system.stop(publisherPacketRouter.toUntyped)
     system.stop(unpublisherPacketRouter.toUntyped)
+    terminations.complete()
   }
 
   private val pingRespBytes = PingResp.encode(ByteString.newBuilder).result()
@@ -497,6 +528,10 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit syste
           (serverConnector ? (ServerConnector
             .PingReqReceivedFromRemote(connectionId, _)): Future[ClientConnection.ForwardPingReq.type])
             .map(_ => Right[DecodeError, Event[_]](Event(PingReq)))
+        case Right(Disconnect) =>
+          (serverConnector ? (ServerConnector
+            .DisconnectReceivedFromRemote(connectionId, _)): Future[ClientConnection.ForwardDisconnect.type])
+            .map(_ => Right[DecodeError, Event[_]](Event(Disconnect)))
         case Right(cp) => Future.failed(new IllegalStateException(cp + " is not a server event"))
         case Left(de) => Future.successful(Left(de))
       }

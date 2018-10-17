@@ -5,6 +5,7 @@
 package akka.stream.alpakka.mqtt.streaming
 package javadsl
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{
   ActorMqttClientSession => ScalaActorMqttClientSession,
@@ -12,6 +13,7 @@ import akka.stream.alpakka.mqtt.streaming.scaladsl.{
   MqttClientSession => ScalaMqttClientSession,
   MqttServerSession => ScalaMqttServerSession
 }
+import akka.stream.javadsl.Source
 
 /**
  * Represents MQTT session state for both clients or servers. Session
@@ -46,11 +48,26 @@ final class ActorMqttClientSession(settings: MqttSessionSettings, system: ActorS
     ScalaActorMqttClientSession(settings)(system)
 }
 
+object MqttServerSession {
+
+  /**
+   * Used to signal that a client session has ended
+   */
+  final case class ClientSessionTerminated(clientId: String)
+}
+
 /**
  * Represents server-only sessions
  */
 abstract class MqttServerSession extends MqttSession {
+  import MqttServerSession._
+
   protected[javadsl] val underlying: ScalaMqttServerSession
+
+  /**
+   * Used to observe client connections being terminated
+   */
+  def watchClientSessions: Source[ClientSessionTerminated, NotUsed]
 
   override def shutdown(): Unit =
     underlying.shutdown()
@@ -62,6 +79,13 @@ abstract class MqttServerSession extends MqttSession {
  * @param settings session settings
  */
 final class ActorMqttServerSession(settings: MqttSessionSettings, system: ActorSystem) extends MqttServerSession {
+  import MqttServerSession._
+
   override protected[javadsl] val underlying: ScalaActorMqttServerSession =
     ScalaActorMqttServerSession(settings)(system)
+
+  override def watchClientSessions: Source[ClientSessionTerminated, NotUsed] =
+    underlying.watchClientSessions.map {
+      case ScalaMqttServerSession.ClientSessionTerminated(clientId) => ClientSessionTerminated(clientId)
+    }.asJava
 }

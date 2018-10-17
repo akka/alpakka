@@ -4,11 +4,18 @@
 
 package docs.scaladsl
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.Done
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.stream.alpakka.mqtt.streaming._
-import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, ActorMqttServerSession, Mqtt}
+import akka.stream.alpakka.mqtt.streaming.scaladsl.{
+  ActorMqttClientSession,
+  ActorMqttServerSession,
+  Mqtt,
+  MqttServerSession
+}
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer, OverflowStrategy, WatchedActorTerminatedException}
 import akka.testkit._
@@ -839,6 +846,7 @@ class MqttSessionSpec
           )
           .wireTap(Sink.foreach[Either[DecodeError, Event[_]]] {
             case Right(Event(`connect`, _)) => connectReceived.success(Done)
+            case _ =>
           })
           .toMat(Sink.collection)(Keep.both)
           .run
@@ -892,6 +900,7 @@ class MqttSessionSpec
           )
           .wireTap(Sink.foreach[Either[DecodeError, Event[_]]] {
             case Right(Event(`connect`, _)) => connectReceived.success(Done)
+            case _ =>
           })
           .toMat(Sink.ignore)(Keep.both)
           .run
@@ -907,8 +916,165 @@ class MqttSessionSpec
       server.offer(Command(connAck))
       client.expectMsg(connAckBytes)
 
-      Thread.sleep(3000)
       result.failed.futureValue shouldBe ActorMqttServerSession.PingFailed
+    }
+
+    "notify on disconnect" in {
+      val session = ActorMqttServerSession(settings.withReceiveConnectTimeout(100.millis.dilated))
+
+      val client = TestProbe()
+      val toClient = Sink.foreach[ByteString](bytes => client.ref ! bytes)
+      val (fromClientQueue, fromClient) = Source
+        .queue[ByteString](1, OverflowStrategy.dropHead)
+        .toMat(BroadcastHub.sink)(Keep.both)
+        .run()
+
+      val pipeToClient = Flow.fromSinkAndSource(toClient, fromClient)
+
+      val clientId = "some-client-id"
+
+      val connect = Connect(clientId, ConnectFlags.None).copy(keepAlive = 1.second.dilated)
+      val connectReceived = Promise[Done]
+
+      val disconnect = Disconnect
+      val disconnectReceived = Promise[Done]
+
+      val server =
+        Source
+          .queue(1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .serverSessionFlow(session, ByteString.empty)
+              .join(pipeToClient)
+          )
+          .wireTap(Sink.foreach[Either[DecodeError, Event[_]]] {
+            case Right(Event(`connect`, _)) => connectReceived.success(Done)
+            case Right(Event(`disconnect`, _)) => disconnectReceived.success(Done)
+            case _ =>
+          })
+          .toMat(Sink.ignore)(Keep.left)
+          .run
+
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val disconnectBytes = disconnect.encode(ByteString.newBuilder).result()
+
+      fromClientQueue.offer(connectBytes)
+
+      connectReceived.future.futureValue shouldBe Done
+
+      server.offer(Command(connAck))
+      client.expectMsg(connAckBytes)
+
+      fromClientQueue.offer(disconnectBytes)
+
+      disconnectReceived.future.futureValue shouldBe Done
+
+      session.watchClientSessions.runWith(Sink.head).futureValue shouldBe
+      MqttServerSession.ClientSessionTerminated(clientId)
+    }
+
+    "re-connect given connect, subscribe, disconnect, connect, publish" in {
+      val session = ActorMqttServerSession(settings)
+
+      val client = TestProbe()
+      val toClient = Sink.foreach[ByteString](bytes => client.ref ! bytes)
+      val (fromClientQueue, fromClient) = Source
+        .queue[ByteString](1, OverflowStrategy.dropHead)
+        .toMat(BroadcastHub.sink)(Keep.both)
+        .run()
+
+      val pipeToClient = Flow.fromSinkAndSource(toClient, fromClient)
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+      val firstConnectReceived = Promise[Done]
+      val secondConnectReceived = Promise[Done]
+
+      val subscribe = Subscribe("some-topic")
+      val subscribeReceived = Promise[Done]
+
+      val disconnect = Disconnect
+      val disconnectReceived = Promise[Done]
+
+      val publish = Publish("some-topic", ByteString("some-payload"))
+      val publishReceived = Promise[Done]
+
+      val connectionId = new AtomicInteger(0)
+
+      val (server, result) =
+        Source
+          .queue[Command[_]](1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .serverSessionFlow(session, ByteString(connectionId.getAndIncrement()))
+              .join(pipeToClient)
+          )
+          .wireTap(Sink.foreach[Either[DecodeError, Event[_]]] {
+            case Right(Event(`connect`, _)) if !firstConnectReceived.isCompleted =>
+              firstConnectReceived.success(Done)
+            case Right(Event(`connect`, _)) =>
+              secondConnectReceived.success(Done)
+            case Right(Event(cp: Subscribe, _)) if cp.topicFilters == subscribe.topicFilters =>
+              subscribeReceived.success(Done)
+            case Right(Event(`disconnect`, _)) =>
+              disconnectReceived.success(Done)
+            case Right(Event(cp: Publish, _)) if cp.topicName == publish.topicName =>
+              publishReceived.success(Done)
+          })
+          .drop(4)
+          .toMat(Sink.head)(Keep.both)
+          .run
+
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val subscribeBytes = subscribe.encode(ByteString.newBuilder, PacketId(1)).result()
+      val subAck = SubAck(PacketId(1), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
+      val subAckBytes = subAck.encode(ByteString.newBuilder).result()
+
+      val disconnectBytes = disconnect.encode(ByteString.newBuilder).result()
+
+      val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+      val pubAck = PubAck(PacketId(1))
+      val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
+
+      fromClientQueue.offer(connectBytes)
+
+      firstConnectReceived.future.futureValue shouldBe Done
+
+      server.offer(Command(connAck))
+      client.expectMsg(connAckBytes)
+
+      fromClientQueue.offer(subscribeBytes)
+
+      subscribeReceived.future.futureValue shouldBe Done
+
+      server.offer(Command(subAck))
+      client.expectMsg(subAckBytes)
+
+      fromClientQueue.offer(disconnectBytes)
+
+      disconnectReceived.future.futureValue shouldBe Done
+
+      fromClientQueue.offer(connectBytes)
+
+      secondConnectReceived.future.futureValue shouldBe Done
+
+      server.offer(Command(connAck))
+      client.expectMsg(connAckBytes)
+
+      fromClientQueue.offer(publishBytes)
+
+      publishReceived.future.futureValue shouldBe Done
+
+      server.offer(Command(pubAck))
+      client.expectMsg(pubAckBytes)
+
+      server.offer(Command(publish))
+      client.expectMsg(publishBytes)
     }
   }
 
