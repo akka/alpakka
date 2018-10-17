@@ -18,17 +18,6 @@ import scala.concurrent.Future
 object MqttSource {
 
   /**
-   * Create a source subscribing to MQTT messages.
-   *
-   * The materialized value completes on successful connection to the MQTT broker.
-   *
-   * @param bufferSize max number of messages read from MQTT before back-pressure applies
-   */
-  @deprecated("use atMostOnce instead", "0.15")
-  def apply(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessage, Future[Done]] =
-    atMostOnce(settings.connectionSettings, MqttSubscriptions(settings.subscriptions), bufferSize)
-
-  /**
    * Create a source subscribing to MQTT messages (without a commit handle).
    *
    * The materialized value completes on successful connection to the MQTT broker.
