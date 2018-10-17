@@ -145,6 +145,12 @@ final class ObjectMetadata private[javadsl] (
     scalaMetadata.lastModified
 
   /**
+   * Gets the optional Cache-Control header
+   */
+  def getCacheControl: Optional[String] =
+    scalaMetadata.cacheControl.fold(Optional.empty[String]())(Optional.of)
+
+  /**
    * Gets the value of the version id header. The version id will only be available
    * if the versioning is enabled in the bucket
    *

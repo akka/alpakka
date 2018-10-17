@@ -8,7 +8,14 @@ import java.time.Instant
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`Content-Length`, `Last-Modified`, ByteRange, ETag}
+import akka.http.scaladsl.model.headers.{
+  `Cache-Control`,
+  `Content-Length`,
+  `Content-Type`,
+  `Last-Modified`,
+  ByteRange,
+  ETag
+}
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.acl.CannedAcl
@@ -132,7 +139,7 @@ final class ObjectMetadata private (
    * @see ObjectMetadata#setContentType(String)
    */
   lazy val contentType: Option[String] = metadata.collectFirst {
-    case h if h.lowercaseName() == "content-type" => h.value
+    case ct: `Content-Type` => ct.value
   }
 
   /**
@@ -146,6 +153,13 @@ final class ObjectMetadata private (
   lazy val lastModified: DateTime = metadata.collectFirst {
     case ct: `Last-Modified` => ct.date
   }.get
+
+  /**
+   * Gets the optional Cache-Control header
+   */
+  lazy val cacheControl: Option[String] = metadata.collectFirst {
+    case c: `Cache-Control` => c.value()
+  }
 
   /**
    * Gets the value of the version id header. The version id will only be available
