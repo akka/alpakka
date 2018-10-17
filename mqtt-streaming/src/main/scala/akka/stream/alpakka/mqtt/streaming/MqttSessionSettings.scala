@@ -14,7 +14,7 @@ object MqttSessionSettings {
    * Factory method for Scala.
    */
   def apply(maxPacketSize: Int = 4096,
-            maxConnectStashSize: Int = 100,
+            maxClientConnectionStashSize: Int = 100,
             actorMqttSessionTimeout: FiniteDuration = 3.seconds,
             commandParallelism: Int = 10,
             eventParallelism: Int = 10,
@@ -27,7 +27,7 @@ object MqttSessionSettings {
             serverSendBufferSize: Int = 100): MqttSessionSettings =
     new MqttSessionSettings(
       maxPacketSize,
-      maxConnectStashSize,
+      maxClientConnectionStashSize,
       actorMqttSessionTimeout,
       commandParallelism,
       eventParallelism,
@@ -54,7 +54,7 @@ object MqttSessionSettings {
    * Factory method for Java.
    */
   def create(maxPacketSize: Int,
-             maxConnectStashSize: Int,
+             maxClientConnectionStashSize: Int,
              actorMqttSessionTimeout: Duration,
              commandParallelism: Int,
              eventParallelism: Int,
@@ -67,7 +67,7 @@ object MqttSessionSettings {
              serverSendBufferSize: Int): MqttSessionSettings =
     MqttSessionSettings(
       maxPacketSize,
-      maxConnectStashSize,
+      maxClientConnectionStashSize,
       FiniteDuration(actorMqttSessionTimeout.toMillis, TimeUnit.MILLISECONDS),
       commandParallelism,
       eventParallelism,
@@ -82,7 +82,7 @@ object MqttSessionSettings {
 }
 
 final class MqttSessionSettings private (val maxPacketSize: Int,
-                                         val maxConnectStashSize: Int,
+                                         val maxClientConnectionStashSize: Int,
                                          val actorMqttSessionTimeout: FiniteDuration,
                                          val commandParallelism: Int,
                                          val eventParallelism: Int,
@@ -130,14 +130,14 @@ final class MqttSessionSettings private (val maxPacketSize: Int,
   def withReceiveUnsubAckTimeout(receiveUnsubAckTimeout: FiniteDuration): MqttSessionSettings =
     copy(receiveUnsubAckTimeout = receiveUnsubAckTimeout)
 
-  def withMaxConnectStashSize(maxConnectStashSize: Int): MqttSessionSettings =
-    copy(maxConnectStashSize = maxConnectStashSize)
+  def withMaxClientConnectionStashSize(maxClientConnectionStashSize: Int): MqttSessionSettings =
+    copy(maxClientConnectionStashSize = maxClientConnectionStashSize)
 
   def withServerSendBufferSize(serverSendBufferSize: Int): MqttSessionSettings =
     copy(serverSendBufferSize = serverSendBufferSize)
 
   private def copy(maxPacketSize: Int = maxPacketSize,
-                   maxConnectStashSize: Int = maxConnectStashSize,
+                   maxClientConnectionStashSize: Int = maxClientConnectionStashSize,
                    actorMqttSessionTimeout: FiniteDuration = actorMqttSessionTimeout,
                    commandParallelism: Int = commandParallelism,
                    eventParallelism: Int = eventParallelism,
@@ -150,7 +150,7 @@ final class MqttSessionSettings private (val maxPacketSize: Int,
                    serverSendBufferSize: Int = serverSendBufferSize) =
     new MqttSessionSettings(
       maxPacketSize,
-      maxConnectStashSize,
+      maxClientConnectionStashSize,
       actorMqttSessionTimeout,
       commandParallelism,
       eventParallelism,
@@ -164,5 +164,5 @@ final class MqttSessionSettings private (val maxPacketSize: Int,
     )
 
   override def toString: String =
-    s"MqttSessionSettings(maxPacketSize=$maxPacketSize,maxConnectStashSize=$maxConnectStashSize,actorMqttSessionTimeout=$actorMqttSessionTimeout,commandParallelism=$commandParallelism,eventParallelism=$eventParallelism,receiveConnAckTimeout=$receiveConnAckTimeout,receivePubAckRecTimeout=$receivePubAckRecTimeout,receivePubCompTimeout=$receivePubCompTimeout,receivePubRelTimeout=$receivePubRelTimeout,receiveSubAckTimeout=$receiveSubAckTimeout,receiveUnsubAckTimeout=$receiveUnsubAckTimeout,serverSendBufferSize=$serverSendBufferSize)"
+    s"MqttSessionSettings(maxPacketSize=$maxPacketSize,maxClientConnectionStashSize=$maxClientConnectionStashSize,actorMqttSessionTimeout=$actorMqttSessionTimeout,commandParallelism=$commandParallelism,eventParallelism=$eventParallelism,receiveConnAckTimeout=$receiveConnAckTimeout,receivePubAckRecTimeout=$receivePubAckRecTimeout,receivePubCompTimeout=$receivePubCompTimeout,receivePubRelTimeout=$receivePubRelTimeout,receiveSubAckTimeout=$receiveSubAckTimeout,receiveUnsubAckTimeout=$receiveUnsubAckTimeout,serverSendBufferSize=$serverSendBufferSize)"
 }

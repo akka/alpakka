@@ -215,7 +215,7 @@ import scala.util.{Failure, Success}
           disconnect(context, data.connect.connectFlags, data.remote, data)
         case (context, ReceiveConnAckTimeout) =>
           disconnect(context, data.connect.connectFlags, data.remote, data)
-        case (_, e) if data.stash.size < data.settings.maxConnectStashSize =>
+        case (_, e) if data.stash.size < data.settings.maxClientConnectionStashSize =>
           serverConnect(data.copy(stash = data.stash :+ e))
       }
       .receiveSignal {

@@ -73,6 +73,8 @@ class MqttFlowSpec
     "receive a bidirectional connection and a subscription to a topic" in {
       val clientId = "flow-spec/flow"
       val topic = "source-spec/topic1"
+      val host = "localhost"
+      val port = 9883
 
       //#create-streaming-bind-flow
       val settings = MqttSessionSettings()
@@ -82,7 +84,7 @@ class MqttFlowSpec
 
       val bindSource =
         Tcp()
-          .bind("localhost", 9883)
+          .bind(host, port)
           .flatMapMerge(
             maxConnections, { connection =>
               val mqttFlow: Flow[Command[_], Either[MqttCodec.DecodeError, Event[_]], NotUsed] =
@@ -114,10 +116,12 @@ class MqttFlowSpec
       //#create-streaming-bind-flow
 
       //#run-streaming-bind-flow
-      bindSource.runWith(Sink.ignore)
+      val bound = bindSource.toMat(Sink.ignore)(Keep.left).run()
       //#run-streaming-bind-flow
 
-      val connection = Tcp().outgoingConnection("localhost", 9883)
+      bound.futureValue.localAddress.getPort shouldBe port
+
+      val connection = Tcp().outgoingConnection(host, port)
       val mqttFlow = Mqtt.clientSessionFlow(ActorMqttClientSession(settings)).join(connection)
       val (commands, events) =
         Source

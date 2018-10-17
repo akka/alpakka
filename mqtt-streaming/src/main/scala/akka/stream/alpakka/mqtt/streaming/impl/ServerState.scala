@@ -227,6 +227,7 @@ import scala.util.{Failure, Success}
       remote: SourceQueueWithComplete[ForwardConnAckCommand],
       publishers: Set[String],
       pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
+      stash: Seq[Event],
       override val keepAlive: FiniteDuration,
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
       override val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
@@ -303,6 +304,7 @@ import scala.util.{Failure, Success}
                 queue,
                 Set.empty,
                 Vector.empty,
+                Vector.empty,
                 data.keepAlive,
                 data.consumerPacketRouter,
                 data.producerPacketRouter,
@@ -313,7 +315,7 @@ import scala.util.{Failure, Success}
             )
           case (_, ReceiveConnAckTimeout) =>
             Behaviors.stopped
-          case (_, e) if data.stash.size < data.settings.maxConnectStashSize =>
+          case (_, e) if data.stash.size < data.settings.maxClientConnectionStashSize =>
             clientConnect(data.copy(stash = data.stash :+ e))
         }
     }
@@ -343,11 +345,10 @@ import scala.util.{Failure, Success}
                   publisherName
                 )
                 context.watchWith(publisher, PublisherFree(subscribe.topicFilters))
+                pendingSubAck(data)
               case _: Some[_] => // Ignored for existing subscriptions
+                Behaviors.same
             }
-            Behaviors.same
-          case (_, PublisherFree(topicFilters)) =>
-            clientConnected(data.copy(publishers = data.publishers ++ topicFilters.map(_._1)))
           case (context, UnsubscribeReceivedFromRemote(unsubscribe, local)) =>
             val unpublisherName = ActorName.mkName(UnpublisherNamePrefix + unsubscribe.topicFilters)
             context.child(unpublisherName) match {
@@ -360,6 +361,10 @@ import scala.util.{Failure, Success}
               case _: Some[_] => // Ignored for existing unsubscriptions
             }
             Behaviors.same
+          case (_, UnpublisherFree(topicFilters)) =>
+            val unsubscribedTopicFilters =
+              data.publishers.filter(publisher => topicFilters.exists(matchTopicFilter(_, publisher)))
+            clientConnected(data.copy(publishers = data.publishers -- unsubscribedTopicFilters))
           case (_, PublishReceivedFromRemote(publish, local))
               if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
             local ! Consumer.ForwardPublish
@@ -422,10 +427,6 @@ import scala.util.{Failure, Success}
               case Producer.ForwardPubRel(_, packetId) => data.remote.offer(ForwardPubRel(packetId))
             })
             Behaviors.same
-          case (_, UnpublisherFree(topicFilters)) =>
-            val unsubscribedTopicFilters =
-              data.publishers.filter(publisher => topicFilters.exists(matchTopicFilter(_, publisher)))
-            clientConnected(data.copy(publishers = data.publishers -- unsubscribedTopicFilters))
           case (_, PingReqReceivedFromRemote(local)) =>
             data.remote.offer(ForwardPingResp)
             local ! ForwardPingReq
@@ -443,6 +444,26 @@ import scala.util.{Failure, Success}
         }
     }
   }
+
+  def pendingSubAck(data: ConnAckReplied): Behavior[Event] =
+    Behaviors
+      .receivePartial[Event] {
+        case (context, PublisherFree(topicFilters)) =>
+          data.stash.foreach(context.self.tell)
+          clientConnected(data.copy(publishers = data.publishers ++ topicFilters.map(_._1), stash = Vector.empty))
+        case (_, e) if data.stash.size < data.settings.maxClientConnectionStashSize =>
+          pendingSubAck(data.copy(stash = data.stash :+ e))
+      }
+      .receiveSignal {
+        case (context, t: Terminated) if t.failure.contains(Publisher.SubscribeFailed) =>
+          data.stash.foreach(context.self.tell)
+          clientConnected(data)
+        case (_, _: Terminated) =>
+          Behaviors.same
+        case (_, PostStop) =>
+          data.remote.complete()
+          Behaviors.same
+      }
 
   //
 

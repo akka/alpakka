@@ -41,7 +41,6 @@ import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import scala.Tuple2;
 import scala.collection.JavaConverters;
@@ -120,6 +119,8 @@ public class MqttFlowTest {
       throws InterruptedException, ExecutionException, TimeoutException {
     String clientId = "flow-spec/flow";
     String topic = "source-spec/topic1";
+    String host = "localhost";
+    int port = 9884;
 
     // #create-streaming-bind-flow
     MqttSessionSettings settings = MqttSessionSettings.create();
@@ -129,7 +130,7 @@ public class MqttFlowTest {
 
     Source<DecodeErrorOrEvent, CompletionStage<Tcp.ServerBinding>> bindSource =
         Tcp.get(system)
-            .bind("localhost", 9883)
+            .bind(host, port)
             .flatMapMerge(
                 maxConnections,
                 connection -> {
@@ -186,11 +187,14 @@ public class MqttFlowTest {
     // #create-streaming-bind-flow
 
     // #run-streaming-bind-flow
-    bindSource.runWith(Sink.ignore(), materializer);
+    CompletionStage<Tcp.ServerBinding> bound =
+        bindSource.toMat(Sink.ignore(), Keep.left()).run(materializer);
     // #run-streaming-bind-flow
 
+    bound.toCompletableFuture().get(3, TimeUnit.SECONDS);
+
     Flow<ByteString, ByteString, CompletionStage<Tcp.OutgoingConnection>> connection =
-        Tcp.get(system).outgoingConnection("localhost", 9883);
+        Tcp.get(system).outgoingConnection(host, port);
 
     Flow<Command<?>, DecodeErrorOrEvent, NotUsed> mqttFlow =
         Mqtt.clientSessionFlow(new ActorMqttClientSession(settings, system)).join(connection);
