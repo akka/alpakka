@@ -90,20 +90,23 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
   def download(s3Location: S3Location,
                range: Option[ByteRange],
                versionId: Option[String],
-               sse: Option[ServerSideEncryption]): (Source[ByteString, NotUsed], Future[ObjectMetadata]) = {
+               sse: Option[ServerSideEncryption]): Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
     import mat.executionContext
     val s3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(GetObject) })
     val future = request(s3Location, rangeOption = range, versionId = versionId, s3Headers = s3Headers)
       .map(response => response.withEntity(response.entity.withoutSizeLimit))
       .flatMap(entityForSuccess)
-    val source = Source
-      .fromFuture(future.map(_._1))
-      .map(_.dataBytes)
-      .flatMapConcat(identity)
-    val meta = future.map {
-      case (entity, headers) ⇒ computeMetaData(headers, entity)
-    }
-    (source, meta)
+
+    future
+      .flatMap {
+        case (entity, headers) =>
+          Future.successful(
+            Some((entity.dataBytes.mapMaterializedValue(_ => NotUsed), computeMetaData(headers, entity)))
+          )
+      }
+      .recover {
+        case e: S3Exception if e.code == "NoSuchKey" => None
+      }
   }
 
   def listBucket(bucket: String, prefix: Option[String] = None): Source[ListBucketResultContents, NotUsed] = {

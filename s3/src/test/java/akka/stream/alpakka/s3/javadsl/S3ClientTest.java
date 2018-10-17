@@ -117,9 +117,10 @@ public class S3ClientTest extends S3WireMockBase {
     mockDownload();
 
     // #download
-    final Pair<Source<ByteString, NotUsed>, CompletionStage<ObjectMetadata>> sourceAndMeta =
+    final CompletionStage<Option<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>> sourceAndMeta =
         client.download(bucket(), bucketKey());
-    final Source<ByteString, NotUsed> source = sourceAndMeta.first();
+    final Source<ByteString, NotUsed> source =
+        sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().first();
     // #download
 
     final CompletionStage<String> resultCompletionStage =
@@ -191,9 +192,10 @@ public class S3ClientTest extends S3WireMockBase {
     mockDownloadSSEC();
 
     // #download
-    final Pair<Source<ByteString, NotUsed>, CompletionStage<ObjectMetadata>> sourceAndMeta =
+    final CompletionStage<Option<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>> sourceAndMeta =
         client.download(bucket(), bucketKey(), sseCustomerKeys());
-    final Source<ByteString, NotUsed> source = sourceAndMeta.first();
+    final Source<ByteString, NotUsed> source =
+        sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().first();
     // #download
 
     final CompletionStage<String> resultCompletionStage =
@@ -210,16 +212,17 @@ public class S3ClientTest extends S3WireMockBase {
     mockDownloadSSECWithVersion(versionId);
 
     // #download
-    final Pair<Source<ByteString, NotUsed>, CompletionStage<ObjectMetadata>> sourceAndMeta =
+    final CompletionStage<Option<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>> sourceAndMeta =
         client.download(bucket(), bucketKey(), null, Optional.of(versionId), sseCustomerKeys());
-    final Source<ByteString, NotUsed> source = sourceAndMeta.first();
+    final Source<ByteString, NotUsed> source =
+        sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().first();
     final CompletionStage<String> resultCompletionStage =
         source.map(ByteString::utf8String).runWith(Sink.head(), materializer);
-    final CompletionStage<ObjectMetadata> objectMetadataCompletionStage = sourceAndMeta.second();
+    final ObjectMetadata metadata =
+        sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().second();
     // #download
 
     final String result = resultCompletionStage.toCompletableFuture().get();
-    final ObjectMetadata metadata = objectMetadataCompletionStage.toCompletableFuture().get();
 
     assertEquals(bodySSE(), result);
     assertEquals(Optional.of(versionId), metadata.getVersionId());
@@ -231,10 +234,11 @@ public class S3ClientTest extends S3WireMockBase {
     mockRangedDownload();
 
     // #rangedDownload
-    final Pair<Source<ByteString, NotUsed>, CompletionStage<ObjectMetadata>> sourceAndMeta =
+    final CompletionStage<Option<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>> sourceAndMeta =
         client.download(
             bucket(), bucketKey(), ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()));
-    final Source<ByteString, NotUsed> source = sourceAndMeta.first();
+    final Source<ByteString, NotUsed> source =
+        sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().first();
     // #rangedDownload
 
     final CompletionStage<byte[]> resultCompletionStage =
@@ -251,13 +255,14 @@ public class S3ClientTest extends S3WireMockBase {
     mockRangedDownloadSSE();
 
     // #rangedDownload
-    final Pair<Source<ByteString, NotUsed>, CompletionStage<ObjectMetadata>> sourceAndMeta =
+    final CompletionStage<Option<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>> sourceAndMeta =
         client.download(
             bucket(),
             bucketKey(),
             ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()),
             sseCustomerKeys());
-    final Source<ByteString, NotUsed> source = sourceAndMeta.first();
+    final Source<ByteString, NotUsed> source =
+        sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().first();
     // #rangedDownload
 
     final CompletionStage<byte[]> resultCompletionStage =

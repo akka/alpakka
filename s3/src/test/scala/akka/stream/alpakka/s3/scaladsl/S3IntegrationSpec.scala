@@ -17,7 +17,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest._
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import com.amazonaws.regions.AwsRegionProvider
 
@@ -141,19 +141,15 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
 
   it should "download with real credentials" in {
 
-    val (source, metaFuture) = defaultRegionClient.download(defaultRegionBucket, objectKey)
+    val Some((source, meta)) =
+      Await.ready(defaultRegionClient.download(defaultRegionBucket, objectKey), 5.seconds).futureValue
 
     val bodyFuture = source
       .map(_.decodeString("utf8"))
       .toMat(Sink.head)(Keep.right)
       .run()
 
-    val result = for {
-      body <- bodyFuture
-      meta <- metaFuture
-    } yield (body, meta)
-
-    val (body, meta) = Await.ready(result, 5.seconds).futureValue
+    val body = Await.ready(bodyFuture, 5.seconds).futureValue
     body shouldBe objectValue
     meta.eTag should not be empty
     meta.contentType shouldBe Some(ContentTypes.`application/octet-stream`.value)
@@ -172,11 +168,14 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
       upload <- source.runWith(
         defaultRegionClient.multipartUpload(defaultRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
       )
-      download <- defaultRegionClient
-        .download(defaultRegionBucket, objectKey)
-        ._1
-        .map(_.decodeString("utf8"))
-        .runWith(Sink.head)
+      download <- defaultRegionClient.download(defaultRegionBucket, objectKey).flatMap {
+        case Some((downloadSource, _)) =>
+          downloadSource
+            .map(_.decodeString("utf8"))
+            .runWith(Sink.head)
+            .map(Some.apply)
+        case None => Future.successful(None)
+      }
     } yield (upload, download)
 
     val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
@@ -196,11 +195,14 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
       upload <- source.runWith(
         defaultRegionClient.multipartUpload(defaultRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
       )
-      download <- defaultRegionClient
-        .download(defaultRegionBucket, objectKey)
-        ._1
-        .map(_.decodeString("utf8"))
-        .runWith(Sink.head)
+      download <- defaultRegionClient.download(defaultRegionBucket, objectKey).flatMap {
+        case Some((downloadSource, _)) =>
+          downloadSource
+            .map(_.decodeString("utf8"))
+            .runWith(Sink.head)
+            .map(Some.apply)
+        case None => Future.successful(None)
+      }
     } yield (upload, download)
 
     val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
@@ -220,11 +222,14 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
       upload <- source.runWith(
         otherRegionClient.multipartUpload(otherRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
       )
-      download <- otherRegionClient
-        .download(otherRegionBucket, objectKey)
-        ._1
-        .map(_.decodeString("utf8"))
-        .runWith(Sink.head)
+      download <- defaultRegionClient.download(defaultRegionBucket, objectKey).flatMap {
+        case Some((downloadSource, _)) =>
+          downloadSource
+            .map(_.decodeString("utf8"))
+            .runWith(Sink.head)
+            .map(Some.apply)
+        case None => Future.successful(None)
+      }
     } yield (upload, download)
 
     val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
@@ -245,11 +250,14 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
       upload <- source.runWith(
         otherRegionClient.multipartUpload(otherRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
       )
-      download <- otherRegionClient
-        .download(otherRegionBucket, objectKey)
-        ._1
-        .map(_.decodeString("utf8"))
-        .runWith(Sink.head)
+      download <- defaultRegionClient.download(defaultRegionBucket, objectKey).flatMap {
+        case Some((downloadSource, _)) =>
+          downloadSource
+            .map(_.decodeString("utf8"))
+            .runWith(Sink.head)
+            .map(Some.apply)
+        case None => Future.successful(None)
+      }
     } yield (upload, download)
 
     val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
@@ -269,11 +277,14 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     val results = for {
       upload <- source.runWith(defaultRegionClient.multipartUpload(defaultRegionBucket, sourceKey))
       copy <- defaultRegionClient.multipartCopy(defaultRegionBucket, sourceKey, defaultRegionBucket, targetKey)
-      download <- defaultRegionClient
-        .download(defaultRegionBucket, targetKey)
-        ._1
-        .map(_.decodeString("utf8"))
-        .runWith(Sink.head)
+      download <- defaultRegionClient.download(defaultRegionBucket, objectKey).flatMap {
+        case Some((downloadSource, _)) =>
+          downloadSource
+            .map(_.decodeString("utf8"))
+            .runWith(Sink.head)
+            .map(Some.apply)
+        case None => Future.successful(None)
+      }
     } yield (upload, copy, download)
 
     whenReady(results) {

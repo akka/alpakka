@@ -280,11 +280,13 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
    * @param sse [optional] the server side encryption used on upload
    * @return A [[akka.stream.scaladsl.Source Source]] of [[akka.util.ByteString ByteString]] and a [[scala.concurrent.Future Future]] containing the [[ObjectMetadata]]
    */
-  def download(bucket: String,
-               key: String,
-               range: Option[ByteRange] = None,
-               versionId: Option[String] = None,
-               sse: Option[ServerSideEncryption] = None): (Source[ByteString, NotUsed], Future[ObjectMetadata]) =
+  def download(
+      bucket: String,
+      key: String,
+      range: Option[ByteRange] = None,
+      versionId: Option[String] = None,
+      sse: Option[ServerSideEncryption] = None
+  ): Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] =
     impl.download(S3Location(bucket, key), range, versionId, sse)
 
   /**
