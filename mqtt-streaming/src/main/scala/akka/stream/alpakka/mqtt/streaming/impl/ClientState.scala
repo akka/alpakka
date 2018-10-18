@@ -246,7 +246,9 @@ import scala.util.{Failure, Success}
             context.child(subscriberName) match {
               case None =>
                 context.spawn(
-                  Subscriber(subscribeData, remote, data.subscriberPacketRouter, data.settings),
+                  Behaviors
+                    .supervise(Subscriber(subscribeData, remote, data.subscriberPacketRouter, data.settings))
+                    .onFailure[Subscriber.SubscribeFailed.type](SupervisorStrategy.stop.withLoggingEnabled(false)),
                   subscriberName
                 )
               case _: Some[_] => // Ignored for existing subscriptions
@@ -259,7 +261,9 @@ import scala.util.{Failure, Success}
             context.child(unsubscriberName) match {
               case None =>
                 context.spawn(
-                  Unsubscriber(unsubscribeData, remote, data.unsubscriberPacketRouter, data.settings),
+                  Behaviors
+                    .supervise(Unsubscriber(unsubscribeData, remote, data.unsubscriberPacketRouter, data.settings))
+                    .onFailure[Unsubscriber.UnsubscribeFailed.type](SupervisorStrategy.stop.withLoggingEnabled(false)),
                   unsubscriberName
                 )
               case _: Some[_] => // Ignored for existing unsubscriptions
@@ -274,7 +278,12 @@ import scala.util.{Failure, Success}
           val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + packetId.underlying)
           context.child(consumerName) match {
             case None =>
-              context.spawn(Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings), consumerName)
+              context.spawn(
+                Behaviors
+                  .supervise(Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings))
+                  .onFailure[Consumer.ConsumeFailed.type](SupervisorStrategy.stop.withLoggingEnabled(false)),
+                consumerName
+              )
             case _: Some[_] => // Ignored for existing consumptions
           }
           serverConnected(data)
@@ -397,39 +406,33 @@ import scala.util.{Failure, Success}
       case Failure(_) => UnobtainablePacketId
     }
 
-    Behaviors
-      .supervise(Behaviors.receiveMessagePartial[Event] {
-        case AcquiredPacketId(packetId) =>
-          data.remote ! ForwardSubscribe(packetId)
-          serverSubscribe(
-            ServerSubscribe(packetId, data.subscribeData, data.packetRouter, data.settings)
-          )
-        case UnobtainablePacketId =>
-          throw SubscribeFailed
-      })
-      .onFailure[SubscribeFailed.type](SupervisorStrategy.stop.withLoggingEnabled(false))
+    Behaviors.receiveMessagePartial[Event] {
+      case AcquiredPacketId(packetId) =>
+        data.remote ! ForwardSubscribe(packetId)
+        serverSubscribe(
+          ServerSubscribe(packetId, data.subscribeData, data.packetRouter, data.settings)
+        )
+      case UnobtainablePacketId =>
+        throw SubscribeFailed
+    }
   }
 
   def serverSubscribe(data: ServerSubscribe): Behavior[Event] = Behaviors.withTimers { timer =>
     timer.startSingleTimer("receive-suback", ReceiveSubAckTimeout, data.settings.receiveSubAckTimeout)
 
     Behaviors
-      .supervise(
-        Behaviors
-          .receiveMessagePartial[Event] {
-            case SubAckReceivedFromRemote(local) =>
-              local ! ForwardSubAck(data.subscribeData)
-              Behaviors.stopped
-            case ReceiveSubAckTimeout =>
-              throw SubscribeFailed
-          }
-          .receiveSignal {
-            case (_, PostStop) =>
-              data.packetRouter ! LocalPacketRouter.Unregister(data.packetId)
-              Behaviors.same
-          }
-      )
-      .onFailure[SubscribeFailed.type](SupervisorStrategy.stop.withLoggingEnabled(false))
+      .receiveMessagePartial[Event] {
+        case SubAckReceivedFromRemote(local) =>
+          local ! ForwardSubAck(data.subscribeData)
+          Behaviors.stopped
+        case ReceiveSubAckTimeout =>
+          throw SubscribeFailed
+      }
+      .receiveSignal {
+        case (_, PostStop) =>
+          data.packetRouter ! LocalPacketRouter.Unregister(data.packetId)
+          Behaviors.same
+      }
   }
 }
 
@@ -491,38 +494,32 @@ import scala.util.{Failure, Success}
       case Failure(_) => UnobtainablePacketId
     }
 
-    Behaviors
-      .supervise(Behaviors.receiveMessagePartial[Event] {
-        case AcquiredPacketId(packetId) =>
-          data.remote ! ForwardUnsubscribe(packetId)
-          serverUnsubscribe(
-            ServerUnsubscribe(packetId, data.unsubscribeData, data.packetRouter, data.settings)
-          )
-        case UnobtainablePacketId =>
-          throw UnsubscribeFailed
-      })
-      .onFailure[UnsubscribeFailed.type](SupervisorStrategy.stop.withLoggingEnabled(false))
+    Behaviors.receiveMessagePartial[Event] {
+      case AcquiredPacketId(packetId) =>
+        data.remote ! ForwardUnsubscribe(packetId)
+        serverUnsubscribe(
+          ServerUnsubscribe(packetId, data.unsubscribeData, data.packetRouter, data.settings)
+        )
+      case UnobtainablePacketId =>
+        throw UnsubscribeFailed
+    }
   }
 
   def serverUnsubscribe(data: ServerUnsubscribe): Behavior[Event] = Behaviors.withTimers { timer =>
     timer.startSingleTimer("receive-unsubAck", ReceiveUnsubAckTimeout, data.settings.receiveUnsubAckTimeout)
 
     Behaviors
-      .supervise(
-        Behaviors
-          .receiveMessagePartial[Event] {
-            case UnsubAckReceivedFromRemote(local) =>
-              local ! ForwardUnsubAck(data.unsubscribeData)
-              Behaviors.stopped
-            case ReceiveUnsubAckTimeout =>
-              throw UnsubscribeFailed
-          }
-          .receiveSignal {
-            case (_, PostStop) =>
-              data.packetRouter ! LocalPacketRouter.Unregister(data.packetId)
-              Behaviors.same
-          }
-      )
-      .onFailure[UnsubscribeFailed.type](SupervisorStrategy.stop.withLoggingEnabled(false))
+      .receiveMessagePartial[Event] {
+        case UnsubAckReceivedFromRemote(local) =>
+          local ! ForwardUnsubAck(data.unsubscribeData)
+          Behaviors.stopped
+        case ReceiveUnsubAckTimeout =>
+          throw UnsubscribeFailed
+      }
+      .receiveSignal {
+        case (_, PostStop) =>
+          data.packetRouter ! LocalPacketRouter.Unregister(data.packetId)
+          Behaviors.same
+      }
   }
 }

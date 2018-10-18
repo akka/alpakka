@@ -6,7 +6,7 @@ package akka.stream.alpakka.mqtt.streaming
 package impl
 
 import akka.NotUsed
-import akka.actor.typed.{ActorRef, Behavior, PostStop, SupervisorStrategy}
+import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy}
@@ -230,84 +230,68 @@ import scala.util.{Failure, Success}
       case Failure(_) => UnobtainablePacketId
     }
 
-    Behaviors
-      .supervise(Behaviors.receiveMessagePartial[Event] {
-        case RegisteredPacketId =>
-          data.local ! ForwardPublish
-          consumeUnacknowledged(ClientConsuming(data.publish, data.packetId, data.packetRouter, data.settings))
-        case UnobtainablePacketId =>
-          throw ConsumeFailed
-      })
-      .onFailure[ConsumeFailed.type](SupervisorStrategy.stop.withLoggingEnabled(false))
+    Behaviors.receiveMessagePartial[Event] {
+      case RegisteredPacketId =>
+        data.local ! ForwardPublish
+        consumeUnacknowledged(ClientConsuming(data.publish, data.packetId, data.packetRouter, data.settings))
+      case UnobtainablePacketId =>
+        throw ConsumeFailed
+    }
 
   }
 
   def consumeUnacknowledged(data: ClientConsuming): Behavior[Event] = Behaviors.withTimers { timer =>
     timer.startSingleTimer("receive-pubackrel", ReceivePubAckRecTimeout, data.settings.receivePubAckRecTimeout)
     Behaviors
-      .supervise(
-        Behaviors
-          .receiveMessagePartial[Event] {
-            case PubAckReceivedLocally(remote)
-                if data.publish.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) =>
-              remote ! ForwardPubAck
-              Behaviors.stopped
-            case PubRecReceivedLocally(remote)
-                if data.publish.flags.contains(ControlPacketFlags.QoSExactlyOnceDelivery) =>
-              remote ! ForwardPubRec
-              consumeReceived(data)
-            case ReceivePubAckRecTimeout =>
-              throw ConsumeFailed
-          }
-          .receiveSignal {
-            case (_, PostStop) =>
-              data.packetRouter ! RemotePacketRouter.Unregister(data.packetId)
-              Behaviors.same
-          }
-      )
-      .onFailure[ConsumeFailed.type](SupervisorStrategy.stop.withLoggingEnabled(false))
+      .receiveMessagePartial[Event] {
+        case PubAckReceivedLocally(remote) if data.publish.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) =>
+          remote ! ForwardPubAck
+          Behaviors.stopped
+        case PubRecReceivedLocally(remote) if data.publish.flags.contains(ControlPacketFlags.QoSExactlyOnceDelivery) =>
+          remote ! ForwardPubRec
+          consumeReceived(data)
+        case ReceivePubAckRecTimeout =>
+          throw ConsumeFailed
+      }
+      .receiveSignal {
+        case (_, PostStop) =>
+          data.packetRouter ! RemotePacketRouter.Unregister(data.packetId)
+          Behaviors.same
+      }
   }
 
   def consumeReceived(data: ClientConsuming): Behavior[Event] = Behaviors.withTimers { timer =>
     timer.startSingleTimer("receive-pubrel", ReceivePubRelTimeout, data.settings.receivePubRelTimeout)
     Behaviors
-      .supervise(
-        Behaviors
-          .receiveMessagePartial[Event] {
-            case PubRelReceivedFromRemote(local) =>
-              local ! ForwardPubRel
-              consumeAcknowledged(data)
-            case ReceivePubRelTimeout =>
-              throw ConsumeFailed
-          }
-          .receiveSignal {
-            case (_, PostStop) =>
-              data.packetRouter ! RemotePacketRouter.Unregister(data.packetId)
-              Behaviors.same
-          }
-      )
-      .onFailure[ConsumeFailed.type](SupervisorStrategy.stop.withLoggingEnabled(false))
+      .receiveMessagePartial[Event] {
+        case PubRelReceivedFromRemote(local) =>
+          local ! ForwardPubRel
+          consumeAcknowledged(data)
+        case ReceivePubRelTimeout =>
+          throw ConsumeFailed
+      }
+      .receiveSignal {
+        case (_, PostStop) =>
+          data.packetRouter ! RemotePacketRouter.Unregister(data.packetId)
+          Behaviors.same
+      }
   }
 
   def consumeAcknowledged(data: ClientConsuming): Behavior[Event] = Behaviors.withTimers { timer =>
     timer.startSingleTimer("receive-pubcomp", ReceivePubCompTimeout, data.settings.receivePubCompTimeout)
     Behaviors
-      .supervise(
-        Behaviors
-          .receiveMessagePartial[Event] {
-            case PubCompReceivedLocally(remote) =>
-              remote ! ForwardPubComp
-              Behaviors.stopped
-            case ReceivePubCompTimeout =>
-              throw ConsumeFailed
-          }
-          .receiveSignal {
-            case (_, PostStop) =>
-              data.packetRouter ! RemotePacketRouter.Unregister(data.packetId)
-              Behaviors.same
-          }
-      )
-      .onFailure[ConsumeFailed.type](SupervisorStrategy.stop.withLoggingEnabled(false))
+      .receiveMessagePartial[Event] {
+        case PubCompReceivedLocally(remote) =>
+          remote ! ForwardPubComp
+          Behaviors.stopped
+        case ReceivePubCompTimeout =>
+          throw ConsumeFailed
+      }
+      .receiveSignal {
+        case (_, PostStop) =>
+          data.packetRouter ! RemotePacketRouter.Unregister(data.packetId)
+          Behaviors.same
+      }
   }
 }
 
