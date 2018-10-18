@@ -25,7 +25,7 @@ import scala.collection.immutable
 
   private def createElement(start: StartElement): Element = {
     val element = start.namespace match {
-      case Some(ns) => doc.createElementNS(start.localName, ns)
+      case Some(ns) => doc.createElementNS(ns, start.localName)
       case None => doc.createElement(start.localName)
     }
     start.attributes.foreach {
