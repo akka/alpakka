@@ -98,11 +98,9 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       .flatMap(entityForSuccess)
 
     future
-      .flatMap {
+      .map {
         case (entity, headers) =>
-          Future.successful(
-            Some((entity.dataBytes.mapMaterializedValue(_ => NotUsed), computeMetaData(headers, entity)))
-          )
+          Some((entity.dataBytes.mapMaterializedValue(_ => NotUsed), computeMetaData(headers, entity)))
       }
       .recover {
         case e: S3Exception if e.code == "NoSuchKey" => None
