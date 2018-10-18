@@ -18,6 +18,7 @@ import akka.util.{ByteString, Timeout}
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success}
 
 /*
@@ -34,7 +35,7 @@ import scala.util.{Failure, Success}
    * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
    * 3.1.2.10 Keep Alive
    */
-  case object PingFailed extends Exception
+  case object PingFailed extends Exception with NoStackTrace
 
   /*
    * Used to signal that a client connection has terminated
@@ -196,7 +197,7 @@ import scala.util.{Failure, Success}
   /*
    * No ACK received - the subscription failed
    */
-  case object ClientConnectionFailed extends Exception
+  case object ClientConnectionFailed extends Exception with NoStackTrace
 
   /*
    * A PINGREQ was not received within 1.5 times the keep alive so the connection will close
@@ -204,7 +205,7 @@ import scala.util.{Failure, Success}
    * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
    * 3.1.2.10 Keep Alive
    */
-  case object PingFailed extends Exception
+  case object PingFailed extends Exception with NoStackTrace
 
   /*
    * Construct with the starting state
@@ -640,7 +641,7 @@ import scala.util.{Failure, Success}
   /*
    * No ACK received - the subscription failed
    */
-  case object SubscribeFailed extends Exception
+  case object SubscribeFailed extends Exception with NoStackTrace
 
   /*
    * Construct with the starting state
@@ -724,7 +725,7 @@ import scala.util.{Failure, Success}
   /*
    * No ACK received - the unsubscription failed
    */
-  case object UnsubscribeFailed extends Exception
+  case object UnsubscribeFailed extends Exception with NoStackTrace
 
   /*
    * Construct with the starting state

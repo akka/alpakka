@@ -14,6 +14,7 @@ import akka.stream.scaladsl.{BroadcastHub, Keep, Source, SourceQueueWithComplete
 import akka.stream.typed.scaladsl.ActorMaterializer
 import akka.util.Timeout
 
+import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success}
 
 /*
@@ -170,7 +171,7 @@ import scala.util.{Failure, Success}
   /*
    * No ACK received - the publication failed
    */
-  case object ConsumeFailed extends Exception
+  case object ConsumeFailed extends Exception with NoStackTrace
 
   /*
    * Construct with the starting state

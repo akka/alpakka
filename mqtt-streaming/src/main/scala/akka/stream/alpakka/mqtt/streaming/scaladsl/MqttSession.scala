@@ -17,6 +17,7 @@ import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Source}
 import akka.util.{ByteString, Timeout}
 
 import scala.concurrent.Future
+import scala.util.control.NoStackTrace
 
 object MqttSession {
 
@@ -66,7 +67,7 @@ object ActorMqttClientSession {
    * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
    * 3.1.2.10 Keep Alive
    */
-  case object PingFailed extends Exception
+  case object PingFailed extends Exception with NoStackTrace
 
   private[scaladsl] val clientSessionCounter = new AtomicLong
 }
@@ -322,7 +323,7 @@ object ActorMqttServerSession {
    * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
    * 3.1.2.10 Keep Alive
    */
-  case object PingFailed extends Exception
+  case object PingFailed extends Exception with NoStackTrace
 
   private[scaladsl] val serverSessionCounter = new AtomicLong
 }
