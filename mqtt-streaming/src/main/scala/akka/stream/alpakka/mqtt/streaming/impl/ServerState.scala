@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior, PostStop, SupervisorStrategy, Terminated}
+import akka.actor.typed.{ActorRef, Behavior, PostStop, Terminated}
 import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{BroadcastHub, Keep, Sink, Source, SourceQueueWithComplete}
@@ -124,19 +124,13 @@ import scala.util.{Failure, Success}
           val clientConnection = context.child(clientConnectionName) match {
             case None =>
               context.spawn(
-                Behaviors
-                  .supervise(
-                    ClientConnection(connect,
-                                     local,
-                                     data.consumerPacketRouter,
-                                     data.producerPacketRouter,
-                                     data.publisherPacketRouter,
-                                     data.unpublisherPacketRouter,
-                                     data.settings)
-                  )
-                  .onFailure[ClientConnection.ClientConnectionFailed.type](
-                    SupervisorStrategy.stop.withLoggingEnabled(false)
-                  ),
+                ClientConnection(connect,
+                                 local,
+                                 data.consumerPacketRouter,
+                                 data.producerPacketRouter,
+                                 data.publisherPacketRouter,
+                                 data.unpublisherPacketRouter,
+                                 data.settings),
                 clientConnectionName
               )
 
@@ -385,9 +379,7 @@ import scala.util.{Failure, Success}
             context.child(publisherName) match {
               case None =>
                 val publisher = context.spawn(
-                  Behaviors
-                    .supervise(Publisher(subscribe.packetId, local, data.publisherPacketRouter, data.settings))
-                    .onFailure[Publisher.SubscribeFailed.type](SupervisorStrategy.stop.withLoggingEnabled(false)),
+                  Publisher(subscribe.packetId, local, data.publisherPacketRouter, data.settings),
                   publisherName
                 )
                 context.watch(publisher)
@@ -414,9 +406,7 @@ import scala.util.{Failure, Success}
             context.child(unpublisherName) match {
               case None =>
                 val unpublisher = context.spawn(
-                  Behaviors
-                    .supervise(Unpublisher(unsubscribe.packetId, local, data.unpublisherPacketRouter, data.settings))
-                    .onFailure[Unpublisher.UnsubscribeFailed.type](SupervisorStrategy.stop.withLoggingEnabled(false)),
+                  Unpublisher(unsubscribe.packetId, local, data.unpublisherPacketRouter, data.settings),
                   unpublisherName
                 )
                 context.watchWith(unpublisher, UnpublisherFree(unsubscribe.topicFilters))
@@ -436,9 +426,7 @@ import scala.util.{Failure, Success}
             context.child(consumerName) match {
               case None =>
                 context.spawn(
-                  Behaviors
-                    .supervise(Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings))
-                    .onFailure[Consumer.ConsumeFailed.type](SupervisorStrategy.stop.withLoggingEnabled(false)),
+                  Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings),
                   consumerName
                 )
               case _: Some[_] => // Ignored for existing consumptions

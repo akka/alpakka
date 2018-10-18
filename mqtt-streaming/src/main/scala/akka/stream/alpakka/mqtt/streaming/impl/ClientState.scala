@@ -6,7 +6,7 @@ package akka.stream.alpakka.mqtt.streaming
 package impl
 
 import akka.NotUsed
-import akka.actor.typed.{ActorRef, Behavior, PostStop, SupervisorStrategy, Terminated}
+import akka.actor.typed.{ActorRef, Behavior, PostStop, Terminated}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy}
@@ -247,9 +247,7 @@ import scala.util.{Failure, Success}
             context.child(subscriberName) match {
               case None =>
                 context.spawn(
-                  Behaviors
-                    .supervise(Subscriber(subscribeData, remote, data.subscriberPacketRouter, data.settings))
-                    .onFailure[Subscriber.SubscribeFailed.type](SupervisorStrategy.stop.withLoggingEnabled(false)),
+                  Subscriber(subscribeData, remote, data.subscriberPacketRouter, data.settings),
                   subscriberName
                 )
               case _: Some[_] => // Ignored for existing subscriptions
@@ -262,9 +260,7 @@ import scala.util.{Failure, Success}
             context.child(unsubscriberName) match {
               case None =>
                 context.spawn(
-                  Behaviors
-                    .supervise(Unsubscriber(unsubscribeData, remote, data.unsubscriberPacketRouter, data.settings))
-                    .onFailure[Unsubscriber.UnsubscribeFailed.type](SupervisorStrategy.stop.withLoggingEnabled(false)),
+                  Unsubscriber(unsubscribeData, remote, data.unsubscriberPacketRouter, data.settings),
                   unsubscriberName
                 )
               case _: Some[_] => // Ignored for existing unsubscriptions
@@ -280,9 +276,7 @@ import scala.util.{Failure, Success}
           context.child(consumerName) match {
             case None =>
               context.spawn(
-                Behaviors
-                  .supervise(Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings))
-                  .onFailure[Consumer.ConsumeFailed.type](SupervisorStrategy.stop.withLoggingEnabled(false)),
+                Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings),
                 consumerName
               )
             case _: Some[_] => // Ignored for existing consumptions
