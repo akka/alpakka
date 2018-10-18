@@ -9,6 +9,7 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters._
+import scala.compat.java8.OptionConverters._
 import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.ByteRange
@@ -78,7 +79,7 @@ final class ObjectMetadata private[javadsl] (
    *         as calculated by Amazon S3.
    */
   lazy val getETag: Optional[String] =
-    scalaMetadata.eTag.fold(Optional.empty[String]())(Optional.of)
+    scalaMetadata.eTag.asJava
 
   /**
    * <p>
@@ -131,7 +132,7 @@ final class ObjectMetadata private[javadsl] (
    * @see ObjectMetadata#setContentType(String)
    */
   def getContentType: Optional[String] =
-    scalaMetadata.contentType.fold(Optional.empty[String]())(Optional.of)
+    scalaMetadata.contentType.asJava
 
   /**
    * Gets the value of the Last-Modified header, indicating the date
@@ -148,7 +149,7 @@ final class ObjectMetadata private[javadsl] (
    * Gets the optional Cache-Control header
    */
   def getCacheControl: Optional[String] =
-    scalaMetadata.cacheControl.fold(Optional.empty[String]())(Optional.of)
+    scalaMetadata.cacheControl.asJava
 
   /**
    * Gets the value of the version id header. The version id will only be available
@@ -156,16 +157,12 @@ final class ObjectMetadata private[javadsl] (
    *
    * @return optional version id of the object
    */
-  def getVersionId: Optional[String] = scalaMetadata.versionId.fold(Optional.empty[String]())(Optional.of)
+  def getVersionId: Optional[String] = scalaMetadata.versionId.asJava
 }
 
 object MultipartUploadResult {
   def create(r: CompleteMultipartUploadResult): MultipartUploadResult =
-    new MultipartUploadResult(Uri.create(r.location),
-                              r.bucket,
-                              r.key,
-                              r.etag,
-                              r.versionId.fold(Optional.empty[String]())(Optional.of))
+    new MultipartUploadResult(Uri.create(r.location), r.bucket, r.key, r.etag, r.versionId.asJava)
 }
 
 object S3Client {

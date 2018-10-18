@@ -158,7 +158,7 @@ final class ObjectMetadata private (
    * Gets the optional Cache-Control header
    */
   lazy val cacheControl: Option[String] = metadata.collectFirst {
-    case c: `Cache-Control` => c.value()
+    case c: `Cache-Control` => c.value
   }
 
   /**
