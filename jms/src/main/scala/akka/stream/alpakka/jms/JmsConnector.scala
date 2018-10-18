@@ -136,8 +136,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
       }
 
     case Failure(ex: jms.JMSException) =>
-      val status = connectionStatus.get()
-      status match {
+      updateState(JmsConnectorDisconnected) match {
         case JmsConnectorInitializing(c, attempt, backoffMaxed, _) =>
           c.foreach(_.close())
           maybeReconnect(ex, attempt, backoffMaxed)
@@ -191,6 +190,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
 
   protected def initSessionAsync(attempt: Int = 0, backoffMaxed: Boolean = false): Unit = {
     val allSessions = openSessions(attempt, backoffMaxed)
+    allSessions.failed.foreach(connectionFailedCB.invoke)(ExecutionContexts.sameThreadExecutionContext)
     // wait for all sessions to successfully initialize before invoking the onSession callback.
     // reduces flakiness (start, consume, then crash) at the cost of increased latency of startup.
     allSessions.foreach(_.foreach(onSession.invoke))
@@ -200,7 +200,6 @@ private[jms] trait JmsConnector[S <: JmsSession] {
 
   def openSessions(attempt: Int, backoffMaxed: Boolean): Future[Seq[S]] = {
     val eventualConnection = openConnection(attempt, backoffMaxed)
-    eventualConnection.failed.foreach(connectionFailedCB.invoke)(ExecutionContexts.sameThreadExecutionContext)
     eventualConnection.flatMap { connection =>
       val sessionFutures =
         for (_ <- 0 until jmsSettings.sessionCount)

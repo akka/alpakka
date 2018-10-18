@@ -5,12 +5,6 @@
 package akka.stream.alpakka.jms.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.jms.JmsConnector.{
-  JmsConnectorConnected,
-  JmsConnectorDisconnected,
-  JmsConnectorInitializing,
-  JmsConnectorStopping
-}
 import akka.stream.alpakka.jms._
 import akka.stream.alpakka.jms.impl.JmsConsumerMatValue
 import akka.stream.scaladsl.Source
@@ -116,12 +110,7 @@ object JmsConsumer {
 
     override def abort(ex: Throwable): Unit = internal.abort(ex)
 
-    override def connection: Source[JmsConnectorState, NotUsed] = internal.connected.map {
-      case JmsConnectorDisconnected => JmsConnectorState.Disconnected
-      case _: JmsConnectorConnected => JmsConnectorState.Connected
-      case i: JmsConnectorInitializing => JmsConnectorState.Connecting(i.attempt)
-      case JmsConnectorStopping => JmsConnectorState.Stopping
-    }
+    override def connection: Source[JmsConnectorState, NotUsed] = transformConnected(internal.connected)
   }
 
 }
