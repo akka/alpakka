@@ -171,6 +171,29 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
         .single(new SendMessageRequest().withMessageBody("alpakka"))
         .via(SqsPublishFlow(queue))
         .runWith(Sink.foreach(result => println(result.message)))
+
+    //#flow
+
+    future.futureValue shouldBe Done
+
+    SqsSource(queue, SqsSourceSettings.Defaults)
+      .map(_.getBody)
+      .runWith(TestSink.probe[String])
+      .request(1)
+      .expectNext("alpakka")
+      .cancel()
+  }
+
+  "PublishFlow" should "put message in a flow, then pass the result further with dynamic queue" in {
+    val queue = randomQueueUrl()
+    implicit val awsSqsClient = sqsClient
+
+    val future =
+    //#flow
+      Source
+        .single(new SendMessageRequest().withMessageBody("alpakka").withQueueUrl(queue))
+        .via(SqsPublishFlow())
+        .runWith(Sink.foreach(result => println(result.message)))
     //#flow
 
     future.futureValue shouldBe Done

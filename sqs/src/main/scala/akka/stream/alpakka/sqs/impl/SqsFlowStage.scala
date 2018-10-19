@@ -19,7 +19,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * INTERNAL API
  */
-@InternalApi private[sqs] final class SqsFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
+@InternalApi private[sqs] final class SqsFlowStage(sqsClient: AmazonSQSAsync)
     extends GraphStage[FlowShape[SendMessageRequest, Future[SqsPublishResult]]] {
 
   private val in = Inlet[SendMessageRequest]("messages")
@@ -86,7 +86,8 @@ import scala.util.{Failure, Success, Try}
 
           override def onPush() = {
             inFlight += 1
-            val msg = grab(in).withQueueUrl(queueUrl)
+            val msg = grab(in)
+
             val responsePromise = Promise[SqsPublishResult]
 
             val handler = new AsyncHandler[SendMessageRequest, SendMessageResult] {
