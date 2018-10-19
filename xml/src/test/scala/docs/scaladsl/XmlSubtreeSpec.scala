@@ -141,6 +141,23 @@ class XmlSubtreeSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       )
     }
 
+    "properly extract a subtree of events even with the namespace prefix" in {
+      val doc =
+        """
+          |<doc xmlns:g="http://base.google.com/ns/1.0" version="2.0">
+          | <elem>
+          |   <item><g:id>id1</g:id></item>
+          |	</elem>
+          |</doc>
+        """.stripMargin
+
+      val result = Await.result(Source.single(doc).runWith(parse), 3.seconds)
+
+      val t = result.map(XmlHelper.asString(_).trim)
+      val f = Seq("""<item><id xmlns="http://base.google.com/ns/1.0">id1</id></item>""".stripMargin)
+      t should ===(f)
+    }
+
   }
 
   override protected def afterAll(): Unit = system.terminate()
