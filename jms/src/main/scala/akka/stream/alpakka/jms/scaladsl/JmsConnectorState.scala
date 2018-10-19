@@ -33,5 +33,8 @@ object JmsConnectorState {
   case object Disconnected extends JmsConnectorState
   case class Connecting(attempt: Int) extends JmsConnectorState
   case object Connected extends JmsConnectorState
-  case object Stopping extends JmsConnectorState
+  case object Completing extends JmsConnectorState
+  case object Completed extends JmsConnectorState
+  case class Failing(exception: Throwable) extends JmsConnectorState
+  case class Failed(exception: Throwable) extends JmsConnectorState
 }

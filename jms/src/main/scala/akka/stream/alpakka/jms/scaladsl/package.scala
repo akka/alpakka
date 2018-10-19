@@ -3,16 +3,19 @@
  */
 
 package akka.stream.alpakka.jms
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.annotation.InternalApi
 import akka.stream.alpakka.jms.JmsConnector.{
-  JmsConnectorState => InternalJmsConnectorState,
   JmsConnectorConnected,
   JmsConnectorDisconnected,
   JmsConnectorInitializing,
-  JmsConnectorStopping
+  JmsConnectorStopped,
+  JmsConnectorStopping,
+  JmsConnectorState => InternalJmsConnectorState
 }
 import akka.stream.scaladsl.Source
+
+import scala.util.{Failure, Success}
 
 package object scaladsl {
   @InternalApi private[scaladsl] def transformConnected(source: Source[InternalJmsConnectorState, NotUsed]) =
@@ -20,6 +23,9 @@ package object scaladsl {
       case JmsConnectorDisconnected => JmsConnectorState.Disconnected
       case _: JmsConnectorConnected => JmsConnectorState.Connected
       case i: JmsConnectorInitializing => JmsConnectorState.Connecting(i.attempt + 1)
-      case JmsConnectorStopping => JmsConnectorState.Stopping
+      case JmsConnectorStopping(Success(Done)) => JmsConnectorState.Completing
+      case JmsConnectorStopping(Failure(t)) => JmsConnectorState.Failing(t)
+      case JmsConnectorStopped(Success(Done)) => JmsConnectorState.Completed
+      case JmsConnectorStopped(Failure(t)) => JmsConnectorState.Failed(t)
     }
 }

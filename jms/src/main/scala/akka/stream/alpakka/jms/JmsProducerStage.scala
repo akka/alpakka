@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.jms
 
+import akka.Done
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
 import akka.stream.alpakka.jms.JmsConnector.JmsConnectorStopping
@@ -80,7 +81,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
           if (isAvailable(out)) pullIfNeeded()
         })
 
-      override def connectionFailed(ex: Throwable): Unit = {
+      override protected def connectionFailed(ex: Throwable): Unit = {
         jmsProducers.clear()
         currentJmsProducerEpoch += 1
         super.connectionFailed(ex)
@@ -88,13 +89,19 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
 
       setHandler(out, new OutHandler {
         override def onPull(): Unit = pushNextIfPossible()
+
+        override def onDownstreamFinish(): Unit = publishAndCompleteStage()
       })
 
       setHandler(
         in,
         new InHandler {
+          override def onUpstreamFinish(): Unit = if (inFlightMessages.isEmpty) publishAndCompleteStage()
 
-          override def onUpstreamFinish(): Unit = if (inFlightMessages.isEmpty) completeStage()
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            jmsSessions.foreach(s => Try(s.closeSession()))
+            failStageWith(ex)
+          }
 
           override def onPush(): Unit = {
             val elem: E = grab(in)
@@ -116,6 +123,13 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
           }
         }
       )
+
+      private def publishAndCompleteStage(): Unit = {
+        val previous = updateState(JmsConnectorStopping(Success(Done)))
+        jmsSessions.foreach(_.closeSession())
+        JmsConnector.connection(previous).foreach(_.close())
+        completeStage()
+      }
 
       override def onTimer(timerKey: Any): Unit = timerKey match {
         case s: SendAttempt[E] => sendWithRetries(s)
@@ -167,11 +181,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
           }
       }
 
-      override def postStop(): Unit = {
-        jmsSessions.foreach(_.closeSession())
-        val previous = updateState(JmsConnectorStopping)
-        JmsConnector.connection(previous).foreach(_.close())
-      }
+      override def postStop(): Unit = finishStop()
 
       private def pullIfNeeded(): Unit =
         if (jmsProducers.nonEmpty // only pull if a producer is available in the pool.
@@ -182,7 +192,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
       private def pushNextIfPossible(): Unit =
         if (inFlightMessages.isEmpty) {
           // no messages in flight, are we about to complete?
-          if (isClosed(in)) completeStage() else pullIfNeeded()
+          if (isClosed(in)) publishAndCompleteStage() else pullIfNeeded()
         } else if (inFlightMessages.peek().elem eq NotYetThere) {
           // next message to be produced is still not there, we need to wait.
           pullIfNeeded()

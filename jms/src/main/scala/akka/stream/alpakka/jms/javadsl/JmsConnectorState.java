@@ -6,6 +6,6 @@ package akka.stream.alpakka.jms.javadsl;
 
 public enum JmsConnectorState {
 
-    Disconnected, Connecting, Connected, Stopping
+    Disconnected, Connecting, Connected, Completing, Completed, Failing, Failed
 
 }

@@ -19,6 +19,7 @@ import javax.jms._
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.concurrent.{Await, Future, TimeoutException}
+import scala.util.{Failure, Success}
 import scala.util.control.NonFatal
 
 private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings, destination: Destination)
@@ -226,17 +227,18 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
 
   private val markStopped = getAsyncCallback[Done.type] { _ =>
     stopped = true
-    connectionStatus.set(JmsConnectorStopping)
+    finishStop()
     if (queue.isEmpty) completeStage()
   }
 
   private val markAborted = getAsyncCallback[Throwable] { ex =>
     stopped = true
-    connectionStatus.set(JmsConnectorStopping)
+    finishStop()
     failStage(ex)
   }
 
   private[jms] val handleError = getAsyncCallback[Throwable] { e =>
+    updateState(JmsConnectorStopping(Failure(e)))
     fail(out, e)
   }
 
@@ -261,15 +263,29 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
 
   protected def pushMessage(msg: T): Unit
 
-  setHandler(out, new OutHandler {
-    override def onPull(): Unit = {
-      if (queue.nonEmpty) pushMessage(queue.dequeue())
-      if (stopped && queue.isEmpty) completeStage()
+  setHandler(
+    out,
+    new OutHandler {
+      override def onPull(): Unit = {
+        if (queue.nonEmpty) pushMessage(queue.dequeue())
+        if (stopped && queue.isEmpty) completeStage()
+      }
+
+      override def onDownstreamFinish(): Unit = {
+        // no need to keep messages in the queue, downstream will never pull them.
+        queue.clear()
+        // keep processing async callbacks for stopSessions.
+        setKeepGoing(true)
+        stopSessions()
+      }
     }
-  })
+  )
 
   private def stopSessions(): Unit =
     if (stopping.compareAndSet(false, true)) {
+      val status = updateState(JmsConnectorStopping(Success(Done)))
+      val connectionFuture = JmsConnector.connection(status)
+
       val closeSessionFutures = jmsSessions.map { s =>
         val f = s.closeSessionAsync()
         f.failed.foreach(e => log.error(e, "Error closing jms session"))
@@ -278,25 +294,28 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
       Future
         .sequence(closeSessionFutures)
         .onComplete { _ =>
-          val status = updateState(JmsConnectorStopping)
-          JmsConnector.connection(status).foreach { connection =>
-            try {
-              connection.close()
-            } catch {
-              case NonFatal(e) => log.error(e, "Error closing JMS connection {}", connection)
-            } finally {
+          connectionFuture
+            .map { connection =>
+              try {
+                connection.close()
+              } catch {
+                case NonFatal(e) => log.error(e, "Error closing JMS connection {}", connection)
+              }
+            }
+            .onComplete { _ =>
               // By this time, after stopping connection, closing sessions, all async message submissions to this
               // stage should have been invoked. We invoke markStopped as the last item so it gets delivered after
               // all JMS messages are delivered. This will allow the stage to complete after all pending messages
               // are delivered, thus preventing message loss due to premature stage completion.
               markStopped.invoke(Done)
             }
-          }
         }
     }
 
   private def abortSessions(ex: Throwable): Unit =
     if (stopping.compareAndSet(false, true)) {
+      val status = updateState(JmsConnectorStopping(Failure(ex)))
+      val connectionFuture = JmsConnector.connection(status)
       val abortSessionFutures = jmsSessions.map { s =>
         val f = s.abortSessionAsync()
         f.failed.foreach(e => log.error(e, "Error closing jms session"))
@@ -305,17 +324,18 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
       Future
         .sequence(abortSessionFutures)
         .onComplete { _ =>
-          val status = updateState(JmsConnectorStopping)
-          JmsConnector.connection(status).foreach { connection =>
-            try {
-              connection.close()
-              log.info("JMS connection {} closed", connection)
-            } catch {
-              case NonFatal(e) => log.error(e, "Error closing JMS connection {}", connection)
-            } finally {
+          connectionFuture
+            .map { connection =>
+              try {
+                connection.close()
+                log.info("JMS connection {} closed", connection)
+              } catch {
+                case NonFatal(e) => log.error(e, "Error closing JMS connection {}", connection)
+              }
+            }
+            .onComplete { _ =>
               markAborted.invoke(ex)
             }
-          }
         }
     }
 
@@ -323,11 +343,12 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
     override def shutdown(): Unit = stopSessions()
     override def abort(ex: Throwable): Unit = abortSessions(ex)
     override def connected: Source[JmsConnectorState, NotUsed] =
-      Source.fromFuture(connectionStatusSource).flatMapConcat(identity)
+      Source.fromFuture(connectionStateSource).flatMapConcat(identity)
   }
 
   override def postStop(): Unit = {
     queue.clear()
     stopSessions()
+    finishStop()
   }
 }

@@ -6,17 +6,16 @@ package akka.stream.alpakka.jms
 
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.atomic.AtomicReference
-import java.util.function.UnaryOperator
 
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
 import akka.pattern.after
-import akka.stream.alpakka.jms.JmsConnector._
+import akka.stream.alpakka.jms.JmsConnector.{JmsConnectorState, _}
 import akka.stream.alpakka.jms.impl.{JmsProducerMatValue, SoftReferenceCache}
 import akka.stream.scaladsl.{Source, SourceQueueWithComplete}
 import akka.stream.stage.{AsyncCallback, StageLogging, TimerGraphStageLogic}
 import akka.stream.{ActorAttributes, ActorMaterializerHelper, Attributes, OverflowStrategy}
+import akka.{Done, NotUsed}
 import javax.jms
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -30,9 +29,6 @@ private[jms] trait JmsConnector[S <: JmsSession] {
 
   implicit protected var ec: ExecutionContext = _
 
-  protected val connectionStatus: AtomicReference[JmsConnectorState] =
-    new AtomicReference[JmsConnectorState](JmsConnectorDisconnected)
-
   protected var jmsSessions = Seq.empty[S]
 
   protected def destination: Destination
@@ -41,71 +37,90 @@ private[jms] trait JmsConnector[S <: JmsSession] {
 
   protected def onSessionOpened(jmsSession: S): Unit = {}
 
-  protected val fail: AsyncCallback[Throwable] = getAsyncCallback[Throwable](e => failStage(e))
+  protected val fail: AsyncCallback[Throwable] = getAsyncCallback[Throwable](failStageWith)
 
-  private val connectionFailedCB = getAsyncCallback[Throwable](e => connectionFailed(e))
+  private val connectionFailedCB = getAsyncCallback[Throwable](connectionFailed)
 
-  protected var connectionStatusQueue: SourceQueueWithComplete[JmsConnectorState] = _
+  private var connectionStateQueue: SourceQueueWithComplete[JmsConnectorState] = _
 
-  private val connectionStatusSourcePromise = Promise[Source[JmsConnectorState, NotUsed]]()
-  protected val connectionStatusSource: Future[Source[JmsConnectorState, NotUsed]] =
-    connectionStatusSourcePromise.future
+  private val connectionStateSourcePromise = Promise[Source[JmsConnectorState, NotUsed]]()
+
+  protected val connectionStateSource: Future[Source[JmsConnectorState, NotUsed]] =
+    connectionStateSourcePromise.future
+
+  private var connectionState: JmsConnectorState = JmsConnectorDisconnected
 
   override def preStart(): Unit = {
     // keep two elements since the time between initializing and connected can be very short.
     // always drops the old state, and keeps the most current (two) state(s) in the queue.
     val pair = Source.queue[JmsConnectorState](2, OverflowStrategy.dropHead).preMaterialize()(this.materializer)
-    connectionStatusQueue = pair._1
-    connectionStatusSourcePromise.complete(Success(pair._2))
+    connectionStateQueue = pair._1
+    connectionStateSourcePromise.complete(Success(pair._2))
   }
 
-  def updateState(next: JmsConnectorState): JmsConnectorState = {
-
-    val update = new UnaryOperator[JmsConnectorState] {
-      override def apply(current: JmsConnectorState): JmsConnectorState =
-        if (current == JmsConnectorStopping) current else next
+  protected def finishStop(): Unit = {
+    val update: JmsConnectorState => JmsConnectorState = {
+      case JmsConnectorStopping(completion) => JmsConnectorStopped(completion)
+      case current => current
     }
 
-    val previous = connectionStatus.getAndUpdate(update)
-    val actualNext = update(previous)
+    val previous = updateStateWith(update)
+    connection(previous).foreach(_.close())
+  }
+
+  protected def failStageWith(ex: Throwable): Unit = {
+    val previous = updateState(JmsConnectorStopping(Failure(ex)))
+    connection(previous).foreach(_.close())
+    failStage(ex)
+  }
+
+  protected def updateState(next: JmsConnectorState): JmsConnectorState = {
+    val update: JmsConnectorState => JmsConnectorState = {
+      case current: JmsConnectorStopping => current
+      case current: JmsConnectorStopped => current
+      case _ => next
+    }
+    updateStateWith(update)
+  }
+
+  private def updateStateWith(f: JmsConnectorState => JmsConnectorState): JmsConnectorState = {
+    val last = connectionState
+    connectionState = f(last)
 
     // use type-based comparison to publish JmsConnectorInitializing only once.
-    if (previous.getClass != actualNext.getClass) {
-      connectionStatusQueue.offer(actualNext)
+    if (last.getClass != connectionState.getClass) {
+      connectionStateQueue.offer(connectionState)
     }
 
-    previous
+    last
   }
 
-  def connectionFailed(ex: Throwable): Unit = {
-    val status = updateState(JmsConnectorDisconnected)
-    ex match {
-      case ex: jms.JMSSecurityException =>
-        log.error(ex,
-                  "{} initializing connection failed, security settings are not properly configured",
-                  attributes.nameOrDefault())
-        failStage(ex)
+  protected def connectionFailed(ex: Throwable): Unit = ex match {
+    case ex: jms.JMSSecurityException =>
+      log.error(ex,
+                "{} initializing connection failed, security settings are not properly configured",
+                attributes.nameOrDefault())
+      failStageWith(ex)
 
-      case _: jms.JMSException => handleRetriableException(status, ex)
-      case _: JmsConnectTimedOut => handleRetriableException(status, ex)
-      case _ =>
-        if (status == JmsConnectorStopping) {
-          logStoppingException(ex)
-        } else {
+    case _: jms.JMSException | _: JmsConnectTimedOut => handleRetriableException(ex)
+
+    case _ =>
+      connectionState match {
+        case _: JmsConnectorStopping | _: JmsConnectorStopped => logStoppingException(ex)
+        case _ =>
           log.error(ex, "{} connection failed", attributes.nameOrDefault())
-          failStage(ex)
-        }
-    }
+          failStageWith(ex)
+      }
   }
 
-  private def handleRetriableException(status: JmsConnectorState, ex: Throwable): Unit = {
+  private def handleRetriableException(ex: Throwable): Unit = {
     jmsSessions = Seq.empty
-    status match {
+    connectionState match {
       case JmsConnectorInitializing(_, attempt, backoffMaxed, _) =>
         maybeReconnect(ex, attempt, backoffMaxed)
       case JmsConnectorConnected(_) | JmsConnectorDisconnected =>
         maybeReconnect(ex, 0, backoffMaxed = false)
-      case JmsConnectorStopping => logStoppingException(ex)
+      case _: JmsConnectorStopping | _: JmsConnectorStopped => logStoppingException(ex)
     }
   }
 
@@ -122,7 +137,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
 
   protected val sessionOpened: Try[Unit] => Unit = {
     case Success(_) =>
-      connectionStatus.get() match {
+      connectionState match {
         case init @ JmsConnectorInitializing(c, _, _, sessions) =>
           if (sessions + 1 == jmsSettings.sessionCount) {
             c.foreach { c =>
@@ -145,7 +160,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
 
     case Failure(ex) =>
       log.error(ex, "{} initializing connection failed", attributes.nameOrDefault())
-      failStage(ex)
+      failStageWith(ex)
   }
 
   protected val sessionOpenedCB: AsyncCallback[Try[Unit]] = getAsyncCallback[Try[Unit]](sessionOpened)
@@ -159,8 +174,10 @@ private[jms] trait JmsConnector[S <: JmsSession] {
         if (maxRetries == 0) ex
         else ConnectionRetryException(s"Could not establish connection after $maxRetries retries.", ex)
       log.error(exception, "{} initializing connection failed", attributes.nameOrDefault())
-      failStage(exception)
+      failStageWith(exception)
     } else {
+      val status = updateState(JmsConnectorDisconnected)
+      connection(status).foreach(_.close())
       val delay = if (backoffMaxed) maxBackoff else waitTime(nextAttempt)
       val backoffNowMaxed = backoffMaxed || delay == maxBackoff
       scheduleOnce(AttemptConnect(nextAttempt, backoffNowMaxed), delay)
@@ -290,7 +307,8 @@ private[jms] object JmsConnector {
                                       sessions: Int)
       extends JmsConnectorState
   case class JmsConnectorConnected(connection: jms.Connection) extends JmsConnectorState
-  case object JmsConnectorStopping extends JmsConnectorState
+  case class JmsConnectorStopping(completion: Try[Done]) extends JmsConnectorState
+  case class JmsConnectorStopped(completion: Try[Done]) extends JmsConnectorState
 
   def connection: JmsConnectorState => Future[jms.Connection] = {
     case JmsConnectorInitializing(c, _, _, _) => c
@@ -322,7 +340,7 @@ private[jms] trait JmsProducerConnector extends JmsConnector[JmsProducerSession]
 
   val status: JmsProducerMatValue = new JmsProducerMatValue {
     override def connected: Source[JmsConnectorState, NotUsed] =
-      Source.fromFuture(connectionStatusSource).flatMapConcat(identity)
+      Source.fromFuture(connectionStateSource).flatMapConcat(identity)
   }
 }
 

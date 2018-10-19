@@ -32,6 +32,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
       val connectedLatch = new CountDownLatch(1)
 
       val jmsSink = textSink(JmsProducerSettings(connectionFactory).withQueue("test"))
+      val exception = new RuntimeException("failing stage")
 
       val producerStatus = Source
         .tick(10.millis, 20.millis, "text")
@@ -39,7 +40,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
         .map { x =>
           if (x._2 == 3) {
             connectedLatch.await()
-            throw new RuntimeException("failing stage")
+            throw exception
           }
           x._1
         }
@@ -52,7 +53,8 @@ class JmsConnectionStatusSpec extends JmsSpec {
 
       connectedLatch.countDown()
 
-      status should havePublishedState(Stopping)
+      status should havePublishedState(Failing(exception))
+      status should havePublishedState(Failed(exception))
     }
 
     "report multiple connection attempts" in withMockedProducer { ctx =>
@@ -73,6 +75,31 @@ class JmsConnectionStatusSpec extends JmsSpec {
       status should havePublishedState(Connected)
     }
 
+    "report failure when running out of connection attempts" in withMockedProducer { ctx =>
+      import ctx._
+      val connectAttempts = new AtomicInteger()
+      val exception = new JMSException("connect error")
+      val retryException = ConnectionRetryException("Could not establish connection after 1 retries.", exception)
+      when(factory.createConnection()).thenAnswer(new Answer[Connection]() {
+        override def answer(invocation: InvocationOnMock): Connection =
+          if (connectAttempts.getAndIncrement() < 2) throw exception else connection
+      })
+
+      val jmsSink = textSink(
+        JmsProducerSettings(factory)
+          .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(1))
+          .withQueue("test")
+      )
+      val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connection
+      val status = connectionStatus.runWith(Sink.queue())
+
+      status should havePublishedState(Connecting(1))
+      status should havePublishedState(Disconnected)
+      status should havePublishedState(Connecting(2))
+      status should havePublishedState(Failing(retryException))
+      status should havePublishedState(Failed(retryException))
+    }
+
     "retry connection when creating session fails" in withMockedProducer { ctx =>
       import ctx._
       val connectAttempts = new AtomicInteger()
@@ -89,6 +116,24 @@ class JmsConnectionStatusSpec extends JmsSpec {
       status should havePublishedState(Disconnected)
       status should havePublishedState(Connecting(2))
       status should havePublishedState(Connected)
+    }
+
+    "abort connection on security exception" in withMockedProducer { ctx =>
+      import ctx._
+      val connectAttempts = new AtomicInteger()
+      val securityException = new JMSSecurityException("security error")
+      when(factory.createConnection()).thenAnswer(new Answer[Connection]() {
+        override def answer(invocation: InvocationOnMock): Connection =
+          if (connectAttempts.getAndIncrement() == 0) throw securityException else connection
+      })
+
+      val jmsSink = textSink(JmsProducerSettings(factory).withQueue("test"))
+      val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connection
+      val status = connectionStatus.runWith(Sink.queue())
+
+      status should havePublishedState(Connecting(1))
+      status should havePublishedState(Failing(securityException))
+      status should havePublishedState(Failed(securityException))
     }
 
     "retry connection when creating producer fails" in withMockedProducer { ctx =>
@@ -166,6 +211,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
     "report disconnected on consumer stream failure" in withServer() { ctx =>
       val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
       val connectedLatch = new CountDownLatch(1)
+      val exception = new RuntimeException("failing stage")
 
       val jmsSink = textSink(JmsProducerSettings(connectionFactory).withQueue("test"))
 
@@ -175,7 +221,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
         .map { x =>
           if (x._2 == 3) {
             connectedLatch.await()
-            throw new RuntimeException("failing stage")
+            throw exception
           }
           x._1
         }
@@ -190,10 +236,11 @@ class JmsConnectionStatusSpec extends JmsSpec {
 
       connectedLatch.countDown()
 
-      eventually { status should havePublishedState(Stopping) }
+      eventually { status should havePublishedState(Completing) }
+      eventually { status should havePublishedState(Completed) }
     }
 
-    "report disconnected on stream completion" in withServer() { ctx =>
+    "report completion on stream shutdown / cancel" in withServer() { ctx =>
       val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       val jmsSink = textSink(
@@ -218,8 +265,32 @@ class JmsConnectionStatusSpec extends JmsSpec {
       cancellable.cancel()
       consumerControl.shutdown()
 
-      eventually { consumerConnected should havePublishedState(Stopping) }
-      eventually { producerConnected should havePublishedState(Stopping) }
+      eventually { consumerConnected should havePublishedState(Completing) }
+      eventually { consumerConnected should havePublishedState(Completed) }
+
+      eventually { producerConnected should havePublishedState(Completing) }
+      eventually { producerConnected should havePublishedState(Completed) }
+    }
+
+    "report failure on external stream abort" in withServer() { ctx =>
+      val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+      val exception = new RuntimeException("aborting stream")
+
+      val jmsSource = JmsConsumer.textSource(
+        JmsConsumerSettings(connectionFactory)
+          .withQueue("test")
+      )
+
+      val consumerControl = jmsSource.toMat(Sink.ignore)(Keep.left).run()
+
+      val consumerConnected = consumerControl.connection.runWith(Sink.queue())
+
+      eventually { consumerConnected should havePublishedState(Connected) }
+
+      consumerControl.abort(exception)
+
+      consumerConnected should havePublishedState(Failing(exception))
+      consumerConnected should havePublishedState(Failed(exception))
     }
 
     "reflect connection status on connection retries" in withServer() { ctx =>
@@ -278,7 +349,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
       .viaMat(JmsProducer.flexiFlow(settings))(Keep.right)
       .to(Sink.ignore)
 
-  class ConnectionStatusMatcher(expectedState: JmsConnectorState)
+  class ConnectionStateMatcher(expectedState: JmsConnectorState)
       extends Matcher[SinkQueueWithCancel[JmsConnectorState]] {
 
     def apply(queue: SinkQueueWithCancel[JmsConnectorState]): MatchResult =
@@ -287,7 +358,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
           MatchResult(
             state == expectedState,
             s"""Published connection state $state was not $expectedState""",
-            s"""Published connection state $state was "$expectedState"""
+            s"""Published connection state $state was $expectedState"""
           )
         case None =>
           MatchResult(
@@ -299,5 +370,5 @@ class JmsConnectionStatusSpec extends JmsSpec {
   }
 
   def havePublishedState(expectedState: JmsConnectorState) =
-    new ConnectionStatusMatcher(expectedState: JmsConnectorState)
+    new ConnectionStateMatcher(expectedState: JmsConnectorState)
 }

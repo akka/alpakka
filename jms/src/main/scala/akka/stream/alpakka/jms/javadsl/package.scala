@@ -20,6 +20,9 @@ package object javadsl {
       case Disconnected => JmsConnectorState.Disconnected
       case Connected => JmsConnectorState.Connected
       case Connecting(_) => JmsConnectorState.Connecting
-      case Stopping => JmsConnectorState.Stopping
+      case Completing => JmsConnectorState.Completing
+      case Completed => JmsConnectorState.Completed
+      case Failing(_) => JmsConnectorState.Failing
+      case Failed(_) => JmsConnectorState.Failed
     }.asJava
 }
