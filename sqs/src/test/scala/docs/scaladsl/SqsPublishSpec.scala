@@ -189,7 +189,7 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
     implicit val awsSqsClient = sqsClient
 
     val future =
-    //#flow
+      //#flow
       Source
         .single(new SendMessageRequest().withMessageBody("alpakka").withQueueUrl(queue))
         .via(SqsPublishFlow())

@@ -44,7 +44,7 @@ class SnsPublisherSpec extends FlatSpec with Matchers with ScalaFutures with Int
 
   it should "send publish request with dynamic arn" in {
     val published: Future[Done] =
-    //#use-sink
+      //#use-sink
       Source
         .single(new PublishRequest().withMessage("message").withTopicArn(topicArn))
         .runWith(SnsPublisher.publishSink())
@@ -78,7 +78,7 @@ class SnsPublisherSpec extends FlatSpec with Matchers with ScalaFutures with Int
 
   it should "send publish request with dynamic topic" in {
     val published: Future[Done] =
-    //#use-flow
+      //#use-flow
       Source
         .single(new PublishRequest().withMessage("message").withTopicArn(topicArn))
         .via(SnsPublisher.publishFlow())
