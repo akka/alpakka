@@ -9,6 +9,7 @@ import java.util.{NoSuchElementException, Optional}
 import java.util.concurrent.TimeUnit
 
 import akka.annotation.InternalApi
+import akka.japi.{Pair => AkkaPair}
 import akka.stream.alpakka.mqtt.streaming.Connect.ProtocolLevel
 import akka.util.{ByteIterator, ByteString, ByteStringBuilder}
 
@@ -354,8 +355,8 @@ final case class Subscribe @InternalApi private[streaming] (packetId: PacketId,
    * 3.8 SUBSCRIBE - Subscribe to topics
    * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
    */
-  def this(topicFilters: java.util.List[(String, Integer)]) =
-    this(PacketId(0), topicFilters.asScala.map(v => v._1 -> ControlPacketFlags(v._2)))
+  def this(topicFilters: java.util.List[AkkaPair[String, Integer]]) =
+    this(PacketId(0), topicFilters.asScala.map(v => v.first -> ControlPacketFlags(v.second)))
 
   /**
    * A convenience for subscribing to a single topic with at-least-once semantics
