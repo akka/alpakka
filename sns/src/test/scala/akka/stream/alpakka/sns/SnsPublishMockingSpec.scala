@@ -107,13 +107,16 @@ class SnsPublishMockingSpec extends FlatSpec with DefaultTestContext with MustMa
 
     Await.result(future, 1.second) mustBe publishResult :: publishResult :: publishResult :: Nil
 
-    val expectedFirst = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message-1").withTopicArn("topic-arn-1")
+    val expectedFirst =
+      new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message-1").withTopicArn("topic-arn-1")
     verify(snsClient, times(1)).publishAsync(meq(expectedFirst), any())
 
-    val expectedSecond = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message-2").withTopicArn("topic-arn-2")
+    val expectedSecond =
+      new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message-2").withTopicArn("topic-arn-2")
     verify(snsClient, times(1)).publishAsync(meq(expectedSecond), any())
 
-    val expectedThird = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message-3").withTopicArn("topic-arn-3")
+    val expectedThird =
+      new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message-3").withTopicArn("topic-arn-3")
     verify(snsClient, times(1)).publishAsync(meq(expectedThird), any())
   }
 

@@ -102,15 +102,15 @@ public class SnsPublisherTest {
     assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
   }
 
-    @Test
+  @Test
   public void sinkShouldPublishRequestWithDynamicTopic() throws Exception {
     CompletionStage<Done> completion =
         // #use-sink
         Source.single(new PublishRequest().withMessage("message").withTopicArn(topicArn))
             .runWith(SnsPublisher.createPublishSink(snsClient), materializer);
-        // #use-sink
-        assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
-    }
+    // #use-sink
+    assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
+  }
 
   @Test
   public void flowShouldPublishString() throws Exception {
@@ -139,7 +139,7 @@ public class SnsPublisherTest {
   @Test
   public void flowShouldPublishRequestWithDynamicTopic() throws Exception {
     CompletionStage<Done> completion =
-     // #use-flow
+        // #use-flow
         Source.single(new PublishRequest().withMessage("message").withTopicArn(topicArn))
             .via(SnsPublisher.createPublishFlow(snsClient))
             .runWith(Sink.foreach(res -> System.out.println(res.getMessageId())), materializer);
