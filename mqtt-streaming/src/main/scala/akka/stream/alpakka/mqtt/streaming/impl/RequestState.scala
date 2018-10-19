@@ -11,7 +11,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{BroadcastHub, Keep, Source, SourceQueueWithComplete}
-import akka.stream.typed.scaladsl.ActorMaterializer
 import akka.util.Timeout
 
 import scala.util.control.NoStackTrace
@@ -36,7 +35,7 @@ import scala.util.{Failure, Success}
             publishData: PublishData,
             remote: ActorRef[Source[ForwardPublishingCommand, NotUsed]],
             packetRouter: ActorRef[LocalPacketRouter.Request[Event]],
-            settings: MqttSessionSettings): Behavior[Event] =
+            settings: MqttSessionSettings)(implicit mat: Materializer): Behavior[Event] =
     preparePublish(Start(publish, publishData, remote, packetRouter, settings))
 
   // Our FSM data, FSM events and commands emitted by the FSM
@@ -75,7 +74,7 @@ import scala.util.{Failure, Success}
 
   // State event handling
 
-  def preparePublish(data: Start): Behavior[Event] = Behaviors.setup { context =>
+  def preparePublish(data: Start)(implicit mat: Materializer): Behavior[Event] = Behaviors.setup { context =>
     implicit val actorMqttSessionTimeout: Timeout = data.settings.actorMqttSessionTimeout
 
     def requestPacketId(): Unit =
@@ -88,7 +87,6 @@ import scala.util.{Failure, Success}
 
     requestPacketId()
 
-    implicit val mat: Materializer = ActorMaterializer()(context.system)
     val (queue, source) = Source
       .queue[ForwardPublishingCommand](1, OverflowStrategy.dropHead)
       .toMat(BroadcastHub.sink)(Keep.both)
@@ -113,52 +111,56 @@ import scala.util.{Failure, Success}
       }
   }
 
-  def publishUnacknowledged(data: Publishing): Behavior[Event] = Behaviors.withTimers { timer =>
-    timer.startSingleTimer("receive-pubackrec", ReceivePubAckRecTimeout, data.settings.receivePubAckRecTimeout)
+  def publishUnacknowledged(data: Publishing)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
+    timer =>
+      timer.startSingleTimer("receive-pubackrec", ReceivePubAckRecTimeout, data.settings.receivePubAckRecTimeout)
 
-    Behaviors
-      .receiveMessagePartial[Event] {
-        case PubAckReceivedFromRemote(local)
-            if data.publish.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) =>
-          local ! ForwardPubAck(data.publishData)
-          Behaviors.stopped
-        case PubRecReceivedFromRemote(local) if data.publish.flags.contains(ControlPacketFlags.QoSAtMostOnceDelivery) =>
-          local ! ForwardPubRec(data.publishData)
-          publishAcknowledged(data)
-        case ReceivePubAckRecTimeout =>
-          data.remote.offer(
-            ForwardPublish(data.publish.copy(flags = data.publish.flags | ControlPacketFlags.DUP), Some(data.packetId))
-          )
-          publishUnacknowledged(data)
-      }
-      .receiveSignal {
-        case (_, PostStop) =>
-          data.packetRouter ! LocalPacketRouter.Unregister(data.packetId)
-          data.remote.complete()
-          Behaviors.same
-      }
+      Behaviors
+        .receiveMessagePartial[Event] {
+          case PubAckReceivedFromRemote(local)
+              if data.publish.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) =>
+            local ! ForwardPubAck(data.publishData)
+            Behaviors.stopped
+          case PubRecReceivedFromRemote(local)
+              if data.publish.flags.contains(ControlPacketFlags.QoSAtMostOnceDelivery) =>
+            local ! ForwardPubRec(data.publishData)
+            publishAcknowledged(data)
+          case ReceivePubAckRecTimeout =>
+            data.remote.offer(
+              ForwardPublish(data.publish.copy(flags = data.publish.flags | ControlPacketFlags.DUP),
+                             Some(data.packetId))
+            )
+            publishUnacknowledged(data)
+        }
+        .receiveSignal {
+          case (_, PostStop) =>
+            data.packetRouter ! LocalPacketRouter.Unregister(data.packetId)
+            data.remote.complete()
+            Behaviors.same
+        }
   }
 
-  def publishAcknowledged(data: Publishing): Behavior[Event] = Behaviors.withTimers { timer =>
-    timer.startSingleTimer("receive-pubrel", ReceivePubCompTimeout, data.settings.receivePubCompTimeout)
+  def publishAcknowledged(data: Publishing)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
+    timer =>
+      timer.startSingleTimer("receive-pubrel", ReceivePubCompTimeout, data.settings.receivePubCompTimeout)
 
-    data.remote.offer(ForwardPubRel(data.publish, data.packetId))
+      data.remote.offer(ForwardPubRel(data.publish, data.packetId))
 
-    Behaviors
-      .receiveMessagePartial[Event] {
-        case PubCompReceivedFromRemote(local) =>
-          local ! ForwardPubComp(data.publishData)
-          Behaviors.stopped
-        case ReceivePubCompTimeout =>
-          data.remote.offer(ForwardPubRel(data.publish, data.packetId))
-          publishAcknowledged(data)
-      }
-      .receiveSignal {
-        case (_, PostStop) =>
-          data.packetRouter ! LocalPacketRouter.Unregister(data.packetId)
-          data.remote.complete()
-          Behaviors.same
-      }
+      Behaviors
+        .receiveMessagePartial[Event] {
+          case PubCompReceivedFromRemote(local) =>
+            local ! ForwardPubComp(data.publishData)
+            Behaviors.stopped
+          case ReceivePubCompTimeout =>
+            data.remote.offer(ForwardPubRel(data.publish, data.packetId))
+            publishAcknowledged(data)
+        }
+        .receiveSignal {
+          case (_, PostStop) =>
+            data.packetRouter ! LocalPacketRouter.Unregister(data.packetId)
+            data.remote.complete()
+            Behaviors.same
+        }
   }
 }
 

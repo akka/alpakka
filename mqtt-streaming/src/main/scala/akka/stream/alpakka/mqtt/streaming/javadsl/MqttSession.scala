@@ -7,6 +7,7 @@ package javadsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream.Materializer
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{
   ActorMqttClientSession => ScalaActorMqttClientSession,
   ActorMqttServerSession => ScalaActorMqttServerSession,
@@ -43,9 +44,10 @@ abstract class MqttClientSession extends MqttSession {
  *
  * @param settings session settings
  */
-final class ActorMqttClientSession(settings: MqttSessionSettings, system: ActorSystem) extends MqttClientSession {
+final class ActorMqttClientSession(settings: MqttSessionSettings, mat: Materializer, system: ActorSystem)
+    extends MqttClientSession {
   override protected[javadsl] val underlying: ScalaActorMqttClientSession =
-    ScalaActorMqttClientSession(settings)(system)
+    ScalaActorMqttClientSession(settings)(mat, system)
 }
 
 object MqttServerSession {
@@ -78,11 +80,12 @@ abstract class MqttServerSession extends MqttSession {
  *
  * @param settings session settings
  */
-final class ActorMqttServerSession(settings: MqttSessionSettings, system: ActorSystem) extends MqttServerSession {
+final class ActorMqttServerSession(settings: MqttSessionSettings, mat: Materializer, system: ActorSystem)
+    extends MqttServerSession {
   import MqttServerSession._
 
   override protected[javadsl] val underlying: ScalaActorMqttServerSession =
-    ScalaActorMqttServerSession(settings)(system)
+    ScalaActorMqttServerSession(settings)(mat, system)
 
   override def watchClientSessions: Source[ClientSessionTerminated, NotUsed] =
     underlying.watchClientSessions.map {

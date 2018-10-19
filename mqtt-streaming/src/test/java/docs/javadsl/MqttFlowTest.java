@@ -86,7 +86,7 @@ public class MqttFlowTest {
 
     // #create-streaming-flow
     MqttSessionSettings settings = MqttSessionSettings.create();
-    MqttClientSession session = new ActorMqttClientSession(settings, system);
+    MqttClientSession session = new ActorMqttClientSession(settings, materializer, system);
 
     Flow<ByteString, ByteString, CompletionStage<Tcp.OutgoingConnection>> connection =
         Tcp.get(system).outgoingConnection("localhost", 1883);
@@ -124,7 +124,7 @@ public class MqttFlowTest {
 
     // #create-streaming-bind-flow
     MqttSessionSettings settings = MqttSessionSettings.create();
-    MqttServerSession session = new ActorMqttServerSession(settings, system);
+    MqttServerSession session = new ActorMqttServerSession(settings, materializer, system);
 
     int maxConnections = 1;
 
@@ -197,7 +197,8 @@ public class MqttFlowTest {
         Tcp.get(system).outgoingConnection(host, port);
 
     Flow<Command<?>, DecodeErrorOrEvent, NotUsed> mqttFlow =
-        Mqtt.clientSessionFlow(new ActorMqttClientSession(settings, system)).join(connection);
+        Mqtt.clientSessionFlow(new ActorMqttClientSession(settings, materializer, system))
+            .join(connection);
 
     Pair<SourceQueueWithComplete<Command<?>>, CompletionStage<DecodeErrorOrEvent>> run =
         Source.<Command<?>>queue(3, OverflowStrategy.fail())

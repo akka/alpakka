@@ -11,7 +11,7 @@ import akka.actor.Scheduler
 import akka.{NotUsed, actor => untyped}
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.stream.{ActorMaterializer, Materializer, OverflowStrategy}
+import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.alpakka.mqtt.streaming.impl._
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Source}
 import akka.util.{ByteString, Timeout}
@@ -58,7 +58,8 @@ abstract class MqttClientSession extends MqttSession {
 }
 
 object ActorMqttClientSession {
-  def apply(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem): ActorMqttClientSession =
+  def apply(settings: MqttSessionSettings)(implicit mat: Materializer,
+                                           system: untyped.ActorSystem): ActorMqttClientSession =
     new ActorMqttClientSession(settings)
 
   /**
@@ -76,7 +77,8 @@ object ActorMqttClientSession {
  * Provides an actor implementation of a client session
  * @param settings session settings
  */
-final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem)
+final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: Materializer,
+                                                                  system: untyped.ActorSystem)
     extends MqttClientSession {
 
   import ActorMqttClientSession._
@@ -314,7 +316,8 @@ abstract class MqttServerSession extends MqttSession {
 }
 
 object ActorMqttServerSession {
-  def apply(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem): ActorMqttServerSession =
+  def apply(settings: MqttSessionSettings)(implicit mat: Materializer,
+                                           system: untyped.ActorSystem): ActorMqttServerSession =
     new ActorMqttServerSession(settings)
 
   /**
@@ -332,15 +335,14 @@ object ActorMqttServerSession {
  * Provides an actor implementation of a server session
  * @param settings session settings
  */
-final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit system: untyped.ActorSystem)
+final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: Materializer,
+                                                                  system: untyped.ActorSystem)
     extends MqttServerSession {
 
   import MqttServerSession._
   import ActorMqttServerSession._
 
   private val serverSessionId = serverSessionCounter.getAndIncrement()
-
-  private implicit val mat: Materializer = ActorMaterializer()
 
   private val (terminations, terminationsSource) = Source
     .queue[ServerConnector.ClientSessionTerminated](settings.clientTerminationWatcherBufferSize,
