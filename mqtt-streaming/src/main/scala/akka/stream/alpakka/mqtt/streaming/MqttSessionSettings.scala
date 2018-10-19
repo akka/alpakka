@@ -3,8 +3,8 @@
  */
 
 package akka.stream.alpakka.mqtt.streaming
+
 import java.time.Duration
-import java.util.concurrent.TimeUnit
 
 import scala.concurrent.duration._
 
@@ -13,36 +13,8 @@ object MqttSessionSettings {
   /**
    * Factory method for Scala.
    */
-  def apply(maxPacketSize: Int = 4096,
-            maxClientConnectionStashSize: Int = 100,
-            clientTerminationWatcherBufferSize: Int = 100,
-            actorMqttSessionTimeout: FiniteDuration = 3.seconds,
-            commandParallelism: Int = 10,
-            eventParallelism: Int = 10,
-            receiveConnectTimeout: FiniteDuration = 5.minutes,
-            receiveConnAckTimeout: FiniteDuration = 30.seconds,
-            receivePubAckRecTimeout: FiniteDuration = 30.seconds,
-            receivePubCompTimeout: FiniteDuration = 30.seconds,
-            receivePubRelTimeout: FiniteDuration = 30.seconds,
-            receiveSubAckTimeout: FiniteDuration = 30.seconds,
-            receiveUnsubAckTimeout: FiniteDuration = 30.seconds,
-            serverSendBufferSize: Int = 100): MqttSessionSettings =
-    new MqttSessionSettings(
-      maxPacketSize,
-      maxClientConnectionStashSize,
-      clientTerminationWatcherBufferSize,
-      actorMqttSessionTimeout,
-      commandParallelism,
-      eventParallelism,
-      receiveConnectTimeout,
-      receiveConnAckTimeout,
-      receivePubAckRecTimeout,
-      receivePubCompTimeout,
-      receivePubRelTimeout,
-      receiveSubAckTimeout,
-      receiveUnsubAckTimeout,
-      serverSendBufferSize
-    )
+  def apply(): MqttSessionSettings =
+    new MqttSessionSettings()
 
   /**
    * Java API
@@ -51,58 +23,22 @@ object MqttSessionSettings {
    */
   def create(): MqttSessionSettings =
     apply()
-
-  /**
-   * Java API
-   *
-   * Factory method for Java.
-   */
-  def create(maxPacketSize: Int,
-             maxClientConnectionStashSize: Int,
-             clientTerminationWatcherBufferSize: Int,
-             actorMqttSessionTimeout: Duration,
-             commandParallelism: Int,
-             eventParallelism: Int,
-             receiveConnectTimeout: Duration,
-             receiveConnAckTimeout: Duration,
-             receivePubAckRecTimeout: Duration,
-             receivePubCompTimeout: Duration,
-             receivePubRelTimeout: Duration,
-             receiveSubAckTimeout: Duration,
-             receiveUnsubAckTimeout: Duration,
-             serverSendBufferSize: Int): MqttSessionSettings =
-    MqttSessionSettings(
-      maxPacketSize,
-      maxClientConnectionStashSize,
-      clientTerminationWatcherBufferSize,
-      FiniteDuration(actorMqttSessionTimeout.toMillis, TimeUnit.MILLISECONDS),
-      commandParallelism,
-      eventParallelism,
-      FiniteDuration(receiveConnectTimeout.toMillis, TimeUnit.MILLISECONDS),
-      FiniteDuration(receiveConnAckTimeout.toMillis, TimeUnit.MILLISECONDS),
-      FiniteDuration(receivePubAckRecTimeout.toMillis, TimeUnit.MILLISECONDS),
-      FiniteDuration(receivePubCompTimeout.toMillis, TimeUnit.MILLISECONDS),
-      FiniteDuration(receivePubRelTimeout.toMillis, TimeUnit.MILLISECONDS),
-      FiniteDuration(receiveSubAckTimeout.toMillis, TimeUnit.MILLISECONDS),
-      FiniteDuration(receiveUnsubAckTimeout.toMillis, TimeUnit.MILLISECONDS),
-      serverSendBufferSize
-    )
 }
 
-final class MqttSessionSettings private (val maxPacketSize: Int,
-                                         val maxClientConnectionStashSize: Int,
-                                         val clientTerminationWatcherBufferSize: Int,
-                                         val actorMqttSessionTimeout: FiniteDuration,
-                                         val commandParallelism: Int,
-                                         val eventParallelism: Int,
-                                         val receiveConnectTimeout: FiniteDuration,
-                                         val receiveConnAckTimeout: FiniteDuration,
-                                         val receivePubAckRecTimeout: FiniteDuration,
-                                         val receivePubCompTimeout: FiniteDuration,
-                                         val receivePubRelTimeout: FiniteDuration,
-                                         val receiveSubAckTimeout: FiniteDuration,
-                                         val receiveUnsubAckTimeout: FiniteDuration,
-                                         val serverSendBufferSize: Int) {
+final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
+                                         val maxClientConnectionStashSize: Int = 100,
+                                         val clientTerminationWatcherBufferSize: Int = 100,
+                                         val actorMqttSessionTimeout: FiniteDuration = 3.seconds,
+                                         val commandParallelism: Int = 10,
+                                         val eventParallelism: Int = 10,
+                                         val receiveConnectTimeout: FiniteDuration = 5.minutes,
+                                         val receiveConnAckTimeout: FiniteDuration = 30.seconds,
+                                         val receivePubAckRecTimeout: FiniteDuration = 30.seconds,
+                                         val receivePubCompTimeout: FiniteDuration = 30.seconds,
+                                         val receivePubRelTimeout: FiniteDuration = 30.seconds,
+                                         val receiveSubAckTimeout: FiniteDuration = 30.seconds,
+                                         val receiveUnsubAckTimeout: FiniteDuration = 30.seconds,
+                                         val serverSendBufferSize: Int = 100) {
 
   require(
     commandParallelism >= 2,
@@ -111,10 +47,15 @@ final class MqttSessionSettings private (val maxPacketSize: Int,
   require(maxPacketSize >= 0 && maxPacketSize <= 0xffff,
           s"maxPacketSize of $maxPacketSize must be positive and less than ${0xffff}")
 
+  import akka.util.JavaDurationConverters._
+
   def withMaxPacketSize(maxPacketSize: Int): MqttSessionSettings = copy(maxPacketSize = maxPacketSize)
 
   def withActorMqttSessionTimeout(actorMqttSessionTimeout: FiniteDuration): MqttSessionSettings =
     copy(actorMqttSessionTimeout = actorMqttSessionTimeout)
+
+  def withActorMqttSessionTimeout(actorMqttSessionTimeout: Duration): MqttSessionSettings =
+    copy(actorMqttSessionTimeout = actorMqttSessionTimeout.asScala)
 
   def withCommandParallelism(commandParallelism: Int): MqttSessionSettings =
     copy(commandParallelism = commandParallelism)
@@ -125,23 +66,44 @@ final class MqttSessionSettings private (val maxPacketSize: Int,
   def withReceiveConnectTimeout(receiveConnectTimeout: FiniteDuration): MqttSessionSettings =
     copy(receiveConnectTimeout = receiveConnectTimeout)
 
+  def withReceiveConnectTimeout(receiveConnectTimeout: Duration): MqttSessionSettings =
+    copy(receiveConnectTimeout = receiveConnectTimeout.asScala)
+
   def withReceiveConnAckTimeout(receiveConnAckTimeout: FiniteDuration): MqttSessionSettings =
     copy(receiveConnAckTimeout = receiveConnAckTimeout)
+
+  def withReceiveConnAckTimeout(receiveConnAckTimeout: Duration): MqttSessionSettings =
+    copy(receiveConnAckTimeout = receiveConnAckTimeout.asScala)
 
   def withReceivePubAckRecTimeout(receivePubAckRecTimeout: FiniteDuration): MqttSessionSettings =
     copy(receivePubAckRecTimeout = receivePubAckRecTimeout)
 
+  def withReceivePubAckRecTimeout(receivePubAckRecTimeout: Duration): MqttSessionSettings =
+    copy(receivePubAckRecTimeout = receivePubAckRecTimeout.asScala)
+
   def withReceivePubCompTimeout(receivePubCompTimeout: FiniteDuration): MqttSessionSettings =
     copy(receivePubCompTimeout = receivePubCompTimeout)
+
+  def withReceivePubCompTimeout(receivePubCompTimeout: Duration): MqttSessionSettings =
+    copy(receivePubCompTimeout = receivePubCompTimeout.asScala)
 
   def withReceivePubRelTimeout(receivePubRelTimeout: FiniteDuration): MqttSessionSettings =
     copy(receivePubRelTimeout = receivePubRelTimeout)
 
+  def withReceivePubRelTimeout(receivePubRelTimeout: Duration): MqttSessionSettings =
+    copy(receivePubRelTimeout = receivePubRelTimeout.asScala)
+
   def withReceiveSubAckTimeout(receiveSubAckTimeout: FiniteDuration): MqttSessionSettings =
     copy(receiveSubAckTimeout = receiveSubAckTimeout)
 
+  def withReceiveSubAckTimeout(receiveSubAckTimeout: Duration): MqttSessionSettings =
+    copy(receiveSubAckTimeout = receiveSubAckTimeout.asScala)
+
   def withReceiveUnsubAckTimeout(receiveUnsubAckTimeout: FiniteDuration): MqttSessionSettings =
     copy(receiveUnsubAckTimeout = receiveUnsubAckTimeout)
+
+  def withReceiveUnsubAckTimeout(receiveUnsubAckTimeout: Duration): MqttSessionSettings =
+    copy(receiveUnsubAckTimeout = receiveUnsubAckTimeout.asScala)
 
   def withMaxClientConnectionStashSize(maxClientConnectionStashSize: Int): MqttSessionSettings =
     copy(maxClientConnectionStashSize = maxClientConnectionStashSize)
