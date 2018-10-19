@@ -29,7 +29,15 @@ object SnsPublisher {
    * creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages to a SNS topic using an [[com.amazonaws.services.sns.AmazonSNSAsync AmazonSNSAsync]]
    */
   def publishFlow(topicArn: String)(implicit snsClient: AmazonSNSAsync): Flow[PublishRequest, PublishResult, NotUsed] =
-    Flow.fromGraph(new SnsPublishFlowStage(topicArn, snsClient))
+    Flow
+      .fromFunction((request: PublishRequest) => request.withTopicArn(topicArn))
+      .via(new SnsPublishFlowStage(snsClient))
+
+  /**
+   * creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages to SNS topics based on the message topic arn using an [[com.amazonaws.services.sns.AmazonSNSAsync AmazonSNSAsync]]
+   */
+  def publishFlow()(implicit snsClient: AmazonSNSAsync): Flow[PublishRequest, PublishResult, NotUsed] =
+    Flow.fromGraph(new SnsPublishFlowStage(snsClient))
 
   /**
    * creates a [[akka.stream.scaladsl.Sink Sink]] to publish messages to a SNS topic using an [[com.amazonaws.services.sns.AmazonSNSAsync AmazonSNSAsync]]
@@ -42,4 +50,10 @@ object SnsPublisher {
    */
   def publishSink(topicArn: String)(implicit snsClient: AmazonSNSAsync): Sink[PublishRequest, Future[Done]] =
     publishFlow(topicArn).toMat(Sink.ignore)(Keep.right)
+
+  /**
+   * creates a [[akka.stream.scaladsl.Sink Sink]] to publish messages to SNS topics based on the message topic arn using an [[com.amazonaws.services.sns.AmazonSNSAsync AmazonSNSAsync]]
+   */
+  def publishSink()(implicit snsClient: AmazonSNSAsync): Sink[PublishRequest, Future[Done]] =
+    publishFlow().toMat(Sink.ignore)(Keep.right)
 }

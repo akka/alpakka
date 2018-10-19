@@ -37,6 +37,17 @@ class SnsPublisherSpec extends FlatSpec with Matchers with ScalaFutures with Int
       Source
         .single(new PublishRequest().withMessage("message"))
         .runWith(SnsPublisher.publishSink(topicArn))
+
+    //#use-sink
+    published.futureValue should be(Done)
+  }
+
+  it should "send publish request with dynamic arn" in {
+    val published: Future[Done] =
+    //#use-sink
+      Source
+        .single(new PublishRequest().withMessage("message").withTopicArn(topicArn))
+        .runWith(SnsPublisher.publishSink())
     //#use-sink
     published.futureValue should be(Done)
   }
@@ -59,6 +70,18 @@ class SnsPublisherSpec extends FlatSpec with Matchers with ScalaFutures with Int
       Source
         .single(new PublishRequest().withMessage("message"))
         .via(SnsPublisher.publishFlow(topicArn))
+        .runWith(Sink.foreach(res => println(res.getMessageId)))
+
+    //#use-flow
+    published.futureValue should be(Done)
+  }
+
+  it should "send publish request with dynamic topic" in {
+    val published: Future[Done] =
+    //#use-flow
+      Source
+        .single(new PublishRequest().withMessage("message").withTopicArn(topicArn))
+        .via(SnsPublisher.publishFlow())
         .runWith(Sink.foreach(res => println(res.getMessageId)))
     //#use-flow
     published.futureValue should be(Done)

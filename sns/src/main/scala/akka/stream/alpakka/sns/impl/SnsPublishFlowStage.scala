@@ -15,7 +15,7 @@ import com.amazonaws.services.sns.model.{PublishRequest, PublishResult}
  * INTERNAL API
  */
 @InternalApi
-private[sns] final class SnsPublishFlowStage(topicArn: String, snsClient: AmazonSNSAsync)
+private[sns] final class SnsPublishFlowStage(snsClient: AmazonSNSAsync)
     extends GraphStage[FlowShape[PublishRequest, PublishResult]] {
 
   private val in = Inlet[PublishRequest]("SnsPublishFlow.in")
@@ -48,7 +48,7 @@ private[sns] final class SnsPublishFlowStage(topicArn: String, snsClient: Amazon
 
       override def onPush(): Unit = {
         isMessageInFlight = true
-        val request = grab(in).withTopicArn(topicArn)
+        val request = grab(in)
         snsClient.publishAsync(request, asyncHandler)
       }
 

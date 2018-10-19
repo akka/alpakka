@@ -81,6 +81,42 @@ class SnsPublishMockingSpec extends FlatSpec with DefaultTestContext with MustMa
     verify(snsClient, times(1)).publishAsync(meq(expectedThird), any())
   }
 
+  it should "publish multiple PublishRequest messages to multiple sns topics" in {
+    val publishResult = new PublishResult().withMessageId("message-id")
+
+    when(snsClient.publishAsync(any[PublishRequest](), any())).thenAnswer(
+      new Answer[AnyRef] {
+        override def answer(invocation: InvocationOnMock): Future[PublishResult] = {
+          val publishRequest = invocation.getArgument[PublishRequest](0)
+          invocation
+            .getArgument[AsyncHandler[PublishRequest, PublishResult]](1)
+            .onSuccess(publishRequest, publishResult)
+          CompletableFuture.completedFuture(publishResult)
+        }
+      }
+    )
+
+    val (probe, future) =
+      TestSource.probe[PublishRequest].via(SnsPublisher.publishFlow()).toMat(Sink.seq)(Keep.both).run()
+
+    probe
+      .sendNext(new PublishRequest().withMessage("sns-message-1").withTopicArn("topic-arn-1"))
+      .sendNext(new PublishRequest().withMessage("sns-message-2").withTopicArn("topic-arn-2"))
+      .sendNext(new PublishRequest().withMessage("sns-message-3").withTopicArn("topic-arn-3"))
+      .sendComplete()
+
+    Await.result(future, 1.second) mustBe publishResult :: publishResult :: publishResult :: Nil
+
+    val expectedFirst = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message-1").withTopicArn("topic-arn-1")
+    verify(snsClient, times(1)).publishAsync(meq(expectedFirst), any())
+
+    val expectedSecond = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message-2").withTopicArn("topic-arn-2")
+    verify(snsClient, times(1)).publishAsync(meq(expectedSecond), any())
+
+    val expectedThird = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message-3").withTopicArn("topic-arn-3")
+    verify(snsClient, times(1)).publishAsync(meq(expectedThird), any())
+  }
+
   it should "publish a single string message to sns" in {
     val publishRequest = new PublishRequest().withTopicArn("topic-arn").withMessage("sns-message")
     val publishResult = new PublishResult().withMessageId("message-id")
