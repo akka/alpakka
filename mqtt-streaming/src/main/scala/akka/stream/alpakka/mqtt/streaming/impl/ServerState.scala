@@ -476,7 +476,7 @@ import scala.util.{Failure, Success}
               } else {
                 clientConnected(data)
               }
-            case (context, ReceivedProducerPublishingCommand(command)) =>
+            case (_, ReceivedProducerPublishingCommand(command)) =>
               command.runWith(Sink.foreach {
                 case Producer.ForwardPublish(publish, packetId) => data.remote.offer(ForwardPublish(publish, packetId))
                 case Producer.ForwardPubRel(_, packetId) => data.remote.offer(ForwardPubRel(packetId))
