@@ -753,10 +753,12 @@ class MqttSessionSpec
               .join(pipeToClient)
           )
           .wireTap(Sink.foreach[Either[DecodeError, Event[_]]] {
-            case Right(Event(`connect`, _)) => connectReceived.success(Done)
+            case Right(Event(`connect`, _)) =>
+              connectReceived.success(Done)
             case Right(Event(cp: Subscribe, _)) if cp.topicFilters == subscribe.topicFilters =>
               subscribeReceived.success(Done)
-            case Right(Event(cp: Publish, _)) if cp.topicName == publish.topicName => publishReceived.success(Done)
+            case Right(Event(cp: Publish, _)) if cp.topicName == publish.topicName =>
+              publishReceived.success(Done)
             case Right(Event(cp: Unsubscribe, _)) if cp.topicFilters == unsubscribe.topicFilters =>
               unsubscribeReceived.success(Done)
           })
