@@ -346,9 +346,5 @@ abstract class SourceStageLogic[T](shape: SourceShape[T],
       Source.fromFuture(connectionStateSource).flatMapConcat(identity)
   }
 
-  override def postStop(): Unit = {
-    queue.clear()
-    stopSessions()
-    finishStop()
-  }
+  override def postStop(): Unit = finishStop()
 }

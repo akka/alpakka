@@ -100,7 +100,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
 
           override def onUpstreamFailure(ex: Throwable): Unit = {
             jmsSessions.foreach(s => Try(s.closeSession()))
-            failStageWith(ex)
+            publishAndFailStage(ex)
           }
 
           override def onPush(): Unit = {

@@ -37,7 +37,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
 
   protected def onSessionOpened(jmsSession: S): Unit = {}
 
-  protected val fail: AsyncCallback[Throwable] = getAsyncCallback[Throwable](failStageWith)
+  protected val fail: AsyncCallback[Throwable] = getAsyncCallback[Throwable](publishAndFailStage)
 
   private val connectionFailedCB = getAsyncCallback[Throwable](connectionFailed)
 
@@ -66,9 +66,10 @@ private[jms] trait JmsConnector[S <: JmsSession] {
 
     val previous = updateStateWith(update)
     connection(previous).foreach(_.close())
+    connectionStateQueue.complete()
   }
 
-  protected def failStageWith(ex: Throwable): Unit = {
+  protected def publishAndFailStage(ex: Throwable): Unit = {
     val previous = updateState(JmsConnectorStopping(Failure(ex)))
     connection(previous).foreach(_.close())
     failStage(ex)
@@ -100,7 +101,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
       log.error(ex,
                 "{} initializing connection failed, security settings are not properly configured",
                 attributes.nameOrDefault())
-      failStageWith(ex)
+      publishAndFailStage(ex)
 
     case _: jms.JMSException | _: JmsConnectTimedOut => handleRetriableException(ex)
 
@@ -109,7 +110,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
         case _: JmsConnectorStopping | _: JmsConnectorStopped => logStoppingException(ex)
         case _ =>
           log.error(ex, "{} connection failed", attributes.nameOrDefault())
-          failStageWith(ex)
+          publishAndFailStage(ex)
       }
   }
 
@@ -160,7 +161,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
 
     case Failure(ex) =>
       log.error(ex, "{} initializing connection failed", attributes.nameOrDefault())
-      failStageWith(ex)
+      publishAndFailStage(ex)
   }
 
   protected val sessionOpenedCB: AsyncCallback[Try[Unit]] = getAsyncCallback[Try[Unit]](sessionOpened)
@@ -174,7 +175,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
         if (maxRetries == 0) ex
         else ConnectionRetryException(s"Could not establish connection after $maxRetries retries.", ex)
       log.error(exception, "{} initializing connection failed", attributes.nameOrDefault())
-      failStageWith(exception)
+      publishAndFailStage(exception)
     } else {
       val status = updateState(JmsConnectorDisconnected)
       connection(status).foreach(_.close())
