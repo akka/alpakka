@@ -18,7 +18,7 @@ import akka.stream.scaladsl.Source
 import scala.util.{Failure, Success}
 
 package object scaladsl {
-  @InternalApi private[scaladsl] def transformConnected(source: Source[InternalJmsConnectorState, NotUsed]) =
+  @InternalApi private[scaladsl] def transformConnectorState(source: Source[InternalJmsConnectorState, NotUsed]) =
     source.map {
       case JmsConnectorDisconnected => JmsConnectorState.Disconnected
       case _: JmsConnectorConnected => JmsConnectorState.Connected

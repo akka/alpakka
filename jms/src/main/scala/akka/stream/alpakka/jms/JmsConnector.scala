@@ -216,7 +216,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
 
   def startConnection: Boolean
 
-  def openSessions(attempt: Int, backoffMaxed: Boolean): Future[Seq[S]] = {
+  private def openSessions(attempt: Int, backoffMaxed: Boolean): Future[Seq[S]] = {
     val eventualConnection = openConnection(attempt, backoffMaxed)
     eventualConnection.flatMap { connection =>
       val sessionFutures =
@@ -224,6 +224,21 @@ private[jms] trait JmsConnector[S <: JmsSession] {
           yield Future(createSession(connection, destination.create))
       Future.sequence(sessionFutures)
     }(ExecutionContexts.sameThreadExecutionContext)
+  }
+
+  private def openConnection(attempt: Int, backoffMaxed: Boolean): Future[jms.Connection] = {
+    implicit val system: ActorSystem = ActorMaterializerHelper.downcast(materializer).system
+    val jmsConnection = openConnectionAttempt(startConnection)
+    updateState(JmsConnectorInitializing(jmsConnection, attempt, backoffMaxed, 0))
+    jmsConnection.foreach { connection =>
+      connection.setExceptionListener(new jms.ExceptionListener {
+        override def onException(ex: jms.JMSException): Unit = {
+          Try(connection.close()) // best effort closing the connection.
+          connectionFailedCB.invoke(ex)
+        }
+      })
+    }(ExecutionContexts.sameThreadExecutionContext)
+    jmsConnection
   }
 
   private def openConnectionAttempt(startConnection: Boolean)(implicit system: ActorSystem): Future[jms.Connection] = {
@@ -272,22 +287,6 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     }
 
     Future.firstCompletedOf(Iterator(connectionFuture, timeoutFuture))(ExecutionContexts.sameThreadExecutionContext)
-  }
-
-  private[jms] def openConnection(attempt: Int, backoffMaxed: Boolean): Future[jms.Connection] = {
-    implicit val system: ActorSystem = ActorMaterializerHelper.downcast(materializer).system
-    val jmsConnection = openConnectionAttempt(startConnection)
-      .map { connection =>
-        connection.setExceptionListener(new jms.ExceptionListener {
-          override def onException(ex: jms.JMSException): Unit = {
-            Try(connection.close()) // best effort closing the connection.
-            connectionFailedCB.invoke(ex)
-          }
-        })
-        connection
-      }(ExecutionContexts.sameThreadExecutionContext)
-    updateState(JmsConnectorInitializing(jmsConnection, attempt, backoffMaxed, 0))
-    jmsConnection
   }
 }
 

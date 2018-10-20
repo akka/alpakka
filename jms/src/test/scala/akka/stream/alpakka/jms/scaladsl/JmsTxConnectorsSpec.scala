@@ -6,11 +6,11 @@ package akka.stream.alpakka.jms.scaladsl
 
 import java.util.concurrent.{ConcurrentHashMap, LinkedBlockingQueue, TimeUnit}
 
-import javax.jms.{JMSException, TextMessage}
 import akka.Done
+import akka.stream._
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import akka.stream._
+import javax.jms.{JMSException, TextMessage}
 import org.apache.activemq.ActiveMQConnectionFactory
 import org.scalatest.Inspectors._
 
@@ -35,7 +35,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
       val in = 0 to 25 map (i => ('a' + i).asInstanceOf[Char].toString)
       Source(in).runWith(jmsSink)
 
-      val jmsSource: Source[TxEnvelope, KillSwitch] = JmsConsumer.txSource(
+      val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
         JmsConsumerSettings(connectionFactory).withSessionCount(5).withQueue("test")
       )
 
@@ -65,7 +65,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
       Source(msgsIn).runWith(jmsSink)
 
       //#create-jms-source
-      val jmsSource: Source[TxEnvelope, KillSwitch] = JmsConsumer.txSource(
+      val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
         JmsConsumerSettings(connectionFactory)
           .withSessionCount(5)
           .withAckTimeout(1.second)
@@ -105,7 +105,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
 
       Source(msgsIn).runWith(jmsSink)
 
-      val jmsSource: Source[TxEnvelope, KillSwitch] = JmsConsumer.txSource(
+      val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
         JmsConsumerSettings(connectionFactory).withSessionCount(5).withQueue("numbers")
       )
 
@@ -176,7 +176,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
       val in = 0 to 25 map (i => ('a' + i).asInstanceOf[Char].toString)
       Source(in).runWith(JmsProducer.textSink(JmsProducerSettings(connectionFactory).withQueue("test")))
 
-      val jmsSource: Source[TxEnvelope, KillSwitch] = JmsConsumer.txSource(
+      val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
         JmsConsumerSettings(connectionFactory).withSessionCount(5).withQueue("test")
       )
 
@@ -221,10 +221,10 @@ class JmsTxConnectorsSpec extends JmsSpec {
       val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
       val inNumbers = (1 to 10).map(_.toString)
 
-      val jmsTopicSource: Source[TxEnvelope, KillSwitch] = JmsConsumer.txSource(
+      val jmsTopicSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
         JmsConsumerSettings(connectionFactory).withSessionCount(1).withTopic("topic")
       )
-      val jmsSource2: Source[TxEnvelope, KillSwitch] = JmsConsumer.txSource(
+      val jmsSource2: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
         JmsConsumerSettings(connectionFactory).withSessionCount(1).withTopic("topic")
       )
 
@@ -268,7 +268,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
         .toMat(Sink.seq)(Keep.both)
         .run()
 
-      val jmsSource: Source[TxEnvelope, KillSwitch] = JmsConsumer.txSource(
+      val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
         JmsConsumerSettings(connectionFactory).withSessionCount(5).withQueue("numbers")
       )
 
@@ -343,7 +343,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
         .toMat(Sink.seq)(Keep.both)
         .run()
 
-      val jmsSource: Source[TxEnvelope, KillSwitch] = JmsConsumer.txSource(
+      val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
         JmsConsumerSettings(connectionFactory).withSessionCount(5).withQueue("numbers")
       )
 
@@ -421,7 +421,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
         .toMat(Sink.seq)(Keep.both)
         .run()
 
-      val jmsSource: Source[TxEnvelope, KillSwitch] = JmsConsumer.txSource(
+      val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
         JmsConsumerSettings(connectionFactory)
           .withSessionCount(5)
           .withQueue("numbers")
@@ -512,7 +512,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
         .toMat(Sink.seq)(Keep.both)
         .run()
 
-      val jmsSource: Source[TxEnvelope, KillSwitch] = JmsConsumer.txSource(
+      val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
         JmsConsumerSettings(connectionFactory)
           .withSessionCount(5)
           .withQueue("numbers")

@@ -110,7 +110,7 @@ object JmsConsumer {
 
     override def abort(ex: Throwable): Unit = internal.abort(ex)
 
-    override def connection: Source[JmsConnectorState, NotUsed] = transformConnected(internal.connected)
+    override def connectorState: Source[JmsConnectorState, NotUsed] = transformConnectorState(internal.connected)
   }
 
 }

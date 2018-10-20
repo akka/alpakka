@@ -22,8 +22,8 @@ object JmsProducer {
    */
   def flow[R <: JmsMessage](
       settings: JmsProducerSettings
-  ): akka.stream.javadsl.Flow[R, R, NotUsed] =
-    akka.stream.alpakka.jms.scaladsl.JmsProducer.flow(settings).asJava
+  ): akka.stream.javadsl.Flow[R, R, JmsProducerStatus] =
+    akka.stream.alpakka.jms.scaladsl.JmsProducer.flow(settings).mapMaterializedValue(toProducerStatus).asJava
 
   /**
    * Java API: Creates an [[JmsProducer]] for [[Envelope]]s
@@ -94,7 +94,8 @@ object JmsProducer {
 
   private def toProducerStatus(scalaStatus: scaladsl.JmsProducerStatus) = new JmsProducerStatus {
 
-    override def connection: Source[JmsConnectorState, NotUsed] = transformConnected(scalaStatus.connection)
+    override def connectorState: Source[JmsConnectorState, NotUsed] =
+      transformConnectorState(scalaStatus.connectorState)
   }
 
 }

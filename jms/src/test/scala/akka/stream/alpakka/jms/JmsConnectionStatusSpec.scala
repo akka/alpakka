@@ -46,7 +46,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
         }
         .runWith(jmsSink)
 
-      val status = producerStatus.connection.toMat(Sink.queue())(Keep.right).run()
+      val status = producerStatus.connectorState.toMat(Sink.queue())(Keep.right).run()
 
       status should havePublishedState(Connecting(1))
       status should havePublishedState(Connected)
@@ -66,7 +66,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
       })
 
       val jmsSink = textSink(JmsProducerSettings(factory).withQueue("test"))
-      val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connection
+      val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connectorState
       val status = connectionStatus.runWith(Sink.queue())
 
       status should havePublishedState(Connecting(1))
@@ -90,7 +90,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
           .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(1))
           .withQueue("test")
       )
-      val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connection
+      val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connectorState
       val status = connectionStatus.runWith(Sink.queue())
 
       status should havePublishedState(Connecting(1))
@@ -109,7 +109,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
       })
 
       val jmsSink = textSink(JmsProducerSettings(factory).withQueue("test"))
-      val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connection
+      val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connectorState
       val status = connectionStatus.runWith(Sink.queue())
 
       status should havePublishedState(Connecting(1))
@@ -128,11 +128,10 @@ class JmsConnectionStatusSpec extends JmsSpec {
       })
 
       val jmsSink = textSink(JmsProducerSettings(factory).withQueue("test"))
-      val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connection
+      val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connectorState
       val status = connectionStatus.runWith(Sink.queue())
 
-      status should havePublishedState(Connecting(1))
-      status should havePublishedState(Failing(securityException))
+      eventually { status should havePublishedState(Failing(securityException)) }
       status should havePublishedState(Failed(securityException))
     }
 
@@ -145,7 +144,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
       })
 
       val jmsSink = textSink(JmsProducerSettings(factory).withQueue("test"))
-      val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connection
+      val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connectorState
       val status = connectionStatus.runWith(Sink.queue())
 
       status should havePublishedState(Connecting(1))
@@ -163,7 +162,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
       })
 
       val jmsSink = textSink(JmsProducerSettings(factory).withQueue("test"))
-      val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connection
+      val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connectorState
       val status = connectionStatus.runWith(Sink.queue())
 
       status should havePublishedState(Connecting(1))
@@ -181,7 +180,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
       })
 
       val jmsSource = JmsConsumer.textSource(JmsConsumerSettings(factory).withQueue("test"))
-      val connectionStatus = jmsSource.toMat(Sink.ignore)(Keep.left).run().connection
+      val connectionStatus = jmsSource.toMat(Sink.ignore)(Keep.left).run().connectorState
       val status = connectionStatus.runWith(Sink.queue())
 
       status should havePublishedState(Connecting(1))
@@ -199,7 +198,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
       })
 
       val jmsSource = JmsConsumer.textSource(JmsConsumerSettings(factory).withQueue("test"))
-      val connectionStatus = jmsSource.toMat(Sink.ignore)(Keep.left).run().connection
+      val connectionStatus = jmsSource.toMat(Sink.ignore)(Keep.left).run().connectorState
       val status = connectionStatus.runWith(Sink.queue())
 
       status should havePublishedState(Connecting(1))
@@ -230,7 +229,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
 
       Source.tick(10.millis, 20.millis, "text").runWith(jmsSink)
 
-      val status = consumerControl.connection.runWith(Sink.queue())
+      val status = consumerControl.connectorState.runWith(Sink.queue())
 
       eventually { status should havePublishedState(Connected) }
 
@@ -256,8 +255,8 @@ class JmsConnectionStatusSpec extends JmsSpec {
       val (cancellable, producerStatus) = Source.tick(10.millis, 20.millis, "text").toMat(jmsSink)(Keep.both).run()
       val consumerControl = jmsSource.toMat(Sink.ignore)(Keep.left).run()
 
-      val consumerConnected = consumerControl.connection.runWith(Sink.queue())
-      val producerConnected = producerStatus.connection.runWith(Sink.queue())
+      val consumerConnected = consumerControl.connectorState.runWith(Sink.queue())
+      val producerConnected = producerStatus.connectorState.runWith(Sink.queue())
 
       eventually { consumerConnected should havePublishedState(Connected) }
       eventually { producerConnected should havePublishedState(Connected) }
@@ -283,7 +282,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
 
       val consumerControl = jmsSource.toMat(Sink.ignore)(Keep.left).run()
 
-      val consumerConnected = consumerControl.connection.runWith(Sink.queue())
+      val consumerConnected = consumerControl.connectorState.runWith(Sink.queue())
 
       eventually { consumerConnected should havePublishedState(Connected) }
 
@@ -323,8 +322,10 @@ class JmsConnectionStatusSpec extends JmsSpec {
       val producerStatus = Source.tick(50.millis, 100.millis, "text").runWith(jmsSink)
       val consumerControl = jmsSource.toMat(Sink.ignore)(Keep.left).run()
 
-      val consumerConnected = consumerControl.connection.buffer(10, OverflowStrategy.backpressure).runWith(Sink.queue())
-      val producerConnected = producerStatus.connection.buffer(10, OverflowStrategy.backpressure).runWith(Sink.queue())
+      val consumerConnected =
+        consumerControl.connectorState.buffer(10, OverflowStrategy.backpressure).runWith(Sink.queue())
+      val producerConnected =
+        producerStatus.connectorState.buffer(10, OverflowStrategy.backpressure).runWith(Sink.queue())
 
       for (_ <- 1 to 20) {
         eventually { consumerConnected should havePublishedState(Connected) }

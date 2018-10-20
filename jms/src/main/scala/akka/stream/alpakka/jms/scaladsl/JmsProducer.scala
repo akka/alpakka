@@ -17,14 +17,16 @@ object JmsProducer {
   /**
    * Scala API: Creates an [[JmsProducer]] for [[JmsMessage]]s
    */
-  def flow[T <: JmsMessage](settings: JmsProducerSettings): Flow[T, T, NotUsed] = settings.destination match {
+  def flow[T <: JmsMessage](settings: JmsProducerSettings): Flow[T, T, JmsProducerStatus] = settings.destination match {
     case None => throw new IllegalArgumentException(noProducerDestination(settings))
     case Some(destination) =>
       Flow[T]
         .map(m => JmsProducerMessage.Message(m, NotUsed))
-        .via(Flow.fromGraph(new JmsProducerStage(settings, destination)))
+        .viaMat(Flow.fromGraph(new JmsProducerStage[T, NotUsed](settings, destination)))(Keep.right)
+        .mapMaterializedValue(toProducerStatus)
         .collectType[JmsProducerMessage.Message[T, NotUsed]]
         .map(_.message)
+
   }
 
   /**
@@ -70,7 +72,7 @@ object JmsProducer {
 
   private def toProducerStatus(internal: JmsProducerMatValue) = new JmsProducerStatus {
 
-    override def connection: Source[JmsConnectorState, NotUsed] = transformConnected(internal.connected)
+    override def connectorState: Source[JmsConnectorState, NotUsed] = transformConnectorState(internal.connected)
   }
 
   private def noProducerDestination(settings: JmsProducerSettings) =

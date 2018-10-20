@@ -13,7 +13,7 @@ import akka.stream.javadsl.Source
 
 package object javadsl {
 
-  @InternalApi private[javadsl] def transformConnected(
+  @InternalApi private[javadsl] def transformConnectorState(
       source: stream.scaladsl.Source[jms.scaladsl.JmsConnectorState, NotUsed]
   ): Source[JmsConnectorState, NotUsed] =
     source.map {

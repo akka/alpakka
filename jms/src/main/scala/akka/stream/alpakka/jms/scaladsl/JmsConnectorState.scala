@@ -13,7 +13,7 @@ trait JmsProducerStatus {
    * source that provides connector status change information.
    * Only the most recent connector state is buffered if the source is not consumed.
    */
-  def connection: Source[JmsConnectorState, NotUsed]
+  def connectorState: Source[JmsConnectorState, NotUsed]
 
 }
 
@@ -23,7 +23,7 @@ trait JmsConsumerControl extends KillSwitch {
    * source that provides connector status change information.
    * Only the most recent connector state is buffered if the source is not consumed.
    */
-  def connection: Source[JmsConnectorState, NotUsed]
+  def connectorState: Source[JmsConnectorState, NotUsed]
 
 }
 
