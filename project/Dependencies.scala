@@ -252,7 +252,7 @@ object Dependencies {
   val MqttStreaming = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion, // ApacheV2
-      "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion, // ApacheV2
+      "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % "test", // ApacheV2
       "com.typesafe.akka" %% "akka-stream-typed" % AkkaVersion // ApacheV2
     )
   )
