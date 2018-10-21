@@ -230,15 +230,15 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     implicit val system: ActorSystem = ActorMaterializerHelper.downcast(materializer).system
     val jmsConnection = openConnectionAttempt(startConnection)
     updateState(JmsConnectorInitializing(jmsConnection, attempt, backoffMaxed, 0))
-    jmsConnection.foreach { connection =>
+    jmsConnection.map { connection =>
       connection.setExceptionListener(new jms.ExceptionListener {
         override def onException(ex: jms.JMSException): Unit = {
           Try(connection.close()) // best effort closing the connection.
           connectionFailedCB.invoke(ex)
         }
       })
-    }(ExecutionContexts.sameThreadExecutionContext)
-    jmsConnection
+      connection
+    }
   }
 
   private def openConnectionAttempt(startConnection: Boolean)(implicit system: ActorSystem): Future[jms.Connection] = {

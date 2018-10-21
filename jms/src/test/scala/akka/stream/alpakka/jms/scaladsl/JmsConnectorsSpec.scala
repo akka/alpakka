@@ -598,8 +598,6 @@ class JmsConnectorsSpec extends JmsSpec {
       if (connectionFactory.cachedConnection != null) {
         connectionFactory.cachedConnection shouldBe 'closed
       }
-
-      ctx.broker.start(true)
     }
 
     "ensure no message loss when stopping a stream" in withServer() { ctx =>

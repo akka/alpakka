@@ -153,6 +153,26 @@ class JmsConnectionStatusSpec extends JmsSpec {
       status should havePublishedState(Connected)
     }
 
+    "retry connection when setting exception listener fails" in withMockedProducer { ctx =>
+      import ctx._
+      val connectAttempts = new AtomicInteger()
+      when(connection.setExceptionListener(any[ExceptionListener]())).thenAnswer(new Answer[Unit]() {
+        override def answer(invocation: InvocationOnMock): Unit = {
+          println("invoked")
+          if (connectAttempts.getAndIncrement() == 0) throw new JMSException("connect error") else ()
+        }
+      })
+
+      val jmsSink = textSink(JmsProducerSettings(factory).withQueue("test"))
+      val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connectorState
+      val status = connectionStatus.runWith(Sink.queue())
+
+      status should havePublishedState(Connecting(1))
+      status should havePublishedState(Disconnected)
+      status should havePublishedState(Connecting(2))
+      status should havePublishedState(Connected)
+    }
+
     "retry connection when creating producer destination fails" in withMockedProducer { ctx =>
       import ctx._
       val connectAttempts = new AtomicInteger()
