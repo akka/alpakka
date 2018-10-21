@@ -86,7 +86,7 @@ public class MqttFlowTest {
 
     // #create-streaming-flow
     MqttSessionSettings settings = MqttSessionSettings.create();
-    MqttClientSession session = new ActorMqttClientSession(settings, materializer, system);
+    MqttClientSession session = ActorMqttClientSession.create(settings, materializer, system);
 
     Flow<ByteString, ByteString, CompletionStage<Tcp.OutgoingConnection>> connection =
         Tcp.get(system).outgoingConnection("localhost", 1883);
@@ -124,7 +124,7 @@ public class MqttFlowTest {
 
     // #create-streaming-bind-flow
     MqttSessionSettings settings = MqttSessionSettings.create();
-    MqttServerSession session = new ActorMqttServerSession(settings, materializer, system);
+    MqttServerSession session = ActorMqttServerSession.create(settings, materializer, system);
 
     int maxConnections = 1;
 

@@ -39,6 +39,11 @@ abstract class MqttClientSession extends MqttSession {
     underlying.shutdown()
 }
 
+object ActorMqttClientSession {
+  def create(settings: MqttSessionSettings, mat: Materializer, system: ActorSystem): ActorMqttClientSession =
+    new ActorMqttClientSession(settings, mat, system)
+}
+
 /**
  * Provides an actor implementation of a client session
  *
@@ -73,6 +78,11 @@ abstract class MqttServerSession extends MqttSession {
 
   override def shutdown(): Unit =
     underlying.shutdown()
+}
+
+object ActorMqttServerSession {
+  def create(settings: MqttSessionSettings, mat: Materializer, system: ActorSystem): ActorMqttServerSession =
+    new ActorMqttServerSession(settings, mat, system)
 }
 
 /**
