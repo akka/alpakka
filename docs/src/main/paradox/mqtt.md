@@ -8,6 +8,12 @@ Further information on [mqtt.org](https://mqtt.org/).
 
 @@@ 
 
+@@@ note { title="Streaming Differences" }
+
+Alpakka contains @ref[another MQTT connector](mqtt-streaming.md) which is _not_ based on the Eclipse Paho client, unlike this one. Please refer to the other connector where the differences are expanded on.
+
+@@@
+
 The Alpakka MQTT connector provides an Akka Stream source, sink and flow to connect to MQTT brokers. It is based on the [Eclipse Paho Java client](https://www.eclipse.org/paho/clients/java/).
 
 ### Reported issues
