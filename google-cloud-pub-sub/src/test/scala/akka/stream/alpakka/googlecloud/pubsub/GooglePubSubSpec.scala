@@ -117,7 +117,8 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
                        subscription = "sub1",
                        apiKey = TestCredentials.apiKey,
                        maybeAccessToken = Some("ok"))
-    ).thenReturn(Future.successful(PullResponse(receivedMessages = Some(Seq(message)))))
+    ).thenReturn(Future.successful(PullResponse(receivedMessages = Some(Seq()))))
+      .thenReturn(Future.successful(PullResponse(receivedMessages = Some(Seq(message)))))
 
     val source = googlePubSub.subscribe(
       projectId = TestCredentials.projectId,
