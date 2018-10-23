@@ -476,9 +476,9 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
 
   private def toJava[M](
       download: Future[Option[(akka.stream.scaladsl.Source[ByteString, M], scaladsl.ObjectMetadata)]]
-  ): CompletionStage[Option[JPair[Source[ByteString, M], ObjectMetadata]]] =
+  ): CompletionStage[Optional[JPair[Source[ByteString, M], ObjectMetadata]]] =
     download.map {
-      _.map { case (stream, meta) => JPair(stream.asJava, metaDataToJava(meta)) }
+      _.map { case (stream, meta) => JPair(stream.asJava, metaDataToJava(meta)) }.asJava
     }(mat.executionContext).toJava
 
   /**
@@ -489,7 +489,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]], and a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[ObjectMetadata]]
    */
   def download(bucket: String,
-               key: String): CompletionStage[Option[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] =
+               key: String): CompletionStage[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] =
     toJava(impl.download(S3Location(bucket, key), None, None, None))
 
   /**
@@ -500,9 +500,11 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    * @param sse the server side encryption to use
    * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]], and a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[ObjectMetadata]]
    */
-  def download(bucket: String,
-               key: String,
-               sse: ServerSideEncryption): CompletionStage[Option[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] =
+  def download(
+      bucket: String,
+      key: String,
+      sse: ServerSideEncryption
+  ): CompletionStage[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] =
     toJava(impl.download(S3Location(bucket, key), None, None, Some(sse)))
 
   /**
@@ -515,7 +517,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
    */
   def download(bucket: String,
                key: String,
-               range: ByteRange): CompletionStage[Option[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] = {
+               range: ByteRange): CompletionStage[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] = {
     val scalaRange = range.asInstanceOf[ScalaByteRange]
     toJava(impl.download(S3Location(bucket, key), Some(scalaRange), None, None))
   }
@@ -534,7 +536,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
       key: String,
       range: ByteRange,
       sse: ServerSideEncryption
-  ): CompletionStage[Option[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] = {
+  ): CompletionStage[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] = {
     val scalaRange = range.asInstanceOf[ScalaByteRange]
     toJava(impl.download(S3Location(bucket, key), Some(scalaRange), None, Some(sse)))
   }
@@ -555,7 +557,7 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
       range: ByteRange,
       versionId: Optional[String],
       sse: ServerSideEncryption
-  ): CompletionStage[Option[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] = {
+  ): CompletionStage[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] = {
     val scalaRange = range.asInstanceOf[ScalaByteRange]
     toJava(impl.download(S3Location(bucket, key), Option(scalaRange), Option(versionId.orElse(null)), Option(sse)))
   }

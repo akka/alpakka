@@ -117,8 +117,8 @@ public class S3ClientTest extends S3WireMockBase {
     mockDownload();
 
     // #download
-    final CompletionStage<Option<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>> sourceAndMeta =
-        client.download(bucket(), bucketKey());
+    final CompletionStage<Optional<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>>
+        sourceAndMeta = client.download(bucket(), bucketKey());
     final Source<ByteString, NotUsed> source =
         sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().first();
     // #download
@@ -192,8 +192,8 @@ public class S3ClientTest extends S3WireMockBase {
     mockDownloadSSEC();
 
     // #download
-    final CompletionStage<Option<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>> sourceAndMeta =
-        client.download(bucket(), bucketKey(), sseCustomerKeys());
+    final CompletionStage<Optional<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>>
+        sourceAndMeta = client.download(bucket(), bucketKey(), sseCustomerKeys());
     final Source<ByteString, NotUsed> source =
         sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().first();
     // #download
@@ -212,8 +212,9 @@ public class S3ClientTest extends S3WireMockBase {
     mockDownloadSSECWithVersion(versionId);
 
     // #download
-    final CompletionStage<Option<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>> sourceAndMeta =
-        client.download(bucket(), bucketKey(), null, Optional.of(versionId), sseCustomerKeys());
+    final CompletionStage<Optional<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>>
+        sourceAndMeta =
+            client.download(bucket(), bucketKey(), null, Optional.of(versionId), sseCustomerKeys());
     final Source<ByteString, NotUsed> source =
         sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().first();
     final CompletionStage<String> resultCompletionStage =
@@ -234,9 +235,10 @@ public class S3ClientTest extends S3WireMockBase {
     mockRangedDownload();
 
     // #rangedDownload
-    final CompletionStage<Option<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>> sourceAndMeta =
-        client.download(
-            bucket(), bucketKey(), ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()));
+    final CompletionStage<Optional<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>>
+        sourceAndMeta =
+            client.download(
+                bucket(), bucketKey(), ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()));
     final Source<ByteString, NotUsed> source =
         sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().first();
     // #rangedDownload
@@ -255,12 +257,13 @@ public class S3ClientTest extends S3WireMockBase {
     mockRangedDownloadSSE();
 
     // #rangedDownload
-    final CompletionStage<Option<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>> sourceAndMeta =
-        client.download(
-            bucket(),
-            bucketKey(),
-            ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()),
-            sseCustomerKeys());
+    final CompletionStage<Optional<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>>
+        sourceAndMeta =
+            client.download(
+                bucket(),
+                bucketKey(),
+                ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()),
+                sseCustomerKeys());
     final Source<ByteString, NotUsed> source =
         sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().first();
     // #rangedDownload
