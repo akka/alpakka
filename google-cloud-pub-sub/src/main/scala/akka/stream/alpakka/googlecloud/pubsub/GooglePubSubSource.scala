@@ -4,14 +4,16 @@
 
 package akka.stream.alpakka.googlecloud.pubsub
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.{Attributes, Materializer, Outlet, SourceShape}
-import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
+import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, TimerGraphStageLogic}
 
 import scala.util.{Failure, Success, Try}
 import GooglePubSubSource._
 
 import scala.collection.immutable
+import scala.concurrent.duration._
 
 @akka.annotation.InternalApi
 private final class GooglePubSubSource(projectId: String,
@@ -25,7 +27,7 @@ private final class GooglePubSubSource(projectId: String,
   override val shape: SourceShape[ReceivedMessage] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) {
+    new TimerGraphStageLogic(shape) {
       private var state: State = Pending
 
       def fetch(implicit mat: Materializer): Unit = {
@@ -50,6 +52,9 @@ private final class GooglePubSubSource(projectId: String,
         state = Fetching
       }
 
+      override def onTimer(timerKey: Any): Unit =
+        fetch(materializer)
+
       private val callback = getAsyncCallback[(Try[PullResponse], Materializer)] {
         case (Failure(tr), _) =>
           failStage(tr)
@@ -66,7 +71,7 @@ private final class GooglePubSubSource(projectId: String,
               }
             case Nil =>
               state = Fetching
-              fetch(mat)
+              scheduleOnce(NotUsed, 1.second)
           }
       }
 
