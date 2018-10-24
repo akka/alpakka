@@ -9,10 +9,11 @@ import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.stream.alpakka.googlecloud.pubsub.impl.GooglePubSubSource._
 import akka.stream.alpakka.googlecloud.pubsub.{PullResponse, ReceivedMessage}
-import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
+import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, TimerGraphStageLogic}
 import akka.stream.{Attributes, Materializer, Outlet, SourceShape}
 
 import scala.collection.immutable
+import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 @InternalApi

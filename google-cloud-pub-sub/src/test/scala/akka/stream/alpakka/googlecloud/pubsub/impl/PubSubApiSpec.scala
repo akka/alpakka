@@ -8,7 +8,6 @@ import java.time.Instant
 import java.util.Base64
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.HttpExt
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.pubsub._
 import com.github.tomakehurst.wiremock.WireMockServer
@@ -44,12 +43,10 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
     val GoogleApisHost = s"http://localhost:${wiremockServer.port()}"
   }
 
-  val http: HttpExt = null
-  val config = new PubSubConfig(TestCredentials.projectId,
-                                TestCredentials.apiKey,
-                                TestCredentials.clientEmail,
-                                TestCredentials.privateKey,
-                                http)
+  val config = PubSubConfig(TestCredentials.projectId,
+                            TestCredentials.apiKey,
+                            TestCredentials.clientEmail,
+                            TestCredentials.privateKey)
 
   val accessToken =
     "ya29.Elz4A2XkfGKJ4CoS5x_umUBHsvjGdeWQzu6gRRCnNXI0fuIyoDP_6aYktBQEOI4YAhLNgUl2OpxWQaN8Z3hd5YfFw1y4EGAtr2o28vSID-c8ul_xxHuudE7RmhH9sg"
