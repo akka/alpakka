@@ -47,8 +47,8 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
     commandParallelism >= 2,
     s"commandParallelism of $commandParallelism must be greater than or equal to 2 to support connection replies such as pinging"
   )
-  require(maxPacketSize >= 0 && maxPacketSize <= 0xffff,
-          s"maxPacketSize of $maxPacketSize must be positive and less than ${0xffff}")
+  require(maxPacketSize >= 0 && maxPacketSize <= (1 << 28),
+          s"maxPacketSize of $maxPacketSize must be positive and less than ${1 << 28}")
 
   import akka.util.JavaDurationConverters._
 
