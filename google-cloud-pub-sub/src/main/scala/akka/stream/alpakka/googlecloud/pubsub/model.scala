@@ -8,29 +8,43 @@ import java.time.Instant
 
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
-import akka.http.scaladsl.{Http, HttpExt}
+import akka.http.scaladsl.Http
 import akka.stream.alpakka.googlecloud.pubsub.impl.{GoogleSession, GoogleTokenApi}
 
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 
-private[pubsub] class PubSubConfig(val projectId: String,
-                                   val apiKey: String,
-                                   clientEmail: String,
-                                   privateKey: String,
-                                   http: => HttpExt) {
-  @InternalApi
-  private[pubsub] lazy val session = new GoogleSession(clientEmail, privateKey, new GoogleTokenApi(http))
+class PubSubConfig private (val projectId: String,
+                            val apiKey: String,
+                            /**
+                             * Internal API
+                             */
+                            @InternalApi private[pubsub] val session: GoogleSession) {
+
+  /**
+   * Internal API
+   */
+  @InternalApi private[pubsub] def withSession(session: GoogleSession) =
+    copy(session = session)
+
+  private def copy(session: GoogleSession) =
+    new PubSubConfig(projectId, apiKey, session)
+
+  override def toString: String =
+    s"PubSubConfig(projectId=$projectId, apiKey=$apiKey)"
 }
 
 object PubSubConfig {
   def apply(projectId: String, apiKey: String, clientEmail: String, privateKey: String)(
       implicit actorSystem: ActorSystem
-  ) = new PubSubConfig(projectId, apiKey, clientEmail, privateKey, Http())
+  ) = new PubSubConfig(projectId, apiKey, new GoogleSession(clientEmail, privateKey, new GoogleTokenApi(Http())))
 
-  def create(projectId: String, apiKey: String, clientEmail: String, privateKey: String, actorSystem: ActorSystem): PubSubConfig = {
+  def create(projectId: String,
+             apiKey: String,
+             clientEmail: String,
+             privateKey: String,
+             actorSystem: ActorSystem): PubSubConfig =
     apply(projectId, apiKey, clientEmail, privateKey)(actorSystem)
-  }
 }
 
 final case class PubSubMessage(data: String,

@@ -37,13 +37,10 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       val httpApi = mockHttpApi
     }
     val http: HttpExt = mock[HttpExt]
-    val config = new PubSubConfig(TestCredentials.projectId,
-                                  TestCredentials.apiKey,
-                                  TestCredentials.clientEmail,
-                                  TestCredentials.privateKey,
-                                  http) {
-      override lazy private[pubsub] val session = mock[GoogleSession]
-    }
+    val config = PubSubConfig(TestCredentials.projectId,
+                              TestCredentials.apiKey,
+                              TestCredentials.clientEmail,
+                              TestCredentials.privateKey).withSession(mock[GoogleSession])
   }
 
   it should "auth and publish the message" in new Fixtures {
