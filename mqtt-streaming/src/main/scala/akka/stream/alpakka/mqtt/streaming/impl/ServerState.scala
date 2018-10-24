@@ -601,8 +601,26 @@ import scala.util.{Failure, Success}
       timer.startSingleTimer("receive-connect", ReceiveConnectTimeout, data.settings.receiveConnectTimeout)
 
       Behaviors
-        .receiveMessagePartial[Event] {
-          case ConnectReceivedFromRemote(connect, local) =>
+        .receivePartial[Event] {
+          case (context, ConnectReceivedFromRemote(connect, local))
+              if connect.connectFlags.contains(ConnectFlags.CleanSession) =>
+            context.children.foreach(context.stop)
+            clientConnect(
+              ConnectReceived(
+                connect,
+                local,
+                Set.empty,
+                Vector.empty,
+                Vector.empty,
+                Vector.empty,
+                data.consumerPacketRouter,
+                data.producerPacketRouter,
+                data.publisherPacketRouter,
+                data.unpublisherPacketRouter,
+                data.settings
+              )
+            )
+          case (_, ConnectReceivedFromRemote(connect, local)) =>
             clientConnect(
               ConnectReceived(
                 connect,
@@ -618,7 +636,7 @@ import scala.util.{Failure, Success}
                 data.settings
               )
             )
-          case ReceiveConnectTimeout =>
+          case (_, ReceiveConnectTimeout) =>
             throw ClientConnectionFailed
         }
         .receiveSignal {
