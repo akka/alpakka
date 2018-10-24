@@ -121,7 +121,7 @@ private[impl] class DecodingLogic(in: Inlet[ByteString],
   }
 
   override protected def decoded(chars: CharBuffer, count: Int, remainingBytes: ByteBuffer): Unit = {
-    if (count > 0) push(out, new String(chars.array, chars.position, count))
+    if (count > 0) push(out, new String(chars.array, chars.position(), count))
     else if (!isClosed(in)) pull(in)
     buffer = ByteString.fromByteBuffer(remainingBytes)
   }

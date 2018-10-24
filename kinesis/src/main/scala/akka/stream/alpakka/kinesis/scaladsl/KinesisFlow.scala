@@ -52,7 +52,7 @@ object KinesisFlow {
       .mapConcat(_.to[immutable.Iterable])
 
   private def getPayloadByteSize[T](record: (PutRecordsRequestEntry, T)): Int = record match {
-    case (request, _) => request.getPartitionKey.length + request.getData.position
+    case (request, _) => request.getPartitionKey.length + request.getData.position()
   }
 
   def byPartitionAndData(
