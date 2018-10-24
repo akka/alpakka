@@ -67,8 +67,8 @@ final class AmqpDetailsConnectionProvider private (
     val handshakeTimeout: Option[Int] = None,
     val shutdownTimeout: Option[Int] = None,
     val networkRecoveryInterval: Option[Int] = None,
-    val automaticRecoveryEnabled: Option[Boolean] = None,
-    val topologyRecoveryEnabled: Option[Boolean] = None,
+    val automaticRecoveryEnabled: Boolean = false,
+    val topologyRecoveryEnabled: Boolean = false,
     val exceptionHandler: Option[ExceptionHandler] = None,
     val connectionName: Option[String] = None
 ) extends AmqpConnectionProvider {
@@ -107,10 +107,10 @@ final class AmqpDetailsConnectionProvider private (
     copy(networkRecoveryInterval = Option(networkRecoveryInterval))
 
   def withAutomaticRecoveryEnabled(automaticRecoveryEnabled: Boolean): AmqpDetailsConnectionProvider =
-    copy(automaticRecoveryEnabled = Option(automaticRecoveryEnabled))
+    copy(automaticRecoveryEnabled = automaticRecoveryEnabled)
 
   def withTopologyRecoveryEnabled(topologyRecoveryEnabled: Boolean): AmqpDetailsConnectionProvider =
-    copy(topologyRecoveryEnabled = Option(topologyRecoveryEnabled))
+    copy(topologyRecoveryEnabled = topologyRecoveryEnabled)
 
   def withExceptionHandler(exceptionHandler: ExceptionHandler): AmqpDetailsConnectionProvider =
     copy(exceptionHandler = Option(exceptionHandler))
@@ -142,8 +142,8 @@ final class AmqpDetailsConnectionProvider private (
     handshakeTimeout.foreach(factory.setHandshakeTimeout)
     shutdownTimeout.foreach(factory.setShutdownTimeout)
     networkRecoveryInterval.foreach(factory.setNetworkRecoveryInterval)
-    automaticRecoveryEnabled.foreach(factory.setAutomaticRecoveryEnabled)
-    topologyRecoveryEnabled.foreach(factory.setTopologyRecoveryEnabled)
+    factory.setAutomaticRecoveryEnabled(automaticRecoveryEnabled)
+    factory.setTopologyRecoveryEnabled(topologyRecoveryEnabled)
     exceptionHandler.foreach(factory.setExceptionHandler)
 
     factory.newConnection(hostAndPortList.map(hp => new Address(hp._1, hp._2)).asJava, connectionName.orNull)
@@ -158,8 +158,8 @@ final class AmqpDetailsConnectionProvider private (
                    handshakeTimeout: Option[Int] = handshakeTimeout,
                    shutdownTimeout: Option[Int] = shutdownTimeout,
                    networkRecoveryInterval: Option[Int] = networkRecoveryInterval,
-                   automaticRecoveryEnabled: Option[Boolean] = automaticRecoveryEnabled,
-                   topologyRecoveryEnabled: Option[Boolean] = topologyRecoveryEnabled,
+                   automaticRecoveryEnabled: Boolean = automaticRecoveryEnabled,
+                   topologyRecoveryEnabled: Boolean = topologyRecoveryEnabled,
                    exceptionHandler: Option[ExceptionHandler] = exceptionHandler,
                    connectionName: Option[String] = connectionName): AmqpDetailsConnectionProvider =
     new AmqpDetailsConnectionProvider(
