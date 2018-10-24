@@ -212,7 +212,9 @@ object Dependencies {
       "org.apache.activemq" % "activemq-client" % "5.15.4" % Test, // ApacheV2
       "org.mockito" % "mockito-core" % "2.21.0" % Test // MIT
     ),
-    resolvers += ("jboss" at "https://repository.jboss.org/nexus/content/groups/public")
+    // Having JBoss as a first resolver is a workaround for https://github.com/coursier/coursier/issues/200
+    externalResolvers := ("jboss" at "http://repository.jboss.org/nexus/content/groups/public")
++: externalResolvers.value
   )
 
   val JsonStreaming = Seq(
