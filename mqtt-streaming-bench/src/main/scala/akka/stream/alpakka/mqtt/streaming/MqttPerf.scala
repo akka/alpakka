@@ -4,8 +4,12 @@
 
 package akka.stream.alpakka.mqtt.streaming
 
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
+
 import akka.Done
 import akka.actor.ActorSystem
+import akka.stream.alpakka.mqtt.streaming
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, ActorMqttServerSession, Mqtt}
 import akka.stream.scaladsl.{BroadcastHub, Keep, Sink, Source, Tcp}
 import akka.stream.{ActorMaterializer, Materializer, OverflowStrategy}
@@ -23,7 +27,7 @@ object MqttPerf {
     val test = new MqttPerf()
     test.setup()
     try {
-      test.serverPublish()
+      for (_ <- 0 until 10000) test.serverPublish()
     } finally {
       test.tearDown()
     }
@@ -48,6 +52,8 @@ class MqttPerf {
     .toMat(BroadcastHub.sink)(Keep.both)
     .run()
 
+  private val pubAckReceivedLock = new ReentrantLock()
+  private val pubAckReceived = pubAckReceivedLock.newCondition()
   @Setup
   def setup(): Unit = {
     val host = "localhost"
@@ -79,6 +85,13 @@ class MqttPerf {
                 server.offer(Command(connAck))
               case Right(Event(s: Subscribe, _)) =>
                 server.offer(Command(subAck.copy(packetId = s.packetId)))
+              case Right(Event(_: PubAck, _)) =>
+                pubAckReceivedLock.lock()
+                try {
+                  pubAckReceived.signal()
+                } finally {
+                  pubAckReceivedLock.unlock()
+                }
               case _ =>
             })
         }
@@ -97,7 +110,7 @@ class MqttPerf {
           .join(Tcp().outgoingConnection(host, port))
       )
       .wireTap(Sink.foreach[Either[DecodeError, Event[_]]] {
-        case Right(Event(s: SubAck, _)) =>
+        case Right(Event(_: SubAck, _)) =>
           subscribed.success(Done)
         case Right(Event(p: Publish, _)) =>
           client.offer(Command(pubAck.copy(packetId = p.packetId.get)))
@@ -111,8 +124,15 @@ class MqttPerf {
   }
 
   @Benchmark
-  def serverPublish(): Unit =
-    Await.ready(server.offer(Command(Publish("some-topic", ByteString("some-payload")))), 3.seconds)
+  def serverPublish(): Unit = {
+    server.offer(streaming.Command(streaming.Publish("some-topic", ByteString("some-payload"))))
+    pubAckReceivedLock.lock()
+    try {
+      pubAckReceived.await(3, TimeUnit.SECONDS)
+    } finally {
+      pubAckReceivedLock.unlock()
+    }
+  }
 
   @TearDown
   def tearDown(): Unit =

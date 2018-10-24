@@ -88,6 +88,7 @@ import scala.util.{Failure, Success}
       keepAlive: FiniteDuration,
       pendingPingResp: Boolean,
       pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
+      pendingRemotePublications: Seq[(String, PublishReceivedFromRemote)],
       remote: SourceQueueWithComplete[ForwardConnectCommand],
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
       override val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
@@ -115,6 +116,7 @@ import scala.util.{Failure, Success}
       extends Event
   final case class PublishReceivedFromRemote(publish: Publish, local: ActorRef[Consumer.ForwardPublish.type])
       extends Event
+  final case class ConsumerFree(topicName: String) extends Event
   final case class PublishReceivedLocally(publish: Publish,
                                           publishData: Producer.PublishData,
                                           remote: ActorRef[Source[Producer.ForwardPublishingCommand, NotUsed]])
@@ -202,6 +204,7 @@ import scala.util.{Failure, Success}
                 data.connect.keepAlive,
                 pendingPingResp = false,
                 Vector.empty,
+                Vector.empty,
                 data.remote,
                 data.consumerPacketRouter,
                 data.producerPacketRouter,
@@ -271,17 +274,48 @@ import scala.util.{Failure, Success}
               if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
             local ! Consumer.ForwardPublish
             serverConnected(data)
-          case (context, PublishReceivedFromRemote(publish @ Publish(_, topicName, Some(packetId), _), local)) =>
-            val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + packetId.underlying)
+          case (context, prfr @ PublishReceivedFromRemote(publish @ Publish(_, topicName, Some(packetId), _), local)) =>
+            val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName)
             context.child(consumerName) match {
-              case None =>
-                context.spawn(
-                  Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings),
-                  consumerName
+              case None if !data.pendingRemotePublications.exists(_._1 == publish.topicName) =>
+                context.watchWith(
+                  context.spawn(
+                    Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings),
+                    consumerName
+                  ),
+                  ConsumerFree(publish.topicName)
                 )
-              case _: Some[_] => // Ignored for existing consumptions
+                serverConnected(data)
+              case _ =>
+                serverConnected(
+                  data.copy(pendingRemotePublications = data.pendingRemotePublications :+ (publish.topicName -> prfr))
+                )
             }
-            serverConnected(data)
+          case (context, ConsumerFree(topicName)) =>
+            val i = data.pendingRemotePublications.indexWhere(_._1 == topicName)
+            if (i >= 0) {
+              val prfr = data.pendingRemotePublications(i)._2
+              val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName)
+              context.watchWith(
+                context.spawn(
+                  Consumer(prfr.publish,
+                           prfr.publish.packetId.get,
+                           prfr.local,
+                           data.consumerPacketRouter,
+                           data.settings),
+                  consumerName
+                ),
+                ConsumerFree(topicName)
+              )
+              serverConnected(
+                data.copy(
+                  pendingRemotePublications =
+                  data.pendingRemotePublications.take(i) ++ data.pendingRemotePublications.drop(i + 1)
+                )
+              )
+            } else {
+              serverConnected(data)
+            }
           case (_, PublishReceivedLocally(publish, _, remote))
               if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
             remote ! Source.single(Producer.ForwardPublish(publish, None))

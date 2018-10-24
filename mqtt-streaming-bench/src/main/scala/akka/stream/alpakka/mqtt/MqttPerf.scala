@@ -4,6 +4,9 @@
 
 package akka.stream.alpakka.mqtt
 
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
+
 import akka.actor.ActorSystem
 import akka.stream.alpakka.mqtt.scaladsl.MqttFlow
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttServerSession, Mqtt}
@@ -24,7 +27,7 @@ object MqttPerf {
     val test = new MqttPerf()
     test.setup()
     try {
-      test.serverPublish()
+      for (_ <- 0 until 10000) test.serverPublish()
     } finally {
       test.tearDown()
     }
@@ -48,6 +51,9 @@ class MqttPerf {
     .queue[streaming.Command[_]](1, OverflowStrategy.backpressure)
     .toMat(BroadcastHub.sink)(Keep.both)
     .run()
+
+  private val pubAckReceivedLock = new ReentrantLock()
+  private val pubAckReceived = pubAckReceivedLock.newCondition()
 
   @Setup
   def setup(): Unit = {
@@ -77,6 +83,13 @@ class MqttPerf {
                 server.offer(streaming.Command(connAck))
               case Right(streaming.Event(s: streaming.Subscribe, _)) =>
                 server.offer(streaming.Command(subAck.copy(packetId = s.packetId)))
+              case Right(streaming.Event(_: streaming.PubAck, _)) =>
+                pubAckReceivedLock.lock()
+                try {
+                  pubAckReceived.signal()
+                } finally {
+                  pubAckReceivedLock.unlock()
+                }
               case _ =>
             })
         }
@@ -100,8 +113,15 @@ class MqttPerf {
   }
 
   @Benchmark
-  def serverPublish(): Unit =
-    Await.ready(server.offer(streaming.Command(streaming.Publish("some-topic", ByteString("some-payload")))), 3.seconds)
+  def serverPublish(): Unit = {
+    server.offer(streaming.Command(streaming.Publish("some-topic", ByteString("some-payload"))))
+    pubAckReceivedLock.lock()
+    try {
+      pubAckReceived.await(3, TimeUnit.SECONDS)
+    } finally {
+      pubAckReceivedLock.unlock()
+    }
+  }
 
   @TearDown
   def tearDown(): Unit =

@@ -211,16 +211,19 @@ import scala.util.{Failure, Success}
             unpublisherPacketRouter: ActorRef[RemotePacketRouter.Request[Unpublisher.Event]],
             settings: MqttSessionSettings)(implicit mat: Materializer): Behavior[Event] =
     clientConnect(
-      ConnectReceived(connect,
-                      local,
-                      Set.empty,
-                      Vector.empty,
-                      Vector.empty,
-                      consumerPacketRouter,
-                      producerPacketRouter,
-                      publisherPacketRouter,
-                      unpublisherPacketRouter,
-                      settings)
+      ConnectReceived(
+        connect,
+        local,
+        Set.empty,
+        Vector.empty,
+        Vector.empty,
+        Vector.empty,
+        consumerPacketRouter,
+        producerPacketRouter,
+        publisherPacketRouter,
+        unpublisherPacketRouter,
+        settings
+      )
     )
 
   // Our FSM data, FSM events and commands emitted by the FSM
@@ -235,6 +238,7 @@ import scala.util.{Failure, Success}
       local: ActorRef[ForwardConnect.type],
       publishers: Set[String],
       pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
+      pendingRemotePublications: Seq[(String, PublishReceivedFromRemote)],
       stash: Seq[Event],
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
       override val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
@@ -247,6 +251,7 @@ import scala.util.{Failure, Success}
       remote: SourceQueueWithComplete[ForwardConnAckCommand],
       publishers: Set[String],
       pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
+      pendingRemotePublications: Seq[(String, PublishReceivedFromRemote)],
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
       override val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
       override val publisherPacketRouter: ActorRef[RemotePacketRouter.Request[Publisher.Event]],
@@ -259,6 +264,7 @@ import scala.util.{Failure, Success}
       remote: SourceQueueWithComplete[ForwardConnAckCommand],
       publishers: Set[String],
       pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
+      pendingRemotePublications: Seq[(String, PublishReceivedFromRemote)],
       stash: Seq[Event],
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
       override val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
@@ -269,6 +275,7 @@ import scala.util.{Failure, Success}
   final case class Disconnected(
       publishers: Set[String],
       pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
+      pendingRemotePublications: Seq[(String, PublishReceivedFromRemote)],
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
       override val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
       override val publisherPacketRouter: ActorRef[RemotePacketRouter.Request[Publisher.Event]],
@@ -284,6 +291,7 @@ import scala.util.{Failure, Success}
       extends Event
   final case class PublishReceivedFromRemote(publish: Publish, local: ActorRef[Consumer.ForwardPublish.type])
       extends Event
+  final case class ConsumerFree(topicName: String) extends Event
   final case class PublishReceivedLocally(publish: Publish, publishData: Producer.PublishData) extends Event
   final case class ProducerFree(topicName: String) extends Event
   final case class UnsubscribeReceivedFromRemote(unsubscribe: Unsubscribe,
@@ -341,6 +349,7 @@ import scala.util.{Failure, Success}
                 queue,
                 data.publishers,
                 data.pendingLocalPublications,
+                data.pendingRemotePublications,
                 data.consumerPacketRouter,
                 data.producerPacketRouter,
                 data.publisherPacketRouter,
@@ -390,6 +399,7 @@ import scala.util.{Failure, Success}
                       data.remote,
                       data.publishers,
                       data.pendingLocalPublications,
+                      data.pendingRemotePublications,
                       Vector.empty,
                       data.consumerPacketRouter,
                       data.producerPacketRouter,
@@ -421,17 +431,49 @@ import scala.util.{Failure, Success}
                 if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
               local ! Consumer.ForwardPublish
               Behaviors.same
-            case (context, PublishReceivedFromRemote(publish @ Publish(_, topicName, Some(packetId), _), local)) =>
-              val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + packetId.underlying)
+            case (context,
+                  prfr @ PublishReceivedFromRemote(publish @ Publish(_, topicName, Some(packetId), _), local)) =>
+              val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName)
               context.child(consumerName) match {
-                case None =>
-                  context.spawn(
-                    Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings),
-                    consumerName
+                case None if !data.pendingRemotePublications.exists(_._1 == publish.topicName) =>
+                  context.watchWith(
+                    context.spawn(
+                      Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings),
+                      consumerName
+                    ),
+                    ConsumerFree(publish.topicName)
                   )
-                case _: Some[_] => // Ignored for existing consumptions
+                  clientConnected(data)
+                case _ =>
+                  clientConnected(
+                    data.copy(pendingRemotePublications = data.pendingRemotePublications :+ (publish.topicName -> prfr))
+                  )
               }
-              Behaviors.same
+            case (context, ConsumerFree(topicName)) =>
+              val i = data.pendingRemotePublications.indexWhere(_._1 == topicName)
+              if (i >= 0) {
+                val prfr = data.pendingRemotePublications(i)._2
+                val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName)
+                context.watchWith(
+                  context.spawn(
+                    Consumer(prfr.publish,
+                             prfr.publish.packetId.get,
+                             prfr.local,
+                             data.consumerPacketRouter,
+                             data.settings),
+                    consumerName
+                  ),
+                  ConsumerFree(topicName)
+                )
+                clientConnected(
+                  data.copy(
+                    pendingRemotePublications =
+                    data.pendingRemotePublications.take(i) ++ data.pendingRemotePublications.drop(i + 1)
+                  )
+                )
+              } else {
+                clientConnected(data)
+              }
             case (_, PublishReceivedLocally(publish, _))
                 if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 &&
                 data.publishers.exists(matchTopicFilter(_, publish.topicName)) =>
@@ -492,6 +534,7 @@ import scala.util.{Failure, Success}
                 Disconnected(
                   data.publishers,
                   data.pendingLocalPublications,
+                  data.pendingRemotePublications,
                   data.consumerPacketRouter,
                   data.producerPacketRouter,
                   data.publisherPacketRouter,
@@ -505,6 +548,7 @@ import scala.util.{Failure, Success}
                 Disconnected(
                   data.publishers,
                   data.pendingLocalPublications,
+                  data.pendingRemotePublications,
                   data.consumerPacketRouter,
                   data.producerPacketRouter,
                   data.publisherPacketRouter,
@@ -539,6 +583,7 @@ import scala.util.{Failure, Success}
               data.publishers ++ (if (t.failure.contains(Publisher.SubscribeFailed)) Vector.empty
                                   else data.subscribe.topicFilters.map(_._1)),
               data.pendingLocalPublications,
+              data.pendingRemotePublications,
               data.consumerPacketRouter,
               data.producerPacketRouter,
               data.publisherPacketRouter,
@@ -564,6 +609,7 @@ import scala.util.{Failure, Success}
                 local,
                 data.publishers,
                 data.pendingLocalPublications,
+                data.pendingRemotePublications,
                 Vector.empty,
                 data.consumerPacketRouter,
                 data.producerPacketRouter,
