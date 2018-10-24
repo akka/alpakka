@@ -81,7 +81,7 @@ public class MqttFlowTest {
   @Test
   public void establishClientBidirectionalConnectionAndSubscribeToATopic()
       throws InterruptedException, ExecutionException, TimeoutException {
-    String clientId = "flow-spec/flow";
+    String clientId = "source-spec/flow";
     String topic = "source-spec/topic1";
 
     // #create-streaming-flow
@@ -104,7 +104,7 @@ public class MqttFlowTest {
             .run(materializer);
 
     SourceQueueWithComplete<Command<?>> commands = run.first();
-    commands.offer(new Command(new Connect(clientId, ConnectFlags.None())));
+    commands.offer(new Command(new Connect(clientId, ConnectFlags.CleanSession())));
     commands.offer(new Command(new Subscribe(topic)));
     commands.offer(new Command(new Publish(topic, ByteString.fromString("ohi"))));
     // #run-streaming-flow

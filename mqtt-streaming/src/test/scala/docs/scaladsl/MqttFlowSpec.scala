@@ -33,7 +33,7 @@ class MqttFlowSpec
 
   "mqtt client flow" should {
     "establish a bidirectional connection and subscribe to a topic" in {
-      val clientId = "flow-spec/flow"
+      val clientId = "source-spec/flow"
       val topic = "source-spec/topic1"
 
       //#create-streaming-flow
@@ -57,7 +57,7 @@ class MqttFlowSpec
           .toMat(Sink.head)(Keep.both)
           .run()
 
-      commands.offer(Command(Connect(clientId, ConnectFlags.None)))
+      commands.offer(Command(Connect(clientId, ConnectFlags.CleanSession)))
       commands.offer(Command(Subscribe(topic)))
       commands.offer(Command(Publish(topic, ByteString("ohi"))))
       //#run-streaming-flow
