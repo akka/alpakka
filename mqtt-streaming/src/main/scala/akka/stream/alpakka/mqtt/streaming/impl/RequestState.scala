@@ -352,7 +352,7 @@ import scala.util.{Failure, Success}
       case Unregister(packetId) =>
         val remainingPacketIds = registrantsByPacketId - packetId
         val revisedNextPacketId = if (remainingPacketIds.nonEmpty) {
-          val maxPacketId = PacketId(remainingPacketIds.keys.map(_.underlying).max)
+          val maxPacketId = remainingPacketIds.keys.maxBy(_.underlying)
           PacketId(maxPacketId.underlying + 1)
         } else {
           MinPacketId
