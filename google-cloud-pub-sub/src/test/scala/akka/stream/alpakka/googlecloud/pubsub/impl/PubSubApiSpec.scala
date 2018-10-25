@@ -2,18 +2,17 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.googlecloud.pubsub
+package akka.stream.alpakka.googlecloud.pubsub.impl
 
-import java.security.KeyFactory
-import java.security.spec.PKCS8EncodedKeySpec
 import java.time.Instant
 import java.util.Base64
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.googlecloud.pubsub._
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, any, urlEqualTo}
+import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, urlEqualTo}
 import com.github.tomakehurst.wiremock.common.ConsoleNotifier
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import org.scalatest.concurrent.ScalaFutures
@@ -23,7 +22,7 @@ import scala.collection.immutable.Seq
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with Matchers {
+class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with Matchers {
 
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
@@ -38,36 +37,19 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
 
   val mock = new WireMock("localhost", wiremockServer.port())
 
-  private object TestHttpApi extends HttpApi {
+  private object TestHttpApi extends PubSubApi {
     val isEmulated = false
     val PubSubGoogleApisHost = s"http://localhost:${wiremockServer.port()}"
     val GoogleApisHost = s"http://localhost:${wiremockServer.port()}"
   }
 
+  val config = PubSubConfig(TestCredentials.projectId,
+                            TestCredentials.apiKey,
+                            TestCredentials.clientEmail,
+                            TestCredentials.privateKey)
+
   val accessToken =
     "ya29.Elz4A2XkfGKJ4CoS5x_umUBHsvjGdeWQzu6gRRCnNXI0fuIyoDP_6aYktBQEOI4YAhLNgUl2OpxWQaN8Z3hd5YfFw1y4EGAtr2o28vSID-c8ul_xxHuudE7RmhH9sg"
-
-  it should "request a auth token" in {
-    val expectedRequest =
-      "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.CnsKICJpc3MiOiAidGVzdC1YWFhAdGVzdC1YWFhYWC5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsCiAic2NvcGUiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vYXV0aC9wdWJzdWIiLAogImF1ZCI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9vYXV0aDIvdjQvdG9rZW4iLAogImV4cCI6IDM2MDAsCiAiaWF0IjogMAp9CiAgICAgIA==.PG_qpgReiRycZftM4evJAiIETNO2yjqL6O0VjtsGaOtrqv8mIl2fI7kSizBxp4f9AY-WIBpAh60T2JpHlUGui0-TNklSH-g3RRGiPk348hi01crSThnk3WjV2WB4F_nfunTWiPR96zVkwPUweBk-Lj151eOHkNEhAHnngvsRAZpVfOiKKi9XA-tPfLCM_VF_e9o7WBrswTA-a-RjI-WZu-S_cJVd2xaxFo1CbccA7n7yzI-3eshaJuqoloSe-u_JAlLo66CdhCRViN06XpveTtwuej4xG-H6BLvNNkF8XxTU2FnbBwLITG4bg_K3T4lfQphpxBqD7Ic7_ciFRKQDAw=="
-    val authResult =
-      s"""{
-        | "access_token": "$accessToken",
-        | "token_type": "bearer",
-        | "expires_in": 3600
-        |}""".stripMargin
-
-    mock.register(
-      any(urlEqualTo("/oauth2/v4/token"))
-        .withRequestBody(WireMock.equalTo(expectedRequest))
-        .willReturn(aResponse().withStatus(200).withBody(authResult).withHeader("Content-Type", "application/json"))
-    )
-
-    val result =
-      TestHttpApi.getAccessToken(TestCredentials.clientEmail, TestCredentials.privateKey, Instant.ofEpochSecond(0))
-
-    result.futureValue shouldBe AccessTokenExpiry(accessToken, 3600)
-  }
 
   it should "publish" in {
 
@@ -87,7 +69,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
     mock.register(
       WireMock
         .post(
-          urlEqualTo(s"/v1/projects/${TestCredentials.projectId}/topics/topic1:publish")
+          urlEqualTo(s"/v1/projects/${config.projectId}/topics/topic1:publish")
         )
         .withRequestBody(WireMock.equalTo(expectedPublishRequest))
         .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
@@ -100,18 +82,14 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
     )
 
     val result =
-      TestHttpApi.publish(TestCredentials.projectId,
-                          "topic1",
-                          Some(accessToken),
-                          TestCredentials.apiKey,
-                          publishRequest)
+      TestHttpApi.publish(config.projectId, "topic1", Some(accessToken), config.apiKey, publishRequest)
 
     result.futureValue shouldBe Seq("1")
   }
 
   it should "publish without Authorization header to emulator" in {
 
-    object TestEmulatorHttpApi extends HttpApi {
+    object TestEmulatorHttpApi extends PubSubApi {
       override val isEmulated = true
       val PubSubGoogleApisHost = s"http://localhost:${wiremockServer.port()}"
       val GoogleApisHost = s"http://localhost:${wiremockServer.port()}"
@@ -128,7 +106,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
     mock.register(
       WireMock
         .post(
-          urlEqualTo(s"/v1/projects/${TestCredentials.projectId}/topics/topic1:publish")
+          urlEqualTo(s"/v1/projects/${config.projectId}/topics/topic1:publish")
         )
         .withRequestBody(WireMock.equalTo(expectedPublishRequest))
         .withHeader("Authorization", WireMock.absent())
@@ -141,7 +119,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
     )
 
     val result =
-      TestEmulatorHttpApi.publish(TestCredentials.projectId, "topic1", None, TestCredentials.apiKey, publishRequest)
+      TestEmulatorHttpApi.publish(config.projectId, "topic1", None, config.apiKey, publishRequest)
 
     result.futureValue shouldBe Seq("1")
   }
@@ -160,7 +138,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
       WireMock
         .post(
           urlEqualTo(
-            s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:pull"
+            s"/v1/projects/${config.projectId}/subscriptions/sub1:pull"
           )
         )
         .withRequestBody(WireMock.equalTo(pullRequest))
@@ -168,13 +146,13 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
         .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
 
-    val result = TestHttpApi.pull(TestCredentials.projectId, "sub1", Some(accessToken), TestCredentials.apiKey)
+    val result = TestHttpApi.pull(config.projectId, "sub1", Some(accessToken), config.apiKey)
     result.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", publishMessage))))
 
   }
 
   it should "Pull with results without access token in emulated mode" in {
-    object TestEmulatorHttpApi extends HttpApi {
+    object TestEmulatorHttpApi extends PubSubApi {
       override val isEmulated = true
       val PubSubGoogleApisHost = s"http://localhost:${wiremockServer.port()}"
       val GoogleApisHost = s"http://localhost:${wiremockServer.port()}"
@@ -192,7 +170,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
       WireMock
         .post(
           urlEqualTo(
-            s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:pull"
+            s"/v1/projects/${config.projectId}/subscriptions/sub1:pull"
           )
         )
         .withRequestBody(WireMock.equalTo(pullRequest))
@@ -200,7 +178,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
         .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
 
-    val result = TestEmulatorHttpApi.pull(TestCredentials.projectId, "sub1", None, TestCredentials.apiKey)
+    val result = TestEmulatorHttpApi.pull(config.projectId, "sub1", None, config.apiKey)
     result.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", publishMessage))))
 
   }
@@ -215,7 +193,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
       WireMock
         .post(
           urlEqualTo(
-            s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:pull"
+            s"/v1/projects/${config.projectId}/subscriptions/sub1:pull"
           )
         )
         .withRequestBody(WireMock.equalTo(pullRequest))
@@ -223,7 +201,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
         .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
 
-    val result = TestHttpApi.pull(TestCredentials.projectId, "sub1", Some(accessToken), TestCredentials.apiKey)
+    val result = TestHttpApi.pull(config.projectId, "sub1", Some(accessToken), config.apiKey)
     result.futureValue shouldBe PullResponse(None)
 
   }
@@ -234,7 +212,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
       WireMock
         .post(
           urlEqualTo(
-            s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:acknowledge"
+            s"/v1/projects/${config.projectId}/subscriptions/sub1:acknowledge"
           )
         )
         .withRequestBody(WireMock.equalTo(ackRequest))
@@ -244,11 +222,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
 
     val acknowledgeRequest = AcknowledgeRequest(Seq("ack1"))
 
-    val result = TestHttpApi.acknowledge(TestCredentials.projectId,
-                                         "sub1",
-                                         Some(accessToken),
-                                         TestCredentials.apiKey,
-                                         acknowledgeRequest)
+    val result = TestHttpApi.acknowledge(config.projectId, "sub1", Some(accessToken), config.apiKey, acknowledgeRequest)
 
     result.futureValue shouldBe (())
   }
@@ -270,7 +244,7 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
     mock.register(
       WireMock
         .post(
-          urlEqualTo(s"/v1/projects/${TestCredentials.projectId}/topics/topic1:publish")
+          urlEqualTo(s"/v1/projects/${config.projectId}/topics/topic1:publish")
         )
         .withRequestBody(WireMock.equalTo(expectedPublishRequest))
         .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
@@ -283,16 +257,12 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
     )
 
     val result =
-      TestHttpApi.publish(TestCredentials.projectId,
-                          "topic1",
-                          Some(accessToken),
-                          TestCredentials.apiKey,
-                          publishRequest)
+      TestHttpApi.publish(config.projectId, "topic1", Some(accessToken), config.apiKey, publishRequest)
 
     assertThrows[RuntimeException] { result.futureValue }
   }
 
-  private val httpApi = HttpApi
+  private val httpApi = PubSubApi
   if (httpApi.PubSubEmulatorHost.isDefined) it should "honor emulator host variables" in {
     val emulatorVar = sys.props
       .get(httpApi.PubSubEmulatorHostVarName)
@@ -312,14 +282,15 @@ class HttpApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with
 }
 
 object TestCredentials {
-  val privateKey = {
-    val pk =
-      "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCxwdLoCIviW0BsREeKziqiSgzl17Q6nD4RhqbB71oPGG8h82EJPeIlLQsMGEtuig0MVsUa9MudewFuQ/XHWtxnueQ3I900EJmrDTA4ysgHcVvyDBPuYdVVV7LE/9nysuHb2x3bh057Sy60qZqDS2hV9ybOBp2RIEK04k/hQDDqp+LxcnNQBi5C0f6aohTN6Ced2vvTY6hWbgFDk4Hdw9JDJpf8TSx/ZxJxPd3EA58SgXRBuamVZWy1IVpFOSKUCr4wwMOrELu9mRGzmNJiLSqn1jqJlG97ogth3dEldSOtwlfVI1M4sDe3k1SnF1+IagfK7Wda5hUidPLLfKn5lzMlAgMBAAECggEAQwjwS5blgfCdw/af8EW9qEQ6xvbove2sLpnUC3EDSowRZQFOh9ixjwmEkAQddktTjmKupHLK0tHPgVDZwFuQoQFmgjDhO8BC41Hu7Iv0kXH7lbVeUtjMRgnznf1KqQ8yw+HHScGmJDL/IxyO65Klfz3cgXfXNiKvZV2veCfoCqWyrI7aaOPiC/6NwKXDxy+Bot44hkJFruOHh67Gunr4TlMcp+z2mQvvCsX6f/bPT0sxamvYY3QyrOMAQO6G0xele1J0lALvxBI5qaE5gysMEEyzELeEayZI4xKlJFZPryyaXl2gfQ1qLFPcZGg+1Qc1Gxxqp3rKazqebj0AiM18xQKBgQDaXLNKN59ChnyCuJqHIOe/+BpAUVXbO9GhtderQTQJR+Jh0NxRWliGIyiKWjazp/+HbAV9YiYuwFUUiBlnz6bAld83Jrl6ad1Q8hAhIbid73/DryGN1CCioKp0C37SoaKewq7jG7N9hIgd8Y/vfNfTfW4+mrwbRmKOwI/wb6xtOwKBgQDQZWpJZ6NpplkMum+AspeNRkYGy8OeAQt9jGeczOqTbVs84Z9rqR3rJYqjfgGBNquj4F6zIb8Emkgx70+mCMJospIVLTlajIbgsQOURrIFwtKU1e01gaZYgm99eHmYPmjQdgGkDU5bZ6bzS8GN7OkotW9FtoFw0nA9ERKrNIZbHwKBgFkr3/+f5UaaewA6+MfT9S/c1oOLc38612mtQ6xozSI5G8aML1x9g4cLloOhQZNuOJiJ0VgZm7Qd0OC4j39oOhWNXoE8LCREVR+4KkQNbEH6yvcTbqVnigg/ijwncZv8a9dfc2HFLzBDzf5EZl4LYmu4XivsroKI5LidBGrQf95/AoGBAMbmtN5g25hf3AiI/RmR25JMa1PbMdbh2my3EMGY159ktbtTAUzJejPQfhVzk84XNxVPdjN01xN2iceXSKcJHzy8iy9JHb+t9qIIcYkZPJrBCyphUGlMWE+MFwtjbHMBxhqJNyG0TYByWudF+/QRFaz0FsMr4TmksNmoLPBZTo8zAoGBAKZIvf5XBlTqd/tR4cnTBQOeeegTHT5x7e+W0mfpCo/gDDmKnOsF2lAwj/F/hM5WqorHoM0ibno+0zUb5q6rhccAm511h0LmV1taVkbWk4UReuPuN+UyVUP+IjmXjagDle9IkOE7+fDlNb+Q7BHl2R8zm1jZjEDwM2NQnSxQ22+/"
-    val kf = KeyFactory.getInstance("RSA")
-    val encodedPv = Base64.getDecoder.decode(pk)
-    val keySpecPv = new PKCS8EncodedKeySpec(encodedPv)
-    kf.generatePrivate(keySpecPv)
-  }
+  val privateKey = """-----BEGIN RSA PRIVATE KEY-----
+                     |MIIBOgIBAAJBAJHPYfmEpShPxAGP12oyPg0CiL1zmd2V84K5dgzhR9TFpkAp2kl2
+                     |9BTc8jbAY0dQW4Zux+hyKxd6uANBKHOWacUCAwEAAQJAQVyXbMS7TGDFWnXieKZh
+                     |Dm/uYA6sEJqheB4u/wMVshjcQdHbi6Rr0kv7dCLbJz2v9bVmFu5i8aFnJy1MJOpA
+                     |2QIhAPyEAaVfDqJGjVfryZDCaxrsREmdKDlmIppFy78/d8DHAiEAk9JyTHcapckD
+                     |uSyaE6EaqKKfyRwSfUGO1VJXmPjPDRMCIF9N900SDnTiye/4FxBiwIfdynw6K3dW
+                     |fBLb6uVYr/r7AiBUu/p26IMm6y4uNGnxvJSqe+X6AxR6Jl043OWHs4AEbwIhANuz
+                     |Ay3MKOeoVbx0L+ruVRY5fkW+oLHbMGtQ9dZq7Dp9
+                     |-----END RSA PRIVATE KEY-----""".stripMargin
   val clientEmail = "test-XXX@test-XXXXX.iam.gserviceaccount.com"
   val projectId = "testX-XXXXX"
   val apiKey = "AIzaSyCVvqrlz057gCssc70n5JERyTW4TpB4ebE"
