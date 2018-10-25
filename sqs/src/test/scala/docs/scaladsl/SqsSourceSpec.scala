@@ -203,7 +203,6 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
       res.futureValue should have size 100
     }
 
-
     "stream single message twice from the queue when visibility timeout passed" taggedAs Integration in {
       val queue = randomQueueUrl()
       implicit val awsSqsClient = sqsClient

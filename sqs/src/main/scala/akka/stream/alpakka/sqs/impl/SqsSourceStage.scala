@@ -123,8 +123,7 @@ import scala.collection.JavaConverters._
 object SqsSourceStage {
 
   private implicit class ReceiveMessageExtension(request: ReceiveMessageRequest) {
-    def withVisibilityTimeout(visibilityTimeout: Option[Int]): ReceiveMessageRequest = {
+    def withVisibilityTimeout(visibilityTimeout: Option[Int]): ReceiveMessageRequest =
       visibilityTimeout.map(request.withVisibilityTimeout(_)).getOrElse(request)
-    }
   }
 }

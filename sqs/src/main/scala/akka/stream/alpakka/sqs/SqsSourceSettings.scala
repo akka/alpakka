@@ -91,12 +91,13 @@ final class SqsSourceSettings private (
     else copy(closeOnEmptyReceive = value)
 
   /**
-    * the period of time (in seconds) during which Amazon SQS prevents other consumers
-    * from receiving and processing an already received message (see Amazon SQS doc)
-    *
-    * Default: None - taken from the SQS queue configuration
-    */
-  def withVisibilityTimeout(timeout: Int): SqsSourceSettings = copy(visibilityTimeout = Some(timeout))
+   * the period of time (in seconds) during which Amazon SQS prevents other consumers
+   * from receiving and processing an already received message (see Amazon SQS doc)
+   *
+   * Default: None - taken from the SQS queue configuration
+   */
+  def withVisibilityTimeout(timeout: Int): SqsSourceSettings =
+    copy(visibilityTimeout = Some(timeout))
 
   private def copy(
       waitTimeSeconds: Int = waitTimeSeconds,
