@@ -17,7 +17,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 class ExampleSpec
     extends TestKit(ActorSystem("ExampleSpec"))
@@ -27,6 +27,7 @@ class ExampleSpec
     with ScalaFutures {
 
   implicit val materializer: Materializer = ActorMaterializer()
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
 
   override def beforeAll() = {
     System.setProperty("aws.accessKeyId", "someKeyId")
@@ -45,7 +46,7 @@ class ExampleSpec
         DynamoDb.single(new ListTablesRequest())
       //##simple-request
 
-      Await.result(listTablesResult, 5.seconds)
+      listTablesResult.futureValue
     }
 
     "allow multiple requests - explicit types" in {
