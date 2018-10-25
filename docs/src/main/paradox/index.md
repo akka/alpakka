@@ -42,6 +42,7 @@ The [Alpakka project](https://developer.lightbend.com/docs/alpakka/current/) is 
 * [JMS](jms.md)
 * [MongoDB](mongodb.md)
 * [MQTT](mqtt.md)
+* [MQTT Streaming](mqtt-streaming.md)
 * [OrientDB](orientdb.md)
 * [Pulsar](external/pulsar.md)
 * [Server-sent Events (SSE)](sse.md)

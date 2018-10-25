@@ -22,6 +22,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   kudu,
   mongodb,
   mqtt,
+  mqttStreaming,
   orientdb,
   reference,
   s3,
@@ -159,6 +160,11 @@ lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test :
 lazy val mongodb = alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
 
 lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt)
+
+lazy val mqttStreaming = alpakkaProject("mqtt-streaming", "mqttStreaming", Dependencies.MqttStreaming)
+lazy val mqttStreamingBench = alpakkaProject("mqtt-streaming-bench", "mqttStreamingBench", Seq.empty)
+  .enablePlugins(JmhPlugin)
+  .dependsOn(mqtt, mqttStreaming)
 
 lazy val orientdb = alpakkaProject("orientdb",
                                    "orientdb",
