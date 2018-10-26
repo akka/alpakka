@@ -843,10 +843,10 @@ object MqttCodec {
               val password =
                 if (connectFlags.contains(ConnectFlags.PasswordFlag)) Some(v.decodeString()) else None
               (clientId,
-               willTopic.fold[Either[DecodeError, Option[String]]](Right(None))(_.map(Some.apply)),
-               willMessage.fold[Either[DecodeError, Option[String]]](Right(None))(_.map(Some.apply)),
-               username.fold[Either[DecodeError, Option[String]]](Right(None))(_.map(Some.apply)),
-               password.fold[Either[DecodeError, Option[String]]](Right(None))(_.map(Some.apply))) match {
+               willTopic.fold[Either[DecodeError, Option[String]]](Right(None))(_.right.map(Some.apply)),
+               willMessage.fold[Either[DecodeError, Option[String]]](Right(None))(_.right.map(Some.apply)),
+               username.fold[Either[DecodeError, Option[String]]](Right(None))(_.right.map(Some.apply)),
+               password.fold[Either[DecodeError, Option[String]]](Right(None))(_.right.map(Some.apply))) match {
                 case (Right(ci), Right(wt), Right(wm), Right(un), Right(pw)) =>
                   Right(Connect(Connect.Mqtt, Connect.v311, ci, connectFlags, keepAlive, wt, wm, un, pw))
                 case _ =>
