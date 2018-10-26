@@ -165,7 +165,8 @@ public class MqttFlowTest {
                           } else if (cp instanceof Subscribe) {
                             Subscribe subscribe = (Subscribe) cp;
                             Collection<Tuple2<String, ControlPacketFlags>> topicFilters =
-                                JavaConverters.asJavaCollection(subscribe.topicFilters());
+                                JavaConverters.asJavaCollectionConverter(subscribe.topicFilters())
+                                    .asJavaCollection();
                             List<Integer> flags =
                                 topicFilters
                                     .stream()
