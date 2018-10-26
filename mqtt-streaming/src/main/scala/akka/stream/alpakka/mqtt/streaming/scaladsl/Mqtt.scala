@@ -38,7 +38,7 @@ object Mqtt {
    */
   def serverSessionFlow(
       session: MqttServerSession,
-      connectionId: ByteString,
+      connectionId: ByteString
   ): BidiFlow[Command[_], ByteString, ByteString, Either[MqttCodec.DecodeError, Event[_]], NotUsed] =
     BidiFlow.fromFlows(session.commandFlow(connectionId), session.eventFlow(connectionId))
 }
