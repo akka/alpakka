@@ -44,7 +44,7 @@ abstract class JmsSpec
       broker.addConnector(serverUrl)
       serverUrl
     } else {
-      s"vm://$host"
+      s"vm://$host?create=false"
     }
     broker.setPersistent(false)
     broker.setBrokerName(host)
