@@ -67,7 +67,9 @@ jobs:
     - env:
       - PRE_CMD="docker-compose up -d mqtt"
       - CMD=+mqtt/testChanged
-    - env: CMD=+mqtt-streaming/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d mqtt"
+      - CMD=+mqtt-streaming/testChanged
     - env:
       - PRE_CMD="docker-compose up -d orientdb"
       - CMD=+orientdb/testChanged
