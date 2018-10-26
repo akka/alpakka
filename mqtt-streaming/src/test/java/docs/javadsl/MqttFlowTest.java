@@ -91,26 +91,28 @@ public class MqttFlowTest {
     Flow<ByteString, ByteString, CompletionStage<Tcp.OutgoingConnection>> connection =
         Tcp.get(system).outgoingConnection("localhost", 1883);
 
-    Flow<Command<?>, DecodeErrorOrEvent, NotUsed> mqttFlow =
+    Flow<Command<Object>, DecodeErrorOrEvent<Object>, NotUsed> mqttFlow =
         Mqtt.clientSessionFlow(session).join(connection);
     // #create-streaming-flow
 
     // #run-streaming-flow
-    Pair<SourceQueueWithComplete<Command<?>>, CompletionStage<DecodeErrorOrEvent>> run =
-        Source.<Command<?>>queue(3, OverflowStrategy.fail())
-            .via(mqttFlow)
-            .drop(3)
-            .toMat(Sink.head(), Keep.both())
-            .run(materializer);
+    Pair<SourceQueueWithComplete<Command<Object>>, CompletionStage<DecodeErrorOrEvent<Object>>>
+        run =
+            Source.<Command<Object>>queue(3, OverflowStrategy.fail())
+                .via(mqttFlow)
+                .drop(3)
+                .toMat(Sink.head(), Keep.both())
+                .run(materializer);
 
-    SourceQueueWithComplete<Command<?>> commands = run.first();
-    commands.offer(new Command(new Connect(clientId, ConnectFlags.CleanSession())));
-    commands.offer(new Command(new Subscribe(topic)));
-    commands.offer(new Command(new Publish(topic, ByteString.fromString("ohi"))));
+    SourceQueueWithComplete<Command<Object>> commands = run.first();
+    commands.offer(new Command<>(new Connect(clientId, ConnectFlags.CleanSession())));
+    commands.offer(new Command<>(new Subscribe(topic)));
+    commands.offer(new Command<>(new Publish(topic, ByteString.fromString("ohi"))));
     // #run-streaming-flow
 
-    CompletionStage<DecodeErrorOrEvent> event = run.second();
-    DecodeErrorOrEvent decodeErrorOrEvent = event.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    CompletionStage<DecodeErrorOrEvent<Object>> event = run.second();
+    DecodeErrorOrEvent<Object> decodeErrorOrEvent =
+        event.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertTrue(decodeErrorOrEvent.getEvent().isPresent());
   }
 
@@ -134,31 +136,33 @@ public class MqttFlowTest {
             .flatMapMerge(
                 maxConnections,
                 connection -> {
-                  Flow<Command<?>, DecodeErrorOrEvent, NotUsed> mqttFlow =
+                  Flow<Command<Object>, DecodeErrorOrEvent<Object>, NotUsed> mqttFlow =
                       Mqtt.serverSessionFlow(
                               session,
                               ByteString.fromArray(
                                   connection.remoteAddress().getAddress().getAddress()))
                           .join(connection.flow());
 
-                  Pair<SourceQueueWithComplete<Command<?>>, Source<DecodeErrorOrEvent, NotUsed>>
+                  Pair<
+                          SourceQueueWithComplete<Command<Object>>,
+                          Source<DecodeErrorOrEvent<Object>, NotUsed>>
                       run =
-                          Source.<Command<?>>queue(2, OverflowStrategy.dropHead())
+                          Source.<Command<Object>>queue(2, OverflowStrategy.dropHead())
                               .via(mqttFlow)
                               .toMat(BroadcastHub.of(DecodeErrorOrEvent.class), Keep.both())
                               .run(materializer);
 
-                  SourceQueueWithComplete<Command<?>> queue = run.first();
-                  Source<DecodeErrorOrEvent, NotUsed> source = run.second();
+                  SourceQueueWithComplete<Command<Object>> queue = run.first();
+                  Source<DecodeErrorOrEvent<Object>, NotUsed> source = run.second();
 
                   source.runForeach(
                       deOrE -> {
                         if (deOrE.getEvent().isPresent()) {
-                          Event<?> event = deOrE.getEvent().get();
+                          Event<Object> event = deOrE.getEvent().get();
                           ControlPacket cp = event.event();
                           if (cp instanceof Connect) {
                             queue.offer(
-                                new Command(
+                                new Command<>(
                                     new ConnAck(
                                         ConnAckFlags.None(),
                                         ConnAckReturnCode.ConnectionAccepted())));
@@ -172,12 +176,12 @@ public class MqttFlowTest {
                                     .stream()
                                     .map(x -> x._2().underlying())
                                     .collect(Collectors.toList());
-                            queue.offer(new Command(new SubAck(subscribe.packetId(), flags)));
+                            queue.offer(new Command<>(new SubAck(subscribe.packetId(), flags)));
                           } else if (cp instanceof Publish) {
                             Publish publish = (Publish) cp;
                             int packetId = publish.packetId().get().underlying();
-                            queue.offer(new Command(new PubAck(packetId)));
-                            queue.offer(new Command(publish));
+                            queue.offer(new Command<>(new PubAck(packetId)));
+                            queue.offer(new Command<>(publish));
                           } // Ignore everything else
                         }
                       },
@@ -197,23 +201,24 @@ public class MqttFlowTest {
     Flow<ByteString, ByteString, CompletionStage<Tcp.OutgoingConnection>> connection =
         Tcp.get(system).outgoingConnection(host, port);
 
-    Flow<Command<?>, DecodeErrorOrEvent, NotUsed> mqttFlow =
+    Flow<Command<Object>, DecodeErrorOrEvent<Object>, NotUsed> mqttFlow =
         Mqtt.clientSessionFlow(new ActorMqttClientSession(settings, materializer, system))
             .join(connection);
 
-    Pair<SourceQueueWithComplete<Command<?>>, CompletionStage<DecodeErrorOrEvent>> run =
-        Source.<Command<?>>queue(3, OverflowStrategy.fail())
-            .via(mqttFlow)
-            .drop(3)
-            .toMat(Sink.head(), Keep.both())
-            .run(materializer);
+    Pair<SourceQueueWithComplete<Command<Object>>, CompletionStage<DecodeErrorOrEvent<Object>>>
+        run =
+            Source.<Command<Object>>queue(3, OverflowStrategy.fail())
+                .via(mqttFlow)
+                .drop(3)
+                .toMat(Sink.head(), Keep.both())
+                .run(materializer);
 
-    SourceQueueWithComplete<Command<?>> commands = run.first();
-    commands.offer(new Command(new Connect(clientId, ConnectFlags.None())));
-    commands.offer(new Command(new Subscribe(topic)));
-    commands.offer(new Command(new Publish(topic, ByteString.fromString("ohi"))));
+    SourceQueueWithComplete<Command<Object>> commands = run.first();
+    commands.offer(new Command<>(new Connect(clientId, ConnectFlags.None())));
+    commands.offer(new Command<>(new Subscribe(topic)));
+    commands.offer(new Command<>(new Publish(topic, ByteString.fromString("ohi"))));
 
-    CompletionStage<DecodeErrorOrEvent> event = run.second();
+    CompletionStage<DecodeErrorOrEvent<Object>> event = run.second();
     DecodeErrorOrEvent decodeErrorOrEvent = event.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertTrue(decodeErrorOrEvent.getEvent().isPresent());
   }

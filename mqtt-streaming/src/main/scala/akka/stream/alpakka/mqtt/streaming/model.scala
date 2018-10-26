@@ -1049,8 +1049,9 @@ object Command {
   /**
    * Send a command to an MQTT session
    * @param command The command to send
+   * @tparam A The type of data being carried through in general, but not here
    */
-  def apply(command: ControlPacket): Command[Nothing] =
+  def apply[A](command: ControlPacket): Command[A] =
     new Command(command)
 
   /**
@@ -1106,8 +1107,9 @@ object Event {
   /**
    * Receive an event from a MQTT session
    * @param event The event to receive
+   * @tparam A The type of data being carried through in general, but not here
    */
-  def apply(event: ControlPacket): Event[Nothing] =
+  def apply[A](event: ControlPacket): Event[A] =
     new Event(event)
 
   /**
@@ -1161,14 +1163,14 @@ final case class Event[A](event: ControlPacket, carry: Option[A]) {
 /**
  * JAVA API
  */
-final case class DecodeErrorOrEvent(v: Either[MqttCodec.DecodeError, Event[_]]) {
+final case class DecodeErrorOrEvent[A](v: Either[MqttCodec.DecodeError, Event[A]]) {
   def getDecodeError: Optional[MqttCodec.DecodeError] =
     v match {
       case Right(_) => Optional.empty()
       case Left(de) => Optional.of(de)
     }
 
-  def getEvent: Optional[Event[_]] =
+  def getEvent: Optional[Event[A]] =
     v match {
       case Right(e) => Optional.of(e)
       case Left(_) => Optional.empty()
