@@ -112,7 +112,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
         .withAttributes(immutable.Seq(SenderId, SentTimestamp))
         .withMessageAttribute(MessageAttributeName.create("bar.*"))
         .withCloseOnEmptyReceive(true)
-        .withVisibilityTimeout(10)
+        .withVisibilityTimeout(10.seconds)
       //#SqsSourceSettings
 
       settings.maxBufferSize should be(100)
@@ -209,7 +209,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
       sqsClient.sendMessage(queue, "alpakka")
 
-      SqsSource(queue, SqsSourceSettings().withVisibilityTimeout(1))
+      SqsSource(queue, SqsSourceSettings().withVisibilityTimeout(1.second))
         .takeWithin(1500.milliseconds)
         .runWith(Sink.seq)
         .map(_.map(_.getBody) shouldBe Seq("alpakka", "alpakka"))
@@ -221,7 +221,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
 
       sqsClient.sendMessage(queue, "alpakka")
 
-      SqsSource(queue, SqsSourceSettings().withVisibilityTimeout(3))
+      SqsSource(queue, SqsSourceSettings().withVisibilityTimeout(3.seconds))
         .takeWithin(500.milliseconds)
         .runWith(Sink.seq)
         .map(_.map(_.getBody) shouldBe Seq("alpakka"))

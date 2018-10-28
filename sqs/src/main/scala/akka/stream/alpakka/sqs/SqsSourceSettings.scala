@@ -17,7 +17,7 @@ final class SqsSourceSettings private (
     val attributeNames: immutable.Seq[AttributeName],
     val messageAttributeNames: immutable.Seq[MessageAttributeName],
     val closeOnEmptyReceive: Boolean,
-    val visibilityTimeout: Option[Int]
+    val visibilityTimeout: Option[FiniteDuration]
 ) {
   require(maxBatchSize <= maxBufferSize, "maxBatchSize must be lower or equal than maxBufferSize")
   // SQS requirements
@@ -96,7 +96,7 @@ final class SqsSourceSettings private (
    *
    * Default: None - taken from the SQS queue configuration
    */
-  def withVisibilityTimeout(timeout: Int): SqsSourceSettings =
+  def withVisibilityTimeout(timeout: FiniteDuration): SqsSourceSettings =
     copy(visibilityTimeout = Some(timeout))
 
   private def copy(
@@ -106,7 +106,7 @@ final class SqsSourceSettings private (
       attributeNames: immutable.Seq[AttributeName] = attributeNames,
       messageAttributeNames: immutable.Seq[MessageAttributeName] = messageAttributeNames,
       closeOnEmptyReceive: Boolean = closeOnEmptyReceive,
-      visibilityTimeout: Option[Int] = visibilityTimeout
+      visibilityTimeout: Option[FiniteDuration] = visibilityTimeout
   ): SqsSourceSettings = new SqsSourceSettings(
     waitTimeSeconds,
     maxBufferSize,
@@ -124,8 +124,8 @@ final class SqsSourceSettings private (
     s"maxBatchSize=$maxBatchSize, " +
     s"attributeNames=${attributeNames.mkString(",")}, " +
     s"messageAttributeNames=${messageAttributeNames.mkString(",")}, " +
-    s"closeOnEmptyReceive=$closeOnEmptyReceive" +
-    s"visibilityTomeout=$visibilityTimeout" +
+    s"closeOnEmptyReceive=$closeOnEmptyReceive," +
+    s"visibilityTomeout=${visibilityTimeout.map(_.toCoarsest)}" +
     ")"
 }
 

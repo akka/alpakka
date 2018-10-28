@@ -23,8 +23,6 @@ import scala.collection.JavaConverters._
     implicit sqsClient: AmazonSQSAsync
 ) extends GraphStage[SourceShape[Message]] {
 
-  import SqsSourceStage._
-
   val out: Outlet[Message] = Outlet("SqsSource.out")
   override val shape: SourceShape[Message] = SourceShape(out)
 
@@ -58,12 +56,13 @@ import scala.collection.JavaConverters._
 
         currentRequests = currentRequests + 1
 
-        val request = new ReceiveMessageRequest(queueUrl)
+        var request = new ReceiveMessageRequest(queueUrl)
           .withAttributeNames(settings.attributeNames.map(_.name).asJava)
           .withMessageAttributeNames(settings.messageAttributeNames.map(_.name).asJava)
           .withMaxNumberOfMessages(settings.maxBatchSize)
           .withWaitTimeSeconds(settings.waitTimeSeconds)
-          .withVisibilityTimeout(settings.visibilityTimeout)
+
+        request = setVisibilityTimeoutIfExists(request)
 
         sqsClient.receiveMessageAsync(
           request,
@@ -98,6 +97,12 @@ import scala.collection.JavaConverters._
         receiveMoreOrComplete()
       }
 
+      private def setVisibilityTimeoutIfExists(request: ReceiveMessageRequest) =
+        settings.visibilityTimeout
+          .map(_.toSeconds.toInt)
+          .map(request.withVisibilityTimeout(_))
+          .getOrElse(request)
+
       private def receiveMoreOrComplete(): Unit =
         if (canReceiveNewMessages) {
           receiveMessages()
@@ -118,12 +123,4 @@ import scala.collection.JavaConverters._
         }
       )
     }
-}
-
-object SqsSourceStage {
-
-  private implicit class ReceiveMessageExtension(request: ReceiveMessageRequest) {
-    def withVisibilityTimeout(visibilityTimeout: Option[Int]): ReceiveMessageRequest =
-      visibilityTimeout.map(request.withVisibilityTimeout(_)).getOrElse(request)
-  }
 }
