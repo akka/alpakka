@@ -194,10 +194,10 @@ public class S3ClientTest extends S3WireMockBase {
     // #download
     final CompletionStage<Optional<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>>
         sourceAndMeta = client.download(bucket(), bucketKey(), sseCustomerKeys());
-    final Source<ByteString, NotUsed> source =
-        sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().first();
     // #download
 
+    final Source<ByteString, NotUsed> source =
+        sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().first();
     final CompletionStage<String> resultCompletionStage =
         source.map(ByteString::utf8String).runWith(Sink.head(), materializer);
 
@@ -215,14 +215,14 @@ public class S3ClientTest extends S3WireMockBase {
     final CompletionStage<Optional<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>>
         sourceAndMeta =
             client.download(bucket(), bucketKey(), null, Optional.of(versionId), sseCustomerKeys());
+    // #download
+
     final Source<ByteString, NotUsed> source =
         sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().first();
     final CompletionStage<String> resultCompletionStage =
         source.map(ByteString::utf8String).runWith(Sink.head(), materializer);
     final ObjectMetadata metadata =
         sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().second();
-    // #download
-
     final String result = resultCompletionStage.toCompletableFuture().get();
 
     assertEquals(bodySSE(), result);
@@ -239,10 +239,10 @@ public class S3ClientTest extends S3WireMockBase {
         sourceAndMeta =
             client.download(
                 bucket(), bucketKey(), ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()));
-    final Source<ByteString, NotUsed> source =
-        sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().first();
     // #rangedDownload
 
+    final Source<ByteString, NotUsed> source =
+        sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().first();
     final CompletionStage<byte[]> resultCompletionStage =
         source.map(ByteString::toArray).runWith(Sink.head(), materializer);
 
@@ -264,10 +264,10 @@ public class S3ClientTest extends S3WireMockBase {
                 bucketKey(),
                 ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()),
                 sseCustomerKeys());
-    final Source<ByteString, NotUsed> source =
-        sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().first();
     // #rangedDownload
 
+    final Source<ByteString, NotUsed> source =
+        sourceAndMeta.toCompletableFuture().get(5, TimeUnit.SECONDS).get().first();
     final CompletionStage<byte[]> resultCompletionStage =
         source.map(ByteString::toArray).runWith(Sink.head(), materializer);
 

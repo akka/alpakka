@@ -36,9 +36,10 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockDownload()
 
     //#download
-    val Some((s3Source: Source[ByteString, _], _)) = s3Client.download(bucket, bucketKey).futureValue
+    val downloadResult = s3Client.download(bucket, bucketKey)
     //#download
 
+    val Some((s3Source: Source[ByteString, _], _)) = downloadResult.futureValue
     val result: Future[String] = s3Source.map(_.utf8String).runWith(Sink.head)
 
     result.futureValue shouldBe body
@@ -96,10 +97,10 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockRangedDownload()
 
     //#rangedDownload
-    val Some((s3Source: Source[ByteString, _], _)) =
-      s3Client.download(bucket, bucketKey, Some(ByteRange(bytesRangeStart, bytesRangeEnd))).futureValue
+    val downloadResult = s3Client.download(bucket, bucketKey, Some(ByteRange(bytesRangeStart, bytesRangeEnd)))
     //#rangedDownload
 
+    val Some((s3Source: Source[ByteString, _], _)) = downloadResult.futureValue
     val result: Future[Array[Byte]] = s3Source.map(_.toArray).runWith(Sink.head)
 
     result.futureValue shouldBe rangeOfBody
@@ -110,9 +111,10 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockDownloadSSEC()
 
     //#download
-    val Some((s3Source, _)) = s3Client.download(bucket, bucketKey, sse = Some(sseCustomerKeys)).futureValue
+    val downloadResult = s3Client.download(bucket, bucketKey, sse = Some(sseCustomerKeys))
     //#download
 
+    val Some((s3Source: Source[ByteString, _], _)) = downloadResult.futureValue
     val result = s3Source.map(_.utf8String).runWith(Sink.head)
 
     result.futureValue shouldBe bodySSE
@@ -123,10 +125,10 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockDownloadSSECWithVersion(versionId)
 
     //#download
-    val Some((s3Source, metadata)) =
-      s3Client.download(bucket, bucketKey, versionId = Some(versionId), sse = Some(sseCustomerKeys)).futureValue
+    val downloadResult = s3Client.download(bucket, bucketKey, versionId = Some(versionId), sse = Some(sseCustomerKeys))
     //#download
 
+    val Some((s3Source: Source[ByteString, _], metadata)) = downloadResult.futureValue
     val result = s3Source.map(_.utf8String).runWith(Sink.head)
 
     result.futureValue shouldBe bodySSE
