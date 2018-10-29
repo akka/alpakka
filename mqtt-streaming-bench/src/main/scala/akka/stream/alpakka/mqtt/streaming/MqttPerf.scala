@@ -43,12 +43,12 @@ class MqttPerf {
   private implicit val mat: Materializer = ActorMaterializer()
 
   private val (client, clientSource) = Source
-    .queue[Command[_]](2, OverflowStrategy.backpressure)
+    .queue[Command[Nothing]](2, OverflowStrategy.backpressure)
     .toMat(BroadcastHub.sink)(Keep.both)
     .run()
 
   private val (server, serverSource) = Source
-    .queue[Command[_]](1, OverflowStrategy.backpressure)
+    .queue[Command[Nothing]](1, OverflowStrategy.backpressure)
     .toMat(BroadcastHub.sink)(Keep.both)
     .run()
 
