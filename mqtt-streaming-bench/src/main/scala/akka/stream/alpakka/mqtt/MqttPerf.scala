@@ -48,7 +48,7 @@ class MqttPerf {
     .run()
 
   private val (server, serverSource) = Source
-    .queue[streaming.Command[_]](1, OverflowStrategy.backpressure)
+    .queue[streaming.Command[Nothing]](1, OverflowStrategy.backpressure)
     .toMat(BroadcastHub.sink)(Keep.both)
     .run()
 

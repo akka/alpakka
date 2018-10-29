@@ -20,9 +20,9 @@ object Mqtt {
    * @param session the MQTT client session to use
    * @return the bidirectional flow
    */
-  def clientSessionFlow(
+  def clientSessionFlow[A](
       session: MqttClientSession
-  ): BidiFlow[Command[_], ByteString, ByteString, Either[MqttCodec.DecodeError, Event[_]], NotUsed] =
+  ): BidiFlow[Command[A], ByteString, ByteString, Either[MqttCodec.DecodeError, Event[A]], NotUsed] =
     BidiFlow.fromFlows(session.commandFlow, session.eventFlow)
 
   /**
@@ -36,9 +36,9 @@ object Mqtt {
    *                     can route the incoming requests
    * @return the bidirectional flow
    */
-  def serverSessionFlow(
+  def serverSessionFlow[A](
       session: MqttServerSession,
       connectionId: ByteString
-  ): BidiFlow[Command[_], ByteString, ByteString, Either[MqttCodec.DecodeError, Event[_]], NotUsed] =
+  ): BidiFlow[Command[A], ByteString, ByteString, Either[MqttCodec.DecodeError, Event[A]], NotUsed] =
     BidiFlow.fromFlows(session.commandFlow(connectionId), session.eventFlow(connectionId))
 }

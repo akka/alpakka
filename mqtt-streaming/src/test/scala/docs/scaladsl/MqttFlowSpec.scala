@@ -42,7 +42,7 @@ class MqttFlowSpec
 
       val connection = Tcp().outgoingConnection("localhost", 1883)
 
-      val mqttFlow: Flow[Command[_], Either[MqttCodec.DecodeError, Event[_]], NotUsed] =
+      val mqttFlow: Flow[Command[Nothing], Either[MqttCodec.DecodeError, Event[Nothing]], NotUsed] =
         Mqtt
           .clientSessionFlow(session)
           .join(connection)
@@ -87,13 +87,13 @@ class MqttFlowSpec
           .bind(host, port)
           .flatMapMerge(
             maxConnections, { connection =>
-              val mqttFlow: Flow[Command[_], Either[MqttCodec.DecodeError, Event[_]], NotUsed] =
+              val mqttFlow: Flow[Command[Nothing], Either[MqttCodec.DecodeError, Event[Nothing]], NotUsed] =
                 Mqtt
                   .serverSessionFlow(session, ByteString(connection.remoteAddress.getAddress.getAddress))
                   .join(connection.flow)
 
               val (queue, source) = Source
-                .queue[Command[_]](3, OverflowStrategy.dropHead)
+                .queue[Command[Nothing]](3, OverflowStrategy.dropHead)
                 .via(mqttFlow)
                 .toMat(BroadcastHub.sink)(Keep.both)
                 .run()
