@@ -413,7 +413,7 @@ class MqttSessionSpec
           .queue(1, OverflowStrategy.fail)
           .via(
             Mqtt
-              .clientSessionFlow(session)
+              .clientSessionFlow[String](session)
               .join(pipeToServer)
           )
           .drop(1)
@@ -539,7 +539,7 @@ class MqttSessionSpec
           .queue(1, OverflowStrategy.fail)
           .via(
             Mqtt
-              .clientSessionFlow(session)
+              .clientSessionFlow[String](session)
               .join(pipeToServer)
           )
           .drop(2)
@@ -746,7 +746,7 @@ class MqttSessionSpec
 
       val (server, result) =
         Source
-          .queue[Command[_]](1, OverflowStrategy.fail)
+          .queue[Command[Nothing]](1, OverflowStrategy.fail)
           .via(
             Mqtt
               .serverSessionFlow(session, ByteString.empty)
@@ -840,7 +840,7 @@ class MqttSessionSpec
 
       val (server, result) =
         Source
-          .queue[Command[_]](1, OverflowStrategy.fail)
+          .queue[Command[Nothing]](1, OverflowStrategy.fail)
           .via(
             Mqtt
               .serverSessionFlow(session, ByteString.empty)
@@ -1007,7 +1007,7 @@ class MqttSessionSpec
 
       val (server, result) =
         Source
-          .queue[Command[_]](1, OverflowStrategy.fail)
+          .queue[Command[Nothing]](1, OverflowStrategy.fail)
           .via(
             Mqtt
               .serverSessionFlow(session, ByteString(connectionId.getAndIncrement()))
