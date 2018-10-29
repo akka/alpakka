@@ -215,13 +215,10 @@ lazy val text = alpakkaProject("text", "text")
 
 lazy val udp = alpakkaProject("udp", "udp")
 
-// FIXME: The exclude filter can be removed once we use JNR with
-// https://github.com/jnr/jnr-enxio/pull/28 merged in.
 lazy val unixdomainsocket = alpakkaProject(
   "unix-domain-socket",
   "unixdomainsocket",
-  Dependencies.UnixDomainSocket,
-  excludeFilter.in(unmanagedSources.in(headerCreate)) := HiddenFileFilter || "KQSelector.java"
+  Dependencies.UnixDomainSocket
 )
 
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)

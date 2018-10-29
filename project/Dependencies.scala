@@ -383,7 +383,8 @@ object Dependencies {
 
   val UnixDomainSocket = Seq(
     libraryDependencies ++= Seq(
-      "com.github.jnr" % "jnr-unixsocket" % "0.19" // BSD/ApacheV2/CPL/MIT as per https://github.com/akka/alpakka/issues/620#issuecomment-348727265
+      "com.github.jnr" % "jnr-enxio" % "0.19", // // ApacheV2
+      "com.github.jnr" % "jnr-unixsocket" % "0.20" // BSD/ApacheV2/CPL/MIT as per https://github.com/akka/alpakka/issues/620#issuecomment-348727265
     )
   )
 
