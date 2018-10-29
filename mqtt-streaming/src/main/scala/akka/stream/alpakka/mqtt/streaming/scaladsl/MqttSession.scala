@@ -213,7 +213,8 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
           (clientConnector ? (ClientConnector
             .ConnAckReceivedFromRemote(cp, _)): Future[ClientConnector.ForwardConnAck])
             .map {
-              case ClientConnector.ForwardConnAck(carry: A) => Right[DecodeError, Event[A]](Event(cp, carry))
+              case ClientConnector.ForwardConnAck(carry: Option[A] @unchecked) =>
+                Right[DecodeError, Event[A]](Event(cp, carry))
             }
         case Right(cp: SubAck) =>
           (subscriberPacketRouter ? (
@@ -223,7 +224,8 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                                           .SubAckReceivedFromRemote(replyTo))
           ): Future[Subscriber.ForwardSubAck])
             .map {
-              case Subscriber.ForwardSubAck(carry: A) => Right[DecodeError, Event[A]](Event(cp, carry))
+              case Subscriber.ForwardSubAck(carry: Option[A] @unchecked) =>
+                Right[DecodeError, Event[A]](Event(cp, carry))
             }
         case Right(cp: UnsubAck) =>
           (unsubscriberPacketRouter ? (
@@ -233,7 +235,8 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                                           .UnsubAckReceivedFromRemote(replyTo))
           ): Future[Unsubscriber.ForwardUnsubAck])
             .map {
-              case Unsubscriber.ForwardUnsubAck(carry: A) => Right[DecodeError, Event[A]](Event(cp, carry))
+              case Unsubscriber.ForwardUnsubAck(carry: Option[A] @unchecked) =>
+                Right[DecodeError, Event[A]](Event(cp, carry))
             }
         case Right(cp: Publish) =>
           (clientConnector ? (ClientConnector
@@ -247,7 +250,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                                           .PubAckReceivedFromRemote(replyTo))
           ): Future[Producer.ForwardPubAck])
             .map {
-              case Producer.ForwardPubAck(carry: A) => Right[DecodeError, Event[A]](Event(cp, carry))
+              case Producer.ForwardPubAck(carry: Option[A] @unchecked) => Right[DecodeError, Event[A]](Event(cp, carry))
             }
         case Right(cp: PubRec) =>
           (producerPacketRouter ? (
@@ -257,7 +260,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                                           .PubRecReceivedFromRemote(replyTo))
           ): Future[Producer.ForwardPubRec])
             .map {
-              case Producer.ForwardPubRec(carry: A) => Right[DecodeError, Event[A]](Event(cp, carry))
+              case Producer.ForwardPubRec(carry: Option[A] @unchecked) => Right[DecodeError, Event[A]](Event(cp, carry))
             }
         case Right(cp: PubRel) =>
           (consumerPacketRouter ? (
@@ -274,7 +277,8 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                                           .PubCompReceivedFromRemote(replyTo))
           ): Future[Producer.ForwardPubComp])
             .map {
-              case Producer.ForwardPubComp(carry: A) => Right[DecodeError, Event[A]](Event(cp, carry))
+              case Producer.ForwardPubComp(carry: Option[A] @unchecked) =>
+                Right[DecodeError, Event[A]](Event(cp, carry))
             }
         case Right(PingResp) =>
           (clientConnector ? ClientConnector.PingRespReceivedFromRemote: Future[ClientConnector.ForwardPingResp.type])
@@ -498,7 +502,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                                           .PubAckReceivedFromRemote(replyTo))
           ): Future[Producer.ForwardPubAck])
             .map {
-              case Producer.ForwardPubAck(carry: A) => Right[DecodeError, Event[A]](Event(cp, carry))
+              case Producer.ForwardPubAck(carry: Option[A] @unchecked) => Right[DecodeError, Event[A]](Event(cp, carry))
             }
         case Right(cp: PubRec) =>
           (producerPacketRouter ? (
@@ -508,7 +512,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                                           .PubRecReceivedFromRemote(replyTo))
           ): Future[Producer.ForwardPubRec])
             .map {
-              case Producer.ForwardPubRec(carry: A) => Right[DecodeError, Event[A]](Event(cp, carry))
+              case Producer.ForwardPubRec(carry: Option[A] @unchecked) => Right[DecodeError, Event[A]](Event(cp, carry))
             }
         case Right(cp: PubRel) =>
           (consumerPacketRouter ? (
@@ -525,7 +529,8 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                                           .PubCompReceivedFromRemote(replyTo))
           ): Future[Producer.ForwardPubComp])
             .map {
-              case Producer.ForwardPubComp(carry: A) => Right[DecodeError, Event[A]](Event(cp, carry))
+              case Producer.ForwardPubComp(carry: Option[A] @unchecked) =>
+                Right[DecodeError, Event[A]](Event(cp, carry))
             }
         case Right(PingReq) =>
           (serverConnector ? (ServerConnector

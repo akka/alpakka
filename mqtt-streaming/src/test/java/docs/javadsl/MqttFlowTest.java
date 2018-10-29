@@ -130,7 +130,7 @@ public class MqttFlowTest {
 
     int maxConnections = 1;
 
-    Source<DecodeErrorOrEvent, CompletionStage<Tcp.ServerBinding>> bindSource =
+    Source<DecodeErrorOrEvent<Object>, CompletionStage<Tcp.ServerBinding>> bindSource =
         Tcp.get(system)
             .bind(host, port)
             .flatMapMerge(
@@ -149,7 +149,7 @@ public class MqttFlowTest {
                       run =
                           Source.<Command<Object>>queue(2, OverflowStrategy.dropHead())
                               .via(mqttFlow)
-                              .toMat(BroadcastHub.of(DecodeErrorOrEvent.class), Keep.both())
+                              .toMat(BroadcastHub.of(DecodeErrorOrEvent.classOf()), Keep.both())
                               .run(materializer);
 
                   SourceQueueWithComplete<Command<Object>> queue = run.first();

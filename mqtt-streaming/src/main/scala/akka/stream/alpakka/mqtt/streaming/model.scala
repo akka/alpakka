@@ -1160,6 +1160,21 @@ final case class Event[A](event: ControlPacket, carry: Option[A]) {
     this(event, Some(carry))
 }
 
+object DecodeErrorOrEvent {
+
+  /**
+   * JAVA API
+   *
+   * Return a Class object representing the carry's type. Java's
+   * `.class` method does not do this, and there are many occassions
+   * where the generic type needs to be retained.
+   * @tparam A The type of the carry
+   * @return The `DecodeErrorOrEvent` class including the carry type
+   */
+  def classOf[A]: Class[DecodeErrorOrEvent[A]] =
+    Predef.classOf[DecodeErrorOrEvent[A]]
+}
+
 /**
  * JAVA API
  */
