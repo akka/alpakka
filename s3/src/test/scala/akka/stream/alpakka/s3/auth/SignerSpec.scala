@@ -11,7 +11,13 @@ import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.http.scaladsl.model.headers.{Host, RawHeader}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import com.amazonaws.auth
+import com.amazonaws.auth.{
+  AWSCredentialsProvider,
+  AWSStaticCredentialsProvider,
+  BasicAWSCredentials,
+  BasicSessionCredentials
+}
 import org.scalatest.{FlatSpecLike, Matchers}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
@@ -87,6 +93,45 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
 
     whenReady(srFuture) { signedRequest =>
       signedRequest.getHeader("x-amz-date").get.value should equal("20171231T123600Z")
+    }
+  }
+
+  it should "add the correct security token header when session credentials are used" in {
+    val req = HttpRequest(HttpMethods.GET)
+      .withUri("https://iam.amazonaws.com/?Action=ListUsers&Version=2010-05-08")
+
+    val date = LocalDateTime.of(2017, 12, 31, 12, 36, 0).atZone(ZoneOffset.UTC)
+    val initialCredentials = new BasicSessionCredentials(
+      "AKIDEXAMPLE",
+      "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+      "AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5TthT+FvwqnKwRcOIfrRh3c/LTo6UDdyJwOOvEVPvLXCrrrUtdnniCEXAMPLE/IvU1dYUg2RVAJBanLiHb4IgRmpRV3zrkuWJOgQs8IZZaIv2BXIa2R4OlgkBN9bkUDNCJiBeb/AXlzBBko7b15fjrBs2+cTQtpZ3CYWFXG8C5zqx37wnOE49mRl/+OtkIKGO7fAE"
+    )
+    val refreshedCredentials = new BasicSessionCredentials(
+      "AKIDEXAMPL2",
+      "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPL2KEY",
+      "AQoEXAMPL2H4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5TthT+FvwqnKwRcOIfrRh3c/LTo6UDdyJwOOvEVPvLXCrrrUtdnniCEXAMPL2/IvU1dYUg2RVAJBanLiHb4IgRmpRV3zrkuWJOgQs8IZZaIv2BXIa2R4OlgkBN9bkUDNCJiBeb/AXlzBBko7b15fjrBs2+cTQtpZ3CYWFXG8C5zqx37wnOE49mRl/+OtkIKGO7fAE"
+    )
+    val sessionCredentialsProvider = new AWSCredentialsProvider {
+      var refreshed = false
+
+      override def getCredentials: auth.AWSCredentials =
+        if (!refreshed) {
+          initialCredentials
+        } else {
+          refreshedCredentials
+        }
+
+      override def refresh(): Unit = refreshed = true
+    }
+    val key = SigningKey(sessionCredentialsProvider, scope(date.toLocalDate))
+
+    sessionCredentialsProvider.refresh()
+
+    val srFuture =
+      Signer.signedRequest(req, key, date)
+
+    whenReady(srFuture) { signedRequest =>
+      signedRequest.getHeader("x-amz-security-token").get.value should equal(initialCredentials.getSessionToken)
     }
   }
 }

@@ -377,6 +377,8 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       sse: Option[ServerSideEncryption]
   )(parallelism: Int): Flow[ByteString, UploadPartResponse, NotUsed] = {
 
+    import mat.executionContext
+
     // Multipart upload requests (except for the completion api) are created here.
     //  The initial upload request gets executed within this function as well.
     //  The individual upload part requests are created.
@@ -385,15 +387,29 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     // The individual upload part requests are processed here
     requestFlow
       .via(Http().superPool[(MultipartUpload, Int)]())
-      .map {
+      .mapAsync(parallelism) {
         case (Success(r), (upload, index)) =>
-          r.entity.dataBytes.runWith(Sink.ignore)
-          val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
-          etag
-            .map((t) => SuccessfulUploadPart(upload, index, t))
-            .getOrElse(FailedUploadPart(upload, index, new RuntimeException(s"Cannot find etag in ${r}")))
+          if (r.status.isFailure()) {
+            Unmarshal(r.entity).to[String].map { errorBody =>
+              FailedUploadPart(
+                upload,
+                index,
+                new RuntimeException(
+                  s"Upload part $index request failed. Response header: ($r), response body: ($errorBody)."
+                )
+              )
+            }
+          } else {
+            r.entity.dataBytes.runWith(Sink.ignore)
+            val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
+            etag
+              .map(t => Future.successful(SuccessfulUploadPart(upload, index, t)))
+              .getOrElse(
+                Future.successful(FailedUploadPart(upload, index, new RuntimeException(s"Cannot find etag in ${r}")))
+              )
+          }
 
-        case (Failure(e), (upload, index)) => FailedUploadPart(upload, index, e)
+        case (Failure(e), (upload, index)) => Future.successful(FailedUploadPart(upload, index, e))
       }
   }
 
