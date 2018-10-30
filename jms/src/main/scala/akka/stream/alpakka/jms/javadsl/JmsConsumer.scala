@@ -80,7 +80,7 @@ object JmsConsumer {
   private def toConsumerControl(scalaControl: scaladsl.JmsConsumerControl) = new JmsConsumerControl {
 
     override def connectorState(): Source[JmsConnectorState, NotUsed] =
-      transformConnectorState(scalaControl.connectorState)
+      scalaControl.connectorState.map(_.asJava).asJava
 
     override def shutdown(): Unit = scalaControl.shutdown()
 

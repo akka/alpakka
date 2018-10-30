@@ -95,7 +95,6 @@ object JmsProducer {
   private def toProducerStatus(scalaStatus: scaladsl.JmsProducerStatus) = new JmsProducerStatus {
 
     override def connectorState: Source[JmsConnectorState, NotUsed] =
-      transformConnectorState(scalaStatus.connectorState)
+      scalaStatus.connectorState.map(_.asJava).asJava
   }
-
 }

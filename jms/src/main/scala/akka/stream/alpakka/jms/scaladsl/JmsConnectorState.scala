@@ -6,6 +6,8 @@ package akka.stream.alpakka.jms.scaladsl
 import akka.NotUsed
 import akka.stream.KillSwitch
 import akka.stream.scaladsl.Source
+import akka.stream.alpakka.jms.javadsl
+import akka.stream.alpakka.jms.scaladsl.JmsConnectorState._
 
 trait JmsProducerStatus {
 
@@ -27,7 +29,17 @@ trait JmsConsumerControl extends KillSwitch {
 
 }
 
-sealed trait JmsConnectorState
+sealed trait JmsConnectorState {
+  final def asJava: javadsl.JmsConnectorState = this match {
+    case Disconnected => javadsl.JmsConnectorState.Disconnected
+    case Connecting(_) => javadsl.JmsConnectorState.Connecting
+    case Connected => javadsl.JmsConnectorState.Connected
+    case Completing => javadsl.JmsConnectorState.Completing
+    case Completed => javadsl.JmsConnectorState.Completed
+    case Failing(_) => javadsl.JmsConnectorState.Failing
+    case Failed(_) => javadsl.JmsConnectorState.Failed
+  }
+}
 
 object JmsConnectorState {
   case object Disconnected extends JmsConnectorState

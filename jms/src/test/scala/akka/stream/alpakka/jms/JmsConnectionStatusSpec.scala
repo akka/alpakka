@@ -157,10 +157,8 @@ class JmsConnectionStatusSpec extends JmsSpec {
       import ctx._
       val connectAttempts = new AtomicInteger()
       when(connection.setExceptionListener(any[ExceptionListener]())).thenAnswer(new Answer[Unit]() {
-        override def answer(invocation: InvocationOnMock): Unit = {
-          println("invoked")
+        override def answer(invocation: InvocationOnMock): Unit =
           if (connectAttempts.getAndIncrement() == 0) throw new JMSException("connect error") else ()
-        }
       })
 
       val jmsSink = textSink(JmsProducerSettings(factory).withQueue("test"))
