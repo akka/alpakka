@@ -112,6 +112,7 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
         .withAttributes(immutable.Seq(SenderId, SentTimestamp))
         .withMessageAttribute(MessageAttributeName.create("bar.*"))
         .withCloseOnEmptyReceive(true)
+        .withVisibilityTimeout(10.seconds)
       //#SqsSourceSettings
 
       settings.maxBufferSize should be(100)
@@ -200,6 +201,30 @@ class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with D
       //#run
 
       res.futureValue should have size 100
+    }
+
+    "stream single message twice from the queue when visibility timeout passed" taggedAs Integration in {
+      val queue = randomQueueUrl()
+      implicit val awsSqsClient = sqsClient
+
+      sqsClient.sendMessage(queue, "alpakka")
+
+      SqsSource(queue, SqsSourceSettings().withVisibilityTimeout(1.second))
+        .takeWithin(1500.milliseconds)
+        .runWith(Sink.seq)
+        .map(_.map(_.getBody) shouldBe Seq("alpakka", "alpakka"))
+    }
+
+    "stream single message once from the queue when visibility timeout did not pass" taggedAs Integration in {
+      val queue = randomQueueUrl()
+      implicit val awsSqsClient = sqsClient
+
+      sqsClient.sendMessage(queue, "alpakka")
+
+      SqsSource(queue, SqsSourceSettings().withVisibilityTimeout(3.seconds))
+        .takeWithin(500.milliseconds)
+        .runWith(Sink.seq)
+        .map(_.map(_.getBody) shouldBe Seq("alpakka"))
     }
   }
 }
