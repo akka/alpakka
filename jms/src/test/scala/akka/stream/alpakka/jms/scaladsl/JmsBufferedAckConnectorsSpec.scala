@@ -5,12 +5,12 @@
 package akka.stream.alpakka.jms.scaladsl
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
-import javax.jms.{JMSException, TextMessage}
 
 import akka.Done
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import akka.stream.{KillSwitch, KillSwitches, ThrottleMode}
+import akka.stream.{KillSwitches, ThrottleMode}
+import javax.jms.{JMSException, TextMessage}
 import org.apache.activemq.{ActiveMQConnectionFactory, ActiveMQSession}
 import org.scalatest.Inspectors._
 
@@ -35,7 +35,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
       val in = 0 to 25 map (i => ('a' + i).asInstanceOf[Char].toString)
       Source(in).runWith(jmsSink)
 
-      val jmsSource: Source[AckEnvelope, KillSwitch] = JmsConsumer.ackSource(
+      val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
         JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(5).withQueue("test")
       )
 
@@ -65,7 +65,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
       Source(msgsIn).runWith(jmsSink)
 
       //#create-jms-source
-      val jmsSource: Source[AckEnvelope, KillSwitch] = JmsConsumer.ackSource(
+      val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
         JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(5).withQueue("numbers")
       )
       //#create-jms-source
@@ -140,7 +140,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
       val in = 0 to 25 map (i => ('a' + i).asInstanceOf[Char].toString)
       Source(in).runWith(JmsProducer.textSink(JmsProducerSettings(connectionFactory).withQueue("test")))
 
-      val jmsSource: Source[AckEnvelope, KillSwitch] = JmsConsumer.ackSource(
+      val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
         JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(5).withQueue("test")
       )
 
@@ -185,10 +185,10 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
       val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
       val inNumbers = (1 to 10).map(_.toString)
 
-      val jmsTopicSource: Source[AckEnvelope, KillSwitch] = JmsConsumer.ackSource(
+      val jmsTopicSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
         JmsConsumerSettings(connectionFactory).withSessionCount(1).withBufferSize(5).withTopic("topic")
       )
-      val jmsSource2: Source[AckEnvelope, KillSwitch] = JmsConsumer.ackSource(
+      val jmsSource2: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
         JmsConsumerSettings(connectionFactory).withSessionCount(1).withBufferSize(5).withTopic("topic")
       )
 
@@ -232,7 +232,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
         .toMat(Sink.seq)(Keep.both)
         .run()
 
-      val jmsSource: Source[AckEnvelope, KillSwitch] = JmsConsumer.ackSource(
+      val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
         JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(5).withQueue("numbers")
       )
 
@@ -311,7 +311,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
       // We need this ack mode for AMQ to not lose messages as ack normally acks any messages read on the session.
       val individualAck = new AcknowledgeMode(ActiveMQSession.INDIVIDUAL_ACKNOWLEDGE)
 
-      val jmsSource: Source[AckEnvelope, KillSwitch] = JmsConsumer.ackSource(
+      val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
         JmsConsumerSettings(connectionFactory)
           .withSessionCount(5)
           .withBufferSize(5)

@@ -3,6 +3,7 @@
  */
 
 package akka.stream.alpakka.jms
+import scala.concurrent.TimeoutException
 import scala.util.control.NoStackTrace
 
 /**
@@ -41,3 +42,9 @@ case class ConnectionRetryException(message: String, cause: Throwable) extends E
 case object RetrySkippedOnMissingConnection
     extends Exception("JmsProducer is not connected, send attempt skipped")
     with NoStackTrace
+
+final case class StopMessageListenerException() extends Exception("Stopping MessageListener.")
+
+case object JmsNotConnected extends Exception("JmsConnector is not connected") with NoStackTrace
+
+case class JmsConnectTimedOut(message: String) extends TimeoutException(message)

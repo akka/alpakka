@@ -5,25 +5,23 @@
 package jms.javasamples;
 
 // #sample
+
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.model.HttpRequest;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
-import akka.stream.KillSwitch;
 import akka.stream.Materializer;
 import akka.stream.alpakka.jms.JmsConsumerSettings;
 import akka.stream.alpakka.jms.JmsProducerSettings;
 import akka.stream.alpakka.jms.javadsl.JmsConsumer;
+import akka.stream.alpakka.jms.javadsl.JmsConsumerControl;
 import akka.stream.alpakka.jms.javadsl.JmsProducer;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
-
-// #sample
-
 import playground.ActiveMqBroker;
 import playground.WebServer;
 import scala.concurrent.ExecutionContext;
@@ -31,6 +29,8 @@ import scala.concurrent.ExecutionContext;
 import javax.jms.ConnectionFactory;
 import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
+
+// #sample
 
 public class JmsToHttpGet {
 
@@ -62,12 +62,12 @@ public class JmsToHttpGet {
 
     final Http http = Http.get(system);
 
-    Source<String, KillSwitch> jmsSource = // (1)
+    Source<String, JmsConsumerControl> jmsSource = // (1)
         JmsConsumer.textSource(
             JmsConsumerSettings.create(connectionFactory).withBufferSize(10).withQueue("test"));
 
     int parallelism = 4;
-    Pair<KillSwitch, CompletionStage<Done>> pair =
+    Pair<JmsConsumerControl, CompletionStage<Done>> pair =
         jmsSource // : String
             .map(ByteString::fromString) // : ByteString   (2)
             .map(
@@ -79,7 +79,7 @@ public class JmsToHttpGet {
             .run(materializer);
     // #sample
     Thread.sleep(5 * 1000);
-    KillSwitch runningSource = pair.first();
+    JmsConsumerControl runningSource = pair.first();
     CompletionStage<Done> streamCompletion = pair.second();
 
     runningSource.shutdown();

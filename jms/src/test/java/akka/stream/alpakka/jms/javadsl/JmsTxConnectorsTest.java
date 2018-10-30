@@ -8,7 +8,6 @@ import akka.Done;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
-import akka.stream.KillSwitch;
 import akka.stream.Materializer;
 import akka.stream.alpakka.jms.*;
 import akka.stream.javadsl.Sink;
@@ -74,7 +73,7 @@ public class JmsTxConnectorsTest {
           // #run-text-sink
 
           // #create-text-source
-          Source<TxEnvelope, KillSwitch> jmsSource =
+          Source<TxEnvelope, JmsConsumerControl> jmsSource =
               JmsConsumer.txSource(
                   JmsConsumerSettings.create(connectionFactory)
                       .withSessionCount(5)
@@ -119,7 +118,7 @@ public class JmsTxConnectorsTest {
           // #run-jms-sink
 
           // #create-jms-source
-          Source<TxEnvelope, KillSwitch> jmsSource =
+          Source<TxEnvelope, JmsConsumerControl> jmsSource =
               JmsConsumer.txSource(
                   JmsConsumerSettings.create(connectionFactory)
                       .withSessionCount(5)
@@ -194,7 +193,7 @@ public class JmsTxConnectorsTest {
           // #run-jms-sink
 
           // #create-jms-source
-          Source<TxEnvelope, KillSwitch> jmsSource =
+          Source<TxEnvelope, JmsConsumerControl> jmsSource =
               JmsConsumer.txSource(
                   JmsConsumerSettings.create(connectionFactory)
                       .withSessionCount(5)
@@ -256,7 +255,7 @@ public class JmsTxConnectorsTest {
           Source.from(msgsIn).runWith(jmsSink, materializer);
 
           // #create-jms-source-with-selector
-          Source<TxEnvelope, KillSwitch> jmsSource =
+          Source<TxEnvelope, JmsConsumerControl> jmsSource =
               JmsConsumer.txSource(
                   JmsConsumerSettings.create(connectionFactory)
                       .withSessionCount(5)
@@ -331,13 +330,13 @@ public class JmsTxConnectorsTest {
                   JmsProducerSettings.create(connectionFactory).withTopic("topic"));
 
           // #create-topic-source
-          Source<TxEnvelope, KillSwitch> jmsTopicSource =
+          Source<TxEnvelope, JmsConsumerControl> jmsTopicSource =
               JmsConsumer.txSource(
                   JmsConsumerSettings.create(connectionFactory)
                       .withSessionCount(1)
                       .withTopic("topic"));
           // #create-topic-source
-          Source<TxEnvelope, KillSwitch> jmsTopicSource2 =
+          Source<TxEnvelope, JmsConsumerControl> jmsTopicSource2 =
               JmsConsumer.txSource(
                   JmsConsumerSettings.create(connectionFactory)
                       .withSessionCount(1)

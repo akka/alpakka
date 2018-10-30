@@ -9,11 +9,11 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.IOResult;
-import akka.stream.KillSwitch;
 import akka.stream.Materializer;
 import akka.stream.alpakka.jms.JmsConsumerSettings;
 import akka.stream.alpakka.jms.JmsProducerSettings;
 import akka.stream.alpakka.jms.javadsl.JmsConsumer;
+import akka.stream.alpakka.jms.javadsl.JmsConsumerControl;
 import akka.stream.alpakka.jms.javadsl.JmsProducer;
 import akka.stream.javadsl.FileIO;
 import akka.stream.javadsl.Keep;
@@ -57,14 +57,14 @@ public class JmsToFile {
     enqueue(connectionFactory, "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
     // #sample
 
-    Source<String, KillSwitch> jmsSource = // (1)
+    Source<String, JmsConsumerControl> jmsSource = // (1)
         JmsConsumer.textSource(
             JmsConsumerSettings.create(connectionFactory).withBufferSize(10).withQueue("test"));
 
     Sink<ByteString, CompletionStage<IOResult>> fileSink =
         FileIO.toPath(Paths.get("target/out.txt")); // (2)
 
-    Pair<KillSwitch, CompletionStage<IOResult>> pair =
+    Pair<JmsConsumerControl, CompletionStage<IOResult>> pair =
         jmsSource // : String
             .map(ByteString::fromString) // : ByteString    (3)
             .toMat(fileSink, Keep.both())
@@ -72,7 +72,7 @@ public class JmsToFile {
 
     // #sample
 
-    KillSwitch runningSource = pair.first();
+    JmsConsumerControl runningSource = pair.first();
     CompletionStage<IOResult> streamCompletion = pair.second();
 
     runningSource.shutdown();
