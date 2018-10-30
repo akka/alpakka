@@ -89,7 +89,7 @@ public class ExampleTest {
     CompletionStage<List<String>> streamCompletion =
         tableArnSource.runWith(Sink.seq(), materializer);
     try {
-      List<String> strings = streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
+      List<String> strings = streamCompletion.toCompletableFuture().get(5, TimeUnit.SECONDS);
       fail("expeced missing schema");
     } catch (ExecutionException expected) {
       // expected
