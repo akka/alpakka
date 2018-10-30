@@ -11,8 +11,6 @@ import scala.concurrent.Future
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
 import akka.stream.Materializer
-import com.amazonaws.auth
-import com.amazonaws.auth._
 
 private[alpakka] object Signer {
   private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssX")
@@ -25,7 +23,7 @@ private[alpakka] object Signer {
 
     hashedBody.map { hb =>
       val headersToAdd = Vector(RawHeader("x-amz-date", date.format(dateFormatter)),
-                                RawHeader("x-amz-content-sha256", hb)) ++ sessionHeader(key.credProvider)
+                                RawHeader("x-amz-content-sha256", hb)) ++ sessionHeader(key)
       val reqWithHeaders = request.withHeaders(request.headers ++ headersToAdd)
       val cr = CanonicalRequest.from(reqWithHeaders)
       val authHeader = authorizationHeader("AWS4-HMAC-SHA256", key, date, cr)
@@ -33,12 +31,8 @@ private[alpakka] object Signer {
     }
   }
 
-  private[this] def sessionHeader(creds: AWSCredentialsProvider): Option[HttpHeader] =
-    creds.getCredentials match {
-      case sessCreds: auth.AWSSessionCredentials =>
-        Some(RawHeader("X-Amz-Security-Token", sessCreds.getSessionToken))
-      case _ => None
-    }
+  private[this] def sessionHeader(key: SigningKey): Option[HttpHeader] =
+    key.sessionToken.map(RawHeader("X-Amz-Security-Token", _))
 
   private[this] def authorizationHeader(algorithm: String,
                                         key: SigningKey,
