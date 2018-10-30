@@ -127,7 +127,9 @@ class MqttFlowSpec
         Source
           .queue(3, OverflowStrategy.fail)
           .via(mqttFlow)
-          .drop(3)
+          .collect {
+            case Right(Event(p: Publish, _)) => p
+          }
           .toMat(Sink.head)(Keep.both)
           .run()
 
@@ -136,7 +138,7 @@ class MqttFlowSpec
       commands.offer(Command(Publish(topic, ByteString("ohi"))))
 
       events.futureValue match {
-        case Right(Event(Publish(_, `topic`, _, bytes), _)) => bytes shouldBe ByteString("ohi")
+        case Publish(_, `topic`, _, bytes) => bytes shouldBe ByteString("ohi")
         case e => fail("Unexpected event: " + e)
       }
     }
