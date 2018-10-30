@@ -4,9 +4,8 @@
 
 package akka.stream.alpakka.s3.scaladsl
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.impl.MetaHeaders
@@ -181,7 +180,9 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
 
     it should s"download with real credentials (${settings.name})" in {
 
-      val download = settings.defaultRegionClient.download(settings.defaultRegionBucket, settings.objectKey)
+      val Some(download) = Await
+        .ready(settings.defaultRegionClient.download(settings.defaultRegionBucket, settings.objectKey), 5.seconds)
+        .futureValue
 
       val result = download._1.map(_.decodeString("utf8")).runWith(Sink.head)
 
@@ -197,11 +198,14 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
                                                        settings.objectKey,
                                                        metaHeaders = MetaHeaders(settings.metaHeaders))
         )
-        download <- settings.defaultRegionClient
-          .download(settings.defaultRegionBucket, settings.objectKey)
-          ._1
-          .map(_.decodeString("utf8"))
-          .runWith(Sink.head)
+        download <- settings.defaultRegionClient.download(settings.defaultRegionBucket, settings.objectKey).flatMap {
+          case Some((downloadSource, _)) =>
+            downloadSource
+              .map(_.decodeString("utf8"))
+              .runWith(Sink.head)
+              .map(Some.apply)
+          case None => Future.successful(None)
+        }
       } yield (upload, download)
 
       val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
@@ -220,11 +224,14 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
                                                        settings.objectKey,
                                                        metaHeaders = MetaHeaders(settings.metaHeaders))
         )
-        download <- settings.defaultRegionClient
-          .download(settings.defaultRegionBucket, settings.objectKey)
-          ._1
-          .map(_.decodeString("utf8"))
-          .runWith(Sink.head)
+        download <- settings.defaultRegionClient.download(settings.defaultRegionBucket, settings.objectKey).flatMap {
+          case Some((downloadSource, _)) =>
+            downloadSource
+              .map(_.decodeString("utf8"))
+              .runWith(Sink.head)
+              .map(Some.apply)
+          case None => Future.successful(None)
+        }
       } yield (upload, download)
 
       val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
@@ -243,11 +250,14 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
                                                      settings.objectKey,
                                                      metaHeaders = MetaHeaders(settings.metaHeaders))
         )
-        download <- settings.otherRegionClient
-          .download(settings.otherRegionBucket, settings.objectKey)
-          ._1
-          .map(_.decodeString("utf8"))
-          .runWith(Sink.head)
+        download <- settings.defaultRegionClient.download(settings.defaultRegionBucket, settings.objectKey).flatMap {
+          case Some((downloadSource, _)) =>
+            downloadSource
+              .map(_.decodeString("utf8"))
+              .runWith(Sink.head)
+              .map(Some.apply)
+          case None => Future.successful(None)
+        }
       } yield (upload, download)
 
       val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
@@ -266,11 +276,14 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
                                                      settings.objectKey,
                                                      metaHeaders = MetaHeaders(settings.metaHeaders))
         )
-        download <- settings.otherRegionClient
-          .download(settings.otherRegionBucket, settings.objectKey)
-          ._1
-          .map(_.decodeString("utf8"))
-          .runWith(Sink.head)
+        download <- settings.defaultRegionClient.download(settings.defaultRegionBucket, settings.objectKey).flatMap {
+          case Some((downloadSource, _)) =>
+            downloadSource
+              .map(_.decodeString("utf8"))
+              .runWith(Sink.head)
+              .map(Some.apply)
+          case None => Future.successful(None)
+        }
       } yield (upload, download)
 
       val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
