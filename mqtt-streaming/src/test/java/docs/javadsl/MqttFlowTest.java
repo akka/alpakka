@@ -6,6 +6,7 @@ package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.japi.JavaPartialFunction;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
@@ -53,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class MqttFlowTest {
@@ -205,21 +207,29 @@ public class MqttFlowTest {
         Mqtt.clientSessionFlow(new ActorMqttClientSession(settings, materializer, system))
             .join(connection);
 
-    Pair<SourceQueueWithComplete<Command<Object>>, CompletionStage<DecodeErrorOrEvent<Object>>>
-        run =
-            Source.<Command<Object>>queue(3, OverflowStrategy.fail())
-                .via(mqttFlow)
-                .drop(3)
-                .toMat(Sink.head(), Keep.both())
-                .run(materializer);
+    Pair<SourceQueueWithComplete<Command<Object>>, CompletionStage<Publish>> run =
+        Source.<Command<Object>>queue(3, OverflowStrategy.fail())
+            .via(mqttFlow)
+            .collect(
+                new JavaPartialFunction<DecodeErrorOrEvent<Object>, Publish>() {
+                  @Override
+                  public Publish apply(DecodeErrorOrEvent<Object> x, boolean isCheck) {
+                    if (x.getEvent().isPresent() && x.getEvent().get().event() instanceof Publish)
+                      return (Publish) x.getEvent().get().event();
+                    else throw noMatch();
+                  }
+                })
+            .toMat(Sink.head(), Keep.both())
+            .run(materializer);
 
     SourceQueueWithComplete<Command<Object>> commands = run.first();
     commands.offer(new Command<>(new Connect(clientId, ConnectFlags.None())));
     commands.offer(new Command<>(new Subscribe(topic)));
     commands.offer(new Command<>(new Publish(topic, ByteString.fromString("ohi"))));
 
-    CompletionStage<DecodeErrorOrEvent<Object>> event = run.second();
-    DecodeErrorOrEvent decodeErrorOrEvent = event.toCompletableFuture().get(3, TimeUnit.SECONDS);
-    assertTrue(decodeErrorOrEvent.getEvent().isPresent());
+    CompletionStage<Publish> event = run.second();
+    Publish publish = event.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertEquals(publish.topicName(), topic);
+    assertEquals(publish.payload(), ByteString.fromString("ohi"));
   }
 }
