@@ -67,9 +67,25 @@ abstract class JmsSpec
   case class ProducerMock(factory: ConnectionFactory = mock[ConnectionFactory],
                           connection: Connection = mock[Connection],
                           session: Session = mock[Session],
-                          producer: MessageProducer = mock[MessageProducer]) {
+                          producer: MessageProducer = mock[MessageProducer],
+                          queue: javax.jms.Queue = mock[javax.jms.Queue]) {
     when(factory.createConnection()).thenReturn(connection)
     when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
     when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
+    when(session.createQueue(any[String])).thenReturn(queue)
   }
+
+  case class ConsumerMock(factory: ConnectionFactory = mock[ConnectionFactory],
+                          connection: Connection = mock[Connection],
+                          session: Session = mock[Session],
+                          consumer: MessageConsumer = mock[MessageConsumer],
+                          queue: javax.jms.Queue = mock[javax.jms.Queue]) {
+    when(factory.createConnection()).thenReturn(connection)
+    when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
+    when(session.createConsumer(any[javax.jms.Destination])).thenReturn(consumer)
+    when(session.createQueue(any[String])).thenReturn(queue)
+  }
+
+  def withMockedConsumer(test: ConsumerMock => Unit): Unit = test(ConsumerMock())
+
 }

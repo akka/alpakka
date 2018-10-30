@@ -9,17 +9,15 @@ import akka.Done
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.{WebSocketRequest, WebSocketUpgradeResponse}
-
-import akka.stream.KillSwitch
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-
 import akka.stream.alpakka.jms.JmsConsumerSettings
-import akka.stream.alpakka.jms.scaladsl.JmsConsumer
+import akka.stream.alpakka.jms.scaladsl.{JmsConsumer, JmsConsumerControl}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 
 import scala.concurrent.Future
 // #sample
-import scala.concurrent.duration.DurationInt
 import playground.{ActiveMqBroker, WebServer}
+
+import scala.concurrent.duration.DurationInt
 
 object JmsToWebSocket extends JmsSampleBase with App {
 
@@ -32,7 +30,7 @@ object JmsToWebSocket extends JmsSampleBase with App {
   // format: off
   // #sample
 
-  val jmsSource: Source[String, KillSwitch] =
+  val jmsSource: Source[String, JmsConsumerControl] =
     JmsConsumer.textSource(                                                           // (1)
       JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("test")
     )
@@ -40,7 +38,7 @@ object JmsToWebSocket extends JmsSampleBase with App {
   val webSocketFlow: Flow[ws.Message, ws.Message, Future[WebSocketUpgradeResponse]] = // (2)
     Http().webSocketClientFlow(WebSocketRequest("ws://localhost:8080/webSocket/ping"))
 
-  val ((runningSource, wsUpgradeResponse), streamCompletion): ((KillSwitch, Future[WebSocketUpgradeResponse]), Future[Done]) =
+  val ((runningSource, wsUpgradeResponse), streamCompletion): ((JmsConsumerControl, Future[WebSocketUpgradeResponse]), Future[Done]) =
                                                      // stream element type
     jmsSource                                        //: String
       .map(ws.TextMessage(_))                        //: ws.TextMessage                  (3)

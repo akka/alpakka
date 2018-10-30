@@ -304,6 +304,12 @@ Java
 If a send operation finally fails, the stage also fails unless a different supervision strategy is applied. The 
 producer stage honours stream supervision.
 
+### Observing connectivity and state of a JMS producer
+
+All JMS producer's materialized values are of type `JmsProducerStatus`. This provides a `connectorState` method returning
+a `Source` of `JmsConnectorState` updates that publishes connection attempts, disconnections, completions and failures.
+The source is completed after the JMS producer completes or fails.
+
 ## Receiving messages from a JMS provider
 
 @java[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.javadsl.JmsConsumer$)]@scala[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.scaladsl.JmsConsumer$)] contains factory methods to facilitate
@@ -618,9 +624,15 @@ Java
 
 ### Stopping a JMS Source
 
-All JMS sources materialize to a `KillSwitch` to allow safely stopping consumption without message loss for transactional and acknowledged messages, and with minimal message loss for the simple JMS source.
+All JMS sources materialize to a `JmsConsumerControl` to allow safely stopping consumption without message loss for transactional and acknowledged messages, and with minimal message loss for the simple JMS source.
 
-To stop consumption safely, call `shutdown()` on the `KillSwitch` that is the materialized value of the source. To abruptly abort consumption (without concerns for message loss), call `abort(Throwable)` on the `KillSwitch`.
+To stop consumption safely, call `shutdown()` on the `JmsConsumerControl` that is the materialized value of the source. To abruptly abort consumption (without concerns for message loss), call `abort(Throwable)` on the `JmsConsumerControl`.
+
+### Observing connectivity and state of a JMS Source
+
+All JMS sources' materialized values are `JmsConsumerControl`s. This provides a `connectorState` method returning
+a `Source` of `JmsConnectorState` updates that publishes connection attempts, disconnections, completions and failures.
+The source is completed after the JMS source completes or fails.
 
 ## Using IBM MQ
 

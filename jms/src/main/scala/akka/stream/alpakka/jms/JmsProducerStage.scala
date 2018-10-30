@@ -4,10 +4,13 @@
 
 package akka.stream.alpakka.jms
 
+import akka.Done
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
-import akka.stream.alpakka.jms.JmsProducerStage._
+import akka.stream.alpakka.jms.JmsConnector.JmsConnectorStopping
 import akka.stream.alpakka.jms.JmsProducerMessage._
+import akka.stream.alpakka.jms.JmsProducerStage._
+import akka.stream.alpakka.jms.impl.JmsProducerMatValue
 import akka.stream.impl.Buffer
 import akka.stream.stage._
 import akka.util.OptionVal
@@ -19,7 +22,8 @@ import scala.util.{Failure, Success, Try}
 
 private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings: JmsProducerSettings,
                                                                         destination: Destination)
-    extends GraphStage[FlowShape[Envelope[A, PassThrough], Envelope[A, PassThrough]]] { stage =>
+    extends GraphStageWithMaterializedValue[FlowShape[Envelope[A, PassThrough], Envelope[A, PassThrough]],
+                                            JmsProducerMatValue] { stage =>
 
   private type E = Envelope[A, PassThrough]
   private val in = Inlet[E]("JmsProducer.in")
@@ -28,10 +32,17 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
   override def shape: FlowShape[E, E] = FlowShape.of(in, out)
 
   override protected def initialAttributes: Attributes =
-    ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher")
+    ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher").and(Attributes.name("JmsProducer"))
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new TimerGraphStageLogic(shape) with JmsProducerConnector {
+  override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes
+  ): (GraphStageLogic, JmsProducerMatValue) = {
+    val logic: TimerGraphStageLogic with JmsProducerConnector = producerLogic(inheritedAttributes)
+    (logic, logic.status)
+  }
+
+  private def producerLogic(inheritedAttributes: Attributes) =
+    new TimerGraphStageLogic(shape) with JmsProducerConnector with StageLogging {
 
       /*
        * NOTE: the following code is heavily inspired by akka.stream.impl.fusing.MapAsync
@@ -56,19 +67,21 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
       protected val jmsSettings: JmsProducerSettings = settings
 
       override def preStart(): Unit = {
+        super.preStart()
         ec = executionContext(inheritedAttributes)
         initSessionAsync()
       }
 
-      override protected def onSessionOpened(jmsSession: JmsProducerSession): Unit = {
-        jmsProducers.enqueue(JmsMessageProducer(jmsSession, settings, currentJmsProducerEpoch))
-        // startup situation: while producer pool was empty, the out port might have pulled. If so, pull from in port.
-        // Note that a message might be already in-flight; that's fine since this stage pre-fetches message from
-        // upstream anyway to increase throughput once the stream is started.
-        if (isAvailable(out)) pullIfNeeded()
-      }
+      override protected def onSessionOpened(jmsSession: JmsProducerSession): Unit =
+        sessionOpened(Try {
+          jmsProducers.enqueue(JmsMessageProducer(jmsSession, settings, currentJmsProducerEpoch))
+          // startup situation: while producer pool was empty, the out port might have pulled. If so, pull from in port.
+          // Note that a message might be already in-flight; that's fine since this stage pre-fetches message from
+          // upstream anyway to increase throughput once the stream is started.
+          if (isAvailable(out)) pullIfNeeded()
+        })
 
-      override def connectionFailed(ex: Throwable): Unit = {
+      override protected def connectionFailed(ex: Throwable): Unit = {
         jmsProducers.clear()
         currentJmsProducerEpoch += 1
         super.connectionFailed(ex)
@@ -76,13 +89,19 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
 
       setHandler(out, new OutHandler {
         override def onPull(): Unit = pushNextIfPossible()
+
+        override def onDownstreamFinish(): Unit = publishAndCompleteStage()
       })
 
       setHandler(
         in,
         new InHandler {
+          override def onUpstreamFinish(): Unit = if (inFlightMessages.isEmpty) publishAndCompleteStage()
 
-          override def onUpstreamFinish(): Unit = if (inFlightMessages.isEmpty) completeStage()
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            jmsSessions.foreach(s => Try(s.closeSession()))
+            publishAndFailStage(ex)
+          }
 
           override def onPush(): Unit = {
             val elem: E = grab(in)
@@ -105,9 +124,16 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
         }
       )
 
+      private def publishAndCompleteStage(): Unit = {
+        val previous = updateState(JmsConnectorStopping(Success(Done)))
+        jmsSessions.foreach(_.closeSession())
+        JmsConnector.connection(previous).foreach(_.close())
+        completeStage()
+      }
+
       override def onTimer(timerKey: Any): Unit = timerKey match {
         case s: SendAttempt[E] => sendWithRetries(s)
-        case _ => ()
+        case _ => super.onTimer(timerKey)
       }
 
       private def sendWithRetries(send: SendAttempt[E]): Unit = {
@@ -123,8 +149,8 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
       }
 
       def nextTryOrFail(send: SendAttempt[E], ex: Throwable): Unit = {
-        import settings.sendRetrySettings._
         import send._
+        import settings.sendRetrySettings._
         if (maxRetries < 0 || attempt + 1 <= maxRetries) {
           val nextAttempt = attempt + 1
           val delay = if (backoffMaxed) maxBackoff else waitTime(nextAttempt)
@@ -155,10 +181,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
           }
       }
 
-      override def postStop(): Unit = {
-        jmsSessions.foreach(_.closeSession())
-        jmsConnection.foreach(_.close)
-      }
+      override def postStop(): Unit = finishStop()
 
       private def pullIfNeeded(): Unit =
         if (jmsProducers.nonEmpty // only pull if a producer is available in the pool.
@@ -169,7 +192,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
       private def pushNextIfPossible(): Unit =
         if (inFlightMessages.isEmpty) {
           // no messages in flight, are we about to complete?
-          if (isClosed(in)) completeStage() else pullIfNeeded()
+          if (isClosed(in)) publishAndCompleteStage() else pullIfNeeded()
         } else if (inFlightMessages.peek().elem eq NotYetThere) {
           // next message to be produced is still not there, we need to wait.
           pullIfNeeded()
