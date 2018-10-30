@@ -56,11 +56,13 @@ import scala.collection.JavaConverters._
 
         currentRequests = currentRequests + 1
 
-        val request = new ReceiveMessageRequest(queueUrl)
+        var request = new ReceiveMessageRequest(queueUrl)
           .withAttributeNames(settings.attributeNames.map(_.name).asJava)
           .withMessageAttributeNames(settings.messageAttributeNames.map(_.name).asJava)
           .withMaxNumberOfMessages(settings.maxBatchSize)
           .withWaitTimeSeconds(settings.waitTimeSeconds)
+
+        request = setVisibilityTimeoutIfExists(request)
 
         sqsClient.receiveMessageAsync(
           request,
@@ -94,6 +96,12 @@ import scala.collection.JavaConverters._
 
         receiveMoreOrComplete()
       }
+
+      private def setVisibilityTimeoutIfExists(request: ReceiveMessageRequest) =
+        settings.visibilityTimeout
+          .map(_.toSeconds.toInt)
+          .map(request.withVisibilityTimeout(_))
+          .getOrElse(request)
 
       private def receiveMoreOrComplete(): Unit =
         if (canReceiveNewMessages) {

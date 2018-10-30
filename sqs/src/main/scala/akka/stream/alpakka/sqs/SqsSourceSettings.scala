@@ -16,7 +16,8 @@ final class SqsSourceSettings private (
     val maxBatchSize: Int,
     val attributeNames: immutable.Seq[AttributeName],
     val messageAttributeNames: immutable.Seq[MessageAttributeName],
-    val closeOnEmptyReceive: Boolean
+    val closeOnEmptyReceive: Boolean,
+    val visibilityTimeout: Option[FiniteDuration]
 ) {
   require(maxBatchSize <= maxBufferSize, "maxBatchSize must be lower or equal than maxBufferSize")
   // SQS requirements
@@ -89,20 +90,31 @@ final class SqsSourceSettings private (
     if (value == closeOnEmptyReceive) this
     else copy(closeOnEmptyReceive = value)
 
+  /**
+   * the period of time (in seconds) during which Amazon SQS prevents other consumers
+   * from receiving and processing an already received message (see Amazon SQS doc)
+   *
+   * Default: None - taken from the SQS queue configuration
+   */
+  def withVisibilityTimeout(timeout: FiniteDuration): SqsSourceSettings =
+    copy(visibilityTimeout = Some(timeout))
+
   private def copy(
       waitTimeSeconds: Int = waitTimeSeconds,
       maxBufferSize: Int = maxBufferSize,
       maxBatchSize: Int = maxBatchSize,
       attributeNames: immutable.Seq[AttributeName] = attributeNames,
       messageAttributeNames: immutable.Seq[MessageAttributeName] = messageAttributeNames,
-      closeOnEmptyReceive: Boolean = closeOnEmptyReceive
+      closeOnEmptyReceive: Boolean = closeOnEmptyReceive,
+      visibilityTimeout: Option[FiniteDuration] = visibilityTimeout
   ): SqsSourceSettings = new SqsSourceSettings(
     waitTimeSeconds,
     maxBufferSize,
     maxBatchSize,
     attributeNames,
     messageAttributeNames,
-    closeOnEmptyReceive
+    closeOnEmptyReceive,
+    visibilityTimeout
   )
 
   override def toString: String =
@@ -112,7 +124,8 @@ final class SqsSourceSettings private (
     s"maxBatchSize=$maxBatchSize, " +
     s"attributeNames=${attributeNames.mkString(",")}, " +
     s"messageAttributeNames=${messageAttributeNames.mkString(",")}, " +
-    s"closeOnEmptyReceive=$closeOnEmptyReceive" +
+    s"closeOnEmptyReceive=$closeOnEmptyReceive," +
+    s"visibilityTomeout=${visibilityTimeout.map(_.toCoarsest)}" +
     ")"
 }
 
@@ -122,7 +135,8 @@ object SqsSourceSettings {
                                        10,
                                        attributeNames = immutable.Seq(),
                                        messageAttributeNames = immutable.Seq(),
-                                       closeOnEmptyReceive = false)
+                                       closeOnEmptyReceive = false,
+                                       visibilityTimeout = None)
 
   /**
    * Scala API
