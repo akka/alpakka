@@ -7,7 +7,6 @@ package akka.stream.alpakka.solr
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.solr.scaladsl.{SolrFlow, SolrSink, SolrSource}
@@ -429,7 +428,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
           IncomingAtomicUpdateMessage[SolrInputDocument](
             "title",
             tuple.fields.get("title").toString,
-            tuple.fields.get("title").toString,
+            None,
             Map("comment" -> Map("set" -> (tuple.fields.get("comment") + " It is a good book!!!")))
           )
         }
@@ -564,7 +563,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
           IncomingAtomicUpdateMessage[Book](
             "title",
             tuple.fields.get("title").toString,
-            tuple.fields.get("title").toString,
+            None,
             Map("comment" -> Map("set" -> (tuple.fields.get("comment") + " It is a good book!!!")))
           )
         }

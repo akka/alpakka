@@ -29,16 +29,9 @@ object IncomingMessage {
 
   def apply[T](idField: String,
                idValue: String,
-               routingFieldValue: String,
+               routingFieldValueOpt: Option[String],
                updates: Map[String, Map[String, Any]]): IncomingMessage[T, NotUsed] =
-    IncomingMessage(AtomicUpdate,
-                    Option(idField),
-                    Option(idValue),
-                    Some(routingFieldValue),
-                    None,
-                    None,
-                    updates,
-                    NotUsed)
+    IncomingMessage(AtomicUpdate, Option(idField), Option(idValue), routingFieldValueOpt, None, None, updates, NotUsed)
 
   // Apply methods to use with passThrough
   def apply[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
@@ -49,13 +42,13 @@ object IncomingMessage {
 
   def apply[T, C](idField: String,
                   idValue: String,
-                  routingFieldValue: String,
+                  routingFieldValueOpt: Option[String],
                   updates: Map[String, Map[String, Any]],
                   passThrough: C): IncomingMessage[T, C] =
     IncomingMessage(AtomicUpdate,
                     Option(idField),
                     Option(idValue),
-                    Option(routingFieldValue),
+                    routingFieldValueOpt,
                     None,
                     None,
                     updates,
@@ -70,9 +63,9 @@ object IncomingMessage {
 
   def create[T](idField: String,
                 idValue: String,
-                routingFieldValue: String,
+                routingFieldValueOpt: Option[String],
                 updates: java.util.Map[String, Map[String, Object]]): IncomingMessage[T, NotUsed] =
-    IncomingMessage(idField, idValue, routingFieldValue, updates.asScala.toMap)
+    IncomingMessage(idField, idValue, routingFieldValueOpt, updates.asScala.toMap)
 
   // Java-api - with passThrough
   def create[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
@@ -83,10 +76,10 @@ object IncomingMessage {
 
   def create[T, C](idField: String,
                    idValue: String,
-                   routingFieldValue: String,
+                   routingFieldValueOpt: Option[String],
                    updates: java.util.Map[String, Map[String, Object]],
                    passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(idField, idValue, routingFieldValue, updates.asScala.toMap, passThrough)
+    IncomingMessage(idField, idValue, routingFieldValueOpt, updates.asScala.toMap, passThrough)
 
   def asScalaUpdates(jupdates: java.util.Map[String, java.util.Map[String, Object]]): Map[String, Map[String, Any]] =
     jupdates.asScala.map {
@@ -149,23 +142,34 @@ object IncomingAtomicUpdateMessage {
   // Apply method to use when not using passThrough
   def apply[T](idField: String,
                idValue: String,
-               routingFieldValue: String,
+               routingFieldValueOpt: Option[String],
                updates: Map[String, Map[String, Any]]): IncomingMessage[T, NotUsed] =
-    IncomingMessage(idField, idValue, routingFieldValue, updates)
+    IncomingMessage(idField, idValue, routingFieldValueOpt, updates)
 
   def apply[T, C](idField: String,
                   idValue: String,
-                  routingFieldValue: String,
+                  routingFieldValueOpt: Option[String],
                   updates: Map[String, Map[String, Any]],
                   passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(idField, idValue, routingFieldValue, updates, passThrough)
+    IncomingMessage(idField, idValue, routingFieldValueOpt, updates, passThrough)
 
   // Java-api - without passThrough
   def create[T](idField: String,
                 idValue: String,
+                updates: java.util.Map[String, java.util.Map[String, Object]]): IncomingMessage[T, NotUsed] =
+    IncomingAtomicUpdateMessage[T](idField, idValue, None, IncomingMessage.asScalaUpdates(updates))
+
+  def create[T](idField: String,
+                idValue: String,
                 routingFieldValue: String,
                 updates: java.util.Map[String, java.util.Map[String, Object]]): IncomingMessage[T, NotUsed] =
-    IncomingAtomicUpdateMessage[T](idField, idValue, routingFieldValue, IncomingMessage.asScalaUpdates(updates))
+    IncomingAtomicUpdateMessage[T](idField, idValue, Option(routingFieldValue), IncomingMessage.asScalaUpdates(updates))
+
+  def create[T, C](idField: String,
+                   idValue: String,
+                   updates: java.util.Map[String, java.util.Map[String, Object]],
+                   passThrough: C): IncomingMessage[T, C] =
+    IncomingAtomicUpdateMessage[T, C](idField, idValue, None, IncomingMessage.asScalaUpdates(updates), passThrough)
 
   def create[T, C](idField: String,
                    idValue: String,
@@ -174,7 +178,7 @@ object IncomingAtomicUpdateMessage {
                    passThrough: C): IncomingMessage[T, C] =
     IncomingAtomicUpdateMessage[T, C](idField,
                                       idValue,
-                                      routingFieldValue,
+                                      Option(routingFieldValue),
                                       IncomingMessage.asScalaUpdates(updates),
                                       passThrough)
 }
@@ -296,19 +300,25 @@ private[solr] final class SolrFlowLogic[T, C](
   private def atomicUpdateBulkToSolr(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
     val docs = messages.map { message =>
       val doc = new SolrInputDocument()
-      if (message.idFieldOpt.isEmpty || message.idFieldValueOpt.isEmpty) {
-        throw new IllegalArgumentException("idfield name and idfield value should be set")
+
+      message.idFieldOpt.foreach { idField =>
+        message.idFieldValueOpt.foreach { idFieldValue =>
+          doc.addField(idField, idFieldValue)
+        }
       }
 
-      doc.addField(message.idFieldOpt.get, message.idFieldValueOpt.get)
-      client match {
-        case csc: CloudSolrClient =>
-          if (message.routingFieldValueOpt.isEmpty)
-            throw new IllegalArgumentException("routing field value should be set")
-          val routerField = csc.getIdField
-          if (routerField != message.idFieldOpt.get)
-            doc.addField(routerField, message.routingFieldValueOpt.get)
-        case _ =>
+      message.routingFieldValueOpt.foreach { routingFieldValue =>
+        val routingFieldOpt = client match {
+          case csc: CloudSolrClient =>
+            Option(csc.getIdField)
+          case _ => None
+        }
+        routingFieldOpt.foreach { routingField =>
+          message.idFieldOpt.foreach { idField =>
+            if (routingField != idField)
+              doc.addField(routingField, routingFieldValue)
+          }
+        }
       }
 
       message.updates.foreach {

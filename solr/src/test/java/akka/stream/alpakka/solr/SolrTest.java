@@ -427,7 +427,7 @@ public class SolrTest {
                   m2.put("set", (t.fields.get("comment") + " It's is a good book!!!"));
                   m1.put("comment", m2);
                   return IncomingAtomicUpdateMessage.<SolrInputDocument>create(
-                      "title", t.fields.get("title").toString(), "comment", m1);
+                      "title", t.fields.get("title").toString(), m1);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
