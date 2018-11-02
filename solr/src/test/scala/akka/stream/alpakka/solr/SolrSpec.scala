@@ -41,12 +41,15 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
   //#init-client
   //#define-class
-  case class Book(title: String, comment: String = "")
+  case class Book(title: String, comment: String = "", routerOpt: Option[String] = None)
 
   val bookToDoc: Book => SolrInputDocument = { b =>
     val doc = new SolrInputDocument
     doc.setField("title", b.title)
     doc.setField("comment", b.comment)
+    b.routerOpt.foreach { router =>
+      doc.setField("router", router)
+    }
     doc
   }
 
@@ -533,13 +536,14 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
   "Solr connector" should {
     "consume and update atomically beans" in {
       // Copy collection1 to collection2 through document stream
-      createCollection("collection10") //create a new collection
+      createCollection("collection10", Some("router")) //create a new collection
       val stream = getTupleStream("collection1")
 
       val f1 = SolrSource
         .fromTupleStream(ts = stream)
         .map { tuple: Tuple =>
-          val book: Book = tupleToBook(tuple).copy(comment = "Written by good authors.")
+          val book: Book =
+            tupleToBook(tuple).copy(comment = "Written by good authors.", routerOpt = Some("router-value"))
           IncomingUpsertMessage(book)
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
@@ -563,7 +567,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
           IncomingAtomicUpdateMessage[Book](
             "title",
             tuple.fields.get("title").toString,
-            None,
+            Some("router-value"),
             Map("comment" -> Map("set" -> (tuple.fields.get("comment") + " It is a good book!!!")))
           )
         }
@@ -709,16 +713,17 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
     client.getClusterStateProvider
       .asInstanceOf[ZkClientClusterStateProvider]
       .uploadConfig(confDir.toPath, "conf")
-    client.setIdField("title")
+    client.setIdField("router")
 
     createCollection("collection1")
 
     assertTrue(!client.getZkStateReader.getClusterState.getLiveNodes.isEmpty)
   }
 
-  private def createCollection(name: String) =
+  private def createCollection(name: String, routerFieldOpt: Option[String] = None) =
     CollectionAdminRequest
       .createCollection(name, "conf", 1, 1)
+      .setRouterField(routerFieldOpt.orNull)
       .process(client)
 
   private def getTupleStream(collection: String): TupleStream = {
