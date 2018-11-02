@@ -63,9 +63,14 @@ object IncomingMessage {
 
   def create[T](idField: String,
                 idValue: String,
-                routingFieldValueOpt: Option[String],
+                routingFieldValue: String,
                 updates: java.util.Map[String, Map[String, Object]]): IncomingMessage[T, NotUsed] =
-    IncomingMessage(idField, idValue, routingFieldValueOpt, updates.asScala.toMap)
+    IncomingMessage(idField, idValue, Option(routingFieldValue), updates.asScala.toMap)
+
+  def create[T](idField: String,
+                idValue: String,
+                updates: java.util.Map[String, Map[String, Object]]): IncomingMessage[T, NotUsed] =
+    IncomingMessage(idField, idValue, None, updates.asScala.toMap)
 
   // Java-api - with passThrough
   def create[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
@@ -76,10 +81,16 @@ object IncomingMessage {
 
   def create[T, C](idField: String,
                    idValue: String,
-                   routingFieldValueOpt: Option[String],
+                   routingFieldValue: String,
                    updates: java.util.Map[String, Map[String, Object]],
                    passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(idField, idValue, routingFieldValueOpt, updates.asScala.toMap, passThrough)
+    IncomingMessage(idField, idValue, Option(routingFieldValue), updates.asScala.toMap, passThrough)
+
+  def create[T, C](idField: String,
+                   idValue: String,
+                   updates: java.util.Map[String, Map[String, Object]],
+                   passThrough: C): IncomingMessage[T, C] =
+    IncomingMessage(idField, idValue, None, updates.asScala.toMap, passThrough)
 
   def asScalaUpdates(jupdates: java.util.Map[String, java.util.Map[String, Object]]): Map[String, Map[String, Any]] =
     jupdates.asScala.map {
