@@ -12,7 +12,7 @@ import scala.util.{Failure, Success}
 import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK}
+import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK, ServerError}
 import akka.http.scaladsl.model.headers.{`Content-Length`, ByteRange, CustomHeader}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
@@ -184,10 +184,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     )
     val req = uploadRequest(s3Location, data, contentLength, contentType, headers)
 
-    val resp = for {
-      signedRequest <- Signer.signedRequest(req, signingKey)
-      resp <- Http().singleRequest(signedRequest)
-    } yield resp
+    val resp = signAndRequest(req)
 
     resp.flatMap {
       case HttpResponse(OK, h, entity, _) =>
@@ -206,7 +203,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
               rangeOption: Option[ByteRange] = None,
               versionId: Option[String] = None,
               s3Headers: S3Headers = S3Headers.empty): Future[HttpResponse] =
-    signAndGet(requestHeaders(getDownloadRequest(s3Location, method, s3Headers, versionId), rangeOption))
+    signAndRequest(requestHeaders(getDownloadRequest(s3Location, method, s3Headers, versionId), rangeOption))
 
   private def requestHeaders(downloadRequest: HttpRequest, rangeOption: Option[ByteRange]): HttpRequest =
     rangeOption match {
@@ -235,10 +232,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
     val req = initiateMultipartUploadRequest(s3Location, contentType, s3Headers)
 
-    val response = for {
-      signedReq <- Signer.signedRequest(req, signingKey)
-      response <- Http().singleRequest(signedReq)
-    } yield response
+    val response: Future[HttpResponse] = signAndRequest(req)
     response.flatMap {
       case HttpResponse(status, _, entity, _) if status.isSuccess() =>
         Unmarshal(entity).to[MultipartUpload]
@@ -442,7 +436,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
   private def signAndGetAs[T](request: HttpRequest)(implicit um: Unmarshaller[ResponseEntity, T]): Future[T] = {
     import mat.executionContext
     for {
-      response <- signAndGet(request)
+      response <- signAndRequest(request)
       (entity, _) <- entityForSuccess(response)
       t <- Unmarshal(entity).to[T]
     } yield t
@@ -452,17 +446,21 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
                               f: (T, Seq[HttpHeader]) => T)(implicit um: Unmarshaller[ResponseEntity, T]): Future[T] = {
     import mat.executionContext
     (for {
-      response <- signAndGet(request)
+      response <- signAndRequest(request)
       (entity, headers) <- entityForSuccess(response)
       t <- Unmarshal(entity).to[T]
     } yield (t, headers)).map((f(_, _)).tupled)
   }
 
-  private def signAndGet(request: HttpRequest): Future[HttpResponse] = {
+  private def signAndRequest(request: HttpRequest, retries: Int = 3): Future[HttpResponse] = {
     import mat.executionContext
     for {
       req <- Signer.signedRequest(request, signingKey)
-      res <- Http().singleRequest(req)
+      res <- Http().singleRequest(req).flatMap {
+        case HttpResponse(status, _, _, _) if (retries > 0) && (500 to 599 contains status.intValue()) =>
+          signAndRequest(request, retries - 1)
+        case res => Future(res)
+      }
     } yield res
   }
 
