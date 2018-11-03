@@ -31,7 +31,6 @@ object MqttSessionSettings {
 final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
                                          val maxClientConnectionStashSize: Int = 100,
                                          val clientTerminationWatcherBufferSize: Int = 100,
-                                         val actorMqttSessionTimeout: FiniteDuration = 3.seconds,
                                          val commandParallelism: Int = 50,
                                          val eventParallelism: Int = 10,
                                          val receiveConnectTimeout: FiniteDuration = 5.minutes,
@@ -56,20 +55,6 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
    * The maximum size of a packet that is allowed to be decoded. Defaults to 4k.
    */
   def withMaxPacketSize(maxPacketSize: Int): MqttSessionSettings = copy(maxPacketSize = maxPacketSize)
-
-  /**
-   * An internal timeout for session actor communication. Its default of 3 seconds should be more than adequate for all use-cases.
-   */
-  def withActorMqttSessionTimeout(actorMqttSessionTimeout: FiniteDuration): MqttSessionSettings =
-    copy(actorMqttSessionTimeout = actorMqttSessionTimeout)
-
-  /**
-   * Java API
-   *
-   * An internal timeout for session actor communication. Its default of 3 seconds should be more than adequate for all use-cases.
-   */
-  def withActorMqttSessionTimeout(actorMqttSessionTimeout: Duration): MqttSessionSettings =
-    copy(actorMqttSessionTimeout = actorMqttSessionTimeout.asScala)
 
   /**
    * The number of commands that can be processed at a time, with a default of 50. For client usage, note that each
@@ -222,7 +207,6 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
   private def copy(maxPacketSize: Int = maxPacketSize,
                    maxClientConnectionStashSize: Int = maxClientConnectionStashSize,
                    clientTerminationWatcherBufferSize: Int = clientTerminationWatcherBufferSize,
-                   actorMqttSessionTimeout: FiniteDuration = actorMqttSessionTimeout,
                    commandParallelism: Int = commandParallelism,
                    eventParallelism: Int = eventParallelism,
                    receiveConnectTimeout: FiniteDuration = receiveConnectTimeout,
@@ -237,7 +221,6 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
       maxPacketSize,
       maxClientConnectionStashSize,
       clientTerminationWatcherBufferSize,
-      actorMqttSessionTimeout,
       commandParallelism,
       eventParallelism,
       receiveConnectTimeout,
@@ -251,5 +234,5 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
     )
 
   override def toString: String =
-    s"MqttSessionSettings(maxPacketSize=$maxPacketSize,maxClientConnectionStashSize=$maxClientConnectionStashSize,clientTerminationWatcherBufferSize=$clientTerminationWatcherBufferSize,actorMqttSessionTimeout=$actorMqttSessionTimeout,commandParallelism=$commandParallelism,eventParallelism=$eventParallelism,receiveConnectTimeout=$receiveConnectTimeout,receiveConnAckTimeout=$receiveConnAckTimeout,receivePubAckRecTimeout=$receivePubAckRecTimeout,receivePubCompTimeout=$receivePubCompTimeout,receivePubRelTimeout=$receivePubRelTimeout,receiveSubAckTimeout=$receiveSubAckTimeout,receiveUnsubAckTimeout=$receiveUnsubAckTimeout,serverSendBufferSize=$serverSendBufferSize)"
+    s"MqttSessionSettings(maxPacketSize=$maxPacketSize,maxClientConnectionStashSize=$maxClientConnectionStashSize,clientTerminationWatcherBufferSize=$clientTerminationWatcherBufferSize,commandParallelism=$commandParallelism,eventParallelism=$eventParallelism,receiveConnectTimeout=$receiveConnectTimeout,receiveConnAckTimeout=$receiveConnAckTimeout,receivePubAckRecTimeout=$receivePubAckRecTimeout,receivePubCompTimeout=$receivePubCompTimeout,receivePubRelTimeout=$receivePubRelTimeout,receiveSubAckTimeout=$receiveSubAckTimeout,receiveUnsubAckTimeout=$receiveUnsubAckTimeout,serverSendBufferSize=$serverSendBufferSize)"
 }

@@ -13,9 +13,10 @@ import akka.actor.typed.{ActorRef, Behavior, PostStop, Terminated}
 import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{BroadcastHub, Keep, Sink, Source, SourceQueueWithComplete}
-import akka.util.{ByteString, Timeout}
+import akka.util.ByteString
 
 import scala.annotation.tailrec
+import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success}
@@ -73,20 +74,20 @@ import scala.util.{Failure, Success}
   sealed abstract class Event(val connectionId: ByteString)
   final case class ConnectReceivedFromRemote(override val connectionId: ByteString,
                                              connect: Connect,
-                                             local: ActorRef[ClientConnection.ForwardConnect.type])
+                                             local: Promise[ClientConnection.ForwardConnect.type])
       extends Event(connectionId)
   final case class ReceiveConnAckTimeout(override val connectionId: ByteString) extends Event(connectionId)
   final case class ConnAckReceivedLocally(override val connectionId: ByteString,
                                           connAck: ConnAck,
-                                          remote: ActorRef[Source[ClientConnection.ForwardConnAckCommand, NotUsed]])
+                                          remote: Promise[Source[ClientConnection.ForwardConnAckCommand, NotUsed]])
       extends Event(connectionId)
   final case class SubscribeReceivedFromRemote(override val connectionId: ByteString,
                                                subscribe: Subscribe,
-                                               local: ActorRef[Publisher.ForwardSubscribe.type])
+                                               local: Promise[Publisher.ForwardSubscribe.type])
       extends Event(connectionId)
   final case class PublishReceivedFromRemote(override val connectionId: ByteString,
                                              publish: Publish,
-                                             local: ActorRef[Consumer.ForwardPublish.type])
+                                             local: Promise[Consumer.ForwardPublish.type])
       extends Event(connectionId)
   final case class PublishReceivedLocally(override val connectionId: ByteString,
                                           publish: Publish,
@@ -94,13 +95,13 @@ import scala.util.{Failure, Success}
       extends Event(connectionId)
   final case class UnsubscribeReceivedFromRemote(override val connectionId: ByteString,
                                                  unsubscribe: Unsubscribe,
-                                                 local: ActorRef[Unpublisher.ForwardUnsubscribe.type])
+                                                 local: Promise[Unpublisher.ForwardUnsubscribe.type])
       extends Event(connectionId)
   final case class PingReqReceivedFromRemote(override val connectionId: ByteString,
-                                             local: ActorRef[ClientConnection.ForwardPingReq.type])
+                                             local: Promise[ClientConnection.ForwardPingReq.type])
       extends Event(connectionId)
   final case class DisconnectReceivedFromRemote(override val connectionId: ByteString,
-                                                local: ActorRef[ClientConnection.ForwardDisconnect.type])
+                                                local: Promise[ClientConnection.ForwardDisconnect.type])
       extends Event(connectionId)
   final case class ConnectionLost(override val connectionId: ByteString) extends Event(connectionId)
 
@@ -204,7 +205,7 @@ import scala.util.{Failure, Success}
    * Construct with the starting state
    */
   def apply(connect: Connect,
-            local: ActorRef[ForwardConnect.type],
+            local: Promise[ForwardConnect.type],
             consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
             producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
             publisherPacketRouter: ActorRef[RemotePacketRouter.Request[Publisher.Event]],
@@ -235,7 +236,7 @@ import scala.util.{Failure, Success}
                              val settings: MqttSessionSettings)
   final case class ConnectReceived(
       connect: Connect,
-      local: ActorRef[ForwardConnect.type],
+      local: Promise[ForwardConnect.type],
       publishers: Set[String],
       pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
       pendingRemotePublications: Seq[(String, PublishReceivedFromRemote)],
@@ -285,26 +286,26 @@ import scala.util.{Failure, Success}
 
   sealed abstract class Event
   case object ReceiveConnAckTimeout extends Event
-  final case class ConnAckReceivedLocally(connAck: ConnAck, remote: ActorRef[Source[ForwardConnAckCommand, NotUsed]])
+  final case class ConnAckReceivedLocally(connAck: ConnAck, remote: Promise[Source[ForwardConnAckCommand, NotUsed]])
       extends Event
-  final case class SubscribeReceivedFromRemote(subscribe: Subscribe, local: ActorRef[Publisher.ForwardSubscribe.type])
+  final case class SubscribeReceivedFromRemote(subscribe: Subscribe, local: Promise[Publisher.ForwardSubscribe.type])
       extends Event
-  final case class PublishReceivedFromRemote(publish: Publish, local: ActorRef[Consumer.ForwardPublish.type])
+  final case class PublishReceivedFromRemote(publish: Publish, local: Promise[Consumer.ForwardPublish.type])
       extends Event
   final case class ConsumerFree(topicName: String) extends Event
   final case class PublishReceivedLocally(publish: Publish, publishData: Producer.PublishData) extends Event
   final case class ProducerFree(topicName: String) extends Event
   final case class UnsubscribeReceivedFromRemote(unsubscribe: Unsubscribe,
-                                                 local: ActorRef[Unpublisher.ForwardUnsubscribe.type])
+                                                 local: Promise[Unpublisher.ForwardUnsubscribe.type])
       extends Event
-  final case class PingReqReceivedFromRemote(local: ActorRef[ForwardPingReq.type]) extends Event
-  final case class DisconnectReceivedFromRemote(local: ActorRef[ForwardDisconnect.type]) extends Event
+  final case class PingReqReceivedFromRemote(local: Promise[ForwardPingReq.type]) extends Event
+  final case class DisconnectReceivedFromRemote(local: Promise[ForwardDisconnect.type]) extends Event
   case object ConnectionLost extends Event
   final case class UnpublisherFree(topicFilters: Seq[String]) extends Event
   case object ReceivePingReqTimeout extends Event
   final case class ReceivedProducerPublishingCommand(command: Source[Producer.ForwardPublishingCommand, NotUsed])
       extends Event
-  final case class ConnectReceivedFromRemote(connect: Connect, local: ActorRef[ClientConnection.ForwardConnect.type])
+  final case class ConnectReceivedFromRemote(connect: Connect, local: Promise[ClientConnection.ForwardConnect.type])
       extends Event
   case object ReceiveConnectTimeout extends Event
 
@@ -326,7 +327,7 @@ import scala.util.{Failure, Success}
   private val UnpublisherNamePrefix = "unpublisher-"
 
   def clientConnect(data: ConnectReceived)(implicit mat: Materializer): Behavior[Event] = Behaviors.setup { _ =>
-    data.local ! ForwardConnect
+    data.local.success(ForwardConnect)
 
     Behaviors.withTimers { timer =>
       timer.startSingleTimer("receive-connack", ReceiveConnAckTimeout, data.settings.receiveConnAckTimeout)
@@ -338,7 +339,7 @@ import scala.util.{Failure, Success}
               .queue[ForwardConnAckCommand](data.settings.serverSendBufferSize, OverflowStrategy.dropNew)
               .toMat(BroadcastHub.sink)(Keep.both)
               .run()
-            remote ! source
+            remote.success(source)
 
             queue.offer(ForwardConnAck)
             data.stash.foreach(context.self.tell)
@@ -369,202 +370,203 @@ import scala.util.{Failure, Success}
     }
   }
 
-  def clientConnected(data: ConnAckReplied)(implicit mat: Materializer): Behavior[Event] = Behaviors.setup {
-    setupContext =>
-      val selfAsRemote =
-        setupContext
-          .messageAdapter[Source[Producer.ForwardPublishingCommand, NotUsed]](ReceivedProducerPublishingCommand)
+  def clientConnected(data: ConnAckReplied)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
+    timer =>
+      if (data.connect.keepAlive.toMillis > 0)
+        timer.startSingleTimer("receive-pingreq",
+                               ReceivePingReqTimeout,
+                               FiniteDuration((data.connect.keepAlive.toMillis * 1.5).toLong, TimeUnit.MILLISECONDS))
 
-      Behaviors.withTimers { timer =>
-        if (data.connect.keepAlive.toMillis > 0)
-          timer.startSingleTimer("receive-pingreq",
-                                 ReceivePingReqTimeout,
-                                 FiniteDuration((data.connect.keepAlive.toMillis * 1.5).toLong, TimeUnit.MILLISECONDS))
-
-        Behaviors
-          .receivePartial[Event] {
-            case (context, SubscribeReceivedFromRemote(subscribe, local)) =>
-              val publisherName = ActorName.mkName(PublisherNamePrefix + subscribe.topicFilters)
-              context.child(publisherName) match {
-                case None =>
-                  val publisher = context.spawn(
-                    Publisher(subscribe.packetId, local, data.publisherPacketRouter, data.settings),
-                    publisherName
+      Behaviors
+        .receivePartial[Event] {
+          case (context, SubscribeReceivedFromRemote(subscribe, local)) =>
+            val publisherName = ActorName.mkName(PublisherNamePrefix + subscribe.topicFilters)
+            context.child(publisherName) match {
+              case None =>
+                val publisher = context.spawn(
+                  Publisher(subscribe.packetId, local, data.publisherPacketRouter, data.settings),
+                  publisherName
+                )
+                context.watch(publisher)
+                pendingSubAck(
+                  PendingSubscribe(
+                    subscribe,
+                    data.connect,
+                    data.remote,
+                    data.publishers,
+                    data.pendingLocalPublications,
+                    data.pendingRemotePublications,
+                    Vector.empty,
+                    data.consumerPacketRouter,
+                    data.producerPacketRouter,
+                    data.publisherPacketRouter,
+                    data.unpublisherPacketRouter,
+                    data.settings
                   )
-                  context.watch(publisher)
-                  pendingSubAck(
-                    PendingSubscribe(
-                      subscribe,
-                      data.connect,
-                      data.remote,
-                      data.publishers,
-                      data.pendingLocalPublications,
-                      data.pendingRemotePublications,
-                      Vector.empty,
-                      data.consumerPacketRouter,
-                      data.producerPacketRouter,
-                      data.publisherPacketRouter,
-                      data.unpublisherPacketRouter,
-                      data.settings
-                    )
-                  )
-                case _: Some[_] => // Ignored for existing subscriptions
-                  Behaviors.same
-              }
-            case (context, UnsubscribeReceivedFromRemote(unsubscribe, local)) =>
-              val unpublisherName = ActorName.mkName(UnpublisherNamePrefix + unsubscribe.topicFilters)
-              context.child(unpublisherName) match {
-                case None =>
-                  val unpublisher = context.spawn(
-                    Unpublisher(unsubscribe.packetId, local, data.unpublisherPacketRouter, data.settings),
-                    unpublisherName
-                  )
-                  context.watchWith(unpublisher, UnpublisherFree(unsubscribe.topicFilters))
-                case _: Some[_] => // Ignored for existing unsubscriptions
-              }
-              Behaviors.same
-            case (_, UnpublisherFree(topicFilters)) =>
-              val unsubscribedTopicFilters =
-                data.publishers.filter(publisher => topicFilters.exists(matchTopicFilter(_, publisher)))
-              clientConnected(data.copy(publishers = data.publishers -- unsubscribedTopicFilters))
-            case (_, PublishReceivedFromRemote(publish, local))
-                if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
-              local ! Consumer.ForwardPublish
-              Behaviors.same
-            case (context,
-                  prfr @ PublishReceivedFromRemote(publish @ Publish(_, topicName, Some(packetId), _), local)) =>
-              val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName)
-              context.child(consumerName) match {
-                case None if !data.pendingRemotePublications.exists(_._1 == publish.topicName) =>
-                  context.watchWith(
-                    context.spawn(
-                      Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings),
-                      consumerName
-                    ),
-                    ConsumerFree(publish.topicName)
-                  )
-                  clientConnected(data)
-                case _ =>
-                  clientConnected(
-                    data.copy(pendingRemotePublications = data.pendingRemotePublications :+ (publish.topicName -> prfr))
-                  )
-              }
-            case (context, ConsumerFree(topicName)) =>
-              val i = data.pendingRemotePublications.indexWhere(_._1 == topicName)
-              if (i >= 0) {
-                val prfr = data.pendingRemotePublications(i)._2
-                val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName)
+                )
+              case _: Some[_] => // It is an error to get here
+                local.failure(new IllegalStateException("Shouldn't be able to receive subscriptions here"))
+                Behaviors.same
+            }
+          case (context, UnsubscribeReceivedFromRemote(unsubscribe, local)) =>
+            val unpublisherName = ActorName.mkName(UnpublisherNamePrefix + unsubscribe.topicFilters)
+            context.child(unpublisherName) match {
+              case None =>
+                val unpublisher = context.spawn(
+                  Unpublisher(unsubscribe.packetId, local, data.unpublisherPacketRouter, data.settings),
+                  unpublisherName
+                )
+                context.watchWith(unpublisher, UnpublisherFree(unsubscribe.topicFilters))
+              case _: Some[_] =>
+                local.failure(new IllegalStateException("Duplicate unsubscribe: " + unsubscribe))
+            }
+            Behaviors.same
+          case (_, UnpublisherFree(topicFilters)) =>
+            val unsubscribedTopicFilters =
+              data.publishers.filter(publisher => topicFilters.exists(matchTopicFilter(_, publisher)))
+            clientConnected(data.copy(publishers = data.publishers -- unsubscribedTopicFilters))
+          case (_, PublishReceivedFromRemote(publish, local))
+              if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
+            local.success(Consumer.ForwardPublish)
+            Behaviors.same
+          case (context, prfr @ PublishReceivedFromRemote(publish @ Publish(_, topicName, Some(packetId), _), local)) =>
+            val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName)
+            context.child(consumerName) match {
+              case None if !data.pendingRemotePublications.exists(_._1 == publish.topicName) =>
                 context.watchWith(
                   context.spawn(
-                    Consumer(prfr.publish,
-                             prfr.publish.packetId.get,
-                             prfr.local,
-                             data.consumerPacketRouter,
-                             data.settings),
+                    Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings),
                     consumerName
                   ),
-                  ConsumerFree(topicName)
+                  ConsumerFree(publish.topicName)
                 )
-                clientConnected(
-                  data.copy(
-                    pendingRemotePublications =
-                    data.pendingRemotePublications.take(i) ++ data.pendingRemotePublications.drop(i + 1)
-                  )
-                )
-              } else {
                 clientConnected(data)
-              }
-            case (_, PublishReceivedLocally(publish, _))
-                if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 &&
-                data.publishers.exists(matchTopicFilter(_, publish.topicName)) =>
-              data.remote.offer(ForwardPublish(publish, None))
+              case _ =>
+                clientConnected(
+                  data.copy(pendingRemotePublications = data.pendingRemotePublications :+ (publish.topicName -> prfr))
+                )
+            }
+          case (context, ConsumerFree(topicName)) =>
+            val i = data.pendingRemotePublications.indexWhere(_._1 == topicName)
+            if (i >= 0) {
+              val prfr = data.pendingRemotePublications(i)._2
+              val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName)
+              context.watchWith(
+                context.spawn(
+                  Consumer(prfr.publish,
+                           prfr.publish.packetId.get,
+                           prfr.local,
+                           data.consumerPacketRouter,
+                           data.settings),
+                  consumerName
+                ),
+                ConsumerFree(topicName)
+              )
+              clientConnected(
+                data.copy(
+                  pendingRemotePublications =
+                  data.pendingRemotePublications.take(i) ++ data.pendingRemotePublications.drop(i + 1)
+                )
+              )
+            } else {
               clientConnected(data)
-            case (context, prl @ PublishReceivedLocally(publish, publishData))
-                if data.publishers.exists(matchTopicFilter(_, publish.topicName)) =>
-              val producerName = ActorName.mkName(ProducerNamePrefix + publish.topicName)
-              context.child(producerName) match {
-                case None if !data.pendingLocalPublications.exists(_._1 == publish.topicName) =>
-                  context.watchWith(
-                    context.spawn(
-                      Producer(publish, publishData, selfAsRemote, data.producerPacketRouter, data.settings),
-                      producerName
-                    ),
-                    ProducerFree(publish.topicName)
-                  )
-                  clientConnected(data)
-                case _ =>
-                  clientConnected(
-                    data.copy(pendingLocalPublications = data.pendingLocalPublications :+ (publish.topicName -> prl))
-                  )
-              }
-            case (context, ProducerFree(topicName)) =>
-              val i = data.pendingLocalPublications.indexWhere(_._1 == topicName)
-              if (i >= 0) {
-                val prl = data.pendingLocalPublications(i)._2
-                val producerName = ActorName.mkName(ProducerNamePrefix + topicName)
+            }
+          case (_, PublishReceivedLocally(publish, _))
+              if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 &&
+              data.publishers.exists(matchTopicFilter(_, publish.topicName)) =>
+            data.remote.offer(ForwardPublish(publish, None))
+            clientConnected(data)
+          case (context, prl @ PublishReceivedLocally(publish, publishData))
+              if data.publishers.exists(matchTopicFilter(_, publish.topicName)) =>
+            val producerName = ActorName.mkName(ProducerNamePrefix + publish.topicName)
+            context.child(producerName) match {
+              case None if !data.pendingLocalPublications.exists(_._1 == publish.topicName) =>
+                val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
+                import context.executionContext
+                reply.future.foreach(command => context.self ! ReceivedProducerPublishingCommand(command))
                 context.watchWith(
                   context.spawn(
-                    Producer(prl.publish, prl.publishData, selfAsRemote, data.producerPacketRouter, data.settings),
+                    Producer(publish, publishData, reply, data.producerPacketRouter, data.settings),
                     producerName
                   ),
-                  ProducerFree(topicName)
+                  ProducerFree(publish.topicName)
                 )
-                clientConnected(
-                  data.copy(
-                    pendingLocalPublications =
-                    data.pendingLocalPublications.take(i) ++ data.pendingLocalPublications.drop(i + 1)
-                  )
-                )
-              } else {
                 clientConnected(data)
-              }
-            case (_, ReceivedProducerPublishingCommand(command)) =>
-              command.runWith(Sink.foreach {
-                case Producer.ForwardPublish(publish, packetId) => data.remote.offer(ForwardPublish(publish, packetId))
-                case Producer.ForwardPubRel(_, packetId) => data.remote.offer(ForwardPubRel(packetId))
-              })
-              Behaviors.same
-            case (_, PingReqReceivedFromRemote(local)) =>
-              data.remote.offer(ForwardPingResp)
-              local ! ForwardPingReq
+              case _ =>
+                clientConnected(
+                  data.copy(pendingLocalPublications = data.pendingLocalPublications :+ (publish.topicName -> prl))
+                )
+            }
+          case (context, ProducerFree(topicName)) =>
+            val i = data.pendingLocalPublications.indexWhere(_._1 == topicName)
+            if (i >= 0) {
+              val prl = data.pendingLocalPublications(i)._2
+              val producerName = ActorName.mkName(ProducerNamePrefix + topicName)
+              val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
+              import context.executionContext
+              reply.future.foreach(command => context.self ! ReceivedProducerPublishingCommand(command))
+              context.watchWith(
+                context.spawn(
+                  Producer(prl.publish, prl.publishData, reply, data.producerPacketRouter, data.settings),
+                  producerName
+                ),
+                ProducerFree(topicName)
+              )
+              clientConnected(
+                data.copy(
+                  pendingLocalPublications =
+                  data.pendingLocalPublications.take(i) ++ data.pendingLocalPublications.drop(i + 1)
+                )
+              )
+            } else {
               clientConnected(data)
-            case (_, ReceivePingReqTimeout) =>
-              data.remote.fail(PingFailed)
-              clientDisconnected(
-                Disconnected(
-                  data.publishers,
-                  data.pendingLocalPublications,
-                  data.pendingRemotePublications,
-                  data.consumerPacketRouter,
-                  data.producerPacketRouter,
-                  data.publisherPacketRouter,
-                  data.unpublisherPacketRouter,
-                  data.settings
-                )
+            }
+          case (_, ReceivedProducerPublishingCommand(command)) =>
+            command.runWith(Sink.foreach {
+              case Producer.ForwardPublish(publish, packetId) => data.remote.offer(ForwardPublish(publish, packetId))
+              case Producer.ForwardPubRel(_, packetId) => data.remote.offer(ForwardPubRel(packetId))
+            })
+            Behaviors.same
+          case (_, PingReqReceivedFromRemote(local)) =>
+            data.remote.offer(ForwardPingResp)
+            local.success(ForwardPingReq)
+            clientConnected(data)
+          case (_, ReceivePingReqTimeout) =>
+            data.remote.fail(PingFailed)
+            clientDisconnected(
+              Disconnected(
+                data.publishers,
+                data.pendingLocalPublications,
+                data.pendingRemotePublications,
+                data.consumerPacketRouter,
+                data.producerPacketRouter,
+                data.publisherPacketRouter,
+                data.unpublisherPacketRouter,
+                data.settings
               )
-            case (_, DisconnectReceivedFromRemote(local)) =>
-              local ! ForwardDisconnect
-              clientDisconnected(
-                Disconnected(
-                  data.publishers,
-                  data.pendingLocalPublications,
-                  data.pendingRemotePublications,
-                  data.consumerPacketRouter,
-                  data.producerPacketRouter,
-                  data.publisherPacketRouter,
-                  data.unpublisherPacketRouter,
-                  data.settings
-                )
+            )
+          case (_, DisconnectReceivedFromRemote(local)) =>
+            local.success(ForwardDisconnect)
+            clientDisconnected(
+              Disconnected(
+                data.publishers,
+                data.pendingLocalPublications,
+                data.pendingRemotePublications,
+                data.consumerPacketRouter,
+                data.producerPacketRouter,
+                data.publisherPacketRouter,
+                data.unpublisherPacketRouter,
+                data.settings
               )
-          }
-          .receiveSignal {
-            case (_, _: Terminated) =>
-              Behaviors.same
-            case (_, PostStop) =>
-              data.remote.complete()
-              Behaviors.same
-          }
-      }
+            )
+        }
+        .receiveSignal {
+          case (_, _: Terminated) =>
+            Behaviors.same
+          case (_, PostStop) =>
+            data.remote.complete()
+            Behaviors.same
+        }
   }
 
   def pendingSubAck(data: PendingSubscribe)(implicit mat: Materializer): Behavior[Event] =
@@ -701,7 +703,7 @@ import scala.util.{Failure, Success}
    * Construct with the starting state
    */
   def apply(packetId: PacketId,
-            local: ActorRef[ForwardSubscribe.type],
+            local: Promise[ForwardSubscribe.type],
             packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
             settings: MqttSessionSettings): Behavior[Event] =
     preparePublisher(Start(packetId, local, packetRouter, settings))
@@ -710,7 +712,7 @@ import scala.util.{Failure, Success}
 
   sealed abstract class Data(val packetId: PacketId, val settings: MqttSessionSettings)
   final case class Start(override val packetId: PacketId,
-                         local: ActorRef[ForwardSubscribe.type],
+                         local: Promise[ForwardSubscribe.type],
                          packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
                          override val settings: MqttSessionSettings)
       extends Data(packetId, settings)
@@ -722,7 +724,7 @@ import scala.util.{Failure, Success}
   sealed abstract class Event
   final case object RegisteredPacketId extends Event
   final case object UnobtainablePacketId extends Event
-  final case class SubAckReceivedLocally(remote: ActorRef[ForwardSubAck.type]) extends Event
+  final case class SubAckReceivedLocally(remote: Promise[ForwardSubAck.type]) extends Event
   case object ReceiveSubAckTimeout extends Event
 
   sealed abstract class Command
@@ -732,20 +734,20 @@ import scala.util.{Failure, Success}
   // State event handling
 
   def preparePublisher(data: Start): Behavior[Event] = Behaviors.setup { context =>
-    implicit val actorMqttSessionTimeout: Timeout = data.settings.actorMqttSessionTimeout
-
-    context.ask[RemotePacketRouter.Register[Event], RemotePacketRouter.Registered.type](data.packetRouter)(
-      replyTo => RemotePacketRouter.Register(context.self, data.packetId, replyTo)
-    ) {
-      case Success(RemotePacketRouter.Registered) => RegisteredPacketId
-      case Failure(_) => UnobtainablePacketId
+    val reply = Promise[RemotePacketRouter.Registered.type]
+    data.packetRouter ! RemotePacketRouter.Register(context.self.upcast, data.packetId, reply)
+    import context.executionContext
+    reply.future.onComplete {
+      case Success(RemotePacketRouter.Registered) => context.self ! RegisteredPacketId
+      case Failure(_) => context.self ! UnobtainablePacketId
     }
 
     Behaviors.receiveMessagePartial[Event] {
       case RegisteredPacketId =>
-        data.local ! ForwardSubscribe
+        data.local.success(ForwardSubscribe)
         serverSubscribe(ServerSubscribe(data.packetId, data.packetRouter, data.settings))
       case UnobtainablePacketId =>
+        data.local.failure(SubscribeFailed)
         throw SubscribeFailed
     }
 
@@ -757,7 +759,7 @@ import scala.util.{Failure, Success}
     Behaviors
       .receiveMessagePartial[Event] {
         case SubAckReceivedLocally(remote) =>
-          remote ! ForwardSubAck
+          remote.success(ForwardSubAck)
           Behaviors.stopped
         case ReceiveSubAckTimeout =>
           throw SubscribeFailed
@@ -785,7 +787,7 @@ import scala.util.{Failure, Success}
    * Construct with the starting state
    */
   def apply(packetId: PacketId,
-            local: ActorRef[ForwardUnsubscribe.type],
+            local: Promise[ForwardUnsubscribe.type],
             packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
             settings: MqttSessionSettings): Behavior[Event] =
     prepareServerUnpublisher(Start(packetId, local, packetRouter, settings))
@@ -794,7 +796,7 @@ import scala.util.{Failure, Success}
 
   sealed abstract class Data(val settings: MqttSessionSettings)
   final case class Start(packetId: PacketId,
-                         local: ActorRef[ForwardUnsubscribe.type],
+                         local: Promise[ForwardUnsubscribe.type],
                          packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
                          override val settings: MqttSessionSettings)
       extends Data(settings)
@@ -806,7 +808,7 @@ import scala.util.{Failure, Success}
   sealed abstract class Event
   final case object RegisteredPacketId extends Event
   final case object UnobtainablePacketId extends Event
-  final case class UnsubAckReceivedLocally(remote: ActorRef[ForwardUnsubAck.type]) extends Event
+  final case class UnsubAckReceivedLocally(remote: Promise[ForwardUnsubAck.type]) extends Event
   case object ReceiveUnsubAckTimeout extends Event
 
   sealed abstract class Command
@@ -816,20 +818,20 @@ import scala.util.{Failure, Success}
   // State event handling
 
   def prepareServerUnpublisher(data: Start): Behavior[Event] = Behaviors.setup { context =>
-    implicit val actorMqttSessionTimeout: Timeout = data.settings.actorMqttSessionTimeout
-
-    context.ask[RemotePacketRouter.Register[Event], RemotePacketRouter.Registered.type](data.packetRouter)(
-      replyTo => RemotePacketRouter.Register(context.self, data.packetId, replyTo)
-    ) {
-      case Success(RemotePacketRouter.Registered) => RegisteredPacketId
-      case Failure(_) => UnobtainablePacketId
+    val reply = Promise[RemotePacketRouter.Registered.type]
+    data.packetRouter ! RemotePacketRouter.Register(context.self.upcast, data.packetId, reply)
+    import context.executionContext
+    reply.future.onComplete {
+      case Success(RemotePacketRouter.Registered) => context.self ! RegisteredPacketId
+      case Failure(_) => context.self ! UnobtainablePacketId
     }
 
     Behaviors.receiveMessagePartial[Event] {
       case RegisteredPacketId =>
-        data.local ! ForwardUnsubscribe
+        data.local.success(ForwardUnsubscribe)
         serverUnsubscribe(ServerUnsubscribe(data.packetId, data.packetRouter, data.settings))
       case UnobtainablePacketId =>
+        data.local.failure(UnsubscribeFailed)
         throw UnsubscribeFailed
     }
   }
@@ -840,7 +842,7 @@ import scala.util.{Failure, Success}
     Behaviors
       .receiveMessagePartial[Event] {
         case UnsubAckReceivedLocally(remote) =>
-          remote ! ForwardUnsubAck
+          remote.success(ForwardUnsubAck)
           Behaviors.stopped
         case ReceiveUnsubAckTimeout =>
           throw UnsubscribeFailed
