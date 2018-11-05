@@ -11,8 +11,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{BroadcastHub, Keep, Source, SourceQueueWithComplete}
-import akka.util.Timeout
 
+import scala.concurrent.Promise
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success}
 
@@ -33,7 +33,7 @@ import scala.util.{Failure, Success}
    */
   def apply(publish: Publish,
             publishData: PublishData,
-            remote: ActorRef[Source[ForwardPublishingCommand, NotUsed]],
+            remote: Promise[Source[ForwardPublishingCommand, NotUsed]],
             packetRouter: ActorRef[LocalPacketRouter.Request[Event]],
             settings: MqttSessionSettings)(implicit mat: Materializer): Behavior[Event] =
     preparePublish(Start(publish, publishData, remote, packetRouter, settings))
@@ -43,7 +43,7 @@ import scala.util.{Failure, Success}
   sealed abstract class Data(val publish: Publish, val publishData: PublishData, val settings: MqttSessionSettings)
   final case class Start(override val publish: Publish,
                          override val publishData: PublishData,
-                         remote: ActorRef[Source[ForwardPublishingCommand, NotUsed]],
+                         remote: Promise[Source[ForwardPublishingCommand, NotUsed]],
                          packetRouter: ActorRef[LocalPacketRouter.Request[Event]],
                          override val settings: MqttSessionSettings)
       extends Data(publish, publishData, settings)
@@ -59,10 +59,10 @@ import scala.util.{Failure, Success}
   final case class AcquiredPacketId(packetId: PacketId) extends Event
   final case object UnacquiredPacketId extends Event
   case object ReceivePubAckRecTimeout extends Event
-  final case class PubAckReceivedFromRemote(local: ActorRef[ForwardPubAck]) extends Event
-  final case class PubRecReceivedFromRemote(local: ActorRef[ForwardPubRec]) extends Event
+  final case class PubAckReceivedFromRemote(local: Promise[ForwardPubAck]) extends Event
+  final case class PubRecReceivedFromRemote(local: Promise[ForwardPubRec]) extends Event
   case object ReceivePubCompTimeout extends Event
-  final case class PubCompReceivedFromRemote(local: ActorRef[ForwardPubComp]) extends Event
+  final case class PubCompReceivedFromRemote(local: Promise[ForwardPubComp]) extends Event
 
   sealed abstract class Command
   sealed abstract class ForwardPublishingCommand extends Command
@@ -75,15 +75,15 @@ import scala.util.{Failure, Success}
   // State event handling
 
   def preparePublish(data: Start)(implicit mat: Materializer): Behavior[Event] = Behaviors.setup { context =>
-    implicit val actorMqttSessionTimeout: Timeout = data.settings.actorMqttSessionTimeout
-
-    def requestPacketId(): Unit =
-      context.ask[LocalPacketRouter.Register[Event], LocalPacketRouter.Registered](data.packetRouter)(
-        replyTo => LocalPacketRouter.Register(context.self.upcast, replyTo)
-      ) {
-        case Success(acquired: LocalPacketRouter.Registered) => AcquiredPacketId(acquired.packetId)
-        case Failure(_) => UnacquiredPacketId
+    def requestPacketId(): Unit = {
+      val reply = Promise[LocalPacketRouter.Registered]
+      data.packetRouter ! LocalPacketRouter.Register(context.self.upcast, reply)
+      import context.executionContext
+      reply.future.onComplete {
+        case Success(acquired: LocalPacketRouter.Registered) => context.self ! AcquiredPacketId(acquired.packetId)
+        case Failure(_) => context.self ! UnacquiredPacketId
       }
+    }
 
     requestPacketId()
 
@@ -91,7 +91,7 @@ import scala.util.{Failure, Success}
       .queue[ForwardPublishingCommand](1, OverflowStrategy.dropHead)
       .toMat(BroadcastHub.sink)(Keep.both)
       .run()
-    data.remote ! source
+    data.remote.success(source)
 
     Behaviors
       .receiveMessagePartial[Event] {
@@ -119,11 +119,11 @@ import scala.util.{Failure, Success}
         .receiveMessagePartial[Event] {
           case PubAckReceivedFromRemote(local)
               if data.publish.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) =>
-            local ! ForwardPubAck(data.publishData)
+            local.success(ForwardPubAck(data.publishData))
             Behaviors.stopped
           case PubRecReceivedFromRemote(local)
               if data.publish.flags.contains(ControlPacketFlags.QoSAtMostOnceDelivery) =>
-            local ! ForwardPubRec(data.publishData)
+            local.success(ForwardPubRec(data.publishData))
             publishAcknowledged(data)
           case ReceivePubAckRecTimeout =>
             data.remote.offer(
@@ -149,7 +149,7 @@ import scala.util.{Failure, Success}
       Behaviors
         .receiveMessagePartial[Event] {
           case PubCompReceivedFromRemote(local) =>
-            local ! ForwardPubComp(data.publishData)
+            local.success(ForwardPubComp(data.publishData))
             Behaviors.stopped
           case ReceivePubCompTimeout =>
             data.remote.offer(ForwardPubRel(data.publish, data.packetId))
@@ -180,7 +180,7 @@ import scala.util.{Failure, Success}
    */
   def apply(publish: Publish,
             packetId: PacketId,
-            local: ActorRef[ForwardPublish.type],
+            local: Promise[ForwardPublish.type],
             packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
             settings: MqttSessionSettings): Behavior[Event] =
     prepareClientConsumption(Start(publish, packetId, local, packetRouter, settings))
@@ -193,7 +193,7 @@ import scala.util.{Failure, Success}
                              val settings: MqttSessionSettings)
   final case class Start(override val publish: Publish,
                          override val packetId: PacketId,
-                         local: ActorRef[ForwardPublish.type],
+                         local: Promise[ForwardPublish.type],
                          override val packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
                          override val settings: MqttSessionSettings)
       extends Data(publish, packetId, packetRouter, settings)
@@ -206,12 +206,12 @@ import scala.util.{Failure, Success}
   sealed abstract class Event
   final case object RegisteredPacketId extends Event
   final case object UnobtainablePacketId extends Event
-  final case class PubAckReceivedLocally(remote: ActorRef[ForwardPubAck.type]) extends Event
-  final case class PubRecReceivedLocally(remote: ActorRef[ForwardPubRec.type]) extends Event
+  final case class PubAckReceivedLocally(remote: Promise[ForwardPubAck.type]) extends Event
+  final case class PubRecReceivedLocally(remote: Promise[ForwardPubRec.type]) extends Event
   case object ReceivePubAckRecTimeout extends Event
-  final case class PubRelReceivedFromRemote(local: ActorRef[ForwardPubRel.type]) extends Event
+  final case class PubRelReceivedFromRemote(local: Promise[ForwardPubRel.type]) extends Event
   case object ReceivePubRelTimeout extends Event
-  final case class PubCompReceivedLocally(remote: ActorRef[ForwardPubComp.type]) extends Event
+  final case class PubCompReceivedLocally(remote: Promise[ForwardPubComp.type]) extends Event
   case object ReceivePubCompTimeout extends Event
 
   sealed abstract class Command
@@ -224,20 +224,20 @@ import scala.util.{Failure, Success}
   // State event handling
 
   def prepareClientConsumption(data: Start): Behavior[Event] = Behaviors.setup { context =>
-    implicit val actorMqttSessionTimeout: Timeout = data.settings.actorMqttSessionTimeout
-
-    context.ask[RemotePacketRouter.Register[Event], RemotePacketRouter.Registered.type](data.packetRouter)(
-      replyTo => RemotePacketRouter.Register(context.self, data.packetId, replyTo)
-    ) {
-      case Success(RemotePacketRouter.Registered) => RegisteredPacketId
-      case Failure(_) => UnobtainablePacketId
+    val reply = Promise[RemotePacketRouter.Registered.type]
+    data.packetRouter ! RemotePacketRouter.Register(context.self.upcast, data.packetId, reply)
+    import context.executionContext
+    reply.future.onComplete {
+      case Success(RemotePacketRouter.Registered) => context.self ! RegisteredPacketId
+      case Failure(_) => context.self ! UnobtainablePacketId
     }
 
     Behaviors.receiveMessagePartial[Event] {
       case RegisteredPacketId =>
-        data.local ! ForwardPublish
+        data.local.success(ForwardPublish)
         consumeUnacknowledged(ClientConsuming(data.publish, data.packetId, data.packetRouter, data.settings))
       case UnobtainablePacketId =>
+        data.local.failure(ConsumeFailed)
         throw ConsumeFailed
     }
 
@@ -248,10 +248,10 @@ import scala.util.{Failure, Success}
     Behaviors
       .receiveMessagePartial[Event] {
         case PubAckReceivedLocally(remote) if data.publish.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) =>
-          remote ! ForwardPubAck
+          remote.success(ForwardPubAck)
           Behaviors.stopped
         case PubRecReceivedLocally(remote) if data.publish.flags.contains(ControlPacketFlags.QoSExactlyOnceDelivery) =>
-          remote ! ForwardPubRec
+          remote.success(ForwardPubRec)
           consumeReceived(data)
         case ReceivePubAckRecTimeout =>
           throw ConsumeFailed
@@ -268,7 +268,7 @@ import scala.util.{Failure, Success}
     Behaviors
       .receiveMessagePartial[Event] {
         case PubRelReceivedFromRemote(local) =>
-          local ! ForwardPubRel
+          local.success(ForwardPubRel)
           consumeAcknowledged(data)
         case ReceivePubRelTimeout =>
           throw ConsumeFailed
@@ -285,7 +285,7 @@ import scala.util.{Failure, Success}
     Behaviors
       .receiveMessagePartial[Event] {
         case PubCompReceivedLocally(remote) =>
-          remote ! ForwardPubComp
+          remote.success(ForwardPubComp)
           Behaviors.stopped
         case ReceivePubCompTimeout =>
           throw ConsumeFailed
@@ -300,6 +300,11 @@ import scala.util.{Failure, Success}
 
 @InternalApi private[streaming] object LocalPacketRouter {
   /*
+   * Raised on routing if a packet id cannot determine an actor to route to
+   */
+  case object CannotRoute extends Exception with NoStackTrace
+
+  /*
    * In case some brokers treat 0 as no packet id, we set our min to 1
    * e.g. https://renesasrulz.com/synergy/synergy_tech_notes/f/technical-bulletin-board-notification-postings/8998/mqtt-client-packet-identifier-is-0-by-default-which-causes-azure-iot-hub-to-reset-connection
    */
@@ -309,9 +314,9 @@ import scala.util.{Failure, Success}
   // Requests
 
   sealed abstract class Request[A]
-  final case class Register[A](registrant: ActorRef[A], replyTo: ActorRef[Registered]) extends Request[A]
+  final case class Register[A](registrant: ActorRef[A], reply: Promise[Registered]) extends Request[A]
   final case class Unregister[A](packetId: PacketId) extends Request[A]
-  final case class Route[A](packetId: PacketId, event: A) extends Request[A]
+  final case class Route[A](packetId: PacketId, event: A, failureReply: Promise[_]) extends Request[A]
 
   // Replies
 
@@ -344,8 +349,8 @@ import scala.util.{Failure, Success}
 
   def main(registrantsByPacketId: Map[PacketId, ActorRef[A]], nextPacketId: PacketId): Behavior[Request[A]] =
     Behaviors.receiveMessage {
-      case Register(registrant: ActorRef[A], replyTo) if nextPacketId.underlying <= MaxPacketId.underlying =>
-        replyTo ! Registered(nextPacketId)
+      case Register(registrant: ActorRef[A], reply) if nextPacketId.underlying <= MaxPacketId.underlying =>
+        reply.success(Registered(nextPacketId))
         main(registrantsByPacketId + (nextPacketId -> registrant), PacketId(nextPacketId.underlying + 1))
       case _: Register[A] =>
         Behaviors.same // We cannot allocate any more. This will eventually cause a timeout to occur on the requestor.
@@ -358,20 +363,28 @@ import scala.util.{Failure, Success}
           MinPacketId
         }
         main(remainingPacketIds, revisedNextPacketId)
-      case Route(packetId, event) =>
-        registrantsByPacketId.get(packetId).foreach(_.tell(event))
+      case Route(packetId, event, failureReply) =>
+        registrantsByPacketId.get(packetId) match {
+          case Some(reply) => reply ! event
+          case None => failureReply.failure(CannotRoute)
+        }
         Behaviors.same
     }
 }
 
 @InternalApi private[streaming] object RemotePacketRouter {
+  /*
+   * Raised on routing if a packet id cannot determine an actor to route to
+   */
+  case object CannotRoute extends Exception with NoStackTrace
+
   // Requests
 
   sealed abstract class Request[A]
-  final case class Register[A](registrant: ActorRef[A], packetId: PacketId, replyTo: ActorRef[Registered.type])
+  final case class Register[A](registrant: ActorRef[A], packetId: PacketId, reply: Promise[Registered.type])
       extends Request[A]
   final case class Unregister[A](packetId: PacketId) extends Request[A]
-  final case class Route[A](packetId: PacketId, event: A) extends Request[A]
+  final case class Route[A](packetId: PacketId, event: A, failureReply: Promise[_]) extends Request[A]
 
   // Replies
 
@@ -398,13 +411,16 @@ import scala.util.{Failure, Success}
 
   def main(registrantsByPacketId: Map[PacketId, ActorRef[A]]): Behavior[Request[A]] =
     Behaviors.receiveMessage {
-      case Register(registrant: ActorRef[A], packetId, replyTo) =>
-        replyTo ! Registered
+      case Register(registrant: ActorRef[A], packetId, reply) =>
+        reply.success(Registered)
         main(registrantsByPacketId + (packetId -> registrant))
       case Unregister(packetId) =>
         main(registrantsByPacketId - packetId)
-      case Route(packetId, event) =>
-        registrantsByPacketId.get(packetId).foreach(_.tell(event))
+      case Route(packetId, event, failureReply) =>
+        registrantsByPacketId.get(packetId) match {
+          case Some(reply) => reply ! event
+          case None => failureReply.failure(CannotRoute)
+        }
         Behaviors.same
     }
 }
