@@ -64,7 +64,10 @@ lazy val alpakka = project
         |  mimaReportBinaryIssues - checks whether this current API
         |    is binary compatible with the released version
       """.stripMargin,
-    mimaPreviousArtifacts := previousStableVersion.value.map(organization.value %% name.value % _).toSet
+    mimaPreviousArtifacts := Set(
+      organization.value %% name.value % previousStableVersion.value
+        .getOrElse(throw new Error("Unable to determine previous version"))
+    )
   )
 
 lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp)
