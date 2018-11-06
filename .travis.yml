@@ -8,6 +8,8 @@ services:
 before_install:
   # make comparing to origin/master work
   - git remote set-branches --add origin master && git fetch
+  # fetch full history for correct current and previous version detection
+  - git fetch --unshallow
 
 # default script for jobs, that do not have any specified
 script:
