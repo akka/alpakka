@@ -9,7 +9,9 @@ import com.amazonaws.services.sqs.model.Message
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.Duration
 
-sealed abstract class MessageAction(val message: Message)
+sealed trait MessageAction {
+  def message: Message
+}
 
 object MessageAction {
 
@@ -18,24 +20,12 @@ object MessageAction {
    *
    * @see [https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_DeleteMessage.html DeleteMessage]
    */
-  final class Delete private (message: Message) extends MessageAction(message) {
-    override def toString: String = s"Delete($message)"
-  }
-
-  final object Delete {
-    def apply(message: Message): MessageAction = new Delete(message)
-  }
+  final case class Delete(message: Message) extends MessageAction
 
   /**
    * Ignore the message.
    */
-  final class Ignore private (message: Message) extends MessageAction(message) {
-    override def toString: String = s"Ignore($message)"
-  }
-
-  final object Ignore {
-    def apply(message: Message): MessageAction = new Ignore(message)
-  }
+  final case class Ignore(message: Message) extends MessageAction
 
   /**
    * Change the visibility timeout of the message.
@@ -44,21 +34,17 @@ object MessageAction {
    * @param visibilityTimeout new timeout in seconds
    * @see [https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ChangeMessageVisibility.html ChangeMessageVisibility]
    */
-  final class ChangeMessageVisibility private (message: Message, val visibilityTimeout: Int)
-      extends MessageAction(message) {
+  final case class ChangeMessageVisibility(message: Message, visibilityTimeout: Int) extends MessageAction {
     // SQS requirements
     require(
       0 <= visibilityTimeout && visibilityTimeout <= 43200,
       s"Invalid value ($visibilityTimeout) for visibilityTimeout. Requirement: 0 <= visibilityTimeout <= 43200"
     )
-    override def toString: String = s"ChangeMessageVisibility($message, $visibilityTimeout)"
   }
 
   object ChangeMessageVisibility {
-    def apply(message: Message, visibilityTimeout: Int): MessageAction =
-      new ChangeMessageVisibility(message, visibilityTimeout)
     def apply(message: Message, visibilityTimeout: Duration): MessageAction =
-      new ChangeMessageVisibility(message, visibilityTimeout.toSeconds.toInt)
+      ChangeMessageVisibility(message, visibilityTimeout.toSeconds.toInt)
   }
 
   /**
@@ -74,7 +60,7 @@ object MessageAction {
   /**
    * Java API: Change the visibility timeout of the message.
    *
-   * @param message the message to change
+   * @param message           the message to change
    * @param visibilityTimeout new timeout in seconds
    */
   def changeMessageVisibility(message: Message, visibilityTimeout: Int): MessageAction =
@@ -83,7 +69,7 @@ object MessageAction {
   /**
    * Java API: Change the visibility timeout of the message.
    *
-   * @param message the message to change
+   * @param message           the message to change
    * @param visibilityTimeout new timeout
    */
   def changeMessageVisibility(message: Message, visibilityTimeout: java.time.Duration): MessageAction =
@@ -93,56 +79,34 @@ object MessageAction {
 
 /**
  * Messages returned by a SqsFlow.
+ *
  * @param metadata metadata with AWS response details.
- * @param message message body.
+ * @param message  message body.
  */
-final class SqsPublishResult private (val metadata: com.amazonaws.services.sqs.model.SendMessageResult,
-                                      val message: String) {
+final case class SqsPublishResult(metadata: com.amazonaws.services.sqs.model.SendMessageResult, message: String) {
 
   /** Java API */
   def getMetadata: com.amazonaws.services.sqs.model.SendMessageResult = metadata
 
   /** Java API */
   def getMessage: String = message
-
-  override def toString =
-    s"""SqsPublishResult(metadata=$metadata,message=$message)"""
-
-  override def equals(other: Any): Boolean = other match {
-    case that: SqsPublishResult =>
-      java.util.Objects.equals(this.metadata, that.metadata) &&
-      java.util.Objects.equals(this.message, that.message)
-    case _ => false
-  }
-
-  override def hashCode(): Int =
-    java.util.Objects.hash(metadata, message)
 }
 
 object SqsPublishResult {
-
-  /** Scala API */
-  def apply(
-      metadata: com.amazonaws.services.sqs.model.SendMessageResult,
-      message: String
-  ): SqsPublishResult = new SqsPublishResult(
-    metadata,
-    message
-  )
 
   /** Java API */
   def create(
       metadata: com.amazonaws.services.sqs.model.SendMessageResult,
       message: String
-  ): SqsPublishResult = new SqsPublishResult(
+  ): SqsPublishResult = SqsPublishResult(
     metadata,
     message
   )
 }
 
-final class SqsAckResult private (
-    val metadata: Option[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]],
-    val message: String
+final case class SqsAckResult(
+    metadata: Option[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]],
+    message: String
 ) {
 
   /** Java API */
@@ -151,37 +115,15 @@ final class SqsAckResult private (
 
   /** Java API */
   def getMessage: String = message
-
-  override def toString =
-    s"""SqsAckResult(metadata=$metadata,message=$message)"""
-
-  override def equals(other: Any): Boolean = other match {
-    case that: SqsAckResult =>
-      java.util.Objects.equals(this.metadata, that.metadata) &&
-      java.util.Objects.equals(this.message, that.message)
-    case _ => false
-  }
-
-  override def hashCode(): Int =
-    java.util.Objects.hash(metadata, message)
 }
 
 object SqsAckResult {
-
-  /** Scala API */
-  def apply(
-      metadata: Option[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]],
-      message: String
-  ): SqsAckResult = new SqsAckResult(
-    metadata,
-    message
-  )
 
   /** Java API */
   def create(
       metadata: java.util.Optional[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]],
       message: String
-  ): SqsAckResult = new SqsAckResult(
+  ): SqsAckResult = SqsAckResult(
     metadata.asScala,
     message
   )
