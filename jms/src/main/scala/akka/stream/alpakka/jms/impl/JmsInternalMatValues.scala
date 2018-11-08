@@ -9,8 +9,14 @@ import akka.stream.KillSwitch
 import JmsConnector.JmsConnectorState
 import akka.stream.scaladsl.Source
 
+/**
+ * Internal API.
+ */
 @InternalApi private[jms] trait JmsProducerMatValue {
   def connected: Source[JmsConnectorState, NotUsed]
 }
 
+/**
+ * Internal API.
+ */
 @InternalApi private[jms] trait JmsConsumerMatValue extends KillSwitch with JmsProducerMatValue

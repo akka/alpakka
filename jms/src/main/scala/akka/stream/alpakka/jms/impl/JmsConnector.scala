@@ -8,6 +8,7 @@ import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.pattern.after
 import akka.stream.alpakka.jms._
@@ -22,8 +23,9 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 /**
- * Internal API
+ * Internal API.
  */
+@InternalApi
 private[jms] trait JmsConnector[S <: JmsSession] {
   this: TimerGraphStageLogic with StageLogging =>
 
@@ -290,6 +292,10 @@ private[jms] trait JmsConnector[S <: JmsSession] {
   }
 }
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[jms] object JmsConnector {
 
   sealed trait ConnectionAttemptStatus
@@ -317,6 +323,10 @@ private[jms] object JmsConnector {
   }
 }
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[jms] trait JmsConsumerConnector extends JmsConnector[JmsConsumerSession] {
   this: TimerGraphStageLogic with StageLogging =>
 
@@ -327,6 +337,10 @@ private[jms] trait JmsConsumerConnector extends JmsConnector[JmsConsumerSession]
 
 }
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[jms] trait JmsProducerConnector extends JmsConnector[JmsProducerSession] {
   this: TimerGraphStageLogic with StageLogging =>
 
@@ -344,6 +358,10 @@ private[jms] trait JmsProducerConnector extends JmsConnector[JmsProducerSession]
   }
 }
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[jms] object JmsMessageProducer {
   def apply(jmsSession: JmsProducerSession, settings: JmsProducerSettings, epoch: Int): JmsMessageProducer = {
     val producer = jmsSession.session.createProducer(null)
@@ -354,6 +372,10 @@ private[jms] object JmsMessageProducer {
   }
 }
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[jms] class JmsMessageProducer(jmsProducer: jms.MessageProducer,
                                       jmsSession: JmsProducerSession,
                                       val epoch: Int) {
@@ -450,6 +472,10 @@ private[jms] class JmsMessageProducer(jmsProducer: jms.MessageProducer,
     }
 }
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[jms] sealed trait JmsSession {
 
   def connection: jms.Connection
@@ -465,11 +491,19 @@ private[jms] sealed trait JmsSession {
   private[jms] def abortSession(): Unit = closeSession()
 }
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[jms] class JmsProducerSession(val connection: jms.Connection,
                                       val session: jms.Session,
                                       val jmsDestination: jms.Destination)
     extends JmsSession
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[jms] class JmsConsumerSession(val connection: jms.Connection,
                                       val session: jms.Session,
                                       val jmsDestination: jms.Destination,
@@ -496,6 +530,10 @@ private[jms] class JmsConsumerSession(val connection: jms.Connection,
     }
 }
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[jms] class JmsAckSession(override val connection: jms.Connection,
                                  override val session: jms.Session,
                                  override val jmsDestination: jms.Destination,

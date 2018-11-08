@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.stream._
 import JmsConnector.{JmsConnectorState, JmsConnectorStopping}
+import akka.annotation.InternalApi
 import akka.stream.alpakka.jms.{Destination, _}
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
@@ -22,6 +23,10 @@ import scala.concurrent.{Await, Future, TimeoutException}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings, destination: Destination)
     extends GraphStageWithMaterializedValue[SourceShape[Message], JmsConsumerMatValue] {
 
@@ -70,6 +75,10 @@ private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings, destina
   }
 }
 
+/**
+ * Internal API.
+ */
+@InternalApi
 final class JmsAckSourceStage(settings: JmsConsumerSettings, destination: Destination)
     extends GraphStageWithMaterializedValue[SourceShape[AckEnvelope], JmsConsumerMatValue] {
 
@@ -155,6 +164,10 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings, destination: Destin
   }
 }
 
+/**
+ * Internal API.
+ */
+@InternalApi
 final class JmsTxSourceStage(settings: JmsConsumerSettings, destination: Destination)
     extends GraphStageWithMaterializedValue[SourceShape[TxEnvelope], JmsConsumerMatValue] {
 
@@ -211,6 +224,10 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings, destination: Destina
   }
 }
 
+/**
+ * Internal API.
+ */
+@InternalApi
 abstract class SourceStageLogic[T](shape: SourceShape[T],
                                    out: Outlet[T],
                                    settings: JmsConsumerSettings,

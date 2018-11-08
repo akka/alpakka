@@ -8,6 +8,7 @@ import akka.Done
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
 import JmsConnector.JmsConnectorStopping
+import akka.annotation.InternalApi
 import akka.stream.alpakka.jms.JmsProducerMessage._
 import akka.stream.alpakka.jms._
 import akka.stream.impl.Buffer
@@ -19,6 +20,10 @@ import scala.concurrent.Future
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings: JmsProducerSettings,
                                                                         destination: Destination)
     extends GraphStageWithMaterializedValue[FlowShape[Envelope[A, PassThrough], Envelope[A, PassThrough]],
@@ -215,6 +220,10 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
     }
 }
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[jms] object JmsProducerStage {
 
   val NotYetThere = Failure(new Exception with NoStackTrace)
