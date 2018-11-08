@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.jms
+package akka.stream.alpakka.jms.impl
 
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.atomic.AtomicReference
@@ -10,8 +10,8 @@ import java.util.concurrent.atomic.AtomicReference
 import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
 import akka.pattern.after
-import akka.stream.alpakka.jms.JmsConnector.{JmsConnectorState, _}
-import akka.stream.alpakka.jms.impl.{JmsProducerMatValue, SoftReferenceCache}
+import akka.stream.alpakka.jms._
+import akka.stream.alpakka.jms.impl.JmsConnector.{JmsConnectorState, _}
 import akka.stream.scaladsl.{Source, SourceQueueWithComplete}
 import akka.stream.stage.{AsyncCallback, StageLogging, TimerGraphStageLogic}
 import akka.stream.{ActorAttributes, ActorMaterializerHelper, Attributes, OverflowStrategy}

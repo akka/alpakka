@@ -6,6 +6,7 @@ package akka.stream.alpakka.jms
 
 import java.util.concurrent.atomic.AtomicBoolean
 
+import akka.stream.alpakka.jms.impl.{JmsAckSession, JmsSession}
 import javax.jms
 import javax.jms.{ConnectionFactory, Message}
 

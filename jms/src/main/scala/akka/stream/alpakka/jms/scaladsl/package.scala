@@ -5,7 +5,7 @@
 package akka.stream.alpakka.jms
 import akka.{Done, NotUsed}
 import akka.annotation.InternalApi
-import akka.stream.alpakka.jms.JmsConnector.{
+import akka.stream.alpakka.jms.impl.JmsConnector.{
   JmsConnectorConnected,
   JmsConnectorDisconnected,
   JmsConnectorInitializing,

@@ -6,7 +6,7 @@ package akka.stream.alpakka.jms.scaladsl
 
 import akka.stream.alpakka.jms.JmsProducerMessage.Envelope
 import akka.stream.alpakka.jms._
-import akka.stream.alpakka.jms.impl.JmsProducerMatValue
+import akka.stream.alpakka.jms.impl.{JmsProducerMatValue, JmsProducerStage}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 

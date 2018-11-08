@@ -2,14 +2,14 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.jms
+package akka.stream.alpakka.jms.impl
 
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.stream._
-import akka.stream.alpakka.jms.JmsConnector.{JmsConnectorState, JmsConnectorStopping}
-import akka.stream.alpakka.jms.impl.JmsConsumerMatValue
+import JmsConnector.{JmsConnectorState, JmsConnectorStopping}
+import akka.stream.alpakka.jms.{Destination, _}
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.util.OptionVal
@@ -19,8 +19,8 @@ import javax.jms._
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.concurrent.{Await, Future, TimeoutException}
-import scala.util.{Failure, Success}
 import scala.util.control.NonFatal
+import scala.util.{Failure, Success}
 
 private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings, destination: Destination)
     extends GraphStageWithMaterializedValue[SourceShape[Message], JmsConsumerMatValue] {

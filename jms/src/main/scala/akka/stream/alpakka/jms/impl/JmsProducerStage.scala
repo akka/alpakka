@@ -2,15 +2,14 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.jms
+package akka.stream.alpakka.jms.impl
 
 import akka.Done
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
-import akka.stream.alpakka.jms.JmsConnector.JmsConnectorStopping
+import JmsConnector.JmsConnectorStopping
 import akka.stream.alpakka.jms.JmsProducerMessage._
-import akka.stream.alpakka.jms.JmsProducerStage._
-import akka.stream.alpakka.jms.impl.JmsProducerMatValue
+import akka.stream.alpakka.jms._
 import akka.stream.impl.Buffer
 import akka.stream.stage._
 import akka.util.OptionVal
@@ -24,6 +23,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
                                                                         destination: Destination)
     extends GraphStageWithMaterializedValue[FlowShape[Envelope[A, PassThrough], Envelope[A, PassThrough]],
                                             JmsProducerMatValue] { stage =>
+  import JmsProducerStage._
 
   private type E = Envelope[A, PassThrough]
   private val in = Inlet[E]("JmsProducer.in")

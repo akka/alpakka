@@ -6,7 +6,7 @@ package akka.stream.alpakka.jms.impl
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.stream.KillSwitch
-import akka.stream.alpakka.jms.JmsConnector.JmsConnectorState
+import JmsConnector.JmsConnectorState
 import akka.stream.scaladsl.Source
 
 @InternalApi private[jms] trait JmsProducerMatValue {

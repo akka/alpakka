@@ -2,13 +2,14 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.jms
+package akka.stream.alpakka.jms.impl
 
-import javax.jms._
-
-import akka.stream.{ActorAttributes, Attributes, Outlet, SourceShape}
-import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import java.util.{Enumeration => JEnumeration}
+
+import akka.stream.alpakka.jms.{AcknowledgeMode, Destination, JmsBrowseSettings}
+import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
+import akka.stream.{ActorAttributes, Attributes, Outlet, SourceShape}
+import javax.jms._
 
 private[jms] final class JmsBrowseStage(settings: JmsBrowseSettings, queue: Destination)
     extends GraphStage[SourceShape[Message]] {

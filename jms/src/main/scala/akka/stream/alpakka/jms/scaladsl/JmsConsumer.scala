@@ -6,7 +6,7 @@ package akka.stream.alpakka.jms.scaladsl
 
 import akka.NotUsed
 import akka.stream.alpakka.jms._
-import akka.stream.alpakka.jms.impl.JmsConsumerMatValue
+import akka.stream.alpakka.jms.impl._
 import akka.stream.scaladsl.Source
 import javax.jms._
 

@@ -3,6 +3,7 @@
  */
 
 package akka.stream.alpakka.jms
+import akka.stream.alpakka.jms.impl.{JmsMessageProducer, JmsProducerSession}
 import javax.jms._
 import javax.jms.{Destination => JmsDestination}
 import org.mockito.ArgumentMatchers.{any, anyBoolean, anyInt, anyString}
