@@ -4,21 +4,43 @@
 
 package akka.stream.alpakka.jms.impl
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
-import JmsConnector.JmsConnectorStopping
+import JmsConnector.{JmsConnectorState, JmsConnectorStopping}
 import akka.annotation.InternalApi
 import akka.stream.alpakka.jms.JmsProducerMessage._
 import akka.stream.alpakka.jms._
 import akka.stream.impl.Buffer
+import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.util.OptionVal
-import javax.jms.JMSException
+import javax.jms
 
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
+
+/**
+ * Internal API.
+ */
+@InternalApi
+private[jms] trait JmsProducerConnector extends JmsConnector[JmsProducerSession] {
+  this: TimerGraphStageLogic with StageLogging =>
+
+  protected final def createSession(connection: jms.Connection,
+                                    createDestination: jms.Session => jms.Destination): JmsProducerSession = {
+    val session = connection.createSession(false, AcknowledgeMode.AutoAcknowledge.mode)
+    new JmsProducerSession(connection, session, createDestination(session))
+  }
+
+  override val startConnection = false
+
+  val status: JmsProducerMatValue = new JmsProducerMatValue {
+    override def connected: Source[JmsConnectorState, NotUsed] =
+      Source.fromFuture(connectionStateSource).flatMapConcat(identity)
+  }
+}
 
 /**
  * Internal API.
@@ -178,7 +200,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
             case Success(_) =>
               holder(Success(envelope))
               pushNextIfPossible()
-            case Failure(t: JMSException) =>
+            case Failure(t: jms.JMSException) =>
               nextTryOrFail(send, t)
             case Failure(t) =>
               holder(Failure(t))
