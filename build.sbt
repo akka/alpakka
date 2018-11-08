@@ -4,6 +4,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   awslambda,
   azureStorageQueue,
   cassandra,
+  couchbase,
   csv,
   dynamodb,
   elasticsearch,
@@ -84,6 +85,9 @@ lazy val awslambda = alpakkaProject("awslambda",
 lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", "azure.storagequeue", Dependencies.AzureStorageQueue)
 
 lazy val cassandra = alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
+
+lazy val couchbase =
+  alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase, parallelExecution in Test := false)
 
 lazy val csv = alpakkaProject("csv", "csv", Dependencies.Csv)
 

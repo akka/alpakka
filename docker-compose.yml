@@ -18,6 +18,11 @@ services:
     image: cassandra:3.0.15
     ports:
       - "9042:9042"
+  couchbase:
+    image: couchbase:community-5.1.1
+    ports:
+    - "8091-8094:8091-8094"
+    - "11210:11210"
   orientdb:
     image: orientdb:3.0.4
     ports:
