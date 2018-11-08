@@ -161,7 +161,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
         .ackSource(
           JmsConsumerSettings(connectionFactory)
             .withQueue("test")
-            .withConnectionRetrySettings(ConnectionRetrySettings(maxRetries = 3))
+            .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(3))
         )
         .runWith(Sink.seq)
       Thread.sleep(500)

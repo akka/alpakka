@@ -342,7 +342,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val result = JmsConsumer(
         JmsConsumerSettings(connectionFactory)
           .withQueue("test")
-          .withConnectionRetrySettings(ConnectionRetrySettings(maxRetries = 3))
+          .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(3))
       ).runWith(Sink.seq)
       Thread.sleep(500)
       ctx.broker.stop()
@@ -575,7 +575,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
         JmsProducerSettings(connectionFactory)
           .withQueue("numbers")
-          .withConnectionRetrySettings(ConnectionRetrySettings(maxRetries = 2))
+          .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(2))
       )
 
       val completionFuture: Future[Done] = Source(0 to 10)
@@ -752,7 +752,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val startTime = System.currentTimeMillis
       val result = JmsConsumer(
         JmsConsumerSettings(connectionFactory)
-          .withConnectionRetrySettings(ConnectionRetrySettings(maxRetries = 4))
+          .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(4))
           .withQueue("test")
       ).runWith(Sink.seq)
 
@@ -1012,7 +1012,7 @@ class JmsConnectorsSpec extends JmsSpec {
         JmsConsumerSettings(factory)
           .withBufferSize(10)
           .withQueue("test")
-          .withConnectionRetrySettings(ConnectionRetrySettings(connectTimeout))
+          .withConnectionRetrySettings(ConnectionRetrySettings().withConnectTimeout(connectTimeout))
       )
 
       val startTime = System.nanoTime
@@ -1052,7 +1052,7 @@ class JmsConnectorsSpec extends JmsSpec {
         JmsConsumerSettings(factory)
           .withBufferSize(10)
           .withQueue("test")
-          .withConnectionRetrySettings(ConnectionRetrySettings(connectTimeout))
+          .withConnectionRetrySettings(ConnectionRetrySettings().withConnectTimeout(connectTimeout))
       )
 
       val startTime = System.nanoTime

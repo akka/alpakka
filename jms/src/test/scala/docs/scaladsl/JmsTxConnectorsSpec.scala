@@ -197,7 +197,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
         .txSource(
           JmsConsumerSettings(connectionFactory)
             .withQueue("test")
-            .withConnectionRetrySettings(ConnectionRetrySettings(maxRetries = 3))
+            .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(3))
         )
         .runWith(Sink.seq)
       Thread.sleep(500)

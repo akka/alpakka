@@ -15,13 +15,12 @@ class JmsSettingsSpec extends JmsSpec {
     "have producer settings" in {
 
       //#retry-settings-case-class
-      val retrySettings = ConnectionRetrySettings(
-        connectTimeout = 3.seconds,
-        initialRetry = 1.second,
-        backoffFactor = 1.5,
-        maxBackoff = 30.seconds,
-        maxRetries = -1
-      )
+      val retrySettings = ConnectionRetrySettings()
+        .withConnectTimeout(3.seconds)
+        .withInitialRetry(1.second)
+        .withBackoffFactor(1.5)
+        .withMaxBackoff(30.seconds)
+        .withInfiniteRetries()
       //#retry-settings-case-class
 
       //#send-retry-settings
