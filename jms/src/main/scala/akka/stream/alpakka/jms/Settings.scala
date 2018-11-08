@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.jms
 import javax.jms
 
@@ -26,7 +30,7 @@ final case class Queue(override val name: String) extends Destination {
   override val create: jms.Session => jms.Destination = session => session.createQueue(name)
 }
 final case class CustomDestination(override val name: String, override val create: jms.Session => jms.Destination)
-  extends Destination
+    extends Destination
 
 final class AcknowledgeMode(val mode: Int)
 
@@ -101,7 +105,7 @@ final case class JmsConsumerSettings(connectionFactory: jms.ConnectionFactory,
                                      acknowledgeMode: Option[AcknowledgeMode] = None,
                                      ackTimeout: Duration = 1.second,
                                      durableName: Option[String] = None)
-  extends JmsSettings {
+    extends JmsSettings {
   def withCredential(credentials: Credentials): JmsConsumerSettings = copy(credentials = Some(credentials))
   def withConnectionRetrySettings(settings: ConnectionRetrySettings): JmsConsumerSettings =
     copy(connectionRetrySettings = settings)
@@ -134,7 +138,7 @@ final case class JmsProducerSettings(connectionFactory: jms.ConnectionFactory,
                                      sessionCount: Int = 1,
                                      timeToLive: Option[Duration] = None,
                                      acknowledgeMode: Option[AcknowledgeMode] = None)
-  extends JmsSettings {
+    extends JmsSettings {
   def withCredential(credentials: Credentials): JmsProducerSettings = copy(credentials = Some(credentials))
   def withConnectionRetrySettings(settings: ConnectionRetrySettings): JmsProducerSettings =
     copy(connectionRetrySettings = settings)
@@ -168,7 +172,7 @@ final case class JmsBrowseSettings(connectionFactory: jms.ConnectionFactory,
                                    credentials: Option[Credentials] = None,
                                    selector: Option[String] = None,
                                    acknowledgeMode: Option[AcknowledgeMode] = None)
-  extends JmsSettings {
+    extends JmsSettings {
   override val sessionCount = 1
   def withCredential(credentials: Credentials): JmsBrowseSettings = copy(credentials = Some(credentials))
   def withConnectionRetrySettings(settings: ConnectionRetrySettings): JmsBrowseSettings =

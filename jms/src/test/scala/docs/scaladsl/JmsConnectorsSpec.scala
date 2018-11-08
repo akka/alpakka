@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.jms.scaladsl
+package docs.scaladsl
 
 import java.nio.charset.Charset
 import java.util.concurrent.atomic.AtomicInteger
@@ -10,6 +10,7 @@ import java.util.concurrent.{CountDownLatch, LinkedBlockingQueue, ThreadLocalRan
 
 import akka.stream._
 import akka.stream.alpakka.jms._
+import akka.stream.alpakka.jms.scaladsl._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 import javax.jms._
@@ -27,6 +28,7 @@ import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
+
 final case class DummyObject(payload: String)
 
 class JmsConnectorsSpec extends JmsSpec {

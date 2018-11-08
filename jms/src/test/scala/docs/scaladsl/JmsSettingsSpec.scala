@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.jms.scaladsl
+package docs.scaladsl
 
 import akka.stream.alpakka.jms._
 import org.apache.activemq.ActiveMQConnectionFactory

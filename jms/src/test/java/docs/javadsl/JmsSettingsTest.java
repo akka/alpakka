@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.jms.javadsl;
+package docs.javadsl;
 
 import akka.stream.alpakka.jms.ConnectionRetrySettings;
 import akka.stream.alpakka.jms.Credentials;

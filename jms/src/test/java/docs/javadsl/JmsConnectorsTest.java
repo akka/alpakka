@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.jms.javadsl;
+package docs.javadsl;
 
 import akka.Done;
 import akka.NotUsed;
@@ -12,6 +12,10 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.jms.*;
 import akka.stream.alpakka.jms.JmsProducerMessage.*;
+import akka.stream.alpakka.jms.javadsl.JmsConsumer;
+import akka.stream.alpakka.jms.javadsl.JmsConsumerControl;
+import akka.stream.alpakka.jms.javadsl.JmsProducer;
+import akka.stream.alpakka.jms.javadsl.JmsProducerStatus;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;

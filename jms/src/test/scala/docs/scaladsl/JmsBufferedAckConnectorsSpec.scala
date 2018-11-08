@@ -2,12 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.jms.scaladsl
+package docs.scaladsl
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 
 import akka.Done
 import akka.stream.alpakka.jms._
+import akka.stream.alpakka.jms.scaladsl.{JmsConsumer, JmsConsumerControl, JmsProducer}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.{KillSwitches, ThrottleMode}
 import javax.jms.{JMSException, TextMessage}
