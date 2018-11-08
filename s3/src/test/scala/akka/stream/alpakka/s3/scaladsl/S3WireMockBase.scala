@@ -13,6 +13,7 @@ import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import com.github.tomakehurst.wiremock.matching.EqualToPattern
+import com.github.tomakehurst.wiremock.stubbing.Scenario
 
 abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockServer) extends TestKit(_system) {
 
@@ -237,6 +238,79 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
                          |  <UploadId>$uploadId</UploadId>
                          |</InitiateMultipartUploadResult>""".stripMargin)
         )
+      )
+
+    mock.register(
+      put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
+        .withRequestBody(matching(expectedBody))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt")
+            .withHeader("x-amz-request-id", "5A37448A37622243")
+            .withHeader("ETag", "\"" + etag + "\"")
+        )
+    )
+
+    mock.register(
+      post(urlEqualTo(s"/$bucketKey?uploadId=$uploadId"))
+        .withRequestBody(containing("CompleteMultipartUpload"))
+        .withRequestBody(containing(etag))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/xml; charset=UTF-8")
+            .withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt")
+            .withHeader("x-amz-request-id", "5A37448A3762224333")
+            .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+                         |<CompleteMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                         |  <Location>$url</Location>
+                         |  <Bucket>$bucket</Bucket>
+                         |  <Key>$bucketKey</Key>
+                         |  <ETag>"$etag"</ETag>
+                         |</CompleteMultipartUploadResult>""".stripMargin)
+        )
+    )
+  }
+
+  def mockUploadWithInternalError(expectedBody: String): Unit = {
+    mock
+      .register(
+        post(urlEqualTo(s"/$bucketKey?uploads"))
+          .inScenario("InternalError")
+          .whenScenarioStateIs(Scenario.STARTED)
+          .willReturn(
+            aResponse()
+              .withStatus(500)
+              .withHeader("x-amz-id-2", "Uuag1LuByRx9e6j5Onimru9pO4ZVKnJ2Qz7/C1NPcfTWAtRPfTaOFg==")
+              .withHeader("x-amz-request-id", "656c76696e6727732072657175657374")
+              .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+                         |<Error>
+                         |  <Code>InternalError</Code>
+                         |  <Message>We encountered an internal error. Please try again.</Message>
+                         |  <Resource>$bucket/$bucketKey</Resource>
+                         |  <RequestId>4442587FB7D0A2F9</RequestId>
+                         |</Error>""".stripMargin)
+          )
+          .willSetStateTo("Recover")
+      )
+    mock
+      .register(
+        post(urlEqualTo(s"/$bucketKey?uploads"))
+          .inScenario("InternalError")
+          .whenScenarioStateIs("Recover")
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("x-amz-id-2", "Uuag1LuByRx9e6j5Onimru9pO4ZVKnJ2Qz7/C1NPcfTWAtRPfTaOFg==")
+              .withHeader("x-amz-request-id", "656c76696e6727732072657175657374")
+              .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+                         |<InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                         |  <Bucket>$bucket</Bucket>
+                         |  <Key>$bucketKey</Key>
+                         |  <UploadId>$uploadId</UploadId>
+                         |</InitiateMultipartUploadResult>""".stripMargin)
+          )
       )
 
     mock.register(
