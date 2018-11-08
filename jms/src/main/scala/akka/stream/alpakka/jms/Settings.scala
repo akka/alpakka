@@ -1,38 +1,10 @@
-/*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
- */
-
 package akka.stream.alpakka.jms
-
-import java.util.concurrent.atomic.AtomicBoolean
-
-import akka.stream.alpakka.jms.impl.{JmsAckSession, JmsSession}
 import javax.jms
-import javax.jms.{ConnectionFactory, Message}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise}
-
-case class AckEnvelope private[jms] (message: Message, private val jmsSession: JmsAckSession) {
-
-  val processed = new AtomicBoolean(false)
-
-  def acknowledge(): Unit = if (processed.compareAndSet(false, true)) jmsSession.ack(message)
-}
-
-case class TxEnvelope private[jms] (message: Message, private val jmsSession: JmsSession) {
-
-  private[this] val commitPromise = Promise[() => Unit]
-
-  private[jms] val commitFuture: Future[() => Unit] = commitPromise.future
-
-  def commit(): Unit = commitPromise.success(jmsSession.session.commit _)
-
-  def rollback(): Unit = commitPromise.success(jmsSession.session.rollback _)
-}
 
 sealed trait JmsSettings {
-  def connectionFactory: ConnectionFactory
+  def connectionFactory: jms.ConnectionFactory
   def connectionRetrySettings: ConnectionRetrySettings
   def destination: Option[Destination]
   def credentials: Option[Credentials]
@@ -54,7 +26,7 @@ final case class Queue(override val name: String) extends Destination {
   override val create: jms.Session => jms.Destination = session => session.createQueue(name)
 }
 final case class CustomDestination(override val name: String, override val create: jms.Session => jms.Destination)
-    extends Destination
+  extends Destination
 
 final class AcknowledgeMode(val mode: Int)
 
@@ -115,11 +87,11 @@ final case class SendRetrySettings(initialRetry: FiniteDuration = 20.millis,
 
 object JmsConsumerSettings {
 
-  def create(connectionFactory: ConnectionFactory) = JmsConsumerSettings(connectionFactory)
+  def create(connectionFactory: jms.ConnectionFactory) = JmsConsumerSettings(connectionFactory)
 
 }
 
-final case class JmsConsumerSettings(connectionFactory: ConnectionFactory,
+final case class JmsConsumerSettings(connectionFactory: jms.ConnectionFactory,
                                      connectionRetrySettings: ConnectionRetrySettings = ConnectionRetrySettings(),
                                      destination: Option[Destination] = None,
                                      credentials: Option[Credentials] = None,
@@ -129,7 +101,7 @@ final case class JmsConsumerSettings(connectionFactory: ConnectionFactory,
                                      acknowledgeMode: Option[AcknowledgeMode] = None,
                                      ackTimeout: Duration = 1.second,
                                      durableName: Option[String] = None)
-    extends JmsSettings {
+  extends JmsSettings {
   def withCredential(credentials: Credentials): JmsConsumerSettings = copy(credentials = Some(credentials))
   def withConnectionRetrySettings(settings: ConnectionRetrySettings): JmsConsumerSettings =
     copy(connectionRetrySettings = settings)
@@ -150,11 +122,11 @@ final case class JmsConsumerSettings(connectionFactory: ConnectionFactory,
 
 object JmsProducerSettings {
 
-  def create(connectionFactory: ConnectionFactory) = JmsProducerSettings(connectionFactory)
+  def create(connectionFactory: jms.ConnectionFactory) = JmsProducerSettings(connectionFactory)
 
 }
 
-final case class JmsProducerSettings(connectionFactory: ConnectionFactory,
+final case class JmsProducerSettings(connectionFactory: jms.ConnectionFactory,
                                      connectionRetrySettings: ConnectionRetrySettings = ConnectionRetrySettings(),
                                      sendRetrySettings: SendRetrySettings = SendRetrySettings(),
                                      destination: Option[Destination] = None,
@@ -162,7 +134,7 @@ final case class JmsProducerSettings(connectionFactory: ConnectionFactory,
                                      sessionCount: Int = 1,
                                      timeToLive: Option[Duration] = None,
                                      acknowledgeMode: Option[AcknowledgeMode] = None)
-    extends JmsSettings {
+  extends JmsSettings {
   def withCredential(credentials: Credentials): JmsProducerSettings = copy(credentials = Some(credentials))
   def withConnectionRetrySettings(settings: ConnectionRetrySettings): JmsProducerSettings =
     copy(connectionRetrySettings = settings)
@@ -186,17 +158,17 @@ final case class Credentials(username: String, password: String) {
 
 object JmsBrowseSettings {
 
-  def create(connectionFactory: ConnectionFactory) = JmsBrowseSettings(connectionFactory)
+  def create(connectionFactory: jms.ConnectionFactory) = JmsBrowseSettings(connectionFactory)
 
 }
 
-final case class JmsBrowseSettings(connectionFactory: ConnectionFactory,
+final case class JmsBrowseSettings(connectionFactory: jms.ConnectionFactory,
                                    connectionRetrySettings: ConnectionRetrySettings = ConnectionRetrySettings(),
                                    destination: Option[Destination] = None,
                                    credentials: Option[Credentials] = None,
                                    selector: Option[String] = None,
                                    acknowledgeMode: Option[AcknowledgeMode] = None)
-    extends JmsSettings {
+  extends JmsSettings {
   override val sessionCount = 1
   def withCredential(credentials: Credentials): JmsBrowseSettings = copy(credentials = Some(credentials))
   def withConnectionRetrySettings(settings: ConnectionRetrySettings): JmsBrowseSettings =

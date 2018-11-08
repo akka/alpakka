@@ -35,9 +35,9 @@ private[jms] sealed trait JmsSession {
  * Internal API.
  */
 @InternalApi
-private[jms] class JmsProducerSession(val connection: jms.Connection,
-                                      val session: jms.Session,
-                                      val jmsDestination: jms.Destination)
+private[jms] final class JmsProducerSession(val connection: jms.Connection,
+                                            val session: jms.Session,
+                                            val jmsDestination: jms.Destination)
     extends JmsSession
 
 /**
@@ -74,11 +74,11 @@ private[jms] class JmsConsumerSession(val connection: jms.Connection,
  * Internal API.
  */
 @InternalApi
-private[jms] class JmsAckSession(override val connection: jms.Connection,
-                                 override val session: jms.Session,
-                                 override val jmsDestination: jms.Destination,
-                                 override val settingsDestination: Destination,
-                                 val maxPendingAcks: Int)
+private[jms] final class JmsAckSession(override val connection: jms.Connection,
+                                       override val session: jms.Session,
+                                       override val jmsDestination: jms.Destination,
+                                       override val settingsDestination: Destination,
+                                       val maxPendingAcks: Int)
     extends JmsConsumerSession(connection, session, jmsDestination, settingsDestination) {
 
   private[jms] var pendingAck = 0

@@ -8,7 +8,7 @@ import akka.NotUsed
 import akka.stream.alpakka.jms._
 import akka.stream.alpakka.jms.impl._
 import akka.stream.scaladsl.Source
-import javax.jms._
+import javax.jms
 
 import scala.collection.JavaConverters._
 
@@ -17,7 +17,7 @@ object JmsConsumer {
   /**
    * Scala API: Creates an [[JmsConsumer]] for [[javax.jms.Message]] instances
    */
-  def apply(settings: JmsConsumerSettings): Source[Message, JmsConsumerControl] = settings.destination match {
+  def apply(settings: JmsConsumerSettings): Source[jms.Message, JmsConsumerControl] = settings.destination match {
     case None => throw new IllegalArgumentException(noConsumerDestination(settings))
     case Some(destination) =>
       Source.fromGraph(new JmsConsumerStage(settings, destination)).mapMaterializedValue(toConsumerControl)
@@ -27,14 +27,14 @@ object JmsConsumer {
    * Scala API: Creates an [[JmsConsumer]] for texts
    */
   def textSource(settings: JmsConsumerSettings): Source[String, JmsConsumerControl] =
-    apply(settings).map(msg => msg.asInstanceOf[TextMessage].getText)
+    apply(settings).map(msg => msg.asInstanceOf[jms.TextMessage].getText)
 
   /**
    * Scala API: Creates an [[JmsConsumer]] for Maps with primitive datatypes
    */
   def mapSource(settings: JmsConsumerSettings): Source[Map[String, Any], JmsConsumerControl] =
     apply(settings).map { msg =>
-      val mapMessage = msg.asInstanceOf[MapMessage]
+      val mapMessage = msg.asInstanceOf[jms.MapMessage]
 
       mapMessage.getMapNames.asScala.foldLeft(Map[String, Any]()) { (result, key) =>
         val keyAsString = key.toString
@@ -48,7 +48,7 @@ object JmsConsumer {
    */
   def bytesSource(settings: JmsConsumerSettings): Source[Array[Byte], JmsConsumerControl] =
     apply(settings).map { msg =>
-      val byteMessage = msg.asInstanceOf[BytesMessage]
+      val byteMessage = msg.asInstanceOf[jms.BytesMessage]
       val byteArray = new Array[Byte](byteMessage.getBodyLength.toInt)
       byteMessage.readBytes(byteArray)
       byteArray
@@ -58,7 +58,7 @@ object JmsConsumer {
    * Scala API: Creates an [[JmsConsumer]] for serializable objects
    */
   def objectSource(settings: JmsConsumerSettings): Source[java.io.Serializable, JmsConsumerControl] =
-    apply(settings).map(msg => msg.asInstanceOf[ObjectMessage].getObject)
+    apply(settings).map(msg => msg.asInstanceOf[jms.ObjectMessage].getObject)
 
   /**
    * Scala API: Creates a [[JmsConsumer]] of envelopes containing messages. It requires explicit acknowledgements
@@ -89,7 +89,7 @@ object JmsConsumer {
   /**
    * Scala API: Creates a [[JmsConsumer]] for browsing messages non-destructively
    */
-  def browse(settings: JmsBrowseSettings): Source[Message, NotUsed] = settings.destination match {
+  def browse(settings: JmsBrowseSettings): Source[jms.Message, NotUsed] = settings.destination match {
     case None => throw new IllegalArgumentException(noBrowseDestination(settings))
     case Some(destination) => Source.fromGraph(new JmsBrowseStage(settings, destination))
   }

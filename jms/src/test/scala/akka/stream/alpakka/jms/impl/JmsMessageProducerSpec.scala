@@ -2,10 +2,10 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.jms
-import akka.stream.alpakka.jms.impl.{JmsMessageProducer, JmsProducerSession}
-import javax.jms._
-import javax.jms.{Destination => JmsDestination}
+package akka.stream.alpakka.jms.impl
+
+import akka.stream.alpakka.jms.{Destination, _}
+import javax.jms.{Destination => JmsDestination, _}
 import org.mockito.ArgumentMatchers.{any, anyBoolean, anyInt, anyString}
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
@@ -30,11 +30,11 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
     val settings = JmsProducerSettings(factory, destination = Some(settingsDestination))
     val jmsSession = new JmsProducerSession(connection, session, destination)
 
-    val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
   }
 
   "populating Jms message properties" should {
     "succeed if properties are set to supported types" in new Setup {
+      val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
       jmsProducer.populateMessageProperties(
         textMessage,
         JmsTextMessage("test",
@@ -58,6 +58,7 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
     }
 
     "fail if a property is set to an unsupported type" in new Setup {
+      val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
       assertThrows[UnsupportedMessagePropertyType] {
         val wrongProperties: Map[String, Any] = Map("object" -> this)
         jmsProducer.populateMessageProperties(textMessage, JmsTextMessage("test", Set.empty, wrongProperties))
@@ -65,6 +66,7 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
     }
 
     "fail if a property is set to a null value" in new Setup {
+      val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
       assertThrows[NullMessageProperty] {
         val wrongProperties: Map[String, Any] = Map("object" -> null)
         jmsProducer.populateMessageProperties(textMessage, JmsTextMessage("test", Set.empty, wrongProperties))
@@ -74,6 +76,7 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
 
   "creating a Jms Map message" should {
     "succeed if map values are supported types" in new Setup {
+      val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
       jmsProducer.createMessage(
         JmsMapMessage(
           Map("string" -> "string",
@@ -95,6 +98,7 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
     }
 
     "fail if a map value is set to an unsupported type" in new Setup {
+      val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
       assertThrows[UnsupportedMapMessageEntryType] {
         val wrongMap: Map[String, Any] = Map("object" -> this)
         jmsProducer.createMessage(JmsMapMessage(wrongMap))
@@ -102,6 +106,7 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
     }
 
     "fail if a map value is set to null" in new Setup {
+      val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
       assertThrows[NullMapMessageEntry] {
         val wrongMap: Map[String, Any] = Map("object" -> null)
         jmsProducer.createMessage(JmsMapMessage(wrongMap))

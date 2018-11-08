@@ -12,9 +12,7 @@ import javax.jms
  * Internal API.
  */
 @InternalApi
-private[jms] class JmsMessageProducer(jmsProducer: jms.MessageProducer,
-                                      jmsSession: JmsProducerSession,
-                                      val epoch: Int) {
+private class JmsMessageProducer(jmsProducer: jms.MessageProducer, jmsSession: JmsProducerSession, val epoch: Int) {
 
   private val defaultDestination = jmsSession.jmsDestination
 
@@ -112,7 +110,7 @@ private[jms] class JmsMessageProducer(jmsProducer: jms.MessageProducer,
  * Internal API.
  */
 @InternalApi
-private[jms] object JmsMessageProducer {
+private object JmsMessageProducer {
   def apply(jmsSession: JmsProducerSession, settings: JmsProducerSettings, epoch: Int): JmsMessageProducer = {
     val producer = jmsSession.session.createProducer(null)
     if (settings.timeToLive.nonEmpty) {

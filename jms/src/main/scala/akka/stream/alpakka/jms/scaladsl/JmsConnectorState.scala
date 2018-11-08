@@ -3,6 +3,7 @@
  */
 
 package akka.stream.alpakka.jms.scaladsl
+
 import akka.NotUsed
 import akka.stream.KillSwitch
 import akka.stream.scaladsl.Source

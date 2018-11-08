@@ -7,7 +7,6 @@ package akka.stream.alpakka.jms.impl
 import akka.{Done, NotUsed}
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
-import JmsConnector.{JmsConnectorState, JmsConnectorStopping}
 import akka.annotation.InternalApi
 import akka.stream.alpakka.jms.JmsProducerMessage._
 import akka.stream.alpakka.jms._
@@ -25,7 +24,7 @@ import scala.util.{Failure, Success, Try}
  * Internal API.
  */
 @InternalApi
-private[jms] trait JmsProducerConnector extends JmsConnector[JmsProducerSession] {
+private trait JmsProducerConnector extends JmsConnector[JmsProducerSession] {
   this: TimerGraphStageLogic with StageLogging =>
 
   protected final def createSession(connection: jms.Connection,
@@ -37,7 +36,7 @@ private[jms] trait JmsProducerConnector extends JmsConnector[JmsProducerSession]
   override val startConnection = false
 
   val status: JmsProducerMatValue = new JmsProducerMatValue {
-    override def connected: Source[JmsConnectorState, NotUsed] =
+    override def connected: Source[InternalConnectionState, NotUsed] =
       Source.fromFuture(connectionStateSource).flatMapConcat(identity)
   }
 }
@@ -152,7 +151,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
       )
 
       private def publishAndCompleteStage(): Unit = {
-        val previous = updateState(JmsConnectorStopping(Success(Done)))
+        val previous = updateState(InternalConnectionState.JmsConnectorStopping(Success(Done)))
         jmsSessions.foreach(_.closeSession())
         JmsConnector.connection(previous).foreach(_.close())
         completeStage()

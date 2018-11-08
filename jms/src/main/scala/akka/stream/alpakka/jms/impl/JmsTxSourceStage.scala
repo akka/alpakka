@@ -8,7 +8,7 @@ import akka.annotation.InternalApi
 import akka.stream.alpakka.jms.{AcknowledgeMode, Destination, JmsConsumerSettings, TxEnvelope}
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue}
 import akka.stream.{Attributes, Outlet, SourceShape}
-import javax.jms._
+import javax.jms
 
 import scala.concurrent.{Await, TimeoutException}
 
@@ -16,7 +16,7 @@ import scala.concurrent.{Await, TimeoutException}
  * Internal API.
  */
 @InternalApi
-final class JmsTxSourceStage(settings: JmsConsumerSettings, destination: Destination)
+private[jms] final class JmsTxSourceStage(settings: JmsConsumerSettings, destination: Destination)
     extends GraphStageWithMaterializedValue[SourceShape[TxEnvelope], JmsConsumerMatValue] {
 
   private val out = Outlet[TxEnvelope]("JmsSource.out")
@@ -29,7 +29,8 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings, destination: Destina
       inheritedAttributes: Attributes
   ): (GraphStageLogic, JmsConsumerMatValue) = {
     val logic = new SourceStageLogic[TxEnvelope](shape, out, settings, destination, inheritedAttributes) {
-      protected def createSession(connection: Connection, createDestination: Session => javax.jms.Destination) = {
+      protected def createSession(connection: jms.Connection,
+                                  createDestination: jms.Session => javax.jms.Destination) = {
         val session =
           connection.createSession(true, settings.acknowledgeMode.getOrElse(AcknowledgeMode.SessionTransacted).mode)
         new JmsConsumerSession(connection, session, createDestination(session), destination)
@@ -43,9 +44,9 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings, destination: Destina
             session
               .createConsumer(settings.selector)
               .map { consumer =>
-                consumer.setMessageListener(new MessageListener {
+                consumer.setMessageListener(new jms.MessageListener {
 
-                  def onMessage(message: Message): Unit =
+                  def onMessage(message: jms.Message): Unit =
                     try {
                       val envelope = TxEnvelope(message, session)
                       handleMessage.invoke(envelope)
@@ -54,7 +55,7 @@ final class JmsTxSourceStage(settings: JmsConsumerSettings, destination: Destina
                     } catch {
                       case _: TimeoutException => session.session.rollback()
                       case e: IllegalArgumentException => handleError.invoke(e) // Invalid envelope. Fail the stage.
-                      case e: JMSException => handleError.invoke(e)
+                      case e: jms.JMSException => handleError.invoke(e)
                     }
                 })
               }

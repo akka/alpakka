@@ -5,11 +5,11 @@
 package akka.stream.alpakka.jms.impl
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.jms.{Destination, _}
+import akka.stream.alpakka.jms._
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue}
 import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.util.OptionVal
-import javax.jms._
+import javax.jms
 
 import scala.annotation.tailrec
 
@@ -17,7 +17,7 @@ import scala.annotation.tailrec
  * Internal API.
  */
 @InternalApi
-final class JmsAckSourceStage(settings: JmsConsumerSettings, destination: Destination)
+private[jms] final class JmsAckSourceStage(settings: JmsConsumerSettings, destination: Destination)
     extends GraphStageWithMaterializedValue[SourceShape[AckEnvelope], JmsConsumerMatValue] {
 
   private val out = Outlet[AckEnvelope]("JmsSource.out")
@@ -33,8 +33,8 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings, destination: Destin
     val logic = new SourceStageLogic[AckEnvelope](shape, out, settings, destination, inheritedAttributes) {
       private val maxPendingAck = settings.bufferSize
 
-      protected def createSession(connection: Connection,
-                                  createDestination: Session => javax.jms.Destination): JmsAckSession = {
+      protected def createSession(connection: jms.Connection,
+                                  createDestination: jms.Session => javax.jms.Destination): JmsAckSession = {
         val session =
           connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.ClientAcknowledge).mode)
         new JmsAckSession(connection, session, createDestination(session), destination, settings.bufferSize)
@@ -48,11 +48,11 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings, destination: Destin
             session
               .createConsumer(settings.selector)
               .map { consumer =>
-                consumer.setMessageListener(new MessageListener {
+                consumer.setMessageListener(new jms.MessageListener {
 
                   var listenerStopped = false
 
-                  def onMessage(message: Message): Unit = {
+                  def onMessage(message: jms.Message): Unit = {
 
                     @tailrec
                     def ackQueued(): Unit =
@@ -82,7 +82,7 @@ final class JmsAckSourceStage(settings: JmsConsumerSettings, destination: Destin
                       } catch {
                         case _: StopMessageListenerException =>
                           listenerStopped = true
-                        case e: JMSException =>
+                        case e: jms.JMSException =>
                           handleError.invoke(e)
                       }
                   }

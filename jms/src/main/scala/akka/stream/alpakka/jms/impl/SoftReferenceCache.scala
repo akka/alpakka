@@ -3,6 +3,7 @@
  */
 
 package akka.stream.alpakka.jms.impl
+
 import akka.annotation.InternalApi
 
 import scala.collection.mutable
@@ -11,7 +12,8 @@ import scala.ref.SoftReference
 /**
  * Internal API.
  */
-@InternalApi private[jms] class SoftReferenceCache[K, V <: AnyRef] {
+@InternalApi
+private final class SoftReferenceCache[K, V <: AnyRef] {
 
   private val cache = mutable.HashMap[K, SoftReference[V]]()
 

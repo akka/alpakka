@@ -7,7 +7,7 @@ package akka.stream.alpakka.jms.impl
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.jms.impl.JmsConnector.{JmsConnectorState, JmsConnectorStopping}
+import akka.stream.alpakka.jms.impl.InternalConnectionState.JmsConnectorStopping
 import akka.stream.alpakka.jms.{Destination, JmsConsumerSettings}
 import akka.stream.scaladsl.Source
 import akka.stream.stage.{OutHandler, StageLogging, TimerGraphStageLogic}
@@ -25,7 +25,7 @@ import javax.jms
  * Internal API.
  */
 @InternalApi
-private[jms] trait JmsConsumerConnector extends JmsConnector[JmsConsumerSession] {
+private trait JmsConsumerConnector extends JmsConnector[JmsConsumerSession] {
   this: TimerGraphStageLogic with StageLogging =>
 
   override val startConnection = true
@@ -167,10 +167,10 @@ private abstract class SourceStageLogic[T](shape: SourceShape[T],
         }
     }
 
-  private[jms] def consumerControl = new JmsConsumerMatValue {
+  def consumerControl = new JmsConsumerMatValue {
     override def shutdown(): Unit = stopSessions()
     override def abort(ex: Throwable): Unit = abortSessions(ex)
-    override def connected: Source[JmsConnectorState, NotUsed] =
+    override def connected: Source[InternalConnectionState, NotUsed] =
       Source.fromFuture(connectionStateSource).flatMapConcat(identity)
   }
 
