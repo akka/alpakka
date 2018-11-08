@@ -559,6 +559,40 @@ import scala.util.{Failure, Success}
                 data.settings
               )
             )
+          case (context, ConnectReceivedFromRemote(connect, local))
+              if connect.connectFlags.contains(ConnectFlags.CleanSession) =>
+            context.children.foreach(context.stop)
+            clientConnect(
+              ConnectReceived(
+                connect,
+                local,
+                Set.empty,
+                Vector.empty,
+                Vector.empty,
+                Vector.empty,
+                data.consumerPacketRouter,
+                data.producerPacketRouter,
+                data.publisherPacketRouter,
+                data.unpublisherPacketRouter,
+                data.settings
+              )
+            )
+          case (_, ConnectReceivedFromRemote(connect, local)) =>
+            clientConnect(
+              ConnectReceived(
+                connect,
+                local,
+                data.publishers,
+                data.pendingLocalPublications,
+                data.pendingRemotePublications,
+                Vector.empty,
+                data.consumerPacketRouter,
+                data.producerPacketRouter,
+                data.publisherPacketRouter,
+                data.unpublisherPacketRouter,
+                data.settings
+              )
+            )
         }
         .receiveSignal {
           case (_, _: Terminated) =>
