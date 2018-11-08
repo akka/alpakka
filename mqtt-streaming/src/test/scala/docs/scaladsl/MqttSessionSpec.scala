@@ -978,7 +978,7 @@ class MqttSessionSpec
       MqttServerSession.ClientSessionTerminated(clientId)
     }
 
-    "re-connect given connect, subscribe, disconnect, connect, publish" in {
+    def reconnectTest(explicitDisconnect: Boolean): Unit = {
       val session = ActorMqttServerSession(settings)
 
       val client = TestProbe()
@@ -1005,7 +1005,7 @@ class MqttSessionSpec
 
       val connectionId = new AtomicInteger(0)
 
-      val (server, result) =
+      val server =
         Source
           .queue[Command[Nothing]](1, OverflowStrategy.fail)
           .via(
@@ -1026,7 +1026,7 @@ class MqttSessionSpec
               publishReceived.success(Done)
           })
           .drop(4)
-          .toMat(Sink.head)(Keep.both)
+          .toMat(Sink.head)(Keep.left)
           .run
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
@@ -1057,9 +1057,11 @@ class MqttSessionSpec
       server.offer(Command(subAck))
       client.expectMsg(subAckBytes)
 
-      fromClientQueue.offer(disconnectBytes)
+      if (explicitDisconnect) {
+        fromClientQueue.offer(disconnectBytes)
 
-      disconnectReceived.future.futureValue shouldBe Done
+        disconnectReceived.future.futureValue shouldBe Done
+      }
 
       fromClientQueue.offer(connectBytes)
 
@@ -1078,6 +1080,12 @@ class MqttSessionSpec
       server.offer(Command(publish))
       client.expectMsg(publishBytes)
     }
+
+    "re-connect given connect, subscribe, disconnect, connect, publish" in
+    reconnectTest(explicitDisconnect = true)
+
+    "re-connect given connect, subscribe, connect again, publish" in
+    reconnectTest(explicitDisconnect = false)
   }
 
   override def afterAll: Unit =
