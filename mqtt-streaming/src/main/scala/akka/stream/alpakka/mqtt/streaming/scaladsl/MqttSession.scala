@@ -132,21 +132,17 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
               reply.future.map(_.map {
                 case ClientConnector.ForwardConnect => cp.encode(ByteString.newBuilder).result()
                 case ClientConnector.ForwardPingReq => pingReqBytes
+                case ClientConnector.ForwardPublish(publish, packetId) =>
+                  publish.encode(ByteString.newBuilder, packetId).result()
+                case ClientConnector.ForwardPubRel(packetId) =>
+                  PubRel(packetId).encode(ByteString.newBuilder).result()
               }.mapError {
                 case ClientConnector.PingFailed => ActorMqttClientSession.PingFailed
               })
             )
           case Command(cp: Publish, carry) =>
-            val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
-            clientConnector ! ClientConnector.PublishReceivedLocally(cp, carry, reply)
-            Source.fromFutureSource(
-              reply.future.map(_.map {
-                case Producer.ForwardPublish(publish, packetId) =>
-                  publish.encode(ByteString.newBuilder, packetId).result()
-                case Producer.ForwardPubRel(_, packetId) =>
-                  PubRel(packetId).encode(ByteString.newBuilder).result()
-              })
-            )
+            clientConnector ! ClientConnector.PublishReceivedLocally(cp, carry)
+            Source.empty
           case Command(cp: PubAck, _) =>
             val reply = Promise[Consumer.ForwardPubAck.type]
             consumerPacketRouter ! RemotePacketRouter.Route(cp.packetId, Consumer.PubAckReceivedLocally(reply), reply)
