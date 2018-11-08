@@ -3,6 +3,7 @@
  */
 
 package akka.stream.alpakka.jms
+
 import javax.jms
 
 import scala.concurrent.duration._
@@ -14,79 +15,6 @@ sealed trait JmsSettings {
   def credentials: Option[Credentials]
   def acknowledgeMode: Option[AcknowledgeMode]
   def sessionCount: Int
-}
-
-sealed trait Destination {
-  val name: String
-  val create: jms.Session => jms.Destination
-}
-final case class Topic(override val name: String) extends Destination {
-  override val create: jms.Session => jms.Destination = session => session.createTopic(name)
-}
-final case class DurableTopic(name: String, subscriberName: String) extends Destination {
-  override val create: jms.Session => jms.Destination = session => session.createTopic(name)
-}
-final case class Queue(override val name: String) extends Destination {
-  override val create: jms.Session => jms.Destination = session => session.createQueue(name)
-}
-final case class CustomDestination(override val name: String, override val create: jms.Session => jms.Destination)
-    extends Destination
-
-final class AcknowledgeMode(val mode: Int)
-
-object AcknowledgeMode {
-  val AutoAcknowledge: AcknowledgeMode = new AcknowledgeMode(jms.Session.AUTO_ACKNOWLEDGE)
-  val ClientAcknowledge: AcknowledgeMode = new AcknowledgeMode(jms.Session.CLIENT_ACKNOWLEDGE)
-  val DupsOkAcknowledge: AcknowledgeMode = new AcknowledgeMode(jms.Session.DUPS_OK_ACKNOWLEDGE)
-  val SessionTransacted: AcknowledgeMode = new AcknowledgeMode(jms.Session.SESSION_TRANSACTED)
-}
-
-object ConnectionRetrySettings {
-  def create(): ConnectionRetrySettings = ConnectionRetrySettings()
-}
-
-final case class ConnectionRetrySettings(connectTimeout: FiniteDuration = 10.seconds,
-                                         initialRetry: FiniteDuration = 100.millis,
-                                         backoffFactor: Double = 2,
-                                         maxBackoff: FiniteDuration = 1.minute,
-                                         maxRetries: Int = 10) {
-  def withConnectTimeout(timeout: FiniteDuration): ConnectionRetrySettings = copy(connectTimeout = timeout)
-  def withConnectTimeout(timeout: Long, unit: TimeUnit): ConnectionRetrySettings =
-    copy(connectTimeout = Duration(timeout, unit))
-  def withInitialRetry(delay: FiniteDuration): ConnectionRetrySettings = copy(initialRetry = delay)
-  def withInitialRetry(delay: Long, unit: TimeUnit): ConnectionRetrySettings =
-    copy(initialRetry = Duration(delay, unit))
-  def withBackoffFactor(backoffFactor: Double): ConnectionRetrySettings = copy(backoffFactor = backoffFactor)
-  def withMaxBackoff(maxBackoff: FiniteDuration): ConnectionRetrySettings = copy(maxBackoff = maxBackoff)
-  def withMaxBackoff(maxBackoff: Long, unit: TimeUnit): ConnectionRetrySettings =
-    copy(maxBackoff = Duration(maxBackoff, unit))
-  def withMaxRetries(maxRetries: Int): ConnectionRetrySettings = copy(maxRetries = maxRetries)
-  def withInfiniteRetries(): ConnectionRetrySettings = withMaxRetries(-1)
-
-  def waitTime(retryNumber: Int): FiniteDuration =
-    (initialRetry * Math.pow(retryNumber, backoffFactor)).asInstanceOf[FiniteDuration].min(maxBackoff)
-}
-
-object SendRetrySettings {
-  def create(): SendRetrySettings = SendRetrySettings()
-}
-
-final case class SendRetrySettings(initialRetry: FiniteDuration = 20.millis,
-                                   backoffFactor: Double = 1.5,
-                                   maxBackoff: FiniteDuration = 500.millis,
-                                   maxRetries: Int = 10) {
-  def withInitialRetry(delay: FiniteDuration): SendRetrySettings = copy(initialRetry = delay)
-  def withInitialRetry(delay: Long, unit: TimeUnit): SendRetrySettings =
-    copy(initialRetry = Duration(delay, unit))
-  def withBackoffFactor(backoffFactor: Double): SendRetrySettings = copy(backoffFactor = backoffFactor)
-  def withMaxBackoff(maxBackoff: FiniteDuration): SendRetrySettings = copy(maxBackoff = maxBackoff)
-  def withMaxBackoff(maxBackoff: Long, unit: TimeUnit): SendRetrySettings =
-    copy(maxBackoff = Duration(maxBackoff, unit))
-  def withMaxRetries(maxRetries: Int): SendRetrySettings = copy(maxRetries = maxRetries)
-  def withInfiniteRetries(): SendRetrySettings = withMaxRetries(-1)
-
-  def waitTime(retryNumber: Int): FiniteDuration =
-    (initialRetry * Math.pow(retryNumber, backoffFactor)).asInstanceOf[FiniteDuration].min(maxBackoff)
 }
 
 object JmsConsumerSettings {
