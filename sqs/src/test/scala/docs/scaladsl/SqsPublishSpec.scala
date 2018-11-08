@@ -170,7 +170,7 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
       Source
         .single(new SendMessageRequest().withMessageBody("alpakka"))
         .via(SqsPublishFlow(queue))
-        .runWith(Sink.foreach(result => println(result.message)))
+        .runWith(Sink.foreach(result => println(result)))
 
     //#flow
 
@@ -193,7 +193,7 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
       Source
         .single(new SendMessageRequest().withMessageBody("alpakka").withQueueUrl(queue))
         .via(SqsPublishFlow())
-        .runWith(Sink.foreach(result => println(result.message)))
+        .runWith(Sink.foreach(result => println(result)))
     //#flow
 
     future.futureValue shouldBe Done

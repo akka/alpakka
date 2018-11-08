@@ -118,29 +118,21 @@ object MessageAction {
 /**
  * Messages returned by a SqsFlow.
  * @param metadata metadata with AWS response details.
- * @param message message body.
  */
-final class SqsPublishResult private (val metadata: com.amazonaws.services.sqs.model.SendMessageResult,
-                                      val message: String) {
+final class SqsPublishResult private (val metadata: com.amazonaws.services.sqs.model.SendMessageResult) {
 
   /** Java API */
   def getMetadata: com.amazonaws.services.sqs.model.SendMessageResult = metadata
 
-  /** Java API */
-  def getMessage: String = message
-
   override def toString =
-    s"""SqsPublishResult(metadata=$metadata,message=$message)"""
+    s"""SqsPublishResult(metadata=$metadata)"""
 
   override def equals(other: Any): Boolean = other match {
-    case that: SqsPublishResult =>
-      java.util.Objects.equals(this.metadata, that.metadata) &&
-      java.util.Objects.equals(this.message, that.message)
+    case that: SqsPublishResult => java.util.Objects.equals(this.metadata, that.metadata)
     case _ => false
   }
 
-  override def hashCode(): Int =
-    java.util.Objects.hash(metadata, message)
+  override def hashCode(): Int = java.util.Objects.hash(metadata)
 }
 
 object SqsPublishResult {
@@ -148,25 +140,21 @@ object SqsPublishResult {
   /** Scala API */
   def apply(
       metadata: com.amazonaws.services.sqs.model.SendMessageResult,
-      message: String
   ): SqsPublishResult = new SqsPublishResult(
-    metadata,
-    message
+    metadata
   )
 
   /** Java API */
   def create(
       metadata: com.amazonaws.services.sqs.model.SendMessageResult,
-      message: String
-  ): SqsPublishResult = new SqsPublishResult(
-    metadata,
-    message
+  ): SqsPublishResult = SqsPublishResult(
+    metadata
   )
 }
 
 final class SqsAckResult private (
     val metadata: Option[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]],
-    val message: String
+    val messageAction: MessageAction
 ) {
 
   /** Java API */
@@ -174,20 +162,20 @@ final class SqsAckResult private (
     metadata.asJava
 
   /** Java API */
-  def getMessage: String = message
+  def getMessageAction: MessageAction = messageAction
 
   override def toString =
-    s"""SqsAckResult(metadata=$metadata,message=$message)"""
+    s"""SqsAckResult(metadata=$metadata,messageAction=$messageAction)"""
 
   override def equals(other: Any): Boolean = other match {
     case that: SqsAckResult =>
       java.util.Objects.equals(this.metadata, that.metadata) &&
-      java.util.Objects.equals(this.message, that.message)
+      java.util.Objects.equals(this.messageAction, that.messageAction)
     case _ => false
   }
 
   override def hashCode(): Int =
-    java.util.Objects.hash(metadata, message)
+    java.util.Objects.hash(metadata, messageAction)
 }
 
 object SqsAckResult {
@@ -195,18 +183,18 @@ object SqsAckResult {
   /** Scala API */
   def apply(
       metadata: Option[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]],
-      message: String
+      messageAction: MessageAction
   ): SqsAckResult = new SqsAckResult(
     metadata,
-    message
+    messageAction
   )
 
   /** Java API */
   def create(
       metadata: java.util.Optional[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]],
-      message: String
-  ): SqsAckResult = new SqsAckResult(
+      messageAction: MessageAction
+  ): SqsAckResult = SqsAckResult(
     metadata.asScala,
-    message
+    messageAction
   )
 }

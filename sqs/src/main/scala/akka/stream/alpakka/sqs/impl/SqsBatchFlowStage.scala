@@ -92,7 +92,7 @@ import scala.util.{Failure, Success, Try}
 
             val handler = new AsyncHandler[SendMessageBatchRequest, SendMessageBatchResult] {
               override def onError(exception: Exception): Unit = {
-                val batchException = new SqsBatchException(messages.size, exception)
+                val batchException = new SqsBatchException(messages.length, exception)
                 responsePromise.failure(batchException)
                 failureCallback.invoke(batchException)
               }
@@ -115,7 +115,6 @@ import scala.util.{Failure, Success, Try}
                   val successfulMessages = result.getSuccessful.iterator()
                   while (successfulMessages.hasNext) {
                     val successfulMessage: SendMessageBatchResultEntry = successfulMessages.next()
-                    val messageBody: String = messages(successfulMessage.getId.toInt).getMessageBody
 
                     val sendMessageResult: SendMessageResult = new SendMessageResult()
                       .withMD5OfMessageAttributes(successfulMessage.getMD5OfMessageAttributes)
@@ -123,7 +122,7 @@ import scala.util.{Failure, Success, Try}
                       .withMessageId(successfulMessage.getMessageId)
                       .withSequenceNumber(successfulMessage.getSequenceNumber)
 
-                    results += SqsPublishResult(sendMessageResult, messageBody)
+                    results += SqsPublishResult(sendMessageResult)
                   }
 
                   responsePromise.success(results.toList)
@@ -139,7 +138,7 @@ import scala.util.{Failure, Success, Try}
 
           private def createMessageBatch(messages: Array[SendMessageRequest]): SendMessageBatchRequest = {
             val messageRequestEntries: java.util.List[SendMessageBatchRequestEntry] =
-              new java.util.ArrayList[SendMessageBatchRequestEntry](messages.size)
+              new java.util.ArrayList[SendMessageBatchRequestEntry](messages.length)
             var id = 0
             messages.foreach { message =>
               val entry = new SendMessageBatchRequestEntry(id.toString, message.getMessageBody)

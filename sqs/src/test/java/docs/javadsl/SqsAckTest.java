@@ -152,7 +152,7 @@ public class SqsAckTest extends BaseSqsTest {
     SqsAckResult result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
     assertEquals(Option.empty(), result.metadata());
-    assertEquals("test", result.message());
+    assertEquals("test", result.messageAction().message().getBody());
   }
 
   @Test
@@ -237,7 +237,7 @@ public class SqsAckTest extends BaseSqsTest {
     assertEquals(10, result.size());
     for (int i = 0; i < 10; i++) {
       assertEquals(Option.empty(), result.get(i).metadata());
-      assertEquals("test", result.get(i).message());
+      assertEquals("test", result.get(i).messageAction().message().getBody());
     }
   }
 }

@@ -98,7 +98,7 @@ import scala.util.{Failure, Success, Try}
               }
 
               override def onSuccess(request: SendMessageRequest, result: SendMessageResult): Unit = {
-                responsePromise.success(SqsPublishResult(result, msg.getMessageBody))
+                responsePromise.success(SqsPublishResult(result))
                 sendCallback.invoke(result)
               }
             }

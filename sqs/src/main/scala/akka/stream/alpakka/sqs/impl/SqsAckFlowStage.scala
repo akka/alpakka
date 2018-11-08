@@ -108,7 +108,7 @@ import scala.util.{Failure, Success, Try}
                   }
 
                   override def onSuccess(request: DeleteMessageRequest, result: DeleteMessageResult): Unit = {
-                    responsePromise.success(SqsAckResult(Some(result), message.getBody))
+                    responsePromise.success(SqsAckResult(Some(result), action))
                     deleteCallback.invoke(request)
                   }
                 }
@@ -127,7 +127,7 @@ import scala.util.{Failure, Success, Try}
 
                   override def onSuccess(request: ChangeMessageVisibilityRequest,
                                          result: ChangeMessageVisibilityResult): Unit = {
-                    responsePromise.success(SqsAckResult(Some(result), message.getBody))
+                    responsePromise.success(SqsAckResult(Some(result), action))
                     changeVisibilityCallback.invoke(request)
                   }
                 }
@@ -138,7 +138,7 @@ import scala.util.{Failure, Success, Try}
                   )
 
               case _: MessageAction.Ignore =>
-                responsePromise.success(SqsAckResult(None, message.getBody))
+                responsePromise.success(SqsAckResult(None, action))
             }
             push(out, responsePromise.future)
           }

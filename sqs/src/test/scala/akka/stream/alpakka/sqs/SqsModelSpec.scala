@@ -49,23 +49,19 @@ class SqsModelSpec extends FlatSpec with Matchers {
     val metadata = new SendMessageResult()
     val otherMetadata = new SendMessageResult().withMessageId("other-id")
 
-    val body = "body"
-    val otherBody = "other-body"
-
-    SqsPublishResult(metadata, body) shouldBe SqsPublishResult(metadata, body)
-    SqsPublishResult(metadata, body) should not be SqsPublishResult(otherMetadata, body)
-    SqsPublishResult(metadata, body) should not be SqsPublishResult(metadata, otherBody)
+    SqsPublishResult(metadata) shouldBe SqsPublishResult(metadata)
+    SqsPublishResult(metadata) should not be SqsPublishResult(otherMetadata)
   }
 
   "SqsAckResult" should "implement proper equality" in {
     val metadata = Some(new SendMessageResult())
     val otherMetadata = Some(new SendMessageResult().withMessageId("other-id"))
 
-    val body = "body"
-    val otherBody = "other-body"
+    val messageAction = MessageAction.Ignore(msg)
+    val otherMessageAction = MessageAction.Ignore(otherMsg)
 
-    SqsAckResult(metadata, body) shouldBe SqsAckResult(metadata, body)
-    SqsAckResult(metadata, body) should not be SqsAckResult(otherMetadata, body)
-    SqsAckResult(metadata, body) should not be SqsAckResult(metadata, otherBody)
+    SqsAckResult(metadata, messageAction) shouldBe SqsAckResult(metadata, messageAction)
+    SqsAckResult(metadata, messageAction) should not be SqsAckResult(otherMetadata, messageAction)
+    SqsAckResult(metadata, messageAction) should not be SqsAckResult(metadata, otherMessageAction)
   }
 }

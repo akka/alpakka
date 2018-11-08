@@ -25,7 +25,7 @@ import scala.concurrent.{Future, Promise}
 @InternalApi private[sqs] final class SqsBatchChangeMessageVisibilityFlowStage(queueUrl: String,
                                                                                sqsClient: AmazonSQSAsync)
     extends GraphStage[FlowShape[Iterable[MessageAction.ChangeMessageVisibility], Future[List[SqsAckResult]]]] {
-  private val in = Inlet[Iterable[MessageAction.ChangeMessageVisibility]]("messages")
+  private val in = Inlet[Iterable[MessageAction.ChangeMessageVisibility]]("actions")
   private val out = Outlet[Future[List[SqsAckResult]]]("results")
   override val shape = FlowShape(in, out)
 
@@ -44,17 +44,17 @@ import scala.concurrent.{Future, Promise}
         changeVisibilityCallback = getAsyncCallback[ChangeMessageVisibilityBatchRequest](handleChangeVisibility)
       }
       override def onPush() = {
-        val messagesIt = grab(in)
-        val messages = messagesIt.toList
-        val nrOfMessages = messages.size
+        val actionsIt = grab(in)
+        val actions = actionsIt.toList
+        val nrOfActions = actions.size
         val responsePromise = Promise[List[SqsAckResult]]
-        inFlight += nrOfMessages
+        inFlight += nrOfActions
 
         sqsClient
           .changeMessageVisibilityBatchAsync(
             new ChangeMessageVisibilityBatchRequest(
               queueUrl,
-              messages.zipWithIndex.map {
+              actions.zipWithIndex.map {
                 case (action, index) =>
                   new ChangeMessageVisibilityBatchRequestEntry()
                     .withReceiptHandle(action.message.getReceiptHandle)
@@ -64,7 +64,7 @@ import scala.concurrent.{Future, Promise}
             ),
             new AsyncHandler[ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchResult]() {
               override def onError(exception: Exception): Unit = {
-                val batchException = new SqsBatchException(messages.size, exception)
+                val batchException = new SqsBatchException(actions.size, exception)
                 responsePromise.failure(batchException)
                 failureCallback.invoke(batchException)
               }
@@ -75,15 +75,15 @@ import scala.concurrent.{Future, Promise}
                   val nrOfFailedMessages = result.getFailed.size()
                   val batchException: SqsBatchException =
                     new SqsBatchException(
-                      batchSize = nrOfMessages,
+                      batchSize = nrOfActions,
                       cause = new Exception(
-                        s"Some messages failed to change visibility. $nrOfFailedMessages of $nrOfMessages messages failed"
+                        s"Some messages failed to change visibility. $nrOfFailedMessages of $nrOfActions messages failed"
                       )
                     )
                   responsePromise.failure(batchException)
                   failureCallback.invoke(batchException)
                 } else {
-                  responsePromise.success(messages.map(msg => SqsAckResult(Some(result), msg.message.getBody)))
+                  responsePromise.success(actions.map(a => SqsAckResult(Some(result), a)))
                   changeVisibilityCallback.invoke(request)
                 }
             }
