@@ -40,7 +40,7 @@ abstract class MqttSession {
    * @tparam A The type of any carry for the command.
    */
   final def tell[A](cp: Command[A]): Unit =
-    this.![A](cp)
+    this ! cp
 
   /**
    * Tell the session to perform a command regardless of the state it is
