@@ -7,6 +7,7 @@ package akka.stream.alpakka.s3.impl
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
+import akka.annotation.InternalApi
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.Uri.{Authority, Query}
@@ -19,7 +20,10 @@ import akka.util.ByteString
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
 
-private[alpakka] object HttpRequests {
+/**
+ * Internal Api
+ */
+@InternalApi private[impl] object HttpRequests {
 
   def listBucket(
       bucket: String,
