@@ -5,8 +5,8 @@
 package akka.stream.alpakka.jms
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.jms.JmsConsumerSettings.configPath
 import akka.util.JavaDurationConverters._
-
 import com.typesafe.config.{Config, ConfigValueType}
 import javax.jms
 
@@ -137,6 +137,7 @@ object JmsConsumerSettings {
   def create(c: Config, connectionFactory: javax.jms.ConnectionFactory): JmsConsumerSettings =
     apply(c, connectionFactory)
 
+  /** Java API */
   def create(actorSystem: ActorSystem, connectionFactory: javax.jms.ConnectionFactory): JmsConsumerSettings =
     apply(actorSystem, connectionFactory)
 }
@@ -234,26 +235,91 @@ object Credentials {
   )
 }
 
-object JmsBrowseSettings {
+final class JmsBrowseSettings private (
+    val connectionFactory: javax.jms.ConnectionFactory,
+    val connectionRetrySettings: ConnectionRetrySettings,
+    val destination: Option[Destination],
+    val credentials: Option[Credentials],
+    val selector: Option[String],
+    val acknowledgeMode: Option[AcknowledgeMode]
+) extends akka.stream.alpakka.jms.JmsSettings {
+  override val sessionCount = 1
 
-  def create(connectionFactory: jms.ConnectionFactory) = JmsBrowseSettings(connectionFactory)
+  def withConnectionFactory(value: javax.jms.ConnectionFactory): JmsBrowseSettings = copy(connectionFactory = value)
+  def withConnectionRetrySettings(value: ConnectionRetrySettings): JmsBrowseSettings =
+    copy(connectionRetrySettings = value)
+  def withQueue(name: String): JmsBrowseSettings = copy(destination = Some(Queue(name)))
+  def withDestination(value: Destination): JmsBrowseSettings = copy(destination = Option(value))
+  def withCredentials(value: Credentials): JmsBrowseSettings = copy(credentials = Option(value))
+  def withSelector(value: String): JmsBrowseSettings = copy(selector = Option(value))
+  def withAcknowledgeMode(value: AcknowledgeMode): JmsBrowseSettings = copy(acknowledgeMode = Option(value))
 
+  private def copy(
+      connectionFactory: javax.jms.ConnectionFactory = connectionFactory,
+      connectionRetrySettings: ConnectionRetrySettings = connectionRetrySettings,
+      destination: Option[Destination] = destination,
+      credentials: Option[Credentials] = credentials,
+      selector: Option[String] = selector,
+      acknowledgeMode: Option[AcknowledgeMode] = acknowledgeMode
+  ): JmsBrowseSettings = new JmsBrowseSettings(
+    connectionFactory = connectionFactory,
+    connectionRetrySettings = connectionRetrySettings,
+    destination = destination,
+    credentials = credentials,
+    selector = selector,
+    acknowledgeMode = acknowledgeMode
+  )
+
+  override def toString =
+    "JmsBrowseSettings(" +
+    s"connectionFactory=$connectionFactory," +
+    s"connectionRetrySettings=$connectionRetrySettings," +
+    s"destination=$destination," +
+    s"credentials=$credentials," +
+    s"selector=$selector," +
+    s"acknowledgeMode=$acknowledgeMode" +
+    ")"
 }
 
-final case class JmsBrowseSettings(connectionFactory: jms.ConnectionFactory,
-                                   connectionRetrySettings: ConnectionRetrySettings = ConnectionRetrySettings(),
-                                   destination: Option[Destination] = None,
-                                   credentials: Option[Credentials] = None,
-                                   selector: Option[String] = None,
-                                   acknowledgeMode: Option[AcknowledgeMode] = None)
-    extends JmsSettings {
-  override val sessionCount = 1
-  def withCredential(credentials: Credentials): JmsBrowseSettings = copy(credentials = Some(credentials))
-  def withConnectionRetrySettings(settings: ConnectionRetrySettings): JmsBrowseSettings =
-    copy(connectionRetrySettings = settings)
-  def withQueue(name: String): JmsBrowseSettings = copy(destination = Some(Queue(name)))
-  def withDestination(destination: Destination): JmsBrowseSettings = copy(destination = Some(destination))
-  def withSelector(selector: String): JmsBrowseSettings = copy(selector = Some(selector))
-  def withAcknowledgeMode(acknowledgeMode: AcknowledgeMode): JmsBrowseSettings =
-    copy(acknowledgeMode = Option(acknowledgeMode))
+object JmsBrowseSettings {
+
+  val configPath = "alpakka.jms.browse"
+
+  /**
+   * Reads from the given config.
+   */
+  def apply(c: Config, connectionFactory: javax.jms.ConnectionFactory): JmsBrowseSettings = {
+    def getOption[A](path: String, read: Config => A): Option[A] =
+      if (c.hasPath(path) && (c.getValue(path).valueType() != ConfigValueType.STRING || c.getString(path) != "off"))
+        Some(read(c))
+      else None
+    def getStringOption(path: String): Option[String] = if (c.hasPath(path)) Some(c.getString(path)) else None
+
+    val connectionRetrySettings = ConnectionRetrySettings(c.getConfig("connection-retry"))
+    val destination = None
+    val credentials = getOption("credentials", c => Credentials(c.getConfig("credentials")))
+    val selector = getStringOption("selector")
+    val acknowledgeMode =
+      getOption("acknowledge-mode", c => AcknowledgeMode.from(c.getString("acknowledge-mode")))
+    new JmsBrowseSettings(
+      connectionFactory,
+      connectionRetrySettings,
+      destination,
+      credentials,
+      selector,
+      acknowledgeMode,
+    )
+  }
+
+  /**
+   * Java API: Reads from the given config.
+   */
+  def create(c: Config, connectionFactory: javax.jms.ConnectionFactory): JmsBrowseSettings = apply(c, connectionFactory)
+
+  def apply(actorSystem: ActorSystem, connectionFactory: javax.jms.ConnectionFactory): JmsBrowseSettings =
+    apply(actorSystem.settings.config.getConfig(configPath), connectionFactory)
+
+  def create(actorSystem: ActorSystem, connectionFactory: javax.jms.ConnectionFactory): JmsBrowseSettings =
+    apply(actorSystem, connectionFactory)
+
 }

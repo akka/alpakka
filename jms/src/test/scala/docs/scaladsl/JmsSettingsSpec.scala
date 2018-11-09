@@ -14,6 +14,7 @@ import scala.concurrent.duration._
 class JmsSettingsSpec extends JmsSpec with OptionValues {
 
   val consumerConfig = system.settings.config.getConfig(JmsConsumerSettings.configPath)
+  val browseConfig = system.settings.config.getConfig(JmsBrowseSettings.configPath)
 
   "Jms producer" should {
     "have producer settings" in {
@@ -60,7 +61,7 @@ class JmsSettingsSpec extends JmsSpec with OptionValues {
         .withMaxRetries(10)
       //#retry-settings-with-clause
       val retrySettings2 = ConnectionRetrySettings(consumerConfig.getConfig("connection-retry"))
-      retrySettings.toString should be (retrySettings2.toString)
+      retrySettings.toString should be(retrySettings2.toString)
 
       //#consumer-settings
       // reiterating defaults from reference.conf
@@ -76,12 +77,11 @@ class JmsSettingsSpec extends JmsSpec with OptionValues {
       val consumerSettings2 = JmsConsumerSettings(consumerConfig, settings.connectionFactory)
         .withQueue("target-queue")
         .withCredentials(Credentials("username", "password"))
-      settings.toString should be (consumerSettings2.toString)
+      settings.toString should be(consumerSettings2.toString)
     }
 
     "read from user config" in {
-      val config = ConfigFactory.parseString(
-        """
+      val config = ConfigFactory.parseString("""
           |connection-retry {
           |    connect-timeout = 10 seconds
           |    initial-retry = 100 millis
@@ -103,8 +103,23 @@ class JmsSettingsSpec extends JmsSpec with OptionValues {
         """.stripMargin).withFallback(consumerConfig).resolve()
 
       val settings = JmsConsumerSettings(config, new ActiveMQConnectionFactory("broker-url"))
-      settings.acknowledgeMode.value should be (AcknowledgeMode.DupsOkAcknowledge)
-      settings.durableName.value should be ("some text")
+      settings.acknowledgeMode.value should be(AcknowledgeMode.DupsOkAcknowledge)
+      settings.durableName.value should be("some text")
+    }
+  }
+
+  "Browse settings" should {
+    "read from config" in {
+      // reiterating defaults from reference.conf
+      val settings = JmsBrowseSettings(browseConfig, new ActiveMQConnectionFactory("broker-url"))
+        .withQueue("target-queue")
+        .withCredentials(Credentials("username", "password"))
+
+      val settings2 = JmsBrowseSettings(browseConfig, settings.connectionFactory)
+        .withQueue("target-queue")
+        .withCredentials(Credentials("username", "password"))
+
+      settings.toString should be (settings2.toString)
     }
   }
 }

@@ -21,6 +21,7 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
+import com.typesafe.config.Config;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.command.ActiveMQQueue;
@@ -77,6 +78,22 @@ final class DummyJavaTests implements java.io.Serializable {
 }
 
 public class JmsConnectorsTest {
+
+  private static ActorSystem system;
+  private static Materializer materializer;
+  private static Config browseConfig;
+
+  @BeforeClass
+  public static void setup() {
+    system = ActorSystem.create();
+    materializer = ActorMaterializer.create(system);
+    browseConfig = system.settings().config().getConfig(JmsBrowseSettings.configPath());
+  }
+
+  @AfterClass
+  public static void teardown() {
+    TestKit.shutdownActorSystem(system);
+  }
 
   private List<JmsTextMessage> createTestMessageList() {
     List<Integer> intsIn = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
@@ -628,7 +645,8 @@ public class JmsConnectorsTest {
 
           // #create-browse-source
           Source<Message, NotUsed> browseSource =
-              JmsConsumer.browse(JmsBrowseSettings.create(connectionFactory).withQueue("test"));
+              JmsConsumer.browse(
+                  JmsBrowseSettings.create(browseConfig, connectionFactory).withQueue("test"));
           // #create-browse-source
 
           // #run-browse-source
@@ -865,20 +883,6 @@ public class JmsConnectorsTest {
           switchAndItems.first().shutdown();
           assertTrue(switchAndItems.second().toCompletableFuture().get().isEmpty());
         });
-  }
-
-  private static ActorSystem system;
-  private static Materializer materializer;
-
-  @BeforeClass
-  public static void setup() {
-    system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
-  }
-
-  @AfterClass
-  public static void teardown() {
-    TestKit.shutdownActorSystem(system);
   }
 
   private void withServer(ConsumerChecked<Context> test) throws Exception {

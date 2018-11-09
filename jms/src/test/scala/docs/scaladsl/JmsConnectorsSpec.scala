@@ -36,6 +36,7 @@ class JmsConnectorsSpec extends JmsSpec {
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(2.minutes)
 
   val consumerConfig = system.settings.config.getConfig(JmsConsumerSettings.configPath)
+  val browseConfig = system.settings.config.getConfig(JmsBrowseSettings.configPath)
 
   "The JMS Connectors" should {
     "publish and consume strings through a queue" in withServer() { ctx =>
@@ -788,7 +789,7 @@ class JmsConnectorsSpec extends JmsSpec {
       withClue("browse the messages") {
         //#create-browse-source
         val browseSource: Source[Message, NotUsed] = JmsConsumer.browse(
-          JmsBrowseSettings(connectionFactory).withQueue("test")
+          JmsBrowseSettings(browseConfig, connectionFactory).withQueue("test")
         )
         //#create-browse-source
 
@@ -802,7 +803,7 @@ class JmsConnectorsSpec extends JmsSpec {
       withClue("browse the messages again") {
         // the messages should not have been consumed
         val result = JmsConsumer
-          .browse(JmsBrowseSettings(connectionFactory).withQueue("test"))
+          .browse(JmsBrowseSettings(browseConfig, connectionFactory).withQueue("test"))
           .collect { case msg: TextMessage => msg.getText }
           .runWith(Sink.seq)
 
