@@ -43,7 +43,8 @@ import scala.util.{Failure, Success}
             unsubscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Unsubscriber.Event]],
             settings: MqttSessionSettings)(implicit mat: Materializer): Behavior[Event] =
     disconnected(
-      Uninitialized(consumerPacketRouter,
+      Uninitialized(Vector.empty,
+                    consumerPacketRouter,
                     producerPacketRouter,
                     subscriberPacketRouter,
                     unsubscriberPacketRouter,
@@ -58,6 +59,7 @@ import scala.util.{Failure, Success}
                              val unsubscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Unsubscriber.Event]],
                              val settings: MqttSessionSettings)
   final case class Uninitialized(
+      stash: Seq[Event],
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
       override val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
       override val subscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Subscriber.Event]],
@@ -145,8 +147,8 @@ import scala.util.{Failure, Success}
   private val SubscriberNamePrefix = "subscriber-"
   private val UnsubscriberNamePrefix = "unsubscriber-"
 
-  def disconnected(data: Uninitialized)(implicit mat: Materializer): Behavior[Event] = Behaviors.receiveMessagePartial {
-    case ConnectReceivedLocally(connect, connectData, remote) =>
+  def disconnected(data: Uninitialized)(implicit mat: Materializer): Behavior[Event] = Behaviors.receivePartial {
+    case (context, ConnectReceivedLocally(connect, connectData, remote)) =>
       val (queue, source) = Source
         .queue[ForwardConnectCommand](1, OverflowStrategy.dropHead)
         .toMat(BroadcastHub.sink)(Keep.both)
@@ -154,6 +156,7 @@ import scala.util.{Failure, Success}
       remote.success(source)
 
       queue.offer(ForwardConnect)
+      data.stash.foreach(context.self.tell)
       serverConnect(
         ConnectReceived(
           connect,
@@ -167,6 +170,8 @@ import scala.util.{Failure, Success}
           data.settings
         )
       )
+    case (_, prl: PublishReceivedLocally) if data.stash.size < data.settings.maxClientConnectionStashSize =>
+      disconnected(data.copy(stash = data.stash :+ prl))
   }
 
   def disconnect(context: ActorContext[Event],
@@ -179,7 +184,8 @@ import scala.util.{Failure, Success}
     remote.complete()
 
     disconnected(
-      Uninitialized(data.consumerPacketRouter,
+      Uninitialized(Vector.empty,
+                    data.consumerPacketRouter,
                     data.producerPacketRouter,
                     data.subscriberPacketRouter,
                     data.unsubscriberPacketRouter,

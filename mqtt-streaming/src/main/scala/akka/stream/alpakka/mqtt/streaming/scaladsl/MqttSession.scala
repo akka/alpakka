@@ -33,6 +33,25 @@ object MqttSession {
 abstract class MqttSession {
 
   /**
+   * Tell the session to perform a command regardless of the state it is
+   * in. This is important for sending Publish messages in particular,
+   * as a connection may not have been established with a session.
+   * @param cp The command to perform
+   * @tparam A The type of any carry for the command.
+   */
+  final def tell[A](cp: Command[A]): Unit =
+    this.![A](cp)
+
+  /**
+   * Tell the session to perform a command regardless of the state it is
+   * in. This is important for sending Publish messages in particular,
+   * as a connection may not have been established with a session.
+   * @param cp The command to perform
+   * @tparam A The type of any carry for the command.
+   */
+  def ![A](cp: Command[A]): Unit
+
+  /**
    * Shutdown the session gracefully
    */
   def shutdown(): Unit
@@ -105,6 +124,15 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
 
   import system.dispatcher
 
+  def send[A](cp: Publish, carry: Option[A]): Unit =
+    tell(Command(cp, carry))
+  override def ![A](cp: Command[A]): Unit = cp match {
+    case Command(cp: Publish, carry) =>
+      clientConnector ! ClientConnector.PublishReceivedLocally(cp, carry)
+      Source.empty
+    case c: Command[_] => throw new IllegalStateException(c + " is not a client command that can be sent directly")
+  }
+
   override def shutdown(): Unit = {
     system.stop(clientConnector.toUntyped)
     system.stop(consumerPacketRouter.toUntyped)
@@ -140,9 +168,6 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                 case ClientConnector.PingFailed => ActorMqttClientSession.PingFailed
               })
             )
-          case Command(cp: Publish, carry) =>
-            clientConnector ! ClientConnector.PublishReceivedLocally(cp, carry)
-            Source.empty
           case Command(cp: PubAck, _) =>
             val reply = Promise[Consumer.ForwardPubAck.type]
             consumerPacketRouter ! RemotePacketRouter.Route(cp.packetId, Consumer.PubAckReceivedLocally(reply), reply)
@@ -334,6 +359,13 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
 
   import system.dispatcher
 
+  override def ![A](cp: Command[A]): Unit = cp match {
+    case Command(cp: Publish, carry) =>
+      serverConnector ! ServerConnector.PublishReceivedLocally(cp, carry)
+      Source.empty
+    case c: Command[_] => throw new IllegalStateException(c + " is not a server command that can be sent directly")
+  }
+
   override def shutdown(): Unit = {
     system.stop(serverConnector.toUntyped)
     system.stop(consumerPacketRouter.toUntyped)
@@ -382,9 +414,6 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                                                                Unpublisher.UnsubAckReceivedLocally(reply),
                                                                reply)
             Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
-          case Command(cp: Publish, carry) =>
-            serverConnector ! ServerConnector.PublishReceivedLocally(connectionId, cp, carry)
-            Source.empty
           case Command(cp: PubAck, _) =>
             val reply = Promise[Consumer.ForwardPubAck.type]
             consumerPacketRouter ! RemotePacketRouter.Route(cp.packetId, Consumer.PubAckReceivedLocally(reply), reply)

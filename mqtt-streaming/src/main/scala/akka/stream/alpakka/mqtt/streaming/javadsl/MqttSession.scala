@@ -24,6 +24,15 @@ import akka.stream.javadsl.Source
 abstract class MqttSession {
 
   /**
+   * Tell the session to perform a command regardless of the state it is
+   * in. This is important for sending Publish messages in particular,
+   * as a connection may not have been established with a session.
+   * @param cp The command to perform
+   * @tparam A The type of any carry for the command.
+   */
+  def tell[A](cp: Command[A]): Unit
+
+  /**
    * Shutdown the session gracefully
    */
   def shutdown(): Unit
@@ -34,6 +43,9 @@ abstract class MqttSession {
  */
 abstract class MqttClientSession extends MqttSession {
   protected[javadsl] val underlying: ScalaMqttClientSession
+
+  override def tell[A](cp: Command[A]): Unit =
+    underlying ! cp
 
   override def shutdown(): Unit =
     underlying.shutdown()
@@ -75,6 +87,9 @@ abstract class MqttServerSession extends MqttSession {
    * Used to observe client connections being terminated
    */
   def watchClientSessions: Source[ClientSessionTerminated, NotUsed]
+
+  override def tell[A](cp: Command[A]): Unit =
+    underlying ! cp
 
   override def shutdown(): Unit =
     underlying.shutdown()

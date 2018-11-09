@@ -89,10 +89,8 @@ import scala.util.{Failure, Success}
                                              publish: Publish,
                                              local: Promise[Consumer.ForwardPublish.type])
       extends Event(connectionId)
-  final case class PublishReceivedLocally(override val connectionId: ByteString,
-                                          publish: Publish,
-                                          publishData: Producer.PublishData)
-      extends Event(connectionId)
+  final case class PublishReceivedLocally(publish: Publish, publishData: Producer.PublishData)
+      extends Event(ByteString.empty)
   final case class UnsubscribeReceivedFromRemote(override val connectionId: ByteString,
                                                  unsubscribe: Unsubscribe,
                                                  local: Promise[Unpublisher.ForwardUnsubscribe.type])
@@ -153,7 +151,7 @@ import scala.util.{Failure, Success}
           forward(connectionId, data.clientConnections, ClientConnection.SubscribeReceivedFromRemote(subscribe, local))
         case (_, PublishReceivedFromRemote(connectionId, publish, local)) =>
           forward(connectionId, data.clientConnections, ClientConnection.PublishReceivedFromRemote(publish, local))
-        case (_, PublishReceivedLocally(_, publish, publishData)) =>
+        case (_, PublishReceivedLocally(publish, publishData)) =>
           data.clientConnections.values.foreach {
             case (_, cc) => cc ! ClientConnection.PublishReceivedLocally(publish, publishData)
           }
