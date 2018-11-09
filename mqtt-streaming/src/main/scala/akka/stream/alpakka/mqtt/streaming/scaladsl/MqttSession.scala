@@ -127,7 +127,6 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
   override def ![A](cp: Command[A]): Unit = cp match {
     case Command(cp: Publish, carry) =>
       clientConnector ! ClientConnector.PublishReceivedLocally(cp, carry)
-      Source.empty
     case c: Command[_] => throw new IllegalStateException(c + " is not a client command that can be sent directly")
   }
 
