@@ -55,6 +55,8 @@ class MqttPerf {
   private val pubAckReceivedLock = new ReentrantLock()
   private val pubAckReceived = pubAckReceivedLock.newCondition()
 
+  private val serverSession = ActorMqttServerSession(streaming.MqttSessionSettings())
+
   @Setup
   def setup(): Unit = {
     val host = "localhost"
@@ -64,8 +66,6 @@ class MqttPerf {
 
     val connAck = streaming.ConnAck(streaming.ConnAckFlags.None, streaming.ConnAckReturnCode.ConnectionAccepted)
     val subAck = streaming.SubAck(streaming.PacketId(1), List(streaming.ControlPacketFlags.QoSAtLeastOnceDelivery))
-
-    val serverSession = ActorMqttServerSession(streaming.MqttSessionSettings())
 
     val bound = Tcp()
       .bind(host, port)
@@ -114,7 +114,7 @@ class MqttPerf {
 
   @Benchmark
   def serverPublish(): Unit = {
-    server.offer(streaming.Command(streaming.Publish("some-topic", ByteString("some-payload"))))
+    serverSession ! streaming.Command(streaming.Publish("some-topic", ByteString("some-payload")))
     pubAckReceivedLock.lock()
     try {
       pubAckReceived.await(3, TimeUnit.SECONDS)
