@@ -50,7 +50,7 @@ class JmsProducerRetrySpec extends JmsSpec {
         .run()
 
       val sentResult = JmsConsumer
-        .mapSource(JmsConsumerSettings(connectionFactory).withBufferSize(1).withQueue("test"))
+        .mapSource(JmsConsumerSettings(system, connectionFactory).withBufferSize(1).withQueue("test"))
         .take(20)
         .runWith(Sink.seq)
 

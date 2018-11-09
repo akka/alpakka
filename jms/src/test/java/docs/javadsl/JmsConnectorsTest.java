@@ -118,7 +118,7 @@ public class JmsConnectorsTest {
           // #create-text-source
           Source<String, JmsConsumerControl> jmsSource =
               JmsConsumer.textSource(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(system, connectionFactory)
                       .withQueue("test")
                       .withBufferSize(10));
           // #create-text-source
@@ -156,7 +156,7 @@ public class JmsConnectorsTest {
           // #create-object-source
           Source<java.io.Serializable, JmsConsumerControl> jmsSource =
               JmsConsumer.objectSource(
-                  JmsConsumerSettings.create(connectionFactory).withQueue("test"));
+                  JmsConsumerSettings.create(system, connectionFactory).withQueue("test"));
           // #create-object-source
 
           // #run-object-source
@@ -189,7 +189,7 @@ public class JmsConnectorsTest {
           // #create-bytearray-source
           Source<byte[], JmsConsumerControl> jmsSource =
               JmsConsumer.bytesSource(
-                  JmsConsumerSettings.create(connectionFactory).withQueue("test"));
+                  JmsConsumerSettings.create(system, connectionFactory).withQueue("test"));
           // #create-bytearray-source
 
           // #run-bytearray-source
@@ -229,7 +229,7 @@ public class JmsConnectorsTest {
           // #create-map-source
           Source<Map<String, Object>, JmsConsumerControl> jmsSource =
               JmsConsumer.mapSource(
-                  JmsConsumerSettings.create(connectionFactory).withQueue("test"));
+                  JmsConsumerSettings.create(system, connectionFactory).withQueue("test"));
           // #create-map-source
 
           // #run-map-source
@@ -273,7 +273,7 @@ public class JmsConnectorsTest {
           // #create-jms-source
           Source<Message, JmsConsumerControl> jmsSource =
               JmsConsumer.create(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(system, connectionFactory)
                       .withQueue("test")
                       .withBufferSize(10));
           // #create-jms-source
@@ -329,7 +329,7 @@ public class JmsConnectorsTest {
 
           Source<Message, JmsConsumerControl> jmsSource =
               JmsConsumer.create(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(system, connectionFactory)
                       .withQueue("test")
                       .withBufferSize(10));
 
@@ -376,7 +376,7 @@ public class JmsConnectorsTest {
           // #create-jms-source-with-selector
           Source<Message, JmsConsumerControl> jmsSource =
               JmsConsumer.create(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(system, connectionFactory)
                       .withQueue("test")
                       .withBufferSize(10)
                       .withSelector("IsOdd = TRUE"));
@@ -434,13 +434,13 @@ public class JmsConnectorsTest {
           // #create-topic-source
           Source<String, JmsConsumerControl> jmsTopicSource =
               JmsConsumer.textSource(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(system, connectionFactory)
                       .withTopic("topic")
                       .withBufferSize(10));
           // #create-topic-source
           Source<String, JmsConsumerControl> jmsTopicSource2 =
               JmsConsumer.textSource(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(system, connectionFactory)
                       .withTopic("topic")
                       .withBufferSize(10));
 
@@ -492,7 +492,7 @@ public class JmsConnectorsTest {
           // #create-jms-source-client-ack
           Source<Message, JmsConsumerControl> jmsSource =
               JmsConsumer.create(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(system, connectionFactory)
                       .withQueue("test")
                       .withAcknowledgeMode(AcknowledgeMode.ClientAcknowledge()));
           // #create-jms-source-client-ack
@@ -674,7 +674,7 @@ public class JmsConnectorsTest {
           // #create-durable-topic-source
           Source<String, JmsConsumerControl> jmsTopicSource =
               JmsConsumer.textSource(
-                  JmsConsumerSettings.create(consumerConnectionFactory)
+                  JmsConsumerSettings.create(system, consumerConnectionFactory)
                       .withDurableTopic("topic", "durable-test"));
           // #create-durable-topic-source
 
@@ -734,7 +734,7 @@ public class JmsConnectorsTest {
 
           CompletionStage<List<Integer>> even =
               JmsConsumer.textSource(
-                      JmsConsumerSettings.create(connectionFactory)
+                      JmsConsumerSettings.create(system, connectionFactory)
                           .withBufferSize(10)
                           .withQueue("even"))
                   .take(5)
@@ -743,7 +743,7 @@ public class JmsConnectorsTest {
 
           CompletionStage<List<Integer>> odd =
               JmsConsumer.textSource(
-                      JmsConsumerSettings.create(connectionFactory)
+                      JmsConsumerSettings.create(system, connectionFactory)
                           .withBufferSize(10)
                           .withQueue("odd"))
                   .take(5)
@@ -764,7 +764,7 @@ public class JmsConnectorsTest {
           long startTime = System.currentTimeMillis();
           CompletionStage<List<Message>> result =
               JmsConsumer.create(
-                      JmsConsumerSettings.create(connectionFactory)
+                      JmsConsumerSettings.create(system, connectionFactory)
                           .withConnectionRetrySettings(
                               ConnectionRetrySettings.create().withMaxRetries(4))
                           .withQueue("test"))
@@ -830,7 +830,7 @@ public class JmsConnectorsTest {
 
           Pair<JmsConsumerControl, CompletionStage<List<String>>> switchAndItems =
               JmsConsumer.textSource(
-                      JmsConsumerSettings.create(connectionFactory)
+                      JmsConsumerSettings.create(system, connectionFactory)
                           .withBufferSize(10)
                           .withQueue("test"))
                   .toMat(Sink.seq(), Keep.both())

@@ -13,4 +13,25 @@ object AcknowledgeMode {
   val ClientAcknowledge: AcknowledgeMode = new AcknowledgeMode(jms.Session.CLIENT_ACKNOWLEDGE)
   val DupsOkAcknowledge: AcknowledgeMode = new AcknowledgeMode(jms.Session.DUPS_OK_ACKNOWLEDGE)
   val SessionTransacted: AcknowledgeMode = new AcknowledgeMode(jms.Session.SESSION_TRANSACTED)
+
+  def from(s: String): AcknowledgeMode = s match {
+    case "auto" => AutoAcknowledge
+    case "client" => ClientAcknowledge
+    case "duplicates-ok" => DupsOkAcknowledge
+    case "session" => SessionTransacted
+    case other =>
+      throw new IllegalArgumentException(
+        s"can't read AcknowledgeMode '$other', (known are auto, client, duplicates-ok, session)"
+      )
+  }
+
+  def asString(mode: AcknowledgeMode) = mode match {
+    case AutoAcknowledge => "auto"
+    case ClientAcknowledge => "client"
+    case DupsOkAcknowledge => "duplicates-ok"
+    case SessionTransacted => "session"
+    case other =>
+      throw new IllegalArgumentException(s"don't know AcknowledgeMode '$other'")
+  }
+
 }

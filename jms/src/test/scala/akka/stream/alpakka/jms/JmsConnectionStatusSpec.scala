@@ -197,7 +197,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
           if (connectAttempts.getAndIncrement() == 0) throw new JMSException("connect error") else consumer
       })
 
-      val jmsSource = JmsConsumer.textSource(JmsConsumerSettings(factory).withQueue("test"))
+      val jmsSource = JmsConsumer.textSource(JmsConsumerSettings(system, factory).withQueue("test"))
       val connectionStatus = jmsSource.toMat(Sink.ignore)(Keep.left).run().connectorState
       val status = connectionStatus.runWith(Sink.queue())
 
@@ -215,7 +215,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
           if (connectAttempts.getAndIncrement() == 0) throw new JMSException("connect error") else queue
       })
 
-      val jmsSource = JmsConsumer.textSource(JmsConsumerSettings(factory).withQueue("test"))
+      val jmsSource = JmsConsumer.textSource(JmsConsumerSettings(system, factory).withQueue("test"))
       val connectionStatus = jmsSource.toMat(Sink.ignore)(Keep.left).run().connectorState
       val status = connectionStatus.runWith(Sink.queue())
 
@@ -232,7 +232,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
 
       val jmsSink = textSink(JmsProducerSettings(connectionFactory).withQueue("test"))
 
-      val jmsSource = JmsConsumer.textSource(JmsConsumerSettings(connectionFactory).withQueue("test"))
+      val jmsSource = JmsConsumer.textSource(JmsConsumerSettings(system, connectionFactory).withQueue("test"))
 
       val consumerControl = jmsSource.zipWithIndex
         .map { x =>
@@ -266,7 +266,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
       )
 
       val jmsSource = JmsConsumer.textSource(
-        JmsConsumerSettings(connectionFactory)
+        JmsConsumerSettings(system, connectionFactory)
           .withQueue("test")
       )
 
@@ -294,7 +294,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
       val exception = new RuntimeException("aborting stream")
 
       val jmsSource = JmsConsumer.textSource(
-        JmsConsumerSettings(connectionFactory)
+        JmsConsumerSettings(system, connectionFactory)
           .withQueue("test")
       )
 
@@ -326,7 +326,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
       )
 
       val jmsSource = JmsConsumer.textSource(
-        JmsConsumerSettings(connectionFactory)
+        JmsConsumerSettings(system, connectionFactory)
           .withQueue("test")
           .withConnectionRetrySettings(
             ConnectionRetrySettings()

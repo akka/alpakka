@@ -24,6 +24,7 @@ import scala.util.{Failure, Success}
 class JmsTxConnectorsSpec extends JmsSpec {
 
   override implicit val patienceConfig = PatienceConfig(2.minutes)
+  val consumerConfig = system.settings.config.getConfig(JmsConsumerSettings.configPath)
 
   "The JMS Transactional Connectors" should {
     "publish and consume strings through a queue" in withServer() { ctx =>
@@ -37,7 +38,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
       Source(in).runWith(jmsSink)
 
       val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(5).withQueue("test")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(5).withQueue("test")
       )
 
       val result = jmsSource
@@ -67,7 +68,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
 
       //#create-jms-source
       val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
-        JmsConsumerSettings(connectionFactory)
+        JmsConsumerSettings(consumerConfig, connectionFactory)
           .withSessionCount(5)
           .withAckTimeout(1.second)
           .withQueue("numbers")
@@ -107,7 +108,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
       Source(msgsIn).runWith(jmsSink)
 
       val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(5).withQueue("numbers")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(5).withQueue("numbers")
       )
 
       val expectedElements = (1 to 100) ++ (2 to 100 by 2) map (_.toString)
@@ -148,7 +149,10 @@ class JmsTxConnectorsSpec extends JmsSpec {
         Source(msgsIn).runWith(jmsSink)
 
         val jmsSource = JmsConsumer.txSource(
-          JmsConsumerSettings(connectionFactory).withSessionCount(5).withQueue("numbers").withSelector("IsOdd = TRUE")
+          JmsConsumerSettings(consumerConfig, connectionFactory)
+            .withSessionCount(5)
+            .withQueue("numbers")
+            .withSelector("IsOdd = TRUE")
         )
 
         val oddMsgsIn = msgsIn.filter(msg => msg.body.toInt % 2 == 1)
@@ -178,7 +182,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
       Source(in).runWith(JmsProducer.textSink(JmsProducerSettings(connectionFactory).withQueue("test")))
 
       val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(5).withQueue("test")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(5).withQueue("test")
       )
 
       val result = jmsSource
@@ -195,7 +199,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
       val result = JmsConsumer
         .txSource(
-          JmsConsumerSettings(connectionFactory)
+          JmsConsumerSettings(consumerConfig, connectionFactory)
             .withQueue("test")
             .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(3))
         )
@@ -223,10 +227,10 @@ class JmsTxConnectorsSpec extends JmsSpec {
       val inNumbers = (1 to 10).map(_.toString)
 
       val jmsTopicSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(1).withTopic("topic")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(1).withTopic("topic")
       )
       val jmsSource2: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(1).withTopic("topic")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(1).withTopic("topic")
       )
 
       val expectedSize = in.size + inNumbers.size
@@ -270,7 +274,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
         .run()
 
       val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(5).withQueue("numbers")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(5).withQueue("numbers")
       )
 
       val resultQueue = new LinkedBlockingQueue[String]()
@@ -345,7 +349,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
         .run()
 
       val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(5).withQueue("numbers")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(5).withQueue("numbers")
       )
 
       val resultQueue = new LinkedBlockingQueue[String]()
@@ -423,7 +427,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
         .run()
 
       val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
-        JmsConsumerSettings(connectionFactory)
+        JmsConsumerSettings(consumerConfig, connectionFactory)
           .withSessionCount(5)
           .withQueue("numbers")
           .withAckTimeout(10.millis)
@@ -514,7 +518,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
         .run()
 
       val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
-        JmsConsumerSettings(connectionFactory)
+        JmsConsumerSettings(consumerConfig, connectionFactory)
           .withSessionCount(5)
           .withQueue("numbers")
           .withAckTimeout(10.millis)

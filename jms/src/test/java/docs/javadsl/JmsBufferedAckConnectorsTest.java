@@ -16,6 +16,7 @@ import akka.stream.alpakka.jms.javadsl.JmsProducer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
+import com.typesafe.config.Config;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.command.ActiveMQQueue;
@@ -37,6 +38,22 @@ import java.util.stream.Stream;
 import static org.junit.Assert.assertEquals;
 
 public class JmsBufferedAckConnectorsTest {
+
+  private static ActorSystem system;
+  private static Materializer materializer;
+  private static Config consumerConfig;
+
+  @BeforeClass
+  public static void setup() {
+    system = ActorSystem.create();
+    materializer = ActorMaterializer.create(system);
+    consumerConfig = system.settings().config().getConfig(JmsConsumerSettings.configPath());
+  }
+
+  @AfterClass
+  public static void teardown() {
+    TestKit.shutdownActorSystem(system);
+  }
 
   private List<JmsTextMessage> createTestMessageList() {
     List<Integer> intsIn = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
@@ -67,7 +84,7 @@ public class JmsBufferedAckConnectorsTest {
 
           Source<AckEnvelope, JmsConsumerControl> jmsSource =
               JmsConsumer.ackSource(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(consumerConfig, connectionFactory)
                       .withSessionCount(5)
                       .withBufferSize(5)
                       .withQueue("test"));
@@ -104,7 +121,7 @@ public class JmsBufferedAckConnectorsTest {
           // #create-jms-source
           Source<AckEnvelope, JmsConsumerControl> jmsSource =
               JmsConsumer.ackSource(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(consumerConfig, connectionFactory)
                       .withSessionCount(5)
                       .withBufferSize(5)
                       .withQueue("test"));
@@ -172,7 +189,7 @@ public class JmsBufferedAckConnectorsTest {
 
           Source<AckEnvelope, JmsConsumerControl> jmsSource =
               JmsConsumer.ackSource(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(consumerConfig, connectionFactory)
                       .withSessionCount(5)
                       .withBufferSize(5)
                       .withQueue("test"));
@@ -231,7 +248,7 @@ public class JmsBufferedAckConnectorsTest {
 
           Source<AckEnvelope, JmsConsumerControl> jmsSource =
               JmsConsumer.ackSource(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(consumerConfig, connectionFactory)
                       .withSessionCount(5)
                       .withBufferSize(5)
                       .withQueue("test")
@@ -301,13 +318,13 @@ public class JmsBufferedAckConnectorsTest {
 
           Source<AckEnvelope, JmsConsumerControl> jmsTopicSource =
               JmsConsumer.ackSource(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(consumerConfig, connectionFactory)
                       .withSessionCount(1)
                       .withBufferSize(5)
                       .withTopic("topic"));
           Source<AckEnvelope, JmsConsumerControl> jmsTopicSource2 =
               JmsConsumer.ackSource(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(consumerConfig, connectionFactory)
                       .withSessionCount(1)
                       .withBufferSize(5)
                       .withTopic("topic"));
@@ -345,20 +362,6 @@ public class JmsBufferedAckConnectorsTest {
               Stream.concat(in.stream(), inNumbers.stream()).sorted().collect(Collectors.toList()),
               result2.toCompletableFuture().get(5, TimeUnit.SECONDS));
         });
-  }
-
-  private static ActorSystem system;
-  private static Materializer materializer;
-
-  @BeforeClass
-  public static void setup() {
-    system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
-  }
-
-  @AfterClass
-  public static void teardown() {
-    TestKit.shutdownActorSystem(system);
   }
 
   private void withServer(ConsumerChecked<Context> test) throws Exception {

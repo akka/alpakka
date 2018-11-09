@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.jms
 
+import akka.actor.ActorSystem
+
 import scala.concurrent.duration._
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.Config
@@ -38,7 +40,7 @@ final class ConnectionRetrySettings private (
 
   def withMaxRetries(value: Int): ConnectionRetrySettings = copy(maxRetries = value)
 
-  def withInfiniteRetries(): ConnectionRetrySettings = withMaxRetries(-1)
+  def withInfiniteRetries(): ConnectionRetrySettings = withMaxRetries(ConnectionRetrySettings.infiniteRetries)
 
   def waitTime(retryNumber: Int): FiniteDuration =
     (initialRetry * Math.pow(retryNumber, backoffFactor)).asInstanceOf[FiniteDuration].min(maxBackoff)
@@ -68,6 +70,8 @@ final class ConnectionRetrySettings private (
 }
 
 object ConnectionRetrySettings {
+  val infiniteRetries = -1
+
   private val defaults = new ConnectionRetrySettings(connectTimeout = 10.seconds,
                                                      initialRetry = 100.millis,
                                                      backoffFactor = 2d,
@@ -88,7 +92,7 @@ object ConnectionRetrySettings {
     val initialRetry = c.getDuration("initial-retry").asScala
     val backoffFactor = c.getDouble("backoff-factor")
     val maxBackoff = c.getDuration("max-backoff").asScala
-    val maxRetries = c.getInt("max-retries")
+    val maxRetries = if (c.getString("max-retries") == "infinite") infiniteRetries else c.getInt("max-retries")
     new ConnectionRetrySettings(
       connectTimeout,
       initialRetry,
@@ -97,6 +101,9 @@ object ConnectionRetrySettings {
       maxRetries
     )
   }
+
+  /** Java API */
+  def create(c: Config): ConnectionRetrySettings = defaults
 }
 
 final class SendRetrySettings private (
@@ -174,5 +181,7 @@ object SendRetrySettings {
       maxRetries
     )
   }
+
+  def create(c: Config): SendRetrySettings = apply(c)
 
 }

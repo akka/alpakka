@@ -35,6 +35,8 @@ class JmsConnectorsSpec extends JmsSpec {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(2.minutes)
 
+  val consumerConfig = system.settings.config.getConfig(JmsConsumerSettings.configPath)
+
   "The JMS Connectors" should {
     "publish and consume strings through a queue" in withServer() { ctx =>
       //#connection-factory
@@ -54,7 +56,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-text-source
       val jmsSource: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
-        JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("test")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(10).withQueue("test")
       )
       //#create-text-source
 
@@ -85,7 +87,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-object-source
       val jmsSource: Source[java.io.Serializable, JmsConsumerControl] = JmsConsumer.objectSource(
-        JmsConsumerSettings(connectionFactory).withQueue("test")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withQueue("test")
       )
       //#create-object-source
 
@@ -112,7 +114,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-bytearray-source
       val jmsSource: Source[Array[Byte], JmsConsumerControl] = JmsConsumer.bytesSource(
-        JmsConsumerSettings(connectionFactory).withQueue("test")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withQueue("test")
       )
       //#create-bytearray-source
 
@@ -151,7 +153,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-map-source
       val jmsSource: Source[Map[String, Any], JmsConsumerControl] = JmsConsumer.mapSource(
-        JmsConsumerSettings(connectionFactory).withQueue("test")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withQueue("test")
       )
       //#create-map-source
 
@@ -194,7 +196,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-jms-source
       val jmsSource: Source[Message, JmsConsumerControl] = JmsConsumer(
-        JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("numbers")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(10).withQueue("numbers")
       )
       //#create-jms-source
 
@@ -235,7 +237,7 @@ class JmsConnectorsSpec extends JmsSpec {
       Source(msgsIn).runWith(jmsSink)
 
       val jmsSource: Source[Message, JmsConsumerControl] = JmsConsumer(
-        JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("numbers")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(10).withQueue("numbers")
       )
 
       val result: Future[Seq[Message]] = jmsSource.take(msgsIn.size).runWith(Sink.seq)
@@ -271,7 +273,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-custom-jms-queue-source
       val jmsSource: Source[Message, JmsConsumerControl] = JmsConsumer(
-        JmsConsumerSettings(connectionFactory)
+        JmsConsumerSettings(consumerConfig, connectionFactory)
           .withBufferSize(10)
           .withDestination(CustomDestination("custom-numbers", createQueue("custom-numbers")))
       )
@@ -304,7 +306,10 @@ class JmsConnectorsSpec extends JmsSpec {
 
         //#create-jms-source-with-selector
         val jmsSource = JmsConsumer(
-          JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("numbers").withSelector("IsOdd = TRUE")
+          JmsConsumerSettings(consumerConfig, connectionFactory)
+            .withBufferSize(10)
+            .withQueue("numbers")
+            .withSelector("IsOdd = TRUE")
         )
         //#create-jms-source-with-selector
 
@@ -329,7 +334,7 @@ class JmsConnectorsSpec extends JmsSpec {
       Source(in).runWith(JmsProducer.textSink(JmsProducerSettings(connectionFactory).withQueue("test")))
 
       val result = JmsConsumer
-        .textSource(JmsConsumerSettings(connectionFactory).withBufferSize(1).withQueue("test"))
+        .textSource(JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(1).withQueue("test"))
         .throttle(1, 1.second, 1, ThrottleMode.shaping)
         .take(in.size)
         .runWith(Sink.seq)
@@ -340,7 +345,7 @@ class JmsConnectorsSpec extends JmsSpec {
     "disconnection should fail the stage after exhausting retries" in withServer() { ctx =>
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
       val result = JmsConsumer(
-        JmsConsumerSettings(connectionFactory)
+        JmsConsumerSettings(consumerConfig, connectionFactory)
           .withQueue("test")
           .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(3))
       ).runWith(Sink.seq)
@@ -377,13 +382,13 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-custom-jms-topic-source
       val jmsTopicSource: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
-        JmsConsumerSettings(connectionFactory)
+        JmsConsumerSettings(consumerConfig, connectionFactory)
           .withBufferSize(10)
           .withDestination(CustomDestination("topic", createTopic("topic")))
       )
       //#create-custom-jms-topic-source
       val jmsSource2: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
-        JmsConsumerSettings(connectionFactory)
+        JmsConsumerSettings(consumerConfig, connectionFactory)
           .withBufferSize(10)
           .withDestination(CustomDestination("topic", createTopic("topic")))
       )
@@ -424,11 +429,11 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-topic-source
       val jmsTopicSource: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
-        JmsConsumerSettings(connectionFactory).withBufferSize(10).withTopic("topic")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(10).withTopic("topic")
       )
       //#create-topic-source
       val jmsSource2: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
-        JmsConsumerSettings(connectionFactory).withBufferSize(10).withTopic("topic")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(10).withTopic("topic")
       )
 
       val expectedSize = in.size + inNumbers.size
@@ -465,7 +470,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-jms-source-client-ack
       val jmsSource: Source[Message, JmsConsumerControl] = JmsConsumer(
-        JmsConsumerSettings(connectionFactory)
+        JmsConsumerSettings(consumerConfig, connectionFactory)
           .withQueue("numbers")
           .withAcknowledgeMode(AcknowledgeMode.ClientAcknowledge)
       )
@@ -506,7 +511,7 @@ class JmsConnectorsSpec extends JmsSpec {
       Source(msgsIn).runWith(jmsSink)
 
       val jmsSource: Source[Message, JmsConsumerControl] = JmsConsumer(
-        JmsConsumerSettings(connectionFactory)
+        JmsConsumerSettings(consumerConfig, connectionFactory)
           .withBufferSize(10)
           .withQueue("numbers")
           .withAcknowledgeMode(AcknowledgeMode.ClientAcknowledge)
@@ -618,7 +623,10 @@ class JmsConnectorsSpec extends JmsSpec {
         .run()
 
       val jmsSource: Source[Message, JmsConsumerControl] = JmsConsumer(
-        JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(5).withQueue("numbers")
+        JmsConsumerSettings(consumerConfig, connectionFactory)
+          .withSessionCount(5)
+          .withBufferSize(5)
+          .withQueue("numbers")
       )
 
       val resultQueue = new LinkedBlockingQueue[String]()
@@ -682,7 +690,10 @@ class JmsConnectorsSpec extends JmsSpec {
         .run()
 
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(5).withQueue("numbers")
+        JmsConsumerSettings(consumerConfig, connectionFactory)
+          .withSessionCount(5)
+          .withBufferSize(5)
+          .withQueue("numbers")
       )
 
       val resultQueue = new LinkedBlockingQueue[String]()
@@ -751,7 +762,7 @@ class JmsConnectorsSpec extends JmsSpec {
       ctx.broker.stop()
       val startTime = System.currentTimeMillis
       val result = JmsConsumer(
-        JmsConsumerSettings(connectionFactory)
+        JmsConsumerSettings(consumerConfig, connectionFactory)
           .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(4))
           .withQueue("test")
       ).runWith(Sink.seq)
@@ -836,10 +847,10 @@ class JmsConnectorsSpec extends JmsSpec {
       //#run-directed-flow-producer
 
       val jmsEvenSource: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
-        JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("even")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(10).withQueue("even")
       )
       val jmsOddSource: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
-        JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("odd")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(10).withQueue("odd")
       )
 
       jmsEvenSource.take(input.size / 2).map(_.toInt).runWith(Sink.seq).futureValue shouldBe (2 to 100 by 2)
@@ -865,7 +876,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val sinkOut = Source(in).runWith(jmsSink)
 
       val jmsSource: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(10).withQueue("test")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(5).withBufferSize(10).withQueue("test")
       )
 
       val result = jmsSource.take(in.size).runWith(Sink.seq)
@@ -1009,7 +1020,7 @@ class JmsConnectorsSpec extends JmsSpec {
       when(consumer.setMessageListener(any[MessageListener])).thenAnswer(mockMessageGenerator)
 
       val jmsSource = JmsConsumer.textSource(
-        JmsConsumerSettings(factory)
+        JmsConsumerSettings(consumerConfig, factory)
           .withBufferSize(10)
           .withQueue("test")
           .withConnectionRetrySettings(ConnectionRetrySettings().withConnectTimeout(connectTimeout))
@@ -1049,7 +1060,7 @@ class JmsConnectorsSpec extends JmsSpec {
       when(consumer.setMessageListener(any[MessageListener])).thenAnswer(mockMessageGenerator)
 
       val jmsSource = JmsConsumer.textSource(
-        JmsConsumerSettings(factory)
+        JmsConsumerSettings(consumerConfig, factory)
           .withBufferSize(10)
           .withQueue("test")
           .withConnectionRetrySettings(ConnectionRetrySettings().withConnectTimeout(connectTimeout))
@@ -1107,7 +1118,7 @@ class JmsConnectorsSpec extends JmsSpec {
       })
 
       val jmsSource = JmsConsumer.textSource(
-        JmsConsumerSettings(factory)
+        JmsConsumerSettings(consumerConfig, factory)
           .withBufferSize(10)
           .withQueue("test")
       )
@@ -1138,7 +1149,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       val sentData =
         JmsConsumer
-          .textSource(JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("test"))
+          .textSource(JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(10).withQueue("test"))
           .take(data.size)
           .runWith(Sink.seq)
 
@@ -1190,7 +1201,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
     //#create-durable-topic-source
     val jmsTopicSource = JmsConsumer.textSource(
-      JmsConsumerSettings(consumerConnectionFactory)
+      JmsConsumerSettings(consumerConfig, consumerConnectionFactory)
         .withDurableTopic("topic", "durable-test")
     )
     //#create-durable-topic-source

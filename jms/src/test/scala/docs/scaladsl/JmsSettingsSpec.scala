@@ -5,11 +5,15 @@
 package docs.scaladsl
 
 import akka.stream.alpakka.jms._
+import com.typesafe.config.ConfigFactory
 import org.apache.activemq.ActiveMQConnectionFactory
+import org.scalatest.OptionValues
 
 import scala.concurrent.duration._
 
-class JmsSettingsSpec extends JmsSpec {
+class JmsSettingsSpec extends JmsSpec with OptionValues {
+
+  val consumerConfig = system.settings.config.getConfig(JmsConsumerSettings.configPath)
 
   "Jms producer" should {
     "have producer settings" in {
@@ -17,8 +21,8 @@ class JmsSettingsSpec extends JmsSpec {
       //#retry-settings-case-class
       val retrySettings = ConnectionRetrySettings()
         .withConnectTimeout(3.seconds)
-        .withInitialRetry(1.second)
-        .withBackoffFactor(1.5)
+        .withInitialRetry(100.millis)
+        .withBackoffFactor(2.0d)
         .withMaxBackoff(30.seconds)
         .withInfiniteRetries()
       //#retry-settings-case-class
@@ -47,21 +51,60 @@ class JmsSettingsSpec extends JmsSpec {
     "have consumer settings" in {
 
       //#retry-settings-with-clause
-      val retrySettings = ConnectionRetrySettings()
-        .withConnectTimeout(3.seconds)
-        .withInitialRetry(1.second)
-        .withBackoffFactor(1.5)
-        .withMaxBackoff(30.seconds)
-        .withMaxRetries(-1)
+      // reiterating defaults from reference.conf
+      val retrySettings = ConnectionRetrySettings(consumerConfig.getConfig("connection-retry"))
+        .withConnectTimeout(10.seconds)
+        .withInitialRetry(100.millis)
+        .withBackoffFactor(2.0d)
+        .withMaxBackoff(1.minute)
+        .withMaxRetries(10)
       //#retry-settings-with-clause
+      val retrySettings2 = ConnectionRetrySettings(consumerConfig.getConfig("connection-retry"))
+      retrySettings.toString should be (retrySettings2.toString)
 
       //#consumer-settings
-      val settings = JmsConsumerSettings(new ActiveMQConnectionFactory("broker-url"))
+      // reiterating defaults from reference.conf
+      val settings = JmsConsumerSettings(consumerConfig, new ActiveMQConnectionFactory("broker-url"))
         .withQueue("target-queue")
-        .withCredential(Credentials("username", "password"))
+        .withCredentials(Credentials("username", "password"))
         .withConnectionRetrySettings(retrySettings)
-        .withSessionCount(10)
+        .withSessionCount(1)
+        .withBufferSize(100)
+        .withAckTimeout(1.second)
       //#consumer-settings
+
+      val consumerSettings2 = JmsConsumerSettings(consumerConfig, settings.connectionFactory)
+        .withQueue("target-queue")
+        .withCredentials(Credentials("username", "password"))
+      settings.toString should be (consumerSettings2.toString)
+    }
+
+    "read from user config" in {
+      val config = ConfigFactory.parseString(
+        """
+          |connection-retry {
+          |    connect-timeout = 10 seconds
+          |    initial-retry = 100 millis
+          |    backoff-factor = 2
+          |    max-backoff = 1 minute
+          |    # infinite, or positive integer
+          |    max-retries = 10
+          |}
+          |//    credentials {
+          |//      username = "some text"
+          |//      password = "some text"
+          |//    }
+          |session-count = 1
+          |buffer-size = 100
+          |// selector = "some text" # optional
+          |acknowledge-mode = duplicates-ok
+          |ack-timeout = 1 second
+          |durable-name = "some text" # optional
+        """.stripMargin).withFallback(consumerConfig).resolve()
+
+      val settings = JmsConsumerSettings(config, new ActiveMQConnectionFactory("broker-url"))
+      settings.acknowledgeMode.value should be (AcknowledgeMode.DupsOkAcknowledge)
+      settings.durableName.value should be ("some text")
     }
   }
 }

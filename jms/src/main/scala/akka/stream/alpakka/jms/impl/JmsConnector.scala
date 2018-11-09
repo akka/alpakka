@@ -253,7 +253,7 @@ trait JmsConnector[S <: JmsSession] {
 
     val connectionFuture = Future {
       val connection = jmsSettings.credentials match {
-        case Some(Credentials(username, password)) => factory.createConnection(username, password)
+        case Some(c: Credentials) => factory.createConnection(c.username, c.password)
         case _ => factory.createConnection()
       }
       if (status.get == Connecting) { // `TimedOut` can be set at any point. So we have to check whether to continue.

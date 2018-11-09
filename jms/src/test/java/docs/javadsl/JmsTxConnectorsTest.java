@@ -16,6 +16,7 @@ import akka.stream.alpakka.jms.javadsl.JmsProducer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
+import com.typesafe.config.Config;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.command.ActiveMQQueue;
@@ -27,6 +28,7 @@ import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.TextMessage;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +39,22 @@ import java.util.stream.Stream;
 import static org.junit.Assert.assertEquals;
 
 public class JmsTxConnectorsTest {
+
+  private static ActorSystem system;
+  private static Materializer materializer;
+  private static Config consumerConfig;
+
+  @BeforeClass
+  public static void setup() {
+    system = ActorSystem.create();
+    materializer = ActorMaterializer.create(system);
+    consumerConfig = system.settings().config().getConfig(JmsConsumerSettings.configPath());
+  }
+
+  @AfterClass
+  public static void teardown() {
+    TestKit.shutdownActorSystem(system);
+  }
 
   // #create-test-message-list
   private List<JmsTextMessage> createTestMessageList() {
@@ -59,6 +77,7 @@ public class JmsTxConnectorsTest {
   public void publishAndConsume() throws Exception {
     withServer(
         ctx -> {
+
           // #connection-factory
           //            ActiveMQConnectionFactory connectionFactory = new
           // ActiveMQConnectionFactory(ctx.url);
@@ -78,7 +97,7 @@ public class JmsTxConnectorsTest {
           // #create-text-source
           Source<TxEnvelope, JmsConsumerControl> jmsSource =
               JmsConsumer.txSource(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(consumerConfig, connectionFactory)
                       .withSessionCount(5)
                       .withQueue("test"));
           // #create-text-source
@@ -123,9 +142,9 @@ public class JmsTxConnectorsTest {
           // #create-jms-source
           Source<TxEnvelope, JmsConsumerControl> jmsSource =
               JmsConsumer.txSource(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(consumerConfig, connectionFactory)
                       .withSessionCount(5)
-                      .withAckTimeout(1, TimeUnit.SECONDS)
+                      .withAckTimeout(Duration.ofSeconds(1))
                       .withQueue("test"));
           // #create-jms-source
 
@@ -198,7 +217,7 @@ public class JmsTxConnectorsTest {
           // #create-jms-source
           Source<TxEnvelope, JmsConsumerControl> jmsSource =
               JmsConsumer.txSource(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(consumerConfig, connectionFactory)
                       .withSessionCount(5)
                       .withQueue("test"));
           // #create-jms-source
@@ -260,7 +279,7 @@ public class JmsTxConnectorsTest {
           // #create-jms-source-with-selector
           Source<TxEnvelope, JmsConsumerControl> jmsSource =
               JmsConsumer.txSource(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(consumerConfig, connectionFactory)
                       .withSessionCount(5)
                       .withQueue("test")
                       .withSelector("IsOdd = TRUE"));
@@ -335,13 +354,13 @@ public class JmsTxConnectorsTest {
           // #create-topic-source
           Source<TxEnvelope, JmsConsumerControl> jmsTopicSource =
               JmsConsumer.txSource(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(consumerConfig, connectionFactory)
                       .withSessionCount(1)
                       .withTopic("topic"));
           // #create-topic-source
           Source<TxEnvelope, JmsConsumerControl> jmsTopicSource2 =
               JmsConsumer.txSource(
-                  JmsConsumerSettings.create(connectionFactory)
+                  JmsConsumerSettings.create(consumerConfig, connectionFactory)
                       .withSessionCount(1)
                       .withTopic("topic"));
 
@@ -382,20 +401,6 @@ public class JmsTxConnectorsTest {
               Stream.concat(in.stream(), inNumbers.stream()).sorted().collect(Collectors.toList()),
               result2.toCompletableFuture().get(5, TimeUnit.SECONDS));
         });
-  }
-
-  private static ActorSystem system;
-  private static Materializer materializer;
-
-  @BeforeClass
-  public static void setup() {
-    system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
-  }
-
-  @AfterClass
-  public static void teardown() {
-    TestKit.shutdownActorSystem(system);
   }
 
   private void withServer(ConsumerChecked<Context> test) throws Exception {

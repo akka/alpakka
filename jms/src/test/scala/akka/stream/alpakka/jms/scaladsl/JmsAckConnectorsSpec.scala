@@ -36,7 +36,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
       Source(in).runWith(jmsSink)
 
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("test")
+        JmsConsumerSettings(system, connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("test")
       )
 
       val result = jmsSource
@@ -65,7 +65,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
       Source(msgsIn).runWith(jmsSink)
 
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("numbers")
+        JmsConsumerSettings(system, connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("numbers")
       )
 
       val result = jmsSource
@@ -103,7 +103,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
         Source(msgsIn).runWith(jmsSink)
 
         val jmsSource = JmsConsumer.ackSource(
-          JmsConsumerSettings(connectionFactory)
+          JmsConsumerSettings(system, connectionFactory)
             .withSessionCount(5)
             .withBufferSize(0)
             .withQueue("numbers")
@@ -136,7 +136,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
       Source(in).runWith(JmsProducer.textSink(JmsProducerSettings(connectionFactory).withQueue("test")))
 
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("test")
+        JmsConsumerSettings(system, connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("test")
       )
 
       val result = jmsSource
@@ -153,7 +153,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
       val result = JmsConsumer
         .ackSource(
-          JmsConsumerSettings(connectionFactory)
+          JmsConsumerSettings(system, connectionFactory)
             .withSessionCount(5)
             .withBufferSize(0)
             .withQueue("test")
@@ -183,10 +183,10 @@ class JmsAckConnectorsSpec extends JmsSpec {
       val inNumbers = (1 to 10).map(_.toString)
 
       val jmsTopicSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(1).withBufferSize(0).withTopic("topic")
+        JmsConsumerSettings(system, connectionFactory).withSessionCount(1).withBufferSize(0).withTopic("topic")
       )
       val jmsSource2: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(1).withBufferSize(0).withTopic("topic")
+        JmsConsumerSettings(system, connectionFactory).withSessionCount(1).withBufferSize(0).withTopic("topic")
       )
 
       val expectedSize = in.size + inNumbers.size
@@ -230,7 +230,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
         .run()
 
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("numbers")
+        JmsConsumerSettings(system, connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("numbers")
       )
 
       val resultQueue = new LinkedBlockingQueue[String]()
@@ -304,7 +304,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
         .run()
 
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("numbers")
+        JmsConsumerSettings(system, connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("numbers")
       )
 
       val resultQueue = new LinkedBlockingQueue[String]()
@@ -375,7 +375,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
       Source(in).runWith(JmsProducer.textSink(JmsProducerSettings(connectionFactory).withQueue("test")))
 
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("test")
+        JmsConsumerSettings(system, connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("test")
       )
 
       val (killSwitch, streamDone) = jmsSource
@@ -397,7 +397,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
       Source(in).runWith(JmsProducer.textSink(JmsProducerSettings(connectionFactory).withQueue("test")))
 
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("test")
+        JmsConsumerSettings(system, connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("test")
       )
 
       val (killSwitch, streamDone) = jmsSource
