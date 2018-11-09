@@ -124,8 +124,6 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
 
   import system.dispatcher
 
-  def send[A](cp: Publish, carry: Option[A]): Unit =
-    tell(Command(cp, carry))
   override def ![A](cp: Command[A]): Unit = cp match {
     case Command(cp: Publish, carry) =>
       clientConnector ! ClientConnector.PublishReceivedLocally(cp, carry)
