@@ -6,6 +6,7 @@ package akka.stream.alpakka.jms
 
 import scala.concurrent.duration._
 import akka.util.JavaDurationConverters._
+import com.typesafe.config.Config
 
 final class ConnectionRetrySettings private (
     val connectTimeout: scala.concurrent.duration.FiniteDuration,
@@ -21,19 +22,11 @@ final class ConnectionRetrySettings private (
   /** Java API */
   def withConnectTimeout(value: java.time.Duration): ConnectionRetrySettings = copy(connectTimeout = value.asScala)
 
-  /** Java API */
-  def withConnectTimeout(timeout: Long, unit: java.util.concurrent.TimeUnit): ConnectionRetrySettings =
-    copy(connectTimeout = Duration(timeout, unit))
-
   def withInitialRetry(value: scala.concurrent.duration.FiniteDuration): ConnectionRetrySettings =
     copy(initialRetry = value)
 
   /** Java API */
   def withInitialRetry(value: java.time.Duration): ConnectionRetrySettings = copy(initialRetry = value.asScala)
-
-  /** Java API */
-  def withInitialRetry(delay: Long, unit: java.util.concurrent.TimeUnit): ConnectionRetrySettings =
-    copy(initialRetry = Duration(delay, unit))
 
   def withBackoffFactor(value: Double): ConnectionRetrySettings = copy(backoffFactor = value)
 
@@ -42,10 +35,6 @@ final class ConnectionRetrySettings private (
 
   /** Java API */
   def withMaxBackoff(value: java.time.Duration): ConnectionRetrySettings = copy(maxBackoff = value.asScala)
-
-  /** Java API */
-  def withMaxBackoff(maxBackoff: Long, unit: java.util.concurrent.TimeUnit): ConnectionRetrySettings =
-    copy(maxBackoff = Duration(maxBackoff, unit))
 
   def withMaxRetries(value: Int): ConnectionRetrySettings = copy(maxRetries = value)
 
@@ -75,7 +64,7 @@ final class ConnectionRetrySettings private (
     s"backoffFactor=$backoffFactor," +
     s"maxBackoff=${maxBackoff.toCoarsest}," +
     s"maxRetries=$maxRetries" +
-    s")"
+    ")"
 }
 
 object ConnectionRetrySettings {
@@ -90,26 +79,100 @@ object ConnectionRetrySettings {
 
   /** Java API */
   def create(): ConnectionRetrySettings = defaults
+
+  /**
+   * Reads from the given config.
+   */
+  def apply(c: Config): ConnectionRetrySettings = {
+    val connectTimeout = c.getDuration("connect-timeout").asScala
+    val initialRetry = c.getDuration("initial-retry").asScala
+    val backoffFactor = c.getDouble("backoff-factor")
+    val maxBackoff = c.getDuration("max-backoff").asScala
+    val maxRetries = c.getInt("max-retries")
+    new ConnectionRetrySettings(
+      connectTimeout,
+      initialRetry,
+      backoffFactor,
+      maxBackoff,
+      maxRetries
+    )
+  }
 }
 
-object SendRetrySettings {
-  def create(): SendRetrySettings = SendRetrySettings()
-}
+final class SendRetrySettings private (
+    val initialRetry: scala.concurrent.duration.FiniteDuration,
+    val backoffFactor: Double,
+    val maxBackoff: scala.concurrent.duration.FiniteDuration,
+    val maxRetries: Int
+) {
 
-final case class SendRetrySettings(initialRetry: FiniteDuration = 20.millis,
-                                   backoffFactor: Double = 1.5,
-                                   maxBackoff: FiniteDuration = 500.millis,
-                                   maxRetries: Int = 10) {
-  def withInitialRetry(delay: FiniteDuration): SendRetrySettings = copy(initialRetry = delay)
-  def withInitialRetry(delay: Long, unit: TimeUnit): SendRetrySettings =
-    copy(initialRetry = Duration(delay, unit))
-  def withBackoffFactor(backoffFactor: Double): SendRetrySettings = copy(backoffFactor = backoffFactor)
-  def withMaxBackoff(maxBackoff: FiniteDuration): SendRetrySettings = copy(maxBackoff = maxBackoff)
-  def withMaxBackoff(maxBackoff: Long, unit: TimeUnit): SendRetrySettings =
-    copy(maxBackoff = Duration(maxBackoff, unit))
-  def withMaxRetries(maxRetries: Int): SendRetrySettings = copy(maxRetries = maxRetries)
+  /** Scala API */
+  def withInitialRetry(value: scala.concurrent.duration.FiniteDuration): SendRetrySettings = copy(initialRetry = value)
+
+  /** Java API */
+  def withInitialRetry(value: java.time.Duration): SendRetrySettings = copy(initialRetry = value.asScala)
+
+  def withBackoffFactor(value: Double): SendRetrySettings = copy(backoffFactor = value)
+
+  /** Scala API */
+  def withMaxBackoff(value: scala.concurrent.duration.FiniteDuration): SendRetrySettings = copy(maxBackoff = value)
+
+  /** Java API */
+  def withMaxBackoff(value: java.time.Duration): SendRetrySettings = copy(maxBackoff = value.asScala)
+
+  def withMaxRetries(value: Int): SendRetrySettings = copy(maxRetries = value)
+
   def withInfiniteRetries(): SendRetrySettings = withMaxRetries(-1)
 
   def waitTime(retryNumber: Int): FiniteDuration =
     (initialRetry * Math.pow(retryNumber, backoffFactor)).asInstanceOf[FiniteDuration].min(maxBackoff)
+
+  private def copy(
+      initialRetry: scala.concurrent.duration.FiniteDuration = initialRetry,
+      backoffFactor: Double = backoffFactor,
+      maxBackoff: scala.concurrent.duration.FiniteDuration = maxBackoff,
+      maxRetries: Int = maxRetries
+  ): SendRetrySettings = new SendRetrySettings(
+    initialRetry = initialRetry,
+    backoffFactor = backoffFactor,
+    maxBackoff = maxBackoff,
+    maxRetries = maxRetries
+  )
+
+  override def toString =
+    "SendRetrySettings(" +
+    s"initialRetry=${initialRetry.toCoarsest}," +
+    s"backoffFactor=$backoffFactor," +
+    s"maxBackoff=${maxBackoff.toCoarsest}," +
+    s"maxRetries=$maxRetries" +
+    ")"
+}
+
+object SendRetrySettings {
+
+  private val defaults =
+    new SendRetrySettings(initialRetry = 20.millis, backoffFactor = 1.5, maxBackoff = 500.millis, maxRetries = 10)
+
+  /** Scala API */
+  def apply(): SendRetrySettings = defaults
+
+  /** Java API */
+  def create(): SendRetrySettings = defaults
+
+  /**
+   * Reads from the given config.
+   */
+  def apply(c: Config): SendRetrySettings = {
+    val initialRetry = c.getDuration("initial-retry").asScala
+    val backoffFactor = c.getDouble("backoff-factor")
+    val maxBackoff = c.getDuration("max-backoff").asScala
+    val maxRetries = c.getInt("max-retries")
+    new SendRetrySettings(
+      initialRetry,
+      backoffFactor,
+      maxBackoff,
+      maxRetries
+    )
+  }
+
 }

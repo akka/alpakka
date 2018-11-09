@@ -11,8 +11,10 @@ import akka.stream.alpakka.jms.SendRetrySettings;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.junit.Test;
 
+// #retry-settings #send-retry-settings
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
+
+// #retry-settings #send-retry-settings
 
 public class JmsSettingsTest {
 
@@ -22,19 +24,19 @@ public class JmsSettingsTest {
     // #retry-settings
     ConnectionRetrySettings retrySettings =
         ConnectionRetrySettings.create()
-            .withConnectTimeout(3, TimeUnit.SECONDS)
-            .withInitialRetry(1, TimeUnit.SECONDS)
+            .withConnectTimeout(Duration.ofSeconds(3))
+            .withInitialRetry(Duration.ofSeconds(1))
             .withBackoffFactor(1.5)
-            .withMaxBackoff(30, TimeUnit.SECONDS)
+            .withMaxBackoff(Duration.ofSeconds(30))
             .withInfiniteRetries();
     // #retry-settings
 
     // #send-retry-settings
     SendRetrySettings sendRetrySettings =
         SendRetrySettings.create()
-            .withInitialRetry(10, TimeUnit.MILLISECONDS)
+            .withInitialRetry(Duration.ofSeconds(10))
             .withBackoffFactor(2)
-            .withMaxBackoff(1, TimeUnit.SECONDS)
+            .withMaxBackoff(Duration.ofSeconds(1))
             .withMaxRetries(60);
     // #send-retry-settings
 
