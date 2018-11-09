@@ -15,8 +15,7 @@ final class JmsProducerSettings private (
     val destination: Option[Destination],
     val credentials: Option[Credentials],
     val sessionCount: Int,
-    val timeToLive: Option[scala.concurrent.duration.Duration],
-    val acknowledgeMode: Option[AcknowledgeMode]
+    val timeToLive: Option[scala.concurrent.duration.Duration]
 ) extends akka.stream.alpakka.jms.JmsSettings {
 
   def withConnectionFactory(value: javax.jms.ConnectionFactory): JmsProducerSettings = copy(connectionFactory = value)
@@ -32,7 +31,6 @@ final class JmsProducerSettings private (
   def withSessionCount(value: Int): JmsProducerSettings = copy(sessionCount = value)
   def withTimeToLive(value: scala.concurrent.duration.Duration): JmsProducerSettings = copy(timeToLive = Option(value))
   def withTimeToLive(value: java.time.Duration): JmsProducerSettings = copy(timeToLive = Option(value).map(_.asScala))
-  def withAcknowledgeMode(value: AcknowledgeMode): JmsProducerSettings = copy(acknowledgeMode = Option(value))
 
   private def copy(
       connectionFactory: javax.jms.ConnectionFactory = connectionFactory,
@@ -41,8 +39,7 @@ final class JmsProducerSettings private (
       destination: Option[Destination] = destination,
       credentials: Option[Credentials] = credentials,
       sessionCount: Int = sessionCount,
-      timeToLive: Option[scala.concurrent.duration.Duration] = timeToLive,
-      acknowledgeMode: Option[AcknowledgeMode] = acknowledgeMode
+      timeToLive: Option[scala.concurrent.duration.Duration] = timeToLive
   ): JmsProducerSettings = new JmsProducerSettings(
     connectionFactory = connectionFactory,
     connectionRetrySettings = connectionRetrySettings,
@@ -50,8 +47,7 @@ final class JmsProducerSettings private (
     destination = destination,
     credentials = credentials,
     sessionCount = sessionCount,
-    timeToLive = timeToLive,
-    acknowledgeMode = acknowledgeMode
+    timeToLive = timeToLive
   )
 
   override def toString =
@@ -62,8 +58,7 @@ final class JmsProducerSettings private (
     s"destination=$destination," +
     s"credentials=$credentials," +
     s"sessionCount=$sessionCount," +
-    s"timeToLive=$timeToLive," +
-    s"acknowledgeMode=$acknowledgeMode" +
+    s"timeToLive=$timeToLive" +
     ")"
 }
 
@@ -85,8 +80,6 @@ object JmsProducerSettings {
     val credentials = getOption("credentials", c => Credentials(c.getConfig("credentials")))
     val sessionCount = c.getInt("session-count")
     val timeToLive = getOption("time-to-live", _.getDuration("time-to-live").asScala)
-    val acknowledgeMode =
-      getOption("acknowledge-mode", c => AcknowledgeMode.from(c.getString("acknowledge-mode")))
     new JmsProducerSettings(
       connectionFactory,
       connectionRetrySettings,
@@ -94,8 +87,7 @@ object JmsProducerSettings {
       destination = None,
       credentials,
       sessionCount,
-      timeToLive,
-      acknowledgeMode
+      timeToLive
     )
   }
 

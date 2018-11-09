@@ -3,6 +3,7 @@
  */
 
 package akka.stream.alpakka.jms
+
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigValueType}
 
@@ -12,7 +13,7 @@ final class JmsBrowseSettings private (
     val destination: Option[Destination],
     val credentials: Option[Credentials],
     val selector: Option[String],
-    val acknowledgeMode: Option[AcknowledgeMode]
+    val acknowledgeMode: AcknowledgeMode
 ) extends akka.stream.alpakka.jms.JmsSettings {
   override val sessionCount = 1
 
@@ -23,7 +24,7 @@ final class JmsBrowseSettings private (
   def withDestination(value: Destination): JmsBrowseSettings = copy(destination = Option(value))
   def withCredentials(value: Credentials): JmsBrowseSettings = copy(credentials = Option(value))
   def withSelector(value: String): JmsBrowseSettings = copy(selector = Option(value))
-  def withAcknowledgeMode(value: AcknowledgeMode): JmsBrowseSettings = copy(acknowledgeMode = Option(value))
+  def withAcknowledgeMode(value: AcknowledgeMode): JmsBrowseSettings = copy(acknowledgeMode = value)
 
   private def copy(
       connectionFactory: javax.jms.ConnectionFactory = connectionFactory,
@@ -31,7 +32,7 @@ final class JmsBrowseSettings private (
       destination: Option[Destination] = destination,
       credentials: Option[Credentials] = credentials,
       selector: Option[String] = selector,
-      acknowledgeMode: Option[AcknowledgeMode] = acknowledgeMode
+      acknowledgeMode: AcknowledgeMode = acknowledgeMode
   ): JmsBrowseSettings = new JmsBrowseSettings(
     connectionFactory = connectionFactory,
     connectionRetrySettings = connectionRetrySettings,
@@ -64,14 +65,14 @@ object JmsBrowseSettings {
       if (c.hasPath(path) && (c.getValue(path).valueType() != ConfigValueType.STRING || c.getString(path) != "off"))
         Some(read(c))
       else None
-    def getStringOption(path: String): Option[String] = if (c.hasPath(path)) Some(c.getString(path)) else None
+    def getStringOption(path: String): Option[String] =
+      if (c.hasPath(path) && c.getString(path).nonEmpty) Some(c.getString(path)) else None
 
     val connectionRetrySettings = ConnectionRetrySettings(c.getConfig("connection-retry"))
     val destination = None
     val credentials = getOption("credentials", c => Credentials(c.getConfig("credentials")))
     val selector = getStringOption("selector")
-    val acknowledgeMode =
-      getOption("acknowledge-mode", c => AcknowledgeMode.from(c.getString("acknowledge-mode")))
+    val acknowledgeMode = AcknowledgeMode.from(c.getString("acknowledge-mode"))
     new JmsBrowseSettings(
       connectionFactory,
       connectionRetrySettings,

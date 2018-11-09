@@ -13,6 +13,5 @@ trait JmsSettings {
   def connectionRetrySettings: ConnectionRetrySettings
   def destination: Option[Destination]
   def credentials: Option[Credentials]
-  def acknowledgeMode: Option[AcknowledgeMode]
   def sessionCount: Int
 }

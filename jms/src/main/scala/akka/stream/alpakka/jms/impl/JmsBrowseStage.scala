@@ -5,7 +5,7 @@
 package akka.stream.alpakka.jms.impl
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.jms.{AcknowledgeMode, Destination, JmsBrowseSettings}
+import akka.stream.alpakka.jms.{Destination, JmsBrowseSettings}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import akka.stream.{ActorAttributes, Attributes, Outlet, SourceShape}
 import javax.jms
@@ -32,7 +32,7 @@ private[jms] final class JmsBrowseStage(settings: JmsBrowseSettings, queue: Dest
       var messages: java.util.Enumeration[jms.Message] = _
 
       override def preStart(): Unit = {
-        val ackMode = settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode
+        val ackMode = settings.acknowledgeMode.mode
         connection = settings.connectionFactory.createConnection()
         connection.start()
 

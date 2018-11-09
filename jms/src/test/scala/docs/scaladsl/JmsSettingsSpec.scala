@@ -39,7 +39,6 @@ class JmsSettingsSpec extends JmsSpec with OptionValues {
         .withTopic("target-topic")
         .withCredentials(Credentials("username", "password"))
         .withSessionCount(1)
-        .withTimeToLive(1.hour)
       //#producer-settings
 
       val producerSettings2 = JmsProducerSettings(producerConfig, settings.connectionFactory)

@@ -5,8 +5,8 @@
 package akka.stream.alpakka.jms
 
 import akka.actor.ActorSystem
-import com.typesafe.config.{Config, ConfigValueType}
 import akka.util.JavaDurationConverters._
+import com.typesafe.config.{Config, ConfigValueType}
 
 final class JmsConsumerSettings private (
     val connectionFactory: javax.jms.ConnectionFactory,
@@ -91,7 +91,8 @@ object JmsConsumerSettings {
       if (c.hasPath(path) && (c.getValue(path).valueType() != ConfigValueType.STRING || c.getString(path) != "off"))
         Some(read(c))
       else None
-    def getStringOption(path: String): Option[String] = if (c.hasPath(path)) Some(c.getString(path)) else None
+    def getStringOption(path: String): Option[String] =
+      if (c.hasPath(path) && c.getString(path).nonEmpty) Some(c.getString(path)) else None
 
     val connectionRetrySettings = ConnectionRetrySettings(c.getConfig("connection-retry"))
     val destination = None
