@@ -35,9 +35,6 @@ class JmsConnectorsSpec extends JmsSpec {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(2.minutes)
 
-  val consumerConfig = system.settings.config.getConfig(JmsConsumerSettings.configPath)
-  val browseConfig = system.settings.config.getConfig(JmsBrowseSettings.configPath)
-
   "The JMS Connectors" should {
     "publish and consume strings through a queue" in withServer() { ctx =>
       //#connection-factory
@@ -46,7 +43,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-text-sink
       val jmsSink: Sink[String, Future[Done]] = JmsProducer.textSink(
-        JmsProducerSettings(connectionFactory).withQueue("test")
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")
       )
       //#create-text-sink
 
@@ -76,7 +73,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-object-sink
       val jmsSink: Sink[Serializable, Future[Done]] = JmsProducer.objectSink(
-        JmsProducerSettings(connectionFactory).withQueue("test")
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")
       )
       //#create-object-sink
 
@@ -104,7 +101,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-bytearray-sink
       val jmsSink: Sink[Array[Byte], Future[Done]] = JmsProducer.bytesSink(
-        JmsProducerSettings(connectionFactory).withQueue("test")
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")
       )
       //#create-bytearray-sink
 
@@ -131,7 +128,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-map-sink
       val jmsSink: Sink[Map[String, Any], Future[Done]] = JmsProducer.mapSink(
-        JmsProducerSettings(connectionFactory).withQueue("test")
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")
       )
       //#create-map-sink
 
@@ -181,7 +178,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
-        JmsProducerSettings(connectionFactory).withQueue("numbers")
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
       )
 
       //#create-messages-with-properties
@@ -219,7 +216,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-jms-sink
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
-        JmsProducerSettings(connectionFactory).withQueue("numbers")
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
       )
       //#create-jms-sink
 
@@ -262,7 +259,7 @@ class JmsConnectorsSpec extends JmsSpec {
       }
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
-        JmsProducerSettings(connectionFactory)
+        JmsProducerSettings(producerConfig, connectionFactory)
           .withDestination(CustomDestination("custom-numbers", createQueue("custom-numbers")))
       )
 
@@ -294,7 +291,7 @@ class JmsConnectorsSpec extends JmsSpec {
         val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
         val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
-          JmsProducerSettings(connectionFactory).withQueue("numbers")
+          JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
         )
 
         val msgsIn = (1 to 10).toList.map { n =>
@@ -332,7 +329,7 @@ class JmsConnectorsSpec extends JmsSpec {
     "applying backpressure when the consumer is slower than the producer" in withServer() { ctx =>
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
       val in = List("a", "b", "c")
-      Source(in).runWith(JmsProducer.textSink(JmsProducerSettings(connectionFactory).withQueue("test")))
+      Source(in).runWith(JmsProducer.textSink(JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")))
 
       val result = JmsConsumer
         .textSource(JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(1).withQueue("test"))
@@ -369,12 +366,12 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-custom-jms-topic-sink
       val jmsTopicSink: Sink[String, Future[Done]] = JmsProducer.textSink(
-        JmsProducerSettings(connectionFactory)
+        JmsProducerSettings(producerConfig, connectionFactory)
           .withDestination(CustomDestination("topic", createTopic("topic")))
       )
       //#create-custom-jms-topic-sink
       val jmsTopicSink2: Sink[String, Future[Done]] = JmsProducer.textSink(
-        JmsProducerSettings(connectionFactory)
+        JmsProducerSettings(producerConfig, connectionFactory)
           .withDestination(CustomDestination("topic", createTopic("topic")))
       )
 
@@ -418,11 +415,11 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-topic-sink
       val jmsTopicSink: Sink[String, Future[Done]] = JmsProducer.textSink(
-        JmsProducerSettings(connectionFactory).withTopic("topic")
+        JmsProducerSettings(producerConfig, connectionFactory).withTopic("topic")
       )
       //#create-topic-sink
       val jmsTopicSink2: Sink[String, Future[Done]] = JmsProducer.textSink(
-        JmsProducerSettings(connectionFactory).withTopic("topic")
+        JmsProducerSettings(producerConfig, connectionFactory).withTopic("topic")
       )
 
       val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
@@ -460,7 +457,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
-        JmsProducerSettings(connectionFactory).withQueue("numbers")
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
       )
 
       val msgsIn = (1 to 10).toList.map { n =>
@@ -502,7 +499,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
-        JmsProducerSettings(connectionFactory).withQueue("numbers")
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
       )
 
       val msgsIn = (1 to 10).toList.map { n =>
@@ -540,7 +537,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val connectionFactory = new CachedConnectionFactory(url)
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
-        JmsProducerSettings(connectionFactory).withQueue("numbers")
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
       )
 
       val msgsIn = (1 to 10).toList.map { n =>
@@ -558,7 +555,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val connectionFactory = new CachedConnectionFactory(url)
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
-        JmsProducerSettings(connectionFactory)
+        JmsProducerSettings(producerConfig, connectionFactory)
           .withQueue("numbers")
           .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(0))
       )
@@ -579,7 +576,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val connectionFactory = new CachedConnectionFactory(url)
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
-        JmsProducerSettings(connectionFactory)
+        JmsProducerSettings(producerConfig, connectionFactory)
           .withQueue("numbers")
           .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(2))
       )
@@ -612,7 +609,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
-        JmsProducerSettings(connectionFactory).withQueue("numbers")
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
       )
 
       val (publishKillSwitch, publishedData) = Source
@@ -679,7 +676,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
-        JmsProducerSettings(connectionFactory).withQueue("numbers")
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
       )
 
       val (publishKillSwitch, publishedData) = Source
@@ -782,7 +779,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       withClue("write some messages") {
         Source(in)
-          .runWith(JmsProducer.textSink(JmsProducerSettings(connectionFactory).withQueue("test")))
+          .runWith(JmsProducer.textSink(JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")))
           .futureValue
       }
 
@@ -816,7 +813,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-flow-producer
       val flowSink: Flow[JmsMessage, JmsMessage, JmsProducerStatus] = JmsProducer.flow(
-        JmsProducerSettings(connectionFactory).withQueue("test")
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")
       )
       //#create-flow-producer
 
@@ -837,7 +834,7 @@ class JmsConnectorsSpec extends JmsSpec {
       //#run-directed-flow-producer
       val flowSink: Flow[JmsMessage, JmsMessage, JmsProducerStatus] =
         JmsProducer.flow(
-          JmsProducerSettings(connectionFactory).withQueue("test")
+          JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")
         )
 
       val input = (1 to 100).map { i =>
@@ -862,7 +859,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val connectionFactory = new ActiveMQConnectionFactory("localhost:1234")
 
       an[IllegalArgumentException] shouldBe thrownBy {
-        JmsProducer.flow(JmsProducerSettings(connectionFactory))
+        JmsProducer.flow(JmsProducerSettings(producerConfig, connectionFactory))
       }
     }
 
@@ -870,7 +867,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       val jmsSink: Sink[String, Future[Done]] = JmsProducer.textSink(
-        JmsProducerSettings(connectionFactory).withQueue("test").withSessionCount(5)
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue("test").withSessionCount(5)
       )
 
       val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
@@ -902,7 +899,9 @@ class JmsConnectorsSpec extends JmsSpec {
         .thenAnswer(delayedSend)
 
       val in = (1 to 50).map(i => JmsTextMessage(i.toString))
-      val jmsFlow = JmsProducer.flow[JmsTextMessage](JmsProducerSettings(factory).withQueue("test").withSessionCount(8))
+      val jmsFlow = JmsProducer.flow[JmsTextMessage](
+        JmsProducerSettings(producerConfig, factory).withQueue("test").withSessionCount(8)
+      )
 
       val result = Source(in).via(jmsFlow).toMat(Sink.seq)(Keep.right).run()
 
@@ -941,7 +940,9 @@ class JmsConnectorsSpec extends JmsSpec {
 
       val in = (1 to 10).map(i => JmsTextMessage(i.toString))
       val done = new JmsTextMessage("done")
-      val jmsFlow = JmsProducer.flow[JmsTextMessage](JmsProducerSettings(factory).withQueue("test").withSessionCount(8))
+      val jmsFlow = JmsProducer.flow[JmsTextMessage](
+        JmsProducerSettings(producerConfig, factory).withQueue("test").withSessionCount(8)
+      )
       val result = Source(in)
         .via(jmsFlow)
         .alsoTo(Sink.foreach(_ => receiveLatch.countDown()))
@@ -977,7 +978,7 @@ class JmsConnectorsSpec extends JmsSpec {
         case _ => Supervision.Stop
       }
       val jmsFlow = JmsProducer
-        .flow[JmsTextMessage](JmsProducerSettings(factory).withQueue("test").withSessionCount(2))
+        .flow[JmsTextMessage](JmsProducerSettings(producerConfig, factory).withQueue("test").withSessionCount(2))
         .withAttributes(ActorAttributes.supervisionStrategy(decider))
 
       val in = (1 to 10).map(i => JmsTextMessage(i.toString))
@@ -1137,7 +1138,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#run-flexi-flow-producer
       val jmsProducer = JmsProducer.flexiFlow[JmsTextMessage, String](
-        JmsProducerSettings(connectionFactory).withQueue("test")
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")
       )
 
       val data = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
@@ -1171,7 +1172,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#run-flexi-flow-pass-through-producer
       val jmsProducer = JmsProducer.flexiFlow[JmsTextMessage, String](
-        JmsProducerSettings(connectionFactory).withQueue("topic")
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue("topic")
       )
 
       val data = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
@@ -1195,7 +1196,7 @@ class JmsConnectorsSpec extends JmsSpec {
     //#create-connection-factory-with-client-id
 
     val jmsTopicSink: Sink[String, Future[Done]] = JmsProducer.textSink(
-      JmsProducerSettings(producerConnectionFactory).withTopic("topic")
+      JmsProducerSettings(producerConfig, producerConnectionFactory).withTopic("topic")
     )
 
     val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")

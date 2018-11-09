@@ -42,12 +42,14 @@ public class JmsBufferedAckConnectorsTest {
   private static ActorSystem system;
   private static Materializer materializer;
   private static Config consumerConfig;
+  private static Config producerConfig;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create();
     materializer = ActorMaterializer.create(system);
     consumerConfig = system.settings().config().getConfig(JmsConsumerSettings.configPath());
+    producerConfig = system.settings().config().getConfig(JmsProducerSettings.configPath());
   }
 
   @AfterClass
@@ -77,7 +79,8 @@ public class JmsBufferedAckConnectorsTest {
           ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
           Sink<String, CompletionStage<Done>> jmsSink =
-              JmsProducer.textSink(JmsProducerSettings.create(connectionFactory).withQueue("test"));
+              JmsProducer.textSink(
+                  JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<String> in = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
           Source.from(in).runWith(jmsSink, materializer);
@@ -112,7 +115,8 @@ public class JmsBufferedAckConnectorsTest {
           ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(JmsProducerSettings.create(connectionFactory).withQueue("test"));
+              JmsProducer.create(
+                  JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<JmsTextMessage> msgsIn = createTestMessageList();
 
@@ -173,7 +177,8 @@ public class JmsBufferedAckConnectorsTest {
           ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(JmsProducerSettings.create(connectionFactory).withQueue("test"));
+              JmsProducer.create(
+                  JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<JmsTextMessage> msgsIn =
               createTestMessageList()
@@ -240,7 +245,8 @@ public class JmsBufferedAckConnectorsTest {
           ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(JmsProducerSettings.create(connectionFactory).withQueue("test"));
+              JmsProducer.create(
+                  JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<JmsTextMessage> msgsIn = createTestMessageList();
 
@@ -311,10 +317,10 @@ public class JmsBufferedAckConnectorsTest {
 
           Sink<String, CompletionStage<Done>> jmsTopicSink =
               JmsProducer.textSink(
-                  JmsProducerSettings.create(connectionFactory).withTopic("topic"));
+                  JmsProducerSettings.create(producerConfig, connectionFactory).withTopic("topic"));
           Sink<String, CompletionStage<Done>> jmsTopicSink2 =
               JmsProducer.textSink(
-                  JmsProducerSettings.create(connectionFactory).withTopic("topic"));
+                  JmsProducerSettings.create(producerConfig, connectionFactory).withTopic("topic"));
 
           Source<AckEnvelope, JmsConsumerControl> jmsTopicSource =
               JmsConsumer.ackSource(

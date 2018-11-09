@@ -31,7 +31,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
       val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
       val connectedLatch = new CountDownLatch(1)
 
-      val jmsSink = textSink(JmsProducerSettings(connectionFactory).withQueue("test"))
+      val jmsSink = textSink(JmsProducerSettings(producerConfig, connectionFactory).withQueue("test"))
       val exception = new RuntimeException("failing stage")
 
       val producerStatus = Source
@@ -65,7 +65,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
           if (connectAttempts.getAndIncrement() == 0) throw new JMSException("connect error") else connection
       })
 
-      val jmsSink = textSink(JmsProducerSettings(factory).withQueue("test"))
+      val jmsSink = textSink(JmsProducerSettings(producerConfig, factory).withQueue("test"))
       val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connectorState
       val status = connectionStatus.runWith(Sink.queue())
 
@@ -86,7 +86,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
       })
 
       val jmsSink = textSink(
-        JmsProducerSettings(factory)
+        JmsProducerSettings(producerConfig, factory)
           .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(1))
           .withQueue("test")
       )
@@ -108,7 +108,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
           if (connectAttempts.getAndIncrement() == 0) throw new JMSException("connect error") else session
       })
 
-      val jmsSink = textSink(JmsProducerSettings(factory).withQueue("test"))
+      val jmsSink = textSink(JmsProducerSettings(producerConfig, factory).withQueue("test"))
       val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connectorState
       val status = connectionStatus.runWith(Sink.queue())
 
@@ -127,7 +127,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
           if (connectAttempts.getAndIncrement() == 0) throw securityException else connection
       })
 
-      val jmsSink = textSink(JmsProducerSettings(factory).withQueue("test"))
+      val jmsSink = textSink(JmsProducerSettings(producerConfig, factory).withQueue("test"))
       val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connectorState
       val status = connectionStatus.runWith(Sink.queue())
 
@@ -143,7 +143,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
           if (connectAttempts.getAndIncrement() == 0) throw new JMSException("connect error") else producer
       })
 
-      val jmsSink = textSink(JmsProducerSettings(factory).withQueue("test"))
+      val jmsSink = textSink(JmsProducerSettings(producerConfig, factory).withQueue("test"))
       val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connectorState
       val status = connectionStatus.runWith(Sink.queue())
 
@@ -161,7 +161,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
           if (connectAttempts.getAndIncrement() == 0) throw new JMSException("connect error") else ()
       })
 
-      val jmsSink = textSink(JmsProducerSettings(factory).withQueue("test"))
+      val jmsSink = textSink(JmsProducerSettings(producerConfig, factory).withQueue("test"))
       val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connectorState
       val status = connectionStatus.runWith(Sink.queue())
 
@@ -179,7 +179,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
           if (connectAttempts.getAndIncrement() == 0) throw new JMSException("connect error") else queue
       })
 
-      val jmsSink = textSink(JmsProducerSettings(factory).withQueue("test"))
+      val jmsSink = textSink(JmsProducerSettings(producerConfig, factory).withQueue("test"))
       val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connectorState
       val status = connectionStatus.runWith(Sink.queue())
 
@@ -230,7 +230,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
       val connectedLatch = new CountDownLatch(1)
       val exception = new RuntimeException("failing stage")
 
-      val jmsSink = textSink(JmsProducerSettings(connectionFactory).withQueue("test"))
+      val jmsSink = textSink(JmsProducerSettings(producerConfig, connectionFactory).withQueue("test"))
 
       val jmsSource = JmsConsumer.textSource(JmsConsumerSettings(system, connectionFactory).withQueue("test"))
 
@@ -261,7 +261,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
       val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       val jmsSink = textSink(
-        JmsProducerSettings(connectionFactory)
+        JmsProducerSettings(producerConfig, connectionFactory)
           .withQueue("test")
       )
 
@@ -314,7 +314,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
       val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       val jmsSink = textSink(
-        JmsProducerSettings(connectionFactory)
+        JmsProducerSettings(producerConfig, connectionFactory)
           .withQueue("test")
           .withConnectionRetrySettings(
             ConnectionRetrySettings()

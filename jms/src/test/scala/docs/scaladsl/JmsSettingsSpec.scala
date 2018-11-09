@@ -13,9 +13,6 @@ import scala.concurrent.duration._
 
 class JmsSettingsSpec extends JmsSpec with OptionValues {
 
-  val consumerConfig = system.settings.config.getConfig(JmsConsumerSettings.configPath)
-  val browseConfig = system.settings.config.getConfig(JmsBrowseSettings.configPath)
-
   "Jms producer" should {
     "have producer settings" in {
 
@@ -37,14 +34,19 @@ class JmsSettingsSpec extends JmsSpec with OptionValues {
       //#send-retry-settings
 
       //#producer-settings
-      val settings = JmsProducerSettings(new ActiveMQConnectionFactory("broker-url"))
+      // reiterating defaults from reference.conf
+      val settings = JmsProducerSettings(producerConfig, new ActiveMQConnectionFactory("broker-url"))
         .withTopic("target-topic")
-        .withCredential(Credentials("username", "password"))
-        .withConnectionRetrySettings(retrySettings)
-        .withSendRetrySettings(sendRetrySettings)
-        .withSessionCount(10)
+        .withCredentials(Credentials("username", "password"))
+        .withSessionCount(1)
         .withTimeToLive(1.hour)
       //#producer-settings
+
+      val producerSettings2 = JmsProducerSettings(producerConfig, settings.connectionFactory)
+        .withTopic("target-topic")
+        .withCredentials(Credentials("username", "password"))
+      settings.toString should be(producerSettings2.toString)
+
     }
   }
 
@@ -119,7 +121,7 @@ class JmsSettingsSpec extends JmsSpec with OptionValues {
         .withQueue("target-queue")
         .withCredentials(Credentials("username", "password"))
 
-      settings.toString should be (settings2.toString)
+      settings.toString should be(settings2.toString)
     }
   }
 }

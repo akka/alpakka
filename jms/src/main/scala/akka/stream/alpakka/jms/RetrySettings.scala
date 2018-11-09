@@ -4,11 +4,10 @@
 
 package akka.stream.alpakka.jms
 
-import akka.actor.ActorSystem
-
-import scala.concurrent.duration._
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.Config
+
+import scala.concurrent.duration._
 
 final class ConnectionRetrySettings private (
     val connectTimeout: scala.concurrent.duration.FiniteDuration,
@@ -59,7 +58,7 @@ final class ConnectionRetrySettings private (
     maxRetries = maxRetries
   )
 
-  override def toString =
+  override def toString: String =
     "ConnectionRetrySettings(" +
     s"connectTimeout=${connectTimeout.toCoarsest}," +
     s"initialRetry=${initialRetry.toCoarsest}," +
@@ -70,7 +69,7 @@ final class ConnectionRetrySettings private (
 }
 
 object ConnectionRetrySettings {
-  val infiniteRetries = -1
+  val infiniteRetries: Int = -1
 
   private val defaults = new ConnectionRetrySettings(connectTimeout = 10.seconds,
                                                      initialRetry = 100.millis,
@@ -146,7 +145,7 @@ final class SendRetrySettings private (
     maxRetries = maxRetries
   )
 
-  override def toString =
+  override def toString: String =
     "SendRetrySettings(" +
     s"initialRetry=${initialRetry.toCoarsest}," +
     s"backoffFactor=$backoffFactor," +
