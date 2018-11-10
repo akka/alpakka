@@ -9,7 +9,7 @@ import com.amazonaws.services.sqs.model.Message
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.Duration
 
-sealed trait MessageAction {
+sealed abstract class MessageAction {
   def message: Message
 }
 
