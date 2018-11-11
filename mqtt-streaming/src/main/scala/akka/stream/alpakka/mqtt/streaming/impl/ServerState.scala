@@ -214,6 +214,8 @@ import scala.util.{Failure, Success}
         connect,
         local,
         Set.empty,
+        Set.empty,
+        Set.empty,
         Vector.empty,
         Vector.empty,
         Vector.empty,
@@ -236,6 +238,8 @@ import scala.util.{Failure, Success}
       connect: Connect,
       local: Promise[ForwardConnect.type],
       publishers: Set[String],
+      activeConsumers: Set[String],
+      activeProducers: Set[String],
       pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
       pendingRemotePublications: Seq[(String, PublishReceivedFromRemote)],
       stash: Seq[Event],
@@ -249,6 +253,8 @@ import scala.util.{Failure, Success}
       connect: Connect,
       remote: SourceQueueWithComplete[ForwardConnAckCommand],
       publishers: Set[String],
+      activeConsumers: Set[String],
+      activeProducers: Set[String],
       pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
       pendingRemotePublications: Seq[(String, PublishReceivedFromRemote)],
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
@@ -262,6 +268,8 @@ import scala.util.{Failure, Success}
       connect: Connect,
       remote: SourceQueueWithComplete[ForwardConnAckCommand],
       publishers: Set[String],
+      activeConsumers: Set[String],
+      activeProducers: Set[String],
       pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
       pendingRemotePublications: Seq[(String, PublishReceivedFromRemote)],
       stash: Seq[Event],
@@ -273,6 +281,8 @@ import scala.util.{Failure, Success}
   ) extends Data(consumerPacketRouter, producerPacketRouter, publisherPacketRouter, unpublisherPacketRouter, settings)
   final case class Disconnected(
       publishers: Set[String],
+      activeConsumers: Set[String],
+      activeProducers: Set[String],
       pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
       pendingRemotePublications: Seq[(String, PublishReceivedFromRemote)],
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
@@ -347,6 +357,8 @@ import scala.util.{Failure, Success}
                 data.connect,
                 queue,
                 data.publishers,
+                data.activeConsumers,
+                data.activeProducers,
                 data.pendingLocalPublications,
                 data.pendingRemotePublications,
                 data.consumerPacketRouter,
@@ -392,6 +404,8 @@ import scala.util.{Failure, Success}
                     data.connect,
                     data.remote,
                     data.publishers,
+                    data.activeConsumers,
+                    data.activeProducers,
                     data.pendingLocalPublications,
                     data.pendingRemotePublications,
                     Vector.empty,
@@ -426,29 +440,28 @@ import scala.util.{Failure, Success}
           case (_, PublishReceivedFromRemote(publish, local))
               if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
             local.success(Consumer.ForwardPublish)
-            Behaviors.same
+            clientConnected(data)
           case (context, prfr @ PublishReceivedFromRemote(publish @ Publish(_, topicName, Some(packetId), _), local)) =>
-            val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName)
-            context.child(consumerName) match {
-              case None if !data.pendingRemotePublications.exists(_._1 == publish.topicName) =>
-                context.watchWith(
-                  context.spawn(
-                    Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings),
-                    consumerName
-                  ),
-                  ConsumerFree(publish.topicName)
-                )
-                clientConnected(data)
-              case _ =>
-                clientConnected(
-                  data.copy(pendingRemotePublications = data.pendingRemotePublications :+ (publish.topicName -> prfr))
-                )
+            if (!data.activeConsumers.contains(topicName)) {
+              val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + context.children.size)
+              context.watchWith(
+                context.spawn(
+                  Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings),
+                  consumerName
+                ),
+                ConsumerFree(publish.topicName)
+              )
+              clientConnected(data.copy(activeConsumers = data.activeConsumers + publish.topicName))
+            } else {
+              clientConnected(
+                data.copy(pendingRemotePublications = data.pendingRemotePublications :+ (publish.topicName -> prfr))
+              )
             }
           case (context, ConsumerFree(topicName)) =>
             val i = data.pendingRemotePublications.indexWhere(_._1 == topicName)
             if (i >= 0) {
               val prfr = data.pendingRemotePublications(i)._2
-              val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName)
+              val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + context.children.size)
               context.watchWith(
                 context.spawn(
                   Consumer(prfr.publish,
@@ -467,39 +480,34 @@ import scala.util.{Failure, Success}
                 )
               )
             } else {
-              clientConnected(data)
+              clientConnected(data.copy(activeConsumers = data.activeConsumers - topicName))
             }
           case (_, PublishReceivedLocally(publish, _))
-              if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 &&
-              data.publishers.exists(matchTopicFilter(_, publish.topicName)) =>
+              if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
             data.remote.offer(ForwardPublish(publish, None))
             clientConnected(data)
-          case (context, prl @ PublishReceivedLocally(publish, publishData))
-              if data.publishers.exists(matchTopicFilter(_, publish.topicName)) =>
-            val producerName = ActorName.mkName(ProducerNamePrefix + publish.topicName)
-            context.child(producerName) match {
-              case None if !data.pendingLocalPublications.exists(_._1 == publish.topicName) =>
-                val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
-                import context.executionContext
-                reply.future.foreach(command => context.self ! ReceivedProducerPublishingCommand(command))
-                context.watchWith(
-                  context.spawn(
-                    Producer(publish, publishData, reply, data.producerPacketRouter, data.settings),
-                    producerName
-                  ),
-                  ProducerFree(publish.topicName)
-                )
-                clientConnected(data)
-              case _ =>
-                clientConnected(
-                  data.copy(pendingLocalPublications = data.pendingLocalPublications :+ (publish.topicName -> prl))
-                )
+          case (context, prl @ PublishReceivedLocally(publish, publishData)) =>
+            val producerName = ActorName.mkName(ProducerNamePrefix + publish.topicName + context.children.size)
+            if (!data.activeProducers.contains(publish.topicName)) {
+              val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
+              import context.executionContext
+              reply.future.foreach(command => context.self ! ReceivedProducerPublishingCommand(command))
+              context.watchWith(
+                context.spawn(Producer(publish, publishData, reply, data.producerPacketRouter, data.settings),
+                              producerName),
+                ProducerFree(publish.topicName)
+              )
+              clientConnected(data.copy(activeProducers = data.activeProducers + publish.topicName))
+            } else {
+              clientConnected(
+                data.copy(pendingLocalPublications = data.pendingLocalPublications :+ (publish.topicName -> prl))
+              )
             }
           case (context, ProducerFree(topicName)) =>
             val i = data.pendingLocalPublications.indexWhere(_._1 == topicName)
             if (i >= 0) {
               val prl = data.pendingLocalPublications(i)._2
-              val producerName = ActorName.mkName(ProducerNamePrefix + topicName)
+              val producerName = ActorName.mkName(ProducerNamePrefix + topicName + context.children.size)
               val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
               import context.executionContext
               reply.future.foreach(command => context.self ! ReceivedProducerPublishingCommand(command))
@@ -517,7 +525,7 @@ import scala.util.{Failure, Success}
                 )
               )
             } else {
-              clientConnected(data)
+              clientConnected(data.copy(activeProducers = data.activeProducers - topicName))
             }
           case (_, ReceivedProducerPublishingCommand(command)) =>
             command.runWith(Sink.foreach {
@@ -534,6 +542,8 @@ import scala.util.{Failure, Success}
             clientDisconnected(
               Disconnected(
                 data.publishers,
+                data.activeConsumers,
+                data.activeProducers,
                 data.pendingLocalPublications,
                 data.pendingRemotePublications,
                 data.consumerPacketRouter,
@@ -548,6 +558,8 @@ import scala.util.{Failure, Success}
             clientDisconnected(
               Disconnected(
                 data.publishers,
+                data.activeConsumers,
+                data.activeProducers,
                 data.pendingLocalPublications,
                 data.pendingRemotePublications,
                 data.consumerPacketRouter,
@@ -565,6 +577,8 @@ import scala.util.{Failure, Success}
                 connect,
                 local,
                 Set.empty,
+                Set.empty,
+                Set.empty,
                 Vector.empty,
                 Vector.empty,
                 Vector.empty,
@@ -581,6 +595,8 @@ import scala.util.{Failure, Success}
                 connect,
                 local,
                 data.publishers,
+                data.activeConsumers,
+                data.activeProducers,
                 data.pendingLocalPublications,
                 data.pendingRemotePublications,
                 Vector.empty,
@@ -616,6 +632,8 @@ import scala.util.{Failure, Success}
               data.remote,
               data.publishers ++ (if (t.failure.contains(Publisher.SubscribeFailed)) Vector.empty
                                   else data.subscribe.topicFilters.map(_._1)),
+              data.activeConsumers,
+              data.activeProducers,
               data.pendingLocalPublications,
               data.pendingRemotePublications,
               data.consumerPacketRouter,
@@ -644,6 +662,8 @@ import scala.util.{Failure, Success}
                 connect,
                 local,
                 Set.empty,
+                Set.empty,
+                Set.empty,
                 Vector.empty,
                 Vector.empty,
                 Vector.empty,
@@ -660,6 +680,8 @@ import scala.util.{Failure, Success}
                 connect,
                 local,
                 data.publishers,
+                data.activeConsumers,
+                data.activeProducers,
                 data.pendingLocalPublications,
                 data.pendingRemotePublications,
                 Vector.empty,
