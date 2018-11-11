@@ -325,7 +325,7 @@ import scala.util.{Failure, Success}
   private val UnpublisherNamePrefix = "unpublisher-"
 
   def clientConnect(data: ConnectReceived)(implicit mat: Materializer): Behavior[Event] = Behaviors.setup { _ =>
-    data.local.success(ForwardConnect)
+    data.local.trySuccess(ForwardConnect)
 
     Behaviors.withTimers { timer =>
       timer.startSingleTimer("receive-connack", ReceiveConnAckTimeout, data.settings.receiveConnAckTimeout)
