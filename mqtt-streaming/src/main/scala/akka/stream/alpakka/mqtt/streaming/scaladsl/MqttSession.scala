@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import akka.{NotUsed, actor => untyped}
 import akka.actor.typed.scaladsl.adapter._
-import akka.stream.{Materializer, OverflowStrategy}
+import akka.stream.{ActorAttributes, Materializer, OverflowStrategy, Supervision}
 import akka.stream.alpakka.mqtt.streaming.impl._
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Source}
 import akka.util.ByteString
@@ -127,7 +127,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
   override def ![A](cp: Command[A]): Unit = cp match {
     case Command(cp: Publish, carry) =>
       clientConnector ! ClientConnector.PublishReceivedLocally(cp, carry)
-    case c: Command[_] => throw new IllegalStateException(c + " is not a client command that can be sent directly")
+    case c: Command[A] => throw new IllegalStateException(c + " is not a client command that can be sent directly")
   }
 
   override def shutdown(): Unit = {
@@ -141,7 +141,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
   private val pingReqBytes = PingReq.encode(ByteString.newBuilder).result()
 
   override def commandFlow[A]: CommandFlow[A] =
-    Flow[Command[_]]
+    Flow[Command[A]]
       .watch(clientConnector.toUntyped)
       .watchTermination() {
         case (_, terminated) =>
@@ -189,9 +189,16 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
             val reply = Promise[ClientConnector.ForwardDisconnect.type]
             clientConnector ! ClientConnector.DisconnectReceivedLocally(reply)
             Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
-          case c: Command[_] => throw new IllegalStateException(c + " is not a client command")
+          case c: Command[A] => throw new IllegalStateException(c + " is not a client command")
         }
       )
+      .withAttributes(ActorAttributes.supervisionStrategy {
+        // Benign exceptions
+        case RemotePacketRouter.CannotRoute =>
+          Supervision.Resume
+        case _ =>
+          Supervision.Stop
+      })
 
   override def eventFlow[A]: EventFlow[A] =
     Flow[ByteString]
@@ -203,7 +210,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
       }
       .via(new MqttFrameStage(settings.maxPacketSize))
       .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
-      .mapAsync(settings.eventParallelism) {
+      .mapAsync[Either[MqttCodec.DecodeError, Event[A]]](settings.eventParallelism) {
         case Right(cp: ConnAck) =>
           val reply = Promise[ClientConnector.ForwardConnAck]
           clientConnector ! ClientConnector.ConnAckReceivedFromRemote(cp, reply)
@@ -226,6 +233,10 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
           reply.future.map {
             case Unsubscriber.ForwardUnsubAck(carry: Option[A] @unchecked) => Right(Event(cp, carry))
           }
+        case Right(cp @ Publish(flags, _, Some(packetId), _)) if flags.contains(ControlPacketFlags.DUP) =>
+          val reply = Promise[Consumer.ForwardPublish.type]
+          consumerPacketRouter ! RemotePacketRouter.Route(packetId, Consumer.DupPublishReceivedFromRemote(reply), reply)
+          reply.future.map(_ => Right(Event(cp)))
         case Right(cp: Publish) =>
           val reply = Promise[Consumer.ForwardPublish.type]
           clientConnector ! ClientConnector.PublishReceivedFromRemote(cp, reply)
@@ -259,6 +270,13 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
         case Right(cp) => Future.failed(new IllegalStateException(cp + " is not a client event"))
         case Left(de) => Future.successful(Left(de))
       }
+      .withAttributes(ActorAttributes.supervisionStrategy {
+        // Benign exceptions
+        case Consumer.ConsumeActive | LocalPacketRouter.CannotRoute | RemotePacketRouter.CannotRoute =>
+          Supervision.Resume
+        case _ =>
+          Supervision.Stop
+      })
 }
 
 object MqttServerSession {
@@ -359,7 +377,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
   override def ![A](cp: Command[A]): Unit = cp match {
     case Command(cp: Publish, carry) =>
       serverConnector ! ServerConnector.PublishReceivedLocally(cp, carry)
-    case c: Command[_] => throw new IllegalStateException(c + " is not a server command that can be sent directly")
+    case c: Command[A] => throw new IllegalStateException(c + " is not a server command that can be sent directly")
   }
 
   override def shutdown(): Unit = {
@@ -374,7 +392,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
   private val pingRespBytes = PingResp.encode(ByteString.newBuilder).result()
 
   override def commandFlow[A](connectionId: ByteString): CommandFlow[A] =
-    Flow[Command[_]]
+    Flow[Command[A]]
       .watch(serverConnector.toUntyped)
       .watchTermination() {
         case (_, terminated) =>
@@ -422,9 +440,16 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
             val reply = Promise[Consumer.ForwardPubComp.type]
             consumerPacketRouter ! RemotePacketRouter.Route(cp.packetId, Consumer.PubCompReceivedLocally(reply), reply)
             Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
-          case c: Command[_] => throw new IllegalStateException(c + " is not a server command")
+          case c: Command[A] => throw new IllegalStateException(c + " is not a server command")
         }
       )
+      .withAttributes(ActorAttributes.supervisionStrategy {
+        // Benign exceptions
+        case RemotePacketRouter.CannotRoute =>
+          Supervision.Resume
+        case _ =>
+          Supervision.Stop
+      })
 
   override def eventFlow[A](connectionId: ByteString): EventFlow[A] =
     Flow[ByteString]
@@ -436,7 +461,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
       }
       .via(new MqttFrameStage(settings.maxPacketSize))
       .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
-      .mapAsync(settings.eventParallelism) {
+      .mapAsync[Either[MqttCodec.DecodeError, Event[A]]](settings.eventParallelism) {
         case Right(cp: Connect) =>
           val reply = Promise[ClientConnection.ForwardConnect.type]
           serverConnector ! ServerConnector.ConnectReceivedFromRemote(connectionId, cp, reply)
@@ -448,6 +473,10 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
         case Right(cp: Unsubscribe) =>
           val reply = Promise[Unpublisher.ForwardUnsubscribe.type]
           serverConnector ! ServerConnector.UnsubscribeReceivedFromRemote(connectionId, cp, reply)
+          reply.future.map(_ => Right(Event(cp)))
+        case Right(cp @ Publish(flags, _, Some(packetId), _)) if flags.contains(ControlPacketFlags.DUP) =>
+          val reply = Promise[Consumer.ForwardPublish.type]
+          consumerPacketRouter ! RemotePacketRouter.Route(packetId, Consumer.DupPublishReceivedFromRemote(reply), reply)
           reply.future.map(_ => Right(Event(cp)))
         case Right(cp: Publish) =>
           val reply = Promise[Consumer.ForwardPublish.type]
@@ -486,4 +515,11 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
         case Right(cp) => Future.failed(new IllegalStateException(cp + " is not a server event"))
         case Left(de) => Future.successful(Left(de))
       }
+      .withAttributes(ActorAttributes.supervisionStrategy {
+        // Benign exceptions
+        case Consumer.ConsumeActive | LocalPacketRouter.CannotRoute | RemotePacketRouter.CannotRoute =>
+          Supervision.Resume
+        case _ =>
+          Supervision.Stop
+      })
 }

@@ -1086,6 +1086,75 @@ class MqttSessionSpec
 
     "re-connect given connect, subscribe, connect again, publish" in
     reconnectTest(explicitDisconnect = false)
+
+    "receive a duplicate publish" in {
+      val session = ActorMqttServerSession(settings)
+
+      val client = TestProbe()
+      val toClient = Sink.foreach[ByteString](bytes => client.ref ! bytes)
+      val (fromClientQueue, fromClient) = Source
+        .queue[ByteString](1, OverflowStrategy.dropHead)
+        .toMat(BroadcastHub.sink)(Keep.both)
+        .run()
+
+      val pipeToClient = Flow.fromSinkAndSource(toClient, fromClient)
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+      val connectReceived = Promise[Done]
+
+      val publish = Publish("some-topic", ByteString("some-payload"))
+      val publishReceived = Promise[Done]
+      val dupPublishReceived = Promise[Done]
+
+      val server =
+        Source
+          .queue[Command[Nothing]](1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .serverSessionFlow(session, ByteString.empty)
+              .join(pipeToClient)
+          )
+          .wireTap(Sink.foreach[Either[DecodeError, Event[_]]] {
+            case Right(Event(`connect`, _)) =>
+              connectReceived.success(Done)
+            case Right(Event(cp: Publish, _)) if cp.flags.contains(ControlPacketFlags.DUP) =>
+              dupPublishReceived.success(Done)
+            case Right(Event(_: Publish, _)) =>
+              publishReceived.success(Done)
+          })
+          .toMat(Sink.collection)(Keep.left)
+          .run
+
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+      val dupPublishBytes = publish
+        .copy(flags = publish.flags | ControlPacketFlags.DUP)
+        .encode(ByteString.newBuilder, Some(PacketId(1)))
+        .result()
+      val pubAck = PubAck(PacketId(1))
+      val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
+
+      fromClientQueue.offer(connectBytes)
+
+      connectReceived.future.futureValue shouldBe Done
+
+      server.offer(Command(connAck))
+      client.expectMsg(connAckBytes)
+
+      fromClientQueue.offer(publishBytes)
+
+      publishReceived.future.futureValue shouldBe Done
+
+      fromClientQueue.offer(dupPublishBytes)
+
+      dupPublishReceived.future.futureValue shouldBe Done
+
+      server.offer(Command(pubAck))
+      client.expectMsg(pubAckBytes)
+    }
   }
 
   override def afterAll: Unit =
