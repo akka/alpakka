@@ -13,10 +13,10 @@ import akka.stream.alpakka.s3.S3Client.MinChunkSize
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 /**
- * Factory of S3 operations that use provided S3Client.scala.
+ * Factory of S3 operations that use provided model.scala.
  */
 object S3External {
 
