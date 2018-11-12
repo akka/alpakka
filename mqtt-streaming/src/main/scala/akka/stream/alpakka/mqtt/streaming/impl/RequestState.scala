@@ -176,6 +176,11 @@ import scala.util.{Failure, Success}
   case object ConsumeFailed extends Exception with NoStackTrace
 
   /*
+   * A consume is active while a duplicate publish was received.
+   */
+  case object ConsumeActive extends Exception with NoStackTrace
+
+  /*
    * Construct with the starting state
    */
   def apply(publish: Publish,
@@ -213,6 +218,7 @@ import scala.util.{Failure, Success}
   case object ReceivePubRelTimeout extends Event
   final case class PubCompReceivedLocally(remote: Promise[ForwardPubComp.type]) extends Event
   case object ReceivePubCompTimeout extends Event
+  final case class DupPublishReceivedFromRemote(local: Promise[ForwardPublish.type]) extends Event
 
   sealed abstract class Command
   case object ForwardPublish extends Command
@@ -236,6 +242,9 @@ import scala.util.{Failure, Success}
       case RegisteredPacketId =>
         data.local.success(ForwardPublish)
         consumeUnacknowledged(ClientConsuming(data.publish, data.packetId, data.packetRouter, data.settings))
+      case _: DupPublishReceivedFromRemote =>
+        data.local.failure(ConsumeActive)
+        throw ConsumeActive
       case UnobtainablePacketId =>
         data.local.failure(ConsumeFailed)
         throw ConsumeFailed
@@ -253,6 +262,9 @@ import scala.util.{Failure, Success}
         case PubRecReceivedLocally(remote) if data.publish.flags.contains(ControlPacketFlags.QoSExactlyOnceDelivery) =>
           remote.success(ForwardPubRec)
           consumeReceived(data)
+        case DupPublishReceivedFromRemote(local) =>
+          local.success(ForwardPublish)
+          consumeUnacknowledged(data)
         case ReceivePubAckRecTimeout =>
           throw ConsumeFailed
       }
@@ -270,6 +282,9 @@ import scala.util.{Failure, Success}
         case PubRelReceivedFromRemote(local) =>
           local.success(ForwardPubRel)
           consumeAcknowledged(data)
+        case DupPublishReceivedFromRemote(local) =>
+          local.success(ForwardPublish)
+          consumeUnacknowledged(data)
         case ReceivePubRelTimeout =>
           throw ConsumeFailed
       }
@@ -287,6 +302,9 @@ import scala.util.{Failure, Success}
         case PubCompReceivedLocally(remote) =>
           remote.success(ForwardPubComp)
           Behaviors.stopped
+        case DupPublishReceivedFromRemote(local) =>
+          local.success(ForwardPublish)
+          consumeUnacknowledged(data)
         case ReceivePubCompTimeout =>
           throw ConsumeFailed
       }
