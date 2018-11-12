@@ -9,9 +9,7 @@ import com.amazonaws.services.sqs.model.Message
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.Duration
 
-sealed abstract class MessageAction {
-  def message: Message
-}
+sealed abstract class MessageAction(val message: Message)
 
 object MessageAction {
 
@@ -20,12 +18,38 @@ object MessageAction {
    *
    * @see [https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_DeleteMessage.html DeleteMessage]
    */
-  final case class Delete(message: Message) extends MessageAction
+  final class Delete private (message: Message) extends MessageAction(message) {
+    override def toString: String = s"Delete($message)"
+
+    override def equals(other: Any): Boolean = other match {
+      case that: Delete => java.util.Objects.equals(this.message, that.message)
+      case _ => false
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(message)
+  }
+
+  final object Delete {
+    def apply(message: Message): MessageAction = new Delete(message)
+  }
 
   /**
    * Ignore the message.
    */
-  final case class Ignore(message: Message) extends MessageAction
+  final class Ignore private (message: Message) extends MessageAction(message) {
+    override def toString: String = s"Ignore($message)"
+
+    override def equals(other: Any): Boolean = other match {
+      case that: Ignore => java.util.Objects.equals(this.message, that.message)
+      case _ => false
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(message)
+  }
+
+  final object Ignore {
+    def apply(message: Message): MessageAction = new Ignore(message)
+  }
 
   /**
    * Change the visibility timeout of the message.
@@ -34,17 +58,31 @@ object MessageAction {
    * @param visibilityTimeout new timeout in seconds
    * @see [https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ChangeMessageVisibility.html ChangeMessageVisibility]
    */
-  final case class ChangeMessageVisibility(message: Message, visibilityTimeout: Int) extends MessageAction {
+  final class ChangeMessageVisibility private (message: Message, val visibilityTimeout: Int)
+      extends MessageAction(message) {
     // SQS requirements
     require(
       0 <= visibilityTimeout && visibilityTimeout <= 43200,
       s"Invalid value ($visibilityTimeout) for visibilityTimeout. Requirement: 0 <= visibilityTimeout <= 43200"
     )
+
+    override def toString: String = s"ChangeMessageVisibility($message, $visibilityTimeout)"
+
+    override def equals(other: Any): Boolean = other match {
+      case that: ChangeMessageVisibility =>
+        java.util.Objects.equals(this.message, that.message) &&
+        this.visibilityTimeout == that.visibilityTimeout
+      case _ => false
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(message, visibilityTimeout: Integer)
   }
 
   object ChangeMessageVisibility {
+    def apply(message: Message, visibilityTimeout: Int): MessageAction =
+      new ChangeMessageVisibility(message, visibilityTimeout)
     def apply(message: Message, visibilityTimeout: Duration): MessageAction =
-      ChangeMessageVisibility(message, visibilityTimeout.toSeconds.toInt)
+      new ChangeMessageVisibility(message, visibilityTimeout.toSeconds.toInt)
   }
 
   /**
@@ -60,7 +98,7 @@ object MessageAction {
   /**
    * Java API: Change the visibility timeout of the message.
    *
-   * @param message           the message to change
+   * @param message the message to change
    * @param visibilityTimeout new timeout in seconds
    */
   def changeMessageVisibility(message: Message, visibilityTimeout: Int): MessageAction =
@@ -69,7 +107,7 @@ object MessageAction {
   /**
    * Java API: Change the visibility timeout of the message.
    *
-   * @param message           the message to change
+   * @param message the message to change
    * @param visibilityTimeout new timeout
    */
   def changeMessageVisibility(message: Message, visibilityTimeout: java.time.Duration): MessageAction =
@@ -79,34 +117,56 @@ object MessageAction {
 
 /**
  * Messages returned by a SqsFlow.
- *
  * @param metadata metadata with AWS response details.
- * @param message  message body.
+ * @param message message body.
  */
-final case class SqsPublishResult(metadata: com.amazonaws.services.sqs.model.SendMessageResult, message: String) {
+final class SqsPublishResult private (val metadata: com.amazonaws.services.sqs.model.SendMessageResult,
+                                      val message: String) {
 
   /** Java API */
   def getMetadata: com.amazonaws.services.sqs.model.SendMessageResult = metadata
 
   /** Java API */
   def getMessage: String = message
+
+  override def toString =
+    s"""SqsPublishResult(metadata=$metadata,message=$message)"""
+
+  override def equals(other: Any): Boolean = other match {
+    case that: SqsPublishResult =>
+      java.util.Objects.equals(this.metadata, that.metadata) &&
+      java.util.Objects.equals(this.message, that.message)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    java.util.Objects.hash(metadata, message)
 }
 
 object SqsPublishResult {
+
+  /** Scala API */
+  def apply(
+      metadata: com.amazonaws.services.sqs.model.SendMessageResult,
+      message: String
+  ): SqsPublishResult = new SqsPublishResult(
+    metadata,
+    message
+  )
 
   /** Java API */
   def create(
       metadata: com.amazonaws.services.sqs.model.SendMessageResult,
       message: String
-  ): SqsPublishResult = SqsPublishResult(
+  ): SqsPublishResult = new SqsPublishResult(
     metadata,
     message
   )
 }
 
-final case class SqsAckResult(
-    metadata: Option[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]],
-    message: String
+final class SqsAckResult private (
+    val metadata: Option[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]],
+    val message: String
 ) {
 
   /** Java API */
@@ -115,15 +175,37 @@ final case class SqsAckResult(
 
   /** Java API */
   def getMessage: String = message
+
+  override def toString =
+    s"""SqsAckResult(metadata=$metadata,message=$message)"""
+
+  override def equals(other: Any): Boolean = other match {
+    case that: SqsAckResult =>
+      java.util.Objects.equals(this.metadata, that.metadata) &&
+      java.util.Objects.equals(this.message, that.message)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    java.util.Objects.hash(metadata, message)
 }
 
 object SqsAckResult {
+
+  /** Scala API */
+  def apply(
+      metadata: Option[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]],
+      message: String
+  ): SqsAckResult = new SqsAckResult(
+    metadata,
+    message
+  )
 
   /** Java API */
   def create(
       metadata: java.util.Optional[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]],
       message: String
-  ): SqsAckResult = SqsAckResult(
+  ): SqsAckResult = new SqsAckResult(
     metadata.asScala,
     message
   )
