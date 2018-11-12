@@ -70,7 +70,7 @@ Java
 
 The resulting source's type shows how `Event`s are received and `Command`s are queued in reply. Our example
 acknowledges a connection, subscription and publication. Upon receiving a publication, it is re-published
-from the server so that any client that is subscribed will receive it. An addition detail is that we hold
+from the server so that any client that is subscribed will receive it. An additional detail is that we hold
 off re-publishing until we have a subscription from the client. Note also how the session is told to perform
 `Publish` commands directly as they will be broadcast to all clients subscribed to the topic.
 
