@@ -8,7 +8,8 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{FlatSpecLike, Matchers}
-import akka.stream.alpakka.s3.Proxy
+import akka.stream.alpakka.s3.{Proxy, S3Client}
+
 import scala.collection.JavaConverters._
 
 /*
