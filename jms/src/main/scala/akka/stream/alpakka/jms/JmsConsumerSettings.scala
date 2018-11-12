@@ -8,6 +8,9 @@ import akka.actor.ActorSystem
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.{Config, ConfigValueType}
 
+/**
+ * Settings for [[akka.stream.alpakka.jms.scaladsl.JmsConsumer]] and [[akka.stream.alpakka.jms.javadsl.JmsConsumer]].
+ */
 final class JmsConsumerSettings private (
     val connectionFactory: javax.jms.ConnectionFactory,
     val connectionRetrySettings: ConnectionRetrySettings,
@@ -17,28 +20,57 @@ final class JmsConsumerSettings private (
     val bufferSize: Int,
     val selector: Option[String],
     val acknowledgeMode: Option[AcknowledgeMode],
-    val ackTimeout: scala.concurrent.duration.Duration,
-    val durableName: Option[String]
+    val ackTimeout: scala.concurrent.duration.Duration
 ) extends akka.stream.alpakka.jms.JmsSettings {
 
+  /** Factory to use for creating JMS connections. */
   def withConnectionFactory(value: javax.jms.ConnectionFactory): JmsConsumerSettings = copy(connectionFactory = value)
+
+  /** Configure connection retrying. */
   def withConnectionRetrySettings(value: ConnectionRetrySettings): JmsConsumerSettings =
     copy(connectionRetrySettings = value)
+
+  /** Set a queue name to read from. */
   def withQueue(name: String): JmsConsumerSettings = copy(destination = Some(Queue(name)))
+
+  /** Set a topic name to listen to. */
   def withTopic(name: String): JmsConsumerSettings = copy(destination = Some(Topic(name)))
+
+  /** Set a durable topic name to listen to, with a unique subscriber name. */
   def withDurableTopic(name: String, subscriberName: String): JmsConsumerSettings =
     copy(destination = Some(DurableTopic(name, subscriberName)))
+
+  /** Set a JMS to subscribe to. Allows for custom handling with [[akka.stream.alpakka.jms.CustomDestination CustomDestination]]. */
   def withDestination(value: Destination): JmsConsumerSettings = copy(destination = Option(value))
   @deprecated("use withCredentials instead", "1.0-M1")
   def withCredential(value: Credentials): JmsConsumerSettings = copy(credentials = Option(value))
+
+  /** Set JMS broker credentials. */
   def withCredentials(value: Credentials): JmsConsumerSettings = copy(credentials = Option(value))
+
+  /**
+   * Number of parallel sessions to use for receiving JMS messages.
+   */
   def withSessionCount(value: Int): JmsConsumerSettings = copy(sessionCount = value)
+
+  /** Buffer size for maximum number for messages read from JMS when there is no demand (or acks are pending for acknowledged consumers). */
   def withBufferSize(value: Int): JmsConsumerSettings = copy(bufferSize = value)
+
+  /**
+   * JMS selector expression.
+   *
+   * @see https://docs.oracle.com/cd/E19798-01/821-1841/bncer/index.html
+   */
   def withSelector(value: String): JmsConsumerSettings = copy(selector = Option(value))
+
+  /** Set an explicit acknowledge mode. (Consumers have specific defaults.) */
   def withAcknowledgeMode(value: AcknowledgeMode): JmsConsumerSettings = copy(acknowledgeMode = Option(value))
+
+  /** Timeout for acknowledge. (Used by TX consumers.) */
   def withAckTimeout(value: scala.concurrent.duration.Duration): JmsConsumerSettings = copy(ackTimeout = value)
+
+  /** Java API: Timeout for acknowledge. (Used by TX consumers.) */
   def withAckTimeout(value: java.time.Duration): JmsConsumerSettings = copy(ackTimeout = value.asScala)
-  def withDurableName(value: String): JmsConsumerSettings = copy(durableName = Option(value))
 
   private def copy(
       connectionFactory: javax.jms.ConnectionFactory = connectionFactory,
@@ -49,8 +81,7 @@ final class JmsConsumerSettings private (
       bufferSize: Int = bufferSize,
       selector: Option[String] = selector,
       acknowledgeMode: Option[AcknowledgeMode] = acknowledgeMode,
-      ackTimeout: scala.concurrent.duration.Duration = ackTimeout,
-      durableName: Option[String] = durableName
+      ackTimeout: scala.concurrent.duration.Duration = ackTimeout
   ): JmsConsumerSettings = new JmsConsumerSettings(
     connectionFactory = connectionFactory,
     connectionRetrySettings = connectionRetrySettings,
@@ -60,8 +91,7 @@ final class JmsConsumerSettings private (
     bufferSize = bufferSize,
     selector = selector,
     acknowledgeMode = acknowledgeMode,
-    ackTimeout = ackTimeout,
-    durableName = durableName
+    ackTimeout = ackTimeout
   )
 
   override def toString =
@@ -73,9 +103,8 @@ final class JmsConsumerSettings private (
     s"sessionCount=$sessionCount," +
     s"bufferSize=$bufferSize," +
     s"selector=$selector," +
-    s"acknowledgeMode=$acknowledgeMode," +
-    s"ackTimeout=$ackTimeout," +
-    s"durableName=$durableName" +
+    s"acknowledgeMode=${acknowledgeMode.map(m => AcknowledgeMode.asString(m))}," +
+    s"ackTimeout=${ackTimeout.toCoarsest}" +
     ")"
 }
 
@@ -85,6 +114,9 @@ object JmsConsumerSettings {
 
   /**
    * Reads from the given config.
+   *
+   * @param c Config instance read configuration from
+   * @param connectionFactory Factory to use for creating JMS connections.
    */
   def apply(c: Config, connectionFactory: javax.jms.ConnectionFactory): JmsConsumerSettings = {
     def getOption[A](path: String, read: Config => A): Option[A] =
@@ -103,7 +135,6 @@ object JmsConsumerSettings {
     val acknowledgeMode =
       getOption("acknowledge-mode", c => AcknowledgeMode.from(c.getString("acknowledge-mode")))
     val ackTimeout = c.getDuration("ack-timeout").asScala
-    val durableName = getStringOption("durable-name")
     new JmsConsumerSettings(
       connectionFactory,
       connectionRetrySettings,
@@ -113,19 +144,34 @@ object JmsConsumerSettings {
       bufferSize,
       selector,
       acknowledgeMode,
-      ackTimeout,
-      durableName
+      ackTimeout
     )
   }
 
+  /**
+   * Reads from the default config provided by the actor system at `alpakka.jms.consumer`.
+   *
+   * @param actorSystem The actor system
+   * @param connectionFactory Factory to use for creating JMS connections.
+   */
   def apply(actorSystem: ActorSystem, connectionFactory: javax.jms.ConnectionFactory): JmsConsumerSettings =
     apply(actorSystem.settings.config.getConfig(configPath), connectionFactory)
 
-  /** Java API */
+  /**
+   * Java API: Reads from the given config.
+   *
+   * @param c Config instance read configuration from
+   * @param connectionFactory Factory to use for creating JMS connections.
+   */
   def create(c: Config, connectionFactory: javax.jms.ConnectionFactory): JmsConsumerSettings =
     apply(c, connectionFactory)
 
-  /** Java API */
+  /**
+   * Java API: Reads from the default config provided by the actor system at `alpakka.jms.consumer`.
+   *
+   * @param actorSystem The actor system
+   * @param connectionFactory Factory to use for creating JMS connections.
+   */
   def create(actorSystem: ActorSystem, connectionFactory: javax.jms.ConnectionFactory): JmsConsumerSettings =
     apply(actorSystem, connectionFactory)
 }

@@ -215,8 +215,8 @@ The producer can be configured with the following settings.
 Setting                 | Defaults    |   Description                                           | 
 ------------------------|-------------|---------------------------------------------------------|
 connectionFactory       | mandatory   | Factory to use for creating JMS connections             |
-destination             | mandatory   | Destination (queue or topic) to send JMS messages to.   |
-credentials             | optional    | Back-off factor for subsequent retries                  |
+destination             | mandatory   | Destination (queue or topic) to send JMS messages to    |
+credentials             | optional    | JMS broker credentials                                  |
 connectionRetrySettings | default settings | Retry characteristics if the connection failed to be established or taking a long time. Please see default values under [Connection Retries](#connection-retries) |
 sendRetrySettings       | default settings | Retry characteristics if message sending failed. Please see default values under [Send Retries](#send-retries) |
 sessionCount            | defaults to `1` | Number of parallel sessions to use for sending JMS messages. Increasing the number of parallel sessions increases throughput at the cost of message ordering. While the messages may arrive out of order on the JMS broker, the producer flow outputs messages in the order they are received |

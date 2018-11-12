@@ -6,7 +6,11 @@ package akka.stream.alpakka.jms
 
 import javax.jms
 
-final class AcknowledgeMode(val mode: Int) extends AnyVal
+/**
+ * JMS acknowledge modes.
+ * See [[javax.jms.Connection#createSession-boolean-int-]]
+ */
+final class AcknowledgeMode(val mode: Int)
 
 object AcknowledgeMode {
   val AutoAcknowledge: AcknowledgeMode = new AcknowledgeMode(jms.Session.AUTO_ACKNOWLEDGE)
@@ -14,6 +18,9 @@ object AcknowledgeMode {
   val DupsOkAcknowledge: AcknowledgeMode = new AcknowledgeMode(jms.Session.DUPS_OK_ACKNOWLEDGE)
   val SessionTransacted: AcknowledgeMode = new AcknowledgeMode(jms.Session.SESSION_TRANSACTED)
 
+  /**
+   * Interpret string to corresponding acknowledge mode.
+   */
   def from(s: String): AcknowledgeMode = s match {
     case "auto" => AutoAcknowledge
     case "client" => ClientAcknowledge
@@ -25,7 +32,10 @@ object AcknowledgeMode {
       )
   }
 
-  def asString(mode: AcknowledgeMode) = mode match {
+  /**
+   * Convert to a string presentation.
+   */
+  def asString(mode: AcknowledgeMode): String = mode match {
     case AutoAcknowledge => "auto"
     case ClientAcknowledge => "client"
     case DupsOkAcknowledge => "duplicates-ok"

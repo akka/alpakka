@@ -7,6 +7,9 @@ package akka.stream.alpakka.jms
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigValueType}
 
+/**
+ * Settings for [[akka.stream.alpakka.jms.scaladsl.JmsConsumer.browse]] and [[akka.stream.alpakka.jms.javadsl.JmsConsumer.browse]].
+ */
 final class JmsBrowseSettings private (
     val connectionFactory: javax.jms.ConnectionFactory,
     val connectionRetrySettings: ConnectionRetrySettings,
@@ -17,13 +20,30 @@ final class JmsBrowseSettings private (
 ) extends akka.stream.alpakka.jms.JmsSettings {
   override val sessionCount = 1
 
+  /** Factory to use for creating JMS connections. */
   def withConnectionFactory(value: javax.jms.ConnectionFactory): JmsBrowseSettings = copy(connectionFactory = value)
+
+  /** Configure connection retrying. */
   def withConnectionRetrySettings(value: ConnectionRetrySettings): JmsBrowseSettings =
     copy(connectionRetrySettings = value)
+
+  /** Set a queue name to browse from. */
   def withQueue(name: String): JmsBrowseSettings = copy(destination = Some(Queue(name)))
+
+  /** Set a JMS to subscribe to. Allows for custom handling with [[akka.stream.alpakka.jms.CustomDestination CustomDestination]]. */
   def withDestination(value: Destination): JmsBrowseSettings = copy(destination = Option(value))
+
+  /** Set JMS broker credentials. */
   def withCredentials(value: Credentials): JmsBrowseSettings = copy(credentials = Option(value))
+
+  /**
+   * JMS selector expression.
+   *
+   * @see https://docs.oracle.com/cd/E19798-01/821-1841/bncer/index.html
+   */
   def withSelector(value: String): JmsBrowseSettings = copy(selector = Option(value))
+
+  /** Set an explicit acknowledge mode. (Consumers have specific defaults.) */
   def withAcknowledgeMode(value: AcknowledgeMode): JmsBrowseSettings = copy(acknowledgeMode = value)
 
   private def copy(
@@ -49,7 +69,7 @@ final class JmsBrowseSettings private (
     s"destination=$destination," +
     s"credentials=$credentials," +
     s"selector=$selector," +
-    s"acknowledgeMode=$acknowledgeMode" +
+    s"acknowledgeMode=${AcknowledgeMode.asString(acknowledgeMode)}" +
     ")"
 }
 
@@ -59,6 +79,9 @@ object JmsBrowseSettings {
 
   /**
    * Reads from the given config.
+   *
+   * @param c Config instance read configuration from
+   * @param connectionFactory Factory to use for creating JMS connections.
    */
   def apply(c: Config, connectionFactory: javax.jms.ConnectionFactory): JmsBrowseSettings = {
     def getOption[A](path: String, read: Config => A): Option[A] =
@@ -85,12 +108,27 @@ object JmsBrowseSettings {
 
   /**
    * Java API: Reads from the given config.
+   *
+   * @param c Config instance read configuration from
+   * @param connectionFactory Factory to use for creating JMS connections.
    */
   def create(c: Config, connectionFactory: javax.jms.ConnectionFactory): JmsBrowseSettings = apply(c, connectionFactory)
 
+  /**
+   * Reads from the default config provided by the actor system at `alpakka.jms.browse`.
+   *
+   * @param actorSystem The actor system
+   * @param connectionFactory Factory to use for creating JMS connections.
+   */
   def apply(actorSystem: ActorSystem, connectionFactory: javax.jms.ConnectionFactory): JmsBrowseSettings =
     apply(actorSystem.settings.config.getConfig(configPath), connectionFactory)
 
+  /**
+   * Java API: Reads from the default config provided by the actor system at `alpakka.jms.browse`.
+   *
+   * @param actorSystem The actor system
+   * @param connectionFactory Factory to use for creating JMS connections.
+   */
   def create(actorSystem: ActorSystem, connectionFactory: javax.jms.ConnectionFactory): JmsBrowseSettings =
     apply(actorSystem, connectionFactory)
 
