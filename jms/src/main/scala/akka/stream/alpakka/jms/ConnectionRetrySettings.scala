@@ -9,6 +9,11 @@ import com.typesafe.config.Config
 
 import scala.concurrent.duration._
 
+/**
+ * When a connection to a broker cannot be established and errors out, or is timing out being established or
+ * started, the connection can be retried.
+ * All JMS publishers, consumers, and browsers are configured with connection retry settings.
+ */
 final class ConnectionRetrySettings private (
     val connectTimeout: scala.concurrent.duration.FiniteDuration,
     val initialRetry: scala.concurrent.duration.FiniteDuration,
@@ -17,30 +22,37 @@ final class ConnectionRetrySettings private (
     val maxRetries: Int
 ) {
 
+  /** Time allowed to establish and start a connection. */
   def withConnectTimeout(value: scala.concurrent.duration.FiniteDuration): ConnectionRetrySettings =
     copy(connectTimeout = value)
 
-  /** Java API */
+  /** Java API: Time allowed to establish and start a connection. */
   def withConnectTimeout(value: java.time.Duration): ConnectionRetrySettings = copy(connectTimeout = value.asScala)
 
+  /** Wait time before retrying the first time. */
   def withInitialRetry(value: scala.concurrent.duration.FiniteDuration): ConnectionRetrySettings =
     copy(initialRetry = value)
 
-  /** Java API */
+  /** Java API: Wait time before retrying the first time. */
   def withInitialRetry(value: java.time.Duration): ConnectionRetrySettings = copy(initialRetry = value.asScala)
 
+  /** Back-off factor for subsequent retries. */
   def withBackoffFactor(value: Double): ConnectionRetrySettings = copy(backoffFactor = value)
 
+  /** Maximum back-off time allowed, after which all retries will happen after this delay. */
   def withMaxBackoff(value: scala.concurrent.duration.FiniteDuration): ConnectionRetrySettings =
     copy(maxBackoff = value)
 
-  /** Java API */
+  /** Java API: Maximum back-off time allowed, after which all retries will happen after this delay. */
   def withMaxBackoff(value: java.time.Duration): ConnectionRetrySettings = copy(maxBackoff = value.asScala)
 
+  /** Maximum number of retries allowed. */
   def withMaxRetries(value: Int): ConnectionRetrySettings = copy(maxRetries = value)
 
+  /** Do not limit the number of retries. */
   def withInfiniteRetries(): ConnectionRetrySettings = withMaxRetries(ConnectionRetrySettings.infiniteRetries)
 
+  /** The wait time before the next attempt may be made. */
   def waitTime(retryNumber: Int): FiniteDuration =
     (initialRetry * Math.pow(retryNumber, backoffFactor)).asInstanceOf[FiniteDuration].min(maxBackoff)
 
@@ -64,7 +76,7 @@ final class ConnectionRetrySettings private (
     s"initialRetry=${initialRetry.toCoarsest}," +
     s"backoffFactor=$backoffFactor," +
     s"maxBackoff=${maxBackoff.toCoarsest}," +
-    s"maxRetries=$maxRetries" +
+    s"maxRetries=${if (maxRetries == ConnectionRetrySettings.infiniteRetries) "infinite" else maxRetries}" +
     ")"
 }
 
@@ -101,86 +113,6 @@ object ConnectionRetrySettings {
     )
   }
 
-  /** Java API */
+  /** Java API: Reads from the given config. */
   def create(c: Config): ConnectionRetrySettings = defaults
-}
-
-final class SendRetrySettings private (
-    val initialRetry: scala.concurrent.duration.FiniteDuration,
-    val backoffFactor: Double,
-    val maxBackoff: scala.concurrent.duration.FiniteDuration,
-    val maxRetries: Int
-) {
-
-  /** Scala API */
-  def withInitialRetry(value: scala.concurrent.duration.FiniteDuration): SendRetrySettings = copy(initialRetry = value)
-
-  /** Java API */
-  def withInitialRetry(value: java.time.Duration): SendRetrySettings = copy(initialRetry = value.asScala)
-
-  def withBackoffFactor(value: Double): SendRetrySettings = copy(backoffFactor = value)
-
-  /** Scala API */
-  def withMaxBackoff(value: scala.concurrent.duration.FiniteDuration): SendRetrySettings = copy(maxBackoff = value)
-
-  /** Java API */
-  def withMaxBackoff(value: java.time.Duration): SendRetrySettings = copy(maxBackoff = value.asScala)
-
-  def withMaxRetries(value: Int): SendRetrySettings = copy(maxRetries = value)
-
-  def withInfiniteRetries(): SendRetrySettings = withMaxRetries(-1)
-
-  def waitTime(retryNumber: Int): FiniteDuration =
-    (initialRetry * Math.pow(retryNumber, backoffFactor)).asInstanceOf[FiniteDuration].min(maxBackoff)
-
-  private def copy(
-      initialRetry: scala.concurrent.duration.FiniteDuration = initialRetry,
-      backoffFactor: Double = backoffFactor,
-      maxBackoff: scala.concurrent.duration.FiniteDuration = maxBackoff,
-      maxRetries: Int = maxRetries
-  ): SendRetrySettings = new SendRetrySettings(
-    initialRetry = initialRetry,
-    backoffFactor = backoffFactor,
-    maxBackoff = maxBackoff,
-    maxRetries = maxRetries
-  )
-
-  override def toString: String =
-    "SendRetrySettings(" +
-    s"initialRetry=${initialRetry.toCoarsest}," +
-    s"backoffFactor=$backoffFactor," +
-    s"maxBackoff=${maxBackoff.toCoarsest}," +
-    s"maxRetries=$maxRetries" +
-    ")"
-}
-
-object SendRetrySettings {
-
-  private val defaults =
-    new SendRetrySettings(initialRetry = 20.millis, backoffFactor = 1.5, maxBackoff = 500.millis, maxRetries = 10)
-
-  /** Scala API */
-  def apply(): SendRetrySettings = defaults
-
-  /** Java API */
-  def create(): SendRetrySettings = defaults
-
-  /**
-   * Reads from the given config.
-   */
-  def apply(c: Config): SendRetrySettings = {
-    val initialRetry = c.getDuration("initial-retry").asScala
-    val backoffFactor = c.getDouble("backoff-factor")
-    val maxBackoff = c.getDuration("max-backoff").asScala
-    val maxRetries = c.getInt("max-retries")
-    new SendRetrySettings(
-      initialRetry,
-      backoffFactor,
-      maxBackoff,
-      maxRetries
-    )
-  }
-
-  def create(c: Config): SendRetrySettings = apply(c)
-
 }

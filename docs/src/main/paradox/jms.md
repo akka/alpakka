@@ -224,7 +224,7 @@ timeToLive              | optional    | Time messages should be kept on the Jms 
 
 ## Connection Retries
 
-When a connection to a broker cannot be established and errors out, or is timing out being established or started, the connection can be retried. All JMS publishers, consumers, and browsers are configured with a connection retry settings as follows:
+When a connection to a broker cannot be established and errors out, or is timing out being established or started, the connection can be retried. All JMS publishers, consumers, and browsers are configured with connection retry settings as follows:
 
 Setting        | Description                                                                         | Default Value
 ---------------|-------------------------------------------------------------------------------------|--------------

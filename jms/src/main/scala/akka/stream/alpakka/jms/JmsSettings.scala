@@ -7,6 +7,10 @@ package akka.stream.alpakka.jms
 import akka.annotation.DoNotInherit
 import javax.jms
 
+/**
+ * Shared settings for all JMS stages.
+ * Used for internal standardization, and not meant to be used by user code.
+ */
 @DoNotInherit
 trait JmsSettings {
   def connectionFactory: jms.ConnectionFactory
