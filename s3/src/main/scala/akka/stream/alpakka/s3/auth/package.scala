@@ -6,10 +6,9 @@ package akka.stream.alpakka.s3
 
 import java.security.MessageDigest
 
-import akka.stream.scaladsl.{Flow, Keep, Sink}
+import akka.NotUsed
+import akka.stream.scaladsl.Flow
 import akka.util.ByteString
-
-import scala.concurrent.Future
 
 package object auth {
 
@@ -28,7 +27,7 @@ package object auth {
 
   def encodeHex(bytes: ByteString): String = encodeHex(bytes.toArray)
 
-  def digest(algorithm: String = "SHA-256"): Sink[ByteString, Future[ByteString]] =
+  def digest(algorithm: String = "SHA-256"): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString]
       .fold(MessageDigest.getInstance(algorithm)) {
         case (digest, bytes) =>
@@ -36,5 +35,4 @@ package object auth {
           digest
       }
       .map(d => ByteString(d.digest()))
-      .toMat(Sink.head[ByteString])(Keep.right)
 }

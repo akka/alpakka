@@ -70,11 +70,11 @@ final case class MultipartCopy(multipartUpload: MultipartUpload, copyPartition: 
 
 object S3Stream {
 
-  def apply(settings: S3Settings)(implicit system: ActorSystem, mat: Materializer): S3Stream =
+  def apply(settings: S3Settings): S3Stream =
     new S3Stream(settings)
 }
 
-private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: ActorSystem, mat: Materializer) {
+private[alpakka] final class S3Stream(settings: S3Settings) {
 
   import HttpRequests._
   import Marshalling._
@@ -90,20 +90,20 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
   def download(s3Location: S3Location,
                range: Option[ByteRange],
                versionId: Option[String],
-               sse: Option[ServerSideEncryption]): Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
-    import mat.executionContext
+               sse: Option[ServerSideEncryption]): Source[Option[(Source[ByteString, NotUsed], ObjectMetadata)], NotUsed] = {
     val s3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(GetObject) })
-    val future = request(s3Location, rangeOption = range, versionId = versionId, s3Headers = s3Headers)
-      .map(response => response.withEntity(response.entity.withoutSizeLimit))
-      .flatMap(entityForSuccess)
 
-    future
-      .map {
-        case (entity, headers) =>
-          Some((entity.dataBytes.mapMaterializedValue(_ => NotUsed), computeMetaData(headers, entity)))
-      }
-      .recover {
-        case e: S3Exception if e.code == "NoSuchKey" => None
+    MaterializerAccess.source { implicit mat =>
+      request(s3Location, rangeOption = range, versionId = versionId, s3Headers = s3Headers)
+        .map(response => response.withEntity(response.entity.withoutSizeLimit))
+        .mapAsync(parallelism = 1)(entityForSuccess)
+        .map {
+          case (entity, headers) =>
+            Some((entity.dataBytes.mapMaterializedValue(_ => NotUsed), computeMetaData(headers, entity)))
+        }
+        .recover {
+          case e: S3Exception if e.code == "NoSuchKey" => None[Option[(Source[ByteString, NotUsed], ObjectMetadata)]]
+        }
       }
   }
 
@@ -113,9 +113,10 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     case class Running(continuationToken: String) extends ListBucketState
     case object Finished extends ListBucketState
 
-    import system.dispatcher
-
-    def listBucketCall(token: Option[String]): Future[Option[(ListBucketState, Seq[ListBucketResultContents])]] =
+    def listBucketCall(
+        token: Option[String]
+    )(implicit mat: Materializer): Future[Option[(ListBucketState, Seq[ListBucketResultContents])]] = {
+      import mat.executionContext
       signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, prefix, token))
         .map { (res: ListBucketResult) =>
           Some(
@@ -125,45 +126,58 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
               )
           )
         }
-
-    Source
-      .unfoldAsync[ListBucketState, Seq[ListBucketResultContents]](Starting) {
-        case Finished => Future.successful(None)
-        case Starting => listBucketCall(None)
-        case Running(token) => listBucketCall(Some(token))
       }
-      .mapConcat(identity)
+
+    MaterializerAccess.source { implicit mat =>
+      Source
+        .unfoldAsync[ListBucketState, Seq[ListBucketResultContents]](Starting) {
+          case Finished => Future.successful(None)
+          case Starting => listBucketCall(None)
+          case Running(token) => listBucketCall(Some(token))
+        }
+        .mapConcat(identity)
+    }
   }
 
   def getObjectMetadata(bucket: String,
                         key: String,
                         versionId: Option[String],
-                        sse: Option[ServerSideEncryption]): Future[Option[ObjectMetadata]] = {
-    implicit val ec = mat.executionContext
-    val s3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(HeadObject) })
-    request(S3Location(bucket, key), HttpMethods.HEAD, versionId = versionId, s3Headers = s3Headers).flatMap {
-      case HttpResponse(OK, headers, entity, _) =>
-        entity.withoutSizeLimit().discardBytes().future().map { _ =>
-          Some(computeMetaData(headers, entity))
-        }
-      case HttpResponse(NotFound, _, entity, _) =>
-        entity.discardBytes().future().map(_ => None)
-      case HttpResponse(_, _, entity, _) =>
-        Unmarshal(entity).to[String].map { err =>
-          throw new S3Exception(err)
-        }
+                        sse: Option[ServerSideEncryption]): Source[Option[ObjectMetadata], NotUsed] = {
+    MaterializerAccess.source { implicit mat =>
+      import mat.executionContext
+      val s3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(HeadObject) })
+      request(S3Location(bucket, key), HttpMethods.HEAD, versionId = versionId, s3Headers = s3Headers).flatMapConcat {
+        case HttpResponse(OK, headers, entity, _) =>
+          Source.fromFuture {
+            entity.withoutSizeLimit().discardBytes().future().map { _ =>
+              Some(computeMetaData(headers, entity))
+            }
+          }
+        case HttpResponse(NotFound, _, entity, _) =>
+          Source.fromFuture(entity.discardBytes().future().map(_ => None))
+        case HttpResponse(_, _, entity, _) =>
+          Source.fromFuture {
+            Unmarshal(entity).to[String].map { err =>
+              throw new S3Exception(err)
+            }
+          }
+      }
     }
   }
 
-  def deleteObject(s3Location: S3Location, versionId: Option[String]): Future[Done] = {
-    implicit val ec = mat.executionContext
-    request(s3Location, HttpMethods.DELETE, versionId = versionId).flatMap {
-      case HttpResponse(NoContent, _, entity, _) =>
-        entity.discardBytes().future().map(_ => Done)
-      case HttpResponse(_, _, entity, _) =>
-        Unmarshal(entity).to[String].map { err =>
-          throw new S3Exception(err)
-        }
+  def deleteObject(s3Location: S3Location, versionId: Option[String]): Source[Done, NotUsed] = {
+    MaterializerAccess.source { implicit mat =>
+      import mat.executionContext
+      request(s3Location, HttpMethods.DELETE, versionId = versionId).flatMapConcat {
+        case HttpResponse(NoContent, _, entity, _) =>
+          Source.fromFuture(entity.discardBytes().future().map(_ => Done))
+        case HttpResponse(_, _, entity, _) =>
+          Source.fromFuture {
+            Unmarshal(entity).to[String].map { err =>
+              throw new S3Exception(err)
+            }
+          }
+      }
     }
   }
 
@@ -172,12 +186,10 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
                 data: Source[ByteString, _],
                 contentLength: Long,
                 s3Headers: S3Headers,
-                sse: Option[ServerSideEncryption]): Future[ObjectMetadata] = {
+                sse: Option[ServerSideEncryption]): Source[ObjectMetadata, NotUsed] = {
 
     // TODO can we take in a Source[ByteString, NotUsed] without forcing chunking
     // chunked requests are causing S3 to think this is a multipart upload
-
-    implicit val ec: ExecutionContext = mat.executionContext
 
     val headers = S3Headers(
       s3Headers.headers ++ sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(PutObject) }
@@ -186,15 +198,22 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
     val resp = signAndRequest(req)
 
-    resp.flatMap {
-      case HttpResponse(OK, h, entity, _) =>
-        entity.discardBytes().future().map { _ =>
-          ObjectMetadata(h :+ `Content-Length`(entity.contentLengthOption.getOrElse(0)))
-        }
-      case HttpResponse(_, _, entity, _) =>
-        Unmarshal(entity).to[String].map { err =>
-          throw new S3Exception(err)
-        }
+    MaterializerAccess.source { implicit mat =>
+      import mat.executionContext
+      resp.flatMapConcat {
+        case HttpResponse(OK, h, entity, _) =>
+          Source.fromFuture {
+            entity.discardBytes().future().map { _ =>
+              ObjectMetadata(h :+ `Content-Length`(entity.contentLengthOption.getOrElse(0)))
+            }
+          }
+        case HttpResponse(_, _, entity, _) =>
+          Source.fromFuture {
+            Unmarshal(entity).to[String].map { err =>
+              throw new S3Exception(err)
+            }
+          }
+      }
     }
   }
 
@@ -202,7 +221,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
               method: HttpMethod = HttpMethods.GET,
               rangeOption: Option[ByteRange] = None,
               versionId: Option[String] = None,
-              s3Headers: S3Headers = S3Headers.empty): Future[HttpResponse] =
+              s3Headers: S3Headers = S3Headers.empty): Source[HttpResponse, NotUsed] =
     signAndRequest(requestHeaders(getDownloadRequest(s3Location, method, s3Headers, versionId), rangeOption))
 
   private def requestHeaders(downloadRequest: HttpRequest, rangeOption: Option[ByteRange]): HttpRequest =
@@ -227,19 +246,21 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
 
   private def initiateMultipartUpload(s3Location: S3Location,
                                       contentType: ContentType,
-                                      s3Headers: S3Headers): Future[MultipartUpload] = {
-    import mat.executionContext
-
+                                      s3Headers: S3Headers): Source[MultipartUpload, NotUsed] = {
     val req = initiateMultipartUploadRequest(s3Location, contentType, s3Headers)
 
-    val response: Future[HttpResponse] = signAndRequest(req)
-    response.flatMap {
-      case HttpResponse(status, _, entity, _) if status.isSuccess() =>
-        Unmarshal(entity).to[MultipartUpload]
-      case HttpResponse(_, _, entity, _) =>
-        Unmarshal(entity).to[String].map { err =>
-          throw new S3Exception(err)
-        }
+    MaterializerAccess.source { implicit mat =>
+      import mat.executionContext
+      signAndRequest(req).flatMapConcat {
+        case HttpResponse(status, _, entity, _) if status.isSuccess() =>
+          Source.fromFuture(Unmarshal(entity).to[MultipartUpload])
+        case HttpResponse(_, _, entity, _) =>
+          Source.fromFuture {
+            Unmarshal(entity).to[String].map { err =>
+              throw new S3Exception(err)
+            }
+          }
+      }
     }
   }
 
@@ -253,20 +274,18 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4
   ): RunnableGraph[Future[CompleteMultipartUploadResult]] = {
-    import mat.executionContext
 
     // Pre step get source meta to get content length (size of the object)
-    val eventualMaybeObjectSize: Future[Option[Long]] =
+    val eventualMaybeObjectSize =
       getObjectMetadata(sourceLocation.bucket, sourceLocation.key, sourceVersionId, sse).map(_.map(_.contentLength))
     val eventualPartitions =
       eventualMaybeObjectSize.map(_.map(createPartitions(chunkSize, sourceLocation)).getOrElse(Nil))
-    val partitions = Source.fromFuture(eventualPartitions)
 
     // Multipart copy upload requests (except for the completion api) are created here.
     //  The initial copy upload request gets executed within this function as well.
     //  The individual copy upload part requests are created.
     val copyRequests =
-      createCopyRequests(targetLocation, sourceVersionId, contentType, s3Headers, sse, partitions)(chunkingParallelism)
+      createCopyRequests(targetLocation, sourceVersionId, contentType, s3Headers, sse, eventualPartitions)(chunkingParallelism)
 
     // The individual copy upload part requests are processed here
     processUploadCopyPartRequests(copyRequests)(chunkingParallelism)
@@ -292,14 +311,14 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
   }
 
   private def completeMultipartUpload(s3Location: S3Location,
-                                      parts: Seq[SuccessfulUploadPart]): Future[CompleteMultipartUploadResult] = {
-    import mat.executionContext
-
+                                      parts: Seq[SuccessfulUploadPart])(implicit mat: Materializer): Future[CompleteMultipartUploadResult] = {
     def populateResult(result: CompleteMultipartUploadResult,
                        headers: Seq[HttpHeader]): CompleteMultipartUploadResult = {
       val versionId = headers.find(_.lowercaseName() == "x-amz-version-id").map(_.value())
       result.copy(versionId = versionId)
     }
+
+    import mat.executionContext
 
     for {
       req <- completeMultipartUploadRequest(parts.head.multipartUpload, parts.map(p => p.index -> p.etag))
@@ -315,7 +334,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
                              s3Headers: S3Headers): Source[(MultipartUpload, Int), NotUsed] =
     Source
       .single(s3Location)
-      .mapAsync(1)(initiateMultipartUpload(_, contentType, s3Headers))
+      .flatMapConcat(initiateMultipartUpload(_, contentType, s3Headers))
       .mapConcat(r => Stream.continually(r))
       .zip(Source.fromIterator(() => Iterator.from(1)))
 
@@ -357,7 +376,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
             uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload.data, chunkedPayload.size, headers)
           (partRequest, (uploadInfo, chunkIndex))
       }
-      .mapAsync(parallelism) { case (req, info) => Signer.signedRequest(req, signingKey).zip(Future.successful(info)) }
+      .flatMapConcat { case (req, info) => Signer.signedRequest(req, signingKey).zip(Source.single(info)) }
   }
 
   private def getChunkBuffer(chunkSize: Int) = settings.bufferType match {
@@ -375,65 +394,69 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
       sse: Option[ServerSideEncryption]
   )(parallelism: Int): Flow[ByteString, UploadPartResponse, NotUsed] = {
 
-    import mat.executionContext
-
     // Multipart upload requests (except for the completion api) are created here.
     //  The initial upload request gets executed within this function as well.
     //  The individual upload part requests are created.
     val requestFlow = createRequests(s3Location, contentType, s3Headers, chunkSize, parallelism, sse)
 
     // The individual upload part requests are processed here
-    requestFlow
-      .via(Http().superPool[(MultipartUpload, Int)]())
-      .mapAsync(parallelism) {
-        case (Success(r), (upload, index)) =>
-          if (r.status.isFailure()) {
-            Unmarshal(r.entity).to[String].map { errorBody =>
-              FailedUploadPart(
-                upload,
-                index,
-                new RuntimeException(
-                  s"Upload part $index request failed. Response header: ($r), response body: ($errorBody)."
-                )
-              )
-            }
-          } else {
-            r.entity.dataBytes.runWith(Sink.ignore)
-            val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
-            etag
-              .map(t => Future.successful(SuccessfulUploadPart(upload, index, t)))
-              .getOrElse(
-                Future.successful(FailedUploadPart(upload, index, new RuntimeException(s"Cannot find etag in ${r}")))
-              )
-          }
+    MaterializerAccess.flow { implicit mat =>
+      import mat.executionContext
+      implicit val sys = mat.system
 
-        case (Failure(e), (upload, index)) => Future.successful(FailedUploadPart(upload, index, e))
-      }
+      requestFlow
+        .via(Http().superPool[(MultipartUpload, Int)]())
+        .mapAsync(parallelism) {
+          case (Success(r), (upload, index)) =>
+            if (r.status.isFailure()) {
+              Unmarshal(r.entity).to[String].map { errorBody =>
+                FailedUploadPart(
+                  upload,
+                  index,
+                  new RuntimeException(
+                    s"Upload part $index request failed. Response header: ($r), response body: ($errorBody)."
+                  )
+                )
+              }
+            } else {
+              r.entity.dataBytes.runWith(Sink.ignore)
+              val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
+              etag
+                .map(t => Future.successful(SuccessfulUploadPart(upload, index, t)))
+                .getOrElse(
+                  Future.successful(FailedUploadPart(upload, index, new RuntimeException(s"Cannot find etag in ${r}")))
+                )
+            }
+
+          case (Failure(e), (upload, index)) => Future.successful(FailedUploadPart(upload, index, e))
+        }
+    }
   }
 
   private def completionSink(
       s3Location: S3Location
   ): Sink[UploadPartResponse, Future[CompleteMultipartUploadResult]] = {
-    import mat.executionContext
-
-    Sink.seq[UploadPartResponse].mapMaterializedValue { responseFuture: Future[Seq[UploadPartResponse]] =>
-      responseFuture
-        .flatMap { responses: Seq[UploadPartResponse] =>
-          val successes = responses.collect { case r: SuccessfulUploadPart => r }
-          val failures = responses.collect { case r: FailedUploadPart => r }
-          if (responses.isEmpty) {
-            Future.failed(new RuntimeException("No Responses"))
-          } else if (failures.isEmpty) {
-            Future.successful(successes.sortBy(_.index))
-          } else {
-            Future.failed(FailedUpload(failures.map(_.exception)))
+    MaterializerAccess.sink { implicit mat =>
+      import mat.executionContext
+      Sink.seq[UploadPartResponse].mapMaterializedValue { responseFuture: Future[Seq[UploadPartResponse]] =>
+        responseFuture
+          .flatMap { responses: Seq[UploadPartResponse] =>
+            val successes = responses.collect { case r: SuccessfulUploadPart => r }
+            val failures = responses.collect { case r: FailedUploadPart => r }
+            if (responses.isEmpty) {
+              Future.failed(new RuntimeException("No Responses"))
+            } else if (failures.isEmpty) {
+              Future.successful(successes.sortBy(_.index))
+            } else {
+              Future.failed(FailedUpload(failures.map(_.exception)))
+            }
           }
-        }
-        .flatMap(completeMultipartUpload(s3Location, _))
+          .flatMap(completeMultipartUpload(s3Location, _))
+      }
     }
   }
 
-  private def signAndGetAs[T](request: HttpRequest)(implicit um: Unmarshaller[ResponseEntity, T]): Future[T] = {
+  private def signAndGetAs[T](request: HttpRequest)(implicit um: Unmarshaller[ResponseEntity, T], mat: Materializer): Future[T] = {
     import mat.executionContext
     for {
       response <- signAndRequest(request)
@@ -443,30 +466,31 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
   }
 
   private def signAndGetAs[T](request: HttpRequest,
-                              f: (T, Seq[HttpHeader]) => T)(implicit um: Unmarshaller[ResponseEntity, T]): Future[T] = {
+                              f: (T, Seq[HttpHeader]) => T)(implicit um: Unmarshaller[ResponseEntity, T], mat: Materializer): Source[T, NotUsed] = {
     import mat.executionContext
-    (for {
-      response <- signAndRequest(request)
-      (entity, headers) <- entityForSuccess(response)
-      t <- Unmarshal(entity).to[T]
-    } yield (t, headers)).map((f(_, _)).tupled)
+    signAndRequest(request)
+      .mapAsync(parallelism = 1)(entityForSuccess)
+      .mapAsync(parallelism = 1) {
+        case (entity, headers) => Unmarshal(entity).to[T].map((_, headers))
+      }
+      .map(f.tupled)
   }
 
-  private def signAndRequest(request: HttpRequest, retries: Int = 3): Future[HttpResponse] = {
-    import mat.executionContext
-    for {
-      req <- Signer.signedRequest(request, signingKey)
-      res <- Http().singleRequest(req).flatMap {
-        case HttpResponse(status, _, _, _) if (retries > 0) && (500 to 599 contains status.intValue()) =>
-          signAndRequest(request, retries - 1)
-        case res => Future(res)
-      }
-    } yield res
-  }
+  private def signAndRequest(request: HttpRequest, retries: Int = 3): Source[HttpResponse, NotUsed] =
+    MatExtract.actorSystem { implicit system =>
+      Signer.signedRequest(request, signingKey)
+        .mapAsync(parallelism = 1)(req => Http().singleRequest(req))
+        .flatMapConcat {
+          case HttpResponse(status, _, _, _) if (retries > 0) && (500 to 599 contains status.intValue()) =>
+            signAndRequest(request, retries - 1)
+          case res => Source.single(res)
+        }
+    }
 
   private def entityForSuccess(
       resp: HttpResponse
-  )(implicit ctx: ExecutionContext): Future[(ResponseEntity, Seq[HttpHeader])] =
+  )(implicit mat: Materializer): Future[(ResponseEntity, Seq[HttpHeader])] = {
+    import mat.executionContext
     resp match {
       case HttpResponse(status, headers, entity, _) if status.isSuccess() && !status.isRedirection() =>
         Future.successful((entity, headers))
@@ -475,6 +499,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
           throw new S3Exception(err)
         }
     }
+  }
 
   private[impl] def createPartitions(chunkSize: Int,
                                      sourceLocation: S3Location)(objectSize: Long): List[CopyPartition] =
@@ -517,38 +542,41 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
           }
       }
       .mapConcat(identity)
-      .mapAsync(parallelism) {
-        case (req, info) => Signer.signedRequest(req, signingKey).zip(Future.successful(info))
+      .flatMapConcat {
+        case (req, info) => Signer.signedRequest(req, signingKey).zip(Source.single(info))
       }
   }
 
   private def processUploadCopyPartRequests(
       requests: Source[(HttpRequest, MultipartCopy), NotUsed]
   )(parallelism: Int) = {
-    import mat.executionContext
+    MaterializerAccess.source { implicit mat =>
+      import mat.executionContext
+      implicit val sys = mat.system
 
-    requests
-      .via(Http().superPool[MultipartCopy]())
-      .map {
-        case (Success(r), multipartCopy) =>
-          val entity = r.entity
-          val upload = multipartCopy.multipartUpload
-          val index = multipartCopy.copyPartition.partNumber
-          import StatusCodes._
-          r.status match {
-            case OK =>
-              Unmarshal(entity).to[CopyPartResult].map(cp => SuccessfulUploadPart(upload, index, cp.eTag))
-            case statusCode: StatusCode =>
-              Unmarshal(entity).to[String].map { err =>
-                val response = Option(err).getOrElse(s"Failed to upload part into S3, status code was: $statusCode")
-                throw new S3Exception(response)
-              }
-          }
+      requests
+        .via(Http().superPool[MultipartCopy]())
+        .map {
+          case (Success(r), multipartCopy) =>
+            val entity = r.entity
+            val upload = multipartCopy.multipartUpload
+            val index = multipartCopy.copyPartition.partNumber
+            import StatusCodes._
+            r.status match {
+              case OK =>
+                Unmarshal(entity).to[CopyPartResult].map(cp => SuccessfulUploadPart(upload, index, cp.eTag))
+              case statusCode: StatusCode =>
+                Unmarshal(entity).to[String].map { err =>
+                  val response = Option(err).getOrElse(s"Failed to upload part into S3, status code was: $statusCode")
+                  throw new S3Exception(response)
+                }
+            }
 
-        case (Failure(ex), multipartCopy) =>
-          Future.successful(FailedUploadPart(multipartCopy.multipartUpload, multipartCopy.copyPartition.partNumber, ex))
-      }
-      .mapAsync(parallelism)(identity)
+          case (Failure(ex), multipartCopy) =>
+            Future.successful(FailedUploadPart(multipartCopy.multipartUpload, multipartCopy.copyPartition.partNumber, ex))
+        }
+        .mapAsync(parallelism)(identity)
+    }
   }
 
 }

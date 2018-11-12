@@ -5,6 +5,7 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.impl.ServerSideEncryption
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase._
 import akka.testkit.TestKit
@@ -14,10 +15,12 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import com.github.tomakehurst.wiremock.matching.EqualToPattern
 import com.github.tomakehurst.wiremock.stubbing.Scenario
+import com.typesafe.config.ConfigFactory
 
 abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockServer) extends TestKit(_system) {
 
-  def this(mock: WireMockServer) = this(ActorSystem(getCallerName(getClass)), mock)
+  def this(mock: WireMockServer) =
+    this(ActorSystem(getCallerName(getClass), config(mock.port()).withFallback(ConfigFactory.load())), mock)
   def this() = this(initServer())
 
   val mock = new WireMock("localhost", _wireMockServer.port())
@@ -744,4 +747,26 @@ private object S3WireMockBase {
     server.start()
     server
   }
+
+  private def config(proxyPort: Int) = ConfigFactory.parseString(s"""
+    |${S3Settings.configPath} {
+    |  proxy {
+    |    host = localhost
+    |    port = $proxyPort
+    |    secure = false
+    |  }
+    |  aws {
+    |    credentials {
+    |      provider = static
+    |      access-key-id = my-AWS-access-key-ID
+    |      secret-access-key = my-AWS-password
+    |    }
+    |    region {
+    |      provider = static
+    |      default-region = "us-east-1"
+    |    }
+    |  }
+    |  path-style-access = false
+    |}
+    """.stripMargin)
 }

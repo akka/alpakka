@@ -93,7 +93,7 @@ import scala.concurrent.{ExecutionContext, Future}
       .withEntity(HttpEntity(ContentTypes.`application/octet-stream`, payloadSize, payload))
 
   def completeMultipartUploadRequest(upload: MultipartUpload, parts: Seq[(Int, String)])(
-      implicit ec: ExecutionContext,
+      implicit mat: ExecutionContext,
       conf: S3Settings
   ): Future[HttpRequest] = {
 
@@ -159,7 +159,7 @@ import scala.concurrent.{ExecutionContext, Future}
               throw IllegalUriException(
                 "Bucket name contains non-LDH characters",
                 s"""The following character is not allowed: $illegalCharacter
-                   | This may be solved by setting akka.stream.alpakka.s3.path-style-access to true in the configuration.
+                   | This may be solved by setting alpakka.s3.path-style-access to true in the configuration.
                  """.stripMargin
               )
             case None => ()

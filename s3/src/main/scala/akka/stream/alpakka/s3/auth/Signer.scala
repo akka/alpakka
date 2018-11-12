@@ -7,19 +7,18 @@ package akka.stream.alpakka.s3.auth
 import java.security.MessageDigest
 import java.time.format.DateTimeFormatter
 import java.time.{ZoneOffset, ZonedDateTime}
-import scala.concurrent.Future
+
+import akka.NotUsed
+
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
-import akka.stream.Materializer
+import akka.stream.scaladsl.Source
 
 private[alpakka] object Signer {
   private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssX")
 
-  def signedRequest(request: HttpRequest, key: SigningKey, date: ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC))(
-      implicit mat: Materializer
-  ): Future[HttpRequest] = {
-    import mat.executionContext
-    val hashedBody = request.entity.dataBytes.runWith(digest()).map(hash => encodeHex(hash.toArray))
+  def signedRequest(request: HttpRequest, key: SigningKey, date: ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC)): Source[HttpRequest, NotUsed] = {
+    val hashedBody = request.entity.dataBytes.via(digest()).map(hash => encodeHex(hash.toArray))
 
     hashedBody.map { hb =>
       val headersToAdd = Vector(RawHeader("x-amz-date", date.format(dateFormatter)),
@@ -28,7 +27,7 @@ private[alpakka] object Signer {
       val cr = CanonicalRequest.from(reqWithHeaders)
       val authHeader = authorizationHeader("AWS4-HMAC-SHA256", key, date, cr)
       reqWithHeaders.withHeaders(reqWithHeaders.headers :+ authHeader)
-    }
+    }.mapMaterializedValue(_ => NotUsed)
   }
 
   private[this] def sessionHeader(key: SigningKey): Option[HttpHeader] =
