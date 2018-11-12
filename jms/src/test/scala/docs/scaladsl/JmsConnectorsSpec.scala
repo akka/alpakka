@@ -23,7 +23,7 @@ import org.mockito.stubbing.Answer
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.collection.immutable.Seq
+import scala.collection.immutable
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -37,20 +37,21 @@ class JmsConnectorsSpec extends JmsSpec {
 
   "The JMS Connectors" should {
     "publish and consume strings through a queue" in withServer() { ctx =>
-      //#connection-factory
+      //#connection-factory #text-sink
       val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
-      //#connection-factory
+      //#connection-factory #text-sink
 
-      //#create-text-sink
+      //#text-sink
+
       val jmsSink: Sink[String, Future[Done]] = JmsProducer.textSink(
-        JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")
+        JmsProducerSettings(system, connectionFactory).withQueue("test")
       )
-      //#create-text-sink
 
-      //#run-text-sink
       val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
-      Source(in).runWith(jmsSink)
-      //#run-text-sink
+      val streamCompletion: Future[Done] =
+        Source(in)
+          .runWith(jmsSink)
+      //#text-sink
 
       //#create-text-source
       val jmsSource: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
@@ -62,26 +63,27 @@ class JmsConnectorsSpec extends JmsSpec {
       val result = jmsSource.take(in.size).runWith(Sink.seq)
       //#run-text-source
 
+      streamCompletion.futureValue shouldEqual Done
       result.futureValue shouldEqual in
     }
 
     "publish and consume serializable objects through a queue" in withServer() { ctx =>
-      //#connection-factory-object
+      //#connection-factory-object #object-sink
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
       connectionFactory.setTrustedPackages(List(classOf[DummyObject].getPackage.getName).asJava)
-      //#connection-factory-object
+      //#connection-factory-object #object-sink
 
-      //#create-object-sink
+      //#object-sink
+
       val jmsSink: Sink[Serializable, Future[Done]] = JmsProducer.objectSink(
-        JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")
+        JmsProducerSettings(system, connectionFactory).withQueue("test")
       )
-      //#create-object-sink
-
-      //#run-object-sink
-
       val in = DummyObject("ThisIsATest")
-      Source.single(in).runWith(jmsSink)
-      //#run-object-sink
+      val streamCompletion: Future[Done] =
+        Source
+          .single(in)
+          .runWith(jmsSink)
+      //#object-sink
 
       //#create-object-source
       val jmsSource: Source[java.io.Serializable, JmsConsumerControl] = JmsConsumer.objectSource(
@@ -93,22 +95,23 @@ class JmsConnectorsSpec extends JmsSpec {
       val result = jmsSource.take(1).runWith(Sink.head)
       //#run-object-source
 
+      streamCompletion.futureValue shouldEqual Done
       result.futureValue shouldEqual in
     }
 
     "publish and consume bytearray through a queue" in withServer() { ctx =>
+      //#bytearray-sink
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
-      //#create-bytearray-sink
       val jmsSink: Sink[Array[Byte], Future[Done]] = JmsProducer.bytesSink(
-        JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")
+        JmsProducerSettings(system, connectionFactory).withQueue("test")
       )
-      //#create-bytearray-sink
-
-      //#run-bytearray-sink
-      val in = "ThisIsATest".getBytes(Charset.forName("UTF-8"))
-      Source.single(in).runWith(jmsSink)
-      //#run-bytearray-sink
+      val in: Array[Byte] = "ThisIsATest".getBytes(Charset.forName("UTF-8"))
+      val streamCompletion: Future[Done] =
+        Source
+          .single(in)
+          .runWith(jmsSink)
+      //#bytearray-sink
 
       //#create-bytearray-source
       val jmsSource: Source[Array[Byte], JmsConsumerControl] = JmsConsumer.bytesSource(
@@ -120,19 +123,18 @@ class JmsConnectorsSpec extends JmsSpec {
       val result = jmsSource.take(1).runWith(Sink.head)
       //#run-bytearray-source
 
+      streamCompletion.futureValue shouldEqual Done
       result.futureValue shouldEqual in
     }
 
     "publish and consume map through a queue" in withServer() { ctx =>
+      //#map-sink
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
-      //#create-map-sink
       val jmsSink: Sink[Map[String, Any], Future[Done]] = JmsProducer.mapSink(
-        JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")
+        JmsProducerSettings(system, connectionFactory).withQueue("test")
       )
-      //#create-map-sink
 
-      //#run-map-sink
       val input = List(
         Map[String, Any](
           "string" -> "value",
@@ -146,8 +148,10 @@ class JmsConnectorsSpec extends JmsSpec {
         )
       )
 
-      Source(input).runWith(jmsSink)
-      //#run-map-sink
+      val streamCompletion: Future[Done] =
+        Source(input)
+          .runWith(jmsSink)
+      //#map-sink
 
       //#create-map-source
       val jmsSource: Source[Map[String, Any], JmsConsumerControl] = JmsConsumer.mapSource(
@@ -159,6 +163,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val result = jmsSource.take(1).runWith(Sink.seq)
       //#run-map-source
 
+      streamCompletion.futureValue shouldEqual Done
       result.futureValue.zip(input).foreach {
         case (out, in) =>
           out("string") shouldEqual in("string")
@@ -263,7 +268,7 @@ class JmsConnectorsSpec extends JmsSpec {
           .withDestination(CustomDestination("custom-numbers", createQueue("custom-numbers")))
       )
 
-      val msgsIn: Seq[JmsTextMessage] = (1 to 10).toList.map { n =>
+      val msgsIn: immutable.Seq[JmsTextMessage] = (1 to 10).toList.map { n =>
         JmsTextMessage(n.toString)
       }
 
@@ -809,21 +814,22 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "producer flow" in withServer() { ctx =>
+      //#flow-producer
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
-      //#create-flow-producer
-      val flowSink: Flow[JmsMessage, JmsMessage, JmsProducerStatus] = JmsProducer.flow(
-        JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")
-      )
-      //#create-flow-producer
+      val flow: Flow[JmsMessage, JmsMessage, JmsProducerStatus] =
+        JmsProducer.flow(
+          JmsProducerSettings(system, connectionFactory)
+            .withQueue("test")
+        )
 
-      //#run-flow-producer
-      val input = (1 to 100).map(i => JmsTextMessage(i.toString))
+      val input: immutable.Seq[JmsTextMessage] =
+        (1 to 100).map(i => JmsTextMessage(i.toString))
 
-      val result = Source(input)
-        .via(flowSink)
+      val result: Future[Seq[JmsMessage]] = Source(input)
+        .via(flow)
         .runWith(Sink.seq)
-      //#run-flow-producer
+      //#flow-producer
 
       result.futureValue should ===(input)
     }
@@ -834,7 +840,7 @@ class JmsConnectorsSpec extends JmsSpec {
       //#run-directed-flow-producer
       val flowSink: Flow[JmsMessage, JmsMessage, JmsProducerStatus] =
         JmsProducer.flow(
-          JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")
+          JmsProducerSettings(system, connectionFactory).withQueue("test")
         )
 
       val input = (1 to 100).map { i =>
@@ -1137,14 +1143,21 @@ class JmsConnectorsSpec extends JmsSpec {
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       //#run-flexi-flow-producer
-      val jmsProducer = JmsProducer.flexiFlow[JmsTextMessage, String](
-        JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")
-      )
+      val jmsProducer: Flow[JmsProducerMessage.Envelope[JmsTextMessage, String],
+                            JmsProducerMessage.Envelope[JmsTextMessage, String],
+                            JmsProducerStatus] =
+        JmsProducer.flexiFlow[JmsTextMessage, String](
+          JmsProducerSettings(system, connectionFactory).withQueue("test")
+        )
 
       val data = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
-      val in = data.map(t => JmsProducerMessage.Message(JmsTextMessage(t), t))
+      val in: immutable.Seq[JmsProducerMessage.Envelope[JmsTextMessage, String]] =
+        data.map(t => JmsProducerMessage.message(JmsTextMessage(t), t))
 
-      val result = Source(in).via(jmsProducer).map(_.passThrough).runWith(Sink.seq)
+      val result = Source(in)
+        .via(jmsProducer)
+        .map(_.passThrough) // extract the value passed through
+        .runWith(Sink.seq)
       //#run-flexi-flow-producer
 
       result.futureValue shouldEqual data
@@ -1176,7 +1189,7 @@ class JmsConnectorsSpec extends JmsSpec {
       )
 
       val data = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
-      val in = data.map(t => JmsProducerMessage.PassThroughMessage(t))
+      val in = data.map(t => JmsProducerMessage.passThroughMessage(t))
 
       val result = Source(in).via(jmsProducer).map(_.passThrough).runWith(Sink.seq)
       //#run-flexi-flow-pass-through-producer

@@ -5,7 +5,7 @@
 package docs.scaladsl
 
 import akka.stream.alpakka.jms._
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.activemq.ActiveMQConnectionFactory
 import org.scalatest.OptionValues
 
@@ -34,7 +34,9 @@ class JmsSettingsSpec extends JmsSpec with OptionValues {
       //#send-retry-settings
 
       //#producer-settings
-      // reiterating defaults from reference.conf
+      val settingsViaActorSystem = JmsProducerSettings(system, new ActiveMQConnectionFactory("broker-url"))
+
+      val producerConfig: Config = system.settings.config.getConfig(JmsProducerSettings.configPath)
       val settings = JmsProducerSettings(producerConfig, new ActiveMQConnectionFactory("broker-url"))
         .withTopic("target-topic")
         .withCredentials(Credentials("username", "password"))

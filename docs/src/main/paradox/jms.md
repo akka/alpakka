@@ -1,6 +1,14 @@
 # JMS
 
-The JMS connector provides Akka Stream sources and sinks to connect to JMS providers.
+@@@ note { title="Java Message Service (JMS)" }
+
+The Java Message Service (JMS) API is a Java message-oriented middleware API for sending messages between two or more clients. It is an implementation to handle the producer–consumer problem. JMS is a part of the [Java Platform, Enterprise Edition (Java EE)](https://docs.oracle.com/javaee/7/tutorial/jms-concepts001.htm#BNCDR), and was defined by a specification developed at Sun Microsystems, but which has since been guided by the Java Community Process. It is a messaging standard that allows application components based on Java EE to create, send, receive, and read messages. It allows the communication between different components of a distributed application to be loosely coupled, reliable, and asynchronous.
+
+-- [Wikipedia](https://en.wikipedia.org/wiki/Java_Message_Service)
+
+@@@
+
+The Alpakka JMS connector provides Akka Stream sources and sinks to connect to JMS providers.
 
 ### Reported issues
 
@@ -17,12 +25,33 @@ The JMS connector provides Akka Stream sources and sinks to connect to JMS provi
   version2=1.1
 }
 
-## Usage
+## Sending messages
 
-The JMS message model supports several types of message body (see @javadoc[javax.jms.Message](javax.jms.Message)) and Alpakka currently supports messages with a body containing a @javadoc[String](java.lang.String),
-a @javadoc[Serializable](java.io.Serializable) object, a @javadoc[Map](java.util.Map) or a byte array.
+Alpakka JMS offers sending messages in three ways
 
-First define a @javadoc[javax.jms.ConnectionFactory](javax.jms.ConnectionFactory) depending on the implementation you're using. Here we're using Active MQ.
+* JVM types to an Akka Streams Sink
+* `JmsMessage` sub-types to a Akka Streams Sink or Flow (using `JmsProducer.create` or `JmsProducer.flow`)
+* `Envelopes` for `JmsMessage` sub-types to a Akka Streams Flow (using `JmsProducer.flexiFlow`) to support pass-throughs
+
+The JMS message model supports several types of message bodies in (see @javadoc[javax.jms.Message](javax.jms.Message)), which may be created directly from the Akka Stream elements, or in wrappers to access more advanced features.
+
+| Stream element type                                   | Alpakka producer         |
+|-------------------------------------------------------|--------------------------|
+| String                                                | [`JmsProducer.textSink`](#text-sinks)   |
+| @scala[Array[Byte]]@java[byte[]]                      | [`JmsProducer.bytesSink`](#byte-array-sinks)  |
+| @scala[Map[String, Object]]@java[Map<String, Object>] | [`JmsProducer.mapSink`](#map-messages-sinks)  |
+| Object (`java.io.Serializable`)                       | [`JmsProducer.objectSink`](#object-sinks)     |
+| `JmsTextMessage`                                      | @scala[`JmsProducer.apply`]@java[`JmsProducer.create`] or [`JmsProducer.flow`](#sending-messages-as-a-flow) |  
+| `JmsByteMessage`                                      | @scala[`JmsProducer.apply`]@java[`JmsProducer.create`] or [`JmsProducer.flow`](#sending-messages-as-a-flow) |  
+| `JmsMapMessage`                                       | @scala[`JmsProducer.apply`]@java[`JmsProducer.create`] or [`JmsProducer.flow`](#sending-messages-as-a-flow) |  
+| `JmsObjectMessage`                                    | @scala[`JmsProducer.apply`]@java[`JmsProducer.create`] or [`JmsProducer.flow`](#sending-messages-as-a-flow) |  
+| @scala[`JmsProducerMessage.Envelope[JmsMessage, PassThrough]`]@java[`JmsProducerMessage.Envelope<JmsMessage, PassThrough>`]             | [`JmsProducer.flexiFlow`](#passing-context-through-the-producer) |  
+
+
+
+### Configure JMS producers
+
+To connect to the JMS broker, first define an appropriate @javadoc[javax.jms.ConnectionFactory](javax.jms.ConnectionFactory). Here we're using Active MQ.
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }
@@ -30,105 +59,67 @@ Scala
 Java
 : @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #connection-factory }
 
-The created @javadoc[ConnectionFactory](javax.jms.ConnectionFactory) is then used for the creation of the different jms sinks or sources (see below).
+
+The created @javadoc[ConnectionFactory](javax.jms.ConnectionFactory) is then used for the creation of the different JMS sinks or sources (see below).
 
 
-## Sending messages to a JMS provider
+### Raw JVM type sinks
 
-Use a case class with the subtype of @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) to wrap the messages you want to send and optionally set their properties.
-@java[@scaladoc[JmsProducer](akka.stream.alpakka.jms.javadsl.JmsProducer$)]@scala[@scaladoc[JmsProducer](akka.stream.alpakka.jms.scaladsl.JmsProducer$)] contains factory methods to facilitate
-the creation of sinks according to the message type (see below for an example).
-
-
-### Sending text messages to a JMS provider
+#### Text sinks
 
 Create a sink, that accepts and forwards @scaladoc[JmsTextMessage](akka.stream.alpakka.jms.JmsTextMessage$)s to the JMS provider:
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-text-sink }
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #text-sink }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-text-sink }
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #text-sink }
 
-Last step is to @extref[materialize](akka-docs:scala/stream/stream-flows-and-basics) and run the sink(s) we have created.
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-text-sink }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-text-sink }
-
-### Sending byte messages to a JMS provider
+### Byte array sinks
 
 Create a sink, that accepts and forwards @scaladoc[JmsByteMessage](akka.stream.alpakka.jms.JmsByteMessage$)s to the JMS provider.
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-bytearray-sink }
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #bytearray-sink }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-bytearray-sink  }
-
-Last step is to @extref[materialize](akka-docs:scala/stream/stream-flows-and-basics) and run the sink(s) we have created.
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-bytearray-sink }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-bytearray-sink }
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #bytearray-sink  }
 
 
-### Sending map messages to a JMS provider
+#### Map message sink
 
 Create a sink, that accepts and forwards @scaladoc[JmsMapMessage](akka.stream.alpakka.jms.JmsMapMessage$)s to the JMS provider:
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-map-sink }
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #map-sink }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-map-sink }
-
-Last step is to @extref[materialize](akka-docs:scala/stream/stream-flows-and-basics) and run the sink(s) we have created.
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-map-sink }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-map-sink }
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #map-sink }
 
 
-### Sending object messages to a JMS provider
+#### Object sinks
 
 Create and configure ActiveMQ connection factory to support serialization.
 See [ActiveMQ Security](http://activemq.apache.org/objectmessage.html) for more information on this.
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #connection-factory-object }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #connection-factory-object }
-
-
 Create a sink, that accepts and forwards @scaladoc[JmsObjectMessage](akka.stream.alpakka.jms.JmsObjectMessage$)s to the JMS provider:
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-object-sink }
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #object-sink }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-object-sink }
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #object-sink }
 
 
-Last step is to @extref[materialize](akka-docs:scala/stream/stream-flows-and-basics) and run the sink(s) we have created.
+### Use `JmsMessage` sub-types
 
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-object-sink }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-object-sink }
+Use a case class with the subtype of @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) to wrap the messages you want to send and optionally set message specific properties or headers.
+@java[@scaladoc[JmsProducer](akka.stream.alpakka.jms.javadsl.JmsProducer$)]@scala[@scaladoc[JmsProducer](akka.stream.alpakka.jms.scaladsl.JmsProducer$)] contains factory methods to facilitate
+the creation of sinks according to the message type (see below for an example).
 
 
-### Sending messages with properties to a JMS provider
+#### Setting JMS messages properties
 
-For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set jms properties.
+For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set JMS message properties.
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-properties }
@@ -136,8 +127,9 @@ Scala
 Java
 : @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-messages-with-properties }
 
-### Sending messages with header to a JMS provider
-For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set also jms headers.
+
+#### Setting JMS message header attributes
+For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set also JMS message headers.
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-headers }
@@ -151,21 +143,13 @@ Java
 The producer can also act as a flow, in order to publish messages in the middle of stream processing.
 For example, you can ensure that a message is persisted to the queue before subsequent processing.
 
-Create a flow:
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-flow-producer }
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #flow-producer }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-flow-producer }
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #flow-producer }
 
-Run the flow:
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-flow-producer }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-flow-producer }
 
 ### Sending messages with per-message destinations
 
@@ -179,10 +163,11 @@ Java
 
 When no destination is defined on the message, the destination given in the producer settings is used.
 
+
 ### Passing context through the producer
 
 In some use cases, it is useful to pass through context information when producing (e.g. for acknowledging or committing
-messages after sending to Jms). For this, the `JmsProducer.flexiFlow` accepts implementations of `JmsProducerEnvelope`,
+messages after sending to Jms). For this, the `JmsProducer.flexiFlow` accepts implementations of `JmsProducer.Envelope`,
 which it will pass through.
 
 Scala
@@ -202,7 +187,12 @@ Scala
 Java
 : @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-flexi-flow-pass-through-producer }
 
-## Configuring the Producer
+
+## Producer Settings
+
+The Alpakka JMS producer is configured via default settings in the [HOCON](https://github.com/lightbend/config#using-hocon-the-json-superset) config file section `alpakka.jms.producer` in your `application.conf`, and settings may be tweaked in the code using the `withXyz` methods.
+
+The `JmsProducerSettings` factories allow for passing the actor system to read from the default  `alpakka.jms.producer` section, or you may pass a `Config` instance which is resolved to a section of the same structure. 
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsSettingsSpec.scala) { #producer-settings }
@@ -221,6 +211,14 @@ connectionRetrySettings | default settings | Retry characteristics if the connec
 sendRetrySettings       | default settings | Retry characteristics if message sending failed. Please see default values under [Send Retries](#send-retries) |
 sessionCount            | defaults to `1` | Number of parallel sessions to use for sending JMS messages. Increasing the number of parallel sessions increases throughput at the cost of message ordering. While the messages may arrive out of order on the JMS broker, the producer flow outputs messages in the order they are received |
 timeToLive              | optional    | Time messages should be kept on the Jms broker. This setting can be overridden on individual messages. If not set, messages will never expire |
+
+
+This section from `reference.conf` shows the structure to use for configuring multipe set-ups.
+
+reference.conf
+: @@snip [snip](/jms/src/main/resources/reference.conf) { #producer }
+
+
 
 ## Connection Retries
 
@@ -279,11 +277,16 @@ Java
 If a send operation finally fails, the stage also fails unless a different supervision strategy is applied. The 
 producer stage honours stream supervision.
 
+
 ### Observing connectivity and state of a JMS producer
 
 All JMS producer's materialized values are of type `JmsProducerStatus`. This provides a `connectorState` method returning
 a `Source` of `JmsConnectorState` updates that publishes connection attempts, disconnections, completions and failures.
 The source is completed after the JMS producer completes or fails.
+
+
+
+
 
 ## Receiving messages from a JMS provider
 
