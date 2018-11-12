@@ -25,6 +25,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import static junit.framework.TestCase.assertEquals;
 
 // #init-writer
@@ -61,7 +65,7 @@ public class AvroParquetSinkTest {
   }
 
   @Test
-  public void createNewParquetFile() throws InterruptedException, IOException {
+  public void createNewParquetFile() throws InterruptedException, IOException, TimeoutException, ExecutionException {
     // #init-writer
     Configuration conf = new Configuration();
     conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true);
@@ -78,9 +82,9 @@ public class AvroParquetSinkTest {
     Sink<GenericRecord, CompletionStage<Done>> sink = AvroParquetSink.create(writer);
     // #init-sink
 
-    Source.from(records).runWith(sink, materializer);
+    CompletionStage<Done> finish = Source.from(records).runWith(sink, materializer);
 
-    Thread.sleep(1000);
+    finish.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEquals(records.size(), checkResponse());
   }
