@@ -62,7 +62,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
 
       private def handleFailure(args: (Seq[WriteMessage[T, C]], Throwable)): Unit = {
         val (messages, exception) = args
-        if (settings.retryLogic.shouldRetry(retryCount, List(exception.toString))) {
+        if (!settings.retryLogic.shouldRetry(retryCount, List(exception.toString))) {
           log.error("Received error from elastic. Giving up after {} tries. {}, Error: {}",
                     retryCount,
                     settings.retryLogic,
