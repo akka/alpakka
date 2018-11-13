@@ -16,6 +16,8 @@ The JMS message model supports several types of message bodies in (see @javadoc[
 
 This examples shows how to listen to a JMS queue and emit @javadoc[`javax.jms.Message`](javax.jms.Message) elements into the stream.
 
+The materialized value `JmsConsumerControl` is used to shut down the consumer (it is a @scaladoc[Killswitch](akka.stream.KillSwitch)) and offers the possibility to inspect the connectivity state of the consumer. 
+
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #jms-source }
 

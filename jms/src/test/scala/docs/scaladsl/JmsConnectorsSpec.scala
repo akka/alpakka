@@ -215,17 +215,22 @@ class JmsConnectorsSpec extends JmsSpec {
         JmsConsumerSettings(system, connectionFactory).withQueue("numbers")
       )
 
-      val result: Future[immutable.Seq[String]] =
+      val (control, result): (JmsConsumerControl, Future[immutable.Seq[String]]) =
         jmsSource
           .take(msgsIn.size)
           .map {
             case t: javax.jms.TextMessage => t.getText
             case other => sys.error(s"unexpected message type ${other.getClass}")
           }
-          .runWith(Sink.seq)
+          .toMat(Sink.seq)(Keep.both)
+          .run()
       //#jms-source
 
       result.futureValue should have size 10
+      //#jms-source
+
+      control.shutdown()
+      //#jms-source
     }
 
     "publish and consume JMS text messages with header through a queue" in withServer() { ctx =>

@@ -300,22 +300,29 @@ public class JmsConnectorsTest {
               JmsConsumer.create(
                   JmsConsumerSettings.create(system, connectionFactory).withQueue("test"));
 
-          CompletionStage<List<String>> result =
+          Pair<JmsConsumerControl, CompletionStage<List<String>>> controlAndResult =
               jmsSource
                   .take(msgsIn.size())
                   .map(
                       msg -> {
-                        if (msg instanceof javax.jms.TextMessage) {
-                          TextMessage t = (javax.jms.TextMessage) msg;
+                        if (msg instanceof TextMessage) {
+                          TextMessage t = (TextMessage) msg;
                           return t.getText();
                         } else
                           throw new RuntimeException("unexpected message type " + msg.getClass());
                       })
-                  .runWith(Sink.seq(), materializer);
+                  .toMat(Sink.seq(), Keep.both())
+                  .run(materializer);
+
           // #jms-source
 
+          CompletionStage<List<String>> result = controlAndResult.second();
           List<String> outMessages = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
           assertEquals("unexpected number of elements", 10, outMessages.size());
+          // #jms-source
+          JmsConsumerControl control = controlAndResult.first();
+          control.shutdown();
+          // #jms-source
         });
   }
 
