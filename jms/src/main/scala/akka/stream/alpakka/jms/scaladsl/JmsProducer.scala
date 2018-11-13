@@ -12,10 +12,14 @@ import akka.{Done, NotUsed}
 
 import scala.concurrent.Future
 
+/**
+ * Factory methods to create JMS producers.
+ */
 object JmsProducer {
 
   /**
-   * Scala API: Creates an [[JmsProducer]] for [[JmsMessage]]s
+   * Create a flow to send [[akka.stream.alpakka.jms.JmsMessage JmsMessage]] sub-classes to
+   * a JMS broker.
    */
   def flow[T <: JmsMessage](settings: JmsProducerSettings): Flow[T, T, JmsProducerStatus] = settings.destination match {
     case None => throw new IllegalArgumentException(noProducerDestination(settings))
@@ -30,45 +34,52 @@ object JmsProducer {
   }
 
   /**
-   * Scala API: Creates an [[JmsProducer]] for [[Envelope]]s
+   * Create a flow to send [[akka.stream.alpakka.jms.JmsProducerMessage.Envelope JmsProducerMessage.Envelope]] sub-classes to
+   * a JMS broker to support pass-through of data.
    */
   def flexiFlow[T <: JmsMessage, PassThrough](
       settings: JmsProducerSettings
   ): Flow[Envelope[T, PassThrough], Envelope[T, PassThrough], JmsProducerStatus] = settings.destination match {
     case None => throw new IllegalArgumentException(noProducerDestination(settings))
     case Some(destination) =>
-      Flow.fromGraph(new JmsProducerStage[T, PassThrough](settings, destination)).mapMaterializedValue(toProducerStatus)
+      Flow
+        .fromGraph(new JmsProducerStage[T, PassThrough](settings, destination))
+        .mapMaterializedValue(toProducerStatus)
   }
 
   /**
-   * Scala API: Creates an [[JmsProducer]] for [[JmsMessage]]s
+   * Create a sink to send [[akka.stream.alpakka.jms.JmsMessage JmsMessage]] sub-classes to
+   * a JMS broker.
    */
   def apply(settings: JmsProducerSettings): Sink[JmsMessage, Future[Done]] =
     flow(settings).toMat(Sink.ignore)(Keep.right)
 
   /**
-   * Scala API: Creates an [[JmsProducer]] for strings
+   * Create a sink to send Strings as text messages to a JMS broker.
    */
   def textSink(settings: JmsProducerSettings): Sink[String, Future[Done]] =
-    Flow.fromFunction((s: String) => JmsTextMessage(s)).toMat(apply(settings))(Keep.right)
+    Flow.fromFunction((s: String) => JmsTextMessage(s)).via(flow(settings)).toMat(Sink.ignore)(Keep.right)
 
   /**
-   * Scala API: Creates an [[JmsProducer]] for bytes
+   * Create a sink to send byte arrays to a JMS broker.
    */
   def bytesSink(settings: JmsProducerSettings): Sink[Array[Byte], Future[Done]] =
-    Flow.fromFunction((s: Array[Byte]) => JmsByteMessage(s)).toMat(apply(settings))(Keep.right)
+    Flow.fromFunction((s: Array[Byte]) => JmsByteMessage(s)).via(flow(settings)).toMat(Sink.ignore)(Keep.right)
 
   /**
-   * Scala API: Creates an [[JmsProducer]] for maps with primitive data types
+   * Create a sink to send map structures to a JMS broker.
    */
   def mapSink(settings: JmsProducerSettings): Sink[Map[String, Any], Future[Done]] =
-    Flow.fromFunction((s: Map[String, Any]) => JmsMapMessage(s)).toMat(apply(settings))(Keep.right)
+    Flow.fromFunction((s: Map[String, Any]) => JmsMapMessage(s)).via(flow(settings)).toMat(Sink.ignore)(Keep.right)
 
   /**
-   * Scala API: Creates an [[JmsProducer]] for serializable objects
+   * Create a sink to send serialized objects to a JMS broker.
    */
   def objectSink(settings: JmsProducerSettings): Sink[java.io.Serializable, Future[Done]] =
-    Flow.fromFunction((s: java.io.Serializable) => JmsObjectMessage(s)).toMat(apply(settings))(Keep.right)
+    Flow
+      .fromFunction((s: java.io.Serializable) => JmsObjectMessage(s))
+      .via(flow(settings))
+      .toMat(Sink.ignore)(Keep.right)
 
   private def toProducerStatus(internal: JmsProducerMatValue) = new JmsProducerStatus {
 
