@@ -84,7 +84,7 @@ class MqttSessionSpec
       server.expectMsg(subscribeBytes)
       server.reply(subAckBytes)
 
-      client.offer(Command(publish))
+      session ! Command(publish)
 
       server.expectMsg(publishBytes)
       server.reply(pubAckBytes)
@@ -397,7 +397,7 @@ class MqttSessionSpec
       server.expectMsg(connectBytes)
       server.reply(connAckBytes)
 
-      client.offer(Command(publish))
+      session ! Command(publish)
 
       server.expectMsg(publishBytes)
     }
@@ -436,7 +436,7 @@ class MqttSessionSpec
       server.expectMsg(connectBytes)
       server.reply(connAckBytes)
 
-      client.offer(Command(publish, carry))
+      session ! Command(publish, carry)
 
       server.expectMsg(publishBytes)
       server.reply(pubAckBytes)
@@ -476,8 +476,8 @@ class MqttSessionSpec
       server.expectMsg(connectBytes)
       server.reply(connAckBytes)
 
-      client.offer(Command(publish))
-      client.offer(Command(publish))
+      session ! Command(publish)
+      session ! Command(publish)
 
       server.expectMsg(publishBytes)
       server.reply(pubAckBytes)
@@ -520,7 +520,7 @@ class MqttSessionSpec
       server.expectMsg(connectBytes)
       server.reply(connAckBytes)
 
-      client.offer(Command(publish))
+      session ! Command(publish)
 
       server.expectMsg(publishBytes)
       server.reply(connAckBytes) // It doesn't matter what the message is - our test machinery here just wants a reply
@@ -566,7 +566,7 @@ class MqttSessionSpec
       server.expectMsg(connectBytes)
       server.reply(connAckBytes)
 
-      client.offer(Command(publish, carry))
+      session ! Command(publish, carry)
 
       server.expectMsg(publishBytes)
       server.reply(pubRecBytes)
@@ -802,7 +802,7 @@ class MqttSessionSpec
       server.offer(Command(pubAck))
       client.expectMsg(pubAckBytes)
 
-      server.offer(Command(publish))
+      session ! Command(publish)
       client.expectMsg(publishBytes)
 
       fromClientQueue.offer(unsubscribeBytes)
@@ -1077,7 +1077,7 @@ class MqttSessionSpec
       server.offer(Command(pubAck))
       client.expectMsg(pubAckBytes)
 
-      server.offer(Command(publish))
+      session ! Command(publish)
       client.expectMsg(publishBytes)
     }
 

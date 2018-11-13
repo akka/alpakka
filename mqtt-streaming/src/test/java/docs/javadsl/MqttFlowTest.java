@@ -4,6 +4,7 @@
 
 package docs.javadsl;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.JavaPartialFunction;
@@ -48,6 +49,7 @@ import scala.collection.JavaConverters;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +57,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class MqttFlowTest {
 
@@ -98,24 +99,36 @@ public class MqttFlowTest {
     // #create-streaming-flow
 
     // #run-streaming-flow
-    Pair<SourceQueueWithComplete<Command<Object>>, CompletionStage<DecodeErrorOrEvent<Object>>>
-        run =
-            Source.<Command<Object>>queue(3, OverflowStrategy.fail())
-                .via(mqttFlow)
-                .drop(3)
-                .toMat(Sink.head(), Keep.both())
-                .run(materializer);
+    Pair<SourceQueueWithComplete<Command<Object>>, CompletionStage<Publish>> run =
+        Source.<Command<Object>>queue(3, OverflowStrategy.fail())
+            .via(mqttFlow)
+            .collect(
+                new JavaPartialFunction<DecodeErrorOrEvent<Object>, Publish>() {
+                  @Override
+                  public Publish apply(DecodeErrorOrEvent<Object> x, boolean isCheck) {
+                    if (x.getEvent().isPresent() && x.getEvent().get().event() instanceof Publish)
+                      return (Publish) x.getEvent().get().event();
+                    else throw noMatch();
+                  }
+                })
+            .toMat(Sink.head(), Keep.both())
+            .run(materializer);
 
     SourceQueueWithComplete<Command<Object>> commands = run.first();
     commands.offer(new Command<>(new Connect(clientId, ConnectFlags.CleanSession())));
     commands.offer(new Command<>(new Subscribe(topic)));
-    commands.offer(new Command<>(new Publish(topic, ByteString.fromString("ohi"))));
+    session.tell(
+        new Command<>(
+            new Publish(
+                ControlPacketFlags.RETAIN() | ControlPacketFlags.QoSAtLeastOnceDelivery(),
+                topic,
+                ByteString.fromString("ohi"))));
     // #run-streaming-flow
 
-    CompletionStage<DecodeErrorOrEvent<Object>> event = run.second();
-    DecodeErrorOrEvent<Object> decodeErrorOrEvent =
-        event.toCompletableFuture().get(3, TimeUnit.SECONDS);
-    assertTrue(decodeErrorOrEvent.getEvent().isPresent());
+    CompletionStage<Publish> event = run.second();
+    Publish publishEvent = event.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertEquals(publishEvent.topicName(), topic);
+    assertEquals(publishEvent.payload(), ByteString.fromString("ohi"));
   }
 
   @Test
@@ -157,6 +170,7 @@ public class MqttFlowTest {
                   SourceQueueWithComplete<Command<Object>> queue = run.first();
                   Source<DecodeErrorOrEvent<Object>, NotUsed> source = run.second();
 
+                  CompletableFuture<Done> subscribed = new CompletableFuture<>();
                   source.runForeach(
                       deOrE -> {
                         if (deOrE.getEvent().isPresent()) {
@@ -179,11 +193,14 @@ public class MqttFlowTest {
                                     .map(x -> x._2().underlying())
                                     .collect(Collectors.toList());
                             queue.offer(new Command<>(new SubAck(subscribe.packetId(), flags)));
+                            subscribed.complete(Done.getInstance());
                           } else if (cp instanceof Publish) {
                             Publish publish = (Publish) cp;
-                            int packetId = publish.packetId().get().underlying();
-                            queue.offer(new Command<>(new PubAck(packetId)));
-                            queue.offer(new Command<>(publish));
+                            if ((publish.flags() & ControlPacketFlags.RETAIN()) != 0) {
+                              int packetId = publish.packetId().get().underlying();
+                              queue.offer(new Command<>(new PubAck(packetId)));
+                              subscribed.thenRun(() -> session.tell(new Command<>(publish)));
+                            }
                           } // Ignore everything else
                         }
                       },
@@ -203,9 +220,10 @@ public class MqttFlowTest {
     Flow<ByteString, ByteString, CompletionStage<Tcp.OutgoingConnection>> connection =
         Tcp.get(system).outgoingConnection(host, port);
 
+    MqttClientSession clientSession = new ActorMqttClientSession(settings, materializer, system);
+
     Flow<Command<Object>, DecodeErrorOrEvent<Object>, NotUsed> mqttFlow =
-        Mqtt.clientSessionFlow(new ActorMqttClientSession(settings, materializer, system))
-            .join(connection);
+        Mqtt.clientSessionFlow(clientSession).join(connection);
 
     Pair<SourceQueueWithComplete<Command<Object>>, CompletionStage<Publish>> run =
         Source.<Command<Object>>queue(3, OverflowStrategy.fail())
@@ -225,7 +243,12 @@ public class MqttFlowTest {
     SourceQueueWithComplete<Command<Object>> commands = run.first();
     commands.offer(new Command<>(new Connect(clientId, ConnectFlags.None())));
     commands.offer(new Command<>(new Subscribe(topic)));
-    commands.offer(new Command<>(new Publish(topic, ByteString.fromString("ohi"))));
+    clientSession.tell(
+        new Command<>(
+            new Publish(
+                ControlPacketFlags.RETAIN() | ControlPacketFlags.QoSAtLeastOnceDelivery(),
+                topic,
+                ByteString.fromString("ohi"))));
 
     CompletionStage<Publish> event = run.second();
     Publish publish = event.toCompletableFuture().get(3, TimeUnit.SECONDS);

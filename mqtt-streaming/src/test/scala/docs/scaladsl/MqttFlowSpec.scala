@@ -4,7 +4,7 @@
 
 package docs.scaladsl
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream.alpakka.mqtt.streaming._
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, ActorMqttServerSession, Mqtt}
@@ -15,6 +15,7 @@ import akka.util.ByteString
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
+import scala.concurrent.Promise
 import scala.concurrent.duration._
 
 class MqttFlowSpec
@@ -51,19 +52,23 @@ class MqttFlowSpec
       //#run-streaming-flow
       val (commands, events) =
         Source
-          .queue(3, OverflowStrategy.fail)
+          .queue(2, OverflowStrategy.fail)
           .via(mqttFlow)
-          .drop(3)
+          .collect {
+            case Right(Event(p: Publish, _)) => p
+          }
           .toMat(Sink.head)(Keep.both)
           .run()
 
       commands.offer(Command(Connect(clientId, ConnectFlags.CleanSession)))
       commands.offer(Command(Subscribe(topic)))
-      commands.offer(Command(Publish(topic, ByteString("ohi"))))
+      session ! Command(
+        Publish(ControlPacketFlags.RETAIN | ControlPacketFlags.QoSAtLeastOnceDelivery, topic, ByteString("ohi"))
+      )
       //#run-streaming-flow
 
       events.futureValue match {
-        case Right(Event(Publish(_, `topic`, _, bytes), _)) => bytes shouldBe ByteString("ohi")
+        case Publish(_, `topic`, _, bytes) => bytes shouldBe ByteString("ohi")
         case e => fail("Unexpected event: " + e)
       }
     }
@@ -98,15 +103,19 @@ class MqttFlowSpec
                 .toMat(BroadcastHub.sink)(Keep.both)
                 .run()
 
+              val subscribed = Promise[Done]
               source
                 .runForeach {
                   case Right(Event(_: Connect, _)) =>
                     queue.offer(Command(ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)))
                   case Right(Event(cp: Subscribe, _)) =>
                     queue.offer(Command(SubAck(cp.packetId, cp.topicFilters.map(_._2))))
-                  case Right(Event(publish @ Publish(_, _, Some(packetId), _), _)) =>
+                    subscribed.success(Done)
+                  case Right(Event(publish @ Publish(flags, _, Some(packetId), _), _))
+                      if flags.contains(ControlPacketFlags.RETAIN) =>
                     queue.offer(Command(PubAck(packetId)))
-                    queue.offer(Command(publish))
+                    import mat.executionContext
+                    subscribed.future.foreach(_ => session ! Command(publish))
                   case _ => // Ignore everything else
                 }
 
@@ -121,11 +130,12 @@ class MqttFlowSpec
 
       bound.futureValue.localAddress.getPort shouldBe port
 
+      val clientSession = ActorMqttClientSession(settings)
       val connection = Tcp().outgoingConnection(host, port)
-      val mqttFlow = Mqtt.clientSessionFlow(ActorMqttClientSession(settings)).join(connection)
+      val mqttFlow = Mqtt.clientSessionFlow(clientSession).join(connection)
       val (commands, events) =
         Source
-          .queue(3, OverflowStrategy.fail)
+          .queue(2, OverflowStrategy.fail)
           .via(mqttFlow)
           .collect {
             case Right(Event(p: Publish, _)) => p
@@ -135,7 +145,9 @@ class MqttFlowSpec
 
       commands.offer(Command(Connect(clientId, ConnectFlags.None)))
       commands.offer(Command(Subscribe(topic)))
-      commands.offer(Command(Publish(topic, ByteString("ohi"))))
+      clientSession ! Command(
+        Publish(ControlPacketFlags.RETAIN | ControlPacketFlags.QoSAtLeastOnceDelivery, topic, ByteString("ohi"))
+      )
 
       events.futureValue match {
         case Publish(_, `topic`, _, bytes) => bytes shouldBe ByteString("ohi")
