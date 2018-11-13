@@ -6,13 +6,18 @@ package akka.stream.alpakka.amqp.scaladsl
 
 import akka.Done
 import akka.stream.alpakka.amqp.{AmqpSinkSettings, OutgoingMessage}
-import akka.stream.alpakka.amqp.impl.AmqpPublishConfirmFlowStage
-import akka.stream.scaladsl.Flow
+import akka.stream.alpakka.amqp.impl.AmqpPublishFlowStage
+import akka.stream.scaladsl.{Flow, Keep}
+import akka.util.ByteString
 
 import scala.concurrent.Future
 
 object AmqpPublishFlow {
-  def withConfirms[O](settings: AmqpSinkSettings,
-                      confirmTimeout: Long = 1000): Flow[(OutgoingMessage, O), O, Future[Done]] =
-    Flow.fromGraph(new AmqpPublishConfirmFlowStage[O](settings, confirmTimeout))
+  def simple[O](settings: AmqpSinkSettings): Flow[(ByteString, O), O, Future[Done]] =
+    Flow[(ByteString, O)]
+      .map { case (s, passthrough) => (OutgoingMessage(s, false, false), passthrough) }
+      .viaMat(apply[O](settings))(Keep.right)
+
+  def apply[O](settings: AmqpSinkSettings): Flow[(OutgoingMessage, O), O, Future[Done]] =
+    Flow.fromGraph(new AmqpPublishFlowStage[O](settings))
 }

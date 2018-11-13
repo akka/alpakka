@@ -6,11 +6,12 @@ package akka.stream.alpakka.amqp.impl
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.stream.alpakka.amqp.{AmqpWriteSettings, WriteMessage}
+import akka.stream.alpakka.amqp.{AmqpPublishConfirmSettings, AmqpWriteSettings, WriteMessage}
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler}
 import akka.stream.{ActorAttributes, Attributes, Inlet, SinkShape}
 
 import scala.concurrent.{Future, Promise}
+import scala.util.{Failure, Success, Try}
 
 /**
  * Connects to an AMQP server upon materialization and sends write messages to the server.
@@ -34,7 +35,10 @@ private[amqp] final class AmqpSinkStage(settings: AmqpWriteSettings)
       private val exchange = settings.exchange.getOrElse("")
       private val routingKey = settings.routingKey.getOrElse("")
 
-      override def whenConnected(): Unit = pull(in)
+      override def whenConnected(): Unit = {
+        if (settings.publishConfirm.isDefined) channel.confirmSelect()
+        pull(in)
+      }
 
       setHandler(
         in,
@@ -60,7 +64,16 @@ private[amqp] final class AmqpSinkStage(settings: AmqpWriteSettings)
               elem.properties.orNull,
               elem.bytes.toArray
             )
-            pull(in)
+
+            settings.publishConfirm match {
+              case Some(AmqpPublishConfirmSettings(confirmTimeout)) =>
+                Try(channel.waitForConfirmsOrDie(confirmTimeout)) match {
+                  case Success(_) => pull(in)
+                  case Failure(e) => onFailure(e)
+                }
+              case None => pull(in)
+            }
+
           }
         }
       )

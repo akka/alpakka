@@ -8,7 +8,7 @@ import java.net.ConnectException
 
 import akka.Done
 import akka.stream._
-import akka.stream.alpakka.amqp._
+import akka.stream.alpakka.amqp.{OutgoingMessage, _}
 import akka.stream.scaladsl.{GraphDSL, Keep, Merge, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
@@ -127,16 +127,17 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueName = "amqp-conn-it-spec-publish-with-confirms-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
 
-      val amqpPublishFlow = AmqpPublishFlow.withConfirms[String](
+      val amqpPublishFlow = AmqpPublishFlow.simple[String](
         AmqpSinkSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
+          .withPublishConfirms()
       )
 
       val input = Vector("one", "two", "three", "four", "five")
       val (_, probe) =
         Source(input)
-          .map(s => (OutgoingMessage(ByteString(s), false, false), s"$s-something"))
+          .map(s => (ByteString(s), s"$s-something"))
           .viaMat(amqpPublishFlow)(Keep.right)
           .toMat(TestSink.probe)(Keep.both)
           .run
@@ -147,21 +148,22 @@ class AmqpConnectorsSpec extends AmqpSpec {
         .expectComplete()
     }
 
-    "correctly handle publish confirms fails" in {
-      val queueName = "amqp-conn-it-spec-publish-with-confirms-queue-" + System.currentTimeMillis()
-      val queueDeclaration = QueueDeclaration(queueName)
+    "correctly handle publish confirm fails" in {
+      val exchangeName = "amqp-conn-it-spec-publish-with-confirms-exchange-" + System.currentTimeMillis()
+      val routingKey = "amqp-conn-it-spec-publish-with-confirms-rk-" + System.currentTimeMillis()
 
-      val amqpPublishFlow = AmqpPublishFlow.withConfirms[String](
+      val amqpPublishFlow = AmqpPublishFlow[String](
         AmqpSinkSettings(connectionProvider)
-          .withRoutingKey(queueName)
-          .withDeclaration(queueDeclaration),
-        1 // We set an unreachable timeout, and expect a timeout exception
+          .withRoutingKey(routingKey)
+          .withExchange(exchangeName)
+          .withPublishConfirms()
       )
 
       val input = Vector("one")
       val (_, probe) =
         Source(input)
-          .map(s => (OutgoingMessage(ByteString(s), false, false), s"$s-something"))
+        // We set mandatory to make sure that the confirm fails
+          .map(s => (OutgoingMessage(ByteString(s), immediate = false, mandatory = true), s"$s-something"))
           .viaMat(amqpPublishFlow)(Keep.right)
           .toMat(TestSink.probe)(Keep.both)
           .run
@@ -175,7 +177,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       Source
         .empty[(OutgoingMessage, String)]
-        .via(AmqpPublishFlow.withConfirms(AmqpSinkSettings(connectionProvider)))
+        .via(AmqpPublishFlow(AmqpSinkSettings(connectionProvider)))
         .runWith(TestSink.probe)
         .ensureSubscription()
         .expectComplete()

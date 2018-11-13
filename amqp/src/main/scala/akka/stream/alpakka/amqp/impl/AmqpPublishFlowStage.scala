@@ -6,7 +6,7 @@ package akka.stream.alpakka.amqp.impl
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.stream.alpakka.amqp.{AmqpSinkSettings, OutgoingMessage}
+import akka.stream.alpakka.amqp.{AmqpPublishConfirmSettings, AmqpSinkSettings, OutgoingMessage}
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler}
 import akka.stream._
 
@@ -18,7 +18,7 @@ import scala.util.{Failure, Success, Try}
  * Each materialized flow will create one connection to the broker.
  */
 @InternalApi
-private[amqp] final class AmqpPublishConfirmFlowStage[O](settings: AmqpSinkSettings, confirmTimeout: Long)
+private[amqp] final class AmqpPublishFlowStage[O](settings: AmqpSinkSettings)
     extends GraphStageWithMaterializedValue[FlowShape[(OutgoingMessage, O), O], Future[Done]] { stage =>
 
   val in = Inlet[(OutgoingMessage, O)]("AmqpPublishConfirmFlow.in")
@@ -39,7 +39,7 @@ private[amqp] final class AmqpPublishConfirmFlowStage[O](settings: AmqpSinkSetti
       private val routingKey = settings.routingKey.getOrElse("")
 
       override def whenConnected(): Unit =
-        channel.confirmSelect()
+        if (settings.publishConfirm.isDefined) channel.confirmSelect()
 
       setHandler(
         out,
@@ -73,9 +73,13 @@ private[amqp] final class AmqpPublishConfirmFlowStage[O](settings: AmqpSinkSetti
               elem.bytes.toArray
             )
 
-            Try(channel.waitForConfirmsOrDie(confirmTimeout)) match {
-              case Success(_) => push(out, passthrough)
-              case Failure(e) => fail(out, e)
+            settings.publishConfirm match {
+              case Some(AmqpPublishConfirmSettings(confirmTimeout)) =>
+                Try(channel.waitForConfirmsOrDie(confirmTimeout)) match {
+                  case Success(_) => push(out, passthrough)
+                  case Failure(e) => fail(out, e)
+                }
+              case None => push(out, passthrough)
             }
           }
         }

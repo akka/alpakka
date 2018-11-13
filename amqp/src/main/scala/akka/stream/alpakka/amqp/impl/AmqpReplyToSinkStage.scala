@@ -6,11 +6,12 @@ package akka.stream.alpakka.amqp.impl
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.stream.alpakka.amqp.{AmqpReplyToSinkSettings, WriteMessage}
+import akka.stream.alpakka.amqp.{AmqpPublishConfirmSettings, AmqpReplyToSinkSettings, WriteMessage}
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler}
 import akka.stream.{ActorAttributes, Attributes, Inlet, SinkShape}
 
 import scala.concurrent.{Future, Promise}
+import scala.util.{Failure, Success, Try}
 
 /**
  * Connects to an AMQP server upon materialization and sends write messages to the server.
@@ -33,7 +34,10 @@ private[amqp] final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings
     (new GraphStageLogic(shape) with AmqpConnectorLogic {
       override val settings = stage.settings
 
-      override def whenConnected(): Unit = pull(in)
+      override def whenConnected(): Unit = {
+        if (settings.publishConfirm.isDefined) channel.confirmSelect()
+        pull(in)
+      }
 
       override def postStop(): Unit = {
         promise.tryFailure(new RuntimeException("stage stopped unexpectedly"))
@@ -73,11 +77,18 @@ private[amqp] final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings
                 elem.properties.orNull,
                 elem.bytes.toArray
               )
+
+              settings.publishConfirm match {
+                case Some(AmqpPublishConfirmSettings(confirmTimeout)) =>
+                  Try(channel.waitForConfirmsOrDie(confirmTimeout)) match {
+                    case Success(_) => tryPull(in)
+                    case Failure(e) => onFailure(e)
+                  }
+                case None => tryPull(in)
+              }
             } else if (settings.failIfReplyToMissing) {
               onFailure(new RuntimeException("Reply-to header was not set"))
             }
-
-            tryPull(in)
           }
         }
       )
