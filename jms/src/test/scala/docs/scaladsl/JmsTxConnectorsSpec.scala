@@ -11,12 +11,12 @@ import akka.stream._
 import akka.stream.alpakka.jms._
 import akka.stream.alpakka.jms.scaladsl.{JmsConsumer, JmsConsumerControl, JmsProducer}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import javax.jms.{JMSException, TextMessage}
+import javax.jms.{JMSException, Message, TextMessage}
 import org.apache.activemq.ActiveMQConnectionFactory
 import org.scalatest.Inspectors._
 
 import scala.annotation.tailrec
-import scala.collection.mutable
+import scala.collection.{immutable, mutable}
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
@@ -65,24 +65,23 @@ class JmsTxConnectorsSpec extends JmsSpec {
 
       Source(msgsIn).runWith(jmsSink)
 
-      //#create-jms-source
+      //#source
       val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
         JmsConsumerSettings(consumerConfig, connectionFactory)
           .withSessionCount(5)
           .withAckTimeout(1.second)
           .withQueue("numbers")
       )
-      //#create-jms-source
 
-      //#run-jms-source
-      val result = jmsSource
-        .take(msgsIn.size)
-        .map { env =>
-          env.commit()
-          env.message
-        }
-        .runWith(Sink.seq)
-      //#run-jms-source
+      val result: Future[immutable.Seq[javax.jms.Message]] =
+        jmsSource
+          .take(msgsIn.size)
+          .map { txEnvelope =>
+            txEnvelope.commit()
+            txEnvelope.message
+          }
+          .runWith(Sink.seq)
+      //#source
 
       // The sent message and the receiving one should have the same properties
       val sortedResult = result.futureValue.sortBy(msg => msg.getIntProperty("Number"))

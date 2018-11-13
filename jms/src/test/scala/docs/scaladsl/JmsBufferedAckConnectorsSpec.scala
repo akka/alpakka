@@ -16,7 +16,7 @@ import org.apache.activemq.{ActiveMQConnectionFactory, ActiveMQSession}
 import org.scalatest.Inspectors._
 
 import scala.annotation.tailrec
-import scala.collection.{mutable, SortedSet}
+import scala.collection.{immutable, mutable, SortedSet}
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
@@ -37,7 +37,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
       Source(in).runWith(jmsSink)
 
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(system, connectionFactory).withSessionCount(5).withBufferSize(5).withQueue("test")
+        JmsConsumerSettings(system, connectionFactory).withSessionCount(5).withQueue("test")
       )
 
       val result = jmsSource
@@ -65,24 +65,22 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
 
       Source(msgsIn).runWith(jmsSink)
 
-      //#create-jms-source
+      //#source
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
         JmsConsumerSettings(consumerConfig, connectionFactory)
           .withSessionCount(5)
-          .withBufferSize(5)
           .withQueue("numbers")
       )
-      //#create-jms-source
 
-      //#run-jms-source
-      val result = jmsSource
-        .take(msgsIn.size)
-        .map { env =>
-          env.acknowledge()
-          env.message
-        }
-        .runWith(Sink.seq)
-      //#run-jms-source
+      val result: Future[immutable.Seq[javax.jms.Message]] =
+        jmsSource
+          .take(msgsIn.size)
+          .map { ackEnvelope =>
+            ackEnvelope.acknowledge()
+            ackEnvelope.message
+          }
+          .runWith(Sink.seq)
+      //#source
 
       // The sent message and the receiving one should have the same properties
       val sortedResult = result.futureValue.sortBy(msg => msg.getIntProperty("Number"))
@@ -113,7 +111,6 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
         val jmsSource = JmsConsumer.ackSource(
           JmsConsumerSettings(consumerConfig, connectionFactory)
             .withSessionCount(5)
-            .withBufferSize(5)
             .withQueue("numbers")
             .withSelector("IsOdd = TRUE")
         )
@@ -145,7 +142,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
       Source(in).runWith(JmsProducer.textSink(JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")))
 
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(5).withBufferSize(5).withQueue("test")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(5).withQueue("test")
       )
 
       val result = jmsSource
@@ -190,10 +187,10 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
       val inNumbers = (1 to 10).map(_.toString)
 
       val jmsTopicSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(1).withBufferSize(5).withTopic("topic")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(1).withTopic("topic")
       )
       val jmsSource2: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(1).withBufferSize(5).withTopic("topic")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(1).withTopic("topic")
       )
 
       val expectedSize = in.size + inNumbers.size
@@ -239,7 +236,6 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
         JmsConsumerSettings(consumerConfig, connectionFactory)
           .withSessionCount(5)
-          .withBufferSize(5)
           .withQueue("numbers")
       )
 
@@ -321,7 +317,6 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
         JmsConsumerSettings(consumerConfig, connectionFactory)
           .withSessionCount(5)
-          .withBufferSize(5)
           .withQueue("numbers")
           .withAcknowledgeMode(individualAck)
       )

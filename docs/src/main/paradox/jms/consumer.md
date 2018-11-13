@@ -1,218 +1,75 @@
 # Consumer
 
-## Receiving messages from a JMS provider
+The Alpakka JMS connector offers consuming JMS messages from topics or queues:
 
-@java[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.javadsl.JmsConsumer$)]@scala[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.scaladsl.JmsConsumer$)] contains factory methods to facilitate
-the creation of sinks according to the message type (see below for an example).
+* Read `javax.jms.Message`s from an Akka Streams source 
+* Allow for client acknowledgement to the JMS broker 
+* Allow for JMS transactions 
+* Read raw JVM types from an Akka Streams Source
+
+The JMS message model supports several types of message bodies in (see @javadoc[javax.jms.Message](javax.jms.Message)), which may be created directly from the Akka Stream elements, or in wrappers to access more advanced features.
 
 
-### Receiving @javadoc[String](java.lang.String) messages from a JMS provider
+## Receiving messages
 
-Create a source:
+@java[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.javadsl.JmsConsumer$)]@scala[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.scaladsl.JmsConsumer$)] offers factory methods to consume JMS messages in a number of ways.
 
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-text-source }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-text-source }
-
-The `bufferSize` parameter controls the maximum number of messages to prefetch before applying backpressure.
-
-Run the source and take the same amount of messages as we previously sent to it.
+This examples shows how to listen to a JMS queue and emit @javadoc[`javax.jms.Message`](javax.jms.Message) elements into the stream.
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-text-source }
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #jms-source }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-text-source }
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #jms-source }
 
-
-### Receiving byte array messages from a JMS provider
-
-Create a source:
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-bytearray-source }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-bytearray-source }
-
-The `bufferSize` parameter controls the maximum number of messages to prefetch before applying backpressure.
-
-Run the source and take the same amount of messages as we previously sent to it.
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-bytearray-source }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-bytearray-source }
-
-
-### Receiving @javadoc[Serializable](java.io.Serializable) object messages from a JMS provider
-
-Create and configure ActiveMQ connection factory to support serialization.
-See [ActiveMQ Security](http://activemq.apache.org/objectmessage.html) for more information on this.
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #connection-factory-object }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #connection-factory-object }
-
-
-Create a source:
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-object-source }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-object-source }
-
-The `bufferSize` parameter controls the maximum number of messages to prefetch before applying backpressure.
-
-Run the source and take the same amount of messages as we previously sent to it.
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-object-source }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-object-source }
-
-
-### Receiving @javadoc[Map](java.util.Map) messages from a JMS provider
-
-Create a source:
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-map-source }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-map-source }
-
-The `bufferSize` parameter controls the maximum number of messages to prefetch before applying backpressure.
-
-Run the source and take the same amount of messages as we previously sent to it.
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-map-source }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-map-source }
-
-
-### Receiving @javadoc[javax.jms.Message](javax.jms.Message)s from a JMS provider
-
-Create a source:
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-jms-source }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-jms-source }
-
-The `bufferSize` parameter controls the maximum number of messages to prefetch before applying backpressure.
-
-Run the source and specify the amount of messages to take:
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-jms-source }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-jms-source }
 
 **Notes:**
 
 *  The default `AcknowledgeMode` is `AutoAcknowledge` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsConsumerSettings` when creating the stream.
 
-### Receiving @javadoc[javax.jms.Message](javax.jms.Message)s messages from a JMS provider with Client Acknowledgement
 
-Create a @javadoc[javax.jms.Message](javax.jms.Message) source:
+## Using JMS client acknowledgement
 
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-jms-source-client-ack }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-jms-source-client-ack }
-
-The `acknowledgeMode` (@scaladoc[AcknowledgeMode](akka.stream.alpakka.jms.AcknowledgeMode$)) parameter controls the JMS acknowledge mode parameter, see @javadoc[javax.jms.Connection.createSession](javax.jms.Connection#createSession-boolean-int-).
-
-Run the source and take the same amount of messages as we previously sent to it acknowledging them.
+Client acknowledgement ensures a message is successfully received by the consumer and notifies the JMS broker for every message. Due to the threading details in JMS brokers, this special source is required (see the explanation below).
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-jms-source-with-ack }
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsBufferedAckConnectorsSpec.scala) { #source }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-jms-source-with-ack }
-
-
-### Receiving @javadoc[javax.jms.Message](javax.jms.Message)s from a JMS provider with a selector
-
-Create a @javadoc[javax.jms.Message](javax.jms.Message) source specifying a [JMS selector expression](https://docs.oracle.com/cd/E19798-01/821-1841/bncer/index.html):
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) {             #create-jms-source-with-selector }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-jms-source-with-selector }
-
-Verify that we are only receiving messages according to the selector:
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #assert-only-odd-messages-received }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #assert-only-odd-messages-received }
-
-### Receiving and explicitly acknowledging @javadoc[javax.jms.Message](javax.jms.Message)s from a JMS provider
-
-Create a @javadoc[javax.jms.Message](javax.jms.Message) source:
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsBufferedAckConnectorsSpec.scala) { #create-jms-source }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsBufferedAckConnectorsTest.java) { #create-jms-source }
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsBufferedAckConnectorsTest.java) { #source }
 
 The `sessionCount` parameter controls the number of JMS sessions to run in parallel.
 
-The `bufferSize` parameter controls the maximum number of messages each JMS session will prefetch and awaiting acknowledgement before applying backpressure.
-
-Run the source and specify the amount of messages to take:
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsBufferedAckConnectorsSpec.scala) { #run-jms-source }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsBufferedAckConnectorsTest.java) { #run-jms-source }
 
 **Notes:**
 
-*  Using multiple sessions increases throughput, especially if a acknowledging message by message is desired.
+*  Using multiple sessions increases throughput, especially if acknowledging message by message is desired.
 *  Messages may arrive out of order if `sessionCount` is larger than 1.
 *  Message-by-message acknowledgement can be achieved by setting `bufferSize` to 0, thus disabling buffering. The outstanding messages before backpressure will be the `sessionCount`.
 *  The default `AcknowledgeMode` is `ClientAcknowledge` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsConsumerSettings` when creating the stream.
 
-### Transactionally receiving @javadoc[javax.jms.Message](javax.jms.Message)s from a JMS provider
+@@@ warning
 
-Create a @javadoc[javax.jms.Message](javax.jms.Message) source:
+Using a regular `JmsConsumer`  with `AcknowledgeMode.ClientAcknowledge` and using `message.acknowledge()` from the stream is not compliant with the JMS specification and can cause issues for some message brokers. `message.acknowledge()` in many cases acknowledges the session and not the message itself, contrary to what the API makes you believe.
+
+Use this `JmsConsumer.ackSource` as shown above instead.
+
+@@@
+
+
+## Using JMS transactions
+
+JMS transactions may be used with this connector. Be aware that transactions are a heavy-weight tool and may not perform very good.
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsTxConnectorsSpec.scala) { #create-jms-source }
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsTxConnectorsSpec.scala) { #source }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsTxConnectorsTest.java) { #create-jms-source }
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsTxConnectorsTest.java) { #source }
 
 The `sessionCount` parameter controls the number of JMS sessions to run in parallel.
 
 The `ackTimeout` parameter controls the maximum time given to a message to be committed or rolled back. If the message times out it will automatically be rolled back. This is to prevent stream from starvation if the application fails to commit or rollback a message, or if the message errors out and the stream is resumed by a `decider`.
-
-Run the source and specify the amount of messages to take:
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsTxConnectorsSpec.scala) { #run-jms-source }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsTxConnectorsTest.java) { #run-jms-source }
 
 **Notes:**
 
@@ -220,3 +77,70 @@ Java
 *  Messages will arrive out of order if `sessionCount` is larger than 1.
 *  Buffering is not supported in transaction mode. The `bufferSize` is ignored.
 *  The default `AcknowledgeMode` is `SessionTransacted` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsConsumerSettings` when creating the stream.
+
+
+
+## Using JMS selectors
+
+Create a @javadoc[javax.jms.Message](javax.jms.Message) source specifying a [JMS selector expression](https://docs.oracle.com/cd/E19798-01/821-1841/bncer/index.html):
+Verify that we are only receiving messages according to the selector:
+
+Scala
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #source-with-selector }
+
+Java
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #source-with-selector }
+
+
+## Raw JVM type sources
+
+| Stream element type                                   | Alpakka source factory   |
+|-------------------------------------------------------|--------------------------|
+| String                                                | [`JmsConsumer.textSource`](#text-sources)   |
+| @scala[Array[Byte]]@java[byte[]]                      | [`JmsConsumer.bytesSource`](#byte-array-sources)  |
+| @scala[Map[String, Object]]@java[Map<String, Object>] | [`JmsConsumer.mapSource`](#map-messages-sources)  |
+| Object (`java.io.Serializable`)                       | [`JmsConsumer.objectSource`](#object-sources)     |
+
+### Text sources
+
+The `textSource` emits the received message body as String:
+
+Scala
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #text-source }
+
+Java
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #text-source }
+
+
+### Byte array sources
+
+The `bytesSource` emits the received message body as byte array:
+
+Scala
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #bytearray-source }
+
+Java
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #bytearray-source }
+
+
+### Map sources
+
+The `mapSource` emits the received message body as @scala[Map[String, Object]]@java[Map<String, Object>]:
+
+Scala
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #map-source }
+
+Java
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #map-source }
+
+
+### Object sources
+
+The `objectSource` emits the received message body as deserialized JVM instance. As serialization may be a security concern, JMS clients require special configuration to allow this. The example shows how to configure ActiveMQ connection factory to support serialization. See [ActiveMQ Security](http://activemq.apache.org/objectmessage.html) for more information on this.
+
+Scala
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #object-source }
+
+Java
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #object-source }
+

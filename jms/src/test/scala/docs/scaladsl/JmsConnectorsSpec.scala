@@ -38,8 +38,10 @@ class JmsConnectorsSpec extends JmsSpec {
   "The JMS Connectors" should {
     "publish and consume strings through a queue" in withServer() { ctx =>
       //#connection-factory #text-sink
+      //#text-source
       val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
       //#connection-factory #text-sink
+      //#text-source
 
       //#text-sink
 
@@ -53,25 +55,23 @@ class JmsConnectorsSpec extends JmsSpec {
           .runWith(jmsSink)
       //#text-sink
 
-      //#create-text-source
+      //#text-source
       val jmsSource: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
-        JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(10).withQueue("test")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withQueue("test")
       )
-      //#create-text-source
 
-      //#run-text-source
-      val result = jmsSource.take(in.size).runWith(Sink.seq)
-      //#run-text-source
+      val result: Future[immutable.Seq[String]] = jmsSource.take(in.size).runWith(Sink.seq)
+      //#text-source
 
       streamCompletion.futureValue shouldEqual Done
       result.futureValue shouldEqual in
     }
 
     "publish and consume serializable objects through a queue" in withServer() { ctx =>
-      //#connection-factory-object #object-sink
+      //#object-sink #object-source
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
       connectionFactory.setTrustedPackages(List(classOf[DummyObject].getPackage.getName).asJava)
-      //#connection-factory-object #object-sink
+      //#object-sink #object-source
 
       //#object-sink
 
@@ -85,24 +85,27 @@ class JmsConnectorsSpec extends JmsSpec {
           .runWith(jmsSink)
       //#object-sink
 
-      //#create-object-source
+      //#object-source
       val jmsSource: Source[java.io.Serializable, JmsConsumerControl] = JmsConsumer.objectSource(
         JmsConsumerSettings(consumerConfig, connectionFactory).withQueue("test")
       )
-      //#create-object-source
 
-      //#run-object-source
-      val result = jmsSource.take(1).runWith(Sink.head)
-      //#run-object-source
+      val result: Future[java.io.Serializable] =
+        jmsSource
+          .take(1)
+          .runWith(Sink.head)
+      //#object-source
 
       streamCompletion.futureValue shouldEqual Done
       result.futureValue shouldEqual in
     }
 
     "publish and consume bytearray through a queue" in withServer() { ctx =>
-      //#bytearray-sink
+      //#bytearray-sink #bytearray-source
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
+      //#bytearray-sink #bytearray-source
+      //#bytearray-sink
       val jmsSink: Sink[Array[Byte], Future[Done]] = JmsProducer.bytesSink(
         JmsProducerSettings(system, connectionFactory).withQueue("test")
       )
@@ -113,24 +116,28 @@ class JmsConnectorsSpec extends JmsSpec {
           .runWith(jmsSink)
       //#bytearray-sink
 
-      //#create-bytearray-source
+      //#bytearray-source
       val jmsSource: Source[Array[Byte], JmsConsumerControl] = JmsConsumer.bytesSource(
-        JmsConsumerSettings(consumerConfig, connectionFactory).withQueue("test")
+        JmsConsumerSettings(system, connectionFactory).withQueue("test")
       )
-      //#create-bytearray-source
 
-      //#run-bytearray-source
-      val result = jmsSource.take(1).runWith(Sink.head)
-      //#run-bytearray-source
+      val result: Future[Array[Byte]] =
+        jmsSource
+          .take(1)
+          .runWith(Sink.head)
+      //#bytearray-source
 
       streamCompletion.futureValue shouldEqual Done
       result.futureValue shouldEqual in
     }
 
     "publish and consume map through a queue" in withServer() { ctx =>
-      //#map-sink
+      //#map-sink #map-source
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
+      //#map-sink #map-source
+
+      //#map-sink
       val jmsSink: Sink[Map[String, Any], Future[Done]] = JmsProducer.mapSink(
         JmsProducerSettings(system, connectionFactory).withQueue("test")
       )
@@ -153,15 +160,16 @@ class JmsConnectorsSpec extends JmsSpec {
           .runWith(jmsSink)
       //#map-sink
 
-      //#create-map-source
+      //#map-source
       val jmsSource: Source[Map[String, Any], JmsConsumerControl] = JmsConsumer.mapSource(
-        JmsConsumerSettings(consumerConfig, connectionFactory).withQueue("test")
+        JmsConsumerSettings(system, connectionFactory).withQueue("test")
       )
-      //#create-map-source
 
-      //#run-map-source
-      val result = jmsSource.take(1).runWith(Sink.seq)
-      //#run-map-source
+      val result: Future[immutable.Seq[Map[String, Any]]] =
+        jmsSource
+          .take(1)
+          .runWith(Sink.seq)
+      //#map-source
 
       streamCompletion.futureValue shouldEqual Done
       result.futureValue.zip(input).foreach {
@@ -180,7 +188,10 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "publish and consume JMS text messages with properties through a queue" in withServer() { ctx =>
+      //#jms-source
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+
+      //#jms-source
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
         JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
@@ -197,23 +208,22 @@ class JmsConnectorsSpec extends JmsSpec {
 
       Source(msgsIn).runWith(jmsSink)
 
-      //#create-jms-source
-      val jmsSource: Source[Message, JmsConsumerControl] = JmsConsumer(
-        JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(10).withQueue("numbers")
+      //#jms-source
+      val jmsSource: Source[javax.jms.Message, JmsConsumerControl] = JmsConsumer(
+        JmsConsumerSettings(system, connectionFactory).withQueue("numbers")
       )
-      //#create-jms-source
 
-      //#run-jms-source
-      val result: Future[Seq[Message]] = jmsSource.take(msgsIn.size).runWith(Sink.seq)
-      //#run-jms-source
+      val result: Future[immutable.Seq[String]] =
+        jmsSource
+          .take(msgsIn.size)
+          .map {
+            case t: javax.jms.TextMessage => t.getText
+            case other => sys.error(s"unexpected message type ${other.getClass}")
+          }
+          .runWith(Sink.seq)
+      //#jms-source
 
-      // The sent message and the receiving one should have the same properties
-      result.futureValue.zip(msgsIn).foreach {
-        case (out, in) =>
-          out.getIntProperty("Number") shouldEqual in.properties("Number")
-          out.getBooleanProperty("IsOdd") shouldEqual in.properties("IsOdd")
-          out.getBooleanProperty("IsEven") shouldEqual in.properties("IsEven")
-      }
+      result.futureValue should have size 10
     }
 
     "publish and consume JMS text messages with header through a queue" in withServer() { ctx =>
@@ -240,7 +250,7 @@ class JmsConnectorsSpec extends JmsSpec {
       Source(msgsIn).runWith(jmsSink)
 
       val jmsSource: Source[Message, JmsConsumerControl] = JmsConsumer(
-        JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(10).withQueue("numbers")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withQueue("numbers")
       )
 
       val result: Future[Seq[Message]] = jmsSource.take(msgsIn.size).runWith(Sink.seq)
@@ -268,21 +278,19 @@ class JmsConnectorsSpec extends JmsSpec {
           .withDestination(CustomDestination("custom-numbers", createQueue("custom-numbers")))
       )
 
-      val msgsIn: immutable.Seq[JmsTextMessage] = (1 to 10).toList.map { n =>
-        JmsTextMessage(n.toString)
+      val msgsIn: immutable.Seq[JmsTextMessage] = (1 to 10).toList.map { n => JmsTextMessage(n.toString)
       }
 
       Source(msgsIn).runWith(jmsSink)
 
       //#create-custom-jms-queue-source
-      val jmsSource: Source[Message, JmsConsumerControl] = JmsConsumer(
+      val jmsSource: Source[javax.jms.Message, JmsConsumerControl] = JmsConsumer(
         JmsConsumerSettings(consumerConfig, connectionFactory)
-          .withBufferSize(10)
           .withDestination(CustomDestination("custom-numbers", createQueue("custom-numbers")))
       )
       //#create-custom-jms-queue-source
 
-      val result: Future[Seq[Message]] = jmsSource.take(msgsIn.size).runWith(Sink.seq)
+      val result: Future[immutable.Seq[javax.jms.Message]] = jmsSource.take(msgsIn.size).runWith(Sink.seq)
 
       // The sent message and the receiving one should have the same properties
       result.futureValue.zip(msgsIn).foreach {
@@ -307,18 +315,17 @@ class JmsConnectorsSpec extends JmsSpec {
         }
         Source(msgsIn).runWith(jmsSink)
 
-        //#create-jms-source-with-selector
+        //#source-with-selector
         val jmsSource = JmsConsumer(
           JmsConsumerSettings(consumerConfig, connectionFactory)
-            .withBufferSize(10)
             .withQueue("numbers")
             .withSelector("IsOdd = TRUE")
         )
-        //#create-jms-source-with-selector
+        //#source-with-selector
 
-        //#assert-only-odd-messages-received
         val oddMsgsIn = msgsIn.filter(msg => msg.body.toInt % 2 == 1)
         val result = jmsSource.take(oddMsgsIn.size).runWith(Sink.seq)
+
         // We should have only received the odd numbers in the list
         result.futureValue.zip(oddMsgsIn).foreach {
           case (out, in) =>
@@ -328,7 +335,6 @@ class JmsConnectorsSpec extends JmsSpec {
             // Make sure we are only receiving odd numbers
             out.getIntProperty("Number") % 2 shouldEqual 1
         }
-      //#assert-only-odd-messages-received
     }
 
     "applying backpressure when the consumer is slower than the producer" in withServer() { ctx =>
@@ -386,13 +392,11 @@ class JmsConnectorsSpec extends JmsSpec {
       //#create-custom-jms-topic-source
       val jmsTopicSource: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
         JmsConsumerSettings(consumerConfig, connectionFactory)
-          .withBufferSize(10)
           .withDestination(CustomDestination("topic", createTopic("topic")))
       )
       //#create-custom-jms-topic-source
       val jmsSource2: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
         JmsConsumerSettings(consumerConfig, connectionFactory)
-          .withBufferSize(10)
           .withDestination(CustomDestination("topic", createTopic("topic")))
       )
 
@@ -432,11 +436,11 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-topic-source
       val jmsTopicSource: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
-        JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(10).withTopic("topic")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withTopic("topic")
       )
       //#create-topic-source
       val jmsSource2: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
-        JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(10).withTopic("topic")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withTopic("topic")
       )
 
       val expectedSize = in.size + inNumbers.size
@@ -458,48 +462,6 @@ class JmsConnectorsSpec extends JmsSpec {
       result2.futureValue shouldEqual expectedList.sorted
     }
 
-    "publish and consume JMS text messages through a queue with client ack" in withServer() { ctx =>
-      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
-
-      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
-        JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
-      )
-
-      val msgsIn = (1 to 10).toList.map { n =>
-        JmsTextMessage(n.toString)
-      }
-
-      Source(msgsIn).runWith(jmsSink)
-
-      //#create-jms-source-client-ack
-      val jmsSource: Source[Message, JmsConsumerControl] = JmsConsumer(
-        JmsConsumerSettings(consumerConfig, connectionFactory)
-          .withQueue("numbers")
-          .withAcknowledgeMode(AcknowledgeMode.ClientAcknowledge)
-      )
-      //#create-jms-source-client-ack
-
-      //#run-jms-source-with-ack
-      val result = jmsSource
-        .map {
-          case textMessage: TextMessage =>
-            val text = textMessage.getText
-            textMessage.acknowledge()
-            text
-        }
-        .take(msgsIn.size)
-        .runWith(Sink.seq)
-      //#run-jms-source-with-ack
-
-      result.futureValue shouldEqual msgsIn.map(_.body)
-
-      // all messages were acknowledged before
-      jmsSource
-        .takeWithin(5.seconds)
-        .runWith(Sink.seq)
-        .futureValue shouldBe empty
-    }
-
     "publish and consume JMS text messages through a queue without acknowledgingg them" in withServer() { ctx =>
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
@@ -507,15 +469,13 @@ class JmsConnectorsSpec extends JmsSpec {
         JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
       )
 
-      val msgsIn = (1 to 10).toList.map { n =>
-        JmsTextMessage(n.toString)
+      val msgsIn = (1 to 10).toList.map { n => JmsTextMessage(n.toString)
       }
 
       Source(msgsIn).runWith(jmsSink)
 
       val jmsSource: Source[Message, JmsConsumerControl] = JmsConsumer(
         JmsConsumerSettings(consumerConfig, connectionFactory)
-          .withBufferSize(10)
           .withQueue("numbers")
           .withAcknowledgeMode(AcknowledgeMode.ClientAcknowledge)
       )
@@ -545,8 +505,7 @@ class JmsConnectorsSpec extends JmsSpec {
         JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
       )
 
-      val msgsIn = (1 to 10).toList.map { n =>
-        JmsTextMessage(n.toString)
+      val msgsIn = (1 to 10).toList.map { n => JmsTextMessage(n.toString)
       }
 
       val completionFuture: Future[Done] = Source(msgsIn).runWith(jmsSink)
@@ -851,10 +810,10 @@ class JmsConnectorsSpec extends JmsSpec {
       //#run-directed-flow-producer
 
       val jmsEvenSource: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
-        JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(10).withQueue("even")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withQueue("even")
       )
       val jmsOddSource: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
-        JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(10).withQueue("odd")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withQueue("odd")
       )
 
       jmsEvenSource.take(input.size / 2).map(_.toInt).runWith(Sink.seq).futureValue shouldBe (2 to 100 by 2)
@@ -880,7 +839,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val sinkOut = Source(in).runWith(jmsSink)
 
       val jmsSource: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
-        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(5).withBufferSize(10).withQueue("test")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(5).withQueue("test")
       )
 
       val result = jmsSource.take(in.size).runWith(Sink.seq)
@@ -1029,7 +988,6 @@ class JmsConnectorsSpec extends JmsSpec {
 
       val jmsSource = JmsConsumer.textSource(
         JmsConsumerSettings(consumerConfig, factory)
-          .withBufferSize(10)
           .withQueue("test")
           .withConnectionRetrySettings(ConnectionRetrySettings().withConnectTimeout(connectTimeout))
       )
@@ -1069,7 +1027,6 @@ class JmsConnectorsSpec extends JmsSpec {
 
       val jmsSource = JmsConsumer.textSource(
         JmsConsumerSettings(consumerConfig, factory)
-          .withBufferSize(10)
           .withQueue("test")
           .withConnectionRetrySettings(ConnectionRetrySettings().withConnectTimeout(connectTimeout))
       )
@@ -1127,7 +1084,6 @@ class JmsConnectorsSpec extends JmsSpec {
 
       val jmsSource = JmsConsumer.textSource(
         JmsConsumerSettings(consumerConfig, factory)
-          .withBufferSize(10)
           .withQueue("test")
       )
 
@@ -1164,7 +1120,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       val sentData =
         JmsConsumer
-          .textSource(JmsConsumerSettings(consumerConfig, connectionFactory).withBufferSize(10).withQueue("test"))
+          .textSource(JmsConsumerSettings(consumerConfig, connectionFactory).withQueue("test"))
           .take(data.size)
           .runWith(Sink.seq)
 

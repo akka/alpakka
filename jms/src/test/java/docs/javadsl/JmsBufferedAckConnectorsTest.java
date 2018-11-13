@@ -112,8 +112,10 @@ public class JmsBufferedAckConnectorsTest {
   public void publishAndConsumeJmsTextMessagesWithProperties() throws Exception {
     withServer(
         ctx -> {
+          // #source
           ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
+          // #source
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
               JmsProducer.create(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
@@ -122,26 +124,23 @@ public class JmsBufferedAckConnectorsTest {
 
           Source.from(msgsIn).runWith(jmsSink, materializer);
 
-          // #create-jms-source
-          Source<AckEnvelope, JmsConsumerControl> jmsSource =
+          // #source
+          Source<akka.stream.alpakka.jms.AckEnvelope, JmsConsumerControl> jmsSource =
               JmsConsumer.ackSource(
-                  JmsConsumerSettings.create(consumerConfig, connectionFactory)
+                  JmsConsumerSettings.create(system, connectionFactory)
                       .withSessionCount(5)
-                      .withBufferSize(5)
                       .withQueue("test"));
-          // #create-jms-source
 
-          // #run-jms-source
-          CompletionStage<List<Message>> result =
+          CompletionStage<List<javax.jms.Message>> result =
               jmsSource
                   .take(msgsIn.size())
                   .map(
-                      env -> {
-                        env.acknowledge();
-                        return env.message();
+                      envelope -> {
+                        envelope.acknowledge();
+                        return envelope.message();
                       })
                   .runWith(Sink.seq(), materializer);
-          // #run-jms-source
+          // #source
 
           List<Message> outMessages =
               new ArrayList<>(result.toCompletableFuture().get(3, TimeUnit.SECONDS));
@@ -196,7 +195,6 @@ public class JmsBufferedAckConnectorsTest {
               JmsConsumer.ackSource(
                   JmsConsumerSettings.create(consumerConfig, connectionFactory)
                       .withSessionCount(5)
-                      .withBufferSize(5)
                       .withQueue("test"));
 
           CompletionStage<List<Message>> result =

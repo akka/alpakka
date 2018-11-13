@@ -1,6 +1,6 @@
 # Producer
 
-Alpakka JMS offers sending messages in three ways
+The Alpakka JMS connector offers producing JMS messages to topics or queues in three ways
 
 * JVM types to an Akka Streams Sink
 * `JmsMessage` sub-types to a Akka Streams Sink or Flow (using `JmsProducer.create` or `JmsProducer.flow`)

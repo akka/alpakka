@@ -33,9 +33,7 @@ import scala.util.Failure;
 import scala.util.Success;
 import scala.util.Try;
 
-import javax.jms.ConnectionFactory;
-import javax.jms.DeliveryMode;
-import javax.jms.JMSException;
+import javax.jms.*;
 import javax.jms.Message;
 import java.nio.charset.Charset;
 import java.util.*;
@@ -121,7 +119,9 @@ public class JmsConnectorsTest {
     withServer(
         ctx -> {
           // #connection-factory #text-sink
+          // #text-source
           javax.jms.ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+          // #text-source
           // #connection-factory #text-sink
 
           // #text-sink
@@ -134,18 +134,14 @@ public class JmsConnectorsTest {
           CompletionStage<Done> finished = Source.from(in).runWith(jmsSink, materializer);
           // #text-sink
 
-          // #create-text-source
+          // #text-source
           Source<String, JmsConsumerControl> jmsSource =
               JmsConsumer.textSource(
-                  JmsConsumerSettings.create(system, connectionFactory)
-                      .withQueue("test")
-                      .withBufferSize(10));
-          // #create-text-source
+                  JmsConsumerSettings.create(system, connectionFactory).withQueue("test"));
 
-          // #run-text-source
           CompletionStage<List<String>> result =
               jmsSource.take(in.size()).runWith(Sink.seq(), materializer);
-          // #run-text-source
+          // #text-source
 
           assertEquals(Done.getInstance(), finished.toCompletableFuture().get(3, TimeUnit.SECONDS));
           assertEquals(in, result.toCompletableFuture().get(3, TimeUnit.SECONDS));
@@ -157,9 +153,12 @@ public class JmsConnectorsTest {
     withServer(
         ctx -> {
           // #connection-factory-object #object-sink
+          // #object-source
           ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
           connectionFactory.setTrustedPackages(
               Arrays.asList(DummyJavaTests.class.getPackage().getName()));
+
+          // #object-source
           // #connection-factory-object #object-sink
 
           // #object-sink
@@ -171,16 +170,14 @@ public class JmsConnectorsTest {
           CompletionStage<Done> finished = Source.single(in).runWith(jmsSink, materializer);
           // #object-sink
 
-          // #create-object-source
+          // #object-source
           Source<java.io.Serializable, JmsConsumerControl> jmsSource =
               JmsConsumer.objectSource(
                   JmsConsumerSettings.create(system, connectionFactory).withQueue("test"));
-          // #create-object-source
 
-          // #run-object-source
           CompletionStage<java.io.Serializable> result =
               jmsSource.take(1).runWith(Sink.head(), materializer);
-          // #run-object-source
+          // #object-source
 
           assertEquals(Done.getInstance(), finished.toCompletableFuture().get(3, TimeUnit.SECONDS));
           Object resultObject = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -192,9 +189,12 @@ public class JmsConnectorsTest {
   public void publishAndConsumeJmsByteMessage() throws Exception {
     withServer(
         ctx -> {
-          // #bytearray-sink
+          // #bytearray-sink #bytearray-source
           ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
+          // #bytearray-sink #bytearray-source
+
+          // #bytearray-sink
           Sink<byte[], CompletionStage<Done>> jmsSink =
               JmsProducer.bytesSink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
@@ -203,15 +203,13 @@ public class JmsConnectorsTest {
           CompletionStage<Done> finished = Source.single(in).runWith(jmsSink, materializer);
           // #bytearray-sink
 
-          // #create-bytearray-source
+          // #bytearray-source
           Source<byte[], JmsConsumerControl> jmsSource =
               JmsConsumer.bytesSource(
                   JmsConsumerSettings.create(system, connectionFactory).withQueue("test"));
-          // #create-bytearray-source
 
-          // #run-bytearray-source
           CompletionStage<byte[]> result = jmsSource.take(1).runWith(Sink.head(), materializer);
-          // #run-bytearray-source
+          // #bytearray-source
 
           assertEquals(Done.getInstance(), finished.toCompletableFuture().get(3, TimeUnit.SECONDS));
           byte[] resultArray = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -223,9 +221,11 @@ public class JmsConnectorsTest {
   public void publishAndConsumeJmsMapMessage() throws Exception {
     withServer(
         ctx -> {
-          // #map-sink
+          // #map-sink #map-source
           ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
 
+          // #map-sink #map-source
+          // #map-sink
           Sink<Map<String, Object>, CompletionStage<Done>> jmsSink =
               JmsProducer.mapSink(
                   JmsProducerSettings.create(system, connectionFactory).withQueue("test"));
@@ -243,16 +243,14 @@ public class JmsConnectorsTest {
           CompletionStage<Done> finished = Source.single(in).runWith(jmsSink, materializer);
           // #map-sink
 
-          // #create-map-source
+          // #map-source
           Source<Map<String, Object>, JmsConsumerControl> jmsSource =
               JmsConsumer.mapSource(
                   JmsConsumerSettings.create(system, connectionFactory).withQueue("test"));
-          // #create-map-source
 
-          // #run-map-source
           CompletionStage<Map<String, Object>> resultStage =
               jmsSource.take(1).runWith(Sink.head(), materializer);
-          // #run-map-source
+          // #map-source
 
           Map<String, Object> resultMap =
               resultStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -275,7 +273,10 @@ public class JmsConnectorsTest {
   public void publishAndConsumeJmsTextMessagesWithProperties() throws Exception {
     withServer(
         ctx -> {
+          // #jms-source
           ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+          // #jms-source
 
           // #create-jms-sink
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
@@ -289,33 +290,25 @@ public class JmsConnectorsTest {
           CompletionStage<Done> finished = Source.from(msgsIn).runWith(jmsSink, materializer);
           // #run-jms-sink
 
-          // #create-jms-source
-          Source<Message, JmsConsumerControl> jmsSource =
+          // #jms-source
+          Source<javax.jms.Message, JmsConsumerControl> jmsSource =
               JmsConsumer.create(
-                  JmsConsumerSettings.create(system, connectionFactory)
-                      .withQueue("test")
-                      .withBufferSize(10));
-          // #create-jms-source
+                  JmsConsumerSettings.create(system, connectionFactory).withQueue("test"));
 
-          // #run-jms-source
-          CompletionStage<List<Message>> result =
-              jmsSource.take(msgsIn.size()).runWith(Sink.seq(), materializer);
-          // #run-jms-source
+          CompletionStage<List<String>> result =
+              jmsSource
+                  .take(msgsIn.size())
+                  .map(msg -> {
+                    if (msg instanceof javax.jms.TextMessage) {
+                      TextMessage t = (javax.jms.TextMessage) msg;
+                      return t.getText();
+                    } else throw new RuntimeException("unexpected message type " + msg.getClass());
+                  })
+                  .runWith(Sink.seq(), materializer);
+          // #jms-source
 
-          List<Message> outMessages = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
-          int msgIdx = 0;
-          for (Message outMsg : outMessages) {
-            assertEquals(
-                outMsg.getIntProperty("Number"),
-                msgsIn.get(msgIdx).properties().get("Number").get());
-            assertEquals(
-                outMsg.getBooleanProperty("IsOdd"),
-                msgsIn.get(msgIdx).properties().get("IsOdd").get());
-            assertEquals(
-                outMsg.getBooleanProperty("IsEven"),
-                (msgsIn.get(msgIdx).properties().get("IsEven").get()));
-            msgIdx++;
-          }
+          List<String> outMessages = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+          assertEquals("unexpected number of elements", 10, outMessages.size());
         });
   }
 
@@ -349,9 +342,7 @@ public class JmsConnectorsTest {
 
           Source<Message, JmsConsumerControl> jmsSource =
               JmsConsumer.create(
-                  JmsConsumerSettings.create(system, connectionFactory)
-                      .withQueue("test")
-                      .withBufferSize(10));
+                  JmsConsumerSettings.create(system, connectionFactory).withQueue("test"));
 
           CompletionStage<List<Message>> result =
               jmsSource.take(msgsIn.size()).runWith(Sink.seq(), materializer);
@@ -394,16 +385,14 @@ public class JmsConnectorsTest {
 
           Source.from(msgsIn).runWith(jmsSink, materializer);
 
-          // #create-jms-source-with-selector
+          // #source-with-selector
           Source<Message, JmsConsumerControl> jmsSource =
               JmsConsumer.create(
                   JmsConsumerSettings.create(system, connectionFactory)
                       .withQueue("test")
-                      .withBufferSize(10)
                       .withSelector("IsOdd = TRUE"));
-          // #create-jms-source-with-selector
+          // #source-with-selector
 
-          // #assert-only-odd-messages-received
           List<JmsTextMessage> oddMsgsIn =
               msgsIn
                   .stream()
@@ -429,7 +418,6 @@ public class JmsConnectorsTest {
             assertEquals(1, outMsg.getIntProperty("Number") % 2);
             msgIdx++;
           }
-          // #assert-only-odd-messages-received
         });
   }
 
@@ -455,15 +443,11 @@ public class JmsConnectorsTest {
           // #create-topic-source
           Source<String, JmsConsumerControl> jmsTopicSource =
               JmsConsumer.textSource(
-                  JmsConsumerSettings.create(system, connectionFactory)
-                      .withTopic("topic")
-                      .withBufferSize(10));
+                  JmsConsumerSettings.create(system, connectionFactory).withTopic("topic"));
           // #create-topic-source
           Source<String, JmsConsumerControl> jmsTopicSource2 =
               JmsConsumer.textSource(
-                  JmsConsumerSettings.create(system, connectionFactory)
-                      .withTopic("topic")
-                      .withBufferSize(10));
+                  JmsConsumerSettings.create(system, connectionFactory).withTopic("topic"));
 
           // #run-topic-source
           CompletionStage<List<String>> result =
@@ -491,53 +475,6 @@ public class JmsConnectorsTest {
           assertEquals(
               Stream.concat(in.stream(), inNumbers.stream()).sorted().collect(Collectors.toList()),
               result2.toCompletableFuture().get(5, TimeUnit.SECONDS));
-        });
-  }
-
-  @Test
-  public void publishAndConsumeJmsTextMessagesWithClientAcknowledgement() throws Exception {
-    withServer(
-        ctx -> {
-          ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
-
-          Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
-                  JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
-          List<Integer> intsIn = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-          List<JmsTextMessage> msgsIn = new ArrayList<>();
-          for (Integer n : intsIn) {
-            msgsIn.add(JmsTextMessage.create(n.toString()));
-          }
-
-          Source.from(msgsIn).runWith(jmsSink, materializer);
-
-          // #create-jms-source-client-ack
-          Source<Message, JmsConsumerControl> jmsSource =
-              JmsConsumer.create(
-                  JmsConsumerSettings.create(system, connectionFactory)
-                      .withQueue("test")
-                      .withAcknowledgeMode(AcknowledgeMode.ClientAcknowledge()));
-          // #create-jms-source-client-ack
-
-          // #run-jms-source-with-ack
-          CompletionStage<List<String>> result =
-              jmsSource
-                  .map(
-                      message -> {
-                        String text = ((ActiveMQTextMessage) message).getText();
-                        message.acknowledge();
-                        return text;
-                      })
-                  .take(msgsIn.size())
-                  .runWith(Sink.seq(), materializer);
-          // #run-jms-source-with-ack
-
-          List<String> outMessages = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
-          int msgIdx = 0;
-          for (String outMsg : outMessages) {
-            assertEquals(outMsg, msgsIn.get(msgIdx).body());
-            msgIdx++;
-          }
         });
   }
 
@@ -760,18 +697,14 @@ public class JmsConnectorsTest {
 
           CompletionStage<List<Integer>> even =
               JmsConsumer.textSource(
-                      JmsConsumerSettings.create(system, connectionFactory)
-                          .withBufferSize(10)
-                          .withQueue("even"))
+                      JmsConsumerSettings.create(system, connectionFactory).withQueue("even"))
                   .take(5)
                   .map(Integer::parseInt)
                   .runWith(Sink.seq(), materializer);
 
           CompletionStage<List<Integer>> odd =
               JmsConsumer.textSource(
-                      JmsConsumerSettings.create(system, connectionFactory)
-                          .withBufferSize(10)
-                          .withQueue("odd"))
+                      JmsConsumerSettings.create(system, connectionFactory).withQueue("odd"))
                   .take(5)
                   .map(Integer::parseInt)
                   .runWith(Sink.seq(), materializer);
@@ -857,9 +790,7 @@ public class JmsConnectorsTest {
 
           Pair<JmsConsumerControl, CompletionStage<List<String>>> switchAndItems =
               JmsConsumer.textSource(
-                      JmsConsumerSettings.create(system, connectionFactory)
-                          .withBufferSize(10)
-                          .withQueue("test"))
+                      JmsConsumerSettings.create(system, connectionFactory).withQueue("test"))
                   .toMat(Sink.seq(), Keep.both())
                   .run(materializer);
 
