@@ -11,7 +11,7 @@ import akka.stream._
 import akka.stream.alpakka.jms._
 import akka.stream.alpakka.jms.scaladsl.{JmsConsumer, JmsConsumerControl, JmsProducer}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import javax.jms.{JMSException, Message, TextMessage}
+import javax.jms.{JMSException, TextMessage}
 import org.apache.activemq.ActiveMQConnectionFactory
 import org.scalatest.Inspectors._
 

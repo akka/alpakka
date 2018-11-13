@@ -4,32 +4,32 @@
 
 package docs.javadsl;
 
+import akka.stream.alpakka.jms.*;
 import com.typesafe.config.ConfigFactory;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.junit.Test;
 
 import java.time.Duration;
 
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 // #retry-settings #send-retry-settings
-import akka.stream.alpakka.jms.ConnectionRetrySettings;
-import akka.stream.alpakka.jms.Credentials;
-import akka.stream.alpakka.jms.JmsProducerSettings;
-import akka.stream.alpakka.jms.SendRetrySettings;
 import com.typesafe.config.Config;
+import scala.Option;
 
 // #retry-settings #send-retry-settings
 
 public class JmsSettingsTest {
 
   @Test
-  public void settings() throws Exception {
+  public void producerSettings() throws Exception {
 
     Config config = ConfigFactory.load();
     // #retry-settings
     Config connectionRetryConfig = config.getConfig("alpakka.jms.connection-retry");
-    // reiterating the values form reference.conf
+    // reiterating the values from reference.conf
     ConnectionRetrySettings retrySettings =
         ConnectionRetrySettings.create(connectionRetryConfig)
             .withConnectTimeout(Duration.ofSeconds(10))
@@ -44,6 +44,7 @@ public class JmsSettingsTest {
 
     // #send-retry-settings
     Config sendRetryConfig = config.getConfig("alpakka.jms.send-retry");
+    // reiterating the values from reference.conf
     SendRetrySettings sendRetrySettings =
         SendRetrySettings.create(sendRetryConfig)
             .withInitialRetry(Duration.ofMillis(20))
@@ -65,5 +66,26 @@ public class JmsSettingsTest {
             .withSessionCount(10)
             .withTimeToLive(Duration.ofHours(1));
     // #producer-settings
+  }
+
+  @Test
+  public void consumerSettings() throws Exception {
+    Config config = ConfigFactory.load();
+    Config connectionRetryConfig = config.getConfig("alpakka.jms.connection-retry");
+    ConnectionRetrySettings retrySettings = ConnectionRetrySettings.create(connectionRetryConfig);
+
+    // #consumer-settings
+    Config consumerConfig = config.getConfig(JmsConsumerSettings.configPath());
+    JmsConsumerSettings settings =
+        JmsConsumerSettings.create(consumerConfig, new ActiveMQConnectionFactory("broker-url"))
+            .withTopic("message-topic")
+            .withCredential(Credentials.create("username", "password"))
+            .withConnectionRetrySettings(retrySettings)
+            .withSessionCount(10)
+            .withAcknowledgeMode(AcknowledgeMode.AutoAcknowledge())
+            .withSelector("Important = TRUE");
+    // #consumer-settings
+    assertThat(settings.sessionCount(), is(10));
+    assertThat(settings.acknowledgeMode(), is(Option.apply(AcknowledgeMode.AutoAcknowledge())));
   }
 }

@@ -39,7 +39,8 @@ class JmsConnectorsSpec extends JmsSpec {
     "publish and consume strings through a queue" in withServer() { ctx =>
       //#connection-factory #text-sink
       //#text-source
-      val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
+      val connectionFactory: javax.jms.ConnectionFactory =
+        new org.apache.activemq.ActiveMQConnectionFactory(ctx.url)
       //#connection-factory #text-sink
       //#text-source
 
@@ -57,7 +58,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#text-source
       val jmsSource: Source[String, JmsConsumerControl] = JmsConsumer.textSource(
-        JmsConsumerSettings(consumerConfig, connectionFactory).withQueue("test")
+        JmsConsumerSettings(system, connectionFactory).withQueue("test")
       )
 
       val result: Future[immutable.Seq[String]] = jmsSource.take(in.size).runWith(Sink.seq)
@@ -87,7 +88,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#object-source
       val jmsSource: Source[java.io.Serializable, JmsConsumerControl] = JmsConsumer.objectSource(
-        JmsConsumerSettings(consumerConfig, connectionFactory).withQueue("test")
+        JmsConsumerSettings(system, connectionFactory).withQueue("test")
       )
 
       val result: Future[java.io.Serializable] =
@@ -199,7 +200,8 @@ class JmsConnectorsSpec extends JmsSpec {
 
       //#create-messages-with-properties
       val msgsIn = (1 to 10).toList.map { n =>
-        JmsTextMessage(n.toString)
+        akka.stream.alpakka.jms
+          .JmsTextMessage(n.toString)
           .withProperty("Number", n)
           .withProperty("IsOdd", n % 2 == 1)
           .withProperty("IsEven", n % 2 == 0)
@@ -268,27 +270,31 @@ class JmsConnectorsSpec extends JmsSpec {
 
     "publish and consume JMS text messages through a queue with custom queue creator " in withServer() { ctx =>
       val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+      //#custom-destination
       def createQueue(destinationName: String): Session => javax.jms.Queue = { (session: Session) =>
         val amqSession = session.asInstanceOf[ActiveMQSession]
         amqSession.createQueue(s"my-$destinationName")
       }
+      //#custom-destination
 
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
         JmsProducerSettings(producerConfig, connectionFactory)
-          .withDestination(CustomDestination("custom-numbers", createQueue("custom-numbers")))
+          .withDestination(CustomDestination("custom", createQueue("custom")))
       )
 
-      val msgsIn: immutable.Seq[JmsTextMessage] = (1 to 10).toList.map { n => JmsTextMessage(n.toString)
+      val msgsIn: immutable.Seq[JmsTextMessage] = (1 to 10).toList.map { n =>
+        JmsTextMessage(n.toString)
       }
 
       Source(msgsIn).runWith(jmsSink)
 
-      //#create-custom-jms-queue-source
+      //#custom-destination
+
       val jmsSource: Source[javax.jms.Message, JmsConsumerControl] = JmsConsumer(
         JmsConsumerSettings(consumerConfig, connectionFactory)
-          .withDestination(CustomDestination("custom-numbers", createQueue("custom-numbers")))
+          .withDestination(CustomDestination("custom", createQueue("custom")))
       )
-      //#create-custom-jms-queue-source
+      //#custom-destination
 
       val result: Future[immutable.Seq[javax.jms.Message]] = jmsSource.take(msgsIn.size).runWith(Sink.seq)
 
@@ -469,7 +475,8 @@ class JmsConnectorsSpec extends JmsSpec {
         JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
       )
 
-      val msgsIn = (1 to 10).toList.map { n => JmsTextMessage(n.toString)
+      val msgsIn = (1 to 10).toList.map { n =>
+        JmsTextMessage(n.toString)
       }
 
       Source(msgsIn).runWith(jmsSink)
@@ -505,7 +512,8 @@ class JmsConnectorsSpec extends JmsSpec {
         JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
       )
 
-      val msgsIn = (1 to 10).toList.map { n => JmsTextMessage(n.toString)
+      val msgsIn = (1 to 10).toList.map { n =>
+        JmsTextMessage(n.toString)
       }
 
       val completionFuture: Future[Done] = Source(msgsIn).runWith(jmsSink)

@@ -23,9 +23,58 @@ Java
 : @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #jms-source }
 
 
-**Notes:**
+## Configure JMS consumers
 
-*  The default `AcknowledgeMode` is `AutoAcknowledge` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsConsumerSettings` when creating the stream.
+To connect to the JMS broker, first define an appropriate @javadoc[javax.jms.ConnectionFactory](javax.jms.ConnectionFactory). The Alpakka tests and all examples use Active MQ.
+
+Scala
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }
+
+Java
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #connection-factory }
+
+
+The created @javadoc[ConnectionFactory](javax.jms.ConnectionFactory) is then used for the creation of the different JMS sources.
+
+
+The Alpakka JMS consumer is configured via default settings in the [HOCON](https://github.com/lightbend/config#using-hocon-the-json-superset) config file section `alpakka.jms.consumer` in your `application.conf`, and settings may be tweaked in the code using the `withXyz` methods.
+
+The `JmsConsumerSettings` factories allow for passing the actor system to read from the default  `alpakka.jms.consumer` section, or you may pass a `Config` instance which is resolved to a section of the same structure. 
+
+Scala
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsSettingsSpec.scala) { #consumer-settings }
+
+Java
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsSettingsTest.java) { #consumer-settings }
+
+The consumer can be configured with the following settings.
+
+Setting                 | Defaults    |   Description                                           | 
+------------------------|-------------|---------------------------------------------------------|
+connectionFactory       | mandatory   | Factory to use for creating JMS connections             |
+destination             | mandatory   | Destination (queue or topic) to send JMS messages to    |
+credentials             | optional    | JMS broker credentials                                  |
+connectionRetrySettings | default settings | Retry characteristics if the connection failed to be established or taking a long time. Please see default values under [Connection Retries](#connection-retries) |
+sessionCount            | defaults to `1`  | Number of parallel sessions to use for receiving JMS messages. |
+bufferSize              | 100              | Controls the maximum number of messages to prefetch before applying backpressure. |
+ackTimeout              | 1 second         | For use with JMS transactions, only: maximum time given to a message to be committed or rolled back. |
+selector                | optional         | JMS selector expression (see [below](#using-jms-selectors))  |
+
+This section from `reference.conf` shows the structure to use for configuring multipe set-ups.
+
+reference.conf
+: @@snip [snip](/jms/src/main/resources/reference.conf) { #consumer }
+
+
+### Broker specific destinations
+
+To reach out to special features of the JMS broker, destinations can be created as `CustomDestination` which takes a factory method for creating destinations.
+
+Scala
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #custom-destination }
+
+Java
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #custom-destination }
 
 
 ## Using JMS client acknowledgement
@@ -98,7 +147,7 @@ Java
 |-------------------------------------------------------|--------------------------|
 | String                                                | [`JmsConsumer.textSource`](#text-sources)   |
 | @scala[Array[Byte]]@java[byte[]]                      | [`JmsConsumer.bytesSource`](#byte-array-sources)  |
-| @scala[Map[String, Object]]@java[Map<String, Object>] | [`JmsConsumer.mapSource`](#map-messages-sources)  |
+| @scala[Map[String, AnyRef]]@java[Map<String, Object>] | [`JmsConsumer.mapSource`](#map-messages-sources)  |
 | Object (`java.io.Serializable`)                       | [`JmsConsumer.objectSource`](#object-sources)     |
 
 ### Text sources

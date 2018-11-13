@@ -23,6 +23,7 @@ import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.Config;
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.ActiveMQSession;
 import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.activemq.command.ActiveMQTextMessage;
@@ -34,13 +35,16 @@ import scala.util.Success;
 import scala.util.Try;
 
 import javax.jms.*;
+import javax.jms.Destination;
 import javax.jms.Message;
+import javax.jms.Queue;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -102,7 +106,7 @@ public class JmsConnectorsTest {
 
       // #create-messages-with-properties
       JmsTextMessage message =
-          JmsTextMessage.create(n.toString())
+          akka.stream.alpakka.jms.JmsTextMessage.create(n.toString())
               .withProperty("Number", n)
               .withProperty("IsOdd", n % 2 == 1)
               .withProperty("IsEven", n % 2 == 0);
@@ -120,7 +124,8 @@ public class JmsConnectorsTest {
         ctx -> {
           // #connection-factory #text-sink
           // #text-source
-          javax.jms.ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+          javax.jms.ConnectionFactory connectionFactory =
+              new org.apache.activemq.ActiveMQConnectionFactory(ctx.url);
           // #text-source
           // #connection-factory #text-sink
 
@@ -298,12 +303,14 @@ public class JmsConnectorsTest {
           CompletionStage<List<String>> result =
               jmsSource
                   .take(msgsIn.size())
-                  .map(msg -> {
-                    if (msg instanceof javax.jms.TextMessage) {
-                      TextMessage t = (javax.jms.TextMessage) msg;
-                      return t.getText();
-                    } else throw new RuntimeException("unexpected message type " + msg.getClass());
-                  })
+                  .map(
+                      msg -> {
+                        if (msg instanceof javax.jms.TextMessage) {
+                          TextMessage t = (javax.jms.TextMessage) msg;
+                          return t.getText();
+                        } else
+                          throw new RuntimeException("unexpected message type " + msg.getClass());
+                      })
                   .runWith(Sink.seq(), materializer);
           // #jms-source
 
@@ -371,6 +378,47 @@ public class JmsConnectorsTest {
         });
   }
 
+  // #custom-destination
+  Function<javax.jms.Session, javax.jms.Destination> createQueue(String destinationName) {
+    return (session) -> {
+      ActiveMQSession amqSession = (ActiveMQSession) session;
+      try {
+        return amqSession.createQueue("my-" + destinationName);
+      } catch (JMSException e) {
+        throw new RuntimeException(e);
+      }
+    };
+  }
+  // #custom-destination
+
+  @Test
+  public void useCustomDesination() throws Exception {
+    withServer(
+        ctx -> {
+          ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+          Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
+              JmsProducer.create(
+                  JmsProducerSettings.create(producerConfig, connectionFactory)
+                      .withDestination(new CustomDestination("custom", createQueue("custom"))));
+
+          List<JmsTextMessage> msgsIn = createTestMessageList();
+
+          Source.from(msgsIn).runWith(jmsSink, materializer);
+          // #custom-destination
+
+          Source<Message, JmsConsumerControl> jmsSource =
+              JmsConsumer.create(
+                  JmsConsumerSettings.create(system, connectionFactory)
+                      .withDestination(new CustomDestination("custom", createQueue("custom"))));
+          // #custom-destination
+
+          CompletionStage<List<Message>> result =
+              jmsSource.take(msgsIn.size()).runWith(Sink.seq(), materializer);
+          List<Message> outMessages = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+          assertEquals(10, outMessages.size());
+        });
+  }
+
   @Test
   public void publishJmsTextMessagesWithPropertiesAndConsumeThemWithASelector() throws Exception {
     withServer(
@@ -431,31 +479,28 @@ public class JmsConnectorsTest {
           List<String> inNumbers =
               IntStream.range(0, 10).boxed().map(String::valueOf).collect(Collectors.toList());
 
-          // #create-topic-sink
           Sink<String, CompletionStage<Done>> jmsTopicSink =
               JmsProducer.textSink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withTopic("topic"));
-          // #create-topic-sink
+
           Sink<String, CompletionStage<Done>> jmsTopicSink2 =
               JmsProducer.textSink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withTopic("topic"));
 
-          // #create-topic-source
           Source<String, JmsConsumerControl> jmsTopicSource =
               JmsConsumer.textSource(
                   JmsConsumerSettings.create(system, connectionFactory).withTopic("topic"));
-          // #create-topic-source
+
           Source<String, JmsConsumerControl> jmsTopicSource2 =
               JmsConsumer.textSource(
                   JmsConsumerSettings.create(system, connectionFactory).withTopic("topic"));
 
-          // #run-topic-source
           CompletionStage<List<String>> result =
               jmsTopicSource
                   .take(in.size() + inNumbers.size())
                   .runWith(Sink.seq(), materializer)
                   .thenApply(l -> l.stream().sorted().collect(Collectors.toList()));
-          // #run-topic-source
+
           CompletionStage<List<String>> result2 =
               jmsTopicSource2
                   .take(in.size() + inNumbers.size())
@@ -464,9 +509,7 @@ public class JmsConnectorsTest {
 
           Thread.sleep(500);
 
-          // #run-topic-sink
           CompletionStage<Done> finished = Source.from(in).runWith(jmsTopicSink, materializer);
-          // #run-topic-sink
           Source.from(inNumbers).runWith(jmsTopicSink2, materializer);
 
           assertEquals(
