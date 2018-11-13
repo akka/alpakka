@@ -102,7 +102,7 @@ object JmsBrowseSettings {
       destination,
       credentials,
       selector,
-      acknowledgeMode,
+      acknowledgeMode
     )
   }
 
