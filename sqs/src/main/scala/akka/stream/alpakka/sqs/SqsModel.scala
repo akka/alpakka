@@ -20,6 +20,13 @@ object MessageAction {
    */
   final class Delete private (message: Message) extends MessageAction(message) {
     override def toString: String = s"Delete($message)"
+
+    override def equals(other: Any): Boolean = other match {
+      case that: Delete => java.util.Objects.equals(this.message, that.message)
+      case _ => false
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(message)
   }
 
   final object Delete {
@@ -31,6 +38,13 @@ object MessageAction {
    */
   final class Ignore private (message: Message) extends MessageAction(message) {
     override def toString: String = s"Ignore($message)"
+
+    override def equals(other: Any): Boolean = other match {
+      case that: Ignore => java.util.Objects.equals(this.message, that.message)
+      case _ => false
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(message)
   }
 
   final object Ignore {
@@ -51,7 +65,17 @@ object MessageAction {
       0 <= visibilityTimeout && visibilityTimeout <= 43200,
       s"Invalid value ($visibilityTimeout) for visibilityTimeout. Requirement: 0 <= visibilityTimeout <= 43200"
     )
+
     override def toString: String = s"ChangeMessageVisibility($message, $visibilityTimeout)"
+
+    override def equals(other: Any): Boolean = other match {
+      case that: ChangeMessageVisibility =>
+        java.util.Objects.equals(this.message, that.message) &&
+        this.visibilityTimeout == that.visibilityTimeout
+      case _ => false
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(message, visibilityTimeout: Integer)
   }
 
   object ChangeMessageVisibility {
