@@ -123,6 +123,65 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
     }
 
+    "correctly publish with successful confirms" in {
+      val queueName = "amqp-conn-it-spec-publish-with-confirms-queue-" + System.currentTimeMillis()
+      val queueDeclaration = QueueDeclaration(queueName)
+
+      val amqpPublishFlow = AmqpPublishFlow.withConfirms[String](
+        AmqpSinkSettings(connectionProvider)
+          .withRoutingKey(queueName)
+          .withDeclaration(queueDeclaration)
+      )
+
+      val input = Vector("one", "two", "three", "four", "five")
+      val (_, probe) =
+        Source(input)
+          .map(s => (OutgoingMessage(ByteString(s), false, false), s"$s-something"))
+          .viaMat(amqpPublishFlow)(Keep.right)
+          .toMat(TestSink.probe)(Keep.both)
+          .run
+
+      probe
+        .request(input.length)
+        .expectNextN(input.map(s => s"$s-something"))
+        .expectComplete()
+    }
+
+    "correctly handle publish confirms fails" in {
+      val queueName = "amqp-conn-it-spec-publish-with-confirms-queue-" + System.currentTimeMillis()
+      val queueDeclaration = QueueDeclaration(queueName)
+
+      val amqpPublishFlow = AmqpPublishFlow.withConfirms[String](
+        AmqpSinkSettings(connectionProvider)
+          .withRoutingKey(queueName)
+          .withDeclaration(queueDeclaration),
+        1 // We set an unreachable timeout, and expect a timeout exception
+      )
+
+      val input = Vector("one")
+      val (_, probe) =
+        Source(input)
+          .map(s => (OutgoingMessage(ByteString(s), false, false), s"$s-something"))
+          .viaMat(amqpPublishFlow)(Keep.right)
+          .toMat(TestSink.probe)(Keep.both)
+          .run
+
+      probe
+        .request(input.length)
+        .expectError()
+    }
+
+    "correctly close a AmqpPublishFlow when stream is closed without passing any elements" in {
+
+      Source
+        .empty[(OutgoingMessage, String)]
+        .via(AmqpPublishFlow.withConfirms(AmqpSinkSettings(connectionProvider)))
+        .runWith(TestSink.probe)
+        .ensureSubscription()
+        .expectComplete()
+
+    }
+
     "handle missing reply-to header correctly" in assertAllStagesStopped {
 
       val outgoingMessage = WriteMessage(ByteString.empty)
