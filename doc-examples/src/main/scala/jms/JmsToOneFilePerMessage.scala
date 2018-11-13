@@ -28,7 +28,7 @@ object JmsToOneFilePerMessage extends JmsSampleBase with App {
 
   val jmsSource: Source[String, JmsConsumerControl] =                                   // (1)
     JmsConsumer.textSource(
-      JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("test")
+      JmsConsumerSettings(actorSystem, connectionFactory).withBufferSize(10).withQueue("test")
     )
                                                             // stream element type
   val runningSource = jmsSource                             //: String

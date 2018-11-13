@@ -32,7 +32,7 @@ object JmsToWebSocket extends JmsSampleBase with App {
 
   val jmsSource: Source[String, JmsConsumerControl] =
     JmsConsumer.textSource(                                                           // (1)
-      JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("test")
+      JmsConsumerSettings(actorSystem, connectionFactory).withBufferSize(10).withQueue("test")
     )
 
   val webSocketFlow: Flow[ws.Message, ws.Message, Future[WebSocketUpgradeResponse]] = // (2)

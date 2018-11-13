@@ -51,7 +51,8 @@ public class JmsToWebSocket {
 
   private void enqueue(ConnectionFactory connectionFactory, String... msgs) {
     Sink<String, ?> jmsSink =
-        JmsProducer.textSink(JmsProducerSettings.create(connectionFactory).withQueue("test"));
+        JmsProducer.textSink(
+            JmsProducerSettings.create(system, connectionFactory).withQueue("test"));
     Source.from(Arrays.asList(msgs)).runWith(jmsSink, materializer);
   }
 
@@ -70,7 +71,9 @@ public class JmsToWebSocket {
 
     Source<String, JmsConsumerControl> jmsSource = // (1)
         JmsConsumer.textSource(
-            JmsConsumerSettings.create(connectionFactory).withBufferSize(10).withQueue("test"));
+            JmsConsumerSettings.create(system, connectionFactory)
+                .withBufferSize(10)
+                .withQueue("test"));
 
     Flow<Message, Message, CompletionStage<WebSocketUpgradeResponse>> webSocketFlow = // (2)
         http.webSocketClientFlow(WebSocketRequest.create("ws://localhost:8080/webSocket/ping"));
