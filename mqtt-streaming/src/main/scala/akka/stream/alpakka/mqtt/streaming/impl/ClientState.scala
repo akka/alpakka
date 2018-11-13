@@ -10,7 +10,7 @@ import akka.actor.typed.{ActorRef, Behavior, PostStop, Terminated}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy}
-import akka.stream.scaladsl.{BroadcastHub, Keep, Source, SourceQueueWithComplete}
+import akka.stream.scaladsl.{BroadcastHub, Keep, Sink, Source, SourceQueueWithComplete}
 
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
@@ -43,7 +43,8 @@ import scala.util.{Failure, Success}
             unsubscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Unsubscriber.Event]],
             settings: MqttSessionSettings)(implicit mat: Materializer): Behavior[Event] =
     disconnected(
-      Uninitialized(consumerPacketRouter,
+      Uninitialized(Vector.empty,
+                    consumerPacketRouter,
                     producerPacketRouter,
                     subscriberPacketRouter,
                     unsubscriberPacketRouter,
@@ -58,6 +59,7 @@ import scala.util.{Failure, Success}
                              val unsubscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Unsubscriber.Event]],
                              val settings: MqttSessionSettings)
   final case class Uninitialized(
+      stash: Seq[Event],
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
       override val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
       override val subscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Subscriber.Event]],
@@ -117,13 +119,12 @@ import scala.util.{Failure, Success}
   final case class PublishReceivedFromRemote(publish: Publish, local: Promise[Consumer.ForwardPublish.type])
       extends Event
   final case class ConsumerFree(topicName: String) extends Event
-  final case class PublishReceivedLocally(publish: Publish,
-                                          publishData: Producer.PublishData,
-                                          remote: Promise[Source[Producer.ForwardPublishingCommand, NotUsed]])
-      extends Event
+  final case class PublishReceivedLocally(publish: Publish, publishData: Producer.PublishData) extends Event
   final case class ProducerFree(topicName: String) extends Event
   case object SendPingReqTimeout extends Event
   final case class PingRespReceivedFromRemote(local: Promise[ForwardPingResp.type]) extends Event
+  final case class ReceivedProducerPublishingCommand(command: Source[Producer.ForwardPublishingCommand, NotUsed])
+      extends Event
   final case class UnsubscribeReceivedLocally(unsubscribe: Unsubscribe,
                                               unsubscribeData: Unsubscriber.UnsubscribeData,
                                               remote: Promise[Unsubscriber.ForwardUnsubscribe])
@@ -133,6 +134,8 @@ import scala.util.{Failure, Success}
   sealed abstract class ForwardConnectCommand
   case object ForwardConnect extends ForwardConnectCommand
   case object ForwardPingReq extends ForwardConnectCommand
+  final case class ForwardPublish(publish: Publish, packetId: Option[PacketId]) extends ForwardConnectCommand
+  final case class ForwardPubRel(packetId: PacketId) extends ForwardConnectCommand
   final case class ForwardConnAck(connectData: ConnectData) extends Command
   case object ForwardDisconnect extends Command
   case object ForwardPingResp extends Command
@@ -144,8 +147,8 @@ import scala.util.{Failure, Success}
   private val SubscriberNamePrefix = "subscriber-"
   private val UnsubscriberNamePrefix = "unsubscriber-"
 
-  def disconnected(data: Uninitialized)(implicit mat: Materializer): Behavior[Event] = Behaviors.receiveMessagePartial {
-    case ConnectReceivedLocally(connect, connectData, remote) =>
+  def disconnected(data: Uninitialized)(implicit mat: Materializer): Behavior[Event] = Behaviors.receivePartial {
+    case (context, ConnectReceivedLocally(connect, connectData, remote)) =>
       val (queue, source) = Source
         .queue[ForwardConnectCommand](1, OverflowStrategy.dropHead)
         .toMat(BroadcastHub.sink)(Keep.both)
@@ -153,6 +156,7 @@ import scala.util.{Failure, Success}
       remote.success(source)
 
       queue.offer(ForwardConnect)
+      data.stash.foreach(context.self.tell)
       serverConnect(
         ConnectReceived(
           connect,
@@ -166,6 +170,8 @@ import scala.util.{Failure, Success}
           data.settings
         )
       )
+    case (_, prl: PublishReceivedLocally) if data.stash.size < data.settings.maxClientConnectionStashSize =>
+      disconnected(data.copy(stash = data.stash :+ prl))
   }
 
   def disconnect(context: ActorContext[Event],
@@ -178,7 +184,8 @@ import scala.util.{Failure, Success}
     remote.complete()
 
     disconnected(
-      Uninitialized(data.consumerPacketRouter,
+      Uninitialized(Vector.empty,
+                    data.consumerPacketRouter,
                     data.producerPacketRouter,
                     data.subscriberPacketRouter,
                     data.unsubscriberPacketRouter,
@@ -318,16 +325,19 @@ import scala.util.{Failure, Success}
             } else {
               serverConnected(data)
             }
-          case (_, PublishReceivedLocally(publish, _, remote))
+          case (_, PublishReceivedLocally(publish, _))
               if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
-            remote.success(Source.single(Producer.ForwardPublish(publish, None)))
+            data.remote.offer(ForwardPublish(publish, None))
             serverConnected(data)
-          case (context, prl @ PublishReceivedLocally(publish, publishData, remote)) =>
+          case (context, prl @ PublishReceivedLocally(publish, publishData)) =>
             val producerName = ActorName.mkName(ProducerNamePrefix + publish.topicName)
             context.child(producerName) match {
               case None if !data.pendingLocalPublications.exists(_._1 == publish.topicName) =>
+                val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
+                import context.executionContext
+                reply.future.foreach(command => context.self ! ReceivedProducerPublishingCommand(command))
                 context.watchWith(
-                  context.spawn(Producer(publish, publishData, remote, data.producerPacketRouter, data.settings),
+                  context.spawn(Producer(publish, publishData, reply, data.producerPacketRouter, data.settings),
                                 producerName),
                   ProducerFree(publish.topicName)
                 )
@@ -342,9 +352,12 @@ import scala.util.{Failure, Success}
             if (i >= 0) {
               val prl = data.pendingLocalPublications(i)._2
               val producerName = ActorName.mkName(ProducerNamePrefix + topicName)
+              val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
+              import context.executionContext
+              reply.future.foreach(command => context.self ! ReceivedProducerPublishingCommand(command))
               context.watchWith(
                 context.spawn(
-                  Producer(prl.publish, prl.publishData, prl.remote, data.producerPacketRouter, data.settings),
+                  Producer(prl.publish, prl.publishData, reply, data.producerPacketRouter, data.settings),
                   producerName
                 ),
                 ProducerFree(topicName)
@@ -358,6 +371,12 @@ import scala.util.{Failure, Success}
             } else {
               serverConnected(data)
             }
+          case (_, ReceivedProducerPublishingCommand(command)) =>
+            command.runWith(Sink.foreach {
+              case Producer.ForwardPublish(publish, packetId) => data.remote.offer(ForwardPublish(publish, packetId))
+              case Producer.ForwardPubRel(_, packetId) => data.remote.offer(ForwardPubRel(packetId))
+            })
+            Behaviors.same
           case (context, SendPingReqTimeout) if data.pendingPingResp =>
             data.remote.fail(PingFailed)
             disconnect(context, data.connectFlags, data.remote, data)
