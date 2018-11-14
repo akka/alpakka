@@ -187,7 +187,7 @@ public class AmqpConnectorsTest {
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
                 .withDeclaration(queueDeclaration)
-                .withPublishConfirms());
+                .withPublishConfirms(1000));
 
     Pair<CompletionStage<Done>, TestSubscriber.Probe<String>> result =
         Source.from(input)
