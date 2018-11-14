@@ -173,9 +173,10 @@ Scala
 Java
 : @@snip [snip](/jms/src/test/java/docs/javadsl/JmsSettingsTest.java) { #producer-settings }
 
-The producer can be configured with the following settings.
+The producer can be configured with the following settings. On the second tab, the section from `reference.conf` shows the structure to use for configuring multiple set-ups.
 
-Setting                 | Defaults    |   Description                                           | 
+Table
+: Setting                 | Defaults    |   Description                                           | 
 ------------------------|-------------|---------------------------------------------------------|
 connectionFactory       | mandatory   | Factory to use for creating JMS connections             |
 destination             | mandatory   | Destination (queue or topic) to send JMS messages to    |
@@ -185,25 +186,26 @@ sendRetrySettings       | default settings | Retry characteristics if message se
 sessionCount            | defaults to `1` | Number of parallel sessions to use for sending JMS messages. Increasing the number of parallel sessions increases throughput at the cost of message ordering. While the messages may arrive out of order on the JMS broker, the producer flow outputs messages in the order they are received |
 timeToLive              | optional    | Time messages should be kept on the Jms broker. This setting can be overridden on individual messages. If not set, messages will never expire |
 
-
-This section from `reference.conf` shows the structure to use for configuring multipe set-ups.
-
 reference.conf
 : @@snip [snip](/jms/src/main/resources/reference.conf) { #producer }
 
 
-
 ## Connection Retries
 
-When a connection to a broker cannot be established and errors out, or is timing out being established or started, the connection can be retried. All JMS publishers, consumers, and browsers are configured with connection retry settings as follows:
+When a connection to a broker cannot be established and errors out, or is timing out being established or started, the connection can be retried. All JMS publishers, consumers, and browsers are configured with connection retry settings. On the second tab the section from `reference.conf` shows the structure to use for configuring multiple set-ups.
 
-Setting        | Description                                                                         | Default Value
+Table
+: Setting        | Description                                                                         | Default Value
 ---------------|-------------------------------------------------------------------------------------|--------------
 connectTimeout | Time allowed to establish and start a connection                                    | 10 s
 initialRetry   | Wait time before retrying the first time                                            | 100 ms
 backoffFactor  | Back-off factor for subsequent retries                                              | 2.0
 maxBackoff     | Maximum back-off time allowed, after which all retries will happen after this delay | 1 minute
 maxRetries     | Maximum number of retries allowed (negative value is infinite)                      | 10
+
+reference.conf
+: @@snip [snip](/jms/src/main/resources/reference.conf) { #connection-retry }
+
 
 The retry time is calculated by:
 
@@ -226,12 +228,16 @@ Java
 When a connection to a broker starts failing, sending JMS messages will also fail. Those failed messages can be retried
 at the cost of potentially duplicating the failed messages. Send retries can be configured as follows:
 
-Setting        | Description                                                                         | Default Value
+Table
+: Setting        | Description                                                                         | Default Value
 ---------------|-------------------------------------------------------------------------------------|--------------
 initialRetry   | Wait time before retrying the first time                                            | 20 ms
 backoffFactor  | Back-off factor for subsequent retries                                              | 1.5
 maxBackoff     | Maximum back-off time allowed, after which all retries will happen after this delay | 500 ms
 maxRetries     | Maximum number of retries allowed (negative value is infinite)                      | 10
+
+reference.conf
+: @@snip [snip](/jms/src/main/resources/reference.conf) { #send-retry }
 
 The retry time is calculated by:
 

@@ -38,10 +38,7 @@ Java
 
 The created @javadoc[ConnectionFactory](javax.jms.ConnectionFactory) is then used for the creation of the different JMS sources.
 
-
-The Alpakka JMS consumer is configured via default settings in the [HOCON](https://github.com/lightbend/config#using-hocon-the-json-superset) config file section `alpakka.jms.consumer` in your `application.conf`, and settings may be tweaked in the code using the `withXyz` methods.
-
-The `JmsConsumerSettings` factories allow for passing the actor system to read from the default  `alpakka.jms.consumer` section, or you may pass a `Config` instance which is resolved to a section of the same structure. 
+The `JmsConsumerSettings` factories allow for passing the actor system to read from the default `alpakka.jms.consumer` section, or you may pass a `Config` instance which is resolved to a section of the same structure. 
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsSettingsSpec.scala) { #consumer-settings }
@@ -49,20 +46,19 @@ Scala
 Java
 : @@snip [snip](/jms/src/test/java/docs/javadsl/JmsSettingsTest.java) { #consumer-settings }
 
-The consumer can be configured with the following settings.
+The Alpakka JMS consumer is configured via default settings in the [HOCON](https://github.com/lightbend/config#using-hocon-the-json-superset) config file section `alpakka.jms.consumer` in your `application.conf`, and settings may be tweaked in the code using the `withXyz` methods. On the second tab the section from `reference.conf` shows the structure to use for configuring multiple set-ups.
 
-Setting                 | Defaults    |   Description                                           | 
-------------------------|-------------|---------------------------------------------------------|
-connectionFactory       | mandatory   | Factory to use for creating JMS connections             |
-destination             | mandatory   | Destination (queue or topic) to send JMS messages to    |
-credentials             | optional    | JMS broker credentials                                  |
-connectionRetrySettings | default settings | Retry characteristics if the connection failed to be established or taking a long time. Please see default values under [Connection Retries](#connection-retries) |
-sessionCount            | defaults to `1`  | Number of parallel sessions to use for receiving JMS messages. |
-bufferSize              | 100              | Controls the maximum number of messages to prefetch before applying backpressure. |
-ackTimeout              | 1 second         | For use with JMS transactions, only: maximum time given to a message to be committed or rolled back. |
-selector                | optional         | JMS selector expression (see [below](#using-jms-selectors))  |
-
-This section from `reference.conf` shows the structure to use for configuring multipe set-ups.
+Table
+: Setting               | Description                                                          | Default Value       | 
+------------------------|----------------------------------------------------------------------|---------------------|
+connectionFactory       | Factory to use for creating JMS connections                          | Must be set in code |
+destination             | Destination (queue or topic) to send JMS messages to                 | Must be set in code |
+credentials             | JMS broker credentials                                               | Empty               |
+connectionRetrySettings | Retry characteristics if the connection failed to be established or is taking a long time. | See @ref[Connection Retries](producer.md#connection-retries) 
+sessionCount            | Number of parallel sessions to use for receiving JMS messages.       | defaults to `1`     |
+bufferSize              | Maximum number of messages to prefetch before applying backpressure. | 100                 |
+ackTimeout              | For use with JMS transactions, only: maximum time given to a message to be committed or rolled back. | 1 second  |
+selector                | JMS selector expression (see [below](#using-jms-selectors))          | Empty               |
 
 reference.conf
 : @@snip [snip](/jms/src/main/resources/reference.conf) { #consumer }

@@ -87,7 +87,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
 
       val jmsSink = textSink(
         JmsProducerSettings(producerConfig, factory)
-          .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(1))
+          .withConnectionRetrySettings(ConnectionRetrySettings(system).withMaxRetries(1))
           .withQueue("test")
       )
       val connectionStatus = Source.tick(10.millis, 20.millis, "text").runWith(jmsSink).connectorState
@@ -317,7 +317,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
         JmsProducerSettings(producerConfig, connectionFactory)
           .withQueue("test")
           .withConnectionRetrySettings(
-            ConnectionRetrySettings()
+            ConnectionRetrySettings(system)
               .withConnectTimeout(1.second)
               .withInitialRetry(100.millis)
               .withMaxBackoff(100.millis)
@@ -329,7 +329,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
         JmsConsumerSettings(system, connectionFactory)
           .withQueue("test")
           .withConnectionRetrySettings(
-            ConnectionRetrySettings()
+            ConnectionRetrySettings(system)
               .withConnectTimeout(1.second)
               .withInitialRetry(100.millis)
               .withMaxBackoff(100.millis)

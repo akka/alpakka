@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.jms
 
+import akka.actor.ActorSystem
 import com.typesafe.config.Config
 
 import scala.concurrent.duration._
@@ -65,16 +66,9 @@ final class SendRetrySettings private (val initialRetry: scala.concurrent.durati
 }
 
 object SendRetrySettings {
+  val configPath = "alpakka.jms.send-retry"
+
   val infiniteRetries: Int = -1
-
-  private val defaults =
-    new SendRetrySettings(initialRetry = 20.millis, backoffFactor = 1.5, maxBackoff = 500.millis, maxRetries = 10)
-
-  /** Scala API */
-  def apply(): SendRetrySettings = defaults
-
-  /** Java API */
-  def create(): SendRetrySettings = defaults
 
   /**
    * Reads from the given config.
@@ -96,5 +90,20 @@ object SendRetrySettings {
    * Java API: Reads from given config.
    */
   def create(c: Config): SendRetrySettings = apply(c)
+
+  /**
+   * Reads from the default config provided by the actor system at `alpakka.jms.send-retry`.
+   *
+   * @param actorSystem The actor system
+   */
+  def apply(actorSystem: ActorSystem): SendRetrySettings =
+    apply(actorSystem.settings.config.getConfig(configPath))
+
+  /**
+   * Java API: Reads from the default config provided by the actor system at `alpakka.jms.send-retry`.
+   *
+   * @param actorSystem The actor system
+   */
+  def create(actorSystem: ActorSystem): SendRetrySettings = apply(actorSystem)
 
 }

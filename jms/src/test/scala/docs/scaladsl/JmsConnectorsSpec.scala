@@ -367,7 +367,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val result = JmsConsumer(
         JmsConsumerSettings(consumerConfig, connectionFactory)
           .withQueue("test")
-          .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(3))
+          .withConnectionRetrySettings(ConnectionRetrySettings(system).withMaxRetries(3))
       ).runWith(Sink.seq)
       Thread.sleep(500)
       ctx.broker.stop()
@@ -534,7 +534,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
         JmsProducerSettings(producerConfig, connectionFactory)
           .withQueue("numbers")
-          .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(0))
+          .withConnectionRetrySettings(ConnectionRetrySettings(system).withMaxRetries(0))
       )
 
       val completionFuture: Future[Done] = Source
@@ -555,7 +555,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
         JmsProducerSettings(producerConfig, connectionFactory)
           .withQueue("numbers")
-          .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(2))
+          .withConnectionRetrySettings(ConnectionRetrySettings(system).withMaxRetries(2))
       )
 
       val completionFuture: Future[Done] = Source(0 to 10)
@@ -738,7 +738,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val startTime = System.currentTimeMillis
       val result = JmsConsumer(
         JmsConsumerSettings(consumerConfig, connectionFactory)
-          .withConnectionRetrySettings(ConnectionRetrySettings().withMaxRetries(4))
+          .withConnectionRetrySettings(ConnectionRetrySettings(system).withMaxRetries(4))
           .withQueue("test")
       ).runWith(Sink.seq)
 
@@ -1007,7 +1007,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val jmsSource = JmsConsumer.textSource(
         JmsConsumerSettings(consumerConfig, factory)
           .withQueue("test")
-          .withConnectionRetrySettings(ConnectionRetrySettings().withConnectTimeout(connectTimeout))
+          .withConnectionRetrySettings(ConnectionRetrySettings(system).withConnectTimeout(connectTimeout))
       )
 
       val startTime = System.nanoTime
@@ -1046,7 +1046,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val jmsSource = JmsConsumer.textSource(
         JmsConsumerSettings(consumerConfig, factory)
           .withQueue("test")
-          .withConnectionRetrySettings(ConnectionRetrySettings().withConnectTimeout(connectTimeout))
+          .withConnectionRetrySettings(ConnectionRetrySettings(system).withConnectTimeout(connectTimeout))
       )
 
       val startTime = System.nanoTime

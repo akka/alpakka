@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.jms
 
+import akka.actor.ActorSystem
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.Config
 
@@ -81,19 +82,9 @@ final class ConnectionRetrySettings private (
 }
 
 object ConnectionRetrySettings {
+  val configPath = "alpakka.jms.connection-retry"
+
   val infiniteRetries: Int = -1
-
-  private val defaults = new ConnectionRetrySettings(connectTimeout = 10.seconds,
-                                                     initialRetry = 100.millis,
-                                                     backoffFactor = 2d,
-                                                     maxBackoff = 1.minute,
-                                                     maxRetries = 10)
-
-  /** Scala API */
-  def apply(): ConnectionRetrySettings = defaults
-
-  /** Java API */
-  def create(): ConnectionRetrySettings = defaults
 
   /**
    * Reads from the given config.
@@ -114,5 +105,21 @@ object ConnectionRetrySettings {
   }
 
   /** Java API: Reads from the given config. */
-  def create(c: Config): ConnectionRetrySettings = defaults
+  def create(c: Config): ConnectionRetrySettings = apply(c)
+
+  /**
+   * Reads from the default config provided by the actor system at `alpakka.jms.connection-retry`.
+   *
+   * @param actorSystem The actor system
+   */
+  def apply(actorSystem: ActorSystem): ConnectionRetrySettings =
+    apply(actorSystem.settings.config.getConfig(configPath))
+
+  /**
+   * Java API: Reads from the default config provided by the actor system at `alpakka.jms.connection-retry`.
+   *
+   * @param actorSystem The actor system
+   */
+  def create(actorSystem: ActorSystem): ConnectionRetrySettings = apply(actorSystem)
+
 }

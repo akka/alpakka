@@ -539,7 +539,7 @@ public class JmsConnectorsTest {
                   JmsProducerSettings.create(producerConfig, connectionFactory)
                       .withQueue("test")
                       .withConnectionRetrySettings(
-                          ConnectionRetrySettings.create().withMaxRetries(0)));
+                          ConnectionRetrySettings.create(system).withMaxRetries(0)));
 
           List<JmsTextMessage> msgsIn = createTestMessageList();
 
@@ -585,7 +585,7 @@ public class JmsConnectorsTest {
                   JmsProducerSettings.create(producerConfig, connectionFactory)
                       .withQueue("test")
                       .withConnectionRetrySettings(
-                          ConnectionRetrySettings.create().withMaxRetries(0)));
+                          ConnectionRetrySettings.create(system).withMaxRetries(0)));
 
           List<JmsTextMessage> msgsIn = createTestMessageList();
 
@@ -777,7 +777,7 @@ public class JmsConnectorsTest {
               JmsConsumer.create(
                       JmsConsumerSettings.create(system, connectionFactory)
                           .withConnectionRetrySettings(
-                              ConnectionRetrySettings.create().withMaxRetries(4))
+                              ConnectionRetrySettings.create(system).withMaxRetries(4))
                           .withQueue("test"))
                   .runWith(Sink.seq(), materializer);
 

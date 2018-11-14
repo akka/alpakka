@@ -13,35 +13,43 @@ import scala.concurrent.duration._
 
 class JmsSettingsSpec extends JmsSpec with OptionValues {
 
+  private val connectionFactory = new ActiveMQConnectionFactory("broker-url")
+
   "Jms producer" should {
     "have producer settings" in {
 
       //#retry-settings-case-class
-      val retrySettings = ConnectionRetrySettings()
-        .withConnectTimeout(3.seconds)
+      // reiterating defaults from reference.conf
+      val retrySettings = ConnectionRetrySettings(system)
+        .withConnectTimeout(10.seconds)
         .withInitialRetry(100.millis)
         .withBackoffFactor(2.0d)
-        .withMaxBackoff(30.seconds)
-        .withInfiniteRetries()
+        .withMaxBackoff(1.minute)
+        .withMaxRetries(10)
       //#retry-settings-case-class
 
       //#send-retry-settings
-      val sendRetrySettings = SendRetrySettings()
-        .withInitialRetry(10.millis)
-        .withBackoffFactor(2)
-        .withMaxBackoff(1.second)
-        .withMaxRetries(60)
+      // reiterating defaults from reference.conf
+      val sendRetrySettings = SendRetrySettings(system)
+        .withInitialRetry(20.millis)
+        .withBackoffFactor(1.5d)
+        .withMaxBackoff(500.millis)
+        .withMaxRetries(10)
       //#send-retry-settings
 
       //#producer-settings
-      val settingsViaActorSystem = JmsProducerSettings(system, new ActiveMQConnectionFactory("broker-url"))
-
       val producerConfig: Config = system.settings.config.getConfig(JmsProducerSettings.configPath)
-      val settings = JmsProducerSettings(producerConfig, new ActiveMQConnectionFactory("broker-url"))
+      val settings = JmsProducerSettings(producerConfig, connectionFactory)
         .withTopic("target-topic")
         .withCredentials(Credentials("username", "password"))
         .withSessionCount(1)
       //#producer-settings
+
+      val retrySettings2 = ConnectionRetrySettings(system)
+      retrySettings.toString should be(retrySettings2.toString)
+
+      val sendRetrySettings2 = SendRetrySettings(system)
+      sendRetrySettings.toString should be(sendRetrySettings2.toString)
 
       val producerSettings2 = JmsProducerSettings(producerConfig, settings.connectionFactory)
         .withTopic("target-topic")
@@ -54,21 +62,18 @@ class JmsSettingsSpec extends JmsSpec with OptionValues {
   "Jms consumer" should {
     "have consumer settings" in {
 
-      //#retry-settings-with-clause
-      // reiterating defaults from reference.conf
-      val retrySettings = ConnectionRetrySettings(consumerConfig.getConfig("connection-retry"))
+      val connectionRetryConfig: Config = system.settings.config.getConfig(ConnectionRetrySettings.configPath)
+      val retrySettings = ConnectionRetrySettings(connectionRetryConfig)
         .withConnectTimeout(10.seconds)
         .withInitialRetry(100.millis)
         .withBackoffFactor(2.0d)
         .withMaxBackoff(1.minute)
         .withMaxRetries(10)
-      //#retry-settings-with-clause
-      val retrySettings2 = ConnectionRetrySettings(consumerConfig.getConfig("connection-retry"))
-      retrySettings.toString should be(retrySettings2.toString)
 
       //#consumer-settings
+      val consumerConfig: Config = system.settings.config.getConfig(JmsConsumerSettings.configPath)
       // reiterating defaults from reference.conf
-      val settings = JmsConsumerSettings(consumerConfig, new ActiveMQConnectionFactory("broker-url"))
+      val settings = JmsConsumerSettings(consumerConfig, connectionFactory)
         .withQueue("target-queue")
         .withCredentials(Credentials("username", "password"))
         .withConnectionRetrySettings(retrySettings)
@@ -76,6 +81,9 @@ class JmsSettingsSpec extends JmsSpec with OptionValues {
         .withBufferSize(100)
         .withAckTimeout(1.second)
       //#consumer-settings
+
+      val retrySettings2 = ConnectionRetrySettings(system)
+      retrySettings.toString should be(retrySettings2.toString)
 
       val consumerSettings2 = JmsConsumerSettings(consumerConfig, settings.connectionFactory)
         .withQueue("target-queue")
@@ -105,18 +113,21 @@ class JmsSettingsSpec extends JmsSpec with OptionValues {
           |durable-name = "some text" # optional
         """.stripMargin).withFallback(consumerConfig).resolve()
 
-      val settings = JmsConsumerSettings(config, new ActiveMQConnectionFactory("broker-url"))
+      val settings = JmsConsumerSettings(config, connectionFactory)
       settings.acknowledgeMode.value should be(AcknowledgeMode.DupsOkAcknowledge)
-//      settings.durableName.value should be("some text")
     }
   }
 
   "Browse settings" should {
     "read from config" in {
-      // reiterating defaults from reference.conf
-      val settings = JmsBrowseSettings(browseConfig, new ActiveMQConnectionFactory("broker-url"))
+      val retrySettings = ConnectionRetrySettings(system)
+      //#browse-settings
+      val browseConfig: Config = system.settings.config.getConfig(JmsBrowseSettings.configPath)
+      val settings = JmsBrowseSettings(browseConfig, connectionFactory)
         .withQueue("target-queue")
         .withCredentials(Credentials("username", "password"))
+        .withConnectionRetrySettings(retrySettings)
+      //#browse-settings
 
       val settings2 = JmsBrowseSettings(browseConfig, settings.connectionFactory)
         .withQueue("target-queue")
