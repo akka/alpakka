@@ -56,6 +56,11 @@ private class JmsMessageProducer(jmsProducer: jms.MessageProducer, jmsSession: J
         newMessage.writeBytes(byteMessage.bytes)
         newMessage
 
+      case byteStringMessage: JmsByteStringMessage =>
+        val newMessage = jmsSession.session.createBytesMessage()
+        newMessage.writeBytes(byteStringMessage.bytes.toArray)
+        newMessage
+
       case mapMessage: JmsMapMessage =>
         val newMessage = jmsSession.session.createMapMessage()
         populateMapMessage(newMessage, mapMessage)
@@ -103,6 +108,7 @@ private class JmsMessageProducer(jmsProducer: jms.MessageProducer, jmsSession: J
       case JmsType(jmsType) => message.setJMSType(jmsType)
       case JmsReplyTo(destination) => message.setJMSReplyTo(destination.create(jmsSession.session))
       case JmsCorrelationId(jmsCorrelationId) => message.setJMSCorrelationID(jmsCorrelationId)
+      case JmsDeliveryMode(_) | JmsPriority(_) | JmsTimeToLive(_) => // see #send(JmsMessage)
     }
 }
 

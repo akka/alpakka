@@ -10,6 +10,7 @@ import akka.stream.alpakka.jms.{scaladsl, JmsMessage, JmsProducerSettings}
 import akka.stream.alpakka.jms.JmsProducerMessage._
 import akka.stream.javadsl.Source
 import akka.stream.scaladsl.{Flow, Keep}
+import akka.util.ByteString
 import akka.{Done, NotUsed}
 
 import scala.collection.JavaConverters._
@@ -68,6 +69,15 @@ object JmsProducer {
   def bytesSink(settings: JmsProducerSettings): akka.stream.javadsl.Sink[Array[Byte], CompletionStage[Done]] =
     akka.stream.alpakka.jms.scaladsl.JmsProducer
       .bytesSink(settings)
+      .mapMaterializedValue(FutureConverters.toJava)
+      .asJava
+
+  /**
+   * Create a sink to send [[akka.util.ByteString ByteString]]s to a JMS broker.
+   */
+  def byteStringSink(settings: JmsProducerSettings): akka.stream.javadsl.Sink[ByteString, CompletionStage[Done]] =
+    akka.stream.alpakka.jms.scaladsl.JmsProducer
+      .byteStringSink(settings)
       .mapMaterializedValue(FutureConverters.toJava)
       .asJava
 

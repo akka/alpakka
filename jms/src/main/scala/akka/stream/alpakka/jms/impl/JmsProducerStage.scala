@@ -158,7 +158,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
       }
 
       override def onTimer(timerKey: Any): Unit = timerKey match {
-        case s: SendAttempt[E] => sendWithRetries(s)
+        case s: SendAttempt[E @unchecked] => sendWithRetries(s)
         case _ => super.onTimer(timerKey)
       }
 

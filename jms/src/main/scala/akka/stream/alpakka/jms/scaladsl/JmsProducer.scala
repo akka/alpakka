@@ -8,6 +8,7 @@ import akka.stream.alpakka.jms.JmsProducerMessage.Envelope
 import akka.stream.alpakka.jms._
 import akka.stream.alpakka.jms.impl.{JmsProducerMatValue, JmsProducerStage}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.util.ByteString
 import akka.{Done, NotUsed}
 
 import scala.concurrent.Future
@@ -65,6 +66,12 @@ object JmsProducer {
    */
   def bytesSink(settings: JmsProducerSettings): Sink[Array[Byte], Future[Done]] =
     Flow.fromFunction((s: Array[Byte]) => JmsByteMessage(s)).via(flow(settings)).toMat(Sink.ignore)(Keep.right)
+
+  /**
+   * Create a sink to send [[akka.util.ByteString ByteString]]s to a JMS broker.
+   */
+  def byteStringSink(settings: JmsProducerSettings): Sink[ByteString, Future[Done]] =
+    Flow.fromFunction((s: ByteString) => JmsByteStringMessage(s)).via(flow(settings)).toMat(Sink.ignore)(Keep.right)
 
   /**
    * Create a sink to send map structures to a JMS broker.
