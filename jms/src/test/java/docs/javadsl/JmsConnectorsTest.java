@@ -627,7 +627,10 @@ public class JmsConnectorsTest {
   public void browse() throws Exception {
     withServer(
         ctx -> {
+          // #browse-source
           ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+
+          // #browse-source
 
           Sink<String, CompletionStage<Done>> jmsSink =
               JmsProducer.textSink(
@@ -637,15 +640,14 @@ public class JmsConnectorsTest {
 
           Source.from(in).runWith(jmsSink, materializer).toCompletableFuture().get();
 
-          // #create-browse-source
-          Source<Message, NotUsed> browseSource =
+          // #browse-source
+          Source<javax.jms.Message, NotUsed> browseSource =
               JmsConsumer.browse(
-                  JmsBrowseSettings.create(browseConfig, connectionFactory).withQueue("test"));
-          // #create-browse-source
+                  JmsBrowseSettings.create(system, connectionFactory).withQueue("test"));
 
-          // #run-browse-source
-          CompletionStage<List<Message>> result = browseSource.runWith(Sink.seq(), materializer);
-          // #run-browse-source
+          CompletionStage<List<javax.jms.Message>> result =
+              browseSource.runWith(Sink.seq(), materializer);
+          // #browse-source
 
           List<String> resultText =
               result

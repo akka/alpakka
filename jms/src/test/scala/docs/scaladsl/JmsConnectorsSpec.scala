@@ -751,7 +751,11 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "browse" in withServer() { ctx =>
-      val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+      // format: off
+        //#browse-source
+        val connectionFactory = new ActiveMQConnectionFactory(ctx.url)
+        //#browse-source
+      // format: on
       val in = List(1 to 100).map(_.toString())
 
       withClue("write some messages") {
@@ -761,15 +765,16 @@ class JmsConnectorsSpec extends JmsSpec {
       }
 
       withClue("browse the messages") {
-        //#create-browse-source
-        val browseSource: Source[Message, NotUsed] = JmsConsumer.browse(
-          JmsBrowseSettings(browseConfig, connectionFactory).withQueue("test")
-        )
-        //#create-browse-source
+        //#browse-source
 
-        //#run-browse-source
-        val result = browseSource.runWith(Sink.seq)
-        //#run-browse-source
+        val browseSource: Source[javax.jms.Message, NotUsed] = JmsConsumer.browse(
+          JmsBrowseSettings(system, connectionFactory)
+            .withQueue("test")
+        )
+
+        val result: Future[immutable.Seq[javax.jms.Message]] =
+          browseSource.runWith(Sink.seq)
+        //#browse-source
 
         result.futureValue.collect { case msg: TextMessage => msg.getText } shouldEqual in
       }

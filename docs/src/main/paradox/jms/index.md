@@ -31,7 +31,7 @@ The Alpakka JMS connector provides Akka Stream sources and sinks to connect to J
 
 * [p](producer.md)
 * [c](consumer.md)
-* [c](browser.md)
+* [c](browse.md)
 * [ibm](ibm-mq.md)
 
 @@@

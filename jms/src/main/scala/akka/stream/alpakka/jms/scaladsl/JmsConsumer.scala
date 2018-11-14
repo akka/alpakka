@@ -93,6 +93,7 @@ object JmsConsumer {
   /**
    * Creates a source browsing a JMS destination (which does not consume the messages)
    * and emitting [[javax.jms.Message]] instances.
+   * Completes: when all messages have been read
    */
   def browse(settings: JmsBrowseSettings): Source[javax.jms.Message, NotUsed] = settings.destination match {
     case None => throw new IllegalArgumentException(noBrowseDestination(settings))
