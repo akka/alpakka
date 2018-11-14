@@ -10,7 +10,13 @@ import javax.jms
  * JMS acknowledge modes.
  * See [[javax.jms.Connection#createSession-boolean-int-]]
  */
-final class AcknowledgeMode(val mode: Int)
+final class AcknowledgeMode(val mode: Int) {
+  override def equals(other: Any): Boolean = other match {
+    case that: AcknowledgeMode => this.mode == that.mode
+  }
+  override def hashCode: Int = mode
+  override def toString: String = s"AcknowledgeMode(${AcknowledgeMode.asString(this)})"
+}
 
 object AcknowledgeMode {
   val AutoAcknowledge: AcknowledgeMode = new AcknowledgeMode(jms.Session.AUTO_ACKNOWLEDGE)
@@ -27,9 +33,15 @@ object AcknowledgeMode {
     case "duplicates-ok" => DupsOkAcknowledge
     case "session" => SessionTransacted
     case other =>
-      throw new IllegalArgumentException(
-        s"can't read AcknowledgeMode '$other', (known are auto, client, duplicates-ok, session)"
-      )
+      try {
+        val mode = other.toInt
+        new AcknowledgeMode(mode)
+      } catch {
+        case _: NumberFormatException =>
+          throw new IllegalArgumentException(
+            s"can't read AcknowledgeMode '$other', (known are auto, client, duplicates-ok, session, or an integer value)"
+          )
+      }
   }
 
   /**
@@ -40,8 +52,7 @@ object AcknowledgeMode {
     case ClientAcknowledge => "client"
     case DupsOkAcknowledge => "duplicates-ok"
     case SessionTransacted => "session"
-    case other =>
-      throw new IllegalArgumentException(s"don't know AcknowledgeMode '$other'")
+    case other => other.mode.toString
   }
 
 }

@@ -26,6 +26,14 @@ final class Credentials private (
     s"username=$username," +
     s"password=${"*" * password.length}" +
     ")"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: Credentials =>
+      java.util.Objects.equals(this.username, that.username) &&
+      java.util.Objects.equals(this.password, that.password)
+  }
+
+  override def hashCode(): Int = java.util.Objects.hash(username, password)
 }
 
 object Credentials {
