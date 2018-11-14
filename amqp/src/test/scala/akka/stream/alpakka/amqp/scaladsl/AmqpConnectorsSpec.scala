@@ -123,7 +123,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
     }
 
-    "correctly publish with successful confirms" in {
+    "correctly publish through AmqpPublishFlow with successful confirms" in {
       val queueName = "amqp-conn-it-spec-publish-with-confirms-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
 

@@ -13,10 +13,7 @@ import akka.stream.KillSwitches;
 import akka.stream.Materializer;
 import akka.stream.UniqueKillSwitch;
 import akka.stream.alpakka.amqp.*;
-import akka.stream.alpakka.amqp.javadsl.AmqpRpcFlow;
-import akka.stream.alpakka.amqp.javadsl.AmqpSink;
-import akka.stream.alpakka.amqp.javadsl.AmqpSource;
-import akka.stream.alpakka.amqp.javadsl.CommittableReadResult;
+import akka.stream.alpakka.amqp.javadsl.*;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -30,6 +27,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.collection.JavaConverters;
 
 import java.time.Duration;
 import java.util.*;
@@ -170,6 +168,41 @@ public class AmqpDocsTest {
         .expectComplete();
 
     killSwitch.shutdown();
+  }
+
+  @Test
+  public void correctlyPublishThroughAmqpPublishFlowWithSuccessfulConfirms() throws Exception {
+
+    final String queueName =
+        "amqp-conn-it-spec-publish-with-confirms-queue-" + System.currentTimeMillis();
+    final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
+
+    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
+
+    // #create-publish-flow
+    final Flow<Pair<ByteString, String>, String, CompletionStage<Done>> amqpPublishFlow =
+        AmqpPublishFlow.createSimple(
+            AmqpWriteSettings.create(connectionProvider)
+                .withRoutingKey(queueName)
+                .withDeclaration(queueDeclaration)
+                .withPublishConfirms());
+    // #create-publish-flow
+
+    // #run-publish-flow
+    Pair<CompletionStage<Done>, TestSubscriber.Probe<String>> result =
+        Source.from(input)
+            .map(ByteString::fromString)
+            .map(bytes -> new Pair<>(bytes, "passThrough"))
+            .viaMat(amqpPublishFlow, Keep.right())
+            .toMat(TestSink.probe(system), Keep.both())
+            .run(materializer);
+    // #run-publish-flow
+
+    List<String> probeResult =
+        JavaConverters.seqAsJavaListConverter(
+                result.second().toStrict(scala.concurrent.duration.Duration.create(3, TimeUnit.SECONDS)))
+            .asJava();
+    assertEquals(probeResult, input.stream().map(s -> "passThrough").collect(Collectors.toList()));
   }
 
   @Test

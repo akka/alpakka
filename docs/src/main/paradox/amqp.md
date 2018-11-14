@@ -32,6 +32,9 @@ There are several types of @scaladoc[AmqpConnectionProvider](akka.stream.alpakka
 
 ## Sending messages
 
+
+#### With a Sink
+
 First define a queue name and the declaration of the queue that the messages will be sent to.
 
 Scala
@@ -54,6 +57,23 @@ Scala
 Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-sink }
 
+#### With a Flow
+
+Create a flow, that accepts a Tuple2 of @scaladoc[ByteString](akka.util.ByteString) and a PassThrough element (a String in the example). The @scaladoc[ByteString](akka.util.ByteString) will be forwarded to the AMQP server, and the PassThrough element passed downstream.
+
+Scala
+: @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-publish-flow }
+
+Java
+: @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-publish-flow }
+
+Note: in This example, we activate AMQP's publish confirms so that only truly published elements pass this stage. This is completely optional.
+
+Scala
+: @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #run-publish-flow }
+
+Java
+: @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #run-publish-flow }
 
 ## Receiving messages
 

@@ -7,7 +7,7 @@ package docs.scaladsl
 import akka.{Done, NotUsed}
 import akka.stream.KillSwitches
 import akka.stream.alpakka.amqp._
-import akka.stream.alpakka.amqp.scaladsl.{AmqpRpcFlow, AmqpSink, AmqpSource, CommittableReadResult}
+import akka.stream.alpakka.amqp.scaladsl._
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
@@ -114,6 +114,35 @@ class AmqpDocsSpec extends AmqpSpec {
 
       probe.request(5).expectNextUnorderedN(input.map(s => ByteString(s.concat("a")))).expectComplete()
       sourceToSink.shutdown()
+    }
+
+    "correctly publish with successful confirms" in {
+      val queueName = "amqp-conn-it-spec-publish-with-confirms-queue-" + System.currentTimeMillis()
+      val queueDeclaration = QueueDeclaration(queueName)
+
+      //#create-publish-flow
+      val amqpPublishFlow = AmqpPublishFlow.simple[String](
+        AmqpWriteSettings(connectionProvider)
+          .withRoutingKey(queueName)
+          .withDeclaration(queueDeclaration)
+          .withPublishConfirms() // Activate publish confirms (optional)
+      )
+      //#create-publish-flow
+
+      val input = Vector("one", "two", "three", "four", "five")
+      //#run-publish-flow
+      val (_, probe) =
+        Source(input)
+          .map(s => (ByteString(s), s"$s-passThrough"))
+          .viaMat(amqpPublishFlow)(Keep.right)
+          .toMat(TestSink.probe)(Keep.both)
+          .run
+      //#run-publish-flow
+
+      probe
+        .request(input.length)
+        .expectNextN(input.map(s => s"$s-passThrough"))
+        .expectComplete()
     }
 
     "pub-sub from one source with multiple sinks" in assertAllStagesStopped {
