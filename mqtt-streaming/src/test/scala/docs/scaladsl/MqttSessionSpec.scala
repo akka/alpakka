@@ -57,7 +57,7 @@ class MqttSessionSpec
               .join(pipeToServer)
           )
           .toMat(Sink.collection)(Keep.both)
-          .run
+          .run()
 
       val connect = Connect("some-client-id", ConnectFlags.None)
       val connectBytes = connect.encode(ByteString.newBuilder).result()
@@ -176,7 +176,7 @@ class MqttSessionSpec
             .join(pipeToServer)
         )
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
       val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
@@ -211,7 +211,7 @@ class MqttSessionSpec
         )
         .drop(2)
         .toMat(Sink.head)(Keep.both)
-        .run
+        .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
       val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
@@ -260,7 +260,7 @@ class MqttSessionSpec
         }
         .wireTap(_ => publishReceived.success(Done))
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
       val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
@@ -323,7 +323,7 @@ class MqttSessionSpec
           }
         }
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
       val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
@@ -382,7 +382,7 @@ class MqttSessionSpec
               .join(pipeToServer)
           )
           .toMat(Sink.ignore)(Keep.left)
-          .run
+          .run()
 
       val connect = Connect("some-client-id", ConnectFlags.None)
       val connectBytes = connect.encode(ByteString.newBuilder).result()
@@ -418,7 +418,7 @@ class MqttSessionSpec
           )
           .drop(1)
           .toMat(Sink.head)(Keep.both)
-          .run
+          .run()
 
       val connect = Connect("some-client-id", ConnectFlags.None)
       val connectBytes = connect.encode(ByteString.newBuilder).result()
@@ -459,7 +459,7 @@ class MqttSessionSpec
               .join(pipeToServer)
           )
           .toMat(Sink.ignore)(Keep.left)
-          .run
+          .run()
 
       val connect = Connect("some-client-id", ConnectFlags.None)
       val connectBytes = connect.encode(ByteString.newBuilder).result()
@@ -501,7 +501,7 @@ class MqttSessionSpec
               .join(pipeToServer)
           )
           .toMat(Sink.ignore)(Keep.left)
-          .run
+          .run()
 
       val connect = Connect("some-client-id", ConnectFlags.None)
       val connectBytes = connect.encode(ByteString.newBuilder).result()
@@ -544,7 +544,7 @@ class MqttSessionSpec
           )
           .drop(2)
           .toMat(Sink.head)(Keep.both)
-          .run
+          .run()
 
       val connect = Connect("some-client-id", ConnectFlags.None)
       val connectBytes = connect.encode(ByteString.newBuilder).result()
@@ -592,7 +592,7 @@ class MqttSessionSpec
               .join(pipeToServer)
           )
           .toMat(Sink.ignore)(Keep.left)
-          .run
+          .run()
 
       val connect = Connect("some-client-id", ConnectFlags.None).copy(keepAlive = 200.millis.dilated)
       val connectBytes = connect.encode(ByteString.newBuilder).result()
@@ -631,7 +631,7 @@ class MqttSessionSpec
               .join(pipeToServer)
           )
           .toMat(Sink.ignore)(Keep.both)
-          .run
+          .run()
 
       val connect = Connect("some-client-id", ConnectFlags.None).copy(keepAlive = 100.millis.dilated)
       val connectBytes = connect.encode(ByteString.newBuilder).result()
@@ -666,7 +666,7 @@ class MqttSessionSpec
           )
           .drop(1)
           .toMat(Sink.head)(Keep.both)
-          .run
+          .run()
 
       val connect = Connect("some-client-id", ConnectFlags.None)
       val connectBytes = connect.encode(ByteString.newBuilder).result()
@@ -707,7 +707,7 @@ class MqttSessionSpec
               .join(pipeToServer)
           )
           .toMat(Sink.ignore)(Keep.both)
-          .run
+          .run()
 
       val connect = Connect("some-client-id", ConnectFlags.None)
 
@@ -763,7 +763,7 @@ class MqttSessionSpec
               unsubscribeReceived.success(Done)
           })
           .toMat(Sink.collection)(Keep.both)
-          .run
+          .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
       val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
@@ -851,7 +851,7 @@ class MqttSessionSpec
             case _ =>
           })
           .toMat(Sink.collection)(Keep.both)
-          .run
+          .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
       val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
@@ -905,7 +905,7 @@ class MqttSessionSpec
             case _ =>
           })
           .toMat(Sink.ignore)(Keep.both)
-          .run
+          .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
       val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
@@ -955,7 +955,7 @@ class MqttSessionSpec
             case _ =>
           })
           .toMat(Sink.ignore)(Keep.left)
-          .run
+          .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
       val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
@@ -1027,7 +1027,7 @@ class MqttSessionSpec
           })
           .drop(4)
           .toMat(Sink.head)(Keep.left)
-          .run
+          .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
       val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
@@ -1123,7 +1123,7 @@ class MqttSessionSpec
               publishReceived.success(Done)
           })
           .toMat(Sink.collection)(Keep.left)
-          .run
+          .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
       val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
