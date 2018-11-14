@@ -174,6 +174,37 @@ public class AmqpConnectorsTest {
   }
 
   @Test
+  public void correctlyPublishThroughAmqpPublishFlowWithSuccessfulConfirms() throws Exception {
+
+    final String queueName =
+        "amqp-conn-it-spec-publish-with-confirms-queue-" + System.currentTimeMillis();
+    final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
+
+    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
+
+    final Flow<Pair<ByteString, String>, String, CompletionStage<Done>> amqpPublishFlow =
+        AmqpPublishFlow.createSimple(
+            AmqpSinkSettings.create(connectionProvider)
+                .withRoutingKey(queueName)
+                .withDeclaration(queueDeclaration)
+                .withPublishConfirms(1000));
+
+    Pair<CompletionStage<Done>, TestSubscriber.Probe<String>> result =
+        Source.from(input)
+            .map(ByteString::fromString)
+            .map(bytes -> new Pair<>(bytes, "something"))
+            .viaMat(amqpPublishFlow, Keep.right())
+            .toMat(TestSink.probe(system), Keep.both())
+            .run(materializer);
+
+    List<String> probeResult =
+        JavaConverters.seqAsJavaListConverter(
+                result.second().toStrict(Duration.create(3, TimeUnit.SECONDS)))
+            .asJava();
+    assertEquals(probeResult, input.stream().map(s -> "something").collect(Collectors.toList()));
+  }
+
+  @Test
   public void keepConnectionOpenIfDownstreamClosesAndThereArePendingAcks() throws Exception {
     final String queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis();
     final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
