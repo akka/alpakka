@@ -2,28 +2,54 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.jms
+package akka.stream.alpakka.jms.impl
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
-import akka.stream.alpakka.jms.JmsConnector.JmsConnectorStopping
+import akka.annotation.InternalApi
 import akka.stream.alpakka.jms.JmsProducerMessage._
-import akka.stream.alpakka.jms.JmsProducerStage._
-import akka.stream.alpakka.jms.impl.JmsProducerMatValue
+import akka.stream.alpakka.jms._
 import akka.stream.impl.Buffer
+import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.util.OptionVal
-import javax.jms.JMSException
+import javax.jms
 
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
 
+/**
+ * Internal API.
+ */
+@InternalApi
+private trait JmsProducerConnector extends JmsConnector[JmsProducerSession] {
+  this: TimerGraphStageLogic with StageLogging =>
+
+  protected final def createSession(connection: jms.Connection,
+                                    createDestination: jms.Session => jms.Destination): JmsProducerSession = {
+    val session = connection.createSession(false, AcknowledgeMode.AutoAcknowledge.mode)
+    new JmsProducerSession(connection, session, createDestination(session))
+  }
+
+  override val startConnection = false
+
+  val status: JmsProducerMatValue = new JmsProducerMatValue {
+    override def connected: Source[InternalConnectionState, NotUsed] =
+      Source.fromFuture(connectionStateSource).flatMapConcat(identity)
+  }
+}
+
+/**
+ * Internal API.
+ */
+@InternalApi
 private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings: JmsProducerSettings,
                                                                         destination: Destination)
     extends GraphStageWithMaterializedValue[FlowShape[Envelope[A, PassThrough], Envelope[A, PassThrough]],
                                             JmsProducerMatValue] { stage =>
+  import JmsProducerStage._
 
   private type E = Envelope[A, PassThrough]
   private val in = Inlet[E]("JmsProducer.in")
@@ -125,14 +151,14 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
       )
 
       private def publishAndCompleteStage(): Unit = {
-        val previous = updateState(JmsConnectorStopping(Success(Done)))
+        val previous = updateState(InternalConnectionState.JmsConnectorStopping(Success(Done)))
         jmsSessions.foreach(_.closeSession())
         JmsConnector.connection(previous).foreach(_.close())
         completeStage()
       }
 
       override def onTimer(timerKey: Any): Unit = timerKey match {
-        case s: SendAttempt[E] => sendWithRetries(s)
+        case s: SendAttempt[E @unchecked] => sendWithRetries(s)
         case _ => super.onTimer(timerKey)
       }
 
@@ -173,7 +199,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
             case Success(_) =>
               holder(Success(envelope))
               pushNextIfPossible()
-            case Failure(t: JMSException) =>
+            case Failure(t: jms.JMSException) =>
               nextTryOrFail(send, t)
             case Failure(t) =>
               holder(Failure(t))
@@ -215,6 +241,10 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
     }
 }
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[jms] object JmsProducerStage {
 
   val NotYetThere = Failure(new Exception with NoStackTrace)

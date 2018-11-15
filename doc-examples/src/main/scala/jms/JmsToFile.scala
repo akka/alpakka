@@ -30,7 +30,7 @@ object JmsToFile extends JmsSampleBase with App {
 
   val jmsSource: Source[String, JmsConsumerControl] =        // (1)
     JmsConsumer.textSource(
-      JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("test")
+      JmsConsumerSettings(actorSystem, connectionFactory).withBufferSize(10).withQueue("test")
     )
 
   val fileSink: Sink[ByteString, Future[IOResult]] = // (2)

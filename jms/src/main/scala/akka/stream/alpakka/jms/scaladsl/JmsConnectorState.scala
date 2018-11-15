@@ -3,6 +3,7 @@
  */
 
 package akka.stream.alpakka.jms.scaladsl
+
 import akka.NotUsed
 import akka.stream.KillSwitch
 import akka.stream.scaladsl.Source
@@ -19,6 +20,9 @@ trait JmsProducerStatus {
 
 }
 
+/**
+ * Handle to shut down consumers and to inspect the connectivity to the JMS broker.
+ */
 trait JmsConsumerControl extends KillSwitch {
 
   /**

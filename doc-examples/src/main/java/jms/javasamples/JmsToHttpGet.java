@@ -45,7 +45,8 @@ public class JmsToHttpGet {
 
   private void enqueue(ConnectionFactory connectionFactory, String... msgs) {
     Sink<String, ?> jmsSink =
-        JmsProducer.textSink(JmsProducerSettings.create(connectionFactory).withQueue("test"));
+        JmsProducer.textSink(
+            JmsProducerSettings.create(system, connectionFactory).withQueue("test"));
     Source.from(Arrays.asList(msgs)).runWith(jmsSink, materializer);
   }
 
@@ -64,7 +65,7 @@ public class JmsToHttpGet {
 
     Source<String, JmsConsumerControl> jmsSource = // (1)
         JmsConsumer.textSource(
-            JmsConsumerSettings.create(connectionFactory).withBufferSize(10).withQueue("test"));
+            JmsConsumerSettings.create(system, connectionFactory).withQueue("test"));
 
     int parallelism = 4;
     Pair<JmsConsumerControl, CompletionStage<Done>> pair =

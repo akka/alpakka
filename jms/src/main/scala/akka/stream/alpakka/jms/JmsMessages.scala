@@ -4,106 +4,11 @@
 
 package akka.stream.alpakka.jms
 
-import scala.collection.JavaConverters._
 import java.util
-import java.util.concurrent.TimeUnit
 
-import scala.concurrent.duration.Duration
+import akka.util.ByteString
 
-sealed trait JmsHeader {
-
-  /**
-   * Indicates if this header must be set during the send() operation according to the JMS specification or as attribute of the jms message before.
-   */
-  def usedDuringSend: Boolean
-}
-
-final case class JmsCorrelationId(jmsCorrelationId: String) extends JmsHeader {
-  override val usedDuringSend = false
-}
-
-final case class JmsReplyTo(jmsDestination: Destination) extends JmsHeader {
-  override val usedDuringSend = false
-}
-final case class JmsType(jmsType: String) extends JmsHeader {
-  override val usedDuringSend = false
-}
-
-final case class JmsTimeToLive(timeInMillis: Long) extends JmsHeader {
-  override val usedDuringSend = true
-}
-
-/**
- * Priority of a message can be between 0 (lowest) and 9 (highest). The default priority is 4.
- */
-final case class JmsPriority(priority: Int) extends JmsHeader {
-  override val usedDuringSend = true
-}
-
-/**
- * Delivery mode can be [[javax.jms.DeliveryMode.NON_PERSISTENT]] or [[javax.jms.DeliveryMode.PERSISTENT]]
- */
-final case class JmsDeliveryMode(deliveryMode: Int) extends JmsHeader {
-  override val usedDuringSend = true
-}
-
-object JmsCorrelationId {
-
-  /**
-   * Java API: create [[JmsCorrelationId]]
-   */
-  def create(correlationId: String) = JmsCorrelationId(correlationId)
-}
-
-object JmsReplyTo {
-
-  /**
-   * Java API: create [[JmsReplyTo]]
-   */
-  def queue(name: String) = JmsReplyTo(Queue(name))
-
-  /**
-   * Java API: create [[JmsReplyTo]]
-   */
-  def topic(name: String) = JmsReplyTo(Topic(name))
-}
-
-object JmsType {
-
-  /**
-   * Java API: create [[JmsType]]
-   */
-  def create(jmsType: String) = JmsType(jmsType)
-}
-
-object JmsTimeToLive {
-
-  /**
-   * Scala API: create [[JmsTimeToLive]]
-   */
-  def apply(timeToLive: Duration): JmsTimeToLive = JmsTimeToLive(timeToLive.toMillis)
-
-  /**
-   * Java API: create [[JmsTimeToLive]]
-   */
-  def create(timeToLive: Long, unit: TimeUnit) = JmsTimeToLive(unit.toMillis(timeToLive))
-}
-
-object JmsPriority {
-
-  /**
-   * Java API: create [[JmsPriority]]
-   */
-  def create(priority: Int) = JmsPriority(priority)
-}
-
-object JmsDeliveryMode {
-
-  /**
-   * Java API: create [[JmsDeliveryMode]]
-   */
-  def create(deliveryMode: Int) = JmsDeliveryMode(deliveryMode)
-}
+import scala.collection.JavaConverters._
 
 sealed trait JmsMessage {
 
@@ -114,12 +19,12 @@ sealed trait JmsMessage {
   def destination: Option[Destination]
 
   /**
-   * Java API: adds a Jms header e.g. JMSType to [[JmsMessage]]
+   * Add a Jms header e.g. JMSType to [[JmsMessage]]
    */
   def withHeader(jmsHeader: JmsHeader): JmsMessage
 
   /**
-   * Java API: adds JMSProperty to [[JmsMessage]]
+   * Add a property to [[JmsMessage]]
    */
   def withProperty(name: String, value: Any): JmsMessage
 
@@ -139,12 +44,12 @@ final case class JmsByteMessage(bytes: Array[Byte],
     extends JmsMessage {
 
   /**
-   * Java API: adds a Jms header e.g. JMSType to [[JmsByteMessage]]
+   * Add a Jms header e.g. JMSType to [[JmsByteMessage]]
    */
   def withHeader(jmsHeader: JmsHeader): JmsByteMessage = copy(headers = headers + jmsHeader)
 
   /**
-   * Java API: adds JMSProperty to [[JmsByteMessage]]
+   * Add a property to [[JmsByteMessage]]
    */
   def withProperty(name: String, value: Any): JmsByteMessage = copy(properties = properties + (name -> value))
 
@@ -183,6 +88,56 @@ object JmsByteMessage {
     JmsByteMessage(bytes = bytes, headers = headers.asScala.toSet, properties = properties.asScala.toMap)
 }
 
+final class JmsByteStringMessage private (val bytes: ByteString,
+                                          val headers: Set[JmsHeader] = Set.empty,
+                                          val properties: Map[String, Any] = Map.empty,
+                                          val destination: Option[Destination] = None)
+    extends JmsMessage {
+
+  /**
+   * Add a Jms header e.g. JMSType to [[JmsByteStringMessage]]
+   */
+  def withHeader(jmsHeader: JmsHeader): JmsByteStringMessage = copy(headers = headers + jmsHeader)
+
+  /**
+   * Add a property to [[JmsByteMessage]]
+   */
+  def withProperty(name: String, value: Any): JmsByteStringMessage = copy(properties = properties + (name -> value))
+
+  def toQueue(name: String): JmsByteStringMessage = to(Queue(name))
+
+  def toTopic(name: String): JmsByteStringMessage = to(Topic(name))
+
+  def to(destination: Destination): JmsByteStringMessage = copy(destination = Some(destination))
+
+  def withoutDestination: JmsByteStringMessage = copy(destination = None)
+
+  private def copy(bytes: ByteString = bytes,
+                   headers: Set[JmsHeader] = headers,
+                   properties: Map[String, Any] = properties,
+                   destination: Option[Destination] = destination): JmsByteStringMessage = new JmsByteStringMessage(
+    bytes,
+    headers,
+    properties,
+    destination
+  )
+
+}
+
+object JmsByteStringMessage {
+
+  /**
+   * Create a byte message from a ByteString
+   */
+  def apply(byteString: ByteString) = new JmsByteStringMessage(byteString)
+
+  /**
+   * Java API: Create a byte message from a ByteString
+   */
+  def create(byteString: ByteString) = apply(byteString)
+
+}
+
 final case class JmsMapMessage(body: Map[String, Any],
                                headers: Set[JmsHeader] = Set.empty,
                                properties: Map[String, Any] = Map.empty,
@@ -190,12 +145,12 @@ final case class JmsMapMessage(body: Map[String, Any],
     extends JmsMessage {
 
   /**
-   * Java API: adds a Jms header e.g. JMSType to [[JmsMapMessage]]
+   * Add a Jms header e.g. JMSType to [[JmsMapMessage]]
    */
   def withHeader(jmsHeader: JmsHeader): JmsMapMessage = copy(headers = headers + jmsHeader)
 
   /**
-   * Java API: adds JMSProperty to [[JmsMapMessage]]
+   * Add a property to [[JmsMapMessage]]
    */
   def withProperty(name: String, value: Any): JmsMapMessage = copy(properties = properties + (name -> value))
 
@@ -242,12 +197,12 @@ final case class JmsTextMessage(body: String,
     extends JmsMessage {
 
   /**
-   * Java API: adds a Jms header e.g. JMSType to [[JmsTextMessage]]
+   * Add a Jms header e.g. JMSType to [[JmsTextMessage]]
    */
   def withHeader(jmsHeader: JmsHeader): JmsTextMessage = copy(headers = headers + jmsHeader)
 
   /**
-   * Java API: adds JMSProperty to [[JmsTextMessage]]
+   * Add a property to [[JmsTextMessage]]
    */
   def withProperty(name: String, value: Any): JmsTextMessage = copy(properties = properties + (name -> value))
 
@@ -293,12 +248,12 @@ final case class JmsObjectMessage(serializable: java.io.Serializable,
     extends JmsMessage {
 
   /**
-   * Java API: adds a Jms header e.g. JMSType to [[JmsObjectMessage]]
+   * Add a Jms header e.g. JMSType to [[JmsObjectMessage]]
    */
   def withHeader(jmsHeader: JmsHeader): JmsObjectMessage = copy(headers = headers + jmsHeader)
 
   /**
-   * Java API: adds JMSProperty to [[JmsObjectMessage]]
+   * Add a property to [[JmsObjectMessage]]
    */
   def withProperty(name: String, value: Any): JmsObjectMessage = copy(properties = properties + (name -> value))
 
