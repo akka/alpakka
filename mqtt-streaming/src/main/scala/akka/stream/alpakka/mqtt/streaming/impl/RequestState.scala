@@ -11,6 +11,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{BroadcastHub, Keep, Source, SourceQueueWithComplete}
+import akka.util.ByteString
 
 import scala.concurrent.Promise
 import scala.util.control.NoStackTrace
@@ -184,29 +185,33 @@ import scala.util.{Failure, Success}
    * Construct with the starting state
    */
   def apply(publish: Publish,
+            clientId: Option[String],
             packetId: PacketId,
             local: Promise[ForwardPublish.type],
             packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
             settings: MqttSessionSettings): Behavior[Event] =
-    prepareClientConsumption(Start(publish, packetId, local, packetRouter, settings))
+    prepareClientConsumption(Start(publish, clientId, packetId, local, packetRouter, settings))
 
   // Our FSM data, FSM events and commands emitted by the FSM
 
   sealed abstract class Data(val publish: Publish,
+                             val clientId: Option[String],
                              val packetId: PacketId,
                              val packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
                              val settings: MqttSessionSettings)
   final case class Start(override val publish: Publish,
+                         override val clientId: Option[String],
                          override val packetId: PacketId,
                          local: Promise[ForwardPublish.type],
                          override val packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
                          override val settings: MqttSessionSettings)
-      extends Data(publish, packetId, packetRouter, settings)
+      extends Data(publish, clientId, packetId, packetRouter, settings)
   final case class ClientConsuming(override val publish: Publish,
+                                   override val clientId: Option[String],
                                    override val packetId: PacketId,
                                    override val packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
                                    override val settings: MqttSessionSettings)
-      extends Data(publish, packetId, packetRouter, settings)
+      extends Data(publish, clientId, packetId, packetRouter, settings)
 
   sealed abstract class Event
   final case object RegisteredPacketId extends Event
@@ -231,7 +236,7 @@ import scala.util.{Failure, Success}
 
   def prepareClientConsumption(data: Start): Behavior[Event] = Behaviors.setup { context =>
     val reply = Promise[RemotePacketRouter.Registered.type]
-    data.packetRouter ! RemotePacketRouter.Register(context.self.upcast, data.packetId, reply)
+    data.packetRouter ! RemotePacketRouter.Register(context.self.upcast, data.clientId, data.packetId, reply)
     import context.executionContext
     reply.future.onComplete {
       case Success(RemotePacketRouter.Registered) => context.self ! RegisteredPacketId
@@ -241,7 +246,9 @@ import scala.util.{Failure, Success}
     Behaviors.receiveMessagePartial[Event] {
       case RegisteredPacketId =>
         data.local.success(ForwardPublish)
-        consumeUnacknowledged(ClientConsuming(data.publish, data.packetId, data.packetRouter, data.settings))
+        consumeUnacknowledged(
+          ClientConsuming(data.publish, data.clientId, data.packetId, data.packetRouter, data.settings)
+        )
       case _: DupPublishReceivedFromRemote =>
         data.local.failure(ConsumeActive)
         throw ConsumeActive
@@ -270,7 +277,7 @@ import scala.util.{Failure, Success}
       }
       .receiveSignal {
         case (_, PostStop) =>
-          data.packetRouter ! RemotePacketRouter.Unregister(data.packetId)
+          data.packetRouter ! RemotePacketRouter.Unregister(data.clientId, data.packetId)
           Behaviors.same
       }
   }
@@ -290,7 +297,7 @@ import scala.util.{Failure, Success}
       }
       .receiveSignal {
         case (_, PostStop) =>
-          data.packetRouter ! RemotePacketRouter.Unregister(data.packetId)
+          data.packetRouter ! RemotePacketRouter.Unregister(data.clientId, data.packetId)
           Behaviors.same
       }
   }
@@ -310,7 +317,7 @@ import scala.util.{Failure, Success}
       }
       .receiveSignal {
         case (_, PostStop) =>
-          data.packetRouter ! RemotePacketRouter.Unregister(data.packetId)
+          data.packetRouter ! RemotePacketRouter.Unregister(data.clientId, data.packetId)
           Behaviors.same
       }
   }
@@ -399,10 +406,21 @@ import scala.util.{Failure, Success}
   // Requests
 
   sealed abstract class Request[A]
-  final case class Register[A](registrant: ActorRef[A], packetId: PacketId, reply: Promise[Registered.type])
+  final case class Register[A](registrant: ActorRef[A],
+                               clientId: Option[String],
+                               packetId: PacketId,
+                               reply: Promise[Registered.type])
       extends Request[A]
-  final case class Unregister[A](packetId: PacketId) extends Request[A]
-  final case class Route[A](packetId: PacketId, event: A, failureReply: Promise[_]) extends Request[A]
+  final case class RegisterConnection[A](connectionId: ByteString, clientId: String) extends Request[A]
+  final case class Unregister[A](clientId: Option[String], packetId: PacketId) extends Request[A]
+  final case class UnregisterConnection[A](connectionId: ByteString) extends Request[A]
+  final case class Route[A](clientId: Option[String], packetId: PacketId, event: A, failureReply: Promise[_])
+      extends Request[A]
+  final case class RouteViaConnection[A](connectionId: ByteString,
+                                         packetId: PacketId,
+                                         event: A,
+                                         failureReply: Promise[_])
+      extends Request[A]
 
   // Replies
 
@@ -413,7 +431,7 @@ import scala.util.{Failure, Success}
    * Construct with the starting state
    */
   def apply[A]: Behavior[Request[A]] =
-    new RemotePacketRouter[A].main(Map.empty)
+    new RemotePacketRouter[A].main(Map.empty, Map.empty)
 }
 
 /*
@@ -427,17 +445,37 @@ import scala.util.{Failure, Success}
 
   // Processing
 
-  def main(registrantsByPacketId: Map[PacketId, ActorRef[A]]): Behavior[Request[A]] =
+  def main(registrantsByPacketId: Map[(Option[String], PacketId), ActorRef[A]],
+           clientIdsByConnectionId: Map[ByteString, String]): Behavior[Request[A]] =
     Behaviors.receiveMessage {
-      case Register(registrant: ActorRef[A], packetId, reply) =>
+      case Register(registrant: ActorRef[A], clientId, packetId, reply) =>
         reply.success(Registered)
-        main(registrantsByPacketId + (packetId -> registrant))
-      case Unregister(packetId) =>
-        main(registrantsByPacketId - packetId)
-      case Route(packetId, event, failureReply) =>
-        registrantsByPacketId.get(packetId) match {
+        val key = (clientId, packetId)
+        main(registrantsByPacketId + (key -> registrant), clientIdsByConnectionId)
+      case RegisterConnection(connectionId, clientId) =>
+        main(registrantsByPacketId, clientIdsByConnectionId + (connectionId -> clientId))
+      case Unregister(clientId, packetId) =>
+        val key = (clientId, packetId)
+        main(registrantsByPacketId - key, clientIdsByConnectionId)
+      case UnregisterConnection(connectionId) =>
+        main(registrantsByPacketId, clientIdsByConnectionId - connectionId)
+      case Route(clientId, packetId, event, failureReply) =>
+        val key = (clientId, packetId)
+        registrantsByPacketId.get(key) match {
           case Some(reply) => reply ! event
           case None => failureReply.failure(CannotRoute)
+        }
+        Behaviors.same
+      case RouteViaConnection(connectionId, packetId, event, failureReply) =>
+        clientIdsByConnectionId.get(connectionId) match {
+          case clientId: Some[String] =>
+            val key = (clientId, packetId)
+            registrantsByPacketId.get(key) match {
+              case Some(reply) => reply ! event
+              case None => failureReply.failure(CannotRoute)
+            }
+          case None =>
+            failureReply.failure(CannotRoute)
         }
         Behaviors.same
     }

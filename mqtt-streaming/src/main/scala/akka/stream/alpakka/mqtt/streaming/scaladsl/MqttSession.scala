@@ -167,15 +167,24 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
             )
           case Command(cp: PubAck, _) =>
             val reply = Promise[Consumer.ForwardPubAck.type]
-            consumerPacketRouter ! RemotePacketRouter.Route(cp.packetId, Consumer.PubAckReceivedLocally(reply), reply)
+            consumerPacketRouter ! RemotePacketRouter.Route(None,
+                                                            cp.packetId,
+                                                            Consumer.PubAckReceivedLocally(reply),
+                                                            reply)
             Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
           case Command(cp: PubRec, _) =>
             val reply = Promise[Consumer.ForwardPubRec.type]
-            consumerPacketRouter ! RemotePacketRouter.Route(cp.packetId, Consumer.PubRecReceivedLocally(reply), reply)
+            consumerPacketRouter ! RemotePacketRouter.Route(None,
+                                                            cp.packetId,
+                                                            Consumer.PubRecReceivedLocally(reply),
+                                                            reply)
             Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
           case Command(cp: PubComp, _) =>
             val reply = Promise[Consumer.ForwardPubComp.type]
-            consumerPacketRouter ! RemotePacketRouter.Route(cp.packetId, Consumer.PubCompReceivedLocally(reply), reply)
+            consumerPacketRouter ! RemotePacketRouter.Route(None,
+                                                            cp.packetId,
+                                                            Consumer.PubCompReceivedLocally(reply),
+                                                            reply)
             Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
           case Command(cp: Subscribe, carry) =>
             val reply = Promise[Subscriber.ForwardSubscribe]
@@ -235,7 +244,10 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
           }
         case Right(cp @ Publish(flags, _, Some(packetId), _)) if flags.contains(ControlPacketFlags.DUP) =>
           val reply = Promise[Consumer.ForwardPublish.type]
-          consumerPacketRouter ! RemotePacketRouter.Route(packetId, Consumer.DupPublishReceivedFromRemote(reply), reply)
+          consumerPacketRouter ! RemotePacketRouter.Route(None,
+                                                          packetId,
+                                                          Consumer.DupPublishReceivedFromRemote(reply),
+                                                          reply)
           reply.future.map(_ => Right(Event(cp)))
         case Right(cp: Publish) =>
           val reply = Promise[Consumer.ForwardPublish.type]
@@ -255,7 +267,10 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
           }
         case Right(cp: PubRel) =>
           val reply = Promise[Consumer.ForwardPubRel.type]
-          consumerPacketRouter ! RemotePacketRouter.Route(cp.packetId, Consumer.PubRelReceivedFromRemote(reply), reply)
+          consumerPacketRouter ! RemotePacketRouter.Route(None,
+                                                          cp.packetId,
+                                                          Consumer.PubRelReceivedFromRemote(reply),
+                                                          reply)
           reply.future.map(_ => Right(Event(cp)))
         case Right(cp: PubComp) =>
           val reply = Promise[Producer.ForwardPubComp]
@@ -420,25 +435,38 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
             )
           case Command(cp: SubAck, _) =>
             val reply = Promise[Publisher.ForwardSubAck.type]
-            publisherPacketRouter ! RemotePacketRouter.Route(cp.packetId, Publisher.SubAckReceivedLocally(reply), reply)
+            publisherPacketRouter ! RemotePacketRouter.RouteViaConnection(connectionId,
+                                                                          cp.packetId,
+                                                                          Publisher.SubAckReceivedLocally(reply),
+                                                                          reply)
             Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
           case Command(cp: UnsubAck, _) =>
             val reply = Promise[Unpublisher.ForwardUnsubAck.type]
-            unpublisherPacketRouter ! RemotePacketRouter.Route(cp.packetId,
-                                                               Unpublisher.UnsubAckReceivedLocally(reply),
-                                                               reply)
+            unpublisherPacketRouter ! RemotePacketRouter.RouteViaConnection(connectionId,
+                                                                            cp.packetId,
+                                                                            Unpublisher.UnsubAckReceivedLocally(reply),
+                                                                            reply)
             Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
           case Command(cp: PubAck, _) =>
             val reply = Promise[Consumer.ForwardPubAck.type]
-            consumerPacketRouter ! RemotePacketRouter.Route(cp.packetId, Consumer.PubAckReceivedLocally(reply), reply)
+            consumerPacketRouter ! RemotePacketRouter.RouteViaConnection(connectionId,
+                                                                         cp.packetId,
+                                                                         Consumer.PubAckReceivedLocally(reply),
+                                                                         reply)
             Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
           case Command(cp: PubRec, _) =>
             val reply = Promise[Consumer.ForwardPubRec.type]
-            consumerPacketRouter ! RemotePacketRouter.Route(cp.packetId, Consumer.PubRecReceivedLocally(reply), reply)
+            consumerPacketRouter ! RemotePacketRouter.RouteViaConnection(connectionId,
+                                                                         cp.packetId,
+                                                                         Consumer.PubRecReceivedLocally(reply),
+                                                                         reply)
             Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
           case Command(cp: PubComp, _) =>
             val reply = Promise[Consumer.ForwardPubComp.type]
-            consumerPacketRouter ! RemotePacketRouter.Route(cp.packetId, Consumer.PubCompReceivedLocally(reply), reply)
+            consumerPacketRouter ! RemotePacketRouter.RouteViaConnection(connectionId,
+                                                                         cp.packetId,
+                                                                         Consumer.PubCompReceivedLocally(reply),
+                                                                         reply)
             Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
           case c: Command[A] => throw new IllegalStateException(c + " is not a server command")
         }
@@ -476,7 +504,10 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
           reply.future.map(_ => Right(Event(cp)))
         case Right(cp @ Publish(flags, _, Some(packetId), _)) if flags.contains(ControlPacketFlags.DUP) =>
           val reply = Promise[Consumer.ForwardPublish.type]
-          consumerPacketRouter ! RemotePacketRouter.Route(packetId, Consumer.DupPublishReceivedFromRemote(reply), reply)
+          consumerPacketRouter ! RemotePacketRouter.RouteViaConnection(connectionId,
+                                                                       packetId,
+                                                                       Consumer.DupPublishReceivedFromRemote(reply),
+                                                                       reply)
           reply.future.map(_ => Right(Event(cp)))
         case Right(cp: Publish) =>
           val reply = Promise[Consumer.ForwardPublish.type]
@@ -496,7 +527,10 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
           }
         case Right(cp: PubRel) =>
           val reply = Promise[Consumer.ForwardPubRel.type]
-          consumerPacketRouter ! RemotePacketRouter.Route(cp.packetId, Consumer.PubRelReceivedFromRemote(reply), reply)
+          consumerPacketRouter ! RemotePacketRouter.RouteViaConnection(connectionId,
+                                                                       cp.packetId,
+                                                                       Consumer.PubRelReceivedFromRemote(reply),
+                                                                       reply)
           reply.future.map(_ => Right(Event(cp)))
         case Right(cp: PubComp) =>
           val reply = Promise[Producer.ForwardPubComp]

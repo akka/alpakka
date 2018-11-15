@@ -292,7 +292,7 @@ import scala.util.{Failure, Success}
               val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + "-" + context.children.size)
               context.watchWith(
                 context.spawn(
-                  Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings),
+                  Consumer(publish, None, packetId, local, data.consumerPacketRouter, data.settings),
                   consumerName
                 ),
                 ConsumerFree(publish.topicName)
@@ -311,6 +311,7 @@ import scala.util.{Failure, Success}
               context.watchWith(
                 context.spawn(
                   Consumer(prfr.publish,
+                           None,
                            prfr.publish.packetId.get,
                            prfr.local,
                            data.consumerPacketRouter,

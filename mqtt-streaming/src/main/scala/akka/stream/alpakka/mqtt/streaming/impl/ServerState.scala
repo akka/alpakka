@@ -138,6 +138,9 @@ import scala.util.{Failure, Success}
               cc
           }
           context.watch(clientConnection)
+          data.consumerPacketRouter ! RemotePacketRouter.RegisterConnection(connectionId, connect.clientId)
+          data.publisherPacketRouter ! RemotePacketRouter.RegisterConnection(connectionId, connect.clientId)
+          data.unpublisherPacketRouter ! RemotePacketRouter.RegisterConnection(connectionId, connect.clientId)
           val newConnection = (connectionId, (connect.clientId, clientConnection))
           listening(
             data.copy(
@@ -174,6 +177,9 @@ import scala.util.{Failure, Success}
             case Some((connectionId, (clientId, _))) =>
               if (t.failure.contains(ClientConnection.ClientConnectionFailed))
                 data.terminations.offer(ClientSessionTerminated(clientId))
+              data.consumerPacketRouter ! RemotePacketRouter.UnregisterConnection(connectionId)
+              data.publisherPacketRouter ! RemotePacketRouter.UnregisterConnection(connectionId)
+              data.unpublisherPacketRouter ! RemotePacketRouter.UnregisterConnection(connectionId)
               listening(data.copy(clientConnections = data.clientConnections - connectionId))
             case None =>
               Behaviors.same
@@ -394,7 +400,11 @@ import scala.util.{Failure, Success}
             context.child(publisherName) match {
               case None =>
                 val publisher = context.spawn(
-                  Publisher(subscribe.packetId, local, data.publisherPacketRouter, data.settings),
+                  Publisher(data.connect.clientId,
+                            subscribe.packetId,
+                            local,
+                            data.publisherPacketRouter,
+                            data.settings),
                   publisherName
                 )
                 context.watch(publisher)
@@ -425,7 +435,11 @@ import scala.util.{Failure, Success}
             context.child(unpublisherName) match {
               case None =>
                 val unpublisher = context.spawn(
-                  Unpublisher(unsubscribe.packetId, local, data.unpublisherPacketRouter, data.settings),
+                  Unpublisher(data.connect.clientId,
+                              unsubscribe.packetId,
+                              local,
+                              data.unpublisherPacketRouter,
+                              data.settings),
                   unpublisherName
                 )
                 context.watchWith(unpublisher, UnpublisherFree(unsubscribe.topicFilters))
@@ -446,7 +460,12 @@ import scala.util.{Failure, Success}
               val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + "-" + context.children.size)
               context.watchWith(
                 context.spawn(
-                  Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings),
+                  Consumer(publish,
+                           Some(data.connect.clientId),
+                           packetId,
+                           local,
+                           data.consumerPacketRouter,
+                           data.settings),
                   consumerName
                 ),
                 ConsumerFree(publish.topicName)
@@ -465,6 +484,7 @@ import scala.util.{Failure, Success}
               context.watchWith(
                 context.spawn(
                   Consumer(prfr.publish,
+                           Some(data.connect.clientId),
                            prfr.publish.packetId.get,
                            prfr.local,
                            data.consumerPacketRouter,
@@ -756,24 +776,27 @@ import scala.util.{Failure, Success}
   /*
    * Construct with the starting state
    */
-  def apply(packetId: PacketId,
+  def apply(clientId: String,
+            packetId: PacketId,
             local: Promise[ForwardSubscribe.type],
             packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
             settings: MqttSessionSettings): Behavior[Event] =
-    preparePublisher(Start(packetId, local, packetRouter, settings))
+    preparePublisher(Start(Some(clientId), packetId, local, packetRouter, settings))
 
   // Our FSM data, FSM events and commands emitted by the FSM
 
-  sealed abstract class Data(val packetId: PacketId, val settings: MqttSessionSettings)
-  final case class Start(override val packetId: PacketId,
+  sealed abstract class Data(val clientId: Some[String], val packetId: PacketId, val settings: MqttSessionSettings)
+  final case class Start(override val clientId: Some[String],
+                         override val packetId: PacketId,
                          local: Promise[ForwardSubscribe.type],
                          packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
                          override val settings: MqttSessionSettings)
-      extends Data(packetId, settings)
-  final case class ServerSubscribe(override val packetId: PacketId,
+      extends Data(clientId, packetId, settings)
+  final case class ServerSubscribe(override val clientId: Some[String],
+                                   override val packetId: PacketId,
                                    packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
                                    override val settings: MqttSessionSettings)
-      extends Data(packetId, settings)
+      extends Data(clientId, packetId, settings)
 
   sealed abstract class Event
   final case object RegisteredPacketId extends Event
@@ -789,7 +812,7 @@ import scala.util.{Failure, Success}
 
   def preparePublisher(data: Start): Behavior[Event] = Behaviors.setup { context =>
     val reply = Promise[RemotePacketRouter.Registered.type]
-    data.packetRouter ! RemotePacketRouter.Register(context.self.upcast, data.packetId, reply)
+    data.packetRouter ! RemotePacketRouter.Register(context.self.upcast, data.clientId, data.packetId, reply)
     import context.executionContext
     reply.future.onComplete {
       case Success(RemotePacketRouter.Registered) => context.self ! RegisteredPacketId
@@ -799,7 +822,7 @@ import scala.util.{Failure, Success}
     Behaviors.receiveMessagePartial[Event] {
       case RegisteredPacketId =>
         data.local.success(ForwardSubscribe)
-        serverSubscribe(ServerSubscribe(data.packetId, data.packetRouter, data.settings))
+        serverSubscribe(ServerSubscribe(data.clientId, data.packetId, data.packetRouter, data.settings))
       case UnobtainablePacketId =>
         data.local.failure(SubscribeFailed)
         throw SubscribeFailed
@@ -820,7 +843,7 @@ import scala.util.{Failure, Success}
       }
       .receiveSignal {
         case (_, PostStop) =>
-          data.packetRouter ! RemotePacketRouter.Unregister(data.packetId)
+          data.packetRouter ! RemotePacketRouter.Unregister(data.clientId, data.packetId)
           Behaviors.same
       }
   }
@@ -840,21 +863,24 @@ import scala.util.{Failure, Success}
   /*
    * Construct with the starting state
    */
-  def apply(packetId: PacketId,
+  def apply(clientId: String,
+            packetId: PacketId,
             local: Promise[ForwardUnsubscribe.type],
             packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
             settings: MqttSessionSettings): Behavior[Event] =
-    prepareServerUnpublisher(Start(packetId, local, packetRouter, settings))
+    prepareServerUnpublisher(Start(Some(clientId), packetId, local, packetRouter, settings))
 
   // Our FSM data, FSM events and commands emitted by the FSM
 
   sealed abstract class Data(val settings: MqttSessionSettings)
-  final case class Start(packetId: PacketId,
+  final case class Start(clientId: Some[String],
+                         packetId: PacketId,
                          local: Promise[ForwardUnsubscribe.type],
                          packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
                          override val settings: MqttSessionSettings)
       extends Data(settings)
-  final case class ServerUnsubscribe(packetId: PacketId,
+  final case class ServerUnsubscribe(clientId: Some[String],
+                                     packetId: PacketId,
                                      packetRouter: ActorRef[RemotePacketRouter.Request[Event]],
                                      override val settings: MqttSessionSettings)
       extends Data(settings)
@@ -873,7 +899,7 @@ import scala.util.{Failure, Success}
 
   def prepareServerUnpublisher(data: Start): Behavior[Event] = Behaviors.setup { context =>
     val reply = Promise[RemotePacketRouter.Registered.type]
-    data.packetRouter ! RemotePacketRouter.Register(context.self.upcast, data.packetId, reply)
+    data.packetRouter ! RemotePacketRouter.Register(context.self.upcast, data.clientId, data.packetId, reply)
     import context.executionContext
     reply.future.onComplete {
       case Success(RemotePacketRouter.Registered) => context.self ! RegisteredPacketId
@@ -883,7 +909,7 @@ import scala.util.{Failure, Success}
     Behaviors.receiveMessagePartial[Event] {
       case RegisteredPacketId =>
         data.local.success(ForwardUnsubscribe)
-        serverUnsubscribe(ServerUnsubscribe(data.packetId, data.packetRouter, data.settings))
+        serverUnsubscribe(ServerUnsubscribe(data.clientId, data.packetId, data.packetRouter, data.settings))
       case UnobtainablePacketId =>
         data.local.failure(UnsubscribeFailed)
         throw UnsubscribeFailed
@@ -903,7 +929,7 @@ import scala.util.{Failure, Success}
       }
       .receiveSignal {
         case (_, PostStop) =>
-          data.packetRouter ! RemotePacketRouter.Unregister(data.packetId)
+          data.packetRouter ! RemotePacketRouter.Unregister(data.clientId, data.packetId)
           Behaviors.same
       }
   }
