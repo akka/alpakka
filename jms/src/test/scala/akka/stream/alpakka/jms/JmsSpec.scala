@@ -32,6 +32,10 @@ abstract class JmsSpec
 
   implicit val materializer = ActorMaterializer(settings)
 
+  val consumerConfig = system.settings.config.getConfig(JmsConsumerSettings.configPath)
+  val producerConfig = system.settings.config.getConfig(JmsProducerSettings.configPath)
+  val browseConfig = system.settings.config.getConfig(JmsBrowseSettings.configPath)
+
   override protected def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
 

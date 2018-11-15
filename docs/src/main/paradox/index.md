@@ -39,7 +39,7 @@ The [Alpakka project](https://developer.lightbend.com/docs/alpakka/current/) is 
 * [HBase](hbase.md)
 * [HTTP](external/http.md)
 * [IronMQ](ironmq.md)
-* [JMS](jms.md)
+* [JMS](jms/index.md)
 * [MongoDB](mongodb.md)
 * [MQTT](mqtt.md)
 * [MQTT Streaming](mqtt-streaming.md)

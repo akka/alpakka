@@ -18,7 +18,7 @@ class JmsSampleBase extends ActorSystemAvailable {
   def enqueue(connectionFactory: ConnectionFactory)(msgs: String*): Unit = {
     val jmsSink: Sink[String, Future[Done]] =
       JmsProducer.textSink(
-        JmsProducerSettings(connectionFactory).withQueue("test")
+        JmsProducerSettings(actorSystem, connectionFactory).withQueue("test")
       )
     Source(msgs.toList).runWith(jmsSink)
   }

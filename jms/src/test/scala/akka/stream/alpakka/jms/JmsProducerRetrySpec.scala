@@ -3,6 +3,7 @@
  */
 
 package akka.stream.alpakka.jms
+
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, OverflowStrategies, Supervision}
@@ -25,18 +26,18 @@ class JmsProducerRetrySpec extends JmsSpec {
       val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       val jms = JmsProducer.flow[JmsMapMessage](
-        JmsProducerSettings(connectionFactory)
+        JmsProducerSettings(producerConfig, connectionFactory)
           .withQueue("test")
           .withSessionCount(3)
           .withConnectionRetrySettings(
-            ConnectionRetrySettings()
+            ConnectionRetrySettings(system)
               .withConnectTimeout(100.millis)
               .withInitialRetry(50.millis)
               .withMaxBackoff(50.millis)
               .withInfiniteRetries()
           )
           .withSendRetrySettings(
-            SendRetrySettings().withInitialRetry(10.millis).withMaxBackoff(10.millis).withInfiniteRetries()
+            SendRetrySettings(system).withInitialRetry(10.millis).withMaxBackoff(10.millis).withInfiniteRetries()
           )
       )
 
@@ -50,7 +51,7 @@ class JmsProducerRetrySpec extends JmsSpec {
         .run()
 
       val sentResult = JmsConsumer
-        .mapSource(JmsConsumerSettings(connectionFactory).withBufferSize(1).withQueue("test"))
+        .mapSource(JmsConsumerSettings(system, connectionFactory).withBufferSize(1).withQueue("test"))
         .take(20)
         .runWith(Sink.seq)
 
@@ -84,11 +85,11 @@ class JmsProducerRetrySpec extends JmsSpec {
       val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       val jms = JmsProducer.flow[JmsMapMessage](
-        JmsProducerSettings(connectionFactory)
+        JmsProducerSettings(producerConfig, connectionFactory)
           .withQueue("test")
-          .withConnectionRetrySettings(ConnectionRetrySettings().withInfiniteRetries())
+          .withConnectionRetrySettings(ConnectionRetrySettings(system).withInfiniteRetries())
           .withSendRetrySettings(
-            SendRetrySettings()
+            SendRetrySettings(system)
               .withInitialRetry(100.millis)
               .withMaxBackoff(600.millis)
               .withBackoffFactor(2)
@@ -120,9 +121,9 @@ class JmsProducerRetrySpec extends JmsSpec {
       val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       val jms = JmsProducer.flow[JmsMapMessage](
-        JmsProducerSettings(connectionFactory)
+        JmsProducerSettings(producerConfig, connectionFactory)
           .withQueue("test")
-          .withSendRetrySettings(SendRetrySettings().withInfiniteRetries())
+          .withSendRetrySettings(SendRetrySettings(system).withInfiniteRetries())
       )
 
       val result = Source(
@@ -147,9 +148,9 @@ class JmsProducerRetrySpec extends JmsSpec {
       val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       val jms = JmsProducer.flow[JmsMapMessage](
-        JmsProducerSettings(connectionFactory)
+        JmsProducerSettings(producerConfig, connectionFactory)
           .withQueue("test")
-          .withSendRetrySettings(SendRetrySettings().withInfiniteRetries())
+          .withSendRetrySettings(SendRetrySettings(system).withInfiniteRetries())
       )
 
       // second element is a wrong map message.
@@ -182,10 +183,10 @@ class JmsProducerRetrySpec extends JmsSpec {
         })
 
       val jms = JmsProducer.textSink(
-        JmsProducerSettings(factory)
+        JmsProducerSettings(producerConfig, factory)
           .withQueue("test")
           .withSendRetrySettings(
-            SendRetrySettings().withInitialRetry(10.millis).withMaxBackoff(10.millis).withMaxRetries(5)
+            SendRetrySettings(system).withInitialRetry(10.millis).withMaxBackoff(10.millis).withMaxRetries(5)
           )
       )
 
@@ -209,9 +210,9 @@ class JmsProducerRetrySpec extends JmsSpec {
         })
 
       val jms = JmsProducer.textSink(
-        JmsProducerSettings(factory)
+        JmsProducerSettings(producerConfig, factory)
           .withQueue("test")
-          .withSendRetrySettings(SendRetrySettings().withMaxRetries(0))
+          .withSendRetrySettings(SendRetrySettings(system).withMaxRetries(0))
       )
 
       val result = Source(List("one")).runWith(jms)
