@@ -900,7 +900,7 @@ class JmsConnectorsSpec extends JmsSpec {
         .thenAnswer(failOnFifthAndDelayFourthItem)
 
       val in = (1 to 10).map(i => JmsTextMessage(i.toString))
-      val done = new JmsTextMessage("done")
+      val done = JmsTextMessage("done")
       val jmsFlow = JmsProducer.flow[JmsTextMessage](
         JmsProducerSettings(producerConfig, factory).withQueue("test").withSessionCount(8)
       )
@@ -1093,16 +1093,14 @@ class JmsConnectorsSpec extends JmsSpec {
 
     "pass through message envelopes" in withConnectionFactory() { connectionFactory =>
       //#run-flexi-flow-producer
-      val jmsProducer: Flow[JmsProducerMessage.Envelope[JmsTextMessage, String],
-                            JmsProducerMessage.Envelope[JmsTextMessage, String],
-                            JmsProducerStatus] =
-        JmsProducer.flexiFlow[JmsTextMessage, String](
+      val jmsProducer: Flow[JmsEnvelope[String], JmsEnvelope[String], JmsProducerStatus] =
+        JmsProducer.flexiFlow[String](
           JmsProducerSettings(system, connectionFactory).withQueue("test")
         )
 
       val data = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
-      val in: immutable.Seq[JmsProducerMessage.Envelope[JmsTextMessage, String]] =
-        data.map(t => JmsProducerMessage.message(JmsTextMessage(t), t))
+      val in: immutable.Seq[JmsTextMessagePassThrough[String]] =
+        data.map(t => JmsTextMessage(t).withPassThrough(t))
 
       val result = Source(in)
         .via(jmsProducer)
@@ -1134,12 +1132,12 @@ class JmsConnectorsSpec extends JmsSpec {
       when(session.createTextMessage(any[String])).thenReturn(message)
 
       //#run-flexi-flow-pass-through-producer
-      val jmsProducer = JmsProducer.flexiFlow[JmsTextMessage, String](
+      val jmsProducer = JmsProducer.flexiFlow[String](
         JmsProducerSettings(producerConfig, connectionFactory).withQueue("topic")
       )
 
       val data = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
-      val in = data.map(t => JmsProducerMessage.passThroughMessage(t))
+      val in = data.map(t => JmsPassThrough(t))
 
       val result = Source(in).via(jmsProducer).map(_.passThrough).runWith(Sink.seq)
       //#run-flexi-flow-pass-through-producer
