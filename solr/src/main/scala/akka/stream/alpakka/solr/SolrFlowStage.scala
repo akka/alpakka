@@ -29,9 +29,9 @@ object IncomingMessage {
 
   def apply[T](idField: String,
                idValue: String,
-               routingFieldValueOpt: Option[String],
+               routingFieldValue: Option[String],
                updates: Map[String, Map[String, Any]]): IncomingMessage[T, NotUsed] =
-    IncomingMessage(AtomicUpdate, Option(idField), Option(idValue), routingFieldValueOpt, None, None, updates, NotUsed)
+    IncomingMessage(AtomicUpdate, Option(idField), Option(idValue), routingFieldValue, None, None, updates, NotUsed)
 
   // Apply methods to use with passThrough
   def apply[T, C](source: T, passThrough: C): IncomingMessage[T, C] =
@@ -42,17 +42,10 @@ object IncomingMessage {
 
   def apply[T, C](idField: String,
                   idValue: String,
-                  routingFieldValueOpt: Option[String],
+                  routingFieldValue: Option[String],
                   updates: Map[String, Map[String, Any]],
                   passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(AtomicUpdate,
-                    Option(idField),
-                    Option(idValue),
-                    routingFieldValueOpt,
-                    None,
-                    None,
-                    updates,
-                    passThrough)
+    IncomingMessage(AtomicUpdate, Option(idField), Option(idValue), routingFieldValue, None, None, updates, passThrough)
 
   // Java-api - without passThrough
   def create[T](source: T): IncomingMessage[T, NotUsed] =
@@ -153,16 +146,16 @@ object IncomingAtomicUpdateMessage {
   // Apply method to use when not using passThrough
   def apply[T](idField: String,
                idValue: String,
-               routingFieldValueOpt: Option[String],
+               routingFieldValue: Option[String],
                updates: Map[String, Map[String, Any]]): IncomingMessage[T, NotUsed] =
-    IncomingMessage(idField, idValue, routingFieldValueOpt, updates)
+    IncomingMessage(idField, idValue, routingFieldValue, updates)
 
   def apply[T, C](idField: String,
                   idValue: String,
-                  routingFieldValueOpt: Option[String],
+                  routingFieldValue: Option[String],
                   updates: Map[String, Map[String, Any]],
                   passThrough: C): IncomingMessage[T, C] =
-    IncomingMessage(idField, idValue, routingFieldValueOpt, updates, passThrough)
+    IncomingMessage(idField, idValue, routingFieldValue, updates, passThrough)
 
   // Java-api - without passThrough
   def create[T](idField: String,
@@ -195,19 +188,19 @@ object IncomingAtomicUpdateMessage {
 }
 
 final case class IncomingMessage[T, C](operation: Operation,
-                                       idFieldOpt: Option[String],
-                                       idFieldValueOpt: Option[String],
-                                       routingFieldValueOpt: Option[String],
-                                       queryOpt: Option[String],
-                                       sourceOpt: Option[T],
+                                       idField: Option[String],
+                                       idFieldValue: Option[String],
+                                       routingFieldValue: Option[String],
+                                       query: Option[String],
+                                       source: Option[T],
                                        updates: Map[String, Map[String, Any]],
                                        passThrough: C = NotUsed) {}
 
-final case class IncomingMessageResult[T, C](idFieldOpt: Option[String],
-                                             idFieldValueOpt: Option[String],
-                                             routingFieldValueOpt: Option[String],
-                                             queryOpt: Option[String],
-                                             sourceOpt: Option[T],
+final case class IncomingMessageResult[T, C](idField: Option[String],
+                                             idFieldValue: Option[String],
+                                             routingFieldValue: Option[String],
+                                             query: Option[String],
+                                             source: Option[T],
                                              updates: Map[String, Map[String, Any]],
                                              passThrough: C,
                                              status: Int)
@@ -285,11 +278,11 @@ private[solr] final class SolrFlowLogic[T, C](
     log.debug(s"Handle the response with $status")
     val result = messages.map(
       m =>
-        IncomingMessageResult(m.idFieldOpt,
-                              m.idFieldValueOpt,
-                              m.routingFieldValueOpt,
-                              m.queryOpt,
-                              m.sourceOpt,
+        IncomingMessageResult(m.idField,
+                              m.idFieldValue,
+                              m.routingFieldValue,
+                              m.query,
+                              m.source,
                               m.updates,
                               m.passThrough,
                               status)
@@ -302,7 +295,7 @@ private[solr] final class SolrFlowLogic[T, C](
     completeStage()
 
   private def updateBulkToSolr(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
-    val docs = messages.flatMap(_.sourceOpt.map(messageBinder))
+    val docs = messages.flatMap(_.source.map(messageBinder))
 
     if (log.isDebugEnabled) log.debug(s"Upsert $docs")
     client.add(collection, docs.asJava, settings.commitWithin)
@@ -312,20 +305,20 @@ private[solr] final class SolrFlowLogic[T, C](
     val docs = messages.map { message =>
       val doc = new SolrInputDocument()
 
-      message.idFieldOpt.foreach { idField =>
-        message.idFieldValueOpt.foreach { idFieldValue =>
+      message.idField.foreach { idField =>
+        message.idFieldValue.foreach { idFieldValue =>
           doc.addField(idField, idFieldValue)
         }
       }
 
-      message.routingFieldValueOpt.foreach { routingFieldValue =>
-        val routingFieldOpt = client match {
+      message.routingFieldValue.foreach { routingFieldValue =>
+        val routingField = client match {
           case csc: CloudSolrClient =>
             Option(csc.getIdField)
           case _ => None
         }
-        routingFieldOpt.foreach { routingField =>
-          message.idFieldOpt.foreach { idField =>
+        routingField.foreach { routingField =>
+          message.idField.foreach { idField =>
             if (routingField != idField)
               doc.addField(routingField, routingFieldValue)
           }
@@ -347,10 +340,10 @@ private[solr] final class SolrFlowLogic[T, C](
   private def deleteBulkToSolrByIds(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
     val docsIds = messages
       .filter { message =>
-        message.operation == DeleteByIds && message.idFieldValueOpt.isDefined
+        message.operation == DeleteByIds && message.idFieldValue.isDefined
       }
       .map { message =>
-        message.idFieldValueOpt.get
+        message.idFieldValue.get
       }
     if (log.isDebugEnabled) log.debug(s"Delete the ids $docsIds")
     client.deleteById(collection, docsIds.asJava, settings.commitWithin)
@@ -358,7 +351,7 @@ private[solr] final class SolrFlowLogic[T, C](
 
   private def deleteEachByQuery(messages: Seq[IncomingMessage[T, C]]): UpdateResponse = {
     val responses = messages.map { message =>
-      val query = message.queryOpt.get
+      val query = message.query.get
       if (log.isDebugEnabled) log.debug(s"Delete by the query $query")
       client.deleteByQuery(collection, query, settings.commitWithin)
     }
