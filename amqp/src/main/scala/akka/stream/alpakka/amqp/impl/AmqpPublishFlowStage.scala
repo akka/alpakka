@@ -6,7 +6,7 @@ package akka.stream.alpakka.amqp.impl
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.stream.alpakka.amqp.{AmqpPublishConfirmSettings, AmqpSinkSettings, OutgoingMessage}
+import akka.stream.alpakka.amqp.{AmqpPublishConfirmConfiguration, AmqpSinkSettings, OutgoingMessage}
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler}
 import akka.stream._
 
@@ -39,7 +39,9 @@ private[amqp] final class AmqpPublishFlowStage[O](settings: AmqpSinkSettings)
       private val routingKey = settings.routingKey.getOrElse("")
 
       override def whenConnected(): Unit =
-        if (settings.publishConfirm.isDefined) channel.confirmSelect()
+        if (settings.publishConfirm.isDefined) {
+          channel.confirmSelect()
+        }
 
       setHandler(
         out,
@@ -74,7 +76,7 @@ private[amqp] final class AmqpPublishFlowStage[O](settings: AmqpSinkSettings)
             )
 
             settings.publishConfirm match {
-              case Some(AmqpPublishConfirmSettings(confirmTimeout)) =>
+              case Some(AmqpPublishConfirmConfiguration(confirmTimeout)) =>
                 Try(channel.waitForConfirmsOrDie(confirmTimeout)) match {
                   case Success(_) => push(out, passthrough)
                   case Failure(e) => fail(out, e)

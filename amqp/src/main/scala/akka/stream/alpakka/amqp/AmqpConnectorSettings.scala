@@ -153,12 +153,28 @@ object TemporaryQueueSourceSettings {
     TemporaryQueueSourceSettings(connectionProvider, exchange)
 }
 
-final case class AmqpPublishConfirmSettings(confirmTimeout: Long)
+final class AmqpPublishConfirmConfiguration private (
+    val confirmTimeout: Long
+)
+
+object AmqpPublishConfirmConfiguration {
+  def apply(confirmTimeout: Long): AmqpPublishConfirmConfiguration =
+    new AmqpPublishConfirmConfiguration(confirmTimeout)
+
+  def unapply(settings: AmqpPublishConfirmConfiguration): Option[Long] =
+    Some(settings.confirmTimeout)
+
+  /**
+   * Java API
+   */
+  def create(confirmTimeout: Long): AmqpPublishConfirmConfiguration =
+    new AmqpPublishConfirmConfiguration(confirmTimeout)
+}
 
 final class AmqpReplyToSinkSettings private (
     val connectionProvider: AmqpConnectionProvider,
     val failIfReplyToMissing: Boolean = true,
-    val publishConfirm: Option[AmqpPublishConfirmSettings] = None
+    val publishConfirm: Option[AmqpPublishConfirmConfiguration] = None
 ) extends AmqpConnectorSettings {
   override final val declarations = Nil
 
@@ -166,11 +182,11 @@ final class AmqpReplyToSinkSettings private (
     copy(failIfReplyToMissing = failIfReplyToMissing)
 
   def withPublishConfirms(confirmTimeout: Long = 1000): AmqpReplyToSinkSettings =
-    copy(publishConfirm = Some(AmqpPublishConfirmSettings(confirmTimeout)))
+    copy(publishConfirm = Some(AmqpPublishConfirmConfiguration(confirmTimeout)))
 
   private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider,
                    failIfReplyToMissing: Boolean = failIfReplyToMissing,
-                   publishConfirm: Option[AmqpPublishConfirmSettings] = publishConfirm) =
+                   publishConfirm: Option[AmqpPublishConfirmConfiguration] = publishConfirm) =
     new AmqpReplyToSinkSettings(connectionProvider, failIfReplyToMissing, publishConfirm)
 
   override def toString: String =
@@ -196,7 +212,7 @@ final class AmqpWriteSettings private (
     val exchange: Option[String] = None,
     val routingKey: Option[String] = None,
     val declarations: immutable.Seq[Declaration] = Nil,
-    val publishConfirm: Option[AmqpPublishConfirmSettings] = None
+    val publishConfirm: Option[AmqpPublishConfirmConfiguration] = None
 ) extends AmqpConnectorSettings {
 
   def withExchange(exchange: String): AmqpWriteSettings =
@@ -211,8 +227,8 @@ final class AmqpWriteSettings private (
   def withDeclarations(declarations: immutable.Seq[Declaration]): AmqpWriteSettings =
     copy(declarations = declarations)
 
-  def withPublishConfirms(confirmTimeout: Long = 1000): AmqpWriteSettings =
-    copy(publishConfirm = Some(AmqpPublishConfirmSettings(confirmTimeout)))
+  def withPublishConfirms(confirmTimeout: Long): AmqpWriteSettings =
+    copy(publishConfirm = Some(AmqpPublishConfirmConfiguration(confirmTimeout)))
 
   /**
    * Java API
@@ -224,7 +240,7 @@ final class AmqpWriteSettings private (
                    exchange: Option[String] = exchange,
                    routingKey: Option[String] = routingKey,
                    declarations: immutable.Seq[Declaration] = declarations,
-                   publishConfirm: Option[AmqpPublishConfirmSettings] = publishConfirm) =
+                   publishConfirm: Option[AmqpPublishConfirmConfiguration] = publishConfirm) =
     new AmqpWriteSettings(connectionProvider, exchange, routingKey, declarations, publishConfirm)
 
   override def toString: String =
