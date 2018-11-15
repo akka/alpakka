@@ -11,27 +11,27 @@ import scala.util.control.NoStackTrace
  */
 trait NonRetriableJmsException extends Exception
 
-case class UnsupportedMessagePropertyType(propertyName: String, propertyValue: Any, message: JmsMessage)
+case class UnsupportedMessagePropertyType(propertyName: String, propertyValue: Any, message: JmsEnvelope[_])
     extends Exception(
       s"Jms property '$propertyName' has unknown type '${propertyValue.getClass.getName}'. " +
       "Only primitive types and String are supported as property values."
     )
     with NonRetriableJmsException
 
-case class NullMessageProperty(propertyName: String, message: JmsMessage)
+case class NullMessageProperty(propertyName: String, message: JmsEnvelope[_])
     extends Exception(
       s"null value was given for Jms property '$propertyName'."
     )
     with NonRetriableJmsException
 
-case class UnsupportedMapMessageEntryType(entryName: String, entryValue: Any, message: JmsMapMessage)
+case class UnsupportedMapMessageEntryType(entryName: String, entryValue: Any, message: JmsMapMessagePassThrough[_])
     extends Exception(
       s"Jms MapMessage entry '$entryName' has unknown type '${entryValue.getClass.getName}'. " +
       "Only primitive types, String, and Byte array are supported as entry values."
     )
     with NonRetriableJmsException
 
-case class NullMapMessageEntry(entryName: String, message: JmsMapMessage)
+case class NullMapMessageEntry(entryName: String, message: JmsMapMessagePassThrough[_])
     extends Exception(
       s"null value was given for Jms MapMessage entry '$entryName'."
     )

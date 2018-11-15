@@ -16,9 +16,10 @@ The JMS message model supports several types of message bodies in (see @javadoc[
 | Object (`java.io.Serializable`)                       | [`JmsProducer.objectSink`](#object-sinks)     |
 | `JmsTextMessage`                                      | @scala[`JmsProducer.apply`]@java[`JmsProducer.create`] or [`JmsProducer.flow`](#sending-messages-as-a-flow) |  
 | `JmsByteMessage`                                      | @scala[`JmsProducer.apply`]@java[`JmsProducer.create`] or [`JmsProducer.flow`](#sending-messages-as-a-flow) |  
+| `JmsByteStringMessage`                                | @scala[`JmsProducer.apply`]@java[`JmsProducer.create`] or [`JmsProducer.flow`](#sending-messages-as-a-flow) |  
 | `JmsMapMessage`                                       | @scala[`JmsProducer.apply`]@java[`JmsProducer.create`] or [`JmsProducer.flow`](#sending-messages-as-a-flow) |  
 | `JmsObjectMessage`                                    | @scala[`JmsProducer.apply`]@java[`JmsProducer.create`] or [`JmsProducer.flow`](#sending-messages-as-a-flow) |  
-| @scala[`JmsProducerMessage.Envelope[JmsMessage, PassThrough]`]@java[`JmsProducerMessage.Envelope<JmsMessage, PassThrough>`]             | [`JmsProducer.flexiFlow`](#passing-context-through-the-producer) |  
+| @scala[`JmsEnvelope[PassThrough]`]@java[`JmsEnvelope<PassThrough>`] with instances `JmsPassThrough`, `JmsTextMessagePassThrough`, `JmsByteMessagePassThrough`, `JmsByteStringMessagePassThrough`, `JmsMapMessagePassThrough`, `JmsObjectMessagePassThrough`      | [`JmsProducer.flexiFlow`](#passing-context-through-the-producer) |  
 
 
 
@@ -140,8 +141,15 @@ When no destination is defined on the message, the destination given in the prod
 ### Passing context through the producer
 
 In some use cases, it is useful to pass through context information when producing (e.g. for acknowledging or committing
-messages after sending to Jms). For this, the `JmsProducer.flexiFlow` accepts implementations of `JmsProducer.Envelope`,
-which it will pass through.
+messages after sending to Jms). For this, the `JmsProducer.flexiFlow` accepts implementations of `JmsEnvelope`,
+which it will pass through:
+
+* `JmsPassThrough`
+* `JmsTextMessagePassThrough`
+* `JmsByteMessagePassThrough`
+* `JmsByteStringMessagePassThrough` 
+* `JmsMapMessagePassThrough`
+* `JmsObjectMessagePassThrough`  
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-flexi-flow-producer }
