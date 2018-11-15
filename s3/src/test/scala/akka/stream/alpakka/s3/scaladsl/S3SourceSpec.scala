@@ -47,7 +47,8 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
   "S3Source" should "download a metadata from S3" in {
 
-    mockHead()
+    val contentLength = 8
+    mockHead(contentLength)
 
     //#objectMetadata
     val metadata = s3Client.getObjectMetadata(bucket, bucketKey)
@@ -56,7 +57,23 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     val Some(result) = metadata.futureValue
 
     result.eTag shouldBe Some(etag)
-    result.contentLength shouldBe 8
+    result.contentLength shouldBe contentLength
+    result.versionId shouldBe empty
+  }
+
+  "S3Source" should "download a metadata from S3 for a big file" in {
+
+    val contentLength = Long.MaxValue
+    mockHead(contentLength)
+
+    //#objectMetadata
+    val metadata = s3Client.getObjectMetadata(bucket, bucketKey)
+    //#objectMetadata
+
+    val Some(result) = metadata.futureValue
+
+    result.eTag shouldBe Some(etag)
+    result.contentLength shouldBe contentLength
     result.versionId shouldBe empty
   }
 

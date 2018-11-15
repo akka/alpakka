@@ -134,7 +134,8 @@ public class S3ClientTest extends S3WireMockBase {
   @Test
   public void head() throws Exception {
 
-    mockHead();
+    long contentLength = 8L;
+    mockHead(contentLength);
 
     // #objectMetadata
     final CompletionStage<Optional<ObjectMetadata>> source =
@@ -145,9 +146,11 @@ public class S3ClientTest extends S3WireMockBase {
 
     final ObjectMetadata objectMetadata = result.get();
     Optional<String> s3eTag = objectMetadata.getETag();
+    long actualContentLength = objectMetadata.getContentLength();
     Optional<String> versionId = objectMetadata.getVersionId();
 
     assertEquals(s3eTag, Optional.of(etag()));
+    assertEquals(actualContentLength, contentLength);
     assertEquals(versionId, Optional.empty());
   }
 

@@ -111,11 +111,14 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
           )
       )
 
-  def mockHead(): Unit =
+  def mockHead(contentLength: Long): Unit =
     mock
       .register(
         head(urlEqualTo(s"/$bucketKey")).willReturn(
-          aResponse().withStatus(200).withHeader("ETag", s""""$etag"""").withHeader("Content-Length", "8")
+          aResponse()
+            .withStatus(200)
+            .withHeader("ETag", s""""$etag"""")
+            .withHeader("Content-Length", contentLength.toString)
         )
       )
 
