@@ -133,6 +133,8 @@ Java
 
 We can use typed and bean to update atomically.
 
+If a collection contains a router field, we have to use the IncomingAtomicUpdateMessage with the router field parameter.
+
 ### Delete documents by ids
 
 We can delete documents by ids.
