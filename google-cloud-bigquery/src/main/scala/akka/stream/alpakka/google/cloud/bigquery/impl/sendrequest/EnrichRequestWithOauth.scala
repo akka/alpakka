@@ -11,17 +11,18 @@ import akka.stream.Materializer
 import akka.stream.alpakka.google.cloud.bigquery.impl.GoogleSession
 import akka.stream.scaladsl.Flow
 
-import scala.concurrent.ExecutionContext
-
 object EnrichRequestWithOauth {
 
   case class TokenErrorException() extends Exception
 
-  def apply(googleSession: GoogleSession)(implicit ec: ExecutionContext,
-                                          materializer: Materializer): Flow[HttpRequest, HttpRequest, NotUsed] =
+  def apply(
+      googleSession: GoogleSession
+  )(implicit materializer: Materializer): Flow[HttpRequest, HttpRequest, NotUsed] = {
+    implicit val executionContext = materializer.executionContext
     Flow[HttpRequest].mapAsync(1) { request =>
       googleSession.getToken.map { token =>
         request.addHeader(Authorization(OAuth2BearerToken(token)))
       }
     }
+  }
 }

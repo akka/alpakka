@@ -16,8 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
 object SendRequestWithOauthHandling {
 
   def apply(googleSession: GoogleSession, http: HttpExt)(
-      implicit ec: ExecutionContext,
-      mat: Materializer
+      implicit mat: Materializer
   ) =
     Flow[HttpRequest]
       .via(EnrichRequestWithOauth(googleSession))
@@ -30,7 +29,7 @@ object SendRequestWithOauthHandling {
       Unmarshal(response.entity)
         .to[String]
         .map(
-          errorBody => throw new IllegalStateException(s"Unexpected error in response: ${response.status}}, $errorBody")
+          errorBody => throw new IllegalStateException(s"Unexpected error in response: ${response.status}, $errorBody")
         )
     } else {
       Future.successful(response)

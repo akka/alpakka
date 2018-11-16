@@ -9,6 +9,8 @@ import akka.stream.alpakka.google.cloud.bigquery.client.TableDataQueryJsonProtoc
 import akka.stream.alpakka.google.cloud.bigquery.client.TableListQueryJsonProtocol.TableListQueryResponse
 import spray.json.JsObject
 
+import scala.util.Try
+
 object BigQueryCommunicationHelper {
 
   def createQueryRequest(query: String, projectId: String, dryRun: Boolean) =
@@ -17,17 +19,18 @@ object BigQueryCommunicationHelper {
   def createQueryBody(query: String, dryRun: Boolean) =
     HttpEntity(ContentTypes.`application/json`, QueryRequest(query, dryRun = Some(dryRun)).toJson.compactPrint)
 
-  def parseQueryResult(result: JsObject): (Seq[String], Seq[Seq[String]]) = {
-    val queryResponse = result.convertTo[QueryResponse]
-    val fields = queryResponse.schema.fields.map(_.name)
-    val rows = queryResponse.rows.fold(Seq[Seq[String]]())(rowSeq => rowSeq.map(row => row.f.map(_.v)))
+  def parseQueryResult(result: JsObject): Option[(Seq[String], Seq[Seq[String]])] =
+    Try {
+      val queryResponse = result.convertTo[QueryResponse]
+      val fields = queryResponse.schema.fields.map(_.name)
+      val rows = queryResponse.rows.fold(Seq[Seq[String]]())(rowSeq => rowSeq.map(row => row.f.map(_.v)))
 
-    (fields, rows)
-  }
+      (fields, rows)
+    }.toOption
 
-  def parseTableListResult(result: JsObject): Seq[TableListQueryJsonProtocol.QueryTableModel] =
-    result.convertTo[TableListQueryResponse].tables
+  def parseTableListResult(result: JsObject): Option[Seq[TableListQueryJsonProtocol.QueryTableModel]] =
+    Try(result.convertTo[TableListQueryResponse].tables).toOption
 
-  def parseFieldListResults(result: JsObject): Seq[TableDataQueryJsonProtocol.Field] =
-    result.convertTo[TableDataQueryResponse].schema.fields
+  def parseFieldListResults(result: JsObject): Option[Seq[TableDataQueryJsonProtocol.Field]] =
+    Try(result.convertTo[TableDataQueryResponse].schema.fields).toOption
 }

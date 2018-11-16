@@ -11,6 +11,7 @@ import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.stream.Materializer
 import akka.stream.alpakka.google.cloud.bigquery.BigQueryFlowModels.BigQueryProjectConfig
 import akka.stream.alpakka.google.cloud.bigquery.client._
+import akka.stream.alpakka.google.cloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.alpakka.google.cloud.bigquery.impl.util.ConcatWithHeaders
 import akka.stream.alpakka.google.cloud.bigquery.impl.{BigQueryStreamSource, GoogleSession, GoogleTokenApi}
 import akka.stream.scaladsl.{Sink, Source}
@@ -28,24 +29,33 @@ object GoogleBigQuerySource {
   }
 
   def raw[T](httpRequest: HttpRequest,
-             parserFn: JsObject => T,
+             parserFn: JsObject => Option[T],
+             onFinishCallback: PagingInfo => NotUsed,
              googleSession: GoogleSession)(implicit mat: Materializer, actorSystem: ActorSystem): Source[T, NotUsed] =
-    BigQueryStreamSource[T](httpRequest, parserFn, googleSession, Http())
+    BigQueryStreamSource[T](httpRequest, parserFn, onFinishCallback, googleSession, Http())
 
-  def runQuery[T](query: String, parserFn: JsObject => T, projectConfig: BigQueryProjectConfig)(
+  def runQuery[T](query: String,
+                  parserFn: JsObject => Option[T],
+                  onFinishCallback: PagingInfo => NotUsed,
+                  projectConfig: BigQueryProjectConfig)(
       implicit mat: Materializer,
       actorSystem: ActorSystem
   ): Source[T, NotUsed] = {
     val request = BigQueryCommunicationHelper.createQueryRequest(query, projectConfig.projectId, dryRun = false)
-    BigQueryStreamSource(request, parserFn, projectConfig.session, Http())
+    BigQueryStreamSource(request, parserFn, onFinishCallback, projectConfig.session, Http())
   }
 
   def runQueryCsvStyle(
       query: String,
+      onFinishCallback: PagingInfo => NotUsed,
       projectConfig: BigQueryProjectConfig
   )(implicit mat: Materializer, actorSystem: ActorSystem): Source[Seq[String], NotUsed] = {
     val request = BigQueryCommunicationHelper.createQueryRequest(query, projectConfig.projectId, dryRun = false)
-    BigQueryStreamSource(request, BigQueryCommunicationHelper.parseQueryResult, projectConfig.session, Http())
+    BigQueryStreamSource(request,
+                         BigQueryCommunicationHelper.parseQueryResult,
+                         onFinishCallback,
+                         projectConfig.session,
+                         Http())
       .via(ConcatWithHeaders())
   }
 
@@ -69,13 +79,13 @@ object GoogleBigQuerySource {
       projectConfig.session
     )
 
-  private def runMetaQuery[T](url: String, parser: JsObject => Seq[T], session: GoogleSession)(
+  private def runMetaQuery[T](url: String, parser: JsObject => Option[Seq[T]], session: GoogleSession)(
       implicit mat: Materializer,
       actorSystem: ActorSystem,
       executionContext: ExecutionContext
   ): Future[Seq[T]] = {
     val request = HttpRequest(HttpMethods.GET, url)
-    val bigQuerySource = BigQueryStreamSource(request, parser, session, Http())
+    val bigQuerySource = BigQueryStreamSource(request, parser, BigQueryCallbacks.ignore, session, Http())
 
     bigQuerySource
       .runWith(Sink.seq)
