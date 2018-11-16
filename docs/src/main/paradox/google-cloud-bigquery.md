@@ -26,8 +26,6 @@ Java
 : @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/GoogleBigQuerySourceDoc.java) { #imports }
 
 At the beginning you will need a config to work with. 
-This config will handle your session, and your service-token. 
-If you create multiple requests to the same source (likely to happen) you should create it once and try to reuse it.
 
 Scala
 : @@snip [snip](/google-cloud-bigquery/src/test/scala/docs/scaladsl/GoogleBigQuerySourceDoc.scala) { #init-config }
@@ -72,6 +70,31 @@ Scala
 Java
 : @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/GoogleBigQuerySourceDoc.java) { #dry-run }
 
+### Config
+
+The config will handle your session, and your service-token. (See the creation code above.)
+
+If you create multiple requests to the same source (likely to happen) you should create it once and try to reuse it.
+If you call multiple bigquery sources (not likely to happen) it is worth to cache the configs, so you can save a lot of unneeded authorization requests.
+
+### Cancel on timeout
+
+All off the provided functionality can fire a callback when the **downstream** signals a stop.
+This is handful if you want to implement some timeout in the downstream, and try to lower your costs with stopping the longrunning jobs.
+(Google doesn't provide any insurance about cost reduction, but at least we could try. [Read this for more information.](https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/cancel))
+
+Scala
+: You can use the build in @scaladoc[BigQueryCallbacks](akka.stream.alpakka.google.cloud.bigquery.scaladsl.BigQueryCallbacks)
+
+Java
+: You can use the build in @scaladoc[BigQueryCallbacks](akka.stream.alpakka.google.cloud.bigquery.javadsl.BigQueryCallbacks)
+
+### Parsers
+
+The parser function is a `JsObject => Option[T]` function. 
+This is needed, because there is a possibility that the response not contains any data, and in that case we need to retry the request with some delay.
+Your parser function needs to be bulletproof and the codes in the examples are not the good practices for this.
+If you returns `None` in every error case; your stream will be polling forever!
 
 ## Running the examples
 

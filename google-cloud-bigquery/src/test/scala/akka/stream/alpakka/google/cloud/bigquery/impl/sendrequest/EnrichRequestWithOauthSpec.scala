@@ -32,8 +32,6 @@ class EnrichRequestWithOauthSpec
   implicit val materializer: Materializer = ActorMaterializer()
   implicit val timeout = Timeout(1.second)
 
-  import system.dispatcher
-
   "EnrichRequestWithOauth" must {
 
     "Ask token actor, add oauth header" in {

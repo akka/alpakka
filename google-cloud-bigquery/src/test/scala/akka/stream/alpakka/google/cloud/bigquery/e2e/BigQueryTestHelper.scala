@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.google.cloud.bigquery.client.GoogleEndpoints
-import akka.stream.alpakka.google.cloud.bigquery.scaladsl.GoogleBigQuerySource
+import akka.stream.alpakka.google.cloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
 import akka.stream.scaladsl.Sink
 
 import scala.concurrent.duration._
@@ -45,7 +45,9 @@ trait BigQueryTestHelper {
   def await[T](f: Future[T]): T = Await.result(f, defaultTimeout)
 
   def runRequest(httpRequest: HttpRequest): Future[Done] =
-    GoogleBigQuerySource.raw(httpRequest, x => x, connection.session).runWith(Sink.ignore)
+    GoogleBigQuerySource
+      .raw(httpRequest, x => Option(x), BigQueryCallbacks.ignore, connection.session)
+      .runWith(Sink.ignore)
 
   def createTable(schemaDefinition: String): HttpRequest = HttpRequest(
     HttpMethods.POST,

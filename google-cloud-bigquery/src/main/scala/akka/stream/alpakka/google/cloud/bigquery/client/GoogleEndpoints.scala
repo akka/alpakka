@@ -28,4 +28,7 @@ object GoogleEndpoints {
 
   def testConnectionUrl(projectId: String, dataset: String): String =
     s"$bigQueryV2Url/projects/$projectId/datasets/$dataset"
+
+  def cancellationUrl(projectId: String, jobId: String): String =
+    s"$bigQueryV2Url/projects/$projectId/jobs/$jobId/cancel"
 }
