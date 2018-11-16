@@ -61,6 +61,8 @@ public class SolrTest {
 
     public String comment;
 
+    public String router;
+
     public Book() {}
 
     public Book(String title) {
@@ -71,6 +73,12 @@ public class SolrTest {
       this.title = title;
       this.comment = comment;
     }
+
+    public Book(String title, String comment, String router) {
+      this.title = title;
+      this.comment = comment;
+      this.router = router;
+    }
   }
 
   Function<Book, SolrInputDocument> bookToDoc =
@@ -78,6 +86,7 @@ public class SolrTest {
         SolrInputDocument doc = new SolrInputDocument();
         doc.setField("title", book.title);
         doc.setField("comment", book.comment);
+        if (book.router != null) doc.setField("router", book.router);
         return doc;
       };
 
@@ -427,7 +436,7 @@ public class SolrTest {
                   m2.put("set", (t.fields.get("comment") + " It's is a good book!!!"));
                   m1.put("comment", m2);
                   return IncomingAtomicUpdateMessage.<SolrInputDocument>create(
-                      "title", t.fields.get("title").toString(), "comment", m1);
+                      "title", t.fields.get("title").toString(), m1);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
@@ -439,6 +448,80 @@ public class SolrTest {
     cluster.getSolrClient().commit("collection8");
 
     TupleStream stream3 = getTupleStream("collection8");
+
+    CompletionStage<List<String>> res3 =
+        SolrSource.fromTupleStream(stream3)
+            .map(
+                t -> {
+                  Book b = tupleToBook.apply(t);
+                  return b.title + ". " + b.comment;
+                })
+            .runWith(Sink.seq(), materializer);
+
+    List<String> result = new ArrayList<>(res3.toCompletableFuture().get());
+
+    List<String> expect =
+        Arrays.asList(
+            "Akka Concurrency. Written by good authors. It's is a good book!!!",
+            "Akka in Action. Written by good authors. It's is a good book!!!",
+            "Effective Akka. Written by good authors. It's is a good book!!!",
+            "Learning Scala. Written by good authors. It's is a good book!!!",
+            "Programming in Scala. Written by good authors. It's is a good book!!!",
+            "Scala Puzzlers. Written by good authors. It's is a good book!!!",
+            "Scala for Spark in Production. Written by good authors. It's is a good book!!!");
+
+    assertEquals(expect, result);
+  }
+
+  @Test
+  public void atomicUpdateDocumentsWithRouter() throws Exception {
+    // Copy collection1 to collection2 through document stream
+    createCollection("collection8-1", "router"); // create a new collection
+    TupleStream stream = getTupleStream("collection1");
+
+    SolrUpdateSettings settings = SolrUpdateSettings.create().withCommitWithin(5);
+    CompletionStage<Done> f1 =
+        SolrSource.fromTupleStream(stream)
+            .map(
+                tuple -> {
+                  Book book =
+                      new Book(
+                          tupleToBook.apply(tuple).title,
+                          "Written by good authors.",
+                          "router-value");
+                  SolrInputDocument doc = bookToDoc.apply(book);
+                  return IncomingUpsertMessage.create(doc);
+                })
+            .groupedWithin(5, Duration.ofMillis(10))
+            .runWith(
+                SolrSink.documents("collection8-1", settings, cluster.getSolrClient()),
+                materializer);
+
+    f1.toCompletableFuture().get();
+
+    TupleStream stream2 = getTupleStream("collection8-1");
+
+    CompletionStage<Done> res2 =
+        SolrSource.fromTupleStream(stream2)
+            .map(
+                t -> {
+                  Map<String, Map<String, Object>> m1 = new HashMap<>();
+                  Map<String, Object> m2 = new HashMap<>();
+                  m2.put("set", (t.fields.get("comment") + " It's is a good book!!!"));
+                  m1.put("comment", m2);
+                  return IncomingAtomicUpdateMessage.<SolrInputDocument>create(
+                      "title", t.fields.get("title").toString(), "router-value", m1);
+                })
+            .groupedWithin(5, Duration.ofMillis(10))
+            .runWith(
+                SolrSink.documents("collection8-1", settings, cluster.getSolrClient()),
+                materializer);
+
+    res2.toCompletableFuture().get();
+
+    cluster.getSolrClient().commit("collection8-1");
+
+    TupleStream stream3 = getTupleStream("collection8-1");
 
     CompletionStage<List<String>> res3 =
         SolrSource.fromTupleStream(stream3)
@@ -599,7 +682,7 @@ public class SolrTest {
     ((ZkClientClusterStateProvider) cluster.getSolrClient().getClusterStateProvider())
         .uploadConfig(confDir.toPath(), "conf");
 
-    cluster.getSolrClient().setIdField("title");
+    cluster.getSolrClient().setIdField("router");
     createCollection("collection1");
 
     assertTrue(
@@ -608,6 +691,13 @@ public class SolrTest {
 
   private static void createCollection(String name) throws IOException, SolrServerException {
     CollectionAdminRequest.createCollection(name, "conf", 1, 1).process(cluster.getSolrClient());
+  }
+
+  private static void createCollection(String name, String router)
+      throws IOException, SolrServerException {
+    CollectionAdminRequest.createCollection(name, "conf", 1, 1)
+        .setRouterField(router)
+        .process(cluster.getSolrClient());
   }
 
   private TupleStream getTupleStream(String collection) throws IOException {
