@@ -503,10 +503,12 @@ import scala.util.{Failure, Success}
               clientConnected(data.copy(activeConsumers = data.activeConsumers - topicName))
             }
           case (_, PublishReceivedLocally(publish, _))
-              if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
+              if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 &&
+              data.publishers.exists(matchTopicFilter(_, publish.topicName)) =>
             data.remote.offer(ForwardPublish(publish, None))
             clientConnected(data)
-          case (context, prl @ PublishReceivedLocally(publish, publishData)) =>
+          case (context, prl @ PublishReceivedLocally(publish, publishData))
+              if data.publishers.exists(matchTopicFilter(_, publish.topicName)) =>
             val producerName = ActorName.mkName(ProducerNamePrefix + publish.topicName + "-" + context.children.size)
             if (!data.activeProducers.contains(publish.topicName)) {
               val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
