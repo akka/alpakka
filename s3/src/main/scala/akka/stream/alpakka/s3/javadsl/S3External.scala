@@ -18,7 +18,6 @@ import akka.stream.alpakka.s3.{scaladsl, S3Client}
 import akka.stream.javadsl.{Sink, Source}
 import akka.util.ByteString
 
-import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.Future

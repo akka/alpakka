@@ -15,23 +15,11 @@ import com.amazonaws.regions.AwsRegionProvider
 
 class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
-  val awsCredentialsProvider = new AWSStaticCredentialsProvider(
-    new BasicAWSCredentials("my-AWS-access-key-ID", "my-AWS-password")
-  )
-  val regionProvider =
-    new AwsRegionProvider {
-      def getRegion: String = "us-east-1"
-    }
-  val proxy = Option(Proxy("localhost", port, "http"))
-  val settings =
-    new S3Settings(MemoryBufferType, proxy, awsCredentialsProvider, regionProvider, false, None, ListBucketVersion2)
-  implicit val s3Client = S3Client(settings)(system, materializer)
-
   it should "succeed uploading an empty file" in {
     mockUpload(expectedBody = "")
 
     //#upload
-    val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = S3External.multipartUpload(bucket, bucketKey)
+    val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = S3.multipartUpload(bucket, bucketKey)
     //#upload
 
     val src = Source.empty[ByteString]
@@ -45,7 +33,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     mockUpload()
 
-    val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = S3External.multipartUpload(bucket, bucketKey)
+    val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = S3.multipartUpload(bucket, bucketKey)
 
     val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)
 
@@ -69,7 +57,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     //#upload
     val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] =
-      S3External.multipartUploadWithHeaders(bucket, bucketKey, s3Headers = Some(S3Headers(ServerSideEncryption.AES256)))
+      S3.multipartUploadWithHeaders(bucket, bucketKey, s3Headers = Some(S3Headers(ServerSideEncryption.AES256)))
     //#upload
 
     val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)
@@ -83,7 +71,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     val result = Source
       .single(ByteString("some contents"))
-      .runWith(S3External.multipartUpload("nonexisting_bucket", "nonexisting_file.xml"))
+      .runWith(S3.multipartUpload("nonexisting_bucket", "nonexisting_file.xml"))
 
     result.failed.futureValue.getMessage shouldBe "No key found"
   }
@@ -93,7 +81,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     //#multipart-copy
     val result: Future[MultipartUploadResult] =
-      S3External.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey)
+      S3.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey)
     //#multipart-copy
 
     result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag, None)
@@ -102,21 +90,21 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
   it should "copy a file from source bucket to target bucket when expected content length is equal to chunk size" in {
     mockCopy(S3Client.MinChunkSize)
 
-    val result = S3External.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey)
+    val result = S3.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey)
     result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag, None)
   }
 
   it should "copy an empty file from source bucket to target bucket" in {
     mockCopy(expectedContentLength = 0)
 
-    val result = S3External.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey)
+    val result = S3.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey)
     result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag, None)
   }
 
   it should "copy a file from source bucket to target bucket with SSE" in {
     mockCopySSE()
 
-    val result = S3External.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey, sse = Some(sseCustomerKeys))
+    val result = S3.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey, sse = Some(sseCustomerKeys))
     result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag, None)
   }
 
@@ -124,18 +112,14 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockCopy()
 
     val result =
-      S3External.multipartCopy(bucket,
-                               bucketKey,
-                               targetBucket,
-                               targetBucketKey,
-                               sse = Some(ServerSideEncryption.AES256))
+      S3.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey, sse = Some(ServerSideEncryption.AES256))
     result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag, None)
   }
 
   it should "copy a file from source bucket to target bucket when expected content length is greater then chunk size" in {
     mockCopyMulti()
 
-    val result = S3External.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey)
+    val result = S3.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey)
     result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag, None)
   }
 
@@ -144,12 +128,11 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     //#multipart-copy-with-source-version
     val result: Future[MultipartUploadResult] =
-      S3External.multipartCopy(bucket,
-                               bucketKey,
-                               targetBucket,
-                               targetBucketKey,
-                               sourceVersionId =
-                                 Some("3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo"))
+      S3.multipartCopy(bucket,
+                       bucketKey,
+                       targetBucket,
+                       targetBucketKey,
+                       sourceVersionId = Some("3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo"))
     //#multipart-copy-with-source-version
 
     result.futureValue shouldBe MultipartUploadResult(targetUrl,

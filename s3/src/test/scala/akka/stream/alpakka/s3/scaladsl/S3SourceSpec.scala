@@ -17,26 +17,12 @@ import com.amazonaws.regions.AwsRegionProvider
 
 class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
-  //#client
-  val awsCredentialsProvider = new AWSStaticCredentialsProvider(
-    new BasicAWSCredentials("my-AWS-access-key-ID", "my-AWS-password")
-  )
-  val regionProvider =
-    new AwsRegionProvider {
-      def getRegion: String = "us-east-1"
-    }
-  val proxy = Option(Proxy("localhost", port, "http"))
-  val settings =
-    new S3Settings(MemoryBufferType, proxy, awsCredentialsProvider, regionProvider, false, None, ListBucketVersion2)
-  implicit val s3Client = S3Client(settings)(system, materializer)
-  //#client
-
   "S3Source" should "download a stream of bytes from S3" in {
 
     mockDownload()
 
     //#download
-    val downloadResult = S3External.download(bucket, bucketKey)
+    val downloadResult = S3.download(bucket, bucketKey)
     //#download
 
     val Some((s3Source: Source[ByteString, _], _)) = downloadResult.futureValue
@@ -50,7 +36,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockHead()
 
     //#objectMetadata
-    val metadata = S3External.getObjectMetadata(bucket, bucketKey)
+    val metadata = S3.getObjectMetadata(bucket, bucketKey)
     //#objectMetadata
 
     val Some(result) = metadata.futureValue
@@ -66,7 +52,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockHeadWithVersion(versionId)
 
     //#objectMetadata
-    val metadata = S3External.getObjectMetadata(bucket, bucketKey, Some(versionId))
+    val metadata = S3.getObjectMetadata(bucket, bucketKey, Some(versionId))
     //#objectMetadata
 
     val Some(result) = metadata.futureValue
@@ -83,7 +69,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockHeadSSEC()
 
     //#objectMetadata
-    val metadata = S3External.getObjectMetadata(bucket, bucketKey, sse = Some(sseCustomerKeys))
+    val metadata = S3.getObjectMetadata(bucket, bucketKey, sse = Some(sseCustomerKeys))
     //#objectMetadata
 
     val Some(result) = metadata.futureValue
@@ -97,7 +83,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockRangedDownload()
 
     //#rangedDownload
-    val downloadResult = S3External.download(bucket, bucketKey, Some(ByteRange(bytesRangeStart, bytesRangeEnd)))
+    val downloadResult = S3.download(bucket, bucketKey, Some(ByteRange(bytesRangeStart, bytesRangeEnd)))
     //#rangedDownload
 
     val Some((s3Source: Source[ByteString, _], _)) = downloadResult.futureValue
@@ -111,7 +97,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockDownloadSSEC()
 
     //#download
-    val downloadResult = S3External.download(bucket, bucketKey, sse = Some(sseCustomerKeys))
+    val downloadResult = S3.download(bucket, bucketKey, sse = Some(sseCustomerKeys))
     //#download
 
     val Some((s3Source: Source[ByteString, _], _)) = downloadResult.futureValue
@@ -126,7 +112,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     //#download
     val downloadResult =
-      S3External.download(bucket, bucketKey, versionId = Some(versionId), sse = Some(sseCustomerKeys))
+      S3.download(bucket, bucketKey, versionId = Some(versionId), sse = Some(sseCustomerKeys))
     //#download
 
     val Some((s3Source: Source[ByteString, _], metadata)) = downloadResult.futureValue
@@ -142,7 +128,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     mock404s()
 
-    val download = S3External
+    val download = S3
       .download("nonexisting_bucket", "nonexisting_file.xml")
       .futureValue
 
@@ -156,7 +142,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     import system.dispatcher
 
     val sse = ServerSideEncryption.CustomerKeys("encoded-key", Some("md5-encoded-key"))
-    val result = S3External
+    val result = S3
       .download(bucket, bucketKey, sse = Some(sse))
       .flatMap {
         case Some((downloadSource, _)) =>
@@ -177,7 +163,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockListBucket()
 
     //#list-bucket
-    val keySource: Source[ListBucketResultContents, NotUsed] = S3External.listBucket(bucket, Some(listPrefix))
+    val keySource: Source[ListBucketResultContents, NotUsed] = S3.listBucket(bucket, Some(listPrefix))
     //#list-bucket
 
     val result = keySource.runWith(Sink.head)
@@ -189,7 +175,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockListBucketVersion1()
 
     val keySource: Source[ListBucketResultContents, NotUsed] =
-      S3External.listBucket(bucket, Some(listPrefix))
+      S3.listBucket(bucket, Some(listPrefix))
 
     val result = keySource.runWith(Sink.head)
 
