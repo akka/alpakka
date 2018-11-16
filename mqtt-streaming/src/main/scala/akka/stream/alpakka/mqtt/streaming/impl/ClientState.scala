@@ -89,6 +89,8 @@ import scala.util.{Failure, Success}
       connectFlags: ConnectFlags,
       keepAlive: FiniteDuration,
       pendingPingResp: Boolean,
+      activeConsumers: Set[String],
+      activeProducers: Set[String],
       pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
       pendingRemotePublications: Seq[(String, PublishReceivedFromRemote)],
       remote: SourceQueueWithComplete[ForwardConnectCommand],
@@ -210,6 +212,8 @@ import scala.util.{Failure, Success}
                 data.connect.connectFlags,
                 data.connect.keepAlive,
                 pendingPingResp = false,
+                Set.empty,
+                Set.empty,
                 Vector.empty,
                 Vector.empty,
                 data.remote,
@@ -284,30 +288,30 @@ import scala.util.{Failure, Success}
             local.success(Consumer.ForwardPublish)
             serverConnected(data)
           case (context, prfr @ PublishReceivedFromRemote(publish @ Publish(_, topicName, Some(packetId), _), local)) =>
-            val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName)
-            context.child(consumerName) match {
-              case None if !data.pendingRemotePublications.exists(_._1 == publish.topicName) =>
-                context.watchWith(
-                  context.spawn(
-                    Consumer(publish, packetId, local, data.consumerPacketRouter, data.settings),
-                    consumerName
-                  ),
-                  ConsumerFree(publish.topicName)
-                )
-                serverConnected(data)
-              case _ =>
-                serverConnected(
-                  data.copy(pendingRemotePublications = data.pendingRemotePublications :+ (publish.topicName -> prfr))
-                )
+            if (!data.activeConsumers.contains(topicName)) {
+              val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + "-" + context.children.size)
+              context.watchWith(
+                context.spawn(
+                  Consumer(publish, None, packetId, local, data.consumerPacketRouter, data.settings),
+                  consumerName
+                ),
+                ConsumerFree(publish.topicName)
+              )
+              serverConnected(data.copy(activeConsumers = data.activeConsumers + publish.topicName))
+            } else {
+              serverConnected(
+                data.copy(pendingRemotePublications = data.pendingRemotePublications :+ (publish.topicName -> prfr))
+              )
             }
           case (context, ConsumerFree(topicName)) =>
             val i = data.pendingRemotePublications.indexWhere(_._1 == topicName)
             if (i >= 0) {
               val prfr = data.pendingRemotePublications(i)._2
-              val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName)
+              val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + "-" + context.children.size)
               context.watchWith(
                 context.spawn(
                   Consumer(prfr.publish,
+                           None,
                            prfr.publish.packetId.get,
                            prfr.local,
                            data.consumerPacketRouter,
@@ -323,35 +327,34 @@ import scala.util.{Failure, Success}
                 )
               )
             } else {
-              serverConnected(data)
+              serverConnected(data.copy(activeConsumers = data.activeConsumers - topicName))
             }
           case (_, PublishReceivedLocally(publish, _))
               if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
             data.remote.offer(ForwardPublish(publish, None))
             serverConnected(data)
           case (context, prl @ PublishReceivedLocally(publish, publishData)) =>
-            val producerName = ActorName.mkName(ProducerNamePrefix + publish.topicName)
-            context.child(producerName) match {
-              case None if !data.pendingLocalPublications.exists(_._1 == publish.topicName) =>
-                val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
-                import context.executionContext
-                reply.future.foreach(command => context.self ! ReceivedProducerPublishingCommand(command))
-                context.watchWith(
-                  context.spawn(Producer(publish, publishData, reply, data.producerPacketRouter, data.settings),
-                                producerName),
-                  ProducerFree(publish.topicName)
-                )
-                serverConnected(data)
-              case _ =>
-                serverConnected(
-                  data.copy(pendingLocalPublications = data.pendingLocalPublications :+ (publish.topicName -> prl))
-                )
+            val producerName = ActorName.mkName(ProducerNamePrefix + publish.topicName + "-" + context.children.size)
+            if (!data.activeProducers.contains(publish.topicName)) {
+              val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
+              import context.executionContext
+              reply.future.foreach(command => context.self ! ReceivedProducerPublishingCommand(command))
+              context.watchWith(
+                context.spawn(Producer(publish, publishData, reply, data.producerPacketRouter, data.settings),
+                              producerName),
+                ProducerFree(publish.topicName)
+              )
+              serverConnected(data.copy(activeProducers = data.activeProducers + publish.topicName))
+            } else {
+              serverConnected(
+                data.copy(pendingLocalPublications = data.pendingLocalPublications :+ (publish.topicName -> prl))
+              )
             }
           case (context, ProducerFree(topicName)) =>
             val i = data.pendingLocalPublications.indexWhere(_._1 == topicName)
             if (i >= 0) {
               val prl = data.pendingLocalPublications(i)._2
-              val producerName = ActorName.mkName(ProducerNamePrefix + topicName)
+              val producerName = ActorName.mkName(ProducerNamePrefix + topicName + "-" + context.children.size)
               val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
               import context.executionContext
               reply.future.foreach(command => context.self ! ReceivedProducerPublishingCommand(command))
@@ -369,7 +372,7 @@ import scala.util.{Failure, Success}
                 )
               )
             } else {
-              serverConnected(data)
+              serverConnected(data.copy(activeProducers = data.activeProducers - topicName))
             }
           case (_, ReceivedProducerPublishingCommand(command)) =>
             command.runWith(Sink.foreach {

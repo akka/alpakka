@@ -6,6 +6,7 @@ package akka.stream.alpakka.mqtt.streaming
 package impl
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
@@ -83,25 +84,40 @@ class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
   "remote packet router" should {
 
     "route a packet" in {
+      val clientId = "some-client"
       val packetId = PacketId(1)
+
+      val connectionId = ByteString("some-connection")
 
       val registrant = testKit.createTestProbe[String]()
       val registerReply = Promise[RemotePacketRouter.Registered.type]()
       val failureReply1 = Promise[String]
       val failureReply2 = Promise[String]
+      val failureReply3 = Promise[String]
+      val failureReply4 = Promise[String]
       val router = testKit.spawn(RemotePacketRouter[String])
 
-      router ! RemotePacketRouter.Register(registrant.ref, packetId, registerReply)
+      router ! RemotePacketRouter.Register(registrant.ref, Some(clientId), packetId, registerReply)
       registerReply.future.futureValue shouldBe RemotePacketRouter.Registered
 
-      router ! RemotePacketRouter.Route(packetId, "some-packet", failureReply1)
+      router ! RemotePacketRouter.Route(Some(clientId), packetId, "some-packet", failureReply1)
       registrant.expectMessage("some-packet")
       failureReply1.future.isCompleted shouldBe false
 
-      router ! RemotePacketRouter.Unregister(packetId)
-      router ! RemotePacketRouter.Route(packetId, "some-packet", failureReply2)
+      router ! RemotePacketRouter.RegisterConnection(connectionId, clientId)
+      router ! RemotePacketRouter.RouteViaConnection(connectionId, packetId, "some-packet2", failureReply3)
+      registrant.expectMessage("some-packet2")
+      failureReply3.future.isCompleted shouldBe false
+
+      router ! RemotePacketRouter.UnregisterConnection(connectionId)
+      router ! RemotePacketRouter.RouteViaConnection(connectionId, packetId, "some-packet2", failureReply4)
+      failureReply4.future.failed.futureValue shouldBe RemotePacketRouter.CannotRoute
+      registrant.expectNoMessage(100.millis)
+
+      router ! RemotePacketRouter.Unregister(Some(clientId), packetId)
+      router ! RemotePacketRouter.Route(Some(clientId), packetId, "some-packet", failureReply2)
       failureReply2.future.failed.futureValue shouldBe RemotePacketRouter.CannotRoute
-      registrant.expectNoMessage(1.second)
+      registrant.expectNoMessage(100.millis)
 
     }
   }
