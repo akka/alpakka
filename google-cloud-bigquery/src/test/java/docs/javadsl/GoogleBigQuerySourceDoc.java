@@ -14,10 +14,12 @@ import akka.stream.alpakka.google.cloud.bigquery.client.BigQueryCommunicationHel
 import akka.stream.alpakka.google.cloud.bigquery.client.TableDataQueryJsonProtocol;
 import akka.stream.alpakka.google.cloud.bigquery.client.TableListQueryJsonProtocol;
 import akka.stream.alpakka.google.cloud.bigquery.javadsl.GoogleBigQuerySource;
+import akka.stream.alpakka.google.cloud.bigquery.javadsl.BigQueryCallbacks;
 import akka.stream.javadsl.Source;
 import spray.json.JsObject;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 // #imports
 
@@ -49,7 +51,11 @@ public class GoogleBigQuerySourceDoc {
     // #csv-style
     Source<List<String>, NotUsed> userCsvLikeStream =
         GoogleBigQuerySource.runQueryCsvStyle(
-            "SELECT uid, name FROM bigQueryDatasetName.myTable", config, system, materializer);
+            "SELECT uid, name FROM bigQueryDatasetName.myTable",
+            BigQueryCallbacks.tryToStopJob(config, system, materializer),
+            config,
+            system,
+            materializer);
     // #csv-style
   }
 
@@ -64,9 +70,14 @@ public class GoogleBigQuerySourceDoc {
     }
   }
 
-  static User userFromJson(JsObject object) {
-    return new User(
-        object.fields().apply("uid").toString(), object.fields().apply("name").toString());
+  static Optional<User> userFromJson(JsObject object) {
+    try {
+      return Optional.of(
+          new User(
+              object.fields().apply("uid").toString(), object.fields().apply("name").toString()));
+    } catch (Throwable e) {
+      return Optional.empty();
+    }
   }
 
   private static Source<User, NotUsed> example2() {
@@ -82,6 +93,7 @@ public class GoogleBigQuerySourceDoc {
     return GoogleBigQuerySource.runQuery(
         "SELECT uid, name FROM bigQueryDatasetName.myTable",
         GoogleBigQuerySourceDoc::userFromJson,
+        BigQueryCallbacks.ignore(),
         config,
         system,
         materializer);
@@ -101,11 +113,16 @@ public class GoogleBigQuerySourceDoc {
     }
   }
 
-  static DryRunResponse dryRunResponseFromJson(JsObject object) {
-    return new DryRunResponse(
-        object.fields().apply("totalBytesProcessed").toString(),
-        object.fields().apply("jobComplete").toString(),
-        object.fields().apply("cacheHit").toString());
+  static Optional<DryRunResponse> dryRunResponseFromJson(JsObject object) {
+    try {
+      return Optional.of(
+          new DryRunResponse(
+              object.fields().apply("totalBytesProcessed").toString(),
+              object.fields().apply("jobComplete").toString(),
+              object.fields().apply("cacheHit").toString()));
+    } catch (Throwable e) {
+      return Optional.empty();
+    }
   }
 
   private static Source<DryRunResponse, NotUsed> example3() {
@@ -126,6 +143,7 @@ public class GoogleBigQuerySourceDoc {
     return GoogleBigQuerySource.raw(
         request,
         GoogleBigQuerySourceDoc::dryRunResponseFromJson,
+        BigQueryCallbacks.ignore(),
         config.session(),
         system,
         materializer);

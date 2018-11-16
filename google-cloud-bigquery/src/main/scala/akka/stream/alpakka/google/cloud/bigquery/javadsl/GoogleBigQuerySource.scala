@@ -14,6 +14,7 @@ import akka.stream.Materializer
 import akka.stream.alpakka.google.cloud.bigquery
 import akka.stream.alpakka.google.cloud.bigquery.BigQueryFlowModels.BigQueryProjectConfig
 import akka.stream.alpakka.google.cloud.bigquery.client._
+import akka.stream.alpakka.google.cloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.alpakka.google.cloud.bigquery.impl.{GoogleSession, GoogleTokenApi}
 import akka.stream.javadsl.Source
 import spray.json.JsObject
@@ -21,6 +22,7 @@ import spray.json.JsObject
 object GoogleBigQuerySource {
   import collection.JavaConverters._
   import scala.compat.java8.FutureConverters._
+  import scala.compat.java8.OptionConverters._
 
   def createProjectConfig(clientEmail: String,
                           privateKey: String,
@@ -32,29 +34,32 @@ object GoogleBigQuerySource {
   }
 
   def raw[T](httpRequest: HttpRequest,
-             parserFn: java.util.function.Function[JsObject, T],
+             parserFn: java.util.function.Function[JsObject, java.util.Optional[T]],
+             onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
              googleSession: GoogleSession,
              actorSystem: ActorSystem,
              materializer: Materializer): Source[T, NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource
-      .raw(httpRequest, parserFn.apply, googleSession)(materializer, actorSystem)
+      .raw(httpRequest, parserFn.apply(_).asScala, onFinishCallback.apply, googleSession)(materializer, actorSystem)
       .asJava
 
   def runQuery[T](query: String,
-                  parserFn: java.util.function.Function[JsObject, T],
+                  parserFn: java.util.function.Function[JsObject, java.util.Optional[T]],
+                  onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
                   projectConfig: BigQueryProjectConfig,
                   actorSystem: ActorSystem,
                   materializer: Materializer): Source[T, NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource
-      .runQuery(query, parserFn.apply, projectConfig)(materializer, actorSystem)
+      .runQuery(query, parserFn.apply(_).asScala, onFinishCallback.apply, projectConfig)(materializer, actorSystem)
       .asJava
 
   def runQueryCsvStyle(query: String,
+                       onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
                        projectConfig: BigQueryProjectConfig,
                        actorSystem: ActorSystem,
                        materializer: Materializer): Source[util.List[String], NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource
-      .runQueryCsvStyle(query, projectConfig)(materializer, actorSystem)
+      .runQueryCsvStyle(query, onFinishCallback.apply, projectConfig)(materializer, actorSystem)
       .map(_.asJava)
       .asJava
 

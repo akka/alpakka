@@ -12,10 +12,14 @@ import akka.stream.alpakka.google.cloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.scaladsl.Flow
 
 object AddPageToken {
-  def apply(): Flow[(HttpRequest, PagingInfo), HttpRequest, NotUsed] =
-    Flow[(HttpRequest, PagingInfo)].map {
-      case (request, pagingInfo) =>
-        val req = addPageToken(request, pagingInfo)
+  def apply(): Flow[(HttpRequest, (Boolean, PagingInfo)), HttpRequest, NotUsed] =
+    Flow[(HttpRequest, (Boolean, PagingInfo))].map {
+      case (request, (retry, pagingInfo)) =>
+        val req = if (!retry) {
+          addPageToken(request, pagingInfo)
+        } else {
+          request
+        }
 
         pagingInfo.jobId match {
           case Some(id) =>

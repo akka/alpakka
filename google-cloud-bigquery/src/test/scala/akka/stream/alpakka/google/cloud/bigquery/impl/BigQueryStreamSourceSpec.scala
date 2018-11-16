@@ -9,8 +9,9 @@ import akka.event.LoggingAdapter
 import akka.http.scaladsl.model.{HttpRequest, _}
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.alpakka.google.cloud.bigquery.scaladsl.BigQueryCallbacks
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{when, _}
@@ -71,7 +72,8 @@ class BigQueryStreamSourceSpec
         )
       )
 
-      val bigQuerySource = BigQueryStreamSource(HttpRequest(), _ => "success", session, http)
+      val bigQuerySource =
+        BigQueryStreamSource(HttpRequest(), _ => Option("success"), BigQueryCallbacks.ignore, session, http)
 
       val resultF = Source.fromGraph(bigQuerySource).runWith(Sink.head)
 
@@ -105,7 +107,8 @@ class BigQueryStreamSourceSpec
         }
       )
 
-      val bigQuerySource = BigQueryStreamSource(HttpRequest(), _ => "success", session, http)
+      val bigQuerySource =
+        BigQueryStreamSource(HttpRequest(), _ => Option("success"), BigQueryCallbacks.ignore, session, http)
 
       val resultF = bigQuerySource.runWith(Sink.seq)
 
@@ -116,7 +119,8 @@ class BigQueryStreamSourceSpec
 
     "url encode page token" in new Scope {
 
-      val bigQuerySource = BigQueryStreamSource(HttpRequest(), _ => "success", session, http)
+      val bigQuerySource =
+        BigQueryStreamSource(HttpRequest(), _ => Option("success"), BigQueryCallbacks.ignore, session, http)
       when(
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),

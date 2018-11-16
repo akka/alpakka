@@ -7,7 +7,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.google.cloud.bigquery.client.TableDataQueryJsonProtocol.Field
 import akka.stream.alpakka.google.cloud.bigquery.client.TableListQueryJsonProtocol.{QueryTableModel, TableReference}
-import akka.stream.alpakka.google.cloud.bigquery.scaladsl.GoogleBigQuerySource
+import akka.stream.alpakka.google.cloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
 import akka.stream.scaladsl.Sink
 import org.scalatest.Matchers
 
@@ -40,7 +40,9 @@ class BigQueryEndToEndSpec extends BigQueryTableHelper with Matchers {
       assume(enableE2E, "BigQuery env-vars not configures")
       val result =
         await(
-          GoogleBigQuerySource.runQueryCsvStyle(s"SELECT * FROM $dataset.$tableName;", connection).runWith(Sink.seq)
+          GoogleBigQuerySource
+            .runQueryCsvStyle(s"SELECT * FROM $dataset.$tableName;", BigQueryCallbacks.ignore, connection)
+            .runWith(Sink.seq)
         )
 
       checkResultWithoutRowOrder(
