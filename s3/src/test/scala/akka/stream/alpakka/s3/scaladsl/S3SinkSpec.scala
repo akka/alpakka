@@ -44,7 +44,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     mockUploadWithInternalError(body)
 
-    val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = s3Client.multipartUpload(bucket, bucketKey)
+    val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = S3.multipartUpload(bucket, bucketKey)
 
     val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)
 
