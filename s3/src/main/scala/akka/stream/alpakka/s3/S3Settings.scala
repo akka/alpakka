@@ -53,6 +53,8 @@ case object DiskBufferType {
 
 object S3Settings {
 
+  val configPath = "alpakka.s3"
+
   /**
    * Scala API: Creates [[S3Settings]] from the [[com.typesafe.config.Config Config]] attached to an [[akka.actor.ActorSystem]].
    */
@@ -67,7 +69,7 @@ object S3Settings {
   /**
    * Scala API: Creates [[S3Settings]] from a [[com.typesafe.config.Config Config]] object.
    */
-  def apply(config: Config, configurationPrefix: String = "akka.stream.alpakka.s3"): S3Settings = {
+  def apply(config: Config, configurationPrefix: String = configPath): S3Settings = {
     val s3Config = config.getConfig(configurationPrefix)
 
     val bufferType = s3Config.getString("buffer") match {

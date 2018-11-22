@@ -5,6 +5,7 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.impl.ServerSideEncryption
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase._
 import akka.testkit.TestKit
@@ -746,7 +747,7 @@ private object S3WireMockBase {
   }
 
   private def config(proxyPort: Int) = ConfigFactory.parseString(s"""
-    |akka.stream.alpakka.s3 {
+    |${S3Settings.configPath} {
     |  proxy {
     |    host = localhost
     |    port = $proxyPort

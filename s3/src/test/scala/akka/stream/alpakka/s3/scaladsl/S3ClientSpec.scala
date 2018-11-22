@@ -19,10 +19,10 @@ class S3ClientSpec extends FlatSpecLike with Matchers {
   it should "reuse application config from actor system" in {
     val config = ConfigFactory.parseMap(
       Map(
-        "akka.stream.alpakka.s3.proxy.host" -> "localhost",
-        "akka.stream.alpakka.s3.proxy.port" -> 8001,
-        "akka.stream.alpakka.s3.proxy.secure" -> false,
-        "akka.stream.alpakka.s3.path-style-access" -> true
+        "alpakka.s3.proxy.host" -> "localhost",
+        "alpakka.s3.proxy.port" -> 8001,
+        "alpakka.s3.proxy.secure" -> false,
+        "alpakka.s3.path-style-access" -> true
       ).asJava
     )
     implicit val system = ActorSystem.create("s3", config)

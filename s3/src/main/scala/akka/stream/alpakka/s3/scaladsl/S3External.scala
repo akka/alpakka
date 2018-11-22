@@ -110,7 +110,7 @@ object S3External {
    * Will return a source of object metadata for a given bucket with optional prefix using version 2 of the List Bucket API.
    * This will automatically page through all keys with the given parameters.
    *
-   * The `akka.stream.alpakka.s3.list-bucket-api-version` can be set to 1 to use the older API version 1
+   * The `alpakka.s3.list-bucket-api-version` can be set to 1 to use the older API version 1
    *
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html  (version 1 API)
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html (version 1 API)

@@ -16,15 +16,15 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
     S3Settings.apply(
       ConfigFactory.parseString(
         s"""
-          |akka.stream.alpakka.s3.buffer = memory
-          |akka.stream.alpakka.s3.path-style-access = false
+          |alpakka.s3.buffer = memory
+          |alpakka.s3.path-style-access = false
           |$more
         """.stripMargin
       )
     )
 
   "S3Settings" should "correctly parse config with anonymous credentials" in {
-    val settings: S3Settings = mkConfig("akka.stream.alpakka.s3.aws.credentials.provider = anon")
+    val settings: S3Settings = mkConfig("alpakka.s3.aws.credentials.provider = anon")
 
     settings.credentialsProvider.getCredentials shouldBe a[AnonymousAWSCredentials]
   }
@@ -34,7 +34,7 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
     val testSk: String = "testsk"
 
     val settings: S3Settings = mkConfig(
-      s"""akka.stream.alpakka.s3.aws.credentials {
+      s"""alpakka.s3.aws.credentials {
         | provider = static
         | access-key-id = $testKi
         | secret-access-key = $testSk
@@ -52,7 +52,7 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
     val testTok: String = "testtok"
 
     val settings: S3Settings = mkConfig(
-      s"""akka.stream.alpakka.s3.aws.credentials {
+      s"""alpakka.s3.aws.credentials {
          | provider = static
          | access-key-id = $testKi
          | secret-access-key = $testSk
@@ -70,7 +70,7 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
 
   it should "correctly parse config with default credentials" in {
     val settings: S3Settings = mkConfig(
-      "akka.stream.alpakka.s3.aws.credentials.provider = default"
+      "alpakka.s3.aws.credentials.provider = default"
     )
     settings.credentialsProvider shouldBe a[DefaultAWSCredentialsProviderChain]
     settings.endpointUrl shouldBe 'empty
@@ -87,8 +87,8 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
     val testAki = "test-aki"
     val testSak = "test-sak"
     val settings = mkConfig(
-      s"""akka.stream.alpakka.s3.aws.access-key-id = $testAki
-         |akka.stream.alpakka.s3.aws.secret-access-key = $testSak""".stripMargin
+      s"""alpakka.s3.aws.access-key-id = $testAki
+         |alpakka.s3.aws.secret-access-key = $testSak""".stripMargin
     )
     settings.credentialsProvider shouldBe a[AWSStaticCredentialsProvider]
     settings.credentialsProvider.getCredentials shouldBe a[BasicAWSCredentials]
@@ -108,8 +108,8 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
 
     val settings: S3Settings = mkConfig(
       s"""
-         |akka.stream.alpakka.s3.aws.region.provider = static
-         |akka.stream.alpakka.s3.aws.region.default-region = $otherRegion
+         |alpakka.s3.aws.region.provider = static
+         |alpakka.s3.aws.region.default-region = $otherRegion
          |""".stripMargin
     )
     settings.s3RegionProvider.getRegion shouldBe otherRegion
@@ -117,7 +117,7 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
 
   it should "use default region provider when set in configuration" in {
     val settings: S3Settings = mkConfig(
-      "akka.stream.alpakka.s3.aws.region.provider = default" // no credentials section
+      "alpakka.s3.aws.region.provider = default" // no credentials section
     )
     settings.s3RegionProvider shouldBe a[DefaultAwsRegionProviderChain]
   }
@@ -130,7 +130,7 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
   it should "properly handle a null endpoint url" in {
     val settings: S3Settings = mkConfig(
       s"""
-         |akka.stream.alpakka.s3.endpoint-url = null
+         |alpakka.s3.endpoint-url = null
         """.stripMargin
     )
     settings.endpointUrl shouldBe 'empty
@@ -141,7 +141,7 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
 
     val settings: S3Settings = mkConfig(
       s"""
-           |akka.stream.alpakka.s3.endpoint-url = "$endpointUrl"
+           |alpakka.s3.endpoint-url = "$endpointUrl"
         """.stripMargin
     )
     settings.endpointUrl.value shouldEqual endpointUrl
@@ -176,17 +176,17 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
   }
 
   it should "instantiate with the list bucket api version 1 if list-bucket-api-version is set to 1" in {
-    val settings: S3Settings = mkConfig("akka.stream.alpakka.s3.list-bucket-api-version = 1")
+    val settings: S3Settings = mkConfig("alpakka.s3.list-bucket-api-version = 1")
     settings.listBucketApiVersion shouldEqual ListBucketVersion1
   }
 
   it should "instantiate with the list bucket api version 2 if list-bucket-api-version is set to a number that is neither 1 or 2" in {
-    val settings: S3Settings = mkConfig("akka.stream.alpakka.s3.list-bucket-api-version = 0")
+    val settings: S3Settings = mkConfig("alpakka.s3.list-bucket-api-version = 0")
     settings.listBucketApiVersion shouldEqual ListBucketVersion2
   }
 
   it should "instantiate with the list bucket api version 2 if list-bucket-api-version is set to a value that is not a nymber" in {
-    val settings: S3Settings = mkConfig("akka.stream.alpakka.s3.list-bucket-api-version = 'version 1'")
+    val settings: S3Settings = mkConfig("alpakka.s3.list-bucket-api-version = 'version 1'")
     settings.listBucketApiVersion shouldEqual ListBucketVersion2
   }
 }
