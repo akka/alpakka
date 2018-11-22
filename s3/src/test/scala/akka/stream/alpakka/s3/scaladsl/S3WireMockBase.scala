@@ -763,6 +763,7 @@ private object S3WireMockBase {
     |      default-region = "us-east-1"
     |    }
     |  }
+    |  path-style-access = false
     |}
     """.stripMargin)
 }
