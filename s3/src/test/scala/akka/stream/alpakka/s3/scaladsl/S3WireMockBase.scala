@@ -18,7 +18,6 @@ import com.github.tomakehurst.wiremock.stubbing.Scenario
 import com.typesafe.config.ConfigFactory
 
 abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockServer) extends TestKit(_system) {
-  import S3WireMockBase._
 
   def this(mock: WireMockServer) =
     this(ActorSystem(getCallerName(getClass), config(mock.port()).withFallback(ConfigFactory.load())), mock)
@@ -752,6 +751,17 @@ private object S3WireMockBase {
     |    host = localhost
     |    port = $proxyPort
     |    secure = false
+    |  }
+    |  aws {
+    |    credentials {
+    |      provider = static
+    |      access-key-id = my-AWS-access-key-ID
+    |      secret-access-key = my-AWS-password
+    |    }
+    |    region {
+    |      provider = static
+    |      default-region = "us-east-1"
+    |    }
     |  }
     |}
     """.stripMargin)
