@@ -38,6 +38,7 @@ The [Alpakka project](https://developer.lightbend.com/docs/alpakka/current/) is 
 * [Hadoop Distributed File System](hdfs.md)
 * [HBase](hbase.md)
 * [HTTP](external/http.md)
+* [Db2 Event Store](external/db2-event-store.md)
 * [IronMQ](ironmq.md)
 * [JMS](jms/index.md)
 * [MongoDB](mongodb.md)
