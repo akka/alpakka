@@ -139,14 +139,14 @@ object SqsPublishResult {
 
   /** Scala API */
   def apply(
-      metadata: com.amazonaws.services.sqs.model.SendMessageResult,
+      metadata: com.amazonaws.services.sqs.model.SendMessageResult
   ): SqsPublishResult = new SqsPublishResult(
     metadata
   )
 
   /** Java API */
   def create(
-      metadata: com.amazonaws.services.sqs.model.SendMessageResult,
+      metadata: com.amazonaws.services.sqs.model.SendMessageResult
   ): SqsPublishResult = SqsPublishResult(
     metadata
   )
