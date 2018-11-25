@@ -427,7 +427,8 @@ import scala.util.{Failure, Success}
                   )
                 )
               case _: Some[_] => // It is an error to get here
-                local.failure(new IllegalStateException("Shouldn't be able to receive subscriptions here"))
+                local
+                  .failure(new IllegalStateException("Shouldn't be able to receive subscriptions here: " + subscribe))
                 Behaviors.same
             }
           case (context, UnsubscribeReceivedFromRemote(unsubscribe, local)) =>

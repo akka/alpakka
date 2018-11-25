@@ -104,6 +104,26 @@ import scala.util.{Failure, Success}
                    subscriberPacketRouter,
                    unsubscriberPacketRouter,
                    settings)
+  final case class PendingSubscribe(
+      stash: Seq[Event],
+      connectFlags: ConnectFlags,
+      keepAlive: FiniteDuration,
+      pendingPingResp: Boolean,
+      activeConsumers: Set[String],
+      activeProducers: Set[String],
+      pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
+      pendingRemotePublications: Seq[(String, PublishReceivedFromRemote)],
+      remote: SourceQueueWithComplete[ForwardConnectCommand],
+      override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
+      override val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
+      override val subscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Subscriber.Event]],
+      override val unsubscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Unsubscriber.Event]],
+      override val settings: MqttSessionSettings
+  ) extends Data(consumerPacketRouter,
+                   producerPacketRouter,
+                   subscriberPacketRouter,
+                   unsubscriberPacketRouter,
+                   settings)
 
   sealed abstract class Event
   final case class ConnectReceivedLocally(connect: Connect,
@@ -255,32 +275,47 @@ import scala.util.{Failure, Success}
             remote.success(ForwardDisconnect)
             disconnect(context, data.connectFlags, data.remote, data)
           case (context, SubscribeReceivedLocally(subscribe, subscribeData, remote)) =>
-            subscribe.topicFilters.foreach { topicFilter =>
-              val (topicFilterName, _) = topicFilter
-              val subscriberName = ActorName.mkName(SubscriberNamePrefix + topicFilterName)
-              context.child(subscriberName) match {
-                case None =>
-                  context.spawn(
-                    Subscriber(subscribeData, remote, data.subscriberPacketRouter, data.settings),
-                    subscriberName
+            val subscriberName = ActorName.mkName(SubscriberNamePrefix + subscribe.topicFilters.map(_._1).mkString("-"))
+            context.child(subscriberName) match {
+              case None =>
+                val subscriber = context.spawn(
+                  Subscriber(subscribeData, remote, data.subscriberPacketRouter, data.settings),
+                  subscriberName
+                )
+                context.watch(subscriber)
+                pendingSubAck(
+                  PendingSubscribe(
+                    Vector.empty,
+                    data.connectFlags,
+                    data.keepAlive,
+                    data.pendingPingResp,
+                    data.activeConsumers,
+                    data.activeProducers,
+                    data.pendingLocalPublications,
+                    data.pendingRemotePublications,
+                    data.remote,
+                    data.consumerPacketRouter,
+                    data.producerPacketRouter,
+                    data.subscriberPacketRouter,
+                    data.unsubscriberPacketRouter,
+                    data.settings
                   )
-                case _: Some[_] =>
-                  remote.failure(new IllegalStateException("Duplicate subscribe: " + subscribe))
-              }
+                )
+              case _: Some[_] =>
+                remote
+                  .failure(new IllegalStateException("Shouldn't be able to receive subscriptions here: " + subscribe))
+                serverConnected(data)
             }
-            serverConnected(data)
           case (context, UnsubscribeReceivedLocally(unsubscribe, unsubscribeData, remote)) =>
-            unsubscribe.topicFilters.foreach { topicFilter =>
-              val unsubscriberName = ActorName.mkName(UnsubscriberNamePrefix + topicFilter)
-              context.child(unsubscriberName) match {
-                case None =>
-                  context.spawn(
-                    Unsubscriber(unsubscribeData, remote, data.unsubscriberPacketRouter, data.settings),
-                    unsubscriberName
-                  )
-                case _: Some[_] =>
-                  remote.failure(new IllegalStateException("Duplicate unsubscribe: " + unsubscribe))
-              }
+            val unsubscriberName = ActorName.mkName(UnsubscriberNamePrefix + unsubscribe.topicFilters.mkString("-"))
+            context.child(unsubscriberName) match {
+              case None =>
+                context.spawn(
+                  Unsubscriber(unsubscribeData, remote, data.unsubscriberPacketRouter, data.settings),
+                  unsubscriberName
+                )
+              case _: Some[_] =>
+                remote.failure(new IllegalStateException("Duplicate unsubscribe: " + unsubscribe))
             }
             serverConnected(data)
           case (_, PublishReceivedFromRemote(publish, local))
@@ -398,6 +433,37 @@ import scala.util.{Failure, Success}
             Behaviors.same
         }
   }
+
+  def pendingSubAck(data: PendingSubscribe)(implicit mat: Materializer): Behavior[Event] =
+    Behaviors
+      .receivePartial[Event] {
+        case (_, e) if data.stash.size < data.settings.maxClientConnectionStashSize =>
+          pendingSubAck(data.copy(stash = data.stash :+ e))
+      }
+      .receiveSignal {
+        case (context, t: Terminated) =>
+          data.stash.foreach(context.self.tell)
+          serverConnected(
+            ConnAckReceived(
+              data.connectFlags,
+              data.keepAlive,
+              data.pendingPingResp,
+              data.activeConsumers,
+              data.activeProducers,
+              data.pendingLocalPublications,
+              data.pendingRemotePublications,
+              data.remote,
+              data.consumerPacketRouter,
+              data.producerPacketRouter,
+              data.subscriberPacketRouter,
+              data.unsubscriberPacketRouter,
+              data.settings
+            )
+          )
+        case (_, PostStop) =>
+          data.remote.complete()
+          Behaviors.same
+      }
 }
 
 /*
