@@ -184,6 +184,9 @@ lazy val googleFcm = alpakkaProject(
   crossScalaVersions -= Dependencies.Scala213 // requires upgrade of jwt-core to 3.0.1
 )
 
+lazy val googleCloudStorage =
+  alpakkaProject("google-cloud-storage", "google.cloud.storage", Dependencies.GoogleStorage).disablePlugins(MimaPlugin)
+
 lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, fork in Test := true)
 
 lazy val hdfs = alpakkaProject("hdfs",

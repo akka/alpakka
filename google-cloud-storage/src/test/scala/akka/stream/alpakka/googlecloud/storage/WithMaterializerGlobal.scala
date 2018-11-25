@@ -5,24 +5,26 @@
 package akka.stream.alpakka.googlecloud.storage
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
-import org.scalatest.{BeforeAndAfterAll, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpecLike}
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-trait WithMaterializerGlobal extends WordSpec with BeforeAndAfterAll {
-  //println(" actorSystem start")
+trait WithMaterializerGlobal
+    extends WordSpecLike
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach
+    with ScalaFutures
+    with IntegrationPatience
+    with Matchers {
   implicit val actorSystem = ActorSystem("test")
-  implicit val materializer = ActorMaterializer.create(actorSystem)
+  implicit val materializer = ActorMaterializer()
   implicit val ec = materializer.executionContext
-  private val http = Http(actorSystem)
 
   override def afterAll(): Unit = {
-    //println(" actorSystem stop")
-    Await.result(http.shutdownAllConnectionPools(), 10.seconds)
-    //materializer.shutdown()
+    super.afterAll()
     Await.result(actorSystem.terminate(), 10.seconds)
   }
 }
