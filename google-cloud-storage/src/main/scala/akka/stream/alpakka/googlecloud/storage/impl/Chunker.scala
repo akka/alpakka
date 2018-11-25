@@ -22,41 +22,45 @@ private[storage] class Chunker(val chunkSize: Int) extends GraphStage[FlowShape[
   override val shape = FlowShape.of(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-    private var buffer = ByteString.empty
+    private val bufferBuilder = ByteString.newBuilder
     private var totalSize = 0l
 
     setHandler(out, new OutHandler {
       override def onPull(): Unit =
-        if (isClosed(in)) emitChunk()
-        else pull(in)
+        emitChunk()
     })
     setHandler(
       in,
       new InHandler {
         override def onPush(): Unit = {
           val elem = grab(in)
-          buffer ++= elem
+          bufferBuilder.append(elem)
           emitChunk()
         }
 
         override def onUpstreamFinish(): Unit =
-          if (isAvailable(out)) emitChunk()
+          if (bufferBuilder.isEmpty) completeStage()
+          else {
+            if (isAvailable(out)) emitChunk()
+          }
       }
     )
 
     private def emitChunk(): Unit =
       if (isClosed(in)) {
-        if (buffer.nonEmpty) {
-          totalSize += buffer.size
-          emit(out, Chunk(buffer, Some(totalSize)))
+        if (bufferBuilder.nonEmpty) {
+          totalSize += bufferBuilder.length
+          emit(out, Chunk(bufferBuilder.result(), Some(totalSize)))
+          bufferBuilder.clear()
         }
         completeStage()
       } else {
-        if (buffer.isEmpty) {
+        if (bufferBuilder.isEmpty) {
           pull(in)
-        } else if (buffer.size > chunkSize) {
-          val (chunk, nextBuffer) = buffer.splitAt(chunkSize)
-          buffer = nextBuffer
+        } else if (bufferBuilder.length > chunkSize) {
+          val (chunk, nextBuffer) = bufferBuilder.result.splitAt(chunkSize)
+          bufferBuilder.clear()
+          bufferBuilder.append(nextBuffer)
           totalSize += chunk.size
           emit(out, Chunk(chunk))
         } else {
