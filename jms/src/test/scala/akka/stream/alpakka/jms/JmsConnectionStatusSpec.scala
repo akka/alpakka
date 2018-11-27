@@ -323,6 +323,7 @@ class JmsConnectionStatusSpec extends JmsSpec {
               .withMaxBackoff(100.millis)
               .withInfiniteRetries()
           )
+          .withSendRetrySettings(SendRetrySettings(system).withInfiniteRetries())
       )
 
       val jmsSource = JmsConsumer.textSource(
