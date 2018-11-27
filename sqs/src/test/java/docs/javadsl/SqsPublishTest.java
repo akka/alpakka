@@ -68,8 +68,8 @@ public class SqsPublishTest extends BaseSqsTest {
                 materializer);
     // #run-string
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
-    List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
 
+    List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
     assertEquals(1, messages.size());
     assertEquals("alpakka", messages.get(0).getBody());
   }
@@ -88,8 +88,8 @@ public class SqsPublishTest extends BaseSqsTest {
 
     // #run-send-request
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
-    List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
 
+    List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
     assertEquals(1, messages.size());
     assertEquals("alpakka", messages.get(0).getBody());
   }
@@ -106,8 +106,8 @@ public class SqsPublishTest extends BaseSqsTest {
                 SqsPublishSink.messageSink(SqsPublishSettings.create(), sqsClient), materializer);
     // #run-send-request
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
-    List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
 
+    List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
     assertEquals(1, messages.size());
     assertEquals("alpakka", messages.get(0).getBody());
   }
@@ -117,15 +117,16 @@ public class SqsPublishTest extends BaseSqsTest {
     final String queueUrl = randomQueueUrl();
 
     // #flow
-    CompletionStage<Done> done =
+    CompletionStage<SqsPublishResult> done =
         Source.single(new SendMessageRequest().withMessageBody("alpakka-flow"))
             .via(SqsPublishFlow.create(queueUrl, SqsPublishSettings.create(), sqsClient))
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.head(), materializer);
 
     // #flow
-    done.toCompletableFuture().get(1, TimeUnit.SECONDS);
-    List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
+    SqsPublishResult result = done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    assertEquals("alpakka-flow", result.message().getBody());
 
+    List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
     assertEquals(1, messages.size());
     assertEquals("alpakka-flow", messages.get(0).getBody());
   }
@@ -135,14 +136,15 @@ public class SqsPublishTest extends BaseSqsTest {
     final String queueUrl = randomQueueUrl();
 
     // #flow
-    CompletionStage<Done> done =
+    CompletionStage<SqsPublishResult> done =
         Source.single(new SendMessageRequest(queueUrl, "alpakka-flow"))
             .via(SqsPublishFlow.create(SqsPublishSettings.create(), sqsClient))
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.head(), materializer);
     // #flow
-    done.toCompletableFuture().get(1, TimeUnit.SECONDS);
-    List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
+    SqsPublishResult result = done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    assertEquals("alpakka-flow", result.message().getBody());
 
+    List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
     assertEquals(1, messages.size());
     assertEquals("alpakka-flow", messages.get(0).getBody());
   }
@@ -245,12 +247,13 @@ public class SqsPublishTest extends BaseSqsTest {
       messagesToSend.add(new SendMessageRequest(queueUrl, "Message - " + i));
     }
 
-    CompletionStage<Done> done =
+    CompletionStage<List<SqsPublishResult>> stage =
         Source.from(messagesToSend)
             .via(SqsPublishFlow.grouped(queueUrl, SqsPublishGroupedSettings.create(), sqsClient))
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.seq(), materializer);
 
-    done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    List<SqsPublishResult> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    assertEquals(10, result.size());
 
     List<Message> messagesFirstBatch =
         sqsClient
@@ -271,12 +274,14 @@ public class SqsPublishTest extends BaseSqsTest {
     }
     Iterable<SendMessageRequest> it = messagesToSend;
 
-    CompletionStage<Done> done =
+    CompletionStage<List<List<SqsPublishResult>>> stage =
         Source.single(it)
             .via(SqsPublishFlow.batch(queueUrl, SqsPublishBatchSettings.create(), sqsClient))
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.seq(), materializer);
 
-    done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    List<SqsPublishResult> result = new ArrayList<>();
+    stage.toCompletableFuture().get(1, TimeUnit.SECONDS).forEach(result::addAll);
+    assertEquals(10, result.size());
 
     List<Message> messagesFirstBatch =
         sqsClient
@@ -291,11 +296,14 @@ public class SqsPublishTest extends BaseSqsTest {
   public void ackViaFlow() throws Exception {
     final String queueUrl = randomQueueUrl();
 
-    CompletionStage<Done> done =
+    CompletionStage<SqsPublishResult> stage =
         Source.single(new SendMessageRequest(queueUrl, "alpakka-flow"))
             .via(SqsPublishFlow.create(queueUrl, SqsPublishSettings.create(), sqsClient))
-            .runWith(Sink.ignore(), materializer);
-    done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+            .runWith(Sink.head(), materializer);
+
+    SqsPublishResult result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    assertEquals("alpakka-flow", result.message().getBody());
+
     List<Message> messages = sqsClient.receiveMessage(queueUrl).getMessages();
 
     assertEquals(1, messages.size());

@@ -6,12 +6,12 @@ package akka.stream.alpakka.sqs.impl
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.stream.alpakka.sqs.SqsPublishResult
+import akka.stream.alpakka.sqs.{FifoMessageIdentifiers, SqsPublishResult}
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.AmazonSQSAsync
-import com.amazonaws.services.sqs.model.{SendMessageRequest, SendMessageResult}
+import com.amazonaws.services.sqs.model.{Message, SendMessageRequest, SendMessageResult}
 
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -22,15 +22,15 @@ import scala.util.{Failure, Success, Try}
 @InternalApi private[sqs] final class SqsFlowStage(sqsClient: AmazonSQSAsync)
     extends GraphStage[FlowShape[SendMessageRequest, Future[SqsPublishResult]]] {
 
-  private val in = Inlet[SendMessageRequest]("messages")
+  private val in = Inlet[SendMessageRequest]("request")
   private val out = Outlet[Future[SqsPublishResult]]("result")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with StageLogging {
       private var inFlight = 0
-      var inIsClosed = false
-      var completionState: Option[Try[Done]] = None
+      private var inIsClosed = false
+      private var completionState: Option[Try[Done]] = None
 
       override protected def logSource: Class[_] = classOf[SqsFlowStage]
 
@@ -54,7 +54,7 @@ import scala.util.{Failure, Success, Try}
         }
       }
 
-      def checkForCompletion() =
+      def checkForCompletion(): Unit =
         if (isClosed(in) && inFlight <= 0) {
           completionState match {
             case Some(Success(_)) => completeStage()
@@ -64,7 +64,7 @@ import scala.util.{Failure, Success, Try}
         }
 
       setHandler(out, new OutHandler {
-        override def onPull() =
+        override def onPull(): Unit =
           tryPull(in)
       })
 
@@ -72,21 +72,21 @@ import scala.util.{Failure, Success, Try}
         in,
         new InHandler {
 
-          override def onUpstreamFinish() = {
+          override def onUpstreamFinish(): Unit = {
             inIsClosed = true
             completionState = Some(Success(Done))
             checkForCompletion()
           }
 
-          override def onUpstreamFailure(ex: Throwable) = {
+          override def onUpstreamFailure(ex: Throwable): Unit = {
             inIsClosed = true
             completionState = Some(Failure(ex))
             checkForCompletion()
           }
 
-          override def onPush() = {
+          override def onPush(): Unit = {
             inFlight += 1
-            val msg = grab(in)
+            val request = grab(in)
 
             val responsePromise = Promise[SqsPublishResult]
 
@@ -98,12 +98,25 @@ import scala.util.{Failure, Success, Try}
               }
 
               override def onSuccess(request: SendMessageRequest, result: SendMessageResult): Unit = {
-                responsePromise.success(SqsPublishResult(result))
+                val message = new Message()
+                  .withMessageId(result.getMessageId)
+                  .withBody(request.getMessageBody)
+                  .withMD5OfBody(result.getMD5OfMessageBody)
+                  .withMessageAttributes(request.getMessageAttributes)
+                  .withMD5OfMessageAttributes(result.getMD5OfMessageAttributes)
+
+                val fifoIdentifiers = Option(result.getSequenceNumber).map { sequenceNumber =>
+                  val messageGroupId = request.getMessageGroupId
+                  val messageDeduplicationId = Option(request.getMessageDeduplicationId)
+                  FifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId)
+                }
+
+                responsePromise.success(SqsPublishResult(result, message, fifoIdentifiers))
                 sendCallback.invoke(result)
               }
             }
             sqsClient.sendMessageAsync(
-              msg,
+              request,
               handler
             )
             push(out, responsePromise.future)

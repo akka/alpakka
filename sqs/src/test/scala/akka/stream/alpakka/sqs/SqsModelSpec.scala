@@ -12,6 +12,38 @@ class SqsModelSpec extends FlatSpec with Matchers {
   val msg = new Message()
   val otherMsg = new Message().withBody("other-body")
 
+  "FifoMessageIdentifiers" should "implement proper equality" in {
+    val sequenceNumber = "sequence-number"
+    val otherSequenceNumber = "other-sequence-number"
+
+    val messageGroupId = "group-id"
+    val otherMessageGroupId = "other-group-id"
+
+    val messageDeduplicationId = Option.empty[String]
+    val otherMessageDeduplicationId = Some("deduplication-id")
+
+    FifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId) shouldBe FifoMessageIdentifiers(
+      sequenceNumber,
+      messageGroupId,
+      messageDeduplicationId
+    )
+    FifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId) should not be FifoMessageIdentifiers(
+      otherSequenceNumber,
+      messageGroupId,
+      messageDeduplicationId
+    )
+    FifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId) should not be FifoMessageIdentifiers(
+      sequenceNumber,
+      otherMessageGroupId,
+      messageDeduplicationId
+    )
+    FifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId) should not be FifoMessageIdentifiers(
+      sequenceNumber,
+      messageGroupId,
+      otherMessageDeduplicationId
+    )
+  }
+
   "MessageAction.Delete" should "implement proper equality" in {
     MessageAction.Delete(msg) shouldBe MessageAction.Delete(msg)
     MessageAction.Delete(msg) should not be MessageAction.Delete(otherMsg)
@@ -49,8 +81,13 @@ class SqsModelSpec extends FlatSpec with Matchers {
     val metadata = new SendMessageResult()
     val otherMetadata = new SendMessageResult().withMessageId("other-id")
 
-    SqsPublishResult(metadata) shouldBe SqsPublishResult(metadata)
-    SqsPublishResult(metadata) should not be SqsPublishResult(otherMetadata)
+    val fifoIdentifiers = Option.empty[FifoMessageIdentifiers]
+    val otherFifoIdentifiers = Some(FifoMessageIdentifiers("sequence-number", "group-id", None))
+
+    SqsPublishResult(metadata, msg, fifoIdentifiers) shouldBe SqsPublishResult(metadata, msg, fifoIdentifiers)
+    SqsPublishResult(metadata, msg, fifoIdentifiers) should not be SqsPublishResult(otherMetadata, msg, fifoIdentifiers)
+    SqsPublishResult(metadata, msg, fifoIdentifiers) should not be SqsPublishResult(metadata, otherMsg, fifoIdentifiers)
+    SqsPublishResult(metadata, msg, fifoIdentifiers) should not be SqsPublishResult(metadata, msg, otherFifoIdentifiers)
   }
 
   "SqsAckResult" should "implement proper equality" in {

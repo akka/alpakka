@@ -22,22 +22,20 @@ private abstract class SqsBatchStageLogic[A](shape: FlowShape[A, Future[scala.Li
 
   private var completionState: Option[Try[Unit]] = None
 
-  private def handleFailure(exception: SqsBatchException): Unit = {
-    log.error(exception, "Client failure: {}", exception)
-    inFlight -= exception.batchSize
-    failStage(exception)
-  }
-
   protected var failureCallback: AsyncCallback[SqsBatchException] = _
 
   override def preStart(): Unit = {
     super.preStart()
-    failureCallback = getAsyncCallback[SqsBatchException](handleFailure)
+    failureCallback = getAsyncCallback[SqsBatchException] { exception =>
+      log.error(exception, "Client failure: {}", exception)
+      inFlight -= exception.batchSize
+      failStage(exception)
+    }
   }
 
   override protected def logSource: Class[_] = classOf[SqsBatchStageLogic[A]]
 
-  def checkForCompletion() =
+  def checkForCompletion(): Unit =
     if (isClosed(in) && inFlight == 0) {
       completionState match {
         case Some(Success(_)) => completeStage()
@@ -46,15 +44,15 @@ private abstract class SqsBatchStageLogic[A](shape: FlowShape[A, Future[scala.Li
       }
     }
 
-  override def onPull() =
+  override def onPull(): Unit =
     tryPull(in)
 
-  override def onUpstreamFinish() = {
+  override def onUpstreamFinish(): Unit = {
     completionState = Some(Success(()))
     checkForCompletion()
   }
 
-  override def onUpstreamFailure(ex: Throwable) = {
+  override def onUpstreamFailure(ex: Throwable): Unit = {
     completionState = Some(Failure(ex))
     checkForCompletion()
   }

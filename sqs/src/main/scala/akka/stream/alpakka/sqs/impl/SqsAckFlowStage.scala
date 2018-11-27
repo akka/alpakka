@@ -21,7 +21,7 @@ import scala.util.{Failure, Success, Try}
 @InternalApi private[sqs] final class SqsAckFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
     extends GraphStage[FlowShape[MessageAction, Future[SqsAckResult]]] {
 
-  private val in = Inlet[MessageAction]("messages")
+  private val in = Inlet[MessageAction]("action")
   private val out = Outlet[Future[SqsAckResult]]("result")
   override val shape = FlowShape(in, out)
 
@@ -30,11 +30,11 @@ import scala.util.{Failure, Success, Try}
       private var inFlight = 0
       private var inIsClosed = false
 
-      var completionState: Option[Try[Unit]] = None
+      private var completionState: Option[Try[Unit]] = None
 
-      var failureCallback: AsyncCallback[Exception] = _
-      var changeVisibilityCallback: AsyncCallback[ChangeMessageVisibilityRequest] = _
-      var deleteCallback: AsyncCallback[DeleteMessageRequest] = _
+      private var failureCallback: AsyncCallback[Exception] = _
+      private var changeVisibilityCallback: AsyncCallback[ChangeMessageVisibilityRequest] = _
+      private var deleteCallback: AsyncCallback[DeleteMessageRequest] = _
 
       override def preStart(): Unit = {
         super.preStart()
@@ -46,7 +46,7 @@ import scala.util.{Failure, Success, Try}
             checkForCompletion()
         }
         changeVisibilityCallback = getAsyncCallback[ChangeMessageVisibilityRequest] { request =>
-          log.debug(s"Set visibility timeout for message {} to {}",
+          log.debug("Set visibility timeout for message {} to {}",
                     request.getReceiptHandle,
                     request.getVisibilityTimeout)
           inFlight -= 1
@@ -54,7 +54,7 @@ import scala.util.{Failure, Success, Try}
             checkForCompletion()
         }
         deleteCallback = getAsyncCallback[DeleteMessageRequest] { request =>
-          log.debug(s"Deleted message {}", request.getReceiptHandle)
+          log.debug("Deleted message {}", request.getReceiptHandle)
           inFlight -= 1
           if (inFlight == 0 && inIsClosed)
             checkForCompletion()
@@ -63,7 +63,7 @@ import scala.util.{Failure, Success, Try}
 
       override protected def logSource: Class[_] = classOf[SqsAckFlowStage]
 
-      def checkForCompletion() =
+      def checkForCompletion(): Unit =
         if (isClosed(in) && inFlight == 0) {
           completionState match {
             case Some(Success(_)) => completeStage()
@@ -73,7 +73,7 @@ import scala.util.{Failure, Success, Try}
         }
 
       setHandler(out, new OutHandler {
-        override def onPull() =
+        override def onPull(): Unit =
           tryPull(in)
       })
 
@@ -81,19 +81,19 @@ import scala.util.{Failure, Success, Try}
         in,
         new InHandler {
 
-          override def onUpstreamFinish() = {
+          override def onUpstreamFinish(): Unit = {
             inIsClosed = true
             completionState = Some(Success(()))
             checkForCompletion()
           }
 
-          override def onUpstreamFailure(ex: Throwable) = {
+          override def onUpstreamFailure(ex: Throwable): Unit = {
             inIsClosed = true
             completionState = Some(Failure(ex))
             checkForCompletion()
           }
 
-          override def onPush() = {
+          override def onPush(): Unit = {
             inFlight += 1
             val action = grab(in)
             val message = action.message

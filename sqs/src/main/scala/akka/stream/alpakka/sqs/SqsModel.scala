@@ -4,10 +4,60 @@
 
 package akka.stream.alpakka.sqs
 
+import com.amazonaws.{AmazonWebServiceResult, ResponseMetadata}
 import com.amazonaws.services.sqs.model.Message
 
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.Duration
+
+/**
+ * Additional identifiers for FIFO messsages
+ * @see [https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-additional-fifo-queue-identifiers.html]
+ */
+final class FifoMessageIdentifiers(
+    val sequenceNumber: String,
+    val messageGroupId: String,
+    val messageDeduplicationId: Option[String]
+) {
+
+  override def toString: String =
+    s"FifoMessageIdentifiers(sequenceNumber=$sequenceNumber, messageGroupId=$messageGroupId, messageDeduplicationId=$messageDeduplicationId)"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: FifoMessageIdentifiers =>
+      java.util.Objects.equals(this.sequenceNumber, that.sequenceNumber) &&
+      java.util.Objects.equals(this.messageGroupId, that.messageGroupId) &&
+      java.util.Objects.equals(this.messageDeduplicationId, that.messageDeduplicationId)
+    case _ => false
+  }
+
+  override def hashCode(): Int = java.util.Objects.hash(sequenceNumber, messageGroupId, messageDeduplicationId)
+}
+
+object FifoMessageIdentifiers {
+
+  /** Scala API */
+  def apply(
+      sequenceNumber: String,
+      messageGroupId: String,
+      messageDeduplicationId: Option[String]
+  ): FifoMessageIdentifiers = new FifoMessageIdentifiers(
+    sequenceNumber,
+    messageGroupId,
+    messageDeduplicationId
+  )
+
+  /** Java API */
+  def create(
+      sequenceNumber: String,
+      messageGroupId: String,
+      messageDeduplicationId: Option[String]
+  ): FifoMessageIdentifiers = new FifoMessageIdentifiers(
+    sequenceNumber,
+    messageGroupId,
+    messageDeduplicationId
+  )
+}
 
 sealed abstract class MessageAction(val message: Message)
 
@@ -117,52 +167,57 @@ object MessageAction {
 
 /**
  * Messages returned by a SqsFlow.
- * @param metadata metadata with AWS response details.
+ * @param message the SQS message.
  */
-final class SqsPublishResult private (val metadata: com.amazonaws.services.sqs.model.SendMessageResult) {
-
-  /** Java API */
-  def getMetadata: com.amazonaws.services.sqs.model.SendMessageResult = metadata
+final class SqsPublishResult private (
+    val metadata: AmazonWebServiceResult[ResponseMetadata],
+    val message: Message,
+    val fifoMessageIdentifiers: Option[FifoMessageIdentifiers]
+) {
 
   override def toString =
-    s"""SqsPublishResult(metadata=$metadata)"""
+    s"""SqsPublishResult(metadata=$metadata, message=$message, fifoMessageIdentifiers=$fifoMessageIdentifiers)"""
 
   override def equals(other: Any): Boolean = other match {
-    case that: SqsPublishResult => java.util.Objects.equals(this.metadata, that.metadata)
+    case that: SqsPublishResult =>
+      java.util.Objects.equals(this.metadata, that.metadata) &&
+      java.util.Objects.equals(this.message, that.message) &&
+      java.util.Objects.equals(this.fifoMessageIdentifiers, that.fifoMessageIdentifiers)
     case _ => false
   }
 
-  override def hashCode(): Int = java.util.Objects.hash(metadata)
+  override def hashCode(): Int = java.util.Objects.hash(metadata, message, fifoMessageIdentifiers)
 }
 
 object SqsPublishResult {
 
   /** Scala API */
   def apply(
-      metadata: com.amazonaws.services.sqs.model.SendMessageResult
+      metadata: AmazonWebServiceResult[ResponseMetadata],
+      message: Message,
+      fifoMessageIdentifiers: Option[FifoMessageIdentifiers]
   ): SqsPublishResult = new SqsPublishResult(
-    metadata
+    metadata,
+    message,
+    fifoMessageIdentifiers
   )
 
   /** Java API */
   def create(
-      metadata: com.amazonaws.services.sqs.model.SendMessageResult
-  ): SqsPublishResult = SqsPublishResult(
-    metadata
+      metadata: AmazonWebServiceResult[ResponseMetadata],
+      message: Message,
+      fifoMessageIdentifiers: Option[FifoMessageIdentifiers]
+  ): SqsPublishResult = new SqsPublishResult(
+    metadata,
+    message,
+    fifoMessageIdentifiers
   )
 }
 
 final class SqsAckResult private (
-    val metadata: Option[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]],
+    val metadata: Option[AmazonWebServiceResult[ResponseMetadata]],
     val messageAction: MessageAction
 ) {
-
-  /** Java API */
-  def getMetadata: java.util.Optional[com.amazonaws.AmazonWebServiceResult[com.amazonaws.ResponseMetadata]] =
-    metadata.asJava
-
-  /** Java API */
-  def getMessageAction: MessageAction = messageAction
 
   override def toString =
     s"""SqsAckResult(metadata=$metadata,messageAction=$messageAction)"""

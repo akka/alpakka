@@ -24,6 +24,7 @@ import scala.concurrent.{Future, Promise}
  */
 @InternalApi private[sqs] final class SqsBatchDeleteFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
     extends GraphStage[FlowShape[Iterable[Delete], Future[List[SqsAckResult]]]] {
+
   private val in = Inlet[Iterable[Delete]]("actions")
   private val out = Outlet[Future[List[SqsAckResult]]]("results")
   override val shape = FlowShape(in, out)
@@ -37,7 +38,7 @@ import scala.concurrent.{Future, Promise}
         deleteCallback = getAsyncCallback[DeleteMessageBatchRequest] { request =>
           val entries = request.getEntries
           for (entry <- entries.asScala)
-            log.debug(s"Deleted message {}", entry.getReceiptHandle)
+            log.debug("Deleted message {}", entry.getReceiptHandle)
           inFlight -= entries.size()
           checkForCompletion()
         }

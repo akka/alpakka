@@ -6,14 +6,14 @@ package akka.stream.alpakka.sqs.impl
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.stream.alpakka.sqs.{SqsBatchException, SqsPublishResult}
+import akka.stream.alpakka.sqs.{FifoMessageIdentifiers, SqsBatchException, SqsPublishResult}
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model._
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.JavaConverters._
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
@@ -22,19 +22,19 @@ import scala.util.{Failure, Success, Try}
  */
 @InternalApi private[sqs] final class SqsBatchFlowStage(queueUrl: String, sqsClient: AmazonSQSAsync)
     extends GraphStage[FlowShape[Iterable[SendMessageRequest], Future[List[SqsPublishResult]]]] {
-  private val in = Inlet[Iterable[SendMessageRequest]]("messageBatch")
-  private val out = Outlet[Future[List[SqsPublishResult]]]("batchResult")
 
-  override def shape: FlowShape[Iterable[SendMessageRequest], Future[List[SqsPublishResult]]] = FlowShape(in, out)
+  private val in = Inlet[Iterable[SendMessageRequest]]("requests")
+  private val out = Outlet[Future[List[SqsPublishResult]]]("results")
+  override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
-      var inFlight: Int = 0
-      var inIsClosed = false
-      var completionState: Option[Try[Done]] = None
+      private var inFlight: Int = 0
+      private var inIsClosed = false
+      private var completionState: Option[Try[Done]] = None
 
-      var failureCallback: AsyncCallback[SqsBatchException] = _
-      var sendCallback: AsyncCallback[SendMessageBatchResult] = _
+      private var failureCallback: AsyncCallback[SqsBatchException] = _
+      private var sendCallback: AsyncCallback[SendMessageBatchResult] = _
 
       override def preStart(): Unit = {
         super.preStart()
@@ -52,7 +52,7 @@ import scala.util.{Failure, Success, Try}
         }
       }
 
-      def checkForCompletion() =
+      private def checkForCompletion(): Unit =
         if (isClosed(in) && inFlight <= 0) {
           completionState match {
             case Some(Success(_)) => completeStage()
@@ -62,7 +62,7 @@ import scala.util.{Failure, Success, Try}
         }
 
       setHandler(out, new OutHandler {
-        override def onPull() =
+        override def onPull(): Unit =
           tryPull(in)
       })
 
@@ -70,20 +70,20 @@ import scala.util.{Failure, Success, Try}
         in,
         new InHandler {
 
-          override def onUpstreamFinish() = {
+          override def onUpstreamFinish(): Unit = {
             inIsClosed = true
             completionState = Some(Success(Done))
             checkForCompletion()
           }
 
-          override def onUpstreamFailure(ex: Throwable) = {
+          override def onUpstreamFailure(ex: Throwable): Unit = {
             inIsClosed = true
             completionState = Some(Failure(ex))
             checkForCompletion()
           }
 
-          override def onPush() = {
-            val messages: Array[SendMessageRequest] = grab(in).toArray
+          override def onPush(): Unit = {
+            val messages = grab(in).toList
             val nrOfMessages = messages.length
 
             inFlight += nrOfMessages
@@ -92,63 +92,66 @@ import scala.util.{Failure, Success, Try}
 
             val handler = new AsyncHandler[SendMessageBatchRequest, SendMessageBatchResult] {
               override def onError(exception: Exception): Unit = {
-                val batchException = new SqsBatchException(messages.length, exception)
+                val batchException = new SqsBatchException(nrOfMessages, exception)
                 responsePromise.failure(batchException)
                 failureCallback.invoke(batchException)
               }
 
               override def onSuccess(request: SendMessageBatchRequest, result: SendMessageBatchResult): Unit =
                 if (!result.getFailed.isEmpty) {
-                  val nrOfFailedMessages: Int = result.getFailed.size()
-                  val batchException: SqsBatchException =
-                    new SqsBatchException(
-                      batchSize = messages.length,
-                      cause = new Exception(
-                        s"Some messages are failed to send. $nrOfFailedMessages of $nrOfMessages messages are failed"
-                      )
+                  val nrOfFailedMessages = result.getFailed.size()
+                  val batchException = new SqsBatchException(
+                    batchSize = nrOfMessages,
+                    cause = new Exception(
+                      s"Some messages are failed to send. $nrOfFailedMessages of $nrOfMessages messages are failed"
                     )
+                  )
                   responsePromise.failure(batchException)
                   failureCallback.invoke(batchException)
                 } else {
-                  val results = ListBuffer.empty[SqsPublishResult]
+                  val requestEntries = request.getEntries.asScala.map(e => e.getId -> e).toMap
+                  val messages = result.getSuccessful.asScala.map {
+                    resp =>
+                      val req = requestEntries(resp.getId)
 
-                  val successfulMessages = result.getSuccessful.iterator()
-                  while (successfulMessages.hasNext) {
-                    val successfulMessage: SendMessageBatchResultEntry = successfulMessages.next()
+                      val message = new Message()
+                        .withMessageId(resp.getMessageId)
+                        .withBody(req.getMessageBody)
+                        .withMD5OfBody(resp.getMD5OfMessageBody)
+                        .withMessageAttributes(req.getMessageAttributes)
+                        .withMD5OfMessageAttributes(resp.getMD5OfMessageAttributes)
 
-                    val sendMessageResult: SendMessageResult = new SendMessageResult()
-                      .withMD5OfMessageAttributes(successfulMessage.getMD5OfMessageAttributes)
-                      .withMD5OfMessageBody(successfulMessage.getMD5OfMessageBody)
-                      .withMessageId(successfulMessage.getMessageId)
-                      .withSequenceNumber(successfulMessage.getSequenceNumber)
+                      val fifoIdentifiers = Option(resp.getSequenceNumber).map { sequenceNumber =>
+                        val messageGroupId = req.getMessageGroupId
+                        val messageDeduplicationId = Option(req.getMessageDeduplicationId)
+                        FifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId)
+                      }
 
-                    results += SqsPublishResult(sendMessageResult)
+                      SqsPublishResult(result, message, fifoIdentifiers)
                   }
-
-                  responsePromise.success(results.toList)
+                  responsePromise.success(messages.toList)
                   sendCallback.invoke(result)
                 }
             }
             sqsClient.sendMessageBatchAsync(
-              createMessageBatch(messages),
+              createBatchRequest(messages),
               handler
             )
             push(out, responsePromise.future)
           }
 
-          private def createMessageBatch(messages: Array[SendMessageRequest]): SendMessageBatchRequest = {
-            val messageRequestEntries: java.util.List[SendMessageBatchRequestEntry] =
-              new java.util.ArrayList[SendMessageBatchRequestEntry](messages.length)
-            var id = 0
-            messages.foreach { message =>
-              val entry = new SendMessageBatchRequestEntry(id.toString, message.getMessageBody)
-              entry.setMessageAttributes(message.getMessageAttributes)
-              messageRequestEntries.add(entry)
-              id += 1
+          private def createBatchRequest(requests: Seq[SendMessageRequest]): SendMessageBatchRequest = {
+            val entries = requests.zipWithIndex.map {
+              case (r, i) =>
+                new SendMessageBatchRequestEntry()
+                  .withId(i.toString)
+                  .withMessageBody(r.getMessageBody)
+                  .withMessageAttributes(r.getMessageAttributes)
             }
 
-            val batchRequest = new SendMessageBatchRequest(queueUrl, messageRequestEntries)
-            batchRequest
+            new SendMessageBatchRequest()
+              .withQueueUrl(queueUrl)
+              .withEntries(entries.asJava)
           }
         }
       )
