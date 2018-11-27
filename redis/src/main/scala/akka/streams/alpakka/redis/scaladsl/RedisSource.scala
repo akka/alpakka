@@ -4,6 +4,8 @@
 
 package akka.streams.alpakka.redis.scaladsl
 
+import java.util.function.Predicate
+
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import akka.streams.alpakka.redis.RedisPubSub
@@ -17,7 +19,12 @@ object RedisSource {
     connection.reactive().subscribe(topics: _*).subscribe()
     Source
       .fromPublisher(
-        connection.reactive().observeChannels().filter((t: ChannelMessage[K, V]) => topics.contains(t.getChannel))
+        connection
+          .reactive()
+          .observeChannels()
+          .filter(new Predicate[ChannelMessage[K, V]] {
+            override def test(t: ChannelMessage[K, V]): Boolean = topics.contains(t.getChannel)
+          })
       )
       .map(f => RedisPubSub(f.getChannel, f.getMessage))
   }
