@@ -278,6 +278,14 @@ object Dependencies {
     )
   )
 
+  val Redis = Seq(
+    libraryDependencies ++= Seq(
+      "io.lettuce" % "lettuce-core" % "5.1.2.RELEASE",
+      "org.specs2" %% "specs2-core" % "4.3.2" % Test,
+      "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.0"
+    )
+  )
+
   val Reference = Seq(
     // connector specific library dependencies and resolver settings
     libraryDependencies ++= Seq(

@@ -111,6 +111,10 @@ services:
     volumes_from:
       - kudu-master-data
     command: master
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
   kudu-tserver:
     image: kunickiaj/kudu
     environment:

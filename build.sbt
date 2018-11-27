@@ -179,6 +179,8 @@ lazy val orientdb = alpakkaProject("orientdb",
                                    fork in Test := true,
                                    parallelExecution in Test := false)
 
+lazy val redis = alpakkaProject("redis", "redis", Dependencies.Redis, parallelExecution in Test := false)
+
 lazy val reference = alpakkaProject("reference", "reference", Dependencies.Reference, publish / skip := true)
   .disablePlugins(BintrayPlugin)
 
