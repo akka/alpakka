@@ -21,8 +21,11 @@ object RedisFlow {
       executionContext: ExecutionContext
   ): Flow[RedisKeyValue[K, V], RedisOperationResult[RedisKeyValue[K, V], java.lang.Long], NotUsed] =
     Flow
-      .fromGraph(akka.streams.alpakka.redis.scaladsl.RedisFlow.append(parallelism, connection)(executionContext))
-      .map(f => RedisOperationResult(f.output, f.result.map(t => java.lang.Long.valueOf(t.toString))))
+      .fromGraph(
+        akka.streams.alpakka.redis.scaladsl.RedisFlow
+          .append(parallelism, connection)(executionContext)
+          .map(f => RedisOperationResult(f.output, f.result.map(t => java.lang.Long.valueOf(t.toString))))
+      )
 
   def set[K, V](
       parallelism: Int,
