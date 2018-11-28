@@ -4,7 +4,6 @@
 
 package docs.scaladsl
 
-
 import java.util.concurrent.TimeUnit
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
