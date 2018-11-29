@@ -11,9 +11,10 @@ import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.client.solrj.impl.CloudSolrClient
 import org.apache.solr.client.solrj.response.UpdateResponse
 import org.apache.solr.common.SolrInputDocument
-
+import akka.stream.ActorAttributes.SupervisionStrategy
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
+import scala.util.control.{NoStackTrace, NonFatal}
 
 @deprecated(
   "you should use a specific incoming message case class: IncomingUpsertMessage/IncomingDeleteMessageByIds/IncomingDeleteMessageByQuery/IncomingAtomicUpdateMessage",
@@ -211,8 +212,10 @@ private[solr] final class SolrFlowStage[T, C](
   override protected def initialAttributes: Attributes =
     super.initialAttributes and Attributes(ActorAttributes.IODispatcher)
 
-  override def createLogic(inheritedAttributes: Attributes): SolrFlowLogic[T, C] =
-    new SolrFlowLogic[T, C](collection, client, in, out, shape, settings, messageBinder)
+  override def createLogic(inheritedAttributes: Attributes): SolrFlowLogic[T, C] = {
+    def decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
+    new SolrFlowLogic[T, C](decider, collection, client, in, out, shape, settings, messageBinder)
+  }
 }
 
 sealed trait Operation
@@ -222,6 +225,7 @@ final object DeleteByQuery extends Operation
 final object AtomicUpdate extends Operation
 
 private[solr] final class SolrFlowLogic[T, C](
+    decider: Supervision.Decider,
     collection: String,
     client: SolrClient,
     in: Inlet[Seq[IncomingMessage[T, C]]],
@@ -241,10 +245,17 @@ private[solr] final class SolrFlowLogic[T, C](
 
   override def onPush(): Unit = {
     val messagesIn = grab(in)
+    try {
+      sendBulkToSolr(messagesIn)
+      tryPull()
+    } catch {
+      case NonFatal(ex) ⇒
+        decider(ex) match {
+          case Supervision.Stop ⇒ failStage(ex)
+          case _ ⇒ tryPull()  // for resume and restart strategies tryPull
+        }
+    }
 
-    sendBulkToSolr(messagesIn)
-
-    tryPull()
   }
 
   override def preStart(): Unit =
