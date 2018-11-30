@@ -18,7 +18,7 @@ This library also differs in that it separates out the concern of how MQTT is co
 
 The Alpakka MQTT connector provides an Akka Stream flow to connect to MQTT brokers. In addition, a flow is provided so that you can implement your own MQTT server in the case where you do not wish to use a broker--MQTT is a fine protocol for directed client/server interactions, as well as having an intermediary broker.
 
-@ @project-info{ project="mqttStreaming" }
+@@project-info{ projectId="mqtt-streaming" }
 
 ## Artifacts
 

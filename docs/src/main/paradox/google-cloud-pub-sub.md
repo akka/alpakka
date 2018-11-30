@@ -8,7 +8,7 @@ Further information at the official [Google Cloud documentation website](https:/
 
 This connector communicates to Pub/Sub via HTTP requests (i.e. https://pubsub.googleapis.com). For a connector that uses gRPC for the communication, take a look at the alternative @ref[Alpakka Google Cloud Pub/Sub gRPC](google-cloud-pub-sub-grpc.md) connector.
 
-@ @project-info{ project="googleCloudPubSub" }
+@@project-info{ projectId="google-cloud-pub-sub" }
 
 ## Artifacts
 

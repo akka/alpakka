@@ -2,7 +2,7 @@
 
 The AWS DynamoDB connector provides a flow for streaming DynamoDB requests. For more information about DynamoDB please visit the [official documentation](https://aws.amazon.com/dynamodb/).
 
-@@project-info{ project="dynamodb" }
+@@project-info{ projectId="dynamodb" }
 
 ## Artifacts
 

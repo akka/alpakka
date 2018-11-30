@@ -6,7 +6,7 @@ This connector provides flow and a sink to put element in and source to retrieve
 
 Basically it can store data as key, value. Key and value must be serialized, more on this later.
 
-@@project-info{ project="geode" }
+@@project-info{ projectId="geode" }
 
 ## Artifacts
 

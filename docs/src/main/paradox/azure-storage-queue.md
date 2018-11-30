@@ -4,7 +4,7 @@ The Azure Storage Queue connector provides an Akka Stream Source and Sinks for A
 
 Azure Storage Queue is a queuing service similar to Amazon's SQS. It is designed mostly for long-running and non-time-critical tasks. For more information on Azure Storage Queue see the [Azure docs](https://azure.microsoft.com/en-us/services/storage/queues/).
 
-@ @project-info{ project="azure-storage-queue" }
+@@project-info{ projectId="azure-storage-queue" }
 
 ### Artifacts
 

@@ -9,7 +9,7 @@ So the error parsing, the condition builder, the apns object and some other obje
 could (and possibly will) be improved.
 @@@
 
-@ @project-info{ project="googleFcm" }
+@@project-info{ projectId="google-fcm" }
 
 ## Artifacts
 

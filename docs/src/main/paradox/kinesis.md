@@ -23,7 +23,7 @@ This library combines the convenience of Akka Streams with KCL checkpoint manage
 Please read more about it at [GitHub StreetContxt/kcl-akka-stream](https://github.com/StreetContxt/kcl-akka-stream).
 @@@
 
-@@project-info{ project="kinesis" }
+@@project-info{ projectId="kinesis" }
 
 ## Artifacts
 

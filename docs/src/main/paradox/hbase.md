@@ -4,7 +4,7 @@ A flow and a composite sink to write element in [HBase](http://hbase.apache.org)
 
 HBase is a column family NoSQL Database backed by HDFS.
 
-@@project-info{ project="hbase" }
+@@project-info{ projectId="hbase" }
 
 ## Artifacts
 

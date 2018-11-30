@@ -2,7 +2,7 @@
 
 The Slick connector provides Scala and Java DSLs to create a `Source` to stream the results of a SQL database query and a `Flow`/`Sink` to perform SQL actions (like inserts, updates, and deletes) for each element in a stream. It is built on the [Slick](http://slick.lightbend.com/) library to interact with a long list of @extref[supported relational databases](slick:supported-databases.html).
 
-@@project-info{ project="slick" }
+@@project-info{ projectId="slick" }
 
 ## Artifacts
 

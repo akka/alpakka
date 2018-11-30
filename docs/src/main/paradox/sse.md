@@ -2,7 +2,7 @@
 
 The SSE connector provides a continuous source of server-sent events recovering from connection failure.
 
-@@project-info{ project="sse" }
+@@project-info{ projectId="sse" }
 
 ## Artifacts
 

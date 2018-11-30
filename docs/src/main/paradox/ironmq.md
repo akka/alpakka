@@ -6,7 +6,7 @@ IronMQ is a simple point-to-point queue, but it is possible to implement a fan-o
 queue and set other queue as subscribers. More information about that could be found on
 [IronMQ documentation](https://www.iron.io/ironmq-fan-out-support/)
 
-@@project-info{ project="ironmq" }
+@@project-info{ projectId="ironmq" }
 
 ## Artifacts
 

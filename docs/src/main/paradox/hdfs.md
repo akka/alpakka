@@ -4,7 +4,7 @@ The connector offers Flows and Sources that interact with HDFS file systems.
 
 For more information about Hadoop, please visit the [Hadoop documentation](https://hadoop.apache.org/).
 
-@@project-info{ project="hdfs" }
+@@project-info{ projectId="hdfs" }
 
 ## Artifacts
 

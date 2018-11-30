@@ -14,7 +14,7 @@ Please read more about it in the [ReactiveMongo documentation](http://reactivemo
 
 @@@
 
-@@project-info{ project="mongodb" }
+@@project-info{ projectId="mongodb" }
 
 ## Artifacts
 

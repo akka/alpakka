@@ -4,7 +4,7 @@ The Alpakka Elasticsearch connector provides Akka Streams integration for Elasti
 
 For more information about Elasticsearch, please visit the [Elasticsearch documentation](https://www.elastic.co/guide/index.html).
 
-@@project-info{ project="elasticsearch" }
+@@project-info{ projectId="elasticsearch" }
 
 ## Artifacts
 

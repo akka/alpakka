@@ -17,7 +17,7 @@ The format uses three different characters to structure the data:
 Lines are separated by either Line Feed (`\n` = ASCII 10) or Carriage Return and Line Feed (`\r` = ASCII 13 + `\n` = ASCII 10).
 
 
-@@project-info{ project="csv" }
+@@project-info{ projectId="csv" }
 
 
 ## Artifacts

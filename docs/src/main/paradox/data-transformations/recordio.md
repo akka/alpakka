@@ -18,7 +18,7 @@ is parsed into frames:
 ```
 
 
-@ @project-info{ project="simple-codecs" }
+@@project-info{ projectId="simple-codecs" }
 
 ## Artifacts
 

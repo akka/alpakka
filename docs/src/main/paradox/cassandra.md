@@ -4,7 +4,7 @@ The Cassandra connector allows you to read and write to Cassandra. You can query
 
 Unlogged batches are also supported. 
 
-@@project-info{ project="cassandra" }
+@@project-info{ projectId="cassandra" }
 
 ## Artifacts
 

@@ -58,7 +58,7 @@ In this particular example, only the `rows` array is interesting for the applica
 even: only the `doc` inside each element of the array.
 
 
-@ @project-info{ project="json-streaming" }
+@@project-info{ projectId="json-streaming" }
 
 
 ### Artifacts

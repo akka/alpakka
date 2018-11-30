@@ -3,7 +3,7 @@
 XML parsing module offers Flows for parsing, processing and writing XML documents.
 
 
-@@project-info{ project="xml" }
+@@project-info{ projectId="xml" }
 
 ## Artifacts
 

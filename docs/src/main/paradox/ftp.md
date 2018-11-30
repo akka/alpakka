@@ -5,7 +5,7 @@ The FTP connector provides Akka Stream sources to connect to FTP, FTPs and SFTP 
 * one for browsing or traversing the server recursively and,
 * another for retrieving files as a stream of bytes.
 
-@@project-info{ project="ftp" }
+@@project-info{ projectId="ftp" }
 
 ## Artifacts
 

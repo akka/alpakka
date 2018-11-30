@@ -6,7 +6,7 @@ This connector provides an implementation of a Unix Domain Socket with interface
 
 > Note that Unix Domain Sockets, as the name implies, do not apply to Windows.
 
-@ @project-info{ project="unixdomainsocket" }
+@@project-info{ projectId="unix-domain-socket" }
 
 
 ## Artifacts

@@ -4,7 +4,7 @@ The Avro Parquet connector provides an Akka Stream Source, Sink and Flow for pus
 
 For more information about Apache Parquet please visit the [official documentation](https://parquet.apache.org/documentation/latest/).
 
-@@project-info{ project="avroparquet" }
+@@project-info{ projectId="avroparquet" }
 
 ## Artifacts
 

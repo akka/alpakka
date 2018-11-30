@@ -11,7 +11,7 @@ For more information about OrientDB please visit the [official documentation](ht
 The Alpakka OrientDB connector provides Akka Stream sources and sinks for OrientDB.
 
 
-@@project-info{ project="orientdb" }
+@@project-info{ projectId="orientdb" }
 
 
 ## Artifacts

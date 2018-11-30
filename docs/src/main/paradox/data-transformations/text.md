@@ -9,7 +9,7 @@ source with a certain character set, which may not be usable with other flows
 or sinks. For example may CSV data arrive in UTF-16 encoding, but the Alpakka CSV
 parser does only support UTF-8.
 
-@@project-info{ project="text" }
+@@project-info{ projectId="text" }
 
 
 ## Artifacts

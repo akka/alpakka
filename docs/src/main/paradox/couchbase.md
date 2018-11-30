@@ -6,7 +6,7 @@ You can read more about Couchbase [here](https://www.couchbase.com/products/serv
 
 The Couchbase connector supports all document formats which are supported by SDK. All those formats extend `Document<T>` interface and this is the level of abstraction that connector is using.
 
-@@project-info{ project="couchbase" }
+@@project-info{ projectId="couchbase" }
 
 ## Artifacts
 
