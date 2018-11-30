@@ -23,9 +23,7 @@ This library combines the convenience of Akka Streams with KCL checkpoint manage
 Please read more about it at [GitHub StreetContxt/kcl-akka-stream](https://github.com/StreetContxt/kcl-akka-stream).
 @@@
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Akinesis)
+@@project-info{ project="kinesis" }
 
 ## Artifacts
 

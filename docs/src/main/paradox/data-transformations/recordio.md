@@ -18,10 +18,7 @@ is parsed into frames:
 ```
 
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Arecordio)
-
+@ @project-info{ project="simple-codecs" }
 
 ## Artifacts
 

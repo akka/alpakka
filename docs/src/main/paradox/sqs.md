@@ -10,9 +10,7 @@ For more information about AWS SQS please visit the [official documentation](htt
 
 The AWS SQS connector provides Akka Stream sources and sinks for AWS SQS queues.
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aaws-sqs)
+@@project-info{ project="sqs" }
 
 
 ## Artifacts

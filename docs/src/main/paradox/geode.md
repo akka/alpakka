@@ -6,9 +6,7 @@ This connector provides flow and a sink to put element in and source to retrieve
 
 Basically it can store data as key, value. Key and value must be serialized, more on this later.
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Ageode)
+@@project-info{ project="geode" }
 
 ## Artifacts
 

@@ -4,9 +4,7 @@ The connector offers Flows and Sources that interact with HDFS file systems.
 
 For more information about Hadoop, please visit the [Hadoop documentation](https://hadoop.apache.org/).
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Ahdfs)
+@@project-info{ project="hdfs" }
 
 ## Artifacts
 

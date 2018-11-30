@@ -4,10 +4,7 @@ The AMQP connector provides Akka Stream sources and sinks to connect to AMQP 0.9
 
 AMQP 1.0 is currently not supported (Qpid, ActiveMQ, Solace, etc.).
 
-## Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aamqp)
-
+@@project-info{ project="amqp" }
 
 ## Artifacts
 

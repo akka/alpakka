@@ -10,10 +10,7 @@ This connector communicates to Pub/Sub via the gRPC protocol. The integration be
 [Akka gRPC library](https://github.com/akka/akka-grpc). For a connector that uses HTTP for the communication, take a
 look at the alternative @ref[Alpakka Google Cloud Pub/Sub](google-cloud-pub-sub.md) connector.
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Agoogle-cloud-pub-sub-grpc)
-
+@ @project-info{ project="googleCloudPubSubGrpc" }
 
 ## Artifacts
 

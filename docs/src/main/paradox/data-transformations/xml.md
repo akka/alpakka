@@ -3,10 +3,7 @@
 XML parsing module offers Flows for parsing, processing and writing XML documents.
 
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Axml)
-
+@@project-info{ project="xml" }
 
 ## Artifacts
 

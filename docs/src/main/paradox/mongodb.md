@@ -14,9 +14,7 @@ Please read more about it in the [ReactiveMongo documentation](http://reactivemo
 
 @@@
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Amongodb)
+@@project-info{ project="mongodb" }
 
 ## Artifacts
 

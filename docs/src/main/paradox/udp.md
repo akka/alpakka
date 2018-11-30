@@ -2,9 +2,7 @@
 
 The UDP connector provides Akka Stream flows that allow to send and receive UDP datagrams.
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Audp)
+@@project-info{ project="udp" }
 
 ## Artifacts
 
