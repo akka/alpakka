@@ -252,7 +252,7 @@ private[solr] final class SolrFlowLogic[T, C](
       case NonFatal(ex) ⇒
         decider(ex) match {
           case Supervision.Stop ⇒ failStage(ex)
-          case _ ⇒ tryPull()  // for resume and restart strategies tryPull
+          case _ ⇒ tryPull() // for resume and restart strategies tryPull
         }
     }
 
