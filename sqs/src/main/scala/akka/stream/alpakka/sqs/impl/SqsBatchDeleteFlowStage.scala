@@ -47,9 +47,9 @@ import scala.concurrent.{Future, Promise}
       override def onPush(): Unit = {
         val actionsIt = grab(in)
         val actions = actionsIt.toList
-        val nrOfMessages = actions.size
+        val nrOfActions = actions.size
         val responsePromise = Promise[List[SqsAckResult]]
-        inFlight += nrOfMessages
+        inFlight += nrOfActions
 
         val request = new DeleteMessageBatchRequest(
           queueUrl,
@@ -62,7 +62,7 @@ import scala.concurrent.{Future, Promise}
         )
         val handler = new AsyncHandler[DeleteMessageBatchRequest, DeleteMessageBatchResult]() {
           override def onError(exception: Exception): Unit = {
-            val batchException = new SqsBatchException(actions.size, exception)
+            val batchException = new SqsBatchException(nrOfActions, exception)
             responsePromise.failure(batchException)
             failureCallback.invoke(batchException)
           }
@@ -72,15 +72,15 @@ import scala.concurrent.{Future, Promise}
               val nrOfFailedMessages = result.getFailed.size()
               val batchException: SqsBatchException =
                 new SqsBatchException(
-                  batchSize = nrOfMessages,
+                  batchSize = nrOfActions,
                   cause = new Exception(
-                    s"Some messages failed to delete. $nrOfFailedMessages of $nrOfMessages messages failed"
+                    s"Some messages failed to delete. $nrOfFailedMessages of $nrOfActions messages failed"
                   )
                 )
               responsePromise.failure(batchException)
               failureCallback.invoke(batchException)
             } else {
-              responsePromise.success(actions.map(a => SqsAckResult(Some(result), a)))
+              responsePromise.success(actions.map(a => new SqsAckResult(Some(result), a)))
               deleteCallback.invoke(request)
             }
 

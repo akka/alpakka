@@ -44,7 +44,7 @@ object SqsAckFlow {
       val sqsDeleteStage = new SqsBatchDeleteFlowStage(queueUrl, sqsClient)
       val sqsChangeVisibilityStage = new SqsBatchChangeMessageVisibilityFlowStage(queueUrl, sqsClient)
       val flattenFutures = Flow[Future[List[SqsAckResult]]].mapAsync(settings.concurrentRequests)(identity)
-      val ignore = Flow[MessageAction].map(x => Future.successful(List(SqsAckResult(None, x))))
+      val ignore = Flow[MessageAction].map(x => Future.successful(List(new SqsAckResult(None, x))))
 
       val getMessageDelete = Flow[MessageAction].map(_.asInstanceOf[Delete])
       val getMessageChangeVisibility = Flow[MessageAction].map(_.asInstanceOf[ChangeMessageVisibility])

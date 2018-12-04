@@ -56,7 +56,7 @@ import scala.concurrent.{Future, Promise}
         val handler =
           new AsyncHandler[ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchResult]() {
             override def onError(exception: Exception): Unit = {
-              val batchException = new SqsBatchException(actions.size, exception)
+              val batchException = new SqsBatchException(nrOfActions, exception)
               responsePromise.failure(batchException)
               failureCallback.invoke(batchException)
             }
@@ -75,7 +75,7 @@ import scala.concurrent.{Future, Promise}
                 responsePromise.failure(batchException)
                 failureCallback.invoke(batchException)
               } else {
-                responsePromise.success(actions.map(a => SqsAckResult(Some(result), a)))
+                responsePromise.success(actions.map(a => new SqsAckResult(Some(result), a)))
                 changeVisibilityCallback.invoke(request)
               }
           }

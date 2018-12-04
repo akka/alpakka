@@ -108,10 +108,10 @@ import scala.util.{Failure, Success, Try}
                 val fifoIdentifiers = Option(result.getSequenceNumber).map { sequenceNumber =>
                   val messageGroupId = request.getMessageGroupId
                   val messageDeduplicationId = Option(request.getMessageDeduplicationId)
-                  FifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId)
+                  new FifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId)
                 }
 
-                responsePromise.success(SqsPublishResult(result, message, fifoIdentifiers))
+                responsePromise.success(new SqsPublishResult(result, message, fifoIdentifiers))
                 sendCallback.invoke(result)
               }
             }
