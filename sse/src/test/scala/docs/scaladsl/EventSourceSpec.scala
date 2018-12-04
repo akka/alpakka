@@ -7,25 +7,29 @@ package docs.scaladsl
 import java.net.InetSocketAddress
 import java.nio.charset.StandardCharsets.UTF_8
 
-import akka.Done
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props, Status}
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes.BadRequest
 import akka.http.scaladsl.model.headers.`Last-Event-ID`
-import akka.http.scaladsl.model.sse.ServerSentEvent
-import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.pipe
-import akka.stream.alpakka.sse.scaladsl.EventSource
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, ThrottleMode}
 import akka.testkit.SocketUtil
+import akka.{Done, NotUsed}
 import org.scalatest.{AsyncWordSpec, BeforeAndAfterAll, Matchers}
 
-import scala.concurrent.Await
+import scala.collection.immutable
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
+//#event-source
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.sse.ServerSentEvent
+import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, Uri}
+import akka.stream.alpakka.sse.scaladsl.EventSource
+
+//#event-source
 
 object EventSourceSpec {
 
@@ -136,12 +140,23 @@ final class EventSourceSpec extends AsyncWordSpec with Matchers with BeforeAndAf
       val server = system.actorOf(Props(new Server(host, port, 2, true)))
 
       //#event-source
-      val eventSource = EventSource(Uri(s"http://$host:$port"), send, Some("2"), 1.second)
+      val send: HttpRequest => Future[HttpResponse] = Http().singleRequest(_)
+
+      val eventSource: Source[ServerSentEvent, NotUsed] =
+        EventSource(
+          uri = Uri(s"http://$host:$port"),
+          send,
+          initialLastEventId = Some("2"),
+          retryDelay = 1.second
+        )
       //#event-source
 
       //#consume-events
-      val events =
-        eventSource.throttle(1, 500.milliseconds, 1, ThrottleMode.Shaping).take(nrOfSamples).runWith(Sink.seq)
+      val events: Future[immutable.Seq[ServerSentEvent]] =
+        eventSource
+          .throttle(elements = 1, per = 500.milliseconds, maximumBurst = 1, ThrottleMode.Shaping)
+          .take(nrOfSamples)
+          .runWith(Sink.seq)
       //#consume-events
 
       val expected = Seq.tabulate(nrOfSamples)(_ + 3).map(toServerSentEvent(true))
