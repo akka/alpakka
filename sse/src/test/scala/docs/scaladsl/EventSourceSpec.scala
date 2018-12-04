@@ -2,8 +2,10 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.sse
-package scaladsl
+package docs.scaladsl
+
+import java.net.InetSocketAddress
+import java.nio.charset.StandardCharsets.UTF_8
 
 import akka.Done
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props, Status}
@@ -16,12 +18,12 @@ import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.pipe
+import akka.stream.alpakka.sse.scaladsl.EventSource
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, ThrottleMode}
 import akka.testkit.SocketUtil
-import java.net.InetSocketAddress
-import java.nio.charset.StandardCharsets.UTF_8
 import org.scalatest.{AsyncWordSpec, BeforeAndAfterAll, Matchers}
+
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 

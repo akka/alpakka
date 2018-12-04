@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.sse.javadsl;
+package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
@@ -11,6 +11,7 @@ import akka.http.javadsl.model.*;
 import akka.http.javadsl.model.sse.ServerSentEvent;
 import akka.stream.ActorMaterializer;
 import akka.stream.ThrottleMode;
+import akka.stream.alpakka.sse.javadsl.EventSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import scala.concurrent.duration.FiniteDuration;
