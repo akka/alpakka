@@ -8,6 +8,7 @@ import java.net.InetSocketAddress
 import java.nio.charset.StandardCharsets.UTF_8
 
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props, Status}
+import akka.http.scaladsl.coding.Gzip
 import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes.BadRequest
@@ -41,7 +42,7 @@ object EventSourceSpec {
     private def route(size: Int, setEventId: Boolean): Route = {
       import Directives._
       import EventStreamMarshalling._
-      get {
+      val sseRoute = get {
         optionalHeaderValueByName(`Last-Event-ID`.name) { lastEventId =>
           try {
             val fromSeqNo = lastEventId.map(_.trim.toInt).getOrElse(0) + 1
@@ -64,6 +65,14 @@ object EventSourceSpec {
           }
         }
       }
+
+      path("gzipped") {
+        encodeResponseWith(Gzip) {
+          sseRoute
+        }
+      } ~
+      sseRoute
+
     }
   }
 
@@ -170,6 +179,23 @@ final class EventSourceSpec extends AsyncWordSpec with Matchers with BeforeAndAf
       val eventSource = EventSource(Uri(s"http://$host:$port"), send, Some("2"), 1.second)
       val events = eventSource.take(nrOfSamples).runWith(Sink.seq)
       val expected = Seq.tabulate(nrOfSamples)(_ % 2 + 3).map(toServerSentEvent(false))
+      events.map(_ shouldBe expected).andThen { case _ => system.stop(server) }
+    }
+
+    "read gzipped replies" in {
+      val nrOfSamples = 20
+      val (host, port) = hostAndPort()
+      val server = system.actorOf(Props(new Server(host, port, 2, shouldSetEventId = true)))
+      val send: HttpRequest => Future[HttpResponse] = Http()
+        .singleRequest(_)
+        .map { possiblyGzipped =>
+          val response = akka.http.scaladsl.coding.Gzip.decodeMessage(possiblyGzipped)
+          response
+        }
+
+      val eventSource = EventSource(Uri(s"http://$host:$port/gzipped"), send, None, 1.second)
+      val events = eventSource.take(nrOfSamples).runWith(Sink.seq)
+      val expected = Seq.tabulate(nrOfSamples)(_ + 1).map(toServerSentEvent(true))
       events.map(_ shouldBe expected).andThen { case _ => system.stop(server) }
     }
   }
