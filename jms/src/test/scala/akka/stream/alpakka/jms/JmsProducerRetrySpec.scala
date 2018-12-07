@@ -6,7 +6,7 @@ package akka.stream.alpakka.jms
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings, OverflowStrategies, Supervision}
+import akka.stream._
 import akka.stream.alpakka.jms.scaladsl.{JmsConsumer, JmsProducer}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import javax.jms.{JMSException, Message, TextMessage}
@@ -15,6 +15,7 @@ import org.mockito.ArgumentMatchers.{any, anyInt, anyLong}
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+
 import scala.concurrent.duration._
 
 class JmsProducerRetrySpec extends JmsSpec {
@@ -42,7 +43,7 @@ class JmsProducerRetrySpec extends JmsSpec {
       )
 
       val (queue, result) = Source
-        .queue[Int](10, OverflowStrategies.Backpressure)
+        .queue[Int](10, OverflowStrategy.backpressure)
         .zipWithIndex
         .map(e => JmsMapMessage(Map("time" -> System.currentTimeMillis(), "index" -> e._2)))
         .via(jms)
