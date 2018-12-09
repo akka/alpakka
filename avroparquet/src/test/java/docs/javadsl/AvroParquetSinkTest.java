@@ -65,7 +65,8 @@ public class AvroParquetSinkTest {
   }
 
   @Test
-  public void createNewParquetFile() throws InterruptedException, IOException, TimeoutException, ExecutionException {
+  public void createNewParquetFile()
+      throws InterruptedException, IOException, TimeoutException, ExecutionException {
     // #init-writer
     Configuration conf = new Configuration();
     conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true);

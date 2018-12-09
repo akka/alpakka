@@ -78,7 +78,7 @@ import scala.util.{Failure, Success}
   def preparePublish(data: Start)(implicit mat: Materializer): Behavior[Event] = Behaviors.setup { context =>
     def requestPacketId(): Unit = {
       val reply = Promise[LocalPacketRouter.Registered]
-      data.packetRouter ! LocalPacketRouter.Register(context.self.upcast, reply)
+      data.packetRouter ! LocalPacketRouter.Register(context.self.unsafeUpcast, reply)
       import context.executionContext
       reply.future.onComplete {
         case Success(acquired: LocalPacketRouter.Registered) => context.self ! AcquiredPacketId(acquired.packetId)
@@ -236,7 +236,7 @@ import scala.util.{Failure, Success}
 
   def prepareClientConsumption(data: Start): Behavior[Event] = Behaviors.setup { context =>
     val reply = Promise[RemotePacketRouter.Registered.type]
-    data.packetRouter ! RemotePacketRouter.Register(context.self.upcast, data.clientId, data.packetId, reply)
+    data.packetRouter ! RemotePacketRouter.Register(context.self.unsafeUpcast, data.clientId, data.packetId, reply)
     import context.executionContext
     reply.future.onComplete {
       case Success(RemotePacketRouter.Registered) => context.self ! RegisteredPacketId
