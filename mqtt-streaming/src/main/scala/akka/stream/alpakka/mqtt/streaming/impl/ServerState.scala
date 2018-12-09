@@ -8,8 +8,8 @@ package impl
 import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior, PostStop, Terminated}
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import akka.actor.typed.{ActorRef, Behavior, ChildFailed, PostStop, Terminated}
 import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{BroadcastHub, Keep, Sink, Source, SourceQueueWithComplete}
@@ -114,7 +114,19 @@ import scala.util.{Failure, Success}
     Behaviors.same
   }
 
-  def listening(data: Data)(implicit mat: Materializer): Behavior[Event] =
+  def listening(data: Data)(implicit mat: Materializer): Behavior[Event] = {
+    def childTerminated(terminatedCc: ActorRef[ClientConnection.Event]): Behavior[Event] =
+      data.clientConnections.find { case (_, (_, cc)) => cc == terminatedCc } match {
+        case Some((connectionId, (clientId, _))) =>
+          data.terminations.offer(ClientSessionTerminated(clientId))
+          data.consumerPacketRouter ! RemotePacketRouter.UnregisterConnection(connectionId)
+          data.publisherPacketRouter ! RemotePacketRouter.UnregisterConnection(connectionId)
+          data.unpublisherPacketRouter ! RemotePacketRouter.UnregisterConnection(connectionId)
+          listening(data.copy(clientConnections = data.clientConnections - connectionId))
+        case None =>
+          Behaviors.same
+      }
+
     Behaviors
       .receivePartial[Event] {
         case (context, ConnectReceivedFromRemote(connectionId, connect, local)) =>
@@ -133,7 +145,7 @@ import scala.util.{Failure, Success}
               )
 
             case Some(ref) =>
-              val cc = ref.upcast[ClientConnection.Event]
+              val cc = ref.unsafeUpcast[ClientConnection.Event]
               cc ! ClientConnection.ConnectReceivedFromRemote(connect, local)
               cc
           }
@@ -171,20 +183,12 @@ import scala.util.{Failure, Success}
           forward(connectionId, data.clientConnections, ClientConnection.ConnectionLost)
       }
       .receiveSignal {
-        case (_, t @ Terminated(ref)) =>
-          val terminatedCc = ref.upcast[ClientConnection.Event]
-          data.clientConnections.find { case (_, (_, cc)) => cc == terminatedCc } match {
-            case Some((connectionId, (clientId, _))) =>
-              if (t.failure.contains(ClientConnection.ClientConnectionFailed))
-                data.terminations.offer(ClientSessionTerminated(clientId))
-              data.consumerPacketRouter ! RemotePacketRouter.UnregisterConnection(connectionId)
-              data.publisherPacketRouter ! RemotePacketRouter.UnregisterConnection(connectionId)
-              data.unpublisherPacketRouter ! RemotePacketRouter.UnregisterConnection(connectionId)
-              listening(data.copy(clientConnections = data.clientConnections - connectionId))
-            case None =>
-              Behaviors.same
-          }
+        case (_, Terminated(ref)) =>
+          childTerminated(ref.unsafeUpcast[ClientConnection.Event])
+        case (_, ChildFailed(ref, failure)) if failure == ClientConnection.ClientConnectionFailed =>
+          childTerminated(ref.unsafeUpcast[ClientConnection.Event])
       }
+  }
 }
 
 /*
@@ -640,36 +644,41 @@ import scala.util.{Failure, Success}
         }
   }
 
-  def pendingSubAck(data: PendingSubscribe)(implicit mat: Materializer): Behavior[Event] =
+  def pendingSubAck(data: PendingSubscribe)(implicit mat: Materializer): Behavior[Event] = {
+    def childTerminated(context: ActorContext[ClientConnection.Event], failure: Option[Throwable]): Behavior[Event] = {
+      data.stash.foreach(context.self.tell)
+      clientConnected(
+        ConnAckReplied(
+          data.connect,
+          data.remote,
+          data.publishers ++ failure.fold(data.subscribe.topicFilters.map(_._1))(_ => Vector.empty),
+          data.activeConsumers,
+          data.activeProducers,
+          data.pendingLocalPublications,
+          data.pendingRemotePublications,
+          data.consumerPacketRouter,
+          data.producerPacketRouter,
+          data.publisherPacketRouter,
+          data.unpublisherPacketRouter,
+          data.settings
+        )
+      )
+    }
     Behaviors
       .receivePartial[Event] {
         case (_, e) if data.stash.size < data.settings.maxClientConnectionStashSize =>
           pendingSubAck(data.copy(stash = data.stash :+ e))
       }
       .receiveSignal {
-        case (context, t: Terminated) =>
-          data.stash.foreach(context.self.tell)
-          clientConnected(
-            ConnAckReplied(
-              data.connect,
-              data.remote,
-              data.publishers ++ (if (t.failure.contains(Publisher.SubscribeFailed)) Vector.empty
-                                  else data.subscribe.topicFilters.map(_._1)),
-              data.activeConsumers,
-              data.activeProducers,
-              data.pendingLocalPublications,
-              data.pendingRemotePublications,
-              data.consumerPacketRouter,
-              data.producerPacketRouter,
-              data.publisherPacketRouter,
-              data.unpublisherPacketRouter,
-              data.settings
-            )
-          )
+        case (context, ChildFailed(_, failure)) if failure == Publisher.SubscribeFailed =>
+          childTerminated(context, Some(failure))
+        case (context, _: Terminated) =>
+          childTerminated(context, None)
         case (_, PostStop) =>
           data.remote.complete()
           Behaviors.same
       }
+  }
 
   def clientDisconnected(data: Disconnected)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
     timer =>
@@ -815,7 +824,7 @@ import scala.util.{Failure, Success}
 
   def preparePublisher(data: Start): Behavior[Event] = Behaviors.setup { context =>
     val reply = Promise[RemotePacketRouter.Registered.type]
-    data.packetRouter ! RemotePacketRouter.Register(context.self.upcast, data.clientId, data.packetId, reply)
+    data.packetRouter ! RemotePacketRouter.Register(context.self.unsafeUpcast, data.clientId, data.packetId, reply)
     import context.executionContext
     reply.future.onComplete {
       case Success(RemotePacketRouter.Registered) => context.self ! RegisteredPacketId
@@ -902,7 +911,7 @@ import scala.util.{Failure, Success}
 
   def prepareServerUnpublisher(data: Start): Behavior[Event] = Behaviors.setup { context =>
     val reply = Promise[RemotePacketRouter.Registered.type]
-    data.packetRouter ! RemotePacketRouter.Register(context.self.upcast, data.clientId, data.packetId, reply)
+    data.packetRouter ! RemotePacketRouter.Register(context.self.unsafeUpcast, data.clientId, data.packetId, reply)
     import context.executionContext
     reply.future.onComplete {
       case Success(RemotePacketRouter.Registered) => context.self ! RegisteredPacketId
