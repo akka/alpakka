@@ -6,225 +6,197 @@ package docs.scaladsl
 
 import java.util.concurrent.Executors
 
+import akka.Done
 import akka.stream.alpakka.sqs._
 import akka.stream.alpakka.sqs.scaladsl.{DefaultTestContext, SqsSource}
 import akka.stream.scaladsl.Sink
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.client.builder.ExecutorFactory
-import com.amazonaws.services.sqs.model.{Message, MessageAttributeValue, QueueDoesNotExistException, SendMessageRequest}
+import com.amazonaws.services.sqs.model.{MessageAttributeValue, QueueDoesNotExistException, SendMessageRequest}
 import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{AsyncWordSpec, Matchers}
+import org.scalatest.{FlatSpec, Matchers}
 
-import scala.collection.immutable
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
+import scala.collection.immutable
 import scala.concurrent.duration._
 
-class SqsSourceSpec extends AsyncWordSpec with ScalaFutures with Matchers with DefaultTestContext {
+class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with DefaultTestContext {
 
-  implicit val defaultPatience =
-    PatienceConfig(timeout = 5.seconds, interval = 100.millis)
-  "SqsSource" should {
+  implicit override val patienceConfig = PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
-    "stream a single batch from the queue" taggedAs Integration in {
-      val queue = randomQueueUrl()
-      implicit val awsSqsClient = sqsClient
-      sqsClient.sendMessage(queue, "alpakka")
+  trait IntegrationFixture {
+    val queue: String = randomQueueUrl()
+    implicit val awsSqsClient: AmazonSQSAsync = sqsClient
+  }
 
-      SqsSource(queue, SqsSourceSettings.Defaults).take(1).runWith(Sink.head).map(_.getBody shouldBe "alpakka")
+  "SqsSource" should "stream a single batch from the queue" taggedAs Integration in new IntegrationFixture {
+    sqsClient.sendMessage(queue, "alpakka")
 
-    }
+    val future = SqsSource(queue, SqsSourceSettings.Defaults)
+      .runWith(Sink.head)
 
-    "continue streaming if receives an empty response" taggedAs Integration in {
-      val queue = randomQueueUrl()
-      implicit val awsSqsClient = sqsClient
+    future.futureValue.getBody shouldBe "alpakka"
+  }
 
-      val f = SqsSource(queue, SqsSourceSettings().withWaitTimeSeconds(0)).take(1).runWith(Sink.seq)
+  it should "continue streaming if receives an empty response" taggedAs Integration in new IntegrationFixture {
+    val future = SqsSource(queue, SqsSourceSettings().withWaitTimeSeconds(0))
+      .runWith(Sink.ignore)
 
-      sqsClient.sendMessage(queue, "alpakka")
+    // make sure the source polled sqs once for an empty response
+    Thread.sleep(1.second.toMillis)
 
-      f.map(_ should have size 1)
-    }
+    future.isCompleted shouldBe false
+  }
 
-    "terminate on an empty response if requested" taggedAs Integration in {
-      val queue = randomQueueUrl()
-      implicit val awsSqsClient = sqsClient
+  it should "terminate on an empty response if requested" taggedAs Integration in new IntegrationFixture {
+    val future = SqsSource(queue, SqsSourceSettings().withWaitTimeSeconds(0).withCloseOnEmptyReceive(true))
+      .runWith(Sink.ignore)
 
-      sqsClient.sendMessage(queue, "alpakka")
-      val f =
-        SqsSource(queue, SqsSourceSettings().withWaitTimeSeconds(0).withCloseOnEmptyReceive(true)).runWith(Sink.seq)
+    future.futureValue shouldBe Done
+  }
 
-      f.map(_ should have size 1)
-    }
+  it should "finish immediately if the queue does not exist" taggedAs Integration in new IntegrationFixture {
+    val notExistingQueue = s"$sqsEndpoint/queue/not-existing"
 
-    "finish immediately if the queue does not exist" taggedAs Integration in {
-      val queue = s"$sqsEndpoint/queue/not-existing"
-      implicit val awsSqsClient = sqsClient
+    val future = SqsSource(notExistingQueue, SqsSourceSettings.Defaults).runWith(Sink.seq)
 
-      val f = SqsSource(queue, SqsSourceSettings.Defaults).runWith(Sink.seq)
+    future.failed.futureValue shouldBe a[QueueDoesNotExistException]
+  }
 
-      f.failed.map(_ shouldBe a[QueueDoesNotExistException])
-    }
+  it should "ask for all the attributes set in the settings" taggedAs Integration in new IntegrationFixture {
+    val attributes = List(SentTimestamp, ApproximateReceiveCount, SenderId)
+    val settings = SqsSourceSettings.Defaults.withAttributes(attributes)
 
-    "ask for all the attributes set in the settings" taggedAs Integration in {
-      val queue = randomQueueUrl()
-      implicit val awsSqsClient = sqsClient
+    sqsClient.sendMessage(queue, "alpakka")
 
-      val attributes = List(SentTimestamp, ApproximateReceiveCount, SenderId)
-      val settings = SqsSourceSettings.Defaults.withAttributes(attributes)
+    val future = SqsSource(queue, settings).runWith(Sink.head)
 
-      sqsClient.sendMessage(queue, "alpakka")
+    future.futureValue.getAttributes.keySet.asScala shouldBe attributes.map(_.name).toSet
+  }
 
-      SqsSource(queue, settings)
-        .take(1)
-        .runWith(Sink.head)
-        .map(_.getAttributes.keySet.asScala shouldBe attributes.map(_.name).toSet)
-    }
+  it should "ask for all the message attributes set in the settings" taggedAs Integration in new IntegrationFixture {
+    val messageAttributes = Map(
+      "attribute-1" -> new MessageAttributeValue().withStringValue("v1").withDataType("String"),
+      "attribute-2" -> new MessageAttributeValue().withStringValue("v2").withDataType("String")
+    )
+    val settings =
+      SqsSourceSettings.Defaults.withMessageAttributes(messageAttributes.keys.toList.map(MessageAttributeName.apply))
 
-    "ask for all the message attributes set in the settings" taggedAs Integration in {
-      val queue = randomQueueUrl()
-      implicit val awsSqsClient = sqsClient
-      val messageAttributes = Map(
-        "attribute-1" -> new MessageAttributeValue().withStringValue("v1").withDataType("String"),
-        "attribute-2" -> new MessageAttributeValue().withStringValue("v2").withDataType("String")
-      )
-      val settings =
-        SqsSourceSettings.Defaults.withMessageAttributes(messageAttributes.keys.toList.map(MessageAttributeName.apply))
+    sqsClient.sendMessage(new SendMessageRequest(queue, "alpakka").withMessageAttributes(messageAttributes.asJava))
 
-      sqsClient.sendMessage(new SendMessageRequest(queue, "alpakka").withMessageAttributes(messageAttributes.asJava))
+    val future = SqsSource(queue, settings)
+      .runWith(Sink.head)
 
-      SqsSource(queue, settings)
-        .take(1)
-        .runWith(Sink.head)
-        .map(_.getMessageAttributes.asScala shouldBe messageAttributes)
+    future.futureValue.getMessageAttributes.asScala shouldBe messageAttributes
+  }
+
+  "SqsSourceSettings" should "be constructed" in {
+    //#SqsSourceSettings
+    val settings = SqsSourceSettings()
+      .withWaitTime(20.seconds)
+      .withMaxBufferSize(100)
+      .withMaxBatchSize(10)
+      .withAttributes(immutable.Seq(SenderId, SentTimestamp))
+      .withMessageAttribute(MessageAttributeName.create("bar.*"))
+      .withCloseOnEmptyReceive(true)
+      .withVisibilityTimeout(10.seconds)
+    //#SqsSourceSettings
+
+    settings.maxBufferSize should be(100)
+  }
+
+  it should "accept valid parameters" in {
+    val s = SqsSourceSettings()
+      .withWaitTimeSeconds(1)
+      .withMaxBatchSize(2)
+      .withMaxBufferSize(3)
+      .withAttribute(All)
+    s.attributeNames should be(List(All))
+  }
+
+  it should "require maxBatchSize <= maxBufferSize" in {
+    a[IllegalArgumentException] should be thrownBy {
+      SqsSourceSettings().withMaxBatchSize(5).withMaxBufferSize(3)
     }
   }
 
-  "SqsSourceSettings" should {
-    "be constructed" in {
-      //#SqsSourceSettings
-      val settings = SqsSourceSettings()
-        .withWaitTime(20.seconds)
-        .withMaxBufferSize(100)
-        .withMaxBatchSize(10)
-        .withAttributes(immutable.Seq(SenderId, SentTimestamp))
-        .withMessageAttribute(MessageAttributeName.create("bar.*"))
-        .withCloseOnEmptyReceive(true)
-        .withVisibilityTimeout(10.seconds)
-      //#SqsSourceSettings
-
-      settings.maxBufferSize should be(100)
+  it should "require waitTimeSeconds within AWS SQS limits" in {
+    a[IllegalArgumentException] should be thrownBy {
+      SqsSourceSettings().withWaitTimeSeconds(-1)
     }
 
-    "accept valid parameters" in {
-      val s = SqsSourceSettings()
-        .withWaitTimeSeconds(1)
-        .withMaxBatchSize(2)
-        .withMaxBufferSize(3)
-        .withAttribute(All)
-      s.attributeNames should be(List(All))
-    }
-
-    "require maxBatchSize <= maxBufferSize" in {
-      a[IllegalArgumentException] should be thrownBy {
-        SqsSourceSettings().withMaxBatchSize(5).withMaxBufferSize(3)
-      }
-    }
-
-    "require waitTimeSeconds within AWS SQS limits" in {
-      a[IllegalArgumentException] should be thrownBy {
-        SqsSourceSettings().withWaitTimeSeconds(-1)
-      }
-
-      a[IllegalArgumentException] should be thrownBy {
-        SqsSourceSettings().withWaitTimeSeconds(100)
-      }
-    }
-
-    "require maxBatchSize within AWS SQS limits" in {
-      a[IllegalArgumentException] should be thrownBy {
-        SqsSourceSettings().withMaxBatchSize(0)
-      }
-
-      a[IllegalArgumentException] should be thrownBy {
-        SqsSourceSettings().withMaxBatchSize(11)
-      }
-    }
-
-  }
-
-  "SqsSource" should {
-
-    "stream a single batch from the queue with custom client" taggedAs Integration in {
-      //#init-custom-client
-      val credentialsProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"))
-      implicit val customSqsClient: AmazonSQSAsync =
-        AmazonSQSAsyncClientBuilder
-          .standard()
-          .withCredentials(credentialsProvider)
-          .withExecutorFactory(new ExecutorFactory {
-            override def newExecutor() = Executors.newFixedThreadPool(10)
-          })
-          .withEndpointConfiguration(new EndpointConfiguration(sqsEndpoint, "eu-central-1"))
-          .build()
-      //#init-custom-client
-
-      val queue = randomQueueUrl()
-      customSqsClient.sendMessage(queue, "alpakka")
-
-      SqsSource(queue, SqsSourceSettings())(customSqsClient)
-        .take(1)
-        .runWith(Sink.head)
-        .map(_.getBody shouldBe "alpakka")
-    }
-
-    "stream multiple batches from the queue" taggedAs Integration in {
-
-      val queue = randomQueueUrl()
-      implicit val awsSqsClient = sqsClient
-
-      val input = 1 to 100 map { i =>
-        s"alpakka-$i"
-      }
-
-      input foreach { m =>
-        sqsClient.sendMessage(queue, m)
-      }
-      //#run
-      val res: Future[immutable.Seq[Message]] =
-        SqsSource(
-          queue,
-          SqsSourceSettings().withCloseOnEmptyReceive(true).withWaitTime(1.second)
-        ).runWith(Sink.seq)
-      //#run
-
-      res.futureValue should have size 100
-    }
-
-    "stream single message twice from the queue when visibility timeout passed" taggedAs Integration in {
-      val queue = randomQueueUrl()
-      implicit val awsSqsClient = sqsClient
-
-      sqsClient.sendMessage(queue, "alpakka")
-
-      SqsSource(queue, SqsSourceSettings().withVisibilityTimeout(1.second))
-        .takeWithin(1500.milliseconds)
-        .runWith(Sink.seq)
-        .map(_.map(_.getBody) shouldBe Seq("alpakka", "alpakka"))
-    }
-
-    "stream single message once from the queue when visibility timeout did not pass" taggedAs Integration in {
-      val queue = randomQueueUrl()
-      implicit val awsSqsClient = sqsClient
-
-      sqsClient.sendMessage(queue, "alpakka")
-
-      SqsSource(queue, SqsSourceSettings().withVisibilityTimeout(3.seconds))
-        .takeWithin(500.milliseconds)
-        .runWith(Sink.seq)
-        .map(_.map(_.getBody) shouldBe Seq("alpakka"))
+    a[IllegalArgumentException] should be thrownBy {
+      SqsSourceSettings().withWaitTimeSeconds(100)
     }
   }
+
+  it should "require maxBatchSize within AWS SQS limits" in {
+    a[IllegalArgumentException] should be thrownBy {
+      SqsSourceSettings().withMaxBatchSize(0)
+    }
+
+    a[IllegalArgumentException] should be thrownBy {
+      SqsSourceSettings().withMaxBatchSize(11)
+    }
+  }
+
+  "SqsSource" should "stream a single batch from the queue with custom client" taggedAs Integration in new IntegrationFixture {
+    //#init-custom-client
+    val credentialsProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"))
+    implicit val customSqsClient: AmazonSQSAsync =
+      AmazonSQSAsyncClientBuilder
+        .standard()
+        .withCredentials(credentialsProvider)
+        .withExecutorFactory(new ExecutorFactory {
+          override def newExecutor() = Executors.newFixedThreadPool(10)
+        })
+        .withEndpointConfiguration(new EndpointConfiguration(sqsEndpoint, "eu-central-1"))
+        .build()
+    //#init-custom-client
+
+    customSqsClient.sendMessage(queue, "alpakka")
+
+    val future = SqsSource(queue, SqsSourceSettings())(customSqsClient)
+      .runWith(Sink.head)
+
+    future.futureValue.getBody shouldBe "alpakka"
+  }
+
+  it should "stream multiple batches from the queue" taggedAs Integration in new IntegrationFixture {
+    val input = for (i <- 1 to 100) yield s"alpakka-$i"
+    input.foreach(m => sqsClient.sendMessage(queue, m))
+
+    //#run
+    val future =
+      SqsSource(
+        queue,
+        SqsSourceSettings().withCloseOnEmptyReceive(true).withWaitTime(1.second)
+      ).runWith(Sink.seq)
+    //#run
+
+    future.futureValue should have size 100
+  }
+
+  it should "stream single message twice from the queue when visibility timeout passed" taggedAs Integration in new IntegrationFixture {
+    sqsClient.sendMessage(queue, "alpakka")
+
+    val future = SqsSource(queue, SqsSourceSettings().withVisibilityTimeout(1.second))
+      .takeWithin(1500.milliseconds)
+      .runWith(Sink.seq)
+
+    future.futureValue should have size 2
+  }
+
+  it should "stream single message once from the queue when visibility timeout did not pass" taggedAs Integration in new IntegrationFixture {
+    sqsClient.sendMessage(queue, "alpakka")
+
+    val future = SqsSource(queue, SqsSourceSettings().withVisibilityTimeout(3.seconds))
+      .takeWithin(500.milliseconds)
+      .runWith(Sink.seq)
+
+    future.futureValue should have size 1
+  }
+
 }
