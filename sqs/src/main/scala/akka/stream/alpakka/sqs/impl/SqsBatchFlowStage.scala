@@ -145,6 +145,8 @@ import scala.util.{Failure, Success, Try}
                   .withId(i.toString)
                   .withMessageBody(r.getMessageBody)
                   .withMessageAttributes(r.getMessageAttributes)
+                  .withMessageGroupId(r.getMessageGroupId)
+                  .withMessageDeduplicationId(r.getMessageDeduplicationId)
             }
 
             new SendMessageBatchRequest()
