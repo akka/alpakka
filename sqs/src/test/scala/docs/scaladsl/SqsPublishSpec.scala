@@ -168,4 +168,34 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     receiveMessage().getBody shouldBe "alpakka"
   }
+
+  ignore should "put message in a flow, then pass the result further with fifo queues" taggedAs Integration in new IntegrationFixture(
+    fifo = true
+  ) {
+    // elasticmq does not provide proper fifo support (see https://github.com/adamw/elasticmq/issues/125)
+    // set your fifo sqs queue url and awsSqsClient manually
+    // override val queue = "https://sqs.us-east-1.amazonaws.com/$AWS_ACCOUNT_ID/$queue_name.fifo"
+    // override implicit val awsSqsClient: AmazonSQSAsync = AmazonSQSAsyncClientBuilder.standard().build()
+
+    val future =
+    //#flow
+      Source
+        .single(
+          new SendMessageRequest()
+            .withMessageBody("alpakka")
+            .withMessageGroupId("group-id")
+            .withMessageDeduplicationId(s"deduplication-id")
+        )
+        .via(SqsPublishFlow(queue))
+        .runWith(Sink.head)
+    //#flow
+
+    val result = future.futureValue
+    result.message.getBody shouldBe "alpakka"
+    result.fifoMessageIdentifiers.map(_.sequenceNumber) shouldBe defined
+    result.fifoMessageIdentifiers.map(_.messageGroupId) shouldBe Some("group-id")
+    result.fifoMessageIdentifiers.flatMap(_.messageDeduplicationId) shouldBe Some("deduplication-id")
+
+    receiveMessage().getBody shouldBe "alpakka"
+  }
 }
