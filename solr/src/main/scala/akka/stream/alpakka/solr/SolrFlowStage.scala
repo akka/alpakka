@@ -364,7 +364,7 @@ private[solr] final class SolrFlowLogic[T, C](
     def send(toSend: Seq[IncomingMessage[T, C]]): UpdateResponse = {
       val operation = toSend.head.operation
       //Just take a subset of this operation
-      val (current, remaining) = toSend.partition { m =>
+      val (current, remaining) = toSend.span { m =>
         m.operation == operation
       }
       //send this subset
