@@ -70,13 +70,10 @@ import scala.concurrent.{Future, Promise}
           override def onSuccess(request: DeleteMessageBatchRequest, result: DeleteMessageBatchResult): Unit =
             if (!result.getFailed.isEmpty) {
               val nrOfFailedMessages = result.getFailed.size()
-              val batchException: SqsBatchException =
-                new SqsBatchException(
-                  batchSize = nrOfActions,
-                  cause = new Exception(
-                    s"Some messages failed to delete. $nrOfFailedMessages of $nrOfActions messages failed"
-                  )
-                )
+              val batchException: SqsBatchException = new SqsBatchException(
+                nrOfActions,
+                s"Some messages failed to delete. $nrOfFailedMessages of $nrOfActions messages failed"
+              )
               responsePromise.failure(batchException)
               failureCallback.invoke(batchException)
             } else {

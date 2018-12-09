@@ -101,10 +101,8 @@ import scala.util.{Failure, Success, Try}
                 if (!result.getFailed.isEmpty) {
                   val nrOfFailedMessages = result.getFailed.size()
                   val batchException = new SqsBatchException(
-                    batchSize = nrOfMessages,
-                    cause = new Exception(
-                      s"Some messages are failed to send. $nrOfFailedMessages of $nrOfMessages messages are failed"
-                    )
+                    nrOfMessages,
+                    s"Some messages are failed to send. $nrOfFailedMessages of $nrOfMessages messages are failed"
                   )
                   responsePromise.failure(batchException)
                   failureCallback.invoke(batchException)
