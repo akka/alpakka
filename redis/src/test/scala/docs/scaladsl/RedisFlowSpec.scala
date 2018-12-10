@@ -9,18 +9,17 @@ import java.util.concurrent.TimeUnit
 
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
-import akka.streams.alpakka.redis.scaladsl.{RedisFlow, RedisSource}
 import akka.streams.alpakka.redis._
+import akka.streams.alpakka.redis.scaladsl.{RedisFlow, RedisSource}
 import org.specs2.mutable.Specification
-
-import scala.collection.immutable.Seq
 import org.specs2.specification.BeforeAfterAll
 
 import scala.collection.immutable
-import scala.concurrent.{Await, Future}
+import scala.collection.immutable.Seq
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
-import scala.util.{Failure, Random, Success}
+import scala.concurrent.{Await, Future}
+import scala.util.Random
 
 class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport {
 
@@ -120,11 +119,6 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
         .fromIterator(() => messages.iterator)
         .via(RedisFlow.publish[String, String](1, redisClient.connectPubSub().async().getStatefulConnection))
         .runWith(Sink.head[RedisOperationResult[RedisPubSub[String, String], Long]])
-      receivedMessages onComplete {
-        case Success(value) => println(value)
-        case Failure(exception) => exception.printStackTrace()
-      }
-
       val results = Await.result(receivedMessages, Duration(5, TimeUnit.SECONDS))
       results shouldEqual messages
     }
