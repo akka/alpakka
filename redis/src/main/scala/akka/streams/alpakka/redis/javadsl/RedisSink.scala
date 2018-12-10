@@ -8,7 +8,7 @@ import java.util.concurrent.CompletionStage
 
 import akka.{Done, NotUsed}
 import akka.stream.javadsl.{Flow, Keep, Sink}
-import akka.streams.alpakka.redis.{RedisKeyValue, RedisKeyValues}
+import akka.streams.alpakka.redis.{RedisHMSet, RedisHSet, RedisKeyValue, RedisKeyValues}
 import io.lettuce.core.api.StatefulRedisConnection
 
 import scala.concurrent.ExecutionContext
@@ -41,6 +41,20 @@ object RedisSink {
                   executionContext: ExecutionContext): Sink[RedisKeyValues[K, V], CompletionStage[Done]] =
     Flow
       .fromGraph(akka.streams.alpakka.redis.scaladsl.RedisFlow.lpush(parallelism, connection)(executionContext))
+      .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
+
+  def hset[K, V](parallelism: Int,
+                 connection: StatefulRedisConnection[K, V],
+                 executionContext: ExecutionContext): Sink[RedisHSet[K, V], CompletionStage[Done]] =
+    Flow
+      .fromGraph(akka.streams.alpakka.redis.scaladsl.RedisFlow.hset(parallelism, connection)(executionContext))
+      .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
+
+  def hmset[K, V](parallelism: Int,
+                  connection: StatefulRedisConnection[K, V],
+                  executionContext: ExecutionContext): Sink[RedisHMSet[K, V], CompletionStage[Done]] =
+    Flow
+      .fromGraph(akka.streams.alpakka.redis.scaladsl.RedisFlow.hmset(parallelism, connection)(executionContext))
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
 }

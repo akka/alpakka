@@ -4,11 +4,13 @@
 
 package akka.streams.alpakka.redis.javadsl
 
-import java.util
+import java.{lang, util}
+
 import akka.NotUsed
 import akka.stream.javadsl.Flow
-import akka.streams.alpakka.redis.{RedisKeyValue, RedisKeyValues, RedisOperationResult}
+import akka.streams.alpakka.redis._
 import io.lettuce.core.api.StatefulRedisConnection
+
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
 import scala.concurrent.ExecutionContext
@@ -55,5 +57,19 @@ object RedisFlow {
       executionContext: ExecutionContext
   ): Flow[RedisKeyValues[K, V], RedisOperationResult[RedisKeyValues[K, V], Long], NotUsed] =
     Flow.fromGraph(akka.streams.alpakka.redis.scaladsl.RedisFlow.lpush(parallelism, connection)(executionContext))
+
+  def hset[K, V](
+      parallelism: Int,
+      connection: StatefulRedisConnection[K, V],
+      executionContext: ExecutionContext
+  ): Flow[RedisHSet[K, V], RedisOperationResult[RedisHSet[K, V], lang.Boolean], NotUsed] =
+    Flow.fromGraph(akka.streams.alpakka.redis.scaladsl.RedisFlow.hset(parallelism, connection)(executionContext))
+
+  def hmset[K, V](
+      parallelism: Int,
+      connection: StatefulRedisConnection[K, V],
+      executionContext: ExecutionContext
+  ): Flow[RedisHMSet[K, V], RedisOperationResult[RedisHMSet[K, V], String], NotUsed] =
+    Flow.fromGraph(akka.streams.alpakka.redis.scaladsl.RedisFlow.hmset(parallelism, connection)(executionContext))
 
 }
