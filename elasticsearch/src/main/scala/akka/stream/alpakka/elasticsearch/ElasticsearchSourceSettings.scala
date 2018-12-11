@@ -8,9 +8,13 @@ package akka.stream.alpakka.elasticsearch
  * Configure Elastiscsearch sources.
  *
  */
-final class ElasticsearchSourceSettings private (val bufferSize: Int, val includeDocumentVersion: Boolean) {
+final class ElasticsearchSourceSettings private (val bufferSize: Int,
+                                                 val includeDocumentVersion: Boolean,
+                                                 val scroll: String) {
 
   def withBufferSize(value: Int): ElasticsearchSourceSettings = copy(bufferSize = value)
+
+  def withScroll(value: String): ElasticsearchSourceSettings = copy(scroll = value)
 
   /**
    * If includeDocumentVersion is true, '_version' is returned with the search-results
@@ -21,8 +25,11 @@ final class ElasticsearchSourceSettings private (val bufferSize: Int, val includ
     if (includeDocumentVersion == value) this else copy(includeDocumentVersion = value)
 
   private def copy(bufferSize: Int = bufferSize,
-                   includeDocumentVersion: Boolean = includeDocumentVersion): ElasticsearchSourceSettings =
-    new ElasticsearchSourceSettings(bufferSize = bufferSize, includeDocumentVersion = includeDocumentVersion)
+                   includeDocumentVersion: Boolean = includeDocumentVersion,
+                   scroll: String = scroll): ElasticsearchSourceSettings =
+    new ElasticsearchSourceSettings(bufferSize = bufferSize,
+                                    includeDocumentVersion = includeDocumentVersion,
+                                    scroll = scroll)
 
   override def toString =
     s"""ElasticsearchSourceSettings(bufferSize=$bufferSize,includeDocumentVersion=$includeDocumentVersion)"""
@@ -31,7 +38,7 @@ final class ElasticsearchSourceSettings private (val bufferSize: Int, val includ
 
 object ElasticsearchSourceSettings {
 
-  val Default = new ElasticsearchSourceSettings(bufferSize = 10, includeDocumentVersion = false)
+  val Default = new ElasticsearchSourceSettings(bufferSize = 10, includeDocumentVersion = false, scroll = "5m")
 
   /** Scala API */
   def apply(): ElasticsearchSourceSettings = Default
