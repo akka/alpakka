@@ -65,6 +65,15 @@ lazy val alpakka = project
         |  mimaReportBinaryIssues - checks whether this current API
         |    is binary compatible with the released version
       """.stripMargin,
+    // unidoc combines sources and jars from all connectors and that
+    // includes two incompatible versions of protobuf. Depending on the
+    // classpath order that migh lead to scaladoc compilation errors.
+    // Therefore the older version is exlcuded here.
+    ScalaUnidoc / unidoc / fullClasspath := {
+      (ScalaUnidoc / unidoc / fullClasspath).value
+        .filterNot(_.data.getAbsolutePath.contains("protobuf-java/2.5.0"))
+    },
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`)
   )
 
 lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp)
