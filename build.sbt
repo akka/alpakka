@@ -33,6 +33,7 @@ lazy val alpakka = project
     mqtt,
     mqttStreaming,
     orientdb,
+    pravega,
     reference,
     s3,
     springWeb,
@@ -273,6 +274,17 @@ lazy val reference = internalProject("reference", Dependencies.Reference)
   .dependsOn(testkit % Test)
 
 lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3, Test / parallelExecution := false)
+
+lazy val pravega =
+  alpakkaProject("pravega",
+                 "pravega",
+                 Dependencies.Pravega,
+                 fork in Test := true,
+                 crossScalaVersions --= Seq(Dependencies.Scala211) // 2.11 SAM issue for java API.
+  )
+  //  TODO: enable MiMa after first release of connector
+  //  https://github.com/akka/alpakka/issues/2181
+    .disablePlugins(MimaPlugin)
 
 lazy val springWeb = alpakkaProject("spring-web", "spring.web", Dependencies.SpringWeb)
 

@@ -238,3 +238,9 @@ services:
       - ./ftp/src/test/resources/squid.conf:/etc/squid/squid.conf
     ports:
       - "3128:3128"
+  pravega:
+    image: pravega/pravega:0.6.2
+    ports:
+      - 9090:9090
+      - 12345:12345
+    command: standalone
