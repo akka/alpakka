@@ -28,6 +28,11 @@ The Alpakka MQTT connector provides an Akka Stream source, sink and flow to conn
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="mqtt" }
+
+
 ## Settings
 
 The required `MqttConnectionSettings` (@scaladoc[API](akka.stream.alpakka.mqtt.MqttConnectionSettings$)) settings to connect to an MQTT server are 

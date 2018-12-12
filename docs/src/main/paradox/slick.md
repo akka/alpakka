@@ -16,6 +16,11 @@ The Slick connector provides Scala and Java DSLs to create a `Source` to stream 
 
 You will also need to add the JDBC driver(s) for the specific relational database(s) to your project. Most of those database have drivers that are not available from public repositories so unfortunately some manual steps will probably be required. The Slick documentation has @extref[information on where to download the drivers](slick:supported-databases.html).
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="slick" }
+
+
 ## Usage
 
 As always, before we get started we will need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and a @scaladoc[Materializer](akka.stream.Materializer).

@@ -17,6 +17,11 @@ about the technology the connector is using.
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="reference" }
+
+
 ## Reading messages
 
 Give a brief description of the usage of this connector. If you want to mention a

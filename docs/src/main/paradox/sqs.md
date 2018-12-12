@@ -23,6 +23,11 @@ The AWS SQS connector provides Akka Stream sources and sinks for AWS SQS queues.
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="sqs" }
+
+
 ## Setup
 
 Prepare an @scaladoc[ActorSystem](akka.actor.ActorSystem) and a @scaladoc[Materializer](akka.stream.Materializer).

@@ -17,6 +17,10 @@ AMQP 1.0 is currently not supported (Qpid, ActiveMQ, Solace, etc.).
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="amqp" }
+
 ## Usage
 
 ### Connecting to AMQP server

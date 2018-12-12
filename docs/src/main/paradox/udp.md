@@ -14,6 +14,11 @@ The UDP connector provides Akka Stream flows that allow to send and receive UDP 
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="udp" }
+
+
 ## Usage
 
 ### Sending

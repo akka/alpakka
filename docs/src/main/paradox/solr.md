@@ -16,6 +16,11 @@ For more information about Solr please visit the [Solr documentation](http://luc
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="solr" }
+
+
 ## Set up client
 
 Sources, Flows and Sinks provided by this connector need a prepared `org.apache.solr.client.solrj.SolrClient` to

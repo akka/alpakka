@@ -20,6 +20,11 @@ This connector communicates to Pub/Sub via HTTP requests (i.e. https://pubsub.go
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="google-cloud-pub-sub" }
+
+
 ## Usage
 
 Prepare your credentials for access to google cloud pub/sub.

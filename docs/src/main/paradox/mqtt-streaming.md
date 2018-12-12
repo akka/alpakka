@@ -30,6 +30,11 @@ The Alpakka MQTT connector provides an Akka Stream flow to connect to MQTT broke
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="mqtt-streaming" }
+
+
 ## Flow through a client session
 
 The following code illustrates how to establish an MQTT client session and join it with a TCP connection:

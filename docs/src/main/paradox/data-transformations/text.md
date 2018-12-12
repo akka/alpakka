@@ -23,6 +23,11 @@ parser does only support UTF-8.
 }
 
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="text" }
+
+
 ## Text transcoding
 
 The text transcoding flow converts incoming binary text data (ByteString) to binary text

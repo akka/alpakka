@@ -22,6 +22,11 @@ This Alpakka module makes it possible to directly return a `Source` in your Spri
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="spring-web" }
+
+
 ## Usage
 
 Using Akka Streams in Spring Web (or Boot for that matter) is very simple, as Alpakka provides autoconfiguration to the

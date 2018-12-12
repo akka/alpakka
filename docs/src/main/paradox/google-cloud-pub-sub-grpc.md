@@ -23,6 +23,11 @@ look at the alternative @ref[Alpakka Google Cloud Pub/Sub](google-cloud-pub-sub.
   version=$version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="google-cloud-pub-sub-grpc" }
+
+
 ## Configuration
 
 The connector comes with the default settings configured to work with the Google Pub Sub endpoint and uses the default way of
