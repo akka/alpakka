@@ -65,10 +65,6 @@ lazy val alpakka = project
         |  mimaReportBinaryIssues - checks whether this current API
         |    is binary compatible with the released version
       """.stripMargin,
-    mimaPreviousArtifacts := Set(
-      organization.value %% name.value % previousStableVersion.value
-        .getOrElse(throw new Error("Unable to determine previous version"))
-    )
   )
 
 lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp)
@@ -274,6 +270,10 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
     .enablePlugins(AutomateHeaderPlugin)
     .settings(
       name := s"akka-stream-alpakka-$projectId",
-      AutomaticModuleName.settings(s"akka.stream.alpakka.$moduleName")
+      AutomaticModuleName.settings(s"akka.stream.alpakka.$moduleName"),
+      mimaPreviousArtifacts := Set(
+        organization.value %% name.value % previousStableVersion.value
+          .getOrElse(throw new Error("Unable to determine previous version"))
+      )
     )
     .settings(additionalSettings: _*)
