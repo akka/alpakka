@@ -67,7 +67,7 @@ lazy val alpakka = project
       """.stripMargin,
     // unidoc combines sources and jars from all connectors and that
     // includes two incompatible versions of protobuf. Depending on the
-    // classpath order that migh lead to scaladoc compilation errors.
+    // classpath order that might lead to scaladoc compilation errors.
     // Therefore the older version is exlcuded here.
     ScalaUnidoc / unidoc / fullClasspath := {
       (ScalaUnidoc / unidoc / fullClasspath).value
