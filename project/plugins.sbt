@@ -14,5 +14,5 @@ addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.4.1")
 addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "0.4")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.4")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.4")
-// patched version of sbt-dependencies
+// patched version of sbt-dependency-graph
 resolvers += Resolver.bintrayIvyRepo("2m", "sbt-plugins")
