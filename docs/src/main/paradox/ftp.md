@@ -17,6 +17,11 @@ The FTP connector provides Akka Stream sources to connect to FTP, FTPs and SFTP 
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="ftp" }
+
+
 ## Usage
 
 ### Configuring the connection settings

@@ -12,6 +12,10 @@ For more information about Apache Parquet please visit the [official documentati
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="avroparquet" }
+
 #Usage
 
 We will need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).

@@ -71,6 +71,11 @@ even: only the `doc` inside each element of the array.
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="json-streaming" }
+
+
 ### Example
 
 To define which parts of the structure you want to stream the module supports

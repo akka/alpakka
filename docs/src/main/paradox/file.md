@@ -16,6 +16,11 @@ the sources and sinks for files already included in core Akka Streams
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="file" }
+
+
 ## Writing to and reading from files
 
 Use the `FileIO` class to create streams reading from or writing to files. It is part part of Akka streams. 

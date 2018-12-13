@@ -8,8 +8,6 @@ HBase is a column family NoSQL Database backed by HDFS.
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Ahbase)
 
-# Usage
-
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
@@ -17,6 +15,13 @@ HBase is a column family NoSQL Database backed by HDFS.
   artifact=akka-stream-alpakka-hbase_$scala.binary.version$
   version=$project.version$
 }
+
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="hbase" }
+
+
+# Usage
 
 Build a converter and a tableSetting.
 

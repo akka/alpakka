@@ -24,6 +24,10 @@ The Alpakka OrientDB connector provides Akka Stream sources and sinks for Orient
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="orientdb" }
+
 ## Usage
 
 Sources, Flows and Sinks provided by this connector need dbUrl & credentials to access to OrientDB.

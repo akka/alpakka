@@ -30,6 +30,11 @@ Lines are separated by either Line Feed (`\n` = ASCII 10) or Carriage Return and
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="csv" }
+
+
 ## CSV parsing
 
 CSV parsing offers a flow that takes a stream of `akka.util.ByteString` and issues a stream of lists of `ByteString`.

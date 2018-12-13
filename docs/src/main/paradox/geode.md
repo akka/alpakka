@@ -18,6 +18,11 @@ Basically it can store data as key, value. Key and value must be serialized, mor
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="geode" }
+
+
 #Usage
 
 ##Connection

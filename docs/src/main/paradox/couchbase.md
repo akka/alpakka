@@ -14,6 +14,11 @@ The Couchbase connector supports all document formats which are supported by SDK
   version=$version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="couchbase" }
+
+
 #Usage
 
 We will need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
@@ -173,4 +178,4 @@ Scala
 :   ```
     sbt
     > couchbase/test
-    ``` 
+    ```
