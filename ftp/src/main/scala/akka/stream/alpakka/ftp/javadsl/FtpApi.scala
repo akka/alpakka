@@ -6,7 +6,7 @@ package akka.stream.alpakka.ftp.javadsl
 
 import akka.NotUsed
 import akka.stream.alpakka.ftp.impl._
-import akka.stream.alpakka.ftp.{FtpFile, RemoteFileSettings}
+import akka.stream.alpakka.ftp._
 import akka.stream.alpakka.ftp.impl.{FtpLike, FtpSourceFactory}
 import akka.stream.IOResult
 import akka.stream.javadsl.Source
@@ -109,7 +109,6 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    *
    *                       Calling [[ls(basePath,connectionSettings,f->false)]] will emit only the files and folder in
    *                       non-recursive fashion
-   *
    * @return A [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s
    */
   def ls(basePath: String, connectionSettings: S, branchSelector: Predicate[FtpFile]): Source[FtpFile, NotUsed] =
@@ -236,9 +235,133 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
 
   protected[this] implicit def ftpLike: FtpLike[FtpClient, S]
 }
-class SftpApi extends FtpApi[SSHClient] with SftpSourceParams
-object Ftp extends FtpApi[FTPClient] with FtpSourceParams
-object Ftps extends FtpApi[FTPSClient] with FtpsSourceParams
+
+class SftpApi extends FtpApi[SSHClient] with SftpSourceParams {
+  // override all methods of FtpApi to work around Scala 2.12.8 regression
+  // https://github.com/scala/bug/issues/11305
+  override def ls(host: String): Source[FtpFile, NotUsed] = super.ls(host)
+  override def ls(host: String, basePath: String): Source[FtpFile, NotUsed] = super.ls(host, basePath)
+  override def ls(host: String, username: String, password: String): Source[FtpFile, NotUsed] =
+    super.ls(host, username, password)
+  override def ls(host: String, username: String, password: String, basePath: String): Source[FtpFile, NotUsed] =
+    super.ls(host, username, password, basePath)
+  override def ls(basePath: String, connectionSettings: SftpSettings): Source[FtpFile, NotUsed] =
+    super.ls(basePath, connectionSettings)
+
+  override def ls(basePath: String,
+                  connectionSettings: SftpSettings,
+                  branchSelector: Predicate[FtpFile]): Source[FtpFile, NotUsed] =
+    super.ls(basePath, connectionSettings, branchSelector)
+  override def fromPath(host: String, path: String): Source[ByteString, CompletionStage[IOResult]] =
+    super.fromPath(host, path)
+  override def fromPath(host: String,
+                        username: String,
+                        password: String,
+                        path: String): Source[ByteString, CompletionStage[IOResult]] =
+    super.fromPath(host, username, password, path)
+  override def fromPath(path: String, connectionSettings: SftpSettings): Source[ByteString, CompletionStage[IOResult]] =
+    super.fromPath(path, connectionSettings)
+  override def fromPath(path: String,
+                        connectionSettings: SftpSettings,
+                        chunkSize: Int): Source[ByteString, CompletionStage[IOResult]] =
+    super.fromPath(path, connectionSettings, chunkSize)
+  override def toPath(path: String,
+                      connectionSettings: SftpSettings,
+                      append: Boolean): Sink[ByteString, CompletionStage[IOResult]] =
+    super.toPath(path, connectionSettings, append)
+  override def toPath(path: String, connectionSettings: SftpSettings): Sink[ByteString, CompletionStage[IOResult]] =
+    super.toPath(path, connectionSettings)
+  override def move(destinationPath: Function[FtpFile, String],
+                    connectionSettings: SftpSettings): Sink[FtpFile, CompletionStage[IOResult]] =
+    super.move(destinationPath, connectionSettings)
+  override def remove(connectionSettings: SftpSettings): Sink[FtpFile, CompletionStage[IOResult]] =
+    super.remove(connectionSettings)
+}
+
+object Ftp extends FtpApi[FTPClient] with FtpSourceParams {
+  // override all methods of FtpApi to work around Scala 2.12.8 regression
+  // https://github.com/scala/bug/issues/11305
+  override def ls(host: String): Source[FtpFile, NotUsed] = super.ls(host)
+  override def ls(host: String, basePath: String): Source[FtpFile, NotUsed] = super.ls(host, basePath)
+  override def ls(host: String, username: String, password: String): Source[FtpFile, NotUsed] =
+    super.ls(host, username, password)
+  override def ls(host: String, username: String, password: String, basePath: String): Source[FtpFile, NotUsed] =
+    super.ls(host, username, password, basePath)
+  override def ls(basePath: String, connectionSettings: FtpSettings): Source[FtpFile, NotUsed] =
+    super.ls(basePath, connectionSettings)
+
+  override def ls(basePath: String,
+                  connectionSettings: FtpSettings,
+                  branchSelector: Predicate[FtpFile]): Source[FtpFile, NotUsed] =
+    super.ls(basePath, connectionSettings, branchSelector)
+  override def fromPath(host: String, path: String): Source[ByteString, CompletionStage[IOResult]] =
+    super.fromPath(host, path)
+  override def fromPath(host: String,
+                        username: String,
+                        password: String,
+                        path: String): Source[ByteString, CompletionStage[IOResult]] =
+    super.fromPath(host, username, password, path)
+  override def fromPath(path: String, connectionSettings: FtpSettings): Source[ByteString, CompletionStage[IOResult]] =
+    super.fromPath(path, connectionSettings)
+  override def fromPath(path: String,
+                        connectionSettings: FtpSettings,
+                        chunkSize: Int): Source[ByteString, CompletionStage[IOResult]] =
+    super.fromPath(path, connectionSettings, chunkSize)
+  override def toPath(path: String,
+                      connectionSettings: FtpSettings,
+                      append: Boolean): Sink[ByteString, CompletionStage[IOResult]] =
+    super.toPath(path, connectionSettings, append)
+  override def toPath(path: String, connectionSettings: FtpSettings): Sink[ByteString, CompletionStage[IOResult]] =
+    super.toPath(path, connectionSettings)
+  override def move(destinationPath: Function[FtpFile, String],
+                    connectionSettings: FtpSettings): Sink[FtpFile, CompletionStage[IOResult]] =
+    super.move(destinationPath, connectionSettings)
+  override def remove(connectionSettings: FtpSettings): Sink[FtpFile, CompletionStage[IOResult]] =
+    super.remove(connectionSettings)
+}
+
+object Ftps extends FtpApi[FTPSClient] with FtpsSourceParams {
+  // override all methods of FtpApi to work around Scala 2.12.8 regression
+  // https://github.com/scala/bug/issues/11305
+  override def ls(host: String): Source[FtpFile, NotUsed] = super.ls(host)
+  override def ls(host: String, basePath: String): Source[FtpFile, NotUsed] = super.ls(host, basePath)
+  override def ls(host: String, username: String, password: String): Source[FtpFile, NotUsed] =
+    super.ls(host, username, password)
+  override def ls(host: String, username: String, password: String, basePath: String): Source[FtpFile, NotUsed] =
+    super.ls(host, username, password, basePath)
+  override def ls(basePath: String, connectionSettings: FtpsSettings): Source[FtpFile, NotUsed] =
+    super.ls(basePath, connectionSettings)
+
+  override def ls(basePath: String,
+                  connectionSettings: FtpsSettings,
+                  branchSelector: Predicate[FtpFile]): Source[FtpFile, NotUsed] =
+    super.ls(basePath, connectionSettings, branchSelector)
+  override def fromPath(host: String, path: String): Source[ByteString, CompletionStage[IOResult]] =
+    super.fromPath(host, path)
+  override def fromPath(host: String,
+                        username: String,
+                        password: String,
+                        path: String): Source[ByteString, CompletionStage[IOResult]] =
+    super.fromPath(host, username, password, path)
+  override def fromPath(path: String, connectionSettings: FtpsSettings): Source[ByteString, CompletionStage[IOResult]] =
+    super.fromPath(path, connectionSettings)
+  override def fromPath(path: String,
+                        connectionSettings: FtpsSettings,
+                        chunkSize: Int): Source[ByteString, CompletionStage[IOResult]] =
+    super.fromPath(path, connectionSettings, chunkSize)
+  override def toPath(path: String,
+                      connectionSettings: FtpsSettings,
+                      append: Boolean): Sink[ByteString, CompletionStage[IOResult]] =
+    super.toPath(path, connectionSettings, append)
+  override def toPath(path: String, connectionSettings: FtpsSettings): Sink[ByteString, CompletionStage[IOResult]] =
+    super.toPath(path, connectionSettings)
+  override def move(destinationPath: Function[FtpFile, String],
+                    connectionSettings: FtpsSettings): Sink[FtpFile, CompletionStage[IOResult]] =
+    super.move(destinationPath, connectionSettings)
+  override def remove(connectionSettings: FtpsSettings): Sink[FtpFile, CompletionStage[IOResult]] =
+    super.remove(connectionSettings)
+}
+
 object Sftp extends SftpApi {
 
   /**
