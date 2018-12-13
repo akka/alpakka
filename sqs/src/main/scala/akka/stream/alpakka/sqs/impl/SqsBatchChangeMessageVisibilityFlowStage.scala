@@ -25,70 +25,75 @@ import scala.concurrent.{Future, Promise}
 @InternalApi private[sqs] final class SqsBatchChangeMessageVisibilityFlowStage(queueUrl: String,
                                                                                sqsClient: AmazonSQSAsync)
     extends GraphStage[FlowShape[Iterable[MessageAction.ChangeMessageVisibility], Future[List[SqsAckResult]]]] {
-  private val in = Inlet[Iterable[MessageAction.ChangeMessageVisibility]]("messages")
+
+  private val in = Inlet[Iterable[MessageAction.ChangeMessageVisibility]]("actions")
   private val out = Outlet[Future[List[SqsAckResult]]]("results")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new SqsBatchStageLogic(shape) {
-      private def handleChangeVisibility(request: ChangeMessageVisibilityBatchRequest): Unit = {
-        val entries = request.getEntries
-        for (entry <- entries.asScala)
-          log.debug(s"Set visibility timeout for message {} to {}", entry.getReceiptHandle, entry.getVisibilityTimeout)
-        inFlight -= entries.size()
-        checkForCompletion()
-      }
+
       private var changeVisibilityCallback: AsyncCallback[ChangeMessageVisibilityBatchRequest] = _
+
       override def preStart(): Unit = {
         super.preStart()
-        changeVisibilityCallback = getAsyncCallback[ChangeMessageVisibilityBatchRequest](handleChangeVisibility)
+        changeVisibilityCallback = getAsyncCallback[ChangeMessageVisibilityBatchRequest] { request =>
+          val entries = request.getEntries
+          for (entry <- entries.asScala)
+            log.debug("Set visibility timeout for message {} to {}", entry.getReceiptHandle, entry.getVisibilityTimeout)
+          inFlight -= entries.size()
+          checkForCompletion()
+        }
       }
-      override def onPush() = {
-        val messagesIt = grab(in)
-        val messages = messagesIt.toList
-        val nrOfMessages = messages.size
-        val responsePromise = Promise[List[SqsAckResult]]
-        inFlight += nrOfMessages
 
-        sqsClient
-          .changeMessageVisibilityBatchAsync(
-            new ChangeMessageVisibilityBatchRequest(
-              queueUrl,
-              messages.zipWithIndex.map {
-                case (action, index) =>
-                  new ChangeMessageVisibilityBatchRequestEntry()
-                    .withReceiptHandle(action.message.getReceiptHandle)
-                    .withVisibilityTimeout(action.visibilityTimeout)
-                    .withId(index.toString)
-              }.asJava
-            ),
-            new AsyncHandler[ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchResult]() {
-              override def onError(exception: Exception): Unit = {
-                val batchException = new SqsBatchException(messages.size, exception)
+      override def onPush(): Unit = {
+        val actions = grab(in).toList
+        val nrOfActions = actions.size
+
+        val responsePromise = Promise[List[SqsAckResult]]
+        inFlight += nrOfActions
+
+        val handler =
+          new AsyncHandler[ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchResult]() {
+            override def onError(exception: Exception): Unit = {
+              val batchException = new SqsBatchException(nrOfActions, exception)
+              responsePromise.failure(batchException)
+              failureCallback.invoke(batchException)
+            }
+
+            override def onSuccess(request: ChangeMessageVisibilityBatchRequest,
+                                   result: ChangeMessageVisibilityBatchResult): Unit =
+              if (!result.getFailed.isEmpty) {
+                val nrOfFailedMessages = result.getFailed.size()
+                val batchException: SqsBatchException = new SqsBatchException(
+                  nrOfActions,
+                  s"Some messages failed to change visibility. $nrOfFailedMessages of $nrOfActions messages failed"
+                )
                 responsePromise.failure(batchException)
                 failureCallback.invoke(batchException)
+              } else {
+                responsePromise.success(actions.map(a => new SqsAckResult(Some(result), a)))
+                changeVisibilityCallback.invoke(request)
               }
+          }
 
-              override def onSuccess(request: ChangeMessageVisibilityBatchRequest,
-                                     result: ChangeMessageVisibilityBatchResult): Unit =
-                if (!result.getFailed.isEmpty) {
-                  val nrOfFailedMessages = result.getFailed.size()
-                  val batchException: SqsBatchException =
-                    new SqsBatchException(
-                      batchSize = nrOfMessages,
-                      cause = new Exception(
-                        s"Some messages failed to change visibility. $nrOfFailedMessages of $nrOfMessages messages failed"
-                      )
-                    )
-                  responsePromise.failure(batchException)
-                  failureCallback.invoke(batchException)
-                } else {
-                  responsePromise.success(messages.map(msg => SqsAckResult(Some(result), msg.message.getBody)))
-                  changeVisibilityCallback.invoke(request)
-                }
-            }
-          )
+        sqsClient.changeMessageVisibilityBatchAsync(createBatchRequest(actions), handler)
         push(out, responsePromise.future)
+      }
+
+      private def createBatchRequest(
+          actions: Seq[MessageAction.ChangeMessageVisibility]
+      ): ChangeMessageVisibilityBatchRequest = {
+        val entries = actions.zipWithIndex.map {
+          case (a, i) =>
+            new ChangeMessageVisibilityBatchRequestEntry()
+              .withId(i.toString)
+              .withReceiptHandle(a.message.getReceiptHandle)
+              .withVisibilityTimeout(a.visibilityTimeout)
+        }
+        new ChangeMessageVisibilityBatchRequest()
+          .withQueueUrl(queueUrl)
+          .withEntries(entries.asJava)
       }
     }
 }

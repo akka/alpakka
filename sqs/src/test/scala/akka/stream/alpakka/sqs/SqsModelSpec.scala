@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.sqs
 
+import akka.stream.alpakka.sqs.testkit.MessageFactory
 import com.amazonaws.services.sqs.model.{Message, SendMessageResult}
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -45,27 +46,75 @@ class SqsModelSpec extends FlatSpec with Matchers {
     MessageAction.ChangeMessageVisibility(msg, 0)
   }
 
+  "FifoMessageIdentifiers" should "implement proper equality" in {
+    val sequenceNumber = "sequence-number"
+    val otherSequenceNumber = "other-sequence-number"
+
+    val messageGroupId = "group-id"
+    val otherMessageGroupId = "other-group-id"
+
+    val messageDeduplicationId = Option.empty[String]
+    val otherMessageDeduplicationId = Some("deduplication-id")
+
+    MessageFactory.createFifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId) shouldBe MessageFactory
+      .createFifoMessageIdentifiers(
+        sequenceNumber,
+        messageGroupId,
+        messageDeduplicationId
+      )
+    MessageFactory.createFifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId) should not be MessageFactory
+      .createFifoMessageIdentifiers(
+        otherSequenceNumber,
+        messageGroupId,
+        messageDeduplicationId
+      )
+    MessageFactory.createFifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId) should not be MessageFactory
+      .createFifoMessageIdentifiers(
+        sequenceNumber,
+        otherMessageGroupId,
+        messageDeduplicationId
+      )
+    MessageFactory.createFifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId) should not be MessageFactory
+      .createFifoMessageIdentifiers(
+        sequenceNumber,
+        messageGroupId,
+        otherMessageDeduplicationId
+      )
+  }
+
   "SqsPublishResult" should "implement proper equality" in {
     val metadata = new SendMessageResult()
     val otherMetadata = new SendMessageResult().withMessageId("other-id")
 
-    val body = "body"
-    val otherBody = "other-body"
+    val fifoIdentifiers = Option.empty[FifoMessageIdentifiers]
+    val otherFifoIdentifiers = Some(MessageFactory.createFifoMessageIdentifiers("sequence-number", "group-id", None))
 
-    SqsPublishResult(metadata, body) shouldBe SqsPublishResult(metadata, body)
-    SqsPublishResult(metadata, body) should not be SqsPublishResult(otherMetadata, body)
-    SqsPublishResult(metadata, body) should not be SqsPublishResult(metadata, otherBody)
+    MessageFactory.createSqsPublishResult(metadata, msg, fifoIdentifiers) shouldBe MessageFactory
+      .createSqsPublishResult(metadata, msg, fifoIdentifiers)
+    MessageFactory.createSqsPublishResult(metadata, msg, fifoIdentifiers) should not be MessageFactory
+      .createSqsPublishResult(otherMetadata, msg, fifoIdentifiers)
+    MessageFactory.createSqsPublishResult(metadata, msg, fifoIdentifiers) should not be MessageFactory
+      .createSqsPublishResult(metadata, otherMsg, fifoIdentifiers)
+    MessageFactory.createSqsPublishResult(metadata, msg, fifoIdentifiers) should not be MessageFactory
+      .createSqsPublishResult(metadata, msg, otherFifoIdentifiers)
   }
 
   "SqsAckResult" should "implement proper equality" in {
     val metadata = Some(new SendMessageResult())
     val otherMetadata = Some(new SendMessageResult().withMessageId("other-id"))
 
-    val body = "body"
-    val otherBody = "other-body"
+    val messageAction = MessageAction.Ignore(msg)
+    val otherMessageAction = MessageAction.Ignore(otherMsg)
 
-    SqsAckResult(metadata, body) shouldBe SqsAckResult(metadata, body)
-    SqsAckResult(metadata, body) should not be SqsAckResult(otherMetadata, body)
-    SqsAckResult(metadata, body) should not be SqsAckResult(metadata, otherBody)
+    MessageFactory.createSqsAckResult(metadata, messageAction) shouldBe MessageFactory.createSqsAckResult(metadata,
+                                                                                                          messageAction)
+    MessageFactory.createSqsAckResult(metadata, messageAction) should not be MessageFactory.createSqsAckResult(
+      otherMetadata,
+      messageAction
+    )
+    MessageFactory.createSqsAckResult(metadata, messageAction) should not be MessageFactory.createSqsAckResult(
+      metadata,
+      otherMessageAction
+    )
   }
 }
