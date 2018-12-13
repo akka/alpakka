@@ -93,7 +93,8 @@ public class SqsAckTest extends BaseSqsTest {
     // #ack
 
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
-    verify(awsClient).deleteMessageAsync(any(DeleteMessageRequest.class), any());
+    verify(awsClient, times(messages.size()))
+        .deleteMessageAsync(any(DeleteMessageRequest.class), any());
   }
 
   @Test
@@ -129,7 +130,8 @@ public class SqsAckTest extends BaseSqsTest {
       assertEquals(MessageAction.delete(m), r.messageAction());
     }
 
-    verify(awsClient).deleteMessageAsync(any(DeleteMessageRequest.class), any());
+    verify(awsClient, times(messages.size()))
+        .deleteMessageAsync(any(DeleteMessageRequest.class), any());
   }
 
   @Test
@@ -158,7 +160,7 @@ public class SqsAckTest extends BaseSqsTest {
     // #requeue
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
-    verify(awsClient)
+    verify(awsClient, times(messages.size()))
         .changeMessageVisibilityAsync(any(ChangeMessageVisibilityRequest.class), any());
   }
 
@@ -226,7 +228,8 @@ public class SqsAckTest extends BaseSqsTest {
       assertEquals(MessageAction.delete(m), r.messageAction());
     }
 
-    verify(awsClient).deleteMessageBatchAsync(any(DeleteMessageBatchRequest.class), any());
+    verify(awsClient, times(1))
+        .deleteMessageBatchAsync(any(DeleteMessageBatchRequest.class), any());
   }
 
   @Test
@@ -268,7 +271,7 @@ public class SqsAckTest extends BaseSqsTest {
       assertEquals(MessageAction.changeMessageVisibility(m, 5), r.messageAction());
     }
 
-    verify(awsClient)
+    verify(awsClient, times(1))
         .changeMessageVisibilityBatchAsync(any(ChangeMessageVisibilityBatchRequest.class), any());
   }
 
