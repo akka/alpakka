@@ -138,6 +138,7 @@ import scala.util.{Failure, Success, Try}
                   )
 
               case _: MessageAction.Ignore =>
+                inFlight -= 1 // since there is no callback, we can directly decrease the inFlight counter
                 responsePromise.success(new SqsAckResult(None, action))
             }
             push(out, responsePromise.future)
