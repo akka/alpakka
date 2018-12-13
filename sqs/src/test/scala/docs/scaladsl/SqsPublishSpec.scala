@@ -18,15 +18,15 @@ import scala.concurrent.duration._
 class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   abstract class IntegrationFixture(fifo: Boolean = false) {
-    val queue: String = if (fifo) randomFifoQueueUrl() else randomQueueUrl()
+    val queueUrl: String = if (fifo) randomFifoQueueUrl() else randomQueueUrl()
     implicit val awsSqsClient: AmazonSQSAsync = sqsClient
 
     def receiveMessage(): Message =
-      awsSqsClient.receiveMessage(queue).getMessages.asScala.head
+      awsSqsClient.receiveMessage(queueUrl).getMessages.asScala.head
 
     def receiveMessages(numberOfMessages: Int): Seq[Message] = {
       val request = new ReceiveMessageRequest()
-        .withQueueUrl(queue)
+        .withQueueUrl(queueUrl)
         .withMaxNumberOfMessages(numberOfMessages)
       awsSqsClient.receiveMessage(request).getMessages.asScala
     }
@@ -76,7 +76,7 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
       //#run-string
       Source
         .single("alpakka")
-        .runWith(SqsPublishSink(queue))
+        .runWith(SqsPublishSink(queueUrl))
     //#run-string
     future.futureValue shouldBe Done
 
@@ -86,9 +86,25 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
   it should "publish and pull a message provided as a SendMessageRequest" taggedAs Integration in new IntegrationFixture {
     val future =
       //#run-send-request
+      // for fix SQS queue
       Source
         .single(new SendMessageRequest().withMessageBody("alpakka"))
-        .runWith(SqsPublishSink.messageSink(queue))
+        .runWith(SqsPublishSink.messageSink(queueUrl))
+
+    //#run-send-request
+
+    future.futureValue shouldBe Done
+
+    receiveMessage().getBody shouldBe "alpakka"
+  }
+
+  it should "publish and pull a message provided as a SendMessageRequest with dynamic queue" taggedAs Integration in new IntegrationFixture {
+    val future =
+      //#run-send-request
+      // for dynamic SQS queues
+      Source
+        .single(new SendMessageRequest().withMessageBody("alpakka").withQueueUrl(queueUrl))
+        .runWith(SqsPublishSink.messageSink())
     //#run-send-request
 
     future.futureValue shouldBe Done
@@ -101,7 +117,7 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
     val messages = for (i <- 0 until 20) yield s"Message - $i"
 
     val future = Source(messages)
-      .runWith(SqsPublishSink.grouped(queue))
+      .runWith(SqsPublishSink.grouped(queueUrl))
     //#group
 
     future.futureValue shouldBe Done
@@ -115,7 +131,7 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val future = Source
       .single(messages)
-      .runWith(SqsPublishSink.batch(queue))
+      .runWith(SqsPublishSink.batch(queueUrl))
     //#batch-string
 
     future.futureValue shouldBe Done
@@ -129,7 +145,7 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val future = Source
       .single(messages)
-      .runWith(SqsPublishSink.batchedMessageSink(queue))
+      .runWith(SqsPublishSink.batchedMessageSink(queueUrl))
     //#batch-send-request
 
     future.futureValue shouldBe Done
@@ -140,10 +156,12 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
   "PublishFlow" should "put message in a flow, then pass the result further" taggedAs Integration in new IntegrationFixture {
     val future =
       //#flow
+      // for fix SQS queue
       Source
         .single(new SendMessageRequest().withMessageBody("alpakka"))
-        .via(SqsPublishFlow(queue))
+        .via(SqsPublishFlow(queueUrl))
         .runWith(Sink.head)
+
     //#flow
 
     val result = future.futureValue
@@ -156,8 +174,9 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
   it should "put message in a flow, then pass the result further with dynamic queue" taggedAs Integration in new IntegrationFixture {
     val future =
       //#flow
+      // for dynamic SQS queues
       Source
-        .single(new SendMessageRequest().withMessageBody("alpakka").withQueueUrl(queue))
+        .single(new SendMessageRequest().withMessageBody("alpakka").withQueueUrl(queueUrl))
         .via(SqsPublishFlow())
         .runWith(Sink.head)
     //#flow
@@ -172,13 +191,12 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
   ignore should "put message in a flow, then pass the result further with fifo queues" taggedAs Integration in new IntegrationFixture(
     fifo = true
   ) {
-    // elasticmq does not provide proper fifo support (see https://github.com/adamw/elasticmq/issues/125)
+    // elasticmq does not provide proper fifo support (see https://github.com/adamw/elasticmq/issues/92)
     // set your fifo sqs queue url and awsSqsClient manually
     // override val queue = "https://sqs.us-east-1.amazonaws.com/$AWS_ACCOUNT_ID/$queue_name.fifo"
     // override implicit val awsSqsClient: AmazonSQSAsync = AmazonSQSAsyncClientBuilder.standard().build()
 
     val future =
-    //#flow
       Source
         .single(
           new SendMessageRequest()
@@ -186,9 +204,8 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
             .withMessageGroupId("group-id")
             .withMessageDeduplicationId(s"deduplication-id")
         )
-        .via(SqsPublishFlow(queue))
+        .via(SqsPublishFlow(queueUrl))
         .runWith(Sink.head)
-    //#flow
 
     val result = future.futureValue
     result.message.getBody shouldBe "alpakka"

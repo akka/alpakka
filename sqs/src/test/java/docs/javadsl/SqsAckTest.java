@@ -5,6 +5,7 @@
 package docs.javadsl;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.stream.alpakka.sqs.*;
 import akka.stream.alpakka.sqs.javadsl.BaseSqsTest;
 import akka.stream.alpakka.sqs.javadsl.SqsAckFlow;
@@ -30,29 +31,13 @@ import static org.junit.Assert.assertEquals;
 
 public class SqsAckTest extends BaseSqsTest {
 
-  @Test
-  public void testAcknowledge() throws Exception {
-    final String queueUrl = "none";
-    AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
-    when(awsClient.deleteMessageAsync(any(DeleteMessageRequest.class), any()))
-        .thenAnswer(
-            invocation -> {
-              DeleteMessageRequest request = invocation.getArgument(0);
-              invocation
-                  .<AsyncHandler<DeleteMessageRequest, DeleteMessageResult>>getArgument(1)
-                  .onSuccess(request, new DeleteMessageResult());
-              return new CompletableFuture<DeleteMessageResult>();
-            });
+  private List<Message> createMessages() {
+    List<Message> messages = new ArrayList<>();
+    for (int i = 0; i < 10; i++) {
 
-    // #ack
-    MessageAction action = MessageAction.delete(new Message().withBody("test"));
-    CompletionStage<Done> done =
-        Source.single(action)
-            .runWith(SqsAckSink.create(queueUrl, SqsAckSettings.create(), awsClient), materializer);
-    // #ack
-
-    done.toCompletableFuture().get(1, TimeUnit.SECONDS);
-    verify(awsClient).deleteMessageAsync(any(DeleteMessageRequest.class), any());
+      messages.add(new Message().withBody("test-" + i));
+    }
+    return messages;
   }
 
   @Test
@@ -84,6 +69,34 @@ public class SqsAckTest extends BaseSqsTest {
   }
 
   @Test
+  public void testAcknowledge() throws Exception {
+    final String queueUrl = "none";
+    AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
+    when(awsClient.deleteMessageAsync(any(DeleteMessageRequest.class), any()))
+        .thenAnswer(
+            invocation -> {
+              DeleteMessageRequest request = invocation.getArgument(0);
+              invocation
+                  .<AsyncHandler<DeleteMessageRequest, DeleteMessageResult>>getArgument(1)
+                  .onSuccess(request, new DeleteMessageResult());
+              return new CompletableFuture<DeleteMessageResult>();
+            });
+
+    List<Message> messages = createMessages();
+    Source<Message, NotUsed> source = Source.fromIterator(() -> messages.iterator());
+
+    CompletionStage<Done> done =
+        // #ack
+        source
+            .map(m -> MessageAction.delete(m))
+            .runWith(SqsAckSink.create(queueUrl, SqsAckSettings.create(), awsClient), materializer);
+    // #ack
+
+    done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    verify(awsClient).deleteMessageAsync(any(DeleteMessageRequest.class), any());
+  }
+
+  @Test
   public void testAcknowledgeViaFlow() throws Exception {
     final String queueUrl = "none";
     AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
@@ -97,15 +110,25 @@ public class SqsAckTest extends BaseSqsTest {
               return new CompletableFuture<DeleteMessageResult>();
             });
 
-    // #flow-ack
-    MessageAction action = MessageAction.delete(new Message().withBody("test-ack-flow"));
-    CompletionStage<Done> done =
-        Source.single(action)
+    List<Message> messages = createMessages();
+    Source<Message, NotUsed> source = Source.fromIterator(() -> messages.iterator());
+
+    CompletionStage<List<SqsAckResult>> stage =
+        // #flow-ack
+        source
+            .map(m -> MessageAction.delete(m))
             .via(SqsAckFlow.create(queueUrl, SqsAckSettings.create(), awsClient))
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.seq(), materializer);
     // #flow-ack
 
-    done.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    List<SqsAckResult> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    assertEquals(10, result.size());
+    for (int i = 0; i < 10; i++) {
+      SqsAckResult r = result.get(i);
+      Message m = messages.get(i);
+      assertEquals(MessageAction.delete(m), r.messageAction());
+    }
+
     verify(awsClient).deleteMessageAsync(any(DeleteMessageRequest.class), any());
   }
 
@@ -124,11 +147,13 @@ public class SqsAckTest extends BaseSqsTest {
               return new CompletableFuture<ChangeMessageVisibilityResult>();
             });
 
-    // #requeue
-    MessageAction action =
-        MessageAction.changeMessageVisibility(new Message().withBody("test"), 12);
+    List<Message> messages = createMessages();
+    Source<Message, NotUsed> source = Source.fromIterator(() -> messages.iterator());
+
     CompletionStage<Done> done =
-        Source.single(action)
+        // #requeue
+        source
+            .map(m -> MessageAction.changeMessageVisibility(m, 12))
             .runWith(SqsAckSink.create(queueUrl, SqsAckSettings.create(), awsClient), materializer);
     // #requeue
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
@@ -142,17 +167,26 @@ public class SqsAckTest extends BaseSqsTest {
     final String queueUrl = "none";
     AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
 
-    // #ignore
-    MessageAction action = MessageAction.ignore(new Message().withBody("test"));
-    CompletionStage<SqsAckResult> stage =
-        Source.single(action)
-            .via(SqsAckFlow.create(queueUrl, SqsAckSettings.create(), awsClient))
-            .runWith(Sink.head(), materializer);
-    // #ignore
-    SqsAckResult result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    List<Message> messages = createMessages();
+    Source<Message, NotUsed> source = Source.fromIterator(() -> messages.iterator());
 
-    assertEquals(Option.empty(), result.metadata());
-    assertEquals("test", result.messageAction().message().getBody());
+    CompletionStage<List<SqsAckResult>> stage =
+        // #ignore
+        source
+            .map(m -> MessageAction.ignore(m))
+            .via(SqsAckFlow.create(queueUrl, SqsAckSettings.create(), awsClient))
+            .runWith(Sink.seq(), materializer);
+    // #ignore
+
+    List<SqsAckResult> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    assertEquals(10, result.size());
+    for (int i = 0; i < 10; i++) {
+      SqsAckResult r = result.get(i);
+      Message m = messages.get(i);
+
+      assertEquals(Option.empty(), r.metadata());
+      assertEquals(MessageAction.ignore(m), r.messageAction());
+    }
   }
 
   @Test
@@ -170,25 +204,26 @@ public class SqsAckTest extends BaseSqsTest {
               return new CompletableFuture<DeleteMessageBatchRequest>();
             });
 
-    // #batch-ack
-    List<MessageAction> actions = new ArrayList<>();
-    for (int i = 0; i < 10; i++) {
-      actions.add(MessageAction.delete(new Message().withBody("test-" + i)));
-    }
+    List<Message> messages = createMessages();
+    Source<Message, NotUsed> source = Source.fromIterator(() -> messages.iterator());
+
     CompletionStage<List<SqsAckResult>> stage =
-        Source.fromIterator(() -> actions.iterator())
+        //  #batch-ack
+        source
+            .map(m -> MessageAction.delete(m))
             .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.create(), awsClient))
             .runWith(Sink.seq(), materializer);
+
     // #batch-ack
 
     List<SqsAckResult> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(10, result.size());
     for (int i = 0; i < 10; i++) {
       SqsAckResult r = result.get(i);
-      MessageAction a = actions.get(i);
+      Message m = messages.get(i);
 
       assertEquals(Option.apply(metadata), r.metadata());
-      assertEquals(a, r.messageAction());
+      assertEquals(MessageAction.delete(m), r.messageAction());
     }
 
     verify(awsClient).deleteMessageBatchAsync(any(DeleteMessageBatchRequest.class), any());
@@ -212,13 +247,13 @@ public class SqsAckTest extends BaseSqsTest {
               return new CompletableFuture<ChangeMessageVisibilityBatchRequest>();
             });
 
-    // #batch-requeue
-    List<MessageAction> actions = new ArrayList<>();
-    for (int i = 0; i < 10; i++) {
-      actions.add(MessageAction.changeMessageVisibility(new Message().withBody("test-" + i), 5));
-    }
+    List<Message> messages = createMessages();
+    Source<Message, NotUsed> source = Source.fromIterator(() -> messages.iterator());
+
     CompletionStage<List<SqsAckResult>> stage =
-        Source.fromIterator(() -> actions.iterator())
+        // #batch-requeue
+        source
+            .map(m -> MessageAction.changeMessageVisibility(m, 5))
             .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.create(), awsClient))
             .runWith(Sink.seq(), materializer);
     // #batch-requeue
@@ -227,10 +262,10 @@ public class SqsAckTest extends BaseSqsTest {
     assertEquals(10, result.size());
     for (int i = 0; i < 10; i++) {
       SqsAckResult r = result.get(i);
-      MessageAction a = actions.get(i);
+      Message m = messages.get(i);
 
       assertEquals(Option.apply(metadata), r.metadata());
-      assertEquals(a, r.messageAction());
+      assertEquals(MessageAction.changeMessageVisibility(m, 5), r.messageAction());
     }
 
     verify(awsClient)
@@ -242,24 +277,25 @@ public class SqsAckTest extends BaseSqsTest {
     final String queueUrl = "none";
     AmazonSQSAsync awsClient = mock(AmazonSQSAsync.class);
 
-    // #batch-ignore
-    List<MessageAction> actions = new ArrayList<>();
-    for (int i = 0; i < 10; i++) {
-      actions.add(MessageAction.ignore(new Message().withBody("test-" + i)));
-    }
+    List<Message> messages = createMessages();
+    Source<Message, NotUsed> source = Source.fromIterator(() -> messages.iterator());
+
     CompletionStage<List<SqsAckResult>> stage =
-        Source.fromIterator(() -> actions.iterator())
+        // #batch-ignore
+        source
+            .map(m -> MessageAction.ignore(m))
             .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.create(), awsClient))
             .runWith(Sink.seq(), materializer);
     // #batch-ignore
+
     List<SqsAckResult> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(10, result.size());
     for (int i = 0; i < 10; i++) {
       SqsAckResult r = result.get(i);
-      MessageAction a = actions.get(i);
+      Message m = messages.get(i);
 
       assertEquals(Option.empty(), r.metadata());
-      assertEquals(a, r.messageAction());
+      assertEquals(MessageAction.ignore(m), r.messageAction());
     }
   }
 }

@@ -60,8 +60,8 @@ public class SqsPublishTest extends BaseSqsTest {
 
     final String queueUrl = randomQueueUrl();
 
-    // #run-string
     CompletionStage<Done> done =
+        // #run-string
         Source.single("alpakka")
             .runWith(
                 SqsPublishSink.create(queueUrl, SqsPublishSettings.create(), sqsClient),
@@ -79,8 +79,9 @@ public class SqsPublishTest extends BaseSqsTest {
 
     final String queueUrl = randomQueueUrl();
 
-    // #run-send-request
     CompletionStage<Done> done =
+        // #run-send-request
+        // for fix SQS queue
         Source.single(new SendMessageRequest().withMessageBody("alpakka"))
             .runWith(
                 SqsPublishSink.messageSink(queueUrl, SqsPublishSettings.create(), sqsClient),
@@ -99,8 +100,9 @@ public class SqsPublishTest extends BaseSqsTest {
 
     final String queueUrl = randomQueueUrl();
 
-    // #run-send-request
     CompletionStage<Done> done =
+        // #run-send-request
+        // for dynamic SQS queues
         Source.single(new SendMessageRequest().withMessageBody("alpakka").withQueueUrl(queueUrl))
             .runWith(
                 SqsPublishSink.messageSink(SqsPublishSettings.create(), sqsClient), materializer);
@@ -116,8 +118,9 @@ public class SqsPublishTest extends BaseSqsTest {
   public void sendViaFlow() throws Exception {
     final String queueUrl = randomQueueUrl();
 
-    // #flow
     CompletionStage<SqsPublishResult> done =
+        // #flow
+        // for fix SQS queue
         Source.single(new SendMessageRequest().withMessageBody("alpakka-flow"))
             .via(SqsPublishFlow.create(queueUrl, SqsPublishSettings.create(), sqsClient))
             .runWith(Sink.head(), materializer);
@@ -135,8 +138,9 @@ public class SqsPublishTest extends BaseSqsTest {
   public void sendViaFlowWithDynamicQueue() throws Exception {
     final String queueUrl = randomQueueUrl();
 
-    // #flow
     CompletionStage<SqsPublishResult> done =
+        // #flow
+        // for dynamic SQS queues
         Source.single(new SendMessageRequest(queueUrl, "alpakka-flow"))
             .via(SqsPublishFlow.create(SqsPublishSettings.create(), sqsClient))
             .runWith(Sink.head(), materializer);

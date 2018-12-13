@@ -124,7 +124,7 @@ Scala
 Java
 : @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishTest.java) { #run-send-request }
 
-You can also build flow stages which publish messages to SQS queues, backpressure on queue response, and then forward `SqsPublishResult` ([API](akka.stream.alpakka.sqs.SqsPublishResult)further down the stream. 
+You can also build flow stages which publish messages to SQS queues, backpressure on queue response, and then forward @scaladoc[`SqsPublishResult`](akka.stream.alpakka.sqs.SqsPublishResult) further down the stream. 
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsPublishSpec.scala) { #flow }
@@ -181,7 +181,7 @@ Scala
 Java
 : @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishTest.java) { #batch-string }
 
-Create a sink, that publishes @scala[`Iterable[SendMessageRequest]`]@java[`Iterable<SendMessageRequest`] to the SQS queue.
+Create a sink, that publishes @scala[`Iterable[SendMessageRequest]`]@java[`Iterable<SendMessageRequest>`] to the SQS queue.
 
 @@@ warning
 
@@ -212,7 +212,7 @@ Options:
 
 ## Updating message statuses
 
-`SqsAckSink` and `SqsAckFlow` provide the possibility to acknowledge (delete), ignore, or postpone messages on an SQS queue. They accept `MessageAction` (@scaladoc[API](akka.stream.alpakka.sqs.MessageAction)) sub-classes to select the action to be taken.
+`SqsAckSink` and `SqsAckFlow` provide the possibility to acknowledge (delete), ignore, or postpone messages on an SQS queue. They accept @scaladoc[`MessageAction`](akka.stream.alpakka.sqs.MessageAction) sub-classes to select the action to be taken.
 
 For every message you may decide which action to take and push it together with message back to the queue:
 
@@ -252,7 +252,7 @@ Java
 
 ### Update message status in a flow
 
-The flow accepts a `MessageAction` (@scaladoc[API](akka.stream.alpakka.sqs.MessageAction)) sub-classes, and returns `SqsAckResult` (@scaladoc[API](akka.stream.alpakka.sqs.SqsAckResult)) .
+The flow accepts a @scaladoc[`MessageAction`](akka.stream.alpakka.sqs.MessageAction) sub-classes, and returns @scaladoc[`SqsAckResult`](akka.stream.alpakka.sqs.SqsAckResult) .
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsAckSpec.scala) { #flow-ack }

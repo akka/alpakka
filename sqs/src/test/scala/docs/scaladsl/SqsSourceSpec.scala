@@ -27,21 +27,21 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
   implicit override val patienceConfig = PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
   trait IntegrationFixture {
-    val queue: String = randomQueueUrl()
+    val queueUrl: String = randomQueueUrl()
     implicit val awsSqsClient: AmazonSQSAsync = sqsClient
   }
 
   "SqsSource" should "stream a single batch from the queue" taggedAs Integration in new IntegrationFixture {
-    sqsClient.sendMessage(queue, "alpakka")
+    sqsClient.sendMessage(queueUrl, "alpakka")
 
-    val future = SqsSource(queue, SqsSourceSettings.Defaults)
+    val future = SqsSource(queueUrl, SqsSourceSettings.Defaults)
       .runWith(Sink.head)
 
     future.futureValue.getBody shouldBe "alpakka"
   }
 
   it should "continue streaming if receives an empty response" taggedAs Integration in new IntegrationFixture {
-    val future = SqsSource(queue, SqsSourceSettings().withWaitTimeSeconds(0))
+    val future = SqsSource(queueUrl, SqsSourceSettings().withWaitTimeSeconds(0))
       .runWith(Sink.ignore)
 
     // make sure the source polled sqs once for an empty response
@@ -51,7 +51,7 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
   }
 
   it should "terminate on an empty response if requested" taggedAs Integration in new IntegrationFixture {
-    val future = SqsSource(queue, SqsSourceSettings().withWaitTimeSeconds(0).withCloseOnEmptyReceive(true))
+    val future = SqsSource(queueUrl, SqsSourceSettings().withWaitTimeSeconds(0).withCloseOnEmptyReceive(true))
       .runWith(Sink.ignore)
 
     future.futureValue shouldBe Done
@@ -69,9 +69,9 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
     val attributes = List(SentTimestamp, ApproximateReceiveCount, SenderId)
     val settings = SqsSourceSettings.Defaults.withAttributes(attributes)
 
-    sqsClient.sendMessage(queue, "alpakka")
+    sqsClient.sendMessage(queueUrl, "alpakka")
 
-    val future = SqsSource(queue, settings).runWith(Sink.head)
+    val future = SqsSource(queueUrl, settings).runWith(Sink.head)
 
     future.futureValue.getAttributes.keySet.asScala shouldBe attributes.map(_.name).toSet
   }
@@ -84,9 +84,9 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
     val settings =
       SqsSourceSettings.Defaults.withMessageAttributes(messageAttributes.keys.toList.map(MessageAttributeName.apply))
 
-    sqsClient.sendMessage(new SendMessageRequest(queue, "alpakka").withMessageAttributes(messageAttributes.asJava))
+    sqsClient.sendMessage(new SendMessageRequest(queueUrl, "alpakka").withMessageAttributes(messageAttributes.asJava))
 
-    val future = SqsSource(queue, settings)
+    val future = SqsSource(queueUrl, settings)
       .runWith(Sink.head)
 
     future.futureValue.getMessageAttributes.asScala shouldBe messageAttributes
@@ -156,9 +156,9 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
         .build()
     //#init-custom-client
 
-    customSqsClient.sendMessage(queue, "alpakka")
+    customSqsClient.sendMessage(queueUrl, "alpakka")
 
-    val future = SqsSource(queue, SqsSourceSettings())(customSqsClient)
+    val future = SqsSource(queueUrl, SqsSourceSettings())(customSqsClient)
       .runWith(Sink.head)
 
     future.futureValue.getBody shouldBe "alpakka"
@@ -166,12 +166,12 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
 
   it should "stream multiple batches from the queue" taggedAs Integration in new IntegrationFixture {
     val input = for (i <- 1 to 100) yield s"alpakka-$i"
-    input.foreach(m => sqsClient.sendMessage(queue, m))
+    input.foreach(m => sqsClient.sendMessage(queueUrl, m))
 
-    //#run
     val future =
+      //#run
       SqsSource(
-        queue,
+        queueUrl,
         SqsSourceSettings().withCloseOnEmptyReceive(true).withWaitTime(1.second)
       ).runWith(Sink.seq)
     //#run
@@ -180,9 +180,9 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
   }
 
   it should "stream single message twice from the queue when visibility timeout passed" taggedAs Integration in new IntegrationFixture {
-    sqsClient.sendMessage(queue, "alpakka")
+    sqsClient.sendMessage(queueUrl, "alpakka")
 
-    val future = SqsSource(queue, SqsSourceSettings().withVisibilityTimeout(1.second))
+    val future = SqsSource(queueUrl, SqsSourceSettings().withVisibilityTimeout(1.second))
       .takeWithin(1500.milliseconds)
       .runWith(Sink.seq)
 
@@ -190,9 +190,9 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
   }
 
   it should "stream single message once from the queue when visibility timeout did not pass" taggedAs Integration in new IntegrationFixture {
-    sqsClient.sendMessage(queue, "alpakka")
+    sqsClient.sendMessage(queueUrl, "alpakka")
 
-    val future = SqsSource(queue, SqsSourceSettings().withVisibilityTimeout(3.seconds))
+    val future = SqsSource(queueUrl, SqsSourceSettings().withVisibilityTimeout(3.seconds))
       .takeWithin(500.milliseconds)
       .runWith(Sink.seq)
 

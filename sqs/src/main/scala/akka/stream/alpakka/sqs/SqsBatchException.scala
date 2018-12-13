@@ -15,6 +15,6 @@ final class SqsBatchException @InternalApi private[sqs] (val batchSize: Int, mes
     initCause(cause)
   }
 
-  /** JAva API */
+  /** Java API */
   def getBatchSize: Int = batchSize
 }

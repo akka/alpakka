@@ -26,17 +26,17 @@ import scala.collection.JavaConverters._
 class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   trait IntegrationFixture {
-    val queue: String = randomQueueUrl()
+    val queueUrl: String = randomQueueUrl()
     implicit val awsSqsClient: AmazonSQSAsync = spy(sqsClient)
 
     def sendMessage(message: String): Unit =
-      awsSqsClient.sendMessage(queue, message)
+      awsSqsClient.sendMessage(queueUrl, message)
 
     def sendMessages(messages: Seq[String]): Unit = {
       val batch = messages.zipWithIndex.map {
         case (m, i) => new SendMessageBatchRequestEntry().withMessageBody(m).withId(i.toString)
       }
-      awsSqsClient.sendMessageBatch(queue, batch.asJava)
+      awsSqsClient.sendMessageBatch(queueUrl, batch.asJava)
     }
   }
 
@@ -84,10 +84,10 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val future =
       //#ack
-      SqsSource(queue)
+      SqsSource(queueUrl)
         .take(1)
         .map(MessageAction.Delete(_))
-        .runWith(SqsAckSink(queue))
+        .runWith(SqsAckSink(queueUrl))
     //#ack
 
     future.futureValue shouldBe Done
@@ -102,10 +102,10 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val future =
       //#requeue
-      SqsSource(queue)
+      SqsSource(queueUrl)
         .take(1)
         .map(MessageAction.ChangeMessageVisibility(_, 5))
-        .runWith(SqsAckSink(queue))
+        .runWith(SqsAckSink(queueUrl))
     //#requeue
 
     future.futureValue shouldBe Done
@@ -119,9 +119,9 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     sendMessage("alpakka-flow-ack")
 
     //#ignore
-    SqsSource(queue)
+    SqsSource(queueUrl)
       .map(MessageAction.Ignore(_))
-      .runWith(SqsAckSink(queue))
+      .runWith(SqsAckSink(queueUrl))
     //#ignore
 
     // TODO: assertions missing
@@ -132,10 +132,10 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val future =
       //#flow-ack
-      SqsSource(queue)
+      SqsSource(queueUrl)
         .take(1)
         .map(MessageAction.Delete(_))
-        .via(SqsAckFlow(queue))
+        .via(SqsAckFlow(queueUrl))
         .runWith(Sink.head)
     //#flow-ack
 
@@ -151,13 +151,11 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     sendMessage("alpakka-4")
 
     val future =
-      //#ignore
-      SqsSource(queue)
+      SqsSource(queueUrl)
         .take(1)
         .map(MessageAction.Ignore(_))
-        .via(SqsAckFlow(queue))
+        .via(SqsAckFlow(queueUrl))
         .runWith(Sink.head)
-    //#ignore
 
     val result = future.futureValue
     result.metadata shouldBe empty
@@ -171,12 +169,12 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val future =
       //#batch-ack
-      SqsSource(queue)
+      SqsSource(queueUrl)
         .take(10)
         .map(MessageAction.Delete(_))
-        .via(SqsAckFlow.grouped(queue, SqsAckGroupedSettings.Defaults))
-        //#batch-ack
+        .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.Defaults))
         .runWith(Sink.seq)
+    //#batch-ack
 
     val results = future.futureValue
     results.size shouldBe 10
@@ -195,10 +193,10 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     val messages = for (i <- 0 until 10) yield s"Message - $i"
     sendMessages(messages)
 
-    val future = SqsSource(queue)
+    val future = SqsSource(queueUrl)
       .take(10)
       .map(MessageAction.Delete(_))
-      .via(SqsAckFlow.grouped(queue, SqsAckGroupedSettings().withMaxBatchSize(5)))
+      .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings().withMaxBatchSize(5)))
       .runWith(Sink.seq)
 
     val results = future.futureValue
@@ -285,7 +283,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     val messages = for (i <- 0 until 10) yield s"Message - $i"
     sendMessages(messages)
 
-    val future = SqsSource(queue)
+    val future = SqsSource(queueUrl)
       .take(10)
       .zipWithIndex
       .map {
@@ -293,7 +291,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
         case (m, i) if i % 3 == 1 => MessageAction.ChangeMessageVisibility(m, 5)
         case (m, _) => MessageAction.Ignore(m)
       }
-      .via(SqsAckFlow.grouped(queue, SqsAckGroupedSettings.Defaults))
+      .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.Defaults))
       .runWith(Sink.seq)
 
     val results = future.futureValue
@@ -319,10 +317,10 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val future =
       //#batch-requeue
-      SqsSource(queue)
+      SqsSource(queueUrl)
         .take(10)
         .map(MessageAction.ChangeMessageVisibility(_, 5))
-        .via(SqsAckFlow.grouped(queue, SqsAckGroupedSettings.Defaults))
+        .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.Defaults))
         .runWith(Sink.seq)
     //#batch-requeue
 
