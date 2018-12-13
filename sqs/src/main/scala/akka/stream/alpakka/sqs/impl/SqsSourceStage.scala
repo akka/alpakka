@@ -23,7 +23,7 @@ import scala.collection.JavaConverters._
     implicit sqsClient: AmazonSQSAsync
 ) extends GraphStage[SourceShape[Message]] {
 
-  val out: Outlet[Message] = Outlet("SqsSource.out")
+  private val out: Outlet[Message] = Outlet("message")
   override val shape: SourceShape[Message] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -40,14 +40,14 @@ import scala.collection.JavaConverters._
       private var currentRequests = 0
       private var closeAfterDrain = false
 
-      private def canReceiveNewMessages = {
+      private def canReceiveNewMessages: Boolean = {
         val currentFreeRequests = (settings.maxBufferSize - buffer.size) / settings.maxBatchSize
         currentFreeRequests > currentRequests &&
         maxCurrentConcurrency > currentRequests &&
         !closeAfterDrain
       }
 
-      private def shouldTerminateStage =
+      private def shouldTerminateStage: Boolean =
         closeAfterDrain &&
         currentRequests == 0 &&
         buffer.isEmpty
@@ -97,7 +97,7 @@ import scala.collection.JavaConverters._
         receiveMoreOrComplete()
       }
 
-      private def setVisibilityTimeoutIfExists(request: ReceiveMessageRequest) =
+      private def setVisibilityTimeoutIfExists(request: ReceiveMessageRequest): ReceiveMessageRequest =
         settings.visibilityTimeout
           .map(_.toSeconds.toInt)
           .map(request.withVisibilityTimeout(_))

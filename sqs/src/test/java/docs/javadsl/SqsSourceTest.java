@@ -38,8 +38,8 @@ public class SqsSourceTest extends BaseSqsTest {
       sqsClient.sendMessage(queueUrl, "alpakka-" + i);
     }
 
-    // #run
     final CompletionStage<List<Message>> cs =
+        // #run
         SqsSource.create(
                 queueUrl,
                 SqsSourceSettings.create()
