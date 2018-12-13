@@ -14,6 +14,11 @@ The AWS DynamoDB connector provides a flow for streaming DynamoDB requests. For 
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="dynamodb" }
+
+
 ## Setup
 
 This connector needs a @scaladoc[DynamoClient](akka.stream.alpakka.dynamodb.DynamoClient) instance in order to create stream operators. You can create the client yourself, or let the Akka Extension handle the lifecycle of the client for you.

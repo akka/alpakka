@@ -16,6 +16,10 @@ Azure Storage Queue is a queuing service similar to Amazon's SQS. It is designed
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="azure-storage-queue" }
+
 
 ## Example usage
 

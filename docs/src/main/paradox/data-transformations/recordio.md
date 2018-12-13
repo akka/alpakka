@@ -31,6 +31,11 @@ is parsed into frames:
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="simple-codecs" }
+
+
 ## Usage
 
 The flow factory `RecordIOFraming` (@scala[@scaladoc[API](akka.stream.alpakka.recordio.scaladsl.RecordIOFraming$)]@java[@scaladoc[API](akka.stream.alpakka.recordio.javadsl.RecordIOFraming$)]) provides a `scanner`

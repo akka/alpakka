@@ -16,6 +16,11 @@ Unlogged batches are also supported.
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="cassandra" }
+
+
 ## Usage
 
 Sources provided by this connector need a prepared session to communicate with Cassandra cluster. First, let's initialize a Cassandra session.

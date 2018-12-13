@@ -26,6 +26,11 @@ Please read more about it in the [ReactiveMongo documentation](http://reactivemo
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="mongodb" }
+
+
 ## Usage
 
 Sources provided by this connector need a prepared session to communicate with MongoDB server.

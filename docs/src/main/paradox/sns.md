@@ -16,6 +16,11 @@ For more information about AWS SNS please visit the [official documentation](htt
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="sns" }
+
+
 ## Setup
 
 Sources provided by this connector need a prepared `AmazonSNSAsyncClient` to publish messages to a topic.

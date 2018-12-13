@@ -17,6 +17,10 @@ For more information about AWS Lambda please visit the [AWS lambda documentation
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="awslambda" }
+
 ## Usage
 
 Flow provided by this connector need a prepared `AWSLambdaAsyncClient` to be able to invoke lambda functions.

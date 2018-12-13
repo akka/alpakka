@@ -18,6 +18,11 @@ queue and set other queue as subscribers. More information about that could be f
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="ironmq" }
+
+
 ## Usage
 
 IronMQ can be used either in cloud or on-premise. Either way you need a authentication token and a project ID. These can

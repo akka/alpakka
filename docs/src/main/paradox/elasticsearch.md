@@ -16,6 +16,11 @@ For more information about Elasticsearch, please visit the [Elasticsearch docume
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="elasticsearch" }
+
+
 ## Set up REST client
 
 Sources, Flows and Sinks provided by this connector need a prepared `org.elasticsearch.client.RestClient` to

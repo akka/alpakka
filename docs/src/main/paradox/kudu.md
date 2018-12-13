@@ -8,6 +8,19 @@ Apache Kudu is a free and open source column-oriented data store in the Apache H
 
 [Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Akudu)
 
+
+## Artifacts
+
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-kudu_$scala.binary.version$
+  version=$project.version$
+}
+
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="kudu" }
+
 ## Configuration
 
 To connect to Kudu

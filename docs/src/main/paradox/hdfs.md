@@ -16,6 +16,11 @@ For more information about Hadoop, please visit the [Hadoop documentation](https
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="hdfs" }
+
+
 ## Specifying a Hadoop Version
 
 By default, HDFS connector uses Hadoop **3.1.0**. If you are using a different version of Hadoop, 
