@@ -4,17 +4,21 @@
 
 package akka.stream.alpakka.elasticsearch
 
+import java.util.concurrent.TimeUnit
+
+import scala.concurrent.duration.FiniteDuration
+
 /**
  * Configure Elastiscsearch sources.
  *
  */
 final class ElasticsearchSourceSettings private (val bufferSize: Int,
                                                  val includeDocumentVersion: Boolean,
-                                                 val scroll: String) {
+                                                 val scrollDuration: FiniteDuration) {
 
   def withBufferSize(value: Int): ElasticsearchSourceSettings = copy(bufferSize = value)
 
-  def withScroll(value: String): ElasticsearchSourceSettings = copy(scroll = value)
+  def withScrollDuration(value: FiniteDuration): ElasticsearchSourceSettings = copy(scrollDuration = value)
 
   /**
    * If includeDocumentVersion is true, '_version' is returned with the search-results
@@ -26,19 +30,37 @@ final class ElasticsearchSourceSettings private (val bufferSize: Int,
 
   private def copy(bufferSize: Int = bufferSize,
                    includeDocumentVersion: Boolean = includeDocumentVersion,
-                   scroll: String = scroll): ElasticsearchSourceSettings =
+                   scrollDuration: FiniteDuration = scrollDuration): ElasticsearchSourceSettings =
     new ElasticsearchSourceSettings(bufferSize = bufferSize,
                                     includeDocumentVersion = includeDocumentVersion,
-                                    scroll = scroll)
+                                    scrollDuration = scrollDuration)
+
+  def scroll: String = {
+    val scrollString = scrollDuration.unit match {
+      case TimeUnit.DAYS => "d"
+      case TimeUnit.HOURS => "h"
+      case TimeUnit.MINUTES => "m"
+      case TimeUnit.SECONDS => "s"
+      case TimeUnit.MILLISECONDS => "ms"
+      case TimeUnit.MICROSECONDS => "micros"
+      case TimeUnit.NANOSECONDS => "nanos"
+    }
+
+    s"${scrollDuration.length}$scrollString"
+  }
 
   override def toString =
-    s"""ElasticsearchSourceSettings(bufferSize=$bufferSize,includeDocumentVersion=$includeDocumentVersion)"""
+    s"""ElasticsearchSourceSettings(bufferSize=$bufferSize,includeDocumentVersion=$includeDocumentVersion,scrollDuration=$scrollDuration)"""
 
 }
 
 object ElasticsearchSourceSettings {
 
-  val Default = new ElasticsearchSourceSettings(bufferSize = 10, includeDocumentVersion = false, scroll = "5m")
+  val Default = new ElasticsearchSourceSettings(
+    bufferSize = 10,
+    includeDocumentVersion = false,
+    scrollDuration = FiniteDuration(5, TimeUnit.MINUTES)
+  )
 
   /** Scala API */
   def apply(): ElasticsearchSourceSettings = Default
