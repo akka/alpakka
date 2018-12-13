@@ -5,8 +5,8 @@
 package akka.stream.alpakka.elasticsearch
 
 import java.util.concurrent.TimeUnit
-
 import scala.concurrent.duration.FiniteDuration
+import akka.util.JavaDurationConverters._
 
 /**
  * Configure Elastiscsearch sources.
@@ -19,6 +19,8 @@ final class ElasticsearchSourceSettings private (val bufferSize: Int,
   def withBufferSize(value: Int): ElasticsearchSourceSettings = copy(bufferSize = value)
 
   def withScrollDuration(value: FiniteDuration): ElasticsearchSourceSettings = copy(scrollDuration = value)
+
+  def withScrollDuration(value: java.time.Duration): ElasticsearchSourceSettings = copy(scrollDuration = value.asScala)
 
   /**
    * If includeDocumentVersion is true, '_version' is returned with the search-results
