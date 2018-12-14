@@ -17,9 +17,7 @@ The format uses three different characters to structure the data:
 Lines are separated by either Line Feed (`\n` = ASCII 10) or Carriage Return and Line Feed (`\r` = ASCII 13 + `\n` = ASCII 10).
 
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Acsv)
+@@project-info{ projectId="csv" }
 
 
 ## Artifacts

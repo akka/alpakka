@@ -4,9 +4,7 @@ The Solr connector provides Akka Stream sources and sinks for Solr.
 
 For more information about Solr please visit the [Solr documentation](http://lucene.apache.org/solr/resources.html).
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Asolr)
+@@project-info{ projectId="solr" }
 
 ## Artifacts
 
