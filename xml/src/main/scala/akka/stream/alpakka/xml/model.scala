@@ -6,8 +6,6 @@ package akka.stream.alpakka.xml
 
 import java.util.Optional
 
-import akka.stream.alpakka.ParseEventMarker
-
 import scala.collection.JavaConverters._
 import scala.collection.immutable.DefaultMap
 import scala.compat.java8.OptionConverters._
