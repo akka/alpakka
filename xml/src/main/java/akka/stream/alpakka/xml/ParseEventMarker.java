@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka;
+package akka.stream.alpakka.xml;
 
 /**
  * Mirrors the sub-classes of [[ParseEvent]] to allow use with Java switch statements instead of
