@@ -123,7 +123,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
         client.performRequestAsync(
           "POST",
           endpoint,
-          Map("scroll" -> "5m", "sort" -> "_doc").asJava,
+          Map("scroll" -> settings.scroll, "sort" -> "_doc").asJava,
           new StringEntity(searchBody),
           this,
           new BasicHeader("Content-Type", "application/json")
@@ -135,7 +135,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
           "POST",
           s"/_search/scroll",
           Map[String, String]().asJava,
-          new StringEntity(Map("scroll" -> "5m", "scroll_id" -> scrollId).toJson.toString),
+          new StringEntity(Map("scroll" -> settings.scroll, "scroll_id" -> scrollId).toJson.toString),
           this,
           new BasicHeader("Content-Type", "application/json")
         )
