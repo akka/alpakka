@@ -4,6 +4,8 @@
 
 package docs.scaladsl
 
+import java.util.concurrent.TimeUnit
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
@@ -104,7 +106,9 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   private def documentation: Unit = {
     //#source-settings
-    val sourceSettings = ElasticsearchSourceSettings().withBufferSize(10)
+    val sourceSettings = ElasticsearchSourceSettings()
+      .withBufferSize(10)
+      .withScrollDuration(FiniteDuration(5, TimeUnit.MINUTES))
     //#source-settings
     //#sink-settings
     val sinkSettings =
@@ -113,6 +117,51 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         .withVersionType("internal")
         .withRetryLogic(RetryAtFixedRate(maxRetries = 5, retryInterval = 1.second))
     //#sink-settings
+  }
+
+  "ElasticsearchSourceSettings" should {
+    "convert scrollDuration value to correct scroll string value (Days)" in {
+      val sourceSettings = ElasticsearchSourceSettings()
+        .withScrollDuration(FiniteDuration(5, TimeUnit.DAYS))
+
+      sourceSettings.scroll shouldEqual "5d"
+    }
+    "convert scrollDuration value to correct scroll string value (Hours)" in {
+      val sourceSettings = ElasticsearchSourceSettings()
+        .withScrollDuration(FiniteDuration(5, TimeUnit.HOURS))
+
+      sourceSettings.scroll shouldEqual "5h"
+    }
+    "convert scrollDuration value to correct scroll string value (Minutes)" in {
+      val sourceSettings = ElasticsearchSourceSettings()
+        .withScrollDuration(FiniteDuration(5, TimeUnit.MINUTES))
+
+      sourceSettings.scroll shouldEqual "5m"
+    }
+    "convert scrollDuration value to correct scroll string value (Seconds)" in {
+      val sourceSettings = ElasticsearchSourceSettings()
+        .withScrollDuration(FiniteDuration(5, TimeUnit.SECONDS))
+
+      sourceSettings.scroll shouldEqual "5s"
+    }
+    "convert scrollDuration value to correct scroll string value (Milliseconds)" in {
+      val sourceSettings = ElasticsearchSourceSettings()
+        .withScrollDuration(FiniteDuration(5, TimeUnit.MILLISECONDS))
+
+      sourceSettings.scroll shouldEqual "5ms"
+    }
+    "convert scrollDuration value to correct scroll string value (Microseconds)" in {
+      val sourceSettings = ElasticsearchSourceSettings()
+        .withScrollDuration(FiniteDuration(5, TimeUnit.MICROSECONDS))
+
+      sourceSettings.scroll shouldEqual "5micros"
+    }
+    "convert scrollDuration value to correct scroll string value (Nanoseconds)" in {
+      val sourceSettings = ElasticsearchSourceSettings()
+        .withScrollDuration(FiniteDuration(5, TimeUnit.NANOSECONDS))
+
+      sourceSettings.scroll shouldEqual "5nanos"
+    }
   }
 
   "Un-typed Elasticsearch connector" should {
