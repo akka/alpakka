@@ -16,7 +16,7 @@ object Common extends AutoPlugin {
   Dependencies.Common ++ Seq(
     organization := "com.lightbend.akka",
     organizationName := "Lightbend Inc.",
-    homepage := Some(url("https://github.com/akka/alpakka")),
+    homepage := Some(url("https://developer.lightbend.com/docs/alpakka/current/")),
     scmInfo := Some(ScmInfo(url("https://github.com/akka/alpakka"), "git@github.com:akka/alpakka.git")),
     developers += Developer("contributors",
                             "Contributors",

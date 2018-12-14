@@ -58,9 +58,7 @@ In this particular example, only the `rows` array is interesting for the applica
 even: only the `doc` inside each element of the array.
 
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Ajson-streaming)
+@@project-info{ projectId="json-streaming" }
 
 
 ### Artifacts

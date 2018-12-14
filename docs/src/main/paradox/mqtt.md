@@ -16,9 +16,7 @@ Alpakka contains @ref[another MQTT connector](mqtt-streaming.md) which is _not_ 
 
 The Alpakka MQTT connector provides an Akka Stream source, sink and flow to connect to MQTT brokers. It is based on the [Eclipse Paho Java client](https://www.eclipse.org/paho/clients/java/).
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Amqtt)
+@@project-info{ projectId="mqtt" }
 
 ## Artifacts
 

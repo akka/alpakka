@@ -4,9 +4,7 @@ The Cassandra connector allows you to read and write to Cassandra. You can query
 
 Unlogged batches are also supported. 
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Acassandra)
+@@project-info{ projectId="cassandra" }
 
 ## Artifacts
 
