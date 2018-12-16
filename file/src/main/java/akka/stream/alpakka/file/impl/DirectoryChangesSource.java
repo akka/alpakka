@@ -22,6 +22,7 @@ import scala.concurrent.duration.FiniteDuration;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Queue;
 import java.util.function.BiFunction;
 
@@ -157,22 +158,26 @@ public final class DirectoryChangesSource<T> extends GraphStage<SourceShape<T>> 
               // overflow means that some file system change events may have been missed,
               // that may be ok for some scenarios but to make sure it does not pass unnoticed we
               // fail the stage
-              failStage(
-                  new RuntimeException("Overflow from watch service: '" + directoryPath + "'"));
-
+              //to prevent "overflow from watch service error" if there is an trigger on arriving  >~500 files
+              try {
+                Files.list(directoryPath)
+                    .filter(t -> t.toFile().isFile())
+                    .forEach(t -> buffer.add(combiner.apply(t, DirectoryChange.Creation))); //use "Creation" event by default
+              } catch (IOException e) {
+                failStage(new RuntimeException("Overflow from watch service: '" + directoryPath + "'", e));
+              }
             } else {
               // if it's not an overflow it must be a Path event
               @SuppressWarnings("unchecked")
               final Path path = (Path) event.context();
               final Path absolutePath = directoryPath.resolve(path);
               final DirectoryChange change = kindToChange(kind);
-
               buffer.add(combiner.apply(absolutePath, change));
-              if (buffer.size() > maxBufferSize) {
-                failStage(
-                    new RuntimeException(
-                        "Max event buffer size " + maxBufferSize + " reached for $path"));
-              }
+            }
+            if (buffer.size() > maxBufferSize) {
+              failStage(
+                  new RuntimeException(
+                      "Max event buffer size " + maxBufferSize + " reached for $path"));
             }
           }
         } finally {
