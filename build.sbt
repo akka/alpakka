@@ -65,10 +65,15 @@ lazy val alpakka = project
         |  mimaReportBinaryIssues - checks whether this current API
         |    is binary compatible with the released version
       """.stripMargin,
-    mimaPreviousArtifacts := Set(
-      organization.value %% name.value % previousStableVersion.value
-        .getOrElse(throw new Error("Unable to determine previous version"))
-    )
+    // unidoc combines sources and jars from all connectors and that
+    // includes two incompatible versions of protobuf. Depending on the
+    // classpath order that might lead to scaladoc compilation errors.
+    // Therefore the older version is exlcuded here.
+    ScalaUnidoc / unidoc / fullClasspath := {
+      (ScalaUnidoc / unidoc / fullClasspath).value
+        .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.5.0.jar"))
+    },
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`)
   )
 
 lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp)
@@ -274,6 +279,10 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
     .enablePlugins(AutomateHeaderPlugin)
     .settings(
       name := s"akka-stream-alpakka-$projectId",
-      AutomaticModuleName.settings(s"akka.stream.alpakka.$moduleName")
+      AutomaticModuleName.settings(s"akka.stream.alpakka.$moduleName"),
+      mimaPreviousArtifacts := Set(
+        organization.value %% name.value % previousStableVersion.value
+          .getOrElse(throw new Error("Unable to determine previous version"))
+      )
     )
     .settings(additionalSettings: _*)

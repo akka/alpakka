@@ -39,6 +39,23 @@ object Common extends AutoPlugin {
       "-Xfuture",
       "-target:jvm-1.8"
     ),
+    Compile / doc / scalacOptions := scalacOptions.value ++ Seq(
+      "-doc-title",
+      "Alpakka",
+      "-doc-version",
+      version.value,
+      "-sourcepath",
+      (baseDirectory in ThisBuild).value.toString,
+      "-doc-source-url", {
+        val branch = if (isSnapshot.value) "master" else s"v$version"
+        s"https://github.com/akka/alpakka/tree/${branch}$${sourcepath.name}.scala#L1"
+      },
+      "-skip-packages",
+      "akka.pattern:" + // for some reason Scaladoc creates this
+      // excluding generated grpc classes, except the model ones (com.google.pubsub)
+      "com.google.api:com.google.cloud:com.google.iam:com.google.logging:" +
+      "com.google.longrunning:com.google.protobuf:com.google.rpc:com.google.type"
+    ),
     javacOptions in compile ++= Seq(
       "-Xlint:unchecked"
     ),
