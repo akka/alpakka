@@ -63,21 +63,21 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
   lazy val version1DefaultRegionClient = S3Client(listBucketVersion1Settings)
 
   it should "list with real credentials" in {
-    val result = S3External.listBucket(defaultRegionBucket, None)(defaultRegionClient).runWith(Sink.seq)
+    val result = S3.listBucket(defaultRegionBucket, None)(defaultRegionClient).runWith(Sink.seq)
 
     val listingResult = result.futureValue
     listingResult.size shouldBe defaultRegionContentCount
   }
 
   it should "list with real credentials using the Version 1 API" in {
-    val result = S3External.listBucket(defaultRegionBucket, None)(version1DefaultRegionClient).runWith(Sink.seq)
+    val result = S3.listBucket(defaultRegionBucket, None)(version1DefaultRegionClient).runWith(Sink.seq)
 
     val listingResult = result.futureValue
     listingResult.size shouldBe defaultRegionContentCount
   }
 
   it should "list with real credentials in non us-east-1 zone" in {
-    val result = S3External.listBucket(otherRegionBucket, None)(otherRegionClient).runWith(Sink.seq)
+    val result = S3.listBucket(otherRegionBucket, None)(otherRegionClient).runWith(Sink.seq)
 
     val listingResult = result.futureValue
     listingResult.size shouldBe otherRegionContentCount
@@ -89,7 +89,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     val data = Source.single(ByteString(objectValue))
 
     val result =
-      S3External.putObject(defaultRegionBucket,
+      S3.putObject(defaultRegionBucket,
                            objectKey,
                            data,
                            bytes.length,
@@ -106,14 +106,14 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     val data = Source.single(ByteString(objectValue))
 
     val result = for {
-      put <- S3External.putObject(defaultRegionBucket,
+      put <- S3.putObject(defaultRegionBucket,
                                   objectKey,
                                   data,
                                   bytes.length,
                                   s3Headers = S3Headers(MetaHeaders(metaHeaders)))
-      metaBefore <- S3External.getObjectMetadata(defaultRegionBucket, objectKey)
-      delete <- S3External.deleteObject(defaultRegionBucket, objectKey)
-      metaAfter <- S3External.getObjectMetadata(defaultRegionBucket, objectKey)
+      metaBefore <- S3.getObjectMetadata(defaultRegionBucket, objectKey)
+      delete <- S3.deleteObject(defaultRegionBucket, objectKey)
+      metaAfter <- S3.getObjectMetadata(defaultRegionBucket, objectKey)
     } yield {
       (put, delete, metaBefore, metaAfter)
     }
@@ -133,7 +133,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
 
     val result =
       source.runWith(
-        S3External.multipartUpload(defaultRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
+        S3.multipartUpload(defaultRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
       )
 
     val multipartUploadResult = Await.ready(result, 90.seconds).futureValue
@@ -145,7 +145,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     implicit val client = defaultRegionClient
 
     val Some((source, meta)) =
-      Await.ready(S3External.download(defaultRegionBucket, objectKey), 5.seconds).futureValue
+      Await.ready(S3.download(defaultRegionBucket, objectKey), 5.seconds).futureValue
 
     val bodyFuture = source
       .map(_.decodeString("utf8"))
@@ -161,7 +161,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
   it should "delete with real credentials" in {
     implicit val client = defaultRegionClient
 
-    val delete = S3External.deleteObject(defaultRegionBucket, objectKey)
+    val delete = S3.deleteObject(defaultRegionBucket, objectKey)
     delete.futureValue shouldEqual akka.Done
   }
 
@@ -173,9 +173,9 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
 
     val results = for {
       upload <- source.runWith(
-        S3External.multipartUpload(defaultRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
+        S3.multipartUpload(defaultRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
       )
-      download <- S3External.download(defaultRegionBucket, objectKey).flatMap {
+      download <- S3.download(defaultRegionBucket, objectKey).flatMap {
         case Some((downloadSource, _)) =>
           downloadSource
             .map(_.decodeString("utf8"))
@@ -191,7 +191,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     multipartUploadResult.key shouldBe objectKey
     downloaded shouldBe objectValue
 
-    S3External.deleteObject(defaultRegionBucket, objectKey).futureValue shouldEqual akka.Done
+    S3.deleteObject(defaultRegionBucket, objectKey).futureValue shouldEqual akka.Done
   }
 
   it should "upload, download and delete with brackets in the key" in {
@@ -202,9 +202,9 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
 
     val results = for {
       upload <- source.runWith(
-        S3External.multipartUpload(defaultRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
+        S3.multipartUpload(defaultRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
       )
-      download <- S3External.download(defaultRegionBucket, objectKey).flatMap {
+      download <- S3.download(defaultRegionBucket, objectKey).flatMap {
         case Some((downloadSource, _)) =>
           downloadSource
             .map(_.decodeString("utf8"))
@@ -220,7 +220,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     multipartUploadResult.key shouldBe objectKey
     downloaded shouldBe objectValue
 
-    S3External.deleteObject(defaultRegionBucket, objectKey).futureValue shouldEqual akka.Done
+    S3.deleteObject(defaultRegionBucket, objectKey).futureValue shouldEqual akka.Done
   }
 
   it should "upload, download and delete with spaces in the key in non us-east-1 zone" in {
@@ -229,11 +229,11 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
 
     val results = for {
       upload <- source.runWith(
-        S3External.multipartUpload(otherRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))(
+        S3.multipartUpload(otherRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))(
           otherRegionClient
         )
       )
-      download <- S3External.download(defaultRegionBucket, objectKey)(defaultRegionClient).flatMap {
+      download <- S3.download(defaultRegionBucket, objectKey)(defaultRegionClient).flatMap {
         case Some((downloadSource, _)) =>
           downloadSource
             .map(_.decodeString("utf8"))
@@ -249,7 +249,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     multipartUploadResult.key shouldBe objectKey
     downloaded shouldBe objectValue
 
-    S3External.deleteObject(otherRegionBucket, objectKey)(defaultRegionClient).futureValue shouldEqual akka.Done
+    S3.deleteObject(otherRegionBucket, objectKey)(defaultRegionClient).futureValue shouldEqual akka.Done
   }
 
   it should "upload, download and delete with special characters in the key in non us-east-1 zone" in {
@@ -259,11 +259,11 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
 
     val results = for {
       upload <- source.runWith(
-        S3External.multipartUpload(otherRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))(
+        S3.multipartUpload(otherRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))(
           otherRegionClient
         )
       )
-      download <- S3External.download(defaultRegionBucket, objectKey)(defaultRegionClient).flatMap {
+      download <- S3.download(defaultRegionBucket, objectKey)(defaultRegionClient).flatMap {
         case Some((downloadSource, _)) =>
           downloadSource
             .map(_.decodeString("utf8"))
@@ -279,7 +279,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     multipartUploadResult.key shouldBe objectKey
     downloaded shouldBe objectValue
 
-    S3External.deleteObject(otherRegionBucket, objectKey)(defaultRegionClient).futureValue shouldEqual akka.Done
+    S3.deleteObject(otherRegionBucket, objectKey)(defaultRegionClient).futureValue shouldEqual akka.Done
   }
 
   it should "upload, copy, download the copy, and delete" in {
@@ -290,9 +290,9 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
     val results = for {
-      upload <- source.runWith(S3External.multipartUpload(defaultRegionBucket, sourceKey))
-      copy <- S3External.multipartCopy(defaultRegionBucket, sourceKey, defaultRegionBucket, targetKey)
-      download <- S3External.download(defaultRegionBucket, objectKey).flatMap {
+      upload <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey))
+      copy <- S3.multipartCopy(defaultRegionBucket, sourceKey, defaultRegionBucket, targetKey)
+      download <- S3.download(defaultRegionBucket, objectKey).flatMap {
         case Some((downloadSource, _)) =>
           downloadSource
             .map(_.decodeString("utf8"))
@@ -310,8 +310,8 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
         copy.key shouldEqual targetKey
         downloaded shouldBe objectValue
 
-        S3External.deleteObject(defaultRegionBucket, sourceKey).futureValue shouldEqual akka.Done
-        S3External.deleteObject(defaultRegionBucket, targetKey).futureValue shouldEqual akka.Done
+        S3.deleteObject(defaultRegionBucket, sourceKey).futureValue shouldEqual akka.Done
+        S3.deleteObject(defaultRegionBucket, targetKey).futureValue shouldEqual akka.Done
     }
   }
 }

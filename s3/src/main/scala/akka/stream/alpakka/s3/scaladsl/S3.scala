@@ -3,21 +3,19 @@
  */
 
 package akka.stream.alpakka.s3.scaladsl
-import akka.actor.ActorSystem
 import akka.{Done, NotUsed}
-import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.ByteRange
-import akka.stream.alpakka.s3.S3Ext
-import akka.stream.alpakka.s3.S3Client.MinChunkSize
+import akka.http.scaladsl.model._
 import akka.stream.alpakka.s3.acl.CannedAcl
-import akka.stream.alpakka.s3.impl.{MetaHeaders, S3Headers, ServerSideEncryption}
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.alpakka.s3.impl._
+import akka.stream.alpakka.s3.S3Client.MinChunkSize
+import akka.stream.scaladsl.{RunnableGraph, Sink, Source}
 import akka.util.ByteString
 
 import scala.concurrent.Future
 
 /**
- * Factory of S3 operations that use provided model.scala.
+ * Factory of S3 operations.
  */
 object S3 {
 
@@ -35,8 +33,8 @@ object S3 {
               key: String,
               method: HttpMethod = HttpMethods.GET,
               versionId: Option[String] = None,
-              s3Headers: S3Headers = S3Headers.empty)(implicit sys: ActorSystem): Future[HttpResponse] =
-    S3External.request(bucket, key, method, versionId, s3Headers)(S3Ext(sys).client)
+              s3Headers: S3Headers = S3Headers.empty): Source[HttpResponse, NotUsed] =
+    S3Stream.request(S3Location(bucket, key), method, versionId = versionId, s3Headers = s3Headers)
 
   /**
    * Gets the metadata for a S3 Object
@@ -52,8 +50,8 @@ object S3 {
       key: String,
       versionId: Option[String] = None,
       sse: Option[ServerSideEncryption] = None
-  )(implicit sys: ActorSystem): Future[Option[ObjectMetadata]] =
-    S3External.getObjectMetadata(bucket, key, versionId, sse)(S3Ext(sys).client)
+  ): Source[Option[ObjectMetadata], NotUsed] =
+    S3Stream.getObjectMetadata(bucket, key, versionId, sse)
 
   /**
    * Deletes a S3 Object
@@ -63,10 +61,8 @@ object S3 {
    * @param versionId optional version idof the object
    * @return A [[scala.concurrent.Future Future]] of [[akka.Done]]
    */
-  def deleteObject(bucket: String, key: String, versionId: Option[String] = None)(
-      implicit sys: ActorSystem
-  ): Future[Done] =
-    S3External.deleteObject(bucket, key, versionId)(S3Ext(sys).client)
+  def deleteObject(bucket: String, key: String, versionId: Option[String] = None): Source[Done, NotUsed] =
+    S3Stream.deleteObject(S3Location(bucket, key), versionId)
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -86,8 +82,8 @@ object S3 {
                 contentLength: Long,
                 contentType: ContentType = ContentTypes.`application/octet-stream`,
                 s3Headers: S3Headers,
-                sse: Option[ServerSideEncryption] = None)(implicit sys: ActorSystem): Future[ObjectMetadata] =
-    S3External.putObject(bucket, key, data, contentLength, contentType, s3Headers, sse)(S3Ext(sys).client)
+                sse: Option[ServerSideEncryption] = None): Source[ObjectMetadata, NotUsed] =
+    S3Stream.putObject(S3Location(bucket, key), contentType, data, contentLength, s3Headers, sse)
 
   /**
    * Downloads a S3 Object
@@ -104,14 +100,14 @@ object S3 {
       range: Option[ByteRange] = None,
       versionId: Option[String] = None,
       sse: Option[ServerSideEncryption] = None
-  )(implicit sys: ActorSystem): Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] =
-    S3External.download(bucket, key, range, versionId, sse)(S3Ext(sys).client)
+  ): Source[Option[(Source[ByteString, NotUsed], ObjectMetadata)], NotUsed] =
+    S3Stream.download(S3Location(bucket, key), range, versionId, sse)
 
   /**
    * Will return a source of object metadata for a given bucket with optional prefix using version 2 of the List Bucket API.
    * This will automatically page through all keys with the given parameters.
    *
-   * The `akka.stream.alpakka.s3.list-bucket-api-version` can be set to 1 to use the older API version 1
+   * The `alpakka.s3.list-bucket-api-version` can be set to 1 to use the older API version 1
    *
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html  (version 1 API)
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html (version 1 API)
@@ -121,8 +117,8 @@ object S3 {
    * @return [[akka.stream.scaladsl.Source Source]] of [[ListBucketResultContents]]
    */
   def listBucket(bucket: String,
-                 prefix: Option[String])(implicit sys: ActorSystem): Source[ListBucketResultContents, NotUsed] =
-    S3External.listBucket(bucket, prefix)(S3Ext(sys).client)
+                 prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
+    S3Stream.listBucket(bucket, prefix)
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -145,10 +141,19 @@ object S3 {
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4,
       sse: Option[ServerSideEncryption] = None
-  )(implicit sys: ActorSystem): Sink[ByteString, Future[MultipartUploadResult]] =
-    S3External.multipartUpload(bucket, key, contentType, metaHeaders, cannedAcl, chunkSize, chunkingParallelism, sse)(
-      S3Ext(sys).client
-    )
+  ): Sink[ByteString, Future[MultipartUploadResult]] =
+    MaterializerAccess.sink { mat =>
+      S3Stream
+        .multipartUpload(
+          S3Location(bucket, key),
+          contentType,
+          S3Headers(cannedAcl, metaHeaders),
+          sse,
+          chunkSize,
+          chunkingParallelism
+        )
+        .mapMaterializedValue(_.map(MultipartUploadResult.apply)(mat.executionContext))
+    }.mapMaterializedValue(_.flatten)
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -169,10 +174,19 @@ object S3 {
       chunkingParallelism: Int = 4,
       s3Headers: Option[S3Headers] = None,
       sse: Option[ServerSideEncryption] = None
-  )(implicit sys: ActorSystem): Sink[ByteString, Future[MultipartUploadResult]] =
-    S3External.multipartUploadWithHeaders(bucket, key, contentType, chunkSize, chunkingParallelism, s3Headers, sse)(
-      S3Ext(sys).client
-    )
+  ): Sink[ByteString, Future[MultipartUploadResult]] =
+    MaterializerAccess.sink { mat =>
+      S3Stream
+        .multipartUpload(
+          S3Location(bucket, key),
+          contentType,
+          s3Headers.getOrElse(S3Headers.empty),
+          sse,
+          chunkSize,
+          chunkingParallelism
+        )
+        .mapMaterializedValue(_.map(MultipartUploadResult.apply)(mat.executionContext))
+    }.mapMaterializedValue(_.flatten)
 
   /**
    * Copy an S3 object from source bucket to target bucket using multi part copy upload.
@@ -200,15 +214,17 @@ object S3 {
       sse: Option[ServerSideEncryption] = None,
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4
-  )(implicit sys: ActorSystem): Future[MultipartUploadResult] =
-    S3External.multipartCopy(sourceBucket,
-                             sourceKey,
-                             targetBucket,
-                             targetKey,
-                             sourceVersionId,
-                             contentType,
-                             s3Headers,
-                             sse,
-                             chunkSize,
-                             chunkingParallelism)(S3Ext(sys).client)
+  ): RunnableGraph[Future[MultipartUploadResult]] =
+    S3Stream
+      .multipartCopy(
+        S3Location(sourceBucket, sourceKey),
+        S3Location(targetBucket, targetKey),
+        sourceVersionId,
+        contentType,
+        s3Headers.getOrElse(S3Headers.empty),
+        MultipartUploadResult.apply,
+        sse,
+        chunkSize,
+        chunkingParallelism
+      )
 }

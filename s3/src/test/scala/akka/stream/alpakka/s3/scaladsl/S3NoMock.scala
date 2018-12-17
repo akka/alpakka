@@ -151,7 +151,7 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
       implicit val client = settings.defaultRegionClient
 
       val result =
-        S3External.listBucket(settings.defaultRegionBucket, None).runWith(Sink.seq)
+        S3.listBucket(settings.defaultRegionBucket, None).runWith(Sink.seq)
 
       val listingResult = result.futureValue
       listingResult.size shouldBe 3
@@ -160,7 +160,7 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
     it should s"list with real credentials in other region (${settings.name})" in {
       implicit val client = settings.defaultRegionClient
 
-      val result = S3External.listBucket(settings.otherRegionBucket, None).runWith(Sink.seq)
+      val result = S3.listBucket(settings.otherRegionBucket, None).runWith(Sink.seq)
 
       val listingResult = result.futureValue
       listingResult.size shouldBe 3
@@ -174,7 +174,7 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
 
       val result =
         source.runWith(
-          S3External.multipartUpload(settings.defaultRegionBucket,
+          S3.multipartUpload(settings.defaultRegionBucket,
                                      settings.objectKey,
                                      metaHeaders = MetaHeaders(settings.metaHeaders))
         )
@@ -188,7 +188,7 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
       implicit val client = settings.defaultRegionClient
 
       val Some(download) = Await
-        .ready(S3External.download(settings.defaultRegionBucket, settings.objectKey), 5.seconds)
+        .ready(S3.download(settings.defaultRegionBucket, settings.objectKey), 5.seconds)
         .futureValue
 
       val result = download._1.map(_.decodeString("utf8")).runWith(Sink.head)
@@ -203,11 +203,11 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
 
       val results = for {
         upload <- source.runWith(
-          S3External.multipartUpload(settings.defaultRegionBucket,
+          S3.multipartUpload(settings.defaultRegionBucket,
                                      settings.objectKey,
                                      metaHeaders = MetaHeaders(settings.metaHeaders))
         )
-        download <- S3External.download(settings.defaultRegionBucket, settings.objectKey).flatMap {
+        download <- S3.download(settings.defaultRegionBucket, settings.objectKey).flatMap {
           case Some((downloadSource, _)) =>
             downloadSource
               .map(_.decodeString("utf8"))
@@ -231,11 +231,11 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
 
       val results = for {
         upload <- source.runWith(
-          S3External.multipartUpload(settings.defaultRegionBucket,
+          S3.multipartUpload(settings.defaultRegionBucket,
                                      settings.objectKey,
                                      metaHeaders = MetaHeaders(settings.metaHeaders))
         )
-        download <- S3External.download(settings.defaultRegionBucket, settings.objectKey).flatMap {
+        download <- S3.download(settings.defaultRegionBucket, settings.objectKey).flatMap {
           case Some((downloadSource, _)) =>
             downloadSource
               .map(_.decodeString("utf8"))
@@ -257,11 +257,11 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
 
       val results = for {
         upload <- source.runWith(
-          S3External.multipartUpload(settings.otherRegionBucket,
+          S3.multipartUpload(settings.otherRegionBucket,
                                      settings.objectKey,
                                      metaHeaders = MetaHeaders(settings.metaHeaders))(settings.otherRegionClient)
         )
-        download <- S3External
+        download <- S3
           .download(settings.defaultRegionBucket, settings.objectKey)(settings.defaultRegionClient)
           .flatMap {
             case Some((downloadSource, _)) =>
@@ -285,11 +285,11 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
 
       val results = for {
         upload <- source.runWith(
-          S3External.multipartUpload(settings.otherRegionBucket,
+          S3.multipartUpload(settings.otherRegionBucket,
                                      settings.objectKey,
                                      metaHeaders = MetaHeaders(settings.metaHeaders))(settings.otherRegionClient)
         )
-        download <- S3External
+        download <- S3
           .download(settings.defaultRegionBucket, settings.objectKey)(settings.defaultRegionClient)
           .flatMap {
             case Some((downloadSource, _)) =>

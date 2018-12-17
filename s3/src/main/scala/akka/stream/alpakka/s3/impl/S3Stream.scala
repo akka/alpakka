@@ -67,7 +67,7 @@ final case class CopyPartition(partNumber: Int, sourceLocation: S3Location, rang
 
 final case class MultipartCopy(multipartUpload: MultipartUpload, copyPartition: CopyPartition)
 
-private[alpakka] final class S3Stream() {
+private[alpakka] object S3Stream {
 
   import HttpRequests._
   import Marshalling._
@@ -266,16 +266,17 @@ private[alpakka] final class S3Stream() {
     }.mapMaterializedValue(_ => NotUsed)
   }
 
-  def multipartCopy(
+  def multipartCopy[T](
       sourceLocation: S3Location,
       targetLocation: S3Location,
       sourceVersionId: Option[String] = None,
       contentType: ContentType = ContentTypes.`application/octet-stream`,
       s3Headers: S3Headers,
+      transformResult: CompleteMultipartUploadResult => T,
       sse: Option[ServerSideEncryption] = None,
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4
-  ): RunnableGraph[Future[CompleteMultipartUploadResult]] = {
+  ): RunnableGraph[Future[T]] = {
 
     // Pre step get source meta to get content length (size of the object)
     val eventualMaybeObjectSize =
@@ -291,7 +292,7 @@ private[alpakka] final class S3Stream() {
 
     // The individual copy upload part requests are processed here
     processUploadCopyPartRequests(copyRequests)(chunkingParallelism)
-      .toMat(completionSink(targetLocation))(Keep.right)
+      .toMat(completionSink(targetLocation, transformResult))(Keep.right)
   }
 
   private def computeMetaData(headers: Seq[HttpHeader], entity: ResponseEntity): ObjectMetadata =
@@ -440,9 +441,10 @@ private[alpakka] final class S3Stream() {
     }.mapMaterializedValue(_ => NotUsed)
   }
 
-  private def completionSink(
-      s3Location: S3Location
-  ): Sink[UploadPartResponse, Future[CompleteMultipartUploadResult]] = {
+  private def completionSink[T](
+      s3Location: S3Location,
+      transformResult: CompleteMultipartUploadResult => T
+  ): Sink[UploadPartResponse, Future[T]] = {
     MaterializerAccess.sink { implicit mat =>
       import mat.executionContext
       Sink.seq[UploadPartResponse].mapMaterializedValue { responseFuture: Future[Seq[UploadPartResponse]] =>
@@ -459,7 +461,7 @@ private[alpakka] final class S3Stream() {
             }
           }
           .flatMap(completeMultipartUpload(s3Location, _))
-      }
+      }.mapMaterializedValue(_.map(transformResult))
     }.mapMaterializedValue(_.flatten)
   }
 
