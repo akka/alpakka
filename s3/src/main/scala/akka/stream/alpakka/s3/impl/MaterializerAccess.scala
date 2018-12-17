@@ -6,7 +6,6 @@ package akka.stream.alpakka.s3.impl
 
 import akka.actor.ActorSystem
 import akka.stream._
-import akka.stream.alpakka.s3.impl.MaterializerAccess.extractMat
 import akka.stream.impl.fusing.GraphInterpreter
 import akka.stream.scaladsl.{Flow, Sink, Source}
 
@@ -33,10 +32,11 @@ object MaterializerAccess {
 
   private def extractMat(gi: GraphInterpreter) = gi match {
     case null => throw new Error("GraphInterpreter not set")
-    case gi => gi.materializer match {
-      case am: ActorMaterializer => am
-      case _ => throw new Error("ActorMaterializer required")
-    }
+    case gi =>
+      gi.materializer match {
+        case am: ActorMaterializer => am
+        case _ => throw new Error("ActorMaterializer required")
+      }
   }
 }
 

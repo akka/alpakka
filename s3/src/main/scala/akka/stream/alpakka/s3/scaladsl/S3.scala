@@ -8,16 +8,14 @@ import akka.http.scaladsl.model.headers.ByteRange
 import akka.http.scaladsl.model._
 import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.impl._
-import akka.stream.alpakka.s3.S3Client.MinChunkSize
 import akka.stream.scaladsl.{RunnableGraph, Sink, Source}
 import akka.util.ByteString
-
-import scala.concurrent.Future
 
 /**
  * Factory of S3 operations.
  */
 object S3 {
+  val MinChunkSize: Int = 5242880
 
   /**
    * Use this to extend the library
@@ -116,8 +114,7 @@ object S3 {
    * @param prefix Prefix of the keys you want to list under passed bucket
    * @return [[akka.stream.scaladsl.Source Source]] of [[ListBucketResultContents]]
    */
-  def listBucket(bucket: String,
-                 prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
+  def listBucket(bucket: String, prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
     S3Stream.listBucket(bucket, prefix)
 
   /**
@@ -141,19 +138,17 @@ object S3 {
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4,
       sse: Option[ServerSideEncryption] = None
-  ): Sink[ByteString, Future[MultipartUploadResult]] =
-    MaterializerAccess.sink { mat =>
-      S3Stream
-        .multipartUpload(
-          S3Location(bucket, key),
-          contentType,
-          S3Headers(cannedAcl, metaHeaders),
-          sse,
-          chunkSize,
-          chunkingParallelism
-        )
-        .mapMaterializedValue(_.map(MultipartUploadResult.apply)(mat.executionContext))
-    }.mapMaterializedValue(_.flatten)
+  ): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
+    S3Stream
+      .multipartUpload(
+        S3Location(bucket, key),
+        contentType,
+        S3Headers(cannedAcl, metaHeaders),
+        MultipartUploadResult.apply,
+        sse,
+        chunkSize,
+        chunkingParallelism
+      )
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -174,19 +169,17 @@ object S3 {
       chunkingParallelism: Int = 4,
       s3Headers: Option[S3Headers] = None,
       sse: Option[ServerSideEncryption] = None
-  ): Sink[ByteString, Future[MultipartUploadResult]] =
-    MaterializerAccess.sink { mat =>
-      S3Stream
-        .multipartUpload(
-          S3Location(bucket, key),
-          contentType,
-          s3Headers.getOrElse(S3Headers.empty),
-          sse,
-          chunkSize,
-          chunkingParallelism
-        )
-        .mapMaterializedValue(_.map(MultipartUploadResult.apply)(mat.executionContext))
-    }.mapMaterializedValue(_.flatten)
+  ): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
+    S3Stream
+      .multipartUpload(
+        S3Location(bucket, key),
+        contentType,
+        s3Headers.getOrElse(S3Headers.empty),
+        MultipartUploadResult.apply,
+        sse,
+        chunkSize,
+        chunkingParallelism
+      )
 
   /**
    * Copy an S3 object from source bucket to target bucket using multi part copy upload.
@@ -214,7 +207,7 @@ object S3 {
       sse: Option[ServerSideEncryption] = None,
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4
-  ): RunnableGraph[Future[MultipartUploadResult]] =
+  ): RunnableGraph[Source[MultipartUploadResult, NotUsed]] =
     S3Stream
       .multipartCopy(
         S3Location(sourceBucket, sourceKey),

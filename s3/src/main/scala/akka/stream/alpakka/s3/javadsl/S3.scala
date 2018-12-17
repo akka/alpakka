@@ -4,7 +4,6 @@
 
 package akka.stream.alpakka.s3.javadsl
 import java.util.Optional
-import java.util.concurrent.CompletionStage
 
 import akka.japi.{Pair => JPair}
 import akka.{Done, NotUsed}
@@ -18,7 +17,6 @@ import akka.stream.alpakka.s3.scaladsl
 import akka.stream.javadsl.{RunnableGraph, Sink, Source}
 import akka.util.ByteString
 
-import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 
 object S3 {
@@ -32,10 +30,7 @@ object S3 {
    * @param s3Headers any headers you want to add
    * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the raw [[HttpResponse]]
    */
-  def request(bucket: String,
-              key: String,
-              method: HttpMethod,
-              s3Headers: S3Headers): Source[HttpResponse, NotUsed] =
+  def request(bucket: String, key: String, method: HttpMethod, s3Headers: S3Headers): Source[HttpResponse, NotUsed] =
     request(bucket, key, Optional.empty(), method, s3Headers)
 
   /**
@@ -307,7 +302,10 @@ object S3 {
               sse)
 
   private def toJava[M](
-      download: akka.stream.scaladsl.Source[Option[(akka.stream.scaladsl.Source[ByteString, M], scaladsl.ObjectMetadata)], NotUsed]): Source[Optional[JPair[Source[ByteString, M], ObjectMetadata]], NotUsed] =
+      download: akka.stream.scaladsl.Source[Option[
+        (akka.stream.scaladsl.Source[ByteString, M], scaladsl.ObjectMetadata)
+      ], NotUsed]
+  ): Source[Optional[JPair[Source[ByteString, M], ObjectMetadata]], NotUsed] =
     download.map {
       _.map { case (stream, meta) => JPair(stream.asJava, metaDataToJava(meta)) }.asJava
     }.asJava
@@ -428,12 +426,14 @@ object S3 {
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
-                      s3Headers: S3Headers): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    MaterializerAccess.sink { mat =>
-      S3Stream
-        .multipartUpload(S3Location(bucket, key), contentType.asInstanceOf[ScalaContentType], s3Headers)
-        .mapMaterializedValue(_.map(MultipartUploadResult.create)(mat.executionContext))
-    }.mapMaterializedValue(_.flatten.toJava).asJava
+                      s3Headers: S3Headers): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
+    S3Stream
+      .multipartUpload(S3Location(bucket, key),
+                       contentType.asInstanceOf[ScalaContentType],
+                       s3Headers,
+                       MultipartUploadResult.create)
+      .mapMaterializedValue(_.asJava)
+      .asJava
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -449,12 +449,15 @@ object S3 {
                       key: String,
                       contentType: ContentType,
                       s3Headers: S3Headers,
-                      sse: ServerSideEncryption): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    MaterializerAccess.sink { mat =>
-      S3Stream
-        .multipartUpload(S3Location(bucket, key), contentType.asInstanceOf[ScalaContentType], s3Headers, Some(sse))
-        .mapMaterializedValue(_.map(MultipartUploadResult.create)(mat.executionContext))
-    }.mapMaterializedValue(_.flatten.toJava).asJava
+                      sse: ServerSideEncryption): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
+    S3Stream
+      .multipartUpload(S3Location(bucket, key),
+                       contentType.asInstanceOf[ScalaContentType],
+                       s3Headers,
+                       MultipartUploadResult.create,
+                       Some(sse))
+      .mapMaterializedValue(_.asJava)
+      .asJava
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -470,7 +473,7 @@ object S3 {
                       key: String,
                       contentType: ContentType,
                       cannedAcl: CannedAcl,
-                      metaHeaders: MetaHeaders): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+                      metaHeaders: MetaHeaders): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
     multipartUpload(bucket, key, contentType, S3Headers(cannedAcl, metaHeaders))
 
   /**
@@ -489,7 +492,7 @@ object S3 {
                       contentType: ContentType,
                       cannedAcl: CannedAcl,
                       metaHeaders: MetaHeaders,
-                      sse: ServerSideEncryption): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+                      sse: ServerSideEncryption): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
     multipartUpload(bucket, key, contentType, S3Headers(cannedAcl, metaHeaders), sse)
 
   /**
@@ -504,7 +507,7 @@ object S3 {
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
-                      cannedAcl: CannedAcl): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+                      cannedAcl: CannedAcl): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
     multipartUpload(bucket, key, contentType, cannedAcl, MetaHeaders(Map()))
 
   /**
@@ -521,7 +524,7 @@ object S3 {
                       key: String,
                       contentType: ContentType,
                       cannedAcl: CannedAcl,
-                      sse: ServerSideEncryption): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+                      sse: ServerSideEncryption): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
     multipartUpload(bucket, key, contentType, cannedAcl, MetaHeaders(Map()), sse)
 
   /**
@@ -534,7 +537,7 @@ object S3 {
    */
   def multipartUpload(bucket: String,
                       key: String,
-                      contentType: ContentType): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+                      contentType: ContentType): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
     multipartUpload(bucket, key, contentType, CannedAcl.Private, MetaHeaders(Map()))
 
   /**
@@ -549,7 +552,7 @@ object S3 {
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
-                      sse: ServerSideEncryption): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+                      sse: ServerSideEncryption): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
     multipartUpload(bucket, key, contentType, CannedAcl.Private, MetaHeaders(Map()), sse)
 
   /**
@@ -559,8 +562,7 @@ object S3 {
    * @param key the s3 object key
    * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
-  def multipartUpload(bucket: String,
-                      key: String): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+  def multipartUpload(bucket: String, key: String): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
     multipartUpload(bucket, key, ContentTypes.APPLICATION_OCTET_STREAM, CannedAcl.Private, MetaHeaders(Map()))
 
   /**
@@ -573,13 +575,8 @@ object S3 {
    */
   def multipartUpload(bucket: String,
                       key: String,
-                      sse: ServerSideEncryption): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    multipartUpload(bucket,
-                    key,
-                    ContentTypes.APPLICATION_OCTET_STREAM,
-                    CannedAcl.Private,
-                    MetaHeaders(Map()),
-                    sse)
+                      sse: ServerSideEncryption): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
+    multipartUpload(bucket, key, ContentTypes.APPLICATION_OCTET_STREAM, CannedAcl.Private, MetaHeaders(Map()), sse)
 
   /**
    * Copy a S3 Object by making multiple requests.
@@ -601,20 +598,21 @@ object S3 {
                     sourceVersionId: Optional[String],
                     contentType: ContentType,
                     s3Headers: S3Headers,
-                    sse: ServerSideEncryption): RunnableGraph[CompletionStage[MultipartUploadResult]] =
-    RunnableGraph.fromGraph(
-      S3Stream
-        .multipartCopy(
-          S3Location(sourceBucket, sourceKey),
-          S3Location(targetBucket, targetKey),
-          Option(sourceVersionId.orElse(null)),
-          contentType.asInstanceOf[ScalaContentType],
-          s3Headers,
-          MultipartUploadResult.create,
-          Option(sse)
-        )
-        .mapMaterializedValue(_.toJava)
-    )
+                    sse: ServerSideEncryption): RunnableGraph[Source[MultipartUploadResult, NotUsed]] =
+    RunnableGraph
+      .fromGraph {
+        S3Stream
+          .multipartCopy(
+            S3Location(sourceBucket, sourceKey),
+            S3Location(targetBucket, targetKey),
+            Option(sourceVersionId.orElse(null)),
+            contentType.asInstanceOf[ScalaContentType],
+            s3Headers,
+            MultipartUploadResult.create,
+            Option(sse)
+          )
+      }
+      .mapMaterializedValue(_.asJava)
 
   /**
    * Copy a S3 Object by making multiple requests.
@@ -634,7 +632,7 @@ object S3 {
                     targetKey: String,
                     sourceVersionId: Optional[String],
                     s3Headers: S3Headers,
-                    sse: ServerSideEncryption): RunnableGraph[CompletionStage[MultipartUploadResult]] =
+                    sse: ServerSideEncryption): RunnableGraph[Source[MultipartUploadResult, NotUsed]] =
     multipartCopy(sourceBucket,
                   sourceKey,
                   targetBucket,
@@ -662,15 +660,8 @@ object S3 {
                     targetKey: String,
                     contentType: ContentType,
                     s3Headers: S3Headers,
-                    sse: ServerSideEncryption): RunnableGraph[CompletionStage[MultipartUploadResult]] =
-    multipartCopy(sourceBucket,
-                  sourceKey,
-                  targetBucket,
-                  targetKey,
-                  Optional.empty(),
-                  contentType,
-                  s3Headers,
-                  sse)
+                    sse: ServerSideEncryption): RunnableGraph[Source[MultipartUploadResult, NotUsed]] =
+    multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, Optional.empty(), contentType, s3Headers, sse)
 
   /**
    * Copy a S3 Object by making multiple requests.
@@ -688,7 +679,7 @@ object S3 {
                     targetBucket: String,
                     targetKey: String,
                     s3Headers: S3Headers,
-                    sse: ServerSideEncryption): RunnableGraph[CompletionStage[MultipartUploadResult]] =
+                    sse: ServerSideEncryption): RunnableGraph[Source[MultipartUploadResult, NotUsed]] =
     multipartCopy(sourceBucket,
                   sourceKey,
                   targetBucket,
@@ -709,7 +700,7 @@ object S3 {
   def multipartCopy(sourceBucket: String,
                     sourceKey: String,
                     targetBucket: String,
-                    targetKey: String): RunnableGraph[CompletionStage[MultipartUploadResult]] =
+                    targetKey: String): RunnableGraph[Source[MultipartUploadResult, NotUsed]] =
     multipartCopy(sourceBucket,
                   sourceKey,
                   targetBucket,
