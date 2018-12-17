@@ -7,10 +7,9 @@ package akka.stream.alpakka.s3.impl
 import java.time.{Instant, LocalDate}
 
 import scala.collection.immutable.Seq
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import akka.{Done, NotUsed}
-import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK}
 import akka.http.scaladsl.model.headers.{`Content-Length`, ByteRange, CustomHeader}
@@ -105,7 +104,7 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
           case e: S3Exception if e.code == "NoSuchKey" => None[Option[(Source[ByteString, NotUsed], ObjectMetadata)]]
         }
       }
-  }
+  }.mapMaterializedValue(_ => NotUsed)
 
   def listBucket(bucket: String, prefix: Option[String] = None): Source[ListBucketResultContents, NotUsed] = {
     sealed trait ListBucketState
@@ -136,7 +135,7 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
           case Running(token) => listBucketCall(Some(token))
         }
         .mapConcat(identity)
-    }
+    }.mapMaterializedValue(_ => NotUsed)
   }
 
   def getObjectMetadata(bucket: String,
@@ -162,7 +161,7 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
             }
           }
       }
-    }
+    }.mapMaterializedValue(_ => NotUsed)
   }
 
   def deleteObject(s3Location: S3Location, versionId: Option[String]): Source[Done, NotUsed] = {
@@ -178,7 +177,7 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
             }
           }
       }
-    }
+    }.mapMaterializedValue(_ => NotUsed)
   }
 
   def putObject(s3Location: S3Location,
@@ -214,7 +213,7 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
             }
           }
       }
-    }
+    }.mapMaterializedValue(_ => NotUsed)
   }
 
   def request(s3Location: S3Location,
@@ -261,7 +260,7 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
             }
           }
       }
-    }
+    }.mapMaterializedValue(_ => NotUsed)
   }
 
   def multipartCopy(
@@ -430,7 +429,7 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
 
           case (Failure(e), (upload, index)) => Future.successful(FailedUploadPart(upload, index, e))
         }
-    }
+    }.mapMaterializedValue(_ => NotUsed)
   }
 
   private def completionSink(
@@ -453,7 +452,7 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
           }
           .flatMap(completeMultipartUpload(s3Location, _))
       }
-    }
+    }.mapMaterializedValue(_.flatten)
   }
 
   private def signAndGetAs[T](request: HttpRequest)(implicit um: Unmarshaller[ResponseEntity, T], mat: Materializer): Future[T] = {
@@ -477,7 +476,7 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
   }
 
   private def signAndRequest(request: HttpRequest, retries: Int = 3): Source[HttpResponse, NotUsed] =
-    MatExtract.actorSystem { implicit system =>
+    ActorSystemAccess.source { implicit system =>
       Signer.signedRequest(request, signingKey)
         .mapAsync(parallelism = 1)(req => Http().singleRequest(req))
         .flatMapConcat {
@@ -485,7 +484,7 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
             signAndRequest(request, retries - 1)
           case res => Source.single(res)
         }
-    }
+    }.mapMaterializedValue(_ => NotUsed)
 
   private def entityForSuccess(
       resp: HttpResponse
