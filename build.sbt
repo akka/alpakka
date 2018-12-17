@@ -42,8 +42,8 @@ lazy val modules: Seq[ProjectReference] = Seq(
 
 lazy val alpakka = project
   .in(file("."))
-  .enablePlugins(PublishUnidoc)
-  .disablePlugins(MimaPlugin)
+  .enablePlugins(ScalaUnidocPlugin)
+  .disablePlugins(MimaPlugin, SitePlugin)
   .aggregate(modules: _*)
   .aggregate(`doc-examples`)
   .settings(
@@ -53,12 +53,11 @@ lazy val alpakka = project
         |
         |Useful sbt tasks:
         |
-        |  docs/Local/paradox - builds documentation with locally
-        |    linked Scala API docs, which can be found at
-        |    docs/target/paradox/site/local
+        |  docs/previewSite - builds Paradox and Scaladoc documentation,
+        |    starts a webserver and opens a new browser window
         |
         |  test - runs all the tests for all of the connectors.
-        |   Make sure to run `docker-compose up` first.
+        |    Make sure to run `docker-compose up` first.
         |
         |  mqtt/testOnly *.MqttSourceSpec - runs a single test
         |
@@ -227,13 +226,17 @@ lazy val unixdomainsocket = alpakkaProject(
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
 
 lazy val docs = project
-  .enablePlugins(AkkaParadoxPlugin)
+  .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin)
   .disablePlugins(BintrayPlugin, MimaPlugin)
+  .settings(addMappingsToSiteDir(LocalRootProject / ScalaUnidoc / packageDoc / mappings, SiteScaladoc / siteSubdirName))
   .settings(
     name := "Alpakka",
     publish / skip := true,
     whitesourceIgnore := true,
-    paradoxProperties ++= Map(
+    SiteScaladoc / siteSubdirName := s"api/alpakka/${version.value}",
+    Paradox / siteSubdirName := s"docs/alpakka/${version.value}",
+    Paradox / sourceDirectory := sourceDirectory.value / "main" / "paradox",
+    Paradox / paradoxProperties ++= Map(
       "project.url" -> "https://developer.lightbend.com/docs/alpakka/current/",
       "akka.version" -> Dependencies.AkkaVersion,
       "akka-http.version" -> Dependencies.AkkaHttpVersion,
@@ -255,17 +258,20 @@ lazy val docs = project
       "scaladoc.scala.base_url" -> s"http://www.scala-lang.org/api/current/",
       "scaladoc.akka.base_url" -> s"http://doc.akka.io/api/akka/${Dependencies.AkkaVersion}",
       "scaladoc.akka.http.base_url" -> s"https://doc.akka.io/api/akka-http/${Dependencies.AkkaHttpVersion}/",
-      "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}"
+      "scaladoc.akka.stream.alpakka.base_url" -> {
+        val docsHost = sys.env.get("CI")
+          .map(_ => "https://doc.akka.io")
+          .getOrElse(s"http://localhost:${(previewSite / previewFixedPort).value}")
+        s"$docsHost/api/alpakka/${version.value}/"
+      }
     ),
+    Paradox / paradoxGroups := Map("Language" -> Seq("Java", "Scala")),
     resolvers += Resolver.jcenterRepo,
-    paradoxGroups := Map("Language" -> Seq("Java", "Scala")),
-    paradoxLocalApiKey := "scaladoc.akka.stream.alpakka.base_url",
-    paradoxLocalApiDir := (alpakka / Compile / sbtunidoc.BaseUnidocPlugin.autoImport.unidoc).value.head,
   )
 
 lazy val `doc-examples` = project
   .enablePlugins(AutomateHeaderPlugin)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin, SitePlugin)
   .dependsOn(
     modules.map(p => classpathDependency(p)): _*
   )
@@ -279,6 +285,7 @@ lazy val `doc-examples` = project
 def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sbt.Def.SettingsDefinition*): Project =
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
+    .disablePlugins(SitePlugin)
     .settings(
       name := s"akka-stream-alpakka-$projectId",
       AutomaticModuleName.settings(s"akka.stream.alpakka.$moduleName"),
