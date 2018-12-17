@@ -87,12 +87,11 @@ final class S3Client private (val s3Settings: S3Settings)(implicit val system: A
 /**
  * Manages one [[S3Client]] per `ActorSystem`.
  */
-final class S3ClientExt private (sys: ExtendedActorSystem) extends Extension {
-  private[this] val systemMaterializer = ActorMaterializer()(sys)
-  implicit val client = S3Client()(sys, systemMaterializer)
+final class S3Ext private (sys: ExtendedActorSystem) extends Extension {
+  implicit val settings = S3Settings()(sys)
 }
 
-object S3ClientExt extends ExtensionId[S3ClientExt] with ExtensionIdProvider {
-  override def lookup = S3ClientExt
-  override def createExtension(system: ExtendedActorSystem) = new S3ClientExt(system)
+object S3Ext extends ExtensionId[S3Ext] with ExtensionIdProvider {
+  override def lookup = S3Ext
+  override def createExtension(system: ExtendedActorSystem) = new S3Ext(system)
 }

@@ -7,7 +7,7 @@ import akka.actor.ActorSystem
 import akka.{Done, NotUsed}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.ByteRange
-import akka.stream.alpakka.s3.S3ClientExt
+import akka.stream.alpakka.s3.S3Ext
 import akka.stream.alpakka.s3.S3Client.MinChunkSize
 import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.impl.{MetaHeaders, S3Headers, ServerSideEncryption}
@@ -36,7 +36,7 @@ object S3 {
               method: HttpMethod = HttpMethods.GET,
               versionId: Option[String] = None,
               s3Headers: S3Headers = S3Headers.empty)(implicit sys: ActorSystem): Future[HttpResponse] =
-    S3External.request(bucket, key, method, versionId, s3Headers)(S3ClientExt(sys).client)
+    S3External.request(bucket, key, method, versionId, s3Headers)(S3Ext(sys).client)
 
   /**
    * Gets the metadata for a S3 Object
@@ -53,7 +53,7 @@ object S3 {
       versionId: Option[String] = None,
       sse: Option[ServerSideEncryption] = None
   )(implicit sys: ActorSystem): Future[Option[ObjectMetadata]] =
-    S3External.getObjectMetadata(bucket, key, versionId, sse)(S3ClientExt(sys).client)
+    S3External.getObjectMetadata(bucket, key, versionId, sse)(S3Ext(sys).client)
 
   /**
    * Deletes a S3 Object
@@ -66,7 +66,7 @@ object S3 {
   def deleteObject(bucket: String, key: String, versionId: Option[String] = None)(
       implicit sys: ActorSystem
   ): Future[Done] =
-    S3External.deleteObject(bucket, key, versionId)(S3ClientExt(sys).client)
+    S3External.deleteObject(bucket, key, versionId)(S3Ext(sys).client)
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -87,7 +87,7 @@ object S3 {
                 contentType: ContentType = ContentTypes.`application/octet-stream`,
                 s3Headers: S3Headers,
                 sse: Option[ServerSideEncryption] = None)(implicit sys: ActorSystem): Future[ObjectMetadata] =
-    S3External.putObject(bucket, key, data, contentLength, contentType, s3Headers, sse)(S3ClientExt(sys).client)
+    S3External.putObject(bucket, key, data, contentLength, contentType, s3Headers, sse)(S3Ext(sys).client)
 
   /**
    * Downloads a S3 Object
@@ -105,7 +105,7 @@ object S3 {
       versionId: Option[String] = None,
       sse: Option[ServerSideEncryption] = None
   )(implicit sys: ActorSystem): Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] =
-    S3External.download(bucket, key, range, versionId, sse)(S3ClientExt(sys).client)
+    S3External.download(bucket, key, range, versionId, sse)(S3Ext(sys).client)
 
   /**
    * Will return a source of object metadata for a given bucket with optional prefix using version 2 of the List Bucket API.
@@ -122,7 +122,7 @@ object S3 {
    */
   def listBucket(bucket: String,
                  prefix: Option[String])(implicit sys: ActorSystem): Source[ListBucketResultContents, NotUsed] =
-    S3External.listBucket(bucket, prefix)(S3ClientExt(sys).client)
+    S3External.listBucket(bucket, prefix)(S3Ext(sys).client)
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -147,7 +147,7 @@ object S3 {
       sse: Option[ServerSideEncryption] = None
   )(implicit sys: ActorSystem): Sink[ByteString, Future[MultipartUploadResult]] =
     S3External.multipartUpload(bucket, key, contentType, metaHeaders, cannedAcl, chunkSize, chunkingParallelism, sse)(
-      S3ClientExt(sys).client
+      S3Ext(sys).client
     )
 
   /**
@@ -171,7 +171,7 @@ object S3 {
       sse: Option[ServerSideEncryption] = None
   )(implicit sys: ActorSystem): Sink[ByteString, Future[MultipartUploadResult]] =
     S3External.multipartUploadWithHeaders(bucket, key, contentType, chunkSize, chunkingParallelism, s3Headers, sse)(
-      S3ClientExt(sys).client
+      S3Ext(sys).client
     )
 
   /**
@@ -210,5 +210,5 @@ object S3 {
                              s3Headers,
                              sse,
                              chunkSize,
-                             chunkingParallelism)(S3ClientExt(sys).client)
+                             chunkingParallelism)(S3Ext(sys).client)
 }

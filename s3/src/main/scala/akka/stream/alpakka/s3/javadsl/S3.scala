@@ -13,7 +13,7 @@ import akka.http.javadsl.model._
 import akka.http.javadsl.model.headers.ByteRange
 import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.impl.{MetaHeaders, S3Headers, ServerSideEncryption}
-import akka.stream.alpakka.s3.S3ClientExt
+import akka.stream.alpakka.s3.S3Ext
 import akka.stream.javadsl.{Sink, Source}
 import akka.util.ByteString
 
@@ -51,7 +51,7 @@ object S3 {
               method: HttpMethod = HttpMethods.GET,
               s3Headers: S3Headers = S3Headers.empty,
               sys: ActorSystem): CompletionStage[HttpResponse] =
-    S3External.request(bucket, key, versionId, method, s3Headers, S3ClientExt.get(sys).client)
+    S3External.request(bucket, key, versionId, method, s3Headers, S3Ext.get(sys).client)
 
   /**
    * Gets the metadata for a S3 Object
@@ -91,7 +91,7 @@ object S3 {
                         versionId: Optional[String],
                         sse: ServerSideEncryption,
                         sys: ActorSystem): CompletionStage[Optional[ObjectMetadata]] =
-    S3External.getObjectMetadata(bucket, key, versionId, sse, S3ClientExt.get(sys).client)
+    S3External.getObjectMetadata(bucket, key, versionId, sse, S3Ext.get(sys).client)
 
   /**
    * Deletes a S3 Object
@@ -112,7 +112,7 @@ object S3 {
    * @return A [[java.util.concurrent.CompletionStage CompletionStage]] of [[java.lang.Void]]
    */
   def deleteObject(bucket: String, key: String, versionId: Optional[String], sys: ActorSystem): CompletionStage[Done] =
-    S3External.deleteObject(bucket, key, versionId, S3ClientExt.get(sys).client)
+    S3External.deleteObject(bucket, key, versionId, S3Ext.get(sys).client)
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -131,7 +131,7 @@ object S3 {
                 contentType: ContentType,
                 s3Headers: S3Headers,
                 sys: ActorSystem): CompletionStage[ObjectMetadata] =
-    S3External.putObject(bucket, key, data, contentLength, contentType, s3Headers, S3ClientExt.get(sys).client)
+    S3External.putObject(bucket, key, data, contentLength, contentType, s3Headers, S3Ext.get(sys).client)
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -152,7 +152,7 @@ object S3 {
                 s3Headers: S3Headers,
                 sse: ServerSideEncryption,
                 sys: ActorSystem): CompletionStage[ObjectMetadata] =
-    S3External.putObject(bucket, key, data, contentLength, contentType, s3Headers, sse, S3ClientExt.get(sys).client)
+    S3External.putObject(bucket, key, data, contentLength, contentType, s3Headers, sse, S3Ext.get(sys).client)
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -297,7 +297,7 @@ object S3 {
   def download(bucket: String,
                key: String,
                sys: ActorSystem): CompletionStage[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] =
-    S3External.download(bucket, key, S3ClientExt.get(sys).client)
+    S3External.download(bucket, key, S3Ext.get(sys).client)
 
   /**
    * Downloads a S3 Object
@@ -313,7 +313,7 @@ object S3 {
       sse: ServerSideEncryption,
       sys: ActorSystem
   ): CompletionStage[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] =
-    S3External.download(bucket, key, sse, S3ClientExt.get(sys).client)
+    S3External.download(bucket, key, sse, S3Ext.get(sys).client)
 
   /**
    * Downloads a specific byte range of a S3 Object
@@ -327,7 +327,7 @@ object S3 {
                key: String,
                range: ByteRange,
                sys: ActorSystem): CompletionStage[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] =
-    S3External.download(bucket, key, range, S3ClientExt.get(sys).client)
+    S3External.download(bucket, key, range, S3Ext.get(sys).client)
 
   /**
    * Downloads a specific byte range of a S3 Object
@@ -345,7 +345,7 @@ object S3 {
       sse: ServerSideEncryption,
       sys: ActorSystem
   ): CompletionStage[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] =
-    S3External.download(bucket, key, range, sse, S3ClientExt.get(sys).client)
+    S3External.download(bucket, key, range, sse, S3Ext.get(sys).client)
 
   /**
    * Downloads a specific byte range of a S3 Object
@@ -365,7 +365,7 @@ object S3 {
       sse: ServerSideEncryption,
       sys: ActorSystem
   ): CompletionStage[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] =
-    S3External.download(bucket, key, range, versionId, sse, S3ClientExt.get(sys).client)
+    S3External.download(bucket, key, range, versionId, sse, S3Ext.get(sys).client)
 
   /**
    * Will return a source of object metadata for a given bucket with optional prefix using version 2 of the List Bucket API.
@@ -381,7 +381,7 @@ object S3 {
    * @return Source of object metadata
    */
   def listBucket(bucket: String, prefix: Option[String], sys: ActorSystem): Source[ListBucketResultContents, NotUsed] =
-    S3External.listBucket(bucket, prefix, S3ClientExt.get(sys).client)
+    S3External.listBucket(bucket, prefix, S3Ext.get(sys).client)
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -397,7 +397,7 @@ object S3 {
                       contentType: ContentType,
                       s3Headers: S3Headers,
                       sys: ActorSystem): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    S3External.multipartUpload(bucket, key, contentType, s3Headers, S3ClientExt.get(sys).client)
+    S3External.multipartUpload(bucket, key, contentType, s3Headers, S3Ext.get(sys).client)
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -415,7 +415,7 @@ object S3 {
                       s3Headers: S3Headers,
                       sse: ServerSideEncryption,
                       sys: ActorSystem): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    S3External.multipartUpload(bucket, key, contentType, s3Headers, sse, S3ClientExt.get(sys).client)
+    S3External.multipartUpload(bucket, key, contentType, s3Headers, sse, S3Ext.get(sys).client)
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -575,7 +575,7 @@ object S3 {
                              contentType,
                              s3Headers,
                              sse,
-                             S3ClientExt.get(sys).client)
+                             S3Ext.get(sys).client)
 
   /**
    * Copy a S3 Object by making multiple requests.

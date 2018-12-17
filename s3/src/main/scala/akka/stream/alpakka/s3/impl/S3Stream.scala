@@ -12,13 +12,13 @@ import scala.util.{Failure, Success}
 import akka.{Done, NotUsed}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK}
-import akka.http.scaladsl.model.headers.{`Content-Length`, ByteRange, CustomHeader}
+import akka.http.scaladsl.model.headers.{ByteRange, CustomHeader, `Content-Length`}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
-import akka.stream.Materializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.s3.auth.{CredentialScope, Signer, SigningKey}
 import akka.stream.alpakka.s3.scaladsl.{ListBucketResultContents, ObjectMetadata}
-import akka.stream.alpakka.s3.{DiskBufferType, MemoryBufferType, S3Exception, S3Settings}
+import akka.stream.alpakka.s3._
 import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
 import akka.util.ByteString
 
@@ -67,21 +67,14 @@ final case class CopyPartition(partNumber: Int, sourceLocation: S3Location, rang
 
 final case class MultipartCopy(multipartUpload: MultipartUpload, copyPartition: CopyPartition)
 
-object S3Stream {
-
-  def apply(settings: S3Settings): S3Stream =
-    new S3Stream(settings)
-}
-
-private[alpakka] final class S3Stream(settings: S3Settings) {
+private[alpakka] final class S3Stream() {
 
   import HttpRequests._
   import Marshalling._
 
-  implicit val conf = settings
   val MinChunkSize = 5242880 //in bytes
   // def because tokens can expire
-  def signingKey = SigningKey(
+  def signingKey(implicit settings: S3Settings) = SigningKey(
     settings.credentialsProvider,
     CredentialScope(LocalDate.now(), settings.s3RegionProvider.getRegion, "s3")
   )
@@ -114,8 +107,11 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
 
     def listBucketCall(
         token: Option[String]
-    )(implicit mat: Materializer): Future[Option[(ListBucketState, Seq[ListBucketResultContents])]] = {
+    )(implicit mat: ActorMaterializer): Future[Option[(ListBucketState, Seq[ListBucketResultContents])]] = {
       import mat.executionContext
+
+      implicit val conf = S3Ext(mat.system).settings
+
       signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, prefix, token))
         .map { (res: ListBucketResult) =>
           Some(
@@ -193,13 +189,15 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
     val headers = S3Headers(
       s3Headers.headers ++ sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(PutObject) }
     )
-    val req = uploadRequest(s3Location, data, contentLength, contentType, headers)
-
-    val resp = signAndRequest(req)
 
     MaterializerAccess.source { implicit mat =>
       import mat.executionContext
-      resp.flatMapConcat {
+      implicit val conf = S3Ext(mat.system).settings
+
+      val req = uploadRequest(s3Location, data, contentLength, contentType, headers)
+
+      signAndRequest(req)
+        .flatMapConcat {
         case HttpResponse(OK, h, entity, _) =>
           Source.fromFuture {
             entity.discardBytes().future().map { _ =>
@@ -221,7 +219,10 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
               rangeOption: Option[ByteRange] = None,
               versionId: Option[String] = None,
               s3Headers: S3Headers = S3Headers.empty): Source[HttpResponse, NotUsed] =
-    signAndRequest(requestHeaders(getDownloadRequest(s3Location, method, s3Headers, versionId), rangeOption))
+    MaterializerAccess.source { mat =>
+      implicit val conf = S3Ext(mat.system).settings
+      signAndRequest(requestHeaders(getDownloadRequest(s3Location, method, s3Headers, versionId), rangeOption))
+    }.mapMaterializedValue(_ => NotUsed)
 
   private def requestHeaders(downloadRequest: HttpRequest, rangeOption: Option[ByteRange]): HttpRequest =
     rangeOption match {
@@ -246,10 +247,12 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
   private def initiateMultipartUpload(s3Location: S3Location,
                                       contentType: ContentType,
                                       s3Headers: S3Headers): Source[MultipartUpload, NotUsed] = {
-    val req = initiateMultipartUploadRequest(s3Location, contentType, s3Headers)
-
     MaterializerAccess.source { implicit mat =>
       import mat.executionContext
+      implicit val conf = S3Ext(mat.system).settings
+
+      val req = initiateMultipartUploadRequest(s3Location, contentType, s3Headers)
+
       signAndRequest(req).flatMapConcat {
         case HttpResponse(status, _, entity, _) if status.isSuccess() =>
           Source.fromFuture(Unmarshal(entity).to[MultipartUpload])
@@ -310,7 +313,7 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
   }
 
   private def completeMultipartUpload(s3Location: S3Location,
-                                      parts: Seq[SuccessfulUploadPart])(implicit mat: Materializer): Future[CompleteMultipartUploadResult] = {
+                                      parts: Seq[SuccessfulUploadPart])(implicit mat: ActorMaterializer): Future[CompleteMultipartUploadResult] = {
     def populateResult(result: CompleteMultipartUploadResult,
                        headers: Seq[HttpHeader]): CompleteMultipartUploadResult = {
       val versionId = headers.find(_.lowercaseName() == "x-amz-version-id").map(_.value())
@@ -318,6 +321,7 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
     }
 
     import mat.executionContext
+    implicit val conf = S3Ext(mat.system).settings
 
     for {
       req <- completeMultipartUploadRequest(parts.head.multipartUpload, parts.map(p => p.index -> p.etag))
@@ -365,20 +369,24 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
 
     val headers: S3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(UploadPart) })
 
-    SplitAfterSize(chunkSize)(atLeastOneByteString)
-      .via(getChunkBuffer(chunkSize)) //creates the chunks
-      .concatSubstreams
-      .zipWith(requestInfo) {
-        case (chunkedPayload, (uploadInfo, chunkIndex)) =>
-          //each of the payload requests are created
-          val partRequest =
-            uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload.data, chunkedPayload.size, headers)
-          (partRequest, (uploadInfo, chunkIndex))
-      }
-      .flatMapConcat { case (req, info) => Signer.signedRequest(req, signingKey).zip(Source.single(info)) }
+    MaterializerAccess.flow { mat =>
+      implicit val conf = S3Ext(mat.system).settings
+
+      SplitAfterSize(chunkSize)(atLeastOneByteString)
+        .via(getChunkBuffer(chunkSize)) //creates the chunks
+        .concatSubstreams
+        .zipWith(requestInfo) {
+          case (chunkedPayload, (uploadInfo, chunkIndex)) =>
+            //each of the payload requests are created
+            val partRequest =
+              uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload.data, chunkedPayload.size, headers)
+            (partRequest, (uploadInfo, chunkIndex))
+        }
+        .flatMapConcat { case (req, info) => Signer.signedRequest(req, signingKey).zip(Source.single(info)) }
+    }.mapMaterializedValue(_ => NotUsed)
   }
 
-  private def getChunkBuffer(chunkSize: Int) = settings.bufferType match {
+  private def getChunkBuffer(chunkSize: Int)(implicit settings: S3Settings) = settings.bufferType match {
     case MemoryBufferType =>
       new MemoryBuffer(chunkSize * 2)
     case d @ DiskBufferType(_) =>
@@ -477,6 +485,8 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
 
   private def signAndRequest(request: HttpRequest, retries: Int = 3): Source[HttpResponse, NotUsed] =
     ActorSystemAccess.source { implicit system =>
+      implicit val conf = S3Ext(system).settings
+
       Signer.signedRequest(request, signingKey)
         .mapAsync(parallelism = 1)(req => Http().singleRequest(req))
         .flatMapConcat {
@@ -531,19 +541,23 @@ private[alpakka] final class S3Stream(settings: S3Settings) {
 
     val headers: S3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(CopyPart) })
 
-    requestInfo
-      .zipWith(partitions) {
-        case ((upload, _), ls) =>
-          ls.map { cp =>
-            val multipartCopy = MultipartCopy(upload, cp)
-            val request = uploadCopyPartRequest(multipartCopy, sourceVersionId, headers)
-            (request, multipartCopy)
-          }
-      }
-      .mapConcat(identity)
-      .flatMapConcat {
-        case (req, info) => Signer.signedRequest(req, signingKey).zip(Source.single(info))
-      }
+    MaterializerAccess.source { mat =>
+      implicit val conf = S3Ext(mat.system).settings
+
+      requestInfo
+        .zipWith(partitions) {
+          case ((upload, _), ls) =>
+            ls.map { cp =>
+              val multipartCopy = MultipartCopy(upload, cp)
+              val request = uploadCopyPartRequest(multipartCopy, sourceVersionId, headers)
+              (request, multipartCopy)
+            }
+        }
+        .mapConcat(identity)
+        .flatMapConcat {
+          case (req, info) => Signer.signedRequest(req, signingKey).zip(Source.single(info))
+        }
+    }.mapMaterializedValue(_ => NotUsed)
   }
 
   private def processUploadCopyPartRequests(
