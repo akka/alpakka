@@ -71,7 +71,7 @@ lazy val alpakka = project
     // Therefore the older version is exlcuded here.
     ScalaUnidoc / unidoc / fullClasspath := {
       (ScalaUnidoc / unidoc / fullClasspath).value
-        .filterNot(_.data.getAbsolutePath.contains("protobuf-java/2.5.0"))
+        .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.5.0.jar"))
     },
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`)
   )
