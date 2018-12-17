@@ -6,16 +6,20 @@ package akka.stream.alpakka.s3.javadsl
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
-import akka.actor.ActorSystem
 import akka.japi.{Pair => JPair}
 import akka.{Done, NotUsed}
 import akka.http.javadsl.model._
 import akka.http.javadsl.model.headers.ByteRange
+import akka.http.scaladsl.model.headers.{ByteRange => ScalaByteRange}
+import akka.http.scaladsl.model.{ContentType => ScalaContentType, HttpMethod => ScalaHttpMethod}
 import akka.stream.alpakka.s3.acl.CannedAcl
-import akka.stream.alpakka.s3.impl.{MetaHeaders, S3Headers, ServerSideEncryption}
-import akka.stream.alpakka.s3.S3Ext
-import akka.stream.javadsl.{Sink, Source}
+import akka.stream.alpakka.s3.impl._
+import akka.stream.alpakka.s3.scaladsl
+import akka.stream.javadsl.{RunnableGraph, Sink, Source}
 import akka.util.ByteString
+
+import scala.compat.java8.FutureConverters._
+import scala.compat.java8.OptionConverters._
 
 object S3 {
 
@@ -31,9 +35,8 @@ object S3 {
   def request(bucket: String,
               key: String,
               method: HttpMethod,
-              s3Headers: S3Headers,
-              sys: ActorSystem): CompletionStage[HttpResponse] =
-    request(bucket, key, Optional.empty(), method, s3Headers, sys)
+              s3Headers: S3Headers): Source[HttpResponse, NotUsed] =
+    request(bucket, key, Optional.empty(), method, s3Headers)
 
   /**
    * Use this to extend the library
@@ -49,9 +52,13 @@ object S3 {
               key: String,
               versionId: Optional[String],
               method: HttpMethod = HttpMethods.GET,
-              s3Headers: S3Headers = S3Headers.empty,
-              sys: ActorSystem): CompletionStage[HttpResponse] =
-    S3External.request(bucket, key, versionId, method, s3Headers, S3Ext.get(sys).client)
+              s3Headers: S3Headers = S3Headers.empty): Source[HttpResponse, NotUsed] =
+    S3Stream
+      .request(S3Location(bucket, key),
+               method.asInstanceOf[ScalaHttpMethod],
+               versionId = Option(versionId.orElse(null)),
+               s3Headers = s3Headers)
+      .asJava
 
   /**
    * Gets the metadata for a S3 Object
@@ -60,8 +67,8 @@ object S3 {
    * @param key the s3 object key
    * @return A [[java.util.concurrent.CompletionStage CompletionStage]] containing an [[java.util.Optional Optional]] that will be empty in case the object does not exist
    */
-  def getObjectMetadata(bucket: String, key: String, sys: ActorSystem): CompletionStage[Optional[ObjectMetadata]] =
-    getObjectMetadata(bucket, key, null, sys)
+  def getObjectMetadata(bucket: String, key: String): Source[Optional[ObjectMetadata], NotUsed] =
+    getObjectMetadata(bucket, key, null)
 
   /**
    * Gets the metadata for a S3 Object
@@ -73,9 +80,8 @@ object S3 {
    */
   def getObjectMetadata(bucket: String,
                         key: String,
-                        sse: ServerSideEncryption,
-                        sys: ActorSystem): CompletionStage[Optional[ObjectMetadata]] =
-    getObjectMetadata(bucket, key, Optional.empty(), sse, sys)
+                        sse: ServerSideEncryption): Source[Optional[ObjectMetadata], NotUsed] =
+    getObjectMetadata(bucket, key, Optional.empty(), sse)
 
   /**
    * Gets the metadata for a S3 Object
@@ -89,9 +95,13 @@ object S3 {
   def getObjectMetadata(bucket: String,
                         key: String,
                         versionId: Optional[String],
-                        sse: ServerSideEncryption,
-                        sys: ActorSystem): CompletionStage[Optional[ObjectMetadata]] =
-    S3External.getObjectMetadata(bucket, key, versionId, sse, S3Ext.get(sys).client)
+                        sse: ServerSideEncryption): Source[Optional[ObjectMetadata], NotUsed] =
+    S3Stream
+      .getObjectMetadata(bucket, key, Option(versionId.orElse(null)), Option(sse))
+      .map { opt =>
+        Optional.ofNullable(opt.map(metaDataToJava).orNull)
+      }
+      .asJava
 
   /**
    * Deletes a S3 Object
@@ -100,8 +110,8 @@ object S3 {
    * @param key the s3 object key
    * @return A [[java.util.concurrent.CompletionStage CompletionStage]] of [[java.lang.Void]]
    */
-  def deleteObject(bucket: String, key: String, sys: ActorSystem): CompletionStage[Done] =
-    deleteObject(bucket, key, Optional.empty(), sys)
+  def deleteObject(bucket: String, key: String): Source[Done, NotUsed] =
+    deleteObject(bucket, key, Optional.empty())
 
   /**
    * Deletes a S3 Object
@@ -111,8 +121,11 @@ object S3 {
    * @param versionId optional version id of the object
    * @return A [[java.util.concurrent.CompletionStage CompletionStage]] of [[java.lang.Void]]
    */
-  def deleteObject(bucket: String, key: String, versionId: Optional[String], sys: ActorSystem): CompletionStage[Done] =
-    S3External.deleteObject(bucket, key, versionId, S3Ext.get(sys).client)
+  def deleteObject(bucket: String, key: String, versionId: Optional[String]): Source[Done, NotUsed] =
+    S3Stream
+      .deleteObject(S3Location(bucket, key), Option(versionId.orElse(null)))
+      .map(_ => Done.getInstance())
+      .asJava
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -129,9 +142,16 @@ object S3 {
                 data: Source[ByteString, _],
                 contentLength: Long,
                 contentType: ContentType,
-                s3Headers: S3Headers,
-                sys: ActorSystem): CompletionStage[ObjectMetadata] =
-    S3External.putObject(bucket, key, data, contentLength, contentType, s3Headers, S3Ext.get(sys).client)
+                s3Headers: S3Headers): Source[ObjectMetadata, NotUsed] =
+    S3Stream
+      .putObject(S3Location(bucket, key),
+                 contentType.asInstanceOf[ScalaContentType],
+                 data.asScala,
+                 contentLength,
+                 s3Headers,
+                 None)
+      .map(metaDataToJava)
+      .asJava
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -150,9 +170,16 @@ object S3 {
                 contentLength: Long,
                 contentType: ContentType,
                 s3Headers: S3Headers,
-                sse: ServerSideEncryption,
-                sys: ActorSystem): CompletionStage[ObjectMetadata] =
-    S3External.putObject(bucket, key, data, contentLength, contentType, s3Headers, sse, S3Ext.get(sys).client)
+                sse: ServerSideEncryption): Source[ObjectMetadata, NotUsed] =
+    S3Stream
+      .putObject(S3Location(bucket, key),
+                 contentType.asInstanceOf[ScalaContentType],
+                 data.asScala,
+                 contentLength,
+                 s3Headers,
+                 Some(sse))
+      .map(metaDataToJava)
+      .asJava
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -172,9 +199,8 @@ object S3 {
                 contentLength: Long,
                 contentType: ContentType,
                 cannedAcl: CannedAcl,
-                metaHeaders: MetaHeaders,
-                sys: ActorSystem): CompletionStage[ObjectMetadata] =
-    putObject(bucket, key, data, contentLength, contentType, S3Headers(cannedAcl, metaHeaders), sys)
+                metaHeaders: MetaHeaders): Source[ObjectMetadata, NotUsed] =
+    putObject(bucket, key, data, contentLength, contentType, S3Headers(cannedAcl, metaHeaders))
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -196,9 +222,8 @@ object S3 {
                 contentType: ContentType,
                 cannedAcl: CannedAcl,
                 metaHeaders: MetaHeaders,
-                sse: ServerSideEncryption,
-                sys: ActorSystem): CompletionStage[ObjectMetadata] =
-    putObject(bucket, key, data, contentLength, contentType, S3Headers(cannedAcl, metaHeaders), sse, sys)
+                sse: ServerSideEncryption): Source[ObjectMetadata, NotUsed] =
+    putObject(bucket, key, data, contentLength, contentType, S3Headers(cannedAcl, metaHeaders), sse)
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -214,9 +239,8 @@ object S3 {
                 key: String,
                 data: Source[ByteString, _],
                 contentLength: Long,
-                contentType: ContentType,
-                sys: ActorSystem): CompletionStage[ObjectMetadata] =
-    putObject(bucket, key, data, contentLength, contentType, CannedAcl.Private, MetaHeaders(Map()), sys)
+                contentType: ContentType): Source[ObjectMetadata, NotUsed] =
+    putObject(bucket, key, data, contentLength, contentType, CannedAcl.Private, MetaHeaders(Map()))
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -234,9 +258,8 @@ object S3 {
                 data: Source[ByteString, _],
                 contentLength: Long,
                 contentType: ContentType,
-                sse: ServerSideEncryption,
-                sys: ActorSystem): CompletionStage[ObjectMetadata] =
-    putObject(bucket, key, data, contentLength, contentType, CannedAcl.Private, MetaHeaders(Map()), sse, sys)
+                sse: ServerSideEncryption): Source[ObjectMetadata, NotUsed] =
+    putObject(bucket, key, data, contentLength, contentType, CannedAcl.Private, MetaHeaders(Map()), sse)
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -250,16 +273,14 @@ object S3 {
   def putObject(bucket: String,
                 key: String,
                 data: Source[ByteString, _],
-                contentLength: Long,
-                sys: ActorSystem): CompletionStage[ObjectMetadata] =
+                contentLength: Long): Source[ObjectMetadata, NotUsed] =
     putObject(bucket,
               key,
               data,
               contentLength,
               ContentTypes.APPLICATION_OCTET_STREAM,
               CannedAcl.Private,
-              MetaHeaders(Map()),
-              sys)
+              MetaHeaders(Map()))
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -275,8 +296,7 @@ object S3 {
                 key: String,
                 data: Source[ByteString, _],
                 contentLength: Long,
-                sse: ServerSideEncryption,
-                sys: ActorSystem): CompletionStage[ObjectMetadata] =
+                sse: ServerSideEncryption): Source[ObjectMetadata, NotUsed] =
     putObject(bucket,
               key,
               data,
@@ -284,8 +304,13 @@ object S3 {
               ContentTypes.APPLICATION_OCTET_STREAM,
               CannedAcl.Private,
               MetaHeaders(Map()),
-              sse,
-              sys)
+              sse)
+
+  private def toJava[M](
+      download: akka.stream.scaladsl.Source[Option[(akka.stream.scaladsl.Source[ByteString, M], scaladsl.ObjectMetadata)], NotUsed]): Source[Optional[JPair[Source[ByteString, M], ObjectMetadata]], NotUsed] =
+    download.map {
+      _.map { case (stream, meta) => JPair(stream.asJava, metaDataToJava(meta)) }.asJava
+    }.asJava
 
   /**
    * Downloads a S3 Object
@@ -295,9 +320,8 @@ object S3 {
    * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]], and a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[ObjectMetadata]]
    */
   def download(bucket: String,
-               key: String,
-               sys: ActorSystem): CompletionStage[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] =
-    S3External.download(bucket, key, S3Ext.get(sys).client)
+               key: String): Source[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]], NotUsed] =
+    toJava(S3Stream.download(S3Location(bucket, key), None, None, None))
 
   /**
    * Downloads a S3 Object
@@ -310,10 +334,9 @@ object S3 {
   def download(
       bucket: String,
       key: String,
-      sse: ServerSideEncryption,
-      sys: ActorSystem
-  ): CompletionStage[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] =
-    S3External.download(bucket, key, sse, S3Ext.get(sys).client)
+      sse: ServerSideEncryption
+  ): Source[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]], NotUsed] =
+    toJava(S3Stream.download(S3Location(bucket, key), None, None, Some(sse)))
 
   /**
    * Downloads a specific byte range of a S3 Object
@@ -325,9 +348,10 @@ object S3 {
    */
   def download(bucket: String,
                key: String,
-               range: ByteRange,
-               sys: ActorSystem): CompletionStage[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] =
-    S3External.download(bucket, key, range, S3Ext.get(sys).client)
+               range: ByteRange): Source[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]], NotUsed] = {
+    val scalaRange = range.asInstanceOf[ScalaByteRange]
+    toJava(S3Stream.download(S3Location(bucket, key), Some(scalaRange), None, None))
+  }
 
   /**
    * Downloads a specific byte range of a S3 Object
@@ -342,10 +366,11 @@ object S3 {
       bucket: String,
       key: String,
       range: ByteRange,
-      sse: ServerSideEncryption,
-      sys: ActorSystem
-  ): CompletionStage[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] =
-    S3External.download(bucket, key, range, sse, S3Ext.get(sys).client)
+      sse: ServerSideEncryption
+  ): Source[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]], NotUsed] = {
+    val scalaRange = range.asInstanceOf[ScalaByteRange]
+    toJava(S3Stream.download(S3Location(bucket, key), Some(scalaRange), None, Some(sse)))
+  }
 
   /**
    * Downloads a specific byte range of a S3 Object
@@ -362,10 +387,13 @@ object S3 {
       key: String,
       range: ByteRange,
       versionId: Optional[String],
-      sse: ServerSideEncryption,
-      sys: ActorSystem
-  ): CompletionStage[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]]] =
-    S3External.download(bucket, key, range, versionId, sse, S3Ext.get(sys).client)
+      sse: ServerSideEncryption
+  ): Source[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]], NotUsed] = {
+    val scalaRange = range.asInstanceOf[ScalaByteRange]
+    toJava(
+      S3Stream.download(S3Location(bucket, key), Option(scalaRange), Option(versionId.orElse(null)), Option(sse))
+    )
+  }
 
   /**
    * Will return a source of object metadata for a given bucket with optional prefix using version 2 of the List Bucket API.
@@ -380,8 +408,13 @@ object S3 {
    * @param prefix Prefix of the keys you want to list under passed bucket
    * @return Source of object metadata
    */
-  def listBucket(bucket: String, prefix: Option[String], sys: ActorSystem): Source[ListBucketResultContents, NotUsed] =
-    S3External.listBucket(bucket, prefix, S3Ext.get(sys).client)
+  def listBucket(bucket: String, prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
+    S3Stream
+      .listBucket(bucket, prefix)
+      .map { scalaContents =>
+        listingToJava(scalaContents)
+      }
+      .asJava
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -395,9 +428,12 @@ object S3 {
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
-                      s3Headers: S3Headers,
-                      sys: ActorSystem): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    S3External.multipartUpload(bucket, key, contentType, s3Headers, S3Ext.get(sys).client)
+                      s3Headers: S3Headers): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    MaterializerAccess.sink { mat =>
+      S3Stream
+        .multipartUpload(S3Location(bucket, key), contentType.asInstanceOf[ScalaContentType], s3Headers)
+        .mapMaterializedValue(_.map(MultipartUploadResult.create)(mat.executionContext))
+    }.mapMaterializedValue(_.flatten.toJava).asJava
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -413,9 +449,12 @@ object S3 {
                       key: String,
                       contentType: ContentType,
                       s3Headers: S3Headers,
-                      sse: ServerSideEncryption,
-                      sys: ActorSystem): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    S3External.multipartUpload(bucket, key, contentType, s3Headers, sse, S3Ext.get(sys).client)
+                      sse: ServerSideEncryption): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    MaterializerAccess.sink { mat =>
+      S3Stream
+        .multipartUpload(S3Location(bucket, key), contentType.asInstanceOf[ScalaContentType], s3Headers, Some(sse))
+        .mapMaterializedValue(_.map(MultipartUploadResult.create)(mat.executionContext))
+    }.mapMaterializedValue(_.flatten.toJava).asJava
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -431,9 +470,8 @@ object S3 {
                       key: String,
                       contentType: ContentType,
                       cannedAcl: CannedAcl,
-                      metaHeaders: MetaHeaders,
-                      sys: ActorSystem): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    multipartUpload(bucket, key, contentType, S3Headers(cannedAcl, metaHeaders), sys)
+                      metaHeaders: MetaHeaders): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    multipartUpload(bucket, key, contentType, S3Headers(cannedAcl, metaHeaders))
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -451,9 +489,8 @@ object S3 {
                       contentType: ContentType,
                       cannedAcl: CannedAcl,
                       metaHeaders: MetaHeaders,
-                      sse: ServerSideEncryption,
-                      sys: ActorSystem): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    multipartUpload(bucket, key, contentType, S3Headers(cannedAcl, metaHeaders), sse, sys)
+                      sse: ServerSideEncryption): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    multipartUpload(bucket, key, contentType, S3Headers(cannedAcl, metaHeaders), sse)
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -467,9 +504,8 @@ object S3 {
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
-                      cannedAcl: CannedAcl,
-                      sys: ActorSystem): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    multipartUpload(bucket, key, contentType, cannedAcl, MetaHeaders(Map()), sys)
+                      cannedAcl: CannedAcl): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    multipartUpload(bucket, key, contentType, cannedAcl, MetaHeaders(Map()))
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -485,9 +521,8 @@ object S3 {
                       key: String,
                       contentType: ContentType,
                       cannedAcl: CannedAcl,
-                      sse: ServerSideEncryption,
-                      sys: ActorSystem): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    multipartUpload(bucket, key, contentType, cannedAcl, MetaHeaders(Map()), sse, sys)
+                      sse: ServerSideEncryption): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    multipartUpload(bucket, key, contentType, cannedAcl, MetaHeaders(Map()), sse)
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -499,9 +534,8 @@ object S3 {
    */
   def multipartUpload(bucket: String,
                       key: String,
-                      contentType: ContentType,
-                      sys: ActorSystem): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    multipartUpload(bucket, key, contentType, CannedAcl.Private, MetaHeaders(Map()), sys)
+                      contentType: ContentType): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    multipartUpload(bucket, key, contentType, CannedAcl.Private, MetaHeaders(Map()))
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -515,9 +549,8 @@ object S3 {
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
-                      sse: ServerSideEncryption,
-                      sys: ActorSystem): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    multipartUpload(bucket, key, contentType, CannedAcl.Private, MetaHeaders(Map()), sse, sys)
+                      sse: ServerSideEncryption): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    multipartUpload(bucket, key, contentType, CannedAcl.Private, MetaHeaders(Map()), sse)
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -527,9 +560,8 @@ object S3 {
    * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
   def multipartUpload(bucket: String,
-                      key: String,
-                      sys: ActorSystem): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    multipartUpload(bucket, key, ContentTypes.APPLICATION_OCTET_STREAM, CannedAcl.Private, MetaHeaders(Map()), sys)
+                      key: String): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    multipartUpload(bucket, key, ContentTypes.APPLICATION_OCTET_STREAM, CannedAcl.Private, MetaHeaders(Map()))
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -541,9 +573,13 @@ object S3 {
    */
   def multipartUpload(bucket: String,
                       key: String,
-                      sse: ServerSideEncryption,
-                      sys: ActorSystem): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    multipartUpload(bucket, key, ContentTypes.APPLICATION_OCTET_STREAM, CannedAcl.Private, MetaHeaders(Map()), sse, sys)
+                      sse: ServerSideEncryption): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    multipartUpload(bucket,
+                    key,
+                    ContentTypes.APPLICATION_OCTET_STREAM,
+                    CannedAcl.Private,
+                    MetaHeaders(Map()),
+                    sse)
 
   /**
    * Copy a S3 Object by making multiple requests.
@@ -565,17 +601,20 @@ object S3 {
                     sourceVersionId: Optional[String],
                     contentType: ContentType,
                     s3Headers: S3Headers,
-                    sse: ServerSideEncryption,
-                    sys: ActorSystem): CompletionStage[MultipartUploadResult] =
-    S3External.multipartCopy(sourceBucket,
-                             sourceKey,
-                             targetBucket,
-                             targetKey,
-                             sourceVersionId,
-                             contentType,
-                             s3Headers,
-                             sse,
-                             S3Ext.get(sys).client)
+                    sse: ServerSideEncryption): RunnableGraph[CompletionStage[MultipartUploadResult]] =
+    RunnableGraph.fromGraph(
+      S3Stream
+        .multipartCopy(
+          S3Location(sourceBucket, sourceKey),
+          S3Location(targetBucket, targetKey),
+          Option(sourceVersionId.orElse(null)),
+          contentType.asInstanceOf[ScalaContentType],
+          s3Headers,
+          MultipartUploadResult.create,
+          Option(sse)
+        )
+        .mapMaterializedValue(_.toJava)
+    )
 
   /**
    * Copy a S3 Object by making multiple requests.
@@ -595,8 +634,7 @@ object S3 {
                     targetKey: String,
                     sourceVersionId: Optional[String],
                     s3Headers: S3Headers,
-                    sse: ServerSideEncryption,
-                    sys: ActorSystem): CompletionStage[MultipartUploadResult] =
+                    sse: ServerSideEncryption): RunnableGraph[CompletionStage[MultipartUploadResult]] =
     multipartCopy(sourceBucket,
                   sourceKey,
                   targetBucket,
@@ -604,8 +642,7 @@ object S3 {
                   sourceVersionId,
                   ContentTypes.APPLICATION_OCTET_STREAM,
                   s3Headers,
-                  sse,
-                  sys)
+                  sse)
 
   /**
    * Copy a S3 Object by making multiple requests.
@@ -625,9 +662,15 @@ object S3 {
                     targetKey: String,
                     contentType: ContentType,
                     s3Headers: S3Headers,
-                    sse: ServerSideEncryption,
-                    sys: ActorSystem): CompletionStage[MultipartUploadResult] =
-    multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, Optional.empty(), contentType, s3Headers, sse, sys)
+                    sse: ServerSideEncryption): RunnableGraph[CompletionStage[MultipartUploadResult]] =
+    multipartCopy(sourceBucket,
+                  sourceKey,
+                  targetBucket,
+                  targetKey,
+                  Optional.empty(),
+                  contentType,
+                  s3Headers,
+                  sse)
 
   /**
    * Copy a S3 Object by making multiple requests.
@@ -645,16 +688,14 @@ object S3 {
                     targetBucket: String,
                     targetKey: String,
                     s3Headers: S3Headers,
-                    sse: ServerSideEncryption,
-                    sys: ActorSystem): CompletionStage[MultipartUploadResult] =
+                    sse: ServerSideEncryption): RunnableGraph[CompletionStage[MultipartUploadResult]] =
     multipartCopy(sourceBucket,
                   sourceKey,
                   targetBucket,
                   targetKey,
                   ContentTypes.APPLICATION_OCTET_STREAM,
                   s3Headers,
-                  sse,
-                  sys)
+                  sse)
 
   /**
    * Copy a S3 Object by making multiple requests.
@@ -668,15 +709,23 @@ object S3 {
   def multipartCopy(sourceBucket: String,
                     sourceKey: String,
                     targetBucket: String,
-                    targetKey: String,
-                    sys: ActorSystem): CompletionStage[MultipartUploadResult] =
+                    targetKey: String): RunnableGraph[CompletionStage[MultipartUploadResult]] =
     multipartCopy(sourceBucket,
                   sourceKey,
                   targetBucket,
                   targetKey,
                   ContentTypes.APPLICATION_OCTET_STREAM,
                   S3Headers.empty,
-                  null,
-                  sys)
+                  null)
 
+  private def listingToJava(scalaContents: scaladsl.ListBucketResultContents): ListBucketResultContents =
+    ListBucketResultContents(scalaContents.bucketName,
+                             scalaContents.key,
+                             scalaContents.eTag,
+                             scalaContents.size,
+                             scalaContents.lastModified,
+                             scalaContents.storageClass)
+
+  private def metaDataToJava(scalaContents: scaladsl.ObjectMetadata): ObjectMetadata =
+    new ObjectMetadata(scalaContents)
 }

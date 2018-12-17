@@ -17,7 +17,7 @@ import akka.stream.alpakka.s3.impl.ListBucketVersion2;
 import akka.stream.alpakka.s3.impl.S3Headers;
 import akka.stream.alpakka.s3.impl.ServerSideEncryption;
 import akka.stream.alpakka.s3.javadsl.MultipartUploadResult;
-import akka.stream.alpakka.s3.javadsl.S3External;
+import akka.stream.alpakka.s3.javadsl.S3;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
@@ -61,7 +61,7 @@ public class JavaExamplesSnippets {
     // #java-example
     // setting the encryption to AES256
     CompletionStage<MultipartUploadResult> result =
-        S3External.multipartCopy(
+        S3.multipartCopy(
             sourceBucket,
             sourceKey,
             targetBucket,
@@ -78,7 +78,7 @@ public class JavaExamplesSnippets {
 
     // using canned ACL
     CompletionStage<MultipartUploadResult> result =
-        S3External.multipartCopy(
+        S3.multipartCopy(
             sourceBucket,
             sourceKey,
             targetBucket,
