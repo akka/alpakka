@@ -89,11 +89,9 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     val data = Source.single(ByteString(objectValue))
 
     val result =
-      S3.putObject(defaultRegionBucket,
-                           objectKey,
-                           data,
-                           bytes.length,
-                           s3Headers = S3Headers(MetaHeaders(metaHeaders)))(defaultRegionClient)
+      S3.putObject(defaultRegionBucket, objectKey, data, bytes.length, s3Headers = S3Headers(MetaHeaders(metaHeaders)))(
+        defaultRegionClient
+      )
 
     val uploadResult = Await.ready(result, 90.seconds).futureValue
     uploadResult.eTag should not be empty
@@ -107,10 +105,10 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
 
     val result = for {
       put <- S3.putObject(defaultRegionBucket,
-                                  objectKey,
-                                  data,
-                                  bytes.length,
-                                  s3Headers = S3Headers(MetaHeaders(metaHeaders)))
+                          objectKey,
+                          data,
+                          bytes.length,
+                          s3Headers = S3Headers(MetaHeaders(metaHeaders)))
       metaBefore <- S3.getObjectMetadata(defaultRegionBucket, objectKey)
       delete <- S3.deleteObject(defaultRegionBucket, objectKey)
       metaAfter <- S3.getObjectMetadata(defaultRegionBucket, objectKey)
