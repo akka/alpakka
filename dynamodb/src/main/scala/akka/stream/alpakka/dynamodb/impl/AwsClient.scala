@@ -55,6 +55,8 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
   protected val defaultContentType: ContentType
   protected val errorResponseHandler: HttpResponseHandler[AmazonServiceException]
 
+  protected def url: String = s"https://${settings.host}/"
+
   private val requestId = new AtomicInteger()
   private val credentials = settings.credentialsProvider
 
@@ -74,8 +76,6 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
     case HttpMethodName.OPTIONS => HttpMethods.OPTIONS
     case HttpMethodName.PATCH => HttpMethods.PATCH
   }
-
-  private val url = s"https://${settings.host}/"
 
   private val signableUrl = Uri(url)
 
