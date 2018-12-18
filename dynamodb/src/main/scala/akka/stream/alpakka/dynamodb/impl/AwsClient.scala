@@ -89,7 +89,7 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
       .via(connection)
       .mapAsync(settings.parallelism) {
         case (Success(response), i) => toAwsResult(response, i)
-        case (Failure(ex), i) => Future.failed(ex)
+        case (Failure(ex), _) => Future.failed(ex)
       }
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
       .map(_.asInstanceOf[Op#B])
