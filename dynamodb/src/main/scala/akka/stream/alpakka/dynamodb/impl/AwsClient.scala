@@ -81,7 +81,7 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
 
   private val uri = new java.net.URI(url)
 
-  private val decider: Supervision.Decider = { case _ => Supervision.Stop }
+  private val decider: Supervision.Decider = _ => Supervision.Stop
 
   def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] =
     Flow[Op]
