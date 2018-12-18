@@ -105,10 +105,10 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
     val body = read(original.getContent)
 
     val tokenHeader: List[headers.RawHeader] = {
-      credentials.getCredentials() match {
-        case sessionCredentials: auth.AWSSessionCredentials =>
+      credentials.getCredentials match {
+        case _: auth.AWSSessionCredentials =>
           Some(headers.RawHeader("x-amz-security-token", amzHeaders.get("X-Amz-Security-Token")))
-        case other =>
+        case _ =>
           None
       }
     }.toList
