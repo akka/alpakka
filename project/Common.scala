@@ -48,7 +48,7 @@ object Common extends AutoPlugin {
       (baseDirectory in ThisBuild).value.toString,
       "-doc-source-url", {
         val branch = if (isSnapshot.value) "master" else s"v$version"
-        s"https://github.com/akka/alpakka/tree/${branch}$${sourcepath.name}.scala#L1"
+        s"https://github.com/akka/alpakka/tree/${branch}€{FILE_PATH}.scala#L1"
       },
       "-skip-packages",
       "akka.pattern:" + // for some reason Scaladoc creates this
