@@ -28,7 +28,7 @@ object MaterializerAccess {
     Sink
       .lazyInit(_ => {
         Future.successful(factory(extractMat(GraphInterpreter.currentInterpreterOrNull)))
-      }, () => ???)
+      }, () => throw new Error("No element received"))
 
   private def extractMat(gi: GraphInterpreter) = gi match {
     case null => throw new Error("GraphInterpreter not set")
