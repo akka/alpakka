@@ -29,7 +29,6 @@ object MqttSessionSettings {
  * Configuration settings for client and server usage.
  */
 final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
-                                         val maxClientConnectionStashSize: Int = 100,
                                          val clientTerminationWatcherBufferSize: Int = 100,
                                          val commandParallelism: Int = 50,
                                          val eventParallelism: Int = 10,
@@ -183,14 +182,6 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
     copy(receiveUnsubAckTimeout = receiveUnsubAckTimeout.asScala)
 
   /**
-   * For clients, the number of commands to buffer in memory while waiting for a connection ack. For servers,
-   * the number of commands to buffer in memory while waiting for a local connection ack command. Defaults
-   * to 100.
-   */
-  def withMaxClientConnectionStashSize(maxClientConnectionStashSize: Int): MqttSessionSettings =
-    copy(maxClientConnectionStashSize = maxClientConnectionStashSize)
-
-  /**
    * The maximum number of client termination event observers permitted. Defaults to 100 which should be
    * more than adequate for most situations.
    */
@@ -205,7 +196,6 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
     copy(serverSendBufferSize = serverSendBufferSize)
 
   private def copy(maxPacketSize: Int = maxPacketSize,
-                   maxClientConnectionStashSize: Int = maxClientConnectionStashSize,
                    clientTerminationWatcherBufferSize: Int = clientTerminationWatcherBufferSize,
                    commandParallelism: Int = commandParallelism,
                    eventParallelism: Int = eventParallelism,
@@ -219,7 +209,6 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
                    serverSendBufferSize: Int = serverSendBufferSize) =
     new MqttSessionSettings(
       maxPacketSize,
-      maxClientConnectionStashSize,
       clientTerminationWatcherBufferSize,
       commandParallelism,
       eventParallelism,
@@ -234,5 +223,5 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
     )
 
   override def toString: String =
-    s"MqttSessionSettings(maxPacketSize=$maxPacketSize,maxClientConnectionStashSize=$maxClientConnectionStashSize,clientTerminationWatcherBufferSize=$clientTerminationWatcherBufferSize,commandParallelism=$commandParallelism,eventParallelism=$eventParallelism,receiveConnectTimeout=$receiveConnectTimeout,receiveConnAckTimeout=$receiveConnAckTimeout,receivePubAckRecTimeout=$receivePubAckRecTimeout,receivePubCompTimeout=$receivePubCompTimeout,receivePubRelTimeout=$receivePubRelTimeout,receiveSubAckTimeout=$receiveSubAckTimeout,receiveUnsubAckTimeout=$receiveUnsubAckTimeout,serverSendBufferSize=$serverSendBufferSize)"
+    s"MqttSessionSettings(maxPacketSize=$maxPacketSize,clientTerminationWatcherBufferSize=$clientTerminationWatcherBufferSize,commandParallelism=$commandParallelism,eventParallelism=$eventParallelism,receiveConnectTimeout=$receiveConnectTimeout,receiveConnAckTimeout=$receiveConnAckTimeout,receivePubAckRecTimeout=$receivePubAckRecTimeout,receivePubCompTimeout=$receivePubCompTimeout,receivePubRelTimeout=$receivePubRelTimeout,receiveSubAckTimeout=$receiveSubAckTimeout,receiveUnsubAckTimeout=$receiveUnsubAckTimeout,serverSendBufferSize=$serverSendBufferSize)"
 }
