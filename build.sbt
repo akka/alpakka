@@ -226,14 +226,18 @@ lazy val unixdomainsocket = alpakkaProject(
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
 
 lazy val docs = project
-  .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin)
+  .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, PreprocessPlugin)
   .disablePlugins(BintrayPlugin, MimaPlugin)
-  .settings(addMappingsToSiteDir(LocalRootProject / ScalaUnidoc / packageDoc / mappings, SiteScaladoc / siteSubdirName))
   .settings(
     name := "Alpakka",
     publish / skip := true,
     whitesourceIgnore := true,
-    SiteScaladoc / siteSubdirName := s"api/alpakka/${version.value}",
+    makeSite := makeSite.dependsOn(LocalRootProject / ScalaUnidoc / doc).value,
+    Preprocess / siteSubdirName := s"api/alpakka/${version.value}",
+    Preprocess / sourceDirectory := (LocalRootProject / ScalaUnidoc / unidoc / target).value,
+    Preprocess / preprocessRules := Seq(
+      ("\\.java\\.scala".r, _ => ".java")
+    ),
     Paradox / siteSubdirName := s"docs/alpakka/${version.value}",
     Paradox / sourceDirectory := sourceDirectory.value / "main" / "paradox",
     Paradox / paradoxProperties ++= Map(
