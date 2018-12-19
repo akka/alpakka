@@ -47,8 +47,7 @@ class S3StreamSpec(_system: ActorSystem)
     implicit val settings =
       new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
 
-    val s3stream = new S3Stream(settings)
-    val result: HttpRequest = s3stream invokePrivate requestHeaders(getDownloadRequest(location), None)
+    val result: HttpRequest = S3Stream invokePrivate requestHeaders(getDownloadRequest(location), None)
     result.headers.size shouldBe 1
     result.headers.seq.exists(_.lowercaseName() == "host")
   }
@@ -73,8 +72,7 @@ class S3StreamSpec(_system: ActorSystem)
     implicit val settings =
       new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
 
-    val s3stream = new S3Stream(settings)
-    val result: HttpRequest = s3stream invokePrivate requestHeaders(getDownloadRequest(location), Some(range))
+    val result: HttpRequest = S3Stream invokePrivate requestHeaders(getDownloadRequest(location), Some(range))
     result.headers.size shouldBe 2
     result.headers.seq.exists(_.lowercaseName() == "host")
     result.headers.seq.exists(_.lowercaseName() == "range")
@@ -95,27 +93,26 @@ class S3StreamSpec(_system: ActorSystem)
       }
     implicit val settings =
       new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
-    val s3stream = new S3Stream(settings)
 
     def nonEmptySrc = Source.repeat(ByteString("hello world"))
 
     nonEmptySrc
       .take(1)
-      .via(s3stream.atLeastOneByteString)
+      .via(S3Stream.atLeastOneByteString)
       .toMat(Sink.seq[ByteString])(Keep.right)
       .run()
       .futureValue should equal(Seq(ByteString("hello world")))
 
     nonEmptySrc
       .take(10)
-      .via(s3stream.atLeastOneByteString)
+      .via(S3Stream.atLeastOneByteString)
       .toMat(Sink.seq[ByteString])(Keep.right)
       .run()
       .futureValue should equal(Seq.fill(10)(ByteString("hello world")))
 
     nonEmptySrc
       .take(0)
-      .via(s3stream.atLeastOneByteString)
+      .via(S3Stream.atLeastOneByteString)
       .toMat(Sink.seq[ByteString])(Keep.right)
       .run()
       .futureValue should equal(Seq(ByteString.empty))
@@ -139,9 +136,8 @@ class S3StreamSpec(_system: ActorSystem)
       }
     implicit val settings: S3Settings =
       new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
-    val s3stream = new S3Stream(settings)
 
-    val partitions: List[CopyPartition] = s3stream.createPartitions(chunkSize, sourceLocation)(objectSize)
+    val partitions: List[CopyPartition] = S3Stream.createPartitions(chunkSize, sourceLocation)(objectSize)
     partitions should have length 3
     partitions should equal(
       List(
@@ -170,9 +166,8 @@ class S3StreamSpec(_system: ActorSystem)
       }
     implicit val settings: S3Settings =
       new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
-    val s3stream = new S3Stream(settings)
 
-    val partitions: List[CopyPartition] = s3stream.createPartitions(chunkSize, sourceLocation)(objectSize)
+    val partitions: List[CopyPartition] = S3Stream.createPartitions(chunkSize, sourceLocation)(objectSize)
     partitions should have length 2
     partitions should equal(
       List(CopyPartition(1, sourceLocation, Some(ByteRange(0, 25))),
@@ -198,9 +193,8 @@ class S3StreamSpec(_system: ActorSystem)
       }
     implicit val settings: S3Settings =
       new S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
-    val s3stream = new S3Stream(settings)
 
-    val partitions: List[CopyPartition] = s3stream.createPartitions(chunkSize, sourceLocation)(objectSize)
+    val partitions: List[CopyPartition] = S3Stream.createPartitions(chunkSize, sourceLocation)(objectSize)
     partitions should have length 1
     partitions should equal(List(CopyPartition(1, sourceLocation)))
   }

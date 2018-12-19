@@ -7,7 +7,7 @@ package akka.stream.alpakka.s3.scaladsl
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.s3.{S3Client, S3Settings}
+import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.impl.{ListBucketVersion1, MetaHeaders, S3Headers}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString

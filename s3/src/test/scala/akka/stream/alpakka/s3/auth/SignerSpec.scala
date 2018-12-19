@@ -9,6 +9,7 @@ import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.http.scaladsl.model.headers.{Host, RawHeader}
+import akka.stream.scaladsl.Sink
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
 import com.amazonaws.auth
@@ -64,7 +65,7 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
 
     val date = LocalDateTime.of(2015, 8, 30, 12, 36, 0).atZone(ZoneOffset.UTC)
     val srFuture =
-      Signer.signedRequest(req, signingKey(date), date)
+      Signer.signedRequest(req, signingKey(date), date).runWith(Sink.head)
     whenReady(srFuture) { signedRequest =>
       signedRequest should equal(
         HttpRequest(HttpMethods.GET)
@@ -89,7 +90,7 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
 
     val date = LocalDateTime.of(2017, 12, 31, 12, 36, 0).atZone(ZoneOffset.UTC)
     val srFuture =
-      Signer.signedRequest(req, signingKey(date), date)
+      Signer.signedRequest(req, signingKey(date), date).runWith(Sink.head)
 
     whenReady(srFuture) { signedRequest =>
       signedRequest.getHeader("x-amz-date").get.value should equal("20171231T123600Z")
@@ -128,7 +129,7 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
     sessionCredentialsProvider.refresh()
 
     val srFuture =
-      Signer.signedRequest(req, key, date)
+      Signer.signedRequest(req, key, date).runWith(Sink.head)
 
     whenReady(srFuture) { signedRequest =>
       signedRequest.getHeader("x-amz-security-token").get.value should equal(initialCredentials.getSessionToken)
