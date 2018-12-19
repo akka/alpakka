@@ -43,4 +43,5 @@ private[dynamodb] class DynamoClientImpl(
       Http().cachedHostConnectionPool[AwsRequestMetadata](settings.host, settings.port, settings = poolSettings)
   }
 
+  override protected def url: String = if (settings.tls) s"https://${settings.host}/" else s"http://${settings.host}/"
 }
