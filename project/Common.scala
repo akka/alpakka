@@ -52,6 +52,7 @@ object Common extends AutoPlugin {
       },
       "-skip-packages",
       "akka.pattern:" + // for some reason Scaladoc creates this
+      "org.mongodb.scala:" + // this one is a mystery as well
       // excluding generated grpc classes, except the model ones (com.google.pubsub)
       "com.google.api:com.google.cloud:com.google.iam:com.google.logging:" +
       "com.google.longrunning:com.google.protobuf:com.google.rpc:com.google.type"
