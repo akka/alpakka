@@ -6,11 +6,11 @@ package docs.javadsl;
 
 import java.util.concurrent.CompletionStage;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.s3.MemoryBufferType;
-import akka.stream.alpakka.s3.S3Client;
 import akka.stream.alpakka.s3.S3Settings;
 import akka.stream.alpakka.s3.acl.CannedAcl;
 import akka.stream.alpakka.s3.impl.ListBucketVersion2;
@@ -18,6 +18,8 @@ import akka.stream.alpakka.s3.impl.S3Headers;
 import akka.stream.alpakka.s3.impl.ServerSideEncryption;
 import akka.stream.alpakka.s3.javadsl.MultipartUploadResult;
 import akka.stream.alpakka.s3.javadsl.S3;
+import akka.stream.javadsl.RunnableGraph;
+import akka.stream.javadsl.Source;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
@@ -54,21 +56,18 @@ public class JavaExamplesSnippets {
           scala.Option.empty(),
           ListBucketVersion2.getInstance());
 
-  private final S3Client client = S3Client.create(settings, system, materializer);
-
   public void aes256Encryption(
       String sourceBucket, String sourceKey, String targetBucket, String targetKey) {
     // #java-example
     // setting the encryption to AES256
-    CompletionStage<MultipartUploadResult> result =
+    RunnableGraph<Source<MultipartUploadResult, NotUsed>> result =
         S3.multipartCopy(
             sourceBucket,
             sourceKey,
             targetBucket,
             targetKey,
             S3Headers.empty(),
-            ServerSideEncryption.AES256$.MODULE$,
-            client);
+            ServerSideEncryption.AES256$.MODULE$);
     // #java-example
   }
 
@@ -77,15 +76,14 @@ public class JavaExamplesSnippets {
     // #java-example
 
     // using canned ACL
-    CompletionStage<MultipartUploadResult> result =
+    RunnableGraph<Source<MultipartUploadResult, NotUsed>> result =
         S3.multipartCopy(
             sourceBucket,
             sourceKey,
             targetBucket,
             targetKey,
             S3Headers.apply(CannedAcl.Private$.MODULE$),
-            null, // encryption,
-            client);
+            null); // encryption
     // #java-example
   }
 }

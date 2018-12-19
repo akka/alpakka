@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.impl.MetaHeaders
-import akka.stream.alpakka.s3.{Proxy, S3Client, S3Settings}
+import akka.stream.alpakka.s3.{Proxy, S3Settings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import com.amazonaws.regions.AwsRegionProvider
@@ -47,14 +47,14 @@ case class S3ConnectionProperties(
     otherRegionBucket: String,
     settings: S3Settings,
     otherRegionSettings: S3Settings,
-    defaultRegionClient: S3Client,
-    otherRegionClient: S3Client,
+    //defaultRegionClient: S3Client,
+    //otherRegionClient: S3Client,
     objectKey: String,
     objectValue: String,
     metaHeaders: Map[String, String]
 )
 
-@Ignore
+/*@Ignore
 class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with ScalaFutures {
 
   implicit val actorSystem = ActorSystem()
@@ -308,4 +308,4 @@ class S3NoMock extends FlatSpecLike with BeforeAndAfterAll with Matchers with Sc
       downloaded shouldBe settings.objectValue
     }
   }
-}
+}*/

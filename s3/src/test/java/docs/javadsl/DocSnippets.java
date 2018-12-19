@@ -9,7 +9,6 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.s3.MemoryBufferType;
 import akka.stream.alpakka.s3.Proxy;
-import akka.stream.alpakka.s3.S3Client;
 import akka.stream.alpakka.s3.S3Settings;
 import akka.stream.alpakka.s3.impl.ListBucketVersion2;
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase;
@@ -50,7 +49,8 @@ public class DocSnippets extends S3WireMockBase {
             true,
             scala.Option.empty(),
             ListBucketVersion2.getInstance());
-    final S3Client s3Client = S3Client.create(settings, system(), mat);
+    // FIXME
+    // final S3Client s3Client = S3Client.create(settings, system(), mat);
     // #java-bluemix-example
   }
 }
