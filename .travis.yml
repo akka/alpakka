@@ -1,6 +1,5 @@
 language: scala
 sudo: false
-jdk: oraclejdk8
 
 services:
   - docker
@@ -10,9 +9,14 @@ before_install:
   - git remote set-branches --add origin master && git fetch
   # fetch full history for correct current and previous version detection
   - git fetch --unshallow
+  # using jabba for custom jdk management
+  - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.0/install.sh | bash && . ~/.jabba/jabba.sh
+  - jabba install adopt@1.8.192-12
 
 # default script for jobs, that do not have any specified
 script:
+  - jabba use ${JDK:=adopt@1.8.192-12}
+  - java -version
   - ${PRE_CMD:=return 0} # do nothing if not set
   - sbt -jvm-opts .jvmopts-travis "$CMD"
 
@@ -20,12 +24,15 @@ jobs:
   include:
     - stage: check
       script: sbt scalafmtCheck || { echo "[error] Unformatted code found. Please run 'Test/compile' and commit the reformatted code."; false; }
-      name: "Code style check"
+      name: "Code style check (fixed with `sbt Test/compile`)"
     - script: sbt scalafmtSbtCheck || { echo "[error] Unformatted sbt code found. Please run 'scalafmtSbt' and commit the reformatted code."; false; }
-      name: "Build code style check"
-    - env: CMD="Test/compile"
+      name: "Build code style check (fixed with `sbt scalafmtSbt`)"
+    - env: CMD="++2.11.12 Test/compile"
+      name: "Compile all tests (with Scala 2.11)"
     - env: CMD="unidoc"
+      name: "Create all API docs"
     - env: CMD="docs/paradox"
+      name: "Create site with Paradox"
 
     - stage: test
       env:
@@ -136,6 +143,7 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
+    - $HOME/.jabba/jdk
   timeout: 900
 
 env:
