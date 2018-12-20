@@ -16,4 +16,6 @@ addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "0.4")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.4")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.4")
 // patched version of sbt-dependency-graph
+// depend directly on the patched version see https://github.com/akka/alpakka/issues/1388
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.2+10-148ba0ff")
 resolvers += Resolver.bintrayIvyRepo("2m", "sbt-plugins")
