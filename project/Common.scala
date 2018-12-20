@@ -4,7 +4,7 @@ import sbt.plugins.JvmPlugin
 import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
 import de.heikoseeberger.sbtheader._
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
-import sbtunidoc.BaseUnidocPlugin.autoImport._
+import Whitesource.whitesourceGroup
 
 object Common extends AutoPlugin {
 
@@ -23,6 +23,7 @@ object Common extends AutoPlugin {
                             "https://gitter.im/akka/dev",
                             url("https://github.com/akka/alpakka/graphs/contributors")),
     licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
+    whitesourceGroup := Whitesource.Group.Community,
     crossVersion := CrossVersion.binary,
     crossScalaVersions := Dependencies.ScalaVersions,
     scalaVersion := crossScalaVersions.value.head,
