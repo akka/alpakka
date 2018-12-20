@@ -53,19 +53,21 @@ import scala.util.{Failure, Success}
 
   // Our FSM data, FSM events and commands emitted by the FSM
 
-  sealed abstract class Data(val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
+  sealed abstract class Data(val stash: Seq[Event],
+                             val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
                              val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
                              val subscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Subscriber.Event]],
                              val unsubscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Unsubscriber.Event]],
                              val settings: MqttSessionSettings)
   final case class Uninitialized(
-      stash: Seq[Event],
+      override val stash: Seq[Event],
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
       override val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
       override val subscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Subscriber.Event]],
       override val unsubscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Unsubscriber.Event]],
       override val settings: MqttSessionSettings
-  ) extends Data(consumerPacketRouter,
+  ) extends Data(stash,
+                   consumerPacketRouter,
                    producerPacketRouter,
                    subscriberPacketRouter,
                    unsubscriberPacketRouter,
@@ -73,14 +75,15 @@ import scala.util.{Failure, Success}
   final case class ConnectReceived(
       connect: Connect,
       connectData: ConnectData,
-      stash: Seq[Event],
       remote: SourceQueueWithComplete[ForwardConnectCommand],
+      override val stash: Seq[Event],
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
       override val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
       override val subscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Subscriber.Event]],
       override val unsubscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Unsubscriber.Event]],
       override val settings: MqttSessionSettings
-  ) extends Data(consumerPacketRouter,
+  ) extends Data(stash,
+                   consumerPacketRouter,
                    producerPacketRouter,
                    subscriberPacketRouter,
                    unsubscriberPacketRouter,
@@ -94,18 +97,19 @@ import scala.util.{Failure, Success}
       pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
       pendingRemotePublications: Seq[(String, PublishReceivedFromRemote)],
       remote: SourceQueueWithComplete[ForwardConnectCommand],
+      override val stash: Seq[Event],
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
       override val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
       override val subscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Subscriber.Event]],
       override val unsubscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Unsubscriber.Event]],
       override val settings: MqttSessionSettings
-  ) extends Data(consumerPacketRouter,
+  ) extends Data(stash,
+                   consumerPacketRouter,
                    producerPacketRouter,
                    subscriberPacketRouter,
                    unsubscriberPacketRouter,
                    settings)
   final case class PendingSubscribe(
-      stash: Seq[Event],
       connectFlags: ConnectFlags,
       keepAlive: FiniteDuration,
       pendingPingResp: Boolean,
@@ -114,12 +118,14 @@ import scala.util.{Failure, Success}
       pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
       pendingRemotePublications: Seq[(String, PublishReceivedFromRemote)],
       remote: SourceQueueWithComplete[ForwardConnectCommand],
+      override val stash: Seq[Event],
       override val consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
       override val producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
       override val subscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Subscriber.Event]],
       override val unsubscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Unsubscriber.Event]],
       override val settings: MqttSessionSettings
-  ) extends Data(consumerPacketRouter,
+  ) extends Data(stash,
+                   consumerPacketRouter,
                    producerPacketRouter,
                    subscriberPacketRouter,
                    unsubscriberPacketRouter,
@@ -183,8 +189,8 @@ import scala.util.{Failure, Success}
         ConnectReceived(
           connect,
           connectData,
-          Vector.empty,
           queue,
+          Vector.empty,
           data.consumerPacketRouter,
           data.producerPacketRouter,
           data.subscriberPacketRouter,
@@ -192,8 +198,8 @@ import scala.util.{Failure, Success}
           data.settings
         )
       )
-    case (_, prl: PublishReceivedLocally) if data.stash.size < data.settings.maxClientConnectionStashSize =>
-      disconnected(data.copy(stash = data.stash :+ prl))
+    case (_, e) =>
+      disconnected(data.copy(stash = data.stash :+ e))
   }
 
   def disconnect(context: ActorContext[Event],
@@ -206,7 +212,7 @@ import scala.util.{Failure, Success}
     remote.complete()
 
     disconnected(
-      Uninitialized(Vector.empty,
+      Uninitialized(data.stash,
                     data.consumerPacketRouter,
                     data.producerPacketRouter,
                     data.subscriberPacketRouter,
@@ -237,6 +243,7 @@ import scala.util.{Failure, Success}
                 Vector.empty,
                 Vector.empty,
                 data.remote,
+                Vector.empty,
                 data.consumerPacketRouter,
                 data.producerPacketRouter,
                 data.subscriberPacketRouter,
@@ -249,7 +256,9 @@ import scala.util.{Failure, Success}
             disconnect(context, data.connect.connectFlags, data.remote, data)
           case (context, ReceiveConnAckTimeout) =>
             disconnect(context, data.connect.connectFlags, data.remote, data)
-          case (_, e) if data.stash.size < data.settings.maxClientConnectionStashSize =>
+          case (context, ConnectionLost) =>
+            disconnect(context, data.connect.connectFlags, data.remote, data)
+          case (_, e) =>
             serverConnect(data.copy(stash = data.stash :+ e))
         }
         .receiveSignal {
@@ -285,7 +294,6 @@ import scala.util.{Failure, Success}
                 context.watch(subscriber)
                 pendingSubAck(
                   PendingSubscribe(
-                    Vector.empty,
                     data.connectFlags,
                     data.keepAlive,
                     data.pendingPingResp,
@@ -294,6 +302,7 @@ import scala.util.{Failure, Success}
                     data.pendingLocalPublications,
                     data.pendingRemotePublications,
                     data.remote,
+                    Vector.empty,
                     data.consumerPacketRouter,
                     data.producerPacketRouter,
                     data.subscriberPacketRouter,
@@ -437,11 +446,11 @@ import scala.util.{Failure, Success}
   def pendingSubAck(data: PendingSubscribe)(implicit mat: Materializer): Behavior[Event] =
     Behaviors
       .receivePartial[Event] {
-        case (_, e) if data.stash.size < data.settings.maxClientConnectionStashSize =>
+        case (_, e) =>
           pendingSubAck(data.copy(stash = data.stash :+ e))
       }
       .receiveSignal {
-        case (context, t: Terminated) =>
+        case (context, _: Terminated) =>
           data.stash.foreach(context.self.tell)
           serverConnected(
             ConnAckReceived(
@@ -453,6 +462,7 @@ import scala.util.{Failure, Success}
               data.pendingLocalPublications,
               data.pendingRemotePublications,
               data.remote,
+              Vector.empty,
               data.consumerPacketRouter,
               data.producerPacketRouter,
               data.subscriberPacketRouter,
