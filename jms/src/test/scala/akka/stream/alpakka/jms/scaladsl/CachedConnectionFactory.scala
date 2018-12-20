@@ -6,19 +6,20 @@ package akka.stream.alpakka.jms.scaladsl
 
 import javax.jms.{Connection, ConnectionFactory}
 
-import org.apache.activemq.{ActiveMQConnection, ActiveMQConnectionFactory}
+import org.apache.activemq.ActiveMQConnection
 
 /**
  * a silly cached connection factory, not thread safe
  *
  * @param url
  */
-class CachedConnectionFactory(url: String) extends ConnectionFactory {
+class CachedConnectionFactory(connFactory: ConnectionFactory) extends ConnectionFactory {
+
   var cachedConnection: ActiveMQConnection = null
 
   override def createConnection(): Connection = {
     if (cachedConnection == null) {
-      cachedConnection = new ActiveMQConnectionFactory(url).createConnection().asInstanceOf[ActiveMQConnection]
+      cachedConnection = connFactory.createConnection().asInstanceOf[ActiveMQConnection]
     }
     cachedConnection
   }
