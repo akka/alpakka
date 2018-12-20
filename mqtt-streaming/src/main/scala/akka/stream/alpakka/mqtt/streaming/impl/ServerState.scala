@@ -380,7 +380,9 @@ import scala.util.{Failure, Success}
             )
           case (_, ReceiveConnAckTimeout) =>
             throw ClientConnectionFailed
-          case (_, e) if data.stash.size < data.settings.maxClientConnectionStashSize =>
+          case (_, ClientConnection.ConnectionLost) =>
+            throw ClientConnectionFailed
+          case (_, e) =>
             clientConnect(data.copy(stash = data.stash :+ e))
         }
         .receiveSignal {
@@ -596,6 +598,21 @@ import scala.util.{Failure, Success}
                 data.settings
               )
             )
+          case (_, ClientConnection.ConnectionLost) =>
+            clientDisconnected(
+              Disconnected(
+                data.publishers,
+                data.activeConsumers,
+                data.activeProducers,
+                data.pendingLocalPublications,
+                data.pendingRemotePublications,
+                data.consumerPacketRouter,
+                data.producerPacketRouter,
+                data.publisherPacketRouter,
+                data.unpublisherPacketRouter,
+                data.settings
+              )
+            )
           case (context, ConnectReceivedFromRemote(connect, local))
               if connect.connectFlags.contains(ConnectFlags.CleanSession) =>
             context.children.foreach(context.stop)
@@ -666,7 +683,7 @@ import scala.util.{Failure, Success}
     }
     Behaviors
       .receivePartial[Event] {
-        case (_, e) if data.stash.size < data.settings.maxClientConnectionStashSize =>
+        case (_, e) =>
           pendingSubAck(data.copy(stash = data.stash :+ e))
       }
       .receiveSignal {

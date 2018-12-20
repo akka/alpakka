@@ -6,7 +6,9 @@ package akka.stream.alpakka.mqtt.streaming
 package scaladsl
 
 import akka.NotUsed
+import akka.stream.{Attributes, BidiShape, Inlet, Outlet}
 import akka.stream.scaladsl.BidiFlow
+import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.util.ByteString
 
 object Mqtt {
@@ -23,7 +25,13 @@ object Mqtt {
   def clientSessionFlow[A](
       session: MqttClientSession
   ): BidiFlow[Command[A], ByteString, ByteString, Either[MqttCodec.DecodeError, Event[A]], NotUsed] =
-    BidiFlow.fromFlows(session.commandFlow, session.eventFlow)
+    BidiFlow
+      .fromFlows(session.commandFlow[A], session.eventFlow[A])
+      .atop(
+        BidiFlow.fromGraph(
+          new CoupledTerminationBidi
+        )
+      )
 
   /**
    * Create a bidirectional flow that maintains server session state with an MQTT endpoint.
@@ -40,5 +48,36 @@ object Mqtt {
       session: MqttServerSession,
       connectionId: ByteString
   ): BidiFlow[Command[A], ByteString, ByteString, Either[MqttCodec.DecodeError, Event[A]], NotUsed] =
-    BidiFlow.fromFlows(session.commandFlow(connectionId), session.eventFlow(connectionId))
+    BidiFlow
+      .fromFlows(session.commandFlow[A](connectionId), session.eventFlow[A](connectionId))
+      .atop(
+        BidiFlow.fromGraph(
+          new CoupledTerminationBidi
+        )
+      )
+}
+
+/** INTERNAL API - taken from Akka streams - perhaps it should be made public */
+private[scaladsl] class CoupledTerminationBidi[I, O] extends GraphStage[BidiShape[I, I, O, O]] {
+  val in1: Inlet[I] = Inlet("CoupledCompletion.in1")
+  val out1: Outlet[I] = Outlet("CoupledCompletion.out1")
+  val in2: Inlet[O] = Inlet("CoupledCompletion.in2")
+  val out2: Outlet[O] = Outlet("CoupledCompletion.out2")
+  override val shape: BidiShape[I, I, O, O] = BidiShape(in1, out1, in2, out2)
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+
+    val handler1: InHandler with OutHandler = new InHandler with OutHandler {
+      override def onPush(): Unit = push(out1, grab(in1))
+      override def onPull(): Unit = pull(in1)
+    }
+
+    val handler2: InHandler with OutHandler = new InHandler with OutHandler {
+      override def onPush(): Unit = push(out2, grab(in2))
+      override def onPull(): Unit = pull(in2)
+    }
+
+    setHandlers(in1, out1, handler1)
+    setHandlers(in2, out2, handler2)
+  }
 }
