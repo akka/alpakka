@@ -276,8 +276,6 @@ import scala.util.{Failure, Success}
     timer =>
       if (data.keepAlive.toMillis > 0)
         timer.startSingleTimer("send-pingreq", SendPingReqTimeout, data.keepAlive)
-      else
-        data.remote.complete() // We'll never be sending pings so free up the command channel for other things
 
       Behaviors
         .receivePartial[Event] {
