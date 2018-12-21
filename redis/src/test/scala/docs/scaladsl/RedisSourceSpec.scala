@@ -4,18 +4,15 @@
 
 package docs.scaladsl
 
-import java.util.concurrent.TimeUnit
-
 import akka.stream.scaladsl.{Sink, Source}
 import akka.streams.alpakka.redis.scaladsl.{RedisFlow, RedisSource}
 import akka.streams.alpakka.redis.{RedisHMSet, RedisHSet, RedisKeyValue}
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterAll
-
+import scala.concurrent.duration._
 import scala.collection.immutable.Seq
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
 import scala.util.Random
 
 class RedisSourceSpec extends Specification with BeforeAfterAll with RedisSupport {
@@ -33,9 +30,9 @@ class RedisSourceSpec extends Specification with BeforeAfterAll with RedisSuppor
         .via(RedisFlow.set(1, connection))
         .runWith(Sink.ignore)
 
-      Await.result(result, Duration(5, TimeUnit.SECONDS))
+      Await.result(result, 5.seconds)
       val getResultFuture = RedisSource.get[String, String](set.key, connection).runWith(Sink.head)
-      val getResult = Await.result(getResultFuture, Duration(5, TimeUnit.SECONDS))
+      val getResult = Await.result(getResultFuture, 5.seconds)
       getResult shouldEqual set
 
     }
@@ -52,10 +49,10 @@ class RedisSourceSpec extends Specification with BeforeAfterAll with RedisSuppor
         .via(RedisFlow.mset(2, connection))
         .runWith(Sink.ignore)
 
-      Await.result(result, Duration(5, TimeUnit.SECONDS))
+      Await.result(result, 5.seconds)
 
       val mgetResultFuture = RedisSource.mget[String, String](sets.map(_.key), connection).runWith(Sink.seq)
-      val mgetResult = Await.result(mgetResultFuture, Duration(5, TimeUnit.SECONDS))
+      val mgetResult = Await.result(mgetResultFuture, 5.seconds)
       mgetResult shouldEqual sets
     }
 
@@ -67,7 +64,7 @@ class RedisSourceSpec extends Specification with BeforeAfterAll with RedisSuppor
       val redisHSet = RedisHSet[String, String]("KEY1", field, "value1")
 
       val hgetResultFuture = RedisSource.hget("KEY1", field, connection).runWith(Sink.head)
-      val hgetResult = Await.result(hgetResultFuture, Duration(5, TimeUnit.SECONDS))
+      val hgetResult = Await.result(hgetResultFuture, 5.seconds)
       hgetResult shouldEqual redisHSet
 
     }
@@ -83,10 +80,10 @@ class RedisSourceSpec extends Specification with BeforeAfterAll with RedisSuppor
       val redisHMSet: RedisHMSet[String, String] = RedisHMSet(key, redisFieldValues)
 
       val resultAsFuture = Source.single(redisHMSet).via(RedisFlow.hmset(1, connection)).runWith(Sink.head)
-      Await.result(resultAsFuture, Duration(5, TimeUnit.SECONDS))
+      Await.result(resultAsFuture, 5.seconds)
 
       val hmgetResultFuture = RedisSource.hmget(key, redisFieldValues.map(_.key), connection).runWith(Sink.seq)
-      val result = Await.result(hmgetResultFuture, Duration(5, TimeUnit.SECONDS))
+      val result = Await.result(hmgetResultFuture, 5.seconds)
       result shouldEqual expectedResult
 
     }
@@ -100,10 +97,10 @@ class RedisSourceSpec extends Specification with BeforeAfterAll with RedisSuppor
       val redisHMSet: RedisHMSet[String, String] = RedisHMSet(key, redisFieldValues)
 
       val resultAsFuture = Source.single(redisHMSet).via(RedisFlow.hmset(1, connection)).runWith(Sink.head)
-      Await.result(resultAsFuture, Duration(5, TimeUnit.SECONDS))
+      Await.result(resultAsFuture, 5.seconds)
       val hgetallFuture: Future[scala.Seq[RedisKeyValue[String, String]]] =
         RedisSource.hgetall(key, connection).runWith(Sink.head)
-      val hgetAll = Await.result(hgetallFuture, Duration(5, TimeUnit.SECONDS))
+      val hgetAll = Await.result(hgetallFuture, 5.seconds)
       hgetAll shouldEqual redisFieldValues
 
     }

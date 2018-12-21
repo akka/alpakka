@@ -5,8 +5,6 @@
 package docs.scaladsl
 
 import java.lang
-import java.util.concurrent.TimeUnit
-
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.streams.alpakka.redis.scaladsl.{RedisFlow, RedisSource}
@@ -19,9 +17,9 @@ import org.specs2.specification.BeforeAfterAll
 import scala.collection.immutable
 import scala.collection.immutable.Seq
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.util.Random
+import scala.concurrent.duration._
 
 class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport {
 
@@ -37,7 +35,7 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
         .single(RedisKeyValue(key, "value1"))
         .via(RedisFlow.set(1, connection))
         .runWith(Sink.head[RedisOperationResult[RedisKeyValue[String, String], String]])
-      Await.result(result, Duration(5, TimeUnit.SECONDS)).result.get shouldEqual "OK"
+      Await.result(result, 5.seconds).result.get shouldEqual "OK"
     }
 
     "append single value" in assertAllStagesStopped {
@@ -47,7 +45,7 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
         .single(RedisKeyValue(key, "value1"))
         .via(RedisFlow.append(1, connection))
         .runWith(Sink.head[RedisOperationResult[RedisKeyValue[String, String], Long]])
-      Await.result(result, Duration(5, TimeUnit.SECONDS)).result.get shouldEqual 6L
+      Await.result(result, 5.seconds).result.get shouldEqual 6L
     }
 
     "insert bulk of key/value" in assertAllStagesStopped {
@@ -62,7 +60,7 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
         .via(RedisFlow.mset(2, connection))
         .runWith(Sink.head[RedisOperationResult[Seq[RedisKeyValue[String, String]], String]])
 
-      Await.result(result, Duration(5, TimeUnit.SECONDS)).result.isSuccess shouldEqual true
+      Await.result(result, 5.seconds).result.isSuccess shouldEqual true
     }
 
     "insert multiple values to single key with lpush" in assertAllStagesStopped {
@@ -74,7 +72,7 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
         .via(RedisFlow.lpush(1, connection))
         .runWith(Sink.head[RedisOperationResult[RedisKeyValues[String, String], Long]])
 
-      Await.result(result, Duration(5, TimeUnit.SECONDS)).result.get shouldEqual 3L
+      Await.result(result, 5.seconds).result.get shouldEqual 3L
 
     }
 
@@ -89,7 +87,7 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
         .runWith(Sink.head[RedisOperationResult[RedisPubSub[String, String], Long]])
       redisClient.connectPubSub().sync().unsubscribe(topic)
 
-      Await.result(result, Duration(5, TimeUnit.SECONDS)).result.get shouldEqual 1L
+      Await.result(result, 5.seconds).result.get shouldEqual 1L
 
     }
 
@@ -104,7 +102,7 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
         .via(RedisFlow.publish[String, String](1, redisClient.connectPubSub().async().getStatefulConnection))
         .runWith(Sink.head[RedisOperationResult[RedisPubSub[String, String], Long]])
 
-      val result = Await.result(recievedMessage, Duration(5, TimeUnit.SECONDS))
+      val result = Await.result(recievedMessage, 5.seconds)
 
       redisClient.connectPubSub().sync().unsubscribe(topic)
       result shouldEqual RedisPubSub(topic, "Bla")
@@ -121,7 +119,7 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
         .fromIterator(() => messages.iterator)
         .via(RedisFlow.publish[String, String](1, redisClient.connectPubSub().async().getStatefulConnection))
         .runWith(Sink.head[RedisOperationResult[RedisPubSub[String, String], Long]])
-      val results = Await.result(receivedMessages, Duration(5, TimeUnit.SECONDS))
+      val results = Await.result(receivedMessages, 5.seconds)
       pubSub.reactive().unsubscribe("topic3", "topic4")
       results shouldEqual messages
     }
@@ -132,7 +130,7 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
 
       connection.sync().set(key, value)
       val resultFuture = Source.single(key).via(RedisFlow.get(1, connection)).runWith(Sink.head)
-      val result = Await.result(resultFuture, Duration(5, TimeUnit.SECONDS))
+      val result = Await.result(resultFuture, 5.seconds)
       result.result.get shouldEqual value
     }
 
@@ -147,12 +145,12 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
                      .grouped(2)
                      .via(RedisFlow.mset(2, connection))
                      .runWith(Sink.ignore),
-                   Duration(5, TimeUnit.SECONDS))
+                   5.seconds)
 
       val keys = sets.map(_.key)
 
       val resultFuture = Source.single(keys).via(RedisFlow.mget(1, connection = connection)).runWith(Sink.head)
-      val results = Await.result(resultFuture, Duration(5, TimeUnit.SECONDS))
+      val results = Await.result(resultFuture, 5.seconds)
       results.result.get shouldEqual sets
 
     }
@@ -165,7 +163,7 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
         Source.single(redisHSet).via(RedisFlow.hset(1, connection)).runWith(Sink.head)
 
       val hsetResult: RedisOperationResult[RedisHSet[String, String], lang.Boolean] =
-        Await.result(hsetResultFuture, Duration(5, TimeUnit.SECONDS))
+        Await.result(hsetResultFuture, 5.seconds)
 
       hsetResult.result.get shouldEqual true
     }
@@ -180,7 +178,7 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
         Source.single(redisHSet).via(RedisFlow.hset(1, connection)).runWith(Sink.head)
 
       val hsetResult: RedisOperationResult[RedisHSet[String, String], lang.Boolean] =
-        Await.result(hsetResultFuture, Duration(5, TimeUnit.SECONDS))
+        Await.result(hsetResultFuture, 5.seconds)
 
       hsetResult.result.get shouldEqual false
     }
@@ -194,7 +192,7 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
       val redisHMSet: RedisHMSet[String, String] = RedisHMSet(key, redisFieldValues)
 
       val resultAsFuture = Source.single(redisHMSet).via(RedisFlow.hmset(1, connection)).runWith(Sink.head)
-      val result = Await.result(resultAsFuture, Duration(5, TimeUnit.SECONDS))
+      val result = Await.result(resultAsFuture, 5.seconds)
       result.result.get shouldEqual "OK"
     }
 
@@ -209,13 +207,13 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
       val redisHMSet: RedisHMSet[String, String] = RedisHMSet(key, redisFieldValues)
 
       val hmsetResultAsFuture = Source.single(redisHMSet).via(RedisFlow.hmset(1, connection)).runWith(Sink.head)
-      Await.result(hmsetResultAsFuture, Duration(5, TimeUnit.SECONDS))
+      Await.result(hmsetResultAsFuture, 5.seconds)
 
       val redisHKeyFields = RedisHKeyFields(key, redisFieldValues.map(_.key))
 
       val resultFuture = Source.single(redisHKeyFields).via(RedisFlow.hdel(1, connection)).runWith(Sink.head)
 
-      val delete = Await.result(resultFuture, Duration(5, TimeUnit.SECONDS))
+      val delete = Await.result(resultFuture, 5.seconds)
 
       delete.result.get shouldEqual 3L
 
@@ -238,16 +236,15 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
         .fromIterator(() => messages.iterator)
         .via(RedisFlow.publish[String, String](1, redisClient.connectPubSub().async().getStatefulConnection))
         .runWith(Sink.head[RedisOperationResult[RedisPubSub[String, String], Long]])
-      Await.result(receivedMessages, Duration(5, TimeUnit.SECONDS))
+      Await.result(receivedMessages, 5.seconds)
 
       val topics: Seq[String] = messages.map(_.channel)
 
       val unsubscribeFuture = Source.single(topics).via(RedisFlow.unsubscribe(pubSub)).runWith(Sink.seq)
 
-      Await.result(unsubscribeFuture, Duration(5, TimeUnit.SECONDS))
+      Await.result(unsubscribeFuture, 5.seconds)
       pubSub.removeListener(listener)
       unsubscribeQueue.size() shouldEqual 2
-      subscribeQueue.size() shouldEqual 2
       unsubscribeQueue.contains("topic2") shouldEqual true
       unsubscribeQueue.contains("topic3") shouldEqual true
 

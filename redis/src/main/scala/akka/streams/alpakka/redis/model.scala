@@ -15,7 +15,7 @@ final class RedisHMSet[K, V] private (val key: K, val values: Seq[RedisKeyValue[
     case that: RedisHMSet[K, V] =>
       key == that.key &&
       values.length == that.values.length &&
-      values.zip(that.values).map { case (a, b) => a.equals(b) }.forall(_ == true)
+      values.zip(that.values).forall { case (a, b) => a == b }
     case _ => false
   }
 
