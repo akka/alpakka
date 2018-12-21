@@ -143,7 +143,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
     val s3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(HeadObject) })
     request(S3Location(bucket, key), HttpMethods.HEAD, versionId = versionId, s3Headers = s3Headers).flatMap {
       case HttpResponse(OK, headers, entity, _) =>
-        entity.discardBytes().future().map { _ =>
+        entity.withoutSizeLimit().discardBytes().future().map { _ =>
           Some(computeMetaData(headers, entity))
         }
       case HttpResponse(NotFound, _, entity, _) =>
