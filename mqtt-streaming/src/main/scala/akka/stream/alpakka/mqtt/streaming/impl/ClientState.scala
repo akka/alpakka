@@ -198,6 +198,8 @@ import scala.util.{Failure, Success}
           data.settings
         )
       )
+    case (_, ConnectionLost) =>
+      Behavior.same
     case (_, e) =>
       disconnected(data.copy(stash = data.stash :+ e))
   }
