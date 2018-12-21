@@ -6,8 +6,9 @@ package akka.streams.alpakka.redis.scaladsl
 
 import akka.Done
 import akka.stream.scaladsl.{Keep, Sink}
-import akka.streams.alpakka.redis.{RedisHSet, RedisKeyValue, RedisKeyValues}
+import akka.streams.alpakka.redis.{RedisHKeyFields, RedisHSet, RedisKeyValue, RedisKeyValues}
 import io.lettuce.core.api.StatefulRedisConnection
+
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -42,5 +43,10 @@ class RedisSink {
       implicit executionContext: ExecutionContext
   ): Sink[RedisHSet[K, V], Future[Done]] =
     RedisFlow.hset(parallelism, connection).toMat(Sink.ignore)(Keep.right)
+
+  def hdel[K, V](parallelism: Int, connection: StatefulRedisConnection[K, V])(
+      implicit executionContext: ExecutionContext
+  ): Sink[RedisHKeyFields[K], Future[Done]] =
+    RedisFlow.hdel(parallelism, connection).toMat(Sink.ignore)(Keep.right)
 
 }

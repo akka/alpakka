@@ -19,10 +19,6 @@ object RedisSource {
                       connection: StatefulRedisPubSubConnection[K, V]): Source[RedisPubSub[K, V], NotUsed] =
     Source.fromGraph(akka.streams.alpakka.redis.scaladsl.RedisSource.subscribe(topics.asScala.to[Seq], connection))
 
-  def psubscribe[K, V](topics: java.util.List[K],
-                       connection: StatefulRedisPubSubConnection[K, V]): Source[RedisPubSub[K, V], NotUsed] =
-    Source.fromGraph(akka.streams.alpakka.redis.scaladsl.RedisSource.psubscribe(topics.asScala.to[Seq], connection))
-
   def get[K, V](key: K, connection: StatefulRedisConnection[K, V]): Source[RedisKeyValue[K, V], NotUsed] =
     Source.fromGraph(akka.streams.alpakka.redis.scaladsl.RedisSource.get(key, connection))
 
@@ -38,4 +34,8 @@ object RedisSource {
                   fields: java.util.List[K],
                   connection: StatefulRedisPubSubConnection[K, V]): Source[RedisKeyValue[K, V], NotUsed] =
     Source.fromGraph(akka.streams.alpakka.redis.scaladsl.RedisSource.hmget(key, fields.asScala.to[Seq], connection))
+
+  def hgetall[K, V](key: K,
+                    connection: StatefulRedisConnection[K, V]): Source[java.util.List[RedisKeyValue[K, V]], NotUsed] =
+    Source.fromGraph(akka.streams.alpakka.redis.scaladsl.RedisSource.hgetall(key, connection)).map(_.asJava)
 }

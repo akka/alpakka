@@ -114,10 +114,46 @@ object RedisFlow {
   ): Flow[RedisHMSet[K, V], RedisOperationResult[RedisHMSet[K, V], String], NotUsed] =
     Flow[RedisHMSet[K, V]].mapAsync(parallism) { redisHMSet =>
       val future =
-        connection.async().hmset(redisHMSet.key, redisHMSet.values.map(f => f.field -> f.value).toMap.asJava).toScala
+        connection.async().hmset(redisHMSet.key, redisHMSet.values.map(f => f.key -> f.value).toMap.asJava).toScala
       future
         .map(f => RedisOperationResult(redisHMSet, Success(f)))
         .recover { case ex: Throwable => RedisOperationResult(redisHMSet, Failure(ex)) }
 
+    }
+
+  def hdel[K, V](parallism: Int, connection: StatefulRedisConnection[K, V])(
+      implicit executionContext: ExecutionContext
+  ): Flow[RedisHKeyFields[K], RedisOperationResult[RedisHKeyFields[K], Long], NotUsed] =
+    Flow[RedisHKeyFields[K]].mapAsync(parallism) { keyValues =>
+      connection
+        .async()
+        .hdel(keyValues.key, keyValues.fields: _*)
+        .toScala
+        .map(f => RedisOperationResult[RedisHKeyFields[K], Long](keyValues, Success(f)))
+        .recover { case ex: Throwable => RedisOperationResult(keyValues, Failure(ex)) }
+    }
+
+  def unsubscribe[K, V](connection: StatefulRedisPubSubConnection[K, V])(
+      implicit executionContext: ExecutionContext
+  ): Flow[Seq[K], RedisOperationResult[Seq[K], Unit.type], NotUsed] =
+    Flow[Seq[K]].mapAsync(1) { topics =>
+      connection
+        .async()
+        .unsubscribe(topics: _*)
+        .toScala
+        .map(_ => RedisOperationResult(topics, Success(Unit)))
+        .recover { case ex: Throwable => RedisOperationResult(topics, Failure(ex)) }
+    }
+
+  def punsubscribe[K, V](
+      connection: StatefulRedisPubSubConnection[K, V]
+  )(implicit executionContext: ExecutionContext): Flow[Seq[K], RedisOperationResult[Seq[K], Unit.type], NotUsed] =
+    Flow[Seq[K]].mapAsync(1) { patterns =>
+      connection
+        .async()
+        .punsubscribe(patterns: _*)
+        .toScala
+        .map(_ => RedisOperationResult(patterns, Success(Unit)))
+        .recover { case ex: Throwable => RedisOperationResult(patterns, Failure(ex)) }
     }
 }

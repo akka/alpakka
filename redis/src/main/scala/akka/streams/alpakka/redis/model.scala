@@ -9,29 +9,7 @@ import scala.collection.immutable.Seq
 import scala.util.{Failure, Success, Try}
 import scala.collection.JavaConverters._
 
-final class RedisFieldValue[K, V] private (val field: K, val value: V) {
-
-  override def equals(other: Any): Boolean = other match {
-    case that: RedisFieldValue[K, V] =>
-      field == that.field &&
-      value == that.value
-    case _ => false
-  }
-
-  override def hashCode(): Int =
-    31 * field.hashCode() + 31 * value.hashCode()
-
-  override def toString = s"RedisFieldValue($field, $value)"
-}
-
-object RedisFieldValue {
-
-  def create[K, V](key: K, value: V): RedisFieldValue[K, V] = new RedisFieldValue(key, value)
-  def apply[K, V](key: K, value: V): RedisFieldValue[K, V] = new RedisFieldValue(key, value)
-
-}
-
-final class RedisHMSet[K, V] private (val key: K, val values: Seq[RedisFieldValue[K, V]]) {
+final class RedisHMSet[K, V] private (val key: K, val values: Seq[RedisKeyValue[K, V]]) {
 
   override def equals(other: Any): Boolean = other match {
     case that: RedisHMSet[K, V] =>
@@ -47,9 +25,9 @@ final class RedisHMSet[K, V] private (val key: K, val values: Seq[RedisFieldValu
 
 object RedisHMSet {
 
-  def create[K, V](key: K, values: java.util.List[RedisFieldValue[K, V]]): RedisHMSet[K, V] =
+  def create[K, V](key: K, values: java.util.List[RedisKeyValue[K, V]]): RedisHMSet[K, V] =
     new RedisHMSet[K, V](key, values.asScala.to[Seq])
-  def apply[K, V](key: K, values: Seq[RedisFieldValue[K, V]]): RedisHMSet[K, V] = new RedisHMSet[K, V](key, values)
+  def apply[K, V](key: K, values: Seq[RedisKeyValue[K, V]]): RedisHMSet[K, V] = new RedisHMSet[K, V](key, values)
 }
 
 final class RedisHSet[K, V] private (val key: K, val field: K, val value: V) {
@@ -85,6 +63,27 @@ final class RedisKeyValue[K, V] private (val key: K, val value: V) {
     31 * key.hashCode() + 31 * value.hashCode()
 }
 
+final class RedisHKeyFields[K] private (val key: K, val fields: Seq[K]) {
+
+  override def equals(other: Any): Boolean = other match {
+    case that: RedisHKeyFields[K] =>
+      key == that.key &&
+      fields == that.fields
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    fields.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b) + 31 + key.hashCode()
+
+}
+
+object RedisHKeyFields {
+  def apply[K](key: K, fields: Seq[K]): RedisHKeyFields[K] = new RedisHKeyFields(key, fields)
+
+  def create[K](key: K, fields: java.util.List[K]): RedisHKeyFields[K] =
+    new RedisHKeyFields(key, fields.asScala.to[Seq])
+}
+
 final class RedisKeyValues[K, V] private (val key: K, val values: Array[V]) {
   override def equals(other: Any): Boolean = other match {
     case that: RedisKeyValues[K, V] =>
@@ -95,7 +94,6 @@ final class RedisKeyValues[K, V] private (val key: K, val values: Array[V]) {
 
   override def hashCode(): Int =
     values.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b) + 31 * key.hashCode()
-
 }
 
 final case class RedisPSubscribeResult[K, V](pattern: K, key: K, value: V) {}

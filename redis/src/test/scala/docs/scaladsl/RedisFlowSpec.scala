@@ -9,8 +9,10 @@ import java.util.concurrent.TimeUnit
 
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
-import akka.streams.alpakka.redis._
 import akka.streams.alpakka.redis.scaladsl.{RedisFlow, RedisSource}
+import akka.streams.alpakka.redis.{RedisHKeyFields, _}
+import docs.scaladsl.impl.SubscurbeListener
+import io.lettuce.core.internal.LettuceFactories
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterAll
 
@@ -76,7 +78,7 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
 
     }
 
-    "implement pub/sub for single topic and return notfication of single consumer" in {
+    "implement pub/sub for single topic and return notification of single consumer" in {
       val topic = "topic20"
       RedisSource.subscribe(Seq(topic), pubSub).runWith(Sink.ignore)
 
@@ -120,6 +122,7 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
         .via(RedisFlow.publish[String, String](1, redisClient.connectPubSub().async().getStatefulConnection))
         .runWith(Sink.head[RedisOperationResult[RedisPubSub[String, String], Long]])
       val results = Await.result(receivedMessages, Duration(5, TimeUnit.SECONDS))
+      pubSub.reactive().unsubscribe("topic3", "topic4")
       results shouldEqual messages
     }
 
@@ -184,9 +187,9 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
 
     "implement hmset and retrun OK" in {
       val key: String = "KEY2"
-      val redisFieldValues = Seq[RedisFieldValue[String, String]](RedisFieldValue("field1", "value1"),
-                                                                  RedisFieldValue("field2", "value2"),
-                                                                  RedisFieldValue("field3", "value3"))
+      val redisFieldValues = Seq[RedisKeyValue[String, String]](RedisKeyValue("field1", "value1"),
+                                                                RedisKeyValue("field2", "value2"),
+                                                                RedisKeyValue("field3", "value3"))
 
       val redisHMSet: RedisHMSet[String, String] = RedisHMSet(key, redisFieldValues)
 
@@ -195,6 +198,60 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
       result.result.get shouldEqual "OK"
     }
 
-  }
+    "implement hdel command" in {
 
+      val key: String = "KEY2"
+
+      val redisFieldValues = Seq[RedisKeyValue[String, String]](RedisKeyValue("field133", "value1"),
+                                                                RedisKeyValue("field122", "value2"),
+                                                                RedisKeyValue("field1233", "value3"))
+
+      val redisHMSet: RedisHMSet[String, String] = RedisHMSet(key, redisFieldValues)
+
+      val hmsetResultAsFuture = Source.single(redisHMSet).via(RedisFlow.hmset(1, connection)).runWith(Sink.head)
+      Await.result(hmsetResultAsFuture, Duration(5, TimeUnit.SECONDS))
+
+      val redisHKeyFields = RedisHKeyFields(key, redisFieldValues.map(_.key))
+
+      val resultFuture = Source.single(redisHKeyFields).via(RedisFlow.hdel(1, connection)).runWith(Sink.head)
+
+      val delete = Await.result(resultFuture, Duration(5, TimeUnit.SECONDS))
+
+      delete.result.get shouldEqual 3L
+
+    }
+
+    "implement unsubscribe method" in {
+
+      val subscribeQueue = LettuceFactories.newBlockingQueue[String]()
+      val unsubscribeQueue = LettuceFactories.newBlockingQueue[String]()
+
+      val listener = new SubscurbeListener(subscribeQueue, unsubscribeQueue)
+      pubSub.addListener(listener)
+
+      val messages = Seq[RedisPubSub[String, String]](RedisPubSub("topic3", "value4"), RedisPubSub("topic2", "value2"))
+
+      val receivedMessages: Future[immutable.Seq[RedisPubSub[String, String]]] =
+        RedisSource.subscribe(Seq("topic3", "topic2"), pubSub).grouped(2).runWith(Sink.head)
+
+      Source
+        .fromIterator(() => messages.iterator)
+        .via(RedisFlow.publish[String, String](1, redisClient.connectPubSub().async().getStatefulConnection))
+        .runWith(Sink.head[RedisOperationResult[RedisPubSub[String, String], Long]])
+      Await.result(receivedMessages, Duration(5, TimeUnit.SECONDS))
+
+      val topics: Seq[String] = messages.map(_.channel)
+
+      val unsubscribeFuture = Source.single(topics).via(RedisFlow.unsubscribe(pubSub)).runWith(Sink.seq)
+
+      Await.result(unsubscribeFuture, Duration(5, TimeUnit.SECONDS))
+      pubSub.removeListener(listener)
+      unsubscribeQueue.size() shouldEqual 2
+      subscribeQueue.size() shouldEqual 2
+      unsubscribeQueue.contains("topic2") shouldEqual true
+      unsubscribeQueue.contains("topic3") shouldEqual true
+
+    }
+
+  }
 }

@@ -10,6 +10,7 @@ import akka.NotUsed
 import akka.stream.javadsl.Flow
 import akka.streams.alpakka.redis._
 import io.lettuce.core.api.StatefulRedisConnection
+import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
@@ -26,7 +27,7 @@ object RedisFlow {
       .fromGraph(
         akka.streams.alpakka.redis.scaladsl.RedisFlow
           .append(parallelism, connection)(executionContext)
-          .map(f => RedisOperationResult(f.output, f.result.map(t => java.lang.Long.valueOf(t.toString))))
+          .map(f => RedisOperationResult(f.output, f.result.map(t => t)))
       )
 
   def set[K, V](
@@ -71,5 +72,36 @@ object RedisFlow {
       executionContext: ExecutionContext
   ): Flow[RedisHMSet[K, V], RedisOperationResult[RedisHMSet[K, V], String], NotUsed] =
     Flow.fromGraph(akka.streams.alpakka.redis.scaladsl.RedisFlow.hmset(parallelism, connection)(executionContext))
+
+  def hdel[K, V](
+      parallelism: Int,
+      connection: StatefulRedisConnection[K, V],
+      executionContext: ExecutionContext
+  ): Flow[RedisHKeyFields[K], RedisOperationResult[RedisHKeyFields[K], Long], NotUsed] =
+    Flow.fromGraph(akka.streams.alpakka.redis.scaladsl.RedisFlow.hdel(parallelism, connection)(executionContext))
+
+  def unsubscribe[K, V](
+      connection: StatefulRedisPubSubConnection[K, V],
+      executionContext: ExecutionContext
+  ): Flow[util.List[K], RedisOperationResult[util.List[K], Unit.type], NotUsed] =
+    Flow.fromGraph(
+      akka.stream.scaladsl
+        .Flow[java.util.List[K]]
+        .map(_.asScala.to[Seq])
+        .via(akka.streams.alpakka.redis.scaladsl.RedisFlow.unsubscribe(connection)(executionContext))
+        .map(f => RedisOperationResult(f.output.asJava, f.result))
+    )
+
+  def punsubscribe[K, V](
+      connection: StatefulRedisPubSubConnection[K, V],
+      executionContext: ExecutionContext
+  ): Flow[util.List[K], RedisOperationResult[util.List[K], Unit.type], NotUsed] =
+    Flow.fromGraph(
+      akka.stream.scaladsl
+        .Flow[java.util.List[K]]
+        .map(_.asScala.to[Seq])
+        .via(akka.streams.alpakka.redis.scaladsl.RedisFlow.punsubscribe(connection)(executionContext))
+        .map(f => RedisOperationResult(f.output.asJava, f.result))
+    )
 
 }

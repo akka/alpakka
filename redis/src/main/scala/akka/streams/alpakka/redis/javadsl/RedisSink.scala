@@ -5,12 +5,10 @@
 package akka.streams.alpakka.redis.javadsl
 
 import java.util.concurrent.CompletionStage
-
 import akka.{Done, NotUsed}
 import akka.stream.javadsl.{Flow, Keep, Sink}
-import akka.streams.alpakka.redis.{RedisHMSet, RedisHSet, RedisKeyValue, RedisKeyValues}
+import akka.streams.alpakka.redis._
 import io.lettuce.core.api.StatefulRedisConnection
-
 import scala.concurrent.ExecutionContext
 
 object RedisSink {
@@ -55,6 +53,13 @@ object RedisSink {
                   executionContext: ExecutionContext): Sink[RedisHMSet[K, V], CompletionStage[Done]] =
     Flow
       .fromGraph(akka.streams.alpakka.redis.scaladsl.RedisFlow.hmset(parallelism, connection)(executionContext))
+      .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
+
+  def hdel[K, V](parallelism: Int,
+                 connection: StatefulRedisConnection[K, V],
+                 executionContext: ExecutionContext): Sink[RedisHKeyFields[K], CompletionStage[Done]] =
+    Flow
+      .fromGraph(akka.streams.alpakka.redis.scaladsl.RedisFlow.hdel(parallelism, connection)(executionContext))
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
 }
