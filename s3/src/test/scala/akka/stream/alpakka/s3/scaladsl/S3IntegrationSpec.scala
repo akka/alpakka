@@ -7,7 +7,7 @@ package akka.stream.alpakka.s3.scaladsl
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.s3.S3Settings
+import akka.stream.alpakka.s3.{S3Attributes, S3Settings}
 import akka.stream.alpakka.s3.impl.{ListBucketVersion1, MetaHeaders, S3Headers}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
@@ -23,17 +23,16 @@ import com.amazonaws.regions.AwsRegionProvider
 
 trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matchers with ScalaFutures with OptionValues {
 
-  implicit val actorSystem = ActorSystem()
+  implicit val actorSystem: ActorSystem = ActorSystem(
+    "S3IntegrationSpec",
+    config().withFallback(ConfigFactory.load())
+  )
   implicit val materializer = ActorMaterializer()
   implicit val ec = materializer.executionContext
 
   implicit val defaultPatience =
     PatienceConfig(timeout = Span(5, Seconds), interval = Span(30, Millis))
 
-  val defaultRegion = "us-east-1"
-  val defaultRegionProvider = new AwsRegionProvider {
-    val getRegion: String = defaultRegion
-  }
   val defaultRegionBucket = "my-test-us-east-1"
 
   val otherRegion = "eu-central-1"
@@ -47,37 +46,41 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
   val objectValue = "Some String"
   val metaHeaders: Map[String, String] = Map("location" -> "Africa", "datatype" -> "image")
 
-  def settings =
-    S3Settings(ConfigFactory.load().getConfig("aws"))
-      .copy(s3RegionProvider = defaultRegionProvider)
+  def config() = ConfigFactory.load().getConfig("aws")
+
   def otherRegionSettings =
-    settings.copy(pathStyleAccess = true, s3RegionProvider = otherRegionProvider)
+    S3Settings().copy(pathStyleAccess = true, s3RegionProvider = otherRegionProvider)
   def listBucketVersion1Settings =
-    settings.copy(listBucketApiVersion = ListBucketVersion1)
+    S3Settings().copy(listBucketApiVersion = ListBucketVersion1)
 
   def defaultRegionContentCount = 4
   def otherRegionContentCount = 5
 
-  //lazy val defaultRegionClient = S3Client(settings)
-  //lazy val otherRegionClient = S3Client(otherRegionSettings)
-  //lazy val version1DefaultRegionClient = S3Client(listBucketVersion1Settings)
-
   it should "list with real credentials" in {
-    val result = S3.listBucket(defaultRegionBucket, None).runWith(Sink.seq)
+    val result = S3
+      .listBucket(defaultRegionBucket, None)
+      //.addAttributes(S3Attributes.settings(settings))
+      .runWith(Sink.seq)
 
     val listingResult = result.futureValue
     listingResult.size shouldBe defaultRegionContentCount
   }
 
-  it should "list with real credentials using the Version 1 API" ignore {
-    val result = S3.listBucket(defaultRegionBucket, None) /*(version1DefaultRegionClient)*/.runWith(Sink.seq)
+  it should "list with real credentials using the Version 1 API" in {
+    val result = S3
+      .listBucket(defaultRegionBucket, None)
+      .withAttributes(S3Attributes.settings(listBucketVersion1Settings))
+      .runWith(Sink.seq)
 
     val listingResult = result.futureValue
     listingResult.size shouldBe defaultRegionContentCount
   }
 
-  it should "list with real credentials in non us-east-1 zone" ignore {
-    val result = S3.listBucket(otherRegionBucket, None) /*(otherRegionClient)*/.runWith(Sink.seq)
+  it should "list with real credentials in non us-east-1 zone" in {
+    val result = S3
+      .listBucket(otherRegionBucket, None)
+      .withAttributes(S3Attributes.settings(otherRegionSettings))
+      .runWith(Sink.seq)
 
     val listingResult = result.futureValue
     listingResult.size shouldBe otherRegionContentCount
@@ -170,7 +173,6 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
           downloadSource
             .map(_.decodeString("utf8"))
             .runWith(Sink.head)
-            .map(Some.apply)
         case None => Future.successful(None)
       }
     } yield (upload, download)
@@ -199,7 +201,6 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
           downloadSource
             .map(_.decodeString("utf8"))
             .runWith(Sink.head)
-            .map(Some.apply)
         case None => Future.successful(None)
       }
     } yield (upload, download)
@@ -213,26 +214,28 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     S3.deleteObject(defaultRegionBucket, objectKey).runWith(Sink.head).futureValue shouldEqual akka.Done
   }
 
-  it should "upload, download and delete with spaces in the key in non us-east-1 zone" ignore {
+  it should "upload, download and delete with spaces in the key in non us-east-1 zone" in {
     val objectKey = "test folder/test file.txt"
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
     val results = for {
       upload <- source
         .runWith(
-          S3.multipartUpload(otherRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders)) /*(
-          otherRegionClient
-        )*/
+          S3.multipartUpload(otherRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
+            .withAttributes(S3Attributes.settings(otherRegionSettings))
         )
         .runWith(Sink.head)
-      download <- S3.download(defaultRegionBucket, objectKey).runWith(Sink.head) /*(defaultRegionClient)*/.flatMap {
-        case Some((downloadSource, _)) =>
-          downloadSource
-            .map(_.decodeString("utf8"))
-            .runWith(Sink.head)
-            .map(Some.apply)
-        case None => Future.successful(None)
-      }
+      download <- S3
+        .download(otherRegionBucket, objectKey)
+        .withAttributes(S3Attributes.settings(otherRegionSettings))
+        .runWith(Sink.head)
+        .flatMap {
+          case Some((downloadSource, _)) =>
+            downloadSource
+              .map(_.decodeString("utf8"))
+              .runWith(Sink.head)
+          case None => Future.successful(None)
+        }
     } yield (upload, download)
 
     val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
@@ -241,12 +244,13 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     multipartUploadResult.key shouldBe objectKey
     downloaded shouldBe objectValue
 
-    S3.deleteObject(otherRegionBucket, objectKey) /*(defaultRegionClient)*/
+    S3.deleteObject(otherRegionBucket, objectKey)
+      .withAttributes(S3Attributes.settings(otherRegionSettings))
       .runWith(Sink.head)
       .futureValue shouldEqual akka.Done
   }
 
-  it should "upload, download and delete with special characters in the key in non us-east-1 zone" ignore {
+  it should "upload, download and delete with special characters in the key in non us-east-1 zone" in {
     // we want ASCII and other UTF-8 characters!
     val objectKey = "føldęrü/1234()[]><!? .TXT"
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
@@ -254,19 +258,21 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     val results = for {
       upload <- source
         .runWith(
-          S3.multipartUpload(otherRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders)) /*(
-          otherRegionClient
-        )*/
+          S3.multipartUpload(otherRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
+            .withAttributes(S3Attributes.settings(otherRegionSettings))
         )
         .runWith(Sink.head)
-      download <- S3.download(defaultRegionBucket, objectKey) /*(defaultRegionClient)*/.runWith(Sink.head).flatMap {
-        case Some((downloadSource, _)) =>
-          downloadSource
-            .map(_.decodeString("utf8"))
-            .runWith(Sink.head)
-            .map(Some.apply)
-        case None => Future.successful(None)
-      }
+      download <- S3
+        .download(otherRegionBucket, objectKey)
+        .withAttributes(S3Attributes.settings(otherRegionSettings))
+        .runWith(Sink.head)
+        .flatMap {
+          case Some((downloadSource, _)) =>
+            downloadSource
+              .map(_.decodeString("utf8"))
+              .runWith(Sink.head)
+          case None => Future.successful(None)
+        }
     } yield (upload, download)
 
     val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
@@ -275,7 +281,8 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     multipartUploadResult.key shouldBe objectKey
     downloaded shouldBe objectValue
 
-    S3.deleteObject(otherRegionBucket, objectKey) /*(defaultRegionClient)*/
+    S3.deleteObject(otherRegionBucket, objectKey)
+      .withAttributes(S3Attributes.settings(otherRegionSettings))
       .runWith(Sink.head)
       .futureValue shouldEqual akka.Done
   }
@@ -288,12 +295,11 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     val results = for {
       upload <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey)).runWith(Sink.head)
       copy <- S3.multipartCopy(defaultRegionBucket, sourceKey, defaultRegionBucket, targetKey).run().runWith(Sink.head)
-      download <- S3.download(defaultRegionBucket, objectKey).runWith(Sink.head).flatMap {
+      download <- S3.download(defaultRegionBucket, targetKey).runWith(Sink.head).flatMap {
         case Some((downloadSource, _)) =>
           downloadSource
             .map(_.decodeString("utf8"))
             .runWith(Sink.head)
-            .map(Some.apply)
         case None => Future.successful(None)
       }
     } yield (upload, copy, download)
@@ -330,8 +336,6 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
 class AWSS3IntegrationSpec extends S3IntegrationSpec
 
 /*
- * This is an integration test and ignored by default
- *
  * For this test, you need a local s3 mirror, for instance minio (https://github.com/minio/minio).
  * With docker and the aws cli installed, you could run something like this:
  *
@@ -339,17 +343,11 @@ class AWSS3IntegrationSpec extends S3IntegrationSpec
  * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket my-test-us-east-1
  * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket my.test.frankfurt
  *
- * aws --endpoint-url http://localhost:9000 s3 create-bucket my-test-us-east-1
- * aws cli --endpoint-url http://localhost:9000 s3 create-bucket my.test.frankfurt
- *
- * Comment out @Ignore and run the tests from inside sbt:
- * s3/testOnly akka.stream.alpakka.s3.scaladsl.MinioS3IntegrationSpec
+ * Run the tests from inside sbt:
+ * s3/testOnly *.MinioS3IntegrationSpec
  */
-@Ignore
 class MinioS3IntegrationSpec extends S3IntegrationSpec {
-  val accessKey = "TESTKEY"
-  val secret = "TESTSECRET"
-  val endpointUrl = "http://localhost:9000"
+  import MinioS3IntegrationSpec._
 
   val staticProvider = new AWSStaticCredentialsProvider(
     new BasicAWSCredentials(accessKey, secret)
@@ -358,19 +356,33 @@ class MinioS3IntegrationSpec extends S3IntegrationSpec {
   override val defaultRegionContentCount = 0
   override val otherRegionContentCount = 0
 
-  override def settings = super.settings.copy(
-    credentialsProvider = staticProvider,
-    endpointUrl = Some(endpointUrl),
-    pathStyleAccess = true
-  )
+  override def config() =
+    ConfigFactory.parseString(s"""
+                                 |alpakka.s3 {
+                                 |  aws {
+                                 |    credentials {
+                                 |      provider = static
+                                 |      access-key-id = $accessKey
+                                 |      secret-access-key = $secret
+                                 |    }
+                                 |  }
+                                 |  endpoint-url = "$endpointUrl"
+                                 |}
+    """.stripMargin).withFallback(super.config())
 
-  override def otherRegionSettings = super.settings.copy(
+  override def otherRegionSettings = S3Settings().copy(
     credentialsProvider = staticProvider,
     endpointUrl = Some(endpointUrl),
     pathStyleAccess = true
   )
 
   it should "properly set the endpointUrl" in {
-    settings.endpointUrl.value shouldEqual endpointUrl
+    S3Settings().endpointUrl.value shouldEqual endpointUrl
   }
+}
+
+object MinioS3IntegrationSpec {
+  val accessKey = "TESTKEY"
+  val secret = "TESTSECRET"
+  val endpointUrl = "http://localhost:9000"
 }

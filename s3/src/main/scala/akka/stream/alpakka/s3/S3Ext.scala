@@ -9,7 +9,8 @@ import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvi
  * Manages one [[S3Settings]] per `ActorSystem`.
  */
 final class S3Ext private (sys: ExtendedActorSystem) extends Extension {
-  implicit val settings = S3Settings()(sys)
+  def settings(prefix: String): S3Settings = S3Settings(prefix)(sys)
+  def settings(): S3Settings = settings(S3Settings.configPath)
 }
 
 object S3Ext extends ExtensionId[S3Ext] with ExtensionIdProvider {
