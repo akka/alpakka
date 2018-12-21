@@ -107,7 +107,7 @@ Java
 
 ## Publishing to MQTT
 
-To publish messages to the MQTT server create a sink be specifying `MqttConnectionSettings` ([API](akka.stream.alpakka.mqtt.MqttConnectionSettings$)) and a default Quality of Service-level.
+To publish messages to the MQTT server create a sink be specifying `MqttConnectionSettings` (@scaladoc[API](akka.stream.alpakka.mqtt.MqttConnectionSettings$)) and a default Quality of Service-level.
 
 Scala
 : @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #run-sink }
