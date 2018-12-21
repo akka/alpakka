@@ -612,7 +612,7 @@ object S3 {
             Option(sse)
           )
       }
-      .mapMaterializedValue(_.asJava)
+      .mapMaterializedValue(func(_.asJava))
 
   /**
    * Copy a S3 Object by making multiple requests.
@@ -719,4 +719,8 @@ object S3 {
 
   private def metaDataToJava(scalaContents: scaladsl.ObjectMetadata): ObjectMetadata =
     new ObjectMetadata(scalaContents)
+
+  private def func[T, R](f: T => R) = new akka.japi.function.Function[T, R] {
+    override def apply(param: T): R = f(param)
+  }
 }
