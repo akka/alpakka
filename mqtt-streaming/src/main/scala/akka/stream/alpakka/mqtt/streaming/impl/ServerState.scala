@@ -344,11 +344,14 @@ import scala.util.{Failure, Success}
   private val PublisherNamePrefix = "publisher-"
   private val UnpublisherNamePrefix = "unpublisher-"
 
+  private val ReceiveConnAck = "receive-connack"
+
   def clientConnect(data: ConnectReceived)(implicit mat: Materializer): Behavior[Event] = Behaviors.setup { _ =>
     data.local.trySuccess(ForwardConnect)
 
     Behaviors.withTimers { timer =>
-      timer.startSingleTimer("receive-connack", ReceiveConnAckTimeout, data.settings.receiveConnAckTimeout)
+      if (!timer.isTimerActive(ReceiveConnAck))
+        timer.startSingleTimer(ReceiveConnAck, ReceiveConnAckTimeout, data.settings.receiveConnAckTimeout)
 
       Behaviors
         .receivePartial[Event] {
