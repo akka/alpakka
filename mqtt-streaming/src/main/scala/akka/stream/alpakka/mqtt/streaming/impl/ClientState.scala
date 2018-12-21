@@ -214,7 +214,7 @@ import scala.util.{Failure, Success}
     remote.complete()
 
     disconnected(
-      Uninitialized(data.stash,
+      Uninitialized(Vector.empty,
                     data.consumerPacketRouter,
                     data.producerPacketRouter,
                     data.subscriberPacketRouter,
