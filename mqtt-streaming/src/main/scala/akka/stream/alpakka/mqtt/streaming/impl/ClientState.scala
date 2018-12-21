@@ -221,9 +221,12 @@ import scala.util.{Failure, Success}
     )
   }
 
+  private val ReceiveConnAck = "receive-connack"
+
   def serverConnect(data: ConnectReceived)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
     timer =>
-      timer.startSingleTimer("receive-connack", ReceiveConnAckTimeout, data.settings.receiveConnAckTimeout)
+      if (!timer.isTimerActive(ReceiveConnAck))
+        timer.startSingleTimer(ReceiveConnAck, ReceiveConnAckTimeout, data.settings.receiveConnAckTimeout)
 
       Behaviors
         .receivePartial[Event] {
