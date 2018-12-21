@@ -176,14 +176,14 @@ class MqttSessionSpec
       val connect = Connect("some-client-id", ConnectFlags.None)
       val disconnect = Disconnect
 
-      val client = Source
+      val (client, result) = Source
         .queue(1, OverflowStrategy.fail)
         .via(
           Mqtt
             .clientSessionFlow(session)
             .join(pipeToServer)
         )
-        .toMat(Sink.ignore)(Keep.left)
+        .toMat(Sink.ignore)(Keep.both)
         .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
@@ -200,6 +200,8 @@ class MqttSessionSpec
       client.offer(Command(disconnect))
 
       server.expectMsg(disconnectBytes)
+
+      result.futureValue shouldBe Done
     }
 
     "disconnect when connection lost" in {
