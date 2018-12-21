@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import akka.{NotUsed, actor => untyped}
 import akka.actor.typed.scaladsl.adapter._
-import akka.stream.{ActorAttributes, Materializer, OverflowStrategy, Supervision}
+import akka.stream._
 import akka.stream.alpakka.mqtt.streaming.impl._
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Source}
 import akka.util.ByteString
@@ -140,6 +140,8 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
 
   private val pingReqBytes = PingReq.encode(ByteString.newBuilder).result()
 
+  private val killSwitch = KillSwitches.shared("command-kill-switch")
+
   override def commandFlow[A]: CommandFlow[A] =
     Flow[Command[A]]
       .watch(clientConnector.toUntyped)
@@ -148,6 +150,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
           terminated.foreach(_ => clientConnector ! ClientConnector.ConnectionLost)
           NotUsed
       }
+      .via(killSwitch.flow)
       .flatMapMerge(
         settings.commandParallelism, {
           case Command(cp: Connect, carry) =>
@@ -162,8 +165,9 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                 case ClientConnector.ForwardPubRel(packetId) =>
                   PubRel(packetId).encode(ByteString.newBuilder).result()
               }.mapError {
-                case ClientConnector.PingFailed => ActorMqttClientSession.PingFailed
-              })
+                  case ClientConnector.PingFailed => ActorMqttClientSession.PingFailed
+                }
+                .watchTermination()((_, done) => done.foreach(_ => killSwitch.shutdown())))
             )
           case Command(cp: PubAck, _) =>
             val reply = Promise[Consumer.ForwardPubAck.type]
@@ -406,6 +410,8 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
 
   private val pingRespBytes = PingResp.encode(ByteString.newBuilder).result()
 
+  private val killSwitch = KillSwitches.shared("command-kill-switch")
+
   override def commandFlow[A](connectionId: ByteString): CommandFlow[A] =
     Flow[Command[A]]
       .watch(serverConnector.toUntyped)
@@ -414,6 +420,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
           terminated.foreach(_ => serverConnector ! ServerConnector.ConnectionLost(connectionId))
           NotUsed
       }
+      .via(killSwitch.flow)
       .flatMapMerge(
         settings.commandParallelism, {
           case Command(cp: ConnAck, _) =>
@@ -430,8 +437,9 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                 case ClientConnection.ForwardPubRel(packetId) =>
                   PubRel(packetId).encode(ByteString.newBuilder).result()
               }.mapError {
-                case ServerConnector.PingFailed => ActorMqttServerSession.PingFailed
-              })
+                  case ServerConnector.PingFailed => ActorMqttServerSession.PingFailed
+                }
+                .watchTermination()((_, done) => done.foreach(_ => killSwitch.shutdown())))
             )
           case Command(cp: SubAck, _) =>
             val reply = Promise[Publisher.ForwardSubAck.type]
