@@ -334,6 +334,9 @@ import akka.util.{ByteString, ByteStringBuilder}
 
         case AfterCr =>
           byte match {
+            case CR =>
+              state = AfterCr
+              pos += 1
             case LF =>
               state = LineEnd
               pos += 1

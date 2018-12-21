@@ -35,12 +35,8 @@ public class CsvParsing {
       byte delimiter, byte quoteChar, byte escapeChar, int maximumLineLength) {
     return akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner(
             delimiter, quoteChar, escapeChar, maximumLineLength)
-        .asJava()
-        .map(
-            c -> {
-              List<ByteString> c1 = (List<ByteString>) c;
-              return JavaConverters.asJavaCollectionConverter(c1).asJavaCollection();
-            })
+        .<ByteString, List<ByteString>, NotUsed>asJava()
+        .map(c -> JavaConverters.asJavaCollectionConverter(c).asJavaCollection())
         .mapMaterializedValue(m -> NotUsed.getInstance());
   }
 }
