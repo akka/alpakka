@@ -198,6 +198,8 @@ import scala.util.{Failure, Success}
           data.settings
         )
       )
+    case (_, ConnectionLost) =>
+      Behavior.same
     case (_, e) =>
       disconnected(data.copy(stash = data.stash :+ e))
   }
@@ -221,9 +223,12 @@ import scala.util.{Failure, Success}
     )
   }
 
+  private val ReceiveConnAck = "receive-connack"
+
   def serverConnect(data: ConnectReceived)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
     timer =>
-      timer.startSingleTimer("receive-connack", ReceiveConnAckTimeout, data.settings.receiveConnAckTimeout)
+      if (!timer.isTimerActive(ReceiveConnAck))
+        timer.startSingleTimer(ReceiveConnAck, ReceiveConnAckTimeout, data.settings.receiveConnAckTimeout)
 
       Behaviors
         .receivePartial[Event] {
@@ -273,8 +278,6 @@ import scala.util.{Failure, Success}
     timer =>
       if (data.keepAlive.toMillis > 0)
         timer.startSingleTimer("send-pingreq", SendPingReqTimeout, data.keepAlive)
-      else
-        data.remote.complete() // We'll never be sending pings so free up the command channel for other things
 
       Behaviors
         .receivePartial[Event] {
