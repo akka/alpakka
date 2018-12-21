@@ -232,6 +232,7 @@ lazy val docs = project
   .settings(
     name := "Alpakka",
     publish / skip := true,
+    whitesourceIgnore := true,
     paradoxProperties ++= Map(
       "project.url" -> "https://developer.lightbend.com/docs/alpakka/current/",
       "akka.version" -> Dependencies.AkkaVersion,
@@ -271,6 +272,7 @@ lazy val `doc-examples` = project
   .settings(
     name := s"akka-stream-alpakka-doc-examples",
     publish / skip := true,
+    whitesourceIgnore := true,
     Dependencies.`Doc-examples`
   )
 

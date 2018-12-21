@@ -87,8 +87,8 @@ object Dependencies {
       "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.3.1", // ApacheV2
       "org.codelibs" % "elasticsearch-cluster-runner" % "6.3.1.0", // ApacheV2
       "io.netty" % "netty-all" % "4.1.29.Final", // ApacheV2
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.6",
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.6",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.8",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.8",
       "org.slf4j" % "log4j-over-slf4j" % "1.7.25",
       "org.slf4j" % "jcl-over-slf4j" % "1.7.25",
       "ch.qos.logback" % "logback-classic" % "1.2.3" // Eclipse Public License 1.0
@@ -105,8 +105,8 @@ object Dependencies {
   val Elasticsearch = Seq(
     libraryDependencies ++= Seq(
       "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.3.1", // ApacheV2
-      "io.spray" %% "spray-json" % "1.3.4", // ApacheV2
-      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.6", // ApacheV2
+      "io.spray" %% "spray-json" % "1.3.5", // ApacheV2
+      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.8", // ApacheV2
       "org.codelibs" % "elasticsearch-cluster-runner" % "6.3.1.0" % Test // ApacheV2
     )
   )

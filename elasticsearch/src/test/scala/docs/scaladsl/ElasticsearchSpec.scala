@@ -404,7 +404,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           MessageFactory.createWriteResult[JsValue, NotUsed](
             WriteMessage.createIndexMessage("1", Map("subject" -> "Akka Concurrency").toJson),
             Some(
-              """{"type":"strict_dynamic_mapping_exception","reason":"mapping set to strict, dynamic introduction of [subject] within [_doc] is not allowed"}"""
+              """{"reason":"mapping set to strict, dynamic introduction of [subject] within [_doc] is not allowed","type":"strict_dynamic_mapping_exception"}"""
             )
           )
         )
