@@ -449,6 +449,8 @@ import scala.util.{Failure, Success}
   def pendingSubAck(data: PendingSubscribe)(implicit mat: Materializer): Behavior[Event] =
     Behaviors
       .receivePartial[Event] {
+        case (context, ConnectionLost) =>
+          disconnect(context, data.connectFlags, data.remote, data)
         case (_, e) =>
           pendingSubAck(data.copy(stash = data.stash :+ e))
       }
