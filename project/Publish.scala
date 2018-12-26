@@ -10,7 +10,7 @@ object Publish extends AutoPlugin {
   override def projectSettings = Seq(
     bintrayOrganization := Some("alpakka-backblazeb2"), // TODO: originally "akka"
     bintrayPackage := "alpakka",
-    bintrayRepository := (if (isSnapshot.value) "snapshots" else "maven")
+    // bintrayRepository := (if (isSnapshot.value) "snapshots" else "maven") // TODO: we commented this
   )
 }
 
