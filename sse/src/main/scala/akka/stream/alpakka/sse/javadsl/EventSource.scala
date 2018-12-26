@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.sse
 package javadsl
 
@@ -76,7 +77,7 @@ object EventSource {
              mat: Materializer): Source[ServerSentEvent, NotUsed] = {
     val eventSource =
       scaladsl.EventSource(
-        uri.asInstanceOf[akka.http.impl.model.JavaUri].uri,
+        uri.asScala,
         send(_).toScala.map(_.asInstanceOf[SHttpResponse])(mat.executionContext),
         lastEventId.asScala
       )(mat)

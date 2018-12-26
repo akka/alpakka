@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.ftp
 
 import akka.NotUsed
@@ -26,9 +27,15 @@ trait BaseSpec
 
   protected def listFiles(basePath: String): Source[FtpFile, NotUsed]
 
+  protected def listFilesWithFilter(basePath: String, branchSelector: FtpFile => Boolean): Source[FtpFile, NotUsed]
+
   protected def retrieveFromPath(path: String): Source[ByteString, Future[IOResult]]
 
   protected def storeToPath(path: String, append: Boolean): Sink[ByteString, Future[IOResult]]
+
+  protected def remove(): Sink[FtpFile, Future[IOResult]]
+
+  protected def move(destinationPath: FtpFile => String): Sink[FtpFile, Future[IOResult]]
 
   protected def startServer(): Unit
 

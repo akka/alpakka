@@ -1,57 +1,72 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.sqs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import com.amazonaws.auth.{AWSCredentialsProvider, AWSStaticCredentialsProvider, BasicAWSCredentials}
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
-import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
-import org.elasticmq.rest.sqs.{SQSRestServer, SQSRestServerBuilder}
-import org.scalatest.{BeforeAndAfterAll, Suite, Tag}
+import akka.stream.{ActorMaterializer, Materializer}
+import com.amazonaws.services.sqs.AmazonSQSAsync
+import com.amazonaws.services.sqs.model.CreateQueueRequest
+import org.elasticmq.rest.sqs.{SQSLimits, SQSRestServer, SQSRestServerBuilder}
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite, Tag}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 
-trait DefaultTestContext extends BeforeAndAfterAll { this: Suite =>
+trait DefaultTestContext extends BeforeAndAfterAll with BeforeAndAfterEach with ScalaFutures { this: Suite =>
 
-  lazy val sqsServer: SQSRestServer = SQSRestServerBuilder.withDynamicPort().start()
-  lazy val sqsAddress = sqsServer.waitUntilStarted().localAddress
-  lazy val sqsPort = sqsAddress.getPort
-  lazy val sqsEndpoint: String = {
-    s"http://${sqsAddress.getHostName}:$sqsPort"
-  }
+  //#init-mat
+  implicit val system: ActorSystem = ActorSystem()
+  implicit val mat: Materializer = ActorMaterializer()
+  //#init-mat
+
+  var sqsServer: SQSRestServer = _
+  def sqsAddress = sqsServer.waitUntilStarted().localAddress
+  def sqsEndpoint: String =
+    s"http://${sqsAddress.getHostName}:${sqsAddress.getPort}"
 
   object Integration extends Tag("akka.stream.alpakka.sqs.scaladsl.Integration")
 
-  //#init-mat
-  implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
-  //#init-mat
-
-  val credentialsProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"))
-
-  implicit val sqsClient = createAsyncClient(sqsEndpoint, credentialsProvider)
+  def sqsClient = createAsyncClient(sqsEndpoint)
 
   def randomQueueUrl(): String = sqsClient.createQueue(s"queue-${Random.nextInt}").getQueueUrl
 
-  override protected def afterAll(): Unit = {
-    super.afterAll()
-    sqsServer.stopAndWait()
-    Await.ready(system.terminate(), 5.seconds)
-  }
+  val fifoQueueRequest = new CreateQueueRequest(s"queue-${Random.nextInt}.fifo")
+    .addAttributesEntry("FifoQueue", "true")
+    .addAttributesEntry("ContentBasedDeduplication", "true")
 
-  def createAsyncClient(sqsEndpoint: String, credentialsProvider: AWSCredentialsProvider): AmazonSQSAsync = {
+  def randomFifoQueueUrl(): String = sqsClient.createQueue(fifoQueueRequest).getQueueUrl
+
+  override protected def beforeEach(): Unit =
+    sqsServer = SQSRestServerBuilder.withActorSystem(system).withSQSLimits(SQSLimits.Relaxed).withDynamicPort().start()
+
+  override protected def afterEach(): Unit =
+    sqsServer.stopAndWait()
+
+  override protected def afterAll(): Unit =
+    try {
+      Await.ready(system.terminate(), 5.seconds)
+    } finally {
+      super.afterAll()
+    }
+
+  def createAsyncClient(sqsEndpoint: String): AmazonSQSAsync = {
     //#init-client
-    val client: AmazonSQSAsync = AmazonSQSAsyncClientBuilder
+    import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+    import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
+    import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
+
+    val credentialsProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"))
+    implicit val awsSqsClient: AmazonSQSAsync = AmazonSQSAsyncClientBuilder
       .standard()
       .withCredentials(credentialsProvider)
       .withEndpointConfiguration(new EndpointConfiguration(sqsEndpoint, "eu-central-1"))
       .build()
+    system.registerOnTermination(awsSqsClient.shutdown())
     //#init-client
-    client
+    awsSqsClient
   }
-
 }

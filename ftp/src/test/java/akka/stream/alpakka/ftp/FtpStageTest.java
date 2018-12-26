@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.ftp;
 
 import akka.NotUsed;
@@ -12,6 +13,7 @@ import akka.util.ByteString;
 import org.junit.Test;
 import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 public class FtpStageTest extends PlainFtpSupportImpl implements CommonFtpStageTest {
 
@@ -30,34 +32,44 @@ public class FtpStageTest extends PlainFtpSupportImpl implements CommonFtpStageT
     CommonFtpStageTest.super.toPath();
   }
 
-  //#traversing
+  @Test
+  public void remove() throws Exception {
+    CommonFtpStageTest.super.remove();
+  }
+
+  @Test
+  public void move() throws Exception {
+    CommonFtpStageTest.super.move();
+  }
+
   public Source<FtpFile, NotUsed> getBrowserSource(String basePath) throws Exception {
     return Ftp.ls(basePath, settings());
   }
-  //#traversing
 
-  //#retrieving
   public Source<ByteString, CompletionStage<IOResult>> getIOSource(String path) throws Exception {
     return Ftp.fromPath(path, settings());
   }
-  //#retrieving
 
-  //#storing
   public Sink<ByteString, CompletionStage<IOResult>> getIOSink(String path) throws Exception {
     return Ftp.toPath(path, settings());
   }
-  //#storing
+
+  public Sink<FtpFile, CompletionStage<IOResult>> getRemoveSink() throws Exception {
+    return Ftp.remove(settings());
+  }
+
+  public Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(
+      Function<FtpFile, String> destinationPath) throws Exception {
+    return Ftp.move(destinationPath, settings());
+  }
 
   private FtpSettings settings() throws Exception {
-    //#create-settings
-    final FtpSettings settings = new FtpSettings(
-            InetAddress.getByName("localhost"),
-            getPort(),
-            FtpCredentials.createAnonCredentials(),
-            false, // binary
-            true   // passiveMode
-    );
-    //#create-settings
+    final FtpSettings settings =
+        FtpSettings.create(InetAddress.getByName("localhost"))
+            .withPort(getPort())
+            .withCredentials(FtpCredentials.anonymous())
+            .withBinary(false)
+            .withPassiveMode(true);
     return settings;
   }
 }

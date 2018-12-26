@@ -1,35 +1,35 @@
 import sbt._
 import sbt.Keys._
 import sbt.plugins.JvmPlugin
+import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
 import de.heikoseeberger.sbtheader._
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
+import Whitesource.whitesourceGroup
 
 object Common extends AutoPlugin {
-
-  val FileHeader = (HeaderPattern.cStyleBlockComment,
-    """|/*
-       | * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
-       | */
-       |""".stripMargin)
 
   override def trigger = allRequirements
 
   override def requires = JvmPlugin && HeaderPlugin
 
   override lazy val projectSettings =
-    Dependencies.Common ++ Seq(
+  Dependencies.Common ++ Seq(
     organization := "com.lightbend.akka",
     organizationName := "Lightbend Inc.",
-    homepage := Some(url("https://github.com/akka/alpakka")),
+    homepage := Some(url("https://developer.lightbend.com/docs/alpakka/current/")),
     scmInfo := Some(ScmInfo(url("https://github.com/akka/alpakka"), "git@github.com:akka/alpakka.git")),
-    developers += Developer("contributors", "Contributors", "https://gitter.im/akka/dev", url("https://github.com/akka/alpakka/graphs/contributors")),
-
+    developers += Developer("contributors",
+                            "Contributors",
+                            "https://gitter.im/akka/dev",
+                            url("https://github.com/akka/alpakka/graphs/contributors")),
     licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
-
+    whitesourceGroup := Whitesource.Group.Community,
     crossVersion := CrossVersion.binary,
-
+    crossScalaVersions := Dependencies.ScalaVersions,
+    scalaVersion := crossScalaVersions.value.head,
     scalacOptions ++= Seq(
-      "-encoding", "UTF-8",
+      "-encoding",
+      "UTF-8",
       "-feature",
       "-unchecked",
       "-deprecation",
@@ -37,26 +37,43 @@ object Common extends AutoPlugin {
       "-Xlint",
       "-Yno-adapted-args",
       "-Ywarn-dead-code",
-      "-Xfuture"
+      "-Xfuture",
+      "-target:jvm-1.8"
     ),
-
-    javacOptions ++= Seq(
+    Compile / doc / scalacOptions := scalacOptions.value ++ Seq(
+      "-doc-title",
+      "Alpakka",
+      "-doc-version",
+      version.value,
+      "-sourcepath",
+      (baseDirectory in ThisBuild).value.toString,
+      "-doc-source-url", {
+        val branch = if (isSnapshot.value) "master" else s"v$version"
+        s"https://github.com/akka/alpakka/tree/${branch}€{FILE_PATH}.scala#L1"
+      },
+      "-skip-packages",
+      "akka.pattern:" + // for some reason Scaladoc creates this
+      "org.mongodb.scala:" + // this one is a mystery as well
+      // excluding generated grpc classes, except the model ones (com.google.pubsub)
+      "com.google.api:com.google.cloud:com.google.iam:com.google.logging:" +
+      "com.google.longrunning:com.google.protobuf:com.google.rpc:com.google.type"
+    ),
+    javacOptions in compile ++= Seq(
       "-Xlint:unchecked"
     ),
-
     autoAPIMappings := true,
     apiURL := Some(url(s"http://developer.lightbend.com/docs/api/alpakka/${version.value}")),
-
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
-
-    // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
     // -a Show stack traces and exception class name for AssertionErrors.
-    testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
-
-    headers := headers.value ++ Map(
-      "scala" -> FileHeader,
-      "java" -> FileHeader
-    )
+    // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
+    // -q Suppress stdout for successful tests.
+    testOptions in Test += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-q"),
+    // By default scalatest futures time out in 150 ms, dilate that to 600ms.
+    // This should not impact the total test time as we don't expect to hit this
+    // timeout.
+    testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4"),
+    scalafmtOnCompile := true,
+    headerLicense := Some(HeaderLicense.Custom("Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>"))
   )
 }

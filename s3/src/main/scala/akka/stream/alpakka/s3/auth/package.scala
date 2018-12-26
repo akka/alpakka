@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.s3
 
 import java.security.MessageDigest
-import javax.xml.bind.DatatypeConverter
 
 import akka.stream.scaladsl.{Flow, Keep, Sink}
 import akka.util.ByteString
@@ -12,7 +12,19 @@ import akka.util.ByteString
 import scala.concurrent.Future
 
 package object auth {
-  def encodeHex(bytes: Array[Byte]): String = DatatypeConverter.printHexBinary(bytes).toLowerCase
+
+  private val Digits = "0123456789abcdef".toCharArray()
+
+  def encodeHex(bytes: Array[Byte]): String = {
+    val length = bytes.length
+    val out = new Array[Char](length * 2)
+    for (i <- 0 to length - 1) {
+      val b = bytes(i)
+      out(i * 2) = Digits((b >> 4) & 0xF)
+      out(i * 2 + 1) = Digits(b & 0xF)
+    }
+    new String(out)
+  }
 
   def encodeHex(bytes: ByteString): String = encodeHex(bytes.toArray)
 

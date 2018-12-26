@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.geode.scaladsl
 
-import akka.stream.alpakka.geode.internal._
-import akka.stream.alpakka.geode.internal.pdx.{PdxDecoder, PdxEncoder, ShapelessPdxSerializer}
-import akka.stream.alpakka.geode.internal.stage.{GeodeContinuousSourceStage, GeodeFiniteSourceStage, GeodeFlowStage}
+import akka.stream.alpakka.geode.impl._
+import akka.stream.alpakka.geode.impl.pdx.{PdxDecoder, PdxEncoder, ShapelessPdxSerializer}
+import akka.stream.alpakka.geode.impl.stage.{GeodeContinuousSourceStage, GeodeFiniteSourceStage, GeodeFlowStage}
 import akka.stream.alpakka.geode.{AkkaPdxSerializer, GeodeSettings, RegionSettings}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
@@ -87,7 +88,7 @@ trait PoolSubscription extends ReactiveGeode {
 
     registerPDXSerializer(serializer, serializer.clazz)
 
-    Source.fromGraph(new GeodeContinuousSourceStage[V](cache, queryName, query))
+    Source.fromGraph(new GeodeContinuousSourceStage[V](cache, queryName.name, query))
   }
 
   /**
@@ -100,7 +101,7 @@ trait PoolSubscription extends ReactiveGeode {
 
     registerPDXSerializer(new ShapelessPdxSerializer[V](enc, dec), tag.runtimeClass)
 
-    Source.fromGraph(new GeodeContinuousSourceStage[V](cache, queryName, query))
+    Source.fromGraph(new GeodeContinuousSourceStage[V](cache, queryName.name, query))
   }
 
   def closeContinuousQuery(queryName: Symbol) =

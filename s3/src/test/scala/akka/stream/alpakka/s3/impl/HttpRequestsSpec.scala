@@ -1,28 +1,50 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.s3.impl
 
+import java.util.UUID
+
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{HttpEntity, MediaTypes}
-import akka.stream.alpakka.s3.{BufferType, MemoryBufferType, Proxy, S3Settings}
+import akka.http.scaladsl.model.headers.{ByteRange, RawHeader}
+import akka.http.scaladsl.model.{HttpEntity, HttpRequest, IllegalUriException, MediaTypes}
+import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.acl.CannedAcl
-import akka.stream.alpakka.s3.auth.AWSCredentials
+import akka.stream.alpakka.s3.{BufferType, MemoryBufferType, Proxy, S3Settings}
 import akka.stream.scaladsl.Source
+import akka.testkit.{SocketUtil, TestProbe}
+import com.amazonaws.auth.{AWSCredentialsProvider, AWSStaticCredentialsProvider, AnonymousAWSCredentials}
+import com.amazonaws.regions.AwsRegionProvider
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, Matchers}
 
 class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
   // test fixtures
-  def getSettings(bufferType: BufferType = MemoryBufferType,
-                  diskBufferPath: String = "",
-                  proxy: Option[Proxy] = None,
-                  awsCredentials: AWSCredentials = AWSCredentials("", ""),
-                  s3Region: String = "us-east-1",
-                  pathStyleAccess: Boolean = false) =
-    new S3Settings(bufferType, diskBufferPath, proxy, awsCredentials, s3Region, pathStyleAccess)
+  def getSettings(
+      bufferType: BufferType = MemoryBufferType,
+      proxy: Option[Proxy] = None,
+      awsCredentials: AWSCredentialsProvider = new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()),
+      s3Region: String = "us-east-1",
+      pathStyleAccess: Boolean = false,
+      endpointUrl: Option[String] = None,
+      listBucketApiVersion: ApiVersion = ListBucketVersion2
+  ) = {
+    val regionProvider = new AwsRegionProvider {
+      def getRegion = s3Region
+    }
+
+    new S3Settings(bufferType,
+                   proxy,
+                   awsCredentials,
+                   regionProvider,
+                   pathStyleAccess,
+                   endpointUrl,
+                   listBucketApiVersion)
+  }
 
   val location = S3Location("bucket", "image-1024@2x")
   val contentType = MediaTypes.`image/jpeg`
@@ -62,6 +84,14 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     }
   }
 
+  it should "throw an error if path-style access is false and the bucket name contains non-LDH characters" in {
+    implicit val settings = getSettings(s3Region = "eu-west-1", pathStyleAccess = false)
+
+    assertThrows[IllegalUriException](
+      HttpRequests.getDownloadRequest(S3Location("invalid_bucket_name", "image-1024@2x"))
+    )
+  }
+
   it should "initiate multipart upload with path-style access in region us-east-1" in {
     implicit val settings = getSettings(s3Region = "us-east-1", pathStyleAccess = true)
 
@@ -79,6 +109,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     req.uri.authority.host.toString shouldEqual "s3.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/image-1024@2x"
+    req.uri.rawQueryString shouldBe empty
   }
 
   it should "initiate multipart upload with path-style access in other regions" in {
@@ -89,7 +120,6 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     req.uri.authority.host.toString shouldEqual "s3-us-west-2.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/image-1024@2x"
-
   }
 
   it should "support download requests with path-style access in other regions" in {
@@ -99,6 +129,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     req.uri.authority.host.toString shouldEqual "s3-eu-west-1.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/image-1024@2x"
+    req.uri.rawQueryString shouldBe empty
   }
 
   it should "support download requests via HTTP when such scheme configured for `proxy`" in {
@@ -122,6 +153,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
     req.uri.path.toString shouldEqual "//test/foo.txt"
+    req.uri.rawQueryString shouldBe empty
   }
 
   it should "support download requests with keys containing spaces" in {
@@ -133,6 +165,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
     req.uri.path.toString shouldEqual "/test%20folder/test%20file.txt"
+    req.uri.rawQueryString shouldBe empty
   }
 
   it should "support download requests with keys containing spaces with path-style access in other regions" in {
@@ -144,6 +177,21 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     req.uri.authority.host.toString shouldEqual "s3-eu-west-1.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/test%20folder/test%20file.txt"
+    req.uri.rawQueryString shouldBe empty
+  }
+
+  it should "add versionId query parameter when provided" in {
+    implicit val settings = getSettings(pathStyleAccess = true)
+
+    val location = S3Location("bucket", "test/foo.txt")
+    val versionId = "123456"
+    val req = HttpRequests.getDownloadRequest(location, versionId = Some(versionId))
+
+    req.uri.authority.host.toString shouldEqual "s3.amazonaws.com"
+    req.uri.path.toString shouldEqual "/bucket/test/foo.txt"
+    req.uri.rawQueryString.fold(fail("query string is empty while it was supposed to be populated")) { rawQueryString =>
+      rawQueryString shouldEqual s"versionId=$versionId"
+    }
   }
 
   it should "support multipart init upload requests via HTTP when such scheme configured for `proxy`" in {
@@ -162,6 +210,18 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
       HttpRequests.uploadPartRequest(multipartUpload, 1, Source.empty, 1)
 
     req.uri.scheme shouldEqual "http"
+  }
+
+  it should "properly multipart upload part request with customer keys server side encryption" in {
+    implicit val settings = getSettings(s3Region = "region", proxy = Option(Proxy("localhost", 8080, "http")))
+    val myKey = "my-key"
+    val md5Key = "md5-key"
+    val s3Headers = S3Headers(ServerSideEncryption.CustomerKeys(myKey, Some(md5Key)))
+    val req = HttpRequests.uploadPartRequest(multipartUpload, 1, Source.empty, 1, s3Headers)
+
+    req.headers should contain(RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256"))
+    req.headers should contain(RawHeader("x-amz-server-side-encryption-customer-key", myKey))
+    req.headers should contain(RawHeader("x-amz-server-side-encryption-customer-key-MD5", md5Key))
   }
 
   it should "support multipart upload complete requests via HTTP when such scheme configured for `proxy`" in {
@@ -190,6 +250,18 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     req.headers should contain(RawHeader("x-amz-server-side-encryption", "aws:kms"))
     req.headers should contain(RawHeader("x-amz-server-side-encryption-aws-kms-key-id", testArn))
+  }
+
+  it should "initiate multipart upload with customer keys encryption" in {
+    implicit val settings = getSettings(s3Region = "us-east-2")
+    val myKey = "my-key"
+    val md5Key = "md5-key"
+    val s3Headers = S3Headers(ServerSideEncryption.CustomerKeys(myKey, Some(md5Key)))
+    val req = HttpRequests.initiateMultipartUploadRequest(location, contentType, s3Headers)
+
+    req.headers should contain(RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256"))
+    req.headers should contain(RawHeader("x-amz-server-side-encryption-customer-key", myKey))
+    req.headers should contain(RawHeader("x-amz-server-side-encryption-customer-key-MD5", md5Key))
   }
 
   it should "initiate multipart upload with custom s3 storage class" in {
@@ -226,5 +298,90 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     req.uri.query() shouldEqual Query("list-type" -> "2",
                                       "prefix" -> "random/prefix",
                                       "continuation-token" -> "randomToken")
+  }
+
+  it should "properly construct the list bucket request when using api version 1" in {
+    implicit val settings =
+      getSettings(s3Region = "region", pathStyleAccess = true, listBucketApiVersion = ListBucketVersion1)
+
+    val req =
+      HttpRequests.listBucket(location.bucket)
+
+    req.uri.query() shouldEqual Query()
+  }
+
+  it should "properly construct the list bucket request when using api version set to 1 and a continuation token" in {
+    implicit val settings =
+      getSettings(s3Region = "region", pathStyleAccess = true, listBucketApiVersion = ListBucketVersion1)
+
+    val req =
+      HttpRequests.listBucket(location.bucket, continuationToken = Some("randomToken"))
+
+    req.uri.query() shouldEqual Query("marker" -> "randomToken")
+  }
+
+  it should "support custom endpoint configured by `endpointUrl`" in {
+    implicit val system: ActorSystem = ActorSystem("HttpRequestsSpec")
+    import system.dispatcher
+    implicit val materializer: ActorMaterializer = ActorMaterializer()
+
+    val probe = TestProbe()
+    val address = SocketUtil.temporaryServerAddress()
+
+    import akka.http.scaladsl.server.Directives._
+
+    Http().bindAndHandle(extractRequestContext { ctx =>
+      probe.ref ! ctx.request
+      complete("MOCK")
+    }, address.getHostName, address.getPort)
+
+    implicit val setting: S3Settings =
+      getSettings(endpointUrl = Some(s"http://${address.getHostName}:${address.getPort}/"))
+
+    val req =
+      HttpRequests.listBucket(location.bucket, Some("random/prefix"), Some("randomToken"))
+
+    Http().singleRequest(req)
+
+    probe.expectMsgType[HttpRequest]
+
+    materializer.shutdown()
+    system.terminate()
+  }
+
+  it should "add two (source, range) headers to multipart upload (copy) request when byte range populated" in {
+    implicit val settings: S3Settings = getSettings()
+
+    val multipartUpload = MultipartUpload(S3Location("target-bucket", "target-key"), UUID.randomUUID().toString)
+    val copyPartition = CopyPartition(1, S3Location("source-bucket", "some/source-key"), Some(ByteRange(0, 5242880L)))
+    val multipartCopy = MultipartCopy(multipartUpload, copyPartition)
+
+    val request = HttpRequests.uploadCopyPartRequest(multipartCopy)
+    request.headers should contain(RawHeader("x-amz-copy-source", "/source-bucket/some/source-key"))
+    request.headers should contain(RawHeader("x-amz-copy-source-range", "bytes=0-5242879"))
+  }
+
+  it should "add only source header to multipart upload (copy) request when byte range missing" in {
+    implicit val settings: S3Settings = getSettings()
+
+    val multipartUpload = MultipartUpload(S3Location("target-bucket", "target-key"), UUID.randomUUID().toString)
+    val copyPartition = CopyPartition(1, S3Location("source-bucket", "some/source-key"))
+    val multipartCopy = MultipartCopy(multipartUpload, copyPartition)
+
+    val request = HttpRequests.uploadCopyPartRequest(multipartCopy)
+    request.headers should contain(RawHeader("x-amz-copy-source", "/source-bucket/some/source-key"))
+    request.headers.map(_.lowercaseName()) should not contain "x-amz-copy-source-range"
+  }
+
+  it should "add versionId parameter to source header if provided" in {
+    implicit val settings: S3Settings = getSettings()
+
+    val multipartUpload = MultipartUpload(S3Location("target-bucket", "target-key"), UUID.randomUUID().toString)
+    val copyPartition = CopyPartition(1, S3Location("source-bucket", "some/source-key"), Some(ByteRange(0, 5242880L)))
+    val multipartCopy = MultipartCopy(multipartUpload, copyPartition)
+
+    val request = HttpRequests.uploadCopyPartRequest(multipartCopy, Some("abcdwxyz"))
+    request.headers should contain(RawHeader("x-amz-copy-source", "/source-bucket/some/source-key?versionId=abcdwxyz"))
+    request.headers should contain(RawHeader("x-amz-copy-source-range", "bytes=0-5242879"))
   }
 }

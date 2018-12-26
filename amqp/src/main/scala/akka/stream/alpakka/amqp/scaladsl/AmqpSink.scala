@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.amqp.scaladsl
 
 import akka.Done
@@ -19,7 +20,7 @@ object AmqpSink {
    * or because of an amqp failure
    */
   def simple(settings: AmqpSinkSettings): Sink[ByteString, Future[Done]] =
-    apply(settings).contramap[ByteString](bytes => OutgoingMessage(bytes, false, false, None))
+    apply(settings).contramap[ByteString](bytes => OutgoingMessage(bytes, false, false))
 
   /**
    * Scala API:
@@ -32,7 +33,7 @@ object AmqpSink {
    * or because of an amqp failure
    */
   def replyTo(settings: AmqpReplyToSinkSettings): Sink[OutgoingMessage, Future[Done]] =
-    Sink.fromGraph(new AmqpReplyToSinkStage(settings))
+    Sink.fromGraph(new impl.AmqpReplyToSinkStage(settings))
 
   /**
    * Scala API:
@@ -45,6 +46,6 @@ object AmqpSink {
    * or because of an amqp failure
    */
   def apply(settings: AmqpSinkSettings): Sink[OutgoingMessage, Future[Done]] =
-    Sink.fromGraph(new AmqpSinkStage(settings))
+    Sink.fromGraph(new impl.AmqpSinkStage(settings))
 
 }

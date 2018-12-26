@@ -1,22 +1,25 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.s3.impl
 
+import java.net.URLEncoder
 import java.time.Instant
 
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
-import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, MediaTypes}
+import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, MediaTypes, Uri}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
 import akka.stream.alpakka.s3.scaladsl.ListBucketResultContents
 
+import scala.util.Try
 import scala.xml.NodeSeq
 
 private[alpakka] object Marshalling {
   import ScalaXmlSupport._
 
   implicit val multipartUploadUnmarshaller: FromEntityUnmarshaller[MultipartUpload] = {
-    nodeSeqUnmarshaller(ContentTypes.`application/octet-stream`) map {
+    nodeSeqUnmarshaller(MediaTypes.`application/xml`, ContentTypes.`application/octet-stream`) map {
       case NodeSeq.Empty => throw Unmarshaller.NoContentException
       case x =>
         MultipartUpload(S3Location((x \ "Bucket").text, (x \ "Key").text), (x \ "UploadId").text)
@@ -28,7 +31,8 @@ private[alpakka] object Marshalling {
       case NodeSeq.Empty => throw Unmarshaller.NoContentException
       case x =>
         CompleteMultipartUploadResult(
-          (x \ "Location").text,
+          Try(Uri((x \ "Location").text))
+            .getOrElse(Uri((x \ "Location").text.split("/").map(s => URLEncoder.encode(s, "utf-8")).mkString("/"))),
           (x \ "Bucket").text,
           (x \ "Key").text,
           (x \ "ETag").text.drop(1).dropRight(1)
@@ -37,15 +41,22 @@ private[alpakka] object Marshalling {
   }
 
   val isTruncated = "IsTruncated"
-  val continuationToken = "NextContinuationToken"
+  val apiV2ContinuationToken = "NextContinuationToken"
 
   implicit val listBucketResultUnmarshaller: FromEntityUnmarshaller[ListBucketResult] = {
     nodeSeqUnmarshaller(MediaTypes.`application/xml` withCharset HttpCharsets.`UTF-8`).map {
       case NodeSeq.Empty => throw Unmarshaller.NoContentException
       case x =>
+        val truncated = (x \ isTruncated).text == "true"
+        val continuation = if (truncated) {
+          Some(x \ apiV2ContinuationToken)
+            .filter(_.nonEmpty)
+            .orElse((x \\ "Contents" \ "Key").lastOption)
+            .map(_.text)
+        } else None
         ListBucketResult(
-          (x \ isTruncated).text == "true",
-          Some(x \ continuationToken).filter(_.nonEmpty).map(_.text),
+          truncated,
+          continuation,
           (x \\ "Contents").map { c =>
             ListBucketResultContents(
               (x \ "Name").text,
@@ -57,6 +68,16 @@ private[alpakka] object Marshalling {
             )
           }
         )
+    }
+  }
+
+  implicit val copyPartResultUnmarshaller: FromEntityUnmarshaller[CopyPartResult] = {
+    nodeSeqUnmarshaller(MediaTypes.`application/xml`, ContentTypes.`application/octet-stream`) map {
+      case NodeSeq.Empty => throw Unmarshaller.NoContentException
+      case x =>
+        val lastModified = Instant.parse((x \ "LastModified").text)
+        val eTag = (x \ "ETag").text
+        CopyPartResult(lastModified, eTag.dropRight(1).drop(1))
     }
   }
 }

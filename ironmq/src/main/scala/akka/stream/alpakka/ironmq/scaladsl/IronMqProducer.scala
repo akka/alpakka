@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.ironmq.scaladsl
 
 import akka.{Done, NotUsed}
@@ -13,20 +14,20 @@ import scala.concurrent.Future
 object IronMqProducer {
 
   /**
-   * This is plain producer [[Flow]] that consume [[PushMessage]] and emit [[Message.Id]] for each produced message.
+   * This is plain producer [[akka.stream.scaladsl.Flow Flow]] that consume [[PushMessage]] and emit [[Message.Id]] for each produced message.
    */
   def producerFlow(queueName: Queue.Name, settings: IronMqSettings): Flow[PushMessage, Message.Id, NotUsed] =
     // The parallelism MUST be 1 to guarantee the order of the messages
     Flow.fromGraph(new IronMqPushStage(queueName, settings)).mapAsync(1)(identity).mapConcat(_.ids)
 
   /**
-   * A plain producer [[Sink]] that consume [[PushMessage]] and push them on IronMq.
+   * A plain producer [[akka.stream.scaladsl.Sink Sink]] that consume [[PushMessage]] and push them on IronMq.
    */
   def producerSink(queueName: Queue.Name, settings: IronMqSettings): Sink[PushMessage, Future[Done]] =
     producerFlow(queueName, settings).toMat(Sink.ignore)(Keep.right)
 
   /**
-   * A [[Committable]] aware producer [[Flow]] that consume [[(PushMessage, Committable)]], push messages on IronMq and
+   * A [[Committable]] aware producer [[akka.stream.scaladsl.Flow Flow]] that consume [[(PushMessage, Committable)]], push messages on IronMq and
    * commit the associated [[Committable]].
    */
   def atLeastOnceProducerFlow(queueName: Queue.Name,
@@ -35,7 +36,7 @@ object IronMqProducer {
     atLeastOnceProducerFlow(queueName, settings, Flow[Committable].mapAsync(1)(_.commit())).map(_._1)
 
   /**
-   * A [[Committable]] aware producer [[Sink]] that consume [[(PushMessage, Committable)]] push messages on IronMq and
+   * A [[Committable]] aware producer [[akka.stream.scaladsl.Sink Sink]] that consume [[(PushMessage, Committable)]] push messages on IronMq and
    * commit the associated [[Committable]].
    */
   def atLeastOnceProducerSink(queueName: Queue.Name,
@@ -43,7 +44,7 @@ object IronMqProducer {
     atLeastOnceProducerFlow(queueName, settings).to(Sink.ignore)
 
   /**
-   * A more generic committable aware producer [[Flow]] that can be used for other committable source, like Kafka. The
+   * A more generic committable aware producer [[akka.stream.scaladsl.Flow Flow]] that can be used for other committable source, like Kafka. The
    * user is responsible to supply the committing flow. The result of the commit is emitted as well as the materialized
    * value of the committing flow.
    */
@@ -69,24 +70,23 @@ object IronMqProducer {
     }
 
     // This graph is used to pass the ToCommit through the commitFlow. Again it assume the commitFlow to have 1-to-1 semantic
-    Flow.fromGraph(GraphDSL.create(producerGraph, commitFlow)(Keep.right) {
-      implicit builder => (producer, committer) =>
-        import GraphDSL.Implicits._
+    Flow.fromGraph(GraphDSL.create(producerGraph, commitFlow)(Keep.right) { implicit builder => (producer, committer) =>
+      import GraphDSL.Implicits._
 
-        val broadcast = builder.add(Broadcast[(Message.Id, ToCommit)](2))
-        val extractMessageId = builder.add(Flow[(Message.Id, ToCommit)].map(_._1))
-        val extractCommittable = builder.add(Flow[(Message.Id, ToCommit)].map(_._2))
-        val zip = builder.add(Zip[Message.Id, CommitResult])
+      val broadcast = builder.add(Broadcast[(Message.Id, ToCommit)](2))
+      val extractMessageId = builder.add(Flow[(Message.Id, ToCommit)].map(_._1))
+      val extractCommittable = builder.add(Flow[(Message.Id, ToCommit)].map(_._2))
+      val zip = builder.add(Zip[Message.Id, CommitResult])
 
-        producer ~> broadcast ~> extractMessageId ~> zip.in0
-        broadcast ~> extractCommittable ~> committer ~> zip.in1
+      producer ~> broadcast ~> extractMessageId ~> zip.in0
+      broadcast ~> extractCommittable ~> committer ~> zip.in1
 
-        FlowShape(producer.in, zip.out)
+      FlowShape(producer.in, zip.out)
     })
   }
 
   /**
-   * A more generic committable aware producer [[Sink]] that can be used for other committable source, like Kafka. The
+   * A more generic committable aware producer [[akka.stream.scaladsl.Sink Sink]] that can be used for other committable source, like Kafka. The
    * user is responsible to supply the committing flow. The materialized value of the committing flow is returned.
    */
   def atLeastOnceProducerSink[ToCommit, CommitResult, CommitMat](

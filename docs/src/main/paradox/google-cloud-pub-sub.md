@@ -1,85 +1,77 @@
 # Google Cloud Pub/Sub
 
-The google cloud pub/sub connector provides a way to connect to google clouds managed pub/sub https://cloud.google.com/pubsub/.
+@@@ note
+Google Cloud Pub/Sub provides many-to-many, asynchronous messaging that decouples senders and receivers.
+
+Further information at the official [Google Cloud documentation website](https://cloud.google.com/pubsub/docs/overview).
+@@@
+
+This connector communicates to Pub/Sub via HTTP requests (i.e. https://pubsub.googleapis.com). For a connector that uses gRPC for the communication, take a look at the alternative @ref[Alpakka Google Cloud Pub/Sub gRPC](google-cloud-pub-sub-grpc.md) connector.
+
+@@project-info{ projectId="google-cloud-pub-sub" }
 
 ## Artifacts
 
-sbt
-:   @@@vars
-    ```scala
-    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-google-cloud-pub-sub" % "$version$"
-    ```
-    @@@
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-google-cloud-pub-sub_$scala.binary.version$
+  version=$project.version$
+}
 
-Maven
-:   @@@vars
-    ```xml
-    <dependency>
-      <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-google-cloud-pub-sub_$scalaBinaryVersion$</artifactId>
-      <version>$version$</version>
-    </dependency>
-    ```
-    @@@
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
 
-Gradle
-:   @@@vars
-    ```gradle
-    dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-google-cloud-pub-sub_$scalaBinaryVersion$", version: "$version$"
-    }
-    ```
-    @@@
-                                                                                                                          
+@@dependencies { projectId="google-cloud-pub-sub" }
+
+
 ## Usage
 
 Prepare your credentials for access to google cloud pub/sub.
 
 Scala
-: @@snip (../../../../google-cloud-pub-sub/src/test/scala/akka/stream/alpakka/googlecloud/pubsub/ExampleUsage.scala) { #init-credentials }
+: @@snip [snip](/google-cloud-pub-sub/src/test/scala/docs/scaladsl/ExampleUsage.scala) { #init-credentials }
 
 Java
-: @@snip (../../../../google-cloud-pub-sub/src/test/java/akka/stream/alpakka/googlecloud/pubsub/ExampleUsageJava.java) { #init-credentials }
+: @@snip [snip](/google-cloud-pub-sub/src/test/java/docs/javadsl/ExampleUsageJava.java) { #init-credentials }
 
 And prepare the actor system and materializer.
 
 Scala
-: @@snip (../../../../google-cloud-pub-sub/src/test/scala/akka/stream/alpakka/googlecloud/pubsub/ExampleUsage.scala) { #init-mat }
+: @@snip [snip](/google-cloud-pub-sub/src/test/scala/docs/scaladsl/ExampleUsage.scala) { #init-mat }
 
 Java
-: @@snip (../../../../google-cloud-pub-sub/src/test/java/akka/stream/alpakka/googlecloud/pubsub/ExampleUsageJava.java) { #init-mat }
+: @@snip [snip](/google-cloud-pub-sub/src/test/java/docs/javadsl/ExampleUsageJava.java) { #init-mat }
 
 To publish a single request, build the message with a base64 data payload and put it in a @scaladoc[PublishRequest](akka.stream.alpakka.googlecloud.pubsub.PublishRequest). Publishing creates a flow taking the messages and returning the accepted message ids.
 
 Scala
-: @@snip (../../../../google-cloud-pub-sub/src/test/scala/akka/stream/alpakka/googlecloud/pubsub/ExampleUsage.scala) { #publish-single }
+: @@snip [snip](/google-cloud-pub-sub/src/test/scala/docs/scaladsl/ExampleUsage.scala) { #publish-single }
 
 Java
-: @@snip (../../../../google-cloud-pub-sub/src/test/java/akka/stream/alpakka/googlecloud/pubsub/ExampleUsageJava.java) { #publish-single }
+: @@snip [snip](/google-cloud-pub-sub/src/test/java/docs/javadsl/ExampleUsageJava.java) { #publish-single }
 
 To get greater performance you can batch messages together, here we send batches with a maximum size of 1000 or at a maximum of 1 minute apart depending on the source.
 
 Scala
-: @@snip (../../../../google-cloud-pub-sub/src/test/scala/akka/stream/alpakka/googlecloud/pubsub/ExampleUsage.scala) { #publish-fast }
+: @@snip [snip](/google-cloud-pub-sub/src/test/scala/docs/scaladsl/ExampleUsage.scala) { #publish-fast }
 
 Java
-: @@snip (../../../../google-cloud-pub-sub/src/test/java/akka/stream/alpakka/googlecloud/pubsub/ExampleUsageJava.java) { #publish-fast }
+: @@snip [snip](/google-cloud-pub-sub/src/test/java/docs/javadsl/ExampleUsageJava.java) { #publish-fast }
 
 To consume the messages from a subscription you must subscribe then acknowledge the received messages. @scaladoc[PublishRequest](akka.stream.alpakka.googlecloud.pubsub.ReceivedMessage)
 
 Scala
-: @@snip (../../../../google-cloud-pub-sub/src/test/scala/akka/stream/alpakka/googlecloud/pubsub/ExampleUsage.scala) { #subscribe }
+: @@snip [snip](/google-cloud-pub-sub/src/test/scala/docs/scaladsl/ExampleUsage.scala) { #subscribe }
 
 Java
-: @@snip (../../../../google-cloud-pub-sub/src/test/java/akka/stream/alpakka/googlecloud/pubsub/ExampleUsageJava.java) { #subscribe }
+: @@snip [snip](/google-cloud-pub-sub/src/test/java/docs/javadsl/ExampleUsageJava.java) { #subscribe }
 
 If you want to automatically acknowledge the messages and send the ReceivedMessages to your own sink you can create a graph.
 
 Scala
-: @@snip (../../../../google-cloud-pub-sub/src/test/scala/akka/stream/alpakka/googlecloud/pubsub/ExampleUsage.scala) { #subscribe-auto-ack }
+: @@snip [snip](/google-cloud-pub-sub/src/test/scala/docs/scaladsl/ExampleUsage.scala) { #subscribe-auto-ack }
 
 Java
-: @@snip (../../../../google-cloud-pub-sub/src/test/java/akka/stream/alpakka/googlecloud/pubsub/ExampleUsageJava.java) { #subscribe-auto-ack }
+: @@snip [snip](/google-cloud-pub-sub/src/test/java/docs/javadsl/ExampleUsageJava.java) { #subscribe-auto-ack }
 
 ## Running the examples
 

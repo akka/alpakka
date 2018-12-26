@@ -1,38 +1,24 @@
-# FTP Connector
+# FTP
 
 The FTP connector provides Akka Stream sources to connect to FTP, FTPs and SFTP servers. Currently, two kinds of sources are provided:
 
-* one for browsing or traversing the server recursively and, 
+* one for browsing or traversing the server recursively and,
 * another for retrieving files as a stream of bytes.
+
+@@project-info{ projectId="ftp" }
 
 ## Artifacts
 
-sbt
-:   @@@vars
-    ```scala
-    libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-ftp" % "$version$"
-    ```
-    @@@
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-ftp_$scala.binary.version$
+  version=$project.version$
+}
 
-Maven
-:   @@@vars
-    ```xml
-    <dependency>
-      <groupId>com.lightbend.akka</groupId>
-      <artifactId>akka-stream-alpakka-ftp_$scalaBinaryVersion$</artifactId>
-      <version>$version$</version>
-    </dependency>
-    ```
-    @@@
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
 
-Gradle
-:   @@@vars
-    ```gradle
-    dependencies {
-      compile group: "com.lightbend.akka", name: "akka-stream-alpakka-ftp_$scalaBinaryVersion$", version: "$version$"
-    }
-    ```
-    @@@
+@@dependencies { projectId="ftp" }
+
 
 ## Usage
 
@@ -41,27 +27,37 @@ Gradle
 In order to establish a connection with the remote server, you need to provide a specialized version of a @scaladoc[RemoteFileSettings](akka.stream.alpakka.ftp.RemoteFileSettings) instance. It's specialized as it depends on the kind of server you're connecting to: FTP, FTPs or SFTP.
 
 Scala
-: @@snip (../../../../ftp/src/test/scala/akka/stream/alpakka/ftp/BaseFtpSpec.scala) { #create-settings }
+: @@snip [snip](/ftp/src/test/scala/docs/scaladsl/scalaExamples.scala) { #create-settings }
 
 Java
-: @@snip (../../../../ftp/src/test/java/akka/stream/alpakka/ftp/FtpStageTest.java) { #create-settings }
+: @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpSettingsExample.java) { #create-settings }
 
 The configuration above will create an anonymous connection with a remote FTP server in passive mode. For both FTPs and SFTP servers, you will need to provide the specialized versions of these settings: @scaladoc[FtpsSettings](akka.stream.alpakka.ftp.RemoteFileSettings$$FtpsSettings) or @scaladoc[SftpSettings](akka.stream.alpakka.ftp.RemoteFileSettings$$SftpSettings)
 respectively.
 
+The example demonstrates optional use of `configureConnection` option available on FTP and FTPs clients. Use it to configure any custom parameters the server may require, such as explicit or implicit data transfer encryption.
+
 For non-anonymous connection, please provide an instance of @scaladoc[NonAnonFtpCredentials](akka.stream.alpakka.ftp.FtpCredentials$$NonAnonFtpCredentials) instead.
 
 For connection using a private key, please provide an instance of @scaladoc[SftpIdentity](akka.stream.alpakka.ftp.SftpIdentity) to @scaladoc[SftpSettings](akka.stream.alpakka.ftp.RemoteFileSettings$$SftpSettings).
+
+In order to use a custom SSH client for SFTP please provide an instance of @scaladoc[SSHClient](net.schmizz.sshj.SSHClient).
+
+Scala
+: @@snip [snip](/ftp/src/test/scala/docs/scaladsl/scalaExamples.scala) { #configure-custom-ssh-client }
+
+Java
+: @@snip [snip](/ftp/src/test/java/docs/javadsl/ConfigureCustomSSHClient.java) { #configure-custom-ssh-client }
 
 ### Traversing a remote FTP folder recursively
 
 In order to traverse a remote folder recursively, you need to use the `ls` method in the FTP API:
 
 Scala
-: @@snip (../../../../ftp/src/test/scala/akka/stream/alpakka/ftp/BaseFtpSpec.scala) { #traversing }
+: @@snip [snip](/ftp/src/test/scala/docs/scaladsl/scalaExamples.scala) { #traversing }
 
 Java
-: @@snip (../../../../ftp/src/test/java/akka/stream/alpakka/ftp/FtpStageTest.java) { #traversing }
+: @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpTraversingExample.java) { #traversing }
 
 This source will emit @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) elements with no significant materialization.
 
@@ -72,12 +68,12 @@ For both FTPs and SFTP servers, you will need to use the `FTPs` and `SFTP` API r
 In order to retrieve a remote file as a stream of bytes, you need to use the `fromPath` method in the FTP API:
 
 Scala
-: @@snip (../../../../ftp/src/test/scala/akka/stream/alpakka/ftp/BaseFtpSpec.scala) { #retrieving }
+: @@snip [snip](/ftp/src/test/scala/docs/scaladsl/scalaExamples.scala) { #retrieving }
 
 Java
-: @@snip (../../../../ftp/src/test/java/akka/stream/alpakka/ftp/FtpStageTest.java) { #retrieving }
+: @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpRetrievingExample.java) { #retrieving }
 
-This source will emit @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @extref[CompletionStage](java-api:java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
+This source will emit @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 
 For both FTPs and SFTP servers, you will need to use the `FTPs` and `SFTP` API respectively.
 
@@ -86,14 +82,48 @@ For both FTPs and SFTP servers, you will need to use the `FTPs` and `SFTP` API r
 In order to store a remote file from a stream of bytes, you need to use the `toPath` method in the FTP API:
 
 Scala
-: @@snip (../../../../ftp/src/test/scala/akka/stream/alpakka/ftp/BaseFtpSpec.scala) { #storing }
+: @@snip [snip](/ftp/src/test/scala/docs/scaladsl/scalaExamples.scala) { #storing }
 
 Java
-: @@snip (../../../../ftp/src/test/java/akka/stream/alpakka/ftp/FtpStageTest.java) { #storing }
+: @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpWritingExample.java) { #storing }
 
-This sink will consume @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @extref[CompletionStage](java-api:java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
+This sink will consume @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 
 For both FTPs and SFTP servers, you will need to use the `FTPs` and `SFTP` API respectively.
+
+### Removing files
+
+In order to remove a remote file, you need to use the `remove` method in the FTP API:
+
+Scala
+: @@snip [snip](/ftp/src/test/scala/docs/scaladsl/scalaExamples.scala) { #removing }
+
+Java
+: @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpRemovingExample.java) { #removing }
+
+This sink will consume @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
+
+### Moving files
+
+In order to move a remote file, you need to use the `move` method in the FTP API. The `move` method takes a function to calculate the path to which the file should be moved based on the consumed @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile).   
+
+Scala
+: @@snip [snip](/ftp/src/test/scala/docs/scaladsl/scalaExamples.scala) { #moving }
+
+Java
+: @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpMovingExample.java) { #moving }
+
+This sink will consume @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
+
+Typical use-case for this would be listing files from a ftp location, do some processing and move the files when done. An example of this use case can be found below.
+
+### Example: downloading files from an FTP location and move the original files  
+
+Scala
+: @@snip [snip](/ftp/src/test/scala/docs/scaladsl/scalaExamples.scala) { #processAndMove }
+
+Java
+: @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpProcessAndMoveExample.java) { #processAndMove }
 
 ### Running the example code
 

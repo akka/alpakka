@@ -1,15 +1,29 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.kinesis
 
 import java.util.Date
+import java.util.concurrent.TimeUnit
 
 import com.amazonaws.services.kinesis.model.ShardIteratorType
 
 import scala.concurrent.duration.FiniteDuration
 
 object ShardSettings {
+
+  /**
+   * Java API: Create settings using the default configuration
+   */
+  def create(streamName: String, shardId: String): ShardSettings =
+    ShardSettings(streamName,
+                  shardId,
+                  ShardIteratorType.LATEST,
+                  None,
+                  None,
+                  FiniteDuration.apply(1L, TimeUnit.SECONDS),
+                  500);
 
   /**
    * Java API: Create settings using the default configuration
@@ -62,4 +76,21 @@ case class ShardSettings(streamName: String,
     case ShardIteratorType.AT_TIMESTAMP => require(atTimestamp.nonEmpty)
     case _ => ()
   }
+
+  def withShardIteratorType(shardIteratorType: ShardIteratorType): ShardSettings =
+    copy(shardIteratorType = shardIteratorType)
+
+  def withStartingSequenceNumber(startingSequenceNumber: String): ShardSettings =
+    copy(startingSequenceNumber = Option(startingSequenceNumber))
+
+  def withAtTimestamp(atTimestamp: java.util.Date): ShardSettings = copy(atTimestamp = Option(atTimestamp))
+
+  def withAtTimestamp(atTimestamp: java.time.ZonedDateTime): ShardSettings =
+    copy(atTimestamp = Option(java.util.Date.from(atTimestamp.toInstant)))
+
+  def withRefreshInterval(refreshInterval: Long, unit: TimeUnit): ShardSettings =
+    copy(refreshInterval = FiniteDuration(refreshInterval, unit))
+
+  def withLimit(limit: Int): ShardSettings = copy(limit = limit)
+
 }
