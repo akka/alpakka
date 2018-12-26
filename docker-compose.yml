@@ -4,27 +4,39 @@
 
 version: '2'
 services:
-  cassandra:
-    image: cassandra:3
+  amazonsns:
+    image: pafortin/goaws
     ports:
-      - "9042:9042"
-  rabbitmq:
+      - "4100:4100"
+    volumes:
+    - ./sns/src/test/travis/:/conf/
+  amqp:
     image: rabbitmq:3
     ports:
       - "5672:5672"
-  mqtt:
-    image: toke/mosquitto
+  cassandra:
+    image: cassandra:3.0.15
     ports:
-      - "1883:1883"
-    volumes:
-      - ./mqtt/src/test/travis:/mqtt/config/conf.d
+      - "9042:9042"
+  couchbase:
+    image: couchbase:community-5.1.1
+    ports:
+    - "8091-8094:8091-8094"
+    - "11210:11210"
+  orientdb:
+    image: orientdb:3.0.4
+    ports:
+      - "2424:2424"
+    environment:
+      - "ORIENTDB_ROOT_PASSWORD=root"
+    command: /orientdb/bin/server.sh -Dmemory.chunk.size=268435456
   dynamodb:
     image: deangiberson/aws-dynamodb-local
     ports:
       - "8001:8000"
   geode:
     container_name: geode
-    image: apachegeode/geode:1.2.0
+    image: apachegeode/geode:1.8.0
     hostname: geode
     mem_limit: 2g
     expose:
@@ -42,6 +54,26 @@ services:
     volumes:
       - ./geode/scripts/:/scripts/
     command: /scripts/geode.sh
+  gcloud-pubsub-emulator:
+    image: bigtruedata/gcloud-pubsub-emulator
+    ports:
+      - "8538:8538"
+    command: start --host-port=0.0.0.0:8538 --data-dir=/data
+  gcloud-pubsub-client:
+    image: martynas/gcloud-pubsub-client
+    links:
+      - "gcloud-pubsub-emulator"
+    environment:
+      - "PUBSUB_PROJECT_ID=alpakka"
+      - "PUBSUB_EMULATOR_HOST=gcloud-pubsub-emulator:8538"
+    entrypoint: ""
+    command: >
+      bash -c "
+        python publisher.py alpakka create simpleTopic &&
+        python subscriber.py alpakka create simpleTopic simpleSubscription
+        python publisher.py alpakka create testTopic &&
+        python subscriber.py alpakka create testTopic testSubscription
+      "
   ironauth:
     image: iron/auth
     ports:
@@ -54,4 +86,39 @@ services:
       - "AUTH_HOST=http://ironauth:8090"
     ports:
       - "8080:8080"
-
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+  mqtt:
+    image: toke/mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mqtt/src/test/travis:/mqtt/config/conf.d
+  kudu-master-data:
+    image: kunickiaj/kudu
+    volumes:
+      - /var/lib/kudu/master
+  kudu-tserver-data:
+    image: kunickiaj/kudu
+    volumes:
+      - /var/lib/kudu/tserver
+  kudu-master:
+    image: kunickiaj/kudu
+    ports:
+      - 7051:7051
+    volumes_from:
+      - kudu-master-data
+    command: master
+  kudu-tserver:
+    image: kunickiaj/kudu
+    environment:
+      - KUDU_MASTER=kudu-master
+    ports:
+      - 7050:7050
+    volumes_from:
+      - kudu-tserver-data
+    command: tserver
+    links:
+      - kudu-master

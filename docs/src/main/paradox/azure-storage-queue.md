@@ -1,8 +1,23 @@
-# Azure Storage Queue Connector
+# Azure Storage Queue
 
 The Azure Storage Queue connector provides an Akka Stream Source and Sinks for Azure Storage Queue integration.
 
-Azure Storage Queue is a queuing service similar to Amazon's SQS. It is designed mostly for long-running and non-time-critical tasks. For more information on Azure Storage Queue see the [official docs](https://azure.microsoft.com/en-us/services/storage/queues/).
+Azure Storage Queue is a queuing service similar to Amazon's SQS. It is designed mostly for long-running and non-time-critical tasks. For more information on Azure Storage Queue see the [Azure docs](https://azure.microsoft.com/en-us/services/storage/queues/).
+
+@@project-info{ projectId="azure-storage-queue" }
+
+### Artifacts
+
+@@dependency [sbt,Maven,Gradle] {
+  group=com.lightbend.akka
+  artifact=akka-stream-alpakka-azure-storage-queue_$scala.binary.version$
+  version=$project.version$
+}
+
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="azure-storage-queue" }
+
 
 ## Example usage
 

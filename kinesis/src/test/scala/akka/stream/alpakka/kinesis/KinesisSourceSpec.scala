@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.kinesis
 
 import java.util
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.stream.alpakka.kinesis.KinesisSourceErrors.NoShardsError
 import akka.stream.alpakka.kinesis.scaladsl.KinesisSource
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
@@ -62,7 +62,7 @@ class KinesisSourceSpec extends WordSpecLike with Matchers with DefaultTestConte
       probe.request(2)
       probe.expectNext().utf8String shouldEqual "1"
       probe.expectNext().utf8String shouldEqual "2"
-      probe.expectNoMsg()
+      probe.expectNoMessage(1.second)
     }
 
     "wait for request before passing downstream" in new KinesisSpecContext with WithGetShardIteratorSuccess
@@ -82,7 +82,7 @@ class KinesisSourceSpec extends WordSpecLike with Matchers with DefaultTestConte
 
       probe.request(1)
       probe.expectNext().utf8String shouldEqual "1"
-      probe.expectNoMsg
+      probe.expectNoMessage(1.second)
       probe.requestNext().utf8String shouldEqual "2"
       probe.requestNext().utf8String shouldEqual "3"
       probe.requestNext().utf8String shouldEqual "4"
@@ -130,7 +130,7 @@ class KinesisSourceSpec extends WordSpecLike with Matchers with DefaultTestConte
     with WithGetRecordsFailure {
       val probe = KinesisSource.basic(shardSettings, amazonKinesisAsync).runWith(TestSink.probe)
       probe.request(1)
-      probe.expectError() shouldBe an[KinesisSourceErrors.GetRecordsError.type]
+      probe.expectError() shouldBe an[KinesisErrors.GetRecordsError.type]
     }
   }
 
@@ -202,5 +202,4 @@ class KinesisSourceSpec extends WordSpecLike with Matchers with DefaultTestConte
       }
     })
   }
-
 }

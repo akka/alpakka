@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.hbase.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.hbase.HTableSettings
 import akka.stream.scaladsl.{Sink, Source}
-import org.apache.hadoop.hbase.client.Put
+import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.scalatest.{Matchers, WordSpec}
@@ -21,19 +22,67 @@ import scala.util.{Failure, Success}
 
 class HBaseStageSpec extends WordSpec with Matchers {
 
-  implicit def toBytes(string: String): Array[Byte] = Bytes.toBytes(string)
+  val hbaseIT: Option[String] = sys.env.get("HBASE_TEST")
 
+  //#create-converter-put
+  implicit def toBytes(string: String): Array[Byte] = Bytes.toBytes(string)
   case class Person(id: Int, name: String)
 
-  val hbaseIT = sys.env.get("HBASE_TEST")
-
-  //#create-converter
-  val hBaseConverter: Person => Put = { person =>
+  val hBaseConverter: Person => immutable.Seq[Mutation] = { person =>
     val put = new Put(s"id_${person.id}")
     put.addColumn("info", "name", person.name)
-    put
+    List(put)
   }
-  //#create-converter
+  //#create-converter-put
+
+  //#create-converter-append
+  val appendHBaseConverter: Person => immutable.Seq[Mutation] = { person =>
+    // Append to a cell
+    val append = new Append(s"id_${person.id}")
+    append.add("info", "aliases", person.name)
+    List(append)
+  }
+  //#create-converter-append
+
+  //#create-converter-delete
+  val deleteHBaseConverter: Person => immutable.Seq[Mutation] = { person =>
+    // Delete the specified row
+    val delete = new Delete(s"id_${person.id}")
+    List(delete)
+  }
+  //#create-converter-delete
+
+  //#create-converter-increment
+  val incrementHBaseConverter: Person => immutable.Seq[Mutation] = { person =>
+    // Increment a cell value
+    val increment = new Increment(s"id_${person.id}")
+    increment.addColumn("info", "numberOfChanges", 1)
+    List(increment)
+  }
+  //#create-converter-increment
+
+  //#create-converter-complex
+  val mutationsHBaseConverter: Person => immutable.Seq[Mutation] = { person =>
+    if (person.id != 0) {
+      if (person.name.isEmpty) {
+        // Delete the specified row
+        val delete = new Delete(s"id_${person.id}")
+        List(delete)
+      } else {
+        // Insert or update a row
+        val put = new Put(s"id_${person.id}")
+        put.addColumn("info", "name", person.name)
+
+        val increment = new Increment(s"id_${person.id}")
+        increment.addColumn("info", "numberOfChanges", 1)
+
+        List(put, increment)
+      }
+    } else {
+      List.empty
+    }
+  }
+  //#create-converter-complex
 
   //#create-settings
   val tableSettings =
@@ -43,8 +92,8 @@ class HBaseStageSpec extends WordSpec with Matchers {
     "HBase stages " must {
 
       "sinks in hbase" in {
-        implicit val actorSystem = ActorSystem("reactiveStreams")
-        implicit val materilizer = ActorMaterializer()
+        implicit val actorSystem: ActorSystem = ActorSystem("reactiveStreams")
+        implicit val materilizer: ActorMaterializer = ActorMaterializer()
 
         //#sink
         val sink = HTableStage.sink[Person](tableSettings)
@@ -52,18 +101,15 @@ class HBaseStageSpec extends WordSpec with Matchers {
         val f = Source(1 to 10).map(i => Person(i, s"zozo_$i")).runWith(sink)
         //#sink
 
-        f.onComplete {
-          case e =>
-            actorSystem.terminate()
-        }
+        f.onComplete(e => actorSystem.terminate())
 
         Await.ready(f, Duration.Inf)
 
       }
 
       "flows through hbase" in {
-        implicit val actorSystem = ActorSystem("reactiveStreams")
-        implicit val materilizer = ActorMaterializer()
+        implicit val actorSystem: ActorSystem = ActorSystem("reactiveStreams")
+        implicit val materilizer: ActorMaterializer = ActorMaterializer()
 
         //#flow
         val flow = HTableStage.flow[Person](tableSettings)

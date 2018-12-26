@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.dynamodb
 
 import com.amazonaws.services.dynamodbv2.model._
@@ -18,6 +19,12 @@ trait TestOps {
   def keyMap(hash: String, sort: Int): Map[String, AttributeValue] = Map(
     keyCol -> S(hash),
     sortCol -> N(sort)
+  )
+
+  def keyEQ(hash: String): Map[String, Condition] = Map(
+    keyCol -> new Condition()
+      .withComparisonOperator(ComparisonOperator.EQ)
+      .withAttributeValueList(S(hash))
   )
 
   object common {
@@ -75,6 +82,11 @@ object ItemSpecOps extends TestOps {
     ).asJava
   )
 
+  val queryItemsRequest = new QueryRequest()
+    .withTableName(tableName)
+    .withKeyConditions(keyEQ("B").asJava)
+    .withLimit(1)
+
   val deleteItemRequest = new DeleteItemRequest().withTableName(tableName).withKey(keyMap("A", 0).asJava)
 
   def test7PutItemRequest(n: Int) =
@@ -106,6 +118,13 @@ object TableSpecOps extends TestOps {
     .withTableName(tableName)
     .withProvisionedThroughput(
       new ProvisionedThroughput().withWriteCapacityUnits(newMaxLimit).withReadCapacityUnits(newMaxLimit)
+    )
+
+  val describeTimeToLiveRequest = new DescribeTimeToLiveRequest()
+  val updateTimeToLiveRequest = new UpdateTimeToLiveRequest()
+    .withTableName(tableName)
+    .withTimeToLiveSpecification(
+      new TimeToLiveSpecification().withAttributeName("expires").withEnabled(true)
     )
 
   val deleteTableRequest = common.deleteTableRequest

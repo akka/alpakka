@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.ftp;
 
 import akka.NotUsed;
@@ -12,8 +13,10 @@ import akka.util.ByteString;
 import org.junit.Test;
 import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
-public class StrictHostCheckingSftpSourceTest extends SftpSupportImpl implements CommonFtpStageTest {
+public class StrictHostCheckingSftpSourceTest extends SftpSupportImpl
+    implements CommonFtpStageTest {
 
   @Test
   public void listFiles() throws Exception {
@@ -37,18 +40,26 @@ public class StrictHostCheckingSftpSourceTest extends SftpSupportImpl implements
     return Sftp.toPath(path, settings());
   }
 
+  public Sink<FtpFile, CompletionStage<IOResult>> getRemoveSink() throws Exception {
+    return Sftp.remove(settings());
+  }
+
+  public Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(
+      Function<FtpFile, String> destinationPath) throws Exception {
+    return Sftp.move(destinationPath, settings());
+  }
+
   private SftpSettings settings() throws Exception {
-    //#create-settings
-    final SftpSettings settings = SftpSettings.create(InetAddress.getByName("localhost"))
+    final SftpSettings settings =
+        SftpSettings.create(InetAddress.getByName("localhost"))
             .withPort(getPort())
-            .withCredentials(new FtpCredentials.NonAnonFtpCredentials("different user and password", "will fail password auth"))
+            .withCredentials(
+                FtpCredentials.create("different user and password", "will fail password auth"))
             .withStrictHostKeyChecking(true) // strictHostKeyChecking
             .withKnownHosts(getKnownHostsFile().getPath())
             .withSftpIdentity(
-                    SftpIdentity.createFileSftpIdentity(
-                            getClientPrivateKeyFile().getPath(),
-                            CLIENT_PRIVATE_KEY_PASSPHRASE));
-    //#create-settings
+                SftpIdentity.createFileSftpIdentity(
+                    getClientPrivateKeyFile().getPath(), CLIENT_PRIVATE_KEY_PASSPHRASE));
     return settings;
   }
 }

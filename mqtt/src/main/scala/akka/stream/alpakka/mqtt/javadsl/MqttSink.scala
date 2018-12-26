@@ -1,21 +1,32 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.mqtt.javadsl
 
 import java.util.concurrent.CompletionStage
 
 import akka.Done
-import akka.stream.alpakka.mqtt.{MqttConnectionSettings, MqttMessage, MqttQoS}
+import akka.stream.alpakka.mqtt._
+import akka.stream.javadsl.{Keep, Sink}
 
+/**
+ * Java API
+ *
+ * MQTT sink factory.
+ */
 object MqttSink {
 
   /**
-   * Java API: create an [[MqttSink]] for a provided QoS.
+   * Create a sink sending messages to MQTT.
+   *
+   * The materialized value completes on stream completion.
+   *
+   * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
   def create(connectionSettings: MqttConnectionSettings,
-             qos: MqttQoS): akka.stream.javadsl.Sink[MqttMessage, CompletionStage[Done]] = {
-    import scala.compat.java8.FutureConverters._
-    akka.stream.alpakka.mqtt.scaladsl.MqttSink.apply(connectionSettings, qos).mapMaterializedValue(_.toJava).asJava
-  }
+             defaultQos: MqttQoS): Sink[MqttMessage, CompletionStage[Done]] =
+    MqttFlow
+      .atMostOnce(connectionSettings, MqttSubscriptions.empty, bufferSize = 0, defaultQos)
+      .toMat(Sink.ignore[MqttMessage], Keep.right[CompletionStage[Done], CompletionStage[Done]])
 }

@@ -1,24 +1,55 @@
-# Alpakka
+# Alpakka Documentation
 
-Welcome to the home of the Alpakka initiative, which harbours various Akka Streams connectors, integration patterns,
-and data transformations for integration use cases. Here you can find documentation of the components that are
-part of this project as well as links to components that are maintained by other projects.
+The [Alpakka project](https://developer.lightbend.com/docs/alpakka/current/) is an open source initiative to implement stream-aware and reactive integration pipelines for Java and Scala. It is built on top of [Akka Streams](https://doc.akka.io/docs/akka/current/stream/index.html), and has been designed from the ground up to understand streaming natively and provide a DSL for reactive and stream-oriented programming, with built-in support for backpressure. Akka Streams is a [Reactive Streams](https://www.reactive-streams.org/) and JDK 9+ [java.util.concurrent.Flow](https://docs.oracle.com/javase/10/docs/api/java/util/concurrent/Flow.html)-compliant implementation and therefore [fully interoperable](https://doc.akka.io/docs/akka/current/general/stream/stream-design.html#interoperation-with-other-reactive-streams-implementations) with other implementations.
 
-The code in this documentation is compiled against
-
-* Alpakka $version$ ([Github](https://github.com/akka/alpakka))
-* Scala $scalaBinaryVersion$
-* Akka Streams $akkaVersion$ (@extref[Docs Scala](akka-docs:scala/stream/index.html), @extref[Docs Java](akka-docs:java/stream/index.html), [Github](https://github.com/akka/akka))
-* Akka Http $akkaHttpVersion$ (@extref[Docs Scala](akka-http-docs:scala.html), @extref[Docs Java](akka-http-docs:java.html), [Github](https://github.com/akka/akka-http))
-
-
-@@ toc { .main depth=2 }
+@@toc { depth=2 }
 
 @@@ index
 
-* [Connectors](connectors.md)
-* [External connectors](external-connectors.md) (hosted separately)
-* [Integration Patterns](patterns.md)
+* [overview](overview.md)
 * [Data Transformations](data-transformations/index.md)
+* [AMQP](amqp.md)
+* [Apache Camel](external/apache-camel.md)
+* [Apache Cassandra](cassandra.md)
+* [Apache Geode](geode.md)
+* [Apache Kafka](kafka.md)
+* [Apache Kudu](kudu.md)
+* [Apache Solr](solr.md)
+* [Avro Parquet](avroparquet.md)
+* [AWS DynamoDB](dynamodb.md)
+* [AWS Kinesis](kinesis.md)
+* [AWS Lambda](awslambda.md)
+* [AWS S3](s3.md)
+* [AWS SNS](sns.md)
+* [AWS SQS](sqs.md)
+* [Azure Event Hubs](external/azure-event-hubs.md)
+* [Azure IoT Hub](external/azure-iot-hub.md)
+* [Azure Storage Queue](azure-storage-queue.md)
+* [Couchbase](couchbase.md)
+* [Elasticsearch](elasticsearch.md)
+* [Eventuate](external/eventuate.md)
+* [File](file.md)
+* [FS2](external/fs2.md)
+* [FTP](ftp.md)
+* [Google Cloud Pub/Sub](google-cloud-pub-sub.md)
+* [Google Cloud Pub/Sub gRPC](google-cloud-pub-sub-grpc.md)
+* [Google Firebase Cloud Messaging](google-fcm.md)
+* [gRPC](external/grpc.md)
+* [Hadoop Distributed File System](hdfs.md)
+* [HBase](hbase.md)
+* [HTTP](external/http.md)
+* [IronMQ](ironmq.md)
+* [JMS](jms/index.md)
+* [MongoDB](mongodb.md)
+* [MQTT](mqtt.md)
+* [MQTT Streaming](mqtt-streaming.md)
+* [OrientDB](orientdb.md)
+* [Pulsar](external/pulsar.md)
+* [Server-sent Events (SSE)](sse.md)
+* [Slick (JDBC)](slick.md)
+* [Spring Web](spring-web.md)
+* [TCP](external/tcp.md)
+* [UDP](udp.md)
+* [Unix Domain Sockets](unix-domain-socket.md)
 
 @@@

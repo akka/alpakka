@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.ironmq
 
 import akka.Done
@@ -28,8 +29,7 @@ object IronMqPullStage {
  *
  * Keep in mind that the IronMq time unit is the second, so any value below the second is considered 0.
  */
-class IronMqPullStage(queue: Queue.Name, settings: IronMqSettings)
-    extends GraphStage[SourceShape[CommittableMessage]] {
+class IronMqPullStage(queue: Queue.Name, settings: IronMqSettings) extends GraphStage[SourceShape[CommittableMessage]] {
 
   import IronMqPullStage._
 

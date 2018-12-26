@@ -1,15 +1,23 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.ftp
 package impl
 
 import net.schmizz.sshj.SSHClient
-import org.apache.commons.net.ftp.FTPClient
+import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
+
 import scala.collection.immutable
 import scala.util.Try
 import java.io.{InputStream, OutputStream}
 
+import akka.annotation.InternalApi
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
 protected[ftp] trait FtpLike[FtpClient, S <: RemoteFileSettings] {
 
   type Handler
@@ -25,10 +33,19 @@ protected[ftp] trait FtpLike[FtpClient, S <: RemoteFileSettings] {
   def retrieveFileInputStream(name: String, handler: Handler): Try[InputStream]
 
   def storeFileOutputStream(name: String, handler: Handler, append: Boolean): Try[OutputStream]
+
+  def move(fromPath: String, destinationPath: String, handler: Handler): Unit
+
+  def remove(path: String, handler: Handler): Unit
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 object FtpLike {
   // type class instances
-  implicit val ftpLikeInstance = new FtpLike[FTPClient, FtpFileSettings] with FtpOperations
+  implicit val ftpLikeInstance = new FtpLike[FTPClient, FtpSettings] with FtpOperations
+  implicit val ftpsLikeInstance = new FtpLike[FTPSClient, FtpsSettings] with FtpsOperations
   implicit val sFtpLikeInstance = new FtpLike[SSHClient, SftpSettings] with SftpOperations
 }

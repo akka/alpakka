@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.hbase.javadsl;
 
 import akka.Done;
@@ -14,10 +15,10 @@ import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -28,87 +29,174 @@ import scala.concurrent.duration.Duration;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
-/**
- * Created by olivier.nouguier@gmail.com on 27/11/2016.
- */
+/** Created by olivier.nouguier@gmail.com on 27/11/2016. */
 @Ignore
 public class HBaseStageTest {
 
-    static ActorSystem system;
-    static Materializer materializer;
+  private static ActorSystem system;
+  private static Materializer materializer;
 
-    @BeforeClass
-    public static void setup() {
-        system = ActorSystem.create();
-        materializer = ActorMaterializer.create(system);
-    }
+  @BeforeClass
+  public static void setup() {
+    system = ActorSystem.create();
+    materializer = ActorMaterializer.create(system);
+  }
 
-    @AfterClass
-    public static void teardown() {
-        JavaTestKit.shutdownActorSystem(system);
-    }
+  @AfterClass
+  public static void teardown() {
+    TestKit.shutdownActorSystem(system);
+  }
 
-    //#create-converter
-    Function<Person, Put> hBaseConverter = person -> {
-        Put put = null;
+  // #create-converter-put
+  Function<Person, List<Mutation>> hBaseConverter =
+      person -> {
         try {
-            put = new Put(String.format("id_%d", person.id).getBytes("UTF-8"));
-            put.addColumn("info".getBytes("UTF-8"), "name".getBytes("UTF-8"), person.name.getBytes("UTF-8"));
+          Put put = new Put(String.format("id_%d", person.id).getBytes("UTF-8"));
+          put.addColumn(
+              "info".getBytes("UTF-8"), "name".getBytes("UTF-8"), person.name.getBytes("UTF-8"));
+
+          return Collections.singletonList(put);
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+          e.printStackTrace();
+          return Collections.emptyList();
         }
-        return put;
-    };
-    //#create-converter
+      };
+  // #create-converter-put
 
+  // #create-converter-append
+  Function<Person, List<Mutation>> appendHBaseConverter =
+      person -> {
+        try {
+          Append append = new Append(String.format("id_%d", person.id).getBytes("UTF-8"));
+          append.add(
+              "info".getBytes("UTF-8"), "aliases".getBytes("UTF-8"), person.name.getBytes("UTF-8"));
 
-    @Test
-    public void sink() throws ExecutionException, InterruptedException, TimeoutException {
+          return Collections.singletonList(append);
+        } catch (UnsupportedEncodingException e) {
+          e.printStackTrace();
+          return Collections.emptyList();
+        }
+      };
+  // #create-converter-append
 
-        //#create-settings
-        HTableSettings<Person> tableSettings = HTableSettings.create(HBaseConfiguration.create(), TableName.valueOf("person1"), Arrays.asList("info"), hBaseConverter);
-        //#create-settings
+  // #create-converter-delete
+  Function<Person, List<Mutation>> deleteHBaseConverter =
+      person -> {
+        try {
+          Delete delete = new Delete(String.format("id_%d", person.id).getBytes("UTF-8"));
 
-        //#sink
-        final Sink<Person, scala.concurrent.Future<Done>> sink = HTableStage.sink(tableSettings);
-        Future<Done> o = Source.from(Arrays.asList(100, 101, 102, 103, 104)).map((i) -> new Person(i, String.format("name %d", i))).runWith(sink, materializer);
-        //#sink
+          return Collections.singletonList(delete);
+        } catch (UnsupportedEncodingException e) {
+          e.printStackTrace();
+          return Collections.emptyList();
+        }
+      };
+  // #create-converter-delete
 
-        Await.ready(o, Duration.Inf());
+  // #create-converter-increment
+  Function<Person, List<Mutation>> incrementHBaseConverter =
+      person -> {
+        try {
+          Increment increment = new Increment(String.format("id_%d", person.id).getBytes("UTF-8"));
+          increment.addColumn("info".getBytes("UTF-8"), "numberOfChanges".getBytes("UTF-8"), 1);
 
+          return Collections.singletonList(increment);
+        } catch (UnsupportedEncodingException e) {
+          e.printStackTrace();
+          return Collections.emptyList();
+        }
+      };
+  // #create-converter-increment
 
-    }
+  // #create-converter-complex
+  Function<Person, List<Mutation>> complexHBaseConverter =
+      person -> {
+        try {
+          byte[] id = String.format("id_%d", person.id).getBytes("UTF-8");
+          byte[] infoFamily = "info".getBytes("UTF-8");
 
-    @Test
-    public void flow() throws ExecutionException, InterruptedException {
+          if (person.id != 0 && person.name.isEmpty()) {
+            Delete delete = new Delete(id);
+            return Collections.singletonList(delete);
+          } else if (person.id != 0) {
+            Put put = new Put(id);
+            put.addColumn(infoFamily, "name".getBytes("UTF-8"), person.name.getBytes("UTF-8"));
 
-        HTableSettings<Person> tableSettings = HTableSettings.create(HBaseConfiguration.create(), TableName.valueOf("person2"), Arrays.asList("info"), hBaseConverter);
+            Increment increment = new Increment(id);
+            increment.addColumn(infoFamily, "numberOfChanges".getBytes("UTF-8"), 1);
 
-        //#flow
-        Flow<Person, Person, NotUsed> flow = HTableStage.flow(tableSettings);
-        Pair<NotUsed, CompletionStage<List<Person>>> run = Source.from(Arrays.asList(200, 201, 202, 203, 204)).map((i)
-                -> new Person(i, String.format("name_%d", i))).via(flow).toMat(Sink.seq(), Keep.both()).run(materializer);
-        //#flow
+            return Arrays.asList(put, increment);
+          } else {
+            return Collections.emptyList();
+          }
+        } catch (UnsupportedEncodingException e) {
+          e.printStackTrace();
+          return Collections.emptyList();
+        }
+      };
+  // #create-converter-complex
 
-        run.second().toCompletableFuture().get();
+  @Test
+  public void sink() throws InterruptedException, TimeoutException {
 
-    }
+    // #create-settings
+    HTableSettings<Person> tableSettings =
+        HTableSettings.create(
+            HBaseConfiguration.create(),
+            TableName.valueOf("person1"),
+            Collections.singletonList("info"),
+            hBaseConverter);
+    // #create-settings
 
+    // #sink
+    final Sink<Person, scala.concurrent.Future<Done>> sink = HTableStage.sink(tableSettings);
+    Future<Done> o =
+        Source.from(Arrays.asList(100, 101, 102, 103, 104))
+            .map((i) -> new Person(i, String.format("name %d", i)))
+            .runWith(sink, materializer);
+    // #sink
+
+    Await.ready(o, Duration.Inf());
+  }
+
+  @Test
+  public void flow() throws ExecutionException, InterruptedException {
+
+    HTableSettings<Person> tableSettings =
+        HTableSettings.create(
+            HBaseConfiguration.create(),
+            TableName.valueOf("person2"),
+            Collections.singletonList("info"),
+            hBaseConverter);
+
+    // #flow
+    Flow<Person, Person, NotUsed> flow = HTableStage.flow(tableSettings);
+    Pair<NotUsed, CompletionStage<List<Person>>> run =
+        Source.from(Arrays.asList(200, 201, 202, 203, 204))
+            .map((i) -> new Person(i, String.format("name_%d", i)))
+            .via(flow)
+            .toMat(Sink.seq(), Keep.both())
+            .run(materializer);
+    // #flow
+
+    run.second().toCompletableFuture().get();
+  }
 }
 
 class Person {
 
-    int id;
-    String name;
+  int id;
+  String name;
 
-    public Person(int i, String name) {
-        this.id = i;
-        this.name = name;
-    }
+  public Person(int i, String name) {
+    this.id = i;
+    this.name = name;
+  }
 }

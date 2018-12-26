@@ -1,27 +1,26 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.s3.auth
 
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-
-import org.scalatest.FlatSpecLike
-import org.scalatest.Matchers
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.Millis
-import org.scalatest.time.Seconds
-import org.scalatest.time.Span
+import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpMethods
-import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.headers.Host
-import akka.http.scaladsl.model.headers.RawHeader
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
+import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
+import akka.http.scaladsl.model.headers.{Host, RawHeader}
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
+import com.amazonaws.auth
+import com.amazonaws.auth.{
+  AWSCredentialsProvider,
+  AWSStaticCredentialsProvider,
+  BasicAWSCredentials,
+  BasicSessionCredentials
+}
+import org.scalatest.{FlatSpecLike, Matchers}
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{Millis, Seconds, Span}
 
 class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLike with Matchers with ScalaFutures {
   def this() = this(ActorSystem("SignerSpec"))
@@ -31,9 +30,12 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
 
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
 
-  val credentials = AWSCredentials("AKIDEXAMPLE", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY")
-  val scope = CredentialScope(LocalDate.of(2015, 8, 30), "us-east-1", "iam")
-  val signingKey = SigningKey(credentials, scope)
+  val credentials = new AWSStaticCredentialsProvider(
+    new BasicAWSCredentials("AKIDEXAMPLE", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY")
+  )
+
+  def scope(date: LocalDate) = CredentialScope(date, "us-east-1", "iam")
+  def signingKey(dateTime: ZonedDateTime) = SigningKey(credentials, scope(dateTime.toLocalDate))
 
   val cr = CanonicalRequest(
     "GET",
@@ -46,7 +48,7 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
 
   "Signer" should "calculate the string to sign" in {
     val date = LocalDateTime.of(2015, 8, 30, 12, 36, 0).atZone(ZoneOffset.UTC)
-    val stringToSign: String = Signer.stringToSign("AWS4-HMAC-SHA256", signingKey, date, cr)
+    val stringToSign: String = Signer.stringToSign("AWS4-HMAC-SHA256", signingKey(date), date, cr)
     stringToSign should equal(
       "AWS4-HMAC-SHA256\n20150830T123600Z\n20150830/us-east-1/iam/aws4_request\nf536975d06c0309214f805bb90ccff089219ecd68b2577efef23edd43b7e1a59"
     )
@@ -60,8 +62,9 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
         RawHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
       )
 
+    val date = LocalDateTime.of(2015, 8, 30, 12, 36, 0).atZone(ZoneOffset.UTC)
     val srFuture =
-      Signer.signedRequest(req, signingKey, LocalDateTime.of(2015, 8, 30, 12, 36, 0).atZone(ZoneOffset.UTC))
+      Signer.signedRequest(req, signingKey(date), date)
     whenReady(srFuture) { signedRequest =>
       signedRequest should equal(
         HttpRequest(HttpMethods.GET)
@@ -80,4 +83,55 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
     }
   }
 
+  it should "format x-amz-date based on year-of-era instead of week-based-year" in {
+    val req = HttpRequest(HttpMethods.GET)
+      .withUri("https://iam.amazonaws.com/?Action=ListUsers&Version=2010-05-08")
+
+    val date = LocalDateTime.of(2017, 12, 31, 12, 36, 0).atZone(ZoneOffset.UTC)
+    val srFuture =
+      Signer.signedRequest(req, signingKey(date), date)
+
+    whenReady(srFuture) { signedRequest =>
+      signedRequest.getHeader("x-amz-date").get.value should equal("20171231T123600Z")
+    }
+  }
+
+  it should "add the correct security token header when session credentials are used" in {
+    val req = HttpRequest(HttpMethods.GET)
+      .withUri("https://iam.amazonaws.com/?Action=ListUsers&Version=2010-05-08")
+
+    val date = LocalDateTime.of(2017, 12, 31, 12, 36, 0).atZone(ZoneOffset.UTC)
+    val initialCredentials = new BasicSessionCredentials(
+      "AKIDEXAMPLE",
+      "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+      "AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5TthT+FvwqnKwRcOIfrRh3c/LTo6UDdyJwOOvEVPvLXCrrrUtdnniCEXAMPLE/IvU1dYUg2RVAJBanLiHb4IgRmpRV3zrkuWJOgQs8IZZaIv2BXIa2R4OlgkBN9bkUDNCJiBeb/AXlzBBko7b15fjrBs2+cTQtpZ3CYWFXG8C5zqx37wnOE49mRl/+OtkIKGO7fAE"
+    )
+    val refreshedCredentials = new BasicSessionCredentials(
+      "AKIDEXAMPL2",
+      "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPL2KEY",
+      "AQoEXAMPL2H4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5TthT+FvwqnKwRcOIfrRh3c/LTo6UDdyJwOOvEVPvLXCrrrUtdnniCEXAMPL2/IvU1dYUg2RVAJBanLiHb4IgRmpRV3zrkuWJOgQs8IZZaIv2BXIa2R4OlgkBN9bkUDNCJiBeb/AXlzBBko7b15fjrBs2+cTQtpZ3CYWFXG8C5zqx37wnOE49mRl/+OtkIKGO7fAE"
+    )
+    val sessionCredentialsProvider = new AWSCredentialsProvider {
+      var refreshed = false
+
+      override def getCredentials: auth.AWSCredentials =
+        if (!refreshed) {
+          initialCredentials
+        } else {
+          refreshedCredentials
+        }
+
+      override def refresh(): Unit = refreshed = true
+    }
+    val key = SigningKey(sessionCredentialsProvider, scope(date.toLocalDate))
+
+    sessionCredentialsProvider.refresh()
+
+    val srFuture =
+      Signer.signedRequest(req, key, date)
+
+    whenReady(srFuture) { signedRequest =>
+      signedRequest.getHeader("x-amz-security-token").get.value should equal(initialCredentials.getSessionToken)
+    }
+  }
 }

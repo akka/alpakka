@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.ftp;
 
 import akka.NotUsed;
@@ -13,6 +14,7 @@ import org.junit.Test;
 
 import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest {
 
@@ -31,6 +33,16 @@ public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest
     CommonFtpStageTest.super.toPath();
   }
 
+  @Test
+  public void remove() throws Exception {
+    CommonFtpStageTest.super.remove();
+  }
+
+  @Test
+  public void move() throws Exception {
+    CommonFtpStageTest.super.move();
+  }
+
   public Source<FtpFile, NotUsed> getBrowserSource(String basePath) throws Exception {
     return Sftp.ls(basePath, settings());
   }
@@ -43,14 +55,21 @@ public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest
     return Sftp.toPath(path, settings());
   }
 
+  public Sink<FtpFile, CompletionStage<IOResult>> getRemoveSink() throws Exception {
+    return Sftp.remove(settings());
+  }
+
+  public Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(
+      Function<FtpFile, String> destinationPath) throws Exception {
+    return Sftp.move(destinationPath, settings());
+  }
+
   private SftpSettings settings() throws Exception {
-    //#create-settings
-    final SftpSettings settings = SftpSettings.create(
-            InetAddress.getByName("localhost"))
+    final SftpSettings settings =
+        SftpSettings.create(InetAddress.getByName("localhost"))
             .withPort(getPort())
-            .withCredentials(FtpCredentials.createAnonCredentials())
+            .withCredentials(FtpCredentials.anonymous())
             .withStrictHostKeyChecking(false);
-    //#create-settings
     return settings;
   }
 }

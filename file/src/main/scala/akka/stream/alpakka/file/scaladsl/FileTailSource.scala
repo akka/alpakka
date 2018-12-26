@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.file.scaladsl
 
 import java.nio.charset.{Charset, StandardCharsets}
 import java.nio.file.Path
 
 import akka.NotUsed
-import akka.stream.alpakka.file.javadsl.{FileTailSource => JavaFileTailSource}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
@@ -34,7 +34,9 @@ object FileTailSource {
             maxChunkSize: Int,
             startingPosition: Long,
             pollingInterval: FiniteDuration): Source[ByteString, NotUsed] =
-    Source.fromGraph(new JavaFileTailSource(path, maxChunkSize, startingPosition, pollingInterval))
+    Source.fromGraph(
+      new akka.stream.alpakka.file.impl.FileTailSource(path, maxChunkSize, startingPosition, pollingInterval)
+    )
 
   /**
    * Scala API: Read the entire contents of a file as text lines, and then when the end is reached, keep reading

@@ -1,14 +1,17 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.googlecloud.pubsub
 
-import java.security.PrivateKey
+import akka.stream.Materializer
 import java.util.Base64
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.http.scaladsl.HttpExt
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.googlecloud.pubsub.impl.{GoogleSession, PubSubApi, TestCredentials}
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
 import akka.stream.scaladsl.{Sink, Source}
 import org.scalatest.concurrent.ScalaFutures
@@ -18,7 +21,6 @@ import org.mockito.Mockito._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-
 import scala.collection.immutable.Seq
 
 class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with Matchers {
@@ -30,33 +32,33 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
   implicit val mat = ActorMaterializer()
 
   private trait Fixtures {
-    val mockHttpApi = mock[HttpApi]
-    val auth = mock[Session]
-    val googlePubSub = new GooglePubSub {
+    lazy val mockHttpApi = mock[PubSubApi]
+    lazy val googlePubSub = new GooglePubSub {
       val httpApi = mockHttpApi
-
-      def getSession(clientEmail: String, privateKey: PrivateKey) = auth
     }
+    val http: HttpExt = mock[HttpExt]
+    val config = PubSubConfig(TestCredentials.projectId,
+                              TestCredentials.apiKey,
+                              TestCredentials.clientEmail,
+                              TestCredentials.privateKey).withSession(mock[GoogleSession])
   }
 
   it should "auth and publish the message" in new Fixtures {
     val flow = googlePubSub.publish(
-      projectId = TestCredentials.projectId,
-      apiKey = TestCredentials.apiKey,
-      clientEmail = TestCredentials.clientEmail,
-      privateKey = TestCredentials.privateKey,
-      topic = "topic1"
+      topic = "topic1",
+      config = config
     )
 
     val request = PublishRequest(Seq(PubSubMessage(messageId = "1", data = base64String("Hello Google!"))))
 
     val source = Source(List(request))
 
-    when(auth.getToken()).thenReturn(Future.successful("ok"))
+    when(mockHttpApi.isEmulated).thenReturn(false)
+    when(config.session.getToken()).thenReturn(Future.successful("ok"))
     when(
       mockHttpApi.publish(project = TestCredentials.projectId,
                           topic = "topic1",
-                          accessToken = "ok",
+                          maybeAccessToken = Some("ok"),
                           apiKey = TestCredentials.apiKey,
                           request = request)
     ).thenReturn(Future.successful(Seq("id1")))
@@ -66,24 +68,52 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
     result.futureValue shouldBe Seq(Seq("id1"))
   }
 
+  it should "publish the message without auth when emulated" in new Fixtures {
+
+    override lazy val mockHttpApi = new PubSubApi {
+      val PubSubGoogleApisHost: String = "..."
+      val GoogleApisHost: String = "..."
+
+      override def isEmulated: Boolean = true
+
+      override def publish(
+          project: String,
+          topic: String,
+          maybeAccessToken: Option[String],
+          apiKey: String,
+          request: PublishRequest
+      )(implicit as: ActorSystem, materializer: Materializer): Future[Seq[String]] =
+        Future.successful(Seq("id2"))
+    }
+
+    val flow = googlePubSub.publish(
+      topic = "topic2",
+      config = config
+    )
+
+    val request = PublishRequest(Seq(PubSubMessage(messageId = "2", data = base64String("Hello Google!"))))
+
+    val source = Source(List(request))
+    val result = source.via(flow).runWith(Sink.seq)
+    result.futureValue shouldBe Seq(Seq("id2"))
+  }
+
   it should "subscribe and pull a message" in new Fixtures {
     val message =
       ReceivedMessage(ackId = "1", message = PubSubMessage(messageId = "1", data = base64String("Hello Google!")))
 
-    when(auth.getToken()).thenReturn(Future.successful("ok"))
+    when(config.session.getToken()).thenReturn(Future.successful("ok"))
     when(
       mockHttpApi.pull(project = TestCredentials.projectId,
                        subscription = "sub1",
                        apiKey = TestCredentials.apiKey,
-                       accessToken = "ok")
-    ).thenReturn(Future.successful(PullResponse(receivedMessages = Some(Seq(message)))))
+                       maybeAccessToken = Some("ok"))
+    ).thenReturn(Future.successful(PullResponse(receivedMessages = Some(Seq()))))
+      .thenReturn(Future.successful(PullResponse(receivedMessages = Some(Seq(message)))))
 
     val source = googlePubSub.subscribe(
-      projectId = TestCredentials.projectId,
-      apiKey = TestCredentials.apiKey,
-      clientEmail = TestCredentials.clientEmail,
-      privateKey = TestCredentials.privateKey,
-      subscription = "sub1"
+      subscription = "sub1",
+      config = config
     )
 
     val result = source.take(1).runWith(Sink.seq)
@@ -92,21 +122,48 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
   }
 
   it should "auth and acknowledge a message" in new Fixtures {
-    when(auth.getToken()).thenReturn(Future.successful("ok"))
+    when(config.session.getToken()).thenReturn(Future.successful("ok"))
     when(
-      mockHttpApi.acknowledge(project = TestCredentials.projectId,
-                              subscription = "sub1",
-                              apiKey = TestCredentials.apiKey,
-                              accessToken = "ok",
-                              request = AcknowledgeRequest(ackIds = Seq("a1")))
+      mockHttpApi.acknowledge(
+        project = TestCredentials.projectId,
+        subscription = "sub1",
+        apiKey = TestCredentials.apiKey,
+        maybeAccessToken = Some("ok"),
+        request = AcknowledgeRequest(ackIds = Seq("a1"))
+      )
     ).thenReturn(Future.successful(()))
 
     val sink = googlePubSub.acknowledge(
-      projectId = TestCredentials.projectId,
-      apiKey = TestCredentials.apiKey,
-      clientEmail = TestCredentials.clientEmail,
-      privateKey = TestCredentials.privateKey,
-      subscription = "sub1"
+      subscription = "sub1",
+      config = config
+    )
+
+    val source = Source(List(AcknowledgeRequest(List("a1"))))
+
+    val result = source.runWith(sink)
+
+    result.futureValue shouldBe Done
+  }
+
+  it should "acknowledge a message without auth when emulated" in new Fixtures {
+    override lazy val mockHttpApi = new PubSubApi {
+      val PubSubGoogleApisHost: String = "..."
+      val GoogleApisHost: String = "..."
+
+      override def isEmulated: Boolean = true
+      override def acknowledge(
+          project: String,
+          subscription: String,
+          maybeAccessToken: Option[String],
+          apiKey: String,
+          request: AcknowledgeRequest
+      )(implicit as: ActorSystem, materializer: Materializer): Future[Unit] =
+        Future.successful(())
+    }
+
+    val sink = googlePubSub.acknowledge(
+      subscription = "sub1",
+      config = config
     )
 
     val source = Source(List(AcknowledgeRequest(List("a1"))))

@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.cassandra.javadsl
 
 import java.util.concurrent.CompletableFuture
 
 import akka.NotUsed
-import akka.stream.alpakka.cassandra.CassandraSourceStage
+import akka.stream.alpakka.cassandra.impl.CassandraSourceStage
 import akka.stream.javadsl.Source
 import com.datastax.driver.core.{Row, Session, Statement}
 

@@ -1,13 +1,19 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.ftp
 package impl
 
+import akka.annotation.InternalApi
 import akka.stream.stage.{GraphStage, OutHandler}
 import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] extends GraphStage[SourceShape[FtpFile]] {
 
   def name: String
@@ -23,6 +29,8 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] exte
   val shape: SourceShape[FtpFile] = SourceShape(Outlet[FtpFile](s"$name.out"))
 
   val out = shape.outlets.head.asInstanceOf[Outlet[FtpFile]]
+
+  val branchSelector: FtpFile => Boolean = (f) => true
 
   override def initialAttributes: Attributes =
     super.initialAttributes and Attributes.name(name) and IODispatcher
@@ -64,7 +72,7 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] exte
 
       @scala.annotation.tailrec
       private[this] def fillBuffer(): Unit = buffer match {
-        case head +: tail if head.isDirectory => {
+        case head +: tail if (head.isDirectory && branchSelector(head)) => {
           buffer = getFilesFromPath(head.path) ++ tail
           fillBuffer()
         }

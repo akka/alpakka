@@ -1,20 +1,32 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.alpakka.mqtt.scaladsl
 
 import akka.Done
 import akka.stream.alpakka.mqtt._
-import akka.stream.scaladsl.{Flow, Keep, Sink}
+import akka.stream.scaladsl.{Keep, Sink}
 
 import scala.concurrent.Future
 
+/**
+ * Scala API
+ *
+ * MQTT sink factory.
+ */
 object MqttSink {
 
   /**
-   * Scala API: create an [[MqttSink]] for a provided QoS.
+   * Create a sink sending messages to MQTT.
+   *
+   * The materialized value completes on stream completion.
+   *
+   * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
-  def apply(connectionSettings: MqttConnectionSettings, qos: MqttQoS): Sink[MqttMessage, Future[Done]] =
-    Flow.fromGraph(new MqttProducerStage(connectionSettings, qos)).toMat(Sink.ignore)(Keep.right)
+  def apply(connectionSettings: MqttConnectionSettings, defaultQos: MqttQoS): Sink[MqttMessage, Future[Done]] =
+    MqttFlow
+      .atMostOnce(connectionSettings, MqttSubscriptions.empty, 0, defaultQos)
+      .toMat(Sink.ignore)(Keep.right)
 
 }
