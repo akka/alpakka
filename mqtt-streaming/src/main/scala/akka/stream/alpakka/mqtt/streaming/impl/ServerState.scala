@@ -686,6 +686,21 @@ import scala.util.{Failure, Success}
     }
     Behaviors
       .receivePartial[Event] {
+        case (_, ClientConnection.ConnectionLost) =>
+          clientDisconnected(
+            Disconnected(
+              data.publishers,
+              data.activeConsumers,
+              data.activeProducers,
+              data.pendingLocalPublications,
+              data.pendingRemotePublications,
+              data.consumerPacketRouter,
+              data.producerPacketRouter,
+              data.publisherPacketRouter,
+              data.unpublisherPacketRouter,
+              data.settings
+            )
+          )
         case (_, e) =>
           pendingSubAck(data.copy(stash = data.stash :+ e))
       }
