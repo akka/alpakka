@@ -214,7 +214,7 @@ import scala.util.{Failure, Success}
     remote.complete()
 
     disconnected(
-      Uninitialized(data.stash,
+      Uninitialized(Vector.empty,
                     data.consumerPacketRouter,
                     data.producerPacketRouter,
                     data.subscriberPacketRouter,
@@ -449,6 +449,8 @@ import scala.util.{Failure, Success}
   def pendingSubAck(data: PendingSubscribe)(implicit mat: Materializer): Behavior[Event] =
     Behaviors
       .receivePartial[Event] {
+        case (context, ConnectionLost) =>
+          disconnect(context, data.connectFlags, data.remote, data)
         case (_, e) =>
           pendingSubAck(data.copy(stash = data.stash :+ e))
       }
