@@ -25,6 +25,7 @@ The [Alpakka project](https://developer.lightbend.com/docs/alpakka/current/) is 
 * [Azure Event Hubs](external/azure-event-hubs.md)
 * [Azure IoT Hub](external/azure-iot-hub.md)
 * [Azure Storage Queue](azure-storage-queue.md)
+* [Backblaze B2](backblazeb2.md)
 * [Couchbase](couchbase.md)
 * [Elasticsearch](elasticsearch.md)
 * [Eventuate](external/eventuate.md)

@@ -8,9 +8,9 @@ object Publish extends AutoPlugin {
   override def requires = BintrayPlugin
 
   override def projectSettings = Seq(
-    bintrayOrganization := Some("alpakka-backblazeb2"), // TODO: originally "akka"
+    bintrayOrganization := Some("akka"),
     bintrayPackage := "alpakka",
-    // bintrayRepository := (if (isSnapshot.value) "snapshots" else "maven") // TODO: we commented this
+    bintrayRepository := (if (isSnapshot.value) "snapshots" else "maven")
   )
 }
 
