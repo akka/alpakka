@@ -7,26 +7,6 @@ import akka.stream.alpakka.ftp.{FtpFile, FtpSettings}
 
 object scalaExamples {
 
-  // settings
-  object settings {
-    //#create-settings
-    import java.io.PrintWriter
-    import java.net.InetAddress
-
-    import akka.stream.alpakka.ftp.FtpSettings
-    import org.apache.commons.net.PrintCommandListener
-    import org.apache.commons.net.ftp.FTPClient
-
-    val settings = FtpSettings(
-      InetAddress.getByName("localhost")
-    ).withBinary(true)
-      .withPassiveMode(true)
-      .withConfigureConnection((ftpClient: FTPClient) => {
-        ftpClient.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.out), true))
-      })
-    //#create-settings
-  }
-
   object sshConfigure {
     //#configure-custom-ssh-client
     import akka.stream.alpakka.ftp.scaladsl.{Sftp, SftpApi}
@@ -62,20 +42,6 @@ object scalaExamples {
       Ftp.fromPath(path, settings)
 
     //#retrieving
-  }
-
-  object storing {
-    //#storing
-    import akka.stream.IOResult
-    import akka.stream.alpakka.ftp.scaladsl.Ftp
-    import akka.stream.scaladsl.Sink
-    import akka.util.ByteString
-
-    import scala.concurrent.Future
-
-    def storeToPath(path: String, settings: FtpSettings, append: Boolean): Sink[ByteString, Future[IOResult]] =
-      Ftp.toPath(path, settings, append)
-    //#storing
   }
 
   object removing {
