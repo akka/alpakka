@@ -27,10 +27,10 @@ The table below shows direct dependencies of this module and the second tab show
 In order to establish a connection with the remote server, you need to provide a specialized version of a @scaladoc[RemoteFileSettings](akka.stream.alpakka.ftp.RemoteFileSettings) instance. It's specialized as it depends on the kind of server you're connecting to: FTP, FTPs or SFTP.
 
 Scala
-: @@snip [snip](/ftp/src/test/scala/docs/scaladsl/scalaExamples.scala) { #create-settings }
+: @@snip [snip](/ftp/src/test/scala/docs/scaladsl/FtpExamplesSpec.scala) { #create-settings }
 
 Java
-: @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpSettingsExample.java) { #create-settings }
+: @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpWritingTest.java) { #create-settings }
 
 The configuration above will create an anonymous connection with a remote FTP server in passive mode. For both FTPs and SFTP servers, you will need to provide the specialized versions of these settings: @scaladoc[FtpsSettings](akka.stream.alpakka.ftp.RemoteFileSettings$$FtpsSettings) or @scaladoc[SftpSettings](akka.stream.alpakka.ftp.RemoteFileSettings$$SftpSettings)
 respectively.
@@ -82,10 +82,10 @@ For both FTPs and SFTP servers, you will need to use the `FTPs` and `SFTP` API r
 In order to store a remote file from a stream of bytes, you need to use the `toPath` method in the FTP API:
 
 Scala
-: @@snip [snip](/ftp/src/test/scala/docs/scaladsl/scalaExamples.scala) { #storing }
+: @@snip [snip](/ftp/src/test/scala/docs/scaladsl/FtpExamplesSpec.scala) { #storing }
 
 Java
-: @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpWritingExample.java) { #storing }
+: @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpWritingTest.java) { #storing }
 
 This sink will consume @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 
