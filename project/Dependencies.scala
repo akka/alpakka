@@ -11,7 +11,7 @@ object Dependencies {
   }
 
   val AwsSdkVersion = "1.11.466"
-  val AkkaHttpVersion = "10.1.5"
+  val AkkaHttpVersion = "10.1.7"
 
   val Common = Seq(
     // These libraries are added to all modules via the `Common` AutoPlugin
@@ -58,7 +58,7 @@ object Dependencies {
       "io.reactivex" % "rxjava-reactive-streams" % "1.2.1", //ApacheV2
       "org.reactivestreams" % "reactive-streams" % "1.0.2", //CC0	http://creativecommons.org/publicdomain/zero/1.0/
       "com.typesafe.play" %% "play-json" % "2.6.9" % Test, // MIT like: http://www.slf4j.org/license.html
-      "com.typesafe.akka" %% "akka-http" % "10.1.4" % Test, // MIT like: http://www.slf4j.org/license.html
+      "com.typesafe.akka" %% "akka-http" % "10.1.7" % Test, // MIT like: http://www.slf4j.org/license.html
       "org.specs2" %% "specs2-core" % "4.3.2" % Test //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
     )
   )
