@@ -226,13 +226,21 @@ lazy val unixdomainsocket = alpakkaProject(
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
 
 lazy val docs = project
-  .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, PreprocessPlugin)
+  .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, PreprocessPlugin, SymlinkPlugin)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .settings(
     name := "Alpakka",
     publish / skip := true,
     whitesourceIgnore := true,
     makeSite := makeSite.dependsOn(LocalRootProject / ScalaUnidoc / doc).value,
+    makeSite := {
+      (Symlink / symlinkCreate).value
+      makeSite.value
+    },
+    Symlink / symlinkPaths := Map(
+      s"api/alpakka/${if (isSnapshot.value) "snapshot" else "current"}" -> s"api/alpakka/${version.value}",
+      s"docs/alpakka/${if (isSnapshot.value) "snapshot" else "current"}" -> s"docs/alpakka/${version.value}",
+    ),
     Preprocess / siteSubdirName := s"api/alpakka/${version.value}",
     Preprocess / sourceDirectory := (LocalRootProject / ScalaUnidoc / unidoc / target).value,
     Preprocess / preprocessRules := Seq(
