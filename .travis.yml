@@ -106,9 +106,7 @@ jobs:
 
     - stage: publish
       script: sbt -jvm-opts .jvmopts-travis +publish
-
-    - stage: techhub-ping
-      script: curl -I https://ci.lightbend.com/job/techhub-publisher/build?token=$TECH_HUB_TOKEN
+    - script: sbt -jvm-opts .jvmopts-travis docs/publishRsync
 
 stages:
   # runs on master commits and PRs
@@ -126,10 +124,6 @@ stages:
   # runs on main repo master commits or version-tagged commits
   - name: publish
     if: repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v )
-
-  # runs on main repo version-tagged commits
-  - name: techhub-ping
-    if: repo = akka/alpakka AND tag =~ ^v
 
 after_failure:
   - docker-compose logs
