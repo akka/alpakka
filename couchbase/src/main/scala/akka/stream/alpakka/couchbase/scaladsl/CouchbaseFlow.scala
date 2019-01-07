@@ -4,7 +4,8 @@
 
 package akka.stream.alpakka.couchbase.scaladsl
 
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
+
 import akka.NotUsed
 import akka.stream.alpakka.couchbase.{CouchbaseWriteSettings, SingleOperationResult}
 import akka.stream.scaladsl.Flow
@@ -12,10 +13,12 @@ import com.couchbase.client.java.Bucket
 import com.couchbase.client.java.document.Document
 import rx.lang.scala.JavaConversions.toScalaObservable
 import akka.stream.alpakka.couchbase._
+
 import scala.collection.JavaConverters._
 import scala.concurrent.Promise
 import scala.util.{Failure, Success}
 import akka.stream.alpakka.couchbase.impl.CouchbaseSourceImpl
+
 import scala.collection.immutable.Seq
 
 object CouchbaseFlow {
@@ -52,8 +55,8 @@ object CouchbaseFlow {
           .upsert(doc,
                   couchbaseWriteSettings.persistTo,
                   couchbaseWriteSettings.replicateTo,
-                  couchbaseWriteSettings.timeout,
-                  couchbaseWriteSettings.timeUnit)
+                  couchbaseWriteSettings.timeout.toMillis,
+                  TimeUnit.MILLISECONDS)
           .single()
         val promise = Promise[SingleOperationResult[T]]
         val scalaObservable = toScalaObservable(javaObservable)
@@ -79,8 +82,8 @@ object CouchbaseFlow {
                 .upsert(doc,
                         couchbaseWriteSettings.persistTo,
                         couchbaseWriteSettings.replicateTo,
-                        couchbaseWriteSettings.timeout,
-                        couchbaseWriteSettings.timeUnit)
+                        couchbaseWriteSettings.timeout.toMillis,
+                        TimeUnit.MILLISECONDS)
             ).onErrorResumeNext(ex => {
               failures.put(doc.id(), ex)
               rx.lang.scala.Observable.empty
@@ -102,8 +105,8 @@ object CouchbaseFlow {
         .remove(id.toString,
                 couchbaseWriteSettings.persistTo,
                 couchbaseWriteSettings.replicateTo,
-                couchbaseWriteSettings.timeout,
-                couchbaseWriteSettings.timeUnit)
+                couchbaseWriteSettings.timeout.toMillis,
+                TimeUnit.MILLISECONDS)
         .single()
       val promise = Promise[SingleOperationResult[String]]
       val scalaObservable = toScalaObservable(javaObservable)
@@ -129,8 +132,8 @@ object CouchbaseFlow {
                 .remove(id.toString,
                         couchbaseWriteSettings.persistTo,
                         couchbaseWriteSettings.replicateTo,
-                        couchbaseWriteSettings.timeout,
-                        couchbaseWriteSettings.timeUnit)
+                        couchbaseWriteSettings.timeout.toMillis,
+                        TimeUnit.MILLISECONDS)
             ).onErrorResumeNext(ex => {
               failures.put(id, ex)
               rx.lang.scala.Observable.empty

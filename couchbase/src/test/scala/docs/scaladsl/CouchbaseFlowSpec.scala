@@ -22,7 +22,7 @@ import org.specs2.mutable.Specification
 import org.specs2.specification.{AfterEach, BeforeAfterAll}
 import scala.collection.immutable.Seq
 import scala.collection.immutable
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import akka.stream.testkit.scaladsl.StreamTestKit._
 
@@ -40,7 +40,7 @@ class CouchbaseFlowSpec extends Specification with BeforeAfterAll with AfterEach
     "create default CouchbaseWriteSettings object" in assertAllStagesStopped {
 
       val couchbaseWriteSettings = CouchbaseWriteSettings()
-      val expectedCouchbaseWriteSettings = CouchbaseWriteSettings(1, ReplicateTo.ONE, PersistTo.NONE)
+      val expectedCouchbaseWriteSettings = CouchbaseWriteSettings(1, ReplicateTo.ONE, PersistTo.NONE, 2.seconds)
       couchbaseWriteSettings shouldEqual expectedCouchbaseWriteSettings
     }
 
@@ -51,10 +51,10 @@ class CouchbaseFlowSpec extends Specification with BeforeAfterAll with AfterEach
         .withParallelism(3)
         .withPersistTo(PersistTo.FOUR)
         .withReplicateTo(ReplicateTo.THREE)
-        .withTimeOut(2L, TimeUnit.SECONDS)
+        .withTimeout(2.seconds)
       //#write-settings
 
-      val expectedCouchbaseWriteSettings = CouchbaseWriteSettings(3, ReplicateTo.THREE, PersistTo.FOUR)
+      val expectedCouchbaseWriteSettings = CouchbaseWriteSettings(3, ReplicateTo.THREE, PersistTo.FOUR, 2.seconds)
       couchbaseWriteSettings shouldEqual expectedCouchbaseWriteSettings
     }
 
@@ -390,7 +390,7 @@ class CouchbaseFlowSpec extends Specification with BeforeAfterAll with AfterEach
           CouchbaseFlow.upsertSingle(CouchbaseWriteSettings()
                                        .withParallelism(2)
                                        .withPersistTo(PersistTo.THREE)
-                                       .withTimeOut(1L, TimeUnit.SECONDS),
+                                       .withTimeout(1.seconds),
                                      akkaBucket)
         )
         .runWith(Sink.head)
@@ -409,7 +409,7 @@ class CouchbaseFlowSpec extends Specification with BeforeAfterAll with AfterEach
           CouchbaseFlow.upsertBulk(CouchbaseWriteSettings()
                                      .withParallelism(2)
                                      .withPersistTo(PersistTo.THREE)
-                                     .withTimeOut(1L, TimeUnit.SECONDS),
+                                     .withTimeout(1.seconds),
                                    akkaBucket)
         )
         .runWith(Sink.seq[BulkOperationResult[JsonDocument]])
