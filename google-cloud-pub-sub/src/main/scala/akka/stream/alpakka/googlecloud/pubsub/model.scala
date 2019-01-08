@@ -15,7 +15,6 @@ import scala.collection.immutable
 import scala.collection.JavaConverters._
 
 class PubSubConfig private (val projectId: String,
-                            val apiKey: String,
                             /**
                              * Internal API
                              */
@@ -28,23 +27,19 @@ class PubSubConfig private (val projectId: String,
     copy(session = session)
 
   private def copy(session: GoogleSession) =
-    new PubSubConfig(projectId, apiKey, session)
+    new PubSubConfig(projectId, session)
 
   override def toString: String =
-    s"PubSubConfig(projectId=$projectId, apiKey=$apiKey)"
+    s"PubSubConfig(projectId=$projectId)"
 }
 
 object PubSubConfig {
-  def apply(projectId: String, apiKey: String, clientEmail: String, privateKey: String)(
+  def apply(projectId: String, clientEmail: String, privateKey: String)(
       implicit actorSystem: ActorSystem
-  ) = new PubSubConfig(projectId, apiKey, new GoogleSession(clientEmail, privateKey, new GoogleTokenApi(Http())))
+  ) = new PubSubConfig(projectId, new GoogleSession(clientEmail, privateKey, new GoogleTokenApi(Http())))
 
-  def create(projectId: String,
-             apiKey: String,
-             clientEmail: String,
-             privateKey: String,
-             actorSystem: ActorSystem): PubSubConfig =
-    apply(projectId, apiKey, clientEmail, privateKey)(actorSystem)
+  def create(projectId: String, clientEmail: String, privateKey: String, actorSystem: ActorSystem): PubSubConfig =
+    apply(projectId, clientEmail, privateKey)(actorSystem)
 }
 
 final case class PubSubMessage(data: String,

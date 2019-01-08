@@ -32,12 +32,12 @@ protected[pubsub] trait GooglePubSub {
 
     if (httpApi.isEmulated) {
       Flow[PublishRequest].mapAsyncUnordered(parallelism) { request =>
-        httpApi.publish(config.projectId, topic, maybeAccessToken = None, config.apiKey, request)
+        httpApi.publish(config.projectId, topic, maybeAccessToken = None, request)
       }
     } else {
       Flow[PublishRequest].mapAsyncUnordered(parallelism) { request =>
         config.session.getToken().flatMap { accessToken =>
-          httpApi.publish(config.projectId, topic, Some(accessToken), config.apiKey, request)
+          httpApi.publish(config.projectId, topic, Some(accessToken), request)
         }
       }
     }
@@ -48,7 +48,6 @@ protected[pubsub] trait GooglePubSub {
   ): Source[ReceivedMessage, NotUsed] =
     Source.fromGraph(
       new GooglePubSubSource(projectId = config.projectId,
-                             apiKey = config.apiKey,
                              session = config.session,
                              subscription = subscription,
                              httpApi = httpApi)
@@ -66,7 +65,6 @@ protected[pubsub] trait GooglePubSub {
          httpApi.acknowledge(project = config.projectId,
                              subscription = subscription,
                              maybeAccessToken = None,
-                             apiKey = config.apiKey,
                              request = ackReq)
        }
      } else {
@@ -76,7 +74,6 @@ protected[pubsub] trait GooglePubSub {
              httpApi.acknowledge(project = config.projectId,
                                  subscription = subscription,
                                  maybeAccessToken = Some(accessToken),
-                                 apiKey = config.apiKey,
                                  request = ackReq)
            }
          }

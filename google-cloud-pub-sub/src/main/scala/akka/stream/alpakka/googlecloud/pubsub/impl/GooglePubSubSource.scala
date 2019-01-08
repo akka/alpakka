@@ -18,7 +18,6 @@ import scala.util.{Failure, Success, Try}
 
 @InternalApi
 private[pubsub] final class GooglePubSubSource(projectId: String,
-                                               apiKey: String,
                                                session: GoogleSession,
                                                subscription: String,
                                                httpApi: PubSubApi)(implicit as: ActorSystem)
@@ -36,15 +35,12 @@ private[pubsub] final class GooglePubSubSource(projectId: String,
 
         val req = if (httpApi.isEmulated) {
           httpApi
-            .pull(project = projectId, subscription = subscription, maybeAccessToken = None, apiKey = apiKey)
+            .pull(project = projectId, subscription = subscription, maybeAccessToken = None)
         } else {
           session
             .getToken()
             .flatMap { token =>
-              httpApi.pull(project = projectId,
-                           subscription = subscription,
-                           maybeAccessToken = Some(token),
-                           apiKey = apiKey)
+              httpApi.pull(project = projectId, subscription = subscription, maybeAccessToken = Some(token))
             }
         }
         req.onComplete { tr =>

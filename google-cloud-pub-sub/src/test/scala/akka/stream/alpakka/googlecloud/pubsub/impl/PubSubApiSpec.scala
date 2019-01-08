@@ -43,10 +43,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
     val GoogleApisHost = s"http://localhost:${wiremockServer.port()}"
   }
 
-  val config = PubSubConfig(TestCredentials.projectId,
-                            TestCredentials.apiKey,
-                            TestCredentials.clientEmail,
-                            TestCredentials.privateKey)
+  val config = PubSubConfig(TestCredentials.projectId, TestCredentials.clientEmail, TestCredentials.privateKey)
 
   val accessToken =
     "ya29.Elz4A2XkfGKJ4CoS5x_umUBHsvjGdeWQzu6gRRCnNXI0fuIyoDP_6aYktBQEOI4YAhLNgUl2OpxWQaN8Z3hd5YfFw1y4EGAtr2o28vSID-c8ul_xxHuudE7RmhH9sg"
@@ -82,7 +79,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
     )
 
     val result =
-      TestHttpApi.publish(config.projectId, "topic1", Some(accessToken), config.apiKey, publishRequest)
+      TestHttpApi.publish(config.projectId, "topic1", Some(accessToken), publishRequest)
 
     result.futureValue shouldBe Seq("1")
   }
@@ -119,7 +116,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
     )
 
     val result =
-      TestEmulatorHttpApi.publish(config.projectId, "topic1", None, config.apiKey, publishRequest)
+      TestEmulatorHttpApi.publish(config.projectId, "topic1", None, publishRequest)
 
     result.futureValue shouldBe Seq("1")
   }
@@ -146,7 +143,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
         .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
 
-    val result = TestHttpApi.pull(config.projectId, "sub1", Some(accessToken), config.apiKey)
+    val result = TestHttpApi.pull(config.projectId, "sub1", Some(accessToken))
     result.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", publishMessage))))
 
   }
@@ -178,7 +175,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
         .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
 
-    val result = TestEmulatorHttpApi.pull(config.projectId, "sub1", None, config.apiKey)
+    val result = TestEmulatorHttpApi.pull(config.projectId, "sub1", None)
     result.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", publishMessage))))
 
   }
@@ -201,7 +198,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
         .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
 
-    val result = TestHttpApi.pull(config.projectId, "sub1", Some(accessToken), config.apiKey)
+    val result = TestHttpApi.pull(config.projectId, "sub1", Some(accessToken))
     result.futureValue shouldBe PullResponse(None)
 
   }
@@ -222,7 +219,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
 
     val acknowledgeRequest = AcknowledgeRequest(Seq("ack1"))
 
-    val result = TestHttpApi.acknowledge(config.projectId, "sub1", Some(accessToken), config.apiKey, acknowledgeRequest)
+    val result = TestHttpApi.acknowledge(config.projectId, "sub1", Some(accessToken), acknowledgeRequest)
 
     result.futureValue shouldBe (())
   }
@@ -257,7 +254,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
     )
 
     val result =
-      TestHttpApi.publish(config.projectId, "topic1", Some(accessToken), config.apiKey, publishRequest)
+      TestHttpApi.publish(config.projectId, "topic1", Some(accessToken), publishRequest)
 
     assertThrows[RuntimeException] { result.futureValue }
   }
@@ -293,5 +290,4 @@ object TestCredentials {
                      |-----END RSA PRIVATE KEY-----""".stripMargin
   val clientEmail = "test-XXX@test-XXXXX.iam.gserviceaccount.com"
   val projectId = "testX-XXXXX"
-  val apiKey = "AIzaSyCVvqrlz057gCssc70n5JERyTW4TpB4ebE"
 }
