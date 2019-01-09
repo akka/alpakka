@@ -4,13 +4,14 @@
 
 package akka.stream.alpakka.s3.impl
 
+import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.stage._
 
 import scala.concurrent.{Future, Promise}
 
-final class SetupSinkStage[T, M](factory: ActorMaterializer => Attributes => Sink[T, M])
+private final class SetupSinkStage[T, M](factory: ActorMaterializer => Attributes => Sink[T, M])
     extends GraphStageWithMaterializedValue[SinkShape[T], Future[M]] {
 
   private val in = Inlet[T]("SetupSinkStage.in")
@@ -38,7 +39,7 @@ final class SetupSinkStage[T, M](factory: ActorMaterializer => Attributes => Sin
 
 }
 
-final class SetupFlowStage[T, U, M](factory: ActorMaterializer => Attributes => Flow[T, U, M])
+private final class SetupFlowStage[T, U, M](factory: ActorMaterializer => Attributes => Flow[T, U, M])
     extends GraphStageWithMaterializedValue[FlowShape[T, U], Future[M]] {
 
   private val in = Inlet[T]("SetupFlowStage.in")
@@ -75,7 +76,7 @@ final class SetupFlowStage[T, U, M](factory: ActorMaterializer => Attributes => 
   }
 }
 
-final class SetupSourceStage[T, M](factory: ActorMaterializer => Attributes => Source[T, M])
+private final class SetupSourceStage[T, M](factory: ActorMaterializer => Attributes => Source[T, M])
     extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
 
   private val out = Outlet[T]("SetupSourceStage.out")
@@ -104,7 +105,7 @@ final class SetupSourceStage[T, M](factory: ActorMaterializer => Attributes => S
   }
 }
 
-object SetupStage {
+private object SetupStage {
   def delegateToSubOutlet[T](grab: () => T, subOutlet: GraphStageLogic#SubSourceOutlet[T]) = new InHandler {
     override def onPush(): Unit =
       subOutlet.push(grab())
@@ -146,7 +147,7 @@ object SetupStage {
   }
 }
 
-object Setup {
+@InternalApi private[impl] object Setup {
   def sink[T, M](factory: ActorMaterializer => Attributes => Sink[T, M]): Sink[T, Future[M]] =
     Sink.fromGraph(new SetupSinkStage(factory))
 
