@@ -2,19 +2,19 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.s3.auth
+package akka.stream.alpakka.s3.impl.auth
 
 import java.security.MessageDigest
 import java.time.format.DateTimeFormatter
 import java.time.{ZoneOffset, ZonedDateTime}
 
 import akka.NotUsed
-
+import akka.annotation.InternalApi
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
 import akka.stream.scaladsl.Source
 
-private[alpakka] object Signer {
+@InternalApi private[impl] object Signer {
   private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssX")
 
   def signedRequest(request: HttpRequest,

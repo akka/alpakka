@@ -2,11 +2,12 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.s3
+package akka.stream.alpakka.s3.impl
 
 import java.security.MessageDigest
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 
@@ -14,7 +15,7 @@ package object auth {
 
   private val Digits = "0123456789abcdef".toCharArray()
 
-  def encodeHex(bytes: Array[Byte]): String = {
+  @InternalApi private[impl] def encodeHex(bytes: Array[Byte]): String = {
     val length = bytes.length
     val out = new Array[Char](length * 2)
     for (i <- 0 to length - 1) {
@@ -25,9 +26,9 @@ package object auth {
     new String(out)
   }
 
-  def encodeHex(bytes: ByteString): String = encodeHex(bytes.toArray)
+  @InternalApi private[impl] def encodeHex(bytes: ByteString): String = encodeHex(bytes.toArray)
 
-  def digest(algorithm: String = "SHA-256"): Flow[ByteString, ByteString, NotUsed] =
+  @InternalApi private[impl] def digest(algorithm: String = "SHA-256"): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString]
       .fold(MessageDigest.getInstance(algorithm)) {
         case (digest, bytes) =>

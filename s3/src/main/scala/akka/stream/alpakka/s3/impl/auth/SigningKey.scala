@@ -2,27 +2,29 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.s3.auth
+package akka.stream.alpakka.s3.impl.auth
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+
+import akka.annotation.InternalApi
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import com.amazonaws.auth.{
-  AWSCredentials ⇒ AmzAWSCredentials,
-  AWSSessionCredentials => AmzAWSSessionCredentials,
-  AWSCredentialsProvider
+  AWSCredentialsProvider,
+  AWSCredentials => AmzAWSCredentials,
+  AWSSessionCredentials => AmzAWSSessionCredentials
 }
 
-private[alpakka] final case class CredentialScope(date: LocalDate, awsRegion: String, awsService: String) {
+@InternalApi private[impl] final case class CredentialScope(date: LocalDate, awsRegion: String, awsService: String) {
   lazy val formattedDate: String = date.format(DateTimeFormatter.BASIC_ISO_DATE)
 
   def scopeString = s"$formattedDate/$awsRegion/$awsService/aws4_request"
 }
 
-private[alpakka] final case class SigningKey(credProvider: AWSCredentialsProvider,
-                                             scope: CredentialScope,
-                                             algorithm: String = "HmacSHA256") {
+@InternalApi private[impl] final case class SigningKey(credProvider: AWSCredentialsProvider,
+                                                       scope: CredentialScope,
+                                                       algorithm: String = "HmacSHA256") {
 
   private val credentials: AmzAWSCredentials = credProvider.getCredentials
 

@@ -18,7 +18,7 @@ import akka.http.scaladsl.model.headers.{`Content-Length`, `Content-Type`, ByteR
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.stream.{ActorMaterializer, Attributes, Materializer}
-import akka.stream.alpakka.s3.auth.{CredentialScope, Signer, SigningKey}
+import akka.stream.alpakka.s3.impl.auth.{CredentialScope, Signer, SigningKey}
 import akka.stream.alpakka.s3._
 import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
 import akka.util.ByteString
