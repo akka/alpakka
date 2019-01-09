@@ -98,6 +98,29 @@ object ItemSpecOps extends TestOps {
       .withKeyConditionExpression(s"$keyCol = :k")
       .withExpressionAttributeValues(Map(":k" -> S("A")).asJava)
 
+  val test8Data = "test8Data"
+
+  val transactPutItemsRequest = new TransactWriteItemsRequest().withTransactItems(
+    List(
+      new TransactWriteItem().withPut(new Put().withTableName(tableName).withItem((keyMap("C", 0) + ("data" -> S(test8Data))).asJava)),
+      new TransactWriteItem().withPut(new Put().withTableName(tableName).withItem((keyMap("C", 1) + ("data" -> S(test8Data))).asJava)),
+    ).asJava
+  )
+
+  val transactGetItemsRequest = new TransactGetItemsRequest().withTransactItems(
+    List(
+      new TransactGetItem().withGet(new Get().withTableName(tableName).withKey(keyMap("C", 0).asJava)),
+      new TransactGetItem().withGet(new Get().withTableName(tableName).withKey(keyMap("C", 1).asJava)),
+    ).asJava
+  )
+
+  val transactDeleteItemsRequest = new TransactWriteItemsRequest().withTransactItems(
+    List(
+      new TransactWriteItem().withDelete(new Delete().withTableName(tableName).withKey(keyMap("C", 0).asJava)),
+      new TransactWriteItem().withDelete(new Delete().withTableName(tableName).withKey(keyMap("C", 1).asJava)),
+    ).asJava
+  )
+
   val deleteTableRequest = common.deleteTableRequest
 
 }
