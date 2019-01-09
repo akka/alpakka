@@ -93,7 +93,7 @@ import scala.concurrent.{ExecutionContext, Future}
       .withEntity(HttpEntity(ContentTypes.`application/octet-stream`, payloadSize, payload))
 
   def completeMultipartUploadRequest(upload: MultipartUpload, parts: Seq[(Int, String)])(
-      implicit mat: ExecutionContext,
+      implicit ec: ExecutionContext,
       conf: S3Settings
   ): Future[HttpRequest] = {
 
