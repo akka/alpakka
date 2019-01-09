@@ -256,21 +256,7 @@ object S3Settings {
             DefaultAWSCredentialsProviderChain.getInstance()
         }
       } else {
-        val deprecatedAccessKeyPath: String = "aws.access-key-id"
-        val deprecatedSecretKeyPath: String = "aws.secret-access-key"
-        val hasOldCredentials: Boolean = {
-          c.hasPath(deprecatedAccessKeyPath) && c.hasPath(deprecatedSecretKeyPath)
-        }
-        if (hasOldCredentials) {
-          new AWSStaticCredentialsProvider(
-            new BasicAWSCredentials(
-              c.getString(deprecatedAccessKeyPath),
-              c.getString(deprecatedSecretKeyPath)
-            )
-          )
-        } else {
-          DefaultAWSCredentialsProviderChain.getInstance()
-        }
+        DefaultAWSCredentialsProviderChain.getInstance()
       }
     }
 

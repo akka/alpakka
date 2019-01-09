@@ -82,19 +82,6 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
     settings.credentialsProvider shouldBe a[DefaultAWSCredentialsProviderChain]
   }
 
-  it should "fall back to old / deprecated credentials if new config is empty, but old is present" in {
-    val testAki = "test-aki"
-    val testSak = "test-sak"
-    val settings = mkConfig(
-      s"""aws.access-key-id = $testAki
-         |aws.secret-access-key = $testSak""".stripMargin
-    )
-    settings.credentialsProvider shouldBe a[AWSStaticCredentialsProvider]
-    settings.credentialsProvider.getCredentials shouldBe a[BasicAWSCredentials]
-    settings.credentialsProvider.getCredentials.getAWSAccessKeyId shouldBe testAki
-    settings.credentialsProvider.getCredentials.getAWSSecretKey shouldBe testSak
-  }
-
   it should "use default region provider chain by default" in {
     val settings: S3Settings = mkConfig(
       "" // no credentials section
