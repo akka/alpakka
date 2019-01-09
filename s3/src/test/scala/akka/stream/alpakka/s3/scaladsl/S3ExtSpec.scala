@@ -5,7 +5,6 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{FlatSpecLike, Matchers}
 import akka.stream.alpakka.s3.{Proxy, S3Ext}
@@ -26,7 +25,6 @@ class S3ExtSpec extends FlatSpecLike with Matchers {
       ).asJava
     )
     implicit val system = ActorSystem.create("s3", config)
-    implicit val materializer = ActorMaterializer()
     val ext = S3Ext(system)
     ext.settings.proxy shouldBe Some(Proxy("localhost", 8001, "http"))
     ext.settings.pathStyleAccess shouldBe true

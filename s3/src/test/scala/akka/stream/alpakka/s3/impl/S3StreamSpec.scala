@@ -80,20 +80,6 @@ class S3StreamSpec(_system: ActorSystem)
   }
 
   it should "properly handle input streams, even when empty" in {
-    val credentialsProvider =
-      new AWSStaticCredentialsProvider(
-        new BasicAWSCredentials(
-          "test-Id",
-          "test-key"
-        )
-      )
-    val regionProvider =
-      new AwsRegionProvider {
-        def getRegion: String = "us-east-1"
-      }
-    implicit val settings =
-      S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
-
     def nonEmptySrc = Source.repeat(ByteString("hello world"))
 
     nonEmptySrc
@@ -123,20 +109,6 @@ class S3StreamSpec(_system: ActorSystem)
     val objectSize = 69L
     val sourceLocation = S3Location("test-bucket", "test-key")
 
-    val credentialsProvider =
-      new AWSStaticCredentialsProvider(
-        new BasicAWSCredentials(
-          "test-Id",
-          "test-key"
-        )
-      )
-    val regionProvider =
-      new AwsRegionProvider {
-        def getRegion: String = "us-east-1"
-      }
-    implicit val settings: S3Settings =
-      S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
-
     val partitions: List[CopyPartition] = S3Stream.createPartitions(chunkSize, sourceLocation)(objectSize)
     partitions should have length 3
     partitions should equal(
@@ -153,20 +125,6 @@ class S3StreamSpec(_system: ActorSystem)
     val objectSize = 50L
     val sourceLocation = S3Location("test-bucket", "test-key")
 
-    val credentialsProvider =
-      new AWSStaticCredentialsProvider(
-        new BasicAWSCredentials(
-          "test-Id",
-          "test-key"
-        )
-      )
-    val regionProvider =
-      new AwsRegionProvider {
-        def getRegion: String = "us-east-1"
-      }
-    implicit val settings: S3Settings =
-      S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
-
     val partitions: List[CopyPartition] = S3Stream.createPartitions(chunkSize, sourceLocation)(objectSize)
     partitions should have length 2
     partitions should equal(
@@ -179,20 +137,6 @@ class S3StreamSpec(_system: ActorSystem)
     val chunkSize = 25
     val objectSize = 0L
     val sourceLocation = S3Location("test-bucket", "test-key")
-
-    val credentialsProvider =
-      new AWSStaticCredentialsProvider(
-        new BasicAWSCredentials(
-          "test-Id",
-          "test-key"
-        )
-      )
-    val regionProvider =
-      new AwsRegionProvider {
-        def getRegion: String = "us-east-1"
-      }
-    implicit val settings: S3Settings =
-      S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
 
     val partitions: List[CopyPartition] = S3Stream.createPartitions(chunkSize, sourceLocation)(objectSize)
     partitions should have length 1
