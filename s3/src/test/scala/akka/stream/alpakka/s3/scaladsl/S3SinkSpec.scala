@@ -9,8 +9,6 @@ import akka.stream.alpakka.s3.impl.{S3Headers, S3Stream, ServerSideEncryption}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 
-import scala.concurrent.Future
-
 class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
   it should "succeed uploading an empty file" in {
