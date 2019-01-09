@@ -102,8 +102,10 @@ object ItemSpecOps extends TestOps {
 
   val transactPutItemsRequest = new TransactWriteItemsRequest().withTransactItems(
     List(
-      new TransactWriteItem().withPut(new Put().withTableName(tableName).withItem((keyMap("C", 0) + ("data" -> S(test8Data))).asJava)),
-      new TransactWriteItem().withPut(new Put().withTableName(tableName).withItem((keyMap("C", 1) + ("data" -> S(test8Data))).asJava)),
+      new TransactWriteItem()
+        .withPut(new Put().withTableName(tableName).withItem((keyMap("C", 0) + ("data" -> S(test8Data))).asJava)),
+      new TransactWriteItem()
+        .withPut(new Put().withTableName(tableName).withItem((keyMap("C", 1) + ("data" -> S(test8Data))).asJava)),
     ).asJava
   )
 

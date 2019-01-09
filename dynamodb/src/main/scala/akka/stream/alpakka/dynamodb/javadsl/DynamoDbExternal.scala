@@ -86,10 +86,12 @@ object DynamoDbExternal {
   def listTables(request: ListTablesRequest, client: DynamoClient): CompletionStage[ListTablesResult] =
     single(ListTables(request), client)
 
-  def transactGetItems(request: TransactGetItemsRequest, client: DynamoClient): CompletionStage[TransactGetItemsResult] =
+  def transactGetItems(request: TransactGetItemsRequest,
+                       client: DynamoClient): CompletionStage[TransactGetItemsResult] =
     single(TransactGetItems(request), client)
 
-  def transactWriteItems(request: TransactWriteItemsRequest, client: DynamoClient): CompletionStage[TransactWriteItemsResult] =
+  def transactWriteItems(request: TransactWriteItemsRequest,
+                         client: DynamoClient): CompletionStage[TransactWriteItemsResult] =
     single(TransactWriteItems(request), client)
 
   def updateTimeToLive(request: UpdateTimeToLiveRequest,
