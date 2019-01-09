@@ -6,7 +6,7 @@ package docs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.s3.impl.ListBucketVersion2
+import akka.stream.alpakka.s3.ListBucketVersion2
 import akka.stream.alpakka.s3.{MemoryBufferType, Proxy, S3Settings}
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.regions.AwsRegionProvider
@@ -34,7 +34,7 @@ object DoucmentationSnippets {
 
     // Set pathStyleAccess to true and specify proxy, leave region blank
     val settings =
-      new S3Settings(MemoryBufferType, proxy, credentialsProvider, regionProvider, true, None, ListBucketVersion2)
+      S3Settings(MemoryBufferType, proxy, credentialsProvider, regionProvider, true, None, ListBucketVersion2)
     // FIXME
     //val s3Client = S3Client(settings)(system, materializer)
     // #scala-bluemix-example

@@ -6,14 +6,12 @@ package akka.stream.alpakka.s3.scaladsl
 
 import akka.NotUsed
 import akka.http.scaladsl.model.headers.ByteRange
-import akka.stream.alpakka.s3.impl.{ListBucketVersion2, ServerSideEncryption}
+import akka.stream.alpakka.s3.impl.ServerSideEncryption
 import akka.stream.alpakka.s3._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 
 import scala.concurrent.Future
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
-import com.amazonaws.regions.AwsRegionProvider
 
 class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 

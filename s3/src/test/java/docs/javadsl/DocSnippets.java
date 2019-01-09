@@ -4,18 +4,18 @@
 
 package docs.javadsl;
 
-import akka.japi.Option;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.s3.MemoryBufferType;
 import akka.stream.alpakka.s3.Proxy;
 import akka.stream.alpakka.s3.S3Settings;
-import akka.stream.alpakka.s3.impl.ListBucketVersion2;
+import akka.stream.alpakka.s3.ListBucketVersion2;
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.AwsRegionProvider;
-import scala.Some;
+
+import java.util.Optional;
 
 public class DocSnippets extends S3WireMockBase {
 
@@ -37,17 +37,17 @@ public class DocSnippets extends S3WireMockBase {
             return "";
           }
         };
-    final Proxy proxy = new Proxy(host, port, "https");
+    final Proxy proxy = Proxy.create(host, port, "https");
 
     // Set pathStyleAccess to true and specify proxy, leave region blank
     final S3Settings settings =
-        new S3Settings(
+        S3Settings.create(
             MemoryBufferType.getInstance(),
-            Some.apply(proxy),
+            Optional.of(proxy),
             credentials,
             regionProvider,
             true,
-            scala.Option.empty(),
+            Optional.empty(),
             ListBucketVersion2.getInstance());
     // FIXME
     // final S3Client s3Client = S3Client.create(settings, system(), mat);

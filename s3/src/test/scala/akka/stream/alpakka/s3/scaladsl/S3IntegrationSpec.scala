@@ -7,8 +7,8 @@ package akka.stream.alpakka.s3.scaladsl
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.s3.{S3Attributes, S3Settings}
-import akka.stream.alpakka.s3.impl.{ListBucketVersion1, MetaHeaders, S3Headers}
+import akka.stream.alpakka.s3.{ListBucketVersion1, S3Attributes, S3Settings}
+import akka.stream.alpakka.s3.impl.{MetaHeaders, S3Headers}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
@@ -49,9 +49,9 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
   def config() = ConfigFactory.load().getConfig("aws")
 
   def otherRegionSettings =
-    S3Settings().copy(pathStyleAccess = true, s3RegionProvider = otherRegionProvider)
+    S3Settings().withPathStyleAccess(true).withS3RegionProvider(otherRegionProvider)
   def listBucketVersion1Settings =
-    S3Settings().copy(listBucketApiVersion = ListBucketVersion1)
+    S3Settings().withListBucketApiVersion(ListBucketVersion1)
 
   def defaultRegionContentCount = 4
   def otherRegionContentCount = 5
@@ -370,11 +370,11 @@ class MinioS3IntegrationSpec extends S3IntegrationSpec {
                                  |}
     """.stripMargin).withFallback(super.config())
 
-  override def otherRegionSettings = S3Settings().copy(
-    credentialsProvider = staticProvider,
-    endpointUrl = Some(endpointUrl),
-    pathStyleAccess = true
-  )
+  override def otherRegionSettings =
+    S3Settings()
+      .withCredentialsProvider(staticProvider)
+      .withEndpointUrl(endpointUrl)
+      .withPathStyleAccess(true)
 
   it should "properly set the endpointUrl" in {
     S3Settings().endpointUrl.value shouldEqual endpointUrl

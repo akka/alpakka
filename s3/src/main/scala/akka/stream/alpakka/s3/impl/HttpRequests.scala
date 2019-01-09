@@ -13,7 +13,7 @@ import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.Uri.{Authority, Query}
 import akka.http.scaladsl.model.headers.{Host, RawHeader}
 import akka.http.scaladsl.model.{ContentTypes, RequestEntity, _}
-import akka.stream.alpakka.s3.S3Settings
+import akka.stream.alpakka.s3.{ListBucketVersion1, ListBucketVersion2, S3Settings}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 

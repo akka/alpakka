@@ -749,7 +749,7 @@ private object S3WireMockBase {
   }
 
   private def config(proxyPort: Int) = ConfigFactory.parseString(s"""
-    |${S3Settings.configPath} {
+    |${S3Settings.ConfigPath} {
     |  proxy {
     |    host = localhost
     |    port = $proxyPort

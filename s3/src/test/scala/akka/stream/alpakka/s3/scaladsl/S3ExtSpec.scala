@@ -15,7 +15,7 @@ import scala.collection.JavaConverters._
 /*
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-class S3ClientSpec extends FlatSpecLike with Matchers {
+class S3ExtSpec extends FlatSpecLike with Matchers {
   it should "reuse application config from actor system" in {
     val config = ConfigFactory.parseMap(
       Map(

@@ -4,6 +4,7 @@
 
 package docs.javadsl;
 
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 import akka.NotUsed;
@@ -13,7 +14,7 @@ import akka.stream.Materializer;
 import akka.stream.alpakka.s3.MemoryBufferType;
 import akka.stream.alpakka.s3.S3Settings;
 import akka.stream.alpakka.s3.acl.CannedAcl;
-import akka.stream.alpakka.s3.impl.ListBucketVersion2;
+import akka.stream.alpakka.s3.ListBucketVersion2;
 import akka.stream.alpakka.s3.impl.S3Headers;
 import akka.stream.alpakka.s3.impl.ServerSideEncryption;
 import akka.stream.alpakka.s3.javadsl.MultipartUploadResult;
@@ -47,13 +48,13 @@ public class JavaExamplesSnippets {
   }
 
   private final S3Settings settings =
-      new S3Settings(
+      S3Settings.create(
           MemoryBufferType.getInstance(),
-          null,
+          Optional.empty(),
           credentials,
           regionProvider("us-east-1"),
           false,
-          scala.Option.empty(),
+          Optional.empty(),
           ListBucketVersion2.getInstance());
 
   public void aes256Encryption(

@@ -52,17 +52,6 @@ final case class ListBucketResult(isTruncated: Boolean,
                                   continuationToken: Option[String],
                                   contents: Seq[ListBucketResultContents])
 
-sealed trait ApiVersion {
-  def getInstance: ApiVersion
-}
-
-case object ListBucketVersion1 extends ApiVersion {
-  override val getInstance: ApiVersion = ListBucketVersion1
-}
-case object ListBucketVersion2 extends ApiVersion {
-  override val getInstance: ApiVersion = ListBucketVersion2
-}
-
 final case class CopyPartResult(lastModified: Instant, eTag: String)
 
 final case class CopyPartition(partNumber: Int, sourceLocation: S3Location, range: Option[ByteRange.Slice] = None)
@@ -416,7 +405,7 @@ private[alpakka] object S3Stream {
   private def getChunkBuffer(chunkSize: Int)(implicit settings: S3Settings) = settings.bufferType match {
     case MemoryBufferType =>
       new MemoryBuffer(chunkSize * 2)
-    case d @ DiskBufferType(_) =>
+    case d: DiskBufferType =>
       new DiskBuffer(2, chunkSize * 2, d.path)
   }
 
