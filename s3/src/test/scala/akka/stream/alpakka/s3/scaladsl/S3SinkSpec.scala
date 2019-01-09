@@ -5,6 +5,7 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.NotUsed
+import akka.stream.alpakka.s3.MultipartUploadResult
 import akka.stream.alpakka.s3.impl.{S3Headers, S3Stream, ServerSideEncryption}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString

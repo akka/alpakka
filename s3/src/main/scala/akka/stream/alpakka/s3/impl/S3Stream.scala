@@ -19,7 +19,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.stream.{ActorMaterializer, Attributes, Materializer}
 import akka.stream.alpakka.s3.auth.{CredentialScope, Signer, SigningKey}
-import akka.stream.alpakka.s3.scaladsl.{ListBucketResultContents, ObjectMetadata}
 import akka.stream.alpakka.s3._
 import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
 import akka.util.ByteString
@@ -237,17 +236,16 @@ private[alpakka] object S3Stream {
   /**
    * Uploads a stream of ByteStrings to a specified location as a multipart upload.
    */
-  def multipartUpload[T](
+  def multipartUpload(
       s3Location: S3Location,
       contentType: ContentType = ContentTypes.`application/octet-stream`,
       s3Headers: S3Headers,
-      transformResult: CompleteMultipartUploadResult => T,
       sse: Option[ServerSideEncryption] = None,
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4
-  ): Sink[ByteString, Source[T, NotUsed]] =
+  ): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
     chunkAndRequest(s3Location, contentType, s3Headers, chunkSize, sse)(chunkingParallelism)
-      .toMat(completionSink(s3Location, transformResult))(Keep.right)
+      .toMat(completionSink(s3Location))(Keep.right)
 
   private def initiateMultipartUpload(s3Location: S3Location,
                                       contentType: ContentType,
@@ -273,17 +271,16 @@ private[alpakka] object S3Stream {
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  def multipartCopy[T](
+  def multipartCopy(
       sourceLocation: S3Location,
       targetLocation: S3Location,
       sourceVersionId: Option[String] = None,
       contentType: ContentType = ContentTypes.`application/octet-stream`,
       s3Headers: S3Headers,
-      transformResult: CompleteMultipartUploadResult => T,
       sse: Option[ServerSideEncryption] = None,
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4
-  ): RunnableGraph[Source[T, NotUsed]] = {
+  ): RunnableGraph[Source[MultipartUploadResult, NotUsed]] = {
 
     // Pre step get source meta to get content length (size of the object)
     val eventualMaybeObjectSize =
@@ -301,7 +298,7 @@ private[alpakka] object S3Stream {
 
     // The individual copy upload part requests are processed here
     processUploadCopyPartRequests(copyRequests)(chunkingParallelism)
-      .toMat(completionSink(targetLocation, transformResult))(Keep.right)
+      .toMat(completionSink(targetLocation))(Keep.right)
   }
 
   private def computeMetaData(headers: Seq[HttpHeader], entity: ResponseEntity): ObjectMetadata =
@@ -459,10 +456,9 @@ private[alpakka] object S3Stream {
       .mapMaterializedValue(_ => NotUsed)
   }
 
-  private def completionSink[T](
-      s3Location: S3Location,
-      transformResult: CompleteMultipartUploadResult => T
-  ): Sink[UploadPartResponse, Source[T, NotUsed]] =
+  private def completionSink(
+      s3Location: S3Location
+  ): Sink[UploadPartResponse, Source[MultipartUploadResult, NotUsed]] =
     Setup
       .sink { implicit mat => implicit attr =>
         Sink
@@ -483,7 +479,7 @@ private[alpakka] object S3Stream {
               }
               .flatMapConcat(completeMultipartUpload(s3Location, _))
           }
-          .mapMaterializedValue(_.map(transformResult))
+          .mapMaterializedValue(_.map(r => MultipartUploadResult(r.location, r.bucket, r.key, r.etag, r.versionId)))
       }
       .mapMaterializedValue(s => Source.fromFuture(s).flatMapConcat(identity))
 

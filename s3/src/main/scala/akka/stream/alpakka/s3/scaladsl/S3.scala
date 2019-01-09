@@ -6,6 +6,7 @@ package akka.stream.alpakka.s3.scaladsl
 import akka.{Done, NotUsed}
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.http.scaladsl.model._
+import akka.stream.alpakka.s3.{ListBucketResultContents, MultipartUploadResult, ObjectMetadata}
 import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.impl._
 import akka.stream.scaladsl.{RunnableGraph, Sink, Source}
@@ -56,7 +57,7 @@ object S3 {
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
-   * @param versionId optional version idof the object
+   * @param versionId optional version id of the object
    * @return A [[scala.concurrent.Future Future]] of [[akka.Done]]
    */
   def deleteObject(bucket: String, key: String, versionId: Option[String] = None): Source[Done, NotUsed] =
@@ -124,7 +125,7 @@ object S3 {
    * @param key the s3 object key
    * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
    * @param metaHeaders any meta-headers you want to add
-   * @param cannedAcl a [[CannedAcl]], defauts to [[CannedAcl.Private]]
+   * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
    * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[ByteString]]'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
@@ -144,7 +145,6 @@ object S3 {
         S3Location(bucket, key),
         contentType,
         S3Headers(cannedAcl, metaHeaders),
-        MultipartUploadResult.apply,
         sse,
         chunkSize,
         chunkingParallelism
@@ -175,7 +175,6 @@ object S3 {
         S3Location(bucket, key),
         contentType,
         s3Headers.getOrElse(S3Headers.empty),
-        MultipartUploadResult.apply,
         sse,
         chunkSize,
         chunkingParallelism
@@ -215,7 +214,6 @@ object S3 {
         sourceVersionId,
         contentType,
         s3Headers.getOrElse(S3Headers.empty),
-        MultipartUploadResult.apply,
         sse,
         chunkSize,
         chunkingParallelism

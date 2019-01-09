@@ -13,6 +13,9 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import akka.actor.ActorSystem;
+import akka.stream.alpakka.s3.ListBucketResultContents;
+import akka.stream.alpakka.s3.MultipartUploadResult;
+import akka.stream.alpakka.s3.ObjectMetadata;
 import org.junit.Test;
 import akka.NotUsed;
 import akka.http.javadsl.model.Uri;
@@ -53,7 +56,7 @@ public class S3ClientTest extends S3WireMockBase {
             .get(5, TimeUnit.SECONDS);
 
     assertEquals(
-        new MultipartUploadResult(
+        MultipartUploadResult.create(
             Uri.create(url()), bucket(), bucketKey(), etag(), Optional.empty()),
         result);
   }
@@ -78,7 +81,7 @@ public class S3ClientTest extends S3WireMockBase {
             .get(5, TimeUnit.SECONDS);
 
     assertEquals(
-        new MultipartUploadResult(
+        MultipartUploadResult.create(
             Uri.create(url()), bucket(), bucketKey(), etag(), Optional.empty()),
         result);
   }
@@ -324,7 +327,7 @@ public class S3ClientTest extends S3WireMockBase {
 
     assertEquals(
         result,
-        new MultipartUploadResult(
+        MultipartUploadResult.create(
             Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag(), Optional.empty()));
   }
 
@@ -359,7 +362,7 @@ public class S3ClientTest extends S3WireMockBase {
 
     assertEquals(
         result,
-        new MultipartUploadResult(
+        MultipartUploadResult.create(
             Uri.create(targetUrl()),
             targetBucket(),
             targetBucketKey(),
@@ -382,7 +385,7 @@ public class S3ClientTest extends S3WireMockBase {
 
     assertEquals(
         result,
-        new MultipartUploadResult(
+        MultipartUploadResult.create(
             Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag(), Optional.empty()));
   }
 
@@ -401,7 +404,7 @@ public class S3ClientTest extends S3WireMockBase {
 
     assertEquals(
         result,
-        new MultipartUploadResult(
+        MultipartUploadResult.create(
             Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag(), Optional.empty()));
   }
 
@@ -420,7 +423,7 @@ public class S3ClientTest extends S3WireMockBase {
 
     assertEquals(
         result,
-        new MultipartUploadResult(
+        MultipartUploadResult.create(
             Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag(), Optional.empty()));
   }
 
@@ -446,7 +449,7 @@ public class S3ClientTest extends S3WireMockBase {
 
     assertEquals(
         result,
-        new MultipartUploadResult(
+        MultipartUploadResult.create(
             Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag(), Optional.empty()));
   }
 }

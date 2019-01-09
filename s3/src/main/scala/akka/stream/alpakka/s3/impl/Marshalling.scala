@@ -11,7 +11,7 @@ import akka.annotation.InternalApi
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, MediaTypes, Uri}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
-import akka.stream.alpakka.s3.scaladsl.ListBucketResultContents
+import akka.stream.alpakka.s3.ListBucketResultContents
 
 import scala.util.Try
 import scala.xml.NodeSeq

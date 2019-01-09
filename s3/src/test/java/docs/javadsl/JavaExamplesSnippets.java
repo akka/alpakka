@@ -17,7 +17,7 @@ import akka.stream.alpakka.s3.acl.CannedAcl;
 import akka.stream.alpakka.s3.ListBucketVersion2;
 import akka.stream.alpakka.s3.impl.S3Headers;
 import akka.stream.alpakka.s3.impl.ServerSideEncryption;
-import akka.stream.alpakka.s3.javadsl.MultipartUploadResult;
+import akka.stream.alpakka.s3.MultipartUploadResult;
 import akka.stream.alpakka.s3.javadsl.S3;
 import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Source;

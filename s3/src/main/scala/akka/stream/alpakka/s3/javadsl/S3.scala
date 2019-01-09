@@ -13,7 +13,7 @@ import akka.http.scaladsl.model.headers.{ByteRange => ScalaByteRange}
 import akka.http.scaladsl.model.{ContentType => ScalaContentType, HttpMethod => ScalaHttpMethod}
 import akka.stream.alpakka.s3.acl.CannedAcl
 import akka.stream.alpakka.s3.impl._
-import akka.stream.alpakka.s3.scaladsl
+import akka.stream.alpakka.s3.{ListBucketResultContents, MultipartUploadResult, ObjectMetadata}
 import akka.stream.javadsl.{RunnableGraph, Sink, Source}
 import akka.util.ByteString
 
@@ -94,7 +94,7 @@ object S3 {
     S3Stream
       .getObjectMetadata(bucket, key, Option(versionId.orElse(null)), Option(sse))
       .map { opt =>
-        Optional.ofNullable(opt.map(metaDataToJava).orNull)
+        Optional.ofNullable(opt.orNull)
       }
       .asJava
 
@@ -145,7 +145,6 @@ object S3 {
                  contentLength,
                  s3Headers,
                  None)
-      .map(metaDataToJava)
       .asJava
 
   /**
@@ -173,7 +172,6 @@ object S3 {
                  contentLength,
                  s3Headers,
                  Some(sse))
-      .map(metaDataToJava)
       .asJava
 
   /**
@@ -303,11 +301,11 @@ object S3 {
 
   private def toJava[M](
       download: akka.stream.scaladsl.Source[Option[
-        (akka.stream.scaladsl.Source[ByteString, M], scaladsl.ObjectMetadata)
+        (akka.stream.scaladsl.Source[ByteString, M], ObjectMetadata)
       ], NotUsed]
   ): Source[Optional[JPair[Source[ByteString, M], ObjectMetadata]], NotUsed] =
     download.map {
-      _.map { case (stream, meta) => JPair(stream.asJava, metaDataToJava(meta)) }.asJava
+      _.map { case (stream, meta) => JPair(stream.asJava, meta) }.asJava
     }.asJava
 
   /**
@@ -409,9 +407,6 @@ object S3 {
   def listBucket(bucket: String, prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
     S3Stream
       .listBucket(bucket, prefix)
-      .map { scalaContents =>
-        listingToJava(scalaContents)
-      }
       .asJava
 
   /**
@@ -428,10 +423,7 @@ object S3 {
                       contentType: ContentType,
                       s3Headers: S3Headers): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
     S3Stream
-      .multipartUpload(S3Location(bucket, key),
-                       contentType.asInstanceOf[ScalaContentType],
-                       s3Headers,
-                       MultipartUploadResult.create)
+      .multipartUpload(S3Location(bucket, key), contentType.asInstanceOf[ScalaContentType], s3Headers)
       .mapMaterializedValue(_.asJava)
       .asJava
 
@@ -451,11 +443,7 @@ object S3 {
                       s3Headers: S3Headers,
                       sse: ServerSideEncryption): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
     S3Stream
-      .multipartUpload(S3Location(bucket, key),
-                       contentType.asInstanceOf[ScalaContentType],
-                       s3Headers,
-                       MultipartUploadResult.create,
-                       Some(sse))
+      .multipartUpload(S3Location(bucket, key), contentType.asInstanceOf[ScalaContentType], s3Headers, Some(sse))
       .mapMaterializedValue(_.asJava)
       .asJava
 
@@ -589,7 +577,7 @@ object S3 {
    * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
    * @param s3Headers any headers you want to add
    * @param sse the server side encryption to use
-   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.javadsl.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
    */
   def multipartCopy(sourceBucket: String,
                     sourceKey: String,
@@ -608,7 +596,6 @@ object S3 {
             Option(sourceVersionId.orElse(null)),
             contentType.asInstanceOf[ScalaContentType],
             s3Headers,
-            MultipartUploadResult.create,
             Option(sse)
           )
       }
@@ -624,7 +611,7 @@ object S3 {
    * @param sourceVersionId version id of source object, if the versioning is enabled in source bucket
    * @param s3Headers any headers you want to add
    * @param sse the server side encryption to use
-   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.javadsl.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
    */
   def multipartCopy(sourceBucket: String,
                     sourceKey: String,
@@ -652,7 +639,7 @@ object S3 {
    * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
    * @param s3Headers any headers you want to add
    * @param sse the server side encryption to use
-   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.javadsl.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
    */
   def multipartCopy(sourceBucket: String,
                     sourceKey: String,
@@ -672,7 +659,7 @@ object S3 {
    * @param targetKey the target s3 key
    * @param s3Headers any headers you want to add
    * @param sse the server side encryption to use
-   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.javadsl.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
    */
   def multipartCopy(sourceBucket: String,
                     sourceKey: String,
@@ -695,7 +682,7 @@ object S3 {
    * @param sourceKey the source s3 key
    * @param targetBucket the target s3 bucket name
    * @param targetKey the target s3 key
-   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.javadsl.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   * @return a [[java.util.concurrent.CompletionStage CompletionStage]] containing the [[akka.stream.alpakka.s3.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
    */
   def multipartCopy(sourceBucket: String,
                     sourceKey: String,
@@ -708,17 +695,6 @@ object S3 {
                   ContentTypes.APPLICATION_OCTET_STREAM,
                   S3Headers.empty,
                   null)
-
-  private def listingToJava(scalaContents: scaladsl.ListBucketResultContents): ListBucketResultContents =
-    ListBucketResultContents(scalaContents.bucketName,
-                             scalaContents.key,
-                             scalaContents.eTag,
-                             scalaContents.size,
-                             scalaContents.lastModified,
-                             scalaContents.storageClass)
-
-  private def metaDataToJava(scalaContents: scaladsl.ObjectMetadata): ObjectMetadata =
-    new ObjectMetadata(scalaContents)
 
   private def func[T, R](f: T => R) = new akka.japi.function.Function[T, R] {
     override def apply(param: T): R = f(param)
