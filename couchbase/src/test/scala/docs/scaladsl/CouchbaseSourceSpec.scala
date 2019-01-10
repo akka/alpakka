@@ -4,23 +4,20 @@
 
 package docs.scaladsl
 
-import java.util.concurrent.TimeUnit
-
-import akka.{Done, NotUsed}
+import akka.Done
 import akka.stream.alpakka.couchbase.CouchbaseWriteSettings
 import akka.stream.alpakka.couchbase.scaladsl.{CouchbaseFlow, CouchbaseSource}
-import akka.stream.scaladsl.{Flow, Sink, Source}
-import com.couchbase.client.java.PersistTo
-import com.couchbase.client.java.query.AsyncN1qlQueryRow
+import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import com.couchbase.client.java.document.json.JsonObject
 import com.couchbase.client.java.query.Select.select
 import com.couchbase.client.java.query.dsl.Expression._
 import org.specs2.matcher.Matchers
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterAll
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
 import scala.collection.immutable.Seq
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
 class CouchbaseSourceSpec extends Specification with BeforeAfterAll with CouchbaseSupport with Matchers {
@@ -28,23 +25,6 @@ class CouchbaseSourceSpec extends Specification with BeforeAfterAll with Couchba
   sequential
 
   "CouchbaseSource" should {
-
-    "initiate Couchbase Cluster" in {
-
-      //#init-cluster
-      import com.couchbase.client.java.{Bucket, CouchbaseCluster}
-      import com.couchbase.client.java.auth.PasswordAuthenticator
-
-      val cluster: CouchbaseCluster = CouchbaseCluster.create("localhost")
-      cluster.authenticate(new PasswordAuthenticator("Administrator", "password"))
-      val cbBucket: Bucket = cluster.openBucket("akka")
-      //#init-cluster
-
-      val isClosed: Boolean = cbBucket.isClosed
-      cbBucket.close()
-
-      isClosed shouldEqual false
-    }
 
     "run get by Bulk flow" in assertAllStagesStopped {
 
@@ -54,57 +34,58 @@ class CouchbaseSourceSpec extends Specification with BeforeAfterAll with Couchba
 
       val ids = Seq("First", "Second", "Third", "Fourth")
 
-      val source: Source[Seq[String], NotUsed] = Source.single(ids)
-      val flow: Flow[Seq[String], Seq[JsonDocument], NotUsed] =
-        CouchbaseFlow.fromBulkIds(queryBucket, classOf[JsonDocument])
-      val futureResult: Future[Seq[JsonDocument]] = source.via(flow).runWith(Sink.head[Seq[JsonDocument]])
+      val futureResult: Future[Seq[JsonDocument]] =
+        Source(ids)
+          .via(CouchbaseFlow.fromId(sessionSettings, queryBucketName))
+          .runWith(Sink.seq[JsonDocument])
       // #by-bulk-id-flow
 
-      val result = Await.result(futureResult, Duration(5, TimeUnit.SECONDS))
+      val result = Await.result(futureResult, 5.seconds)
 
       result.map(_.id()) must contain(exactly("First", "Second", "Third", "Fourth"))
     }
 
     "run simple Statement Query" in assertAllStagesStopped {
-      val resultAsFuture: Future[Seq[AsyncN1qlQueryRow]] =
-        CouchbaseSource.fromStatement(select("*").from(i("akkaquery")).limit(10), queryBucket).runWith(Sink.seq)
-      val result = Await.result(resultAsFuture, Duration(5, TimeUnit.SECONDS))
+      val resultAsFuture: Future[Seq[JsonObject]] =
+        CouchbaseSource
+          .fromStatement(sessionSettings, select("*").from(i(queryBucketName)).limit(10), bucketName)
+          .runWith(Sink.seq)
+      val result = Await.result(resultAsFuture, 5.seconds)
       result.length shouldEqual 4
     }
 
     "run simple N11QL query" in assertAllStagesStopped {
 
       //#init-sourcen1ql
-      import com.couchbase.client.java.query.{AsyncN1qlQueryRow, N1qlParams, N1qlQuery}
+      import com.couchbase.client.java.query.{N1qlParams, N1qlQuery}
 
       val params = N1qlParams.build.adhoc(false)
-      val query = N1qlQuery.simple("select count(*) from akkaquery", params)
+      val query = N1qlQuery.simple(s"select count(*) from $queryBucketName", params)
 
-      val resultAsFuture: Future[Seq[AsyncN1qlQueryRow]] =
-        CouchbaseSource.fromN1qlQuery(query, queryBucket).runWith(Sink.seq)
+      val resultAsFuture: Future[Seq[JsonObject]] =
+        CouchbaseSource.fromN1qlQuery(sessionSettings, query, bucketName).runWith(Sink.seq)
       //#init-sourcen1ql
 
-      val result = Await.result(resultAsFuture, Duration(5, TimeUnit.SECONDS))
-      result.head.value().get("$1") shouldEqual 4
+      val result = Await.result(resultAsFuture, 5.seconds)
+      result.head.get("$1") shouldEqual 4
     }
 
   }
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val bulkUpsertResult: Future[Done] = Source
-      .fromIterator(() => bulk.iterator)
-      .map(createCBJson)
-      .grouped(2)
-      .via(CouchbaseFlow.upsertBulk(CouchbaseWriteSettings().withPersistTo(PersistTo.NONE), queryBucket))
+    val bulkUpsertResult: Future[Done] = Source(sampleSequence)
+      .map(toJsonDocument)
+      .via(CouchbaseFlow.upsert(sessionSettings, CouchbaseWriteSettings.inMemory, queryBucketName))
       .runWith(Sink.ignore)
-    Await.result(bulkUpsertResult, Duration(5, TimeUnit.SECONDS))
+    Await.result(bulkUpsertResult, 5.seconds)
     //all queries are Eventual Consistent, se we need to wait for index refresh!!
     Thread.sleep(2000)
   }
 
-  override def afterAll(): Unit =
-    //cleanAllInBucket(bulk.map(_.id),queryBucket)
+  override def afterAll(): Unit = {
+    cleanAllInBucket(sampleSequence.map(_.id), queryBucketName)
     super.afterAll()
+  }
 
 }

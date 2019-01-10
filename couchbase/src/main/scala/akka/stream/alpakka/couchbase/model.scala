@@ -4,11 +4,9 @@
 
 package akka.stream.alpakka.couchbase
 
-import java.util.Optional
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
-import akka.annotation.InternalApi
 import com.couchbase.client.java.env.CouchbaseEnvironment
 import com.couchbase.client.java.{PersistTo, ReplicateTo}
 import com.typesafe.config.Config
@@ -16,14 +14,18 @@ import com.typesafe.config.Config
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
 
+/**
+ * Configure Couchbase writes.
+ */
 object CouchbaseWriteSettings {
 
-  // TODO name it `noReplication` or YOLO?
-  val default = CouchbaseWriteSettings(1, ReplicateTo.ONE, PersistTo.NONE, 2.seconds)
+  /**
+   * Simple settings not requiring replication nor persistence.
+   */
+  val inMemory = CouchbaseWriteSettings(1, ReplicateTo.NONE, PersistTo.NONE, 2.seconds)
 
-  def apply(): CouchbaseWriteSettings = default
+  def apply(): CouchbaseWriteSettings = inMemory
 
   def apply(parallelism: Int,
             replicateTo: ReplicateTo,
@@ -31,7 +33,7 @@ object CouchbaseWriteSettings {
             timeout: FiniteDuration): CouchbaseWriteSettings =
     new CouchbaseWriteSettings(parallelism, replicateTo, persistTo, timeout)
 
-  def create(): CouchbaseWriteSettings = default
+  def create(): CouchbaseWriteSettings = inMemory
 
   def create(parallelism: Int,
              replicateTo: ReplicateTo,
@@ -44,6 +46,9 @@ object CouchbaseWriteSettings {
 
 }
 
+/**
+ * Configure Couchbase writes.
+ */
 final class CouchbaseWriteSettings private (val parallelism: Int,
                                             val replicateTo: ReplicateTo,
                                             val persistTo: PersistTo,
@@ -71,6 +76,17 @@ final class CouchbaseWriteSettings private (val parallelism: Int,
                          persistTo: PersistTo = persistTo,
                          timeout: FiniteDuration = timeout) =
     new CouchbaseWriteSettings(parallelism, replicateTo, persistTo, timeout)
+
+  override def equals(other: Any): Boolean = other match {
+    case that: CouchbaseWriteSettings =>
+      this.parallelism == that.parallelism &&
+      this.replicateTo == that.replicateTo &&
+      this.persistTo == that.persistTo &&
+      this.timeout == that.timeout
+    case _ => false
+  }
+
+  override def hashCode(): Int = java.util.Objects.hash(int2Integer(parallelism), replicateTo, persistTo, timeout)
 
   override def toString: String =
     "CouchbaseWriteSettings(" +
@@ -176,60 +192,11 @@ final class CouchbaseSessionSettings private (val username: String,
   override def hashCode(): Int =
     java.util.Objects.hash(username, password, nodes, environment)
 
-  override def toString =
+  override def toString: String =
     "CouchbaseSessionSettings(" +
     s"username=$username," +
     s"password=*****," +
     s"nodes=${nodes.mkString("[", ", ", "]")}," +
     s"environment=$environment" +
     ")"
-}
-
-final class FailedOperation private (val id: String, val ex: Throwable) {
-
-  override def equals(other: Any): Boolean = other match {
-    case that: FailedOperation =>
-      id == that.id &&
-      ex == that.ex
-    case _ => false
-  }
-
-  override def hashCode(): Int = {
-    val state = Seq(id, ex)
-    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
-  }
-}
-
-object FailedOperation {
-
-  /** Scala API */
-  @InternalApi
-  private[couchbase] def apply(id: String, ex: Throwable) = new FailedOperation(id = id, ex = ex)
-
-  /** Java API */
-  @InternalApi
-  private[couchbase] def create(id: String, ex: Throwable) = new FailedOperation(id = id, ex = ex)
-}
-
-final case class SingleOperationResult[T](entity: T, result: Try[String]) {
-
-  /** Java API */
-  def getEntity: T = entity
-
-  /** Java API */
-  def getException: Optional[Throwable] =
-    result match {
-      case Failure(ex) => Optional.of(ex)
-      case Success(_) => Optional.empty()
-
-    }
-}
-
-final case class BulkOperationResult[T](entities: Seq[T], failures: Seq[FailedOperation] = Seq[FailedOperation]()) {
-
-  /** Java API */
-  def getEntities: java.util.List[T] = entities.asJava
-
-  /** Java API */
-  def getFailures: java.util.List[FailedOperation] = failures.asJava
 }
