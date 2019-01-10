@@ -39,7 +39,7 @@ class ExampleUsage {
   val projectId = "test-XXXXX"
   val apiKey = "AIzaSyCVvqrlz057gCssc70n5JERyTW4TpB4ebE"
 
-  val config = PubSubConfig(projectId, apiKey, clientEmail, privateKey)
+  val config = PubSubConfig(projectId, clientEmail, privateKey)
 
   val topic = "topic1"
   val subscription = "subscription1"

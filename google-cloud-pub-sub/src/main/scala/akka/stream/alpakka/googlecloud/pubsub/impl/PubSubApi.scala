@@ -66,7 +66,7 @@ private[pubsub] trait PubSubApi {
     DefaultJsonProtocol.jsonFormat1(AcknowledgeRequest.apply)
   private implicit val pullRequestFormat = DefaultJsonProtocol.jsonFormat2(PubSubApi.PullRequest)
 
-  def pull(project: String, subscription: String, maybeAccessToken: Option[String], apiKey: String)(
+  def pull(project: String, subscription: String, maybeAccessToken: Option[String])(
       implicit as: ActorSystem,
       materializer: Materializer
   ): Future[PullResponse] = {
@@ -83,11 +83,10 @@ private[pubsub] trait PubSubApi {
     } yield pullResponse
   }
 
-  def acknowledge(project: String,
-                  subscription: String,
-                  maybeAccessToken: Option[String],
-                  apiKey: String,
-                  request: AcknowledgeRequest)(implicit as: ActorSystem, materializer: Materializer): Future[Unit] = {
+  def acknowledge(project: String, subscription: String, maybeAccessToken: Option[String], request: AcknowledgeRequest)(
+      implicit as: ActorSystem,
+      materializer: Materializer
+  ): Future[Unit] = {
     import materializer.executionContext
 
     val url: Uri =
@@ -111,11 +110,7 @@ private[pubsub] trait PubSubApi {
       maybeAccessToken.map(accessToken => request.addCredentials(OAuth2BearerToken(accessToken))).getOrElse(request)
     )
 
-  def publish(project: String,
-              topic: String,
-              maybeAccessToken: Option[String],
-              apiKey: String,
-              request: PublishRequest)(
+  def publish(project: String, topic: String, maybeAccessToken: Option[String], request: PublishRequest)(
       implicit as: ActorSystem,
       materializer: Materializer
   ): Future[immutable.Seq[String]] = {

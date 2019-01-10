@@ -37,10 +37,8 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       val httpApi = mockHttpApi
     }
     val http: HttpExt = mock[HttpExt]
-    val config = PubSubConfig(TestCredentials.projectId,
-                              TestCredentials.apiKey,
-                              TestCredentials.clientEmail,
-                              TestCredentials.privateKey).withSession(mock[GoogleSession])
+    val config = PubSubConfig(TestCredentials.projectId, TestCredentials.clientEmail, TestCredentials.privateKey)
+      .withSession(mock[GoogleSession])
   }
 
   it should "auth and publish the message" in new Fixtures {
@@ -59,7 +57,6 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       mockHttpApi.publish(project = TestCredentials.projectId,
                           topic = "topic1",
                           maybeAccessToken = Some("ok"),
-                          apiKey = TestCredentials.apiKey,
                           request = request)
     ).thenReturn(Future.successful(Seq("id1")))
 
@@ -80,7 +77,6 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
           project: String,
           topic: String,
           maybeAccessToken: Option[String],
-          apiKey: String,
           request: PublishRequest
       )(implicit as: ActorSystem, materializer: Materializer): Future[Seq[String]] =
         Future.successful(Seq("id2"))
@@ -104,10 +100,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
 
     when(config.session.getToken()).thenReturn(Future.successful("ok"))
     when(
-      mockHttpApi.pull(project = TestCredentials.projectId,
-                       subscription = "sub1",
-                       apiKey = TestCredentials.apiKey,
-                       maybeAccessToken = Some("ok"))
+      mockHttpApi.pull(project = TestCredentials.projectId, subscription = "sub1", maybeAccessToken = Some("ok"))
     ).thenReturn(Future.successful(PullResponse(receivedMessages = Some(Seq()))))
       .thenReturn(Future.successful(PullResponse(receivedMessages = Some(Seq(message)))))
 
@@ -127,7 +120,6 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       mockHttpApi.acknowledge(
         project = TestCredentials.projectId,
         subscription = "sub1",
-        apiKey = TestCredentials.apiKey,
         maybeAccessToken = Some("ok"),
         request = AcknowledgeRequest(ackIds = Seq("a1"))
       )
@@ -155,7 +147,6 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
           project: String,
           subscription: String,
           maybeAccessToken: Option[String],
-          apiKey: String,
           request: AcknowledgeRequest
       )(implicit as: ActorSystem, materializer: Materializer): Future[Unit] =
         Future.successful(())
