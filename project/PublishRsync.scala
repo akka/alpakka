@@ -21,7 +21,9 @@ object PublishRsyncPlugin extends AutoPlugin {
   def publishRsyncSettings(): Seq[Setting[_]] = Seq(
     publishRsync := {
       val (from, to) = publishRsyncArtifact.value
-      s"rsync -azP $from/ ${publishRsyncHost.value}:$to" !
+      Process(Seq("rsync", "-azP", s"$from/", s"${publishRsyncHost.value}:$to"),
+              None,
+              "RSYNC_RSH" -> "ssh -o StrictHostKeyChecking=no").!
     }
   )
 }
