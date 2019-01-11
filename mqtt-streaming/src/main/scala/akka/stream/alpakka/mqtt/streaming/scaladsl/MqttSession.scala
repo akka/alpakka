@@ -15,6 +15,7 @@ import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Source}
 import akka.util.ByteString
 
 import scala.concurrent.{Future, Promise}
+import scala.util.{Failure, Success}
 import scala.util.control.NoStackTrace
 
 object MqttSession {
@@ -150,7 +151,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
             .watch(clientConnector.toUntyped)
             .watchTermination() {
               case (_, terminated) =>
-                terminated.foreach(_ => clientConnector ! ClientConnector.ConnectionLost)
+                terminated.onComplete(_ => clientConnector ! ClientConnector.ConnectionLost)
                 NotUsed
             }
             .via(killSwitch.flow)
@@ -170,7 +171,12 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                     }.mapError {
                         case ClientConnector.PingFailed => ActorMqttClientSession.PingFailed
                       }
-                      .watchTermination()((_, done) => done.foreach(_ => killSwitch.shutdown())))
+                      .watchTermination() { (_, done) =>
+                        done.onComplete {
+                          case Success(_) => killSwitch.shutdown()
+                          case Failure(t) => killSwitch.abort(t)
+                        }
+                      })
                   )
                 case Command(cp: PubAck, _) =>
                   val reply = Promise[Consumer.ForwardPubAck.type]
@@ -228,7 +234,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
       .watch(clientConnector.toUntyped)
       .watchTermination() {
         case (_, terminated) =>
-          terminated.foreach(_ => clientConnector ! ClientConnector.ConnectionLost)
+          terminated.onComplete(_ => clientConnector ! ClientConnector.ConnectionLost)
           NotUsed
       }
       .via(new MqttFrameStage(settings.maxPacketSize))
@@ -430,7 +436,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
             .watch(serverConnector.toUntyped)
             .watchTermination() {
               case (_, terminated) =>
-                terminated.foreach(_ => serverConnector ! ServerConnector.ConnectionLost(connectionId))
+                terminated.onComplete(_ => serverConnector ! ServerConnector.ConnectionLost(connectionId))
                 NotUsed
             }
             .via(killSwitch.flow)
@@ -452,7 +458,12 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                     }.mapError {
                         case ServerConnector.PingFailed => ActorMqttServerSession.PingFailed
                       }
-                      .watchTermination()((_, done) => done.foreach(_ => killSwitch.shutdown())))
+                      .watchTermination() { (_, done) =>
+                        done.onComplete {
+                          case Success(_) => killSwitch.shutdown()
+                          case Failure(t) => killSwitch.abort(t)
+                        }
+                      })
                   )
                 case Command(cp: SubAck, _) =>
                   val reply = Promise[Publisher.ForwardSubAck.type]
@@ -506,7 +517,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
       .watch(serverConnector.toUntyped)
       .watchTermination() {
         case (_, terminated) =>
-          terminated.foreach(_ => serverConnector ! ServerConnector.ConnectionLost(connectionId))
+          terminated.onComplete(_ => serverConnector ! ServerConnector.ConnectionLost(connectionId))
           NotUsed
       }
       .via(new MqttFrameStage(settings.maxPacketSize))
