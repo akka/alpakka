@@ -31,7 +31,7 @@ jobs:
       name: "Compile all tests (with Scala 2.11)"
     - env: CMD="unidoc"
       name: "Create all API docs"
-    - env: CMD="docs/paradox"
+    - env: CMD="docs/Paradox/paradox"
       name: "Create site with Paradox"
 
     - stage: test
@@ -106,9 +106,7 @@ jobs:
 
     - stage: publish
       script: sbt -jvm-opts .jvmopts-travis +publish
-
-    - stage: techhub-ping
-      script: curl -I https://ci.lightbend.com/job/techhub-publisher/build?token=$TECH_HUB_TOKEN
+    - script: openssl aes-256-cbc -K $encrypted_bbf1dc4f2a07_key -iv $encrypted_bbf1dc4f2a07_iv -in .travis/travis_alpakka_rsa.enc -out .travis/id_rsa -d && eval "$(ssh-agent -s)" && chmod 600 .travis/id_rsa && ssh-add .travis/id_rsa && sbt -jvm-opts .jvmopts-travis docs/publishRsync
 
 stages:
   # runs on master commits and PRs
@@ -126,10 +124,6 @@ stages:
   # runs on main repo master commits or version-tagged commits
   - name: publish
     if: repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v )
-
-  # runs on main repo version-tagged commits
-  - name: techhub-ping
-    if: repo = akka/alpakka AND tag =~ ^v
 
 after_failure:
   - docker-compose logs
