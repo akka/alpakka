@@ -39,7 +39,10 @@ object CouchbaseSession {
              bucketName: String,
              executor: Executor): CompletionStage[CouchbaseSession] =
     ScalaDslCouchbaseSession
-      .apply(settings, bucketName)(ExecutionContext.fromExecutor(executor))
+      .apply(settings, bucketName)(executor match {
+        case ec: ExecutionContext => ec
+        case _ => ExecutionContext.fromExecutor(executor)
+      })
       .map(new CouchbaseSessionJavaAdapter(_).asInstanceOf[CouchbaseSession])(
         ExecutionContexts.sameThreadExecutionContext
       )
