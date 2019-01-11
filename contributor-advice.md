@@ -180,5 +180,5 @@ unused methods.
 
 Use ScalaDoc if you see the need to describe the API usage better than the naming does.
 
-Run `sbt docs/Local/paradox` to generate reference docs while developing. Generated documentation can be 
-found in the `./docs/target/paradox/site/local` directory.
+Run `sbt docs/makeSite` to generate reference and API docs while developing. Generated documentation can be
+found in the `./docs/target/site` directory.
