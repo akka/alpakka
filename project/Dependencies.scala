@@ -328,16 +328,15 @@ object Dependencies {
   val circeVersion = "0.11.0"
   val BackblazeB2 = Seq(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka"     %% "akka-http"     % AkkaHttpVersion,
-      "de.heikoseeberger"     %% "akka-http-circe" % "1.23.0", // ApacheV2
+      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+      "de.heikoseeberger" %% "akka-http-circe" % "1.22.0", // ApacheV2
       "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0", // ApacheV2
       "ch.qos.logback" % "logback-classic" % "1.2.3", // EPL v1.0 or LGPL 2.1
-      "com.github.tomakehurst" % "wiremock"      % "2.20.0" % Test //ApacheV2
+      "com.github.tomakehurst" % "wiremock" % "2.20.0" % Test //ApacheV2
     ) ++ Seq( // ApacheV2
-      "io.circe" %% "circe-core",
-      "io.circe" %% "circe-generic",
-      "io.circe" %% "circe-parser"
-    ).map(_ % circeVersion)
+             "io.circe" %% "circe-core",
+             "io.circe" %% "circe-generic",
+             "io.circe" %% "circe-parser").map(_ % circeVersion)
   )
 
   val Sns = Seq(
