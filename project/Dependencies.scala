@@ -60,7 +60,6 @@ object Dependencies {
       "io.reactivex" % "rxjava-reactive-streams" % "1.2.1", //ApacheV2
       "com.typesafe.play" %% "play-json" % "2.6.9" % Test, // MIT like: http://www.slf4j.org/license.html
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test, // Apache V2
-      "org.specs2" %% "specs2-core" % "4.3.2" % Test //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
     )
   )
 

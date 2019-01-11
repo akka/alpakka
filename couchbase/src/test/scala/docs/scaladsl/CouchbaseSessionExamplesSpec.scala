@@ -60,7 +60,10 @@ class CouchbaseSessionExamplesSpec
       cluster.authenticate(new PasswordAuthenticator("Administrator", "password"))
       val bucket: Bucket = cluster.openBucket("akka")
       val session: CouchbaseSession = CouchbaseSession(bucket)
-      actorSystem.registerOnTermination(session.close())
+      actorSystem.registerOnTermination {
+        session.close()
+        bucket.close()
+      }
 
       val id = "myId"
       val documentFuture = session.get(id).flatMap {

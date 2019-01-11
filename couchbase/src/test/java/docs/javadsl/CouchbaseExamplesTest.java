@@ -111,7 +111,11 @@ public class CouchbaseExamplesTest {
     cluster.authenticate(new PasswordAuthenticator("Administrator", "password"));
     Bucket bucket = cluster.openBucket("akka");
     CouchbaseSession session = CouchbaseSession.create(bucket);
-    actorSystem.registerOnTermination(session::close);
+    actorSystem.registerOnTermination(
+        () -> {
+          session.close();
+          bucket.close();
+        });
 
     String id = "First";
     CompletionStage<Optional<JsonDocument>> documentCompletionStage = session.get(id);

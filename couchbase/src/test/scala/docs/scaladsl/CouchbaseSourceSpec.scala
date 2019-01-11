@@ -9,17 +9,21 @@ import akka.stream.alpakka.couchbase.testing.CouchbaseSupport
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import com.couchbase.client.java.document.json.JsonObject
-import org.specs2.matcher.Matchers
-import org.specs2.mutable.Specification
-import org.specs2.specification.BeforeAfterAll
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
-class CouchbaseSourceSpec extends Specification with BeforeAfterAll with CouchbaseSupport with Matchers {
+class CouchbaseSourceSpec
+    extends WordSpec
+    with BeforeAndAfterAll
+    with CouchbaseSupport
+    with Matchers
+    with ScalaFutures {
 
-  sequential
+  override implicit def patienceConfig: PatienceConfig = PatienceConfig(3.seconds)
 
   "CouchbaseSource" should {
 
@@ -32,9 +36,8 @@ class CouchbaseSourceSpec extends Specification with BeforeAfterAll with Couchba
         CouchbaseSource
           .fromStatement(sessionSettings, select("*").from(i(queryBucketName)).limit(10), bucketName)
           .runWith(Sink.seq)
-      // #statement
-      val result = Await.result(resultAsFuture, 5.seconds)
-      result.length shouldEqual 4
+
+      resultAsFuture.futureValue.length shouldEqual 4
     }
 
     "run simple N1QL query" in assertAllStagesStopped {
@@ -51,15 +54,14 @@ class CouchbaseSourceSpec extends Specification with BeforeAfterAll with Couchba
           .runWith(Sink.seq)
       //#n1ql
 
-      val result = Await.result(resultAsFuture, 5.seconds)
-      result.head.get("$1") shouldEqual 4
+      resultAsFuture.futureValue.head.get("$1") shouldEqual 4
     }
 
   }
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    upsertSampleData();
+    upsertSampleData()
   }
 
   override def afterAll(): Unit = {
