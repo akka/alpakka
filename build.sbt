@@ -253,7 +253,7 @@ lazy val docs = project
     Paradox / siteSubdirName := s"docs/alpakka/${if (isSnapshot.value) "snapshot" else version.value}",
     Paradox / sourceDirectory := sourceDirectory.value / "main" / "paradox",
     Paradox / paradoxProperties ++= Map(
-      "project.url" -> "https://developer.lightbend.com/docs/alpakka/current/",
+      "project.url" -> "https://doc.akka.io/docs/alpakka/current/",
       "akka.version" -> Dependencies.AkkaVersion,
       "akka-http.version" -> Dependencies.AkkaHttpVersion,
       "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.AkkaVersion}/%s",
