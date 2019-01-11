@@ -51,10 +51,10 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockHead(contentLength)
 
     //#objectMetadata
-    val metadata = s3Client.getObjectMetadata(bucket, bucketKey)
+    val metadata = S3.getObjectMetadata(bucket, bucketKey)
     //#objectMetadata
 
-    val Some(result) = metadata.futureValue
+    val Some(result) = metadata.runWith(Sink.head).futureValue
 
     result.eTag shouldBe Some(etag)
     result.contentLength shouldBe contentLength
