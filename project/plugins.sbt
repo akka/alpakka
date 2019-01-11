@@ -10,12 +10,13 @@ addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "2.1.0")
 addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.4")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.3.0")
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.13")
-addSbtPlugin("lt.dvim.paradox" % "sbt-paradox-local" % "0.2")
+addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.3.3-2m")
+addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.2")
 addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.4.1")
 addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "0.4")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.4")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.4")
-// patched version of sbt-dependency-graph
 // depend directly on the patched version see https://github.com/akka/alpakka/issues/1388
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.2+10-148ba0ff")
+// patched version of sbt-dependency-graph and sbt-site
 resolvers += Resolver.bintrayIvyRepo("2m", "sbt-plugins")
