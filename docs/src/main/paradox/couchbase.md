@@ -1,12 +1,22 @@
-#Couchbase
+# Couchbase
 
-The Couchbase connector allows you to read and write to Couchbase. You can query a bucket from CouchbaseSource using N1QL queries or use bulk operation to insert or update with CouchbaseFlow or CouchbaseSink. Couchbase connector uses Couchbase Java SDK behind the scene. 
+@@@ note { title="Couchbase"}
 
-You can read more about Couchbase [here](https://www.couchbase.com/products/server) and you can read more about Couchbase Java SDK [here](https://developer.couchbase.com/documentation/server/current/sdk/java/start-using-sdk.html)
+Couchbase is an open-source, distributed (shared-nothing architecture) multi-model NoSQL document-oriented database software package that is optimized for interactive applications. These applications may serve many concurrent users by creating, storing, retrieving, aggregating, manipulating and presenting data. In support of these kinds of application needs, Couchbase Server is designed to provide easy-to-scale key-value or JSON document access with low latency and high sustained throughput. It is designed to be clustered from a single machine to very large-scale deployments spanning many machines. 
 
-The Couchbase connector supports all document formats which are supported by SDK. All those formats extend `Document<T>` interface and this is the level of abstraction that connector is using.
+Couchbase provides client protocol compatibility with memcached, but adds disk persistence, data replication, live cluster reconfiguration, rebalancing and multitenancy with data partitioning. 
+
+-- [Wikipedia](https://en.wikipedia.org/wiki/Couchbase_Server)
+
+@@@
+
+Alpakka Couchbase allows you to read and write to Couchbase. You can query a bucket from CouchbaseSource using N1QL queries or reading by document ID. Couchbase connector uses [Couchbase Java SDK verison ${couchbase.version}](https://developer.couchbase.com/documentation/server/current/sdk/java/start-using-sdk.html) behind the scene. 
+
+The Couchbase connector supports all document formats which are supported by the SDK. All those formats use the @java[`Document<T>`]@scala[`Document[T]`] interface and this is the level of abstraction that this connector is using.
+
 
 @@project-info{ projectId="couchbase" }
+
 
 ## Artifacts
 
@@ -20,164 +30,117 @@ The table below shows direct dependencies of this module and the second tab show
 
 @@dependencies { projectId="couchbase" }
 
+# Overview
 
-#Usage
+Alpakka Couchbase offers both Akka Streams APIs and a more direct API to access Couchbase:
 
-We will need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
+* `CouchbaseSession` offers a direct API for one-off operations
+* `CouchbaseSessionRegistry` is a Akka extension to keep track and share `CouchbaseSession`s within an `ActorSystem`
+* `CouchbaseSource`, `CouchbaseFlow`, and `CouchbaseSink` offer factory methods to create Akka Streams
 
-Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseSupport.scala) { #init-actor-system }
+All operations use the `CouchbaseSession` internally. A session is configured with `CouchbaseSessionSettings` and a Couchbase bucket name. The Akka Stream factory methods create and access the corresponding session instance behind the scenes.
 
-Java
-: @@snip (/couchbase/src/test/java/docs/javadsl/Examples.java) { #init-actor-system }
+## Using `CouchbaseSession` directly
 
-
-
-Then we will need to connect to Couchbase cluster
-
-Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseSourceSpec.scala) { #init-cluster }
-
-Java
-: @@snip (/couchbase/src/test/java/docs/javadsl/Examples.java) { #cluster-connect }
-
-#Source Usage
-
-We can create different types of `CouchbaseSource`.
-
-From Single Id
+Use `CouchbaseSessionSettings` to get an instance of `CouchbaseSession`. These settings may be specified in `application.conf` and complemented in code. Furthermore a session requires the bucket name and needs an `ExecutionContext` as the creation is asynchronous. 
 
 Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #init-sourceSingle }
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSessionExamplesSpec.scala) { #create }
 
 Java
-: @@snip (/couchbase/src/test/java/docs/javadsl/Examples.java) { #init-sourceSingle }
- 
-From Bulk of Ids
+: @@snip (/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #session }
+
+
+Alternatively a `CouchbaseSession` may be created from a Couchbase `Bucket`:
 
 Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #init-sourceBulk }
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSessionExamplesSpec.scala) { #fromBucket }
 
 Java
-: @@snip (/couchbase/src/test/java/docs/javadsl/Examples.java) { #init-sourceBulk }
-        
+: @@snip (/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #sessionFromBucket }
 
-From N1QL query
+To learn about the full range of operations on `CouchbaseSession`, read the @scala[@scaladoc[API docs](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession)]@java[@scaladoc[API docs](akka.stream.alpakka.couchbase.javadsl.CouchbaseSession)].
+
+
+## Reading from Couchbase in Akka Streams
+
+### Using statements
+
+To query Couchbase using the statement DSL use `CouchbaseSource.fromStatement`. 
 
 Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseSourceSpec.scala) { #init-sourcen1ql }
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSourceSpec.scala) { #statement }
 
 Java
-: @@snip (/couchbase/src/test/java/docs/javadsl/Examples.java) { #init-sourcen1ql }
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #statement }
 
-#Write Operation Settings
+
+### Using N1QL queries
+
+To query Couchbase using the ["N1QL" queries](https://docs.couchbase.com/java-sdk/2.7/n1ql-query.html) use `CouchbaseSource.fromN1qlQuery`. 
+
+Scala
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSourceSpec.scala) { #n1ql }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #n1ql }
+
+
+### Get by ID
+
+`CouchbaseFlow.fromId` methods allow to read documents specified by the document ID in the Akka Stream.
+
+Scala
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #fromId }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #fromId }
+
+
+## Writing to Couchbase in Akka Streams
 
 For each mutation operation we need to create `CouchbaseWriteSettings` instance which consists of the following parameters
 
-- Stage Parallelism (default 1)
-- Couchbase Replication Factor (default `ReplicateTo.ONE`) 
-- Couchbase Persistance Level for Write Operation (default `PersistTo.NONE`)
+- Parallelism in access to Couchbase (default 1)
+- Couchbase Replication Factor (default `ReplicateTo.NONE`) 
+- Couchbase Persistence Level for Write Operation (default `PersistTo.NONE`)
 - 2 seconds operation timeout 
 
-Last two default values mean that we will observe replication to one replica znd do not observe persistence on disk for any node,
+These default values are not recommended for real use, as they do not observe persistence on disk for any node. 
 
 Scala
 : @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #write-settings }
 
 Java
-: @@snip (/couchbase/src/test/java/docs/javadsl/Examples.java) { #write-settings }
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #write-settings }
 
 
-You can read more about it [here](https://docs.couchbase.com/java-sdk/2.6/durability.html#configuring-durability) 
+Read more about durability settings in the [Couchbase documentation](https://docs.couchbase.com/java-sdk/2.6/durability.html#configuring-durability). 
 
-#Sink Usage
+### Upsert
 
-
-We can create Sink that upserts single document that extends  `Document<T>`
+The `CouchbaseFlow` and `CouchbaseSink` offer factories for upserting documents (insert or update) in Couchbase. `upsert` is used for the most commonly used `JsonDocument`, and `upsertDoc` has as type parameter to support any variants of @scala[`Document[T]`]@java[`Document<T>`] which may be `RawJsonDocument`, `StringDocument` or `BinaryDocument`.
 
 Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseSupport.scala) { #init-SingleSink }
+: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #upsert }
 
 Java
-: @@snip (/couchbase/src/test/java/docs/javadsl/Examples.java) { #upsertSingle }
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #upsert }
 
-There also an option to upsert bulk of Documents.
+
+@@@ note
+
+For single document modifications you may consider using the `CouchbaseSession` methods directly, they offer a @scala[future-based]@java[CompletionStage-based] API which in many cases might be simpler than using Akka Streams with just one element. See [above](#using-couchbasesession-directly)
+
+@@@
+
+### Delete
+
+The `CouchbaseFlow` and `CouchbaseSink` offer factories to delete documents in Couchbase by ID.
 
 Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseSupport.scala) { #init-BulkSink }
+: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #delete }
 
 Java
-: @@snip (/couchbase/src/test/java/docs/javadsl/Examples.java) { #upsertBulk }
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #delete }
 
-We can create `CouchbaseSink` for single delete operation
-
-Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseSupport.scala) { #delete-SingleSink }
-
-Java
-: @@snip (/couchbase/src/test/java/docs/javadsl/Examples.java) { #delete-single-sink }
-
-There is also an option to create Sink that deletes bulk of documents by their Ids
-
-Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseSupport.scala) { #delete-BulkSink }
-
-Java
-: @@snip (/couchbase/src/test/java/docs/javadsl/Examples.java) { #delete-bulk-sink }
-
-#Flow Usage
-
-Couchbase Flow implements exactly the same method for upsert and delete as `CouchbaseSink`, but unlike Sink, an output of the Flow Stage is the following:
-
-- For an operation on single object output will be instance of `SingleOperationResult` class which consists of input `T` and optional exception of failed operation 
-
-- For an operation on bulk the output will be instance of `BulkOperationResult` class which consists of Collection of input elements and Collection failed documents Id's and its relevant Exception. 
-
-This is vivid if you want to handle partial or single failures and do not want to affect stream materialization.  
-
-Creating flow with single upsert operation
-
-Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseSupport.scala) { #init-SingleFlow }
-
-Java
-: @@snip (/couchbase/src/test/java/docs/javadsl/Examples.java) { #upsertFlowSingle }
-
-Creating flow for delete Bulk operation
-
-Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseSupport.scala) { #delete-BulkFlow }
-
-Java
-: @@snip (/couchbase/src/test/java/docs/javadsl/Examples.java) { #delete-bulk-flow }
-
-You can create Flow stage which has single Id as input and Couchbase Document as output.
-
-Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #by-single-id-flow }
-
-Java
-: @@snip (/couchbase/src/test/java/docs/javadsl/Examples.java) { #by-single-id-flow } 
-
-There is also a possibility to create Flow from bulk of Ids
-
-Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseSourceSpec.scala) { #by-bulk-id-flow }
-
-###Dealing with Consistency Level and Durability.
-
-For every mutation method in Sink and Flow there is an option to set `PersistTo` and `ReplicateTo` parameters. You can read more about it [here](https://docs.couchbase.com/java-sdk/2.6/durability.html#configuring-durability)
-
-### Running the example code
-
-The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
-
-> Test code requires a Couchbase server running in the background. You can start one quickly using docker:
->
-> `docker-compose up couchbase`
-
-Scala
-:   ```
-    sbt
-    > couchbase/test
-    ```

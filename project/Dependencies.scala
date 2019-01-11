@@ -12,6 +12,8 @@ object Dependencies {
 
   val AwsSdkVersion = "1.11.476"
   val AkkaHttpVersion = "10.1.7"
+  
+  val CouchbaseVersion = "2.7.0"
 
   val Common = Seq(
     // These libraries are added to all modules via the `Common` AutoPlugin
@@ -54,12 +56,10 @@ object Dependencies {
 
   val Couchbase = Seq(
     libraryDependencies ++= Seq(
-      "com.couchbase.client" % "java-client" % "2.7.0", // ApacheV2
-      "io.reactivex" %% "rxscala" % "0.26.5", // ApacheV2
+      "com.couchbase.client" % "java-client" % CouchbaseVersion, // ApacheV2
       "io.reactivex" % "rxjava-reactive-streams" % "1.2.1", //ApacheV2
-      "org.reactivestreams" % "reactive-streams" % "1.0.2", //CC0	http://creativecommons.org/publicdomain/zero/1.0/
       "com.typesafe.play" %% "play-json" % "2.6.9" % Test, // MIT like: http://www.slf4j.org/license.html
-      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test,
+      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test, // Apache V2
       "org.specs2" %% "specs2-core" % "4.3.2" % Test //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
     )
   )

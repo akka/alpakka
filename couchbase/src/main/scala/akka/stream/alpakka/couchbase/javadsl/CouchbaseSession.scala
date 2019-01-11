@@ -6,7 +6,7 @@ package akka.stream.alpakka.couchbase.javadsl
 
 import java.time.Duration
 import java.util.Optional
-import java.util.concurrent.CompletionStage
+import java.util.concurrent.{CompletionStage, Executor}
 
 import akka.annotation.DoNotInherit
 import akka.dispatch.ExecutionContexts
@@ -37,9 +37,9 @@ object CouchbaseSession {
    */
   def create(settings: CouchbaseSessionSettings,
              bucketName: String,
-             executionContext: ExecutionContext): CompletionStage[CouchbaseSession] =
+             executor: Executor): CompletionStage[CouchbaseSession] =
     ScalaDslCouchbaseSession
-      .apply(settings, bucketName)(executionContext)
+      .apply(settings, bucketName)(ExecutionContext.fromExecutor(executor))
       .map(new CouchbaseSessionJavaAdapter(_).asInstanceOf[CouchbaseSession])(
         ExecutionContexts.sameThreadExecutionContext
       )

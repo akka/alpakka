@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package docs.scaladsl
+package akka.stream.alpakka.couchbase.testing
 
 import akka.Done
 import akka.actor.ActorSystem
@@ -11,7 +11,7 @@ import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.couchbase.scaladsl._
 import akka.stream.alpakka.couchbase.{CouchbaseSessionSettings, CouchbaseWriteSettings}
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Sink, Source}
 import com.couchbase.client.deps.io.netty.buffer.Unpooled
 import com.couchbase.client.deps.io.netty.util.CharsetUtil
 import com.couchbase.client.java.auth.PasswordAuthenticator
@@ -26,14 +26,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
+case class TestObject(id: String, value: String)
+
 trait CouchbaseSupport {
 
   private val log = LoggerFactory.getLogger(classOf[CouchbaseSupport])
 
-  case class TestObject(id: String, value: String)
-
   //#init-actor-system
-  implicit val system: ActorSystem = ActorSystem()
+  implicit val actorSystem: ActorSystem = ActorSystem()
   implicit val mat: ActorMaterializer = ActorMaterializer()
   //#init-actor-system
 
@@ -47,10 +47,12 @@ trait CouchbaseSupport {
 
   cluster.authenticate(new PasswordAuthenticator("Administrator", "password"))
 
-  val sessionSettings = CouchbaseSessionSettings(system)
+  val sessionSettings = CouchbaseSessionSettings(actorSystem)
   val writeSettings: CouchbaseWriteSettings = CouchbaseWriteSettings().withReplicateTo(ReplicateTo.NONE)
   val bucketName = "akka"
   val queryBucketName = "akkaquery"
+
+  var session: CouchbaseSession = _
 
   def beforeAll(): Unit = {
     def setupIndexAndQuota =
@@ -151,6 +153,7 @@ trait CouchbaseSupport {
     Await.result(createIndex, 5.seconds)
     Thread.sleep(4000)
 
+    session = Await.result(CouchbaseSession(sessionSettings, bucketName), 2.seconds)
     log.info("Done Creating CB Server")
   }
 
@@ -173,6 +176,16 @@ trait CouchbaseSupport {
     BinaryDocument.create(testObject.id, toWrite)
   }
 
+  def upsertSampleData(): Unit = {
+    val bulkUpsertResult: Future[Done] = Source(sampleSequence)
+      .map(toJsonDocument)
+      .via(CouchbaseFlow.upsert(sessionSettings, CouchbaseWriteSettings.inMemory, queryBucketName))
+      .runWith(Sink.ignore)
+    Await.result(bulkUpsertResult, 5.seconds)
+    //all queries are Eventual Consistent, se we need to wait for index refresh!!
+    Thread.sleep(2000)
+  }
+
   def cleanAllInBucket(ids: Seq[String], bucketName: String): Unit = {
     val result: Future[Done] =
       Source(ids)
@@ -182,148 +195,7 @@ trait CouchbaseSupport {
   }
 
   def afterAll(): Unit =
-    system.terminate()
+    actorSystem.terminate()
 }
 
 final class CouchbaseSupportClass extends CouchbaseSupport
-//
-//private class UpsertSingleSinkSnippet {
-//
-//  val bucket: Bucket = ???
-//  implicit val system: ActorSystem = ActorSystem()
-//  implicit val mat: ActorMaterializer = ActorMaterializer()
-//
-//  //#init-SingleSink
-//  import akka.stream.scaladsl.Source
-//  import com.couchbase.client.java.document.JsonDocument
-//  val document: JsonDocument = ???
-//  val source: Source[JsonDocument, NotUsed] = Source.single(document)
-//
-//  val couchbaseWriteSettings: CouchbaseWriteSettings = CouchbaseWriteSettings().withParallelism(2)
-//
-//  source.runWith(CouchbaseSink.upsertSingle(couchbaseWriteSettings, bucket))
-//
-//  //#init-SingleSink
-//}
-//
-//private class UsertBulkSinkSnippet {
-//
-//  val bucket: Bucket = ???
-//  implicit val system: ActorSystem = ActorSystem()
-//  implicit val mat: ActorMaterializer = ActorMaterializer()
-//
-//  //#init-BulkSink
-//  import akka.stream.scaladsl.Source
-//  import com.couchbase.client.java.document.JsonDocument
-//  val documents: Seq[JsonDocument] = ???
-//
-//  val couchbaseWriteSettings: CouchbaseWriteSettings =
-//    CouchbaseWriteSettings().withParallelism(2).withReplicateTo(ReplicateTo.NONE).withPersistTo(PersistTo.NONE)
-//
-//  val source: Source[JsonDocument, NotUsed] = Source.fromIterator(() => documents.iterator)
-//  source.grouped(2).runWith(CouchbaseSink.upsertBulk(couchbaseWriteSettings, bucket))
-//  //#init-BulkSink
-//}
-//
-//private class DeleteSingleSinkSnippet {
-//
-//  val bucket: Bucket = ???
-//  implicit val system: ActorSystem = ActorSystem()
-//  implicit val mat: ActorMaterializer = ActorMaterializer()
-//
-//  //#delete-SingleSink
-//  import akka.NotUsed
-//  import akka.stream.scaladsl.Source
-//  val documentId: String = ???
-//  val source: Source[String, NotUsed] = Source.single(documentId)
-//
-//  val couchbaseWriteSettings: CouchbaseWriteSettings = CouchbaseWriteSettings()
-//
-//  source.runWith(CouchbaseSink.deleteOne(couchbaseWriteSettings, bucket))
-//
-//  //#delete-SingleSink
-//}
-//
-//private class DeleteBulkSinkSnippet {
-//
-//  val bucket: Bucket = ???
-//  implicit val system: ActorSystem = ActorSystem()
-//  implicit val mat: ActorMaterializer = ActorMaterializer()
-//
-//  //#delete-BulkSink
-//  import akka.NotUsed
-//  import akka.stream.scaladsl.Source
-//
-//  val documentIds: Seq[String] = ???
-//  val source: Source[String, NotUsed] = Source.fromIterator(() => documentIds.iterator)
-//
-//  val couchbaseWriteSettings: CouchbaseWriteSettings =
-//    CouchbaseWriteSettings().withParallelism(2).withReplicateTo(ReplicateTo.NONE).withPersistTo(PersistTo.NONE)
-//
-//  source.grouped(2).runWith(CouchbaseSink.deleteBulk(couchbaseWriteSettings, bucket))
-//  //#delete-BulkSink
-//}
-//
-//private class DeleteBulkFlowSnippet {
-//
-//  private val log = LoggerFactory.getLogger(classOf[DeleteBulkFlowSnippet])
-//  val bucket: Bucket = ???
-//  implicit val system: ActorSystem = ActorSystem()
-//  implicit val mat: ActorMaterializer = ActorMaterializer()
-//
-//  //#delete-BulkFlow
-//  import akka.stream.scaladsl.Source
-//  import akka.stream.alpakka.couchbase.BulkOperationResult
-//
-//  val documentIds: Seq[String] = ???
-//  val source: Source[String, NotUsed] = Source.fromIterator(() => documentIds.iterator)
-//
-//  val couchbaseWriteSettings: CouchbaseWriteSettings =
-//    CouchbaseWriteSettings().withParallelism(2).withReplicateTo(ReplicateTo.NONE).withPersistTo(PersistTo.NONE)
-//
-//  val flow: Flow[Seq[String], BulkOperationResult[String], NotUsed] =
-//    CouchbaseFlow2.deleteOne(sessionSettings, couchbaseWriteSettings, bucketName)
-//
-//  source
-//    .grouped(2)
-//    .via(flow)
-//    .map(result => {
-//      //Logging failed operation
-//      result.failures.foreach(f => log.warn(f.id, f.ex))
-//      result.entities
-//    })
-//    .runWith(Sink.ignore)
-//  //#delete-BulkFlow
-//}
-//private class UpsertSingleFlowSnippet {
-//
-//  private val log = LoggerFactory.getLogger(classOf[DeleteBulkFlowSnippet])
-//  val bucket: Bucket = ???
-//  implicit val system: ActorSystem = ActorSystem()
-//  implicit val mat: ActorMaterializer = ActorMaterializer()
-//
-//  //#init-SingleFlow
-//  import akka.stream.scaladsl.Source
-//  import com.couchbase.client.java.document.JsonDocument
-//  import akka.stream.alpakka.couchbase.SingleOperationResult
-//  val document: JsonDocument = ???
-//
-//  val source: Source[JsonDocument, NotUsed] = Source.single(document)
-//
-//  val couchbaseWriteSettings: CouchbaseWriteSettings =
-//    CouchbaseWriteSettings().withParallelism(2).withReplicateTo(ReplicateTo.NONE).withPersistTo(PersistTo.NONE)
-//
-//  val flow: Flow[JsonDocument, SingleOperationResult[JsonDocument], NotUsed] =
-//    CouchbaseFlow2.upsertSingle(sessionSettings, couchbaseWriteSettings, bucketName)
-//  source
-//    .via(flow)
-//    .map(response => {
-//      response.result match {
-//        case Failure(exception) => log.error(response.entity.id(), exception)
-//        case Success(id) => log.info(s"Document with id $id successfully deleted.")
-//      }
-//      response.entity
-//    })
-//    .runWith(Sink.ignore)
-//  //#init-SingleFlow
-//}
