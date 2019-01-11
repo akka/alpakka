@@ -35,7 +35,7 @@ object Dependencies {
   val AwsLambda = Seq(
     libraryDependencies ++= Seq(
       "com.amazonaws" % "aws-java-sdk-lambda" % AwsSdkVersion, // ApacheV2
-      "org.mockito" % "mockito-core" % "2.19.1" % Test // MIT
+      "org.mockito" % "mockito-core" % "2.23.4" % Test // MIT
     )
   )
 
@@ -158,7 +158,7 @@ object Dependencies {
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
       "com.pauldijou" %% "jwt-core" % "0.16.0", //ApacheV2
-      "org.mockito" % "mockito-core" % "2.19.1" % Test, // MIT
+      "org.mockito" % "mockito-core" % "2.23.4" % Test, // MIT
       "com.github.tomakehurst" % "wiremock" % "2.18.0" % Test // ApacheV2
     )
   )
@@ -178,7 +178,7 @@ object Dependencies {
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
       "com.pauldijou" %% "jwt-core" % "0.16.0", //ApacheV2
-      "org.mockito" % "mockito-core" % "2.19.1" % Test // MIT
+      "org.mockito" % "mockito-core" % "2.23.4" % Test // MIT
     )
   )
 
@@ -227,7 +227,7 @@ object Dependencies {
       "javax.jms" % "jms" % "1.1" % Provided, // CDDL + GPLv2
       "org.apache.activemq" % "activemq-broker" % "5.15.4" % Test, // ApacheV2
       "org.apache.activemq" % "activemq-client" % "5.15.4" % Test, // ApacheV2
-      "org.mockito" % "mockito-core" % "2.21.0" % Test // MIT
+      "org.mockito" % "mockito-core" % "2.23.4" % Test // MIT
     ),
     // Having JBoss as a first resolver is a workaround for https://github.com/coursier/coursier/issues/200
     externalResolvers := ("jboss" at "http://repository.jboss.org/nexus/content/groups/public") +: externalResolvers.value
@@ -243,7 +243,7 @@ object Dependencies {
   val Kinesis = Seq(
     libraryDependencies ++= Seq(
       "com.amazonaws" % "aws-java-sdk-kinesis" % AwsSdkVersion, // ApacheV2
-      "org.mockito" % "mockito-core" % "2.19.1" % Test // MIT
+      "org.mockito" % "mockito-core" % "2.23.4" % Test // MIT
     )
   )
 
@@ -328,7 +328,7 @@ object Dependencies {
   val Sns = Seq(
     libraryDependencies ++= Seq(
       "com.amazonaws" % "aws-java-sdk-sns" % AwsSdkVersion, // ApacheV2
-      "org.mockito" % "mockito-core" % "2.19.1" % Test // MIT
+      "org.mockito" % "mockito-core" % "2.23.4" % Test // MIT
     )
   )
 
@@ -355,7 +355,7 @@ object Dependencies {
       ), // ApacheV2
       // pull up akka-http version to the latest version for elasticmq-rest-sqs
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test, // ApacheV2
-      "org.mockito" % "mockito-core" % "2.19.1" % Test // MIT
+      "org.mockito" % "mockito-core" % "2.23.4" % Test // MIT
     )
   )
 
