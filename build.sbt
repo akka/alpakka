@@ -271,7 +271,8 @@ lazy val docs = project
       "scaladoc.akka.base_url" -> s"http://doc.akka.io/api/akka/${Dependencies.AkkaVersion}",
       "scaladoc.akka.http.base_url" -> s"https://doc.akka.io/api/akka-http/${Dependencies.AkkaHttpVersion}/",
       "scaladoc.akka.stream.alpakka.base_url" -> {
-        val docsHost = sys.env.get("CI")
+        val docsHost = sys.env
+          .get("CI")
           .map(_ => "https://doc.akka.io")
           .getOrElse(s"http://localhost:${(previewSite / previewFixedPort).value}")
         s"$docsHost/api/alpakka/${version.value}/"
