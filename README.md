@@ -18,7 +18,7 @@ The Alpakka project is an open source initiative to implement stream-aware, reac
 Documentation
 -------------
 
-- [Alpakka reference](http://developer.lightbend.com/docs/alpakka/current/) documentation 
+- [Alpakka reference](https://doc.akka.io/docs/alpakka/current/) documentation
 
 - [Alpakka Kafka connector reference](https://doc.akka.io/docs/akka-stream-kafka/current/) documentation
 
