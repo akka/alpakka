@@ -22,11 +22,14 @@ object SymlinkPlugin extends AutoPlugin {
 
   override def projectSettings = symlinkSettings(Symlink)
 
-  def symlinkSettings(config: Configuration): Seq[Setting[_]] = inConfig(config)(Seq(
-    target := (makeSite / target).value,
-    symlinkPaths := Map.empty,
-    symlinkCreate := createSymlinks(symlinkPaths.value, target.value)
-  ))
+  def symlinkSettings(config: Configuration): Seq[Setting[_]] =
+    inConfig(config)(
+      Seq(
+        target := (makeSite / target).value,
+        symlinkPaths := Map.empty,
+        symlinkCreate := createSymlinks(symlinkPaths.value, target.value)
+      )
+    )
 
   private def createSymlinks(definitions: Map[String, String], targetDir: File) = {
     definitions.map {
