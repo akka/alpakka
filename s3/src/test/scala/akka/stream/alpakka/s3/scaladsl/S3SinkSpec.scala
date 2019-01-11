@@ -15,9 +15,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
   it should "succeed uploading an empty file" in {
     mockUpload(expectedBody = "")
 
-    //#upload
     val s3Sink: Sink[ByteString, Source[MultipartUploadResult, NotUsed]] = S3.multipartUpload(bucket, bucketKey)
-    //#upload
 
     val src = Source.empty[ByteString]
 
@@ -30,9 +28,16 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     mockUpload()
 
-    val s3Sink: Sink[ByteString, Source[MultipartUploadResult, NotUsed]] = S3.multipartUpload(bucket, bucketKey)
+    //#upload
+    val file: Source[ByteString, NotUsed] =
+      Source.single(ByteString(body))
 
-    val result: Source[MultipartUploadResult, NotUsed] = Source.single(ByteString(body)).runWith(s3Sink)
+    val s3Sink: Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
+      S3.multipartUpload(bucket, bucketKey)
+
+    val result: Source[MultipartUploadResult, NotUsed] =
+      file.runWith(s3Sink)
+    //#upload
 
     result.runWith(Sink.head).futureValue shouldBe MultipartUploadResult(url, bucket, bucketKey, etag, None)
   }
@@ -52,10 +57,8 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     mockUpload()
 
-    //#upload
     val s3Sink: Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
       S3.multipartUploadWithHeaders(bucket, bucketKey, s3Headers = Some(S3Headers(ServerSideEncryption.AES256)))
-    //#upload
 
     val result: Source[MultipartUploadResult, NotUsed] = Source.single(ByteString(body)).runWith(s3Sink)
 

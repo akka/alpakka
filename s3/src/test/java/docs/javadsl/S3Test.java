@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.s3.javadsl;
+package docs.javadsl;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -13,12 +13,13 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import akka.actor.ActorSystem;
+import akka.http.javadsl.model.*;
 import akka.stream.alpakka.s3.ListBucketResultContents;
 import akka.stream.alpakka.s3.MultipartUploadResult;
 import akka.stream.alpakka.s3.ObjectMetadata;
+import akka.stream.alpakka.s3.javadsl.S3;
 import org.junit.Test;
 import akka.NotUsed;
-import akka.http.javadsl.model.Uri;
 import akka.http.javadsl.model.headers.ByteRange;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
@@ -31,7 +32,7 @@ import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import scala.Option;
 
-public class S3ClientTest extends S3WireMockBase {
+public class S3Test extends S3WireMockBase {
 
   private final ActorSystem system = system();
   private final Materializer materializer = ActorMaterializer.create(system());
@@ -42,12 +43,14 @@ public class S3ClientTest extends S3WireMockBase {
     mockUpload();
 
     // #upload
+    final Source<ByteString, NotUsed> file = Source.single(ByteString.fromString(body()));
+
     final Sink<ByteString, Source<MultipartUploadResult, NotUsed>> sink =
         S3.multipartUpload(bucket(), bucketKey());
-    // #upload
 
     final Source<MultipartUploadResult, NotUsed> resultCompletionStage =
-        Source.single(ByteString.fromString(body())).runWith(sink, materializer);
+        file.runWith(sink, materializer);
+    // #upload
 
     MultipartUploadResult result =
         resultCompletionStage
@@ -66,10 +69,8 @@ public class S3ClientTest extends S3WireMockBase {
 
     mockUploadSSE();
 
-    // #upload
     final Sink<ByteString, Source<MultipartUploadResult, NotUsed>> sink =
         S3.multipartUpload(bucket(), bucketKey(), sseCustomerKeys());
-    // #upload
 
     final Source<MultipartUploadResult, NotUsed> resultCompletionStage =
         Source.single(ByteString.fromString(body())).runWith(sink, materializer);
@@ -94,21 +95,38 @@ public class S3ClientTest extends S3WireMockBase {
     // #download
     final Source<Optional<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>, NotUsed>
         sourceAndMeta = S3.download(bucket(), bucketKey());
-    final Source<ByteString, NotUsed> source =
+    final Pair<Source<ByteString, NotUsed>, ObjectMetadata> dataAndMetadata =
         sourceAndMeta
             .runWith(Sink.head(), materializer)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS)
-            .get()
-            .first();
-    // #download
+            .get();
+
+    final Source<ByteString, NotUsed> data = dataAndMetadata.first();
+    final ObjectMetadata metadata = dataAndMetadata.second();
 
     final CompletionStage<String> resultCompletionStage =
-        source.map(ByteString::utf8String).runWith(Sink.head(), materializer);
+        data.map(ByteString::utf8String).runWith(Sink.head(), materializer);
 
     String result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+    // #download
 
     assertEquals(body(), result);
+
+    System.out.println("#####");
+    System.out.println(metadata.getContentLength());
+
+    // #downloadToAkkaHttp
+    HttpResponse.create()
+        .withEntity(
+            HttpEntities.create(
+                metadata
+                    .getContentType()
+                    .map(ct -> ContentTypes.parse(ct))
+                    .orElse(ContentTypes.APPLICATION_OCTET_STREAM),
+                metadata.getContentLength(),
+                data));
+    // #downloadToAkkaHttp
   }
 
   @Test
@@ -140,10 +158,8 @@ public class S3ClientTest extends S3WireMockBase {
     String versionId = "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo";
     mockHeadWithVersion(versionId);
 
-    // #objectMetadata
     final Source<Optional<ObjectMetadata>, NotUsed> source =
         S3.getObjectMetadata(bucket(), bucketKey(), Optional.of(versionId), null);
-    // #objectMetadata
 
     Optional<ObjectMetadata> result =
         source.runWith(Sink.head(), materializer).toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -160,10 +176,8 @@ public class S3ClientTest extends S3WireMockBase {
   public void headServerSideEncryption() throws Exception {
     mockHeadSSEC();
 
-    // #objectMetadata
     final Source<Optional<ObjectMetadata>, NotUsed> source =
         S3.getObjectMetadata(bucket(), bucketKey(), sseCustomerKeys());
-    // #objectMetadata
 
     Optional<ObjectMetadata> result =
         source.runWith(Sink.head(), materializer).toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -177,10 +191,8 @@ public class S3ClientTest extends S3WireMockBase {
   public void downloadServerSideEncryption() throws Exception {
     mockDownloadSSEC();
 
-    // #download
     final Source<Optional<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>, NotUsed>
         sourceAndMeta = S3.download(bucket(), bucketKey(), sseCustomerKeys());
-    // #download
 
     final Source<ByteString, NotUsed> source =
         sourceAndMeta
@@ -202,11 +214,9 @@ public class S3ClientTest extends S3WireMockBase {
     String versionId = "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo";
     mockDownloadSSECWithVersion(versionId);
 
-    // #download
     final Source<Optional<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>, NotUsed>
         sourceAndMeta =
             S3.download(bucket(), bucketKey(), null, Optional.of(versionId), sseCustomerKeys());
-    // #download
 
     final Source<ByteString, NotUsed> source =
         sourceAndMeta
@@ -262,7 +272,6 @@ public class S3ClientTest extends S3WireMockBase {
 
     mockRangedDownloadSSE();
 
-    // #rangedDownload
     final Source<Optional<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>, NotUsed>
         sourceAndMeta =
             S3.download(
@@ -270,7 +279,6 @@ public class S3ClientTest extends S3WireMockBase {
                 bucketKey(),
                 ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()),
                 sseCustomerKeys());
-    // #rangedDownload
 
     final Source<ByteString, NotUsed> source =
         sourceAndMeta

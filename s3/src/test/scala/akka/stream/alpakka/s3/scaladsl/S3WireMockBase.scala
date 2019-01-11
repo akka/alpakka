@@ -79,7 +79,11 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
     mock
       .register(
         get(urlEqualTo(s"/$bucketKey")).willReturn(
-          aResponse().withStatus(200).withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""").withBody(body)
+          aResponse()
+            .withStatus(200)
+            .withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""")
+            .withHeader("Content-Length", body.length.toString)
+            .withBody(body)
         )
       )
 
