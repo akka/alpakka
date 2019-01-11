@@ -11,9 +11,9 @@ import akka.http.javadsl.model._
 import akka.http.javadsl.model.headers.ByteRange
 import akka.http.scaladsl.model.headers.{ByteRange => ScalaByteRange}
 import akka.http.scaladsl.model.{ContentType => ScalaContentType, HttpMethod => ScalaHttpMethod}
-import akka.stream.alpakka.s3.acl.CannedAcl
+import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption}
 import akka.stream.alpakka.s3.impl._
-import akka.stream.alpakka.s3.{ListBucketResultContents, MultipartUploadResult, ObjectMetadata}
+import akka.stream.alpakka.s3._
 import akka.stream.javadsl.{RunnableGraph, Sink, Source}
 import akka.util.ByteString
 
@@ -47,12 +47,12 @@ object S3 {
               key: String,
               versionId: Optional[String],
               method: HttpMethod = HttpMethods.GET,
-              s3Headers: S3Headers = S3Headers.empty): Source[HttpResponse, NotUsed] =
+              s3Headers: S3Headers = S3Headers()): Source[HttpResponse, NotUsed] =
     S3Stream
       .request(S3Location(bucket, key),
                method.asInstanceOf[ScalaHttpMethod],
                versionId = Option(versionId.orElse(null)),
-               s3Headers = s3Headers)
+               s3Headers = s3Headers.headers)
       .asJava
 
   /**
@@ -193,7 +193,12 @@ object S3 {
                 contentType: ContentType,
                 cannedAcl: CannedAcl,
                 metaHeaders: MetaHeaders): Source[ObjectMetadata, NotUsed] =
-    putObject(bucket, key, data, contentLength, contentType, S3Headers(cannedAcl, metaHeaders))
+    putObject(bucket,
+              key,
+              data,
+              contentLength,
+              contentType,
+              S3Headers().withCannedAcl(cannedAcl).withMetaHeaders(metaHeaders))
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -216,7 +221,13 @@ object S3 {
                 cannedAcl: CannedAcl,
                 metaHeaders: MetaHeaders,
                 sse: ServerSideEncryption): Source[ObjectMetadata, NotUsed] =
-    putObject(bucket, key, data, contentLength, contentType, S3Headers(cannedAcl, metaHeaders), sse)
+    putObject(bucket,
+              key,
+              data,
+              contentLength,
+              contentType,
+              S3Headers().withCannedAcl(cannedAcl).withMetaHeaders(metaHeaders),
+              sse)
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -462,7 +473,7 @@ object S3 {
                       contentType: ContentType,
                       cannedAcl: CannedAcl,
                       metaHeaders: MetaHeaders): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
-    multipartUpload(bucket, key, contentType, S3Headers(cannedAcl, metaHeaders))
+    multipartUpload(bucket, key, contentType, S3Headers().withCannedAcl(cannedAcl).withMetaHeaders(metaHeaders))
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -481,7 +492,7 @@ object S3 {
                       cannedAcl: CannedAcl,
                       metaHeaders: MetaHeaders,
                       sse: ServerSideEncryption): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
-    multipartUpload(bucket, key, contentType, S3Headers(cannedAcl, metaHeaders), sse)
+    multipartUpload(bucket, key, contentType, S3Headers().withCannedAcl(cannedAcl).withMetaHeaders(metaHeaders), sse)
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -693,7 +704,7 @@ object S3 {
                   targetBucket,
                   targetKey,
                   ContentTypes.APPLICATION_OCTET_STREAM,
-                  S3Headers.empty,
+                  S3Headers(),
                   null)
 
   private def func[T, R](f: T => R) = new akka.japi.function.Function[T, R] {

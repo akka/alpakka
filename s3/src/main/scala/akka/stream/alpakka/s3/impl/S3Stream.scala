@@ -15,11 +15,12 @@ import akka.{Done, NotUsed}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK}
 import akka.http.scaladsl.model.headers.{`Content-Length`, `Content-Type`, ByteRange, CustomHeader}
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.{headers => http, _}
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.stream.{ActorMaterializer, Attributes, Materializer}
 import akka.stream.alpakka.s3.impl.auth.{CredentialScope, Signer, SigningKey}
 import akka.stream.alpakka.s3._
+import akka.stream.alpakka.s3.headers.ServerSideEncryption
 import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
 import akka.util.ByteString
 
@@ -75,7 +76,7 @@ private[alpakka] object S3Stream {
       versionId: Option[String],
       sse: Option[ServerSideEncryption]
   ): Source[Option[(Source[ByteString, NotUsed], ObjectMetadata)], NotUsed] = {
-    val s3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(GetObject) })
+    val s3Headers = sse.to[Seq].flatMap(_.headersFor(GetObject))
 
     Setup.source { implicit mat => _ =>
       request(s3Location, rangeOption = range, versionId = versionId, s3Headers = s3Headers)
@@ -136,7 +137,7 @@ private[alpakka] object S3Stream {
     Setup
       .source { implicit mat => _ =>
         import mat.executionContext
-        val s3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(HeadObject) })
+        val s3Headers = sse.to[Seq].flatMap(_.headersFor(HeadObject))
         request(S3Location(bucket, key), HttpMethods.HEAD, versionId = versionId, s3Headers = s3Headers).flatMapConcat {
           case HttpResponse(OK, headers, entity, _) =>
             Source.fromFuture {
@@ -183,9 +184,7 @@ private[alpakka] object S3Stream {
     // TODO can we take in a Source[ByteString, NotUsed] without forcing chunking
     // chunked requests are causing S3 to think this is a multipart upload
 
-    val headers = S3Headers(
-      s3Headers.headers ++ sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(PutObject) }
-    )
+    val headers = s3Headers.headers ++ sse.to[Seq].flatMap(_.headersFor(PutObject))
 
     Setup
       .source { implicit mat => implicit attr =>
@@ -218,7 +217,7 @@ private[alpakka] object S3Stream {
               method: HttpMethod = HttpMethods.GET,
               rangeOption: Option[ByteRange] = None,
               versionId: Option[String] = None,
-              s3Headers: S3Headers = S3Headers.empty): Source[HttpResponse, NotUsed] =
+              s3Headers: Seq[HttpHeader] = Seq.empty): Source[HttpResponse, NotUsed] =
     Setup
       .source { mat => implicit attr =>
         implicit val sys = mat.system
@@ -229,7 +228,7 @@ private[alpakka] object S3Stream {
 
   private def requestHeaders(downloadRequest: HttpRequest, rangeOption: Option[ByteRange]): HttpRequest =
     rangeOption match {
-      case Some(range) => downloadRequest.addHeader(headers.Range(range))
+      case Some(range) => downloadRequest.addHeader(http.Range(range))
       case _ => downloadRequest
     }
 
@@ -249,7 +248,7 @@ private[alpakka] object S3Stream {
 
   private def initiateMultipartUpload(s3Location: S3Location,
                                       contentType: ContentType,
-                                      s3Headers: S3Headers): Source[MultipartUpload, NotUsed] =
+                                      s3Headers: Seq[HttpHeader]): Source[MultipartUpload, NotUsed] =
     Setup
       .source { implicit mat => implicit attr =>
         import mat.executionContext
@@ -344,7 +343,7 @@ private[alpakka] object S3Stream {
    */
   private def initiateUpload(s3Location: S3Location,
                              contentType: ContentType,
-                             s3Headers: S3Headers): Source[(MultipartUpload, Int), NotUsed] =
+                             s3Headers: Seq[HttpHeader]): Source[(MultipartUpload, Int), NotUsed] =
     Source
       .single(s3Location)
       .flatMapConcat(initiateMultipartUpload(_, contentType, s3Headers))
@@ -372,12 +371,10 @@ private[alpakka] object S3Stream {
     val requestInfo: Source[(MultipartUpload, Int), NotUsed] =
       initiateUpload(s3Location,
                      contentType,
-                     S3Headers(
-                       s3Headers.headers ++
-                       sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(InitiateMultipartUpload) }
-                     ))
+                     s3Headers.headers ++
+                     sse.to[Seq].flatMap(_.headersFor(InitiateMultipartUpload)))
 
-    val headers: S3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(UploadPart) })
+    val headers = sse.to[Seq].flatMap(_.headersFor(UploadPart))
 
     Setup
       .flow { mat => implicit attr =>
@@ -563,12 +560,10 @@ private[alpakka] object S3Stream {
     val requestInfo: Source[(MultipartUpload, Int), NotUsed] =
       initiateUpload(location,
                      contentType,
-                     S3Headers(
-                       s3Headers.headers ++
-                       sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(InitiateMultipartUpload) }
-                     ))
+                     s3Headers.headers ++
+                     sse.to[Seq].flatMap(_.headersFor(InitiateMultipartUpload)))
 
-    val headers: S3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(CopyPart) })
+    val headers = sse.to[Seq].flatMap(_.headersFor(CopyPart))
 
     Setup
       .source { mat => implicit attr =>

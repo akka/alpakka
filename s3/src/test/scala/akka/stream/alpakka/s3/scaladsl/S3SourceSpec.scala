@@ -7,8 +7,8 @@ package akka.stream.alpakka.s3.scaladsl
 import akka.NotUsed
 import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpEntity, HttpResponse}
 import akka.http.scaladsl.model.headers.ByteRange
-import akka.stream.alpakka.s3.impl.ServerSideEncryption
 import akka.stream.alpakka.s3._
+import akka.stream.alpakka.s3.headers.ServerSideEncryption
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 
@@ -165,7 +165,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     import system.dispatcher
 
-    val sse = ServerSideEncryption.CustomerKeys("encoded-key", Some("md5-encoded-key"))
+    val sse = ServerSideEncryption.customerKeys("encoded-key").withMd5("md5-encoded-key")
     val result = S3
       .download(bucket, bucketKey, sse = Some(sse))
       .runWith(Sink.head)

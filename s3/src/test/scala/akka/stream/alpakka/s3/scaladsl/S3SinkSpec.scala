@@ -5,8 +5,9 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.s3.MultipartUploadResult
-import akka.stream.alpakka.s3.impl.{S3Headers, S3Stream, ServerSideEncryption}
+import akka.stream.alpakka.s3.{MultipartUploadResult, S3Headers}
+import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption}
+import akka.stream.alpakka.s3.impl.S3Stream
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 
@@ -58,7 +59,9 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockUpload()
 
     val s3Sink: Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
-      S3.multipartUploadWithHeaders(bucket, bucketKey, s3Headers = Some(S3Headers(ServerSideEncryption.AES256)))
+      S3.multipartUploadWithHeaders(bucket,
+                                    bucketKey,
+                                    s3Headers = S3Headers().withCannedAcl(CannedAcl.AuthenticatedRead))
 
     val result: Source[MultipartUploadResult, NotUsed] = Source.single(ByteString(body)).runWith(s3Sink)
 
@@ -129,7 +132,8 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockCopy()
 
     val result =
-      S3.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey, sse = Some(ServerSideEncryption.AES256)).run()
+      S3.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey, sse = Some(ServerSideEncryption.aes256()))
+        .run()
     result.runWith(Sink.head).futureValue shouldBe MultipartUploadResult(targetUrl,
                                                                          targetBucket,
                                                                          targetBucketKey,

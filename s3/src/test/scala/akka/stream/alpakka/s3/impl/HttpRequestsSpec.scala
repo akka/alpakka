@@ -12,14 +12,16 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.{ByteRange, RawHeader}
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, IllegalUriException, MediaTypes}
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.s3.acl.CannedAcl
+import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption, StorageClass}
 import akka.stream.alpakka.s3.{
   ApiVersion,
   BufferType,
   ListBucketVersion1,
   ListBucketVersion2,
   MemoryBufferType,
+  MetaHeaders,
   Proxy,
+  S3Headers,
   S3Settings
 }
 import akka.stream.scaladsl.Source
@@ -58,7 +60,11 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     implicit val settings = getSettings()
 
     val req =
-      HttpRequests.initiateMultipartUploadRequest(location, contentType, S3Headers(acl, MetaHeaders(metaHeaders)))
+      HttpRequests.initiateMultipartUploadRequest(
+        location,
+        contentType,
+        S3Headers().withCannedAcl(acl).withMetaHeaders(MetaHeaders(metaHeaders)).headers
+      )
 
     req.entity shouldEqual HttpEntity.empty(contentType)
     req.headers should contain(RawHeader("x-amz-acl", acl.value))
@@ -74,7 +80,11 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     implicit val settings = getSettings(s3Region = "us-east-2")
 
     val req =
-      HttpRequests.initiateMultipartUploadRequest(location, contentType, S3Headers(acl, MetaHeaders(metaHeaders)))
+      HttpRequests.initiateMultipartUploadRequest(
+        location,
+        contentType,
+        S3Headers().withCannedAcl(acl).withMetaHeaders(MetaHeaders(metaHeaders)).headers
+      )
 
     req.entity shouldEqual HttpEntity.empty(contentType)
     req.headers should contain(RawHeader("x-amz-acl", acl.value))
@@ -98,7 +108,11 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     implicit val settings = getSettings(s3Region = "us-east-1", pathStyleAccess = true)
 
     val req =
-      HttpRequests.initiateMultipartUploadRequest(location, contentType, S3Headers(acl, MetaHeaders(metaHeaders)))
+      HttpRequests.initiateMultipartUploadRequest(
+        location,
+        contentType,
+        S3Headers().withCannedAcl(acl).withMetaHeaders(MetaHeaders(metaHeaders)).headers
+      )
 
     req.uri.authority.host.toString shouldEqual "s3.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/image-1024@2x"
@@ -118,7 +132,11 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     implicit val settings = getSettings(s3Region = "us-west-2", pathStyleAccess = true)
 
     val req =
-      HttpRequests.initiateMultipartUploadRequest(location, contentType, S3Headers(acl, MetaHeaders(metaHeaders)))
+      HttpRequests.initiateMultipartUploadRequest(
+        location,
+        contentType,
+        S3Headers().withCannedAcl(acl).withMetaHeaders(MetaHeaders(metaHeaders)).headers
+      )
 
     req.uri.authority.host.toString shouldEqual "s3-us-west-2.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/image-1024@2x"
@@ -200,7 +218,11 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     implicit val settings = getSettings(s3Region = "region", proxy = Option(Proxy("localhost", 8080, "http")))
 
     val req =
-      HttpRequests.initiateMultipartUploadRequest(location, contentType, S3Headers(acl, MetaHeaders(metaHeaders)))
+      HttpRequests.initiateMultipartUploadRequest(
+        location,
+        contentType,
+        S3Headers().withCannedAcl(acl).withMetaHeaders(MetaHeaders(metaHeaders)).headers
+      )
 
     req.uri.scheme shouldEqual "http"
   }
@@ -218,7 +240,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     implicit val settings = getSettings(s3Region = "region", proxy = Option(Proxy("localhost", 8080, "http")))
     val myKey = "my-key"
     val md5Key = "md5-key"
-    val s3Headers = S3Headers(ServerSideEncryption.CustomerKeys(myKey, Some(md5Key)))
+    val s3Headers = ServerSideEncryption.customerKeys(myKey).withMd5(md5Key).headersFor(UploadPart)
     val req = HttpRequests.uploadPartRequest(multipartUpload, 1, Source.empty, 1, s3Headers)
 
     req.headers should contain(RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256"))
@@ -238,7 +260,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
   it should "initiate multipart upload with AES-256 server side encryption" in {
     implicit val settings = getSettings(s3Region = "us-east-2", proxy = Option(Proxy("localhost", 8080, "http")))
-    val s3Headers = S3Headers(ServerSideEncryption.AES256)
+    val s3Headers = ServerSideEncryption.aes256().headersFor(InitiateMultipartUpload)
     val req = HttpRequests.initiateMultipartUploadRequest(location, contentType, s3Headers)
 
     req.headers should contain(RawHeader("x-amz-server-side-encryption", "AES256"))
@@ -247,7 +269,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
   it should "initiate multipart upload with aws:kms server side encryption" in {
     implicit val settings = getSettings(s3Region = "us-east-2")
     val testArn = "arn:aws:kms:my-region:my-account-id:key/my-key-id"
-    val s3Headers = S3Headers(ServerSideEncryption.KMS(testArn))
+    val s3Headers = ServerSideEncryption.kms(testArn).headersFor(InitiateMultipartUpload)
     val req = HttpRequests.initiateMultipartUploadRequest(location, contentType, s3Headers)
 
     req.headers should contain(RawHeader("x-amz-server-side-encryption", "aws:kms"))
@@ -258,7 +280,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     implicit val settings = getSettings(s3Region = "us-east-2")
     val myKey = "my-key"
     val md5Key = "md5-key"
-    val s3Headers = S3Headers(ServerSideEncryption.CustomerKeys(myKey, Some(md5Key)))
+    val s3Headers = ServerSideEncryption.customerKeys(myKey).withMd5(md5Key).headersFor(InitiateMultipartUpload)
     val req = HttpRequests.initiateMultipartUploadRequest(location, contentType, s3Headers)
 
     req.headers should contain(RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256"))
@@ -268,7 +290,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
   it should "initiate multipart upload with custom s3 storage class" in {
     implicit val settings = getSettings(s3Region = "us-east-2")
-    val s3Headers = S3Headers(StorageClass.ReducedRedundancy)
+    val s3Headers = S3Headers().withStorageClass(StorageClass.ReducedRedundancy).headers
     val req = HttpRequests.initiateMultipartUploadRequest(location, contentType, s3Headers)
 
     req.headers should contain(RawHeader("x-amz-storage-class", "REDUCED_REDUNDANCY"))
@@ -276,7 +298,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
   it should "initiate multipart upload with custom s3 headers" in {
     implicit val settings = getSettings(s3Region = "us-east-2")
-    val s3Headers = S3Headers(Map("Cache-Control" -> "no-cache"))
+    val s3Headers = S3Headers().withCustomHeaders(Map("Cache-Control" -> "no-cache")).headers
     val req = HttpRequests.initiateMultipartUploadRequest(location, contentType, s3Headers)
 
     req.headers should contain(RawHeader("Cache-Control", "no-cache"))

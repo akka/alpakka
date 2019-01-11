@@ -6,8 +6,8 @@ package akka.stream.alpakka.s3.scaladsl
 import akka.{Done, NotUsed}
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.http.scaladsl.model._
-import akka.stream.alpakka.s3.{ListBucketResultContents, MultipartUploadResult, ObjectMetadata}
-import akka.stream.alpakka.s3.acl.CannedAcl
+import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption}
+import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.impl._
 import akka.stream.scaladsl.{RunnableGraph, Sink, Source}
 import akka.util.ByteString
@@ -32,8 +32,8 @@ object S3 {
               key: String,
               method: HttpMethod = HttpMethods.GET,
               versionId: Option[String] = None,
-              s3Headers: S3Headers = S3Headers.empty): Source[HttpResponse, NotUsed] =
-    S3Stream.request(S3Location(bucket, key), method, versionId = versionId, s3Headers = s3Headers)
+              s3Headers: S3Headers = S3Headers()): Source[HttpResponse, NotUsed] =
+    S3Stream.request(S3Location(bucket, key), method, versionId = versionId, s3Headers = s3Headers.headers)
 
   /**
    * Gets the metadata for a S3 Object
@@ -144,7 +144,7 @@ object S3 {
       .multipartUpload(
         S3Location(bucket, key),
         contentType,
-        S3Headers(cannedAcl, metaHeaders),
+        S3Headers().withCannedAcl(cannedAcl).withMetaHeaders(metaHeaders),
         sse,
         chunkSize,
         chunkingParallelism
@@ -167,14 +167,14 @@ object S3 {
       contentType: ContentType = ContentTypes.`application/octet-stream`,
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4,
-      s3Headers: Option[S3Headers] = None,
+      s3Headers: S3Headers = S3Headers(),
       sse: Option[ServerSideEncryption] = None
   ): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
     S3Stream
       .multipartUpload(
         S3Location(bucket, key),
         contentType,
-        s3Headers.getOrElse(S3Headers.empty),
+        s3Headers,
         sse,
         chunkSize,
         chunkingParallelism
@@ -213,7 +213,7 @@ object S3 {
         S3Location(targetBucket, targetKey),
         sourceVersionId,
         contentType,
-        s3Headers.getOrElse(S3Headers.empty),
+        s3Headers.getOrElse(S3Headers()),
         sse,
         chunkSize,
         chunkingParallelism

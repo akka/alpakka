@@ -5,19 +5,14 @@
 package docs.javadsl;
 
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.s3.MemoryBufferType;
-import akka.stream.alpakka.s3.S3Settings;
-import akka.stream.alpakka.s3.acl.CannedAcl;
-import akka.stream.alpakka.s3.ListBucketVersion2;
-import akka.stream.alpakka.s3.impl.S3Headers;
-import akka.stream.alpakka.s3.impl.ServerSideEncryption;
-import akka.stream.alpakka.s3.MultipartUploadResult;
+import akka.stream.alpakka.s3.*;
+import akka.stream.alpakka.s3.headers.CannedAcl;
+import akka.stream.alpakka.s3.headers.ServerSideEncryption;
 import akka.stream.alpakka.s3.javadsl.S3;
 import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Source;
@@ -67,8 +62,8 @@ public class JavaExamplesSnippets {
             sourceKey,
             targetBucket,
             targetKey,
-            S3Headers.empty(),
-            ServerSideEncryption.AES256$.MODULE$);
+            S3Headers.create(),
+            ServerSideEncryption.aes256());
     // #java-example
   }
 
@@ -83,7 +78,7 @@ public class JavaExamplesSnippets {
             sourceKey,
             targetBucket,
             targetKey,
-            S3Headers.apply(CannedAcl.Private$.MODULE$),
+            S3Headers.create().withCannedAcl(CannedAcl.Private()),
             null); // encryption
     // #java-example
   }

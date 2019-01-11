@@ -7,8 +7,7 @@ package akka.stream.alpakka.s3.scaladsl
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.s3.{ListBucketVersion1, S3Attributes, S3Settings}
-import akka.stream.alpakka.s3.impl.{MetaHeaders, S3Headers}
+import akka.stream.alpakka.s3._
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
@@ -92,7 +91,11 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     val data = Source.single(ByteString(objectValue))
 
     val result =
-      S3.putObject(defaultRegionBucket, objectKey, data, bytes.length, s3Headers = S3Headers(MetaHeaders(metaHeaders)))
+      S3.putObject(defaultRegionBucket,
+                   objectKey,
+                   data,
+                   bytes.length,
+                   s3Headers = S3Headers().withMetaHeaders(MetaHeaders(metaHeaders)))
         .runWith(Sink.head)
 
     val uploadResult = Await.ready(result, 90.seconds).futureValue
@@ -106,7 +109,11 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
 
     val result = for {
       put <- S3
-        .putObject(defaultRegionBucket, objectKey, data, bytes.length, s3Headers = S3Headers(MetaHeaders(metaHeaders)))
+        .putObject(defaultRegionBucket,
+                   objectKey,
+                   data,
+                   bytes.length,
+                   s3Headers = S3Headers().withMetaHeaders(MetaHeaders(metaHeaders)))
         .runWith(Sink.head)
       metaBefore <- S3.getObjectMetadata(defaultRegionBucket, objectKey).runWith(Sink.head)
       delete <- S3.deleteObject(defaultRegionBucket, objectKey).runWith(Sink.head)

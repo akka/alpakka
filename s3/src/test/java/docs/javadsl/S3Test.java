@@ -17,6 +17,8 @@ import akka.http.javadsl.model.*;
 import akka.stream.alpakka.s3.ListBucketResultContents;
 import akka.stream.alpakka.s3.MultipartUploadResult;
 import akka.stream.alpakka.s3.ObjectMetadata;
+import akka.stream.alpakka.s3.S3Headers;
+import akka.stream.alpakka.s3.headers.ServerSideEncryption;
 import akka.stream.alpakka.s3.javadsl.S3;
 import org.junit.Test;
 import akka.NotUsed;
@@ -24,8 +26,6 @@ import akka.http.javadsl.model.headers.ByteRange;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.s3.impl.S3Headers;
-import akka.stream.alpakka.s3.impl.ServerSideEncryption;
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -357,7 +357,7 @@ public class S3Test extends S3WireMockBase {
                 targetBucket,
                 targetKey,
                 Optional.of(sourceVersionId),
-                S3Headers.empty(),
+                S3Headers.create(),
                 null)
             .run(materializer);
     // #multipart-copy-with-source-version
@@ -445,8 +445,8 @@ public class S3Test extends S3WireMockBase {
                 bucketKey(),
                 targetBucket(),
                 targetBucketKey(),
-                S3Headers.empty(),
-                ServerSideEncryption.AES256$.MODULE$)
+                S3Headers.create(),
+                ServerSideEncryption.aes256())
             .run(materializer);
 
     final MultipartUploadResult result =

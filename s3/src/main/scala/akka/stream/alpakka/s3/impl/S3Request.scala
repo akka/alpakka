@@ -8,34 +8,34 @@ import akka.annotation.InternalApi
 /**
  * Internal Api
  */
-@InternalApi sealed trait S3Request
+@InternalApi private[s3] sealed trait S3Request
 
 /**
  * Internal Api
  */
-@InternalApi private[impl] case object GetObject extends S3Request
+@InternalApi private[s3] case object GetObject extends S3Request
 
 /**
  * Internal Api
  */
-@InternalApi private[impl] case object HeadObject extends S3Request
+@InternalApi private[s3] case object HeadObject extends S3Request
 
 /**
  * Internal Api
  */
-@InternalApi private[impl] case object PutObject extends S3Request
+@InternalApi private[s3] case object PutObject extends S3Request
 
 /**
  * Internal Api
  */
-@InternalApi private[impl] case object InitiateMultipartUpload extends S3Request
+@InternalApi private[s3] case object InitiateMultipartUpload extends S3Request
 
 /**
  * Internal Api
  */
-@InternalApi private[impl] case object UploadPart extends S3Request
+@InternalApi private[s3] case object UploadPart extends S3Request
 
 /**
  * Internal Api
  */
-@InternalApi private[impl] case object CopyPart extends S3Request
+@InternalApi private[s3] case object CopyPart extends S3Request
