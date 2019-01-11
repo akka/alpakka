@@ -237,16 +237,20 @@ lazy val docs = project
       (Symlink / symlinkCreate).value
       makeSite.value
     },
-    Symlink / symlinkPaths := Map(
-      s"api/alpakka/${if (isSnapshot.value) "snapshot" else "current"}" -> s"api/alpakka/${version.value}",
-      s"docs/alpakka/${if (isSnapshot.value) "snapshot" else "current"}" -> s"docs/alpakka/${version.value}",
-    ),
-    Preprocess / siteSubdirName := s"api/alpakka/${version.value}",
+    Symlink / symlinkPaths ++= Seq(isSnapshot.value).flatMap {
+      case false =>
+        Seq(
+          "api/alpakka/current" -> s"api/alpakka/${version.value}",
+          "docs/alpakka/current" -> s"docs/alpakka/${version.value}",
+        )
+      case true => Seq.empty
+    }.toMap,
+    Preprocess / siteSubdirName := s"api/alpakka/${if (isSnapshot.value) "snapshot" else version.value}",
     Preprocess / sourceDirectory := (LocalRootProject / ScalaUnidoc / unidoc / target).value,
     Preprocess / preprocessRules := Seq(
       ("\\.java\\.scala".r, _ => ".java")
     ),
-    Paradox / siteSubdirName := s"docs/alpakka/${version.value}",
+    Paradox / siteSubdirName := s"docs/alpakka/${if (isSnapshot.value) "snapshot" else version.value}",
     Paradox / sourceDirectory := sourceDirectory.value / "main" / "paradox",
     Paradox / paradoxProperties ++= Map(
       "project.url" -> "https://developer.lightbend.com/docs/alpakka/current/",
