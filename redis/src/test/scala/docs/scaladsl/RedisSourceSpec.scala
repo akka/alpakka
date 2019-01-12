@@ -6,9 +6,10 @@ package docs.scaladsl
 
 import akka.stream.scaladsl.{Sink, Source}
 import akka.streams.alpakka.redis.scaladsl.{RedisFlow, RedisSource}
-import akka.streams.alpakka.redis.{RedisHMSet, RedisHSet, RedisKeyValue}
+import akka.streams.alpakka.redis.{RedisHMSet, RedisHSet, RedisKeyValue, RedisSubscriberSettings}
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterAll
+
 import scala.concurrent.duration._
 import scala.collection.immutable.Seq
 import scala.concurrent.{Await, Future}
@@ -19,7 +20,7 @@ class RedisSourceSpec extends Specification with BeforeAfterAll with RedisSuppor
 
   sequential
 
-  "scaladsl.RedisFlow" should {
+  "scaladsl.RedisSource" should {
 
     "implement get command " in {
 
@@ -104,5 +105,27 @@ class RedisSourceSpec extends Specification with BeforeAfterAll with RedisSuppor
       hgetAll shouldEqual redisFieldValues
 
     }
+
+    "create RedisSubscriberSettings with Default values " in {
+
+      val objectUnderTest = RedisSubscriberSettings.Defaults
+      val expected =
+        RedisSubscriberSettings.create().withMaxBufferSize(1000).withMaxConcurrency(100).withUnsubscribeOnShutDown(true)
+
+      objectUnderTest.maxBufferSize shouldEqual expected.maxBufferSize
+      objectUnderTest.maxConcurrency shouldEqual expected.maxConcurrency
+      objectUnderTest.unsubscribeOnShutDown shouldEqual expected.unsubscribeOnShutDown
+    }
+
+    "create RedisSubscriberSettings ] " in {
+
+      val objectUnderTest =
+        RedisSubscriberSettings.create().withMaxBufferSize(10).withMaxConcurrency(11).withUnsubscribeOnShutDown(false)
+
+      objectUnderTest.maxBufferSize shouldEqual 10
+      objectUnderTest.maxConcurrency shouldEqual 11
+      objectUnderTest.unsubscribeOnShutDown shouldEqual false
+    }
+
   }
 }

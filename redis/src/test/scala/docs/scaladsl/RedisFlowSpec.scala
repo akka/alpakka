@@ -5,21 +5,21 @@
 package docs.scaladsl
 
 import java.lang
-import akka.stream.scaladsl.{Sink, Source}
+
+import akka.stream.KillSwitches
+import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.streams.alpakka.redis.scaladsl.{RedisFlow, RedisSource}
 import akka.streams.alpakka.redis.{RedisHKeyFields, _}
-import docs.scaladsl.impl.SubscurbeListener
-import io.lettuce.core.internal.LettuceFactories
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterAll
 
 import scala.collection.immutable
 import scala.collection.immutable.Seq
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.util.Random
-import scala.concurrent.duration._
 
 class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport {
 
@@ -85,8 +85,6 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
         .map(f => RedisPubSub(topic, f))
         .via(RedisFlow.publish[String, String](1, redisClient.connectPubSub().async().getStatefulConnection))
         .runWith(Sink.head[RedisOperationResult[RedisPubSub[String, String], Long]])
-      redisClient.connectPubSub().sync().unsubscribe(topic)
-
       Await.result(result, 5.seconds).result.get shouldEqual 1L
 
     }
@@ -120,7 +118,6 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
         .via(RedisFlow.publish[String, String](1, redisClient.connectPubSub().async().getStatefulConnection))
         .runWith(Sink.head[RedisOperationResult[RedisPubSub[String, String], Long]])
       val results = Await.result(receivedMessages, 5.seconds)
-      pubSub.reactive().unsubscribe("topic3", "topic4")
       results shouldEqual messages
     }
 
@@ -219,34 +216,27 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
 
     }
 
-    "implement unsubscribe method" in {
+    "check that unsubscribe occurs in subscribeSource when stream completes" in {
 
-      val subscribeQueue = LettuceFactories.newBlockingQueue[String]()
-      val unsubscribeQueue = LettuceFactories.newBlockingQueue[String]()
+      import scala.compat.java8.FutureConverters._
+      import scala.collection.JavaConverters._
 
-      val listener = new SubscurbeListener(subscribeQueue, unsubscribeQueue)
-      pubSub.addListener(listener)
+      val (killSwitch, done) =
+        RedisSource
+          .subscribe(Seq("topic3", "topic2"), pubSub)
+          .viaMat(KillSwitches.single)(Keep.right)
+          .grouped(2)
+          .toMat(Sink.ignore)(Keep.both)
+          .run()
 
-      val messages = Seq[RedisPubSub[String, String]](RedisPubSub("topic3", "value4"), RedisPubSub("topic2", "value2"))
+      Thread.sleep(1000)
 
-      val receivedMessages: Future[immutable.Seq[RedisPubSub[String, String]]] =
-        RedisSource.subscribe(Seq("topic3", "topic2"), pubSub).grouped(2).runWith(Sink.head)
+      killSwitch.shutdown()
+      Thread.sleep(1000)
+      val channels = Await.result(pubSub.async().pubsubChannels().toScala, 5.second)
 
-      Source
-        .fromIterator(() => messages.iterator)
-        .via(RedisFlow.publish[String, String](1, redisClient.connectPubSub().async().getStatefulConnection))
-        .runWith(Sink.head[RedisOperationResult[RedisPubSub[String, String], Long]])
-      Await.result(receivedMessages, 5.seconds)
-
-      val topics: Seq[String] = messages.map(_.channel)
-
-      val unsubscribeFuture = Source.single(topics).via(RedisFlow.unsubscribe(pubSub)).runWith(Sink.seq)
-
-      Await.result(unsubscribeFuture, 5.seconds)
-      pubSub.removeListener(listener)
-      unsubscribeQueue.size() shouldEqual 2
-      unsubscribeQueue.contains("topic2") shouldEqual true
-      unsubscribeQueue.contains("topic3") shouldEqual true
+      channels.asScala.contains("topic2") shouldEqual false
+      channels.asScala.contains("topic3") shouldEqual false
 
     }
 

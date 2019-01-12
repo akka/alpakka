@@ -6,9 +6,10 @@ package akka.streams.alpakka.redis.javadsl
 
 import akka.NotUsed
 import akka.stream.javadsl.Source
-import akka.streams.alpakka.redis.{RedisHSet, RedisKeyValue, RedisPubSub}
+import akka.streams.alpakka.redis.{RedisHSet, RedisKeyValue, RedisPubSub, RedisSubscriberSettings}
 import io.lettuce.core.api.StatefulRedisConnection
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
+
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
 import scala.concurrent.ExecutionContext
@@ -16,8 +17,11 @@ import scala.concurrent.ExecutionContext
 object RedisSource {
 
   def subscribe[K, V](topics: java.util.List[K],
-                      connection: StatefulRedisPubSubConnection[K, V]): Source[RedisPubSub[K, V], NotUsed] =
-    Source.fromGraph(akka.streams.alpakka.redis.scaladsl.RedisSource.subscribe(topics.asScala.to[Seq], connection))
+                      connection: StatefulRedisPubSubConnection[K, V],
+                      settings: RedisSubscriberSettings): Source[RedisPubSub[K, V], NotUsed] =
+    Source.fromGraph(
+      akka.streams.alpakka.redis.scaladsl.RedisSource.subscribe(topics.asScala.to[Seq], connection, settings)
+    )
 
   def get[K, V](key: K, connection: StatefulRedisConnection[K, V]): Source[RedisKeyValue[K, V], NotUsed] =
     Source.fromGraph(akka.streams.alpakka.redis.scaladsl.RedisSource.get(key, connection))

@@ -5,6 +5,7 @@
 package akka.streams.alpakka.redis
 
 import java.util.Optional
+
 import scala.collection.immutable.Seq
 import scala.util.{Failure, Success, Try}
 import scala.collection.JavaConverters._
@@ -140,4 +141,35 @@ final case class RedisOperationResult[T, R] private (output: T, result: Try[R]) 
       case Failure(ex) => Optional.of(ex)
       case Success(_) => Optional.empty()
     }
+}
+
+final class RedisSubscriberSettings private (val maxConcurrency: Int,
+                                             val maxBufferSize: Int,
+                                             val unsubscribeOnShutDown: Boolean) {
+
+  def withMaxConcurrency(maxConcurrency: Int): RedisSubscriberSettings = copy(maxConcurrency = maxConcurrency)
+
+  def withMaxBufferSize(maxBufferSize: Int): RedisSubscriberSettings = copy(maxBufferSize = maxBufferSize)
+
+  def withUnsubscribeOnShutDown(unsubscribeOnShutDown: Boolean): RedisSubscriberSettings =
+    copy(unsubscribeOnShutDown = unsubscribeOnShutDown)
+
+  private[this] def copy(maxConcurrency: Int = maxConcurrency,
+                         maxBufferSize: Int = maxBufferSize,
+                         unsubscribeOnShutDown: Boolean = unsubscribeOnShutDown) =
+    new RedisSubscriberSettings(maxConcurrency, maxBufferSize, unsubscribeOnShutDown)
+}
+
+object RedisSubscriberSettings {
+  val Defaults = new RedisSubscriberSettings(100, 1000, true)
+
+  /**
+   * Scala API
+   */
+  def apply(): RedisSubscriberSettings = Defaults
+
+  /**
+   * Java API
+   */
+  def create(): RedisSubscriberSettings = Defaults
 }

@@ -133,27 +133,4 @@ object RedisFlow {
         .recover { case ex: Throwable => RedisOperationResult(keyValues, Failure(ex)) }
     }
 
-  def unsubscribe[K, V](connection: StatefulRedisPubSubConnection[K, V])(
-      implicit executionContext: ExecutionContext
-  ): Flow[Seq[K], RedisOperationResult[Seq[K], Unit.type], NotUsed] =
-    Flow[Seq[K]].mapAsync(1) { topics =>
-      connection
-        .async()
-        .unsubscribe(topics: _*)
-        .toScala
-        .map(_ => RedisOperationResult(topics, Success(Unit)))
-        .recover { case ex: Throwable => RedisOperationResult(topics, Failure(ex)) }
-    }
-
-  def punsubscribe[K, V](
-      connection: StatefulRedisPubSubConnection[K, V]
-  )(implicit executionContext: ExecutionContext): Flow[Seq[K], RedisOperationResult[Seq[K], Unit.type], NotUsed] =
-    Flow[Seq[K]].mapAsync(1) { patterns =>
-      connection
-        .async()
-        .punsubscribe(patterns: _*)
-        .toScala
-        .map(_ => RedisOperationResult(patterns, Success(Unit)))
-        .recover { case ex: Throwable => RedisOperationResult(patterns, Failure(ex)) }
-    }
 }
