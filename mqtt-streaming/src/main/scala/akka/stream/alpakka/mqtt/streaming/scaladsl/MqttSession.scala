@@ -151,7 +151,11 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
             .watch(clientConnector.toUntyped)
             .watchTermination() {
               case (_, terminated) =>
-                terminated.onComplete(_ => clientConnector ! ClientConnector.ConnectionLost)
+                terminated.onComplete {
+                  case Failure(_: WatchedActorTerminatedException) =>
+                  case _ =>
+                    clientConnector ! ClientConnector.ConnectionLost
+                }
                 NotUsed
             }
             .via(killSwitch.flow)
@@ -234,7 +238,11 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
       .watch(clientConnector.toUntyped)
       .watchTermination() {
         case (_, terminated) =>
-          terminated.onComplete(_ => clientConnector ! ClientConnector.ConnectionLost)
+          terminated.onComplete {
+            case Failure(_: WatchedActorTerminatedException) =>
+            case _ =>
+              clientConnector ! ClientConnector.ConnectionLost
+          }
           NotUsed
       }
       .via(new MqttFrameStage(settings.maxPacketSize))
@@ -436,7 +444,11 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
             .watch(serverConnector.toUntyped)
             .watchTermination() {
               case (_, terminated) =>
-                terminated.onComplete(_ => serverConnector ! ServerConnector.ConnectionLost(connectionId))
+                terminated.onComplete {
+                  case Failure(_: WatchedActorTerminatedException) =>
+                  case _ =>
+                    serverConnector ! ServerConnector.ConnectionLost(connectionId)
+                }
                 NotUsed
             }
             .via(killSwitch.flow)
@@ -517,7 +529,11 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
       .watch(serverConnector.toUntyped)
       .watchTermination() {
         case (_, terminated) =>
-          terminated.onComplete(_ => serverConnector ! ServerConnector.ConnectionLost(connectionId))
+          terminated.onComplete {
+            case Failure(_: WatchedActorTerminatedException) =>
+            case _ =>
+              serverConnector ! ServerConnector.ConnectionLost(connectionId)
+          }
           NotUsed
       }
       .via(new MqttFrameStage(settings.maxPacketSize))
