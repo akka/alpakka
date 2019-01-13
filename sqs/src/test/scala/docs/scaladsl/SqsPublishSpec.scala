@@ -24,10 +24,13 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
     def receiveMessage(): Message =
       awsSqsClient.receiveMessage(queueUrl).getMessages.asScala.head
 
-    def receiveMessages(numberOfMessages: Int): Seq[Message] = {
+    def receiveMessages(maxNumberOfMessages: Int): Seq[Message] = {
+      // see https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/sqs/model/ReceiveMessageRequest.html
+      require(maxNumberOfMessages > 0 && maxNumberOfMessages <= 10, "maxNumberOfMessages must be in 1 to 10")
+
       val request = new ReceiveMessageRequest()
         .withQueueUrl(queueUrl)
-        .withMaxNumberOfMessages(numberOfMessages)
+        .withMaxNumberOfMessages(maxNumberOfMessages)
       awsSqsClient.receiveMessage(request).getMessages.asScala
     }
   }
@@ -114,15 +117,15 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   it should "publish messages by grouping and pull them" taggedAs Integration in new IntegrationFixture {
     //#group
-    val messages = for (i <- 0 until 20) yield s"Message - $i"
+    val messages = for (i <- 0 until 10) yield s"Message - $i"
 
     val future = Source(messages)
-      .runWith(SqsPublishSink.grouped(queueUrl))
+      .runWith(SqsPublishSink.grouped(queueUrl, SqsPublishGroupedSettings.Defaults.withMaxBatchSize(2)))
     //#group
 
     future.futureValue shouldBe Done
 
-    receiveMessages(20) should have size 20
+    receiveMessages(10) should have size 10
   }
 
   it should "publish batch of messages and pull them" taggedAs Integration in new IntegrationFixture {

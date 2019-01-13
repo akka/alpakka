@@ -17,14 +17,10 @@ import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
 
 // #init-client
-import org.elasticmq.rest.sqs.SQSRestServer;
-import org.elasticmq.rest.sqs.SQSRestServerBuilder;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
-import java.net.InetSocketAddress;
 import java.util.Random;
 
 public abstract class BaseSqsTest {
@@ -33,10 +29,7 @@ public abstract class BaseSqsTest {
   protected static Materializer materializer;
 
   private boolean initialized = false;
-  private boolean tornDown = false;
-  private SQSRestServer sqsServer;
-  private InetSocketAddress sqsAddress;
-  protected String sqsEndpoint;
+  protected String sqsEndpoint = "http://localhost:9324";
   protected AmazonSQSAsync sqsClient;
 
   @BeforeClass
@@ -55,9 +48,6 @@ public abstract class BaseSqsTest {
   @Before
   public void setupBefore() {
     if (!initialized) {
-      sqsServer = SQSRestServerBuilder.withActorSystem(system).withDynamicPort().start();
-      sqsAddress = sqsServer.waitUntilStarted().localAddress();
-      sqsEndpoint = "http://" + sqsAddress.getHostName() + ":" + sqsAddress.getPort();
       sqsClient = createAsyncClient(sqsEndpoint);
       initialized = true;
     }
@@ -76,14 +66,6 @@ public abstract class BaseSqsTest {
     system.registerOnTermination(() -> awsSqsClient.shutdown());
     // #init-client
     return awsSqsClient;
-  }
-
-  @After
-  public void tearDownAfter() {
-    if (!tornDown) {
-      sqsServer.stopAndWait();
-      tornDown = true;
-    }
   }
 
   protected String randomQueueUrl() {

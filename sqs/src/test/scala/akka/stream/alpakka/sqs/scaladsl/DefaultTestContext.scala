@@ -8,25 +8,22 @@ import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model.CreateQueueRequest
-import org.elasticmq.rest.sqs.{SQSLimits, SQSRestServer, SQSRestServerBuilder}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite, Tag}
+import org.scalatest.{BeforeAndAfterAll, Suite, Tag}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 
-trait DefaultTestContext extends BeforeAndAfterAll with BeforeAndAfterEach with ScalaFutures { this: Suite =>
+trait DefaultTestContext extends BeforeAndAfterAll with ScalaFutures { this: Suite =>
 
   //#init-mat
   implicit val system: ActorSystem = ActorSystem()
   implicit val mat: Materializer = ActorMaterializer()
   //#init-mat
 
-  var sqsServer: SQSRestServer = _
-  def sqsAddress = sqsServer.waitUntilStarted().localAddress
-  def sqsEndpoint: String =
-    s"http://${sqsAddress.getHostName}:${sqsAddress.getPort}"
+  // endpoint of the elasticmq docker container
+  val sqsEndpoint: String = "http://localhost:9324"
 
   object Integration extends Tag("akka.stream.alpakka.sqs.scaladsl.Integration")
 
@@ -39,12 +36,6 @@ trait DefaultTestContext extends BeforeAndAfterAll with BeforeAndAfterEach with 
     .addAttributesEntry("ContentBasedDeduplication", "true")
 
   def randomFifoQueueUrl(): String = sqsClient.createQueue(fifoQueueRequest).getQueueUrl
-
-  override protected def beforeEach(): Unit =
-    sqsServer = SQSRestServerBuilder.withActorSystem(system).withSQSLimits(SQSLimits.Relaxed).withDynamicPort().start()
-
-  override protected def afterEach(): Unit =
-    sqsServer.stopAndWait()
 
   override protected def afterAll(): Unit =
     try {
