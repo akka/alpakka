@@ -8,7 +8,7 @@ import java.util.concurrent.LinkedBlockingQueue
 
 import io.lettuce.core.pubsub.RedisPubSubListener
 
-class SubscurbeListener(subscribeQueue: LinkedBlockingQueue[String], unsubscribeQueue: LinkedBlockingQueue[String])
+class SubscribeListener(subscribeQueue: LinkedBlockingQueue[String], unsubscribeQueue: LinkedBlockingQueue[String])
     extends RedisPubSubListener[String, String] {
 
   override def message(channel: String, message: String): Unit = ()

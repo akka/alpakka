@@ -106,7 +106,7 @@ class RedisSourceSpec extends Specification with BeforeAfterAll with RedisSuppor
 
     }
 
-    "create RedisSubscriberSettings with Default values " in {
+    "create RedisSubscriberSettings with Default values" in {
 
       val objectUnderTest = RedisSubscriberSettings.Defaults
       val expected =
@@ -117,7 +117,7 @@ class RedisSourceSpec extends Specification with BeforeAfterAll with RedisSuppor
       objectUnderTest.unsubscribeOnShutDown shouldEqual expected.unsubscribeOnShutDown
     }
 
-    "create RedisSubscriberSettings ] " in {
+    "create RedisSubscriberSettings" in {
 
       val objectUnderTest =
         RedisSubscriberSettings.create().withMaxBufferSize(10).withMaxConcurrency(11).withUnsubscribeOnShutDown(false)

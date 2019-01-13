@@ -48,7 +48,7 @@ object RedisFlow {
     Flow[RedisKeyValues[K, V]].mapAsync(parallelism) { keyValues =>
       val resultFuture = connection.async().lpush(keyValues.key, keyValues.values: _*).toScala
       resultFuture.map(r => redis.RedisOperationResult(keyValues, Success(r.longValue()))).recover {
-        case ex: Throwable => ex.printStackTrace(); RedisOperationResult(keyValues, Failure(ex))
+        case ex: Throwable => RedisOperationResult(keyValues, Failure(ex))
       }
     }
 

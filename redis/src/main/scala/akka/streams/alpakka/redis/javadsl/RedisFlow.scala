@@ -25,7 +25,7 @@ object RedisFlow {
       .fromGraph(
         akka.streams.alpakka.redis.scaladsl.RedisFlow
           .append(parallelism, connection)(executionContext)
-          .map(f => RedisOperationResult(f.output, f.result.map(t => t)))
+          .map(f => RedisOperationResult(f.input, f.result.map(t => t)))
       )
 
   def set[K, V](
@@ -47,7 +47,7 @@ object RedisFlow {
         .Flow[util.List[RedisKeyValue[K, V]]]
         .map(_.asScala.to[Seq])
         .via(akka.streams.alpakka.redis.scaladsl.RedisFlow.mset(parallelism, connection)(executionContext))
-        .map(f => f.copy(f.output.asJava))
+        .map(f => f.copy(f.input.asJava))
     )
 
   def lset[K, V](

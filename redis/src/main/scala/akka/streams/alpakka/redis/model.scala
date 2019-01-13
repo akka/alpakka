@@ -130,16 +130,24 @@ object RedisKeyValue {
   def create[K, V](key: K, value: V) = new RedisKeyValue(key, value)
 }
 
-final case class RedisOperationResult[T, R] private (output: T, result: Try[R]) {
+final case class RedisOperationResult[T, R] private (input: T, result: Try[R]) {
 
   /** Java API */
-  def getOutput: T = output
+  def getInput: T = input
 
   /** Java API */
   def getException: Optional[Throwable] =
     result match {
       case Failure(ex) => Optional.of(ex)
       case Success(_) => Optional.empty()
+    }
+
+  /** Java API */
+  def getResult: Optional[R] =
+    result match {
+      case Success(_) => Optional.of(result.get)
+      case Failure(ex) => Optional.empty()
+
     }
 }
 
