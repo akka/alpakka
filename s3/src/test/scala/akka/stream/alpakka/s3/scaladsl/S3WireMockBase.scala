@@ -7,6 +7,7 @@ package akka.stream.alpakka.s3.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.headers.ServerSideEncryption
+import akka.stream.alpakka.s3.impl.S3Stream
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase._
 import akka.testkit.TestKit
 import com.github.tomakehurst.wiremock.WireMockServer
@@ -414,6 +415,7 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
   }
 
   def mockCopy(): Unit = mockCopy(body.length)
+  def mockCopyMinChunkSize(): Unit = mockCopy(S3Stream.MinChunkSize)
   def mockCopy(expectedContentLength: Int): Unit = {
     mock.register(
       head(urlEqualTo(s"/$bucketKey"))

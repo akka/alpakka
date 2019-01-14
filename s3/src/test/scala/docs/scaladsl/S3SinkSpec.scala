@@ -2,12 +2,12 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.s3.scaladsl
+package docs.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.s3.{MultipartUploadResult, S3Headers}
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption}
-import akka.stream.alpakka.s3.impl.S3Stream
+import akka.stream.alpakka.s3.scaladsl.{S3, S3ClientIntegrationSpec, S3WireMockBase}
+import akka.stream.alpakka.s3.{MultipartUploadResult, S3Headers}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 
@@ -99,7 +99,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
   }
 
   it should "copy a file from source bucket to target bucket when expected content length is equal to chunk size" in {
-    mockCopy(S3Stream.MinChunkSize)
+    mockCopyMinChunkSize()
 
     val result = S3.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey).run()
     result.runWith(Sink.head).futureValue shouldBe MultipartUploadResult(targetUrl,

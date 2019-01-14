@@ -2,13 +2,14 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.s3.scaladsl
+package docs.scaladsl
 
 import akka.NotUsed
-import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpEntity, HttpResponse}
 import akka.http.scaladsl.model.headers.ByteRange
+import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpEntity, HttpResponse}
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.headers.ServerSideEncryption
+import akka.stream.alpakka.s3.scaladsl.{S3, S3ClientIntegrationSpec, S3WireMockBase}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 
