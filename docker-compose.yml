@@ -23,13 +23,10 @@ services:
     ports:
     - "8091-8094:8091-8094"
     - "11210:11210"
-  orientdb:
-    image: orientdb:3.0.4
+  elasticmq:
+    image: softwaremill/elasticmq:0.14.6
     ports:
-      - "2424:2424"
-    environment:
-      - "ORIENTDB_ROOT_PASSWORD=root"
-    command: /orientdb/bin/server.sh -Dmemory.chunk.size=268435456
+      - "9324:9324"
   dynamodb:
     image: deangiberson/aws-dynamodb-local
     ports:
@@ -86,16 +83,6 @@ services:
       - "AUTH_HOST=http://ironauth:8090"
     ports:
       - "8080:8080"
-  mongo:
-    image: mongo
-    ports:
-      - "27017:27017"
-  mqtt:
-    image: toke/mosquitto
-    ports:
-      - "1883:1883"
-    volumes:
-      - ./mqtt/src/test/travis:/mqtt/config/conf.d
   kudu-master-data:
     image: kunickiaj/kudu
     volumes:
@@ -122,3 +109,20 @@ services:
     command: tserver
     links:
       - kudu-master
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+  mqtt:
+    image: toke/mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mqtt/src/test/travis:/mqtt/config/conf.d
+  orientdb:
+    image: orientdb:3.0.4
+    ports:
+      - "2424:2424"
+    environment:
+      - "ORIENTDB_ROOT_PASSWORD=root"
+    command: /orientdb/bin/server.sh -Dmemory.chunk.size=268435456

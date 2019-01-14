@@ -328,15 +328,16 @@ Options:
 
 ## Integration testing
 
-For integration testing without touching Amazon SQS, Alpakka uses [ElasticMQ](https://github.com/adamw/elasticmq).
-
+For integration testing without touching Amazon SQS, Alpakka uses [ElasticMQ](https://github.com/adamw/elasticmq), 
+a queuing service which serves an AWS SQS compatible API.
 
 ### Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
 
-> The test code uses embedded [ElasticMQ](https://github.com/adamw/elasticmq) as queuing service which serves an AWS SQS
-> compatible API.
+> The code requires ElasticMQ running in the background. You can start it quickly using docker:
+>
+> `docker-compose up elasticmq`
 
 Scala
 :   ```
