@@ -167,6 +167,72 @@ class MqttSessionSpec
       result.futureValue shouldBe Right(Event(subAck))
     }
 
+    "Connect and fail given no ack" in {
+      val session = ActorMqttClientSession(settings.withReceiveConnAckTimeout(0.seconds))
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+
+      val (client, result) =
+        Source
+          .queue[Command[String]](1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .clientSessionFlow(session)
+              .join(pipeToServer)
+          )
+          .toMat(Sink.ignore)(Keep.both)
+          .run()
+
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+
+      client.offer(Command(connect))
+
+      server.expectMsg(connectBytes)
+
+      result.failed.futureValue shouldBe an[ActorMqttClientSession.ConnectFailed.type]
+    }
+
+    "Connect successfully, subscribe and fail given no ack" in {
+      val session = ActorMqttClientSession(settings.withReceiveSubAckTimeout(0.seconds))
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+      val subscribe = Subscribe("some-topic")
+
+      val (client, result) =
+        Source
+          .queue[Command[String]](1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .clientSessionFlow(session)
+              .join(pipeToServer)
+          )
+          .toMat(Sink.ignore)(Keep.both)
+          .run()
+
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val subscribeBytes = subscribe.encode(ByteString.newBuilder, PacketId(1)).result()
+
+      client.offer(Command(connect))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      client.offer(Command(subscribe))
+
+      server.expectMsg(subscribeBytes)
+
+      result.failed.futureValue shouldBe an[ActorMqttClientSession.SubscribeFailed.type]
+    }
+
     "Subscribe and stash any subsequent subscriptions" in {
       val session = ActorMqttClientSession(settings)
 
