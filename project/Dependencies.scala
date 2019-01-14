@@ -349,11 +349,6 @@ object Dependencies {
   val Sqs = Seq(
     libraryDependencies ++= Seq(
       "com.amazonaws" % "aws-java-sdk-sqs" % AwsSdkVersion, // ApacheV2
-      "org.elasticmq" %% "elasticmq-rest-sqs" % "0.14.5" % Test excludeAll (
-        // elasticmq-rest-sqs depends on Akka 2.5, exclude it, so we can choose Akka version
-        ExclusionRule(organization = "com.typesafe.akka") //
-      ), // ApacheV2
-      // pull up akka-http version to the latest version for elasticmq-rest-sqs
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test, // ApacheV2
       "org.mockito" % "mockito-core" % "2.19.1" % Test // MIT
     )

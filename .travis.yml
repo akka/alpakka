@@ -94,7 +94,9 @@ jobs:
       - PRE_CMD="docker-compose up -d amazonsns"
       - CMD=+sns/testChanged
     - env: CMD=+solr/testChanged
-    - env: CMD=+sqs/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d elasticmq"
+      - CMD=+sqs/testChanged
     - env: CMD=+sse/testChanged
     - env: CMD=+text/testChanged
     - env: CMD=+udp/testChanged
