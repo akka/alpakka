@@ -16,7 +16,7 @@ object Common extends AutoPlugin {
   Dependencies.Common ++ Seq(
     organization := "com.lightbend.akka",
     organizationName := "Lightbend Inc.",
-    homepage := Some(url("https://developer.lightbend.com/docs/alpakka/current/")),
+    homepage := Some(url("https://doc.akka.io/docs/alpakka/current/")),
     scmInfo := Some(ScmInfo(url("https://github.com/akka/alpakka"), "git@github.com:akka/alpakka.git")),
     developers += Developer("contributors",
                             "Contributors",
@@ -62,7 +62,7 @@ object Common extends AutoPlugin {
       "-Xlint:unchecked"
     ),
     autoAPIMappings := true,
-    apiURL := Some(url(s"http://developer.lightbend.com/docs/api/alpakka/${version.value}")),
+    apiURL := Some(url(s"https://doc.akka.io/api/alpakka/${version.value}/akka/stream/alpakka/index.html")),
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
     // -a Show stack traces and exception class name for AssertionErrors.
