@@ -19,14 +19,14 @@ object S3 {
   val MinChunkSize: Int = 5242880
 
   /**
-   * Use this to extend the library
+   * Use this for a low level access to S3.
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param method the [[akka.http.scaladsl.model.HttpMethod HttpMethod]] to use when making the request
    * @param versionId optional version id of the object
    * @param s3Headers any headers you want to add
-   * @return a [[scala.concurrent.Future Future]] containing the raw [[akka.http.scaladsl.model.HttpResponse HttpResponse]]
+   * @return a raw HTTP response from S3
    */
   def request(bucket: String,
               key: String,
@@ -42,7 +42,7 @@ object S3 {
    * @param key the s3 object key
    * @param versionId optional version id of the object
    * @param sse the server side encryption to use
-   * @return A [[scala.concurrent.Future Future]] containing an [[scala.Option]] that will be [[scala.None]] in case the object does not exist
+   * @return A [[akka.stream.scaladsl.Source Source]] containing an [[scala.Option]] that will be [[scala.None]] in case the object does not exist
    */
   def getObjectMetadata(
       bucket: String,
@@ -58,7 +58,7 @@ object S3 {
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param versionId optional version id of the object
-   * @return A [[scala.concurrent.Future Future]] of [[akka.Done]]
+   * @return A [[akka.stream.scaladsl.Source Source]] that will emit [[akka.Done]] when operation is completed
    */
   def deleteObject(bucket: String, key: String, versionId: Option[String] = None): Source[Done, NotUsed] =
     S3Stream.deleteObject(S3Location(bucket, key), versionId)
@@ -73,7 +73,7 @@ object S3 {
    * @param contentType an optional [[ContentType]]
    * @param s3Headers any headers you want to add
    * @param sse the server side encryption to use
-   * @return a [[scala.concurrent.Future Future]] containing the [[ObjectMetadata]] of the uploaded S3 Object
+   * @return a [[akka.stream.scaladsl.Source Source]] containing the [[ObjectMetadata]] of the uploaded S3 Object
    */
   def putObject(bucket: String,
                 key: String,
@@ -91,7 +91,8 @@ object S3 {
    * @param key the s3 object key
    * @param range [optional] the [[akka.http.scaladsl.model.headers.ByteRange ByteRange]] you want to download
    * @param sse [optional] the server side encryption used on upload
-   * @return A [[akka.stream.scaladsl.Source Source]] of [[akka.util.ByteString ByteString]] and a [[scala.concurrent.Future Future]] containing the [[ObjectMetadata]]
+   * @return The source will emit an empty [[scala.Option Option]] if an object can not be found.
+   *         Otherwise [[scala.Option Option]] will contain a tuple of object's data and metadata.
    */
   def download(
       bucket: String,
@@ -110,7 +111,6 @@ object S3 {
    *
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html  (version 1 API)
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html (version 1 API)
-   *
    * @param bucket Which bucket that you list object metadata for
    * @param prefix Prefix of the keys you want to list under passed bucket
    * @return [[akka.stream.scaladsl.Source Source]] of [[ListBucketResultContents]]
@@ -128,7 +128,7 @@ object S3 {
    * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
-   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[ByteString]]'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[ByteString]]'s and materializes to a [[akka.stream.scaladsl.Source]] of [[MultipartUploadResult]]
    */
   def multipartUpload(
       bucket: String,
@@ -159,7 +159,7 @@ object S3 {
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
    * @param s3Headers any headers you want to add
-   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[akka.stream.scaladsl.Source]] of [[MultipartUploadResult]]
    */
   def multipartUploadWithHeaders(
       bucket: String,
@@ -193,7 +193,7 @@ object S3 {
    * @param sse an optional server side encryption key
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
-   * @return
+   * @return a runnable graph which upon materialization will return a source containing the results of the copy operation.
    */
   def multipartCopy(
       sourceBucket: String,
