@@ -196,6 +196,10 @@ final case class Connect(protocolName: Connect.ProtocolName,
       Some(username),
       Some(password)
     )
+
+  override def toString: String =
+    s"""Connect(protocolName:$protocolName,protocolLevel:$protocolLevel,clientId:$clientId,connectFlags:$connectFlags,keepAlive:$keepAlive,willTopic:$willTopic,willMessage:$willMessage,username:$username,password:${password
+      .map(_ => "********")})"""
 }
 
 object ConnAckFlags {
@@ -288,6 +292,9 @@ final case class Publish @InternalApi private[streaming] (override val flags: Co
    */
   def this(topicName: String, payload: ByteString) =
     this(ControlPacketFlags.QoSAtLeastOnceDelivery, topicName, Some(PacketId(0)), payload)
+
+  override def toString: String =
+    s"""Publish(flags:$flags,topicName:$topicName,packetId:$packetId,payload:${payload.size}b)"""
 }
 
 /**
@@ -503,7 +510,14 @@ object MqttCodec {
                                      willMessage: Option[Either[MqttCodec.DecodeError, String]],
                                      username: Option[Either[MqttCodec.DecodeError, String]],
                                      password: Option[Either[MqttCodec.DecodeError, String]])
-      extends DecodeError
+      extends DecodeError {
+    override def toString: String =
+      s"""BadConnectMessage(clientId:$clientId,willTopic:$willTopic,willMessage:$willMessage,username:$username,password:${password
+        .map {
+          case Left(x) => s"Left($x)"
+          case Right(x) => s"Right(" + x.map(_ => "********") + ")"
+        }})"""
+  }
 
   /**
    * A reserved QoS was specified
@@ -521,7 +535,10 @@ object MqttCodec {
   final case class BadPublishMessage(topicName: Either[DecodeError, String],
                                      packetId: Option[PacketId],
                                      payload: ByteString)
-      extends DecodeError
+      extends DecodeError {
+    override def toString: String =
+      s"""BadPublishMessage(topicName:$topicName,packetId:$packetId,payload:${payload.size}b)"""
+  }
 
   /**
    * Something is wrong with the subscribe message

@@ -113,8 +113,9 @@ import scala.util.{Failure, Success}
   }
 
   def publishUnacknowledged(data: Publishing)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
+    val ReceivePubackrec = "producer-receive-pubackrec"
     timer =>
-      timer.startSingleTimer("receive-pubackrec", ReceivePubAckRecTimeout, data.settings.receivePubAckRecTimeout)
+      timer.startSingleTimer(ReceivePubackrec, ReceivePubAckRecTimeout, data.settings.receivePubAckRecTimeout)
 
       Behaviors
         .receiveMessagePartial[Event] {
@@ -125,6 +126,7 @@ import scala.util.{Failure, Success}
           case PubRecReceivedFromRemote(local)
               if data.publish.flags.contains(ControlPacketFlags.QoSAtMostOnceDelivery) =>
             local.success(ForwardPubRec(data.publishData))
+            timer.cancel(ReceivePubackrec)
             publishAcknowledged(data)
           case ReceivePubAckRecTimeout =>
             data.remote.offer(
@@ -142,8 +144,9 @@ import scala.util.{Failure, Success}
   }
 
   def publishAcknowledged(data: Publishing)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
+    val ReceivePubrel = "producer-receive-pubrel"
     timer =>
-      timer.startSingleTimer("receive-pubrel", ReceivePubCompTimeout, data.settings.receivePubCompTimeout)
+      timer.startSingleTimer(ReceivePubrel, ReceivePubCompTimeout, data.settings.receivePubCompTimeout)
 
       data.remote.offer(ForwardPubRel(data.publish, data.packetId))
 
@@ -154,6 +157,7 @@ import scala.util.{Failure, Success}
             Behaviors.stopped
           case ReceivePubCompTimeout =>
             data.remote.offer(ForwardPubRel(data.publish, data.packetId))
+            timer.cancel(ReceivePubrel)
             publishAcknowledged(data)
         }
         .receiveSignal {
@@ -260,7 +264,8 @@ import scala.util.{Failure, Success}
   }
 
   def consumeUnacknowledged(data: ClientConsuming): Behavior[Event] = Behaviors.withTimers { timer =>
-    timer.startSingleTimer("receive-pubackrel", ReceivePubAckRecTimeout, data.settings.receivePubAckRecTimeout)
+    val ReceivePubackrel = "consumer-receive-pubackrel"
+    timer.startSingleTimer(ReceivePubackrel, ReceivePubAckRecTimeout, data.settings.receivePubAckRecTimeout)
     Behaviors
       .receiveMessagePartial[Event] {
         case PubAckReceivedLocally(remote) if data.publish.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) =>
@@ -268,6 +273,7 @@ import scala.util.{Failure, Success}
           Behaviors.stopped
         case PubRecReceivedLocally(remote) if data.publish.flags.contains(ControlPacketFlags.QoSExactlyOnceDelivery) =>
           remote.success(ForwardPubRec)
+          timer.cancel(ReceivePubackrel)
           consumeReceived(data)
         case DupPublishReceivedFromRemote(local) =>
           local.success(ForwardPublish)
@@ -283,11 +289,13 @@ import scala.util.{Failure, Success}
   }
 
   def consumeReceived(data: ClientConsuming): Behavior[Event] = Behaviors.withTimers { timer =>
-    timer.startSingleTimer("receive-pubrel", ReceivePubRelTimeout, data.settings.receivePubRelTimeout)
+    val ReceivePubrel = "consumer-receive-pubrel"
+    timer.startSingleTimer(ReceivePubrel, ReceivePubRelTimeout, data.settings.receivePubRelTimeout)
     Behaviors
       .receiveMessagePartial[Event] {
         case PubRelReceivedFromRemote(local) =>
           local.success(ForwardPubRel)
+          timer.cancel(ReceivePubrel)
           consumeAcknowledged(data)
         case DupPublishReceivedFromRemote(local) =>
           local.success(ForwardPublish)
@@ -303,7 +311,8 @@ import scala.util.{Failure, Success}
   }
 
   def consumeAcknowledged(data: ClientConsuming): Behavior[Event] = Behaviors.withTimers { timer =>
-    timer.startSingleTimer("receive-pubcomp", ReceivePubCompTimeout, data.settings.receivePubCompTimeout)
+    val ReceivePubcomp = "consumer-receive-pubcomp"
+    timer.startSingleTimer(ReceivePubcomp, ReceivePubCompTimeout, data.settings.receivePubCompTimeout)
     Behaviors
       .receiveMessagePartial[Event] {
         case PubCompReceivedLocally(remote) =>
@@ -311,6 +320,7 @@ import scala.util.{Failure, Success}
           Behaviors.stopped
         case DupPublishReceivedFromRemote(local) =>
           local.success(ForwardPublish)
+          timer.cancel(ReceivePubcomp)
           consumeUnacknowledged(data)
         case ReceivePubCompTimeout =>
           throw ConsumeFailed

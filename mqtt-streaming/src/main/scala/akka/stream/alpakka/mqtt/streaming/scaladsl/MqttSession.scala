@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import akka.{NotUsed, actor => untyped}
 import akka.actor.typed.scaladsl.adapter._
+import akka.event.Logging
 import akka.stream._
 import akka.stream.alpakka.mqtt.streaming.impl._
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Source}
@@ -148,10 +149,16 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
 
         Future.successful(
           Flow[Command[A]]
+            .log("client-commandFlow")
+            .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
             .watch(clientConnector.toUntyped)
             .watchTermination() {
               case (_, terminated) =>
-                terminated.onComplete(_ => clientConnector ! ClientConnector.ConnectionLost)
+                terminated.onComplete {
+                  case Failure(_: WatchedActorTerminatedException) =>
+                  case _ =>
+                    clientConnector ! ClientConnector.ConnectionLost
+                }
                 NotUsed
             }
             .via(killSwitch.flow)
@@ -234,7 +241,11 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
       .watch(clientConnector.toUntyped)
       .watchTermination() {
         case (_, terminated) =>
-          terminated.onComplete(_ => clientConnector ! ClientConnector.ConnectionLost)
+          terminated.onComplete {
+            case Failure(_: WatchedActorTerminatedException) =>
+            case _ =>
+              clientConnector ! ClientConnector.ConnectionLost
+          }
           NotUsed
       }
       .via(new MqttFrameStage(settings.maxPacketSize))
@@ -312,6 +323,8 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
         case _ =>
           Supervision.Stop
       })
+      .log("client-events")
+      .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
 }
 
 object MqttServerSession {
@@ -433,10 +446,16 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
 
         Future.successful(
           Flow[Command[A]]
+            .log("server-commandFlow")
+            .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
             .watch(serverConnector.toUntyped)
             .watchTermination() {
               case (_, terminated) =>
-                terminated.onComplete(_ => serverConnector ! ServerConnector.ConnectionLost(connectionId))
+                terminated.onComplete {
+                  case Failure(_: WatchedActorTerminatedException) =>
+                  case _ =>
+                    serverConnector ! ServerConnector.ConnectionLost(connectionId)
+                }
                 NotUsed
             }
             .via(killSwitch.flow)
@@ -517,7 +536,11 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
       .watch(serverConnector.toUntyped)
       .watchTermination() {
         case (_, terminated) =>
-          terminated.onComplete(_ => serverConnector ! ServerConnector.ConnectionLost(connectionId))
+          terminated.onComplete {
+            case Failure(_: WatchedActorTerminatedException) =>
+            case _ =>
+              serverConnector ! ServerConnector.ConnectionLost(connectionId)
+          }
           NotUsed
       }
       .via(new MqttFrameStage(settings.maxPacketSize))
@@ -589,4 +612,6 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
         case _ =>
           Supervision.Stop
       })
+      .log("server-events")
+      .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
 }

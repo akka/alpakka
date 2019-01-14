@@ -12,7 +12,7 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, ChildFailed, PostStop, Terminated}
 import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy}
-import akka.stream.scaladsl.{BroadcastHub, Keep, Sink, Source, SourceQueueWithComplete}
+import akka.stream.scaladsl.{BroadcastHub, Keep, Source, SourceQueueWithComplete}
 import akka.util.ByteString
 
 import scala.annotation.tailrec
@@ -321,8 +321,7 @@ import scala.util.{Failure, Success}
   case object ConnectionLost extends Event
   final case class UnpublisherFree(topicFilters: Seq[String]) extends Event
   case object ReceivePingReqTimeout extends Event
-  final case class ReceivedProducerPublishingCommand(command: Source[Producer.ForwardPublishingCommand, NotUsed])
-      extends Event
+  final case class ReceivedProducerPublishingCommand(command: Producer.ForwardPublishingCommand) extends Event
   final case class ConnectReceivedFromRemote(connect: Connect, local: Promise[ClientConnection.ForwardConnect.type])
       extends Event
   case object ReceiveConnectTimeout extends Event
@@ -344,12 +343,11 @@ import scala.util.{Failure, Success}
   private val PublisherNamePrefix = "publisher-"
   private val UnpublisherNamePrefix = "unpublisher-"
 
-  private val ReceiveConnAck = "receive-connack"
-
   def clientConnect(data: ConnectReceived)(implicit mat: Materializer): Behavior[Event] = Behaviors.setup { _ =>
     data.local.trySuccess(ForwardConnect)
 
     Behaviors.withTimers { timer =>
+      val ReceiveConnAck = "receive-connack"
       if (!timer.isTimerActive(ReceiveConnAck))
         timer.startSingleTimer(ReceiveConnAck, ReceiveConnAckTimeout, data.settings.receiveConnAckTimeout)
 
@@ -364,6 +362,7 @@ import scala.util.{Failure, Success}
 
             queue.offer(ForwardConnAck)
             data.stash.foreach(context.self.tell)
+            timer.cancel(ReceiveConnAck)
 
             clientConnected(
               ConnAckReplied(
@@ -397,8 +396,9 @@ import scala.util.{Failure, Success}
 
   def clientConnected(data: ConnAckReplied)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
     timer =>
+      val ReceivePingreq = "receive-pingreq"
       if (data.connect.keepAlive.toMillis > 0)
-        timer.startSingleTimer("receive-pingreq",
+        timer.startSingleTimer(ReceivePingreq,
                                ReceivePingReqTimeout,
                                FiniteDuration((data.connect.keepAlive.toMillis * 1.5).toLong, TimeUnit.MILLISECONDS))
 
@@ -417,6 +417,7 @@ import scala.util.{Failure, Success}
                   publisherName
                 )
                 context.watch(publisher)
+                timer.cancel(ReceivePingreq)
                 pendingSubAck(
                   PendingSubscribe(
                     subscribe,
@@ -456,7 +457,7 @@ import scala.util.{Failure, Success}
               case _: Some[_] =>
                 local.failure(new IllegalStateException("Duplicate unsubscribe: " + unsubscribe))
             }
-            Behaviors.same
+            clientConnected(data)
           case (_, UnpublisherFree(topicFilters)) =>
             val unsubscribedTopicFilters =
               data.publishers.filter(publisher => topicFilters.exists(matchTopicFilter(_, publisher)))
@@ -523,7 +524,9 @@ import scala.util.{Failure, Success}
             if (!data.activeProducers.contains(publish.topicName)) {
               val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
               import context.executionContext
-              reply.future.foreach(command => context.self ! ReceivedProducerPublishingCommand(command))
+              reply.future.foreach {
+                _.runForeach(command => context.self ! ReceivedProducerPublishingCommand(command))
+              }
               context.watchWith(
                 context.spawn(Producer(publish, publishData, reply, data.producerPacketRouter, data.settings),
                               producerName),
@@ -542,7 +545,9 @@ import scala.util.{Failure, Success}
               val producerName = ActorName.mkName(ProducerNamePrefix + topicName + "-" + context.children.size)
               val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
               import context.executionContext
-              reply.future.foreach(command => context.self ! ReceivedProducerPublishingCommand(command))
+              reply.future.foreach {
+                _.runForeach(command => context.self ! ReceivedProducerPublishingCommand(command))
+              }
               context.watchWith(
                 context.spawn(
                   Producer(prl.publish, prl.publishData, reply, data.producerPacketRouter, data.settings),
@@ -560,10 +565,10 @@ import scala.util.{Failure, Success}
               clientConnected(data.copy(activeProducers = data.activeProducers - topicName))
             }
           case (_, ReceivedProducerPublishingCommand(command)) =>
-            command.runWith(Sink.foreach {
+            command match {
               case Producer.ForwardPublish(publish, packetId) => data.remote.offer(ForwardPublish(publish, packetId))
               case Producer.ForwardPubRel(_, packetId) => data.remote.offer(ForwardPubRel(packetId))
-            })
+            }
             Behaviors.same
           case (_, PingReqReceivedFromRemote(local)) =>
             data.remote.offer(ForwardPingResp)
@@ -571,6 +576,7 @@ import scala.util.{Failure, Success}
             clientConnected(data)
           case (_, ReceivePingReqTimeout) =>
             data.remote.fail(PingFailed)
+            timer.cancel(ReceivePingreq)
             clientDisconnected(
               Disconnected(
                 data.publishers,
@@ -587,6 +593,7 @@ import scala.util.{Failure, Success}
             )
           case (_, DisconnectReceivedFromRemote(local)) =>
             local.success(ForwardDisconnect)
+            timer.cancel(ReceivePingreq)
             clientDisconnected(
               Disconnected(
                 data.publishers,
@@ -602,6 +609,7 @@ import scala.util.{Failure, Success}
               )
             )
           case (_, ClientConnection.ConnectionLost) =>
+            timer.cancel(ReceivePingreq)
             clientDisconnected(
               Disconnected(
                 data.publishers,
@@ -619,6 +627,7 @@ import scala.util.{Failure, Success}
           case (context, ConnectReceivedFromRemote(connect, local))
               if connect.connectFlags.contains(ConnectFlags.CleanSession) =>
             context.children.foreach(context.stop)
+            timer.cancel(ReceivePingreq)
             clientConnect(
               ConnectReceived(
                 connect,
@@ -637,6 +646,7 @@ import scala.util.{Failure, Success}
               )
             )
           case (_, ConnectReceivedFromRemote(connect, local)) =>
+            timer.cancel(ReceivePingreq)
             clientConnect(
               ConnectReceived(
                 connect,
@@ -717,13 +727,15 @@ import scala.util.{Failure, Success}
 
   def clientDisconnected(data: Disconnected)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
     timer =>
-      timer.startSingleTimer("receive-connect", ReceiveConnectTimeout, data.settings.receiveConnectTimeout)
+      val ReceiveConnect = "receive-connect"
+      timer.startSingleTimer(ReceiveConnect, ReceiveConnectTimeout, data.settings.receiveConnectTimeout)
 
       Behaviors
         .receivePartial[Event] {
           case (context, ConnectReceivedFromRemote(connect, local))
               if connect.connectFlags.contains(ConnectFlags.CleanSession) =>
             context.children.foreach(context.stop)
+            timer.cancel(ReceiveConnect)
             clientConnect(
               ConnectReceived(
                 connect,
@@ -742,6 +754,7 @@ import scala.util.{Failure, Success}
               )
             )
           case (_, ConnectReceivedFromRemote(connect, local)) =>
+            timer.cancel(ReceiveConnect)
             clientConnect(
               ConnectReceived(
                 connect,
@@ -878,7 +891,8 @@ import scala.util.{Failure, Success}
   }
 
   def serverSubscribe(data: ServerSubscribe): Behavior[Event] = Behaviors.withTimers { timer =>
-    timer.startSingleTimer("receive-suback", ReceiveSubAckTimeout, data.settings.receiveSubAckTimeout)
+    val ReceiveSuback = "server-receive-suback"
+    timer.startSingleTimer(ReceiveSuback, ReceiveSubAckTimeout, data.settings.receiveSubAckTimeout)
 
     Behaviors
       .receiveMessagePartial[Event] {
@@ -964,7 +978,8 @@ import scala.util.{Failure, Success}
   }
 
   def serverUnsubscribe(data: ServerUnsubscribe): Behavior[Event] = Behaviors.withTimers { timer =>
-    timer.startSingleTimer("receive-unsubAck", ReceiveUnsubAckTimeout, data.settings.receiveUnsubAckTimeout)
+    val ReceiveUnsubAck = "server-receive-unsubAck"
+    timer.startSingleTimer(ReceiveUnsubAck, ReceiveUnsubAckTimeout, data.settings.receiveUnsubAckTimeout)
 
     Behaviors
       .receiveMessagePartial[Event] {
