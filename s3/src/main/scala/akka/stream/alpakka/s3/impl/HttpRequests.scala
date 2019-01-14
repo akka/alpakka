@@ -92,7 +92,7 @@ import scala.concurrent.{ExecutionContext, Future}
     ).withDefaultHeaders(s3Headers)
       .withEntity(HttpEntity(ContentTypes.`application/octet-stream`, payloadSize, payload))
 
-  def completeMultipartUploadRequest(upload: MultipartUpload, parts: Seq[(Int, String)])(
+  def completeMultipartUploadRequest(upload: MultipartUpload, parts: Seq[(Int, String)], headers: Seq[HttpHeader])(
       implicit ec: ExecutionContext,
       conf: S3Settings
   ): Future[HttpRequest] = {
@@ -113,7 +113,7 @@ import scala.concurrent.{ExecutionContext, Future}
         upload.s3Location,
         HttpMethods.POST,
         _.withQuery(Query("uploadId" -> upload.uploadId))
-      ).withEntity(entity)
+      ).withEntity(entity).withDefaultHeaders(headers)
     }
   }
 
@@ -138,7 +138,7 @@ import scala.concurrent.{ExecutionContext, Future}
     s3Request(upload.s3Location,
               HttpMethods.PUT,
               _.withQuery(Query("partNumber" -> copyPartition.partNumber.toString, "uploadId" -> upload.uploadId)))
-      .withDefaultHeaders(allHeaders: _*)
+      .withDefaultHeaders(allHeaders)
   }
 
   private[this] def s3Request(s3Location: S3Location, method: HttpMethod, uriFn: Uri => Uri = identity)(

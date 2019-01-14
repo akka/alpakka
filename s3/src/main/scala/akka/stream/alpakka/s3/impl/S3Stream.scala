@@ -244,7 +244,7 @@ private[alpakka] object S3Stream {
       chunkingParallelism: Int = 4
   ): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
     chunkAndRequest(s3Location, contentType, s3Headers, chunkSize, sse)(chunkingParallelism)
-      .toMat(completionSink(s3Location))(Keep.right)
+      .toMat(completionSink(s3Location, sse))(Keep.right)
 
   private def initiateMultipartUpload(s3Location: S3Location,
                                       contentType: ContentType,
@@ -297,7 +297,7 @@ private[alpakka] object S3Stream {
 
     // The individual copy upload part requests are processed here
     processUploadCopyPartRequests(copyRequests)(chunkingParallelism)
-      .toMat(completionSink(targetLocation))(Keep.right)
+      .toMat(completionSink(targetLocation, sse))(Keep.right)
   }
 
   private def computeMetaData(headers: Seq[HttpHeader], entity: ResponseEntity): ObjectMetadata =
@@ -319,7 +319,9 @@ private[alpakka] object S3Stream {
     override def renderInResponses(): Boolean = true
   }
 
-  private def completeMultipartUpload(s3Location: S3Location, parts: Seq[SuccessfulUploadPart])(
+  private def completeMultipartUpload(s3Location: S3Location,
+                                      parts: Seq[SuccessfulUploadPart],
+                                      sse: Option[ServerSideEncryption])(
       implicit mat: ActorMaterializer,
       attr: Attributes
   ): Source[CompleteMultipartUploadResult, NotUsed] = {
@@ -333,8 +335,12 @@ private[alpakka] object S3Stream {
     implicit val sys = mat.system
     implicit val conf = resolveSettings()
 
+    val headers = sse.to[Seq].flatMap(_.headersFor(UploadPart))
+
     Source
-      .fromFuture(completeMultipartUploadRequest(parts.head.multipartUpload, parts.map(p => p.index -> p.etag)))
+      .fromFuture(
+        completeMultipartUploadRequest(parts.head.multipartUpload, parts.map(p => p.index -> p.etag), headers)
+      )
       .flatMapConcat(signAndGetAs[CompleteMultipartUploadResult](_, populateResult(_, _)))
   }
 
@@ -454,7 +460,8 @@ private[alpakka] object S3Stream {
   }
 
   private def completionSink(
-      s3Location: S3Location
+      s3Location: S3Location,
+      sse: Option[ServerSideEncryption]
   ): Sink[UploadPartResponse, Source[MultipartUploadResult, NotUsed]] =
     Setup
       .sink { implicit mat => implicit attr =>
@@ -474,7 +481,7 @@ private[alpakka] object S3Stream {
                   Source.failed(FailedUpload(failures.map(_.exception)))
                 }
               }
-              .flatMapConcat(completeMultipartUpload(s3Location, _))
+              .flatMapConcat(completeMultipartUpload(s3Location, _, sse))
           }
           .mapMaterializedValue(_.map(r => MultipartUploadResult(r.location, r.bucket, r.key, r.etag, r.versionId)))
       }

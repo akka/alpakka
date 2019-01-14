@@ -48,7 +48,7 @@ object MetaHeaders {
 }
 
 /**
- * Container for headers used in s3 uploads like acl, server side encryption, storage class,
+ * Container for headers used in s3 uploads like acl, storage class,
  * metadata or custom headers for more advanced use cases.
  */
 final class S3Headers private (val cannedAcl: Option[CannedAcl] = None,

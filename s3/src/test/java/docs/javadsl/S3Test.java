@@ -18,6 +18,7 @@ import akka.stream.alpakka.s3.ListBucketResultContents;
 import akka.stream.alpakka.s3.MultipartUploadResult;
 import akka.stream.alpakka.s3.ObjectMetadata;
 import akka.stream.alpakka.s3.S3Headers;
+import akka.stream.alpakka.s3.headers.CustomerKeys;
 import akka.stream.alpakka.s3.headers.ServerSideEncryption;
 import akka.stream.alpakka.s3.javadsl.S3;
 import org.junit.Test;
@@ -423,6 +424,32 @@ public class S3Test extends S3WireMockBase {
     final Source<MultipartUploadResult, NotUsed> resultCompletionStage =
         S3.multipartCopy(bucket(), bucketKey(), targetBucket(), targetBucketKey())
             .run(materializer);
+    final MultipartUploadResult result =
+        resultCompletionStage
+            .runWith(Sink.head(), materializer)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS);
+
+    assertEquals(
+        result,
+        MultipartUploadResult.create(
+            Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag(), Optional.empty()));
+  }
+
+  @Test
+  public void copyUploadWithSSE() throws Exception {
+    mockCopySSE();
+
+    // #multipart-copy-sse
+    final CustomerKeys keys =
+        ServerSideEncryption.customerKeys(sseCustomerKey()).withMd5(sseCustomerMd5Key());
+
+    final Source<MultipartUploadResult, NotUsed> resultCompletionStage =
+        S3.multipartCopy(
+                bucket(), bucketKey(), targetBucket(), targetBucketKey(), S3Headers.create(), keys)
+            .run(materializer);
+    // #multipart-copy-sse
+
     final MultipartUploadResult result =
         resultCompletionStage
             .runWith(Sink.head(), materializer)

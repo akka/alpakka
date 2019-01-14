@@ -13,6 +13,9 @@ import akka.util.ByteString
 
 class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
+  override protected def afterEach(): Unit =
+    mock.removeMappings()
+
   it should "succeed uploading an empty file" in {
     mockUpload(expectedBody = "")
 
@@ -120,7 +123,16 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
   it should "copy a file from source bucket to target bucket with SSE" in {
     mockCopySSE()
 
-    val result = S3.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey, sse = Some(sseCustomerKeys)).run()
+    //#multipart-copy-sse
+    val keys = ServerSideEncryption
+      .customerKeys(sseCustomerKey)
+      .withMd5(sseCustomerMd5Key)
+
+    val result: Source[MultipartUploadResult, NotUsed] =
+      S3.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey, sse = Some(keys))
+        .run()
+    //#multipart-copy-sse
+
     result.runWith(Sink.head).futureValue shouldBe MultipartUploadResult(targetUrl,
                                                                          targetBucket,
                                                                          targetBucketKey,

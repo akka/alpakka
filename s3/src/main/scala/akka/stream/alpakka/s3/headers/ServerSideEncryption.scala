@@ -89,7 +89,7 @@ final class KMS private[headers] (val keyId: String, val context: Option[String]
   override def toString =
     "ServerSideEncryption.KMS(" +
     s"keyId=$keyId," +
-    s"context=$context," +
+    s"context=$context" +
     ")"
 
   override def equals(other: Any): Boolean = other match {
@@ -154,7 +154,7 @@ final class CustomerKeys private[headers] (val key: String, val md5: Option[Stri
   override def toString =
     "ServerSideEncryption.CustomerKeys(" +
     s"key=$key," +
-    s"md5=$md5," +
+    s"md5=$md5" +
     ")"
 
   override def equals(other: Any): Boolean = other match {

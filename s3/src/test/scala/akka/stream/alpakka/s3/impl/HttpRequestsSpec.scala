@@ -253,7 +253,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     implicit val executionContext = scala.concurrent.ExecutionContext.global
 
     val reqFuture =
-      HttpRequests.completeMultipartUploadRequest(multipartUpload, (1, "part") :: Nil)
+      HttpRequests.completeMultipartUploadRequest(multipartUpload, (1, "part") :: Nil, Nil)
 
     reqFuture.futureValue.uri.scheme shouldEqual "http"
   }
