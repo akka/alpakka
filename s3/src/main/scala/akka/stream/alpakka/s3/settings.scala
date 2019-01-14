@@ -68,15 +68,19 @@ object Proxy {
     apply(host, port, scheme)
 }
 
-sealed trait ApiVersion {
-  def getInstance: ApiVersion
-}
+sealed abstract class ApiVersion
+object ApiVersion {
+  sealed abstract class ListBucketVersion1 extends ApiVersion
+  case object ListBucketVersion1 extends ListBucketVersion1
 
-case object ListBucketVersion1 extends ApiVersion {
-  override val getInstance: ApiVersion = ListBucketVersion1
-}
-case object ListBucketVersion2 extends ApiVersion {
-  override val getInstance: ApiVersion = ListBucketVersion2
+  /** Java Api */
+  def getListBucketVersion1: ListBucketVersion1 = ListBucketVersion1
+
+  sealed abstract class ListBucketVersion2 extends ApiVersion
+  case object ListBucketVersion2 extends ListBucketVersion2
+
+  /** Java Api */
+  def getListBucketVersion2: ListBucketVersion2 = ListBucketVersion2
 }
 
 final class S3Settings private (
@@ -261,9 +265,9 @@ object S3Settings {
     }
 
     val apiVersion = Try(c.getInt("list-bucket-api-version") match {
-      case 1 => ListBucketVersion1
-      case 2 => ListBucketVersion2
-    }).getOrElse(ListBucketVersion2)
+      case 1 => ApiVersion.ListBucketVersion1
+      case 2 => ApiVersion.ListBucketVersion2
+    }).getOrElse(ApiVersion.ListBucketVersion2)
 
     new S3Settings(
       bufferType = bufferType,

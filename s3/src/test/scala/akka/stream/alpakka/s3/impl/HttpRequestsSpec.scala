@@ -13,17 +13,7 @@ import akka.http.scaladsl.model.headers.{ByteRange, RawHeader}
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, IllegalUriException, MediaTypes}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption, StorageClass}
-import akka.stream.alpakka.s3.{
-  ApiVersion,
-  BufferType,
-  ListBucketVersion1,
-  ListBucketVersion2,
-  MemoryBufferType,
-  MetaHeaders,
-  Proxy,
-  S3Headers,
-  S3Settings
-}
+import akka.stream.alpakka.s3.{ApiVersion, BufferType, MemoryBufferType, MetaHeaders, Proxy, S3Headers, S3Settings}
 import akka.stream.scaladsl.Source
 import akka.testkit.{SocketUtil, TestProbe}
 import com.amazonaws.auth.{AWSCredentialsProvider, AWSStaticCredentialsProvider, AnonymousAWSCredentials}
@@ -41,7 +31,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
       s3Region: String = "us-east-1",
       pathStyleAccess: Boolean = false,
       endpointUrl: Option[String] = None,
-      listBucketApiVersion: ApiVersion = ListBucketVersion2
+      listBucketApiVersion: ApiVersion = ApiVersion.ListBucketVersion2
   ) = {
     val regionProvider = new AwsRegionProvider {
       def getRegion = s3Region
@@ -326,7 +316,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
   it should "properly construct the list bucket request when using api version 1" in {
     implicit val settings =
-      getSettings(s3Region = "region", pathStyleAccess = true, listBucketApiVersion = ListBucketVersion1)
+      getSettings(s3Region = "region", pathStyleAccess = true, listBucketApiVersion = ApiVersion.ListBucketVersion1)
 
     val req =
       HttpRequests.listBucket(location.bucket)
@@ -336,7 +326,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
   it should "properly construct the list bucket request when using api version set to 1 and a continuation token" in {
     implicit val settings =
-      getSettings(s3Region = "region", pathStyleAccess = true, listBucketApiVersion = ListBucketVersion1)
+      getSettings(s3Region = "region", pathStyleAccess = true, listBucketApiVersion = ApiVersion.ListBucketVersion1)
 
     val req =
       HttpRequests.listBucket(location.bucket, continuationToken = Some("randomToken"))

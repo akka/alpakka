@@ -17,6 +17,9 @@ import scala.concurrent.Future
 
 class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
+  override protected def afterEach(): Unit =
+    mock.removeMappings()
+
   "S3Source" should "download a stream of bytes from S3" in {
 
     mockDownload()
@@ -201,8 +204,14 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
   it should "list keys for a given bucket with a prefix using the version 1 api" in {
     mockListBucketVersion1()
 
+    //#list-bucket-attributes
+    val useVersion1Api = S3Ext(system).settings
+      .withListBucketApiVersion(ApiVersion.ListBucketVersion1)
+
     val keySource: Source[ListBucketResultContents, NotUsed] =
       S3.listBucket(bucket, Some(listPrefix))
+        .withAttributes(S3Attributes.settings(useVersion1Api))
+    //#list-bucket-attributes
 
     val result = keySource.runWith(Sink.head)
 

@@ -14,10 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 import akka.actor.ActorSystem;
 import akka.http.javadsl.model.*;
-import akka.stream.alpakka.s3.ListBucketResultContents;
-import akka.stream.alpakka.s3.MultipartUploadResult;
-import akka.stream.alpakka.s3.ObjectMetadata;
-import akka.stream.alpakka.s3.S3Headers;
+import akka.stream.alpakka.s3.*;
 import akka.stream.alpakka.s3.headers.CustomerKeys;
 import akka.stream.alpakka.s3.headers.ServerSideEncryption;
 import akka.stream.alpakka.s3.javadsl.S3;
@@ -308,6 +305,28 @@ public class S3Test extends S3WireMockBase {
     final Source<ListBucketResultContents, NotUsed> keySource =
         S3.listBucket(bucket(), Option.apply(listPrefix()));
     // #list-bucket
+
+    final CompletionStage<ListBucketResultContents> resultCompletionStage =
+        keySource.runWith(Sink.head(), materializer);
+
+    ListBucketResultContents result =
+        resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    assertEquals(result.key(), listKey());
+  }
+
+  @Test
+  public void listBucketVersion1() throws Exception {
+    mockListBucketVersion1();
+
+    // #list-bucket-attributes
+    final S3Settings useVersion1Api =
+        S3Ext.get(system()).settings().withListBucketApiVersion(ApiVersion.getListBucketVersion1());
+
+    final Source<ListBucketResultContents, NotUsed> keySource =
+        S3.listBucket(bucket(), Option.apply(listPrefix()))
+            .withAttributes(S3Attributes.settings(useVersion1Api));
+    // #list-bucket-attributes
 
     final CompletionStage<ListBucketResultContents> resultCompletionStage =
         keySource.runWith(Sink.head(), materializer);

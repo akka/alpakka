@@ -13,7 +13,7 @@ import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.Uri.{Authority, Query}
 import akka.http.scaladsl.model.headers.{Host, RawHeader}
 import akka.http.scaladsl.model.{ContentTypes, RequestEntity, _}
-import akka.stream.alpakka.s3.{ListBucketVersion1, ListBucketVersion2, S3Settings}
+import akka.stream.alpakka.s3.{ApiVersion, S3Settings}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
@@ -32,8 +32,8 @@ import scala.concurrent.{ExecutionContext, Future}
   )(implicit conf: S3Settings): HttpRequest = {
 
     val (listType, continuationTokenName) = conf.listBucketApiVersion match {
-      case ListBucketVersion1 => (None, "marker")
-      case ListBucketVersion2 => (Some("2"), "continuation-token")
+      case ApiVersion.ListBucketVersion1 => (None, "marker")
+      case ApiVersion.ListBucketVersion2 => (Some("2"), "continuation-token")
     }
 
     val query = Query(

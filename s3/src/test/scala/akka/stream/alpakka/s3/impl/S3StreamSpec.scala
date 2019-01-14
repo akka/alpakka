@@ -7,7 +7,7 @@ package akka.stream.alpakka.s3.impl
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.headers.ByteRange
-import akka.stream.alpakka.s3.{ListBucketVersion2, MemoryBufferType, S3Settings}
+import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType, S3Settings}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
@@ -45,7 +45,13 @@ class S3StreamSpec(_system: ActorSystem)
     val location = S3Location("test-bucket", "test-key")
 
     implicit val settings =
-      S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
+      S3Settings(MemoryBufferType,
+                 None,
+                 credentialsProvider,
+                 regionProvider,
+                 false,
+                 None,
+                 ApiVersion.ListBucketVersion2)
 
     val result: HttpRequest = S3Stream invokePrivate requestHeaders(getDownloadRequest(location), None)
     result.headers.size shouldBe 1
@@ -70,7 +76,13 @@ class S3StreamSpec(_system: ActorSystem)
     val range = ByteRange(1, 4)
 
     implicit val settings =
-      S3Settings(MemoryBufferType, None, credentialsProvider, regionProvider, false, None, ListBucketVersion2)
+      S3Settings(MemoryBufferType,
+                 None,
+                 credentialsProvider,
+                 regionProvider,
+                 false,
+                 None,
+                 ApiVersion.ListBucketVersion2)
 
     val result: HttpRequest = S3Stream invokePrivate requestHeaders(getDownloadRequest(location), Some(range))
     result.headers.size shouldBe 2

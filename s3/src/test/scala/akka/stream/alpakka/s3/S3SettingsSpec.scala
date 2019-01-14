@@ -156,21 +156,21 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
 
   it should "instantiate with the list bucket api version 2 by default" in {
     val settings: S3Settings = mkConfig("")
-    settings.listBucketApiVersion shouldEqual ListBucketVersion2
+    settings.listBucketApiVersion shouldEqual ApiVersion.ListBucketVersion2
   }
 
   it should "instantiate with the list bucket api version 1 if list-bucket-api-version is set to 1" in {
     val settings: S3Settings = mkConfig("list-bucket-api-version = 1")
-    settings.listBucketApiVersion shouldEqual ListBucketVersion1
+    settings.listBucketApiVersion shouldEqual ApiVersion.ListBucketVersion1
   }
 
   it should "instantiate with the list bucket api version 2 if list-bucket-api-version is set to a number that is neither 1 or 2" in {
     val settings: S3Settings = mkConfig("list-bucket-api-version = 0")
-    settings.listBucketApiVersion shouldEqual ListBucketVersion2
+    settings.listBucketApiVersion shouldEqual ApiVersion.ListBucketVersion2
   }
 
   it should "instantiate with the list bucket api version 2 if list-bucket-api-version is set to a value that is not a nymber" in {
     val settings: S3Settings = mkConfig("list-bucket-api-version = 'version 1'")
-    settings.listBucketApiVersion shouldEqual ListBucketVersion2
+    settings.listBucketApiVersion shouldEqual ApiVersion.ListBucketVersion2
   }
 }

@@ -55,7 +55,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
   def otherRegionSettings =
     S3Settings().withPathStyleAccess(true).withS3RegionProvider(otherRegionProvider)
   def listBucketVersion1Settings =
-    S3Settings().withListBucketApiVersion(ListBucketVersion1)
+    S3Settings().withListBucketApiVersion(ApiVersion.ListBucketVersion1)
 
   def defaultRegionContentCount = 4
   def otherRegionContentCount = 5
