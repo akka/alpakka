@@ -41,7 +41,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     HttpResponse(
       entity = HttpEntity(
         metadata.contentType
-          .flatMap(ContentType.parse(_).toOption)
+          .flatMap(ContentType.parse(_).right.toOption)
           .getOrElse(ContentTypes.`application/octet-stream`),
         metadata.contentLength,
         data

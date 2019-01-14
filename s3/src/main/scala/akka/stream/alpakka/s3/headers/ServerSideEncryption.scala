@@ -85,7 +85,7 @@ final class KMS private[headers] (val keyId: String, val context: Option[String]
       context: Option[String] = context
   ): KMS = new KMS(
     keyId = keyId,
-    context = context,
+    context = context
   )
 
   override def toString =
@@ -150,7 +150,7 @@ final class CustomerKeys private[headers] (val key: String, val md5: Option[Stri
       md5: Option[String] = md5
   ): CustomerKeys = new CustomerKeys(
     key = key,
-    md5 = md5,
+    md5 = md5
   )
 
   override def toString =
