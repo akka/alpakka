@@ -223,9 +223,9 @@ import scala.util.{Failure, Success}
     )
   }
 
-  private val ReceiveConnAck = "receive-connack"
-
   def serverConnect(data: ConnectReceived)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
+    val ReceiveConnAck = "receive-connack"
+
     timer =>
       if (!timer.isTimerActive(ReceiveConnAck))
         timer.startSingleTimer(ReceiveConnAck, ReceiveConnAckTimeout, data.settings.receiveConnAckTimeout)
@@ -238,6 +238,7 @@ import scala.util.{Failure, Success}
             if (data.connect.connectFlags.contains(ConnectFlags.CleanSession))
               context.children.foreach(context.stop)
             data.stash.foreach(context.self.tell)
+            timer.cancel(ReceiveConnAck)
             serverConnected(
               ConnAckReceived(
                 data.connect.connectFlags,
@@ -258,10 +259,13 @@ import scala.util.{Failure, Success}
             )
           case (context, ConnAckReceivedFromRemote(_, local)) =>
             local.success(ForwardConnAck(data.connectData))
+            timer.cancel(ReceiveConnAck)
             disconnect(context, data.connect.connectFlags, data.remote, data)
           case (context, ReceiveConnAckTimeout) =>
+            timer.cancel(ReceiveConnAck)
             disconnect(context, data.connect.connectFlags, data.remote, data)
           case (context, ConnectionLost) =>
+            timer.cancel(ReceiveConnAck)
             disconnect(context, data.connect.connectFlags, data.remote, data)
           case (_, e) =>
             serverConnect(data.copy(stash = data.stash :+ e))
@@ -276,15 +280,18 @@ import scala.util.{Failure, Success}
 
   def serverConnected(data: ConnAckReceived)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
     timer =>
+      val SendPingreq = "send-pingreq"
       if (data.keepAlive.toMillis > 0)
-        timer.startSingleTimer("send-pingreq", SendPingReqTimeout, data.keepAlive)
+        timer.startSingleTimer(SendPingreq, SendPingReqTimeout, data.keepAlive)
 
       Behaviors
         .receivePartial[Event] {
           case (context, ConnectionLost) =>
+            timer.cancel(SendPingreq)
             disconnect(context, data.connectFlags, data.remote, data)
           case (context, DisconnectReceivedLocally(remote)) =>
             remote.success(ForwardDisconnect)
+            timer.cancel(SendPingreq)
             disconnect(context, data.connectFlags, data.remote, data)
           case (context, SubscribeReceivedLocally(subscribe, subscribeData, remote)) =>
             val subscriberName = ActorName.mkName(SubscriberNamePrefix + subscribe.topicFilters.map(_._1).mkString("-"))
@@ -295,6 +302,7 @@ import scala.util.{Failure, Success}
                   subscriberName
                 )
                 context.watch(subscriber)
+                timer.cancel(SendPingreq)
                 pendingSubAck(
                   PendingSubscribe(
                     data.connectFlags,
@@ -429,6 +437,7 @@ import scala.util.{Failure, Success}
             Behaviors.same
           case (context, SendPingReqTimeout) if data.pendingPingResp =>
             data.remote.fail(PingFailed)
+            timer.cancel(SendPingreq)
             disconnect(context, data.connectFlags, data.remote, data)
           case (_, SendPingReqTimeout) =>
             data.remote.offer(ForwardPingReq)
@@ -552,7 +561,8 @@ import scala.util.{Failure, Success}
   }
 
   def serverSubscribe(data: ServerSubscribe): Behavior[Event] = Behaviors.withTimers { timer =>
-    timer.startSingleTimer("receive-suback", ReceiveSubAckTimeout, data.settings.receiveSubAckTimeout)
+    val ReceiveSuback = "client-receive-suback"
+    timer.startSingleTimer(ReceiveSuback, ReceiveSubAckTimeout, data.settings.receiveSubAckTimeout)
 
     Behaviors
       .receiveMessagePartial[Event] {
@@ -640,7 +650,8 @@ import scala.util.{Failure, Success}
   }
 
   def serverUnsubscribe(data: ServerUnsubscribe): Behavior[Event] = Behaviors.withTimers { timer =>
-    timer.startSingleTimer("receive-unsubAck", ReceiveUnsubAckTimeout, data.settings.receiveUnsubAckTimeout)
+    val ReceiveUnsubAck = "client-receive-unsubAck"
+    timer.startSingleTimer(ReceiveUnsubAck, ReceiveUnsubAckTimeout, data.settings.receiveUnsubAckTimeout)
 
     Behaviors
       .receiveMessagePartial[Event] {
