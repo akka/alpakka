@@ -45,7 +45,12 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
   val objectValue = "Some String"
   val metaHeaders: Map[String, String] = Map("location" -> "Africa", "datatype" -> "image")
 
-  def config() = ConfigFactory.load().getConfig("aws")
+  def config() = ConfigFactory.parseString("""
+      |alpakka.s3.aws.region {
+      |  provider = static
+      |  default-region = "us-east-1"
+      |}
+    """.stripMargin)
 
   def otherRegionSettings =
     S3Settings().withPathStyleAccess(true).withS3RegionProvider(otherRegionProvider)
