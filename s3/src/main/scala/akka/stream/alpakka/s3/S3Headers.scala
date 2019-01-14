@@ -6,19 +6,21 @@ package akka.stream.alpakka.s3
 
 import java.util.Objects
 
+import akka.annotation.InternalApi
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.stream.alpakka.s3.headers.{CannedAcl, StorageClass}
+import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption, StorageClass}
+import akka.stream.alpakka.s3.impl.S3Request
 
-import scala.collection.immutable
 import scala.collection.immutable.Seq
 import scala.collection.JavaConverters._
 
 final class MetaHeaders private (val metaHeaders: Map[String, String]) {
-  def headers: immutable.Seq[HttpHeader] =
+
+  @InternalApi private[s3] def headers: Seq[HttpHeader] =
     metaHeaders.map { header =>
       RawHeader(s"x-amz-meta-${header._1}", header._2)
-    }(collection.breakOut): immutable.Seq[HttpHeader]
+    }(collection.breakOut)
 
   def withMetaHeaders(metaHeaders: Map[String, String]) = new MetaHeaders(
     metaHeaders = metaHeaders
@@ -49,14 +51,15 @@ object MetaHeaders {
 
 /**
  * Container for headers used in s3 uploads like acl, storage class,
- * metadata or custom headers for more advanced use cases.
+ * metadata, server side encryption or custom headers for more advanced use cases.
  */
 final class S3Headers private (val cannedAcl: Option[CannedAcl] = None,
                                val metaHeaders: Option[MetaHeaders] = None,
                                val storageClass: Option[StorageClass] = None,
-                               val customHeaders: Map[String, String] = Map.empty) {
+                               val customHeaders: Map[String, String] = Map.empty,
+                               val serverSideEncryption: Option[ServerSideEncryption] = None) {
 
-  val headers: Seq[HttpHeader] =
+  @InternalApi private[s3] val headers: Seq[HttpHeader] =
   cannedAcl.to[Seq].map(_.header) ++
   metaHeaders.to[Seq].flatMap(_.headers) ++
   storageClass.to[Seq].map(_.header) ++
@@ -64,21 +67,28 @@ final class S3Headers private (val cannedAcl: Option[CannedAcl] = None,
     RawHeader(header._1, header._2)
   }
 
+  @InternalApi private[s3] def headersFor(request: S3Request) =
+    headers ++ serverSideEncryption.to[Seq].flatMap(_.headersFor(request))
+
   def withCannedAcl(cannedAcl: CannedAcl) = copy(cannedAcl = Some(cannedAcl))
   def withMetaHeaders(metaHeaders: MetaHeaders) = copy(metaHeaders = Some(metaHeaders))
   def withStorageClass(storageClass: StorageClass) = copy(storageClass = Some(storageClass))
   def withCustomHeaders(customHeaders: Map[String, String]) = copy(customHeaders = customHeaders)
+  def withServerSideEncryption(serverSideEncryption: ServerSideEncryption) =
+    copy(serverSideEncryption = Some(serverSideEncryption))
 
   private def copy(
       cannedAcl: Option[CannedAcl] = cannedAcl,
       metaHeaders: Option[MetaHeaders] = metaHeaders,
       storageClass: Option[StorageClass] = storageClass,
-      customHeaders: Map[String, String] = customHeaders
+      customHeaders: Map[String, String] = customHeaders,
+      serverSideEncryption: Option[ServerSideEncryption] = serverSideEncryption
   ): S3Headers = new S3Headers(
     cannedAcl = cannedAcl,
     metaHeaders = metaHeaders,
     storageClass = storageClass,
-    customHeaders = customHeaders
+    customHeaders = customHeaders,
+    serverSideEncryption = serverSideEncryption
   )
 
   override def toString =
@@ -87,6 +97,7 @@ final class S3Headers private (val cannedAcl: Option[CannedAcl] = None,
     s"metaHeaders=$metaHeaders," +
     s"storageClass=$storageClass," +
     s"customHeaders=$customHeaders," +
+    s"serverSideEncryption=$serverSideEncryption" +
     ")"
 
   override def equals(other: Any): Boolean = other match {
@@ -94,12 +105,13 @@ final class S3Headers private (val cannedAcl: Option[CannedAcl] = None,
       Objects.equals(this.cannedAcl, that.cannedAcl) &&
       Objects.equals(this.metaHeaders, that.metaHeaders) &&
       Objects.equals(this.storageClass, that.storageClass) &&
-      Objects.equals(this.customHeaders, that.customHeaders)
+      Objects.equals(this.customHeaders, that.customHeaders) &&
+      Objects.equals(this.serverSideEncryption, that.serverSideEncryption)
     case _ => false
   }
 
   override def hashCode(): Int =
-    Objects.hash(cannedAcl, metaHeaders, storageClass, customHeaders)
+    Objects.hash(cannedAcl, metaHeaders, storageClass, customHeaders, serverSideEncryption)
 }
 
 /**

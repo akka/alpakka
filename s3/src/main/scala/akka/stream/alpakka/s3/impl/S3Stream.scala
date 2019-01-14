@@ -178,13 +178,12 @@ private[alpakka] object S3Stream {
                 contentType: ContentType,
                 data: Source[ByteString, _],
                 contentLength: Long,
-                s3Headers: S3Headers,
-                sse: Option[ServerSideEncryption]): Source[ObjectMetadata, NotUsed] = {
+                s3Headers: S3Headers): Source[ObjectMetadata, NotUsed] = {
 
     // TODO can we take in a Source[ByteString, NotUsed] without forcing chunking
     // chunked requests are causing S3 to think this is a multipart upload
 
-    val headers = s3Headers.headers ++ sse.to[Seq].flatMap(_.headersFor(PutObject))
+    val headers = s3Headers.headersFor(PutObject)
 
     Setup
       .source { implicit mat => implicit attr =>
@@ -239,12 +238,11 @@ private[alpakka] object S3Stream {
       s3Location: S3Location,
       contentType: ContentType = ContentTypes.`application/octet-stream`,
       s3Headers: S3Headers,
-      sse: Option[ServerSideEncryption] = None,
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4
   ): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
-    chunkAndRequest(s3Location, contentType, s3Headers, chunkSize, sse)(chunkingParallelism)
-      .toMat(completionSink(s3Location, sse))(Keep.right)
+    chunkAndRequest(s3Location, contentType, s3Headers, chunkSize)(chunkingParallelism)
+      .toMat(completionSink(s3Location, s3Headers.serverSideEncryption))(Keep.right)
 
   private def initiateMultipartUpload(s3Location: S3Location,
                                       contentType: ContentType,
@@ -276,14 +274,14 @@ private[alpakka] object S3Stream {
       sourceVersionId: Option[String] = None,
       contentType: ContentType = ContentTypes.`application/octet-stream`,
       s3Headers: S3Headers,
-      sse: Option[ServerSideEncryption] = None,
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4
   ): RunnableGraph[Source[MultipartUploadResult, NotUsed]] = {
 
     // Pre step get source meta to get content length (size of the object)
     val eventualMaybeObjectSize =
-      getObjectMetadata(sourceLocation.bucket, sourceLocation.key, sourceVersionId, sse).map(_.map(_.contentLength))
+      getObjectMetadata(sourceLocation.bucket, sourceLocation.key, sourceVersionId, s3Headers.serverSideEncryption)
+        .map(_.map(_.contentLength))
     val eventualPartitions =
       eventualMaybeObjectSize.map(_.map(createPartitions(chunkSize, sourceLocation)).getOrElse(Nil))
 
@@ -291,13 +289,13 @@ private[alpakka] object S3Stream {
     //  The initial copy upload request gets executed within this function as well.
     //  The individual copy upload part requests are created.
     val copyRequests =
-      createCopyRequests(targetLocation, sourceVersionId, contentType, s3Headers, sse, eventualPartitions)(
+      createCopyRequests(targetLocation, sourceVersionId, contentType, s3Headers, eventualPartitions)(
         chunkingParallelism
       )
 
     // The individual copy upload part requests are processed here
     processUploadCopyPartRequests(copyRequests)(chunkingParallelism)
-      .toMat(completionSink(targetLocation, sse))(Keep.right)
+      .toMat(completionSink(targetLocation, s3Headers.serverSideEncryption))(Keep.right)
   }
 
   private def computeMetaData(headers: Seq[HttpHeader], entity: ResponseEntity): ObjectMetadata =
@@ -363,8 +361,7 @@ private[alpakka] object S3Stream {
       contentType: ContentType,
       s3Headers: S3Headers,
       chunkSize: Int,
-      parallelism: Int,
-      sse: Option[ServerSideEncryption]
+      parallelism: Int
   ): Flow[ByteString, (HttpRequest, (MultipartUpload, Int)), NotUsed] = {
 
     assert(
@@ -375,12 +372,9 @@ private[alpakka] object S3Stream {
     // First step of the multi part upload process is made.
     //  The response is then used to construct the subsequent individual upload part requests
     val requestInfo: Source[(MultipartUpload, Int), NotUsed] =
-      initiateUpload(s3Location,
-                     contentType,
-                     s3Headers.headers ++
-                     sse.to[Seq].flatMap(_.headersFor(InitiateMultipartUpload)))
+      initiateUpload(s3Location, contentType, s3Headers.headersFor(InitiateMultipartUpload))
 
-    val headers = sse.to[Seq].flatMap(_.headersFor(UploadPart))
+    val headers = s3Headers.serverSideEncryption.to[Seq].flatMap(_.headersFor(UploadPart))
 
     Setup
       .flow { mat => implicit attr =>
@@ -413,14 +407,13 @@ private[alpakka] object S3Stream {
       s3Location: S3Location,
       contentType: ContentType,
       s3Headers: S3Headers,
-      chunkSize: Int,
-      sse: Option[ServerSideEncryption]
+      chunkSize: Int
   )(parallelism: Int): Flow[ByteString, UploadPartResponse, NotUsed] = {
 
     // Multipart upload requests (except for the completion api) are created here.
     //  The initial upload request gets executed within this function as well.
     //  The individual upload part requests are created.
-    val requestFlow = createRequests(s3Location, contentType, s3Headers, chunkSize, parallelism, sse)
+    val requestFlow = createRequests(s3Location, contentType, s3Headers, chunkSize, parallelism)
 
     // The individual upload part requests are processed here
     Setup
@@ -561,16 +554,12 @@ private[alpakka] object S3Stream {
       sourceVersionId: Option[String],
       contentType: ContentType,
       s3Headers: S3Headers,
-      sse: Option[ServerSideEncryption],
       partitions: Source[List[CopyPartition], NotUsed]
   )(parallelism: Int) = {
     val requestInfo: Source[(MultipartUpload, Int), NotUsed] =
-      initiateUpload(location,
-                     contentType,
-                     s3Headers.headers ++
-                     sse.to[Seq].flatMap(_.headersFor(InitiateMultipartUpload)))
+      initiateUpload(location, contentType, s3Headers.headersFor(InitiateMultipartUpload))
 
-    val headers = sse.to[Seq].flatMap(_.headersFor(CopyPart))
+    val headers = s3Headers.serverSideEncryption.to[Seq].flatMap(_.headersFor(CopyPart))
 
     Setup
       .source { mat => implicit attr =>

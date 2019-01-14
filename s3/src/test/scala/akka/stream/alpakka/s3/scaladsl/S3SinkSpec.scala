@@ -129,7 +129,11 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
       .withMd5(sseCustomerMd5Key)
 
     val result: Source[MultipartUploadResult, NotUsed] =
-      S3.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey, sse = Some(keys))
+      S3.multipartCopy(bucket,
+                       bucketKey,
+                       targetBucket,
+                       targetBucketKey,
+                       s3Headers = S3Headers().withServerSideEncryption(keys))
         .run()
     //#multipart-copy-sse
 
@@ -144,7 +148,11 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockCopy()
 
     val result =
-      S3.multipartCopy(bucket, bucketKey, targetBucket, targetBucketKey, sse = Some(ServerSideEncryption.aes256()))
+      S3.multipartCopy(bucket,
+                       bucketKey,
+                       targetBucket,
+                       targetBucketKey,
+                       s3Headers = S3Headers().withServerSideEncryption(ServerSideEncryption.aes256()))
         .run()
     result.runWith(Sink.head).futureValue shouldBe MultipartUploadResult(targetUrl,
                                                                          targetBucket,

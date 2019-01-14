@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.s3.headers
 
+import akka.annotation.InternalApi
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers.RawHeader
 
@@ -11,7 +12,7 @@ import akka.http.scaladsl.model.headers.RawHeader
  * Documentation: http://docs.aws.amazon.com/AmazonS3/latest/dev/storage-class-intro.html
  */
 final class StorageClass private (val storageClass: String) {
-  def header: HttpHeader = RawHeader("x-amz-storage-class", storageClass)
+  @InternalApi private[s3] def header: HttpHeader = RawHeader("x-amz-storage-class", storageClass)
 }
 
 object StorageClass {

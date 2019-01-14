@@ -35,7 +35,6 @@ import scala.Option;
 
 public class S3Test extends S3WireMockBase {
 
-  private final ActorSystem system = system();
   private final Materializer materializer = ActorMaterializer.create(system());
 
   @Test
@@ -71,7 +70,11 @@ public class S3Test extends S3WireMockBase {
     mockUploadSSE();
 
     final Sink<ByteString, Source<MultipartUploadResult, NotUsed>> sink =
-        S3.multipartUpload(bucket(), bucketKey(), sseCustomerKeys());
+        S3.multipartUpload(
+            bucket(),
+            bucketKey(),
+            ContentTypes.APPLICATION_OCTET_STREAM,
+            S3Headers.create().withServerSideEncryption(sseCustomerKeys()));
 
     final Source<MultipartUploadResult, NotUsed> resultCompletionStage =
         Source.single(ByteString.fromString(body())).runWith(sink, materializer);
@@ -358,8 +361,7 @@ public class S3Test extends S3WireMockBase {
                 targetBucket,
                 targetKey,
                 Optional.of(sourceVersionId),
-                S3Headers.create(),
-                null)
+                S3Headers.create())
             .run(materializer);
     // #multipart-copy-with-source-version
 
@@ -446,7 +448,11 @@ public class S3Test extends S3WireMockBase {
 
     final Source<MultipartUploadResult, NotUsed> resultCompletionStage =
         S3.multipartCopy(
-                bucket(), bucketKey(), targetBucket(), targetBucketKey(), S3Headers.create(), keys)
+                bucket(),
+                bucketKey(),
+                targetBucket(),
+                targetBucketKey(),
+                S3Headers.create().withServerSideEncryption(keys))
             .run(materializer);
     // #multipart-copy-sse
 
@@ -472,8 +478,7 @@ public class S3Test extends S3WireMockBase {
                 bucketKey(),
                 targetBucket(),
                 targetBucketKey(),
-                S3Headers.create(),
-                ServerSideEncryption.aes256())
+                S3Headers.create().withServerSideEncryption(ServerSideEncryption.aes256()))
             .run(materializer);
 
     final MultipartUploadResult result =

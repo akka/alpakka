@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.s3.headers
 
+import akka.annotation.InternalApi
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers.RawHeader
 
@@ -11,7 +12,7 @@ import akka.http.scaladsl.model.headers.RawHeader
  * Documentation: http://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
  */
 final class CannedAcl private (val value: String) {
-  def header: HttpHeader = RawHeader("x-amz-acl", value)
+  @InternalApi private[s3] def header: HttpHeader = RawHeader("x-amz-acl", value)
 }
 
 object CannedAcl {

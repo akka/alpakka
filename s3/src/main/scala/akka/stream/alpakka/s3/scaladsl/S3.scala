@@ -72,7 +72,6 @@ object S3 {
    * @param contentLength the number of bytes that will be uploaded (required!)
    * @param contentType an optional [[ContentType]]
    * @param s3Headers any headers you want to add
-   * @param sse the server side encryption to use
    * @return a [[akka.stream.scaladsl.Source Source]] containing the [[ObjectMetadata]] of the uploaded S3 Object
    */
   def putObject(bucket: String,
@@ -80,9 +79,8 @@ object S3 {
                 data: Source[ByteString, _],
                 contentLength: Long,
                 contentType: ContentType = ContentTypes.`application/octet-stream`,
-                s3Headers: S3Headers,
-                sse: Option[ServerSideEncryption] = None): Source[ObjectMetadata, NotUsed] =
-    S3Stream.putObject(S3Location(bucket, key), contentType, data, contentLength, s3Headers, sse)
+                s3Headers: S3Headers): Source[ObjectMetadata, NotUsed] =
+    S3Stream.putObject(S3Location(bucket, key), contentType, data, contentLength, s3Headers)
 
   /**
    * Downloads a S3 Object
@@ -139,16 +137,17 @@ object S3 {
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4,
       sse: Option[ServerSideEncryption] = None
-  ): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
+  ): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] = {
+    val s3Headers = S3Headers().withCannedAcl(cannedAcl).withMetaHeaders(metaHeaders)
     S3Stream
       .multipartUpload(
         S3Location(bucket, key),
         contentType,
-        S3Headers().withCannedAcl(cannedAcl).withMetaHeaders(metaHeaders),
-        sse,
+        sse.map(s3Headers.withServerSideEncryption).getOrElse(s3Headers),
         chunkSize,
         chunkingParallelism
       )
+  }
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -167,15 +166,13 @@ object S3 {
       contentType: ContentType = ContentTypes.`application/octet-stream`,
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4,
-      s3Headers: S3Headers = S3Headers(),
-      sse: Option[ServerSideEncryption] = None
+      s3Headers: S3Headers = S3Headers()
   ): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
     S3Stream
       .multipartUpload(
         S3Location(bucket, key),
         contentType,
         s3Headers,
-        sse,
         chunkSize,
         chunkingParallelism
       )
@@ -202,8 +199,7 @@ object S3 {
       targetKey: String,
       sourceVersionId: Option[String] = None,
       contentType: ContentType = ContentTypes.`application/octet-stream`,
-      s3Headers: Option[S3Headers] = None,
-      sse: Option[ServerSideEncryption] = None,
+      s3Headers: S3Headers = S3Headers(),
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4
   ): RunnableGraph[Source[MultipartUploadResult, NotUsed]] =
@@ -213,8 +209,7 @@ object S3 {
         S3Location(targetBucket, targetKey),
         sourceVersionId,
         contentType,
-        s3Headers.getOrElse(S3Headers()),
-        sse,
+        s3Headers,
         chunkSize,
         chunkingParallelism
       )
