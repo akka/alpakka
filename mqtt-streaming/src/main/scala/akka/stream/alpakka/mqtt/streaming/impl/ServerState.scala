@@ -343,12 +343,11 @@ import scala.util.{Failure, Success}
   private val PublisherNamePrefix = "publisher-"
   private val UnpublisherNamePrefix = "unpublisher-"
 
-  private val ReceiveConnAck = "receive-connack"
-
   def clientConnect(data: ConnectReceived)(implicit mat: Materializer): Behavior[Event] = Behaviors.setup { _ =>
     data.local.trySuccess(ForwardConnect)
 
     Behaviors.withTimers { timer =>
+      val ReceiveConnAck = "receive-connack"
       if (!timer.isTimerActive(ReceiveConnAck))
         timer.startSingleTimer(ReceiveConnAck, ReceiveConnAckTimeout, data.settings.receiveConnAckTimeout)
 
@@ -363,6 +362,7 @@ import scala.util.{Failure, Success}
 
             queue.offer(ForwardConnAck)
             data.stash.foreach(context.self.tell)
+            timer.cancel(ReceiveConnAck)
 
             clientConnected(
               ConnAckReplied(
@@ -396,8 +396,9 @@ import scala.util.{Failure, Success}
 
   def clientConnected(data: ConnAckReplied)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
     timer =>
+      val ReceivePingreq = "receive-pingreq"
       if (data.connect.keepAlive.toMillis > 0)
-        timer.startSingleTimer("receive-pingreq",
+        timer.startSingleTimer(ReceivePingreq,
                                ReceivePingReqTimeout,
                                FiniteDuration((data.connect.keepAlive.toMillis * 1.5).toLong, TimeUnit.MILLISECONDS))
 
@@ -416,6 +417,7 @@ import scala.util.{Failure, Success}
                   publisherName
                 )
                 context.watch(publisher)
+                timer.cancel(ReceivePingreq)
                 pendingSubAck(
                   PendingSubscribe(
                     subscribe,
@@ -455,7 +457,7 @@ import scala.util.{Failure, Success}
               case _: Some[_] =>
                 local.failure(new IllegalStateException("Duplicate unsubscribe: " + unsubscribe))
             }
-            Behaviors.same
+            clientConnected(data)
           case (_, UnpublisherFree(topicFilters)) =>
             val unsubscribedTopicFilters =
               data.publishers.filter(publisher => topicFilters.exists(matchTopicFilter(_, publisher)))
@@ -574,6 +576,7 @@ import scala.util.{Failure, Success}
             clientConnected(data)
           case (_, ReceivePingReqTimeout) =>
             data.remote.fail(PingFailed)
+            timer.cancel(ReceivePingreq)
             clientDisconnected(
               Disconnected(
                 data.publishers,
@@ -590,6 +593,7 @@ import scala.util.{Failure, Success}
             )
           case (_, DisconnectReceivedFromRemote(local)) =>
             local.success(ForwardDisconnect)
+            timer.cancel(ReceivePingreq)
             clientDisconnected(
               Disconnected(
                 data.publishers,
@@ -605,6 +609,7 @@ import scala.util.{Failure, Success}
               )
             )
           case (_, ClientConnection.ConnectionLost) =>
+            timer.cancel(ReceivePingreq)
             clientDisconnected(
               Disconnected(
                 data.publishers,
@@ -622,6 +627,7 @@ import scala.util.{Failure, Success}
           case (context, ConnectReceivedFromRemote(connect, local))
               if connect.connectFlags.contains(ConnectFlags.CleanSession) =>
             context.children.foreach(context.stop)
+            timer.cancel(ReceivePingreq)
             clientConnect(
               ConnectReceived(
                 connect,
@@ -640,6 +646,7 @@ import scala.util.{Failure, Success}
               )
             )
           case (_, ConnectReceivedFromRemote(connect, local)) =>
+            timer.cancel(ReceivePingreq)
             clientConnect(
               ConnectReceived(
                 connect,
@@ -720,13 +727,15 @@ import scala.util.{Failure, Success}
 
   def clientDisconnected(data: Disconnected)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
     timer =>
-      timer.startSingleTimer("receive-connect", ReceiveConnectTimeout, data.settings.receiveConnectTimeout)
+      val ReceiveConnect = "receive-connect"
+      timer.startSingleTimer(ReceiveConnect, ReceiveConnectTimeout, data.settings.receiveConnectTimeout)
 
       Behaviors
         .receivePartial[Event] {
           case (context, ConnectReceivedFromRemote(connect, local))
               if connect.connectFlags.contains(ConnectFlags.CleanSession) =>
             context.children.foreach(context.stop)
+            timer.cancel(ReceiveConnect)
             clientConnect(
               ConnectReceived(
                 connect,
@@ -745,6 +754,7 @@ import scala.util.{Failure, Success}
               )
             )
           case (_, ConnectReceivedFromRemote(connect, local)) =>
+            timer.cancel(ReceiveConnect)
             clientConnect(
               ConnectReceived(
                 connect,
@@ -881,7 +891,8 @@ import scala.util.{Failure, Success}
   }
 
   def serverSubscribe(data: ServerSubscribe): Behavior[Event] = Behaviors.withTimers { timer =>
-    timer.startSingleTimer("receive-suback", ReceiveSubAckTimeout, data.settings.receiveSubAckTimeout)
+    val ReceiveSuback = "server-receive-suback"
+    timer.startSingleTimer(ReceiveSuback, ReceiveSubAckTimeout, data.settings.receiveSubAckTimeout)
 
     Behaviors
       .receiveMessagePartial[Event] {
@@ -967,7 +978,8 @@ import scala.util.{Failure, Success}
   }
 
   def serverUnsubscribe(data: ServerUnsubscribe): Behavior[Event] = Behaviors.withTimers { timer =>
-    timer.startSingleTimer("receive-unsubAck", ReceiveUnsubAckTimeout, data.settings.receiveUnsubAckTimeout)
+    val ReceiveUnsubAck = "server-receive-unsubAck"
+    timer.startSingleTimer(ReceiveUnsubAck, ReceiveUnsubAckTimeout, data.settings.receiveUnsubAckTimeout)
 
     Behaviors
       .receiveMessagePartial[Event] {
