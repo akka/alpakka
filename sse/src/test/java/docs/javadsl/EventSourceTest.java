@@ -2,23 +2,28 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.sse.javadsl;
+package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.http.javadsl.Http;
-import akka.http.javadsl.model.*;
-import akka.http.javadsl.model.sse.ServerSentEvent;
+
 import akka.stream.ActorMaterializer;
 import akka.stream.ThrottleMode;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import scala.concurrent.duration.FiniteDuration;
 
+import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
+
+// #event-source
 import java.util.function.Function;
+import java.util.concurrent.CompletionStage;
+
+import akka.http.javadsl.Http;
+import akka.http.javadsl.model.*;
+import akka.http.javadsl.model.sse.ServerSentEvent;
+import akka.stream.alpakka.sse.javadsl.EventSource;
+// #event-source
 
 public class EventSourceTest {
 
@@ -36,7 +41,7 @@ public class EventSourceTest {
 
     final Http http = Http.get(system);
     Function<HttpRequest, CompletionStage<HttpResponse>> send =
-        (request) -> http.singleRequest(request, materializer);
+        (request) -> http.singleRequest(request);
 
     final Uri targetUri = Uri.create(String.format("http://%s:%d", host, port));
     final Optional<String> lastEventId = Optional.of("2");
@@ -45,9 +50,8 @@ public class EventSourceTest {
     // #event-source
 
     // #consume-events
-
     int elements = 1;
-    FiniteDuration per = FiniteDuration.create(500, TimeUnit.MILLISECONDS);
+    Duration per = Duration.ofMillis(500);
     int maximumBurst = 1;
 
     eventSource
