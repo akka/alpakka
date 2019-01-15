@@ -284,7 +284,7 @@ lazy val docs = project
     ),
     Paradox / paradoxGroups := Map("Language" -> Seq("Java", "Scala")),
     resolvers += Resolver.jcenterRepo,
-    publishRsyncArtifact := makeSite.value -> "www/",
+    publishRsyncArtifact := makeSite.value -> "",
     publishRsyncHost := "akkarepo@gustav.akka.io"
   )
 
