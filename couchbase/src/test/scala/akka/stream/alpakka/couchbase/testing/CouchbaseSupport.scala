@@ -150,7 +150,7 @@ trait CouchbaseSupport {
     }
 
     Thread.sleep(4000)
-    Await.result(createIndex, 5.seconds)
+    Await.result(createIndex, 10.seconds)
     Thread.sleep(4000)
 
     session = Await.result(CouchbaseSession(sessionSettings, bucketName), 2.seconds)
